@@ -1,0 +1,11 @@
+{
+  "tsx": true,
+  "componentDir": "./src/shared/ui",
+  "tailwind": {
+    "config": "src/shared/config/ui.presets.cjs",
+    "css": "src/app/app.css"
+  },
+  "aliases": {
+    "path": "@/*"
+  }
+}
