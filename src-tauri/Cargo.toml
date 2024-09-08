@@ -19,6 +19,9 @@ serde_json = "1"
 aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.0" }
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', branch = "develop" }
 # aether-core = { path = "../../aether-core/aether-core" }
+anyhow = "1.0.87"
+daedalus = "0.2.3"
+thiserror = "1.0.63"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

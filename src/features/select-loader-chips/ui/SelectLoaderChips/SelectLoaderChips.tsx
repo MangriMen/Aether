@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 import { SelectLoaderChipsProps } from '.';
 
 export const SelectLoaderChips: Component<SelectLoaderChipsProps> = (props) => {
-  const [local, others] = splitProps(props, ['class', 'loaders']);
+  const [local, others] = splitProps(props, ['loaders', 'class']);
 
   return (
     <ToggleGroup class={cn('justify-start', local.class)} {...others}>
