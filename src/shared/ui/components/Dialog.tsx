@@ -145,6 +145,13 @@ const DialogDescription = <T extends ValidComponent = 'p'>(
   );
 };
 
+export type {
+  DialogOverlayProps,
+  DialogContentProps,
+  DialogTitleProps,
+  DialogDescriptionProps,
+};
+
 export {
   Dialog,
   DialogTrigger,

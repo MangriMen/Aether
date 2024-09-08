@@ -22,13 +22,18 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
         <DialogHeader>
           <DialogTitle>Create Instance</DialogTitle>
         </DialogHeader>
-        <CreateCustomInstance />
-        <DialogFooter>
-          <Button size='sm' variant='success'>
-            Create
-          </Button>
-          <Button size='sm'>Cancel</Button>
-        </DialogFooter>
+        <CreateCustomInstance
+          footer={
+            <DialogFooter>
+              <Button size='sm' variant='success' type='submit'>
+                Create
+              </Button>
+              <Button size='sm' onClick={() => props.onOpenChange?.(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          }
+        />
       </DialogContent>
     </Dialog>
   );

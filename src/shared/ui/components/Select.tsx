@@ -9,6 +9,15 @@ const Select = SelectPrimitive.Root;
 const SelectValue = SelectPrimitive.Value;
 const SelectHiddenSelect = SelectPrimitive.HiddenSelect;
 
+type SelectRootProps<
+  Option,
+  OptGroup,
+  T extends ValidComponent = 'div',
+> = SelectPrimitive.SelectRootProps<Option, OptGroup, T> & {
+  class?: string | undefined;
+  children?: JSX.Element;
+};
+
 type SelectTriggerProps<T extends ValidComponent = 'button'> =
   SelectPrimitive.SelectTriggerProps<T> & {
     class?: string | undefined;
@@ -110,6 +119,13 @@ const SelectItem = <T extends ValidComponent = 'li'>(
       <SelectPrimitive.ItemLabel>{local.children}</SelectPrimitive.ItemLabel>
     </SelectPrimitive.Item>
   );
+};
+
+export type {
+  SelectRootProps,
+  SelectTriggerProps,
+  SelectContentProps,
+  SelectItemProps,
 };
 
 export {

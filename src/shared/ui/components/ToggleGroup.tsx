@@ -13,7 +13,7 @@ const ToggleGroupContext = createContext<VariantProps<typeof toggleVariants>>({
   variant: 'default',
 });
 
-export type ToggleGroupRootProps<T extends ValidComponent = 'div'> =
+type ToggleGroupRootProps<T extends ValidComponent = 'div'> =
   ToggleGroupPrimitive.ToggleGroupRootProps<T> &
     VariantProps<typeof toggleVariants> & {
       class?: string | undefined;
@@ -51,7 +51,7 @@ const ToggleGroup = <T extends ValidComponent = 'div'>(
   );
 };
 
-export type ToggleGroupItemProps<T extends ValidComponent = 'button'> =
+type ToggleGroupItemProps<T extends ValidComponent = 'button'> =
   ToggleGroupPrimitive.ToggleGroupItemProps<T> &
     VariantProps<typeof toggleVariants> & { class?: string | undefined };
 
@@ -78,5 +78,7 @@ const ToggleGroupItem = <T extends ValidComponent = 'button'>(
     />
   );
 };
+
+export type { ToggleGroupRootProps, ToggleGroupItemProps };
 
 export { ToggleGroup, ToggleGroupItem };
