@@ -16,9 +16,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 
-# aether-core = { git = 'https://github.com/MangriMen/aether-core.git', branch = "main" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.0" }
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', branch = "develop" }
-aether-core = { path = "../../aether-core/aether-core" }
+# aether-core = { path = "../../aether-core/aether-core" }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

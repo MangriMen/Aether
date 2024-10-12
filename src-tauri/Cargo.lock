@@ -48,6 +48,7 @@ dependencies = [
 [[package]]
 name = "aether-core"
 version = "0.1.0"
+source = "git+https://github.com/MangriMen/aether-core.git#1b04205c21174d3f293628c5644e34ea94c70333"
 dependencies = [
  "anyhow",
  "bytes",
