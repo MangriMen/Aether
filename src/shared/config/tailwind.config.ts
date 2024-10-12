@@ -8,6 +8,15 @@ export const tailwindConfig: Config = {
   darkMode: ['class', '[data-kb-theme="dark"]'],
   content: ['./src/**/*.{html,js,jsx,md,mdx,ts,tsx}'],
   presets: [presets],
+  theme: {
+    extend: {
+      colors: {
+        secondary: {
+          dark: 'hsl(var(--secondary-dark))',
+        },
+      },
+    },
+  },
 };
 
 export const resolvedTailwindConfig = resolveConfig(tailwindConfig);

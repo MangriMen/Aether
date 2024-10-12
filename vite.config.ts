@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
+import solidSvg from 'vite-plugin-solid-svg';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [solid(), tsconfigPaths()],
+  plugins: [solid(), solidSvg(), tsconfigPaths()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
