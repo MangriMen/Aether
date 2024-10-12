@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "open-mc",
+    "productName": "aether",
     "version": "0.0.0"
   },
   "tauri": {
@@ -19,7 +19,7 @@
     },
     "windows": [
       {
-        "title": "open-mc",
+        "title": "aether",
         "width": 800,
         "height": 600
       }

@@ -1,0 +1,75 @@
+{
+  "env": {
+    "browser": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:sonarjs/recommended",
+    "plugin:solid/recommended",
+    "plugin:prettier/recommended",
+    "plugin:tailwindcss/recommended",
+    "plugin:import/recommended",
+    "@feature-sliced",
+    "@feature-sliced/eslint-config/rules/import-order/experimental",
+    "prettier"
+  ],
+  "globals": {
+    "alert": "readonly",
+    "document": "readonly",
+    "localStorage": "readonly",
+    "window": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "eslint-plugin-sonarjs",
+    "import",
+    "jsx-a11y",
+    "mysticatea",
+    "prefer-object-spread",
+    "prettier",
+    "risxss",
+    "boundaries",
+    "@feature-sliced/eslint-plugin-messages"
+  ],
+  "processor": "@feature-sliced/messages/fs",
+  "root": true,
+  "rules": {
+    "@typescript-eslint/no-empty-interface": 0,
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "complexity": [
+      "error",
+      13
+    ],
+    "curly": "error",
+    "mysticatea/no-useless-rest-spread": "error",
+    "no-debugger": "warn",
+    "no-template-curly-in-string": "off",
+    "no-unused-vars": "off",
+    "prefer-object-spread/prefer-object-spread": 2,
+    "prettier/prettier": "warn"
+  },
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  }
+}
