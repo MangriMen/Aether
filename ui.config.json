@@ -1,6 +1,6 @@
 {
   "tsx": true,
-  "componentDir": "./src/shared/ui",
+  "componentDir": "./src/shared/ui/components",
   "tailwind": {
     "config": "src/shared/config/ui.presets.cjs",
     "css": "src/app/app.css"

@@ -6,6 +6,8 @@ import {
 import { Route, Router } from '@solidjs/router';
 import { Component } from 'solid-js';
 
+import { initializeState } from '@/entities/minecraft';
+
 import { HomePage } from '@/pages/home-page';
 
 export const AppRouter: Component = () => {
@@ -21,6 +23,9 @@ export const AppRouter: Component = () => {
           </ColorModeProvider>
         </>
       )}
+      rootPreload={() => {
+        initializeState();
+      }}
     >
       <Route path='*'>
         <Route path='/' component={HomePage} />
