@@ -1,5 +1,7 @@
 import { Component } from 'solid-js';
 
+import { InstancesPanel } from '@/widgets/instances-panel';
+
 import { HomePageLayout } from '../HomePageLayout';
 
 import { HomePageProps } from '.';
@@ -7,7 +9,9 @@ import { HomePageProps } from '.';
 export const HomePage: Component<HomePageProps> = (props) => {
   return (
     <HomePageLayout>
-      <div {...props}>HomePage</div>
+      <div class='p-4' {...props}>
+        <InstancesPanel />
+      </div>
     </HomePageLayout>
   );
 };

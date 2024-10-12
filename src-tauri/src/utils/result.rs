@@ -7,9 +7,9 @@ pub struct AetherLauncherError {
 
 impl From<Box<dyn Error + 'static>> for AetherLauncherError {
     fn from(value: Box<dyn Error + 'static>) -> Self {
-        return AetherLauncherError {
+        AetherLauncherError {
             message: value.to_string(),
-        };
+        }
     }
 }
 

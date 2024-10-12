@@ -22,7 +22,12 @@ import {
   TextFieldLabel,
 } from '@/shared/ui';
 
-import { getMinecraftVersionManifest } from '@/entities/minecraft';
+import {
+  createMinecraftInstance,
+  getMinecraftVersionManifest,
+  InstanceCreateDto,
+  ModLoader,
+} from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
 import { SelectLoaderChips } from '@/features/select-loader-chips';
@@ -74,19 +79,31 @@ export const CreateCustomInstanceDialogBody: Component<
     loaderVersion: undefined,
   });
 
-  const handleSubmit = (e: SubmitEvent) => {
+  const handleSubmit = async (e: SubmitEvent) => {
     e.preventDefault();
 
     const data = new FormData(e.target as HTMLFormElement);
 
     const dataObject = { ...fields, ...Object.fromEntries(data.entries()) };
 
-    const finalData = {
-      ...dataObject,
-      gameVersion: dataObject.gameVersion?.id,
+    if (dataObject.gameVersion === undefined) {
+      return;
+    }
+
+    const dto: InstanceCreateDto = {
+      name: dataObject.name,
+      game_version: dataObject.gameVersion.id,
+      mod_loader: 'vanilla',
     };
 
-    console.log(finalData);
+    console.log(dto);
+
+    try {
+      await createMinecraftInstance(dto);
+      props.onOpenChange?.(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   createEffect(() => {

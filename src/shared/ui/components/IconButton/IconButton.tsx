@@ -15,17 +15,22 @@ const getIconColor = (variant: ButtonProps['variant']) => {
     case 'ghost':
     case 'link':
       return '[&_svg]:fill-foreground';
+    case 'success':
+      return '[&_svg]:fill-success-foreground';
   }
 };
 
 export const IconButton: Component<IconButtonProps> = (props) => {
-  const [local, others] = splitProps(props as IconButtonProps, ['variant']);
+  const [local, others] = splitProps(props as IconButtonProps, [
+    'class',
+    'variant',
+  ]);
 
   const iconColorClass = createMemo(() => getIconColor(local.variant));
 
   return (
     <Button
-      class={cn('p-0.5 rounded-full', iconColorClass())}
+      class={cn('p-0.5 rounded-full', iconColorClass(), local.class)}
       variant={local.variant}
       size='icon'
       {...others}
