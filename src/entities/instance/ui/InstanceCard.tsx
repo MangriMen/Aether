@@ -1,4 +1,5 @@
-import { Component, splitProps } from 'solid-js';
+import { Icon } from '@iconify-icon/solid';
+import { Component, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { IconButton, PlayIcon } from '@/shared/ui';
@@ -20,7 +21,14 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       )}
       {...others}
     >
-      <div class='size-24 rounded-md border' />
+      <div class='size-24 rounded-md border'>
+        <Show
+          when={local.instance.iconPath}
+          fallback={<Icon class='text-[96px]' icon='mdi-cube-outline' />}
+        >
+          {(path) => <img src={path()} />}
+        </Show>
+      </div>
       <div>
         <div>{local.instance.name}</div>
         <div class='text-sm capitalize text-muted-foreground'>
@@ -31,7 +39,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       </div>
       <IconButton
         variant='success'
-        class='absolute bottom-1/3 left-1/2 rounded-md opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100'
+        class='absolute bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100'
         onClick={() => local.onLaunchClick?.()}
       >
         <PlayIcon />

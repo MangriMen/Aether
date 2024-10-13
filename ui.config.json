@@ -1,11 +1,14 @@
 {
+  "$schema": "https://solid-ui.com/schema.json",
   "tsx": true,
-  "componentDir": "./src/shared/ui/components",
   "tailwind": {
+    "css": "src/app/app.css",
     "config": "src/shared/config/ui.presets.cjs",
-    "css": "src/app/app.css"
+    "prefix": ""
   },
   "aliases": {
-    "path": "@/*"
+    "path": "@/*",
+    "components": "src/shared/ui/components",
+    "utils": "src/shared/lib"
   }
 }

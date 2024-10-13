@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.0.1"
+version = "0.0.2"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -8,20 +8,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "1", features = ["shell-open"] }
+tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.0" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.1" }
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', branch = "develop" }
 # aether-core = { path = "../../aether-core/aether-core" }
 anyhow = "1.0.87"
 daedalus = "0.2.3"
 thiserror = "1.0.63"
+tauri-plugin-shell = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
