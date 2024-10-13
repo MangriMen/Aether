@@ -1,5 +1,13 @@
-import { createAsync } from '@solidjs/router';
-import { Component, For, splitProps } from 'solid-js';
+import {
+  Component,
+  createEffect,
+  createResource,
+  For,
+  Match,
+  Show,
+  splitProps,
+  Switch,
+} from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -15,22 +23,41 @@ import { InstancesPanelProps } from './types';
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const instances = createAsync(() => getMinecraftInstances());
+  const [instances, { refetch }] = createResource(
+    () => getMinecraftInstances(),
+    {
+      initialValue: [],
+    },
+  );
 
   const handleInstanceLaunch = (instance: Instance) => {
     launchMinecraftInstance(instance.path);
   };
 
+  createEffect(() => {
+    refetch();
+  });
+
   return (
-    <div class={cn('flex gap-4', local.class)} {...others}>
-      <For each={instances()}>
-        {(instance) => (
-          <InstanceCard
-            instance={instance}
-            onLaunchClick={() => handleInstanceLaunch(instance)}
-          />
-        )}
-      </For>
+    <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
+      <Switch>
+        <Match when={instances.loading}>Loading</Match>
+        <Match when={!instances.loading}>
+          <Show
+            when={instances()?.length}
+            fallback={<span class='m-auto'>You don't have instances</span>}
+          >
+            <For each={instances()}>
+              {(instance) => (
+                <InstanceCard
+                  instance={instance}
+                  onLaunchClick={() => handleInstanceLaunch(instance)}
+                />
+              )}
+            </For>
+          </Show>
+        </Match>
+      </Switch>
     </div>
   );
 };

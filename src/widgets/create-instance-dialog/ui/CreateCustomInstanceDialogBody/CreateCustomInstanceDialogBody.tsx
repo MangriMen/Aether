@@ -15,6 +15,8 @@ import { cn } from '@/shared/lib';
 import { Option } from '@/shared/model';
 import {
   Button,
+  Collapsible,
+  CollapsibleContent,
   DialogFooter,
   Field,
   TextField,
@@ -39,11 +41,11 @@ import {
   CreateCustomInstanceDialogBodyProps,
 } from '.';
 
-const loaders = [
-  { name: 'Vanilla', value: 'vanilla' },
-  { name: 'Forge', value: 'forge' },
-  { name: 'Fabric', value: 'fabric' },
-  { name: 'Quilt', value: 'quilt' },
+const loaders: Option<ModLoader>[] = [
+  { name: 'Vanilla', value: ModLoader.Vanilla },
+  { name: 'Forge', value: ModLoader.Forge },
+  { name: 'Fabric', value: ModLoader.Fabric },
+  { name: 'Quilt', value: ModLoader.Quilt },
 ];
 
 const loaderVersionTypes: Option[] = [
@@ -73,8 +75,9 @@ export const CreateCustomInstanceDialogBody: Component<
   const [local, others] = splitProps(props, ['class', 'onOpenChange']);
 
   const [fields, setFields] = createStore<CreateCustomInstanceFormProps>({
+    name: undefined,
     gameVersion: undefined,
-    loader: 'vanilla',
+    loader: ModLoader.Vanilla,
     loaderType: 'stable',
     loaderVersion: undefined,
   });
@@ -90,13 +93,19 @@ export const CreateCustomInstanceDialogBody: Component<
       return;
     }
 
+    if (dataObject.loader === undefined) {
+      return;
+    }
+
+    if (dataObject.name === undefined) {
+      return;
+    }
+
     const dto: InstanceCreateDto = {
       name: dataObject.name,
-      game_version: dataObject.gameVersion.id,
-      mod_loader: 'vanilla',
+      gameVersion: dataObject.gameVersion.id,
+      modLoader: dataObject.loader,
     };
-
-    console.log(dto);
 
     try {
       await createMinecraftInstance(dto);
@@ -127,6 +136,7 @@ export const CreateCustomInstanceDialogBody: Component<
           class='max-w-[36ch]'
           maxLength={32}
           required
+          autocomplete='off'
         />
       </TextField>
 
@@ -147,45 +157,52 @@ export const CreateCustomInstanceDialogBody: Component<
           defaultValue={loaders[0].value}
           value={fields.loader}
           onChange={(value) => {
-            if (value) {
-              setFields('loader', value);
+            if (
+              value &&
+              Object.values(ModLoader).includes(value as ModLoader)
+            ) {
+              setFields('loader', value as ModLoader);
             }
           }}
         />
       </Field>
 
-      <Show when={isAdvanced()}>
-        <Field label='Loader Version'>
-          <SelectLoaderTypeChips
-            loaderTypes={loaderVersionTypes}
-            value={fields.loaderType}
-            onChange={(value) => {
-              setFields('loaderType', value);
-            }}
-          />
-        </Field>
+      <Collapsible open={isAdvanced()}>
+        <CollapsibleContent>
+          <Field label='Loader Version'>
+            <SelectLoaderTypeChips
+              loaderTypes={loaderVersionTypes}
+              value={fields.loaderType}
+              onChange={(value) => {
+                if (value) {
+                  setFields('loaderType', value);
+                }
+              }}
+            />
+          </Field>
 
-        <Show when={fields.loaderType === 'other'}>
-          <Show
-            when={fields.gameVersion !== undefined}
-            fallback={
-              <span class='italic'>
-                Select a game version before you select a loader version
-              </span>
-            }
-          >
-            <Field label='Select version'>
-              <SelectSpecificLoaderVersion
-                placeholder='Select loader version'
-                // TODO
-                options={[]}
-                //@ts-expect-error TODO: fix
-                onChange={(value) => setFields('loaderVersion', value?.id)}
-              />
-            </Field>
+          <Show when={fields.loaderType === 'other'}>
+            <Show
+              when={fields.gameVersion !== undefined}
+              fallback={
+                <span class='italic'>
+                  Select a game version before you select a loader version
+                </span>
+              }
+            >
+              <Field label='Select version'>
+                <SelectSpecificLoaderVersion
+                  placeholder='Select loader version'
+                  // TODO
+                  options={[]}
+                  //@ts-expect-error TODO: fix
+                  onChange={(value) => setFields('loaderVersion', value?.id)}
+                />
+              </Field>
+            </Show>
           </Show>
-        </Show>
-      </Show>
+        </CollapsibleContent>
+      </Collapsible>
 
       <DialogFooter>
         <Button size='sm' onClick={() => setIsAdvanced(!isAdvanced())}>

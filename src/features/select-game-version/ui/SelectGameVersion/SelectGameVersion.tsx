@@ -1,10 +1,4 @@
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  Show,
-  splitProps,
-} from 'solid-js';
+import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -70,15 +64,15 @@ export function SelectGameVersion<T extends Version = Version>(
     <div class='flex gap-2'>
       <Select
         class={cn('w-full', local.class)}
+        options={version_list()}
         optionValue={'id'}
         optionTextValue={'id'}
         defaultValue={local.defaultValue}
         value={local.value}
         onChange={local.onChange}
         itemComponent={(props) => (
-          <SelectItem item={props.item}>{props.item.rawValue?.id}</SelectItem>
+          <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
         )}
-        options={version_list()}
         {...others}
       >
         <SelectTrigger>
@@ -87,15 +81,20 @@ export function SelectGameVersion<T extends Version = Version>(
         <SelectContent class='max-h-[148px] overflow-y-auto' />
       </Select>
 
-      <Show when={local.advanced}>
-        <div class='flex min-w-max items-center gap-2'>
-          <Checkbox
-            id='advanced-game-version'
-            onChange={handleIncludeSnapshotsChange}
-          />
-          <Label for='advanced-game-version'>Include snapshots</Label>
-        </div>
-      </Show>
+      <div
+        class={cn(
+          'flex min-w-max items-center gap-2 animate-in fade-in-0 duration-300',
+          {
+            'invisible animate-out fade-out-0': !local.advanced,
+          },
+        )}
+      >
+        <Checkbox
+          id='advanced-game-version'
+          onChange={handleIncludeSnapshotsChange}
+        />
+        <Label for='advanced-game-version'>Include snapshots</Label>
+      </div>
     </div>
   );
 }

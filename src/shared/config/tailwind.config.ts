@@ -15,6 +15,30 @@ export const tailwindConfig: Config = {
           dark: 'hsl(var(--secondary-dark))',
         },
       },
+      keyframes: {
+        'content-show': {
+          from: { opacity: '0', transform: 'scaleY(0) translateY(-40px)' },
+          to: { opacity: '1', transform: 'scaleY(1) translateY(0)' },
+        },
+        'content-hide': {
+          from: { opacity: '1', transform: 'scaleY(1) translateY(0)' },
+          to: { opacity: '0', transform: 'scaleY(0) translateY(-40px)' },
+        },
+        'slide-down': {
+          from: { height: '0' },
+          to: { height: 'var(--kb-collapsible-content-height)' },
+        },
+        'slide-up': {
+          from: { height: 'var(--kb-collapsible-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      animation: {
+        'content-show': 'content-show 0.2s ease-out',
+        'content-hide': 'content-hide 0.2s ease-out',
+        'slide-down': 'slide-down 0.2s ease-out',
+        'slide-up': 'slide-up 0.2s ease-out',
+      },
     },
   },
 };

@@ -1,7 +1,14 @@
+import { A } from '@solidjs/router';
 import { Component, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { AddIcon, IconButton, SettingsIcon, Sidebar } from '@/shared/ui';
+import {
+  AddIcon,
+  HomeIcon,
+  IconButton,
+  SettingsIcon,
+  Sidebar,
+} from '@/shared/ui';
 
 // TODO: make something like react-modal-global
 // eslint-disable-next-line boundaries/element-types
@@ -16,13 +23,23 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     createSignal(false);
 
   return (
-    <Sidebar class={cn('justify-end', local.class)} {...others}>
-      <IconButton variant='ghost'>
-        <AddIcon onClick={() => setIsCreateInstanceDialogOpen(true)} />
-      </IconButton>
-      <IconButton disabled variant='ghost'>
-        <SettingsIcon />
-      </IconButton>
+    <Sidebar class={cn('justify-between', local.class)} {...others}>
+      <div class='flex flex-col items-center gap-2'>
+        <IconButton as={A} href='/' variant='ghost'>
+          <HomeIcon />
+        </IconButton>
+      </div>
+      <div class='flex flex-col items-center gap-2'>
+        <IconButton
+          variant='success'
+          onClick={() => setIsCreateInstanceDialogOpen(true)}
+        >
+          <AddIcon />
+        </IconButton>
+        <IconButton as={A} href='/settings' variant='ghost'>
+          <SettingsIcon />
+        </IconButton>
+      </div>
 
       {/* Dialogs */}
       <CreateInstanceDialog

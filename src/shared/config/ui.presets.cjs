@@ -78,12 +78,12 @@ module.exports = {
           to: { height: 0 },
         },
         'content-show': {
-          from: { opacity: 0, transform: 'scale(0.96)' },
-          to: { opacity: 1, transform: 'scale(1)' },
+          from: { opacity: 0, transform: 'scaleY(0) translateY(-40px)' },
+          to: { opacity: 1, transform: 'scaleY(1) translateY(0)' },
         },
         'content-hide': {
-          from: { opacity: 1, transform: 'scale(1)' },
-          to: { opacity: 0, transform: 'scale(0.96)' },
+          from: { opacity: 1, transform: 'scaleY(1) translateY(0)' },
+          to: { opacity: 0, transform: 'scaleY(0) translateY(-40px)' },
         },
       },
       animation: {
