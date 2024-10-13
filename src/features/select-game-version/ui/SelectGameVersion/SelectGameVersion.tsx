@@ -93,7 +93,7 @@ export function SelectGameVersion<T extends Version = Version>(
           id='advanced-game-version'
           onChange={handleIncludeSnapshotsChange}
         />
-        <Label for='advanced-game-version'>Include snapshots</Label>
+        <Label for='advanced-game-version-input'>Include snapshots</Label>
       </div>
     </div>
   );
