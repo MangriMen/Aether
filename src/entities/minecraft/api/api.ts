@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 
 import { VersionManifest, InstanceCreateDto, Instance } from '../model';
 

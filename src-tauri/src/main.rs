@@ -12,6 +12,7 @@ use api::tauri::{
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
             get_minecraft_version_manifest,

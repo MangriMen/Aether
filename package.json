@@ -14,7 +14,8 @@
   "dependencies": {
     "@kobalte/core": "^0.13.7",
     "@solidjs/router": "^0.14.3",
-    "@tauri-apps/api": "^1",
+    "@tauri-apps/api": "2.0.0",
+    "@tauri-apps/plugin-shell": "~2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "solid-js": "^1.8.22",
@@ -26,7 +27,7 @@
     "@feature-sliced/eslint-config": "^0.1.0-beta.6",
     "@feature-sliced/eslint-plugin-messages": "^0.1.0-beta.2",
     "@iconify-icon/solid": "^2.1.1",
-    "@tauri-apps/cli": "^1",
+    "@tauri-apps/cli": "2.0.0",
     "@types/node": "^22.5.4",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
