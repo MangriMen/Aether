@@ -18,7 +18,7 @@
   },
   "productName": "aether",
   "mainBinaryName": "aether",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "identifier": "com.mangrimen.aether",
   "plugins": {},
   "app": {
