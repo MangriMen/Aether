@@ -1,16 +1,12 @@
 {
-    "files.associations": {
-        "*.css": "tailwindcss"
-    },
-    "rust-analyzer.linkedProjects": [
-        ".\\src-tauri\\Cargo.toml"
-    ],
-    "editor.quickSuggestions": {
-        "strings": "on"
-    },
-    "tailwindCSS.classAttributes": [
-        "class",
-        "classList"
-    ],
-    "feature-sliced-design-components.componentTemplate": "fsd-solid-types"
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "rust-analyzer.linkedProjects": [".\\src-tauri\\Cargo.toml"],
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.classAttributes": ["class", "classList"],
+  "feature-sliced-design-components.componentTemplate": "fsd-solid-types",
+  "svg.preview.background": "black"
 }
