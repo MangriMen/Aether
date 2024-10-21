@@ -1,6 +1,7 @@
 import { Route, Router } from '@solidjs/router';
 import { Component } from 'solid-js';
 
+import { AppLayout } from '@/widgets/layouts/app-layout';
 import { MainLayout } from '@/widgets/layouts/main-layout';
 
 import { HomePage } from '@/pages/home-page';
@@ -12,7 +13,7 @@ import { ColorModeObserver } from './ui';
 export const AppRouter: Component = () => {
   return (
     <Router root={ColorModeObserver} rootPreload={initializeApp}>
-      <Route path='*'>
+      <Route path='*' component={AppLayout}>
         <Route path='/' component={MainLayout}>
           <Route path='/' component={HomePage} />
           <Route path='/settings' component={SettingsPage} />

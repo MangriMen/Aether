@@ -9,9 +9,11 @@ export const MainLayout: Component<MainLayoutProps> = (props) => {
   const [local, others] = splitProps(props, ['params', 'location', 'children']);
 
   return (
-    <div id='main-layout' class='flex h-full' {...others}>
+    <div id='main-layout' class='flex h-full bg-secondary-dark' {...others}>
       <AppSidebar />
-      {local.children}
+      <div class='size-full overflow-hidden rounded-l-2xl bg-background'>
+        {local.children}
+      </div>
     </div>
   );
 };
