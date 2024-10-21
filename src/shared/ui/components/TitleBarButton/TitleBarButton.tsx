@@ -13,7 +13,7 @@ export const TitleBarButton: Component<TitleBarButtonProps> = (props) => {
     <IconButton
       variant='ghost'
       class={cn(
-        'inline-flex size-[30px] items-center justify-center hover:bg-[#5bbec3]',
+        'inline-flex size-[30px] items-center justify-center hover:bg-secondary',
         local.class,
       )}
       {...others}

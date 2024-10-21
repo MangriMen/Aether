@@ -1,7 +1,6 @@
 import {
   Component,
   createEffect,
-  createResource,
   For,
   Match,
   Show,
@@ -10,12 +9,19 @@ import {
 } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { ContextMenuTrigger } from '@/shared/ui';
 
-import { InstanceCard } from '@/entities/instance';
 import {
-  getMinecraftInstances,
+  getInstances,
+  InstanceCard,
+  InstanceContextMenu,
+  refetchInstances,
+} from '@/entities/instance';
+import {
   Instance,
+  InstanceInstallStage,
   launchMinecraftInstance,
+  removeMinecraftInstance,
 } from '@/entities/minecraft';
 
 import { InstancesPanelProps } from './types';
@@ -23,25 +29,36 @@ import { InstancesPanelProps } from './types';
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [instances, { refetch }] = createResource(
-    () => getMinecraftInstances(),
-    {
-      initialValue: [],
-    },
-  );
+  const instances = getInstances();
 
-  const handleInstanceLaunch = (instance: Instance) => {
-    launchMinecraftInstance(instance.path);
+  const handleInstanceLaunch = async (instance: Instance) => {
+    if (instance.installStage !== InstanceInstallStage.Installed) {
+      return;
+    }
+
+    try {
+      await launchMinecraftInstance(instance.nameId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleInstanceRemove = async (instance: Instance) => {
+    try {
+      await removeMinecraftInstance(instance.nameId);
+      refetchInstances();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   createEffect(() => {
-    refetch();
+    refetchInstances();
   });
 
   return (
     <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
       <Switch>
-        <Match when={instances.loading}>Loading</Match>
         <Match when={!instances.loading}>
           <Show
             when={instances()?.length}
@@ -49,10 +66,17 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           >
             <For each={instances()}>
               {(instance) => (
-                <InstanceCard
-                  instance={instance}
-                  onLaunchClick={() => handleInstanceLaunch(instance)}
-                />
+                <InstanceContextMenu
+                  onPlay={() => handleInstanceLaunch(instance)}
+                  onRemove={() => handleInstanceRemove(instance)}
+                >
+                  <ContextMenuTrigger>
+                    <InstanceCard
+                      instance={instance}
+                      onLaunchClick={() => handleInstanceLaunch(instance)}
+                    />
+                  </ContextMenuTrigger>
+                </InstanceContextMenu>
               )}
             </For>
           </Show>

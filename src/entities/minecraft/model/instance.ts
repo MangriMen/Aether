@@ -1,6 +1,7 @@
 export interface Instance {
   installStage: InstanceInstallStage;
 
+  nameId: string;
   path: string;
 
   name: string;

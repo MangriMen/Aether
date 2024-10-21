@@ -24,6 +24,7 @@ import {
   TextFieldLabel,
 } from '@/shared/ui';
 
+import { refetchInstances } from '@/entities/instance';
 import {
   createMinecraftInstance,
   getMinecraftVersionManifest,
@@ -108,8 +109,9 @@ export const CreateCustomInstanceDialogBody: Component<
     };
 
     try {
-      await createMinecraftInstance(dto);
+      createMinecraftInstance(dto);
       props.onOpenChange?.(false);
+      refetchInstances();
     } catch (e) {
       console.error(e);
     }
