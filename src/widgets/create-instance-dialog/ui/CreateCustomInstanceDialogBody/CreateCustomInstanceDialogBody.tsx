@@ -169,7 +169,7 @@ export const CreateCustomInstanceDialogBody: Component<
         />
       </Field>
 
-      <Collapsible open={isAdvanced()}>
+      <Collapsible open={isAdvanced() && fields.loader !== ModLoader.Vanilla}>
         <CollapsibleContent>
           <Field label='Loader Version'>
             <SelectLoaderTypeChips
