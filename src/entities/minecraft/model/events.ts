@@ -10,6 +10,14 @@ export interface MinecraftDownload {
 
 export type LoadingBarType = MinecraftDownload;
 
+export interface LoadingBar {
+  loadingBarUuid: string;
+  message: string;
+  total: number;
+  current: number;
+  barType: LoadingBarType;
+}
+
 export interface LoadingPayload {
   event: LoadingBarType;
   loaderUuid: string;

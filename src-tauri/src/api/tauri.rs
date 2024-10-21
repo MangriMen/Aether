@@ -1,6 +1,11 @@
-use aether_core::state::{Instance, LauncherState, MinecraftProcessMetadata};
+use aether_core::{
+    event::LoadingBar,
+    state::{Instance, LauncherState, MinecraftProcessMetadata},
+};
 use daedalus::minecraft;
+use dashmap::DashMap;
 use tauri::AppHandle;
+use uuid::Uuid;
 
 use crate::{
     models::minecraft::InstanceCreateDto,
@@ -73,4 +78,9 @@ pub async fn launch_minecraft_instance(
 #[tauri::command]
 pub async fn remove_minecraft_instance(name_id: String) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::remove(&name_id).await?)
+}
+
+#[tauri::command]
+pub async fn get_progress_bars() -> AetherLauncherResult<DashMap<Uuid, LoadingBar>> {
+    Ok(aether_core::event::EventState::list_progress_bars().await?)
 }

@@ -1,6 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import { VersionManifest, InstanceCreateDto, Instance } from '../model';
+import {
+  VersionManifest,
+  InstanceCreateDto,
+  Instance,
+  LoadingBar,
+} from '../model';
 
 export const initializeState = () => invoke('initialize_state');
 
@@ -18,3 +23,6 @@ export const launchMinecraftInstance = (nameId: string) =>
 
 export const removeMinecraftInstance = (nameId: string) =>
   invoke('remove_minecraft_instance', { nameId });
+
+export const getLoadingBars = () =>
+  invoke<Record<string, LoadingBar>>('get_progress_bars');

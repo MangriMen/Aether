@@ -17,7 +17,12 @@ import {
 
 import { EventCard } from '@/entities/events';
 import { refetchInstances } from '@/entities/instance';
-import { listenLoading, LoadingPayload } from '@/entities/minecraft';
+import {
+  getLoadingBars,
+  listenLoading,
+  LoadingBarTypeEnum,
+  LoadingPayload,
+} from '@/entities/minecraft';
 
 import { NotificationMenuButtonProps } from './types';
 
@@ -28,6 +33,26 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
 
   const [isMenuOpen, setIsMenuOpen] = createSignal(false);
   const [isNewEvent, setIsNewEvent] = createSignal(false);
+
+  const fetchEvents = async () => {
+    try {
+      const bars = await getLoadingBars();
+
+      Object.entries(bars).forEach(([_, value]) => {
+        console.log(value);
+        if (value.barType.type === LoadingBarTypeEnum.MinecraftDownload) {
+          addEvent({
+            event: value.barType,
+            loaderUuid: value.loadingBarUuid,
+            message: value.message,
+            fraction: value.current / value.total,
+          });
+        }
+      });
+    } catch {
+      /* empty */
+    }
+  };
 
   const addEvent = (e: LoadingPayload) => {
     if (e.fraction === null) {
@@ -43,17 +68,20 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   };
 
   onMount(() => {
+    fetchEvents();
+
     listenLoading((e) => {
-      console.log(e.payload.fraction);
       if ((e.payload.fraction ?? 1) <= 0.05) {
         setIsNewEvent(true);
       }
+
       if (
         e.payload.fraction === undefined ||
         e.payload.message === 'Completed'
       ) {
         refetchInstances();
       }
+
       addEvent(e.payload);
     });
   });
@@ -68,7 +96,7 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   return (
     <Popover open={isMenuOpen()} onOpenChange={setIsMenuOpen}>
       <Show when={Object.keys(events()).length}>
-        <PopoverTrigger as={IconButton} variant='success' {...props}>
+        <PopoverTrigger as={IconButton} variant='ghost' {...props}>
           <Icon class='text-2xl' icon='mdi-menu-down' />
         </PopoverTrigger>
       </Show>

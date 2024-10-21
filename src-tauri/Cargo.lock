@@ -36,6 +36,7 @@ dependencies = [
  "anyhow",
  "async-event-emitter",
  "daedalus",
+ "dashmap",
  "event-emitter-rs",
  "log",
  "serde",

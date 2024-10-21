@@ -10,7 +10,7 @@ use tauri::Manager;
 
 use api::tauri::{
     create_minecraft_instance, get_minecraft_instances, get_minecraft_version_manifest,
-    initialize_state, launch_minecraft_instance, remove_minecraft_instance,
+    get_progress_bars, initialize_state, launch_minecraft_instance, remove_minecraft_instance,
 };
 
 fn main() {
@@ -38,7 +38,8 @@ fn main() {
             create_minecraft_instance,
             get_minecraft_instances,
             launch_minecraft_instance,
-            remove_minecraft_instance
+            remove_minecraft_instance,
+            get_progress_bars
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
