@@ -32,8 +32,26 @@ export const tailwindConfig: Config = {
           from: { height: 'var(--kb-collapsible-content-height)' },
           to: { height: '0' },
         },
+        'bump-out': {
+          '0%': {
+            transform: 'scale(1)',
+          },
+          '100%': {
+            transform: 'scale(0.95)',
+          },
+        },
+        'bump-in': {
+          '0%': {
+            transform: 'scale(1)',
+          },
+          '100%': {
+            transform: 'scale(1.05)',
+          },
+        },
       },
       animation: {
+        'bump-in': 'bump-in 0.05s ease-in-out forwards',
+        'bump-out': 'bump-out 0.05s ease-in-out forwards',
         'content-show': 'content-show 0.2s ease-out',
         'content-hide': 'content-hide 0.2s ease-out',
         'slide-down': 'slide-down 0.2s ease-out',

@@ -9,7 +9,7 @@ export const TitleBar: Component<TitleBarProps> = (props) => {
   return (
     <div
       class={cn(
-        'fixed inset-x-0 top-0 flex h-[30px] select-none justify-end bg-secondary-dark',
+        'fixed inset-x-0 top-0 flex h-[40px] select-none bg-secondary-dark',
         local.class,
       )}
       {...others}

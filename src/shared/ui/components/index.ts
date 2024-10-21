@@ -15,3 +15,7 @@ export * from './TitleBarButton';
 export * from './Toggle';
 export * from './ToggleGroup';
 export * from './Collapsible';
+export * from './Popover';
+export * from './ContextMenu';
+export * from './Progress';
+export * from './TitledBlock';

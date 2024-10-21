@@ -1,8 +1,11 @@
 import { Icon } from '@iconify-icon/solid';
-import { Component, Show, splitProps } from 'solid-js';
+import { Component, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { IconButton, PlayIcon } from '@/shared/ui';
+
+// eslint-disable-next-line boundaries/element-types
+import { InstanceInstallStage } from '@/entities/minecraft';
 
 import { InstanceCardProps } from './types';
 
@@ -17,11 +20,11 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     <div
       class={cn(
         local.class,
-        'group flex flex-col gap-2 border rounded-md p-2 size-max overflow-hidden relative',
+        'group flex flex-col cursor-pointer gap-2 border rounded-md p-2 size-max overflow-hidden relative active:animate-bump-out',
       )}
       {...others}
     >
-      <div class='size-24 rounded-md border'>
+      <div class='size-24 rounded-lg border bg-secondary'>
         <Show
           when={local.instance.iconPath}
           fallback={<Icon class='text-[96px]' icon='mdi-cube-outline' />}
@@ -42,7 +45,18 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         class='absolute bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100'
         onClick={() => local.onLaunchClick?.()}
       >
-        <PlayIcon />
+        <Switch
+          fallback={<Icon class='animate-spin text-2xl' icon='mdi-loading' />}
+        >
+          <Match
+            when={
+              local.instance.installStage ===
+              ('000' as unknown as InstanceInstallStage) //InstanceInstallStage.Installed
+            }
+          >
+            <PlayIcon />
+          </Match>
+        </Switch>
       </IconButton>
     </div>
   );

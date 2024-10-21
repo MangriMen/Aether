@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.0.2"
+version = "0.0.3"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -15,14 +15,20 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+tokio = { version = "1.39.2", features = ["full"] }
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.1" }
-# aether-core = { git = 'https://github.com/MangriMen/aether-core.git', branch = "develop" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.2" }
 # aether-core = { path = "../../aether-core/aether-core" }
 anyhow = "1.0.87"
 daedalus = "0.2.3"
 thiserror = "1.0.63"
 tauri-plugin-shell = "2"
+async-event-emitter = "0.1.3"
+event-emitter-rs = "0.1.4"
+uuid = { version = "1.10.0", features = ["serde", "v4"] }
+tauri-plugin-log = "2"
+log = "0.4.22"
+dashmap = { version = "6.1.0", features = ["serde"] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
