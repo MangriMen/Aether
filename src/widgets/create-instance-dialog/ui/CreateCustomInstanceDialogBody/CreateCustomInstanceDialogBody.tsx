@@ -71,6 +71,8 @@ export const CreateCustomInstanceDialogBody: Component<
 
   const version_list = createMemo(() => version_manifest()?.versions ?? []);
 
+  const [isCreating, setIsCreating] = createSignal(false);
+
   const [isAdvanced, setIsAdvanced] = createSignal(false);
 
   const [local, others] = splitProps(props, ['class', 'onOpenChange']);
@@ -102,6 +104,8 @@ export const CreateCustomInstanceDialogBody: Component<
       return;
     }
 
+    setIsCreating(true);
+
     const dto: InstanceCreateDto = {
       name: dataObject.name,
       gameVersion: dataObject.gameVersion.id,
@@ -109,12 +113,14 @@ export const CreateCustomInstanceDialogBody: Component<
     };
 
     try {
-      await createMinecraftInstance(dto);
+      createMinecraftInstance(dto);
       props.onOpenChange?.(false);
       refetchInstances();
     } catch (e) {
       console.error(e);
     }
+
+    setIsCreating(false);
   };
 
   createEffect(() => {
@@ -214,7 +220,12 @@ export const CreateCustomInstanceDialogBody: Component<
           </Switch>
         </Button>
 
-        <Button size='sm' variant='success' type='submit'>
+        <Button
+          size='sm'
+          variant='success'
+          type='submit'
+          disabled={isCreating()}
+        >
           Create
         </Button>
 

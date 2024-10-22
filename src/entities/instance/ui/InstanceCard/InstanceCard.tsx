@@ -1,5 +1,5 @@
 import { Icon } from '@iconify-icon/solid';
-import { Component, Match, Show, splitProps, Switch } from 'solid-js';
+import { Component, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { IconButton, PlayIcon } from '@/shared/ui';
@@ -14,6 +14,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     'class',
     'onLaunchClick',
     'instance',
+    'isLoading',
   ]);
 
   return (
@@ -45,17 +46,15 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         class='absolute bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100'
         onClick={() => local.onLaunchClick?.()}
       >
-        <Switch
+        <Show
+          when={
+            local.instance.installStage === InstanceInstallStage.Installed &&
+            !local.isLoading
+          }
           fallback={<Icon class='animate-spin text-2xl' icon='mdi-loading' />}
         >
-          <Match
-            when={
-              local.instance.installStage === InstanceInstallStage.Installed
-            }
-          >
-            <PlayIcon />
-          </Match>
-        </Switch>
+          <PlayIcon />
+        </Show>
       </IconButton>
     </div>
   );

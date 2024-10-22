@@ -12,7 +12,12 @@ import { InstanceContextMenuProps } from './types';
 export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['onPlay', 'onRemove', 'children']);
+  const [local, others] = splitProps(props, [
+    'onPlay',
+    'onRemove',
+    'isLoading',
+    'children',
+  ]);
 
   return (
     <ContextMenu {...others}>
@@ -21,6 +26,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         <ContextMenuItem
           class='w-full hover:!bg-success hover:text-success-foreground'
           onClick={local.onPlay}
+          disabled={local.isLoading}
         >
           Play
         </ContextMenuItem>
@@ -28,6 +34,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         <ContextMenuItem
           class='w-full hover:!bg-destructive hover:text-destructive-foreground'
           onClick={local.onRemove}
+          disabled={local.isLoading}
         >
           Delete
         </ContextMenuItem>
