@@ -40,8 +40,8 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   const [isNewEvent, setIsNewEvent] = createSignal(false);
 
   const [removeNotificationTimer, setRemoveNotificationTimer] = createSignal<
-    number | null
-  >(null);
+    number | undefined
+  >(undefined);
 
   const fetchEvents = async () => {
     try {
@@ -104,10 +104,8 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   });
 
   onCleanup(() => {
-    const timerId = removeNotificationTimer();
-    if (timerId !== null) {
-      clearTimeout(timerId);
-    }
+    clearTimeout(removeNotificationTimer());
+    setRemoveNotificationTimer(undefined);
   });
 
   return (
