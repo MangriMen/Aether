@@ -1,9 +1,12 @@
 import { Icon } from '@iconify-icon/solid';
+import { ReactiveMap } from '@solid-primitives/map';
 import {
   Component,
   createEffect,
+  createMemo,
   createSignal,
   For,
+  onCleanup,
   onMount,
   Show,
 } from 'solid-js';
@@ -26,20 +29,25 @@ import {
 
 import { NotificationMenuButtonProps } from './types';
 
+const NOTIFICATION_COMPLETED_REMOVE_DELAY = 1500;
+
 export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   props,
 ) => {
-  const [events, setEvents] = createSignal<Record<string, LoadingPayload>>({});
+  const events = new ReactiveMap<string, LoadingPayload>();
 
   const [isMenuOpen, setIsMenuOpen] = createSignal(false);
   const [isNewEvent, setIsNewEvent] = createSignal(false);
+
+  const [removeNotificationTimer, setRemoveNotificationTimer] = createSignal<
+    number | null
+  >(null);
 
   const fetchEvents = async () => {
     try {
       const bars = await getLoadingBars();
 
       Object.entries(bars).forEach(([_, value]) => {
-        console.log(value);
         if (value.barType.type === LoadingBarTypeEnum.MinecraftDownload) {
           addEvent({
             event: value.barType,
@@ -54,54 +62,63 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
     }
   };
 
-  const addEvent = (e: LoadingPayload) => {
-    if (e.fraction === null) {
-      setEvents((prev) => {
-        const newEvents = { ...prev };
-        delete newEvents[e.loaderUuid];
-        return newEvents;
-      });
-      return;
-    }
-
-    setEvents((prev) => ({ ...prev, [e.loaderUuid]: e }));
+  const removeEvent = (payload: LoadingPayload) => {
+    setRemoveNotificationTimer(
+      setTimeout(() => {
+        events.delete(payload.loaderUuid);
+      }, NOTIFICATION_COMPLETED_REMOVE_DELAY),
+    );
   };
 
-  onMount(() => {
-    fetchEvents();
+  const addEvent = (payload: LoadingPayload) => {
+    events.set(payload.loaderUuid, payload);
+  };
 
+  const listenEvents = () => {
     listenLoading((e) => {
       if ((e.payload.fraction ?? 1) <= 0.05) {
         setIsNewEvent(true);
       }
 
-      if (
-        e.payload.fraction === undefined ||
-        e.payload.message === 'Completed'
-      ) {
+      if (e.payload.fraction === null) {
+        removeEvent(e.payload);
         refetchInstances();
+      } else {
+        addEvent(e.payload);
       }
-
-      addEvent(e.payload);
     });
+  };
+
+  const payloads = createMemo(() => [...events.values()]);
+
+  onMount(() => {
+    fetchEvents();
+    listenEvents();
   });
 
   createEffect(() => {
-    if (isNewEvent() && !isMenuOpen() && Object.keys(events()).length > 0) {
+    if (isNewEvent() && !isMenuOpen() && events.size > 0) {
       setIsMenuOpen(true);
       setIsNewEvent(false);
     }
   });
 
+  onCleanup(() => {
+    const timerId = removeNotificationTimer();
+    if (timerId !== null) {
+      clearTimeout(timerId);
+    }
+  });
+
   return (
     <Popover open={isMenuOpen()} onOpenChange={setIsMenuOpen}>
-      <Show when={Object.keys(events()).length}>
+      <Show when={payloads().length}>
         <PopoverTrigger as={IconButton} variant='ghost' {...props}>
           <Icon class='text-2xl' icon='mdi-menu-down' />
         </PopoverTrigger>
       </Show>
       <PopoverContent class='flex flex-col gap-3 border-none bg-transparent p-0 pt-2'>
-        <For each={Object.values(events())}>
+        <For each={payloads()}>
           {(payload) => <EventCard payload={payload} />}
         </For>
       </PopoverContent>

@@ -109,7 +109,7 @@ export const CreateCustomInstanceDialogBody: Component<
     };
 
     try {
-      createMinecraftInstance(dto);
+      await createMinecraftInstance(dto);
       props.onOpenChange?.(false);
       refetchInstances();
     } catch (e) {

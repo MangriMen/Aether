@@ -14,6 +14,7 @@
   "dependencies": {
     "@kobalte/core": "^0.13.7",
     "@modular-forms/solid": "^0.24.1",
+    "@solid-primitives/map": "^0.4.13",
     "@solidjs/router": "^0.14.3",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-log": "~2",

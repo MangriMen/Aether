@@ -50,8 +50,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         >
           <Match
             when={
-              local.instance.installStage ===
-              ('000' as unknown as InstanceInstallStage) //InstanceInstallStage.Installed
+              local.instance.installStage === InstanceInstallStage.Installed
             }
           >
             <PlayIcon />

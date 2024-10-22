@@ -19,7 +19,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     let settings = aether_core::state::Settings {
         launcher_dir: user_data_dir.clone(),
         metadata_dir: user_data_dir.clone(),
-        max_concurrent_downloads: 4,
+        max_concurrent_downloads: 10,
     };
 
     aether_core::state::LauncherState::init(&settings).await?;
