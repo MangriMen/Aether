@@ -1,5 +1,6 @@
 export enum LoadingBarTypeEnum {
   MinecraftDownload = 'minecraft_download',
+  JavaDownload = 'java_download',
 }
 
 export interface MinecraftDownload {
@@ -8,7 +9,12 @@ export interface MinecraftDownload {
   instance_name_id: string;
 }
 
-export type LoadingBarType = MinecraftDownload;
+export interface JavaDownload {
+  type: LoadingBarTypeEnum.JavaDownload;
+  version: number;
+}
+
+export type LoadingBarType = MinecraftDownload | JavaDownload;
 
 export interface LoadingBar {
   loadingBarUuid: string;
@@ -21,6 +27,6 @@ export interface LoadingBar {
 export interface LoadingPayload {
   event: LoadingBarType;
   loaderUuid: string;
-  fraction?: number; // by convention, if optional, it means the loading is done
+  fraction: number | null; // by convention, if optional, it means the loading is done
   message: string;
 }
