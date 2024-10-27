@@ -76,6 +76,11 @@ pub async fn launch_minecraft_instance(
 }
 
 #[tauri::command]
+pub async fn stop_minecraft_instance(uuid: Uuid) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::process::kill(uuid).await?)
+}
+
+#[tauri::command]
 pub async fn remove_minecraft_instance(name_id: String) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::remove(&name_id).await?)
 }
@@ -83,4 +88,17 @@ pub async fn remove_minecraft_instance(name_id: String) -> AetherLauncherResult<
 #[tauri::command]
 pub async fn get_progress_bars() -> AetherLauncherResult<DashMap<Uuid, LoadingBar>> {
     Ok(aether_core::event::EventState::list_progress_bars().await?)
+}
+
+#[tauri::command]
+pub async fn get_running_minecraft_instances() -> AetherLauncherResult<Vec<MinecraftProcessMetadata>>
+{
+    Ok(aether_core::api::process::get_all().await?)
+}
+
+#[tauri::command]
+pub async fn get_minecraft_instance_process(
+    name_id: String,
+) -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
+    Ok(aether_core::api::process::get_by_instance_name_id(&name_id).await?)
 }

@@ -9,8 +9,10 @@ pub mod utils;
 use tauri::Manager;
 
 use api::tauri::{
-    create_minecraft_instance, get_minecraft_instances, get_minecraft_version_manifest,
-    get_progress_bars, initialize_state, launch_minecraft_instance, remove_minecraft_instance,
+    create_minecraft_instance, get_minecraft_instance_process, get_minecraft_instances,
+    get_minecraft_version_manifest, get_progress_bars, get_running_minecraft_instances,
+    initialize_state, launch_minecraft_instance, remove_minecraft_instance,
+    stop_minecraft_instance,
 };
 
 fn main() {
@@ -33,13 +35,16 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            initialize_state,
-            get_minecraft_version_manifest,
             create_minecraft_instance,
             get_minecraft_instances,
+            get_minecraft_version_manifest,
+            get_progress_bars,
+            get_running_minecraft_instances,
+            initialize_state,
+            get_minecraft_instance_process,
+            stop_minecraft_instance,
             launch_minecraft_instance,
-            remove_minecraft_instance,
-            get_progress_bars
+            remove_minecraft_instance
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

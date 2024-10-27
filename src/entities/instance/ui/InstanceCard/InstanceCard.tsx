@@ -1,20 +1,24 @@
 import { Icon } from '@iconify-icon/solid';
-import { Component, Show, splitProps } from 'solid-js';
+import { Component, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { IconButton, PlayIcon } from '@/shared/ui';
+import { PlayIcon } from '@/shared/ui';
 
 // eslint-disable-next-line boundaries/element-types
 import { InstanceInstallStage } from '@/entities/minecraft';
 
+import { InstanceButton } from '../InstanceButton';
+
 import { InstanceCardProps } from './types';
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {
-  const [local, others] = splitProps(props as InstanceCardProps, [
+  const [local, others] = splitProps(props, [
     'class',
     'onLaunchClick',
+    'onStopClick',
     'instance',
     'isLoading',
+    'isRunning',
   ]);
 
   return (
@@ -41,21 +45,35 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
           <span>{local.instance.gameVersion}</span>
         </div>
       </div>
-      <IconButton
-        variant='success'
-        class='absolute bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100'
-        onClick={() => local.onLaunchClick?.()}
+      <Switch
+        fallback={
+          <InstanceButton variant={local.isRunning ? 'destructive' : 'success'}>
+            <Icon class='animate-spin text-2xl' icon='mdi-loading' />
+          </InstanceButton>
+        }
       >
-        <Show
+        <Match
           when={
             local.instance.installStage === InstanceInstallStage.Installed &&
+            !local.isRunning &&
             !local.isLoading
           }
-          fallback={<Icon class='animate-spin text-2xl' icon='mdi-loading' />}
         >
-          <PlayIcon />
-        </Show>
-      </IconButton>
+          <InstanceButton variant='success' onClick={local.onLaunchClick}>
+            <PlayIcon />
+          </InstanceButton>
+        </Match>
+        <Match
+          when={
+            local.instance.installStage === InstanceInstallStage.Installed &&
+            local.isRunning
+          }
+        >
+          <InstanceButton variant='destructive' onClick={local.onStopClick}>
+            <Icon icon='mdi-stop' />
+          </InstanceButton>
+        </Match>
+      </Switch>
     </div>
   );
 };
