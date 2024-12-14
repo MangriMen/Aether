@@ -6,5 +6,7 @@ import { Instance } from '@/entities/minecraft';
 export type InstanceCardProps = ComponentProps<'div'> & {
   instance: Instance;
   onLaunchClick?: () => void;
+  onStopClick?: () => void;
   isLoading?: boolean;
+  isRunning?: boolean;
 };

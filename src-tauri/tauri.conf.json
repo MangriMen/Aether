@@ -28,9 +28,10 @@
     "windows": [
       {
         "title": "Aether",
-        "width": 800,
-        "height": 600,
-        "decorations": false
+        "width": 1024,
+        "height": 682,
+        "decorations": false,
+        "visible": false
       }
     ]
   }

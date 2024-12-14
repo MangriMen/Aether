@@ -8,11 +8,11 @@ const instancesResource = createResource(
     try {
       return getMinecraftInstances();
     } catch {
-      console.log('kek');
+      console.error("Can't get minecraft instances");
     }
   },
   {
-    initialValue: [],
+    initialValue: [[], []],
   },
 );
 

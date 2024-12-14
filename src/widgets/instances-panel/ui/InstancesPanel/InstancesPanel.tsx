@@ -28,15 +28,16 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   return (
     <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
       <Switch>
+        {/* TODO: add loading */}
         {/* <Match when={instances.loading}>
           <ProgressCircle />
         </Match> */}
         <Match when={!instances.loading}>
           <Show
-            when={instances()?.length}
+            when={instances()?.[0]?.length}
             fallback={<span class='m-auto'>You don't have instances</span>}
           >
-            <For each={instances()}>
+            <For each={instances()?.[0]}>
               {(instance) => <InstanceControlledCard instance={instance} />}
             </For>
           </Show>
