@@ -1,8 +1,14 @@
 import './app.css';
 import { AppRouter } from './routes';
+import { WindowObserver } from './ui';
 
 function App() {
-  return <AppRouter />;
+  return (
+    <>
+      <WindowObserver />
+      <AppRouter />
+    </>
+  );
 }
 
 export default App;
