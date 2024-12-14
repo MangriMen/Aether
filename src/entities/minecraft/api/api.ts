@@ -17,7 +17,7 @@ export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
   invoke<string>('create_minecraft_instance', { instanceCreateDto });
 
 export const getMinecraftInstances = () =>
-  invoke<Instance[]>('get_minecraft_instances');
+  invoke<[Instance[], string[]]>('get_minecraft_instances');
 
 export const launchMinecraftInstance = (nameId: string) =>
   invoke('launch_minecraft_instance', { nameId });

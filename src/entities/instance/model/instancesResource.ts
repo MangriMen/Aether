@@ -12,7 +12,7 @@ const instancesResource = createResource(
     }
   },
   {
-    initialValue: [],
+    initialValue: [[], []],
   },
 );
 
