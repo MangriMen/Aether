@@ -19,6 +19,7 @@
     "core:window:allow-start-dragging",
     "shell:allow-open",
     "shell:default",
-    "log:default"
+    "log:default",
+    "dialog:default"
   ]
 }
