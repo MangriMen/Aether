@@ -6,7 +6,7 @@ export enum LoadingBarTypeEnum {
 export interface MinecraftDownload {
   type: LoadingBarTypeEnum.MinecraftDownload;
   instance_name: string;
-  instance_name_id: string;
+  instance_id: string;
 }
 
 export interface JavaDownload {
@@ -30,3 +30,9 @@ export interface LoadingPayload {
   fraction: number | null; // by convention, if optional, it means the loading is done
   message: string;
 }
+
+export enum MinecraftEvent {
+  Loading = 'loading',
+}
+
+export type MinecraftEventName = `${MinecraftEvent}`;

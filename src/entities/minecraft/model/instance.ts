@@ -1,31 +1,34 @@
 export interface Instance {
-  installStage: InstanceInstallStage;
-
-  nameId: string;
+  id: string;
   path: string;
 
   name: string;
   iconPath?: string;
+
+  installStage: InstanceInstallStage;
 
   // Main minecraft metadata
   gameVersion: string;
   loader: ModLoader;
   loaderVersion?: string;
 
-  // Runtime metadata
+  // Launch arguments
   javaPath?: string;
   extraLaunchArgs?: string[];
   customEnvVars?: { [key: string]: string };
 
+  // Minecraft runtime settings
   memory?: MemorySettings;
   forceFullscreen?: boolean;
   gameResolution?: WindowSize;
 
   // Additional information
-  timePlayed: number;
   created: Date;
   modified: Date;
   lastPlayed?: Date;
+
+  timePlayed: number;
+  recent_time_played: number;
 }
 
 export type WindowSize = [number, number];
@@ -59,7 +62,6 @@ export interface InstanceCreateDto {
   modLoader: ModLoader;
   loaderVersion?: string;
   iconPath?: string;
-  linkedData?: string;
   skipInstallProfile?: boolean;
 }
 

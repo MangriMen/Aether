@@ -9,6 +9,22 @@ import { callPlugin } from '@/entities/plugins';
 
 import { PackwizPluginImportMenuProps } from './types';
 
+type PackwizPluginImportData = {
+  kind: 'import';
+  data: {
+    url: string;
+  };
+};
+
+type PackwizPluginUpdateData = {
+  kind: 'update';
+  data: {
+    instance_id: string;
+  };
+};
+
+type PackwizPluginData = PackwizPluginImportData | PackwizPluginUpdateData;
+
 export const PackwizPluginImportMenu: Component<
   PackwizPluginImportMenuProps
 > = (props) => {
@@ -17,10 +33,13 @@ export const PackwizPluginImportMenu: Component<
   const [packwizUrl, setPackwizUrl] = createSignal('');
 
   const onSubmit = () => {
-    callPlugin(
-      'packwiz',
-      JSON.stringify({ kind: 'IMPORT_BY_URL', url: packwizUrl() }),
-    );
+    const data: PackwizPluginData = {
+      kind: 'import',
+      data: {
+        url: packwizUrl(),
+      },
+    };
+    callPlugin('packwiz', JSON.stringify(data));
     local.onSubmit?.();
   };
 

@@ -10,6 +10,8 @@ import {
   Sidebar,
 } from '@/shared/ui';
 
+// eslint-disable-next-line boundaries/element-types
+import { AccountSelectButton } from '@/widgets/account-select-button';
 // TODO: make something like react-modal-global
 // eslint-disable-next-line boundaries/element-types
 import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
@@ -28,14 +30,16 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
         <IconButton as={A} href='/' variant='ghost'>
           <HomeIcon />
         </IconButton>
-      </div>
-      <div class='flex flex-col items-center gap-2'>
+        <hr class='h-px w-full bg-muted' />
         <IconButton
-          variant='success'
+          variant='ghost'
           onClick={() => setIsCreateInstanceDialogOpen(true)}
         >
           <AddIcon />
         </IconButton>
+      </div>
+      <div class='flex flex-col items-center gap-2'>
+        <AccountSelectButton />
         <IconButton as={A} href='/settings' variant='ghost'>
           <SettingsIcon />
         </IconButton>

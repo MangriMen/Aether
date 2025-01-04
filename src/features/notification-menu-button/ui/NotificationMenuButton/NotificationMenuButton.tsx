@@ -11,6 +11,7 @@ import {
   Show,
 } from 'solid-js';
 
+import { isDebug } from '@/shared/model/settings';
 import {
   IconButton,
   Popover,
@@ -22,7 +23,7 @@ import { EventCard } from '@/entities/events';
 import { refetchInstances } from '@/entities/instance';
 import {
   getLoadingBars,
-  listenLoading,
+  listenEvent,
   LoadingBarTypeEnum,
   LoadingPayload,
 } from '@/entities/minecraft';
@@ -75,7 +76,11 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   };
 
   const listenEvents = () => {
-    listenLoading((e) => {
+    listenEvent('loading', (e) => {
+      if (isDebug()) {
+        console.log('[EVENT][DEBUG]', e);
+      }
+
       if ((e.payload.fraction ?? 1) <= 0.05) {
         setIsNewEvent(true);
       }

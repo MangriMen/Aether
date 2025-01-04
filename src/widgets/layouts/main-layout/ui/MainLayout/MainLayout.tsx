@@ -11,7 +11,7 @@ export const MainLayout: Component<MainLayoutProps> = (props) => {
   return (
     <div id='main-layout' class='flex h-full bg-secondary-dark' {...others}>
       <AppSidebar />
-      <div class='size-full overflow-hidden rounded-l-2xl bg-background'>
+      <div class='size-full overflow-hidden rounded-tl-2xl bg-background'>
         {local.children}
       </div>
     </div>
