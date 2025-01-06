@@ -9,11 +9,10 @@ pub mod utils;
 use tauri::Manager;
 
 use api::tauri::{
-    call_plugin, change_account, create_minecraft_instance, create_offline_account,
-    get_account_state, get_minecraft_instance_process, get_minecraft_instances,
-    get_minecraft_version_manifest, get_progress_bars, get_running_minecraft_instances,
-    initialize_state, launch_minecraft_instance, logout, remove_minecraft_instance,
-    stop_minecraft_instance,
+    call_plugin, change_account, create_minecraft_instance, create_offline_account, get_accounts,
+    get_minecraft_instance_process, get_minecraft_instances, get_minecraft_version_manifest,
+    get_progress_bars, get_running_minecraft_instances, initialize_state,
+    launch_minecraft_instance, logout, remove_minecraft_instance, stop_minecraft_instance,
 };
 
 fn main() {
@@ -48,7 +47,7 @@ fn main() {
             stop_minecraft_instance,
             launch_minecraft_instance,
             remove_minecraft_instance,
-            get_account_state,
+            get_accounts,
             create_offline_account,
             change_account,
             logout

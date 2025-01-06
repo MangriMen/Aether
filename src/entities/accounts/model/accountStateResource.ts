@@ -1,14 +1,20 @@
 import { createResource } from 'solid-js';
 
-import { getAccountState } from '../api';
+import { getAccounts } from '../api';
 
-const accountStateResource = createResource(() => {
-  try {
-    return getAccountState();
-  } catch {
-    console.error("Can't get account state");
-  }
-});
+import { Account } from './account';
+
+const accountStateResource = createResource<Account[]>(
+  () => {
+    try {
+      return getAccounts();
+    } catch {
+      console.error("Can't get account state");
+      return [];
+    }
+  },
+  { initialValue: [] },
+);
 
 export const getAccountStateResource = () => {
   return accountStateResource[0];

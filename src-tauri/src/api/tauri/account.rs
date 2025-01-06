@@ -1,10 +1,10 @@
-use aether_core::state::AccountState;
+use aether_core::state::Account;
 use uuid::Uuid;
 
 use crate::utils::result::AetherLauncherResult;
 
 #[tauri::command]
-pub async fn get_account_state() -> AetherLauncherResult<AccountState> {
+pub async fn get_accounts() -> AetherLauncherResult<Vec<Account>> {
     Ok(aether_core::api::credentials::get_accounts().await?)
 }
 

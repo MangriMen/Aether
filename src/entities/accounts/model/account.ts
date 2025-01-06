@@ -1,11 +1,8 @@
 export interface Account {
   id: string;
+  active: boolean;
   username: string;
-}
-
-export interface AccountState {
-  default?: string;
-  accounts: Account[];
+  accountType: AccountType;
 }
 
 export type AccountType = 'offline' | 'online';

@@ -18,14 +18,21 @@ export const CreateOfflineAccountDialog: Component<
   const handleCreate = async (username: string) => {
     await createOfflineAccount(username);
     refetchAccountStateResource();
+    closeDialog();
+  };
+
+  const closeDialog = () => {
     props.onOpenChange?.(false);
   };
 
   return (
     <Dialog {...props}>
-      <DialogContent>
+      <DialogContent class='max-w-80'>
         <DialogHeader>Create offline account</DialogHeader>
-        <CreateOfflineAccountForm onCreate={handleCreate} />
+        <CreateOfflineAccountForm
+          onCreate={handleCreate}
+          onCancel={closeDialog}
+        />
       </DialogContent>
     </Dialog>
   );

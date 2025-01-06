@@ -18,7 +18,7 @@ import {
   refetchAccountStateResource,
 } from '@/entities/accounts';
 
-import { AccountSelectForm } from '@/features/account-select-form';
+import { AccountSelectCard } from '@/features/account-select-card';
 
 // eslint-disable-next-line boundaries/element-types
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
@@ -26,13 +26,13 @@ import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dia
 export type AccountSelectProps = IconButtonProps;
 
 export const AccountSelectButton: Component<AccountSelectProps> = (props) => {
+  const handleCreate = (type: AccountType) => {
+    setAccountCreationType(type);
+  };
+
   const handleSelect = async (id: Account['id']) => {
     await changeAccount(id);
     refetchAccountStateResource();
-  };
-
-  const handleCreate = (type: AccountType) => {
-    setAccountCreationType(type);
   };
 
   const handleLogout = async (uuid: string) => {
@@ -53,10 +53,10 @@ export const AccountSelectButton: Component<AccountSelectProps> = (props) => {
         <PopoverTrigger as={IconButton} variant='ghost' {...props}>
           <Icon icon={MdiAccount} class='text-2xl' />
         </PopoverTrigger>
-        <PopoverContent class='w-max'>
-          <AccountSelectForm
-            onCreateAccount={handleCreate}
-            onSelectAccount={handleSelect}
+        <PopoverContent class='w-max p-0'>
+          <AccountSelectCard
+            onCreate={handleCreate}
+            onActivate={handleSelect}
             onLogout={handleLogout}
           />
         </PopoverContent>

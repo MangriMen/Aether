@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import { Account, AccountState } from '../model';
+import { Account } from '../model';
 
-export const getAccountState = () => invoke<AccountState>('get_account_state');
+export const getAccounts = () => invoke<Account[]>('get_accounts');
 
 export const createOfflineAccount = (username: string) =>
   invoke('create_offline_account', { username });
