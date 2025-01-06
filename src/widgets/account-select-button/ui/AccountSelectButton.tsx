@@ -50,7 +50,12 @@ export const AccountSelectButton: Component<AccountSelectProps> = (props) => {
   return (
     <>
       <Popover>
-        <PopoverTrigger as={IconButton} variant='ghost' {...props}>
+        <PopoverTrigger
+          as={IconButton}
+          variant='ghost'
+          title='Account'
+          {...props}
+        >
           <Icon icon={MdiAccount} class='text-2xl' />
         </PopoverTrigger>
         <PopoverContent class='w-max p-0'>

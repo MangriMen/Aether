@@ -27,20 +27,21 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   return (
     <Sidebar class={cn('justify-between', local.class)} {...others}>
       <div class='flex flex-col items-center gap-2'>
-        <IconButton as={A} href='/' variant='ghost'>
+        <IconButton as={A} href='/' variant='ghost' title='Home'>
           <HomeIcon />
         </IconButton>
         <hr class='h-px w-full bg-muted' />
         <IconButton
           variant='ghost'
           onClick={() => setIsCreateInstanceDialogOpen(true)}
+          title='Create instance'
         >
           <AddIcon />
         </IconButton>
       </div>
       <div class='flex flex-col items-center gap-2'>
         <AccountSelectButton />
-        <IconButton as={A} href='/settings' variant='ghost'>
+        <IconButton as={A} href='/settings' variant='ghost' title='Settings'>
           <SettingsIcon />
         </IconButton>
       </div>
