@@ -1,7 +1,7 @@
 use aether_core::state::Account;
 use uuid::Uuid;
 
-use crate::utils::result::AetherLauncherResult;
+use crate::AetherLauncherResult;
 
 #[tauri::command]
 pub async fn get_accounts() -> AetherLauncherResult<Vec<Account>> {

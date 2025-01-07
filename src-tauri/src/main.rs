@@ -6,6 +6,8 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
+pub use utils::result::*;
+
 use tauri::Manager;
 
 use api::tauri::{

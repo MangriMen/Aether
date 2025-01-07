@@ -1,16 +1,12 @@
 use std::path::PathBuf;
 
 use aether_core::{
-    event::LoadingBar,
-    state::{Hooks, Instance, LauncherState, MemorySettings, MinecraftProcessMetadata, WindowSize},
+    state::{Hooks, LauncherState, MemorySettings, WindowSize},
     utils::io::read_json_async,
 };
-use daedalus::minecraft;
-use dashmap::DashMap;
 use tauri::AppHandle;
-use uuid::Uuid;
 
-use crate::{models::minecraft::InstanceCreateDto, utils::result::AetherLauncherResult};
+use crate::AetherLauncherResult;
 
 #[tauri::command]
 pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
@@ -65,68 +61,4 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     aether_core::state::Settings::update(&state, &settings).await?;
 
     Ok(())
-}
-
-#[tauri::command]
-pub async fn get_minecraft_version_manifest() -> AetherLauncherResult<minecraft::VersionManifest> {
-    let state = LauncherState::get().await?;
-    let manifest = aether_core::launcher::download_version_manifest(&state, false).await?;
-
-    Ok(manifest)
-}
-
-#[tauri::command]
-pub async fn create_minecraft_instance(
-    instance_create_dto: InstanceCreateDto,
-) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::instance_create(
-        instance_create_dto.name,
-        instance_create_dto.game_version,
-        instance_create_dto.mod_loader,
-        instance_create_dto.loader_version,
-        instance_create_dto.icon_path,
-        instance_create_dto.skip_install_profile,
-    )
-    .await?)
-}
-
-#[tauri::command]
-pub async fn get_minecraft_instances() -> AetherLauncherResult<(Vec<Instance>, Vec<String>)> {
-    let res = aether_core::api::instance::get_all().await?;
-    Ok((res.0, res.1.iter().map(|err| err.to_string()).collect()))
-}
-
-#[tauri::command]
-pub async fn launch_minecraft_instance(
-    id: String,
-) -> AetherLauncherResult<MinecraftProcessMetadata> {
-    Ok(aether_core::api::instance::run(&id).await?)
-}
-
-#[tauri::command]
-pub async fn stop_minecraft_instance(uuid: Uuid) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::process::kill(uuid).await?)
-}
-
-#[tauri::command]
-pub async fn remove_minecraft_instance(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove(&id).await?)
-}
-
-#[tauri::command]
-pub async fn get_progress_bars() -> AetherLauncherResult<DashMap<Uuid, LoadingBar>> {
-    Ok(aether_core::event::EventState::list_progress_bars().await?)
-}
-
-#[tauri::command]
-pub async fn get_running_minecraft_instances() -> AetherLauncherResult<Vec<MinecraftProcessMetadata>>
-{
-    Ok(aether_core::api::process::get_all().await?)
-}
-
-#[tauri::command]
-pub async fn get_minecraft_instance_process(
-    id: String,
-) -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_by_instance_id(&id).await?)
 }
