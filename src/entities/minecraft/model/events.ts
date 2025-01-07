@@ -1,6 +1,7 @@
 export enum LoadingBarTypeEnum {
   MinecraftDownload = 'minecraft_download',
   JavaDownload = 'java_download',
+  PluginDownload = 'plugin_download',
 }
 
 export interface MinecraftDownload {
@@ -14,7 +15,12 @@ export interface JavaDownload {
   version: number;
 }
 
-export type LoadingBarType = MinecraftDownload | JavaDownload;
+export interface PluginDownload {
+  type: LoadingBarTypeEnum.PluginDownload;
+  plugin_name: string;
+}
+
+export type LoadingBarType = MinecraftDownload | JavaDownload | PluginDownload;
 
 export interface LoadingBar {
   loadingBarUuid: string;

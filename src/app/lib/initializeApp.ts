@@ -7,6 +7,6 @@ export const initializeHandlers = () => {
 };
 
 export const initializeApp = async () => {
-  await initializeState();
   initializeHandlers();
+  await initializeState();
 };

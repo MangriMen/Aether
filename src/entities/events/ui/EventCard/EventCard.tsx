@@ -18,6 +18,8 @@ export const EventCard: Component<EventCardProps> = (props) => {
         return `Downloading Java ${local.payload.event.version}`;
       case LoadingBarTypeEnum.MinecraftDownload:
         return local.payload.event.instance_name;
+      case LoadingBarTypeEnum.PluginDownload:
+        return `[Plugin] ${local.payload.event.plugin_name}`;
     }
   });
 

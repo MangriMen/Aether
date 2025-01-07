@@ -24,7 +24,6 @@ import { refetchInstances } from '@/entities/instance';
 import {
   getLoadingBars,
   listenEvent,
-  LoadingBarTypeEnum,
   LoadingPayload,
 } from '@/entities/minecraft';
 
@@ -49,14 +48,12 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
       const bars = await getLoadingBars();
 
       Object.entries(bars).forEach(([_, value]) => {
-        if (value.barType.type === LoadingBarTypeEnum.MinecraftDownload) {
-          addEvent({
-            event: value.barType,
-            loaderUuid: value.loadingBarUuid,
-            message: value.message,
-            fraction: value.current / value.total,
-          });
-        }
+        addEvent({
+          event: value.barType,
+          loaderUuid: value.loadingBarUuid,
+          message: value.message,
+          fraction: value.current / value.total,
+        });
       });
     } catch {
       /* empty */
