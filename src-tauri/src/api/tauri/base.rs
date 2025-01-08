@@ -60,7 +60,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
         aether_core::state::Settings::update(&state, &settings).await?;
     }
 
-    let mut plugin_manager = state.plugin_manager.write().await; // Используем write() вместо read()
+    let mut plugin_manager = state.plugin_manager.write().await;
 
     plugin_manager.scan_plugins();
     plugin_manager.enable_plugin("packwiz".to_string()).await?;

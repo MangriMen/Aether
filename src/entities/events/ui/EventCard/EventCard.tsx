@@ -25,7 +25,7 @@ export const EventCard: Component<EventCardProps> = (props) => {
 
   return (
     <div
-      class='flex flex-col gap-2 rounded-md border bg-background px-4 py-2'
+      class='flex flex-col gap-2 rounded-md border bg-background p-3'
       {...others}
     >
       <span class='font-bold'>{title()}</span>

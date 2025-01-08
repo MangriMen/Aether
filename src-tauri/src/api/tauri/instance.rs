@@ -14,6 +14,7 @@ pub async fn create_minecraft_instance(
         instance_create_dto.loader_version,
         instance_create_dto.icon_path,
         instance_create_dto.skip_install_profile,
+        None,
     )
     .await?)
 }

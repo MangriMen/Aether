@@ -1,3 +1,13 @@
+export interface InstancePluginSettings {
+  preLaunch?: string;
+}
+
+export interface Hooks {
+  pre_launch: string;
+  wrapper: string;
+  post_exit: string;
+}
+
 export interface Instance {
   id: string;
   path: string;
@@ -29,6 +39,10 @@ export interface Instance {
 
   timePlayed: number;
   recent_time_played: number;
+
+  hooks: Hooks;
+
+  plugin?: InstancePluginSettings;
 }
 
 export type WindowSize = [number, number];
