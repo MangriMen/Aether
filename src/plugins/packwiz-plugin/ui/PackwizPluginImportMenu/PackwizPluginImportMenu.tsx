@@ -1,7 +1,7 @@
 import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import { Icon } from '@iconify-icon/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Component, createSignal, JSX, splitProps } from 'solid-js';
+import { Component, createSignal, splitProps } from 'solid-js';
 
 import { Button, TextField, TextFieldInput, TextFieldLabel } from '@/shared/ui';
 
@@ -55,8 +55,10 @@ export const PackwizPluginImportMenu: Component<
     }
   };
 
-  const onChangeUrl: JSX.EventHandler<HTMLInputElement, InputEvent> = (e) =>
-    setPackwizUrl(e.currentTarget.value);
+  // TODO: fall in pipeline
+  // const onChangeUrl: JSX.EventHandler<HTMLInputElement, InputEvent>
+  const onChangeUrl = (e: Event) =>
+    setPackwizUrl((e.currentTarget as HTMLInputElement).value);
 
   return (
     <div class='flex flex-col gap-4' {...others}>
