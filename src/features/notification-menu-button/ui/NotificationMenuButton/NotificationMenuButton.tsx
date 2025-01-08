@@ -11,6 +11,7 @@ import {
   Show,
 } from 'solid-js';
 
+import { isDebug } from '@/shared/model/settings';
 import {
   IconButton,
   Popover,
@@ -22,8 +23,7 @@ import { EventCard } from '@/entities/events';
 import { refetchInstances } from '@/entities/instance';
 import {
   getLoadingBars,
-  listenLoading,
-  LoadingBarTypeEnum,
+  listenEvent,
   LoadingPayload,
 } from '@/entities/minecraft';
 
@@ -48,14 +48,12 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
       const bars = await getLoadingBars();
 
       Object.entries(bars).forEach(([_, value]) => {
-        if (value.barType.type === LoadingBarTypeEnum.MinecraftDownload) {
-          addEvent({
-            event: value.barType,
-            loaderUuid: value.loadingBarUuid,
-            message: value.message,
-            fraction: value.current / value.total,
-          });
-        }
+        addEvent({
+          event: value.barType,
+          loaderUuid: value.loadingBarUuid,
+          message: value.message,
+          fraction: value.current / value.total,
+        });
       });
     } catch {
       /* empty */
@@ -75,7 +73,11 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   };
 
   const listenEvents = () => {
-    listenLoading((e) => {
+    listenEvent('loading', (e) => {
+      if (isDebug()) {
+        console.log('[EVENT][DEBUG]', e);
+      }
+
       if ((e.payload.fraction ?? 1) <= 0.05) {
         setIsNewEvent(true);
       }

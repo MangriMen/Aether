@@ -29,18 +29,21 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
     <div class={cn('flex', local.class)} {...others}>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
+        title='Minimize'
         onClick={handleMinimize}
       >
         <Icon class='text-base text-muted-foreground' icon='mdi-minimize' />
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
+        title='Maximize'
         onClick={toggleMaximize}
       >
         <Icon class='text-base text-muted-foreground' icon={maximizeIcon()} />
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max brightness-110 hover:bg-destructive'
+        title='Close'
         onClick={handleClose}
       >
         <Icon class='text-base text-muted-foreground' icon='mdi-close' />

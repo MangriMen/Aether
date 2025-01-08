@@ -17,8 +17,8 @@ serde_json = "1"
 
 tokio = { version = "1.39.2", features = ["full"] }
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.4" }
-# aether-core = { path = "../../aether-core/aether-core" }
+# aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.1.4" }
+aether-core = { path = "../../aether-core/aether-core" }
 anyhow = "1.0.87"
 daedalus = "0.2.3"
 thiserror = "1.0.63"
@@ -29,6 +29,7 @@ uuid = { version = "1.10.0", features = ["serde", "v4"] }
 tauri-plugin-log = "2"
 log = "0.4.22"
 dashmap = { version = "6.1.0", features = ["serde"] }
+tauri-plugin-dialog = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

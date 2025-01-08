@@ -4,7 +4,7 @@ export enum ProcessPayloadType {
 }
 
 export interface ProcessPayload {
-  instanceNameId: string;
+  instanceId: string;
   uuid: string;
   event: ProcessPayloadType;
   message: string;
@@ -12,6 +12,6 @@ export interface ProcessPayload {
 
 export interface MinecraftProcessMetadata {
   uuid: string;
-  nameId: string;
+  id: string;
   startTime: Date;
 }

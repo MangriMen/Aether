@@ -8,5 +8,6 @@
   },
   "tailwindCSS.classAttributes": ["class", "classList"],
   "feature-sliced-design-components.componentTemplate": "fsd-solid-types",
-  "svg.preview.background": "black"
+  "svg.preview.background": "black",
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

@@ -19,3 +19,4 @@ export * from './Popover';
 export * from './ContextMenu';
 export * from './Progress';
 export * from './TitledBlock';
+export * from './Tabs';

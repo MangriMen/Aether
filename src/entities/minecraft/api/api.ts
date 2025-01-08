@@ -19,14 +19,14 @@ export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
 export const getMinecraftInstances = () =>
   invoke<[Instance[], string[]]>('get_minecraft_instances');
 
-export const launchMinecraftInstance = (nameId: string) =>
-  invoke('launch_minecraft_instance', { nameId });
+export const launchMinecraftInstance = (id: string) =>
+  invoke('launch_minecraft_instance', { id });
 
 export const stopMinecraftInstance = (uuid: string) =>
   invoke('stop_minecraft_instance', { uuid });
 
-export const removeMinecraftInstance = (nameId: string) =>
-  invoke('remove_minecraft_instance', { nameId });
+export const removeMinecraftInstance = (id: string) =>
+  invoke('remove_minecraft_instance', { id });
 
 export const getLoadingBars = () =>
   invoke<Record<string, LoadingBar>>('get_progress_bars');
@@ -34,7 +34,7 @@ export const getLoadingBars = () =>
 export const getRunningMinecraftInstances = () =>
   invoke<MinecraftProcessMetadata[]>('get_running_minecraft_instances');
 
-export const getMinecraftInstanceProcess = (nameId: string) =>
+export const getMinecraftInstanceProcess = (id: string) =>
   invoke<MinecraftProcessMetadata[]>('get_running_minecraft_instances', {
-    nameId,
+    id,
   });
