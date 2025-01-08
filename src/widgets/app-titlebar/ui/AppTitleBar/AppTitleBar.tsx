@@ -11,7 +11,8 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
   return (
     <TitleBar
       id='title-bar'
-      class='justify-end gap-2'
+      class='pointer-events-auto z-[100] justify-end gap-2'
+      data-ignore-outside-click
       data-tauri-drag-region
       {...props}
     >

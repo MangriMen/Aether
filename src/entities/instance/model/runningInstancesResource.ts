@@ -22,10 +22,10 @@ export const refetchRunningInstances = () => {
   return runningInstances[1].refetch();
 };
 
-export const createRunningInstanceResource = (nameId: Accessor<string>) =>
-  createResource(nameId, (nameId) => {
+export const createRunningInstanceResource = (id: Accessor<string>) =>
+  createResource(id, (id) => {
     try {
-      return getMinecraftInstanceProcess(nameId);
+      return getMinecraftInstanceProcess(id);
     } catch {
       console.error("Can't get running instance");
     }

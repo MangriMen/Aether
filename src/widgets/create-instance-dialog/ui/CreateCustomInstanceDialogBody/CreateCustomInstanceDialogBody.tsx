@@ -30,6 +30,7 @@ import {
   getMinecraftVersionManifest,
   InstanceCreateDto,
   ModLoader,
+  Version,
 } from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
@@ -155,7 +156,9 @@ export const CreateCustomInstanceDialogBody: Component<
           advanced={isAdvanced()}
           value={fields.gameVersion}
           options={version_list()}
-          onChange={(value) => setFields('gameVersion', value ?? undefined)}
+          onChange={(value: Version | null) =>
+            setFields('gameVersion', value ?? undefined)
+          }
         />
       </Field>
 
@@ -213,7 +216,11 @@ export const CreateCustomInstanceDialogBody: Component<
       </Collapsible>
 
       <DialogFooter>
-        <Button size='sm' onClick={() => setIsAdvanced(!isAdvanced())}>
+        <Button
+          class='mb-2 sm:mb-0 sm:mr-auto'
+          size='sm'
+          onClick={() => setIsAdvanced(!isAdvanced())}
+        >
           <Switch>
             <Match when={isAdvanced()}>Hide advanced</Match>
             <Match when={!isAdvanced()}>Show advanced</Match>

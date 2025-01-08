@@ -1,8 +1,9 @@
+import { Icon, IconifyIcon } from '@iconify-icon/solid';
 import { PolymorphicProps } from '@kobalte/core';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
-import { splitProps, ValidComponent } from 'solid-js';
+import { Show, splitProps, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -41,7 +42,10 @@ const iconButtonVariants = cva('', {
 type OnlyIconButtonProps = VariantProps<typeof iconButtonVariants>;
 
 type IconButtonProps<T extends ValidComponent = 'button'> =
-  OnlyIconButtonProps & ButtonProps<T>;
+  OnlyIconButtonProps &
+    ButtonProps<T> & {
+      icon?: IconifyIcon;
+    };
 
 const IconButton = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, IconButtonProps<T>>,
@@ -50,6 +54,8 @@ const IconButton = <T extends ValidComponent = 'button'>(
     'class',
     'variant',
     'size',
+    'icon',
+    'children',
   ]);
 
   return (
@@ -60,7 +66,11 @@ const IconButton = <T extends ValidComponent = 'button'>(
         local.class,
       )}
       {...others}
-    />
+    >
+      <Show when={local.icon} fallback={local.children}>
+        {(icon) => <Icon class='text-2xl' icon={icon()} />}
+      </Show>
+    </ButtonPrimitive.Root>
   );
 };
 

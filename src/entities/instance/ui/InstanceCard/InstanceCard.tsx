@@ -47,7 +47,10 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       </div>
       <Switch
         fallback={
-          <InstanceButton variant={local.isRunning ? 'destructive' : 'success'}>
+          <InstanceButton
+            variant={local.isRunning ? 'destructive' : 'success'}
+            title={local.isRunning ? 'Stop' : 'Launch'}
+          >
             <Icon class='animate-spin text-2xl' icon='mdi-loading' />
           </InstanceButton>
         }
@@ -59,7 +62,11 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
             !local.isLoading
           }
         >
-          <InstanceButton variant='success' onClick={local.onLaunchClick}>
+          <InstanceButton
+            variant='success'
+            onClick={local.onLaunchClick}
+            title='Launch'
+          >
             <PlayIcon />
           </InstanceButton>
         </Match>
@@ -69,7 +76,11 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
             local.isRunning
           }
         >
-          <InstanceButton variant='destructive' onClick={local.onStopClick}>
+          <InstanceButton
+            variant='destructive'
+            onClick={local.onStopClick}
+            title='Stop'
+          >
             <Icon icon='mdi-stop' />
           </InstanceButton>
         </Match>
