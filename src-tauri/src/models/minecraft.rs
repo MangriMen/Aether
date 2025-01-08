@@ -8,7 +8,6 @@ pub struct InstanceCreateDto {
     pub mod_loader: ModLoader,
     pub loader_version: Option<String>,
     pub icon_path: Option<String>,
-    pub linked_data: Option<String>,
     pub skip_install_profile: Option<bool>,
 }
 

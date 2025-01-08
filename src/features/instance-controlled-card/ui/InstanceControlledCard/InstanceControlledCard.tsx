@@ -40,13 +40,13 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   let processListenerUnlistenFn: UnlistenFn | undefined;
 
-  const nameId = createMemo(() => props.instance.nameId);
+  const id = createMemo(() => props.instance.id);
 
   const stopProcessListener = () => processListenerUnlistenFn?.();
 
-  const startProcessListener = (nameId: string) =>
+  const startProcessListener = (id: string) =>
     listenProcess((e) => {
-      if (e.payload.instanceNameId === nameId) {
+      if (e.payload.instanceId === id) {
         setProcessPayload(e.payload);
         const isLaunched = e.payload.event === ProcessPayloadType.Launched;
         setIsLoading(false);
@@ -56,7 +56,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   createEffect(() => {
     (async () => {
-      processListenerUnlistenFn = await startProcessListener(nameId());
+      processListenerUnlistenFn = await startProcessListener(id());
     })();
   });
 
@@ -75,7 +75,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
     try {
       setIsLoading(true);
-      await launchMinecraftInstance(instance.nameId);
+      await launchMinecraftInstance(instance.id);
     } catch (e) {
       setIsLoading(false);
       console.error(e);
@@ -114,7 +114,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     }
 
     try {
-      await removeMinecraftInstance(instance.nameId);
+      await removeMinecraftInstance(instance.id);
       refetchInstances();
     } catch (e) {
       console.error(e);
