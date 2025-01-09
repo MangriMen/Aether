@@ -1,4 +1,5 @@
 import {
+  Badge,
   Select,
   SelectContent,
   SelectItem,
@@ -21,14 +22,23 @@ export const SelectSpecificLoaderVersion = <
       optionValue={'id'}
       optionTextValue={'id'}
       itemComponent={(props) => (
-        <SelectItem item={props.item}>{props.item.rawValue.id}</SelectItem>
+        <SelectItem item={props.item}>
+          <div class='inline-flex gap-2'>
+            {props.item.rawValue.id}
+            {props.item.rawValue.stable ? (
+              <Badge variant='default'>stable</Badge>
+            ) : (
+              ''
+            )}
+          </div>
+        </SelectItem>
       )}
       {...props}
     >
       <SelectTrigger>
-        <SelectValue<T>>{(state) => state.selectedOption().id}</SelectValue>
+        <SelectValue<T>>{(state) => state.selectedOption()?.id}</SelectValue>
       </SelectTrigger>
-      <SelectContent />
+      <SelectContent class='max-h-[148px] overflow-y-auto' />
     </Select>
   );
 };

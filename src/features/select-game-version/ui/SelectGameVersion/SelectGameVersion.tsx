@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
+import { createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -20,10 +20,8 @@ export function SelectGameVersion<T extends Version = Version>(
 ) {
   const [local, others] = splitProps(props, [
     'advanced',
-    'defaultValue',
-    'value',
-    'onChange',
     'options',
+    'value',
     'class',
   ]);
 
@@ -41,42 +39,23 @@ export function SelectGameVersion<T extends Version = Version>(
       ) ?? [],
   );
 
-  const handleIncludeSnapshotsChange = (value: boolean) => {
-    if (
-      !value &&
-      local.value !== null &&
-      local.value !== undefined &&
-      local.value.type === VersionType.Snapshot
-    ) {
-      local.onChange?.(null);
-    }
-
-    setShouldIncludeSnapshots(value);
-  };
-
-  createEffect(() => {
-    if (!local.advanced) {
-      setShouldIncludeSnapshots(false);
-    }
-  });
-
   return (
     <div class='flex gap-2'>
       <Select
         class={cn('w-full', local.class)}
         options={version_list()}
+        value={local.value}
         optionValue={'id'}
         optionTextValue={'id'}
-        defaultValue={local.defaultValue}
-        value={local.value}
-        onChange={local.onChange}
         itemComponent={(props) => (
           <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
         )}
         {...others}
       >
         <SelectTrigger>
-          <SelectValue<T>>{(state) => state.selectedOption()?.id}</SelectValue>
+          <SelectValue<T>>
+            {(state) => state.selectedOption()?.id ?? local.value?.id}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent class='max-h-[148px] overflow-y-auto' />
       </Select>
@@ -91,7 +70,8 @@ export function SelectGameVersion<T extends Version = Version>(
       >
         <Checkbox
           id='advanced-game-version'
-          onChange={handleIncludeSnapshotsChange}
+          checked={shouldIncludeSnapshots()}
+          onChange={setShouldIncludeSnapshots}
         />
         <Label for='advanced-game-version-input'>Include snapshots</Label>
       </div>

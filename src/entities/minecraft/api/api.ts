@@ -6,12 +6,17 @@ import {
   Instance,
   LoadingBar,
   MinecraftProcessMetadata,
+  LoaderManifest,
+  ModLoader,
 } from '../model';
 
 export const initializeState = () => invoke('initialize_state');
 
 export const getMinecraftVersionManifest = () =>
   invoke<VersionManifest>('get_minecraft_version_manifest');
+
+export const getLoaderVersionsManifest = (loader: ModLoader) =>
+  invoke<LoaderManifest>('get_loader_versions_manifest', { loader });
 
 export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
   invoke<string>('create_minecraft_instance', { instanceCreateDto });

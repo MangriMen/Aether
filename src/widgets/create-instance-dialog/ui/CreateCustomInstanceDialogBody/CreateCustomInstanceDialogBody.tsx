@@ -1,7 +1,6 @@
 import { createAsync } from '@solidjs/router';
 import {
   Component,
-  createEffect,
   createMemo,
   createSignal,
   Match,
@@ -27,8 +26,10 @@ import {
 import { refetchInstances } from '@/entities/instance';
 import {
   createMinecraftInstance,
+  getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   InstanceCreateDto,
+  LoaderVersion,
   ModLoader,
   Version,
 } from '@/entities/minecraft';
@@ -70,8 +71,6 @@ export const CreateCustomInstanceDialogBody: Component<
 > = (props) => {
   const version_manifest = createAsync(() => getMinecraftVersionManifest());
 
-  const version_list = createMemo(() => version_manifest()?.versions ?? []);
-
   const [isCreating, setIsCreating] = createSignal(false);
 
   const [isAdvanced, setIsAdvanced] = createSignal(false);
@@ -84,6 +83,63 @@ export const CreateCustomInstanceDialogBody: Component<
     loader: ModLoader.Vanilla,
     loaderType: 'stable',
     loaderVersion: undefined,
+  });
+
+  const fabricVersions = createAsync(() =>
+    getLoaderVersionsManifest(ModLoader.Fabric),
+  );
+  const forgeVersions = createAsync(() =>
+    getLoaderVersionsManifest(ModLoader.Forge),
+  );
+  const quiltVersions = createAsync(() =>
+    getLoaderVersionsManifest(ModLoader.Quilt),
+  );
+
+  const game_versions = createMemo(() => {
+    if (fields.loader === ModLoader.Vanilla) {
+      return version_manifest()?.versions ?? [];
+    }
+
+    return (
+      version_manifest()?.versions.filter((version) => {
+        switch (fields.loader) {
+          case ModLoader.Fabric:
+            return fabricVersions()?.gameVersions.some(
+              (x) => version.id === x.id,
+            );
+          case ModLoader.Forge:
+            return forgeVersions()?.gameVersions.some(
+              (x) => version.id === x.id,
+            );
+          case ModLoader.Quilt:
+            return quiltVersions()?.gameVersions.some(
+              (x) => version.id === x.id,
+            );
+        }
+      }) ?? []
+    );
+  });
+
+  const specificLoaderVersions = createMemo(() => {
+    const gameVersion = fields.gameVersion;
+    if (gameVersion === undefined) {
+      return [];
+    }
+
+    switch (fields.loader) {
+      case ModLoader.Fabric:
+        return fabricVersions()?.gameVersions[0].loaders ?? [];
+      case ModLoader.Forge:
+        return (
+          forgeVersions()?.gameVersions.find(
+            (item) => item.id === gameVersion.id,
+          )?.loaders ?? []
+        );
+      case ModLoader.Quilt:
+        return quiltVersions()?.gameVersions[0].loaders ?? [];
+      default:
+        return [];
+    }
   });
 
   const handleSubmit = async (e: SubmitEvent) => {
@@ -124,12 +180,6 @@ export const CreateCustomInstanceDialogBody: Component<
     setIsCreating(false);
   };
 
-  createEffect(() => {
-    if (!isAdvanced()) {
-      setFields('loaderType', 'stable');
-    }
-  });
-
   return (
     <form
       class={cn('flex flex-col gap-4', local.class)}
@@ -149,19 +199,6 @@ export const CreateCustomInstanceDialogBody: Component<
         />
       </TextField>
 
-      <Field label='Game Version'>
-        <SelectGameVersion
-          class='max-w-[31.5ch]'
-          placeholder='Select game version'
-          advanced={isAdvanced()}
-          value={fields.gameVersion}
-          options={version_list()}
-          onChange={(value: Version | null) =>
-            setFields('gameVersion', value ?? undefined)
-          }
-        />
-      </Field>
-
       <Field label='Loader'>
         <SelectLoaderChips
           loaders={loaders}
@@ -173,13 +210,29 @@ export const CreateCustomInstanceDialogBody: Component<
               Object.values(ModLoader).includes(value as ModLoader)
             ) {
               setFields('loader', value as ModLoader);
+              setFields('loaderVersion', undefined);
+            }
+          }}
+        />
+      </Field>
+
+      <Field label='Game Version'>
+        <SelectGameVersion
+          class='max-w-[31.5ch]'
+          placeholder='Select game version'
+          advanced={isAdvanced()}
+          value={fields.gameVersion}
+          options={game_versions()}
+          onChange={(value: Version | null) => {
+            if (value) {
+              setFields('gameVersion', value);
             }
           }}
         />
       </Field>
 
       <Collapsible open={isAdvanced() && fields.loader !== ModLoader.Vanilla}>
-        <CollapsibleContent>
+        <CollapsibleContent class='p-2'>
           <Field label='Loader Version'>
             <SelectLoaderTypeChips
               loaderTypes={loaderVersionTypes}
@@ -203,11 +256,14 @@ export const CreateCustomInstanceDialogBody: Component<
             >
               <Field label='Select version'>
                 <SelectSpecificLoaderVersion
+                  value={fields.loaderVersion || null}
                   placeholder='Select loader version'
-                  // TODO
-                  options={[]}
-                  //@ts-expect-error TODO: fix
-                  onChange={(value) => setFields('loaderVersion', value?.id)}
+                  options={specificLoaderVersions()}
+                  onChange={(value) => {
+                    if (value) {
+                      setFields('loaderVersion', value as LoaderVersion);
+                    }
+                  }}
                 />
               </Field>
             </Show>
