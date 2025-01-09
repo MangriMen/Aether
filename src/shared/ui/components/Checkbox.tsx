@@ -39,3 +39,4 @@ const Checkbox = <T extends ValidComponent = 'div'>(
 };
 
 export { Checkbox };
+export type { CheckboxRootProps };

@@ -3,6 +3,10 @@ export interface LoaderManifest {
   gameVersions: MinecraftLoaderVersion[];
 }
 
+export interface MappedLoaderManifest {
+  gameVersions: Record<string, MinecraftLoaderVersion>;
+}
+
 ///  A game version of Minecraft
 export interface MinecraftLoaderVersion {
   /// The minecraft version ID

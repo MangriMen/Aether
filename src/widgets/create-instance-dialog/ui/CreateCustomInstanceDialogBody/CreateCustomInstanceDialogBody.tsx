@@ -1,3 +1,10 @@
+import {
+  createForm,
+  getValue,
+  setValue,
+  SubmitHandler,
+  zodForm,
+} from '@modular-forms/solid';
 import { createAsync } from '@solidjs/router';
 import {
   Component,
@@ -8,30 +15,33 @@ import {
   splitProps,
   Switch,
 } from 'solid-js';
-import { createStore } from 'solid-js/store';
 
 import { cn } from '@/shared/lib';
-import { Option } from '@/shared/model';
 import {
   Button,
   Collapsible,
   CollapsibleContent,
   DialogFooter,
-  Field,
+  LabeledField,
   TextField,
+  TextFieldErrorMessage,
   TextFieldInput,
   TextFieldLabel,
 } from '@/shared/ui';
 
-import { refetchInstances } from '@/entities/instance';
+import {
+  IncludeSnapshotsCheckbox,
+  refetchInstances,
+} from '@/entities/instance';
 import {
   createMinecraftInstance,
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   InstanceCreateDto,
-  LoaderVersion,
+  loaderManifestToMapped,
   ModLoader,
   Version,
+  VersionType,
 } from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
@@ -40,232 +50,251 @@ import { SelectLoaderTypeChips } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
 import {
-  CreateCustomInstanceFormProps,
+  CreateCustomInstanceSchema,
+  loaders,
+  loaderVersionTypes,
+} from '../../model';
+
+import {
+  CreateCustomInstanceFormValues,
   CreateCustomInstanceDialogBodyProps,
 } from '.';
-
-const loaders: Option<ModLoader>[] = [
-  { name: 'Vanilla', value: ModLoader.Vanilla },
-  { name: 'Forge', value: ModLoader.Forge },
-  { name: 'Fabric', value: ModLoader.Fabric },
-  { name: 'Quilt', value: ModLoader.Quilt },
-];
-
-const loaderVersionTypes: Option[] = [
-  {
-    name: 'Stable',
-    value: 'stable',
-  },
-  {
-    name: 'Latest',
-    value: 'latest',
-  },
-  {
-    name: 'Other',
-    value: 'other',
-  },
-];
 
 export const CreateCustomInstanceDialogBody: Component<
   CreateCustomInstanceDialogBodyProps
 > = (props) => {
-  const version_manifest = createAsync(() => getMinecraftVersionManifest());
+  const [local, others] = splitProps(props, ['class', 'onOpenChange']);
+
+  const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
+    validate: zodForm(CreateCustomInstanceSchema._def.schema),
+    initialValues: {
+      loader: ModLoader.Vanilla,
+      loaderType: 'stable',
+    },
+  });
+
+  const versionManifest = createAsync(() => getMinecraftVersionManifest());
 
   const [isCreating, setIsCreating] = createSignal(false);
 
   const [isAdvanced, setIsAdvanced] = createSignal(false);
 
-  const [local, others] = splitProps(props, ['class', 'onOpenChange']);
+  const [shouldIncludeSnapshots, setShouldIncludeSnapshots] =
+    createSignal(false);
 
-  const [fields, setFields] = createStore<CreateCustomInstanceFormProps>({
-    name: undefined,
-    gameVersion: undefined,
-    loader: ModLoader.Vanilla,
-    loaderType: 'stable',
-    loaderVersion: undefined,
-  });
-
-  const fabricVersions = createAsync(() =>
-    getLoaderVersionsManifest(ModLoader.Fabric),
+  const fabricVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Fabric)),
   );
-  const forgeVersions = createAsync(() =>
-    getLoaderVersionsManifest(ModLoader.Forge),
+  const forgeVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Forge)),
   );
-  const quiltVersions = createAsync(() =>
-    getLoaderVersionsManifest(ModLoader.Quilt),
+  const quiltVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Quilt)),
   );
 
-  const game_versions = createMemo(() => {
-    if (fields.loader === ModLoader.Vanilla) {
-      return version_manifest()?.versions ?? [];
+  const loaderGameVersions = createMemo(() => {
+    const loader = getValue(form, 'loader');
+    const versions = versionManifest()?.versions ?? [];
+    if (loader === ModLoader.Vanilla) {
+      return versions;
     }
 
-    return (
-      version_manifest()?.versions.filter((version) => {
-        switch (fields.loader) {
-          case ModLoader.Fabric:
-            return fabricVersions()?.gameVersions.some(
-              (x) => version.id === x.id,
-            );
-          case ModLoader.Forge:
-            return forgeVersions()?.gameVersions.some(
-              (x) => version.id === x.id,
-            );
-          case ModLoader.Quilt:
-            return quiltVersions()?.gameVersions.some(
-              (x) => version.id === x.id,
-            );
-        }
-      }) ?? []
-    );
+    return versions.filter((version) => {
+      switch (loader) {
+        case ModLoader.Fabric:
+          return !!fabricVersions()?.gameVersions?.[version.id];
+        case ModLoader.Forge:
+          return !!forgeVersions()?.gameVersions?.[version.id];
+        case ModLoader.Quilt:
+          return !!quiltVersions()?.gameVersions?.[version.id];
+      }
+    });
+  });
+
+  const gameVersions = createMemo(() => {
+    return loaderGameVersions().filter((version) => {
+      const isRelease = version.type === VersionType.Release;
+      const needIncludeSnapshots = shouldIncludeSnapshots();
+      return isRelease || needIncludeSnapshots;
+    });
   });
 
   const specificLoaderVersions = createMemo(() => {
-    const gameVersion = fields.gameVersion;
+    const gameVersion = getValue(form, 'gameVersion');
     if (gameVersion === undefined) {
       return [];
     }
 
-    switch (fields.loader) {
+    const loader = getValue(form, 'loader');
+    const dummyReplaceString = '${modrinth.gameVersion}';
+    switch (loader) {
       case ModLoader.Fabric:
-        return fabricVersions()?.gameVersions[0].loaders ?? [];
+        return fabricVersions()?.gameVersions[dummyReplaceString].loaders ?? [];
       case ModLoader.Forge:
-        return (
-          forgeVersions()?.gameVersions.find(
-            (item) => item.id === gameVersion.id,
-          )?.loaders ?? []
-        );
+        return forgeVersions()?.gameVersions[gameVersion]?.loaders ?? [];
       case ModLoader.Quilt:
-        return quiltVersions()?.gameVersions[0].loaders ?? [];
+        return quiltVersions()?.gameVersions[dummyReplaceString].loaders ?? [];
       default:
         return [];
     }
   });
 
-  const handleSubmit = async (e: SubmitEvent) => {
-    e.preventDefault();
-
-    const data = new FormData(e.target as HTMLFormElement);
-
-    const dataObject = { ...fields, ...Object.fromEntries(data.entries()) };
-
-    if (dataObject.gameVersion === undefined) {
-      return;
-    }
-
-    if (dataObject.loader === undefined) {
-      return;
-    }
-
-    if (dataObject.name === undefined) {
-      return;
-    }
-
+  const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
+    values,
+  ) => {
     setIsCreating(true);
 
-    const dto: InstanceCreateDto = {
-      name: dataObject.name,
-      gameVersion: dataObject.gameVersion.id,
-      modLoader: dataObject.loader,
-    };
-
     try {
-      createMinecraftInstance(dto);
-      props.onOpenChange?.(false);
+      // props.onOpenChange?.(false);
       refetchInstances();
+      // await createMinecraftInstance(formValuesToDto(values));
     } catch (e) {
       console.error(e);
     }
 
+    console.log(values);
     setIsCreating(false);
   };
 
+  const formValuesToDto = (
+    values: CreateCustomInstanceFormValues,
+  ): InstanceCreateDto => ({
+    name: values.name,
+    gameVersion: values.gameVersion,
+    modLoader: values.loader,
+    loaderVersion: values.loaderVersion,
+  });
+
   return (
-    <form
+    <Form
       class={cn('flex flex-col gap-4', local.class)}
       onSubmit={handleSubmit}
+      shouldActive
       {...others}
     >
-      <TextField class='flex flex-col gap-2'>
-        <TextFieldLabel for='name'>Name</TextFieldLabel>
-        <TextFieldInput
-          type='text'
-          id='name'
-          name='name'
-          class='max-w-[36ch]'
-          maxLength={32}
-          required
-          autocomplete='off'
-        />
-      </TextField>
-
-      <Field label='Loader'>
-        <SelectLoaderChips
-          loaders={loaders}
-          defaultValue={loaders[0].value}
-          value={fields.loader}
-          onChange={(value) => {
-            if (
-              value &&
-              Object.values(ModLoader).includes(value as ModLoader)
-            ) {
-              setFields('loader', value as ModLoader);
-              setFields('loaderVersion', undefined);
-            }
-          }}
-        />
+      <button onClick={() => setValue(form, 'loader', ModLoader.Quilt)}>
+        Кнопка
+      </button>
+      <Field name='name'>
+        {(field, props) => (
+          <TextField
+            validationState={field.error ? 'invalid' : 'valid'}
+            class='flex flex-col gap-2'
+          >
+            <TextFieldLabel for='name'>Name</TextFieldLabel>
+            <TextFieldInput
+              id='name'
+              class='max-w-[36ch]'
+              required
+              type='text'
+              maxLength={32}
+              autocomplete='off'
+              value={field.value}
+              {...props}
+            />
+            <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
+          </TextField>
+        )}
       </Field>
 
-      <Field label='Game Version'>
-        <SelectGameVersion
-          class='max-w-[31.5ch]'
-          placeholder='Select game version'
-          advanced={isAdvanced()}
-          value={fields.gameVersion}
-          options={game_versions()}
-          onChange={(value: Version | null) => {
-            if (value) {
-              setFields('gameVersion', value);
-            }
-          }}
-        />
-      </Field>
-
-      <Collapsible open={isAdvanced() && fields.loader !== ModLoader.Vanilla}>
-        <CollapsibleContent class='p-2'>
-          <Field label='Loader Version'>
-            <SelectLoaderTypeChips
-              loaderTypes={loaderVersionTypes}
-              value={fields.loaderType}
+      <LabeledField label='Loader'>
+        <Field name='loader'>
+          {(_field, props) => (
+            <SelectLoaderChips
+              loaders={loaders}
+              defaultValue={loaders[0].value}
+              {...props}
               onChange={(value) => {
-                if (value) {
-                  setFields('loaderType', value);
+                if (!value) {
+                  return;
                 }
+
+                setValue(form, 'loader', value as ModLoader);
+                setValue(form, 'loaderVersion', undefined);
               }}
             />
-          </Field>
+          )}
+        </Field>
+      </LabeledField>
 
-          <Show when={fields.loaderType === 'other'}>
+      <LabeledField label='Game Version'>
+        <div class='flex gap-2'>
+          <Field name='gameVersion'>
+            {(_field, props) => (
+              <SelectGameVersion
+                validationState={_field.error ? 'invalid' : 'valid'}
+                class='max-w-[31.5ch]'
+                placeholder='Select game version'
+                options={gameVersions()}
+                {...props}
+                onChange={(value: Version | null) => {
+                  if (!value) {
+                    return;
+                  }
+
+                  setValue(form, 'gameVersion', value.id);
+                }}
+              />
+            )}
+          </Field>
+          <IncludeSnapshotsCheckbox
+            show={isAdvanced()}
+            checked={shouldIncludeSnapshots()}
+            onChange={setShouldIncludeSnapshots}
+          />
+        </div>
+      </LabeledField>
+
+      <Collapsible
+        open={isAdvanced() && getValue(form, 'loader') !== ModLoader.Vanilla}
+      >
+        <CollapsibleContent class='p-2'>
+          <LabeledField label='Loader Version'>
+            <Field name='loaderType'>
+              {(field, props) => (
+                <SelectLoaderTypeChips
+                  loaderTypes={loaderVersionTypes}
+                  value={field.value}
+                  {...props}
+                  onChange={(value) => {
+                    if (!value) {
+                      return;
+                    }
+
+                    setValue(form, 'loaderType', value);
+                  }}
+                />
+              )}
+            </Field>
+          </LabeledField>
+
+          <Show when={getValue(form, 'loaderType') === 'other'}>
             <Show
-              when={fields.gameVersion !== undefined}
+              when={getValue(form, 'gameVersion') !== undefined}
               fallback={
                 <span class='italic'>
                   Select a game version before you select a loader version
                 </span>
               }
             >
-              <Field label='Select version'>
-                <SelectSpecificLoaderVersion
-                  value={fields.loaderVersion || null}
-                  placeholder='Select loader version'
-                  options={specificLoaderVersions()}
-                  onChange={(value) => {
-                    if (value) {
-                      setFields('loaderVersion', value as LoaderVersion);
-                    }
-                  }}
-                />
-              </Field>
+              <LabeledField label='Select version'>
+                <Field name='loaderVersion'>
+                  {(_, props) => (
+                    <SelectSpecificLoaderVersion
+                      placeholder='Select loader version'
+                      options={specificLoaderVersions()}
+                      {...props}
+                      onChange={(value) => {
+                        if (!value) {
+                          return;
+                        }
+
+                        setValue(form, 'loaderVersion', value.id);
+                      }}
+                    />
+                  )}
+                </Field>
+              </LabeledField>
             </Show>
           </Show>
         </CollapsibleContent>
@@ -296,6 +325,6 @@ export const CreateCustomInstanceDialogBody: Component<
           Cancel
         </Button>
       </DialogFooter>
-    </form>
+    </Form>
   );
 };

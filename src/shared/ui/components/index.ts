@@ -4,7 +4,7 @@ export * from './Checkbox';
 export * from './Collapsible';
 export * from './ContextMenu';
 export * from './Dialog';
-export * from './Field';
+export * from './LabeledField';
 export * from './FieldLabel';
 export * from './IconButton';
 export * from './Label';
