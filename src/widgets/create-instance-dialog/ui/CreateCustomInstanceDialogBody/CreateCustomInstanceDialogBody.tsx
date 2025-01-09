@@ -145,14 +145,13 @@ export const CreateCustomInstanceDialogBody: Component<
     setIsCreating(true);
 
     try {
-      // props.onOpenChange?.(false);
+      props.onOpenChange?.(false);
       refetchInstances();
-      // await createMinecraftInstance(formValuesToDto(values));
+      await createMinecraftInstance(formValuesToDto(values));
     } catch (e) {
       console.error(e);
     }
 
-    console.log(values);
     setIsCreating(false);
   };
 
