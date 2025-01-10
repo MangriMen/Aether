@@ -6,7 +6,7 @@ import { FieldLabel } from '../FieldLabel';
 
 import { FieldProps } from '.';
 
-export const Field: Component<FieldProps> = (props) => {
+export const LabeledField: Component<FieldProps> = (props) => {
   const [local, others] = splitProps(props, ['label', 'class', 'children']);
 
   const labelElement = createMemo(() =>

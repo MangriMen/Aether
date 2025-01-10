@@ -1,6 +1,9 @@
 import { Option } from '@/shared/model';
 import { ToggleGroupRootProps } from '@/shared/ui';
 
-export type SelectLoaderTypeChipsProps = ToggleGroupRootProps & {
+export type LoaderVersionTypeChipsToggleGroupProps = Exclude<
+  ToggleGroupRootProps,
+  'onChange'
+> & {
   loaderTypes: Option[];
 };

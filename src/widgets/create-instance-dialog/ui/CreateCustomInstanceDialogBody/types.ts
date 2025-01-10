@@ -1,15 +1,13 @@
 import { DialogRootProps } from '@kobalte/core/dialog';
-import { ComponentProps } from 'solid-js';
+import { FieldValues } from '@modular-forms/solid';
+import { z } from 'zod';
 
-import { LoaderVersion, ModLoader, Version } from '@/entities/minecraft';
+import { CreateCustomInstanceSchema } from '../../model';
 
-export type CreateCustomInstanceDialogBodyProps = ComponentProps<'form'> &
-  Pick<DialogRootProps, 'onOpenChange'>;
+export type CreateCustomInstanceDialogBodyProps = { class?: string } & Pick<
+  DialogRootProps,
+  'onOpenChange'
+>;
 
-export type CreateCustomInstanceFormProps = {
-  name: string | undefined;
-  gameVersion: Version | undefined;
-  loader: ModLoader | undefined;
-  loaderType: string | undefined;
-  loaderVersion: LoaderVersion | undefined;
-};
+export type CreateCustomInstanceFormValues = FieldValues &
+  z.infer<typeof CreateCustomInstanceSchema>;

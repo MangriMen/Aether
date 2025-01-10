@@ -11,7 +11,7 @@ export const InstanceButton: Component<InstanceButtonProps> = (props) => {
   return (
     <IconButton
       class={cn(
-        'absolute bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100',
+        'absolute p-0 pr-0.5 bottom-1/3 left-1/2 opacity-0 transition-[bottom,opacity] group-hover:bottom-1/4 group-hover:opacity-100',
         local.class,
       )}
       {...others}

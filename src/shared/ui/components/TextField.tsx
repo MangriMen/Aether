@@ -6,6 +6,11 @@ import type { ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
+type TextFieldRootProps<T extends ValidComponent = 'div'> =
+  TextFieldPrimitive.TextFieldRootProps<T> & {
+    class?: string | undefined;
+  };
+
 const TextField = TextFieldPrimitive.Root;
 
 type TextFieldInputProps<T extends ValidComponent = 'input'> =
@@ -151,4 +156,13 @@ export {
   TextFieldLabel,
   TextFieldDescription,
   TextFieldErrorMessage,
+};
+
+export type {
+  TextFieldRootProps,
+  TextFieldInputProps,
+  TextFieldLabelProps,
+  TextFieldTextAreaProps,
+  TextFieldDescriptionProps,
+  TextFieldErrorMessageProps,
 };

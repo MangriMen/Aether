@@ -1,5 +1,6 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import * as SelectPrimitive from '@kobalte/core/select';
+import { cva } from 'class-variance-authority';
 import type { JSX, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
@@ -34,7 +35,7 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        'flex h-10 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full items-center justify-between data-[invalid]:border-destructive rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         local.class,
       )}
       {...others}
@@ -121,11 +122,49 @@ const SelectItem = <T extends ValidComponent = 'li'>(
   );
 };
 
+const labelVariants = cva(
+  'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  {
+    variants: {
+      variant: {
+        label: 'data-[invalid]:text-destructive',
+        description: 'font-normal text-muted-foreground',
+        error: 'text-destructive',
+      },
+    },
+    defaultVariants: {
+      variant: 'label',
+    },
+  },
+);
+
+type SelectErrorMessageProps<T extends ValidComponent = 'div'> =
+  SelectPrimitive.SelectErrorMessageProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
+
+const SelectErrorMessage = <T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, SelectErrorMessageProps<T>>,
+) => {
+  const [local, others] = splitProps(props as SelectErrorMessageProps, [
+    'class',
+  ]);
+
+  return (
+    <SelectPrimitive.ErrorMessage
+      class={cn(labelVariants({ variant: 'error' }), local.class)}
+      {...others}
+    />
+  );
+};
+
 export type {
   SelectRootProps,
   SelectTriggerProps,
   SelectContentProps,
   SelectItemProps,
+  SelectErrorMessageProps,
 };
 
 export {
@@ -135,4 +174,5 @@ export {
   SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectErrorMessage,
 };

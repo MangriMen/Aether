@@ -1,3 +1,4 @@
+import { throttle } from '@solid-primitives/scheduled';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Component, createEffect, onCleanup } from 'solid-js';
 
@@ -13,9 +14,17 @@ export const WindowObserver: Component<Record<never, never>> = () => {
         unlistenFn();
       }
 
-      unlistenFn = await appWindow.onResized(async () =>
-        updateMaximize(await appWindow.isMaximized()),
+      const handleResizeThrottle = throttle(
+        async () => updateMaximize(await appWindow.isMaximized()),
+        400,
       );
+
+      const unlistenEvent = await appWindow.onResized(handleResizeThrottle);
+
+      unlistenFn = async () => {
+        unlistenEvent();
+        handleResizeThrottle.clear();
+      };
     })();
 
     onCleanup(() => unlistenFn && unlistenFn());
