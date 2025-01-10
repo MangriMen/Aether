@@ -1,7 +1,11 @@
+import { splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
 import {
   Badge,
   Select,
   SelectContent,
+  SelectErrorMessage,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -16,9 +20,12 @@ export const SelectSpecificLoaderVersion = <
 >(
   props: SelectSpecificLoaderVersionProps<T>,
 ) => {
+  const [local, others] = splitProps(props, ['errorMessage', 'class']);
+
   return (
     <Select
-      class='w-full'
+      class={cn('flex flex-col gap-2 w-full', local.class)}
+      validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionValue={'id'}
       optionTextValue={'id'}
       itemComponent={(props) => (
@@ -33,12 +40,13 @@ export const SelectSpecificLoaderVersion = <
           </div>
         </SelectItem>
       )}
-      {...props}
+      {...others}
     >
       <SelectTrigger>
         <SelectValue<T>>{(state) => state.selectedOption()?.id}</SelectValue>
       </SelectTrigger>
       <SelectContent class='max-h-[148px] overflow-y-auto' />
+      <SelectErrorMessage>{local.errorMessage}</SelectErrorMessage>
     </Select>
   );
 };

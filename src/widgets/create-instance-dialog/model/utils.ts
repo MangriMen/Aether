@@ -1,54 +1,69 @@
 import {
-  LoaderManifest,
+  MappedLoaderManifest,
   ModLoader,
-  VersionManifest,
+  Version,
   VersionType,
 } from '@/entities/minecraft';
 
-export const getGameVersions = (
-  versionManifest: VersionManifest | undefined,
-  loader: ModLoader,
-  shouldIncludeSnapshots: boolean,
+export const filterGameVersions = (
+  versions: Version[],
+  shouldIncludeSnapshots?: boolean,
+) =>
+  versions.filter(
+    (version) => version.type === VersionType.Release || shouldIncludeSnapshots,
+  );
+
+export const filterGameVersionsForLoader = (
+  loader: ModLoader | undefined,
+  versions: Version[],
   loaderVersions: {
-    fabricVersions: LoaderManifest;
-    forgeVersions: LoaderManifest;
-    quiltVersions: LoaderManifest;
+    fabric?: MappedLoaderManifest;
+    forge?: MappedLoaderManifest;
+    quilt?: MappedLoaderManifest;
   },
 ) => {
-  const versions = versionManifest?.versions;
-
-  if (loader === ModLoader.Vanilla) {
-    return versions ?? [];
+  if (!loader || loader === ModLoader.Vanilla) {
+    return versions;
   }
 
-  return (
-    versions?.filter((version) => {
-      const defaultValue =
-        version.type === VersionType.Release || shouldIncludeSnapshots;
+  return versions.filter((version) => {
+    switch (loader) {
+      case ModLoader.Fabric:
+        return !!loaderVersions.fabric?.gameVersions?.[version.id];
+      case ModLoader.Forge:
+        return !!loaderVersions.forge?.gameVersions?.[version.id];
+      case ModLoader.Quilt:
+        return !!loaderVersions.quilt?.gameVersions?.[version.id];
+    }
+  });
+};
 
-      switch (loader) {
-        case ModLoader.Fabric:
-          return (
-            defaultValue &&
-            loaderVersions.fabricVersions?.gameVersions.some(
-              (x) => version.id === x.id,
-            )
-          );
-        case ModLoader.Forge:
-          return (
-            defaultValue &&
-            loaderVersions.forgeVersions?.gameVersions.some(
-              (x) => version.id === x.id,
-            )
-          );
-        case ModLoader.Quilt:
-          return (
-            defaultValue &&
-            loaderVersions.quiltVersions?.gameVersions.some(
-              (x) => version.id === x.id,
-            )
-          );
-      }
-    }) ?? []
-  );
+export const getLoaderVersionsForGameVersion = (
+  loader: ModLoader | undefined,
+  gameVersion: string | undefined,
+  loaderVersions: {
+    fabric?: MappedLoaderManifest;
+    forge?: MappedLoaderManifest;
+    quilt?: MappedLoaderManifest;
+  },
+) => {
+  if (!loader || !gameVersion) {
+    return [];
+  }
+
+  const dummyReplaceString = '${modrinth.gameVersion}';
+  switch (loader) {
+    case ModLoader.Fabric:
+      return (
+        loaderVersions.fabric?.gameVersions[dummyReplaceString].loaders ?? []
+      );
+    case ModLoader.Forge:
+      return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
+    case ModLoader.Quilt:
+      return (
+        loaderVersions.quilt?.gameVersions[dummyReplaceString].loaders ?? []
+      );
+    default:
+      return [];
+  }
 };

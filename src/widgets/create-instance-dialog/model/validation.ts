@@ -42,17 +42,21 @@ export const LoaderVersionSchema: z.ZodType<LoaderVersion> = z.object({
 
 export const CreateCustomInstanceSchema = z
   .object({
-    name: z.string().min(1, { message: 'Name is required' }),
-    gameVersion: z.string().min(1, { message: 'Game version is required' }),
+    name: z
+      .string({ required_error: 'Name is required' })
+      .min(1, { message: 'Name is required' }),
+    gameVersion: z
+      .string({ required_error: 'Game version is required' })
+      .min(1, { message: 'Game version is required' }),
     loader: ModLoaderSchema,
-    loaderType: z.string().optional(),
+    loaderVersionType: z.string().optional(),
     loaderVersion: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.loaderType === 'other' && !data.loaderVersion) {
+    if (data.loaderVersionType === 'other' && !data.loaderVersion) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Loader version is required',
+        message: 'Loader version is required if loader version type is other',
         path: ['loaderVersion'],
       });
     }

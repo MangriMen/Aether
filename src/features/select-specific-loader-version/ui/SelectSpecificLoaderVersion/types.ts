@@ -6,4 +6,5 @@ export type SelectSpecificLoaderVersionProps<
   Option extends LoaderVersion = LoaderVersion,
 > = SelectRootProps<Option, never, 'div'> & {
   multiple?: false;
+  errorMessage?: string;
 };

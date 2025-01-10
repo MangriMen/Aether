@@ -1,13 +1,8 @@
 import { PolymorphicProps } from '@kobalte/core';
-import {
-  Component,
-  createUniqueId,
-  splitProps,
-  ValidComponent,
-} from 'solid-js';
+import { Component, splitProps, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Checkbox, CheckboxRootProps, Label } from '@/shared/ui';
+import { Checkbox, CheckboxRootProps } from '@/shared/ui';
 
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',
@@ -20,8 +15,6 @@ export const IncludeSnapshotsCheckbox: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['show', 'class']);
 
-  const id = createUniqueId();
-
   return (
     <div
       class={cn(
@@ -32,8 +25,11 @@ export const IncludeSnapshotsCheckbox: Component<
         local.class,
       )}
     >
-      <Checkbox id={id} {...others} />
-      <Label for={`${id}-input`}>Include snapshots</Label>
+      <Checkbox
+        class='text-sm font-semibold'
+        label='Include snapshots'
+        {...others}
+      />
     </div>
   );
 };

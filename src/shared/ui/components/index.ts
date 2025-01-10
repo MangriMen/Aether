@@ -21,3 +21,4 @@ export * from './TitleBarButton';
 export * from './TitledBlock';
 export * from './Toggle';
 export * from './ToggleGroup';
+export * from './CombinedTextField';
