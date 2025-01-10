@@ -16,7 +16,7 @@ const SVG_CHILD_FILL_VARIANTS = {
   success: '[&_svg]:fill-success-foreground',
 };
 
-const iconButtonVariants = cva('', {
+const iconButtonVariants = cva('aspect-square', {
   variants: {
     variant: {
       default: SVG_CHILD_FILL_VARIANTS.background,
