@@ -261,7 +261,6 @@ export const CreateCustomInstanceDialogBody: Component<
       <DialogFooter>
         <Button
           class='mb-2 sm:mb-0 sm:mr-auto'
-          size='sm'
           onClick={() => setIsAdvanced(!isAdvanced())}
         >
           <Switch>
@@ -270,18 +269,11 @@ export const CreateCustomInstanceDialogBody: Component<
           </Switch>
         </Button>
 
-        <Button
-          size='sm'
-          variant='success'
-          type='submit'
-          disabled={isCreating()}
-        >
+        <Button variant='success' type='submit' disabled={isCreating()}>
           Create
         </Button>
 
-        <Button size='sm' onClick={() => props.onOpenChange?.(false)}>
-          Cancel
-        </Button>
+        <Button onClick={() => props.onOpenChange?.(false)}>Cancel</Button>
       </DialogFooter>
     </Form>
   );
