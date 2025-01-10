@@ -13,8 +13,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --border: 240 5.9% 80%;
+    --input: 240 5.9% 80%;
 
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -69,7 +69,7 @@
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%;
+    --primary: 0 100% 98%;
     --primary-foreground: 240 5.9% 10%;
 
     --secondary: 240 3.7% 15.9%;
@@ -83,7 +83,7 @@
     --info-foreground: 199 89% 48%;
 
     --success: 160 84% 39%;
-    --success-foreground: 149 80% 90%;
+    --success-foreground: 240 5.9% 10%;
 
     --warning: 48 96% 89%;
     --warning-foreground: 25 95% 53%;

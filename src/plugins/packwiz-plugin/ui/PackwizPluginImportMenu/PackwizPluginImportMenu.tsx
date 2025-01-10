@@ -1,9 +1,24 @@
 import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import { Icon } from '@iconify-icon/solid';
+import {
+  createForm,
+  setValue,
+  SubmitHandler,
+  zodForm,
+} from '@modular-forms/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Component, createSignal, splitProps } from 'solid-js';
+import { Component, splitProps } from 'solid-js';
+import { z } from 'zod';
 
-import { Button, TextField, TextFieldInput, TextFieldLabel } from '@/shared/ui';
+import { isAetherLauncherError } from '@/shared/model';
+import {
+  Button,
+  showToast,
+  TextField,
+  TextFieldErrorMessage,
+  TextFieldInput,
+  TextFieldLabel,
+} from '@/shared/ui';
 
 import { callPlugin } from '@/entities/plugins';
 
@@ -25,21 +40,42 @@ type PackwizPluginUpdateData = {
 
 type PackwizPluginData = PackwizPluginImportData | PackwizPluginUpdateData;
 
+const PackwizPluginImportSchema = z.object({
+  packPath: z.string().min(1, {
+    message: 'Pack path is required',
+  }),
+});
+
+type PackwizPluginImportValues = z.infer<typeof PackwizPluginImportSchema>;
+
 export const PackwizPluginImportMenu: Component<
   PackwizPluginImportMenuProps
 > = (props) => {
   const [local, others] = splitProps(props, ['onSubmit']);
 
-  const [packwizUrl, setPackwizUrl] = createSignal('');
+  const [form, { Form, Field }] = createForm({
+    validate: zodForm(PackwizPluginImportSchema),
+  });
 
-  const onSubmit = () => {
-    const data: PackwizPluginData = {
+  const handleSubmit: SubmitHandler<PackwizPluginImportValues> = async (
+    values,
+  ) => {
+    const payload: PackwizPluginData = {
       kind: 'import',
       data: {
-        url: packwizUrl(),
+        url: values.packPath,
       },
     };
-    callPlugin('packwiz', JSON.stringify(data));
+
+    callPlugin('packwiz', JSON.stringify(payload)).catch((error) => {
+      if (isAetherLauncherError(error)) {
+        showToast({
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    });
+
     local.onSubmit?.();
   };
 
@@ -51,41 +87,45 @@ export const PackwizPluginImportMenu: Component<
     });
 
     if (file) {
-      setPackwizUrl(file);
+      setValue(form, 'packPath', file);
     }
   };
 
-  // TODO: fall in pipeline
-  // const onChangeUrl: JSX.EventHandler<HTMLInputElement, InputEvent>
-  const onChangeUrl = (e: Event) =>
-    setPackwizUrl((e.currentTarget as HTMLInputElement).value);
-
   return (
-    <div class='flex flex-col gap-4' {...others}>
+    <Form class='flex flex-col gap-4' onSubmit={handleSubmit} {...others}>
       <div class='flex w-full items-end gap-4'>
-        <TextField class='relative flex w-full flex-col gap-2'>
-          <TextFieldLabel for='packwiz_url'>Packwiz URL or File</TextFieldLabel>
-          <TextFieldInput
-            value={packwizUrl()}
-            onChange={onChangeUrl}
-            type='text'
-            class='pr-24'
-            id='packwiz_url'
-            required
-            autocomplete='off'
-          />
-          <Button
-            class='absolute bottom-1 right-1 aspect-square h-3/6 p-0'
-            variant='secondary'
-            type='button'
-            title='Browse'
-            onClick={onBrowse}
-          >
-            <Icon icon={FileFindOutlineIcon} class='text-xl' />
-          </Button>
-        </TextField>
+        <Field name='packPath'>
+          {(field, props) => (
+            <TextField
+              validationState={field.error ? 'invalid' : 'valid'}
+              class='flex w-full flex-col gap-2'
+            >
+              <TextFieldLabel class='relative flex flex-col gap-2'>
+                Packwiz URL or File
+                <TextFieldInput
+                  value={field.value}
+                  type='text'
+                  class='pr-10'
+                  required
+                  autocomplete='off'
+                  {...props}
+                />
+                <Button
+                  class='absolute bottom-1 right-1 aspect-square h-3/6 p-0'
+                  variant='secondary'
+                  type='button'
+                  title='Browse'
+                  onClick={onBrowse}
+                >
+                  <Icon icon={FileFindOutlineIcon} class='text-xl' />
+                </Button>
+              </TextFieldLabel>
+              <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
+            </TextField>
+          )}
+        </Field>
       </div>
-      <Button onClick={onSubmit}>Import</Button>
-    </div>
+      <Button type='submit'>Import</Button>
+    </Form>
   );
 };

@@ -1,7 +1,13 @@
+import {
+  createForm,
+  getValue,
+  setValue,
+  SubmitHandler,
+  zodForm,
+} from '@modular-forms/solid';
 import { createAsync } from '@solidjs/router';
 import {
   Component,
-  createEffect,
   createMemo,
   createSignal,
   Match,
@@ -9,114 +15,125 @@ import {
   splitProps,
   Switch,
 } from 'solid-js';
-import { createStore } from 'solid-js/store';
 
 import { cn } from '@/shared/lib';
-import { Option } from '@/shared/model';
 import {
   Button,
   Collapsible,
   CollapsibleContent,
+  CombinedTextField,
   DialogFooter,
-  Field,
-  TextField,
-  TextFieldInput,
-  TextFieldLabel,
+  LabeledField,
 } from '@/shared/ui';
 
-import { refetchInstances } from '@/entities/instance';
+import {
+  IncludeSnapshotsCheckbox,
+  refetchInstances,
+} from '@/entities/instance';
 import {
   createMinecraftInstance,
+  getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   InstanceCreateDto,
+  loaderManifestToMapped,
   ModLoader,
-  Version,
 } from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
-import { SelectLoaderChips } from '@/features/select-loader-chips';
-import { SelectLoaderTypeChips } from '@/features/select-loader-version';
+import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';
+import { LoaderVersionTypeChipsToggleGroup } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
 import {
-  CreateCustomInstanceFormProps,
+  CreateCustomInstanceSchema,
+  filterGameVersions,
+  filterGameVersionsForLoader,
+  getLoaderVersionsForGameVersion,
+  loaders,
+  loaderVersionTypes,
+} from '../../model';
+
+import {
+  CreateCustomInstanceFormValues,
   CreateCustomInstanceDialogBodyProps,
 } from '.';
-
-const loaders: Option<ModLoader>[] = [
-  { name: 'Vanilla', value: ModLoader.Vanilla },
-  { name: 'Forge', value: ModLoader.Forge },
-  { name: 'Fabric', value: ModLoader.Fabric },
-  { name: 'Quilt', value: ModLoader.Quilt },
-];
-
-const loaderVersionTypes: Option[] = [
-  {
-    name: 'Stable',
-    value: 'stable',
-  },
-  {
-    name: 'Latest',
-    value: 'latest',
-  },
-  {
-    name: 'Other',
-    value: 'other',
-  },
-];
 
 export const CreateCustomInstanceDialogBody: Component<
   CreateCustomInstanceDialogBodyProps
 > = (props) => {
-  const version_manifest = createAsync(() => getMinecraftVersionManifest());
+  const [local, others] = splitProps(props, ['class', 'onOpenChange']);
 
-  const version_list = createMemo(() => version_manifest()?.versions ?? []);
+  const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
+    validate: zodForm(CreateCustomInstanceSchema),
+    initialValues: {
+      loader: ModLoader.Vanilla,
+      loaderVersionType: loaderVersionTypes[0].value,
+    },
+  });
 
   const [isCreating, setIsCreating] = createSignal(false);
 
   const [isAdvanced, setIsAdvanced] = createSignal(false);
 
-  const [local, others] = splitProps(props, ['class', 'onOpenChange']);
+  const [shouldIncludeSnapshots, setShouldIncludeSnapshots] =
+    createSignal(false);
 
-  const [fields, setFields] = createStore<CreateCustomInstanceFormProps>({
-    name: undefined,
-    gameVersion: undefined,
-    loader: ModLoader.Vanilla,
-    loaderType: 'stable',
-    loaderVersion: undefined,
-  });
+  const versionManifest = createAsync(() => getMinecraftVersionManifest());
 
-  const handleSubmit = async (e: SubmitEvent) => {
-    e.preventDefault();
+  const forgeVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Forge)),
+  );
+  const fabricVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Fabric)),
+  );
+  const quiltVersions = createAsync(async () =>
+    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Quilt)),
+  );
 
-    const data = new FormData(e.target as HTMLFormElement);
+  const loaderVersions = createMemo(() =>
+    getLoaderVersionsForGameVersion(
+      getValue(form, 'loader'),
+      getValue(form, 'gameVersion'),
+      {
+        fabric: fabricVersions(),
+        forge: forgeVersions(),
+        quilt: quiltVersions(),
+      },
+    ),
+  );
 
-    const dataObject = { ...fields, ...Object.fromEntries(data.entries()) };
+  const loaderGameVersions = createMemo(() =>
+    filterGameVersionsForLoader(
+      getValue(form, 'loader'),
+      versionManifest()?.versions ?? [],
+      {
+        fabric: fabricVersions(),
+        forge: forgeVersions(),
+        quilt: quiltVersions(),
+      },
+    ),
+  );
 
-    if (dataObject.gameVersion === undefined) {
-      return;
-    }
+  const filteredGameVersions = createMemo(() =>
+    filterGameVersions(loaderGameVersions(), shouldIncludeSnapshots()),
+  );
 
-    if (dataObject.loader === undefined) {
-      return;
-    }
-
-    if (dataObject.name === undefined) {
-      return;
-    }
-
+  const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
+    values,
+  ) => {
     setIsCreating(true);
 
-    const dto: InstanceCreateDto = {
-      name: dataObject.name,
-      gameVersion: dataObject.gameVersion.id,
-      modLoader: dataObject.loader,
+    const payload: InstanceCreateDto = {
+      name: values.name,
+      gameVersion: values.gameVersion,
+      modLoader: values.loader,
+      loaderVersion: values.loaderVersion,
     };
 
     try {
-      createMinecraftInstance(dto);
       props.onOpenChange?.(false);
       refetchInstances();
+      await createMinecraftInstance(payload);
     } catch (e) {
       console.error(e);
     }
@@ -124,92 +141,118 @@ export const CreateCustomInstanceDialogBody: Component<
     setIsCreating(false);
   };
 
-  createEffect(() => {
-    if (!isAdvanced()) {
-      setFields('loaderType', 'stable');
-    }
-  });
-
   return (
-    <form
+    <Form
       class={cn('flex flex-col gap-4', local.class)}
       onSubmit={handleSubmit}
+      shouldActive
       {...others}
     >
-      <TextField class='flex flex-col gap-2'>
-        <TextFieldLabel for='name'>Name</TextFieldLabel>
-        <TextFieldInput
-          type='text'
-          id='name'
-          name='name'
-          class='max-w-[36ch]'
-          maxLength={32}
-          required
-          autocomplete='off'
-        />
-      </TextField>
-
-      <Field label='Game Version'>
-        <SelectGameVersion
-          class='max-w-[31.5ch]'
-          placeholder='Select game version'
-          advanced={isAdvanced()}
-          value={fields.gameVersion}
-          options={version_list()}
-          onChange={(value: Version | null) =>
-            setFields('gameVersion', value ?? undefined)
-          }
-        />
+      <Field name='name'>
+        {(field, props) => (
+          <CombinedTextField
+            label='Name'
+            value={field.value}
+            errorMessage={field.error}
+            inputProps={{
+              class: 'max-w-[36ch]',
+              maxLength: 32,
+              autocomplete: 'off',
+              type: 'text',
+              ...props,
+            }}
+          />
+        )}
       </Field>
 
-      <Field label='Loader'>
-        <SelectLoaderChips
-          loaders={loaders}
-          defaultValue={loaders[0].value}
-          value={fields.loader}
-          onChange={(value) => {
-            if (
-              value &&
-              Object.values(ModLoader).includes(value as ModLoader)
-            ) {
-              setFields('loader', value as ModLoader);
-            }
-          }}
-        />
-      </Field>
-
-      <Collapsible open={isAdvanced() && fields.loader !== ModLoader.Vanilla}>
-        <CollapsibleContent>
-          <Field label='Loader Version'>
-            <SelectLoaderTypeChips
-              loaderTypes={loaderVersionTypes}
-              value={fields.loaderType}
+      <LabeledField label='Loader'>
+        <Field name='loader'>
+          {(field) => (
+            <LoaderChipsToggleGroup
+              loaders={loaders}
+              value={field.value}
               onChange={(value) => {
-                if (value) {
-                  setFields('loaderType', value);
-                }
+                setValue(form, 'loader', value as ModLoader);
+                setValue(form, 'loaderVersion', undefined);
               }}
             />
-          </Field>
+          )}
+        </Field>
+      </LabeledField>
 
-          <Show when={fields.loaderType === 'other'}>
+      <LabeledField label='Game Version'>
+        <div class='flex items-start gap-2'>
+          <Field name='gameVersion'>
+            {(field, props) => (
+              <SelectGameVersion
+                class='max-w-[31.5ch]'
+                placeholder='Select game version'
+                options={filteredGameVersions()}
+                errorMessage={field.error}
+                {...props}
+                onChange={(value) => {
+                  if (value) {
+                    setValue(form, 'gameVersion', value.id);
+                  }
+                }}
+              />
+            )}
+          </Field>
+          <IncludeSnapshotsCheckbox
+            class='mt-2'
+            show={isAdvanced()}
+            checked={shouldIncludeSnapshots()}
+            onChange={setShouldIncludeSnapshots}
+          />
+        </div>
+      </LabeledField>
+
+      <Collapsible
+        open={isAdvanced() && getValue(form, 'loader') !== ModLoader.Vanilla}
+      >
+        <CollapsibleContent class='p-2'>
+          <LabeledField label='Loader Version'>
+            <Field name='loaderVersionType'>
+              {(field) => (
+                <LoaderVersionTypeChipsToggleGroup
+                  loaderTypes={loaderVersionTypes}
+                  value={field.value}
+                  onChange={(value) => {
+                    if (value) {
+                      setValue(form, 'loaderVersionType', value);
+                    }
+                  }}
+                />
+              )}
+            </Field>
+          </LabeledField>
+
+          <Show when={getValue(form, 'loaderVersionType') === 'other'}>
             <Show
-              when={fields.gameVersion !== undefined}
+              when={getValue(form, 'gameVersion') !== undefined}
               fallback={
                 <span class='italic'>
                   Select a game version before you select a loader version
                 </span>
               }
             >
-              <Field label='Select version'>
-                <SelectSpecificLoaderVersion
-                  placeholder='Select loader version'
-                  // TODO
-                  options={[]}
-                  //@ts-expect-error TODO: fix
-                  onChange={(value) => setFields('loaderVersion', value?.id)}
-                />
-              </Field>
+              <LabeledField label='Select version'>
+                <Field name='loaderVersion'>
+                  {(field, props) => (
+                    <SelectSpecificLoaderVersion
+                      placeholder='Select loader version'
+                      options={loaderVersions()}
+                      errorMessage={field.error}
+                      {...props}
+                      onChange={(value) => {
+                        if (value) {
+                          setValue(form, 'loaderVersion', value.id);
+                        }
+                      }}
+                    />
+                  )}
+                </Field>
+              </LabeledField>
             </Show>
           </Show>
         </CollapsibleContent>
@@ -218,7 +261,6 @@ export const CreateCustomInstanceDialogBody: Component<
       <DialogFooter>
         <Button
           class='mb-2 sm:mb-0 sm:mr-auto'
-          size='sm'
           onClick={() => setIsAdvanced(!isAdvanced())}
         >
           <Switch>
@@ -227,19 +269,12 @@ export const CreateCustomInstanceDialogBody: Component<
           </Switch>
         </Button>
 
-        <Button
-          size='sm'
-          variant='success'
-          type='submit'
-          disabled={isCreating()}
-        >
+        <Button variant='success' type='submit' disabled={isCreating()}>
           Create
         </Button>
 
-        <Button size='sm' onClick={() => props.onOpenChange?.(false)}>
-          Cancel
-        </Button>
+        <Button onClick={() => props.onOpenChange?.(false)}>Cancel</Button>
       </DialogFooter>
-    </form>
+    </Form>
   );
 };

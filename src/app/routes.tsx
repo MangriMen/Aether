@@ -8,11 +8,11 @@ import { HomePage } from '@/pages/home-page';
 import { SettingsPage } from '@/pages/settings-page';
 
 import { initializeApp } from './lib';
-import { ColorModeObserver } from './ui';
+import { AppRoot } from './ui';
 
 export const AppRouter: Component = () => {
   return (
-    <Router root={ColorModeObserver} rootPreload={initializeApp}>
+    <Router root={AppRoot} rootPreload={initializeApp}>
       <Route path='*' component={AppLayout}>
         <Route path='/' component={MainLayout}>
           <Route path='/' component={HomePage} />

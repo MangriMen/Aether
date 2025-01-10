@@ -33,8 +33,7 @@ export interface Version {
 /// The latest snapshot and release of the game
 export interface LatestVersion {
   /// The version id of the latest release
-  release: string;
-  /// The version id of the latest snapshot
+  release: string; /// The version id of the latest snapshot
   snapshot: string;
 }
 
