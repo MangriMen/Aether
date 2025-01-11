@@ -25,27 +25,33 @@ export const SelectSpecificLoaderVersion = <
   return (
     <Select
       class={cn('flex flex-col gap-2 w-full', local.class)}
+      virtualized
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionValue={'id'}
       optionTextValue={'id'}
-      itemComponent={(props) => (
-        <SelectItem item={props.item}>
-          <div class='inline-flex gap-2'>
-            {props.item.rawValue.id}
-            {props.item.rawValue.stable ? (
-              <Badge variant='default'>stable</Badge>
-            ) : (
-              ''
-            )}
-          </div>
-        </SelectItem>
-      )}
       {...others}
     >
       <SelectTrigger>
         <SelectValue<T>>{(state) => state.selectedOption()?.id}</SelectValue>
       </SelectTrigger>
-      <SelectContent class='max-h-[148px] overflow-y-auto' />
+      <SelectContent
+        class='max-h-[148px] overflow-y-auto'
+        virtualized
+        options={others.options}
+        optionValue={'id'}
+        itemComponent={(props) => (
+          <SelectItem item={props.item} style={props.style}>
+            <div class='inline-flex gap-2'>
+              {props.item.rawValue.id}
+              {props.item.rawValue.stable ? (
+                <Badge variant='default'>stable</Badge>
+              ) : (
+                ''
+              )}
+            </div>
+          </SelectItem>
+        )}
+      />
       <SelectErrorMessage>{local.errorMessage}</SelectErrorMessage>
     </Select>
   );

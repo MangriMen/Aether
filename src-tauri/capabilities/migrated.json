@@ -20,6 +20,7 @@
     "shell:allow-open",
     "shell:default",
     "log:default",
-    "dialog:default"
+    "dialog:default",
+    "os:default"
   ]
 }

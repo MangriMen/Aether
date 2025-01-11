@@ -15,11 +15,12 @@ use api::tauri::{
     get_loader_versions_manifest, get_minecraft_instance_process, get_minecraft_instances,
     get_minecraft_version_manifest, get_progress_bars, get_running_minecraft_instances,
     initialize_state, launch_minecraft_instance, logout, remove_minecraft_instance,
-    stop_minecraft_instance,
+    reveal_in_explorer, stop_minecraft_instance,
 };
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -52,6 +53,7 @@ fn main() {
             launch_minecraft_instance,
             remove_minecraft_instance,
             get_accounts,
+            reveal_in_explorer,
             create_offline_account,
             change_account,
             logout
