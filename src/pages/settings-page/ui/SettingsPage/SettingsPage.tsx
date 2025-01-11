@@ -1,5 +1,7 @@
 import { Component } from 'solid-js';
 
+import { AppVersion } from '@/entities/settings';
+
 import { SelectColorMode } from '@/features/select-color-mode';
 
 import { SettingsEntry } from '../SettingsEntry';
@@ -9,7 +11,7 @@ import { SettingsPageProps } from './types';
 
 export const SettingsPage: Component<SettingsPageProps> = (props) => {
   return (
-    <div class='size-full p-4' {...props}>
+    <div class='flex size-full flex-col p-4' {...props}>
       <SettingsPane title='Launcher'>
         <SettingsEntry
           title='Color theme'
@@ -18,6 +20,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
           <SelectColorMode id='color-mode' />
         </SettingsEntry>
       </SettingsPane>
+      <AppVersion class='mt-auto' />
     </div>
   );
 };

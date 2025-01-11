@@ -30,6 +30,7 @@ tauri-plugin-log = "2"
 log = "0.4.22"
 dashmap = { version = "6.1.0", features = ["serde"] }
 tauri-plugin-dialog = "2"
+tauri-plugin-os = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
