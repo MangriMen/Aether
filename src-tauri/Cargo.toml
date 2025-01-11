@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.3.0"
+version = "0.3.1"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -30,6 +30,8 @@ tauri-plugin-log = "2"
 log = "0.4.22"
 dashmap = { version = "6.1.0", features = ["serde"] }
 tauri-plugin-dialog = "2"
+tauri-plugin-os = "2"
+open = { version = "5.3.2", features = ["shellexecute-on-windows"] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

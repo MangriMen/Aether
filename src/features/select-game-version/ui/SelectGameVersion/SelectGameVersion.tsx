@@ -22,13 +22,11 @@ export function SelectGameVersion<T extends Version = Version>(
   return (
     <Select
       class={cn('flex flex-col gap-2 w-full', local.class)}
+      virtualized
       value={local.value}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionValue={'id'}
       optionTextValue={'id'}
-      itemComponent={(props) => (
-        <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
-      )}
       {...others}
     >
       <SelectTrigger>
@@ -36,7 +34,17 @@ export function SelectGameVersion<T extends Version = Version>(
           {(state) => state.selectedOption()?.id ?? local.value?.id}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent class='max-h-[148px] overflow-y-auto' />
+      <SelectContent
+        class='max-h-[148px] overflow-y-auto'
+        virtualized
+        options={others.options}
+        optionValue={'id'}
+        itemComponent={(props) => (
+          <SelectItem item={props.item} style={props.style}>
+            {props.item.textValue}
+          </SelectItem>
+        )}
+      />
       <SelectErrorMessage>{local.errorMessage}</SelectErrorMessage>
     </Select>
   );
