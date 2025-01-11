@@ -14,6 +14,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'onPlay',
+    'onOpenFolder',
     'onRemove',
     'isLoading',
     'children',
@@ -29,6 +30,13 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
           disabled={local.isLoading}
         >
           Play
+        </ContextMenuItem>
+        <ContextMenuItem
+          class='w-full'
+          onClick={local.onOpenFolder}
+          disabled={local.isLoading}
+        >
+          Open folder
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
