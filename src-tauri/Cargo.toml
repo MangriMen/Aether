@@ -1,37 +1,41 @@
 [package]
 name = "aether"
 version = "0.3.1"
-description = "A Tauri App"
-authors = ["you"]
+description = "Desktop application for managing Minecraft instances and mods"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+tauri-plugin-os = "2"
+tauri-plugin-shell = "2"
+
+tokio = { version = "1.39.2", features = ["full"] }
+anyhow = "1.0.87"
+thiserror = "1.0.63"
+log = "0.4.22"
+
+uuid = { version = "1.10.0", features = ["serde", "v4"] }
+
+async-event-emitter = "0.1.3"
+event-emitter-rs = "0.1.4"
+
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-tokio = { version = "1.39.2", features = ["full"] }
+dashmap = { version = "6.1.0", features = ["serde"] }
+open = { version = "5.3.2", features = ["shellexecute-on-windows"] }
+
+daedalus = "0.2.3"
 
 aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.3.0" }
-# aether-core = { path = "../../aether-core/aether-core" }
-anyhow = "1.0.87"
-daedalus = "0.2.3"
-thiserror = "1.0.63"
-tauri-plugin-shell = "2"
-async-event-emitter = "0.1.3"
-event-emitter-rs = "0.1.4"
-uuid = { version = "1.10.0", features = ["serde", "v4"] }
-tauri-plugin-log = "2"
-log = "0.4.22"
-dashmap = { version = "6.1.0", features = ["serde"] }
-tauri-plugin-dialog = "2"
-tauri-plugin-os = "2"
-open = { version = "5.3.2", features = ["shellexecute-on-windows"] }
+
+[patch."https://github.com/MangriMen/aether-core"]
+aether-core = { path = "../../aether-core/aether-core" }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
