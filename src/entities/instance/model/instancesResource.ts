@@ -1,12 +1,26 @@
-import { createResource } from 'solid-js';
+import { createResource, createSignal } from 'solid-js';
 
 // eslint-disable-next-line boundaries/element-types
-import { getMinecraftInstances } from '@/entities/minecraft';
+import { getMinecraftInstances, Instance } from '@/entities/minecraft';
+
+const mapInstancesToIds = (
+  instances: Instance[] | undefined,
+): Record<string, Instance> | undefined => {
+  return instances?.reduce<Record<string, Instance>>((acc, instance) => {
+    acc[instance.id] = instance;
+    return acc;
+  }, {});
+};
 
 const instancesResource = createResource(
   () => {
     try {
-      return getMinecraftInstances();
+      const res = getMinecraftInstances();
+      res.then((instances) =>
+        setMappedInstances(mapInstancesToIds(instances?.[0])),
+      );
+
+      return res;
     } catch {
       console.error("Can't get minecraft instances");
     }
@@ -16,10 +30,16 @@ const instancesResource = createResource(
   },
 );
 
-export const getInstances = () => {
+const [mappedInstances, setMappedInstances] = createSignal<
+  Record<string, Instance> | undefined
+>();
+
+export const useInstances = () => {
   return instancesResource[0];
 };
 
 export const refetchInstances = () => {
   instancesResource[1].refetch();
 };
+
+export const useMappedInstances = () => mappedInstances;

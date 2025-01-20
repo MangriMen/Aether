@@ -10,7 +10,7 @@ import {
 
 import { cn } from '@/shared/lib';
 
-import { getInstances, refetchInstances } from '@/entities/instance';
+import { useInstances, refetchInstances } from '@/entities/instance';
 
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
 
@@ -19,7 +19,7 @@ import { InstancesPanelProps } from './types';
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const instances = getInstances();
+  const instances = useInstances();
 
   createEffect(() => {
     refetchInstances();

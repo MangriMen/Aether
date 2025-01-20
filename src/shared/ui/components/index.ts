@@ -13,6 +13,7 @@ export * from './Popover';
 export * from './Progress';
 export * from './ProgressCircle';
 export * from './Select';
+export * from './Separator';
 export * from './Sidebar';
 export * from './Switch';
 export * from './Tabs';

@@ -1,15 +1,8 @@
+import { useNavigate } from '@solidjs/router';
 // eslint-disable-next-line import/named
-import { UnlistenFn } from '@tauri-apps/api/event';
-import {
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  onCleanup,
-  Show,
-} from 'solid-js';
+import { Component, createMemo, createSignal, Show } from 'solid-js';
 
-import { isAetherLauncherError } from '@/shared/model';
+import { preventAll } from '@/shared/lib';
 import {
   Button,
   ContextMenuTrigger,
@@ -18,177 +11,64 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  showToast,
 } from '@/shared/ui';
 
 import {
   InstanceCard,
   InstanceContextMenu,
-  listenProcess,
-  openInstanceFolder,
-  refetchInstances,
+  useInstanceActions,
+  useRunningInstancesContext,
 } from '@/entities/instance';
-import {
-  Instance,
-  InstanceInstallStage,
-  launchMinecraftInstance,
-  ProcessPayload,
-  ProcessPayloadType,
-  removeMinecraftInstance,
-  stopMinecraftInstance,
-} from '@/entities/minecraft';
+import { Instance } from '@/entities/minecraft';
 
 import { InstanceControlledCardProps } from './types';
 
 export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   props,
 ) => {
-  const [isRunning, setIsRunning] = createSignal(false);
-  const [isLoading, setIsLoading] = createSignal(false);
-
-  const [processPayload, setProcessPayload] = createSignal<
-    ProcessPayload | undefined
-  >(undefined);
-
-  let processListenerUnlistenFn: UnlistenFn | undefined;
+  const navigate = useNavigate();
 
   const id = createMemo(() => props.instance.id);
+
+  const context = useRunningInstancesContext();
+  const runningInstance = createMemo(() => context[0].instances[id()]);
+
+  const {
+    handleInstanceLaunch,
+    handleInstanceRemove,
+    handleInstanceStop,
+    handleOpenFolder,
+  } = useInstanceActions();
 
   const [instanceToRemove, setInstanceToRemove] = createSignal<
     Instance | undefined
   >();
 
-  const stopProcessListener = () => processListenerUnlistenFn?.();
-
-  const startProcessListener = (id: string) =>
-    listenProcess((e) => {
-      if (e.payload.instanceId === id) {
-        setProcessPayload(e.payload);
-        const isLaunched = e.payload.event === ProcessPayloadType.Launched;
-        setIsLoading(false);
-        setIsRunning(isLaunched);
-      }
-    });
-
-  createEffect(() => {
-    (async () => {
-      processListenerUnlistenFn = await startProcessListener(id());
-    })();
-  });
-
-  onCleanup(() => {
-    stopProcessListener();
-  });
-
-  const handleInstanceLaunch = async (instance: Instance) => {
-    if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      isLoading() ||
-      isRunning()
-    ) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await launchMinecraftInstance(instance.id);
-    } catch (e) {
-      setIsLoading(false);
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to launch ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
-  const handleInstanceStop = async (instance: Instance) => {
-    if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      isLoading()
-    ) {
-      return;
-    }
-
-    const uuid = processPayload()?.uuid;
-    if (uuid === undefined) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await stopMinecraftInstance(uuid);
-    } catch (e) {
-      setIsLoading(false);
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to stop ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
-  const handleOpenFolder = async (instance: Instance) => {
-    if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      isLoading() ||
-      isRunning()
-    ) {
-      return;
-    }
-
-    try {
-      await openInstanceFolder(instance);
-    } catch (e) {
-      showToast({
-        title: 'Failed to open folder',
-        description: `Instance path: ${instance.path}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleInstanceRemove = async (instance: Instance) => {
-    if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      isLoading() ||
-      isRunning()
-    ) {
-      return;
-    }
-
-    try {
-      await removeMinecraftInstance(instance.id);
-      refetchInstances();
-    } catch (e) {
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to remove ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
-    }
+  const goToInstancePage = () => {
+    navigate(`/instances/${props.instance.id}`);
   };
 
   return (
     <>
       <InstanceContextMenu
-        isLoading={isLoading()}
+        isLoading={runningInstance()?.isLoading}
         onPlay={() => handleInstanceLaunch(props.instance)}
         onOpenFolder={() => handleOpenFolder(props.instance)}
         onRemove={() => setInstanceToRemove(props.instance)}
       >
         <ContextMenuTrigger>
           <InstanceCard
-            isRunning={isRunning()}
-            isLoading={isLoading()}
-            onLaunchClick={() => handleInstanceLaunch(props.instance)}
-            onStopClick={() => handleInstanceStop(props.instance)}
+            isRunning={runningInstance()?.isRunning}
+            isLoading={runningInstance()?.isLoading}
+            onClick={goToInstancePage}
+            onLaunchClick={(e) => {
+              preventAll(e);
+              handleInstanceLaunch(props.instance);
+            }}
+            onStopClick={(e) => {
+              preventAll(e);
+              handleInstanceStop(props.instance);
+            }}
             {...props}
           />
         </ContextMenuTrigger>

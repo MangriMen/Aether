@@ -35,7 +35,7 @@ export interface Instance {
   // Additional information
   created: Date;
   modified: Date;
-  lastPlayed?: Date;
+  lastPlayed?: string;
 
   timePlayed: number;
   recent_time_played: number;

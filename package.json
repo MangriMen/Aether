@@ -26,6 +26,7 @@
     "@tauri-apps/plugin-shell": "^2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
     "solid-js": "^1.8.22",
     "tailwind-merge": "^2.5.3",
     "tailwindcss-animate": "^1.0.7",
