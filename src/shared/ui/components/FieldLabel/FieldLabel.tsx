@@ -7,5 +7,5 @@ import { FieldLabelProps } from '.';
 export const FieldLabel: Component<FieldLabelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  return <span class={cn('text-sm font-medium', local.class)} {...others} />;
+  return <span class={cn('font-medium', local.class)} {...others} />;
 };

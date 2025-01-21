@@ -18,7 +18,7 @@ export const LabeledField: Component<FieldProps> = (props) => {
   );
 
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <div class={cn('flex flex-col gap-2 text-sm', local.class)} {...others}>
       {labelElement()}
       {local.children}
     </div>

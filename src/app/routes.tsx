@@ -27,7 +27,9 @@ export const AppRouter: Component = () => {
           <Route path='/' component={RunningInstancesProvider}>
             <Route path='/' component={HomePage} />
             <Route path='/settings' component={SettingsPage} />
-            <Route path='/instances/:id' component={InstancePage} />
+            <Route path='/instances'>
+              <Route path=':id/*' component={InstancePage} />
+            </Route>
           </Route>
         </Route>
       </Route>

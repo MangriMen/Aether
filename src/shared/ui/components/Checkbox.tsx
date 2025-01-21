@@ -21,10 +21,7 @@ const Checkbox = <T extends ValidComponent = 'div'>(
 
   return (
     <CheckboxPrimitive.Root
-      class={cn(
-        'items-top group inline-flex items-center space-x-2',
-        local.class,
-      )}
+      class={cn('items-top group inline-flex items-center gap-2', local.class)}
       {...others}
     >
       <CheckboxPrimitive.Input class='peer' />
