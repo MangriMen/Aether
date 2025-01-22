@@ -32,12 +32,12 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
         {/* <Match when={instances.loading}>
           <ProgressCircle />
         </Match> */}
-        <Match when={!instances.loading}>
+        <Match when={instances?.() && !instances.loading}>
           <Show
-            when={instances()?.[0]?.length}
+            when={instances?.()?.[0]?.length}
             fallback={<span class='m-auto'>You don't have instances</span>}
           >
-            <For each={instances()?.[0]}>
+            <For each={instances?.()?.[0]}>
               {(instance) => <InstanceControlledCard instance={instance} />}
             </For>
           </Show>

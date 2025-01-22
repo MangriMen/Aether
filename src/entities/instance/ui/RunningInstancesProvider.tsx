@@ -4,10 +4,11 @@ import { Component, createEffect, JSX, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 // eslint-disable-next-line boundaries/element-types
-import { Instance, ProcessPayloadType } from '@/entities/minecraft';
+import { ProcessPayloadType } from '@/entities/minecraft';
 
 import { listenProcess } from '../api';
 import {
+  Instance,
   RunningInstancesContext,
   RunningInstancesContextValue,
 } from '../model';

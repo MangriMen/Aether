@@ -10,8 +10,7 @@ import {
 
 import { IconButton, IconButtonProps, PlayIcon } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
-import { InstanceInstallStage } from '@/entities/minecraft';
+import { InstanceInstallStage } from '@/entities/instance';
 
 export type InstanceActionButtonProps = IconButtonProps & {
   installStage: InstanceInstallStage;

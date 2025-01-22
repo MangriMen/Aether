@@ -11,11 +11,12 @@ pub use utils::result::*;
 use tauri::Manager;
 
 use api::tauri::{
-    call_plugin, change_account, create_minecraft_instance, create_offline_account, get_accounts,
-    get_loader_versions_manifest, get_minecraft_instance_process, get_minecraft_instances,
-    get_minecraft_version_manifest, get_progress_bars, get_running_minecraft_instances,
-    initialize_state, launch_minecraft_instance, logout, remove_minecraft_instance,
-    reveal_in_explorer, stop_minecraft_instance,
+    call_plugin, change_account, create_minecraft_instance, create_offline_account,
+    edit_minecraft_instance, get_accounts, get_loader_versions_manifest,
+    get_minecraft_instance_process, get_minecraft_instances, get_minecraft_version_manifest,
+    get_progress_bars, get_running_minecraft_instances, initialize_state,
+    launch_minecraft_instance, logout, remove_minecraft_instance, reveal_in_explorer,
+    stop_minecraft_instance,
 };
 
 fn main() {
@@ -42,6 +43,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             call_plugin,
             create_minecraft_instance,
+            edit_minecraft_instance,
             get_minecraft_instances,
             get_minecraft_version_manifest,
             get_loader_versions_manifest,

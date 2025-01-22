@@ -1,5 +1,4 @@
-// eslint-disable-next-line boundaries/element-types
-import { Instance } from '@/entities/minecraft';
+import { Instance } from '@/entities/instance';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;

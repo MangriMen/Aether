@@ -18,8 +18,8 @@ import {
   InstanceContextMenu,
   useInstanceActions,
   useRunningInstancesContext,
+  Instance,
 } from '@/entities/instance';
-import { Instance } from '@/entities/minecraft';
 
 import { InstanceControlledCardProps } from './types';
 

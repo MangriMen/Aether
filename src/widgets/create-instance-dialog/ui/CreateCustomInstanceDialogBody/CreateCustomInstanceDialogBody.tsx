@@ -29,12 +29,12 @@ import {
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
+  createMinecraftInstance,
+  InstanceCreateDto,
 } from '@/entities/instance';
 import {
-  createMinecraftInstance,
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
-  InstanceCreateDto,
   loaderManifestToMapped,
   ModLoader,
 } from '@/entities/minecraft';

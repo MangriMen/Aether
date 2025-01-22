@@ -7,15 +7,12 @@ import {
   openInstanceFolder,
   refetchInstances,
   RunningInstancesContext,
-} from '@/entities/instance';
-import {
   Instance,
   InstanceInstallStage,
   launchMinecraftInstance,
   removeMinecraftInstance,
   stopMinecraftInstance,
-  // eslint-disable-next-line boundaries/element-types
-} from '@/entities/minecraft';
+} from '@/entities/instance';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(

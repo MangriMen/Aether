@@ -13,8 +13,8 @@ import {
   InstanceActionButton,
   useInstanceActions,
   useRunningInstancesContext,
+  Instance,
 } from '@/entities/instance';
-import { Instance } from '@/entities/minecraft';
 
 export type InstanceHeaderProps = ComponentProps<'div'> & {
   instance: Instance;

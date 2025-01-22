@@ -1,13 +1,16 @@
 use aether_core::state::{Instance, MinecraftProcessMetadata};
 use uuid::Uuid;
 
-use crate::{models::minecraft::InstanceCreateDto, AetherLauncherResult};
+use crate::{
+    models::minecraft::{InstanceCreateDto, InstanceEditDto},
+    AetherLauncherResult,
+};
 
 #[tauri::command]
 pub async fn create_minecraft_instance(
     instance_create_dto: InstanceCreateDto,
 ) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::instance_create(
+    Ok(aether_core::api::instance::create(
         instance_create_dto.name,
         instance_create_dto.game_version,
         instance_create_dto.mod_loader,
@@ -15,6 +18,24 @@ pub async fn create_minecraft_instance(
         instance_create_dto.icon_path,
         instance_create_dto.skip_install_profile,
         None,
+    )
+    .await?)
+}
+
+#[tauri::command]
+pub async fn edit_minecraft_instance(
+    id: String,
+    instance_edit_dto: InstanceEditDto,
+) -> AetherLauncherResult<()> {
+    print!("{:?}", instance_edit_dto);
+    Ok(aether_core::api::instance::edit(
+        &id,
+        &instance_edit_dto.name,
+        &instance_edit_dto.java_path,
+        &instance_edit_dto.extra_launch_args,
+        &instance_edit_dto.custom_env_vars,
+        &instance_edit_dto.memory,
+        &instance_edit_dto.game_resolution,
     )
     .await?)
 }

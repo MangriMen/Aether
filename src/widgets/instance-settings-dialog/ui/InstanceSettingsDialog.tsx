@@ -7,14 +7,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Separator,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/shared/ui';
 
-import { Instance } from '@/entities/minecraft';
+import { Instance } from '@/entities/instance';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
@@ -33,7 +32,7 @@ const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
 
   return (
     <Dialog defaultOpen open={true} {...others}>
-      <DialogContent class='w-[900px] max-w-full'>
+      <DialogContent class='w-[900px] max-w-full bg-secondary-dark'>
         <DialogHeader>
           <DialogTitle>{local.instance.name}</DialogTitle>
         </DialogHeader>
@@ -42,11 +41,11 @@ const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
           defaultValue={InstanceSettingsDialogTabs.General}
           orientation='vertical'
         >
-          <TabsList class='min-w-40 justify-start bg-background pr-3'>
+          <TabsList class='min-w-40 justify-start bg-secondary-dark p-0'>
             <For each={INSTANCE_SETTINGS_TABS_TRIGGER}>
               {(tab) => (
                 <TabsTrigger
-                  class='w-full justify-start gap-2 data-[selected]:bg-muted'
+                  class='w-full justify-start gap-2'
                   value={tab.value}
                 >
                   <Icon class='text-lg' icon={tab.icon} />
@@ -55,10 +54,12 @@ const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
               )}
             </For>
           </TabsList>
-          <Separator orientation='vertical' />
           <For each={INSTANCE_SETTINGS_TABS_CONTENT}>
             {(tabContent) => (
-              <TabsContent class='pl-2' value={tabContent.value}>
+              <TabsContent
+                class='data-[orientation=vertical]:ml-8'
+                value={tabContent.value}
+              >
                 <tabContent.component instance={local.instance} />
               </TabsContent>
             )}

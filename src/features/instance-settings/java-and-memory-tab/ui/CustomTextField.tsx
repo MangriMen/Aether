@@ -11,6 +11,7 @@ import {
 export type CustomTextFieldProps = CombinedTextFieldProps & {
   fieldLabel?: string;
   placeholder?: string;
+  onChange?: (value: string | null) => void;
 };
 
 const CustomTextField: Component<CustomTextFieldProps> = (props) => {
@@ -18,20 +19,42 @@ const CustomTextField: Component<CustomTextFieldProps> = (props) => {
     'fieldLabel',
     'placeholder',
     'label',
+    'onChange',
     'inputProps',
     'class',
   ]);
 
-  const [custom, setCustom] = createSignal(false);
+  const [custom, setCustom] = createSignal(!!others.defaultValue);
+  const [value, setValue] = createSignal(others.defaultValue);
+
+  const handleSetCustom = (val: boolean) => {
+    setCustom(val);
+    if (!val) {
+      local.onChange?.(null);
+    } else {
+      local.onChange?.(value() ?? null);
+    }
+  };
+
+  const handleChange = (value: string) => {
+    setValue(value);
+    local.onChange?.(value);
+  };
 
   return (
     <LabeledField class={cn('text-base', local.class)} label={local.fieldLabel}>
-      <Checkbox checked={custom()} onChange={setCustom} label={local.label} />
+      <Checkbox
+        checked={custom()}
+        onChange={handleSetCustom}
+        label={local.label}
+      />
       <CombinedTextField
         disabled={!custom()}
+        value={value()}
         inputProps={{
           type: 'text',
           placeholder: local.placeholder,
+          onBlur: (e) => handleChange(e.target.value),
           ...local.inputProps,
         }}
         {...others}

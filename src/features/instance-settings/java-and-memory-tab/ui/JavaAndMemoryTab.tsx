@@ -1,8 +1,14 @@
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import { debounce } from '@solid-primitives/scheduled';
+import { Component, ComponentProps, createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { InstanceSettingsTabProps } from '@/entities/instance';
+import {
+  editMinecraftInstance,
+  Instance,
+  InstanceEditDto,
+  InstanceSettingsTabProps,
+} from '@/entities/instance';
 
 import CustomMemory from './CustomMemory';
 import CustomTextField from './CustomTextField';
@@ -13,17 +19,44 @@ export type JavaAndMemoryTabProps = ComponentProps<'div'> &
 const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const handleChangeMemory = (value: number) => {
-    console.log('Memory: ', value);
+  const handleChangeMemoryDebounce = debounce(
+    (id: Instance['id'], value: number | null) => {
+      const dto: InstanceEditDto = {
+        memory: value ? { maximum: value } : undefined,
+      };
+      editMinecraftInstance(id, dto);
+    },
+    1000,
+  );
+
+  const handleChangeMemory = (value: number | null) => {
+    handleChangeMemoryDebounce(local.instance.id, value);
   };
 
-  const handleChangeArguments = (value: string) => {
-    console.log('Arguments: ', value);
+  const handleChangeArguments = (value: string | null) => {
+    const extraLaunchArgs = value?.split(' ');
+    editMinecraftInstance(local.instance.id, {
+      extraLaunchArgs,
+    });
   };
 
-  const handleChangeEnvironmentVariables = (value: string) => {
-    console.log('Environment variables: ', value);
+  const handleChangeEnvironmentVariables = (value: string | null) => {
+    const customEnvVars = value
+      ?.split(' ')
+      .map((variable) => variable.split('=', 2) as [string, string]);
+    editMinecraftInstance(local.instance.id, {
+      customEnvVars,
+    });
   };
+
+  const defaultJavaArguments = createMemo(() =>
+    local.instance.extraLaunchArgs?.join(' '),
+  );
+  const defaultEnvironmentVariables = createMemo(() =>
+    local.instance.customEnvVars
+      ?.map(([key, value]) => `${key}=${value}`)
+      ?.join(' '),
+  );
 
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
@@ -32,23 +65,18 @@ const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
         onChange={handleChangeMemory}
       />
       <CustomTextField
+        defaultValue={defaultJavaArguments()}
         fieldLabel='Java arguments'
         label='Custom arguments'
         placeholder='Enter arguments'
-        inputProps={{
-          type: 'text',
-          onBlur: (value) => handleChangeArguments(value.target.value),
-        }}
+        onChange={handleChangeArguments}
       />
       <CustomTextField
+        defaultValue={defaultEnvironmentVariables()}
         fieldLabel='Environment arguments'
         label='Custom environment variables'
         placeholder='Enter environment variables'
-        inputProps={{
-          type: 'text',
-          onBlur: (value) =>
-            handleChangeEnvironmentVariables(value.target.value),
-        }}
+        onChange={handleChangeEnvironmentVariables}
       />
     </div>
   );

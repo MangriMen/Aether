@@ -13,14 +13,14 @@ import { MemorySlider } from '@/entities/instance';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   defaultValue?: number;
-  onChange?: (value: number) => void;
+  onChange?: (value: number | null) => void;
 };
 
 const minMemory = 512;
 const maxMemory = 32692;
 
-const getClampedMemory = (value: number | undefined) => {
-  if (value === undefined || value < minMemory) {
+const getClampedMemory = (value: number | null) => {
+  if (value === null || value < minMemory) {
     return minMemory;
   } else if (value > maxMemory) {
     return maxMemory;
@@ -39,17 +39,29 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const [memory, setMemory] = createSignal(minMemory);
   const [inputMemory, setInputMemory] = createSignal(minMemory.toString());
 
-  const setMemoryValue = (value: number | undefined) => {
+  const setMemoryValue = (
+    value: number | null,
+    clampCallback: boolean = true,
+  ) => {
     const clampedMemory = getClampedMemory(value);
     setMemory(clampedMemory);
     setInputMemory(clampedMemory.toString());
-    local.onChange?.(clampedMemory);
+    local.onChange?.(clampCallback ? clampedMemory : value);
+  };
+
+  const handleSetCustomMemory = (value: boolean) => {
+    setCustomMemory(value);
+    if (!value) {
+      setMemoryValue(null, false);
+    } else {
+      setMemoryValue(memory());
+    }
   };
 
   createEffect(() => {
     setCustomMemory(!!local.defaultValue);
 
-    const clampedMemory = getClampedMemory(local.defaultValue);
+    const clampedMemory = getClampedMemory(local.defaultValue ?? null);
     setInputMemory(clampedMemory.toString());
     setMemory(clampedMemory);
   });
@@ -62,7 +74,7 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
     >
       <Checkbox
         checked={customMemory()}
-        onChange={setCustomMemory}
+        onChange={handleSetCustomMemory}
         label='Custom memory'
       />
       <div class='flex items-start gap-4'>
