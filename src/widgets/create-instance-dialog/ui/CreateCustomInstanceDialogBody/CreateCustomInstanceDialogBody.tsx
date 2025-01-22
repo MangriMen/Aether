@@ -270,7 +270,7 @@ export const CreateCustomInstanceDialogBody: Component<
           </Switch>
         </Button>
 
-        <Button variant='success' type='submit' disabled={isCreating()}>
+        <Button type='submit' disabled={isCreating()}>
           Create
         </Button>
 
