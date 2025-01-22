@@ -57,7 +57,7 @@ const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
           <For each={INSTANCE_SETTINGS_TABS_CONTENT}>
             {(tabContent) => (
               <TabsContent
-                class='data-[orientation=vertical]:ml-8'
+                class='h-max duration-300 animate-in slide-in-from-bottom-6 data-[orientation=vertical]:ml-8'
                 value={tabContent.value}
               >
                 <tabContent.component instance={local.instance} />
