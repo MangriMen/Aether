@@ -44,7 +44,7 @@ export const CreateInstancePluginsMenu: Component<
   return (
     <div {...others}>
       <Tabs defaultValue={tabs()[0].value} orientation='vertical'>
-        <TabsList>
+        <TabsList class='bg-secondary-dark p-0'>
           <For each={tabs()}>
             {(tab) => (
               <TabsTrigger
@@ -60,7 +60,10 @@ export const CreateInstancePluginsMenu: Component<
         </TabsList>
         <For each={tabs()}>
           {(tab) => (
-            <TabsContent class='rounded-md border p-2' value={tab.value}>
+            <TabsContent
+              class='h-[294px] data-[orientation=vertical]:ml-6'
+              value={tab.value}
+            >
               <Show when={tabsContent()[tab.value]}>
                 {(component) => (
                   <Dynamic
