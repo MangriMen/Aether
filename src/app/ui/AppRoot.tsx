@@ -1,23 +1,44 @@
 // eslint-disable-next-line import/named
 import { RouteSectionProps } from '@solidjs/router';
-import { Component, createEffect, onCleanup } from 'solid-js';
+import { Component, createEffect, onCleanup, onMount } from 'solid-js';
 
 import { Toaster } from '@/shared/ui';
 
+import { initializeInstanceResource } from '@/entities/instance';
+
+import ThemeObserver from './ThemeObserver';
+
 import { ColorModeObserver, WindowObserver } from '.';
 
-export const AppRoot: Component<RouteSectionProps> = (props) => {
-  const preventFn = (e: MouseEvent) => e.preventDefault();
+const RIGHT_CLICK_EXCLUDE_TAGS = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
 
+export const AppRoot: Component<RouteSectionProps> = (props) => {
+  const preventFn = (e: MouseEvent) => {
+    if (!(e.target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (RIGHT_CLICK_EXCLUDE_TAGS.has(e.target.tagName)) {
+      return;
+    }
+
+    e.preventDefault();
+  };
   createEffect(() => document.body.addEventListener('contextmenu', preventFn));
 
   onCleanup(() => document.body.removeEventListener('contextmenu', preventFn));
 
+  onMount(() => {
+    initializeInstanceResource();
+  });
+
   return (
     <ColorModeObserver {...props}>
-      {props.children}
-      <Toaster />
-      <WindowObserver />
+      <ThemeObserver>
+        {props.children}
+        <Toaster />
+        <WindowObserver />
+      </ThemeObserver>
     </ColorModeObserver>
   );
 };

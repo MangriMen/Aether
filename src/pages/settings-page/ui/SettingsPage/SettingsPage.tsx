@@ -17,7 +17,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
           title='Color theme'
           description='Change global launcher theme'
         >
-          <SelectColorMode id='color-mode' />
+          <SelectColorMode />
         </SettingsEntry>
       </SettingsPane>
       <AppVersion class='mt-auto' />
