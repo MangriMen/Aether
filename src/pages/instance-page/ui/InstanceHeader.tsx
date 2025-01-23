@@ -1,5 +1,6 @@
 import MdiClockIcon from '@iconify/icons-mdi/clock';
-import MdiSettingsButton from '@iconify/icons-mdi/settings';
+import MdiFolderIcon from '@iconify/icons-mdi/folder';
+import MdiSettingsIcon from '@iconify/icons-mdi/settings';
 import { Icon } from '@iconify-icon/solid';
 import { useNavigate } from '@solidjs/router';
 import { Component, ComponentProps, createMemo, splitProps } from 'solid-js';
@@ -28,7 +29,8 @@ export const InstanceHeader: Component<InstanceHeaderProps> = (props) => {
   const [context, { get }] = useRunningInstancesContext();
   const runningInstance = createMemo(() => get(context, local.instance.id));
 
-  const { handleInstanceLaunch, handleInstanceStop } = useInstanceActions();
+  const { handleInstanceLaunch, handleInstanceStop, handleOpenFolder } =
+    useInstanceActions();
 
   const lastPlayedDate = createMemo(() => {
     return local.instance?.lastPlayed
@@ -63,19 +65,29 @@ export const InstanceHeader: Component<InstanceHeaderProps> = (props) => {
           </span>
         </span>
       </div>
-      <div class='ml-auto flex flex-col justify-between'>
+      <div class='ml-auto flex items-center gap-2'>
         <InstanceActionButton
-          class='aspect-square p-2'
+          class='w-20 p-2'
           installStage={local.instance.installStage}
           isRunning={runningInstance()?.isRunning}
           isLoading={runningInstance()?.isLoading}
           onLaunchClick={() => handleInstanceLaunch(local.instance)}
           onStopClick={() => handleInstanceStop(local.instance)}
+        >
+          Play
+        </InstanceActionButton>
+        <IconButton
+          class='aspect-square p-2'
+          variant='secondary'
+          title='Open folder'
+          icon={MdiFolderIcon}
+          onClick={() => handleOpenFolder(local.instance)}
         />
         <IconButton
           class='aspect-square p-2'
           variant='secondary'
-          icon={MdiSettingsButton}
+          title='Settings'
+          icon={MdiSettingsIcon}
           onClick={navigateToSettings}
         />
       </div>

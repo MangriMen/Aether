@@ -75,16 +75,6 @@ export const useInstanceActions = () => {
   };
 
   const handleOpenFolder = async (instance: Instance) => {
-    const runningInstance = getRunningInstance(context, instance.id);
-    if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      !runningInstance ||
-      runningInstance.isLoading ||
-      runningInstance.isRunning
-    ) {
-      return;
-    }
-
     try {
       await openInstanceFolder(instance);
     } catch (e) {
