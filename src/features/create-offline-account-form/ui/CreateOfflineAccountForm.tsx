@@ -69,10 +69,10 @@ export const CreateOfflineAccountForm: Component<
         </Field>
 
         <DialogFooter>
-          <Button type='submit' variant='success'>
-            Create
+          <Button type='submit'>Create</Button>
+          <Button variant={'secondary'} onClick={handleCancel}>
+            Cancel
           </Button>
-          <Button onClick={handleCancel}>Cancel</Button>
         </DialogFooter>
       </div>
     </Form>

@@ -1,43 +1,48 @@
 import { ConfigColorMode, useColorMode } from '@kobalte/core';
-import { Component, createMemo, createSignal } from 'solid-js';
-
 import {
-  getTheme,
-  Option,
-  setTheme,
-  Theme,
-  THEME_TO_MODE,
-} from '@/shared/model';
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  Show,
+} from 'solid-js';
+
+import { Option, ThemeConfig, THEME_TO_MODE, THEMES } from '@/shared/model';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Separator,
 } from '@/shared/ui';
 
-import { SelectColorModeProps } from './types';
+// eslint-disable-next-line boundaries/element-types
+import { useThemeContext } from '@/app/model';
 
-const THEME_OPTIONS: Option<Theme>[] = [
-  { name: 'Light', value: 'light' },
-  { name: 'Aether Light', value: 'aether-light' },
-  { name: 'Dark', value: 'dark' },
-  { name: 'Aether Dark', value: 'aether-dark' },
+import { SelectThemeProps } from './types';
+
+const THEME_OPTIONS: Option<ThemeConfig>[] = [
+  ...THEMES.map((theme) => ({
+    name: theme.name,
+    value: theme.value,
+  })),
   { name: 'System', value: 'system' },
 ];
 
-export const SelectColorMode: Component<SelectColorModeProps> = (props) => {
+export const SelectTheme: Component<SelectThemeProps> = (props) => {
   const colorModeContext = useColorMode();
+  const [themeContext, { setTheme }] = useThemeContext();
 
-  const [currentTheme, setCurrentTheme] = createSignal<Theme>(
-    getTheme() ?? colorModeContext.colorMode(),
+  const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>(
+    themeContext.rawTheme,
   );
 
   const currentOption = createMemo(() =>
     THEME_OPTIONS.find((option) => option.value === currentTheme()),
   );
 
-  const handleChangeTheme = (theme: Option<Theme> | null) => {
+  const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {
     if (!theme) {
       return;
     }
@@ -52,6 +57,10 @@ export const SelectColorMode: Component<SelectColorModeProps> = (props) => {
     colorModeContext.setColorMode(colorMode);
   };
 
+  createEffect(() => {
+    setCurrentTheme(themeContext.rawTheme);
+  });
+
   return (
     <Select
       class='w-32'
@@ -62,12 +71,17 @@ export const SelectColorMode: Component<SelectColorModeProps> = (props) => {
       value={currentOption()}
       onChange={handleChangeTheme}
       itemComponent={(props) => (
-        <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
+        <>
+          <Show when={props.item.rawValue.value === 'system'}>
+            <Separator class='my-1' />
+          </Show>
+          <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
+        </>
       )}
       {...props}
     >
       <SelectTrigger>
-        <SelectValue<Option<ConfigColorMode>>>
+        <SelectValue<Option<ThemeConfig>>>
           {(state) => state.selectedOption().name}
         </SelectValue>
       </SelectTrigger>

@@ -1,1 +1,1 @@
-export * from './SelectColorMode';
+export * from './SelectTheme';

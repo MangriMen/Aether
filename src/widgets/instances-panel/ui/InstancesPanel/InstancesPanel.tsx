@@ -26,16 +26,18 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   });
 
   return (
-    <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
+    <div class={cn('flex flex-wrap gap-4 h-full', local.class)} {...others}>
       <Switch>
-        {/* TODO: add loading */}
-        {/* <Match when={instances.loading}>
-          <ProgressCircle />
-        </Match> */}
         <Match when={instances?.() && !instances.loading}>
           <Show
             when={instances?.()?.[0]?.length}
-            fallback={<span class='m-auto'>You don't have instances</span>}
+            fallback={
+              <p class='m-auto text-center text-muted-foreground'>
+                <span>No instances available</span>
+                <br />
+                <span>It seems you don`t have any instances at the moment</span>
+              </p>
+            }
           >
             <For each={instances?.()?.[0]}>
               {(instance) => <InstanceControlledCard instance={instance} />}
