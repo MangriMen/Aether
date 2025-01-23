@@ -1,4 +1,4 @@
-use aether_core::state::{self, Instance, ModLoader};
+use aether_core::state::{self, Instance, MemorySettings, ModLoader, WindowSize};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -20,4 +20,15 @@ pub struct InstanceLaunchDto {
     pub memory: state::MemorySettings,
     pub resolution: state::WindowSize,
     pub credentials: state::Credentials,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceEditDto {
+    pub name: Option<String>,
+    pub java_path: Option<String>,
+    pub extra_launch_args: Option<Vec<String>>,
+    pub custom_env_vars: Option<Vec<(String, String)>>,
+    pub memory: Option<MemorySettings>,
+    pub game_resolution: Option<WindowSize>,
 }

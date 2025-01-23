@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  Separator,
   Tabs,
   TabsContent,
   TabsList,
@@ -28,12 +29,12 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
 ) => {
   return (
     <Dialog {...props}>
-      <DialogContent>
+      <DialogContent class='bg-secondary-dark'>
         <DialogHeader>
           <DialogTitle>Create Instance</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue={CreateInstanceDialogTabs.Custom}>
-          <TabsList>
+          <TabsList class='bg-secondary-dark p-0'>
             <TabsTrigger value={CreateInstanceDialogTabs.Custom}>
               Custom
             </TabsTrigger>
@@ -41,7 +42,7 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
               Plugins
             </TabsTrigger>
           </TabsList>
-          <hr class='my-2' />
+          <Separator class='mb-4 mt-2' />
           <TabsContent value={CreateInstanceDialogTabs.Custom}>
             <CreateCustomInstanceDialogBody onOpenChange={props.onOpenChange} />
           </TabsContent>

@@ -1,9 +1,10 @@
+import MdiLoadingIcon from '@iconify/icons-mdi/loading';
 import { Icon, IconifyIcon } from '@iconify-icon/solid';
 import { PolymorphicProps } from '@kobalte/core';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
-import { Show, splitProps, ValidComponent } from 'solid-js';
+import { Match, splitProps, Switch, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -28,7 +29,7 @@ const iconButtonVariants = cva('aspect-square', {
       link: SVG_CHILD_FILL_VARIANTS.foreground,
     },
     size: {
-      default: 'size-10 rounded-md',
+      default: 'size-10 rounded-md text-2xl',
       sm: 'size-9 rounded-md',
       lg: 'size-11 rounded-md',
     },
@@ -45,6 +46,7 @@ type IconButtonProps<T extends ValidComponent = 'button'> =
   OnlyIconButtonProps &
     ButtonProps<T> & {
       icon?: IconifyIcon;
+      loading?: boolean;
     };
 
 const IconButton = <T extends ValidComponent = 'button'>(
@@ -55,6 +57,8 @@ const IconButton = <T extends ValidComponent = 'button'>(
     'variant',
     'size',
     'icon',
+    'loading',
+    'disabled',
     'children',
   ]);
 
@@ -65,11 +69,15 @@ const IconButton = <T extends ValidComponent = 'button'>(
         iconButtonVariants({ variant: local.variant, size: local.size }),
         local.class,
       )}
+      disabled={local.disabled || local.loading}
       {...others}
     >
-      <Show when={local.icon} fallback={local.children}>
-        {(icon) => <Icon class='text-2xl' icon={icon()} />}
-      </Show>
+      <Switch fallback={local.children}>
+        <Match when={local.loading}>
+          <Icon class='animate-spin' icon={MdiLoadingIcon} />
+        </Match>
+        <Match when={local.icon}>{(icon) => <Icon icon={icon()} />}</Match>
+      </Switch>
     </ButtonPrimitive.Root>
   );
 };

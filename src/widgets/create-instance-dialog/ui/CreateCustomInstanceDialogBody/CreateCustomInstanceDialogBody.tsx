@@ -29,12 +29,12 @@ import {
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
+  createMinecraftInstance,
+  InstanceCreateDto,
 } from '@/entities/instance';
 import {
-  createMinecraftInstance,
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
-  InstanceCreateDto,
   loaderManifestToMapped,
   ModLoader,
 } from '@/entities/minecraft';
@@ -261,6 +261,7 @@ export const CreateCustomInstanceDialogBody: Component<
       <DialogFooter>
         <Button
           class='mb-2 sm:mb-0 sm:mr-auto'
+          variant='secondary'
           onClick={() => setIsAdvanced(!isAdvanced())}
         >
           <Switch>
@@ -269,11 +270,13 @@ export const CreateCustomInstanceDialogBody: Component<
           </Switch>
         </Button>
 
-        <Button variant='success' type='submit' disabled={isCreating()}>
+        <Button type='submit' disabled={isCreating()}>
           Create
         </Button>
 
-        <Button onClick={() => props.onOpenChange?.(false)}>Cancel</Button>
+        <Button variant='secondary' onClick={() => props.onOpenChange?.(false)}>
+          Cancel
+        </Button>
       </DialogFooter>
     </Form>
   );

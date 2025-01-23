@@ -1,5 +1,7 @@
 import { Component, splitProps } from 'solid-js';
 
+import { cn } from '@/shared/lib';
+
 import { SettingsPaneProps } from './types';
 
 export const SettingsPane: Component<SettingsPaneProps> = (props) => {
@@ -7,7 +9,10 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
 
   return (
     <div
-      class='flex flex-col gap-2 rounded-lg bg-secondary-dark px-6 py-4'
+      class={cn(
+        'flex flex-col gap-4 rounded-lg bg-secondary-dark px-6 py-4',
+        local.class,
+      )}
       {...others}
     >
       <h2 class='text-xl font-bold'>{local.title}</h2>

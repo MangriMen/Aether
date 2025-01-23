@@ -25,7 +25,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     createSignal(false);
 
   return (
-    <Sidebar class={cn('justify-between', local.class)} {...others}>
+    <Sidebar
+      class={cn('justify-between min-w-16 max-w-16', local.class)}
+      {...others}
+    >
       <div class='flex flex-col items-center gap-2'>
         <IconButton as={A} href='/' variant='ghost' title='Home'>
           <HomeIcon />

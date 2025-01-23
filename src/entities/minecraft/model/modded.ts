@@ -1,3 +1,11 @@
+export enum ModLoader {
+  Vanilla = 'vanilla',
+  Forge = 'forge',
+  Fabric = 'fabric',
+  Quilt = 'quilt',
+  NeoForge = 'neoforge',
+}
+
 export interface LoaderManifest {
   /// The game versions the mod loader supports
   gameVersions: MinecraftLoaderVersion[];
