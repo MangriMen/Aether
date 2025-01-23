@@ -1,3 +1,6 @@
+// eslint-disable-next-line boundaries/element-types
+import { ModLoader } from '@/entities/minecraft';
+
 export interface InstancePluginSettings {
   preLaunch?: string;
 }
@@ -25,7 +28,7 @@ export interface Instance {
   // Launch arguments
   javaPath?: string;
   extraLaunchArgs?: string[];
-  customEnvVars?: { [key: string]: string };
+  customEnvVars?: Array<[string, string]>;
 
   // Minecraft runtime settings
   memory?: MemorySettings;
@@ -35,7 +38,7 @@ export interface Instance {
   // Additional information
   created: Date;
   modified: Date;
-  lastPlayed?: Date;
+  lastPlayed?: string;
 
   timePlayed: number;
   recent_time_played: number;
@@ -62,14 +65,6 @@ export enum InstanceInstallStage {
   NotInstalled = 'not_installed',
 }
 
-export enum ModLoader {
-  Vanilla = 'vanilla',
-  Forge = 'forge',
-  Fabric = 'fabric',
-  Quilt = 'quilt',
-  NeoForge = 'neoforge',
-}
-
 export interface InstanceCreateDto {
   name: string;
   gameVersion: string;
@@ -77,6 +72,15 @@ export interface InstanceCreateDto {
   loaderVersion?: string;
   iconPath?: string;
   skipInstallProfile?: boolean;
+}
+
+export interface InstanceEditDto {
+  name?: string;
+  javaPath?: string;
+  extraLaunchArgs?: string[];
+  customEnvVars?: Array<[string, string]>;
+  memory?: MemorySettings;
+  gameResolution?: WindowSize;
 }
 
 export interface InstanceLaunchDto {

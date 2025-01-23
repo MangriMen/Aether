@@ -6,7 +6,7 @@ import {
   // eslint-disable-next-line boundaries/element-types
 } from '@/entities/minecraft';
 
-const runningInstances = createResource(() => {
+const runningInstancesData = createResource(() => {
   try {
     return getRunningMinecraftInstances();
   } catch {
@@ -14,15 +14,15 @@ const runningInstances = createResource(() => {
   }
 });
 
-export const getRunningInstances = () => {
-  return runningInstances[0];
+export const useRunningInstancesData = () => {
+  return runningInstancesData[0];
 };
 
-export const refetchRunningInstances = () => {
-  return runningInstances[1].refetch();
+export const refetchRunningInstancesData = () => {
+  return runningInstancesData[1].refetch();
 };
 
-export const createRunningInstanceResource = (id: Accessor<string>) =>
+export const createRunningInstanceDataResource = (id: Accessor<string>) =>
   createResource(id, (id) => {
     try {
       return getMinecraftInstanceProcess(id);

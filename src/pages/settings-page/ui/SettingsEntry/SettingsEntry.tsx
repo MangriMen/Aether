@@ -1,7 +1,7 @@
-import { Component, splitProps } from 'solid-js';
+import { Component, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Label } from '@/shared/ui';
+import { FieldLabel } from '@/shared/ui';
 
 import { SettingsEntryProps } from './types';
 
@@ -9,20 +9,25 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
   const [local, others] = splitProps(props, [
     'title',
     'description',
-    'inputId',
     'class',
     'children',
   ]);
 
   return (
     <div
-      class={cn('flex items-center justify-between', local.class)}
+      class={cn('flex justify-between items-center w-full gap-8', local.class)}
       {...others}
     >
-      <Label class='flex flex-col' for={local.inputId}>
-        <h3 class='text-lg font-bold'>{local.title}</h3>
-        <span>{local.description}</span>
-      </Label>
+      <div class=' text-pretty'>
+        <Show when={local.title}>
+          <FieldLabel class='text-lg font-bold'>{local.title}</FieldLabel>
+        </Show>
+        <Show when={local.description}>
+          <p class='whitespace-pre-line text-muted-foreground'>
+            {local.description}
+          </p>
+        </Show>
+      </div>
       {local.children}
     </div>
   );

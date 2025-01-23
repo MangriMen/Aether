@@ -12,13 +12,13 @@ import {
   TextFieldRootProps,
 } from './TextField';
 
-export type CTextFieldProps = TextFieldRootProps & {
+export type CombinedTextFieldProps = TextFieldRootProps & {
   label?: string;
   errorMessage?: string;
   inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
 };
 
-export const CombinedTextField: Component<CTextFieldProps> = (props) => {
+export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
   const [local, others] = splitProps(props, [
     'label',
     'errorMessage',
