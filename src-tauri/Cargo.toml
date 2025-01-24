@@ -32,7 +32,7 @@ open = { version = "5", features = ["shellexecute-on-windows"] }
 
 daedalus = "0.2.3"
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.3.1" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.3.2" }
 tauri-plugin-process = "2"
 
 [features]
