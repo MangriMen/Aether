@@ -20,6 +20,8 @@ export const EventCard: Component<EventCardProps> = (props) => {
         return local.payload.event.instance_name;
       case LoadingBarTypeEnum.PluginDownload:
         return `[Plugin] ${local.payload.event.plugin_name}`;
+      case LoadingBarTypeEnum.LauncherUpdate:
+        return `Updating launcher to ${local.payload.event.version}`;
     }
   });
 
