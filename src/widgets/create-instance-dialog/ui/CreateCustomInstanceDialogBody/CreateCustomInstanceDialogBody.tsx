@@ -24,6 +24,7 @@ import {
   CombinedTextField,
   DialogFooter,
   LabeledField,
+  showToast,
 } from '@/shared/ui';
 
 import {
@@ -133,9 +134,14 @@ export const CreateCustomInstanceDialogBody: Component<
     try {
       props.onOpenChange?.(false);
       refetchInstances();
+
       await createMinecraftInstance(payload);
     } catch (e) {
       console.error(e);
+      showToast({
+        title: `Failed to create instance ${payload.name}`,
+        variant: 'destructive',
+      });
     }
 
     setIsCreating(false);

@@ -19,7 +19,7 @@ export const useInstanceActions = () => {
     RunningInstancesContext,
   );
 
-  const handleInstanceLaunch = async (instance: Instance) => {
+  const launchInstance = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
@@ -44,7 +44,7 @@ export const useInstanceActions = () => {
     }
   };
 
-  const handleInstanceStop = async (instance: Instance) => {
+  const stopInstance = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
@@ -74,7 +74,7 @@ export const useInstanceActions = () => {
     }
   };
 
-  const handleOpenFolder = async (instance: Instance) => {
+  const openFolder = async (instance: Instance) => {
     try {
       await openInstanceFolder(instance);
     } catch (e) {
@@ -86,14 +86,18 @@ export const useInstanceActions = () => {
     }
   };
 
-  const handleInstanceRemove = async (instance: Instance) => {
+  const removeInstance = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
-      !runningInstance ||
-      runningInstance.isLoading ||
-      runningInstance.isRunning
+      runningInstance?.isLoading ||
+      runningInstance?.isRunning
     ) {
+      showToast({
+        title: `Failed to remove ${instance.name}`,
+        description: ' Still installing or running. Please stop instance first',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -112,9 +116,9 @@ export const useInstanceActions = () => {
   };
 
   return {
-    handleInstanceLaunch,
-    handleInstanceStop,
-    handleInstanceRemove,
-    handleOpenFolder,
+    launchInstance,
+    stopInstance,
+    removeInstance,
+    openFolder,
   };
 };

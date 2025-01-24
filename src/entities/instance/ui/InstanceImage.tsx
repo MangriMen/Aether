@@ -1,5 +1,8 @@
-import { Icon } from '@iconify-icon/solid';
+import MdiCubeOutline from '@iconify/icons-mdi/cube-outline';
 import { Component, ComponentProps, Show, splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { ResponsiveIcon } from '@/shared/ui';
 
 export type InstanceImageProps = ComponentProps<'div'> &
   Pick<ComponentProps<'img'>, 'src'>;
@@ -8,10 +11,16 @@ export const InstanceImage: Component<InstanceImageProps> = (props) => {
   const [local, others] = splitProps(props, ['src', 'class']);
 
   return (
-    <div class='size-24 rounded-lg border bg-secondary' {...others}>
+    <div
+      class={cn(
+        'size-24 rounded-lg border bg-secondary flex items-center justify-center p-1',
+        local.class,
+      )}
+      {...others}
+    >
       <Show
         when={local.src}
-        fallback={<Icon class='text-[96px]' icon='mdi-cube-outline' />}
+        fallback={<ResponsiveIcon icon={MdiCubeOutline} />}
       >
         {(path) => <img src={path()} />}
       </Show>
