@@ -1,3 +1,4 @@
+import MdiRightArrowIcon from '@iconify/icons-mdi/chevron-right';
 import { Icon } from '@iconify-icon/solid';
 import { DialogRootProps } from '@kobalte/core/dialog';
 import { Component, For, splitProps } from 'solid-js';
@@ -13,7 +14,7 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 
-import { Instance } from '@/entities/instance';
+import { Instance, InstanceImage } from '@/entities/instance';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
@@ -34,7 +35,14 @@ const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
     <Dialog defaultOpen open={true} {...others}>
       <DialogContent class='w-[900px] max-w-full bg-secondary-dark'>
         <DialogHeader>
-          <DialogTitle>{local.instance.name}</DialogTitle>
+          <DialogTitle class='flex items-center gap-1 text-muted-foreground'>
+            <div class='flex items-center gap-2'>
+              <InstanceImage class='size-8' />
+              <span>{local.instance.name}</span>
+            </div>
+            <Icon class='text-xl' icon={MdiRightArrowIcon} />
+            <span class='text-foreground'>Settings</span>
+          </DialogTitle>
         </DialogHeader>
         <Tabs
           class='min-h-96'

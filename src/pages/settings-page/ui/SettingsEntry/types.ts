@@ -1,6 +1,6 @@
-import { ComponentProps } from 'solid-js';
+import { ComponentProps, JSX } from 'solid-js';
 
 export type SettingsEntryProps = ComponentProps<'div'> & {
-  title?: string;
-  description?: string;
+  title?: string | JSX.Element;
+  description?: string | JSX.Element;
 };

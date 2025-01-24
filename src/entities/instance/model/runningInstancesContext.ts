@@ -13,7 +13,7 @@ export type RunningInstancesInstanceData = {
 
 export type RunningInstancesContextValue = [
   {
-    instances: Record<Instance['id'], RunningInstancesInstanceData>;
+    instances: Record<Instance['id'], RunningInstancesInstanceData | undefined>;
   },
   {
     get: (

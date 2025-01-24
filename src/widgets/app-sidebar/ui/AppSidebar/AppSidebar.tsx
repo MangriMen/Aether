@@ -1,14 +1,17 @@
 import { A } from '@solidjs/router';
-import { Component, createSignal, splitProps } from 'solid-js';
+import { Component, createSignal, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
   AddIcon,
+  Badge,
   HomeIcon,
   IconButton,
   SettingsIcon,
   Sidebar,
 } from '@/shared/ui';
+
+import { updateResource } from '@/entities/update';
 
 // eslint-disable-next-line boundaries/element-types
 import { AccountSelectButton } from '@/widgets/account-select-button';
@@ -20,6 +23,8 @@ import { AppSidebarProps } from '.';
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
+
+  const [update] = updateResource;
 
   const [isCreateInstanceDialogOpen, setIsCreateInstanceDialogOpen] =
     createSignal(false);
@@ -44,7 +49,18 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
       <div class='flex flex-col items-center gap-2'>
         <AccountSelectButton />
-        <IconButton as={A} href='/settings' variant='ghost' title='Settings'>
+        <IconButton
+          class='relative'
+          as={A}
+          href='/settings'
+          variant='ghost'
+          title={
+            update()?.available ? 'Settings (Update available)' : `Settings`
+          }
+        >
+          <Show when={update()?.available}>
+            <Badge class='absolute right-2 top-1 aspect-square size-2 p-0' />
+          </Show>
           <SettingsIcon />
         </IconButton>
       </div>

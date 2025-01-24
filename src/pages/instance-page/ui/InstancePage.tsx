@@ -31,7 +31,7 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
 
   const showSettings = createMemo(() => location.pathname.endsWith('settings'));
 
-  const id = createMemo(() => props.params.id);
+  const id = createMemo(() => decodeURIComponent(props.params.id));
 
   const mappedInstances = useMappedInstances();
 
