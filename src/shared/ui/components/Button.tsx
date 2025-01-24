@@ -1,8 +1,10 @@
+import MdiLoadingIcon from '@iconify/icons-mdi/loading';
+import { Icon } from '@iconify-icon/solid';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
-import { splitProps } from 'solid-js';
+import { splitProps, Show } from 'solid-js';
 import type { JSX, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -41,6 +43,7 @@ type ButtonProps<T extends ValidComponent = 'button'> =
     VariantProps<typeof buttonVariants> & {
       class?: string | undefined;
       children?: JSX.Element;
+      loading?: boolean;
     };
 
 const Button = <T extends ValidComponent = 'button'>(
@@ -49,7 +52,10 @@ const Button = <T extends ValidComponent = 'button'>(
   const [local, others] = splitProps(props as ButtonProps, [
     'variant',
     'size',
+    'loading',
+    'disabled',
     'class',
+    'children',
   ]);
   return (
     <ButtonPrimitive.Root
@@ -57,8 +63,13 @@ const Button = <T extends ValidComponent = 'button'>(
         buttonVariants({ variant: local.variant, size: local.size }),
         local.class,
       )}
+      disabled={local.disabled || local.loading}
       {...others}
-    />
+    >
+      <Show when={local.loading} fallback={local.children}>
+        <Icon class='animate-spin' icon={MdiLoadingIcon} />
+      </Show>
+    </ButtonPrimitive.Root>
   );
 };
 
