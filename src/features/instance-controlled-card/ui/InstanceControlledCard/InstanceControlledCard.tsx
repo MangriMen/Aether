@@ -1,24 +1,14 @@
 import { useNavigate } from '@solidjs/router';
-// eslint-disable-next-line import/named
-import { Component, createMemo, createSignal, Show } from 'solid-js';
+import { Component, createMemo, createSignal } from 'solid-js';
 
 import { preventAll } from '@/shared/lib';
-import {
-  Button,
-  ContextMenuTrigger,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-} from '@/shared/ui';
+import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
 
 import {
   InstanceCard,
   InstanceContextMenu,
   useInstanceActions,
   useRunningInstancesContext,
-  Instance,
 } from '@/entities/instance';
 
 import { InstanceControlledCardProps } from './types';
@@ -30,80 +20,66 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   const id = createMemo(() => props.instance.id);
 
-  const context = useRunningInstancesContext();
-  const runningInstance = createMemo(() => context[0].instances[id()]);
+  const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 
-  const {
-    handleInstanceLaunch,
-    handleInstanceRemove,
-    handleInstanceStop,
-    handleOpenFolder,
-  } = useInstanceActions();
+  const openRemoveModal = () => setShowRemoveModal(true);
+  const closeRemoveModal = () => {
+    setShowRemoveModal(false);
+  };
 
-  const [instanceToRemove, setInstanceToRemove] = createSignal<
-    Instance | undefined
-  >();
+  const { launchInstance, removeInstance, stopInstance, openFolder } =
+    useInstanceActions();
+
+  const handleLaunch = (e: MouseEvent) => {
+    preventAll(e);
+    launchInstance(props.instance);
+  };
+  const handleStop = (e: MouseEvent) => {
+    preventAll(e);
+    stopInstance(props.instance);
+  };
+
+  const handleRemove = () => removeInstance(props.instance);
+
+  const handleOpenFolder = () => openFolder(props.instance);
 
   const goToInstancePage = () => {
-    navigate(`/instances/${props.instance.id}`);
+    navigate(`/instances/${encodeURIComponent(props.instance.id)}`);
   };
+
+  const context = useRunningInstancesContext();
+  const runningInstanceData = createMemo(() => context[0].instances[id()]);
 
   return (
     <>
       <InstanceContextMenu
-        isLoading={runningInstance()?.isLoading}
-        onPlay={() => handleInstanceLaunch(props.instance)}
-        onOpenFolder={() => handleOpenFolder(props.instance)}
-        onRemove={() => setInstanceToRemove(props.instance)}
+        isLoading={runningInstanceData()?.isLoading}
+        onPlay={handleLaunch}
+        onOpenFolder={handleOpenFolder}
+        onRemove={openRemoveModal}
       >
-        <ContextMenuTrigger>
-          <InstanceCard
-            isRunning={runningInstance()?.isRunning}
-            isLoading={runningInstance()?.isLoading}
-            onClick={goToInstancePage}
-            onLaunchClick={(e) => {
-              preventAll(e);
-              handleInstanceLaunch(props.instance);
-            }}
-            onStopClick={(e) => {
-              preventAll(e);
-              handleInstanceStop(props.instance);
-            }}
-            {...props}
-          />
-        </ContextMenuTrigger>
+        <ContextMenuTrigger
+          as={InstanceCard}
+          isRunning={runningInstanceData()?.isRunning}
+          isLoading={runningInstanceData()?.isLoading}
+          onClick={goToInstancePage}
+          onLaunchClick={handleLaunch}
+          onStopClick={handleStop}
+          {...props}
+        />
       </InstanceContextMenu>
 
-      <Dialog
-        open={!!instanceToRemove()}
-        onOpenChange={() => setInstanceToRemove(undefined)}
-      >
-        <DialogContent>
-          <DialogHeader class='text-lg'>
-            Are you shure you want to delete instance {instanceToRemove()?.name}
-            ?
-          </DialogHeader>
-          <DialogDescription class='text-base'>
-            If you proceed, all data for your instance will be permanently
-            erased, including your worlds. You will not be able to recover it.
-          </DialogDescription>
-          <DialogFooter>
-            <Show when={instanceToRemove()}>
-              {(instance) => (
-                <Button
-                  variant='destructive'
-                  onClick={() => handleInstanceRemove(instance())}
-                >
-                  Remove
-                </Button>
-              )}
-            </Show>
-            <Button onClick={() => setInstanceToRemove(undefined)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CombinedDialog
+        variant='destructive'
+        open={showRemoveModal()}
+        onOpenChange={setShowRemoveModal}
+        header={`Are you shure you want to delete instance ${props.instance?.name}?`}
+        description='If you proceed, all data for your instance will be permanently
+            erased, including your worlds. You will not be able to recover it.'
+        buttonOkText='Remove'
+        onOk={handleRemove}
+        onCancel={closeRemoveModal}
+      />
     </>
   );
 };

@@ -1,3 +1,4 @@
+import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
 import { Icon } from '@iconify-icon/solid';
 import { ReactiveMap } from '@solid-primitives/map';
 import {
@@ -11,6 +12,7 @@ import {
   Show,
 } from 'solid-js';
 
+import { cn } from '@/shared/lib';
 import { isDebug } from '@/shared/model/settings';
 import {
   IconButton,
@@ -28,7 +30,6 @@ import {
 } from '@/entities/minecraft';
 
 import { NotificationMenuButtonProps } from './types';
-
 const NOTIFICATION_COMPLETED_REMOVE_DELAY = 1500;
 
 export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
@@ -113,8 +114,18 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   return (
     <Popover open={isMenuOpen()} onOpenChange={setIsMenuOpen}>
       <Show when={payloads().length}>
-        <PopoverTrigger as={IconButton} variant='ghost' {...props}>
-          <Icon class='text-2xl' icon='mdi-menu-down' />
+        <PopoverTrigger
+          as={IconButton}
+          class='aspect-square p-0'
+          variant='ghost'
+          {...props}
+        >
+          <Icon
+            class={cn('text-2xl transition-transform duration-300', {
+              'rotate-180': isMenuOpen(),
+            })}
+            icon={MdiMenuDownIcon}
+          />
         </PopoverTrigger>
       </Show>
       <PopoverContent class='flex flex-col gap-3 border-none bg-transparent p-0 pt-2'>

@@ -1,6 +1,8 @@
 import { PointerDownOutsideEvent } from '@kobalte/core';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import { cva } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
@@ -20,34 +22,52 @@ const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
   );
 };
 
+const dialogOverlayVariants = cva(
+  'fixed inset-0 z-50 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0',
+  {
+    variants: {
+      variant: {
+        default: 'bg-background/80',
+        destructive: 'bg-destructive/35',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  },
+);
+
 type DialogOverlayProps<T extends ValidComponent = 'div'> =
-  DialogPrimitive.DialogOverlayProps<T> & { class?: string | undefined };
+  DialogPrimitive.DialogOverlayProps<T> &
+    VariantProps<typeof dialogOverlayVariants> & { class?: string | undefined };
 
 const DialogOverlay = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DialogOverlayProps<T>>,
 ) => {
-  const [, rest] = splitProps(props as DialogOverlayProps, ['class']);
+  const [local, rest] = splitProps(props as DialogOverlayProps, [
+    'variant',
+    'class',
+  ]);
   return (
     <DialogPrimitive.Overlay
-      class={cn(
-        'fixed inset-0 z-50 bg-background/80 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0',
-        props.class,
-      )}
+      class={cn(dialogOverlayVariants({ variant: local.variant }), local.class)}
       {...rest}
     />
   );
 };
 
 type DialogContentProps<T extends ValidComponent = 'div'> =
-  DialogPrimitive.DialogContentProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+  DialogPrimitive.DialogContentProps<T> &
+    Pick<DialogOverlayProps, 'variant'> & {
+      class?: string | undefined;
+      children?: JSX.Element;
+    };
 
 const DialogContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DialogContentProps<T>>,
 ) => {
-  const [, rest] = splitProps(props as DialogContentProps, [
+  const [local, rest] = splitProps(props as DialogContentProps, [
+    'variant',
     'class',
     'children',
   ]);
@@ -61,16 +81,16 @@ const DialogContent = <T extends ValidComponent = 'div'>(
 
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay variant={local.variant} />
       <DialogPrimitive.Content
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
           'fixed left-1/2 top-1/2 z-50 grid max-h-screen w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto border bg-background p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] sm:rounded-lg',
-          props.class,
+          local.class,
         )}
         {...rest}
       >
-        {props.children}
+        {local.children}
         <DialogPrimitive.CloseButton class='absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
