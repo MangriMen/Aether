@@ -1,4 +1,22 @@
 {
+  "productName": "aether",
+  "mainBinaryName": "aether",
+  "version": "0.3.2",
+  "identifier": "com.mangrimen.aether",
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "title": "Aether",
+        "width": 1024,
+        "height": 682,
+        "decorations": false,
+        "visible": false
+      }
+    ]
+  },
   "build": {
     "beforeDevCommand": "bun run dev",
     "beforeBuildCommand": "bun run build",
@@ -14,25 +32,19 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
   },
-  "productName": "aether",
-  "mainBinaryName": "aether",
-  "version": "0.3.2",
-  "identifier": "com.mangrimen.aether",
-  "plugins": {},
-  "app": {
-    "security": {
-      "csp": null
-    },
-    "windows": [
-      {
-        "title": "Aether",
-        "width": 1024,
-        "height": 682,
-        "decorations": false,
-        "visible": false
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhFQ0Y0MTc3RTIzODVCRjUKUldUMVd6amlkMEhQam85d1BybzFlSWNvWE9paStqU21uSFM4T2R1eHpBYWJuTHN3d0NHUkwzVjgK",
+      "endpoints": [
+        "https://github.com/MangriMen/aether/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
-    ]
+    }
   }
 }
