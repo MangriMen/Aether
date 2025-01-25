@@ -36,13 +36,13 @@ const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (props) => {
       <span class='text-2xl font-bold text-foreground'>
         {local.instance.name}
       </span>
-      <span class='inline-flex items-center gap-2 capitalize' title='Modloader'>
-        <span class='inline-flex items-center gap-1'>
+      <span class='inline-flex items-center gap-2 capitalize'>
+        <span class='inline-flex items-center gap-1' title='Game version'>
           <Icon icon={MdiGamepadSquare} />
           {local.instance.gameVersion}
         </span>
         <Separator orientation='vertical' />
-        <span class='inline-flex items-center gap-1'>
+        <span class='inline-flex items-center gap-1' title='Modloader'>
           <Icon icon={MdiEngineIcon} />
           {local.instance.loader} {local.instance.loaderVersion}
         </span>
