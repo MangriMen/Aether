@@ -35,7 +35,7 @@ export function SelectGameVersion<T extends Version = Version>(
         </SelectValue>
       </SelectTrigger>
       <SelectContent
-        class='max-h-[148px] overflow-y-auto'
+        maxHeight={148}
         virtualized
         options={others.options}
         optionValue={'id'}

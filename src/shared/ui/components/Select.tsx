@@ -70,6 +70,7 @@ type NonVirtualizedProps = {
   options?: never;
   optionValue?: never;
   itemComponent?: never;
+  maxHeight?: never;
 };
 
 type VirtualizedProps<Option> = {
@@ -80,6 +81,7 @@ type VirtualizedProps<Option> = {
       style: JSX.CSSProperties;
     }
   >;
+  maxHeight?: number | string;
 };
 
 type VirtualizedContentProps<Option> = {
@@ -97,7 +99,14 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
 ) => {
   const [local, others] = splitProps(
     props as SelectContentVirtualizedProps<Option, T>,
-    ['virtualized', 'options', 'optionValue', 'itemComponent', 'class'],
+    [
+      'virtualized',
+      'options',
+      'optionValue',
+      'itemComponent',
+      'maxHeight',
+      'class',
+    ],
   );
 
   return (
@@ -115,6 +124,7 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
         >
           <SelectListboxVirtualized
             class='m-0 p-1'
+            maxHeight={local.maxHeight}
             options={local.options ?? []}
             optionValue={local.optionValue}
             itemComponent={local.itemComponent}
@@ -143,30 +153,36 @@ type SelectListboxVirtualizedProps<
 const SelectListboxVirtualized = <Option, T extends ValidComponent = 'ul'>(
   props: PolymorphicProps<T, SelectListboxVirtualizedProps<Option, T>>,
 ) => {
+  const [local, _] = splitProps(props, ['maxHeight', 'class']);
+
   let listboxRef: HTMLUListElement | undefined;
+
+  const getItemValue = (option: Option) =>
+    (option as VirtualizedOption)[props.optionValue ?? 'value'];
 
   const virtualizer = createMemo(() =>
     createVirtualizer({
       count: props.options.length,
       getScrollElement: () => listboxRef ?? null,
-      getItemKey: (index: number) =>
-        (props.options[index] as VirtualizedOption)[props.optionValue ?? 'id'],
+      getItemKey: (index: number) => getItemValue(props.options[index]),
       estimateSize: () => 32,
-      // enableSmoothScroll: false,
       overscan: 5,
+      enabled: true,
     }),
   );
 
-  const scrollToItem = (key: string) =>
-    virtualizer()?.scrollToIndex(
-      props.options.findIndex(
-        (option: Option) => (option as VirtualizedOption).value === key,
-      ),
+  const scrollToItem = (key: string) => {
+    const index = props.options.findIndex(
+      (option: Option) => getItemValue(option) === key,
     );
+    virtualizer()?.scrollToIndex(index);
+  };
 
   return (
     <SelectPrimitive.Listbox
-      class='m-0 overflow-auto p-1'
+      class={cn('overflow-auto', local.class, {
+        [`max-h-[${local.maxHeight}px]`]: local.maxHeight,
+      })}
       ref={listboxRef}
       scrollToItem={scrollToItem}
     >
@@ -206,7 +222,7 @@ const SelectListboxVirtualized = <Option, T extends ValidComponent = 'ul'>(
               return (
                 <SelectPrimitive.Item item={item} style={itemStyle}>
                   <SelectPrimitive.ItemLabel>
-                    {item.rawValue.label}
+                    {item.textValue}
                   </SelectPrimitive.ItemLabel>
                   <SelectPrimitive.ItemIndicator>
                     V
