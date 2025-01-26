@@ -17,7 +17,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
   const [_, others] = splitProps(props, ['params', 'location', 'data']);
   return (
     <div class='flex size-full flex-col gap-4 p-4' {...others}>
-      <SettingsPane class='mx-auto w-full max-w-screen-lg' title='Launcher'>
+      <SettingsPane class='container max-w-screen-lg' title='Launcher'>
         <SettingsEntry
           title='Color theme'
           description='Select your referred color theme'
@@ -26,7 +26,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
         </SettingsEntry>
         <SelectThemeForColorModeEntry />
       </SettingsPane>
-      <SettingsPane title='Update'>
+      <SettingsPane class='container max-w-screen-lg' title='Update'>
         <UpdateAppEntry />
       </SettingsPane>
       <AppVersion class='mt-auto' />

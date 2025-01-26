@@ -1,5 +1,3 @@
-import MdiLoadingIcon from '@iconify/icons-mdi/loading';
-import { Icon } from '@iconify-icon/solid';
 import { emit } from '@tauri-apps/api/event';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { DownloadEvent } from '@tauri-apps/plugin-updater';
@@ -112,40 +110,39 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
       class='items-start'
       title='Check updates'
       description={
-        <Show
-          when={!update.loading}
-          fallback={<Icon class='animate-spin' icon={MdiLoadingIcon} />}
-        >
-          <Show when={update()?.available} fallback='There is no updates'>
-            <div class='flex flex-col'>
-              <span>
-                An updated version of the application is now available!
-              </span>
-              <span>It will restart automatically after installation.</span>
-              <span>Version: {update()?.version}</span>
-              <Show when={update()?.date}>
-                <span>Release date: {update()?.date}</span>
-              </Show>
-            </div>
-          </Show>
+        <Show when={update()?.available} fallback='There is no updates'>
+          <div class='flex flex-col'>
+            <span>An updated version of the application is now available!</span>
+            <span>It will restart automatically after installation.</span>
+            <span>Version: {update()?.version}</span>
+            <Show when={update()?.date}>
+              <span>Release date: {update()?.date}</span>
+            </Show>
+          </div>
         </Show>
       }
       {...props}
     >
-      <div class='flex flex-col gap-2'>
-        <Button
-          loading={update.loading}
-          disabled={isUpdating()}
-          onClick={checkUpdates}
+      <div class='flex h-full flex-col justify-center gap-2'>
+        <Show
+          when={update()?.available}
+          fallback={
+            <Button
+              loading={update.loading}
+              disabled={isUpdating()}
+              onClick={checkUpdates}
+            >
+              Check for updates
+            </Button>
+          }
         >
-          Check for updates
-        </Button>
-        <Button
-          disabled={!update()?.available || isUpdating()}
-          onClick={downloadAndInstallUpdate}
-        >
-          Install and restart app
-        </Button>
+          <Button
+            disabled={!update()?.available || isUpdating()}
+            onClick={downloadAndInstallUpdate}
+          >
+            Install and restart app
+          </Button>
+        </Show>
       </div>
     </SettingsEntry>
   );

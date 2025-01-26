@@ -60,14 +60,21 @@ const Button = <T extends ValidComponent = 'button'>(
   return (
     <ButtonPrimitive.Root
       class={cn(
+        'relative',
         buttonVariants({ variant: local.variant, size: local.size }),
         local.class,
       )}
       disabled={local.disabled || local.loading}
       {...others}
     >
-      <Show when={local.loading} fallback={local.children}>
-        <Icon class='animate-spin' icon={MdiLoadingIcon} />
+      <span style={{ visibility: local.loading ? 'hidden' : 'visible' }}>
+        {local.children}
+      </span>
+      <Show when={local.loading}>
+        <Icon
+          class='absolute m-auto animate-spin text-2xl'
+          icon={MdiLoadingIcon}
+        />
       </Show>
     </ButtonPrimitive.Root>
   );
