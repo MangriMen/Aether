@@ -10,6 +10,10 @@ use crate::AetherLauncherResult;
 
 #[tauri::command]
 pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
+    if LauncherState::initialized().await {
+        return Ok(());
+    }
+
     let user_data_dir = Some(
         crate::utils::tauri::get_app_dir(&app)
             .to_str()
