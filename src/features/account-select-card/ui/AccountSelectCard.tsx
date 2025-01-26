@@ -1,10 +1,10 @@
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
+import type { Account, AccountType } from '@/entities/accounts';
 import {
-  Account,
   AccountLoginMethods,
   AccountsList,
-  AccountType,
   getAccountStateResource,
 } from '@/entities/accounts';
 

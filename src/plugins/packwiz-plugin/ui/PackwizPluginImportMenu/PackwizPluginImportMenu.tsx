@@ -1,13 +1,10 @@
 import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import { Icon } from '@iconify-icon/solid';
-import {
-  createForm,
-  setValue,
-  SubmitHandler,
-  zodForm,
-} from '@modular-forms/solid';
+import type { SubmitHandler } from '@modular-forms/solid';
+import { createForm, setValue, zodForm } from '@modular-forms/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 import { z } from 'zod';
 
 import { isAetherLauncherError } from '@/shared/model';
@@ -22,7 +19,7 @@ import {
 
 import { callPlugin } from '@/entities/plugins';
 
-import { PackwizPluginImportMenuProps } from './types';
+import type { PackwizPluginImportMenuProps } from './types';
 
 type PackwizPluginImportData = {
   kind: 'import';

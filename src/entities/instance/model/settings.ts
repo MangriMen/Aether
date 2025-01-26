@@ -1,4 +1,4 @@
-import { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instance';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;

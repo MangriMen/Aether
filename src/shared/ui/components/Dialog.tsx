@@ -1,4 +1,4 @@
-import { PointerDownOutsideEvent } from '@kobalte/core';
+import type { PointerDownOutsideEvent } from '@kobalte/core';
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import { cva } from 'class-variance-authority';

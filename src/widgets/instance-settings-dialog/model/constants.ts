@@ -1,10 +1,10 @@
 import MdiCoffeeOutlineIcon from '@iconify/icons-mdi/coffee-outline';
 import MdiInfoOutlineIcon from '@iconify/icons-mdi/info-outline';
 import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
-import { IconifyIcon } from '@iconify-icon/solid';
-import { Component } from 'solid-js';
+import type { IconifyIcon } from '@iconify-icon/solid';
+import type { Component } from 'solid-js';
 
-import { InstanceSettingsTabProps } from '@/entities/instance';
+import type { InstanceSettingsTabProps } from '@/entities/instance';
 
 import { GeneralTab } from '@/features/instance-settings/general-tab';
 import { JavaAndMemoryTab } from '@/features/instance-settings/java-and-memory-tab';

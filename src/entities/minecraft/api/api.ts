@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import {
+import type {
   VersionManifest,
   LoadingBar,
   MinecraftProcessMetadata,

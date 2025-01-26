@@ -1,7 +1,8 @@
 // eslint-disable-next-line import/named
-import { EventCallback, listen } from '@tauri-apps/api/event';
+import type { EventCallback } from '@tauri-apps/api/event';
+import { listen } from '@tauri-apps/api/event';
 
-import { LoadingPayload, MinecraftEventName } from '../model';
+import type { LoadingPayload, MinecraftEventName } from '../model';
 
 export const listenEvent = <T = LoadingPayload>(
   event: MinecraftEventName,

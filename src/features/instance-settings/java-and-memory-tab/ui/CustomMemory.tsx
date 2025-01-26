@@ -1,10 +1,5 @@
-import {
-  Component,
-  ComponentProps,
-  createEffect,
-  createSignal,
-  splitProps,
-} from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createEffect, createSignal, splitProps } from 'solid-js';
 
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';

@@ -1,12 +1,5 @@
-import {
-  Component,
-  createEffect,
-  For,
-  Match,
-  Show,
-  splitProps,
-  Switch,
-} from 'solid-js';
+import type { Component } from 'solid-js';
+import { createEffect, For, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -14,7 +7,7 @@ import { useInstances, refetchInstances } from '@/entities/instance';
 
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
 
-import { InstancesPanelProps } from './types';
+import type { InstancesPanelProps } from './types';
 
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

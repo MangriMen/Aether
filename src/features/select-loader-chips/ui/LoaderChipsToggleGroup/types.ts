@@ -1,7 +1,7 @@
-import { Option } from '@/shared/model';
-import { ToggleGroupRootProps } from '@/shared/ui';
+import type { Option } from '@/shared/model';
+import type { ToggleGroupRootProps } from '@/shared/ui';
 
-import { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/entities/minecraft';
 
 export type LoaderChipsToggleGroupProps = ToggleGroupRootProps & {
   loaders: Option<ModLoader>[];

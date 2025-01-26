@@ -1,4 +1,4 @@
-import { Option } from '@/shared/model';
+import type { Option } from '@/shared/model';
 
 import { ModLoader } from '@/entities/minecraft';
 

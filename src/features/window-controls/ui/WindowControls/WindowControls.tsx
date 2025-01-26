@@ -1,12 +1,13 @@
 import { Icon } from '@iconify-icon/solid';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { Component, createMemo, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { isMaximized, toggleMaximize } from '@/shared/model';
 import { TitleBarButton } from '@/shared/ui';
 
-import { WindowControlsProps } from './types';
+import type { WindowControlsProps } from './types';
 
 export const WindowControls: Component<WindowControlsProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

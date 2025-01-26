@@ -1,3 +1,3 @@
-import { InstanceCardProps } from '@/entities/instance';
+import type { InstanceCardProps } from '@/entities/instance';
 
 export type InstanceControlledCardProps = InstanceCardProps;

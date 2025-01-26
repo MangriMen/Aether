@@ -1,4 +1,5 @@
-import { Accessor, createResource } from 'solid-js';
+import type { Accessor } from 'solid-js';
+import { createResource } from 'solid-js';
 
 import {
   getMinecraftInstanceProcess,

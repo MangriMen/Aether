@@ -1,9 +1,10 @@
-import { Component, For, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { For, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-import { LoaderVersionTypeChipsToggleGroupProps } from '.';
+import type { LoaderVersionTypeChipsToggleGroupProps } from '.';
 
 export const LoaderVersionTypeChipsToggleGroup: Component<
   LoaderVersionTypeChipsToggleGroupProps

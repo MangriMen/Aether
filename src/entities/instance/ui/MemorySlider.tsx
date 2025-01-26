@@ -1,6 +1,7 @@
-import { PolymorphicProps } from '@kobalte/core';
-import { SliderRootProps } from '@kobalte/core/slider';
-import { Component, splitProps, ValidComponent } from 'solid-js';
+import type { PolymorphicProps } from '@kobalte/core';
+import type { SliderRootProps } from '@kobalte/core/slider';
+import type { Component, ValidComponent } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {

@@ -1,14 +1,17 @@
 import MdiLoadingIcon from '@iconify/icons-mdi/loading';
-import { Icon, IconifyIcon } from '@iconify-icon/solid';
-import { PolymorphicProps } from '@kobalte/core';
+import type { IconifyIcon } from '@iconify-icon/solid';
+import { Icon } from '@iconify-icon/solid';
+import type { PolymorphicProps } from '@kobalte/core';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
-import { Match, splitProps, Switch, ValidComponent } from 'solid-js';
+import type { ValidComponent } from 'solid-js';
+import { Match, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { ButtonProps, buttonVariants } from './Button';
+import type { ButtonProps } from './Button';
+import { buttonVariants } from './Button';
 
 const SVG_CHILD_FILL_VARIANTS = {
   background: '[&_svg]:fill-background',

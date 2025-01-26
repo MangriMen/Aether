@@ -1,13 +1,13 @@
-import { ColorMode, ConfigColorMode, PolymorphicProps } from '@kobalte/core';
-import {
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  ValidComponent,
-} from 'solid-js';
+import type {
+  ColorMode,
+  ConfigColorMode,
+  PolymorphicProps,
+} from '@kobalte/core';
+import type { Component, ValidComponent } from 'solid-js';
+import { createEffect, createMemo, createSignal } from 'solid-js';
 
-import { Option, ThemeConfig, THEME_BY_MODE } from '@/shared/model';
+import type { Option, ThemeConfig } from '@/shared/model';
+import { THEME_BY_MODE } from '@/shared/model';
 import {
   Select,
   SelectContent,

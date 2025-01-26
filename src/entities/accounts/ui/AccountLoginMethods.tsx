@@ -1,12 +1,13 @@
 import MdiCloudOffOutline from '@iconify/icons-mdi/cloud-off-outline';
 import MdiSignIn from '@iconify/icons-mdi/login-variant';
 import { Icon } from '@iconify-icon/solid';
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { Button } from '@/shared/ui';
 
-import { AccountType } from '../model';
+import type { AccountType } from '../model';
 
 export type AccountLoginMethodsProps = ComponentProps<'div'> & {
   onLogin: (type: AccountType) => void;

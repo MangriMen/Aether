@@ -1,8 +1,9 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { SettingsPaneProps } from './types';
+import type { SettingsPaneProps } from './types';
 
 export const SettingsPane: Component<SettingsPaneProps> = (props) => {
   const [local, others] = splitProps(props, ['title', 'class', 'children']);

@@ -1,17 +1,12 @@
-import { DialogRootProps } from '@kobalte/core/dialog';
-import {
-  Component,
-  ComponentProps,
-  mergeProps,
-  Show,
-  splitProps,
-} from 'solid-js';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { Component, ComponentProps } from 'solid-js';
+import { mergeProps, Show, splitProps } from 'solid-js';
 
 import { Button } from './Button';
+import type { DialogContentProps } from './Dialog';
 import {
   Dialog,
   DialogContent,
-  DialogContentProps,
   DialogDescription,
   DialogFooter,
   DialogHeader,

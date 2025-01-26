@@ -1,4 +1,4 @@
-import { Component } from 'solid-js';
+import type { Component } from 'solid-js';
 
 import {
   Dialog,
@@ -16,7 +16,7 @@ import { CreateInstancePluginsMenu } from '@/features/create-instance-plugins-me
 
 import { CreateCustomInstanceDialogBody } from '../CreateCustomInstanceDialogBody';
 
-import { CreateInstanceDialogProps } from '.';
+import type { CreateInstanceDialogProps } from '.';
 
 enum CreateInstanceDialogTabs {
   Custom = 'custom',

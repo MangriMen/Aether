@@ -1,17 +1,15 @@
 // eslint-disable-next-line import/named
-import { UnlistenFn } from '@tauri-apps/api/event';
-import { Component, createEffect, JSX, onCleanup } from 'solid-js';
+import type { UnlistenFn } from '@tauri-apps/api/event';
+import type { Component, JSX } from 'solid-js';
+import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 // eslint-disable-next-line boundaries/element-types
 import { ProcessPayloadType } from '@/entities/minecraft';
 
 import { listenProcess } from '../api';
-import {
-  Instance,
-  RunningInstancesContext,
-  RunningInstancesContextValue,
-} from '../model';
+import type { Instance, RunningInstancesContextValue } from '../model';
+import { RunningInstancesContext } from '../model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
 

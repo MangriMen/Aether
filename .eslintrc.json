@@ -53,17 +53,21 @@
         "varsIgnorePattern": "^_"
       }
     ],
-    "complexity": [
-      "error",
-      13
-    ],
+    "complexity": ["error", 13],
     "curly": "error",
     "mysticatea/no-useless-rest-spread": "error",
     "no-debugger": "warn",
     "no-template-curly-in-string": "off",
     "no-unused-vars": "off",
     "prefer-object-spread/prefer-object-spread": 2,
-    "prettier/prettier": "warn"
+    "prettier/prettier": "warn",
+    "tailwindcss/no-custom-classname": [
+      "warn",
+      {
+        "cssFiles": ["src/**/*.css"]
+      }
+    ],
+    "@typescript-eslint/consistent-type-imports": "error"
   },
   "settings": {
     "import/resolver": {

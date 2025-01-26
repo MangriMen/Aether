@@ -1,18 +1,11 @@
-import {
-  Component,
-  ComponentProps,
-  createEffect,
-  createSignal,
-  splitProps,
-} from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createEffect, createSignal, splitProps } from 'solid-js';
 
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import {
-  editMinecraftInstance,
-  InstanceSettingsTabProps,
-} from '@/entities/instance';
+import type { InstanceSettingsTabProps } from '@/entities/instance';
+import { editMinecraftInstance } from '@/entities/instance';
 
 import { DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../model';
 

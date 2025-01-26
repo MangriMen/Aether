@@ -1,11 +1,9 @@
-import {
-  createResource,
-  createSignal,
-  InitializedResourceReturn,
-} from 'solid-js';
+import type { InitializedResourceReturn } from 'solid-js';
+import { createResource, createSignal } from 'solid-js';
 
 // eslint-disable-next-line boundaries/element-types
-import { getMinecraftInstances, Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instance';
+import { getMinecraftInstances } from '@/entities/instance';
 
 const mapInstancesToIds = (
   instances: Instance[] | undefined,

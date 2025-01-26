@@ -1,7 +1,8 @@
-import { Collection, CollectionNode } from '@kobalte/core';
+import type { Collection, CollectionNode } from '@kobalte/core';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import * as SelectPrimitive from '@kobalte/core/select';
-import { createVirtualizer, VirtualItem } from '@tanstack/solid-virtual';
+import type { VirtualItem } from '@tanstack/solid-virtual';
+import { createVirtualizer } from '@tanstack/solid-virtual';
 import { cva } from 'class-variance-authority';
 import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
 import { createMemo, Show, splitProps, For } from 'solid-js';

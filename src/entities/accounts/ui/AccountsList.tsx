@@ -1,15 +1,9 @@
-import {
-  Component,
-  ComponentProps,
-  Show,
-  For,
-  splitProps,
-  createMemo,
-} from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { Show, For, splitProps, createMemo } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { Account } from '../model';
+import type { Account } from '../model';
 
 import { AccountCard } from './AccountCard';
 

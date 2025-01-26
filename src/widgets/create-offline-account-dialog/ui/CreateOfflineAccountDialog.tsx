@@ -1,5 +1,5 @@
-import { DialogRootProps } from '@kobalte/core/dialog';
-import { Component } from 'solid-js';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { Component } from 'solid-js';
 
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 

@@ -1,5 +1,6 @@
 import { Route, Router } from '@solidjs/router';
-import { Component, lazy } from 'solid-js';
+import type { Component } from 'solid-js';
+import { lazy } from 'solid-js';
 
 import { RunningInstancesProvider } from '@/entities/instance';
 

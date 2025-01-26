@@ -10,9 +10,9 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import { Version } from '@/entities/minecraft';
+import type { Version } from '@/entities/minecraft';
 
-import { SelectGameVersionProps } from '.';
+import type { SelectGameVersionProps } from '.';
 
 export function SelectGameVersion<T extends Version = Version>(
   props: SelectGameVersionProps<T>,

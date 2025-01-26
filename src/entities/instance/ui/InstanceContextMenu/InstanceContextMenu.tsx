@@ -1,4 +1,5 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import {
   ContextMenu,
@@ -7,7 +8,7 @@ import {
   ContextMenuSeparator,
 } from '@/shared/ui';
 
-import { InstanceContextMenuProps } from './types';
+import type { InstanceContextMenuProps } from './types';
 
 export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
   props,

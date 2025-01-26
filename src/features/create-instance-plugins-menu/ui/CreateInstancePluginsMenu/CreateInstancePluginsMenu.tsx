@@ -1,16 +1,17 @@
-import { Component, createMemo, For, Show, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createMemo, For, Show, splitProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 // TODO: move to own package
 // eslint-disable-next-line import/no-internal-modules
 import { PackwizPluginImportMenu } from '@/plugins/packwiz-plugin';
 
-import { Option } from '@/shared/model';
+import type { Option } from '@/shared/model';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
-import { Plugin } from '@/entities/plugins';
+import type { Plugin } from '@/entities/plugins';
 
-import { CreateInstancePluginsMenuProps } from './types';
+import type { CreateInstancePluginsMenuProps } from './types';
 
 export const CreateInstancePluginsMenu: Component<
   CreateInstancePluginsMenuProps

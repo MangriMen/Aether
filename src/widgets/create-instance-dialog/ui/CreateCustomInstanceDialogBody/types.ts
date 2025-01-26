@@ -1,8 +1,8 @@
-import { DialogRootProps } from '@kobalte/core/dialog';
-import { FieldValues } from '@modular-forms/solid';
-import { z } from 'zod';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { FieldValues } from '@modular-forms/solid';
+import type { z } from 'zod';
 
-import { CreateCustomInstanceSchema } from '../../model';
+import type { CreateCustomInstanceSchema } from '../../model';
 
 export type CreateCustomInstanceDialogBodyProps = { class?: string } & Pick<
   DialogRootProps,
