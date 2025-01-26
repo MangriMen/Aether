@@ -1,5 +1,6 @@
 import { A } from '@solidjs/router';
-import { Component, createSignal, Show, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createSignal, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -19,7 +20,7 @@ import { AccountSelectButton } from '@/widgets/account-select-button';
 // eslint-disable-next-line boundaries/element-types
 import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
 
-import { AppSidebarProps } from '.';
+import type { AppSidebarProps } from '.';
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

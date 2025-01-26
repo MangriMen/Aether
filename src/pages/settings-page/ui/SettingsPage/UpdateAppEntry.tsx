@@ -2,12 +2,14 @@ import MdiLoadingIcon from '@iconify/icons-mdi/loading';
 import { Icon } from '@iconify-icon/solid';
 import { emit } from '@tauri-apps/api/event';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { DownloadEvent } from '@tauri-apps/plugin-updater';
-import { Component, ComponentProps, Show } from 'solid-js';
+import type { DownloadEvent } from '@tauri-apps/plugin-updater';
+import type { Component, ComponentProps } from 'solid-js';
+import { Show } from 'solid-js';
 
 import { Button } from '@/shared/ui';
 
-import { LoadingBarTypeEnum, LoadingPayload } from '@/entities/minecraft';
+import type { LoadingPayload } from '@/entities/minecraft';
+import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
 import { getVersion } from '@tauri-apps/api/app';

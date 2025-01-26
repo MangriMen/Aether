@@ -1,10 +1,11 @@
-import { Component, createMemo, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
 import { FieldLabel } from '../FieldLabel';
 
-import { FieldProps } from '.';
+import type { FieldProps } from '.';
 
 export const LabeledField: Component<FieldProps> = (props) => {
   const [local, others] = splitProps(props, ['label', 'class', 'children']);

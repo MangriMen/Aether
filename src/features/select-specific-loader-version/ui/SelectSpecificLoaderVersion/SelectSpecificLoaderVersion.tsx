@@ -11,9 +11,9 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import { LoaderVersion } from '@/entities/minecraft';
+import type { LoaderVersion } from '@/entities/minecraft';
 
-import { SelectSpecificLoaderVersionProps } from '.';
+import type { SelectSpecificLoaderVersionProps } from '.';
 
 export const SelectSpecificLoaderVersion = <
   T extends LoaderVersion = LoaderVersion,

@@ -1,16 +1,17 @@
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiSettingsIcon from '@iconify/icons-mdi/settings';
 import { useNavigate } from '@solidjs/router';
-import { Component, ComponentProps, createMemo, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { IconButton } from '@/shared/ui';
 
+import type { Instance } from '@/entities/instance';
 import {
   InstanceImage,
   InstanceActionButton,
   useInstanceActions,
   useRunningInstancesContext,
-  Instance,
 } from '@/entities/instance';
 
 import InstanceHeaderInfo from './InstanceHeaderInfo';

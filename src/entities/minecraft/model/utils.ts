@@ -1,4 +1,4 @@
-import { LoaderManifest, MappedLoaderManifest } from './modded';
+import type { LoaderManifest, MappedLoaderManifest } from './modded';
 
 export const loaderManifestToMapped = (
   manifest: LoaderManifest,

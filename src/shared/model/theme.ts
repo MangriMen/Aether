@@ -1,4 +1,4 @@
-import { ColorMode, ConfigColorMode } from '@kobalte/core';
+import type { ColorMode, ConfigColorMode } from '@kobalte/core';
 
 export type Theme = ColorMode | string;
 export type ThemeObject = { value: Theme; name: string; mode: ColorMode };

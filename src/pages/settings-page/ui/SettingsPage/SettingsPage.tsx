@@ -1,4 +1,5 @@
-import { Component } from 'solid-js';
+import type { RouteSectionProps } from '@solidjs/router';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { AppVersion } from '@/entities/settings';
 
@@ -8,12 +9,14 @@ import { SettingsEntry } from '../SettingsEntry';
 import { SettingsPane } from '../SettingsPane';
 
 import SelectThemeForColorModeEntry from './SelectThemeForColorModeEntry';
-import { SettingsPageProps } from './types';
 import UpdateAppEntry from './UpdateAppEntry';
 
+export type SettingsPageProps = ComponentProps<'div'> & RouteSectionProps;
+
 export const SettingsPage: Component<SettingsPageProps> = (props) => {
+  const [_, others] = splitProps(props, ['params', 'location', 'data']);
   return (
-    <div class='flex size-full flex-col gap-4 p-4' {...props}>
+    <div class='flex size-full flex-col gap-4 p-4' {...others}>
       <SettingsPane class='mx-auto w-full max-w-screen-lg' title='Launcher'>
         <SettingsEntry
           title='Color theme'

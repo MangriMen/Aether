@@ -1,10 +1,11 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
 import { IconButton } from '../IconButton';
 
-import { TitleBarButtonProps } from './types';
+import type { TitleBarButtonProps } from './types';
 
 export const TitleBarButton: Component<TitleBarButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

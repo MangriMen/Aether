@@ -1,11 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import {
-  Instance,
-  InstanceCreateDto,
-  InstanceEditDto,
-  refetchInstances,
-} from '../model';
+import type { Instance, InstanceCreateDto, InstanceEditDto } from '../model';
+import { refetchInstances } from '../model';
 
 export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
   invoke<string>('create_minecraft_instance', { instanceCreateDto });

@@ -3,13 +3,8 @@ import {
   version as getOsVersion,
   platform as getOsPlatform,
 } from '@tauri-apps/plugin-os';
-import {
-  Component,
-  ComponentProps,
-  createMemo,
-  Show,
-  splitProps,
-} from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 

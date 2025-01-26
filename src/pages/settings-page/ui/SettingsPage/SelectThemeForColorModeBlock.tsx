@@ -1,4 +1,5 @@
-import { Component, ComponentProps, createMemo, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { FieldLabel } from '@/shared/ui';

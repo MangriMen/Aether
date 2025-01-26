@@ -1,4 +1,5 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -6,7 +7,7 @@ import { InstanceActionButton } from '../InstanceActionButton';
 import { InstanceImage } from '../InstanceImage';
 import { InstanceTitle } from '../InstanceTitle';
 
-import { InstanceCardProps } from './types';
+import type { InstanceCardProps } from './types';
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {
   const [local, others] = splitProps(props, [

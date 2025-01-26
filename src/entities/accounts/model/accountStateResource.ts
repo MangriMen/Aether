@@ -2,7 +2,7 @@ import { createResource } from 'solid-js';
 
 import { getAccounts } from '../api';
 
-import { Account } from './account';
+import type { Account } from './account';
 
 const accountStateResource = createResource<Account[]>(
   () => {

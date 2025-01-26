@@ -1,11 +1,12 @@
-import { Component, For, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { For, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-import { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/entities/minecraft';
 
-import { LoaderChipsToggleGroupProps } from '.';
+import type { LoaderChipsToggleGroupProps } from '.';
 
 export const LoaderChipsToggleGroup: Component<LoaderChipsToggleGroupProps> = (
   props,

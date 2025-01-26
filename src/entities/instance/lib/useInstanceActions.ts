@@ -3,11 +3,11 @@ import { useContext } from 'solid-js';
 import { isAetherLauncherError } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
+import type { Instance } from '@/entities/instance';
 import {
   openInstanceFolder,
   refetchInstances,
   RunningInstancesContext,
-  Instance,
   InstanceInstallStage,
   launchMinecraftInstance,
   removeMinecraftInstance,

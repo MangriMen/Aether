@@ -1,14 +1,15 @@
 import { debounce } from '@solid-primitives/scheduled';
-import { Component, ComponentProps, createMemo, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import {
-  editMinecraftInstance,
+import type {
   Instance,
   InstanceEditDto,
   InstanceSettingsTabProps,
 } from '@/entities/instance';
+import { editMinecraftInstance } from '@/entities/instance';
 
 import CustomMemory from './CustomMemory';
 import CustomTextField from './CustomTextField';

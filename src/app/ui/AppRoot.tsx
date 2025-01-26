@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/named
-import { RouteSectionProps } from '@solidjs/router';
-import { Component, createEffect, onCleanup, onMount } from 'solid-js';
+import type { RouteSectionProps } from '@solidjs/router';
+import type { Component } from 'solid-js';
+import { createEffect, onCleanup, onMount } from 'solid-js';
 
 import { Toaster } from '@/shared/ui';
 

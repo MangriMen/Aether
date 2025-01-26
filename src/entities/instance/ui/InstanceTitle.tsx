@@ -1,4 +1,5 @@
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 export type InstanceTitleProps = ComponentProps<'div'> & {
   name?: string;

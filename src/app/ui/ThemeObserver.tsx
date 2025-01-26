@@ -1,10 +1,14 @@
-import { ColorMode, useColorMode } from '@kobalte/core';
-import { Component, JSX, onMount } from 'solid-js';
+import type { ColorMode } from '@kobalte/core';
+import { useColorMode } from '@kobalte/core';
+import type { Component, JSX } from 'solid-js';
+import { onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import { Theme, ThemeConfig, THEMES_MAP } from '@/shared/model';
+import type { Theme, ThemeConfig } from '@/shared/model';
+import { THEMES_MAP } from '@/shared/model';
 
-import { DEFAULT_THEME, ThemeContext, ThemeContextValue } from '../model';
+import type { ThemeContextValue } from '../model';
+import { DEFAULT_THEME, ThemeContext } from '../model';
 
 export type ThemeObserverProps = { children?: JSX.Element };
 

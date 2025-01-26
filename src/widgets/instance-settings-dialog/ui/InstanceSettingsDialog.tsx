@@ -1,7 +1,8 @@
 import MdiRightArrowIcon from '@iconify/icons-mdi/chevron-right';
 import { Icon } from '@iconify-icon/solid';
-import { DialogRootProps } from '@kobalte/core/dialog';
-import { Component, For, splitProps } from 'solid-js';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { Component } from 'solid-js';
+import { For, splitProps } from 'solid-js';
 
 import {
   Dialog,
@@ -14,7 +15,8 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 
-import { Instance, InstanceImage } from '@/entities/instance';
+import type { Instance } from '@/entities/instance';
+import { InstanceImage } from '@/entities/instance';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,

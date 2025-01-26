@@ -1,8 +1,9 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { TitleBarProps } from './types';
+import type { TitleBarProps } from './types';
 
 export const TitleBar: Component<TitleBarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

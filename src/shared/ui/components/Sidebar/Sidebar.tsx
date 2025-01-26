@@ -1,8 +1,9 @@
-import { Component, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { SidebarProps } from '.';
+import type { SidebarProps } from '.';
 
 export const Sidebar: Component<SidebarProps> = (props) => {
   const [local, others] = splitProps(props as SidebarProps, [

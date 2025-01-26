@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import { Account } from '../model';
+import type { Account } from '../model';
 
 export const getAccounts = () => invoke<Account[]>('get_accounts');
 

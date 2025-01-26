@@ -1,13 +1,10 @@
-import { ConfigColorMode, useColorMode } from '@kobalte/core';
-import {
-  Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  Show,
-} from 'solid-js';
+import type { ConfigColorMode } from '@kobalte/core';
+import { useColorMode } from '@kobalte/core';
+import type { Component } from 'solid-js';
+import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
-import { Option, ThemeConfig, THEME_TO_MODE, THEMES } from '@/shared/model';
+import type { Option, ThemeConfig } from '@/shared/model';
+import { THEME_TO_MODE, THEMES } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -20,7 +17,7 @@ import {
 // eslint-disable-next-line boundaries/element-types
 import { useThemeContext } from '@/app/model';
 
-import { SelectThemeProps } from './types';
+import type { SelectThemeProps } from './types';
 
 const THEME_OPTIONS: Option<ThemeConfig>[] = [
   ...THEMES.map((theme) => ({

@@ -1,5 +1,6 @@
 import { useNavigate } from '@solidjs/router';
-import { Component, createMemo, createSignal } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createMemo, createSignal } from 'solid-js';
 
 import { preventAll } from '@/shared/lib';
 import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
@@ -11,7 +12,7 @@ import {
   useRunningInstancesContext,
 } from '@/entities/instance';
 
-import { InstanceControlledCardProps } from './types';
+import type { InstanceControlledCardProps } from './types';
 
 export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   props,

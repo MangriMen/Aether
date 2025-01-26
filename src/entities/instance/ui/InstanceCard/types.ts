@@ -1,6 +1,6 @@
-import { ComponentProps } from 'solid-js';
+import type { ComponentProps } from 'solid-js';
 
-import { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instance';
 
 export type InstanceCardProps = ComponentProps<'div'> & {
   instance: Instance;

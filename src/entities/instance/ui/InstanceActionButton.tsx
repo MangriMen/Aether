@@ -1,14 +1,10 @@
 import MdiStopIcon from '@iconify/icons-mdi/stop';
-import { PolymorphicProps } from '@kobalte/core';
-import {
-  Component,
-  splitProps,
-  createMemo,
-  Show,
-  ValidComponent,
-} from 'solid-js';
+import type { PolymorphicProps } from '@kobalte/core';
+import type { Component, ValidComponent } from 'solid-js';
+import { splitProps, createMemo, Show } from 'solid-js';
 
-import { IconButton, IconButtonProps, PlayIcon } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui';
+import { IconButton, PlayIcon } from '@/shared/ui';
 
 import { InstanceInstallStage } from '@/entities/instance';
 

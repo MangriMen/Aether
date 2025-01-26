@@ -1,14 +1,12 @@
 import { throttle } from '@solid-primitives/scheduled';
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import {
-  editMinecraftInstance,
-  Instance,
-  InstanceSettingsTabProps,
-} from '@/entities/instance';
+import type { Instance, InstanceSettingsTabProps } from '@/entities/instance';
+import { editMinecraftInstance } from '@/entities/instance';
 
 export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 

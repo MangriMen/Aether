@@ -1,13 +1,8 @@
 // eslint-disable-next-line import/named
-import { RouteSectionProps, useLocation, useNavigate } from '@solidjs/router';
-import {
-  Component,
-  ComponentProps,
-  createMemo,
-  lazy,
-  Show,
-  splitProps,
-} from 'solid-js';
+import type { RouteSectionProps } from '@solidjs/router';
+import { useLocation, useNavigate } from '@solidjs/router';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, lazy, Show, splitProps } from 'solid-js';
 
 import { Separator } from '@/shared/ui';
 
@@ -24,7 +19,7 @@ const InstanceSettingsDialog = lazy(() =>
 export type InstancePageProps = ComponentProps<'div'> & RouteSectionProps;
 
 export const InstancePage: Component<InstancePageProps> = (props) => {
-  const [_local, others] = splitProps(props, ['params', 'location', 'data']);
+  const [_, others] = splitProps(props, ['params', 'location', 'data']);
 
   const navigate = useNavigate();
   const location = useLocation();

@@ -1,11 +1,12 @@
-import { Component, createMemo, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { Progress } from '@/shared/ui';
 
 // eslint-disable-next-line boundaries/element-types
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 
-import { EventCardProps } from './types';
+import type { EventCardProps } from './types';
 
 export const EventCard: Component<EventCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);

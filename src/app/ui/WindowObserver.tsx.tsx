@@ -1,6 +1,7 @@
 import { throttle } from '@solid-primitives/scheduled';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { Component, createEffect, onCleanup } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createEffect, onCleanup } from 'solid-js';
 
 import { updateMaximize } from '@/shared/model';
 

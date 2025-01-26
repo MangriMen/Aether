@@ -1,13 +1,8 @@
-import {
-  createForm,
-  getValue,
-  setValue,
-  SubmitHandler,
-  zodForm,
-} from '@modular-forms/solid';
+import type { SubmitHandler } from '@modular-forms/solid';
+import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
 import { createAsync } from '@solidjs/router';
+import type { Component } from 'solid-js';
 import {
-  Component,
   createMemo,
   createSignal,
   Match,
@@ -27,11 +22,11 @@ import {
   showToast,
 } from '@/shared/ui';
 
+import type { InstanceCreateDto } from '@/entities/instance';
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
   createMinecraftInstance,
-  InstanceCreateDto,
 } from '@/entities/instance';
 import {
   getLoaderVersionsManifest,
@@ -54,7 +49,7 @@ import {
   loaderVersionTypes,
 } from '../../model';
 
-import {
+import type {
   CreateCustomInstanceFormValues,
   CreateCustomInstanceDialogBodyProps,
 } from '.';

@@ -2,18 +2,14 @@ import MdiClockIcon from '@iconify/icons-mdi/clock';
 import MdiEngineIcon from '@iconify/icons-mdi/engine';
 import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
 import { Icon } from '@iconify-icon/solid';
-import {
-  Component,
-  ComponentProps,
-  createMemo,
-  Show,
-  splitProps,
-} from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { Separator } from '@/shared/ui';
 
-import { formatTimePlayedHumanized, Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instance';
+import { formatTimePlayedHumanized } from '@/entities/instance';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
   instance: Instance;

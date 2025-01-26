@@ -1,10 +1,7 @@
-import {
-  createForm,
-  reset,
-  SubmitHandler,
-  zodForm,
-} from '@modular-forms/solid';
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { SubmitHandler } from '@modular-forms/solid';
+import { createForm, reset, zodForm } from '@modular-forms/solid';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import {
   Button,
@@ -15,10 +12,8 @@ import {
   TextFieldLabel,
 } from '@/shared/ui';
 
-import {
-  CreateOfflineAccountFormSchema,
-  CreateOfflineAccountFormValues,
-} from '../model';
+import type { CreateOfflineAccountFormValues } from '../model';
+import { CreateOfflineAccountFormSchema } from '../model';
 
 export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;

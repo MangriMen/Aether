@@ -4,9 +4,9 @@ import {
   ColorModeScript,
   createLocalStorageManager,
 } from '@kobalte/core';
-import { Component } from 'solid-js';
+import type { Component } from 'solid-js';
 
-import { ColorModeObserverProps } from './types';
+import type { ColorModeObserverProps } from './types';
 
 export const ColorModeObserver: Component<ColorModeObserverProps> = (props) => {
   const storageManager = createLocalStorageManager(COLOR_MODE_STORAGE_KEY);

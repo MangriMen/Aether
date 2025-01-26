@@ -1,8 +1,8 @@
 import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
 import { Icon } from '@iconify-icon/solid';
 import { ReactiveMap } from '@solid-primitives/map';
+import type { Component } from 'solid-js';
 import {
-  Component,
   createEffect,
   createMemo,
   createSignal,
@@ -23,13 +23,10 @@ import {
 
 import { EventCard } from '@/entities/events';
 import { refetchInstances } from '@/entities/instance';
-import {
-  getLoadingBars,
-  listenEvent,
-  LoadingPayload,
-} from '@/entities/minecraft';
+import type { LoadingPayload } from '@/entities/minecraft';
+import { getLoadingBars, listenEvent } from '@/entities/minecraft';
 
-import { NotificationMenuButtonProps } from './types';
+import type { NotificationMenuButtonProps } from './types';
 const NOTIFICATION_COMPLETED_REMOVE_DELAY = 1500;
 
 export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (

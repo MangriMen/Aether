@@ -1,18 +1,18 @@
 import MdiAccount from '@iconify/icons-mdi/account';
 import { Icon } from '@iconify-icon/solid';
-import { Component, createSignal } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createSignal } from 'solid-js';
 
+import type { IconButtonProps } from '@/shared/ui';
 import {
   IconButton,
-  IconButtonProps,
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/shared/ui';
 
+import type { Account, AccountType } from '@/entities/accounts';
 import {
-  Account,
-  AccountType,
   changeAccount,
   logout,
   refetchAccountStateResource,

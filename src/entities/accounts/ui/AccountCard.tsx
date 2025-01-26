@@ -1,11 +1,13 @@
 import MdiDelete from '@iconify/icons-mdi/delete';
 // import MdiLocationEnter from '@iconify/icons-mdi/location-enter';
-import { Component, ComponentProps, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Button, ButtonProps, IconButton } from '@/shared/ui';
+import type { ButtonProps } from '@/shared/ui';
+import { Button, IconButton } from '@/shared/ui';
 
-import { Account, AccountType } from '../model';
+import type { Account, AccountType } from '../model';
 
 export type AccountCardProps = ComponentProps<'div'> & {
   username: Account['username'];

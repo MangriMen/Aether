@@ -1,3 +1,3 @@
-import { PluginComponentProps } from '@/entities/plugins';
+import type { PluginComponentProps } from '@/entities/plugins';
 
 export type PackwizPluginImportMenuProps = PluginComponentProps;

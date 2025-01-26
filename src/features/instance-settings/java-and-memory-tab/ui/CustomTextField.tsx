@@ -1,12 +1,9 @@
-import { Component, createSignal, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import {
-  Checkbox,
-  CombinedTextField,
-  CombinedTextFieldProps,
-  LabeledField,
-} from '@/shared/ui';
+import type { CombinedTextFieldProps } from '@/shared/ui';
+import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 export type CustomTextFieldProps = CombinedTextFieldProps & {
   fieldLabel?: string;

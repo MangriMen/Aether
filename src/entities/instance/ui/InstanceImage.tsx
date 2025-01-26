@@ -1,5 +1,6 @@
 import MdiCubeOutline from '@iconify/icons-mdi/cube-outline';
-import { Component, ComponentProps, Show, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { ResponsiveIcon } from '@/shared/ui';
