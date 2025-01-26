@@ -1,8 +1,9 @@
+import { Collection, CollectionNode } from '@kobalte/core';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import * as SelectPrimitive from '@kobalte/core/select';
-import { createVirtualizer } from '@tanstack/solid-virtual';
+import { createVirtualizer, VirtualItem } from '@tanstack/solid-virtual';
 import { cva } from 'class-variance-authority';
-import type { Component, JSX, ValidComponent } from 'solid-js';
+import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
 import { createMemo, Show, splitProps, For } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -63,50 +64,43 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
 type SelectContentProps<T extends ValidComponent = 'div'> =
   SelectPrimitive.SelectContentProps<T> & { class?: string | undefined };
 
-type VirtualizedOption = Record<string, string | number | bigint>;
+type SelectVirtualizedItemComponentProps<Option> =
+  SelectPrimitive.SelectRootItemComponentProps<Option> & {
+    style: JSX.CSSProperties;
+  };
 
-type NonVirtualizedProps = {
+type NonVirtualizedSelectProps = {
   virtualized?: false;
   options?: never;
   optionValue?: never;
   itemComponent?: never;
-  maxHeight?: never;
 };
 
-type VirtualizedProps<Option> = {
-  options: Option[];
-  optionValue?: string;
-  itemComponent?: Component<
-    SelectPrimitive.SelectRootItemComponentProps<Option> & {
-      style: JSX.CSSProperties;
-    }
-  >;
-  maxHeight?: number | string;
+type VirtualizedSelectProps<Option, OptGroup> = Pick<
+  SelectPrimitive.SelectRootOptions<Option, OptGroup>,
+  'optionValue'
+> & {
+  options: Array<Option>;
+  itemComponent?: Component<SelectVirtualizedItemComponentProps<Option>>;
 };
 
-type VirtualizedContentProps<Option> = {
+type VirtualizedSelectContentProps<Option, OptGroup> = {
   virtualized: true;
-} & VirtualizedProps<Option>;
+} & VirtualizedSelectProps<Option, OptGroup>;
 
 type SelectContentVirtualizedProps<
   Option,
+  OptGroup,
   T extends ValidComponent = 'div',
 > = SelectContentProps<T> &
-  (NonVirtualizedProps | VirtualizedContentProps<Option>);
+  (NonVirtualizedSelectProps | VirtualizedSelectContentProps<Option, OptGroup>);
 
 const SelectContent = <Option, T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SelectContentVirtualizedProps<Option, T>>,
 ) => {
   const [local, others] = splitProps(
     props as SelectContentVirtualizedProps<Option, T>,
-    [
-      'virtualized',
-      'options',
-      'optionValue',
-      'itemComponent',
-      'maxHeight',
-      'class',
-    ],
+    ['virtualized', 'options', 'optionValue', 'itemComponent', 'class'],
   );
 
   return (
@@ -115,16 +109,18 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
         class={cn(
           'relative z-50 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md origin-[var(--kb-select-content-transform-origin)] animate-content-hide data-[expanded]:animate-content-show',
           local.class,
+          {
+            'py-1': local.virtualized,
+          },
         )}
         {...(others as SelectContentProps)}
       >
         <Show
           when={local.virtualized && !!local.options}
-          fallback={<SelectPrimitive.Listbox class='m-0 p-1' />}
+          fallback={<SelectPrimitive.Listbox class='m-0 max-h-full p-1' />}
         >
           <SelectListboxVirtualized
-            class='m-0 p-1'
-            maxHeight={local.maxHeight}
+            class='max-h-full px-1'
             options={local.options ?? []}
             optionValue={local.optionValue}
             itemComponent={local.itemComponent}
@@ -141,6 +137,7 @@ type SelectListboxProps<
   T extends ValidComponent = 'ul',
 > = SelectPrimitive.SelectListboxProps<Option, OptGroup, T> & {
   class?: string | undefined;
+  style?: JSX.CSSProperties;
 };
 
 type SelectListboxVirtualizedProps<
@@ -148,41 +145,99 @@ type SelectListboxVirtualizedProps<
   OptGroup = never,
   T extends ValidComponent = 'ul',
 > = SelectListboxProps<Option, OptGroup, T> &
-  Exclude<VirtualizedProps<Option>, 'virtualized'>;
+  VirtualizedSelectProps<Option, OptGroup>;
 
-const SelectListboxVirtualized = <Option, T extends ValidComponent = 'ul'>(
-  props: PolymorphicProps<T, SelectListboxVirtualizedProps<Option, T>>,
+const SelectListboxVirtualized = <
+  Option,
+  OptGroup = never,
+  T extends ValidComponent = 'ul',
+>(
+  props: PolymorphicProps<
+    T,
+    SelectListboxVirtualizedProps<Option, OptGroup, T>
+  >,
 ) => {
-  const [local, _] = splitProps(props, ['maxHeight', 'class']);
+  const [local, _] = splitProps(props, ['optionValue', 'class']);
 
   let listboxRef: HTMLUListElement | undefined;
 
-  const getItemValue = (option: Option) =>
-    (option as VirtualizedOption)[props.optionValue ?? 'value'];
+  let firstOpen = true;
 
-  const virtualizer = createMemo(() =>
-    createVirtualizer({
+  const getOptionValue = (option: Option) => {
+    const optionValue = local.optionValue ?? null;
+    if (optionValue == null) {
+      return String(option);
+    }
+    return String(
+      typeof optionValue === 'function'
+        ? optionValue(option)
+        : option[optionValue],
+    );
+  };
+
+  const virtualizer = createMemo(() => {
+    return createVirtualizer({
       count: props.options.length,
-      getScrollElement: () => listboxRef ?? null,
-      getItemKey: (index: number) => getItemValue(props.options[index]),
-      estimateSize: () => 32,
       overscan: 5,
-      enabled: true,
-    }),
-  );
+      getScrollElement: () => listboxRef ?? null,
+      getItemKey: (index: number) => getOptionValue(props.options[index]),
+      estimateSize: () => 32,
+    });
+  });
 
   const scrollToItem = (key: string) => {
     const index = props.options.findIndex(
-      (option: Option) => getItemValue(option) === key,
+      (option: Option) => getOptionValue(option) === key,
     );
+
+    if (index === 0 && firstOpen) {
+      virtualizer()?.scrollToOffset(-100, { align: 'start' });
+      firstOpen = false;
+      return;
+    }
+
     virtualizer()?.scrollToIndex(index);
+  };
+
+  const getItemStyle = (virtualRow: VirtualItem): JSX.CSSProperties => ({
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: `${virtualRow.size}px`,
+    transform: `translateY(${virtualRow.start}px)`,
+  });
+
+  const renderVirtualItem = (
+    items: Accessor<Collection<CollectionNode<Option>>>,
+    virtualRow: VirtualItem,
+  ) => {
+    if (typeof virtualRow.key !== 'string') {
+      return;
+    }
+
+    const item = items().getItem(virtualRow.key);
+
+    if (!item) {
+      return;
+    }
+
+    const style = getItemStyle(virtualRow);
+
+    if (props.itemComponent) {
+      return <props.itemComponent item={item} style={style} />;
+    }
+
+    return (
+      <SelectItem item={item} style={style}>
+        {getOptionValue(item.rawValue)}
+      </SelectItem>
+    );
   };
 
   return (
     <SelectPrimitive.Listbox
-      class={cn('overflow-auto', local.class, {
-        [`max-h-[${local.maxHeight}px]`]: local.maxHeight,
-      })}
+      class={cn('overflow-y-auto overflow-x-hidden', local.class)}
       ref={listboxRef}
       scrollToItem={scrollToItem}
     >
@@ -195,41 +250,7 @@ const SelectListboxVirtualized = <Option, T extends ValidComponent = 'ul'>(
           }}
         >
           <For each={virtualizer().getVirtualItems()}>
-            {(virtualRow) => {
-              if (typeof virtualRow.key !== 'string') {
-                return;
-              }
-
-              const item = items().getItem(virtualRow.key);
-
-              if (!item) {
-                return;
-              }
-
-              const itemStyle: JSX.CSSProperties = {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              };
-
-              if (props.itemComponent) {
-                return props.itemComponent({ item, style: itemStyle });
-              }
-
-              return (
-                <SelectPrimitive.Item item={item} style={itemStyle}>
-                  <SelectPrimitive.ItemLabel>
-                    {item.textValue}
-                  </SelectPrimitive.ItemLabel>
-                  <SelectPrimitive.ItemIndicator>
-                    V
-                  </SelectPrimitive.ItemIndicator>
-                </SelectPrimitive.Item>
-              );
-            }}
+            {(virtualRow) => renderVirtualItem(items, virtualRow)}
           </For>
         </div>
       )}
@@ -253,7 +274,7 @@ const SelectItem = <T extends ValidComponent = 'li'>(
   return (
     <SelectPrimitive.Item
       class={cn(
-        'relative mt-0 flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative mt-0 flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         local.class,
       )}
       {...others}
