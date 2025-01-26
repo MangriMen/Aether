@@ -4,9 +4,9 @@ import { emit } from '@tauri-apps/api/event';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { DownloadEvent } from '@tauri-apps/plugin-updater';
 import type { Component, ComponentProps } from 'solid-js';
-import { Show } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 
-import { Button } from '@/shared/ui';
+import { Button, showToast } from '@/shared/ui';
 
 import type { LoadingPayload } from '@/entities/minecraft';
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
@@ -24,6 +24,8 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const checkUpdates = () => {
     refetch();
   };
+
+  const [isUpdating, setIsUpdating] = createSignal(false);
 
   let downloaded: number = 0;
   let contentLength: number | undefined = 0;
@@ -91,9 +93,18 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     downloaded = 0;
     contentLength = 0;
 
-    update()?.downloadAndInstall(handleUpdatingEvent);
+    try {
+      setIsUpdating(true);
+      await update()?.downloadAndInstall(handleUpdatingEvent);
 
-    await relaunch();
+      await relaunch();
+    } catch {
+      setIsUpdating(false);
+      showToast({
+        title: 'Error updating launcher',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -122,11 +133,15 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
       {...props}
     >
       <div class='flex flex-col gap-2'>
-        <Button onClick={checkUpdates} loading={update.loading}>
+        <Button
+          loading={update.loading}
+          disabled={isUpdating()}
+          onClick={checkUpdates}
+        >
           Check for updates
         </Button>
         <Button
-          disabled={!update()?.available}
+          disabled={!update()?.available || isUpdating()}
           onClick={downloadAndInstallUpdate}
         >
           Install and restart app
