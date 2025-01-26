@@ -1,9 +1,11 @@
-import { isDebug, setIsDebug } from '@/shared/model/settings';
+import { IS_DEBUG_KEY, isDebug, setIsDebug } from '@/shared/model';
 
 export const AetherNamespaceName = '_AETHER_';
 
 export const AetherNamespaceObject = {
   toggleDebug: () => {
-    setIsDebug(!isDebug());
+    const newValue = !isDebug();
+    localStorage.setItem(IS_DEBUG_KEY, JSON.stringify(newValue));
+    setIsDebug(newValue);
   },
 };
