@@ -5,17 +5,18 @@ import { cn } from '@/shared/lib';
 
 import { useInstances, refetchInstances } from '@/entities/instance';
 
+import { InstanceActionButton } from '@/features/instance-action-button';
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
 
 // eslint-disable-next-line boundaries/element-types
-import { useI18nContext } from '@/app/model';
+import { useTranslate } from '@/app/model';
 
 import type { InstancesPanelProps } from './types';
 
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useI18nContext();
+  const [{ t }] = useTranslate();
 
   const instances = useInstances();
 
@@ -31,12 +32,17 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
             when={instances?.()?.[0]?.length}
             fallback={
               <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
-                {t('noInstances')}
+                {t('home.noInstances')}
               </p>
             }
           >
             <For each={instances?.()?.[0]}>
-              {(instance) => <InstanceControlledCard instance={instance} />}
+              {(instance) => (
+                <InstanceControlledCard
+                  instance={instance}
+                  instanceActionButton={InstanceActionButton}
+                />
+              )}
             </For>
           </Show>
         </Match>

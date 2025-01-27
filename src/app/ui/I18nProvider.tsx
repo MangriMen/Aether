@@ -8,22 +8,20 @@ import {
 } from 'solid-js';
 
 import enDictionary from '../i18n/en.json';
-import type {
-  I18nContextActions,
-  I18nContextType,
-  I18nContextValue,
-  Locale,
+import type { I18nContextType, Locale } from '../model';
+import {
+  fetchDictionary,
+  getSystemLocale,
+  I18nContext,
+  LOCALE_KEY,
 } from '../model';
-import { fetchDictionary, getLocaleFromBrowser, I18nContext } from '../model';
 
 export type I18nProviderProps = { children?: JSX.Element };
-
-const LOCALE_KEY = 'locale';
 
 const I18nProvider: Component<I18nProviderProps> = (props) => {
   const [locale, setLocale_] = makePersisted(
     // eslint-disable-next-line solid/reactivity
-    createSignal<Locale>(getLocaleFromBrowser()),
+    createSignal<Locale>(getSystemLocale()),
     { name: LOCALE_KEY },
   );
 
@@ -33,19 +31,20 @@ const I18nProvider: Component<I18nProviderProps> = (props) => {
 
   const t = i18n.translator(dict);
 
-  const contextValue: I18nContextValue = {
-    locale,
-    dict,
-    t,
-  };
-
   const setLocale = (locale: Locale) => {
     setLocale_(locale);
   };
 
-  const contextActions: I18nContextActions = { setLocale };
-
-  const context: I18nContextType = [contextValue, contextActions];
+  const context: I18nContextType = [
+    {
+      locale,
+      dict,
+      t,
+    },
+    {
+      setLocale,
+    },
+  ];
 
   return (
     <I18nContext.Provider value={context}>

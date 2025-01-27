@@ -18,22 +18,22 @@ export enum InstanceSettingsDialogTabs {
 
 export const INSTANCE_SETTINGS_TABS_TRIGGER: {
   icon: IconifyIcon;
-  title: string;
+  title: 'general' | 'window' | 'javaAndMemory';
   value: InstanceSettingsDialogTabs;
 }[] = [
   {
     icon: MdiInfoOutlineIcon,
-    title: 'General',
+    title: 'general',
     value: InstanceSettingsDialogTabs.General,
   },
   {
     icon: MdiMonitorIcon,
-    title: 'Window',
+    title: 'window',
     value: InstanceSettingsDialogTabs.Window,
   },
   {
     icon: MdiCoffeeOutlineIcon,
-    title: 'Java and memory',
+    title: 'javaAndMemory',
     value: InstanceSettingsDialogTabs.JavaAndMemory,
   },
 ];

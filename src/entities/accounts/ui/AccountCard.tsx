@@ -36,7 +36,7 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
       {...others}
     >
       <Button
-        class={cn('size-full rounded-r-none items-start flex-col px-2', {
+        class={cn('size-full rounded-r-none justify-start px-2', {
           'bg-muted pointer-events-none': local.active,
         })}
         variant='ghost'
@@ -44,8 +44,10 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
         onClick={local.onActivate}
         {...local.accountButtonProps}
       >
-        <span class='font-bold'>{local.username}</span>
-        <span class='capitalize text-muted-foreground'>{local.type}</span>
+        <div class='flex flex-col items-start'>
+          <span class='font-bold'>{local.username}</span>
+          <span class='capitalize text-muted-foreground'>{local.type}</span>
+        </div>
       </Button>
       <div class='flex items-start justify-start'>
         <IconButton

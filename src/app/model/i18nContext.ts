@@ -18,12 +18,12 @@ export type I18nContextType = [I18nContextValue, I18nContextActions];
 
 export const I18nContext = createContext<I18nContextType>();
 
-export const useI18nContext = () => {
+export const useTranslate = () => {
   const value = useContext(I18nContext);
 
   if (!value) {
     throw new Error(
-      '`useI18nContext` must be used within a `I18nProvider` component',
+      '`useTranslate` must be used within a `I18nProvider` component',
     );
   }
 

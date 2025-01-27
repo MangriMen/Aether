@@ -6,18 +6,18 @@ import { TitledBlock } from '@/shared/ui';
 import { InstancesPanel } from '@/widgets/instances-panel';
 
 // eslint-disable-next-line boundaries/element-types
-import { useI18nContext } from '@/app/model';
+import { useTranslate } from '@/app/model';
 
 import type { HomePageProps } from '.';
 
 export const HomePage: Component<HomePageProps> = (props) => {
   const [_, others] = splitProps(props, ['params', 'location', 'data']);
 
-  const [{ t }] = useI18nContext();
+  const [{ t }] = useTranslate();
 
   return (
     <div class='size-full p-4' {...others}>
-      <TitledBlock title={t('instances')}>
+      <TitledBlock title={t('home.instances')}>
         <InstancesPanel />
       </TitledBlock>
     </div>

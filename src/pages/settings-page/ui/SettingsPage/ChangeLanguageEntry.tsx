@@ -7,14 +7,14 @@ import { SelectLanguage } from '@/features/select-language';
 // eslint-disable-next-line boundaries/element-types
 import type { Locale } from '@/app/model';
 // eslint-disable-next-line boundaries/element-types
-import { LOCALES_OPTIONS, useI18nContext } from '@/app/model';
+import { LOCALES_OPTIONS, useTranslate } from '@/app/model';
 
 import { SettingsEntry } from '../SettingsEntry';
 
 export type ChangeLanguageEntryProps = ComponentProps<'div'>;
 
 const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
-  const [{ locale, t }, { setLocale }] = useI18nContext();
+  const [{ locale, t }, { setLocale }] = useTranslate();
 
   const currentOption = createMemo(() =>
     LOCALES_OPTIONS.find((option) => option.value === locale()),
@@ -30,8 +30,8 @@ const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
 
   return (
     <SettingsEntry
-      title={t('language')}
-      description={t('languageDescription')}
+      title={t('settings.language')}
+      description={t('settings.languageDescription')}
       {...props}
     >
       <SelectLanguage

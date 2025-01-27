@@ -11,7 +11,7 @@ import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
 // eslint-disable-next-line boundaries/element-types
-import { useI18nContext } from '@/app/model';
+import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';
 
 import { SettingsEntry } from '../SettingsEntry';
@@ -20,7 +20,7 @@ export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [update, { refetch }] = updateResource;
-  const [{ t }] = useI18nContext();
+  const [{ t }] = useTranslate();
 
   const checkUpdates = () => {
     refetch();
@@ -111,20 +111,20 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <SettingsEntry
       class='items-start'
-      title={t('checkForUpdates')}
+      title={t('settings.checkForUpdates')}
       description={
         <Show
           when={update()?.available}
-          fallback={t('checkForUpdatesDescriptionNoUpdates')}
+          fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
         >
           <div class='flex flex-col'>
-            {t('checkForUpdatesDescription')}
+            {t('settings.checkForUpdatesDescription')}
             <span>
-              {t('version')}: {update()?.version}
+              {t('common.version')}: {update()?.version}
             </span>
             <Show when={update()?.date}>
               <span>
-                {t('releaseDate')}: {update()?.date}
+                {t('settings.releaseDate')}: {update()?.date}
               </span>
             </Show>
           </div>
@@ -141,7 +141,7 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
               disabled={isUpdating()}
               onClick={checkUpdates}
             >
-              {t('checkForUpdates')}
+              {t('settings.checkForUpdates')}
             </Button>
           }
         >

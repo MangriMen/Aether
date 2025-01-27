@@ -6,7 +6,7 @@ import { AppVersion } from '@/entities/settings';
 import { SelectTheme } from '@/features/select-color-mode';
 
 // eslint-disable-next-line boundaries/element-types
-import { useI18nContext } from '@/app/model';
+import { useTranslate } from '@/app/model';
 
 import { SettingsEntry } from '../SettingsEntry';
 import { SettingsPane } from '../SettingsPane';
@@ -19,21 +19,27 @@ export type SettingsPageProps = ComponentProps<'div'> & RouteSectionProps;
 
 export const SettingsPage: Component<SettingsPageProps> = (props) => {
   const [_, others] = splitProps(props, ['params', 'location', 'data']);
-  const [{ t }] = useI18nContext();
+  const [{ t }] = useTranslate();
 
   return (
     <div class='flex size-full flex-col gap-4 p-4' {...others}>
-      <SettingsPane class='container max-w-screen-lg' title={t('launcher')}>
+      <SettingsPane
+        class='container max-w-screen-lg'
+        title={t('settings.launcher')}
+      >
         <SettingsEntry
-          title={t('colorScheme')}
-          description={t('colorSchemeDescription')}
+          title={t('settings.colorScheme')}
+          description={t('settings.colorSchemeDescription')}
         >
           <SelectTheme />
         </SettingsEntry>
         <SelectThemeForColorModeEntry />
         <ChangeLanguageEntry />
       </SettingsPane>
-      <SettingsPane class='container max-w-screen-lg' title={t('update')}>
+      <SettingsPane
+        class='container max-w-screen-lg'
+        title={t('settings.update')}
+      >
         <UpdateAppEntry />
       </SettingsPane>
       <AppVersion class='mt-auto' />
