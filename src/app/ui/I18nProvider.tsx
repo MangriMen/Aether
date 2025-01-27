@@ -3,9 +3,12 @@ import { makePersisted } from '@solid-primitives/storage';
 import {
   createResource,
   createSignal,
+  onMount,
   type Component,
   type JSX,
 } from 'solid-js';
+
+import { dayjs } from '@/shared/lib';
 
 import enDictionary from '../i18n/en.json';
 import type { I18nContextType, Locale } from '../model';
@@ -29,9 +32,10 @@ const I18nProvider: Component<I18nProviderProps> = (props) => {
     initialValue: i18n.flatten(enDictionary),
   });
 
-  const t = i18n.translator(dict);
+  const t = i18n.translator(dict, i18n.resolveTemplate);
 
   const setLocale = (locale: Locale) => {
+    dayjs.locale(locale);
     setLocale_(locale);
   };
 
@@ -45,6 +49,10 @@ const I18nProvider: Component<I18nProviderProps> = (props) => {
       setLocale,
     },
   ];
+
+  onMount(() => {
+    dayjs.locale(locale());
+  });
 
   return (
     <I18nContext.Provider value={context}>

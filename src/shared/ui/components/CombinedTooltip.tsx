@@ -9,6 +9,7 @@ export type CombinedTooltipProps<T extends ValidComponent = 'button'> =
   TooltipRootProps &
     TooltipTriggerProps<T> & {
       label?: string | JSX.Element;
+      disableTooltip?: boolean;
     };
 
 const TOOLTIP_ROOT_KEYS = [
@@ -28,7 +29,7 @@ const TOOLTIP_ROOT_KEYS = [
   'open',
   'defaultOpen',
   'onOpenChange',
-  'disabled',
+  'disableTooltip',
   'triggerOnFocusOnly',
   'openDelay',
   'closeDelay',
@@ -43,11 +44,11 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
 ) => {
   const [local, tooltipRoot, others] = splitProps(
     props,
-    ['label'],
+    ['label', 'disableTooltip'],
     TOOLTIP_ROOT_KEYS,
   );
   return (
-    <Tooltip {...tooltipRoot}>
+    <Tooltip disabled={local.disableTooltip} {...tooltipRoot}>
       {/* // TODO: find a way to make this work
       //@ts-expect-error no declaration */}
       <TooltipTrigger {...(others as TooltipTriggerProps<T>)} />

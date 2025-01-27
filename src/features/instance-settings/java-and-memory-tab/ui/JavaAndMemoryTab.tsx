@@ -11,6 +11,9 @@ import type {
 } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 import CustomMemory from './CustomMemory';
 import CustomTextField from './CustomTextField';
 
@@ -19,6 +22,8 @@ export type JavaAndMemoryTabProps = ComponentProps<'div'> &
 
 const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const handleChangeMemoryDebounce = debounce(
     (id: Instance['id'], value: number | null) => {
@@ -67,16 +72,16 @@ const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       />
       <CustomTextField
         defaultValue={defaultJavaArguments()}
-        fieldLabel='Java arguments'
-        label='Custom arguments'
-        placeholder='Enter arguments'
+        fieldLabel={t('instanceSettings.javaArguments')}
+        label={t('instanceSettings.customArguments')}
+        placeholder={t('instanceSettings.enterArguments')}
         onChange={handleChangeArguments}
       />
       <CustomTextField
         defaultValue={defaultEnvironmentVariables()}
-        fieldLabel='Environment arguments'
-        label='Custom environment variables'
-        placeholder='Enter environment variables'
+        fieldLabel={t('instanceSettings.environmentVariables')}
+        label={t('instanceSettings.customEnvironmentVariables')}
+        placeholder={t('instanceSettings.enterVariables')}
         onChange={handleChangeEnvironmentVariables}
       />
     </div>

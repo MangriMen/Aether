@@ -3,7 +3,21 @@
     "version": "Версия",
     "createInstance": "Создать инстанс",
     "account": "Аккаунт",
-    "updateAvailable": "Доступно обновление"
+    "updateAvailable": "Доступно обновление",
+    "name": "Имя",
+    "create": "Создать",
+    "cancel": "Отмена",
+    "gameVersion": "Версия игры",
+    "loader": "Загрузчик"
+  },
+  "account": {
+    "title": "Аккаунт",
+    "signInMinecraft": "Войти в аккаунт Minecraft",
+    "signInOffline": "Войти оффлайн",
+    "signIn": "Войти",
+    "offline": "Оффлайн",
+    "activate": "Активировать",
+    "removeAccount": "Удалить аккаунт"
   },
   "home": {
     "title": "Главная",
@@ -24,15 +38,46 @@
     "checkForUpdatesDescriptionNoUpdates": "Нет доступных обновлений",
     "checkForUpdatesDescription": "Доступна новая версия приложения!\nОно будет перезапущена после установки.",
     "installAndRestartApp": "Установить и перезапустить приложение",
-    "releaseDate": "Дата выпуска"
+    "releaseDate": "Дата выпуска",
+    "light": "Светлая",
+    "dark": "Тёмная"
   },
   "instance": {
     "settings": "Настройки",
     "openFolder": "Открыть папку",
     "launch": "Запустить",
     "stop": "Остановить",
+    "lastPlayed": "Последний запуск: {{date}}",
+    "neverPlayed": "Никогда не запускался"
+  },
+  "createInstance": {
+    "title": "Создать инстанс",
+    "gameVersionPlaceholder": "Выберите версию игры",
+    "showAdvanced": "Показать расширенные",
+    "hideAdvanced": "Скрыть расширенные",
+    "includeSnapshots": "Включить снапшоты",
+    "loaderVersion": "Версия загрузчика",
+    "loaderVersionPlaceholder": "Выберите версию загрузчика",
+    "loaderVersionNoGameVersion": "Выберите версию игры перед выбором версии загрузчика",
+    "loaderVersionStable": "Стабильная",
+    "loaderVersionLatest": "Последняя",
+    "loaderVersionOther": "Другое",
+    "custom": "Пользовательский",
+    "plugins": "Плагины"
+  },
+  "instanceSettings": {
     "general": "Общие",
     "window": "Окно",
-    "javaAndMemory": "Java и память"
+    "javaAndMemory": "Java и память",
+    "resolution": "Разрешение",
+    "customWindowSettings": "Пользовательские настройки окна",
+    "memoryAllocation": "Выделение памяти",
+    "customMemorySettings": "Пользовательские настройки памяти",
+    "javaArguments": "Аргументы Java",
+    "customArguments": "Пользовательские аргументы",
+    "enterArguments": "Введите аргументы здесь (например -Xmx1024m)",
+    "environmentVariables": "Переменные окружения",
+    "customEnvironmentVariables": "Пользовательские переменные окружения",
+    "enterVariables": "Введите переменные здесь (например JAVA_HOME=C:\\Program Files\\Java\\jdk-17)"
   }
 }

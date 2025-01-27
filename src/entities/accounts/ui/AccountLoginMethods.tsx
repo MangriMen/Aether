@@ -5,7 +5,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Button } from '@/shared/ui';
+import { Button, CombinedTooltip } from '@/shared/ui';
+
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 
 import type { AccountType } from '../model';
 
@@ -18,6 +21,8 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
 ) => {
   const [local, others] = splitProps(props, ['onLogin', 'class']);
 
+  const [{ t }] = useTranslate();
+
   const onOnline = () => {
     local.onLogin('online');
   };
@@ -28,31 +33,32 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
 
   return (
     <div class={cn('flex gap-2', local.class)} {...others}>
-      <Button
+      <CombinedTooltip
+        label={t('account.signInMinecraft')}
+        as={Button}
         variant='outline'
         class='px-2'
         onClick={onOnline}
         // TODO: implement minecraft login
         disabled
-        title='Sign in minecraft account'
       >
         <span class='flex items-center gap-2'>
-          Sign in
+          {t('account.signIn')}
           <Icon class='text-2xl' icon={MdiSignIn} />
         </span>
-      </Button>
-
-      <Button
+      </CombinedTooltip>
+      <CombinedTooltip
+        label={t('account.signInOffline')}
+        as={Button}
         variant='outline'
         class='px-2'
-        title='Sign in offline'
         onClick={onOffline}
       >
         <span class='flex items-center gap-2'>
-          Offline
+          {t('account.offline')}
           <Icon class='text-2xl' icon={MdiCloudOffOutline} />
         </span>
-      </Button>
+      </CombinedTooltip>
     </div>
   );
 };

@@ -41,7 +41,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
           {(tab) => (
             <TabsTrigger class='w-full justify-start gap-2' value={tab.value}>
               <Icon class='text-lg' icon={tab.icon} />
-              {t(`instance.${tab.title}`)}
+              {t(`instanceSettings.${tab.title}`)}
             </TabsTrigger>
           )}
         </For>

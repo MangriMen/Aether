@@ -13,6 +13,9 @@ import {
 
 import type { LoaderVersion } from '@/entities/minecraft';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 import type { SelectSpecificLoaderVersionProps } from '.';
 
 export const SelectSpecificLoaderVersion = <
@@ -21,6 +24,8 @@ export const SelectSpecificLoaderVersion = <
   props: SelectSpecificLoaderVersionProps<T>,
 ) => {
   const [local, others] = splitProps(props, ['errorMessage', 'class']);
+
+  const [{ t }] = useTranslate();
 
   return (
     <Select
@@ -44,7 +49,9 @@ export const SelectSpecificLoaderVersion = <
             <div class='inline-flex gap-2'>
               {props.item.rawValue.id}
               {props.item.rawValue.stable ? (
-                <Badge variant='default'>stable</Badge>
+                <Badge variant='default'>
+                  {t('createInstance.loaderVersionStable')}
+                </Badge>
               ) : (
                 ''
               )}

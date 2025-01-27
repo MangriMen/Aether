@@ -3,7 +3,21 @@
     "version": "Version",
     "createInstance": "Create instance",
     "account": "Account",
-    "updateAvailable": "Update available"
+    "updateAvailable": "Update available",
+    "name": "Name",
+    "create": "Create",
+    "cancel": "Cancel",
+    "gameVersion": "Game version",
+    "loader": "Loader"
+  },
+  "account": {
+    "title": "Account",
+    "signInMinecraft": "Sign in Minecraft Account",
+    "signInOffline": "Sign in offline",
+    "signIn": "Sign in",
+    "offline": "Offline",
+    "activate": "Activate",
+    "removeAccount": "Remove Account"
   },
   "home": {
     "title": "Home",
@@ -24,15 +38,46 @@
     "checkForUpdatesDescriptionNoUpdates": "No updates available",
     "checkForUpdatesDescription": "An updated version of the application is now available!\nIt will restart automatically after installation.",
     "installAndRestartApp": "Install and restart app",
-    "releaseDate": "Release date"
+    "releaseDate": "Release date",
+    "light": "Light",
+    "dark": "Dark"
   },
   "instance": {
     "settings": "Settings",
     "openFolder": "Open folder",
     "launch": "Launch",
     "stop": "Stop",
+    "lastPlayed": "Last played: {{date}}",
+    "neverPlayed": "Never played"
+  },
+  "createInstance": {
+    "title": "Create instance",
+    "gameVersionPlaceholder": "Select game version",
+    "showAdvanced": "Show advanced",
+    "hideAdvanced": "Hide advanced",
+    "includeSnapshots": "Include snapshots",
+    "loaderVersion": "Loader version",
+    "loaderVersionPlaceholder": "Select loader version",
+    "loaderVersionNoGameVersion": "Select a game version before you select a loader version",
+    "loaderVersionStable": "Stable",
+    "loaderVersionLatest": "Latest",
+    "loaderVersionOther": "Other",
+    "custom": "Custom",
+    "plugins": "Plugins"
+  },
+  "instanceSettings": {
     "general": "General",
     "window": "Window",
-    "javaAndMemory": "Java and memory"
+    "javaAndMemory": "Java and memory",
+    "resolution": "Resolution",
+    "customWindowSettings": "Custom window settings",
+    "memoryAllocation": "Memory allocation",
+    "customMemorySettings": "Custom memory settings",
+    "javaArguments": "Java arguments",
+    "customArguments": "Custom arguments",
+    "enterArguments": "Enter arguments here (e.g. -Xmx1024m)",
+    "environmentVariables": "Environment variables",
+    "customEnvironmentVariables": "Custom environment variables",
+    "enterVariables": "Enter variables here (e.g. JAVA_HOME=C:\\Program Files\\Java\\jdk-17)"
   }
 }

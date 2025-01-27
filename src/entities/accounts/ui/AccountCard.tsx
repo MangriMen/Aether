@@ -1,13 +1,17 @@
 import MdiDelete from '@iconify/icons-mdi/delete';
-// import MdiLocationEnter from '@iconify/icons-mdi/location-enter';
 import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import type { ButtonProps } from '@/shared/ui';
-import { Button, IconButton } from '@/shared/ui';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
+
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 
 import type { Account, AccountType } from '../model';
+
+import AccountButton from './AccountButton';
 
 export type AccountCardProps = ComponentProps<'div'> & {
   username: Account['username'];
@@ -30,30 +34,26 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
     'removeButtonProps',
   ]);
 
+  const [{ t }] = useTranslate();
+
   return (
     <div
       class={cn('flex justify-between w-full border rounded-md h-12 ')}
       {...others}
     >
-      <Button
-        class={cn('size-full rounded-r-none justify-start px-2', {
-          'bg-muted pointer-events-none': local.active,
-        })}
-        variant='ghost'
-        title='Activate'
+      <AccountButton
+        active={local.active}
+        username={local.username}
+        type={local.type}
         onClick={local.onActivate}
         {...local.accountButtonProps}
-      >
-        <div class='flex flex-col items-start'>
-          <span class='font-bold'>{local.username}</span>
-          <span class='capitalize text-muted-foreground'>{local.type}</span>
-        </div>
-      </Button>
+      />
       <div class='flex items-start justify-start'>
-        <IconButton
-          class='aspect-square size-full rounded-l-none p-0 hover:bg-destructive'
+        <CombinedTooltip
+          label={t('account.removeAccount')}
+          as={IconButton}
+          class='aspect-square size-full rounded-l-none p-0 hover:bg-destructive focus:z-10'
           variant='ghost'
-          title='Remove'
           icon={MdiDelete}
           onClick={local.onRemove}
           {...local.removeButtonProps}

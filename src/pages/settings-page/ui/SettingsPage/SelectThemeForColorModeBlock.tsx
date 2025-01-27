@@ -7,7 +7,7 @@ import { FieldLabel } from '@/shared/ui';
 import { SelectThemeByColorMode } from '@/features/select-color-mode';
 
 // eslint-disable-next-line boundaries/element-types
-import { useThemeContext } from '@/app/model';
+import { useThemeContext, useTranslate } from '@/app/model';
 
 export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
 
@@ -15,6 +15,8 @@ const SelectThemeForColorModeBlock: Component<
   SelectThemeForColorModeBlockProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
+
+  const [{ t }] = useTranslate();
 
   const [themeContext] = useThemeContext();
 
@@ -30,13 +32,13 @@ const SelectThemeForColorModeBlock: Component<
       )}
       {...others}
     >
-      <FieldLabel class='text-sm'>Light</FieldLabel>
+      <FieldLabel class='text-sm'>{t('settings.light')}</FieldLabel>
       <SelectThemeByColorMode
         colorMode='light'
         disabled={!isSystemColorMode()}
       />
 
-      <FieldLabel class='text-sm'>Dark</FieldLabel>
+      <FieldLabel class='text-sm'>{t('settings.dark')}</FieldLabel>
       <SelectThemeByColorMode
         colorMode='dark'
         disabled={!isSystemColorMode()}
