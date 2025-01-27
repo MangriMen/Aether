@@ -4,7 +4,7 @@ import { createMemo, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 
 // eslint-disable-next-line boundaries/element-types
-import { useThemeContext } from '@/app/model';
+import { useI18nContext, useThemeContext } from '@/app/model';
 
 import { SettingsEntry } from '../SettingsEntry';
 
@@ -16,6 +16,7 @@ const SelectThemeForColorModeEntry: Component<
   SelectThemeForColorModeEntryProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
+  const [{ t }] = useI18nContext();
   const [themeContext] = useThemeContext();
 
   const isSystemColorMode = createMemo(
@@ -25,10 +26,8 @@ const SelectThemeForColorModeEntry: Component<
   return (
     <SettingsEntry
       class={cn(local.class, { 'text-muted-foreground': !isSystemColorMode() })}
-      title='System color mode'
-      description={
-        'Automatically adapt to your system\'s color mode.\nThis option is applied only when the color theme is set to "System"'
-      }
+      title={t('systemColorMode')}
+      description={t('systemColorModeDescription')}
       {...others}
     >
       <SelectThemeForColorModeBlock />

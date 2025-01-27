@@ -1,0 +1,18 @@
+{
+  "instances": "Instances",
+  "noInstances": "No instances available\nIt seems you don`t have any instances at the moment",
+  "launcher": "Launcher",
+  "colorScheme": "Color scheme",
+  "colorSchemeDescription": "Select preferred color scheme",
+  "systemColorMode": "System color mode",
+  "systemColorModeDescription": "Automatically adapt to your system's color mode.\nThis option is applied only when the color theme is set to \"System\"",
+  "language": "Language",
+  "languageDescription": "Select your language",
+  "update": "Update",
+  "checkForUpdates": "Check for updates",
+  "checkForUpdatesDescriptionNoUpdates": "No updates available",
+  "checkForUpdatesDescription": "An updated version of the application is now available!\nIt will restart automatically after installation.",
+  "installAndRestartApp": "Install and restart app",
+  "version": "Version",
+  "releaseDate": "Release date"
+}

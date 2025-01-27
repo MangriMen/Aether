@@ -67,7 +67,10 @@ const Button = <T extends ValidComponent = 'button'>(
       disabled={local.disabled || local.loading}
       {...others}
     >
-      <span style={{ visibility: local.loading ? 'hidden' : 'visible' }}>
+      <span
+        class='flex items-center justify-center'
+        style={{ visibility: local.loading ? 'hidden' : 'visible' }}
+      >
         {local.children}
       </span>
       <Show when={local.loading}>

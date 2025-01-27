@@ -7,10 +7,15 @@ import { useInstances, refetchInstances } from '@/entities/instance';
 
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
 
+// eslint-disable-next-line boundaries/element-types
+import { useI18nContext } from '@/app/model';
+
 import type { InstancesPanelProps } from './types';
 
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
+
+  const [{ t }] = useI18nContext();
 
   const instances = useInstances();
 
@@ -25,10 +30,8 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           <Show
             when={instances?.()?.[0]?.length}
             fallback={
-              <p class='m-auto text-center text-muted-foreground'>
-                <span>No instances available</span>
-                <br />
-                <span>It seems you don`t have any instances at the moment</span>
+              <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
+                {t('noInstances')}
               </p>
             }
           >

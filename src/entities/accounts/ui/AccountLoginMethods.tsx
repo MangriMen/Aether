@@ -30,24 +30,28 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
     <div class={cn('flex gap-2', local.class)} {...others}>
       <Button
         variant='outline'
-        class='flex items-center gap-2 px-2'
+        class='px-2'
         onClick={onOnline}
         // TODO: implement minecraft login
         disabled
         title='Sign in minecraft account'
       >
-        Sign in
-        <Icon class='text-2xl' icon={MdiSignIn} />
+        <span class='flex items-center gap-2'>
+          Sign in
+          <Icon class='text-2xl' icon={MdiSignIn} />
+        </span>
       </Button>
 
       <Button
         variant='outline'
-        class='flex items-center gap-2 px-2'
+        class='px-2'
         title='Sign in offline'
         onClick={onOffline}
       >
-        Offline
-        <Icon class='text-2xl' icon={MdiCloudOffOutline} />
+        <span class='flex items-center gap-2'>
+          Offline
+          <Icon class='text-2xl' icon={MdiCloudOffOutline} />
+        </span>
       </Button>
     </div>
   );
