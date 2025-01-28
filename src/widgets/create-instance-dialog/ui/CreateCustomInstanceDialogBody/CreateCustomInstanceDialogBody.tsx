@@ -32,7 +32,9 @@ import {
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   loaderManifestToMapped,
+  LoaderVersion,
   ModLoader,
+  Version,
 } from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
@@ -196,7 +198,7 @@ export const CreateCustomInstanceDialogBody: Component<
                 options={filteredGameVersions()}
                 errorMessage={field.error}
                 {...props}
-                onChange={(value) => {
+                onChange={(value: Version | null) => {
                   if (value) {
                     setValue(form, 'gameVersion', value.id);
                   }
@@ -250,7 +252,7 @@ export const CreateCustomInstanceDialogBody: Component<
                       options={loaderVersions()}
                       errorMessage={field.error}
                       {...props}
-                      onChange={(value) => {
+                      onChange={(value: LoaderVersion | null) => {
                         if (value) {
                           setValue(form, 'loaderVersion', value.id);
                         }
