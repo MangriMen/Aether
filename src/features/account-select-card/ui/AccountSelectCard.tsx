@@ -1,6 +1,8 @@
 import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
+import { Separator } from '@/shared/ui';
+
 import type { Account, AccountType } from '@/entities/accounts';
 import {
   AccountLoginMethods,
@@ -31,7 +33,7 @@ export const AccountSelectCard: Component<AccountSelectCardProps> = (props) => {
         onActivate={local.onActivate}
         onRemove={local.onLogout}
       />
-      <hr class='mb-2 mt-1' />
+      <Separator class='mb-2 mt-1' />
       <AccountLoginMethods class='px-3 pb-3' onLogin={local.onCreate} />
     </div>
   );

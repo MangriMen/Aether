@@ -14,6 +14,9 @@ import {
 
 import { CreateInstancePluginsMenu } from '@/features/create-instance-plugins-menu';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 import { CreateCustomInstanceDialogBody } from '../CreateCustomInstanceDialogBody';
 
 import type { CreateInstanceDialogProps } from '.';
@@ -21,12 +24,14 @@ import type { CreateInstanceDialogProps } from '.';
 enum CreateInstanceDialogTabs {
   Custom = 'custom',
   Import = 'import',
-  Plugins = 'Plugins',
+  Plugins = 'plugins',
 }
 
 export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
   props,
 ) => {
+  const [{ t }] = useTranslate();
+
   return (
     <Dialog {...props}>
       <DialogContent class='bg-secondary-dark'>
@@ -36,10 +41,10 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
         <Tabs defaultValue={CreateInstanceDialogTabs.Custom}>
           <TabsList class='bg-secondary-dark p-0'>
             <TabsTrigger value={CreateInstanceDialogTabs.Custom}>
-              Custom
+              {t('createInstance.custom')}
             </TabsTrigger>
             <TabsTrigger value={CreateInstanceDialogTabs.Plugins}>
-              Plugins
+              {t('createInstance.plugins')}
             </TabsTrigger>
           </TabsList>
           <Separator class='mb-4 mt-2' />

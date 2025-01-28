@@ -6,10 +6,13 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Separator } from '@/shared/ui';
+import { CombinedTooltip, Separator } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instance';
 import { formatTimePlayedHumanized } from '@/entities/instance';
+
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -17,6 +20,8 @@ export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
 
 const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const [{ locale, t }] = useTranslate();
 
   const lastPlayedDate = createMemo(() => {
     return local.instance?.lastPlayed
@@ -33,25 +38,37 @@ const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (props) => {
         {local.instance.name}
       </span>
       <span class='inline-flex items-center gap-2 capitalize'>
-        <span class='inline-flex items-center gap-1' title='Game version'>
+        <CombinedTooltip
+          label={t('common.gameVersion')}
+          as='span'
+          class='inline-flex items-center gap-1'
+        >
           <Icon icon={MdiGamepadSquare} />
           {local.instance.gameVersion}
-        </span>
+        </CombinedTooltip>
         <Separator orientation='vertical' />
-        <span class='inline-flex items-center gap-1' title='Modloader'>
+        <CombinedTooltip
+          label={t('common.loader')}
+          as='span'
+          class='inline-flex items-center gap-1'
+        >
           <Icon icon={MdiEngineIcon} />
           {local.instance.loader} {local.instance.loaderVersion}
-        </span>
+        </CombinedTooltip>
       </span>
       <span class='mt-auto inline-flex items-center gap-1'>
         <Icon icon={MdiClockIcon} />
-        <Show when={local.instance.timePlayed} fallback='Never played'>
-          <span
-            class='mt-auto inline-flex items-center gap-1 capitalize'
-            title={`Last played: ${lastPlayedDate()?.toLocaleString()}`}
-          >
-            {formatTimePlayedHumanized(local.instance.timePlayed)}
-          </span>
+        <Show when={lastPlayedDate()} fallback={t('instance.neverPlayed')}>
+          {(lastPlayedDate) => (
+            <span
+              class='mt-auto inline-flex items-center gap-1 capitalize'
+              title={t('instance.lastPlayed', {
+                date: lastPlayedDate().toLocaleString(locale()),
+              })}
+            >
+              {formatTimePlayedHumanized(local.instance.timePlayed)}
+            </span>
+          )}
         </Show>
       </span>
     </div>

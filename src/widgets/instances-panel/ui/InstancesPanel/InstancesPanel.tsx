@@ -5,12 +5,18 @@ import { cn } from '@/shared/lib';
 
 import { useInstances, refetchInstances } from '@/entities/instance';
 
+import { InstanceActionButton } from '@/features/instance-action-button';
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
+
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 
 import type { InstancesPanelProps } from './types';
 
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
+
+  const [{ t }] = useTranslate();
 
   const instances = useInstances();
 
@@ -25,15 +31,18 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           <Show
             when={instances?.()?.[0]?.length}
             fallback={
-              <p class='m-auto text-center text-muted-foreground'>
-                <span>No instances available</span>
-                <br />
-                <span>It seems you don`t have any instances at the moment</span>
+              <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
+                {t('home.noInstances')}
               </p>
             }
           >
             <For each={instances?.()?.[0]}>
-              {(instance) => <InstanceControlledCard instance={instance} />}
+              {(instance) => (
+                <InstanceControlledCard
+                  instance={instance}
+                  instanceActionButton={InstanceActionButton}
+                />
+              )}
             </For>
           </Show>
         </Match>

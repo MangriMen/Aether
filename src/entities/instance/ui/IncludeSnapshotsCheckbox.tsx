@@ -6,6 +6,9 @@ import { cn } from '@/shared/lib';
 import type { CheckboxRootProps } from '@/shared/ui';
 import { Checkbox } from '@/shared/ui';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',
 > = PolymorphicProps<T, CheckboxRootProps<T>> & {
@@ -16,6 +19,8 @@ export const IncludeSnapshotsCheckbox: Component<
   IncludeSnapshotsCheckboxProps
 > = (props) => {
   const [local, others] = splitProps(props, ['show', 'class']);
+
+  const [{ t }] = useTranslate();
 
   return (
     <div
@@ -29,7 +34,7 @@ export const IncludeSnapshotsCheckbox: Component<
     >
       <Checkbox
         class='text-sm font-semibold'
-        label='Include snapshots'
+        label={t('createInstance.includeSnapshots')}
         {...others}
       />
     </div>

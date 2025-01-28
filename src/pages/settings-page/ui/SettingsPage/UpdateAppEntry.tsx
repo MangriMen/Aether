@@ -10,6 +10,8 @@ import type { LoadingPayload } from '@/entities/minecraft';
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';
 
 import { SettingsEntry } from '../SettingsEntry';
@@ -18,6 +20,7 @@ export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [update, { refetch }] = updateResource;
+  const [{ t }] = useTranslate();
 
   const checkUpdates = () => {
     refetch();
@@ -108,15 +111,21 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <SettingsEntry
       class='items-start'
-      title='Check updates'
+      title={t('settings.checkForUpdates')}
       description={
-        <Show when={update()?.available} fallback='There is no updates'>
+        <Show
+          when={update()?.available}
+          fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
+        >
           <div class='flex flex-col'>
-            <span>An updated version of the application is now available!</span>
-            <span>It will restart automatically after installation.</span>
-            <span>Version: {update()?.version}</span>
+            {t('settings.checkForUpdatesDescription')}
+            <span>
+              {t('common.version')}: {update()?.version}
+            </span>
             <Show when={update()?.date}>
-              <span>Release date: {update()?.date}</span>
+              <span>
+                {t('settings.releaseDate')}: {update()?.date}
+              </span>
             </Show>
           </div>
         </Show>
@@ -132,7 +141,7 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
               disabled={isUpdating()}
               onClick={checkUpdates}
             >
-              Check for updates
+              {t('settings.checkForUpdates')}
             </Button>
           }
         >

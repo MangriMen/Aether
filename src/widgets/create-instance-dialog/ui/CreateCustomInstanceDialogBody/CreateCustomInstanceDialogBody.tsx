@@ -40,6 +40,9 @@ import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';
 import { LoaderVersionTypeChipsToggleGroup } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 import {
   CreateCustomInstanceSchema,
   filterGameVersions,
@@ -58,6 +61,8 @@ export const CreateCustomInstanceDialogBody: Component<
   CreateCustomInstanceDialogBodyProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class', 'onOpenChange']);
+
+  const [{ t }] = useTranslate();
 
   const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
     validate: zodForm(CreateCustomInstanceSchema),
@@ -152,7 +157,7 @@ export const CreateCustomInstanceDialogBody: Component<
       <Field name='name'>
         {(field, props) => (
           <CombinedTextField
-            label='Name'
+            label={t('common.name')}
             value={field.value}
             errorMessage={field.error}
             inputProps={{
@@ -166,7 +171,7 @@ export const CreateCustomInstanceDialogBody: Component<
         )}
       </Field>
 
-      <LabeledField label='Loader'>
+      <LabeledField label={t('common.loader')}>
         <Field name='loader'>
           {(field) => (
             <LoaderChipsToggleGroup
@@ -181,13 +186,13 @@ export const CreateCustomInstanceDialogBody: Component<
         </Field>
       </LabeledField>
 
-      <LabeledField label='Game Version'>
+      <LabeledField label={t('common.gameVersion')}>
         <div class='flex items-start gap-2'>
           <Field name='gameVersion'>
             {(field, props) => (
               <SelectGameVersion
                 class='max-w-[31.5ch]'
-                placeholder='Select game version'
+                placeholder={t('createInstance.gameVersionPlaceholder')}
                 options={filteredGameVersions()}
                 errorMessage={field.error}
                 {...props}
@@ -212,7 +217,7 @@ export const CreateCustomInstanceDialogBody: Component<
         open={isAdvanced() && getValue(form, 'loader') !== ModLoader.Vanilla}
       >
         <CollapsibleContent class='p-2'>
-          <LabeledField label='Loader Version'>
+          <LabeledField label={t('createInstance.loaderVersion')}>
             <Field name='loaderVersionType'>
               {(field) => (
                 <LoaderVersionTypeChipsToggleGroup
@@ -233,15 +238,15 @@ export const CreateCustomInstanceDialogBody: Component<
               when={getValue(form, 'gameVersion') !== undefined}
               fallback={
                 <span class='italic'>
-                  Select a game version before you select a loader version
+                  {t('createInstance.loaderVersionNoGameVersion')}
                 </span>
               }
             >
-              <LabeledField label='Select version'>
+              <LabeledField label={t('createInstance.loaderVersion')}>
                 <Field name='loaderVersion'>
                   {(field, props) => (
                     <SelectSpecificLoaderVersion
-                      placeholder='Select loader version'
+                      placeholder={t('createInstance.loaderVersionPlaceholder')}
                       options={loaderVersions()}
                       errorMessage={field.error}
                       {...props}
@@ -266,17 +271,21 @@ export const CreateCustomInstanceDialogBody: Component<
           onClick={() => setIsAdvanced(!isAdvanced())}
         >
           <Switch>
-            <Match when={isAdvanced()}>Hide advanced</Match>
-            <Match when={!isAdvanced()}>Show advanced</Match>
+            <Match when={isAdvanced()}>
+              {t('createInstance.hideAdvanced')}
+            </Match>
+            <Match when={!isAdvanced()}>
+              {t('createInstance.showAdvanced')}
+            </Match>
           </Switch>
         </Button>
 
         <Button type='submit' disabled={isCreating()}>
-          Create
+          {t('common.create')}
         </Button>
 
         <Button variant='secondary' onClick={() => props.onOpenChange?.(false)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </DialogFooter>
     </Form>

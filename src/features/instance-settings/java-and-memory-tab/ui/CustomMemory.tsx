@@ -6,6 +6,9 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 import { MemorySlider } from '@/entities/instance';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   defaultValue?: number;
   onChange?: (value: number | null) => void;
@@ -29,6 +32,8 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
     'onChange',
     'class',
   ]);
+
+  const [{ t }] = useTranslate();
 
   const [customMemory, setCustomMemory] = createSignal(false);
   const [memory, setMemory] = createSignal(minMemory);
@@ -64,13 +69,13 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
   return (
     <LabeledField
       class={cn('text-base', local.class)}
-      label='Memory allocation'
+      label={t('instanceSettings.memoryAllocation')}
       {...others}
     >
       <Checkbox
         checked={customMemory()}
         onChange={handleSetCustomMemory}
-        label='Custom memory'
+        label={t('instanceSettings.customMemorySettings')}
       />
       <div class='flex items-start gap-4'>
         <MemorySlider

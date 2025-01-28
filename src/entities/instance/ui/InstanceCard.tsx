@@ -1,22 +1,26 @@
-import type { Component } from 'solid-js';
 import { splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { InstanceActionButton } from '../InstanceActionButton';
-import { InstanceImage } from '../InstanceImage';
-import { InstanceTitle } from '../InstanceTitle';
+import type { Instance } from '@/entities/instance';
 
-import type { InstanceCardProps } from './types';
+// eslint-disable-next-line boundaries/element-types
+import type { InstanceActionButtonProps } from '@/features/instance-action-button';
+
+import { InstanceImage } from './InstanceImage';
+import { InstanceTitle } from './InstanceTitle';
+
+export type InstanceCardProps = ComponentProps<'div'> & {
+  instance: Instance;
+  instanceActionButton: Component<InstanceActionButtonProps>;
+};
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {
   const [local, others] = splitProps(props, [
-    'class',
-    'onLaunchClick',
-    'onStopClick',
     'instance',
-    'isLoading',
-    'isRunning',
+    'instanceActionButton',
+    'class',
   ]);
 
   return (
@@ -33,13 +37,9 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         loader={local.instance.loader}
         gameVersion={local.instance.gameVersion}
       />
-      <InstanceActionButton
+      <local.instanceActionButton
         class='absolute bottom-1/3 left-1/2 p-0 pr-0.5 opacity-0 transition-[bottom,opacity] disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
-        isLoading={local.isLoading}
-        isRunning={local.isRunning}
-        installStage={local.instance.installStage}
-        onLaunchClick={local.onLaunchClick}
-        onStopClick={local.onStopClick}
+        instance={local.instance}
       />
     </div>
   );

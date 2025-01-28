@@ -1,10 +1,10 @@
 import MdiAccount from '@iconify/icons-mdi/account';
-import { Icon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
-import { createSignal } from 'solid-js';
+import { createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
 import {
+  CombinedTooltip,
   IconButton,
   Popover,
   PopoverContent,
@@ -18,14 +18,24 @@ import {
   refetchAccountStateResource,
 } from '@/entities/accounts';
 
-import { AccountSelectCard } from '@/features/account-select-card';
+// eslint-disable-next-line boundaries/element-types
+import type { AccountSelectCardProps } from '@/features/account-select-card';
 
 // eslint-disable-next-line boundaries/element-types
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 
-export type AccountSelectProps = IconButtonProps;
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
+export type AccountSelectProps = IconButtonProps & {
+  accountSelectCard: Component<AccountSelectCardProps>;
+};
 
 export const AccountSelectButton: Component<AccountSelectProps> = (props) => {
+  const [local, others] = splitProps(props, ['accountSelectCard']);
+
+  const [{ t }] = useTranslate();
+
   const handleCreate = (type: AccountType) => {
     setAccountCreationType(type);
   };
@@ -50,16 +60,18 @@ export const AccountSelectButton: Component<AccountSelectProps> = (props) => {
   return (
     <>
       <Popover>
-        <PopoverTrigger
-          as={IconButton}
-          variant='ghost'
-          title='Account'
-          {...props}
-        >
-          <Icon icon={MdiAccount} class='text-2xl' />
+        <PopoverTrigger>
+          <CombinedTooltip
+            label={t('common.account')}
+            placement='right'
+            as={IconButton}
+            variant='ghost'
+            icon={MdiAccount}
+            {...others}
+          />
         </PopoverTrigger>
         <PopoverContent class='w-max p-0'>
-          <AccountSelectCard
+          <local.accountSelectCard
             onCreate={handleCreate}
             onActivate={handleSelect}
             onLogout={handleLogout}

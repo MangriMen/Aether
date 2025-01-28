@@ -7,7 +7,11 @@ import { createStore } from 'solid-js/store';
 import type { Theme, ThemeConfig } from '@/shared/model';
 import { THEMES_MAP } from '@/shared/model';
 
-import type { ThemeContextValue } from '../model';
+import type {
+  ThemeContextActions,
+  ThemeContextType,
+  ThemeContextValue,
+} from '../model';
 import { DEFAULT_THEME, ThemeContext } from '../model';
 
 export type ThemeObserverProps = { children?: JSX.Element };
@@ -26,7 +30,7 @@ const setThemeToWindow = (theme: Theme) => {
 const ThemeObserver: Component<ThemeObserverProps> = (props) => {
   const colorModeContext = useColorMode();
 
-  const [contextValue, setContextValue] = createStore<ThemeContextValue[0]>({
+  const [contextValue, setContextValue] = createStore<ThemeContextValue>({
     theme: DEFAULT_THEME,
     rawTheme: DEFAULT_THEME,
     lightTheme: 'light',
@@ -77,13 +81,12 @@ const ThemeObserver: Component<ThemeObserverProps> = (props) => {
     );
   };
 
-  const context: ThemeContextValue = [
-    contextValue,
-    {
-      setTheme,
-      setThemeForColorMode,
-    },
-  ];
+  const contextActions: ThemeContextActions = {
+    setTheme,
+    setThemeForColorMode,
+  };
+
+  const context: ThemeContextType = [contextValue, contextActions];
 
   const initializeContext = () => {
     const rawTheme = localStorage.getItem(RAW_THEME_KEY) as ThemeConfig | null;
