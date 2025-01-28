@@ -14,7 +14,6 @@ import {
   Separator,
 } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
 import { useThemeContext } from '@/app/model';
 
 import type { SelectThemeProps } from './types';

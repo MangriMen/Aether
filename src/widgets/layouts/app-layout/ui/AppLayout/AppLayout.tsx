@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js';
 
-// eslint-disable-next-line boundaries/element-types
 import { AppTitleBar } from '@/widgets/app-titlebar';
 
 import type { AppLayoutProps } from './types';

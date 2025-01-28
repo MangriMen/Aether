@@ -8,7 +8,6 @@ import { CombinedTextField } from '@/shared/ui';
 import type { Instance, InstanceSettingsTabProps } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;

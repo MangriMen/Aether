@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'solid-js';
 
-// eslint-disable-next-line boundaries/element-types
 import type { ProcessPayload } from '@/entities/minecraft';
 
 import type { Instance } from './instance';

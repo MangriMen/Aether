@@ -5,7 +5,6 @@ import { TitledBlock } from '@/shared/ui';
 
 import { InstancesPanel } from '@/widgets/instances-panel';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 import type { HomePageProps } from '.';

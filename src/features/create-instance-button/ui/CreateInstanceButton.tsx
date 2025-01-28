@@ -6,14 +6,13 @@ import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 // TODO: make something like react-modal-global
-// eslint-disable-next-line boundaries/element-types
+
 const CreateInstanceDialog = lazy(() =>
   import('@/widgets/create-instance-dialog').then((module) => ({
     default: module.CreateInstanceDialog,
   })),
 );
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 export type CreateInstanceButtonProps = IconButtonProps;
