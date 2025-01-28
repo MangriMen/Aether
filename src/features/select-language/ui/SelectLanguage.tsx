@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
+
 import type { Locale } from '@/app/model';
 
 export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =

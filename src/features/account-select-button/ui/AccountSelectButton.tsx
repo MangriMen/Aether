@@ -18,13 +18,13 @@ import {
   refetchAccountStateResource,
 } from '@/entities/accounts';
 
-// eslint-disable-next-line boundaries/element-types
+
 import type { AccountSelectCardProps } from '@/features/account-select-card';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 export type AccountSelectProps = IconButtonProps & {

@@ -11,7 +11,7 @@ import { CombinedTooltip, Separator } from '@/shared/ui';
 import type { Instance } from '@/entities/instance';
 import { formatTimePlayedHumanized } from '@/entities/instance';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {

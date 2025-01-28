@@ -10,7 +10,7 @@ import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { updateResource } from '@/entities/update';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =

@@ -13,7 +13,7 @@ import {
 
 import type { LoaderVersion } from '@/entities/minecraft';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 import type { SelectSpecificLoaderVersionProps } from '.';

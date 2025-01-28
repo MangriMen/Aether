@@ -23,7 +23,7 @@ export const InstanceImage: Component<InstanceImageProps> = (props) => {
         when={local.src}
         fallback={<ResponsiveIcon icon={MdiCubeOutline} />}
       >
-        {(path) => <img src={path()} />}
+        {(path) => <img src={path()} alt="Instance" />}
       </Show>
     </div>
   );

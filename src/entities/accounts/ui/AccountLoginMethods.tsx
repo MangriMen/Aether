@@ -7,7 +7,7 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { Button, CombinedTooltip } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 import type { AccountType } from '../model';

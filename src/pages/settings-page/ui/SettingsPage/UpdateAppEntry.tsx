@@ -10,7 +10,7 @@ import type { LoadingPayload } from '@/entities/minecraft';
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';
 

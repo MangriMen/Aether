@@ -4,9 +4,9 @@ import type { Option } from '@/shared/model';
 
 import { SelectLanguage } from '@/features/select-language';
 
-// eslint-disable-next-line boundaries/element-types
+
 import type { Locale } from '@/app/model';
-// eslint-disable-next-line boundaries/element-types
+
 import { LOCALES_OPTIONS, useTranslate } from '@/app/model';
 
 import { SettingsEntry } from '../SettingsEntry';

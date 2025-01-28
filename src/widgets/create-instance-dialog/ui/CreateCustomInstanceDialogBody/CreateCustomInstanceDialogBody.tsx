@@ -28,13 +28,14 @@ import {
   refetchInstances,
   createMinecraftInstance,
 } from '@/entities/instance';
+import type {
+  LoaderVersion,
+  Version} from '@/entities/minecraft';
 import {
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   loaderManifestToMapped,
-  LoaderVersion,
-  ModLoader,
-  Version,
+  ModLoader
 } from '@/entities/minecraft';
 
 import { SelectGameVersion } from '@/features/select-game-version';
@@ -42,7 +43,7 @@ import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';
 import { LoaderVersionTypeChipsToggleGroup } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 import {

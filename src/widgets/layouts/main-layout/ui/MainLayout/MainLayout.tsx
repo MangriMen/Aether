@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { AppSidebar } from '@/widgets/app-sidebar';
 
 import type { MainLayoutProps } from '.';

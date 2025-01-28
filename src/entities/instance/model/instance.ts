@@ -1,4 +1,4 @@
-// eslint-disable-next-line boundaries/element-types
+
 import type { ModLoader } from '@/entities/minecraft';
 
 export interface InstancePluginSettings {

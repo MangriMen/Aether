@@ -8,7 +8,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 import type { Instance } from '@/entities/instance';
 import { useInstanceActions } from '@/entities/instance';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 export type InstanceOpenFolderButtonProps<T extends ValidComponent = 'button'> =

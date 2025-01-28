@@ -14,7 +14,7 @@ import {
 
 import { CreateInstancePluginsMenu } from '@/features/create-instance-plugins-menu';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useTranslate } from '@/app/model';
 
 import { CreateCustomInstanceDialogBody } from '../CreateCustomInstanceDialogBody';

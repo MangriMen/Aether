@@ -1,7 +1,7 @@
 import type { InitializedResourceReturn } from 'solid-js';
 import { createResource, createSignal } from 'solid-js';
 
-// eslint-disable-next-line boundaries/element-types
+
 import type { Instance } from '@/entities/instance';
 import { getMinecraftInstances } from '@/entities/instance';
 

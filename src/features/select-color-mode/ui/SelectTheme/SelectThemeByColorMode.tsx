@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
+
 import { useThemeContext } from '@/app/model';
 
 export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =

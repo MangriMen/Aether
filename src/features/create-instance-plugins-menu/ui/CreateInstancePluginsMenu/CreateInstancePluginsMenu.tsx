@@ -3,7 +3,6 @@ import { createMemo, For, Show, splitProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 // TODO: move to own package
-// eslint-disable-next-line import/no-internal-modules
 import { PackwizPluginImportMenu } from '@/plugins/packwiz-plugin';
 
 import type { Option } from '@/shared/model';
