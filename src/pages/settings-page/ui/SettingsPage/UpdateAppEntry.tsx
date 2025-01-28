@@ -1,5 +1,3 @@
-import MdiLoadingIcon from '@iconify/icons-mdi/loading';
-import { Icon } from '@iconify-icon/solid';
 import { emit } from '@tauri-apps/api/event';
 import { relaunch } from '@tauri-apps/plugin-process';
 import type { DownloadEvent } from '@tauri-apps/plugin-updater';
@@ -12,6 +10,8 @@ import type { LoadingPayload } from '@/entities/minecraft';
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';
 
 import { SettingsEntry } from '../SettingsEntry';
@@ -20,6 +20,7 @@ export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [update, { refetch }] = updateResource;
+  const [{ t }] = useTranslate();
 
   const checkUpdates = () => {
     refetch();
@@ -110,42 +111,47 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <SettingsEntry
       class='items-start'
-      title='Check updates'
+      title={t('settings.checkForUpdates')}
       description={
         <Show
-          when={!update.loading}
-          fallback={<Icon class='animate-spin' icon={MdiLoadingIcon} />}
+          when={update()?.available}
+          fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
         >
-          <Show when={update()?.available} fallback='There is no updates'>
-            <div class='flex flex-col'>
+          <div class='flex flex-col'>
+            {t('settings.checkForUpdatesDescription')}
+            <span>
+              {t('common.version')}: {update()?.version}
+            </span>
+            <Show when={update()?.date}>
               <span>
-                An updated version of the application is now available!
+                {t('settings.releaseDate')}: {update()?.date}
               </span>
-              <span>It will restart automatically after installation.</span>
-              <span>Version: {update()?.version}</span>
-              <Show when={update()?.date}>
-                <span>Release date: {update()?.date}</span>
-              </Show>
-            </div>
-          </Show>
+            </Show>
+          </div>
         </Show>
       }
       {...props}
     >
-      <div class='flex flex-col gap-2'>
-        <Button
-          loading={update.loading}
-          disabled={isUpdating()}
-          onClick={checkUpdates}
+      <div class='flex h-full flex-col justify-center gap-2'>
+        <Show
+          when={update()?.available}
+          fallback={
+            <Button
+              loading={update.loading}
+              disabled={isUpdating()}
+              onClick={checkUpdates}
+            >
+              {t('settings.checkForUpdates')}
+            </Button>
+          }
         >
-          Check for updates
-        </Button>
-        <Button
-          disabled={!update()?.available || isUpdating()}
-          onClick={downloadAndInstallUpdate}
-        >
-          Install and restart app
-        </Button>
+          <Button
+            disabled={!update()?.available || isUpdating()}
+            onClick={downloadAndInstallUpdate}
+          >
+            Install and restart app
+          </Button>
+        </Show>
       </div>
     </SettingsEntry>
   );

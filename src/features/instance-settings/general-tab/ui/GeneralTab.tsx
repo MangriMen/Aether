@@ -8,10 +8,15 @@ import { CombinedTextField } from '@/shared/ui';
 import type { Instance, InstanceSettingsTabProps } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 
 const GeneralTab: Component<GeneralTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const handleChangeNameThrottle = throttle(
     (id: Instance['id'], value: string) => {
@@ -27,7 +32,7 @@ const GeneralTab: Component<GeneralTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
       <CombinedTextField
-        label='Name'
+        label={t('common.name')}
         defaultValue={local.instance.name}
         onChange={handleChangeName}
       />

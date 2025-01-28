@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/named
 import type { RouteSectionProps } from '@solidjs/router';
 import type { Component } from 'solid-js';
 import { createEffect, onCleanup, onMount } from 'solid-js';
@@ -7,6 +6,7 @@ import { Toaster } from '@/shared/ui';
 
 import { initializeInstanceResource } from '@/entities/instance';
 
+import I18nProvider from './I18nProvider';
 import ThemeObserver from './ThemeObserver';
 
 import { ColorModeObserver, WindowObserver } from '.';
@@ -34,12 +34,16 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
   });
 
   return (
-    <ColorModeObserver {...props}>
-      <ThemeObserver>
-        {props.children}
-        <Toaster />
-        <WindowObserver />
-      </ThemeObserver>
-    </ColorModeObserver>
+    <>
+      <ColorModeObserver {...props}>
+        <ThemeObserver>
+          <I18nProvider>
+            {props.children}
+            <Toaster />
+          </I18nProvider>
+        </ThemeObserver>
+      </ColorModeObserver>
+      <WindowObserver />
+    </>
   );
 };

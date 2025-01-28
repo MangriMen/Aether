@@ -3,29 +3,23 @@ import { createContext, useContext } from 'solid-js';
 
 import type { Theme, ThemeConfig } from '@/shared/model';
 
-export type ThemeData = {
+export type ThemeContextValue = {
   theme: Theme;
   rawTheme: ThemeConfig;
   lightTheme: Theme;
   darkTheme: Theme;
 };
 
-export type ThemeContextValue = [
-  ThemeData,
-  {
-    setTheme: (theme: ThemeConfig) => void;
-    setThemeForColorMode: (colorMode: ColorMode, theme: Theme) => void;
-  },
-];
+export type ThemeContextActions = {
+  setTheme: (theme: ThemeConfig) => void;
+  setThemeForColorMode: (colorMode: ColorMode, theme: Theme) => void;
+};
 
-// const DEFAULT_VALUE: ThemeContextValue = [
-//   { theme: 'aether-dark', themeRaw: 'aether-dark' },
-//   { setTheme: () => {} },
-// ];
+export type ThemeContextType = [ThemeContextValue, ThemeContextActions];
 
 export const DEFAULT_THEME: ThemeConfig = 'aether-dark';
 
-export const ThemeContext = createContext<ThemeContextValue>();
+export const ThemeContext = createContext<ThemeContextType>();
 
 export const useThemeContext = () => {
   const value = useContext(ThemeContext);

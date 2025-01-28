@@ -1,34 +1,19 @@
-import { A } from '@solidjs/router';
 import type { Component } from 'solid-js';
-import { createSignal, Show, splitProps } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import {
-  AddIcon,
-  Badge,
-  HomeIcon,
-  IconButton,
-  SettingsIcon,
-  Sidebar,
-} from '@/shared/ui';
+import { Separator, Sidebar } from '@/shared/ui';
 
-import { updateResource } from '@/entities/update';
-
-// eslint-disable-next-line boundaries/element-types
-import { AccountSelectButton } from '@/widgets/account-select-button';
-// TODO: make something like react-modal-global
-// eslint-disable-next-line boundaries/element-types
-import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
+import { AccountSelectButton } from '@/features/account-select-button';
+import { AccountSelectCard } from '@/features/account-select-card';
+import { CreateInstanceButton } from '@/features/create-instance-button';
+import { HomeButton } from '@/features/home-button/';
+import { SettingsButton } from '@/features/settings-button';
 
 import type { AppSidebarProps } from '.';
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
-
-  const [update] = updateResource;
-
-  const [isCreateInstanceDialogOpen, setIsCreateInstanceDialogOpen] =
-    createSignal(false);
 
   return (
     <Sidebar
@@ -36,41 +21,14 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       {...others}
     >
       <div class='flex flex-col items-center gap-2'>
-        <IconButton as={A} href='/' variant='ghost' title='Home'>
-          <HomeIcon />
-        </IconButton>
-        <hr class='h-px w-full bg-muted' />
-        <IconButton
-          variant='ghost'
-          onClick={() => setIsCreateInstanceDialogOpen(true)}
-          title='Create instance'
-        >
-          <AddIcon />
-        </IconButton>
+        <HomeButton />
+        <Separator />
+        <CreateInstanceButton />
       </div>
       <div class='flex flex-col items-center gap-2'>
-        <AccountSelectButton />
-        <IconButton
-          class='relative'
-          as={A}
-          href='/settings'
-          variant='ghost'
-          title={
-            update()?.available ? 'Settings (Update available)' : `Settings`
-          }
-        >
-          <Show when={update()?.available}>
-            <Badge class='absolute right-2 top-1 aspect-square size-2 p-0' />
-          </Show>
-          <SettingsIcon />
-        </IconButton>
+        <AccountSelectButton accountSelectCard={AccountSelectCard} />
+        <SettingsButton />
       </div>
-
-      {/* Dialogs */}
-      <CreateInstanceDialog
-        open={isCreateInstanceDialogOpen()}
-        onOpenChange={setIsCreateInstanceDialogOpen}
-      />
     </Sidebar>
   );
 };

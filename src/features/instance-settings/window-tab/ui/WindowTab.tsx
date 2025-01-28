@@ -7,6 +7,9 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import type { InstanceSettingsTabProps } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
+// eslint-disable-next-line boundaries/element-types
+import { useTranslate } from '@/app/model';
+
 import { DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../model';
 
 export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
@@ -25,6 +28,8 @@ const getClampedResolution = (value: number | null, min: number) => {
 
 const WindowTab: Component<WindowTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const [custom, setCustom] = createSignal(false);
 
@@ -83,9 +88,9 @@ const WindowTab: Component<WindowTabProps> = (props) => {
         class='text-sm'
         checked={custom()}
         onChange={handleSetCustom}
-        label='Custom window settings'
+        label={t('instanceSettings.customWindowSettings')}
       />
-      <LabeledField class='text-lg' label='Resolution'>
+      <LabeledField class='text-lg' label={t('instanceSettings.resolution')}>
         <div class='flex items-center gap-3'>
           <CombinedTextField
             disabled={!custom()}
