@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/named
 import type { EventCallback } from '@tauri-apps/api/event';
 import { listen } from '@tauri-apps/api/event';
 

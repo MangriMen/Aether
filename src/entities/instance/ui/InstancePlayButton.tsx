@@ -5,7 +5,6 @@ import type { Component, ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 export type InstancePlayButtonProps<T extends ValidComponent = 'button'> =

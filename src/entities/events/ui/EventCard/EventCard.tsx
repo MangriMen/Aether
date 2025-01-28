@@ -3,7 +3,6 @@ import { createMemo, splitProps } from 'solid-js';
 
 import { Progress } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 
 import type { EventCardProps } from './types';

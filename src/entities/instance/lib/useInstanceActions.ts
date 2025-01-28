@@ -1,6 +1,6 @@
 import { useContext } from 'solid-js';
 
-import { isAetherLauncherError } from '@/shared/model';
+import { isAetherLauncherError, isDebug } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instance';
@@ -78,6 +78,10 @@ export const useInstanceActions = () => {
     try {
       await openInstanceFolder(instance);
     } catch (e) {
+      if (isDebug()) {
+        console.error(e);
+      }
+
       showToast({
         title: 'Failed to open folder',
         description: `Instance path: ${instance.path}`,

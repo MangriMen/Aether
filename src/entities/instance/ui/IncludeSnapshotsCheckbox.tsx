@@ -6,7 +6,6 @@ import { cn } from '@/shared/lib';
 import type { CheckboxRootProps } from '@/shared/ui';
 import { Checkbox } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 export type IncludeSnapshotsCheckboxProps<

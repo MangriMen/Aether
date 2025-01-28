@@ -5,7 +5,6 @@ import { AppVersion } from '@/entities/settings';
 
 import { SelectTheme } from '@/features/select-color-mode';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 import { SettingsEntry } from '../SettingsEntry';

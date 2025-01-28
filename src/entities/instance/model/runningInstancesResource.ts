@@ -4,7 +4,6 @@ import { createResource } from 'solid-js';
 import {
   getMinecraftInstanceProcess,
   getRunningMinecraftInstances,
-  // eslint-disable-next-line boundaries/element-types
 } from '@/entities/minecraft';
 
 const runningInstancesData = createResource(() => {

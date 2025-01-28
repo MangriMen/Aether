@@ -28,6 +28,7 @@ import {
   refetchInstances,
   createMinecraftInstance,
 } from '@/entities/instance';
+import type { LoaderVersion, Version } from '@/entities/minecraft';
 import {
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
@@ -40,7 +41,6 @@ import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';
 import { LoaderVersionTypeChipsToggleGroup } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 import {
@@ -196,7 +196,7 @@ export const CreateCustomInstanceDialogBody: Component<
                 options={filteredGameVersions()}
                 errorMessage={field.error}
                 {...props}
-                onChange={(value) => {
+                onChange={(value: Version | null) => {
                   if (value) {
                     setValue(form, 'gameVersion', value.id);
                   }
@@ -250,7 +250,7 @@ export const CreateCustomInstanceDialogBody: Component<
                       options={loaderVersions()}
                       errorMessage={field.error}
                       {...props}
-                      onChange={(value) => {
+                      onChange={(value: LoaderVersion | null) => {
                         if (value) {
                           setValue(form, 'loaderVersion', value.id);
                         }

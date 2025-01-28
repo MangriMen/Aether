@@ -11,7 +11,6 @@ import type {
 } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
-// eslint-disable-next-line boundaries/element-types
 import { useTranslate } from '@/app/model';
 
 import CustomMemory from './CustomMemory';
