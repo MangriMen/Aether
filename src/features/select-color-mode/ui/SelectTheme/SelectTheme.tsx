@@ -14,7 +14,6 @@ import {
   Separator,
 } from '@/shared/ui';
 
-
 import { useThemeContext } from '@/app/model';
 
 import type { SelectThemeProps } from './types';

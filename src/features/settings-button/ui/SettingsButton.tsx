@@ -10,7 +10,6 @@ import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { updateResource } from '@/entities/update';
 
-
 import { useTranslate } from '@/app/model';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =

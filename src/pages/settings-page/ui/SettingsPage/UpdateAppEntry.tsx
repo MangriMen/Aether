@@ -10,7 +10,6 @@ import type { LoadingPayload } from '@/entities/minecraft';
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 import { updateResource } from '@/entities/update';
 
-
 import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';
 

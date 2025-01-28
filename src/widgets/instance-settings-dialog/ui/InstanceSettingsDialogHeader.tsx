@@ -7,7 +7,6 @@ import { DialogHeader, DialogTitle } from '@/shared/ui';
 import type { Instance } from '@/entities/instance';
 import { InstanceImage } from '@/entities/instance';
 
-
 import { useTranslate } from '@/app/model';
 
 export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {

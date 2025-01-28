@@ -4,7 +4,6 @@ import { For, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-
 import { useTranslate } from '@/app/model';
 
 import type { LoaderVersionTypeChipsToggleGroupProps } from '.';

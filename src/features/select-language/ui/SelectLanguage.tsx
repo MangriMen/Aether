@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-
 import type { Locale } from '@/app/model';
 
 export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =

@@ -1,12 +1,13 @@
 import globals from 'globals';
 import js from '@eslint/js';
 import ts from 'typescript-eslint';
-import sonarjs from 'eslint-plugin-sonarjs';
-import solid from 'eslint-plugin-solid/configs/recommended';
-import tailwind from 'eslint-plugin-tailwindcss';
-import importX from 'eslint-plugin-import-x';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import tsParser from '@typescript-eslint/parser';
+import importX from 'eslint-plugin-import-x';
+import sonarjs from 'eslint-plugin-sonarjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
+import tailwind from 'eslint-plugin-tailwindcss';
+import solid from 'eslint-plugin-solid/configs/recommended';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -48,23 +49,13 @@ export default [
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
+  eslintPluginPrettierRecommended,
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {
     rules: {
       'import-x/no-dynamic-require': 'warn',
       'import-x/no-nodejs-modules': 'warn',
-    },
-  },
-  ...tailwind.configs['flat/recommended'],
-  {
-    rules: {
-      'tailwindcss/no-custom-classname': [
-        'warn',
-        {
-          cssFiles: ['src/**/*.css'],
-        },
-      ],
     },
   },
   sonarjs.configs.recommended,
@@ -78,6 +69,17 @@ export default [
   {
     rules: {
       'jsx-a11y/label-has-associated-control': 'off',
+    },
+  },
+  ...tailwind.configs['flat/recommended'],
+  {
+    rules: {
+      'tailwindcss/no-custom-classname': [
+        'warn',
+        {
+          cssFiles: ['src/**/*.css'],
+        },
+      ],
     },
   },
   solid,

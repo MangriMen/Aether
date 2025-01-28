@@ -4,7 +4,6 @@ import { createResource } from 'solid-js';
 import {
   getMinecraftInstanceProcess,
   getRunningMinecraftInstances,
-  
 } from '@/entities/minecraft';
 
 const runningInstancesData = createResource(() => {

@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-
 import { useThemeContext } from '@/app/model';
 
 export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =

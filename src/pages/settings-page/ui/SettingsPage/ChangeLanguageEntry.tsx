@@ -4,7 +4,6 @@ import type { Option } from '@/shared/model';
 
 import { SelectLanguage } from '@/features/select-language';
 
-
 import type { Locale } from '@/app/model';
 
 import { LOCALES_OPTIONS, useTranslate } from '@/app/model';

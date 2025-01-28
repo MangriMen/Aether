@@ -7,7 +7,6 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import type { InstanceSettingsTabProps } from '@/entities/instance';
 import { editMinecraftInstance } from '@/entities/instance';
 
-
 import { useTranslate } from '@/app/model';
 
 import { DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../model';

@@ -5,7 +5,6 @@ import { cn } from '@/shared/lib';
 
 import type { Instance } from '@/entities/instance';
 
-
 import type { InstanceActionButtonProps } from '@/features/instance-action-button';
 
 import { InstanceImage } from './InstanceImage';

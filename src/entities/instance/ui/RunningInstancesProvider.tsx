@@ -3,7 +3,6 @@ import type { Component, JSX } from 'solid-js';
 import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-
 import { ProcessPayloadType } from '@/entities/minecraft';
 
 import { listenProcess } from '../api';

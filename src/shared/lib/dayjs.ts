@@ -1,4 +1,4 @@
-import {default as dayjs, extend as dayjsExtend} from 'dayjs';
+import { default as dayjs, extend as dayjsExtend } from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import localeData from 'dayjs/plugin/localeData';
 import relativeTime from 'dayjs/plugin/relativeTime';

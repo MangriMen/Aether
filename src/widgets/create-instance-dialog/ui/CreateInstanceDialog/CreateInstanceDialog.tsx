@@ -14,7 +14,6 @@ import {
 
 import { CreateInstancePluginsMenu } from '@/features/create-instance-plugins-menu';
 
-
 import { useTranslate } from '@/app/model';
 
 import { CreateCustomInstanceDialogBody } from '../CreateCustomInstanceDialogBody';

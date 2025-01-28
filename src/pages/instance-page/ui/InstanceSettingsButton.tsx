@@ -5,7 +5,6 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
 
-
 import { useTranslate } from '@/app/model';
 
 export type InstanceSettingsButtonProps<T extends ValidComponent = 'button'> =

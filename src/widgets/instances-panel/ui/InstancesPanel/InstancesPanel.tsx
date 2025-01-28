@@ -8,7 +8,6 @@ import { useInstances, refetchInstances } from '@/entities/instance';
 import { InstanceActionButton } from '@/features/instance-action-button';
 import { InstanceControlledCard } from '@/features/instance-controlled-card';
 
-
 import { useTranslate } from '@/app/model';
 
 import type { InstancesPanelProps } from './types';

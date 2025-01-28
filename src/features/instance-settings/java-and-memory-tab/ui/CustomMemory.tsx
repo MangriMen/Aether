@@ -6,7 +6,6 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 import { MemorySlider } from '@/entities/instance';
 
-
 import { useTranslate } from '@/app/model';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {

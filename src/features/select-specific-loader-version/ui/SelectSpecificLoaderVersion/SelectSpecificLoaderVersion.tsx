@@ -13,7 +13,6 @@ import {
 
 import type { LoaderVersion } from '@/entities/minecraft';
 
-
 import { useTranslate } from '@/app/model';
 
 import type { SelectSpecificLoaderVersionProps } from '.';

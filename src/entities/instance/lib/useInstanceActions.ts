@@ -81,7 +81,7 @@ export const useInstanceActions = () => {
       if (isDebug()) {
         console.error(e);
       }
-      
+
       showToast({
         title: 'Failed to open folder',
         description: `Instance path: ${instance.path}`,

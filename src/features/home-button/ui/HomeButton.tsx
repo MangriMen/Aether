@@ -5,7 +5,6 @@ import type { Component } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-
 import { useTranslate } from '@/app/model';
 
 export type HomeButtonProps = IconButtonProps;

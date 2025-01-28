@@ -1,4 +1,3 @@
-
 import type { ModLoader } from '@/entities/minecraft';
 
 export interface InstancePluginSettings {

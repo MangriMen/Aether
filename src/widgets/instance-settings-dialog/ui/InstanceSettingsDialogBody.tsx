@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instance';
 
-
 import { useTranslate } from '@/app/model';
 
 import {

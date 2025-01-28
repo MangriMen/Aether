@@ -3,7 +3,6 @@ import { createMemo, splitProps } from 'solid-js';
 
 import { Progress } from '@/shared/ui';
 
-
 import { LoadingBarTypeEnum } from '@/entities/minecraft';
 
 import type { EventCardProps } from './types';
