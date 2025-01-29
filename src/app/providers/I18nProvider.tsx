@@ -19,9 +19,11 @@ import {
   LOCALE_KEY,
 } from '../model';
 
-export type I18nProviderProps = { children?: JSX.Element };
+export type I18nProviderProps = {
+  children?: JSX.Element;
+};
 
-const I18nProvider: Component<I18nProviderProps> = (props) => {
+export const I18nProvider: Component<I18nProviderProps> = (props) => {
   const [locale, setLocale_] = makePersisted(
     // eslint-disable-next-line solid/reactivity
     createSignal<Locale>(getSystemLocale()),
@@ -60,5 +62,3 @@ const I18nProvider: Component<I18nProviderProps> = (props) => {
     </I18nContext.Provider>
   );
 };
-
-export default I18nProvider;

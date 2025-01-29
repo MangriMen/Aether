@@ -1,15 +1,6 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { onMount } from 'solid-js';
-
 import './app.css';
-import { AppRouter } from './routes';
+import { AppRouter } from './AppRouter';
 
-function App() {
-  onMount(() => {
-    getCurrentWindow().show();
-  });
-
+export const App = () => {
   return <AppRouter />;
-}
-
-export default App;
+};

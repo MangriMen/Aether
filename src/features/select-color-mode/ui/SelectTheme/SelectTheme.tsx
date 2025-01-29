@@ -4,7 +4,7 @@ import type { Component } from 'solid-js';
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
-import { THEME_TO_MODE, THEMES } from '@/shared/model';
+import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -13,8 +13,6 @@ import {
   SelectValue,
   Separator,
 } from '@/shared/ui';
-
-import { useThemeContext } from '@/app/model';
 
 import type { SelectThemeProps } from './types';
 

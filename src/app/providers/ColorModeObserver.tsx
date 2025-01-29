@@ -1,25 +1,26 @@
 import {
   COLOR_MODE_STORAGE_KEY,
-  ColorModeProvider,
+  ColorModeProvider as KobalteColorModeProvider,
   ColorModeScript,
   createLocalStorageManager,
 } from '@kobalte/core';
+import type { RouteSectionProps } from '@solidjs/router';
 import type { Component } from 'solid-js';
 
-import type { ColorModeObserverProps } from './types';
+export type ColorModeObserverProps = RouteSectionProps;
 
-export const ColorModeObserver: Component<ColorModeObserverProps> = (props) => {
+export const ColorModeProvider: Component<ColorModeObserverProps> = (props) => {
   const storageManager = createLocalStorageManager(COLOR_MODE_STORAGE_KEY);
 
   return (
     <>
       <ColorModeScript storageType={storageManager.type} />
-      <ColorModeProvider
+      <KobalteColorModeProvider
         storageManager={storageManager}
         initialColorMode='dark'
       >
         {props.children}
-      </ColorModeProvider>
+      </KobalteColorModeProvider>
     </>
   );
 };

@@ -17,8 +17,6 @@ export type ThemeContextActions = {
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];
 
-export const DEFAULT_THEME: ThemeConfig = 'aether-dark';
-
 export const ThemeContext = createContext<ThemeContextType>();
 
 export const useThemeContext = () => {

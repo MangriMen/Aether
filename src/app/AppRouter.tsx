@@ -8,7 +8,7 @@ import { AppLayout } from '@/widgets/layouts/app-layout';
 import { MainLayout } from '@/widgets/layouts/main-layout';
 
 import { initializeApp } from './lib';
-import { AppRoot } from './ui';
+import { AppRoot } from './AppRoot';
 
 const HomePage = lazy(() =>
   import('@/pages/home').then((m) => ({ default: m.HomePage })),

@@ -1,40 +1,46 @@
 import type { ColorMode } from '@kobalte/core';
 import { useColorMode } from '@kobalte/core';
 import type { Component, JSX } from 'solid-js';
-import { onMount } from 'solid-js';
+import { onMount, splitProps } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import type { Theme, ThemeConfig } from '@/shared/model';
-import { THEMES_MAP } from '@/shared/model';
-
 import type {
+  Theme,
+  ThemeConfig,
   ThemeContextActions,
   ThemeContextType,
   ThemeContextValue,
-} from '../model';
-import { DEFAULT_THEME, ThemeContext } from '../model';
+} from '@/shared/model';
+import { THEMES_MAP, THEME_BY_MODE, ThemeContext } from '@/shared/model';
+import { DEFAULT_THEME } from '../config';
 
-export type ThemeObserverProps = { children?: JSX.Element };
-
-const THEME_KEY = 'theme';
-const RAW_THEME_KEY = 'theme-raw';
-
-const THEME_ATTRIBUTE = 'data-theme';
+export type ThemeObserverProps = {
+  themeLsKey: string;
+  rawThemeLsKey: string;
+  themeAttribute: string;
+  children?: JSX.Element;
+};
 
 const COLOR_MODES = ['light', 'dark'] as ColorMode[];
 
-const setThemeToWindow = (theme: Theme) => {
-  window.document.documentElement.setAttribute(THEME_ATTRIBUTE, theme);
+const setThemeToWindow = (theme: Theme, themeAttribute: string) => {
+  window.document.documentElement.setAttribute(themeAttribute, theme);
 };
 
-const ThemeObserver: Component<ThemeObserverProps> = (props) => {
+export const ThemeProvider: Component<ThemeObserverProps> = (props) => {
+  const [local, others] = splitProps(props, [
+    'themeLsKey',
+    'rawThemeLsKey',
+    'themeAttribute',
+  ]);
+
   const colorModeContext = useColorMode();
 
   const [contextValue, setContextValue] = createStore<ThemeContextValue>({
     theme: DEFAULT_THEME,
     rawTheme: DEFAULT_THEME,
-    lightTheme: 'light',
-    darkTheme: 'dark',
+    lightTheme: THEME_BY_MODE['light'][0].value,
+    darkTheme: THEME_BY_MODE['dark'][0].value,
   });
 
   const getThemeVariableNameByColorMode = (colorMode: ColorMode) =>
@@ -50,18 +56,18 @@ const ThemeObserver: Component<ThemeObserverProps> = (props) => {
   };
 
   const setRawThemeField = (theme: ThemeConfig) => {
-    localStorage.setItem(RAW_THEME_KEY, theme);
+    localStorage.setItem(local.rawThemeLsKey, theme);
     setContextValue('rawTheme', theme);
   };
 
   const setThemeField = (theme: Theme) => {
-    localStorage.setItem(THEME_KEY, theme);
+    localStorage.setItem(local.themeLsKey, theme);
     setContextValue('theme', theme);
-    setThemeToWindow(theme);
+    setThemeToWindow(theme, local.themeAttribute);
   };
 
   const setThemeForColorMode = (colorMode: ColorMode, theme: Theme) => {
-    localStorage.setItem(`${colorMode}-${THEME_KEY}`, theme);
+    localStorage.setItem(`${colorMode}-${local.themeLsKey}`, theme);
     setContextValue(getThemeVariableNameByColorMode(colorMode), theme);
 
     const isSystemTheme = contextValue.rawTheme === 'system';
@@ -89,12 +95,16 @@ const ThemeObserver: Component<ThemeObserverProps> = (props) => {
   const context: ThemeContextType = [contextValue, contextActions];
 
   const initializeContext = () => {
-    const rawTheme = localStorage.getItem(RAW_THEME_KEY) as ThemeConfig | null;
+    const rawTheme = localStorage.getItem(
+      local.rawThemeLsKey,
+    ) as ThemeConfig | null;
     setTheme(rawTheme ?? DEFAULT_THEME);
 
     const colorModeThemes = COLOR_MODES.map(
       (colorMode) =>
-        localStorage.getItem(`${colorMode}-${THEME_KEY}`) as Theme | null,
+        localStorage.getItem(
+          `${colorMode}-${local.themeLsKey}`,
+        ) as Theme | null,
     );
     colorModeThemes.map((theme, index) => {
       setThemeForColorMode(COLOR_MODES[index], theme ?? COLOR_MODES[index]);
@@ -106,9 +116,7 @@ const ThemeObserver: Component<ThemeObserverProps> = (props) => {
 
   return (
     <ThemeContext.Provider value={context}>
-      {props.children}
+      {others.children}
     </ThemeContext.Provider>
   );
 };
-
-export default ThemeObserver;
