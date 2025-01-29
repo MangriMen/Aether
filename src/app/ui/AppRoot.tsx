@@ -4,7 +4,7 @@ import { createEffect, onCleanup, onMount } from 'solid-js';
 
 import { Toaster } from '@/shared/ui';
 
-import { initializeInstanceResource } from '@/entities/instance';
+import { initializeInstanceResource } from '@/entities/instances';
 
 import I18nProvider from './I18nProvider';
 import ThemeObserver from './ThemeObserver';

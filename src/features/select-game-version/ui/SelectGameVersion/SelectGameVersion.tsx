@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { Version } from '@/entities/minecraft';
+import type { Version } from '@/entities/minecrafts';
 
 import type { SelectGameVersionProps } from '.';
 

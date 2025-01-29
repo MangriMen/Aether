@@ -22,9 +22,9 @@ import {
 } from '@/shared/ui';
 
 import { EventCard } from '@/entities/events';
-import { refetchInstances } from '@/entities/instance';
-import type { LoadingPayload } from '@/entities/minecraft';
-import { getLoadingBars, listenEvent } from '@/entities/minecraft';
+import { refetchInstances } from '@/entities/instances';
+import type { LoadingPayload } from '@/entities/minecrafts';
+import { getLoadingBars, listenEvent } from '@/entities/minecrafts';
 
 import type { NotificationMenuButtonProps } from './types';
 const NOTIFICATION_COMPLETED_REMOVE_DELAY = 1500;

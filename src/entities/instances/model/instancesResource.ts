@@ -1,8 +1,8 @@
 import type { InitializedResourceReturn } from 'solid-js';
 import { createResource, createSignal } from 'solid-js';
 
-import type { Instance } from '@/entities/instance';
-import { getMinecraftInstances } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
+import { getMinecraftInstances } from '@/entities/instances';
 
 const mapInstancesToIds = (
   instances: Instance[] | undefined,

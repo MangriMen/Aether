@@ -5,8 +5,8 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import type { Instance, InstanceSettingsTabProps } from '@/entities/instance';
-import { editMinecraftInstance } from '@/entities/instance';
+import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
+import { editMinecraftInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

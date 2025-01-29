@@ -3,7 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 
 import type { InstanceActionButtonProps } from '@/features/instance-action-button';
 

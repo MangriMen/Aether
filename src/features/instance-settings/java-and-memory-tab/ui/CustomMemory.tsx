@@ -4,7 +4,7 @@ import { createEffect, createSignal, splitProps } from 'solid-js';
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import { MemorySlider } from '@/entities/instance';
+import { MemorySlider } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

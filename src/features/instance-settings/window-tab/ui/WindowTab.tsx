@@ -4,8 +4,8 @@ import { createEffect, createSignal, splitProps } from 'solid-js';
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import type { InstanceSettingsTabProps } from '@/entities/instance';
-import { editMinecraftInstance } from '@/entities/instance';
+import type { InstanceSettingsTabProps } from '@/entities/instances';
+import { editMinecraftInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

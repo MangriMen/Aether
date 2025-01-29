@@ -6,7 +6,7 @@ import { For, splitProps } from 'solid-js';
 import type { TabsProps } from '@/shared/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

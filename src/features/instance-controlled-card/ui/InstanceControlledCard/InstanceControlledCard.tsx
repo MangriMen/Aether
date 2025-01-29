@@ -10,7 +10,7 @@ import {
   InstanceContextMenu,
   useInstanceActions,
   useRunningInstancesContext,
-} from '@/entities/instance';
+} from '@/entities/instances';
 
 import type { InstanceControlledCardProps } from './types';
 

@@ -22,19 +22,19 @@ import {
   showToast,
 } from '@/shared/ui';
 
-import type { InstanceCreateDto } from '@/entities/instance';
+import type { InstanceCreateDto } from '@/entities/instances';
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
   createMinecraftInstance,
-} from '@/entities/instance';
-import type { LoaderVersion, Version } from '@/entities/minecraft';
+} from '@/entities/instances';
+import type { LoaderVersion, Version } from '@/entities/minecrafts';
 import {
   getLoaderVersionsManifest,
   getMinecraftVersionManifest,
   loaderManifestToMapped,
   ModLoader,
-} from '@/entities/minecraft';
+} from '@/entities/minecrafts';
 
 import { SelectGameVersion } from '@/features/select-game-version';
 import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';

@@ -1,4 +1,4 @@
-import type { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/entities/minecrafts';
 
 export interface InstancePluginSettings {
   preLaunch?: string;

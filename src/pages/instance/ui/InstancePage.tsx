@@ -5,7 +5,7 @@ import { createMemo, lazy, Show, splitProps } from 'solid-js';
 
 import { Separator } from '@/shared/ui';
 
-import { useMappedInstances } from '@/entities/instance';
+import { useMappedInstances } from '@/entities/instances';
 
 import { InstanceHeader } from './InstanceHeader';
 

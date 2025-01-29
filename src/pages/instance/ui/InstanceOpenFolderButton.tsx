@@ -5,8 +5,8 @@ import { splitProps, type Component, type ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
-import { useInstanceActions } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
+import { useInstanceActions } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

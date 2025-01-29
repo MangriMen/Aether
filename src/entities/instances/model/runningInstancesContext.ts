@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'solid-js';
 
-import type { ProcessPayload } from '@/entities/minecraft';
+import type { ProcessPayload } from '@/entities/minecrafts';
 
 import type { Instance } from './instance';
 

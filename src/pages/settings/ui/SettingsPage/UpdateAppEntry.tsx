@@ -6,9 +6,9 @@ import { createSignal, Show } from 'solid-js';
 
 import { Button, showToast } from '@/shared/ui';
 
-import type { LoadingPayload } from '@/entities/minecraft';
-import { LoadingBarTypeEnum } from '@/entities/minecraft';
-import { updateResource } from '@/entities/update';
+import type { LoadingPayload } from '@/entities/minecrafts';
+import { LoadingBarTypeEnum } from '@/entities/minecrafts';
+import { updateResource } from '@/entities/updates';
 
 import { useTranslate } from '@/app/model';
 import { getVersion } from '@tauri-apps/api/app';

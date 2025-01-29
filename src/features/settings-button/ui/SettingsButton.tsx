@@ -8,7 +8,7 @@ import type { Component, ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { updateResource } from '@/entities/update';
+import { updateResource } from '@/entities/updates';
 
 import { useTranslate } from '@/app/model';
 

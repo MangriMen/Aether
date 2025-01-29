@@ -1,6 +1,6 @@
 import type { SelectRootProps } from '@/shared/ui';
 
-import type { LoaderVersion } from '@/entities/minecraft';
+import type { LoaderVersion } from '@/entities/minecrafts';
 
 export type SelectSpecificLoaderVersionProps<
   Option extends LoaderVersion = LoaderVersion,

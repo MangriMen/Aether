@@ -3,7 +3,7 @@ import { useContext } from 'solid-js';
 import { isAetherLauncherError, isDebug } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 import {
   openInstanceFolder,
   refetchInstances,
@@ -12,7 +12,7 @@ import {
   launchMinecraftInstance,
   removeMinecraftInstance,
   stopMinecraftInstance,
-} from '@/entities/instance';
+} from '@/entities/instances';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(

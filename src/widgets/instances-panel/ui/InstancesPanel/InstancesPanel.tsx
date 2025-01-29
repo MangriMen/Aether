@@ -3,7 +3,7 @@ import { createEffect, For, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { useInstances, refetchInstances } from '@/entities/instance';
+import { useInstances, refetchInstances } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 import { InstanceControlledCard } from '@/features/instance-controlled-card';

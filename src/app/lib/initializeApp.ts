@@ -1,4 +1,4 @@
-import { initializeState } from '@/entities/minecraft';
+import { initializeState } from '@/entities/minecrafts';
 
 import { AetherNamespaceName, AetherNamespaceObject } from '../model';
 

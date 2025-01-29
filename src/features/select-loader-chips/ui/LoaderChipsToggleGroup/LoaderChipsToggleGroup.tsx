@@ -4,7 +4,7 @@ import { For, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-import type { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/entities/minecrafts';
 
 import type { LoaderChipsToggleGroupProps } from '.';
 

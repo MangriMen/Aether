@@ -8,8 +8,8 @@ import type {
   Instance,
   InstanceEditDto,
   InstanceSettingsTabProps,
-} from '@/entities/instance';
-import { editMinecraftInstance } from '@/entities/instance';
+} from '@/entities/instances';
+import { editMinecraftInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 

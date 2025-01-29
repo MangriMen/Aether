@@ -1,8 +1,8 @@
 import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import type { Instance } from '@/entities/instance';
-import { InstanceImage } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
+import { InstanceImage } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 

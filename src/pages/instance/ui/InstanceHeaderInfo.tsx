@@ -8,8 +8,8 @@ import { createMemo, Show, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { CombinedTooltip, Separator } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
-import { formatTimePlayedHumanized } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
+import { formatTimePlayedHumanized } from '@/entities/instances';
 
 import { useTranslate } from '@/app/model';
 
