@@ -6,8 +6,7 @@ import { FieldLabel } from '@/shared/ui';
 
 import { SelectThemeByColorMode } from '@/features/select-color-mode';
 
-import { useThemeContext } from '@/shared/model';
-import { useTranslate } from '@/app/model';
+import { useThemeContext, useTranslate } from '@/shared/model';
 
 export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
 

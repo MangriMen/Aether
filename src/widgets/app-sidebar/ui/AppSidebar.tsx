@@ -2,6 +2,7 @@ import type { Component } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import type { SidebarProps } from '@/shared/ui';
 import { Separator, Sidebar } from '@/shared/ui';
 
 import { AccountSelectButton } from '@/features/account-select-button';
@@ -10,7 +11,7 @@ import { CreateInstanceButton } from '@/features/create-instance-button';
 import { HomeButton } from '@/features/home-button/';
 import { SettingsButton } from '@/features/settings-button';
 
-import type { AppSidebarProps } from '.';
+export type AppSidebarProps = SidebarProps;
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

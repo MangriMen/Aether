@@ -11,7 +11,7 @@ import { CombinedTooltip, Separator } from '@/shared/ui';
 import type { Instance } from '@/entities/instances';
 import { formatTimePlayedHumanized } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
   instance: Instance;

@@ -1,47 +1,68 @@
 import * as i18n from '@solid-primitives/i18n';
 import { makePersisted } from '@solid-primitives/storage';
 import {
+  createMemo,
   createResource,
   createSignal,
   onMount,
-  type Component,
+  splitProps,
   type JSX,
 } from 'solid-js';
 
 import { dayjs } from '@/shared/lib';
 
-import enDictionary from '../i18n/en.json';
-import type { I18nContextType, Locale } from '../model';
-import {
-  fetchDictionary,
-  getSystemLocale,
-  I18nContext,
-  LOCALE_KEY,
-} from '../model';
+import type { I18nContextType } from '@/shared/model';
+import { getSystemLocale, I18nContext } from '@/shared/model';
+import { LOCALE_LS_KEY } from '../config';
 
-export type I18nProviderProps = {
+export type I18nProviderProps<
+  Locale extends string,
+  Dictionary extends i18n.BaseRecordDict,
+> = {
+  resources: Record<Locale, Dictionary>;
+  fallbackLocale: Locale;
   children?: JSX.Element;
 };
 
-export const I18nProvider: Component<I18nProviderProps> = (props) => {
+export const I18nProvider = <
+  Locale extends string,
+  RawDictionary extends i18n.BaseRecordDict,
+>(
+  props: I18nProviderProps<Locale, RawDictionary>,
+) => {
+  const [local, others] = splitProps(props, ['resources', 'fallbackLocale']);
+
+  const getLocale = (): Locale => {
+    const locale = getSystemLocale();
+    if (!(locale in local.resources)) {
+      return local.fallbackLocale;
+    }
+    return locale as Locale;
+  };
+
   const [locale, setLocale_] = makePersisted(
     // eslint-disable-next-line solid/reactivity
-    createSignal<Locale>(getSystemLocale()),
-    { name: LOCALE_KEY },
+    createSignal<Locale>(getLocale()),
+    { name: LOCALE_LS_KEY },
   );
 
-  const [dict] = createResource(locale, fetchDictionary, {
-    initialValue: i18n.flatten(enDictionary),
-  });
+  const combinedSignal = createMemo(() => [locale(), local.resources] as const);
+
+  const [dict] = createResource(combinedSignal, ([locale, resources]) =>
+    i18n.flatten(resources[locale]),
+  );
+
+  type Dictionary = NonNullable<ReturnType<typeof dict>>;
 
   const t = i18n.translator(dict, i18n.resolveTemplate);
 
   const setLocale = (locale: Locale) => {
     dayjs.locale(locale);
-    setLocale_(locale);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    setLocale_(locale as Exclude<Locale, Function>);
   };
 
-  const context: I18nContextType = [
+  const context: I18nContextType<Locale, Dictionary> = [
     {
       locale,
       dict,
@@ -58,7 +79,7 @@ export const I18nProvider: Component<I18nProviderProps> = (props) => {
 
   return (
     <I18nContext.Provider value={context}>
-      {props.children}
+      {others.children}
     </I18nContext.Provider>
   );
 };

@@ -41,7 +41,7 @@ import { LoaderChipsToggleGroup } from '@/features/select-loader-chips';
 import { LoaderVersionTypeChipsToggleGroup } from '@/features/select-loader-version';
 import { SelectSpecificLoaderVersion } from '@/features/select-specific-loader-version';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import {
   CreateCustomInstanceSchema,

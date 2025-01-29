@@ -8,7 +8,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 import type { Instance } from '@/entities/instances';
 import { useInstanceActions } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type InstanceOpenFolderButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {

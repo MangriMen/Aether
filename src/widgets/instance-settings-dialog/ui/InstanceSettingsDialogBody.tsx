@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,

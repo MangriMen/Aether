@@ -7,25 +7,18 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import type { InstanceSettingsTabProps } from '@/entities/instances';
 import { editMinecraftInstance } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
-import { DEFAULT_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH } from '../model';
+import {
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  RESOLUTION_FIELD_CLASS,
+} from '../model';
+import { getClampedResolution } from '../lib';
 
-export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
+export type WindowProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 
-const resolutionFieldClass = 'w-[16ch]';
-
-const getClampedResolution = (value: number | null, min: number) => {
-  if (value === null || value < 0) {
-    return min;
-  } else if (value > 65535) {
-    return 65535;
-  }
-
-  return value;
-};
-
-const WindowTab: Component<WindowTabProps> = (props) => {
+export const Window: Component<WindowProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslate();
@@ -93,7 +86,7 @@ const WindowTab: Component<WindowTabProps> = (props) => {
         <div class='flex items-center gap-3'>
           <CombinedTextField
             disabled={!custom()}
-            class={resolutionFieldClass}
+            class={RESOLUTION_FIELD_CLASS}
             value={width()}
             onChange={setWidth}
             inputProps={{
@@ -107,7 +100,7 @@ const WindowTab: Component<WindowTabProps> = (props) => {
           <span class='text-muted-foreground'>&times;</span>
           <CombinedTextField
             disabled={!custom()}
-            class={resolutionFieldClass}
+            class={RESOLUTION_FIELD_CLASS}
             value={height()}
             onChange={setHeight}
             inputProps={{
@@ -123,5 +116,3 @@ const WindowTab: Component<WindowTabProps> = (props) => {
     </div>
   );
 };
-
-export default WindowTab;

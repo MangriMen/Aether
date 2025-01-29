@@ -6,9 +6,9 @@ import type { Component } from 'solid-js';
 
 import type { InstanceSettingsTabProps } from '@/entities/instances';
 
-import { GeneralTab } from '@/features/instance-settings/general-tab';
-import { JavaAndMemoryTab } from '@/features/instance-settings/java-and-memory-tab';
-import { WindowTab } from '@/features/instance-settings/window-tab';
+import { General } from '@/features/instance-settings/general';
+import { JavaAndMemory } from '@/features/instance-settings/java-and-memory';
+import { Window } from '@/features/instance-settings/window';
 
 export enum InstanceSettingsDialogTabs {
   General = 'general',
@@ -43,15 +43,15 @@ export const INSTANCE_SETTINGS_TABS_CONTENT: {
   value: InstanceSettingsDialogTabs;
 }[] = [
   {
-    component: GeneralTab,
+    component: General,
     value: InstanceSettingsDialogTabs.General,
   },
   {
-    component: WindowTab,
+    component: Window,
     value: InstanceSettingsDialogTabs.Window,
   },
   {
-    component: JavaAndMemoryTab,
+    component: JavaAndMemory,
     value: InstanceSettingsDialogTabs.JavaAndMemory,
   },
 ];

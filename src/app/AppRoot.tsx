@@ -8,6 +8,7 @@ import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import { initializeResources, usePreventRightClick } from './lib';
 import { useMaximizeObserver } from '@/shared/lib';
 import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
+import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 
 export const AppRoot: Component<RouteSectionProps> = (props) => {
   usePreventRightClick();
@@ -22,7 +23,7 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
         themeLsKey={THEME_LS_KEY}
         themeAttribute={THEME_ATTRIBUTE}
       >
-        <I18nProvider>
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
           {props.children}
           <Toaster />
         </I18nProvider>

@@ -8,7 +8,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 import type { Account, AccountType } from '../model';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import AccountButton from './AccountButton';
 

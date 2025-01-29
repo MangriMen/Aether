@@ -5,7 +5,7 @@ import { TitledBlock } from '@/shared/ui';
 
 import { InstancesPanel } from '@/widgets/instances-panel';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import type { HomePageProps } from '.';
 

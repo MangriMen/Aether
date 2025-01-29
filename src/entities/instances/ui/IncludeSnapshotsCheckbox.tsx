@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib';
 import type { CheckboxRootProps } from '@/shared/ui';
 import { Checkbox } from '@/shared/ui';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',

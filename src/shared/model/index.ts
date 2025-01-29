@@ -4,3 +4,5 @@ export * from './error';
 export * from './theme';
 export * from './settings';
 export * from './themeContext';
+export * from './i18n';
+export * from './i18nContext';

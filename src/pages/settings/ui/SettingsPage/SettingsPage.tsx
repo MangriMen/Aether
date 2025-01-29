@@ -5,7 +5,7 @@ import { AppVersion } from '@/entities/settings';
 
 import { SelectTheme } from '@/features/select-color-mode';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import { SettingsEntry } from '../SettingsEntry';
 import { SettingsPane } from '../SettingsPane';

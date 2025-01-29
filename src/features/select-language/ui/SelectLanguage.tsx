@@ -1,7 +1,7 @@
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import type { Option } from '@/shared/model';
+import type { Locale, Option } from '@/shared/model';
 import type { SelectRootProps } from '@/shared/ui';
 import {
   Select,
@@ -11,8 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui';
-
-import type { Locale } from '@/app/model';
 
 export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =
   SelectRootProps<Opt, never, 'div'> & {

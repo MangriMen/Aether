@@ -8,11 +8,11 @@ import { CombinedTextField } from '@/shared/ui';
 import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
 import { editMinecraftInstance } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
-export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
+export type GeneralProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 
-const GeneralTab: Component<GeneralTabProps> = (props) => {
+export const General: Component<GeneralProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslate();
@@ -38,5 +38,3 @@ const GeneralTab: Component<GeneralTabProps> = (props) => {
     </div>
   );
 };
-
-export default GeneralTab;

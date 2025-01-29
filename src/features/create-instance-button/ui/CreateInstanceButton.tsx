@@ -13,7 +13,7 @@ const CreateInstanceDialog = lazy(() =>
   })),
 );
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type CreateInstanceButtonProps = IconButtonProps;
 

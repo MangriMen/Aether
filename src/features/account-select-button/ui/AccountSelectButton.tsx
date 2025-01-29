@@ -22,7 +22,7 @@ import type { AccountSelectCardProps } from '@/features/account-select-card';
 
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type AccountSelectProps = IconButtonProps & {
   accountSelectCard: Component<AccountSelectCardProps>;

@@ -13,7 +13,7 @@ import {
 } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { isDebug } from '@/shared/model/settings';
+import { isDebug } from '@/shared/model';
 import {
   IconButton,
   Popover,

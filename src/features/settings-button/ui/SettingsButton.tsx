@@ -10,7 +10,7 @@ import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { updateResource } from '@/entities/updates';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

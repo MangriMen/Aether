@@ -1,11 +1,12 @@
 import type { Component } from 'solid-js';
 
+import type { TitleBarProps } from '@/shared/ui';
 import { TitleBar } from '@/shared/ui';
 
 import { NotificationMenuButton } from '@/features/notification-menu-button';
 import { WindowControls } from '@/features/window-controls';
 
-import type { AppTitleBarProps } from './types';
+export type AppTitleBarProps = TitleBarProps;
 
 export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
   return (

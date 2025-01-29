@@ -3,8 +3,7 @@ import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { useTranslate } from '@/app/model';
-import { useThemeContext } from '@/shared/model';
+import { useTranslate, useThemeContext } from '@/shared/model';
 
 import { SettingsEntry } from '../SettingsEntry';
 

@@ -11,15 +11,15 @@ import type {
 } from '@/entities/instances';
 import { editMinecraftInstance } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import CustomMemory from './CustomMemory';
 import CustomTextField from './CustomTextField';
 
-export type JavaAndMemoryTabProps = ComponentProps<'div'> &
+export type JavaAndMemoryProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
 
-const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
+export const JavaAndMemory: Component<JavaAndMemoryProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslate();
@@ -86,5 +86,3 @@ const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     </div>
   );
 };
-
-export default JavaAndMemoryTab;
