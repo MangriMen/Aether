@@ -4,8 +4,8 @@ import { lazy } from 'solid-js';
 
 import { RunningInstancesProvider } from '@/entities/instances';
 
-import { AppLayout } from '@/widgets/layouts/app-layout';
-import { MainLayout } from '@/widgets/layouts/main-layout';
+import { AppLayout } from '@/app/layouts/AppLayout';
+import { MainLayout } from '@/app/layouts/MainLayout';
 
 import { initializeApp } from './lib';
 import { AppRoot } from './AppRoot';

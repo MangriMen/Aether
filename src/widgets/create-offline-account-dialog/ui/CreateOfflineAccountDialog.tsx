@@ -7,8 +7,7 @@ import {
   createOfflineAccount,
   refetchAccountStateResource,
 } from '@/entities/accounts';
-
-import { CreateOfflineAccountForm } from '@/features/create-offline-account-form';
+import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
 

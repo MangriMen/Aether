@@ -3,8 +3,8 @@ import type { Component } from 'solid-js';
 import type { TitleBarProps } from '@/shared/ui';
 import { TitleBar } from '@/shared/ui';
 
-import { NotificationMenuButton } from '@/features/notification-menu-button';
-import { WindowControls } from '@/features/window-controls';
+import { WindowControls } from './WindowControls';
+import { NotificationMenuButton } from './NotificationMenuButton';
 
 export type AppTitleBarProps = TitleBarProps;
 

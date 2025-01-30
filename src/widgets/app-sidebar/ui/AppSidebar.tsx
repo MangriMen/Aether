@@ -5,16 +5,24 @@ import { cn } from '@/shared/lib';
 import type { SidebarProps } from '@/shared/ui';
 import { Separator, Sidebar } from '@/shared/ui';
 
-import { AccountSelectButton } from '@/features/account-select-button';
-import { AccountSelectCard } from '@/features/account-select-card';
-import { CreateInstanceButton } from '@/features/create-instance-button';
-import { HomeButton } from '@/features/home-button/';
-import { SettingsButton } from '@/features/settings-button';
+import { AccountSelectCard } from './AccountSelectCard';
+import type { AccountSelectButtonProps } from './AccountSelectButton';
+import { AccountSelectButton } from './AccountSelectButton';
+import type { CreateInstanceButtonProps } from './CreateInstanceButton';
+import CreateInstanceButton from './CreateInstanceButton';
+import HomeButton from './HomeButton';
+import SettingsButton from './SettingsButton';
 
-export type AppSidebarProps = SidebarProps;
+export type AppSidebarProps = SidebarProps &
+  Pick<CreateInstanceButtonProps, 'createInstanceDialog'> &
+  Pick<AccountSelectButtonProps, 'createOfflineAccountDialog'>;
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
-  const [local, others] = splitProps(props, ['class']);
+  const [local, others] = splitProps(props, [
+    'createInstanceDialog',
+    'createOfflineAccountDialog',
+    'class',
+  ]);
 
   return (
     <Sidebar
@@ -24,10 +32,15 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       <div class='flex flex-col items-center gap-2'>
         <HomeButton />
         <Separator />
-        <CreateInstanceButton />
+        <CreateInstanceButton
+          createInstanceDialog={local.createInstanceDialog}
+        />
       </div>
       <div class='flex flex-col items-center gap-2'>
-        <AccountSelectButton accountSelectCard={AccountSelectCard} />
+        <AccountSelectButton
+          accountSelectCard={AccountSelectCard}
+          createOfflineAccountDialog={local.createOfflineAccountDialog}
+        />
         <SettingsButton />
       </div>
     </Sidebar>

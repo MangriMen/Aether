@@ -1,12 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type {
-  VersionManifest,
-  LoadingBar,
-  MinecraftProcessMetadata,
-  LoaderManifest,
-  ModLoader,
-} from '../model';
+import type { VersionManifest, LoaderManifest, ModLoader } from '../model';
 
 export const initializeState = () => invoke('initialize_state');
 
@@ -15,14 +9,3 @@ export const getMinecraftVersionManifest = () =>
 
 export const getLoaderVersionsManifest = (loader: ModLoader) =>
   invoke<LoaderManifest>('get_loader_versions_manifest', { loader });
-
-export const getLoadingBars = () =>
-  invoke<Record<string, LoadingBar>>('get_progress_bars');
-
-export const getRunningMinecraftInstances = () =>
-  invoke<MinecraftProcessMetadata[]>('get_running_minecraft_instances');
-
-export const getMinecraftInstanceProcess = (id: string) =>
-  invoke<MinecraftProcessMetadata[]>('get_minecraft_instance_process', {
-    id,
-  });

@@ -5,14 +5,14 @@ import { cn } from '@/shared/lib';
 
 import type { Instance } from '@/entities/instances';
 
-import type { InstanceActionButtonProps } from '@/features/instance-action-button';
-
 import { InstanceImage } from './InstanceImage';
 import { InstanceTitle } from './InstanceTitle';
 
 export type InstanceCardProps = ComponentProps<'div'> & {
   instance: Instance;
-  instanceActionButton: Component<InstanceActionButtonProps>;
+  instanceActionButton: Component<
+    ComponentProps<'button'> & { instance: Instance }
+  >;
 };
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {

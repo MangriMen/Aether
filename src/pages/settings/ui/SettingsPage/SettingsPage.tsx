@@ -1,18 +1,16 @@
 import type { RouteSectionProps } from '@solidjs/router';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { AppVersion } from '@/entities/settings';
-
-import { SelectTheme } from '@/features/select-color-mode';
-
 import { useTranslate } from '@/shared/model';
 
 import { SettingsEntry } from '../SettingsEntry';
-import { SettingsPane } from '../SettingsPane';
 
 import ChangeLanguageEntry from './ChangeLanguageEntry';
 import SelectThemeForColorModeEntry from './SelectThemeForColorModeEntry';
 import UpdateAppEntry from './UpdateAppEntry';
+import { SettingsPane } from '../SettingsPane';
+import { AppVersion } from '../AppVersion';
+import { SelectTheme } from '../SelectTheme';
 
 export type SettingsPageProps = ComponentProps<'div'> & RouteSectionProps;
 

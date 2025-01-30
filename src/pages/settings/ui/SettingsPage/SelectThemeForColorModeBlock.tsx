@@ -4,9 +4,8 @@ import { createMemo, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { FieldLabel } from '@/shared/ui';
 
-import { SelectThemeByColorMode } from '@/features/select-color-mode';
-
 import { useThemeContext, useTranslate } from '@/shared/model';
+import SelectThemeByColorMode from '../SelectThemeByColorMode';
 
 export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
 

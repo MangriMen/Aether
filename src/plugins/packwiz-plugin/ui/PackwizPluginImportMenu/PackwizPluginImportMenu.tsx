@@ -17,9 +17,8 @@ import {
   TextFieldLabel,
 } from '@/shared/ui';
 
-import { callPlugin } from '@/entities/plugins';
-
 import type { PackwizPluginImportMenuProps } from './types';
+import { callPlugin } from '@/features/create-instance-plugins-menu';
 
 type PackwizPluginImportData = {
   kind: 'import';
