@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib';
 import type { Account } from '../model';
 
 import { AccountCard } from './AccountCard';
+import { useTranslate } from '@/shared/model';
 
 export type AccountsListProps = ComponentProps<'div'> & {
   accounts: Account[];
@@ -20,6 +21,8 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
     'onRemove',
     'class',
   ]);
+
+  const [{ t }] = useTranslate();
 
   const mappedAccounts = createMemo(() =>
     local.accounts.reduce<{ active: Account | undefined; others: Account[] }>(
@@ -42,7 +45,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
       when={local.accounts.length > 0}
       fallback={
         <span class={cn('inline-flex w-full justify-center', local.class)}>
-          No accounts found
+          {t('account.notFound')}
         </span>
       }
     >

@@ -11,6 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
 } from './Dialog';
+import { useTranslate } from '@/shared/model';
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {
@@ -23,8 +24,13 @@ export type CombinedDialogProps = DialogRootProps &
   };
 
 export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
+  const [{ t }] = useTranslate();
+
   const mergedProps = mergeProps(
-    { buttonOkText: 'Ok', buttonCancelText: 'Cancel' },
+    {
+      buttonOkText: t('common.ok') || 'Ok',
+      buttonCancelText: t('common.cancel') || 'Cancel',
+    },
     props,
   );
 

@@ -45,8 +45,14 @@ const InstanceActionButton: Component<InstanceActionButtonProps> = (props) => {
       runningInstance()?.isLoading,
   );
 
-  const handleLaunch = () => launchInstance(local.instance);
-  const handleStop = () => stopInstance(local.instance);
+  const handleLaunch = (e: MouseEvent) => {
+    e.stopPropagation();
+    launchInstance(local.instance);
+  };
+  const handleStop = (e: MouseEvent) => {
+    e.stopPropagation();
+    stopInstance(local.instance);
+  };
 
   return (
     <Show
