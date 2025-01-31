@@ -1,5 +1,5 @@
-import type { MappedLoaderManifest, Version } from '@/entities/minecraft';
-import { ModLoader, VersionType } from '@/entities/minecraft';
+import type { MappedLoaderManifest, Version } from '@/entities/minecrafts';
+import { ModLoader, VersionType } from '@/entities/minecrafts';
 
 export const filterGameVersions = (
   versions: Version[],

@@ -4,7 +4,7 @@ import { splitProps } from 'solid-js';
 
 import { Dialog, DialogContent } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';

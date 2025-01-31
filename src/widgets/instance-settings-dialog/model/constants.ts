@@ -4,11 +4,11 @@ import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
 import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
 
-import type { InstanceSettingsTabProps } from '@/entities/instance';
+import type { InstanceSettingsTabProps } from '@/entities/instances';
 
-import { GeneralTab } from '@/features/instance-settings/general-tab';
-import { JavaAndMemoryTab } from '@/features/instance-settings/java-and-memory-tab';
-import { WindowTab } from '@/features/instance-settings/window-tab';
+import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
+import { GeneralTab } from '../ui/GeneralTab';
+import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
 
 export enum InstanceSettingsDialogTabs {
   General = 'general',

@@ -4,10 +4,10 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { DialogHeader, DialogTitle } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
-import { InstanceImage } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
+import { InstanceImage } from '@/entities/instances';
 
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {
   instance: Instance;
