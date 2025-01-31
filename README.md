@@ -1,8 +1,17 @@
-# Tauri + Solid + Typescript
+# Aether Launcher
 
-This template should help get you started developing with Tauri, Solid and Typescript in Vite.
+Aether Launcher - это удобный лаунчер для управления вашими установками minecraft.
 
-## Recommended IDE Setup
+## Особенности
+- Поддержка нескольких языков (включая английский и русский)
+- Удобный интерфейс
+- Легкая настройка и использование
+- В текущий момент поддерживаются только offline аккаунты для ознакомления
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-# aether
+## Планируется в будущем
+- Поддержка плагинов и расширений
+- Интеграция с различными сервисами
+- Поддержка лицензионных аккаунтов
+
+## Установка
+Для загрузки установщика перейдите на [страницу релизов](https://github.com/MangriMen/aether/releases) 
