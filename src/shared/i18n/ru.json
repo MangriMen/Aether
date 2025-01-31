@@ -8,7 +8,9 @@
     "create": "Создать",
     "cancel": "Отмена",
     "gameVersion": "Версия игры",
-    "loader": "Загрузчик"
+    "loader": "Загрузчик",
+    "username": "Имя пользователя",
+    "ok": "Ок"
   },
   "account": {
     "title": "Аккаунт",
@@ -17,7 +19,9 @@
     "signIn": "Войти",
     "offline": "Оффлайн",
     "activate": "Активировать",
-    "removeAccount": "Удалить аккаунт"
+    "removeAccount": "Удалить аккаунт",
+    "notFound": "Аккаунты не найдены",
+    "online": "Онлайн"
   },
   "home": {
     "title": "Главная",
@@ -47,8 +51,11 @@
     "openFolder": "Открыть папку",
     "launch": "Запустить",
     "stop": "Остановить",
+    "remove": "Удалить",
     "lastPlayed": "Последний запуск: {{date}}",
-    "neverPlayed": "Никогда не запускался"
+    "neverPlayed": "Никогда не запускался",
+    "removeTitle": "Вы уверены, что хотите удалить инстанс {{name}}?",
+    "removeDescription": "Если вы продолжите, все данные вашего инстанса будут безвозвратно стёрты, включая ваши миры. Вы не сможете их восстановить."
   },
   "createInstance": {
     "title": "Создать инстанс",
@@ -79,5 +86,13 @@
     "environmentVariables": "Переменные окружения",
     "customEnvironmentVariables": "Пользовательские переменные окружения",
     "enterVariables": "Введите переменные здесь (например JAVA_HOME=C:\\Program Files\\Java\\jdk-17)"
+  },
+  "createOfflineAccount": {
+    "title": "Создать оффлайн аккаунт",
+    "usernameError": "Имя пользователя должно содержать только английские буквы, цифры и подчёркивания"
+  },
+  "events": {
+    "javaDownloading": "Загрузка Java {{version}}",
+    "launcherUpdating": "Обновление лаунчера до {{version}}"
   }
 }

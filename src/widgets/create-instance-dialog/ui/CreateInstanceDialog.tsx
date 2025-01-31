@@ -34,7 +34,7 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
     <Dialog {...props}>
       <DialogContent class='bg-secondary-dark'>
         <DialogHeader>
-          <DialogTitle>Create Instance</DialogTitle>
+          <DialogTitle>{t('createInstance.title')}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue={CreateInstanceDialogTabs.Custom}>
           <TabsList class='bg-secondary-dark p-0'>

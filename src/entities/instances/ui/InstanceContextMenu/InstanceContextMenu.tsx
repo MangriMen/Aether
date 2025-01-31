@@ -9,6 +9,7 @@ import {
 } from '@/shared/ui';
 
 import type { InstanceContextMenuProps } from './types';
+import { useTranslate } from '@/shared/model';
 
 export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
   props,
@@ -21,6 +22,8 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
     'children',
   ]);
 
+  const [{ t }] = useTranslate();
+
   return (
     <ContextMenu {...others}>
       {local.children}
@@ -30,14 +33,14 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
           onClick={local.onPlay}
           disabled={local.isLoading}
         >
-          Play
+          {t('instance.launch')}
         </ContextMenuItem>
         <ContextMenuItem
           class='w-full'
           onClick={local.onOpenFolder}
           disabled={local.isLoading}
         >
-          Open folder
+          {t('instance.openFolder')}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -45,7 +48,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
           onClick={local.onRemove}
           disabled={local.isLoading}
         >
-          Delete
+          {t('instance.remove')}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

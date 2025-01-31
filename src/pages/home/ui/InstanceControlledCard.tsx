@@ -12,6 +12,7 @@ import {
   useInstanceActions,
   useRunningInstancesContext,
 } from '@/entities/instances';
+import { useTranslate } from '@/shared/model';
 
 export type InstanceControlledCardProps = InstanceCardProps;
 
@@ -21,6 +22,8 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const navigate = useNavigate();
 
   const id = createMemo(() => props.instance.id);
+
+  const [{ t }] = useTranslate();
 
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 
@@ -41,7 +44,8 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     stopInstance(props.instance);
   };
 
-  const handleRemove = () => removeInstance(props.instance);
+  const handleRemove = () =>
+    removeInstance(props.instance).then(() => closeRemoveModal());
 
   const handleOpenFolder = () => openFolder(props.instance);
 
@@ -75,10 +79,9 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         variant='destructive'
         open={showRemoveModal()}
         onOpenChange={setShowRemoveModal}
-        header={`Are you shure you want to delete instance ${props.instance?.name}?`}
-        description='If you proceed, all data for your instance will be permanently
-            erased, including your worlds. You will not be able to recover it.'
-        buttonOkText='Remove'
+        header={t('instance.removeTitle', { name: props.instance.name })}
+        description={t('instance.removeDescription')}
+        buttonOkText={t('instance.remove')}
         onOk={handleRemove}
         onCancel={closeRemoveModal}
       />

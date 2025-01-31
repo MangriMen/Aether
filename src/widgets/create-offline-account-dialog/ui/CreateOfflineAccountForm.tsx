@@ -12,8 +12,12 @@ import {
   TextFieldLabel,
 } from '@/shared/ui';
 
-import type { CreateOfflineAccountFormValues } from '../model';
+import type {
+  CreateOfflineAccountFormSchemaErrors,
+  CreateOfflineAccountFormValues,
+} from '../model';
 import { CreateOfflineAccountFormSchema } from '../model';
+import { useTranslate } from '@/shared/model';
 
 export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;
@@ -24,6 +28,8 @@ export const CreateOfflineAccountForm: Component<
   CreateOfflineAccountFormProps
 > = (props) => {
   const [local, others] = splitProps(props, ['onCreate', 'onCancel']);
+
+  const [{ t }] = useTranslate();
 
   const [form, { Form, Field }] = createForm<CreateOfflineAccountFormValues>({
     validate: zodForm(CreateOfflineAccountFormSchema),
@@ -49,24 +55,30 @@ export const CreateOfflineAccountForm: Component<
               validationState={field.error ? 'invalid' : 'valid'}
               class='flex flex-col gap-3'
             >
-              <TextFieldLabel for='username'>Username</TextFieldLabel>
-              <TextFieldInput
-                id='username'
-                autocomplete='off'
-                required
-                type='text'
-                value={field.value}
-                {...props}
-              />
-              <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
+              <TextFieldLabel class='flex flex-col gap-3'>
+                {t('common.username')}
+                <TextFieldInput
+                  id='username'
+                  autocomplete='off'
+                  required
+                  type='text'
+                  value={field.value}
+                  {...props}
+                />
+              </TextFieldLabel>
+              <TextFieldErrorMessage>
+                {t(
+                  `createOfflineAccount.${field.error as CreateOfflineAccountFormSchemaErrors}`,
+                )?.toString()}
+              </TextFieldErrorMessage>
             </TextField>
           )}
         </Field>
 
         <DialogFooter>
-          <Button type='submit'>Create</Button>
+          <Button type='submit'>{t('common.create')}</Button>
           <Button variant={'secondary'} onClick={handleCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </DialogFooter>
       </div>

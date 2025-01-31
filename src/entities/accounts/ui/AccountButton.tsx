@@ -40,7 +40,9 @@ const AccountButton = <T extends ValidComponent = 'button'>(
     >
       <div class='flex flex-col items-start'>
         <span class='font-bold'>{local.username}</span>
-        <span class='capitalize text-muted-foreground'>{local.type}</span>
+        <span class='capitalize text-muted-foreground'>
+          {t(`account.${local.type as AccountType}`)}
+        </span>
       </div>
     </CombinedTooltip>
   );

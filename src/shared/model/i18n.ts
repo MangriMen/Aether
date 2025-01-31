@@ -1,3 +1,4 @@
+import type { Flatten } from '@solid-primitives/i18n';
 import { enDictionary, ruDictionary } from '../i18n';
 
 export const LOCALES = {
@@ -11,6 +12,9 @@ export const LOCALE_RESOURCES = {
 };
 
 export type Locale = (typeof LOCALES)[keyof typeof LOCALES];
+
+export type RawDictionary = (typeof LOCALE_RESOURCES)[Locale];
+export type Dictionary = Flatten<RawDictionary>;
 
 export const getLocaleFromBrowser = () => {
   return navigator.language.split('-')[0];

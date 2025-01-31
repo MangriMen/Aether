@@ -4,6 +4,7 @@ import type {
 } from '@solid-primitives/i18n';
 import type { Accessor, Resource } from 'solid-js';
 import { createContext, useContext } from 'solid-js';
+import type { Dictionary, Locale } from './i18n';
 
 export type I18nContextValue<Locale, Dictionary extends BaseRecordDict> = {
   locale: Accessor<Locale>;
@@ -20,8 +21,7 @@ export type I18nContextType<Locale, Dictionary extends BaseRecordDict> = [
   I18nContextActions<Locale>,
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const I18nContext = createContext<I18nContextType<any, any>>();
+export const I18nContext = createContext<I18nContextType<Locale, Dictionary>>();
 
 export const useI18nContext = () => {
   const value = useContext(I18nContext);

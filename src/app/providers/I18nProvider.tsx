@@ -11,7 +11,12 @@ import {
 
 import { dayjs } from '@/shared/lib';
 
-import type { I18nContextType } from '@/shared/model';
+import type {
+  Dictionary,
+  I18nContextType,
+  Locale,
+  RawDictionary,
+} from '@/shared/model';
 import { getSystemLocale, I18nContext } from '@/shared/model';
 import { LOCALE_LS_KEY } from '../config';
 
@@ -24,10 +29,7 @@ export type I18nProviderProps<
   children?: JSX.Element;
 };
 
-export const I18nProvider = <
-  Locale extends string,
-  RawDictionary extends i18n.BaseRecordDict,
->(
+export const I18nProvider = (
   props: I18nProviderProps<Locale, RawDictionary>,
 ) => {
   const [local, others] = splitProps(props, ['resources', 'fallbackLocale']);
@@ -51,8 +53,6 @@ export const I18nProvider = <
   const [dict] = createResource(combinedSignal, ([locale, resources]) =>
     i18n.flatten(resources[locale]),
   );
-
-  type Dictionary = NonNullable<ReturnType<typeof dict>>;
 
   const t = i18n.translator(dict, i18n.resolveTemplate);
 
