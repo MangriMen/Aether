@@ -10,8 +10,8 @@
     "serve": "vite preview",
     "tauri": "tauri",
     "prepare": "husky || true",
-    "lint": "eslint && npx steiger ./src || true",
-    "lint:fix": "eslint --fix && npx steiger ./src --fix || true"
+    "lint": "eslint && (npx steiger ./src || true)",
+    "lint:fix": "eslint --fix && (npx steiger ./src --fix || true)"
   },
   "license": "MIT",
   "dependencies": {
