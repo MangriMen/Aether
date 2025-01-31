@@ -4,8 +4,8 @@ import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import type { Instance, RunningInstancesContextValue } from '../model';
-import { RunningInstancesContext } from '../model';
-import { listenProcess, ProcessPayloadType } from '@/entities/processes/@x/instances';
+import { RunningInstancesContext, ProcessPayloadType } from '../model';
+import { listenProcess } from '../api';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
 

@@ -63,7 +63,7 @@
     "loaderVersionLatest": "Последняя",
     "loaderVersionOther": "Другое",
     "custom": "Пользовательский",
-    "plugins": "Плагины"
+    "import": "Импорт"
   },
   "instanceSettings": {
     "general": "Общие",

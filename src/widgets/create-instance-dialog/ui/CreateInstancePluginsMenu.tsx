@@ -5,11 +5,11 @@ import { Dynamic } from 'solid-js/web';
 // TODO: move to own package
 import { PackwizPluginImportMenu } from '@/plugins/packwiz-plugin';
 
-import type { Option } from '@/shared/model';
+import type { Option, Plugin } from '@/shared/model';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
-import type { Plugin } from '../model';
 import type { DialogRootProps } from '@kobalte/core/dialog';
+import { callPlugin } from '../api';
 
 export type CreateInstancePluginsMenuProps = ComponentProps<'div'> &
   Pick<DialogRootProps, 'onOpenChange'>;
@@ -70,6 +70,7 @@ export const CreateInstancePluginsMenu: Component<
                 {(component) => (
                   <Dynamic
                     component={component()}
+                    callPlugin={callPlugin}
                     onSubmit={() => local.onOpenChange?.(false)}
                   />
                 )}

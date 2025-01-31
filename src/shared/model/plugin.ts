@@ -9,5 +9,6 @@ export interface Plugin {
 }
 
 export interface PluginComponentProps {
+  callPlugin: (id: string, data: string) => Promise<unknown>;
   onSubmit: () => void;
 }

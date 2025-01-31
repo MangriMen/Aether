@@ -1,6 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { Instance, InstanceCreateDto, InstanceEditDto } from '../model';
+import type {
+  Instance,
+  InstanceCreateDto,
+  InstanceEditDto,
+  MinecraftProcessMetadata,
+} from '../model';
 import { refetchInstances } from '../model';
 
 export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
@@ -32,3 +37,11 @@ export const editMinecraftInstance = async (
 
 export const openInstanceFolder = (instance: Instance, exact = true) =>
   invoke('reveal_in_explorer', { path: instance.path, exact });
+
+export const getRunningMinecraftInstances = () =>
+  invoke<MinecraftProcessMetadata[]>('get_running_minecraft_instances');
+
+export const getMinecraftInstanceProcess = (id: string) =>
+  invoke<MinecraftProcessMetadata[]>('get_minecraft_instance_process', {
+    id,
+  });

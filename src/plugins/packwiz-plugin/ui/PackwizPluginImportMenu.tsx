@@ -16,9 +16,7 @@ import {
   TextFieldInput,
   TextFieldLabel,
 } from '@/shared/ui';
-
-import type { PackwizPluginImportMenuProps } from './types';
-import { callPlugin } from '@/features/create-instance-plugins-menu';
+import type { PluginComponentProps } from '@/shared/model/plugin';
 
 type PackwizPluginImportData = {
   kind: 'import';
@@ -44,10 +42,12 @@ const PackwizPluginImportSchema = z.object({
 
 type PackwizPluginImportValues = z.infer<typeof PackwizPluginImportSchema>;
 
+export type PackwizPluginImportMenuProps = PluginComponentProps;
+
 export const PackwizPluginImportMenu: Component<
   PackwizPluginImportMenuProps
 > = (props) => {
-  const [local, others] = splitProps(props, ['onSubmit']);
+  const [local, others] = splitProps(props, ['callPlugin', 'onSubmit']);
 
   const [form, { Form, Field }] = createForm({
     validate: zodForm(PackwizPluginImportSchema),
@@ -63,7 +63,7 @@ export const PackwizPluginImportMenu: Component<
       },
     };
 
-    callPlugin('packwiz', JSON.stringify(payload)).catch((error) => {
+    local.callPlugin('packwiz', JSON.stringify(payload)).catch((error) => {
       if (isAetherLauncherError(error)) {
         showToast({
           description: error.message,

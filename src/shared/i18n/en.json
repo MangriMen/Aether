@@ -63,7 +63,7 @@
     "loaderVersionLatest": "Latest",
     "loaderVersionOther": "Other",
     "custom": "Custom",
-    "plugins": "Plugins"
+    "import": "Import"
   },
   "instanceSettings": {
     "general": "General",
