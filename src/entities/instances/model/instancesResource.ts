@@ -1,5 +1,5 @@
-import type { InitializedResourceReturn } from 'solid-js';
-import { createResource, createSignal } from 'solid-js';
+import type { Accessor, InitializedResourceReturn } from 'solid-js';
+import { createMemo, createResource, createSignal } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
 import { getMinecraftInstances } from '@/entities/instances';
@@ -50,3 +50,10 @@ export const refetchInstances = () => {
 };
 
 export const useMappedInstances = () => mappedInstances;
+
+const getCachedInstance = (id: Instance['id']) => mappedInstances()?.[id];
+
+export const useInstance = (id: Accessor<Instance['id']>) => {
+  const memoizedInstance = createMemo(() => getCachedInstance(id()));
+  return memoizedInstance;
+};

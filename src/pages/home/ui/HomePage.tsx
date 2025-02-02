@@ -10,7 +10,12 @@ import { InstancesPanel } from './InstancesPanel';
 export type HomePageProps = ComponentProps<'div'> & RouteSectionProps;
 
 export const HomePage: Component<HomePageProps> = (props) => {
-  const [_, others] = splitProps(props, ['params', 'location', 'data']);
+  const [local, others] = splitProps(props, [
+    'params',
+    'location',
+    'data',
+    'children',
+  ]);
 
   const [{ t }] = useTranslate();
 
@@ -19,6 +24,7 @@ export const HomePage: Component<HomePageProps> = (props) => {
       <TitledBlock title={t('home.instances')}>
         <InstancesPanel />
       </TitledBlock>
+      {local.children}
     </div>
   );
 };
