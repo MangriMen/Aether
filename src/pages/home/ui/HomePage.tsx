@@ -20,9 +20,9 @@ export const HomePage: Component<HomePageProps> = (props) => {
   const [{ t }] = useTranslate();
 
   return (
-    <div class='size-full p-4' {...others}>
-      <TitledBlock title={t('home.instances')}>
-        <InstancesPanel />
+    <div class='flex size-full flex-col overflow-hidden p-4' {...others}>
+      <TitledBlock class='h-full' title={t('home.instances')}>
+        <InstancesPanel class='overflow-y-auto' />
       </TitledBlock>
       {local.children}
     </div>

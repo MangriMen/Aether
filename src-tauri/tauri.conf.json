@@ -11,7 +11,9 @@
       {
         "title": "Aether",
         "width": 1024,
-        "height": 682,
+        "height": 640,
+        "minWidth": 768,
+        "minHeight": 480,
         "decorations": false,
         "visible": false
       }
