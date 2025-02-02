@@ -136,6 +136,7 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           when={update()?.available}
           fallback={
             <Button
+              class='h-auto max-h-none'
               loading={update.loading}
               disabled={isUpdating()}
               onClick={checkUpdates}
@@ -145,10 +146,11 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           }
         >
           <Button
+            class='h-auto max-h-none'
             disabled={!update()?.available || isUpdating()}
             onClick={downloadAndInstallUpdate}
           >
-            Install and restart app
+            {t('settings.installAndRestartApp')}
           </Button>
         </Show>
       </div>

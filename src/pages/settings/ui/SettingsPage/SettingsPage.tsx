@@ -19,7 +19,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
   const [{ t }] = useTranslate();
 
   return (
-    <div class='flex size-full flex-col gap-4 p-4' {...others}>
+    <div class='flex size-full flex-col gap-4 overflow-y-auto p-4' {...others}>
       <SettingsPane
         class='container max-w-screen-lg'
         title={t('settings.launcher')}

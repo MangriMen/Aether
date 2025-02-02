@@ -25,7 +25,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   });
 
   return (
-    <div class={cn('flex flex-wrap gap-4 h-full', local.class)} {...others}>
+    <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
       <Switch>
         <Match when={instances?.() && !instances.loading}>
           <Show
