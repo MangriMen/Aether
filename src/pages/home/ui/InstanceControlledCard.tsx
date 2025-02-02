@@ -49,6 +49,10 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   const handleOpenFolder = () => openFolder(props.instance);
 
+  const handleOpenSettings = () => {
+    navigate(`/instance-settings/${encodeURIComponent(props.instance.id)}`);
+  };
+
   const goToInstancePage = () => {
     navigate(`/instances/${encodeURIComponent(props.instance.id)}`);
   };
@@ -62,6 +66,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         isLoading={runningInstanceData()?.isLoading}
         onPlay={handleLaunch}
         onOpenFolder={handleOpenFolder}
+        onOpenSettings={handleOpenSettings}
         onRemove={openRemoveModal}
       >
         <ContextMenuTrigger
