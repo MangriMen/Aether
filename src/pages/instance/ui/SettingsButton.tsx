@@ -7,12 +7,10 @@ import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
 
 import { useTranslate } from '@/shared/model';
 
-export type InstanceSettingsButtonProps<T extends ValidComponent = 'button'> =
+export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
-const InstanceSettingsButton: Component<InstanceSettingsButtonProps> = (
-  props,
-) => {
+const SettingsButton: Component<SettingsButtonProps> = (props) => {
   const navigate = useNavigate();
   const [{ t }] = useTranslate();
 
@@ -31,4 +29,4 @@ const InstanceSettingsButton: Component<InstanceSettingsButtonProps> = (
   );
 };
 
-export default InstanceSettingsButton;
+export default SettingsButton;

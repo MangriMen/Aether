@@ -6,7 +6,8 @@ import { Separator } from '@/shared/ui';
 
 import { useInstance } from '@/entities/instances';
 
-import { InstanceHeader } from './InstanceHeader';
+import { Header } from './Header';
+import { Body } from './Body';
 
 export type InstancePageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -28,8 +29,9 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
       <Show when={instance()} fallback={<span>Instance not found</span>}>
         {(instance) => (
           <>
-            <InstanceHeader instance={instance()} />
+            <Header instance={instance()} />
             <Separator />
+            <Body instance={instance()} />
           </>
         )}
       </Show>
