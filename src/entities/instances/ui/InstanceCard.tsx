@@ -37,7 +37,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         gameVersion={local.instance.gameVersion}
       />
       <local.instanceActionButton
-        class='absolute bottom-1/3 left-1/2 p-0 pr-0.5 opacity-0 transition-[bottom,opacity] disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
+        class='absolute bottom-1/3 left-1/2 p-0 pr-0.5 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
         instance={local.instance}
       />
     </div>
