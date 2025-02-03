@@ -81,6 +81,7 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
 
       if ((e.payload.fraction ?? 1) <= 0.05) {
         setIsNewEvent(true);
+        refetchInstances();
       }
 
       if (e.payload.fraction === null) {

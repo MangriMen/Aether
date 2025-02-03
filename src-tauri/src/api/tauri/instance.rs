@@ -9,17 +9,21 @@ use crate::{
 #[tauri::command]
 pub async fn create_minecraft_instance(
     instance_create_dto: InstanceCreateDto,
-) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::create(
-        instance_create_dto.name,
-        instance_create_dto.game_version,
-        instance_create_dto.mod_loader,
-        instance_create_dto.loader_version,
-        instance_create_dto.icon_path,
-        instance_create_dto.skip_install_profile,
-        None,
-    )
-    .await?)
+) -> AetherLauncherResult<()> {
+    tokio::spawn(async move {
+        aether_core::api::instance::create(
+            instance_create_dto.name,
+            instance_create_dto.game_version,
+            instance_create_dto.mod_loader,
+            instance_create_dto.loader_version,
+            instance_create_dto.icon_path,
+            instance_create_dto.skip_install_profile,
+            None,
+        )
+        .await
+    });
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -27,7 +31,6 @@ pub async fn edit_minecraft_instance(
     id: String,
     instance_edit_dto: InstanceEditDto,
 ) -> AetherLauncherResult<()> {
-    print!("{:?}", instance_edit_dto);
     Ok(aether_core::api::instance::edit(
         &id,
         &instance_edit_dto.name,
