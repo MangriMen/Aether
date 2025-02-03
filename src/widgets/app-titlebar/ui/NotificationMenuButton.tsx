@@ -74,7 +74,7 @@ export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   };
 
   const listenEvents = () => {
-    listenEvent('loading', (e) => {
+    listenEvent<LoadingPayload>('loading', (e) => {
       if (isDebug()) {
         console.log('[EVENT][DEBUG]', e);
       }
