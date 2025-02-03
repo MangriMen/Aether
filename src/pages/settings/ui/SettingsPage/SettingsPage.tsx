@@ -11,6 +11,7 @@ import UpdateAppEntry from './UpdateAppEntry';
 import { SettingsPane } from '../SettingsPane';
 import { AppVersion } from '../AppVersion';
 import { SelectTheme } from '../SelectTheme';
+import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
 
 export type SettingsPageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -32,6 +33,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
         </SettingsEntry>
         <SelectThemeForColorModeEntry />
         <ChangeLanguageEntry />
+        <SelectActionOnInstanceLaunchEntry />
       </SettingsPane>
       <SettingsPane
         class='container max-w-screen-lg'

@@ -5,11 +5,7 @@ import { onMount } from 'solid-js';
 import { Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import {
-  initializeResources,
-  useHideOnLaunch,
-  usePreventRightClick,
-} from './lib';
+import { initializeResources, usePreventRightClick } from './lib';
 import { useMaximizeObserver } from '@/shared/lib';
 import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
@@ -18,7 +14,6 @@ import { AppLayout } from './layouts/AppLayout';
 export const AppRoot: Component<RouteSectionProps> = (props) => {
   usePreventRightClick();
   useMaximizeObserver();
-  useHideOnLaunch();
 
   onMount(initializeResources);
 

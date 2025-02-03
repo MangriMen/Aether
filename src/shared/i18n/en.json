@@ -44,7 +44,12 @@
     "installAndRestartApp": "Install and restart app",
     "releaseDate": "Release date",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "actionOnInstanceLaunch": "Launcher behavior on instance launch",
+    "actionOnInstanceLaunchDescription": "Select an action to perform when launching an instance.\n \"Do nothing\" will not hide the launcher on launch.\n \"Hide\"  hide launcher window.\n \"Close\" will close the launcher window but will not close application (saves memory).",
+    "doNothing": "Do nothing",
+    "hide": "Hide",
+    "close": "Close"
   },
   "instance": {
     "settings": "Settings",
