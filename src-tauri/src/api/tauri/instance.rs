@@ -65,3 +65,8 @@ pub async fn get_minecraft_instances() -> AetherLauncherResult<(Vec<Instance>, V
     let res = aether_core::api::instance::get_all().await?;
     Ok((res.0, res.1.iter().map(|err| err.to_string()).collect()))
 }
+
+#[tauri::command]
+pub async fn get_minecraft_instance(id: String) -> AetherLauncherResult<Instance> {
+    Ok(aether_core::api::instance::get(&id).await?)
+}

@@ -5,8 +5,9 @@ import { createStore } from 'solid-js/store';
 
 import type { Instance, RunningInstancesContextValue } from '../model';
 import { RunningInstancesContext } from '../model';
-import { listenProcess } from '../api';
 import { ProcessPayloadType } from '@/entities/events/@x/instances';
+import { listenEvent } from '@/entities/events';
+import { isDebug } from '@/shared/model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
 
@@ -44,15 +45,17 @@ export const RunningInstancesProvider: Component<
   const stopProcessListener = () => processListenerUnlistenFn?.();
 
   const startProcessListener = () =>
-    listenProcess((e) => {
-      const isLaunched = e.payload.event === ProcessPayloadType.Launched;
+    listenEvent('process', (e) => {
+      if (isDebug()) {
+        console.log('[EVENT][DEBUG]', e);
+      }
 
       setContextValue('instances', (instances) => ({
         ...instances,
         [e.payload.instanceId]: {
           payload: e.payload,
           isLoading: false,
-          isRunning: isLaunched,
+          isRunning: e.payload.event === ProcessPayloadType.Launched,
         },
       }));
     });

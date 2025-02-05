@@ -1,3 +1,5 @@
+import type { LauncherEventPayload } from './event';
+
 export enum LoadingBarTypeEnum {
   MinecraftDownload = 'minecraft_download',
   JavaDownload = 'java_download',
@@ -48,33 +50,6 @@ export interface LoadingPayload {
   message: string;
 }
 
-export enum ProcessPayloadType {
-  Launched = 'launched',
-  Finished = 'finished',
-}
-
-export interface ProcessPayload {
-  instanceId: string;
-  uuid: string;
-  event: ProcessPayloadType;
-  message: string;
-}
-
-export enum MinecraftEvent {
-  Loading = 'loading',
-  Process = 'process',
-}
-
-export type MinecraftEventName = `${MinecraftEvent}`;
-export type MinecraftEventPayload = LoadingPayload | ProcessPayload;
-
-export const isProcessPayload = (
-  payload: MinecraftEventPayload,
-): payload is ProcessPayload =>
-  'event' in payload &&
-  (payload.event === ProcessPayloadType.Launched ||
-    payload.event === ProcessPayloadType.Finished);
-
 export const isLoadingPayload = (
-  payload: MinecraftEventPayload,
+  payload: LauncherEventPayload,
 ): payload is LoadingPayload => 'event' in payload && 'fraction' in payload;

@@ -1,9 +1,17 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createEffect, For, Match, Show, splitProps, Switch } from 'solid-js';
+import {
+  createEffect,
+  createMemo,
+  For,
+  Match,
+  Show,
+  splitProps,
+  Switch,
+} from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { useInstances, refetchInstances } from '@/entities/instances';
+import { refetchInstances, useInstances } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 
@@ -18,7 +26,9 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
-  const instances = useInstances();
+  const [instances, { isLoading }] = useInstances();
+
+  const instancesArray = createMemo(() => Array.from(instances.values()));
 
   createEffect(() => {
     refetchInstances();
@@ -27,16 +37,16 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   return (
     <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
       <Switch>
-        <Match when={instances?.() && !instances.loading}>
+        <Match when={instances.size && !isLoading()}>
           <Show
-            when={instances?.()?.[0]?.length}
+            when={instances.size}
             fallback={
               <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
                 {t('home.noInstances')}
               </p>
             }
           >
-            <For each={instances?.()?.[0]}>
+            <For each={instancesArray()}>
               {(instance) => (
                 <InstanceControlledCard
                   instance={instance}

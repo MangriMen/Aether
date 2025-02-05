@@ -1,1 +1,1 @@
-export { type ProcessPayload, ProcessPayloadType } from '../model/events';
+export { type ProcessPayload, ProcessPayloadType } from '../model/process';
