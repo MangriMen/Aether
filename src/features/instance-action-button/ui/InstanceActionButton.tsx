@@ -3,14 +3,14 @@ import { splitProps, createMemo, Show } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 import {
   InstanceInstallStage,
   InstancePlayButton,
   InstanceStopButton,
   useInstanceActions,
   useRunningInstancesContext,
-} from '@/entities/instance';
+} from '@/entities/instances';
 
 export type InstanceActionButtonProps = IconButtonProps & {
   instance: Instance;
@@ -45,8 +45,14 @@ const InstanceActionButton: Component<InstanceActionButtonProps> = (props) => {
       runningInstance()?.isLoading,
   );
 
-  const handleLaunch = () => launchInstance(local.instance);
-  const handleStop = () => stopInstance(local.instance);
+  const handleLaunch = (e: MouseEvent) => {
+    e.stopPropagation();
+    launchInstance(local.instance);
+  };
+  const handleStop = (e: MouseEvent) => {
+    e.stopPropagation();
+    stopInstance(local.instance);
+  };
 
   return (
     <Show

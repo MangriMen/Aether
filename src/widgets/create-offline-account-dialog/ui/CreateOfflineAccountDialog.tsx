@@ -7,14 +7,16 @@ import {
   createOfflineAccount,
   refetchAccountStateResource,
 } from '@/entities/accounts';
-
-import { CreateOfflineAccountForm } from '@/features/create-offline-account-form';
+import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
+import { useTranslate } from '@/shared/model';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
 
 export const CreateOfflineAccountDialog: Component<
   CreateOfflineAccountDialogProps
 > = (props) => {
+  const [{ t }] = useTranslate();
+
   const handleCreate = async (username: string) => {
     await createOfflineAccount(username);
     refetchAccountStateResource();
@@ -28,7 +30,7 @@ export const CreateOfflineAccountDialog: Component<
   return (
     <Dialog {...props}>
       <DialogContent class='max-w-80'>
-        <DialogHeader>Create offline account</DialogHeader>
+        <DialogHeader>{t('createOfflineAccount.title')}</DialogHeader>
         <CreateOfflineAccountForm
           onCreate={handleCreate}
           onCancel={closeDialog}

@@ -1,31 +1,51 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import { Dialog, DialogContent } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import { useInstance } from '@/entities/instances';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
+import { useNavigate } from '@solidjs/router';
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
-  instance: Instance;
+  id: string;
 };
 
-const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
+export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['instance']);
+  const [local, others] = splitProps(props, ['id', 'onOpenChange']);
+
+  const navigate = useNavigate();
+
+  const id = createMemo(() => decodeURIComponent(local.id));
+
+  // eslint-disable-next-line solid/reactivity
+  const instance = useInstance(id);
+
+  const onOpenChange = (open: boolean) => {
+    if (local.onOpenChange) {
+      local.onOpenChange(open);
+    } else {
+      navigate(-1);
+    }
+  };
 
   return (
-    <Dialog defaultOpen open={true} {...others}>
-      <DialogContent class='w-[900px] max-w-full bg-secondary-dark'>
-        <InstanceSettingsDialogHeader instance={local.instance} />
-        <InstanceSettingsDialogBody instance={local.instance} />
+    <Dialog defaultOpen onOpenChange={onOpenChange} {...others}>
+      <DialogContent class='flex w-[900px] max-w-[calc(100%-80px)] flex-col bg-secondary-dark'>
+        <Show when={instance()} fallback={<span>Instance not found</span>}>
+          {(instance) => (
+            <>
+              <InstanceSettingsDialogHeader instance={instance()} />
+              <InstanceSettingsDialogBody instance={instance()} />
+            </>
+          )}
+        </Show>
       </DialogContent>
     </Dialog>
   );
 };
-
-export default InstanceSettingsDialog;

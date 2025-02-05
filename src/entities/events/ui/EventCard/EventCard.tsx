@@ -3,26 +3,32 @@ import { createMemo, splitProps } from 'solid-js';
 
 import { Progress } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
-import { LoadingBarTypeEnum } from '@/entities/minecraft';
+import { LoadingBarTypeEnum } from '@/entities/events';
 
 import type { EventCardProps } from './types';
+import { useTranslate } from '@/shared/model';
 
 export const EventCard: Component<EventCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const clampedValue = createMemo(() => local.payload.fraction ?? 1);
 
   const title = createMemo(() => {
     switch (local.payload.event.type) {
       case LoadingBarTypeEnum.JavaDownload:
-        return `Downloading Java ${local.payload.event.version}`;
+        return t('events.javaDownloading', {
+          version: local.payload.event.version,
+        });
       case LoadingBarTypeEnum.MinecraftDownload:
         return local.payload.event.instance_name;
       case LoadingBarTypeEnum.PluginDownload:
         return `[Plugin] ${local.payload.event.plugin_name}`;
       case LoadingBarTypeEnum.LauncherUpdate:
-        return `Updating launcher to ${local.payload.event.version}`;
+        return t('events.launcherUpdating', {
+          version: local.payload.event.version,
+        });
     }
   });
 

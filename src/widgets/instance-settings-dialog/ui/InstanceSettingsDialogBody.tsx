@@ -6,16 +6,16 @@ import { For, splitProps } from 'solid-js';
 import type { TabsProps } from '@/shared/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instance';
+import type { Instance } from '@/entities/instances';
 
-// eslint-disable-next-line boundaries/element-types
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
   INSTANCE_SETTINGS_TABS_TRIGGER,
   InstanceSettingsDialogTabs,
 } from '../model';
+import { cn } from '@/shared/lib';
 
 export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
   TabsProps<T> & {
@@ -25,13 +25,13 @@ export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
 const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, InstanceSettingsDialogBodyProps<T>>,
 ) => {
-  const [local, others] = splitProps(props, ['instance']);
+  const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslate();
 
   return (
     <Tabs
-      class='min-h-96'
+      class={cn('h-96 flex overflow-hidden', local.class)}
       defaultValue={InstanceSettingsDialogTabs.General}
       orientation='vertical'
       {...(others as TabsProps<T>)}
@@ -49,11 +49,11 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
       <For each={INSTANCE_SETTINGS_TABS_CONTENT}>
         {(tabContent) => (
           <TabsContent
-            class='h-max duration-300 animate-in slide-in-from-bottom-6 data-[orientation=vertical]:ml-8'
             value={tabContent.value}
-          >
-            <tabContent.component instance={local.instance} />
-          </TabsContent>
+            as={tabContent.component}
+            class=' flex-1 overflow-y-auto pl-1 duration-300 animate-in slide-in-from-bottom-6 data-[orientation=vertical]:ml-8'
+            instance={local.instance}
+          />
         )}
       </For>
     </Tabs>

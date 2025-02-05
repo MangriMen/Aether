@@ -4,8 +4,7 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { Button, CombinedTooltip, type ButtonProps } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
-import { useTranslate } from '@/app/model';
+import { useTranslate } from '@/shared/model';
 
 import type { Account, AccountType } from '../model';
 
@@ -41,7 +40,9 @@ const AccountButton = <T extends ValidComponent = 'button'>(
     >
       <div class='flex flex-col items-start'>
         <span class='font-bold'>{local.username}</span>
-        <span class='capitalize text-muted-foreground'>{local.type}</span>
+        <span class='capitalize text-muted-foreground'>
+          {t(`account.${local.type as AccountType}`)}
+        </span>
       </div>
     </CombinedTooltip>
   );

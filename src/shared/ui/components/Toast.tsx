@@ -21,6 +21,9 @@ const toastVariants = cva(
           'success border-success-foreground bg-success text-success-foreground',
         warning:
           'warning border-warning-foreground bg-warning text-warning-foreground',
+        // TODO: rework toast variants design
+        warningFilled:
+          'warning border-warning-foreground bg-warning-foreground text-warning',
         error: 'error border-error-foreground bg-error text-error-foreground',
       },
     },

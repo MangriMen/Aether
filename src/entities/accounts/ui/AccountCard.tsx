@@ -6,10 +6,9 @@ import { cn } from '@/shared/lib';
 import type { ButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-// eslint-disable-next-line boundaries/element-types
-import { useTranslate } from '@/app/model';
-
 import type { Account, AccountType } from '../model';
+
+import { useTranslate } from '@/shared/model';
 
 import AccountButton from './AccountButton';
 
@@ -48,6 +47,7 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
         onClick={local.onActivate}
         {...local.accountButtonProps}
       />
+
       <div class='flex items-start justify-start'>
         <CombinedTooltip
           label={t('account.removeAccount')}
