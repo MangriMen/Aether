@@ -1,4 +1,4 @@
-import { listenEvent } from '@/entities/events';
+import { listenEvent } from '@/entities/events/@x/instances';
 import { onCleanup, onMount } from 'solid-js';
 import { refetchInstance } from '../model/instancesResource';
 import { isDebug } from '@/shared/model';

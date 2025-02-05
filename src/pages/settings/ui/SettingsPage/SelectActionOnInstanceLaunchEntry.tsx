@@ -9,11 +9,11 @@ import {
 import type { Component } from 'solid-js';
 import { createMemo, createResource } from 'solid-js';
 import { SettingsEntry } from '../SettingsEntry';
+import type { ActionOnInstanceLaunchType } from '../../model';
 import {
   getActionOnInstanceLaunch,
   setActionOnInstanceLaunch,
-  type ActionOnInstanceLaunchType,
-} from '@/entities/settings';
+} from '../../api';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;

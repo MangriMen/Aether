@@ -5,8 +5,11 @@ import { createStore } from 'solid-js/store';
 
 import type { Instance, RunningInstancesContextValue } from '../model';
 import { RunningInstancesContext } from '../model';
-import { ProcessPayloadType } from '@/entities/events/@x/instances';
-import { listenEvent } from '@/entities/events';
+import {
+  ProcessPayloadType,
+  listenEvent,
+} from '@/entities/events/@x/instances';
+
 import { isDebug } from '@/shared/model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
