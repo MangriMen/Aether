@@ -13,6 +13,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
+tauri-plugin-process = "2"
 
 tokio = { version = "1", features = ["full"] }
 
@@ -32,9 +33,7 @@ open = { version = "5", features = ["shellexecute-on-windows"] }
 
 daedalus = "0.2.3"
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.3.2" }
-tauri-plugin-process = "2"
-
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.3.3" }
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]

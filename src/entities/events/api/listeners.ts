@@ -1,8 +1,11 @@
 import type { EventCallback } from '@tauri-apps/api/event';
 import { listen } from '@tauri-apps/api/event';
-import type { MinecraftEventName, MinecraftEventPayload } from '../model';
+import type { LauncherEvent, LauncherEventPayload } from '../model';
 
-export const listenEvent = <T = MinecraftEventPayload>(
-  event: MinecraftEventName,
-  callback: EventCallback<T>,
-) => listen<T>(event, callback);
+export const listenEvent = <
+  E extends string = LauncherEvent,
+  P = LauncherEventPayload<E>,
+>(
+  event: E,
+  callback: EventCallback<P>,
+) => listen<P>(event, callback);

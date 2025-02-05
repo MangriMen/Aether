@@ -1,6 +1,9 @@
+import { makePersisted } from '@solid-primitives/storage';
 import { createSignal } from 'solid-js';
 
 export const IS_DEBUG_KEY = '_AETHER_DEBUG';
-export const [isDebug, setIsDebug] = createSignal(
-  JSON.parse(localStorage.getItem(IS_DEBUG_KEY) ?? 'false'),
-);
+
+// eslint-disable-next-line solid/reactivity
+export const [isDebug, setIsDebug] = makePersisted(createSignal(false), {
+  name: IS_DEBUG_KEY,
+});

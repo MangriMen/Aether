@@ -15,10 +15,11 @@ use tauri::{Listener, Manager, WebviewWindowBuilder};
 use api::tauri::{
     call_plugin, change_account, create_minecraft_instance, create_offline_account,
     edit_minecraft_instance, get_accounts, get_action_on_instance_launch,
-    get_loader_versions_manifest, get_minecraft_instance_process, get_minecraft_instances,
-    get_minecraft_version_manifest, get_progress_bars, get_running_minecraft_instances,
-    initialize_state, launch_minecraft_instance, logout, remove_minecraft_instance,
-    reveal_in_explorer, set_action_on_instance_launch, stop_minecraft_instance,
+    get_loader_versions_manifest, get_minecraft_instance, get_minecraft_instance_process,
+    get_minecraft_instances, get_minecraft_version_manifest, get_progress_bars,
+    get_running_minecraft_instances, initialize_state, launch_minecraft_instance, logout,
+    remove_minecraft_instance, reveal_in_explorer, set_action_on_instance_launch,
+    stop_minecraft_instance,
 };
 
 struct ManualExitFlagStateInner(bool);
@@ -44,7 +45,7 @@ fn main() {
             let app_handle = app.handle().clone();
 
             app.listen(
-                aether_core::event::MinecraftEvent::Process.as_str(),
+                aether_core::event::LauncherEvent::Process.as_str(),
                 move |e| {
                     let app_handle = app_handle.clone();
                     let payload =
@@ -139,6 +140,7 @@ fn main() {
             create_minecraft_instance,
             edit_minecraft_instance,
             get_minecraft_instances,
+            get_minecraft_instance,
             get_minecraft_version_manifest,
             get_loader_versions_manifest,
             get_progress_bars,

@@ -1,6 +1,5 @@
 import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
 import { Icon } from '@iconify-icon/solid';
-import { ReactiveMap } from '@solid-primitives/map';
 import type { Component, ValidComponent } from 'solid-js';
 import {
   createEffect,
@@ -23,11 +22,11 @@ import {
 } from '@/shared/ui';
 
 import { EventCard, getLoadingBars, listenEvent } from '@/entities/events';
-import { refetchInstances } from '@/entities/instances';
 import type { LoadingPayload } from '@/entities/events';
 import type { PolymorphicProps } from '@kobalte/core';
-
-const NOTIFICATION_COMPLETED_REMOVE_DELAY = 1500;
+import { COMPLETED_NOTIFICATION_REMOVE_DELAY } from '../model/constants';
+import { ReactiveMap } from '@solid-primitives/map';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 
 export type NotificationMenuButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
@@ -35,82 +34,86 @@ export type NotificationMenuButtonProps<T extends ValidComponent = 'button'> =
 export const NotificationMenuButton: Component<NotificationMenuButtonProps> = (
   props,
 ) => {
-  const events = new ReactiveMap<string, LoadingPayload>();
+  const displayEventsMap = new ReactiveMap<string, LoadingPayload>();
 
   const [isMenuOpen, setIsMenuOpen] = createSignal(false);
   const [isNewEvent, setIsNewEvent] = createSignal(false);
 
-  const [removeNotificationTimer, setRemoveNotificationTimer] = createSignal<
-    number | undefined
-  >(undefined);
+  let removeNotificationTimer: number | undefined;
+
+  const resetTimer = () => {
+    clearTimeout(removeNotificationTimer);
+    removeNotificationTimer = undefined;
+  };
+
+  const addEvent = (payload: LoadingPayload) => {
+    displayEventsMap.set(payload.loaderUuid, payload);
+  };
+
+  const removeEvent = (payload: LoadingPayload) => {
+    removeNotificationTimer = setTimeout(
+      () => displayEventsMap.delete(payload.loaderUuid),
+      COMPLETED_NOTIFICATION_REMOVE_DELAY,
+    );
+  };
 
   const fetchEvents = async () => {
     try {
       const bars = await getLoadingBars();
 
-      Object.entries(bars).forEach(([_, value]) => {
+      for (const bar of Object.values(bars)) {
         addEvent({
-          event: value.barType,
-          loaderUuid: value.loadingBarUuid,
-          message: value.message,
-          fraction: value.current / value.total,
+          event: bar.barType,
+          loaderUuid: bar.loadingBarUuid,
+          message: bar.message,
+          fraction: bar.current / bar.total,
         });
-      });
+      }
     } catch {
       /* empty */
     }
   };
 
-  const removeEvent = (payload: LoadingPayload) => {
-    setRemoveNotificationTimer(
-      setTimeout(() => {
-        events.delete(payload.loaderUuid);
-      }, NOTIFICATION_COMPLETED_REMOVE_DELAY),
-    );
-  };
+  let loadingEventsUnlistenFn: UnlistenFn | undefined;
 
-  const addEvent = (payload: LoadingPayload) => {
-    events.set(payload.loaderUuid, payload);
-  };
-
-  const listenEvents = () => {
-    listenEvent<LoadingPayload>('loading', (e) => {
+  const startLoadingListener = () =>
+    listenEvent('loading', (e) => {
       if (isDebug()) {
         console.log('[EVENT][DEBUG]', e);
       }
 
-      if ((e.payload.fraction ?? 1) <= 0.05) {
-        setIsNewEvent(true);
-        refetchInstances();
-      }
-
       if (e.payload.fraction === null) {
         removeEvent(e.payload);
-        refetchInstances();
-      } else {
-        addEvent(e.payload);
+        return;
       }
+
+      if (e.payload.fraction <= 0.05) {
+        setIsNewEvent(true);
+      }
+
+      addEvent(e.payload);
     });
-  };
 
-  const payloads = createMemo(() => [...events.values()]);
+  const stopLoadingListener = () => loadingEventsUnlistenFn?.();
 
-  onMount(() => {
-    fetchEvents();
-    listenEvents();
-  });
+  const payloads = createMemo(() => [...displayEventsMap.values()]);
 
   createEffect(() => {
-    if (isNewEvent() && !isMenuOpen() && events.size > 0) {
+    if (isNewEvent() && !isMenuOpen() && displayEventsMap.size > 0) {
       setIsMenuOpen(true);
       setIsNewEvent(false);
     }
   });
 
-  onCleanup(() => {
-    clearTimeout(removeNotificationTimer());
-    setRemoveNotificationTimer(undefined);
+  onMount(() => {
+    fetchEvents();
+    startLoadingListener().then((unlistenFn) => {
+      loadingEventsUnlistenFn = unlistenFn;
+    });
   });
+
+  onCleanup(resetTimer);
+  onCleanup(stopLoadingListener);
 
   return (
     <Popover open={isMenuOpen()} onOpenChange={setIsMenuOpen}>

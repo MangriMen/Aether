@@ -10,10 +10,15 @@ import { useMaximizeObserver } from '@/shared/lib';
 import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
+import { useInstanceEventsListener } from '@/entities/instances';
+import { useWarningEventsListener } from '@/entities/events';
 
 export const AppRoot: Component<RouteSectionProps> = (props) => {
   usePreventRightClick();
   useMaximizeObserver();
+
+  useInstanceEventsListener();
+  useWarningEventsListener();
 
   onMount(initializeResources);
 
