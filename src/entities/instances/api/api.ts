@@ -6,7 +6,6 @@ import type {
   InstanceEditDto,
   MinecraftProcessMetadata,
 } from '../model';
-import { refetchInstances } from '../model';
 
 export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
   invoke<string>('create_minecraft_instance', { instanceCreateDto });
@@ -29,11 +28,7 @@ export const removeMinecraftInstance = (id: Instance['id']) =>
 export const editMinecraftInstance = async (
   id: Instance['id'],
   instanceEditDto: InstanceEditDto,
-) => {
-  await invoke('edit_minecraft_instance', { id, instanceEditDto });
-  // await new Promise((r) => setTimeout(r, 10));
-  refetchInstances();
-};
+) => invoke('edit_minecraft_instance', { id, instanceEditDto });
 
 export const openInstanceFolder = (instance: Instance, exact = true) =>
   invoke('reveal_in_explorer', { path: instance.path, exact });
