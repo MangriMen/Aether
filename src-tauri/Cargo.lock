@@ -56,8 +56,8 @@ dependencies = [
 
 [[package]]
 name = "aether-core"
-version = "0.3.3"
-source = "git+https://github.com/MangriMen/aether-core.git#1e7d0442f689c6b59b1699d2c9c890fcc0f95d0d"
+version = "0.3.4"
+source = "git+https://github.com/MangriMen/aether-core.git#2533702ed7bfce7100072a2a52fcd64493c23e41"
 dependencies = [
  "anyhow",
  "async-event-emitter",
@@ -4772,10 +4772,12 @@ dependencies = [
  "glob",
  "heck 0.5.0",
  "json-patch",
+ "quote",
  "schemars",
  "semver",
  "serde",
  "serde_json",
+ "tauri-codegen",
  "tauri-utils",
  "tauri-winres",
  "toml 0.8.19",

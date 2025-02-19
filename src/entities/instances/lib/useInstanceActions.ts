@@ -5,13 +5,13 @@ import { showToast } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 import {
-  openInstanceFolder,
+  revealInExplorer,
   refetchInstances,
   RunningInstancesContext,
   InstanceInstallStage,
-  launchMinecraftInstance,
-  removeMinecraftInstance,
-  stopMinecraftInstance,
+  launchInstance,
+  removeInstance,
+  stopInstance,
 } from '@/entities/instances';
 
 export const useInstanceActions = () => {
@@ -19,7 +19,7 @@ export const useInstanceActions = () => {
     RunningInstancesContext,
   );
 
-  const launchInstance = async (instance: Instance) => {
+  const launch = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
@@ -31,7 +31,7 @@ export const useInstanceActions = () => {
 
     try {
       setIsLoading(instance.id, true);
-      await launchMinecraftInstance(instance.id);
+      await launchInstance(instance.id);
     } catch (e) {
       setIsLoading(instance.id, false);
       if (isAetherLauncherError(e)) {
@@ -44,7 +44,7 @@ export const useInstanceActions = () => {
     }
   };
 
-  const stopInstance = async (instance: Instance) => {
+  const stop = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
@@ -61,7 +61,7 @@ export const useInstanceActions = () => {
 
     try {
       setIsLoading(instance.id, true);
-      await stopMinecraftInstance(uuid);
+      await stopInstance(uuid);
     } catch (e) {
       setIsLoading(instance.id, false);
       if (isAetherLauncherError(e)) {
@@ -76,7 +76,7 @@ export const useInstanceActions = () => {
 
   const openFolder = async (instance: Instance) => {
     try {
-      await openInstanceFolder(instance);
+      await revealInExplorer(instance.path);
     } catch (e) {
       if (isDebug()) {
         console.error(e);
@@ -90,7 +90,7 @@ export const useInstanceActions = () => {
     }
   };
 
-  const removeInstance = async (instance: Instance) => {
+  const remove = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
       instance.installStage !== InstanceInstallStage.Installed ||
@@ -106,7 +106,7 @@ export const useInstanceActions = () => {
     }
 
     try {
-      await removeMinecraftInstance(instance.id);
+      await removeInstance(instance.id);
       refetchInstances();
     } catch (e) {
       if (isAetherLauncherError(e)) {
@@ -120,9 +120,9 @@ export const useInstanceActions = () => {
   };
 
   return {
-    launchInstance,
-    stopInstance,
-    removeInstance,
+    launch,
+    stop,
+    remove,
     openFolder,
   };
 };

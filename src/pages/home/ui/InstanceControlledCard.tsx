@@ -32,8 +32,12 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     setShowRemoveModal(false);
   };
 
-  const { launchInstance, removeInstance, stopInstance, openFolder } =
-    useInstanceActions();
+  const {
+    launch: launchInstance,
+    remove: removeInstance,
+    stop: stopInstance,
+    openFolder,
+  } = useInstanceActions();
 
   const handleLaunch = (e: MouseEvent) => {
     preventAll(e);

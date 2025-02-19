@@ -2,10 +2,7 @@ import type { Accessor } from 'solid-js';
 import { createMemo, createSignal } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
-import {
-  getMinecraftInstance,
-  getMinecraftInstances,
-} from '@/entities/instances';
+import { getInstance, listInstances } from '@/entities/instances';
 import { ReactiveMap } from '@solid-primitives/map';
 
 const [isMappedInstancesLoading, setIsMappedInstancesLoading] =
@@ -14,7 +11,7 @@ const [isMappedInstancesLoading, setIsMappedInstancesLoading] =
 const fetchInstances = async () => {
   try {
     setIsMappedInstancesLoading(true);
-    const [instances, _] = await getMinecraftInstances();
+    const [instances, _] = await listInstances();
 
     for (const instance of instances) {
       mappedInstances.set(instance.id, instance);
@@ -28,7 +25,7 @@ const fetchInstances = async () => {
 
 const fetchInstance = async (id: Instance['id']) => {
   try {
-    const instance = await getMinecraftInstance(id);
+    const instance = await getInstance(id);
 
     mappedInstances.set(instance.id, instance);
   } catch (e) {

@@ -1,14 +1,11 @@
 import type { Accessor } from 'solid-js';
 import { createResource } from 'solid-js';
 
-import {
-  getMinecraftInstanceProcess,
-  getRunningMinecraftInstances,
-} from '../api';
+import { getInstanceProcess, listProcess } from '../api';
 
 const runningInstancesData = createResource(() => {
   try {
-    return getRunningMinecraftInstances();
+    return listProcess();
   } catch {
     console.error("Can't get running instances");
   }
@@ -25,7 +22,7 @@ export const refetchRunningInstancesData = () => {
 export const createRunningInstanceDataResource = (id: Accessor<string>) =>
   createResource(id, (id) => {
     try {
-      return getMinecraftInstanceProcess(id);
+      return getInstanceProcess(id);
     } catch {
       console.error("Can't get running instance");
     }

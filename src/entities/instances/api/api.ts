@@ -4,39 +4,60 @@ import type {
   Instance,
   InstanceCreateDto,
   InstanceEditDto,
+  InstanceFile,
   MinecraftProcessMetadata,
 } from '../model';
 
-export const createMinecraftInstance = (instanceCreateDto: InstanceCreateDto) =>
-  invoke<string>('create_minecraft_instance', { instanceCreateDto });
+export const createInstance = (instanceCreateDto: InstanceCreateDto) =>
+  invoke<string>('plugin:instance|instance_create', { instanceCreateDto });
 
-export const getMinecraftInstances = () =>
-  invoke<[Instance[], string[]]>('get_minecraft_instances');
+export const listInstances = () =>
+  invoke<[Instance[], string[]]>('plugin:instance|instance_list');
 
-export const getMinecraftInstance = (id: Instance['id']) =>
-  invoke<Instance>('get_minecraft_instance', { id });
+export const getInstance = (id: Instance['id']) =>
+  invoke<Instance>('plugin:instance|instance_get', { id });
 
-export const launchMinecraftInstance = (id: Instance['id']) =>
-  invoke('launch_minecraft_instance', { id });
+export const launchInstance = (id: Instance['id']) =>
+  invoke('plugin:instance|instance_launch', { id });
 
-export const stopMinecraftInstance = (uuid: string) =>
-  invoke('stop_minecraft_instance', { uuid });
+export const stopInstance = (uuid: string) =>
+  invoke('plugin:instance|instance_stop', { uuid });
 
-export const removeMinecraftInstance = (id: Instance['id']) =>
-  invoke('remove_minecraft_instance', { id });
+export const removeInstance = (id: Instance['id']) =>
+  invoke('plugin:instance|instance_remove', { id });
 
-export const editMinecraftInstance = async (
+export const editInstance = async (
   id: Instance['id'],
   instanceEditDto: InstanceEditDto,
-) => invoke('edit_minecraft_instance', { id, instanceEditDto });
+) => invoke('plugin:instance|instance_edit', { id, instanceEditDto });
 
-export const openInstanceFolder = (instance: Instance, exact = true) =>
-  invoke('reveal_in_explorer', { path: instance.path, exact });
+export const revealInExplorer = (path: string, exact = true) =>
+  invoke('reveal_in_explorer', { path, exact });
 
-export const getRunningMinecraftInstances = () =>
-  invoke<MinecraftProcessMetadata[]>('get_running_minecraft_instances');
+export const listProcess = () =>
+  invoke<MinecraftProcessMetadata[]>('plugin:process|process_list');
 
-export const getMinecraftInstanceProcess = (id: string) =>
-  invoke<MinecraftProcessMetadata[]>('get_minecraft_instance_process', {
+export const getInstanceProcess = (id: string) =>
+  invoke<MinecraftProcessMetadata[]>(
+    'plugin:process|process_get_by_instance_id',
+    {
+      id,
+    },
+  );
+
+export const getInstanceContents = (id: string) =>
+  invoke<Record<string, InstanceFile>>(
+    'plugin:instance|instance_get_contents',
+    {
+      id,
+    },
+  );
+
+export const toggleDisableInstanceContent = (id: string, contentPath: string) =>
+  invoke('plugin:instance|instance_toggle_disable_content', {
     id,
+    contentPath,
   });
+
+export const removeInstanceContent = (id: string, contentPath: string) =>
+  invoke('plugin:instance|instance_remove_content', { id, contentPath });

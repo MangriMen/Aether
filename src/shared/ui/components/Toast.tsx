@@ -135,7 +135,7 @@ const ToastDescription = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props as ToastDescriptionProps, ['class']);
   return (
     <ToastPrimitive.Description
-      class={cn('text-sm opacity-90', local.class)}
+      class={cn('text-sm opacity-90 [word-break:break-word]', local.class)}
       {...others}
     />
   );

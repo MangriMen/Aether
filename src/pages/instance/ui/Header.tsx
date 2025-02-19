@@ -6,15 +6,15 @@ import { InstanceImage } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 
-import InstanceHeaderInfo from './InstanceHeaderInfo';
-import InstanceOpenFolderButton from './InstanceOpenFolderButton';
-import InstanceSettingsButton from './InstanceSettingsButton';
+import InstanceHeaderInfo from './InstanceInfo';
+import OpenFolderButton from './OpenFolderButton';
+import SettingsButton from './SettingsButton';
 
-export type InstanceHeaderProps = ComponentProps<'div'> & {
+export type HeaderProps = ComponentProps<'div'> & {
   instance: Instance;
 };
 
-export const InstanceHeader: Component<InstanceHeaderProps> = (props) => {
+export const Header: Component<HeaderProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   return (
@@ -23,8 +23,8 @@ export const InstanceHeader: Component<InstanceHeaderProps> = (props) => {
       <InstanceHeaderInfo instance={local.instance} />
       <div class='ml-auto flex items-center gap-2'>
         <InstanceActionButton class='w-20 p-2' instance={local.instance} />
-        <InstanceOpenFolderButton instance={local.instance} />
-        <InstanceSettingsButton />
+        <OpenFolderButton instance={local.instance} />
+        <SettingsButton />
       </div>
     </div>
   );

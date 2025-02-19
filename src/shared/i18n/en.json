@@ -60,7 +60,9 @@
     "lastPlayed": "Last played: {{date}}",
     "neverPlayed": "Never played",
     "removeTitle": "Are you sure you want to delete instance {{name}}?",
-    "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it."
+    "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it.",
+    "content": "Content",
+    "noContent": "You haven't added any content to this instance yet"
   },
   "createInstance": {
     "title": "Create instance",

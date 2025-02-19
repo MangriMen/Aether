@@ -10,14 +10,12 @@ import { useInstanceActions } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
-export type InstanceOpenFolderButtonProps<T extends ValidComponent = 'button'> =
+export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {
     instance: Instance;
   };
 
-const InstanceOpenFolderButton: Component<InstanceOpenFolderButtonProps> = (
-  props,
-) => {
+const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['instance']);
 
   const [{ t }] = useTranslate();
@@ -39,4 +37,4 @@ const InstanceOpenFolderButton: Component<InstanceOpenFolderButtonProps> = (
   );
 };
 
-export default InstanceOpenFolderButton;
+export default OpenFolderButton;

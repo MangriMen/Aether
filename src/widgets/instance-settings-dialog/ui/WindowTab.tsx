@@ -5,7 +5,7 @@ import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 import type { InstanceSettingsTabProps } from '@/entities/instances';
-import { editMinecraftInstance } from '@/entities/instances';
+import { editInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -43,7 +43,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
         ? undefined
         : ([width, height] as [number, number]);
 
-    editMinecraftInstance(local.instance.id, { gameResolution });
+    editInstance(local.instance.id, { gameResolution });
   };
 
   const setWidthValue = (value: number | null) => {

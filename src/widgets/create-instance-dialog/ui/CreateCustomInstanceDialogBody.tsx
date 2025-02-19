@@ -26,7 +26,7 @@ import type { InstanceCreateDto } from '@/entities/instances';
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
-  createMinecraftInstance,
+  createInstance,
 } from '@/entities/instances';
 import type { LoaderVersion, Version } from '@/entities/minecrafts';
 import {
@@ -140,7 +140,7 @@ export const CreateCustomInstanceDialogBody: Component<
       props.onOpenChange?.(false);
       refetchInstances();
 
-      await createMinecraftInstance(payload);
+      await createInstance(payload);
     } catch (e) {
       console.error(e);
       showToast({
