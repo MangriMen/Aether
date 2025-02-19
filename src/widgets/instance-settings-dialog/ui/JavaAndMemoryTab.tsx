@@ -1,15 +1,14 @@
-import { debounce } from '@solid-primitives/scheduled';
 import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, splitProps } from 'solid-js';
+import { createMemo, onCleanup, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn, debounce } from '@/shared/lib';
 
 import type {
   Instance,
   InstanceEditDto,
   InstanceSettingsTabProps,
 } from '@/entities/instances';
-import { editMinecraftInstance } from '@/entities/instances';
+import { editInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -25,31 +24,31 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [{ t }] = useTranslate();
 
   const handleChangeMemoryDebounce = debounce(
-    (id: Instance['id'], value: number | null) => {
+    async (id: Instance['id'], value: number | null) => {
       const dto: InstanceEditDto = {
         memory: value ? { maximum: value } : undefined,
       };
-      editMinecraftInstance(id, dto);
+      editInstance(id, dto);
     },
-    1000,
+    300,
   );
 
   const handleChangeMemory = (value: number | null) => {
     handleChangeMemoryDebounce(local.instance.id, value);
   };
 
-  const handleChangeArguments = (value: string | null) => {
+  const handleChangeArguments = async (value: string | null) => {
     const extraLaunchArgs = value?.split(' ');
-    editMinecraftInstance(local.instance.id, {
+    await editInstance(local.instance.id, {
       extraLaunchArgs,
     });
   };
 
-  const handleChangeEnvironmentVariables = (value: string | null) => {
+  const handleChangeEnvironmentVariables = async (value: string | null) => {
     const customEnvVars = value
       ?.split(' ')
       .map((variable) => variable.split('=', 2) as [string, string]);
-    editMinecraftInstance(local.instance.id, {
+    await editInstance(local.instance.id, {
       customEnvVars,
     });
   };
@@ -62,6 +61,10 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       ?.map(([key, value]) => `${key}=${value}`)
       ?.join(' '),
   );
+
+  onCleanup(() => {
+    handleChangeMemoryDebounce.callAndClear();
+  });
 
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>

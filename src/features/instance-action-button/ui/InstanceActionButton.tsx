@@ -22,7 +22,7 @@ const InstanceActionButton: Component<InstanceActionButtonProps> = (props) => {
   const [context, { get }] = useRunningInstancesContext();
   const runningInstance = createMemo(() => get(context, local.instance.id));
 
-  const { launchInstance, stopInstance } = useInstanceActions();
+  const { launch: launchInstance, stop: stopInstance } = useInstanceActions();
 
   const isInstanceInstalled = createMemo(
     () => local.instance.installStage === InstanceInstallStage.Installed,

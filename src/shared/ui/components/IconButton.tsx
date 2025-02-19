@@ -5,12 +5,11 @@ import type { PolymorphicProps } from '@kobalte/core';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
-import type { ValidComponent } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 import { Match, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { ButtonProps } from './Button';
 import { buttonVariants } from './Button';
 
 const SVG_CHILD_FILL_VARIANTS = {
@@ -43,13 +42,13 @@ const iconButtonVariants = cva('aspect-square', {
   },
 });
 
-type OnlyIconButtonProps = VariantProps<typeof iconButtonVariants>;
-
 type IconButtonProps<T extends ValidComponent = 'button'> =
-  OnlyIconButtonProps &
-    ButtonProps<T> & {
+  ButtonPrimitive.ButtonRootProps<T> &
+    VariantProps<typeof iconButtonVariants> & {
       icon?: IconifyIcon;
       loading?: boolean;
+      class?: string | undefined;
+      children?: JSX.Element;
     };
 
 const IconButton = <T extends ValidComponent = 'button'>(

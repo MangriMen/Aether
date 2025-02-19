@@ -48,6 +48,7 @@ const CustomTextField: Component<CustomTextFieldProps> = (props) => {
       <CombinedTextField
         disabled={!custom()}
         value={value()}
+        onChange={setValue}
         inputProps={{
           type: 'text',
           placeholder: local.placeholder,
