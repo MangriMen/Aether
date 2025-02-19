@@ -3,19 +3,15 @@ use std::fs;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(
+    serde::Serialize, serde::Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default,
+)]
 #[serde(rename_all = "snake_case")]
-
 pub enum ActionOnInstanceLaunch {
+    #[default]
+    Nothing,
     Hide,
     Close,
-    Nothing,
-}
-
-impl Default for ActionOnInstanceLaunch {
-    fn default() -> Self {
-        ActionOnInstanceLaunch::Nothing
-    }
 }
 
 #[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
@@ -45,7 +41,7 @@ pub fn load_settings(app_handle: AppHandle) -> SettingsStateInner {
                 save_settings(app_handle, &settings).await;
             });
 
-            return settings;
+            settings
         })
     } else {
         SettingsStateInner::default()

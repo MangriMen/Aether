@@ -11,7 +11,7 @@ pub async fn get_action_on_instance_launch(
 ) -> AetherLauncherResult<ActionOnInstanceLaunch> {
     let settings_state = state.lock().await;
 
-    Ok(settings_state.action_on_instance_launch.clone())
+    Ok(settings_state.action_on_instance_launch)
 }
 
 #[tauri::command]

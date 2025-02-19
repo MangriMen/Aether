@@ -2,7 +2,7 @@ use std::{io, path::PathBuf};
 
 pub fn reveal_in_explorer(path: &PathBuf, exact: bool) -> io::Result<()> {
     if exact {
-        open::that(&path)
+        open::that(path)
     } else {
         #[cfg(target_os = "windows")]
         {

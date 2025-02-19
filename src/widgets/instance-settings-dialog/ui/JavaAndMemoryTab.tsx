@@ -8,7 +8,7 @@ import type {
   InstanceEditDto,
   InstanceSettingsTabProps,
 } from '@/entities/instances';
-import { editMinecraftInstance } from '@/entities/instances';
+import { editInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -28,7 +28,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       const dto: InstanceEditDto = {
         memory: value ? { maximum: value } : undefined,
       };
-      editMinecraftInstance(id, dto);
+      editInstance(id, dto);
     },
     300,
   );
@@ -39,7 +39,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const handleChangeArguments = async (value: string | null) => {
     const extraLaunchArgs = value?.split(' ');
-    await editMinecraftInstance(local.instance.id, {
+    await editInstance(local.instance.id, {
       extraLaunchArgs,
     });
   };
@@ -48,7 +48,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     const customEnvVars = value
       ?.split(' ')
       .map((variable) => variable.split('=', 2) as [string, string]);
-    await editMinecraftInstance(local.instance.id, {
+    await editInstance(local.instance.id, {
       customEnvVars,
     });
   };

@@ -82,6 +82,7 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
           disabled={!customMemory()}
           minValue={minMemory}
           maxValue={maxMemory}
+          warningValue={maxMemory / 2}
           value={[memory()]}
           onChange={(value) => setMemoryValue(value[0])}
         />
@@ -92,8 +93,12 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
           onChange={setInputMemory}
           inputProps={{
             type: 'text',
-            onBlur: (value) =>
-              setMemoryValue(stringToNumber(value.target.value)),
+            onBlur: (e) => setMemoryValue(stringToNumber(e.target.value)),
+            onKeyPress: (e) =>
+              e.key === 'Enter' &&
+              setMemoryValue(
+                stringToNumber((e.target as HTMLInputElement).value),
+              ),
           }}
         />
       </div>

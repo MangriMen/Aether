@@ -1,4 +1,5 @@
 import type { ModLoader } from '@/entities/minecrafts/@x/instances';
+import type { ContentType } from './contentType';
 
 export interface InstancePluginSettings {
   preLaunch?: string;
@@ -45,6 +46,14 @@ export interface Instance {
   hooks: Hooks;
 
   plugin?: InstancePluginSettings;
+}
+
+export interface InstanceFile {
+  fileName: string;
+  size: number;
+  contentType: ContentType;
+  path: string;
+  disabled: boolean;
 }
 
 export type WindowSize = [number, number];

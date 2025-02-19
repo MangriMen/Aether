@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
 import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
-import { editMinecraftInstance } from '@/entities/instances';
+import { editInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -19,7 +19,7 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
 
   const handleChangeNameThrottle = throttle(
     (id: Instance['id'], value: string) => {
-      editMinecraftInstance(id, { name: value });
+      editInstance(id, { name: value });
     },
     16,
   );

@@ -36,7 +36,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
       orientation='vertical'
       {...(others as TabsProps<T>)}
     >
-      <TabsList class='min-w-40 justify-start bg-secondary-dark p-0'>
+      <TabsList class='min-w-40 justify-start bg-secondary-dark p-0 pl-1 pt-1'>
         <For each={INSTANCE_SETTINGS_TABS_TRIGGER}>
           {(tab) => (
             <TabsTrigger class='w-full justify-start gap-2' value={tab.value}>
@@ -51,7 +51,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
           <TabsContent
             value={tabContent.value}
             as={tabContent.component}
-            class=' flex-1 overflow-y-auto pl-1 duration-300 animate-in slide-in-from-bottom-6 data-[orientation=vertical]:ml-8'
+            class=' flex-1 overflow-y-auto px-1 pt-1 duration-300 animate-in slide-in-from-bottom-6 data-[orientation=vertical]:ml-8'
             instance={local.instance}
           />
         )}
