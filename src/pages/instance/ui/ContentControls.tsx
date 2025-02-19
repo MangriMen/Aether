@@ -44,7 +44,7 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
         inputProps={{ type: 'text', placeholder: searchPlaceholder() }}
         onChange={local.onSearch}
       />
-      <div class='flex h-9'>
+      <div class='hidden h-9'>
         <Button class='min-w-max rounded-r-none' disabled>
           Install content
         </Button>
