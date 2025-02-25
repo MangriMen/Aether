@@ -18,6 +18,7 @@ fn main() {
                         "instance_remove_content",
                         "instance_launch",
                         "instance_stop",
+                        "instance_get_import_handlers",
                     ])
                     .default_permission(DefaultPermissionRule::AllowAllCommands),
             )

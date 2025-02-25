@@ -33,7 +33,6 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
             aether_core::state::Settings {
                 launcher_dir: user_data_dir.clone(),
                 metadata_dir: user_data_dir.clone(),
-                plugins_dir: user_data_dir.clone(),
                 max_concurrent_downloads: 10,
 
                 memory: MemorySettings { maximum: 1024 },
@@ -66,8 +65,13 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
     let mut plugin_manager = state.plugin_manager.write().await;
 
-    plugin_manager.scan_plugins();
-    plugin_manager.enable_plugin("packwiz".to_string()).await?;
+    plugin_manager
+        .scan_plugins(&PathBuf::from(&state.locations.plugins_dir()))
+        .await?;
+
+    // if let Err(res) = plugin_manager.load_plugin("packwiz").await {
+    //     log::debug!("Failed to enable plugin: {}", res);
+    // }
 
     Ok(())
 }

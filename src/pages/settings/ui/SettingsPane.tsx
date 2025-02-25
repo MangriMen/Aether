@@ -1,14 +1,14 @@
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component, ComponentProps, JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
 export type SettingsPaneProps = ComponentProps<'div'> & {
-  title?: string;
+  label?: JSX.Element;
 };
 
 export const SettingsPane: Component<SettingsPaneProps> = (props) => {
-  const [local, others] = splitProps(props, ['title', 'class', 'children']);
+  const [local, others] = splitProps(props, ['label', 'class', 'children']);
 
   return (
     <div
@@ -18,7 +18,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       )}
       {...others}
     >
-      <h2 class='text-xl font-bold'>{local.title}</h2>
+      <h2 class='text-xl font-bold'>{local.label}</h2>
       {local.children}
     </div>
   );

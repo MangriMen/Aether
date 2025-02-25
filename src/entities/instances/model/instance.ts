@@ -73,6 +73,11 @@ export enum InstanceInstallStage {
   NotInstalled = 'not_installed',
 }
 
+export interface InstanceImportDto {
+  type: string;
+  path: string;
+}
+
 export interface InstanceCreateDto {
   name: string;
   gameVersion: string;
@@ -107,4 +112,12 @@ export interface Credentials {
   refreshToken: string;
   expires: Date;
   active: boolean;
+}
+
+export interface ImportHandler {
+  packType: string;
+  title: string;
+  fieldLabel: string;
+  fileName: string;
+  fileExtensions: string[];
 }

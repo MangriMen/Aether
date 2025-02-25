@@ -5,3 +5,4 @@ export * from './process';
 export * from './runningInstancesContext';
 export * from './runningInstancesResource';
 export * from './settings';
+export * from './importHandlersResource';

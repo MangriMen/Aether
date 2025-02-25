@@ -147,13 +147,13 @@ function showToast(props: {
   variant?: ToastVariant;
   duration?: number;
 }) {
-  ToastPrimitive.toaster.show((data) => (
+  return ToastPrimitive.toaster.show((data) => (
     <Toast
       toastId={data.toastId}
       variant={props.variant}
       duration={props.duration}
     >
-      <div class='grid gap-1'>
+      <div class='grid w-full gap-1'>
         {props.title && <ToastTitle>{props.title}</ToastTitle>}
         {props.description && (
           <ToastDescription>{props.description}</ToastDescription>
@@ -197,6 +197,10 @@ function showToastPromise<T, U>(
   ));
 }
 
+function closeToast(id: number) {
+  return ToastPrimitive.toaster.dismiss(id);
+}
+
 export {
   Toaster,
   Toast,
@@ -205,4 +209,5 @@ export {
   ToastDescription,
   showToast,
   showToastPromise,
+  closeToast,
 };

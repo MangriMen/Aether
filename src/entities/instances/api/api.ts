@@ -1,15 +1,23 @@
 import { invoke } from '@tauri-apps/api/core';
 
 import type {
+  ImportHandler,
   Instance,
   InstanceCreateDto,
   InstanceEditDto,
   InstanceFile,
+  InstanceImportDto,
   MinecraftProcessMetadata,
 } from '../model';
 
 export const createInstance = (instanceCreateDto: InstanceCreateDto) =>
   invoke<string>('plugin:instance|instance_create', { instanceCreateDto });
+
+export const importInstance = (instanceImportDto: InstanceImportDto) =>
+  invoke<string>('plugin:instance|instance_import', { instanceImportDto });
+
+export const getImportHandlers = () =>
+  invoke<ImportHandler[]>('plugin:instance|instance_get_import_handlers');
 
 export const listInstances = () =>
   invoke<[Instance[], string[]]>('plugin:instance|instance_list');

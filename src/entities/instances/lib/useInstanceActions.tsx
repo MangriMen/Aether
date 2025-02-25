@@ -1,7 +1,7 @@
 import { useContext } from 'solid-js';
 
 import { isAetherLauncherError, isDebug } from '@/shared/model';
-import { showToast } from '@/shared/ui';
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 import {
@@ -90,16 +90,33 @@ export const useInstanceActions = () => {
     }
   };
 
-  const remove = async (instance: Instance) => {
+  const remove = async (instance: Instance, force: boolean = false) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
-      instance.installStage !== InstanceInstallStage.Installed ||
-      runningInstance?.isLoading ||
-      runningInstance?.isRunning
+      !force &&
+      (instance.installStage !== InstanceInstallStage.Installed ||
+        runningInstance?.isLoading ||
+        runningInstance?.isRunning)
     ) {
-      showToast({
+      const handleForceRemove = async (e: MouseEvent) => {
+        e.stopPropagation();
+        await remove(instance, true);
+        closeToast(id);
+      };
+
+      const id = showToast({
         title: `Failed to remove ${instance.name}`,
-        description: ' Still installing or running. Please stop instance first',
+        description: (
+          <div class='inline-flex w-full flex-col gap-2'>
+            Instance still installing or running
+            <Button
+              class='w-full'
+              variant='secondary'
+              onClick={handleForceRemove}
+              children='Remove force'
+            />
+          </div>
+        ),
         variant: 'destructive',
       });
       return;

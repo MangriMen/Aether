@@ -32,3 +32,10 @@ pub struct InstanceEditDto {
     pub memory: Option<MemorySettings>,
     pub game_resolution: Option<WindowSize>,
 }
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceImportDto {
+    pub pack_type: String,
+    pub path: String,
+}

@@ -7,7 +7,7 @@ import type { Account, AccountType } from '@/entities/accounts';
 import {
   AccountLoginMethods,
   AccountsList,
-  getAccountStateResource,
+  useAccounts,
 } from '@/entities/accounts';
 
 export type AccountSelectCardProps = ComponentProps<'div'> & {
@@ -23,7 +23,7 @@ export const AccountSelectCard: Component<AccountSelectCardProps> = (props) => {
     'onLogout',
   ]);
 
-  const accountState = getAccountStateResource();
+  const accountState = useAccounts();
 
   return (
     <div {...others}>

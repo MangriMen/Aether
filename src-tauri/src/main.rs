@@ -14,10 +14,11 @@ pub use utils::result::*;
 use tauri::{Listener, Manager};
 
 use api::{
-    call_plugin, change_account, create_offline_account, get_accounts,
-    get_action_on_instance_launch, get_loader_versions_manifest, get_minecraft_version_manifest,
-    get_progress_bars, initialize_state, logout, process_get_by_instance_id, process_list,
-    reveal_in_explorer, set_action_on_instance_launch,
+    call_plugin, change_account, create_offline_account, disable_plugin, enable_plugin,
+    get_accounts, get_action_on_instance_launch, get_loader_versions_manifest,
+    get_minecraft_version_manifest, get_progress_bars, initialize_state, is_plugin_enabled,
+    list_plugins, logout, process_get_by_instance_id, process_list, reveal_in_explorer,
+    scan_plugins, set_action_on_instance_launch,
 };
 
 struct ManualExitFlagStateInner(bool);
@@ -31,7 +32,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(log::LevelFilter::Trace)
+                .level(log::LevelFilter::Debug)
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())
@@ -56,6 +57,11 @@ fn main() {
             get_minecraft_version_manifest,
             get_loader_versions_manifest,
             get_progress_bars,
+            list_plugins,
+            enable_plugin,
+            scan_plugins,
+            disable_plugin,
+            is_plugin_enabled,
             process_list,
             initialize_state,
             process_get_by_instance_id,
