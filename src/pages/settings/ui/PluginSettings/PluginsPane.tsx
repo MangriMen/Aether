@@ -1,7 +1,7 @@
 import type { PluginMetadata } from '@/entities/plugins';
 import { refetchPlugins, scanPlugins, usePlugins } from '@/entities/plugins';
 import { createSignal, For, Show, type Component } from 'solid-js';
-import { Button, CombinedTooltip, Separator, IconButton } from '@/shared/ui';
+import { CombinedTooltip, Separator, IconButton } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import type { SettingsPaneProps } from '../SettingsPane';
 import { SettingsPane } from '../SettingsPane';
@@ -9,6 +9,7 @@ import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
 import { revealInExplorer } from '@/entities/instances';
 import { PluginInfoCard } from './PluginInfoCard';
+import { PluginCard } from './PluginCard';
 
 export type PluginsEntryProps = SettingsPaneProps;
 
@@ -59,31 +60,34 @@ export const PluginsPane: Component<PluginsEntryProps> = (props) => {
         fallback={<span>There is no plugins</span>}
       >
         <div class='flex size-full'>
-          <div class='basis-48'>
+          <div
+            class={cn('flex-1 basis-72 min-w-72', {
+              'max-w-72': !!selectedMetadata(),
+            })}
+          >
             <For each={pluginsMetadata()}>
               {(metadata) => (
-                <Button
-                  variant='secondary'
-                  class={cn('w-full', {
-                    'bg-primary':
-                      metadata.plugin.name === selectedMetadata()?.plugin.name,
-                  })}
+                <PluginCard
+                  role='button'
+                  isActive={
+                    metadata.plugin.name === selectedMetadata()?.plugin.name
+                  }
+                  plugin={metadata}
                   onClick={() => setSelectedMetadata(metadata)}
-                >
-                  {metadata.plugin.name}
-                </Button>
+                />
               )}
             </For>
           </div>
 
-          <Separator class='mx-2 bg-primary' orientation='vertical' />
-
-          <Show
-            when={selectedMetadata()}
-            fallback={<span>Select a plugin</span>}
-          >
+          <Show when={selectedMetadata()}>
             {(metadata) => (
-              <PluginInfoCard class='size-full' plugin={metadata()} />
+              <>
+                <Separator class='mx-2' orientation='vertical' />
+                <PluginInfoCard
+                  class='my-2 flex-1 basis-full'
+                  plugin={metadata()}
+                />
+              </>
             )}
           </Show>
         </div>

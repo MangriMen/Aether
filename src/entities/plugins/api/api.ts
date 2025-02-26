@@ -14,7 +14,10 @@ export const disablePlugin = async (id: PluginInfo['id']) =>
 export const getIsPluginEnabled = async (id: PluginInfo['id']) =>
   invoke<boolean>('is_plugin_enabled', { id });
 
-export const setPluginSettings = async (
+export const getPluginSettings = async (id: PluginInfo['id']) =>
+  invoke<PluginSettings>('plugin_get_settings', { id });
+
+export const editPluginSettings = async (
   id: PluginInfo['id'],
   settings: PluginSettings,
-) => invoke('set_plugin_settings', { id, data: settings });
+) => invoke('plugin_edit_settings', { id, settings });

@@ -24,6 +24,6 @@ export interface ConfigInfo {
 }
 
 export interface PluginSettings {
-  allowedHosts?: string[];
-  allowedPaths?: Array<[string, string]>;
+  allowed_hosts?: string[];
+  allowed_paths?: Array<[string, string]>;
 }

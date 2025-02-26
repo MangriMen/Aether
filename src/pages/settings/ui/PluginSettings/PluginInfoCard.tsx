@@ -7,6 +7,7 @@ import {
 import { cn } from '@/shared/lib';
 import { Button, Separator } from '@/shared/ui';
 import {
+  createMemo,
   createResource,
   createSignal,
   splitProps,
@@ -14,6 +15,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { PluginSettingsForm } from './PluginSettingsForm';
+import { SettingsPane } from '../SettingsPane';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: PluginMetadata;
@@ -47,6 +49,10 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
     setIsLoading(false);
   };
 
+  const isSettingsFormDisabled = createMemo(
+    () => isPluginEnabled() || isLoading(),
+  );
+
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <div>
@@ -74,9 +80,17 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
 
       <p class='pb-1'>{local.plugin.plugin.description}</p>
 
-      <span class='text-lg font-medium'>Settings</span>
-
-      <PluginSettingsForm plugin={local.plugin} />
+      <SettingsPane
+        class={cn('p-0 bg-[unset]', {
+          'text-muted-foreground': isSettingsFormDisabled(),
+        })}
+        label={`Settings ${isSettingsFormDisabled() ? '(disable plugin to change settings)' : ''}`}
+      >
+        <PluginSettingsForm
+          plugin={local.plugin}
+          disabled={isSettingsFormDisabled()}
+        />
+      </SettingsPane>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-use aether_core::state::PluginMetadata;
+use aether_core::state::{PluginMetadata, PluginSettings};
 
 use crate::AetherLauncherResult;
 
@@ -30,4 +30,17 @@ pub async fn disable_plugin(id: String) -> AetherLauncherResult<()> {
 #[tauri::command]
 pub async fn call_plugin(id: String, data: String) -> AetherLauncherResult<()> {
     Ok(aether_core::api::plugin::call(&id, &data).await?)
+}
+
+#[tauri::command]
+pub async fn plugin_get_settings(id: String) -> AetherLauncherResult<PluginSettings> {
+    Ok(aether_core::api::plugin::get_settings(&id).await?)
+}
+
+#[tauri::command]
+pub async fn plugin_edit_settings(
+    id: String,
+    settings: PluginSettings,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::plugin::edit_settings(&id, &settings).await?)
 }
