@@ -74,7 +74,7 @@ export enum InstanceInstallStage {
 }
 
 export interface InstanceImportDto {
-  type: string;
+  packType: string;
   path: string;
 }
 

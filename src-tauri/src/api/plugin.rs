@@ -13,6 +13,11 @@ pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginMetadata>> {
 }
 
 #[tauri::command]
+pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginMetadata> {
+    Ok(aether_core::api::plugin::get(&id).await?)
+}
+
+#[tauri::command]
 pub async fn is_plugin_enabled(id: String) -> AetherLauncherResult<bool> {
     Ok(aether_core::api::plugin::is_enabled(&id).await?)
 }

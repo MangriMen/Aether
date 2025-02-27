@@ -36,13 +36,13 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
   const [{ t }] = useTranslate();
 
   const [form, { Form, Field }] = createForm({
-    initialValues: { type: importHandlers()[0].packType },
+    initialValues: { packType: importHandlers()[0].packType },
     validate: zodForm(ImportInstanceSchema),
   });
 
   const currentImportHandler = createMemo(
     () =>
-      importHandlers().find((h) => h.packType === getValue(form, 'type')) ??
+      importHandlers().find((h) => h.packType === getValue(form, 'packType')) ??
       importHandlers()[0],
   );
 
@@ -77,14 +77,14 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
       {...others}
     >
       <LabeledField label='Type'>
-        <Field name='type'>
+        <Field name='packType'>
           {(field) => (
             <ToggleGroup
               class='justify-start'
               value={field.value}
               onChange={(value) => {
                 if (value) {
-                  setValue(form, 'type', value);
+                  setValue(form, 'packType', value);
                 }
               }}
             >

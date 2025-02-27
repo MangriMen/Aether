@@ -59,7 +59,7 @@ export const CreateCustomInstanceSchema = z
   });
 
 export const ImportInstanceSchema = z.object({
-  type: z.string().min(1),
+  packType: z.string().min(1),
   path: z.string().min(1, {
     message: 'Path is required',
   }),

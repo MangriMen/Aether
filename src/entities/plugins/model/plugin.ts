@@ -1,3 +1,8 @@
+export interface Plugin {
+  enabled: boolean;
+  metadata: PluginMetadata;
+}
+
 export interface PluginMetadata {
   plugin: PluginInfo;
   wasm: WasmInfo;

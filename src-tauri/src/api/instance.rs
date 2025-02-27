@@ -20,6 +20,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_remove_content,
             instance_launch,
             instance_stop,
+            instance_import,
             instance_get_import_handlers
         ])
         .build()
@@ -45,7 +46,11 @@ pub async fn instance_create(instance_create_dto: InstanceCreateDto) -> AetherLa
 
 #[tauri::command]
 pub async fn instance_import(instance_import_dto: InstanceImportDto) -> AetherLauncherResult<()> {
-    todo!()
+    Ok(aether_core::api::instance::import(
+        &instance_import_dto.pack_type,
+        &instance_import_dto.path,
+    )
+    .await?)
 }
 
 #[tauri::command]

@@ -6,5 +6,4 @@ export * from './settings';
 export * from './themeContext';
 export * from './i18n';
 export * from './i18nContext';
-export * from './plugin';
 export * from './typescript';

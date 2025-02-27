@@ -17,8 +17,9 @@ use api::{
     call_plugin, change_account, create_offline_account, disable_plugin, enable_plugin,
     get_accounts, get_action_on_instance_launch, get_loader_versions_manifest,
     get_minecraft_version_manifest, get_progress_bars, initialize_state, is_plugin_enabled,
-    list_plugins, logout, plugin_edit_settings, plugin_get_settings, process_get_by_instance_id,
-    process_list, reveal_in_explorer, scan_plugins, set_action_on_instance_launch,
+    list_plugins, logout, plugin_edit_settings, plugin_get, plugin_get_settings,
+    process_get_by_instance_id, process_list, reveal_in_explorer, scan_plugins,
+    set_action_on_instance_launch,
 };
 
 struct ManualExitFlagStateInner(bool);
@@ -64,6 +65,7 @@ fn main() {
             is_plugin_enabled,
             process_list,
             initialize_state,
+            plugin_get,
             plugin_get_settings,
             plugin_edit_settings,
             process_get_by_instance_id,

@@ -1,6 +1,6 @@
-import type { PluginMetadata } from '@/entities/plugins';
+import type { PluginInfo } from '@/entities/plugins';
 import { refetchPlugins, scanPlugins, usePlugins } from '@/entities/plugins';
-import { createSignal, For, Show, type Component } from 'solid-js';
+import { createMemo, createSignal, For, Show, type Component } from 'solid-js';
 import { CombinedTooltip, Separator, IconButton } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import type { SettingsPaneProps } from '../SettingsPane';
@@ -14,10 +14,18 @@ import { PluginCard } from './PluginCard';
 export type PluginsEntryProps = SettingsPaneProps;
 
 export const PluginsPane: Component<PluginsEntryProps> = (props) => {
-  const pluginsMetadata = usePlugins();
+  const plugins = usePlugins();
 
-  const [selectedMetadata, setSelectedMetadata] =
-    createSignal<PluginMetadata | null>(null);
+  const pluginsValues = createMemo(() => Array.from(plugins.values()));
+
+  const [selectedPluginId, setSelectedPluginId] = createSignal<
+    PluginInfo['id'] | null
+  >(null);
+
+  const selectedPlugin = () => {
+    const id = selectedPluginId();
+    return id ? plugins.get(id) : null;
+  };
 
   const handleOpenPluginsFolder = () => {
     revealInExplorer(
@@ -28,7 +36,7 @@ export const PluginsPane: Component<PluginsEntryProps> = (props) => {
 
   const handleRefreshPlugins = async () => {
     await scanPlugins();
-    refetchPlugins();
+    await refetchPlugins();
   };
 
   return (
@@ -55,37 +63,32 @@ export const PluginsPane: Component<PluginsEntryProps> = (props) => {
       }
       {...props}
     >
-      <Show
-        when={pluginsMetadata()?.length}
-        fallback={<span>There is no plugins</span>}
-      >
+      <Show when={plugins?.size} fallback={<span>There is no plugins</span>}>
         <div class='flex size-full'>
           <div
             class={cn('flex-1 basis-72 min-w-72', {
-              'max-w-72': !!selectedMetadata(),
+              'max-w-72': !!selectedPluginId(),
             })}
           >
-            <For each={pluginsMetadata()}>
-              {(metadata) => (
+            <For each={pluginsValues()}>
+              {(plugin) => (
                 <PluginCard
                   role='button'
-                  isActive={
-                    metadata.plugin.name === selectedMetadata()?.plugin.name
-                  }
-                  plugin={metadata}
-                  onClick={() => setSelectedMetadata(metadata)}
+                  isSelected={plugin.metadata.plugin.id === selectedPluginId()}
+                  plugin={plugin}
+                  onClick={() => setSelectedPluginId(plugin.metadata.plugin.id)}
                 />
               )}
             </For>
           </div>
 
-          <Show when={selectedMetadata()}>
-            {(metadata) => (
+          <Show when={selectedPlugin()}>
+            {(plugin) => (
               <>
                 <Separator class='mx-2' orientation='vertical' />
                 <PluginInfoCard
                   class='my-2 flex-1 basis-full'
-                  plugin={metadata()}
+                  plugin={plugin()}
                 />
               </>
             )}

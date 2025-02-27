@@ -1,14 +1,11 @@
-import {
-  disablePlugin,
-  enablePlugin,
-  getIsPluginEnabled,
-  type PluginMetadata,
-} from '@/entities/plugins';
+import type { Plugin } from '@/entities/plugins';
+
+import { disablePlugin, enablePlugin, refetchPlugin } from '@/entities/plugins';
+
 import { cn } from '@/shared/lib';
 import { Button, Separator } from '@/shared/ui';
 import {
   createMemo,
-  createResource,
   createSignal,
   splitProps,
   type Component,
@@ -18,17 +15,15 @@ import { PluginSettingsForm } from './PluginSettingsForm';
 import { SettingsPane } from '../SettingsPane';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
-  plugin: PluginMetadata;
+  plugin: Plugin;
 };
 
 export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
 
-  const [isLoading, setIsLoading] = createSignal(false);
+  const isPluginEnabled = createMemo(() => local.plugin.enabled);
 
-  const [isPluginEnabled, { refetch }] = createResource(() =>
-    getIsPluginEnabled(local.plugin.plugin.id),
-  );
+  const [isLoading, setIsLoading] = createSignal(false);
 
   const togglePluginEnabled = async () => {
     if (isLoading()) {
@@ -38,14 +33,14 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
     setIsLoading(true);
     try {
       if (isPluginEnabled()) {
-        await disablePlugin(local.plugin.plugin.id);
+        await disablePlugin(local.plugin.metadata.plugin.id);
       } else {
-        await enablePlugin(local.plugin.plugin.id);
+        await enablePlugin(local.plugin.metadata.plugin.id);
       }
     } catch {
       /* empty */
     }
-    refetch();
+    await refetchPlugin(local.plugin.metadata.plugin.id);
     setIsLoading(false);
   };
 
@@ -57,28 +52,24 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <div>
         <div class='flex items-end gap-2'>
-          <h2 class='text-xl font-bold'>{local.plugin.plugin.name}</h2>
+          <h2 class='text-xl font-bold'>{local.plugin.metadata.plugin.name}</h2>
           <span class='text-muted-foreground'>
-            Version: {local.plugin.plugin.version}
+            Version: {local.plugin.metadata.plugin.version}
           </span>
         </div>
         <span class='text-muted-foreground'>
-          Authors: {local.plugin.plugin.authors?.join(', ')}
+          Authors: {local.plugin.metadata.plugin.authors?.join(', ')}
         </span>
       </div>
       <div>
-        <Button
-          size='sm'
-          onClick={togglePluginEnabled}
-          loading={isPluginEnabled.loading || isLoading()}
-        >
+        <Button size='sm' onClick={togglePluginEnabled} loading={isLoading()}>
           {isPluginEnabled() ? 'Disable' : 'Enable'}
         </Button>
       </div>
 
       <Separator />
 
-      <p class='pb-1'>{local.plugin.plugin.description}</p>
+      <p class='pb-1'>{local.plugin.metadata.plugin.description}</p>
 
       <SettingsPane
         class={cn('p-0 bg-[unset]', {
@@ -87,7 +78,7 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         label={`Settings ${isSettingsFormDisabled() ? '(disable plugin to change settings)' : ''}`}
       >
         <PluginSettingsForm
-          plugin={local.plugin}
+          plugin={local.plugin.metadata}
           disabled={isSettingsFormDisabled()}
         />
       </SettingsPane>

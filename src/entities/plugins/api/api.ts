@@ -5,6 +5,9 @@ export const scanPlugins = async () => invoke('scan_plugins');
 
 export const listPlugins = async () => invoke<PluginMetadata[]>('list_plugins');
 
+export const getPlugin = async (id: PluginInfo['id']) =>
+  invoke<PluginMetadata>('plugin_get', { id });
+
 export const enablePlugin = async (id: PluginInfo['id']) =>
   invoke('enable_plugin', { id });
 
