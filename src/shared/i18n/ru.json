@@ -77,7 +77,8 @@
     "loaderVersionLatest": "Последняя",
     "loaderVersionOther": "Другое",
     "custom": "Пользовательский",
-    "import": "Импорт"
+    "import": "Импорт",
+    "noImportConfigs": "Нет конфигов для импорта.\nВы можете добавить их с помощью плагинов в настройках лаунчера."
   },
   "instanceSettings": {
     "general": "Общие",

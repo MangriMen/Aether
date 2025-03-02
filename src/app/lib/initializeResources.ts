@@ -1,6 +1,6 @@
 import { initializeAccountsResource } from '@/entities/accounts';
 import {
-  initializeImportHandlers,
+  initializeImportConfigs,
   initializeInstances,
   initializeRunningInstances,
 } from '@/entities/instances';
@@ -9,7 +9,7 @@ import { initializePlugins } from '@/entities/plugins';
 export const initializeResources = async () => {
   return Promise.all([
     initializeAccountsResource(),
-    initializeImportHandlers(),
+    initializeImportConfigs(),
     initializeInstances(),
     initializeRunningInstances(),
     initializePlugins(),

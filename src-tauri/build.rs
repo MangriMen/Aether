@@ -19,7 +19,7 @@ fn main() {
                         "instance_launch",
                         "instance_stop",
                         "instance_import",
-                        "instance_get_import_handlers",
+                        "instance_get_import_configs",
                     ])
                     .default_permission(DefaultPermissionRule::AllowAllCommands),
             )

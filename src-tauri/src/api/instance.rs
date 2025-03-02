@@ -1,4 +1,4 @@
-use aether_core::state::{ImportHandler, Instance, InstanceFile, MinecraftProcessMetadata};
+use aether_core::state::{ImportConfig, Instance, InstanceFile, MinecraftProcessMetadata};
 use dashmap::DashMap;
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_launch,
             instance_stop,
             instance_import,
-            instance_get_import_handlers
+            instance_get_import_configs
         ])
         .build()
 }
@@ -54,8 +54,8 @@ pub async fn instance_import(instance_import_dto: InstanceImportDto) -> AetherLa
 }
 
 #[tauri::command]
-pub async fn instance_get_import_handlers() -> AetherLauncherResult<Vec<ImportHandler>> {
-    Ok(aether_core::api::instance::get_import_handlers().await?)
+pub async fn instance_get_import_configs() -> AetherLauncherResult<Vec<ImportConfig>> {
+    Ok(aether_core::api::instance::get_import_configs().await?)
 }
 
 #[tauri::command]

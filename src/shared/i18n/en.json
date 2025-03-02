@@ -77,7 +77,8 @@
     "loaderVersionLatest": "Latest",
     "loaderVersionOther": "Other",
     "custom": "Custom",
-    "import": "Import"
+    "import": "Import",
+    "noImportConfigs": "No import configs available.\nYou can add it with plugins in the launcher settings."
   },
   "instanceSettings": {
     "general": "General",

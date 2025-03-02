@@ -16,8 +16,8 @@ export const createInstance = (instanceCreateDto: InstanceCreateDto) =>
 export const importInstance = (instanceImportDto: InstanceImportDto) =>
   invoke<string>('plugin:instance|instance_import', { instanceImportDto });
 
-export const getImportHandlers = () =>
-  invoke<ImportHandler[]>('plugin:instance|instance_get_import_handlers');
+export const getImportConfigs = () =>
+  invoke<ImportHandler[]>('plugin:instance|instance_get_import_configs');
 
 export const listInstances = () =>
   invoke<[Instance[], string[]]>('plugin:instance|instance_list');
