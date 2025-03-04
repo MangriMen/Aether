@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use aether_core::{
-    state::{Hooks, LauncherState, MemorySettings, WindowSize},
+    state::{Hooks, LauncherState, MemorySettings, Settings, WindowSize},
     utils::io::read_json_async,
 };
 use tauri::AppHandle;
@@ -33,7 +33,6 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
             aether_core::state::Settings {
                 launcher_dir: user_data_dir.clone(),
                 metadata_dir: user_data_dir.clone(),
-                plugins_dir: user_data_dir.clone(),
                 max_concurrent_downloads: 10,
 
                 memory: MemorySettings { maximum: 1024 },
@@ -41,6 +40,8 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
                 custom_env_vars: vec![],
                 extra_launch_args: vec![],
                 hooks: Hooks::default(),
+
+                enabled_plugins: HashSet::default(),
             }
         });
 
@@ -66,8 +67,25 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
     let mut plugin_manager = state.plugin_manager.write().await;
 
-    plugin_manager.scan_plugins();
-    plugin_manager.enable_plugin("packwiz".to_string()).await?;
+    plugin_manager
+        .scan_plugins(&PathBuf::from(&state.locations.plugins_dir()))
+        .await?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn load_enabled_plugins() -> AetherLauncherResult<()> {
+    let state = LauncherState::get().await?;
+    let mut plugin_manager = state.plugin_manager.write().await;
+
+    let settings = Settings::get(&state).await?;
+
+    for plugin in settings.enabled_plugins.iter() {
+        if let Err(e) = plugin_manager.load_plugin(plugin).await {
+            log::error!("Failed to load plugin {}: {}", plugin, e);
+        }
+    }
 
     Ok(())
 }

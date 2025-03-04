@@ -6,7 +6,6 @@ import { RunningInstancesProvider } from '@/entities/instances';
 
 import { MainLayout } from '@/app/layouts/MainLayout';
 
-import { initializeApp } from './lib';
 import { AppRoot } from './AppRoot';
 
 const HomePage = lazy(() =>
@@ -28,7 +27,7 @@ const InstanceSettingsDialog = lazy(() =>
 
 export const AppRouter: Component = () => {
   return (
-    <Router root={AppRoot} rootPreload={initializeApp}>
+    <Router root={AppRoot}>
       <Route path='/' component={MainLayout}>
         <Route path='/' component={RunningInstancesProvider}>
           <Route path='/' component={HomePage}>

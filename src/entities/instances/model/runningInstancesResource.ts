@@ -1,29 +1,31 @@
-import type { Accessor } from 'solid-js';
-import { createResource } from 'solid-js';
+import { createSignal } from 'solid-js';
 
-import { getInstanceProcess, listProcess } from '../api';
+import { listProcess } from '../api';
+import type { MinecraftProcessMetadata } from './process';
 
-const runningInstancesData = createResource(() => {
+const [runningInstancesData, setRunningInstancesData] = createSignal<
+  MinecraftProcessMetadata[]
+>([]);
+
+const fetchRunningInstancesData = async () => {
   try {
-    return listProcess();
+    setRunningInstancesData(await listProcess());
   } catch {
     console.error("Can't get running instances");
   }
-});
-
-export const useRunningInstancesData = () => {
-  return runningInstancesData[0];
 };
 
-export const refetchRunningInstancesData = () => {
-  return runningInstancesData[1].refetch();
-};
+export const initializeRunningInstances = fetchRunningInstancesData;
 
-export const createRunningInstanceDataResource = (id: Accessor<string>) =>
-  createResource(id, (id) => {
-    try {
-      return getInstanceProcess(id);
-    } catch {
-      console.error("Can't get running instance");
-    }
-  });
+export const useRunningInstances = () => runningInstancesData;
+
+export const refetchRunningInstances = fetchRunningInstancesData;
+
+// export const createRunningInstanceDataResource = (id: Accessor<string>) =>
+//   createResource(id, (id) => {
+//     try {
+//       return getInstanceProcess(id);
+//     } catch {
+//       console.error("Can't get running instance");
+//     }
+//   });

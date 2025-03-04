@@ -12,6 +12,7 @@ import { SettingsPane } from '../SettingsPane';
 import { AppVersion } from '../AppVersion';
 import { SelectTheme } from '../SelectTheme';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
+import { PluginsPane } from '../PluginSettings/PluginsPane';
 
 export type SettingsPageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -23,7 +24,7 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
     <div class='flex size-full flex-col gap-4 overflow-y-auto p-4' {...others}>
       <SettingsPane
         class='container max-w-screen-lg'
-        title={t('settings.launcher')}
+        label={t('settings.launcher')}
       >
         <SettingsEntry
           title={t('settings.colorScheme')}
@@ -37,10 +38,11 @@ export const SettingsPage: Component<SettingsPageProps> = (props) => {
       </SettingsPane>
       <SettingsPane
         class='container max-w-screen-lg'
-        title={t('settings.update')}
+        label={t('settings.update')}
       >
         <UpdateAppEntry />
       </SettingsPane>
+      <PluginsPane />
       <AppVersion class='mt-auto' />
     </div>
   );

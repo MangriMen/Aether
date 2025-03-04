@@ -1,13 +1,19 @@
-use std::{io, path::PathBuf};
+use std::path::Path;
 
-pub fn reveal_in_explorer(path: &PathBuf, exact: bool) -> io::Result<()> {
+use super::{AetherLauncherError, AetherLauncherResult};
+
+pub fn reveal_in_explorer(path: &Path, exact: bool) -> AetherLauncherResult<()> {
     if exact {
-        open::that(path)
+        open::that(path).map_err(|err| AetherLauncherError {
+            message: err.to_string(),
+        })
     } else {
         #[cfg(target_os = "windows")]
         {
             let reveal_path = format!("/select,{}", path.display().to_string().replace("/", "\\"));
-            open::with_detached(reveal_path, "explorer")
+            open::with_detached(reveal_path, "explorer").map_err(|err| AetherLauncherError {
+                message: err.to_string(),
+            })
         }
 
         #[cfg(not(target_os = "windows"))]
@@ -17,7 +23,9 @@ pub fn reveal_in_explorer(path: &PathBuf, exact: bool) -> io::Result<()> {
                 false => path.to_path_buf(),
             };
 
-            open::that(parent_folder)
+            open::that(parent_folder).map_err(|err| AetherLauncherError {
+                message: err.to_string(),
+            })
         }
     }
 }

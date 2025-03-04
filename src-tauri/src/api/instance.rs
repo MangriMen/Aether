@@ -1,9 +1,9 @@
-use aether_core::state::{Instance, InstanceFile, MinecraftProcessMetadata};
+use aether_core::state::{ImportConfig, Instance, InstanceFile, MinecraftProcessMetadata};
 use dashmap::DashMap;
 use uuid::Uuid;
 
 use crate::{
-    models::minecraft::{InstanceCreateDto, InstanceEditDto},
+    models::minecraft::{InstanceCreateDto, InstanceEditDto, InstanceImportDto},
     AetherLauncherResult,
 };
 
@@ -11,6 +11,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
         .invoke_handler(tauri::generate_handler![
             instance_create,
+            instance_install,
+            instance_update,
             instance_list,
             instance_get,
             instance_edit,
@@ -20,6 +22,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_remove_content,
             instance_launch,
             instance_stop,
+            instance_import,
+            instance_get_import_configs
         ])
         .build()
 }
@@ -40,6 +44,30 @@ pub async fn instance_create(instance_create_dto: InstanceCreateDto) -> AetherLa
     });
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn instance_install(id: String, force: bool) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::install(&id, force).await?)
+}
+
+#[tauri::command]
+pub async fn instance_update(id: String) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::update(&id).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import(instance_import_dto: InstanceImportDto) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::import(
+        &instance_import_dto.pack_type,
+        &instance_import_dto.path,
+    )
+    .await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_import_configs() -> AetherLauncherResult<Vec<ImportConfig>> {
+    Ok(aether_core::api::instance::get_import_configs().await?)
 }
 
 #[tauri::command]

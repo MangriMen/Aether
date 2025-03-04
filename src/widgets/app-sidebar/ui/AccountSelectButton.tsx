@@ -12,11 +12,7 @@ import {
 } from '@/shared/ui';
 
 import type { Account, AccountType } from '@/entities/accounts';
-import {
-  changeAccount,
-  logout,
-  refetchAccountStateResource,
-} from '@/entities/accounts';
+import { changeAccount, logout, refetchAccounts } from '@/entities/accounts';
 
 import { useTranslate } from '@/shared/model';
 import type { DialogRootProps } from '@kobalte/core/dialog';
@@ -50,12 +46,12 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
 
   const handleSelect = async (id: Account['id']) => {
     await changeAccount(id);
-    refetchAccountStateResource();
+    refetchAccounts();
   };
 
   const handleLogout = async (uuid: string) => {
     await logout(uuid);
-    refetchAccountStateResource();
+    refetchAccounts();
   };
 
   const [accountCreationType, setAccountCreationType] =

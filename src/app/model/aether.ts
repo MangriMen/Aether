@@ -1,8 +1,8 @@
 import { isDebug, setIsDebug } from '@/shared/model';
 
-export const AetherNamespaceName = '_AETHER_';
+export const AetherNamespace = '_AETHER_';
 
-export const AetherNamespaceObject = {
+export const AetherNamespaceMethods = {
   toggleDebug: () =>
     console.info(setIsDebug(!isDebug()) ? 'Debug enabled' : 'Debug disabled'),
 };
