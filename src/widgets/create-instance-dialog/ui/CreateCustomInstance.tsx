@@ -54,7 +54,7 @@ import { SelectSpecificLoaderVersion } from './SelectSpecificLoaderVersion';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { z } from 'zod';
 
-export type CreateCustomInstanceDialogBodyProps = { class?: string } & Pick<
+export type CreateCustomInstanceProps = { class?: string } & Pick<
   DialogRootProps,
   'onOpenChange'
 >;
@@ -62,9 +62,9 @@ export type CreateCustomInstanceDialogBodyProps = { class?: string } & Pick<
 export type CreateCustomInstanceFormValues = FieldValues &
   z.infer<typeof CreateCustomInstanceSchema>;
 
-export const CreateCustomInstanceDialogBody: Component<
-  CreateCustomInstanceDialogBodyProps
-> = (props) => {
+export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
+  props,
+) => {
   const [local, others] = splitProps(props, ['class', 'onOpenChange']);
 
   const [{ t }] = useTranslate();

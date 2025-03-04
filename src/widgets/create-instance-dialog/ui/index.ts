@@ -1,2 +1,2 @@
 export * from './CreateInstanceDialog';
-export * from './CreateCustomInstanceDialogBody';
+export * from './CreateCustomInstance';

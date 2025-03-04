@@ -34,9 +34,7 @@ const fetchInstance = async (id: Instance['id']) => {
   }
 };
 
-export const initializeInstanceResource = () => {
-  fetchInstances();
-};
+export const initializeInstances = fetchInstances;
 
 const mappedInstances = new ReactiveMap<string, Instance>();
 

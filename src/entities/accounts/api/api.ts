@@ -2,12 +2,16 @@ import { invoke } from '@tauri-apps/api/core';
 
 import type { Account } from '../model';
 
-export const getAccounts = () => invoke<Account[]>('get_accounts');
+const PLUGIN_PREFIX = 'plugin:auth|';
+
+export const getAccounts = () =>
+  invoke<Account[]>(`${PLUGIN_PREFIX}get_accounts`);
 
 export const createOfflineAccount = (username: string) =>
-  invoke('create_offline_account', { username });
+  invoke(`${PLUGIN_PREFIX}create_offline_account`, { username });
 
 export const changeAccount = (id: Account['id']) =>
-  invoke('change_account', { id });
+  invoke(`${PLUGIN_PREFIX}change_account`, { id });
 
-export const logout = (id: Account['id']) => invoke('logout', { id });
+export const logout = (id: Account['id']) =>
+  invoke(`${PLUGIN_PREFIX}logout`, { id });

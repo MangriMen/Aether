@@ -11,6 +11,12 @@ export interface Hooks {
   post_exit: string;
 }
 
+export interface PackInfo {
+  packType: string;
+  version: string;
+  canUpdate: boolean;
+}
+
 export interface Instance {
   id: string;
   path: string;
@@ -45,7 +51,7 @@ export interface Instance {
 
   hooks: Hooks;
 
-  plugin?: InstancePluginSettings;
+  packInfo?: PackInfo;
 }
 
 export interface InstanceFile {
@@ -71,6 +77,11 @@ export enum InstanceInstallStage {
   PackInstalling = 'pack_installing',
   /// Instance is not installed
   NotInstalled = 'not_installed',
+}
+
+export interface InstanceImportDto {
+  packType: string;
+  path: string;
 }
 
 export interface InstanceCreateDto {
@@ -107,4 +118,12 @@ export interface Credentials {
   refreshToken: string;
   expires: Date;
   active: boolean;
+}
+
+export interface ImportHandler {
+  packType: string;
+  title: string;
+  fieldLabel: string;
+  fileName: string;
+  fileExtensions: string[];
 }

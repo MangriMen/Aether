@@ -14,9 +14,9 @@ import {
 
 import { useTranslate } from '@/shared/model';
 
-import { CreateCustomInstanceDialogBody } from './CreateCustomInstanceDialogBody';
+import { CreateCustomInstance } from './CreateCustomInstance';
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import { CreateInstancePluginsMenu } from './CreateInstancePluginsMenu';
+import { ImportInstance } from './ImportInstance';
 
 enum CreateInstanceDialogTabs {
   Custom = 'custom',
@@ -39,18 +39,24 @@ export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
         <Tabs defaultValue={CreateInstanceDialogTabs.Custom}>
           <TabsList class='bg-secondary-dark p-0'>
             <TabsTrigger value={CreateInstanceDialogTabs.Custom}>
-              {t('createInstance.custom')}
+              {t(`createInstance.${CreateInstanceDialogTabs.Custom}`)}
             </TabsTrigger>
             <TabsTrigger value={CreateInstanceDialogTabs.Import}>
-              {t('createInstance.import')}
+              {t(`createInstance.${CreateInstanceDialogTabs.Import}`)}
             </TabsTrigger>
           </TabsList>
           <Separator class='mb-4 mt-2' />
-          <TabsContent value={CreateInstanceDialogTabs.Custom}>
-            <CreateCustomInstanceDialogBody onOpenChange={props.onOpenChange} />
+          <TabsContent
+            class='min-h-[294px]'
+            value={CreateInstanceDialogTabs.Custom}
+          >
+            <CreateCustomInstance onOpenChange={props.onOpenChange} />
           </TabsContent>
-          <TabsContent value={CreateInstanceDialogTabs.Import}>
-            <CreateInstancePluginsMenu onOpenChange={props.onOpenChange} />
+          <TabsContent
+            class='flex min-h-[294px] grow flex-col'
+            value={CreateInstanceDialogTabs.Import}
+          >
+            <ImportInstance class='grow' onOpenChange={props.onOpenChange} />
           </TabsContent>
         </Tabs>
       </DialogContent>
