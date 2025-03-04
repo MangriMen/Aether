@@ -3,5 +3,10 @@
   "description": "",
   "local": true,
   "windows": ["main"],
-  "permissions": ["process:default", "instance:default"]
+  "permissions": [
+    "auth:default",
+    "instance:default",
+    "process:default",
+    "plugin:default"
+  ]
 }

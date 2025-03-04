@@ -9,9 +9,8 @@ const [accountsResource, setAccountsResource] = createSignal<Account[]>([]);
 const fetchAccounts = async () => {
   try {
     setAccountsResource(await getAccounts());
-  } catch {
-    console.error("Can't get account state");
-    return [];
+  } catch (e) {
+    console.error("Can't get account state:", e);
   }
 };
 

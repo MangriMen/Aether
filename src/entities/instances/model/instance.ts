@@ -11,6 +11,12 @@ export interface Hooks {
   post_exit: string;
 }
 
+export interface PackInfo {
+  packType: string;
+  version: string;
+  canUpdate: boolean;
+}
+
 export interface Instance {
   id: string;
   path: string;
@@ -45,7 +51,7 @@ export interface Instance {
 
   hooks: Hooks;
 
-  plugin?: InstancePluginSettings;
+  packInfo?: PackInfo;
 }
 
 export interface InstanceFile {

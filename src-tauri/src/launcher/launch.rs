@@ -1,9 +1,9 @@
-use tauri::{AppHandle, Event, Manager, WebviewWindowBuilder};
+use tauri::{AppHandle, Event, Manager, RunEvent, WebviewWindowBuilder};
 
-use crate::{
-    state::{ActionOnInstanceLaunch, SettingsState},
-    ManualExitFlagState,
-};
+use crate::state::{ActionOnInstanceLaunch, SettingsState};
+
+pub(super) struct ManualExitFlagStateInner(pub(super) bool);
+type ManualExitFlagState = std::sync::Mutex<ManualExitFlagStateInner>;
 
 pub fn handle_instance_launch(app_handle: &AppHandle, e: Event) {
     let app_handle = app_handle.clone();
@@ -82,4 +82,14 @@ pub fn handle_instance_launch(app_handle: &AppHandle, e: Event) {
             }
         }
     });
+}
+
+pub fn process_exit(app: &AppHandle, event: &RunEvent) {
+    if let tauri::RunEvent::ExitRequested { api, .. } = event {
+        let manual_exit_flag = app.state::<ManualExitFlagState>();
+        let manual_exit_flag = manual_exit_flag.lock().unwrap();
+        if manual_exit_flag.0 {
+            api.prevent_exit();
+        }
+    }
 }

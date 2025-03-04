@@ -15,6 +15,8 @@ import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
 import { useInstanceEventsListener } from '@/entities/instances';
 import { useWarningEventsListener } from '@/entities/events';
+import { loadEnabledPlugins } from '@/entities/minecrafts';
+import { refetchPlugins } from '@/entities/plugins';
 
 export const AppRoot: Component<RouteSectionProps> = (props) => {
   const [isAppInitialized, setIsAppInitialized] = createSignal(false);
@@ -30,6 +32,9 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
       await initializeApp();
       await initializeResources();
       setIsAppInitialized(true);
+
+      await loadEnabledPlugins();
+      await refetchPlugins();
     };
     init();
   });

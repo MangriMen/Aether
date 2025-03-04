@@ -1,26 +1,29 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { PluginInfo, PluginMetadata, PluginSettings } from '../model';
 
-export const scanPlugins = async () => invoke('scan_plugins');
+const PLUGIN_PREFIX = 'plugin:plugin|';
 
-export const listPlugins = async () => invoke<PluginMetadata[]>('list_plugins');
+export const scanPlugins = async () => invoke(`${PLUGIN_PREFIX}scan_plugins`);
+
+export const listPlugins = async () =>
+  invoke<PluginMetadata[]>(`${PLUGIN_PREFIX}list_plugins`);
 
 export const getPlugin = async (id: PluginInfo['id']) =>
-  invoke<PluginMetadata>('plugin_get', { id });
+  invoke<PluginMetadata>(`${PLUGIN_PREFIX}plugin_get`, { id });
 
 export const enablePlugin = async (id: PluginInfo['id']) =>
-  invoke('enable_plugin', { id });
+  invoke(`${PLUGIN_PREFIX}enable_plugin`, { id });
 
 export const disablePlugin = async (id: PluginInfo['id']) =>
-  invoke('disable_plugin', { id });
+  invoke(`${PLUGIN_PREFIX}disable_plugin`, { id });
 
 export const getIsPluginEnabled = async (id: PluginInfo['id']) =>
-  invoke<boolean>('is_plugin_enabled', { id });
+  invoke<boolean>(`${PLUGIN_PREFIX}is_plugin_enabled`, { id });
 
 export const getPluginSettings = async (id: PluginInfo['id']) =>
-  invoke<PluginSettings>('plugin_get_settings', { id });
+  invoke<PluginSettings>(`${PLUGIN_PREFIX}plugin_get_settings`, { id });
 
 export const editPluginSettings = async (
   id: PluginInfo['id'],
   settings: PluginSettings,
-) => invoke('plugin_edit_settings', { id, settings });
+) => invoke(`${PLUGIN_PREFIX}plugin_edit_settings`, { id, settings });

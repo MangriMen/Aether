@@ -82,6 +82,7 @@
   },
   "instanceSettings": {
     "general": "General",
+    "installation": "Installation",
     "window": "Window",
     "javaAndMemory": "Java and memory",
     "resolution": "Resolution",

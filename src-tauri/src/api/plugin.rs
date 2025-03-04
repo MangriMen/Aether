@@ -1,6 +1,23 @@
-use aether_core::state::{PluginMetadata, PluginSettings};
+use aether_core::state::{LauncherState, PluginMetadata, PluginSettings};
 
 use crate::AetherLauncherResult;
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("plugin")
+        .invoke_handler(tauri::generate_handler![
+            scan_plugins,
+            list_plugins,
+            plugin_get,
+            is_plugin_enabled,
+            enable_plugin,
+            disable_plugin,
+            call_plugin,
+            plugin_get_settings,
+            plugin_edit_settings,
+            open_plugins_folder,
+        ])
+        .build()
+}
 
 #[tauri::command]
 pub async fn scan_plugins() -> AetherLauncherResult<()> {
@@ -48,4 +65,10 @@ pub async fn plugin_edit_settings(
     settings: PluginSettings,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::plugin::edit_settings(&id, &settings).await?)
+}
+
+#[tauri::command]
+pub async fn open_plugins_folder() -> AetherLauncherResult<()> {
+    let state = LauncherState::get().await?;
+    crate::utils::file::reveal_in_explorer(&state.locations.plugins_dir(), false)
 }

@@ -26,8 +26,8 @@ const fetchPlugins = async () => {
         metadata,
       });
     }
-  } catch {
-    console.error("Can't get plugins");
+  } catch (e) {
+    console.error("Can't get plugins", e);
   }
 };
 

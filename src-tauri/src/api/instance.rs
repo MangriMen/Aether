@@ -11,6 +11,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
         .invoke_handler(tauri::generate_handler![
             instance_create,
+            instance_install,
+            instance_update,
             instance_list,
             instance_get,
             instance_edit,
@@ -42,6 +44,16 @@ pub async fn instance_create(instance_create_dto: InstanceCreateDto) -> AetherLa
     });
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn instance_install(id: String, force: bool) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::install(&id, force).await?)
+}
+
+#[tauri::command]
+pub async fn instance_update(id: String) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::update(&id).await?)
 }
 
 #[tauri::command]

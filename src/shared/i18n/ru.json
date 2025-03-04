@@ -82,6 +82,7 @@
   },
   "instanceSettings": {
     "general": "Общие",
+    "installation": "Установка",
     "window": "Окно",
     "javaAndMemory": "Java и память",
     "resolution": "Разрешение",
