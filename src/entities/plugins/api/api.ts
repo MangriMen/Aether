@@ -27,3 +27,6 @@ export const editPluginSettings = async (
   id: PluginInfo['id'],
   settings: PluginSettings,
 ) => invoke(`${PLUGIN_PREFIX}plugin_edit_settings`, { id, settings });
+
+export const openPluginsFolder = async () =>
+  invoke(`${PLUGIN_PREFIX}open_plugins_folder`);

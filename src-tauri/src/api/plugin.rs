@@ -70,5 +70,5 @@ pub async fn plugin_edit_settings(
 #[tauri::command]
 pub async fn open_plugins_folder() -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
-    crate::utils::file::reveal_in_explorer(&state.locations.plugins_dir(), false)
+    crate::utils::file::reveal_in_explorer(&state.locations.plugins_dir(), true)
 }

@@ -1,15 +1,20 @@
 import type { PluginInfo } from '@/entities/plugins';
-import { refetchPlugins, scanPlugins, usePlugins } from '@/entities/plugins';
+import {
+  openPluginsFolder,
+  refetchPlugins,
+  scanPlugins,
+  usePlugins,
+} from '@/entities/plugins';
 import { createMemo, createSignal, For, Show, type Component } from 'solid-js';
-import { CombinedTooltip, Separator, IconButton } from '@/shared/ui';
+import { CombinedTooltip, Separator, IconButton, showToast } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import type { SettingsPaneProps } from '../SettingsPane';
 import { SettingsPane } from '../SettingsPane';
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
-import { revealInExplorer } from '@/entities/instances';
 import { PluginInfoCard } from './PluginInfoCard';
 import { PluginCard } from './PluginCard';
+import { isAetherLauncherError } from '@/shared/model';
 
 export type PluginsEntryProps = SettingsPaneProps;
 
@@ -27,11 +32,18 @@ export const PluginsPane: Component<PluginsEntryProps> = (props) => {
     return id ? plugins.get(id) : null;
   };
 
-  const handleOpenPluginsFolder = () => {
-    revealInExplorer(
-      'C:/Users/mangr/AppData/Roaming/com.mangrimen.aether/plugins',
-      true,
-    );
+  const handleOpenPluginsFolder = async () => {
+    try {
+      await openPluginsFolder();
+    } catch (e) {
+      if (isAetherLauncherError(e)) {
+        showToast({
+          title: 'Failed to open plugins folder',
+          variant: 'destructive',
+          description: e.message,
+        });
+      }
+    }
   };
 
   const handleRefreshPlugins = async () => {
