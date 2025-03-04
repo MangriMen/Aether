@@ -1,7 +1,7 @@
 import type { RouteSectionProps } from '@solidjs/router';
 import { createSignal, onMount, Show, type Component } from 'solid-js';
 
-import { Toaster } from '@/shared/ui';
+import { showToast, Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import {
@@ -29,8 +29,28 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
 
   onMount(() => {
     const init = async () => {
-      await initializeApp();
-      await initializeResources();
+      try {
+        await initializeApp();
+      } catch (e) {
+        console.error(e);
+        showToast({
+          title: 'Failed to initialize app',
+          variant: 'destructive',
+          description: 'Failed to initialize. Try reload the app.',
+        });
+      }
+
+      try {
+        await initializeResources();
+      } catch (e) {
+        console.error(e);
+        showToast({
+          title: 'Failed to initialize resources',
+          variant: 'destructive',
+          description: 'Failed to initialize. Try reload the app.',
+        });
+      }
+
       setIsAppInitialized(true);
 
       await loadEnabledPlugins();

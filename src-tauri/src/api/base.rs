@@ -62,14 +62,23 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
 
     if need_update_settings {
-        aether_core::state::Settings::update(&state, &settings).await?;
+        if let Err(e) = aether_core::state::Settings::update(&state, &settings).await {
+            log::error!("Failed to update settings: {}", e);
+        }
     }
+
+    tokio::fs::create_dir_all(&state.locations.plugins_dir())
+        .await
+        .unwrap();
 
     let mut plugin_manager = state.plugin_manager.write().await;
 
-    plugin_manager
+    if let Err(e) = plugin_manager
         .scan_plugins(&PathBuf::from(&state.locations.plugins_dir()))
-        .await?;
+        .await
+    {
+        log::error!("Failed to scan plugins: {}", e);
+    }
 
     Ok(())
 }
