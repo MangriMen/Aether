@@ -16,6 +16,7 @@ import type { ImportInstanceValues } from '../model';
 import { ImportInstanceSchema } from '../model';
 import {
   Button,
+  CombinedTooltip,
   DialogFooter,
   IconButton,
   LabeledField,
@@ -106,7 +107,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       onSubmit={handleSubmit}
       {...others}
     >
-      <LabeledField label='Type'>
+      <LabeledField label={t('common.type')}>
         <Field name='packType'>
           {(field) => (
             <ToggleGroup
@@ -139,18 +140,19 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
               <TextFieldLabel class='relative flex flex-col gap-2'>
                 {currentImportHandler()?.fieldLabel}
                 <TextFieldInput
-                  value={field.value}
+                  value={field.value ?? ''}
                   type='text'
                   class='pr-10'
                   required
                   autocomplete='off'
                   {...props}
                 />
-                <IconButton
+                <CombinedTooltip
+                  label={t('common.browse')}
+                  as={IconButton}
                   class='absolute bottom-1 right-1 aspect-square h-3/6 p-0'
                   variant='secondary'
                   type='button'
-                  title='Browse'
                   onClick={onBrowse}
                   icon={FileFindOutlineIcon}
                 />
@@ -161,7 +163,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
         </Field>
       </div>
       <DialogFooter class='mt-auto'>
-        <Button type='submit'>Import</Button>
+        <Button type='submit'>{t('createInstance.import')}</Button>
         <Button variant='secondary' onClick={() => props.onOpenChange?.(false)}>
           {t('common.cancel')}
         </Button>

@@ -6,6 +6,7 @@ import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 import { Button, Checkbox } from '@/shared/ui';
 import type { InstanceFile } from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslate } from '@/shared/model';
 
 export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
@@ -33,24 +34,28 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
     accessorKey: 'fileName',
     id: 'name',
-    header: (props) => (
-      <Button
-        variant='ghost'
-        size='sm'
-        onClick={() =>
-          props.column.toggleSorting(props.column.getIsSorted() === 'asc')
-        }
-        trailingIcon={
-          <Icon
-            class={cn('text-lg transition-transform', {
-              'rotate-180': props.column.getIsSorted() === 'asc',
-            })}
-            icon={MdiChevronDownIcon}
-          />
-        }
-        children='Name'
-      />
-    ),
+    header: (props) => {
+      const [{ t }] = useTranslate();
+
+      return (
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() =>
+            props.column.toggleSorting(props.column.getIsSorted() === 'asc')
+          }
+          trailingIcon={
+            <Icon
+              class={cn('text-lg transition-transform', {
+                'rotate-180': props.column.getIsSorted() === 'asc',
+              })}
+              icon={MdiChevronDownIcon}
+            />
+          }
+          children={<>{t('common.name')}</>}
+        />
+      );
+    },
     cell: (props) => (
       <span
         class={cn({
@@ -64,23 +69,27 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
     accessorKey: 'contentType',
     id: 'type',
-    header: (props) => (
-      <Button
-        variant='ghost'
-        size='sm'
-        onClick={() =>
-          props.column.toggleSorting(props.column.getIsSorted() === 'asc')
-        }
-        trailingIcon={
-          <Icon
-            class={cn('text-lg transition-transform', {
-              'rotate-180': props.column.getIsSorted() === 'asc',
-            })}
-            icon={MdiChevronDownIcon}
-          />
-        }
-        children='Type'
-      />
-    ),
+    header: (props) => {
+      const [{ t }] = useTranslate();
+
+      return (
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={() =>
+            props.column.toggleSorting(props.column.getIsSorted() === 'asc')
+          }
+          trailingIcon={
+            <Icon
+              class={cn('text-lg transition-transform', {
+                'rotate-180': props.column.getIsSorted() === 'asc',
+              })}
+              icon={MdiChevronDownIcon}
+            />
+          }
+          children={<>{t('common.type')}</>}
+        />
+      );
+    },
   },
 ];

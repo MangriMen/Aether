@@ -20,6 +20,7 @@ import {
   removeInstanceContent,
   toggleDisableInstanceContent,
 } from '@/entities/instances';
+import { useTranslate } from '@/shared/model';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;
@@ -34,6 +35,8 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
     'content',
     'class',
   ]);
+
+  const [{ t }] = useTranslate();
 
   const handleToggleDisable = () => {
     toggleDisableInstanceContent(local.instanceId, local.content.path);
@@ -55,7 +58,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         </SwitchControl>
       </Switch>
       <CombinedTooltip
-        label='Remove'
+        label={t('common.remove')}
         as={IconButton}
         variant='ghost'
         class='p-0'
@@ -71,7 +74,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         />
         <DropdownMenuContent>
           <DropdownMenuItem onClick={handleShowFile}>
-            Show file
+            {t('instance.showFile')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

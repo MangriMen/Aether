@@ -2,6 +2,7 @@ import { Show, type Component } from 'solid-js';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
 import { Button } from '@/shared/ui';
 import { SelectedRowsActions } from './SelectedRowsActions';
+import { useTranslate } from '@/shared/model';
 
 export type HeaderActionsProps = {
   allRowsSelected?: boolean;
@@ -11,6 +12,8 @@ export type HeaderActionsProps = {
 };
 
 export const HeaderActions: Component<HeaderActionsProps> = (props) => {
+  const [{ t }] = useTranslate();
+
   return (
     <Show
       when={props.allRowsSelected || props.someRowsSelected}
@@ -22,7 +25,7 @@ export const HeaderActions: Component<HeaderActionsProps> = (props) => {
             leadingIcon={MdiReloadIcon}
             loading={props.isLoading}
             onClick={props.refetch}
-            children='Refresh'
+            children={t('common.refresh')}
           />
         </Show>
       }

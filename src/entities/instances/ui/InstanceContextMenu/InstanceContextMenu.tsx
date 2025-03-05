@@ -57,7 +57,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
           onClick={local.onRemove}
           disabled={local.isLoading}
         >
-          {t('instance.remove')}
+          {t('common.remove')}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

@@ -90,7 +90,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         onOpenChange={setShowRemoveModal}
         header={t('instance.removeTitle', { name: props.instance.name })}
         description={t('instance.removeDescription')}
-        buttonOkText={t('instance.remove')}
+        buttonOkText={t('common.remove')}
         onOk={handleRemove}
         onCancel={closeRemoveModal}
       />

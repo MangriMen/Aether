@@ -7,6 +7,7 @@ import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
 import type { AddNewItemProps } from './AddNewSettingsItem';
 import { AddNewSettingsItem } from './AddNewSettingsItem';
 import type { PluginSettingsSchemaValues } from '../../model';
+import { useTranslate } from '@/shared/model';
 
 export type AllowedItemFieldProps<T> = {
   form: FormStore<PluginSettingsSchemaValues>;
@@ -60,6 +61,8 @@ export const AllowedItems = <
     'class',
   ]);
 
+  const [{ t }] = useTranslate();
+
   const [editingIndex, setEditingIndex] = createSignal<number | null>(null);
 
   const handleAddNew = (value: TValue) =>
@@ -86,7 +89,7 @@ export const AllowedItems = <
       {...others}
     >
       <Show when={local.unchangeableItems?.length}>
-        <LabeledField class='px-1' label='Plugin'>
+        <LabeledField class='px-1' label={t('plugins.fromPlugin')}>
           <ol class='flex flex-col rounded-lg bg-black/20'>
             <For each={local.unchangeableItems}>
               {(item) => (
@@ -98,7 +101,7 @@ export const AllowedItems = <
           </ol>
         </LabeledField>
       </Show>
-      <LabeledField class='px-1' label='Custom'>
+      <LabeledField class='px-1' label={t('plugins.custom')}>
         <ol class='flex flex-col rounded-lg bg-black/20'>
           <FieldArray of={local.form} name={local.name}>
             {(fieldArray) => (

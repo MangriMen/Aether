@@ -10,7 +10,12 @@
     "gameVersion": "Game version",
     "loader": "Loader",
     "username": "Username",
-    "ok": "Ok"
+    "ok": "Ok",
+    "browse": "Browse",
+    "authors": "Authors",
+    "refresh": "Refresh",
+    "remove": "Remove",
+    "type": "Type"
   },
   "account": {
     "title": "Account",
@@ -56,13 +61,13 @@
     "openFolder": "Open folder",
     "launch": "Launch",
     "stop": "Stop",
-    "remove": "Remove",
     "lastPlayed": "Last played: {{date}}",
     "neverPlayed": "Never played",
     "removeTitle": "Are you sure you want to delete instance {{name}}?",
     "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it.",
     "content": "Content",
-    "noContent": "You haven't added any content to this instance yet"
+    "noContent": "You haven't added any content to this instance yet",
+    "showFile": "Show file"
   },
   "createInstance": {
     "title": "Create instance",
@@ -103,5 +108,19 @@
   "events": {
     "javaDownloading": "Downloading Java {{version}}",
     "launcherUpdating": "Updating launcher to {{version}}"
+  },
+  "plugins": {
+    "title": "Plugins",
+    "noPlugins": "No plugins found",
+    "disableToChangeSettings": "To change settings, disable the plugin",
+    "allowedHosts": "Allowed hosts",
+    "allowedPaths": "Allowed paths",
+    "addItem": "Add item",
+    "saveSettings": "Save settings",
+    "custom": "Custom",
+    "fromPlugin": "From plugin",
+    "disable": "Disable",
+    "enable": "Enable",
+    "openPluginsFolder": "Open plugins folder"
   }
 }

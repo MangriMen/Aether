@@ -23,6 +23,7 @@ import { EditAllowedPath } from './EditAllowedPath';
 import { AllowedPathField } from './AllowedPathField';
 import { AllowedHost } from './AllowedHost';
 import { AllowedPath } from './AllowedPath';
+import { useTranslate } from '@/shared/model';
 
 export type PluginSettingsFormProps = {
   plugin: PluginMetadata;
@@ -34,6 +35,8 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, ['plugin', 'disabled', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const pluginId = createMemo(() => local.plugin.plugin.id);
   const [settings, { mutate }] = createResource(pluginId, getPluginSettings);
@@ -95,7 +98,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         disabled={local.disabled}
       >
         <AllowedItems
-          label='Allowed hosts'
+          label={t('plugins.allowedHosts')}
           name='allowedHosts'
           form={form}
           unchangeableItems={local.plugin.wasm.allowed_hosts}
@@ -106,7 +109,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           )}
         />
         <AllowedItems
-          label='Allowed paths'
+          label={t('plugins.allowedPaths')}
           name='allowedPaths'
           form={form}
           unchangeableItems={local.plugin.wasm.allowed_paths}
@@ -117,7 +120,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           )}
         />
         <Button class='w-max' type='submit' loading={isLoading()}>
-          Save settings
+          {t('plugins.saveSettings')}
         </Button>
       </fieldset>
     </Form>

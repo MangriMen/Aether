@@ -13,6 +13,7 @@ import {
 } from 'solid-js';
 import { PluginSettingsForm } from './PluginSettingsForm';
 import { SettingsPane } from '../SettingsPane';
+import { useTranslate } from '@/shared/model';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -20,6 +21,8 @@ export type PluginInfoCardProps = ComponentProps<'div'> & {
 
 export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
+
+  const [{ t }] = useTranslate();
 
   const isPluginEnabled = createMemo(() => local.plugin.enabled);
 
@@ -54,16 +57,17 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         <div class='flex items-end gap-2'>
           <h2 class='text-xl font-bold'>{local.plugin.metadata.plugin.name}</h2>
           <span class='text-muted-foreground'>
-            Version: {local.plugin.metadata.plugin.version}
+            {t('common.version')}: {local.plugin.metadata.plugin.version}
           </span>
         </div>
         <span class='text-muted-foreground'>
-          Authors: {local.plugin.metadata.plugin.authors?.join(', ')}
+          {t('common.authors')}:{' '}
+          {local.plugin.metadata.plugin.authors?.join(', ')}
         </span>
       </div>
       <div>
         <Button size='sm' onClick={togglePluginEnabled} loading={isLoading()}>
-          {isPluginEnabled() ? 'Disable' : 'Enable'}
+          {isPluginEnabled() ? t('plugins.disable') : t('plugins.enable')}
         </Button>
       </div>
 
@@ -75,7 +79,8 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         class={cn('p-0 bg-[unset]', {
           'text-muted-foreground': isSettingsFormDisabled(),
         })}
-        label={`Settings ${isSettingsFormDisabled() ? '(disable plugin to change settings)' : ''}`}
+        label={`${t('settings.title')} ${isSettingsFormDisabled() ? '(' + t('plugins.disableToChangeSettings') + ')' : ''}`}
+        collapsible
       >
         <PluginSettingsForm
           plugin={local.plugin.metadata}

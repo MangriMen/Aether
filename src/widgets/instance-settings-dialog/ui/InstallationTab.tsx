@@ -59,7 +59,9 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               Minecraft {local.instance.gameVersion}
             </div>
             <div class='capitalize'>{local.instance.loader}</div>
-            <div>Managed by: {local.instance.packInfo?.packType}</div>
+            <Show when={local.instance.packInfo}>
+              <div>Managed by: {local.instance.packInfo?.packType}</div>
+            </Show>
           </div>
           <div class='ml-auto flex items-center gap-1'>
             <Show when={local.instance.packInfo}>

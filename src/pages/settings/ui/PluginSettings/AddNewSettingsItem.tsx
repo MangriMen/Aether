@@ -1,3 +1,4 @@
+import { useTranslate } from '@/shared/model';
 import { Button } from '@/shared/ui';
 import { Show } from 'solid-js';
 import type { Accessor, JSX } from 'solid-js';
@@ -13,6 +14,8 @@ export type AddNewItemProps<T> = {
 };
 
 export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
+  const [{ t }] = useTranslate();
+
   const onAddNew = () => {
     props.setEditingIndex(-1);
   };
@@ -34,7 +37,7 @@ export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
           class='size-max px-2 py-1'
           size='sm'
           onClick={onAddNew}
-          children='Add item'
+          children={t('plugins.addItem')}
         />
       }
     >
