@@ -10,7 +10,9 @@ import { useTranslate } from '@/shared/model';
 export type InstanceStopButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
-const InstanceStopButton: Component<InstanceStopButtonProps> = (props) => {
+export const InstanceStopButton: Component<InstanceStopButtonProps> = (
+  props,
+) => {
   const [{ t }] = useTranslate();
 
   return (
@@ -23,5 +25,3 @@ const InstanceStopButton: Component<InstanceStopButtonProps> = (props) => {
     />
   );
 };
-
-export default InstanceStopButton;

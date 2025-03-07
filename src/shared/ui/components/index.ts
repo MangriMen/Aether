@@ -12,6 +12,7 @@ export * from './Dialog';
 export * from './DropdownMenu';
 export * from './FieldLabel';
 export * from './IconButton';
+export * from './Image';
 export * from './Label';
 export * from './LabeledField';
 export * from './Pagination';

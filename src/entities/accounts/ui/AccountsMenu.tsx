@@ -16,7 +16,7 @@ export type AccountSelectCardProps = ComponentProps<'div'> & {
   onLogout: (uuid: string) => void;
 };
 
-export const AccountSelectCard: Component<AccountSelectCardProps> = (props) => {
+export const AccountsMenu: Component<AccountSelectCardProps> = (props) => {
   const [local, others] = splitProps(props, [
     'onActivate',
     'onCreate',

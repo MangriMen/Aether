@@ -2,10 +2,6 @@ import { Route, Router } from '@solidjs/router';
 import type { Component } from 'solid-js';
 import { lazy } from 'solid-js';
 
-import { RunningInstancesProvider } from '@/entities/instances';
-
-import { MainLayout } from '@/app/layouts/MainLayout';
-
 import { AppRoot } from './AppRoot';
 
 const HomePage = lazy(() =>
@@ -28,29 +24,21 @@ const InstanceSettingsDialog = lazy(() =>
 export const AppRouter: Component = () => {
   return (
     <Router root={AppRoot}>
-      <Route path='/' component={MainLayout}>
-        <Route path='/' component={RunningInstancesProvider}>
-          <Route path='/' component={HomePage}>
-            <Route />
-            <Route
-              path='/instance-settings/:id'
-              component={(props) => (
-                <InstanceSettingsDialog id={props.params.id} />
-              )}
-            />
-          </Route>
-          <Route path='/instances/:id' component={InstancePage}>
-            <Route />
-            <Route
-              path='settings'
-              component={(props) => (
-                <InstanceSettingsDialog id={props.params.id} />
-              )}
-            />
-          </Route>
-          <Route path='/settings' component={SettingsPage} />
-        </Route>
+      <Route path='/' component={HomePage}>
+        <Route />
+        <Route
+          path='/instance-settings/:id'
+          component={(props) => <InstanceSettingsDialog id={props.params.id} />}
+        />
       </Route>
+      <Route path='/instances/:id' component={InstancePage}>
+        <Route />
+        <Route
+          path='settings'
+          component={(props) => <InstanceSettingsDialog id={props.params.id} />}
+        />
+      </Route>
+      <Route path='/settings' component={SettingsPage} />
     </Router>
   );
 };

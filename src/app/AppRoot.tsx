@@ -1,81 +1,38 @@
 import type { RouteSectionProps } from '@solidjs/router';
-import { createSignal, onMount, Show, type Component } from 'solid-js';
+import { type Component } from 'solid-js';
 
-import { showToast, Toaster } from '@/shared/ui';
+import { Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import {
-  initializeApp,
-  initializeResources,
-  usePreventRightClick,
-} from './lib';
-import { useMaximizeObserver } from '@/shared/lib';
 import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
-import { useInstanceEventsListener } from '@/entities/instances';
-import { useWarningEventsListener } from '@/entities/events';
-import { loadEnabledPlugins } from '@/entities/minecrafts';
-import { refetchPlugins } from '@/entities/plugins';
+import { AppProvider } from './providers/AppProvider/AppProvider';
+import { useSetup } from './lib/useSetup';
+import { MainLayout } from './layouts/MainLayout';
+import { RunningInstancesProvider } from '@/entities/instances';
 
 export const AppRoot: Component<RouteSectionProps> = (props) => {
-  const [isAppInitialized, setIsAppInitialized] = createSignal(false);
-
-  usePreventRightClick();
-  useMaximizeObserver();
-
-  useInstanceEventsListener();
-  useWarningEventsListener();
-
-  onMount(() => {
-    const init = async () => {
-      try {
-        await initializeApp();
-      } catch (e) {
-        console.error(e);
-        showToast({
-          title: 'Failed to initialize app',
-          variant: 'destructive',
-          description: 'Failed to initialize. Try reload the app.',
-        });
-      }
-
-      try {
-        await initializeResources();
-      } catch (e) {
-        console.error(e);
-        showToast({
-          title: 'Failed to initialize resources',
-          variant: 'destructive',
-          description: 'Failed to initialize. Try reload the app.',
-        });
-      }
-
-      setIsAppInitialized(true);
-
-      await loadEnabledPlugins();
-      await refetchPlugins();
-    };
-    init();
-  });
+  useSetup();
 
   return (
-    <Show when={isAppInitialized()}>
-      <ColorModeProvider {...props}>
-        <ThemeProvider
-          rawThemeLsKey={RAW_THEME_LS_KEY}
-          themeLsKey={THEME_LS_KEY}
-          themeAttribute={THEME_ATTRIBUTE}
-        >
-          <I18nProvider
-            resources={LOCALE_RESOURCES}
-            fallbackLocale={LOCALES.En}
-          >
-            <AppLayout>{props.children}</AppLayout>
-            <Toaster />
-          </I18nProvider>
-        </ThemeProvider>
-      </ColorModeProvider>
-    </Show>
+    <ColorModeProvider {...props}>
+      <ThemeProvider
+        rawThemeLsKey={RAW_THEME_LS_KEY}
+        themeLsKey={THEME_LS_KEY}
+        themeAttribute={THEME_ATTRIBUTE}
+      >
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+          <AppLayout>
+            <AppProvider>
+              <RunningInstancesProvider>
+                <MainLayout>{props.children}</MainLayout>
+              </RunningInstancesProvider>
+            </AppProvider>
+          </AppLayout>
+          <Toaster />
+        </I18nProvider>
+      </ThemeProvider>
+    </ColorModeProvider>
   );
 };

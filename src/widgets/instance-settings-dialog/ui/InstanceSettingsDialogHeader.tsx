@@ -2,10 +2,9 @@ import MdiRightArrowIcon from '@iconify/icons-mdi/chevron-right';
 import { Icon } from '@iconify-icon/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { DialogHeader, DialogTitle } from '@/shared/ui';
+import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
-import { InstanceImage } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -24,7 +23,7 @@ const InstanceSettingsDialogHeader: Component<
     <DialogHeader {...others}>
       <DialogTitle class='flex items-center gap-1 text-muted-foreground'>
         <div class='flex items-center gap-2'>
-          <InstanceImage class='size-8' />
+          <Image class='size-8' />
           <span>{local.instance.name}</span>
         </div>
         <Icon class='text-xl' icon={MdiRightArrowIcon} />

@@ -10,5 +10,8 @@ export const initializeWindowMethods = () => {
 export const initializeApp = async () => {
   await initializeState();
   initializeWindowMethods();
+};
+
+export const showWindow = async () => {
   await getCurrentWindow().show();
 };

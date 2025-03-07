@@ -8,7 +8,7 @@ import { ResponsiveIcon } from '@/shared/ui';
 export type InstanceImageProps = ComponentProps<'div'> &
   Pick<ComponentProps<'img'>, 'src'>;
 
-export const InstanceImage: Component<InstanceImageProps> = (props) => {
+export const Image: Component<InstanceImageProps> = (props) => {
   const [local, others] = splitProps(props, ['src', 'class']);
 
   return (

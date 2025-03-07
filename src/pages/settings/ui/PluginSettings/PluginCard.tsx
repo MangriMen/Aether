@@ -1,6 +1,6 @@
-import { InstanceImage } from '@/entities/instances';
 import type { Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
+import { Image } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 export type PluginCardProps = ComponentProps<'div'> & {
@@ -21,7 +21,7 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
       data-active={local.isSelected ? '' : undefined}
       {...others}
     >
-      <InstanceImage class='h-12 w-max' />
+      <Image class='h-12 w-max' />
       <div class='flex flex-col truncate font-normal'>
         <span class='font-medium'>{local.plugin.metadata.plugin.name}</span>
         <span class='w-full truncate'>

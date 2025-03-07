@@ -9,7 +9,7 @@ import type { InstanceSettingsTabProps } from '@/entities/instances';
 
 import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
 import { GeneralTab } from '../ui/GeneralTab';
-import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
+import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
 
 export enum InstanceSettingsDialogTabs {

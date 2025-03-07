@@ -5,31 +5,36 @@ import { createEffect, onCleanup } from 'solid-js';
 
 const RESIZE_MAXIMIZE_THROTTLE_TIMEOUT = 400;
 
+/**
+ * Observes window maximize state and notifies about it.
+ *
+ * @param {number} [throttleTimeout] - Debounce timeout in ms.
+ * @returns {void}
+ */
 export const useMaximizeObserver = (
   throttleTimeout = RESIZE_MAXIMIZE_THROTTLE_TIMEOUT,
 ) => {
   const appWindow = getCurrentWebviewWindow();
+  let unlistenResize: VoidFunction | undefined;
 
-  let unlistenResize: VoidFunction | undefined = undefined;
+  const initializeResizeObserver = async () => {
+    unlistenResize?.();
+
+    const handleResizeThrottle = throttle(
+      async () => updateMaximize(await appWindow.isMaximized()),
+      throttleTimeout,
+    );
+
+    const unlistenResizeEvent = await appWindow.onResized(handleResizeThrottle);
+
+    unlistenResize = () => {
+      unlistenResizeEvent();
+      handleResizeThrottle.clear();
+    };
+  };
 
   createEffect(() => {
-    (async () => {
-      unlistenResize?.();
-
-      const handleResizeThrottle = throttle(
-        async () => updateMaximize(await appWindow.isMaximized()),
-        throttleTimeout,
-      );
-
-      const unlistenResizeEvent =
-        await appWindow.onResized(handleResizeThrottle);
-
-      unlistenResize = async () => {
-        unlistenResizeEvent();
-        handleResizeThrottle.clear();
-      };
-    })();
-
+    initializeResizeObserver();
     onCleanup(() => unlistenResize?.());
   });
 };

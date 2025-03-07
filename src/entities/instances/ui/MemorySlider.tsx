@@ -17,7 +17,7 @@ export type MemorySliderProps<T extends ValidComponent = 'div'> =
     warningValue?: number;
   };
 
-const MemorySlider: Component<MemorySliderProps> = (props) => {
+export const MemorySlider: Component<MemorySliderProps> = (props) => {
   const [local, others] = splitProps(props, [
     'warningValue',
     'onChange',
@@ -77,5 +77,3 @@ const MemorySlider: Component<MemorySliderProps> = (props) => {
     </Slider>
   );
 };
-
-export default MemorySlider;

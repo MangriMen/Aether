@@ -16,7 +16,9 @@ export type InstanceActionButtonProps = IconButtonProps & {
   instance: Instance;
 };
 
-const InstanceActionButton: Component<InstanceActionButtonProps> = (props) => {
+export const InstanceActionButton: Component<InstanceActionButtonProps> = (
+  props,
+) => {
   const [local, others] = splitProps(props, ['instance']);
 
   const [context, { get }] = useRunningInstancesContext();
@@ -68,5 +70,3 @@ const InstanceActionButton: Component<InstanceActionButtonProps> = (props) => {
     </Show>
   );
 };
-
-export default InstanceActionButton;

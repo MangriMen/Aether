@@ -5,13 +5,13 @@ import { cn } from '@/shared/lib';
 import type { SidebarProps } from '@/shared/ui';
 import { Separator, Sidebar } from '@/shared/ui';
 
-import { AccountSelectCard } from './AccountSelectCard';
 import type { AccountSelectButtonProps } from './AccountSelectButton';
 import { AccountSelectButton } from './AccountSelectButton';
 import type { CreateInstanceButtonProps } from './CreateInstanceButton';
 import CreateInstanceButton from './CreateInstanceButton';
 import HomeButton from './HomeButton';
 import SettingsButton from './SettingsButton';
+import { AccountsMenu } from '@/entities/accounts';
 
 export type AppSidebarProps = SidebarProps &
   Pick<CreateInstanceButtonProps, 'createInstanceDialog'> &
@@ -38,7 +38,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
       <div class='flex flex-col items-center gap-2'>
         <AccountSelectButton
-          accountSelectCard={AccountSelectCard}
+          accountSelectCard={AccountsMenu}
           createOfflineAccountDialog={local.createOfflineAccountDialog}
         />
         <SettingsButton />

@@ -3,10 +3,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { Instance } from '@/entities/instances';
+import { type Instance } from '@/entities/instances';
 
-import { InstanceImage } from './InstanceImage';
 import { InstanceTitle } from './InstanceTitle';
+import { Image } from '@/shared/ui';
 
 export type InstanceCardProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -30,7 +30,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       )}
       {...others}
     >
-      <InstanceImage src={local.instance.iconPath} />
+      <Image src={local.instance.iconPath} />
       <InstanceTitle
         name={local.instance.name}
         loader={local.instance.loader}

@@ -1,11 +1,10 @@
 import {
   installInstance,
-  InstanceImage,
   updateInstance,
   type InstanceSettingsTabProps,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { Button, LabeledField, showToast } from '@/shared/ui';
+import { Button, Image, LabeledField, showToast } from '@/shared/ui';
 import {
   Show,
   splitProps,
@@ -53,7 +52,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <LabeledField label='Currently installed'>
         <div class='flex items-center gap-3 rounded-lg bg-background p-3 text-muted-foreground'>
-          <InstanceImage class='h-full w-max p-0' />
+          <Image class='h-full w-max p-0' />
           <div class='flex flex-col'>
             <div class='text-base font-medium'>
               Minecraft {local.instance.gameVersion}

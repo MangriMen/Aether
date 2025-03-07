@@ -1,2 +1,1 @@
-export { default as InstanceActionButton } from './InstanceActionButton';
-export type * from './InstanceActionButton';
+export * from './InstanceActionButton';

@@ -10,7 +10,9 @@ import { useTranslate } from '@/shared/model';
 export type InstancePlayButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
-const InstancePlayButton: Component<InstancePlayButtonProps> = (props) => {
+export const InstancePlayButton: Component<InstancePlayButtonProps> = (
+  props,
+) => {
   const [{ t }] = useTranslate();
 
   return (
@@ -23,5 +25,3 @@ const InstancePlayButton: Component<InstancePlayButtonProps> = (props) => {
     />
   );
 };
-
-export default InstancePlayButton;
