@@ -35,3 +35,7 @@ export * from './Toast';
 export * from './Toggle';
 export * from './ToggleGroup';
 export * from './Tooltip';
+export * from './SettingsEntry';
+export * from './SettingsPane';
+export * from './CollapsibleSettingsPane';
+export * from '../../../pages/settings/ui/LauncherPane/SelectTheme';

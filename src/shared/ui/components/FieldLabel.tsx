@@ -1,9 +1,9 @@
-import type { Component } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { FieldLabelProps } from '.';
+export type FieldLabelProps = ComponentProps<'span'>;
 
 export const FieldLabel: Component<FieldLabelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);

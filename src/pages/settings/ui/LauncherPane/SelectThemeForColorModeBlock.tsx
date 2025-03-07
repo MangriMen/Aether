@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib';
 import { FieldLabel } from '@/shared/ui';
 
 import { useThemeContext, useTranslate } from '@/shared/model';
-import SelectThemeByColorMode from '../SelectThemeByColorMode';
+import SelectThemeByColorMode from './SelectThemeByColorMode';
 
 export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
 

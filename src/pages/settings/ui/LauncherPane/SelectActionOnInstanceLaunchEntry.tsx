@@ -5,10 +5,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SettingsEntry,
 } from '@/shared/ui';
 import type { Component } from 'solid-js';
 import { createMemo, createResource } from 'solid-js';
-import { SettingsEntry } from '../SettingsEntry';
 import type { ActionOnInstanceLaunchType } from '../../model';
 import {
   getActionOnInstanceLaunch,

@@ -5,9 +5,8 @@ import { cn } from '@/shared/lib';
 
 import { useTranslate, useThemeContext } from '@/shared/model';
 
-import { SettingsEntry } from '../SettingsEntry';
-
 import SelectThemeForColorModeBlock from './SelectThemeForColorModeBlock';
+import { SettingsEntry } from '@/shared/ui';
 
 export type SelectThemeForColorModeEntryProps = ComponentProps<'div'>;
 

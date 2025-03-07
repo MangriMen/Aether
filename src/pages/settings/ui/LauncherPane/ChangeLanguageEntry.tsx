@@ -4,9 +4,9 @@ import type { Locale, Option } from '@/shared/model';
 
 import { useTranslate } from '@/shared/model';
 
-import { SettingsEntry } from '../SettingsEntry';
 import { LOCALE_OPTIONS } from '../../model';
-import SelectLanguage from '../SelectLanguage';
+import SelectLanguage from '../LauncherPane/SelectLanguage';
+import { SettingsEntry } from '@/shared/ui';
 
 export type ChangeLanguageEntryProps = ComponentProps<'div'>;
 

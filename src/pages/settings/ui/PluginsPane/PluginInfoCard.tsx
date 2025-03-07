@@ -3,7 +3,7 @@ import type { Plugin } from '@/entities/plugins';
 import { disablePlugin, enablePlugin, refetchPlugin } from '@/entities/plugins';
 
 import { cn } from '@/shared/lib';
-import { Button, Separator } from '@/shared/ui';
+import { Button, Separator, SettingsPane } from '@/shared/ui';
 import {
   createMemo,
   createSignal,
@@ -12,7 +12,6 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { PluginSettingsForm } from './PluginSettingsForm';
-import { SettingsPane } from '../SettingsPane';
 import { useTranslate } from '@/shared/model';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {

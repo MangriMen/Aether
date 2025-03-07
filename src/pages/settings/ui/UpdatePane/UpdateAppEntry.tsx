@@ -4,7 +4,7 @@ import type { DownloadEvent } from '@tauri-apps/plugin-updater';
 import type { Component, ComponentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
 
-import { Button, showToast } from '@/shared/ui';
+import { Button, SettingsEntry, showToast } from '@/shared/ui';
 
 import type { LoadingPayload } from '@/entities/events';
 import { LoadingBarTypeEnum } from '@/entities/events';
@@ -13,11 +13,9 @@ import { updateResource } from '@/entities/updates';
 import { useTranslate } from '@/shared/model';
 import { getVersion } from '@tauri-apps/api/app';
 
-import { SettingsEntry } from '../SettingsEntry';
-
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 
-const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
+export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [update, { refetch }] = updateResource;
   const [{ t }] = useTranslate();
 
@@ -157,5 +155,3 @@ const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     </SettingsEntry>
   );
 };
-
-export default UpdateAppEntry;

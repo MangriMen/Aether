@@ -1,14 +1,14 @@
 import { usePlugins } from '@/entities/plugins';
 import { Show, type Component } from 'solid-js';
-import type { SettingsPaneProps } from '../SettingsPane';
-import { SettingsPane } from '../SettingsPane';
 import { useTranslate } from '@/shared/model';
 import { PluginsList } from './PluginsList';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
+import type { SettingsPaneProps } from '@/shared/ui';
+import { SettingsPane } from '@/shared/ui';
 
-export type PluginsEntryProps = SettingsPaneProps;
+export type PluginsPaneProps = SettingsPaneProps;
 
-export const PluginsPane: Component<PluginsEntryProps> = (props) => {
+export const PluginsPane: Component<PluginsPaneProps> = (props) => {
   const [{ t }] = useTranslate();
 
   const plugins = usePlugins();
