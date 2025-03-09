@@ -67,7 +67,8 @@
     "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it.",
     "content": "Content",
     "noContent": "You haven't added any content to this instance yet",
-    "showFile": "Show file"
+    "showFile": "Show file",
+    "installContent": "Install content"
   },
   "createInstance": {
     "title": "Create instance",
@@ -122,5 +123,13 @@
     "disable": "Disable",
     "enable": "Enable",
     "openPluginsFolder": "Open plugins folder"
+  },
+  "content": {
+    "title": "Content",
+    "backToInstance": "Back to instance",
+    "mods": "Mods",
+    "dataPacks": "Data Packs",
+    "resourcePacks": "Resource Packs",
+    "shaders": "Shaders"
   }
 }

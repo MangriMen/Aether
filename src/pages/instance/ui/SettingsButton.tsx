@@ -10,7 +10,7 @@ import { useTranslate } from '@/shared/model';
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
-const SettingsButton: Component<SettingsButtonProps> = (props) => {
+export const SettingsButton: Component<SettingsButtonProps> = (props) => {
   const navigate = useNavigate();
   const [{ t }] = useTranslate();
 
@@ -28,5 +28,3 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
     />
   );
 };
-
-export default SettingsButton;

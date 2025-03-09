@@ -17,6 +17,7 @@ import {
 
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
+import { useNavigate } from '@solidjs/router';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -24,6 +25,8 @@ export type ContentTabProps = ComponentProps<'div'> & {
 
 export const ContentTab: Component<ContentTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const navigate = useNavigate();
 
   const [{ t }] = useTranslate();
 
@@ -38,6 +41,14 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
 
   const [search, setSearch] = createSignal<string | undefined>();
 
+  const handleInstallContent = () => {
+    const searchParams = new URLSearchParams({
+      instance: local.instance.id,
+    });
+
+    return navigate(`/content?${searchParams.toString()}`);
+  };
+
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
@@ -51,6 +62,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
         <ContentControls
           contentsCount={contents().length}
           onSearch={setSearch}
+          onInstallContent={handleInstallContent}
         />
         <ContentTable
           data={contents()}

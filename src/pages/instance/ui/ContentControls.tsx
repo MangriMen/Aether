@@ -19,18 +19,23 @@ import {
 } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import { CONTENT_TYPES } from '@/entities/instances';
+import { useTranslate } from '@/shared/model';
 
 export type ContentControlsProps = ComponentProps<'div'> & {
   contentsCount: number;
   onSearch?: (query: string) => void;
+  onInstallContent?: () => void;
 };
 
 export const ContentControls: Component<ContentControlsProps> = (props) => {
   const [local, others] = splitProps(props, [
     'contentsCount',
     'onSearch',
+    'onInstallContent',
     'class',
   ]);
+
+  const [{ t }] = useTranslate();
 
   const searchPlaceholder = createMemo(
     () => `Search ${local.contentsCount} contents`,
@@ -44,9 +49,12 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
         inputProps={{ type: 'text', placeholder: searchPlaceholder() }}
         onChange={local.onSearch}
       />
-      <div class='hidden h-9'>
-        <Button class='min-w-max rounded-r-none' disabled>
-          Install content
+      <div class='flex'>
+        <Button
+          class='min-w-max rounded-r-none'
+          onClick={local.onInstallContent}
+        >
+          {t('instance.installContent')}
         </Button>
         <Separator orientation='vertical' />
         <DropdownMenu>
@@ -57,7 +65,6 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
             icon={MdiChevronDownIcon}
             disabled
           />
-
           <DropdownMenuContent>
             <For each={CONTENT_TYPES}>
               {(contentType) => (
