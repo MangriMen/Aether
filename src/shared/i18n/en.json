@@ -15,7 +15,10 @@
     "authors": "Authors",
     "refresh": "Refresh",
     "remove": "Remove",
-    "type": "Type"
+    "type": "Type",
+    "perPage": "View",
+    "search": "Search",
+    "install": "Install"
   },
   "account": {
     "title": "Account",

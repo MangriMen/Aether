@@ -1,14 +1,13 @@
-import {
-  type ContentItem,
-  CONTENT_TYPES,
-  type ContentType,
-} from '@/entities/instances';
+import { CONTENT_TYPES, getContentByProvider } from '@/entities/instances';
+
+import type { ContentRequest, ContentType } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
-import { Tabs, TabsList, TabsTrigger } from '@/shared/ui';
+import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 import {
   createMemo,
+  createResource,
   createSignal,
   For,
   splitProps,
@@ -17,84 +16,85 @@ import {
 } from 'solid-js';
 import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
+import { CONTENT_TYPE_TO_TITLE } from '../model';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {
   availableContent?: ContentType[];
 };
 
-const CONTENT_TYPE_TO_TITLE: Record<
-  ContentType,
-  'mods' | 'dataPacks' | 'resourcePacks' | 'shaders'
-> = {
-  mod: 'mods',
-  datapack: 'dataPacks',
-  resourcepack: 'resourcePacks',
-  shaderpack: 'shaders',
-} as const;
+const PROVIDERS = ['modrinth', 'curseforge'];
 
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const [local, others] = splitProps(props, ['availableContent', 'class']);
 
   const [{ t }] = useTranslate();
 
-  const [_currentContentType, setCurrentContentType] =
-    createSignal<ContentType>(CONTENT_TYPES[0]);
+  const [currentContentType, setCurrentContentType] = createSignal<ContentType>(
+    CONTENT_TYPES[0],
+  );
 
-  const availableContentTabs = createMemo(() => {
-    return local.availableContent ?? CONTENT_TYPES;
-  });
+  const availableContentTabs = createMemo(
+    () => local.availableContent ?? CONTENT_TYPES,
+  );
 
+  const [searchQuery, setSearchQuery] = createSignal<string | undefined>();
+  const [currentProvider, setCurrentProvider] = createSignal(PROVIDERS[0]);
   const [currentPage, setCurrentPage] = createSignal(1);
-
   const [currentPageSize, setCurrentPageSize] = createSignal(20);
 
-  const handleOnSearch = (_query: string) => {};
+  const handleOnSearch = (query: string) => setSearchQuery(query);
+  const handlePageChange = (page: number) => setCurrentPage(page);
+  const handlePageSizeChange = (pageSize: number) =>
+    setCurrentPageSize(pageSize);
 
-  const handlePageChange = (_page: number) => {
-    setCurrentPage(_page);
-  };
+  const contentRequestPayload = createMemo<ContentRequest>(() => ({
+    contentType: currentContentType(),
+    provider: currentProvider(),
+    page: currentPage(),
+    pageSize: currentPageSize(),
+    query: searchQuery(),
+  }));
 
-  const handlePageSizeChange = (_pageSize: number) => {
-    setCurrentPageSize(_pageSize);
-  };
-
-  const items = createMemo(() => {
-    const length = currentPageSize();
-    return Array.from({ length }).map((_, i) => ({
-      id: `mock-content-item-${i}`,
-      name: `Mock content item ${i}`,
-      description: `This is a mock content item ${i}`,
-      type: _currentContentType(),
-      url: `https://example.com/content-item-${i}`,
-      author: 'Mock author',
-    })) as ContentItem[];
-  });
+  const [contentRequest] = createResource(contentRequestPayload, (payload) =>
+    getContentByProvider(payload).catch((e) => {
+      console.error(e);
+      return undefined;
+    }),
+  );
 
   return (
     <div
-      class={cn('flex flex-col gap-2 overflow-hidden px-1', local.class)}
+      class={cn('flex flex-col gap-2 overflow-hidden p-1', local.class)}
       {...others}
     >
-      <Tabs onChange={setCurrentContentType}>
-        <TabsList>
-          <For each={availableContentTabs()}>
-            {(contentType) => (
-              <TabsTrigger value={contentType}>
-                {t(`content.${CONTENT_TYPE_TO_TITLE[contentType]}`)}
-              </TabsTrigger>
-            )}
-          </For>
-        </TabsList>
-      </Tabs>
+      <div class='flex gap-2'>
+        <CombinedSelect
+          options={PROVIDERS}
+          value={currentProvider()}
+          onChange={setCurrentProvider}
+        />
+        <Tabs onChange={setCurrentContentType}>
+          <TabsList>
+            <For each={availableContentTabs()}>
+              {(contentType) => (
+                <TabsTrigger value={contentType}>
+                  {t(`content.${CONTENT_TYPE_TO_TITLE[contentType]}`)}
+                </TabsTrigger>
+              )}
+            </For>
+          </TabsList>
+        </Tabs>
+      </div>
       <ContentFilters
         pageSize={currentPageSize()}
-        pageCount={552}
+        pageCount={contentRequest()?.pageCount ?? 0}
         currentPage={currentPage()}
         onSearch={handleOnSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        contentType={currentContentType()}
       />
-      <ContentList items={items()} />
+      <ContentList items={contentRequest()?.items ?? []} />
     </div>
   );
 };

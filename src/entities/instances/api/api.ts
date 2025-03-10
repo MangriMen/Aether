@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 import type {
+  ContentRequest,
   ImportHandler,
   Instance,
   InstanceCreateDto,
@@ -8,6 +9,7 @@ import type {
   InstanceFile,
   InstanceImportDto,
   MinecraftProcessMetadata,
+  ContentResponse,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -55,6 +57,23 @@ export const editInstance = async (
   instanceEditDto: InstanceEditDto,
 ) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, { id, instanceEditDto });
 
+// Utils
+export const revealInExplorer = (path: string, exact = true) =>
+  invoke('reveal_in_explorer', { path, exact });
+
+// Process
+export const listProcess = () =>
+  invoke<MinecraftProcessMetadata[]>(`${PLUGIN_PROCESS_PREFIX}process_list`);
+
+export const getInstanceProcess = (id: string) =>
+  invoke<MinecraftProcessMetadata[]>(
+    `${PLUGIN_PROCESS_PREFIX}process_get_by_instance_id`,
+    {
+      id,
+    },
+  );
+
+// Content
 export const getInstanceContents = (id: string) =>
   invoke<Record<string, InstanceFile>>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_contents`,
@@ -73,18 +92,8 @@ export const removeInstanceContent = (id: string, contentPath: string) =>
     contentPath,
   });
 
-// Utils
-export const revealInExplorer = (path: string, exact = true) =>
-  invoke('reveal_in_explorer', { path, exact });
-
-// Process
-export const listProcess = () =>
-  invoke<MinecraftProcessMetadata[]>(`${PLUGIN_PROCESS_PREFIX}process_list`);
-
-export const getInstanceProcess = (id: string) =>
-  invoke<MinecraftProcessMetadata[]>(
-    `${PLUGIN_PROCESS_PREFIX}process_get_by_instance_id`,
-    {
-      id,
-    },
+export const getContentByProvider = (payload: ContentRequest) =>
+  invoke<ContentResponse>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_content_by_provider`,
+    { payload },
   );

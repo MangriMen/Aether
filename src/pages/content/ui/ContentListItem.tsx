@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib';
 import { Button, Image } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import MdiDownload from '@iconify/icons-mdi/download';
+import { useTranslate } from '@/shared/model';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
   item: ContentItem;
@@ -10,6 +11,8 @@ export type ContentListItemProps = ComponentProps<'div'> & {
 
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const [local, others] = splitProps(props, ['item', 'class']);
+
+  const [{ t }] = useTranslate();
 
   return (
     <div
@@ -31,7 +34,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       </div>
       <div class='ml-auto flex flex-col justify-end'>
         <Button class='px-3' variant='outline' leadingIcon={MdiDownload}>
-          Install
+          {t('common.install')}
         </Button>
       </div>
     </div>

@@ -1,10 +1,11 @@
-import { SelectTheme, SettingsEntry, SettingsPane } from '@/shared/ui';
+import { SettingsEntry, SettingsPane } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import SelectThemeForColorModeEntry from './SelectThemeForColorModeEntry';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
 import { useTranslate } from '@/shared/model';
 import { cn } from '@/shared/lib';
 import ChangeLanguageEntry from './ChangeLanguageEntry';
+import { SelectTheme } from './SelectTheme';
 
 export type LauncherPaneProps = ComponentProps<'div'>;
 
