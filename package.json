@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@kobalte/core": "^0.13.8",
+    "@kobalte/core": "^0.13.9",
     "@modular-forms/solid": "^0.25.0",
     "@solid-primitives/i18n": "^2.2.0",
     "@solid-primitives/map": "^0.6.0",

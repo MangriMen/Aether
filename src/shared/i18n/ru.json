@@ -133,6 +133,7 @@
     "mods": "Моды",
     "dataPacks": "Дата паки",
     "resourcePacks": "Ресурс паки",
-    "shaders": "Шейдеры"
+    "shaders": "Шейдеры",
+    "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента"
   }
 }

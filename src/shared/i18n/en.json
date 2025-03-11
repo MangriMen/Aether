@@ -133,6 +133,7 @@
     "mods": "Mods",
     "dataPacks": "Data Packs",
     "resourcePacks": "Resource Packs",
-    "shaders": "Shaders"
+    "shaders": "Shaders",
+    "providerErrorOrNotFound": "Provider not found or error getting content"
   }
 }

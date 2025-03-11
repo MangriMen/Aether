@@ -22,10 +22,12 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       )}
       {...others}
     >
-      <Image class='h-24 w-max' />
+      <Image class='h-24 w-max' src={local.item.iconUrl || undefined} />
       <div class='flex flex-col text-muted-foreground'>
         <span class='text-lg font-bold text-foreground'>
-          {local.item.name}{' '}
+          <a href={local.item.url} target='_blank'>
+            {local.item.name}
+          </a>{' '}
           <span class='text-base font-semibold text-muted-foreground'>
             by {local.item.author}
           </span>

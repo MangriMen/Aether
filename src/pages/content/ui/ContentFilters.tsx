@@ -12,6 +12,7 @@ import {
 } from '@/shared/ui';
 import {
   createMemo,
+  Show,
   splitProps,
   type Component,
   type ComponentProps,
@@ -85,12 +86,14 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
           <SelectContent />
         </Select>
 
-        <CombinedPagination
-          siblingCount={1}
-          count={local.pageCount}
-          page={local.currentPage}
-          onPageChange={local.onPageChange}
-        />
+        <Show when={local.pageCount > 1}>
+          <CombinedPagination
+            siblingCount={1}
+            count={local.pageCount}
+            page={local.currentPage}
+            onPageChange={local.onPageChange}
+          />
+        </Show>
       </div>
     </div>
   );

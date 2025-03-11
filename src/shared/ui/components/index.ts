@@ -27,6 +27,7 @@ export * from './Separator';
 export * from './SettingsEntry';
 export * from './SettingsPane';
 export * from './Sidebar';
+export * from './Skeleton';
 export * from './Slider';
 export * from './Switch';
 export * from './Table';

@@ -7,6 +7,10 @@ export interface ContentItem {
   author: string;
   contentType: ContentType;
   url: string;
+  iconUrl: string;
+  versions: string[];
+  latestVersion: string;
+  providerData?: unknown;
 }
 
 export interface ContentRequest {
