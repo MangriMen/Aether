@@ -5,13 +5,14 @@ import {
 } from '@solidjs/router';
 import {
   createMemo,
+  createResource,
   Show,
   splitProps,
   type Component,
   type ComponentProps,
 } from 'solid-js';
 import { InstanceInfo } from './InstanceInfo';
-import { useInstance } from '@/entities/instances';
+import { getContentProviders, useInstance } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 import { ContentBrowser } from './ContentBrowser';
 
@@ -43,6 +44,19 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
   // eslint-disable-next-line solid/reactivity
   const instance = useInstance(id);
 
+  const getTransformedContentProviders = async () => {
+    const res = await getContentProviders();
+
+    return Object.entries(res).map(([key, value]) => ({
+      name: key,
+      value,
+    }));
+  };
+
+  const [contentProviders] = createResource(getTransformedContentProviders, {
+    initialValue: [],
+  });
+
   return (
     <div class='flex size-full flex-col gap-2 p-4' {...others}>
       <Show when={instance()}>
@@ -50,7 +64,10 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
           <>
             <InstanceInfo instance={instance()} />
             <Separator />
-            <ContentBrowser />
+            <ContentBrowser
+              instance={instance()}
+              providers={contentProviders() ?? []}
+            />
           </>
         )}
       </Show>

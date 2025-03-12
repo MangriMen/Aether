@@ -44,6 +44,33 @@ export const CombinedSelect = <
       )),
   );
 
+  const getSelectedValue = (state: {
+    selectedOption: () => Option;
+    selectedOptions: () => Option[];
+    remove: (option: Option) => void;
+    clear: () => void;
+  }): string | null => {
+    if (!state) {
+      return null;
+    }
+
+    const selectedOption = state.selectedOption();
+
+    if (!selectedOption) {
+      return null;
+    }
+
+    if (typeof selectedOption === 'string') {
+      return selectedOption;
+    } else if (typeof selectedOption === 'object') {
+      if (typeof props.optionTextValue === 'string') {
+        return selectedOption[props.optionTextValue];
+      }
+    }
+
+    return null;
+  };
+
   return (
     <Select itemComponent={itemComponent()} {...others}>
       <Show
@@ -51,7 +78,7 @@ export const CombinedSelect = <
         fallback={
           <SelectTrigger class='gap-1.5 whitespace-nowrap px-2'>
             <SelectValue<Option>>
-              {(state) => `${state.selectedOption()}`}
+              {(state) => getSelectedValue(state)}
             </SelectValue>
           </SelectTrigger>
         }

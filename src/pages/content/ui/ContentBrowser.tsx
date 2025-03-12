@@ -1,17 +1,27 @@
-import { CONTENT_TYPES, getContentByProvider } from '@/entities/instances';
+import {
+  CONTENT_TYPES,
+  ContentType,
+  installContent,
+} from '@/entities/instances';
 
-import type { ContentRequest, ContentType } from '@/entities/instances';
+import type {
+  ContentItem,
+  ContentRequest,
+  Instance,
+} from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
+import type { Option } from '@/shared/model';
 import { useTranslate } from '@/shared/model';
 import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 import {
+  createEffect,
   createMemo,
-  createResource,
   createSignal,
   For,
-  Show,
+  Match,
   splitProps,
+  Switch,
   type Component,
   type ComponentProps,
 } from 'solid-js';
@@ -20,20 +30,26 @@ import { ContentList } from './ContentList';
 import { CONTENT_TYPE_TO_TITLE } from '../model';
 import { debounce } from '@solid-primitives/scheduled';
 import { ContentListSkeleton } from './ContentListSkeleton';
+import { useContent } from '../lib';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {
+  providers: Option<string>[];
+  instance: Instance;
   availableContent?: ContentType[];
 };
 
-const PROVIDERS = ['curseforge', 'modrinth'];
-
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
-  const [local, others] = splitProps(props, ['availableContent', 'class']);
+  const [local, others] = splitProps(props, [
+    'providers',
+    'instance',
+    'availableContent',
+    'class',
+  ]);
 
   const [{ t }] = useTranslate();
 
-  const [currentContentType, setCurrentContentType] = createSignal<ContentType>(
-    CONTENT_TYPES[0],
+  const [contentType, setContentType] = createSignal<ContentType>(
+    ContentType.Mod,
   );
 
   const availableContentTabs = createMemo(
@@ -41,47 +57,52 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   );
 
   const [searchQuery, setSearchQuery] = createSignal<string | undefined>();
-  const [currentProvider, setCurrentProvider] = createSignal(PROVIDERS[0]);
-  const [currentPage, setCurrentPage] = createSignal(1);
-  const [currentPageSize, setCurrentPageSize] = createSignal(20);
+  const [provider, setProvider] = createSignal<Option<string> | null>(null);
+  const [page, setPage] = createSignal(1);
+  const [pageSize, setPageSize] = createSignal(20);
 
-  const handleOnSearch = debounce(
-    (query: string) => setSearchQuery(query),
-    300,
-  );
-  const handlePageChange = (page: number) => setCurrentPage(page);
-  const handlePageSizeChange = (pageSize: number) =>
-    setCurrentPageSize(pageSize);
+  createEffect(() => {
+    if (local.providers.length) {
+      setProvider(local.providers[0]);
+    }
+  });
 
-  const handleSetContentProvider = (provider: string | null) => {
+  const handleSearch = debounce(setSearchQuery, 300);
+  const handlePageChange = (page: number) => setPage(page);
+  const handlePageSizeChange = (pageSize: number) => setPageSize(pageSize);
+  const handleSetProvider = (provider: Option<string> | null) => {
     if (provider) {
-      setCurrentProvider(provider);
+      setProvider(provider);
     }
   };
 
-  const contentRequestPayload = createMemo<ContentRequest>(() => ({
-    contentType: currentContentType(),
-    provider: currentProvider(),
-    page: currentPage(),
-    pageSize: currentPageSize(),
-    query: searchQuery(),
-  }));
-
-  const [contentRequestError, setContentRequestError] = createSignal<
-    unknown | null
-  >(null);
-  const setContentRequestErrorDebounced = debounce(setContentRequestError, 100);
-
-  const getContent = async (payload: ContentRequest) => {
-    setContentRequestErrorDebounced(null);
-    try {
-      return await getContentByProvider(payload);
-    } catch (e) {
-      setContentRequestErrorDebounced(e);
+  const contentRequestPayload = createMemo((): ContentRequest | null => {
+    const currentProvider = provider();
+    if (!currentProvider) {
+      return null;
     }
-  };
 
-  const [contentRequest] = createResource(contentRequestPayload, getContent);
+    return {
+      contentType: contentType(),
+      provider: currentProvider.value,
+      page: page(),
+      pageSize: pageSize(),
+      query: searchQuery(),
+    };
+  });
+
+  const [content, { isLoading: isContentLoading }] = useContent(() =>
+    contentRequestPayload(),
+  );
+
+  const handleInstallContent = (content_item: ContentItem) => {
+    const provider = content().data?.provider;
+    if (!provider) {
+      return;
+    }
+
+    installContent(local.instance.id, content_item, provider);
+  };
 
   return (
     <div
@@ -90,11 +111,13 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     >
       <div class='flex gap-2'>
         <CombinedSelect
-          options={PROVIDERS}
-          value={currentProvider()}
-          onChange={handleSetContentProvider}
+          options={local.providers}
+          value={provider()}
+          onChange={handleSetProvider}
+          optionValue='value'
+          optionTextValue='name'
         />
-        <Tabs onChange={setCurrentContentType}>
+        <Tabs onChange={setContentType}>
           <TabsList>
             <For each={availableContentTabs()}>
               {(contentType) => (
@@ -107,26 +130,32 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         </Tabs>
       </div>
       <ContentFilters
-        pageSize={currentPageSize()}
-        pageCount={contentRequest()?.pageCount ?? 0}
-        currentPage={currentPage()}
-        onSearch={handleOnSearch}
+        pageSize={pageSize()}
+        pageCount={content()?.data?.pageCount ?? 0}
+        currentPage={page()}
+        onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-        contentType={currentContentType()}
+        contentType={contentType()}
       />
-      <Show
-        when={!contentRequestError()}
-        fallback={
+      <Switch>
+        <Match when={isContentLoading()}>
+          <ContentListSkeleton />
+        </Match>
+        <Match when={content().error}>
           <span class='flex grow items-center justify-center text-xl font-medium text-muted-foreground'>
             {t('content.providerErrorOrNotFound')}
           </span>
-        }
-      >
-        <Show when={contentRequest()} fallback={<ContentListSkeleton />}>
-          {(contentRequest) => <ContentList items={contentRequest().items} />}
-        </Show>
-      </Show>
+        </Match>
+        <Match when={content().data}>
+          {(contentRequest) => (
+            <ContentList
+              items={contentRequest().items ?? []}
+              onInstall={handleInstallContent}
+            />
+          )}
+        </Match>
+      </Switch>
     </div>
   );
 };

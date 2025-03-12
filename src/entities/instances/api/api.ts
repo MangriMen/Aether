@@ -10,6 +10,7 @@ import type {
   InstanceImportDto,
   MinecraftProcessMetadata,
   ContentResponse,
+  ContentItem,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -92,8 +93,24 @@ export const removeInstanceContent = (id: string, contentPath: string) =>
     contentPath,
   });
 
+export const getContentProviders = () =>
+  invoke<Record<string, string>>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_content_providers`,
+  );
+
 export const getContentByProvider = (payload: ContentRequest) =>
   invoke<ContentResponse>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_content_by_provider`,
     { payload },
   );
+
+export const installContent = (
+  id: string,
+  contentItem: ContentItem,
+  provider: string,
+) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install_content`, {
+    id,
+    contentItem,
+    provider,
+  });
