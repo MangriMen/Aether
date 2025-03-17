@@ -28,3 +28,12 @@ export interface ContentResponse {
   provider: string;
   items: ContentItem[];
 }
+
+export interface InstallContentPayload {
+  gameVersion: string;
+  loader?: string;
+  contentType: ContentType;
+  contentVersion?: string;
+  provider: string;
+  providerData?: unknown;
+}

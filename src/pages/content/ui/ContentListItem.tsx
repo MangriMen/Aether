@@ -41,7 +41,6 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       <div class='ml-auto flex flex-col justify-end'>
         <Button
           class='px-3'
-          variant='outline'
           leadingIcon={MdiDownload}
           onClick={local.onInstall}
         >

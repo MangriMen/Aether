@@ -7,6 +7,7 @@ import {
 import type {
   ContentItem,
   ContentRequest,
+  InstallContentPayload,
   Instance,
 } from '@/entities/instances';
 
@@ -101,7 +102,16 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       return;
     }
 
-    installContent(local.instance.id, content_item, provider);
+    const payload: InstallContentPayload = {
+      gameVersion: local.instance.gameVersion,
+      loader: local.instance.loader,
+      contentType: contentType(),
+      contentVersion: undefined,
+      provider: provider,
+      providerData: content_item.providerData,
+    };
+
+    installContent(local.instance.id, payload);
   };
 
   return (

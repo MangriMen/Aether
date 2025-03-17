@@ -10,7 +10,7 @@ import type {
   InstanceImportDto,
   MinecraftProcessMetadata,
   ContentResponse,
-  ContentItem,
+  InstallContentPayload,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -104,13 +104,8 @@ export const getContentByProvider = (payload: ContentRequest) =>
     { payload },
   );
 
-export const installContent = (
-  id: string,
-  contentItem: ContentItem,
-  provider: string,
-) =>
+export const installContent = (id: string, payload: InstallContentPayload) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install_content`, {
     id,
-    contentItem,
-    provider,
+    payload,
   });

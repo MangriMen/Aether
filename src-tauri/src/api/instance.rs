@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aether_core::state::{
-    ContentItem, ContentRequest, ContentResponse, ImportConfig, Instance, InstanceFile,
+    ContentRequest, ContentResponse, ImportConfig, InstallContentPayload, Instance, InstanceFile,
     MinecraftProcessMetadata,
 };
 use dashmap::DashMap;
@@ -156,8 +156,7 @@ pub async fn instance_get_content_by_provider(
 #[tauri::command]
 pub async fn instance_install_content(
     id: String,
-    content_item: ContentItem,
-    provider: String,
+    payload: InstallContentPayload,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::install_content(&id, &content_item, &provider).await?)
+    Ok(aether_core::api::instance::install_content(&id, &payload).await?)
 }
