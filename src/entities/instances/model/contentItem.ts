@@ -19,6 +19,8 @@ export interface ContentRequest {
   page: number;
   pageSize: number;
   query?: string;
+  gameVersions?: string[];
+  loader?: string;
 }
 
 export interface ContentResponse {

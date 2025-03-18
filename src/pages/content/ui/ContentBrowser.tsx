@@ -89,6 +89,8 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       page: page(),
       pageSize: pageSize(),
       query: searchQuery(),
+      gameVersions: [local.instance.gameVersion],
+      loader: local.instance.loader,
     };
   });
 

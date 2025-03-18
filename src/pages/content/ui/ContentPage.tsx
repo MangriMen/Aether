@@ -12,9 +12,14 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { InstanceInfo } from './InstanceInfo';
-import { getContentProviders, useInstance } from '@/entities/instances';
+import {
+  ContentType,
+  getContentProviders,
+  useInstance,
+} from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 import { ContentBrowser } from './ContentBrowser';
+import { ModLoader } from '@/entities/minecrafts';
 
 export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -57,6 +62,18 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     initialValue: [],
   });
 
+  const availableContent = createMemo(() => {
+    const inst = instance();
+
+    if (!inst) {
+      return [];
+    } else if (inst.loader == ModLoader.Vanilla) {
+      return [ContentType.ResourcePack, ContentType.DataPack];
+    } else {
+      return undefined;
+    }
+  });
+
   return (
     <div class='flex size-full flex-col gap-2 p-4' {...others}>
       <Show when={instance()}>
@@ -67,6 +84,7 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
             <ContentBrowser
               instance={instance()}
               providers={contentProviders() ?? []}
+              availableContent={availableContent()}
             />
           </>
         )}
