@@ -55,6 +55,7 @@ export interface Instance {
 }
 
 export interface InstanceFile {
+  hash: string;
   fileName: string;
   size: number;
   contentType: ContentType;

@@ -5,11 +5,10 @@ export interface ContentItem {
   name: string;
   description?: string;
   author: string;
-  contentType: ContentType;
   url: string;
   iconUrl: string;
   versions: string[];
-  latestVersion: string;
+  contentType: ContentType;
   providerData?: unknown;
 }
 
