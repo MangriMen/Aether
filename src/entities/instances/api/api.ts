@@ -109,3 +109,9 @@ export const installContent = (id: string, payload: InstallContentPayload) =>
     id,
     payload,
   });
+
+export const getMetadataFieldToCheckInstalled = (provider: string) =>
+  invoke<string>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_metadata_field_to_check_installed`,
+    { provider },
+  );

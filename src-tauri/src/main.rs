@@ -26,6 +26,10 @@ fn main() {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Debug)
+                // .filter(|metadata| {
+                //     metadata.target().starts_with("aether_core")
+                //         || metadata.target().starts_with("aether")
+                // })
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())

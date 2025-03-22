@@ -9,7 +9,7 @@ export interface ContentItem {
   iconUrl: string;
   versions: string[];
   contentType: ContentType;
-  providerData?: unknown;
+  providerData?: Record<string, unknown>;
 }
 
 export interface ContentRequest {
@@ -37,4 +37,8 @@ export interface InstallContentPayload {
   contentVersion?: string;
   provider: string;
   providerData?: unknown;
+}
+
+export interface ContentItemExtended extends ContentItem {
+  installed: boolean;
 }

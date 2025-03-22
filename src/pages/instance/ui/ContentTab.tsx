@@ -1,13 +1,12 @@
 import {
-  getInstanceContents,
+  refetchInstanceContent,
+  useInstanceContent,
   type Instance,
-  type InstanceFile,
 } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
-  createResource,
   createSignal,
   Show,
   splitProps,
@@ -30,14 +29,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
-  const [contents, { refetch }] = createResource(
-    () => local.instance,
-    (instance) =>
-      getInstanceContents(instance.id)
-        .then((contentsObj) => Object.values<InstanceFile>(contentsObj))
-        .catch(() => []),
-    { initialValue: [] },
-  );
+  const instanceContent = useInstanceContent(() => local.instance.id);
 
   const [search, setSearch] = createSignal<string | undefined>();
 
@@ -52,26 +44,30 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
-        when={contents.loading || contents()}
+        when={instanceContent.array !== undefined && instanceContent.array}
         fallback={
           <span class='mx-auto mt-20 text-lg text-muted-foreground'>
             {t('instance.noContent')}
           </span>
         }
       >
-        <ContentControls
-          contentsCount={contents().length}
-          onSearch={setSearch}
-          onInstallContent={handleInstallContent}
-        />
-        <ContentTable
-          data={contents()}
-          refetch={() => refetch()}
-          searchQuery={search()}
-          isLoading={contents.loading}
-          instanceId={local.instance.id}
-          instancePath={local.instance.path}
-        />
+        {(items) => (
+          <>
+            <ContentControls
+              contentsCount={items().length ?? 0}
+              onSearch={setSearch}
+              onInstallContent={handleInstallContent}
+            />
+            <ContentTable
+              data={items()}
+              refetch={() => refetchInstanceContent(local.instance.id)}
+              searchQuery={search()}
+              isLoading={instanceContent.loading}
+              instanceId={local.instance.id}
+              instancePath={local.instance.path}
+            />
+          </>
+        )}
       </Show>
     </div>
   );

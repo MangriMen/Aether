@@ -18,7 +18,9 @@
     "type": "Type",
     "perPage": "View",
     "search": "Search",
-    "install": "Install"
+    "install": "Install",
+    "installing": "Installing",
+    "installed": "Installed"
   },
   "account": {
     "title": "Account",

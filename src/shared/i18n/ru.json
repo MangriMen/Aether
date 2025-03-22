@@ -18,7 +18,9 @@
     "remove": "Удалить",
     "perPage": "Отображать",
     "search": "Искать",
-    "install": "Установить"
+    "install": "Установить",
+    "installing": "Установка",
+    "installed": "Установлено"
   },
   "account": {
     "title": "Аккаунт",

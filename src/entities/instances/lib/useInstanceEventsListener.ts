@@ -3,6 +3,7 @@ import { onCleanup, onMount } from 'solid-js';
 import { refetchInstance } from '../model/instancesResource';
 import { isDebug } from '@/shared/model';
 import type { UnlistenFn } from '@tauri-apps/api/event';
+import { refetchInstanceContent } from '../model';
 
 export const useInstanceEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -14,6 +15,7 @@ export const useInstanceEventsListener = () => {
       }
 
       refetchInstance(e.payload.instancePathId);
+      refetchInstanceContent(e.payload.instancePathId);
     });
   };
 

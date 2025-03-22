@@ -1,13 +1,13 @@
 import {
   CONTENT_TYPES,
   ContentType,
-  installContent,
+  getMetadataFieldToCheckInstalled,
+  useInstanceContent,
 } from '@/entities/instances';
 
 import type {
-  ContentItem,
+  ContentItemExtended,
   ContentRequest,
-  InstallContentPayload,
   Instance,
 } from '@/entities/instances';
 
@@ -18,6 +18,7 @@ import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 import {
   createEffect,
   createMemo,
+  createResource,
   createSignal,
   For,
   Match,
@@ -98,22 +99,64 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     contentRequestPayload(),
   );
 
-  const handleInstallContent = (content_item: ContentItem) => {
-    const provider = content().data?.provider;
-    if (!provider) {
+  const instanceContent = useInstanceContent(() => local.instance.id);
+
+  const [compareMetadataField] = createResource(
+    () => provider()?.value,
+    getMetadataFieldToCheckInstalled,
+  );
+
+  const instanceContentFields = createMemo(() => {
+    const field = compareMetadataField();
+    if (!field) {
+      return [];
+    }
+    const providerValue = provider()?.value;
+    if (!providerValue) {
+      return [];
+    }
+
+    return instanceContent.array?.map(
+      (item) => item.update?.[providerValue]?.[field],
+    );
+  });
+
+  const [newlyInstalled, setNewlyInstalled] = createSignal<
+    NonNullable<ContentItemExtended['providerData']>[string][]
+  >([]);
+
+  const items = createMemo(() =>
+    content().data?.items.map<ContentItemExtended>((item) => {
+      const field = compareMetadataField();
+
+      const contentItemField = field ? item.providerData?.[field] : undefined;
+      const installed =
+        contentItemField && typeof contentItemField === 'string'
+          ? Boolean(newlyInstalled().includes(contentItemField)) ||
+            Boolean(instanceContentFields()?.includes(contentItemField))
+          : false;
+
+      return {
+        ...item,
+        installed,
+      };
+    }),
+  );
+
+  const handleOnInstalled = (
+    providerData: ContentItemExtended['providerData'],
+  ) => {
+    const field = compareMetadataField();
+    if (!field) {
       return;
     }
 
-    const payload: InstallContentPayload = {
-      gameVersion: local.instance.gameVersion,
-      loader: local.instance.loader,
-      contentType: contentType(),
-      contentVersion: undefined,
-      provider: provider,
-      providerData: content_item.providerData,
-    };
+    const data = providerData?.[field];
+    if (!data) {
+      return;
+    }
 
-    installContent(local.instance.id, payload);
+    setNewlyInstalled((prev) => [...prev, data]);
   };
 
   return (
@@ -159,11 +202,15 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
             {t('content.providerErrorOrNotFound')}
           </span>
         </Match>
-        <Match when={content().data}>
-          {(contentRequest) => (
+        <Match when={items()}>
+          {(items) => (
             <ContentList
-              items={contentRequest().items ?? []}
-              onInstall={handleInstallContent}
+              items={items() ?? []}
+              instanceId={local.instance.id}
+              gameVersion={local.instance.gameVersion}
+              loader={local.instance.loader}
+              provider={provider()?.value}
+              onInstalled={handleOnInstalled}
             />
           )}
         </Match>

@@ -1,15 +1,27 @@
-import type { ContentItem } from '@/entities/instances';
+import type { ContentItemExtended } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
 import { ContentListItem } from './ContentListItem';
 
 export type ContentListProps = ComponentProps<'div'> & {
-  items: ContentItem[];
-  onInstall: (contentItem: ContentItem) => void;
+  items: ContentItemExtended[];
+  instanceId: string;
+  gameVersion: string;
+  loader?: string;
+  provider?: string;
+  onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
 };
 
 export const ContentList: Component<ContentListProps> = (props) => {
-  const [local, others] = splitProps(props, ['items', 'onInstall', 'class']);
+  const [local, others] = splitProps(props, [
+    'items',
+    'instanceId',
+    'gameVersion',
+    'loader',
+    'provider',
+    'onInstalled',
+    'class',
+  ]);
 
   return (
     <div
@@ -20,7 +32,11 @@ export const ContentList: Component<ContentListProps> = (props) => {
         {(item) => (
           <ContentListItem
             item={item}
-            onInstall={() => local.onInstall(item)}
+            instanceId={local.instanceId}
+            gameVersion={local.gameVersion}
+            loader={local.loader}
+            provider={local.provider}
+            onInstalled={local.onInstalled}
           />
         )}
       </For>

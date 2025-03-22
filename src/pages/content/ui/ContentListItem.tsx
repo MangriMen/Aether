@@ -1,19 +1,74 @@
-import type { ContentItem } from '@/entities/instances';
+import {
+  installContent,
+  type ContentItemExtended,
+  type InstallContentPayload,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { Button, Image } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 import MdiDownload from '@iconify/icons-mdi/download';
+import MdiCheck from '@iconify/icons-mdi/check';
 import { useTranslate } from '@/shared/model';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
-  item: ContentItem;
-  onInstall: () => void;
+  item: ContentItemExtended;
+  instanceId: string;
+  gameVersion: string;
+  loader?: string;
+  provider?: string;
+  onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
 };
 
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
-  const [local, others] = splitProps(props, ['item', 'onInstall', 'class']);
+  const [local, others] = splitProps(props, [
+    'item',
+    'instanceId',
+    'gameVersion',
+    'loader',
+    'provider',
+    'onInstalled',
+    'class',
+  ]);
 
   const [{ t }] = useTranslate();
+
+  const [isInstalling, setIsInstalling] = createSignal(false);
+
+  const handleInstallContent = async () => {
+    if (!local.provider) {
+      return;
+    }
+
+    const payload: InstallContentPayload = {
+      gameVersion: local.gameVersion,
+      loader: local.loader,
+      contentType: local.item.contentType,
+      contentVersion: undefined,
+      provider: local.provider,
+      providerData: local.item.providerData,
+    };
+
+    setIsInstalling(true);
+    await installContent(local.instanceId, payload);
+    setIsInstalling(false);
+    local.onInstalled?.(local.item.providerData);
+  };
+
+  const installButtonText = createMemo(() => {
+    if (isInstalling()) {
+      return t('common.installing');
+    } else if (local.item.installed) {
+      return t('common.installed');
+    } else {
+      return t('common.install');
+    }
+  });
 
   return (
     <div
@@ -41,10 +96,11 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       <div class='ml-auto flex flex-col justify-end'>
         <Button
           class='px-3'
-          leadingIcon={MdiDownload}
-          onClick={local.onInstall}
+          leadingIcon={local.item.installed ? MdiCheck : MdiDownload}
+          onClick={handleInstallContent}
+          disabled={local.item.installed}
         >
-          {t('common.install')}
+          {installButtonText()}
         </Button>
       </div>
     </div>

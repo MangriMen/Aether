@@ -61,6 +61,7 @@ export interface InstanceFile {
   contentType: ContentType;
   path: string;
   disabled: boolean;
+  update: Record<string, Record<string, unknown>>;
 }
 
 export type WindowSize = [number, number];

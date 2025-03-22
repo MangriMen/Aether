@@ -31,7 +31,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_get_import_configs,
             instance_get_content_providers,
             instance_get_content_by_provider,
-            instance_install_content
+            instance_install_content,
+            instance_get_metadata_field_to_check_installed
         ])
         .build()
 }
@@ -159,4 +160,11 @@ pub async fn instance_install_content(
     payload: InstallContentPayload,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::install_content(&id, &payload).await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_metadata_field_to_check_installed(
+    provider: String,
+) -> AetherLauncherResult<String> {
+    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(&provider).await?)
 }
