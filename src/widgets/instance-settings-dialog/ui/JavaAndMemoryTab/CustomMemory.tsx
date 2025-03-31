@@ -9,25 +9,19 @@ import { MemorySlider } from '@/entities/instances';
 import { useTranslate } from '@/shared/model';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
-  defaultValue?: number;
+  systemMaxMemory: number;
+  defaultMaxMemory?: number;
+  instanceMaxMemory?: number;
   onChange?: (value: number | null) => void;
 };
 
 const minMemory = 512;
-const maxMemory = 32692;
-
-const getClampedMemory = (value: number | null) => {
-  if (value === null || value < minMemory) {
-    return minMemory;
-  } else if (value > maxMemory) {
-    return maxMemory;
-  }
-  return value;
-};
 
 const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const [local, others] = splitProps(props, [
-    'defaultValue',
+    'systemMaxMemory',
+    'defaultMaxMemory',
+    'instanceMaxMemory',
     'onChange',
     'class',
   ]);
@@ -38,13 +32,24 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const [memory, setMemory] = createSignal(minMemory);
   const [inputMemory, setInputMemory] = createSignal(minMemory.toString());
 
+  const getClampedMemory = (value: number | null) => {
+    if (value === null || value < minMemory) {
+      return minMemory;
+    } else if (value > local.systemMaxMemory) {
+      return local.systemMaxMemory;
+    }
+    return value;
+  };
+
   const setMemoryValue = (
     value: number | null,
     clampCallback: boolean = true,
   ) => {
     const clampedMemory = getClampedMemory(value);
-    setMemory(clampedMemory);
-    setInputMemory(clampedMemory.toString());
+    const defaultMemory = local.defaultMaxMemory ?? minMemory;
+    const memory = value ? clampedMemory : defaultMemory;
+    setMemory(memory);
+    setInputMemory(memory.toString());
     local.onChange?.(clampCallback ? clampedMemory : value);
   };
 
@@ -58,9 +63,11 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
   };
 
   createEffect(() => {
-    setCustomMemory(!!local.defaultValue);
+    setCustomMemory(!!local.instanceMaxMemory);
 
-    const clampedMemory = getClampedMemory(local.defaultValue ?? null);
+    const clampedMemory = getClampedMemory(
+      local.instanceMaxMemory ?? local.defaultMaxMemory ?? null,
+    );
     setInputMemory(clampedMemory.toString());
     setMemory(clampedMemory);
   });
@@ -81,8 +88,8 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
           class='mt-4'
           disabled={!customMemory()}
           minValue={minMemory}
-          maxValue={maxMemory}
-          warningValue={maxMemory / 2}
+          maxValue={local.systemMaxMemory}
+          warningValue={local.systemMaxMemory / 2}
           value={[memory()]}
           onChange={(value) => setMemoryValue(value[0])}
         />

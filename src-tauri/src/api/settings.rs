@@ -1,3 +1,4 @@
+use aether_core::state::Settings;
 use tauri::State;
 
 use crate::{
@@ -27,4 +28,14 @@ pub async fn set_action_on_instance_launch(
     save_settings(app_handle, &settings_state).await;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_settings() -> AetherLauncherResult<Settings> {
+    Ok(aether_core::api::settings::get().await?)
+}
+
+#[tauri::command]
+pub async fn get_max_ram() -> AetherLauncherResult<u64> {
+    Ok(aether_core::api::settings::get_max_ram())
 }
