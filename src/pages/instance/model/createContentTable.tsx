@@ -64,7 +64,7 @@ export const createContentTable = (props: CreateContentTableProps) => {
   );
   const [rowSelection, setRowSelection] = createSignal<RowSelectionState>({});
   const [pagination, setPagination] = createSignal<PaginationState>({
-    pageIndex: 1,
+    pageIndex: 0,
     pageSize: 20,
   });
 
