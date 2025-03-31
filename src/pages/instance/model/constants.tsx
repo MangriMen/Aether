@@ -1,3 +1,4 @@
+import { Show } from 'solid-js';
 import type { ColumnDef } from '@tanstack/solid-table';
 
 import { Icon } from '@iconify-icon/solid';
@@ -32,7 +33,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
     ),
   },
   {
-    accessorKey: 'fileName',
+    accessorKey: 'name',
     id: 'name',
     header: (props) => {
       const [{ t }] = useTranslate();
@@ -58,11 +59,16 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
     },
     cell: (props) => (
       <span
-        class={cn({
+        class={cn('inline-flex flex-col', {
           'text-muted-foreground': props.cell.row.original.disabled,
         })}
       >
-        {props.cell.row.original.fileName.replace('.disabled', '')}
+        <Show when={props.cell.row.original.name}>
+          {(name) => <span> {name()}</span>}
+        </Show>
+        <span class='text-muted-foreground'>
+          {props.cell.row.original.fileName.replace('.disabled', '')}
+        </span>
       </span>
     ),
   },

@@ -24,7 +24,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_remove,
             instance_get_contents,
             instance_toggle_disable_content,
+            instance_disable_contents,
+            instance_enable_contents,
             instance_remove_content,
+            instance_remove_contents,
             instance_launch,
             instance_stop,
             instance_import,
@@ -128,8 +131,32 @@ pub async fn instance_toggle_disable_content(
 }
 
 #[tauri::command]
+pub async fn instance_disable_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::disable_contents(&id, &content_paths).await?)
+}
+
+#[tauri::command]
+pub async fn instance_enable_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::enable_contents(&id, &content_paths).await?)
+}
+
+#[tauri::command]
 pub async fn instance_remove_content(id: String, content_path: String) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::remove_content(&id, &content_path).await?)
+}
+
+#[tauri::command]
+pub async fn instance_remove_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::remove_contents(&id, &content_paths).await?)
 }
 
 #[tauri::command]

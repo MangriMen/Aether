@@ -20,7 +20,10 @@
     "search": "Search",
     "install": "Install",
     "installing": "Installing",
-    "installed": "Installed"
+    "installed": "Installed",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete"
   },
   "account": {
     "title": "Account",
@@ -125,8 +128,6 @@
     "saveSettings": "Save settings",
     "custom": "Custom",
     "fromPlugin": "From plugin",
-    "disable": "Disable",
-    "enable": "Enable",
     "openPluginsFolder": "Open plugins folder"
   },
   "content": {

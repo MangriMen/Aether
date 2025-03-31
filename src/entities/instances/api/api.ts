@@ -87,10 +87,28 @@ export const toggleDisableInstanceContent = (id: string, contentPath: string) =>
     contentPath,
   });
 
+export const disableInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_disable_contents`, {
+    id,
+    contentPaths,
+  });
+
+export const enableInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_enable_contents`, {
+    id,
+    contentPaths,
+  });
+
 export const removeInstanceContent = (id: string, contentPath: string) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_content`, {
     id,
     contentPath,
+  });
+
+export const removeInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_contents`, {
+    id,
+    contentPaths,
   });
 
 export const getContentProviders = () =>

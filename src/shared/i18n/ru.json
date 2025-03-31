@@ -20,7 +20,10 @@
     "search": "Искать",
     "install": "Установить",
     "installing": "Установка",
-    "installed": "Установлено"
+    "installed": "Установлено",
+    "disable": "Отключить",
+    "enable": "Включить",
+    "delete": "Удалить"
   },
   "account": {
     "title": "Аккаунт",
@@ -125,8 +128,6 @@
     "saveSettings": "Сохранить настройки",
     "custom": "Пользовательские",
     "fromPlugin": "Из плагина",
-    "disable": "Отключить",
-    "enable": "Включить",
     "openPluginsFolder": "Открыть папку плагинов"
   },
   "content": {

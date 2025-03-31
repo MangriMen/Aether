@@ -14,6 +14,7 @@ import type {
   RowSelectionState,
   PaginationState,
   ColumnDef,
+  RowModel,
 } from '@tanstack/solid-table';
 import type { InstanceFile } from '@/entities/instances';
 import { CONTENT_TABLE_COLUMNS } from './constants';
@@ -23,6 +24,7 @@ export interface CreateContentTableProps {
     allRowsSelected?: boolean;
     someRowsSelected?: boolean;
     refetch?: () => void;
+    selectedRows: RowModel<InstanceFile>;
   }>;
   contentActions: Component<{ file: InstanceFile }>;
   data: Accessor<InstanceFile[]>;
@@ -39,6 +41,7 @@ export const createContentTable = (props: CreateContentTableProps) => {
           <props.headerActions
             allRowsSelected={rowProps.table.getIsAllPageRowsSelected()}
             someRowsSelected={rowProps.table.getIsSomePageRowsSelected()}
+            selectedRows={rowProps.table.getSelectedRowModel()}
             refetch={props.refetch}
           />
         </div>
