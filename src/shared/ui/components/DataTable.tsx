@@ -18,6 +18,7 @@ import {
 type DataTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[];
   isLoading?: boolean;
+  noContentPlaceholder?: string;
 } & (
   | { data: TData[]; columnsCount?: never; table?: never }
   | { data?: never; columnsCount?: number; table?: SolidTable<TData> }
@@ -72,7 +73,7 @@ export const DataTable = <TData, TValue>(
                   colSpan={props.columns.length}
                   class='h-24 text-center'
                 >
-                  No results.
+                  {props.noContentPlaceholder}
                 </TableCell>
               </TableRow>
             }

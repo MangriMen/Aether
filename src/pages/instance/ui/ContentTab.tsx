@@ -17,6 +17,7 @@ import {
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
 import { useNavigate } from '@solidjs/router';
+import { InstallContentButton } from './InstallContentButton';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -44,11 +45,20 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
-        when={instanceContent.array !== undefined && instanceContent.array}
+        when={
+          instanceContent.array !== undefined &&
+          !!instanceContent.array.length &&
+          instanceContent.array
+        }
         fallback={
-          <span class='mx-auto mt-20 text-lg text-muted-foreground'>
-            {t('instance.noContent')}
-          </span>
+          <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
+            <span class='text-lg text-muted-foreground'>
+              {t('instance.noContent')}
+            </span>
+            <InstallContentButton
+              onInstallContentClick={handleInstallContent}
+            />
+          </div>
         }
       >
         {(items) => (
@@ -56,7 +66,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
             <ContentControls
               contentsCount={items().length ?? 0}
               onSearch={setSearch}
-              onInstallContent={handleInstallContent}
+              onInstallContentClick={handleInstallContent}
             />
             <ContentTable
               data={items()}

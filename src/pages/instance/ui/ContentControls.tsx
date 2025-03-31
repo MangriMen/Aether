@@ -3,39 +3,25 @@ import {
   splitProps,
   type Component,
   type ComponentProps,
-  For,
 } from 'solid-js';
 
-import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
-import {
-  Button,
-  CombinedTextField,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  IconButton,
-  Separator,
-} from '@/shared/ui';
+import { CombinedTextField } from '@/shared/ui';
 import { cn } from '@/shared/lib';
-import { CONTENT_TYPES } from '@/entities/instances';
-import { useTranslate } from '@/shared/model';
+import { InstallContentButton } from './InstallContentButton';
 
 export type ContentControlsProps = ComponentProps<'div'> & {
   contentsCount: number;
   onSearch?: (query: string) => void;
-  onInstallContent?: () => void;
+  onInstallContentClick?: () => void;
 };
 
 export const ContentControls: Component<ContentControlsProps> = (props) => {
   const [local, others] = splitProps(props, [
     'contentsCount',
     'onSearch',
-    'onInstallContent',
+    'onInstallContentClick',
     'class',
   ]);
-
-  const [{ t }] = useTranslate();
 
   const searchPlaceholder = createMemo(
     () => `Search ${local.contentsCount} contents`,
@@ -49,7 +35,10 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
         inputProps={{ type: 'text', placeholder: searchPlaceholder() }}
         onChange={local.onSearch}
       />
-      <div class='flex'>
+      <InstallContentButton
+        onInstallContentClick={local.onInstallContentClick}
+      />
+      {/* <div class='flex'>
         <Button
           class='min-w-max rounded-r-none'
           onClick={local.onInstallContent}
@@ -73,7 +62,7 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
             </For>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -74,7 +74,7 @@
     "removeTitle": "Are you sure you want to delete instance {{name}}?",
     "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it.",
     "content": "Content",
-    "noContent": "You haven't added any content to this instance yet",
+    "noContent": "You don't have any installed content",
     "showFile": "Show file",
     "installContent": "Install content"
   },
