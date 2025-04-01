@@ -65,7 +65,11 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
         <Show when={props.cell.row.original.name}>
           {(name) => <span> {name()}</span>}
         </Show>
-        <span class='text-muted-foreground'>
+        <span
+          class={cn({
+            'text-muted-foreground': !!props.cell.row.original.name,
+          })}
+        >
           {props.cell.row.original.fileName.replace('.disabled', '')}
         </span>
       </span>

@@ -1,4 +1,5 @@
 import {
+  ContentType,
   refetchInstanceContent,
   useInstanceContent,
   type Instance,
@@ -7,6 +8,7 @@ import {
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
+  createMemo,
   createSignal,
   Show,
   splitProps,
@@ -18,6 +20,7 @@ import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
 import { useNavigate } from '@solidjs/router';
 import { InstallContentButton } from './InstallContentButton';
+import { ModLoader } from '@/entities/minecrafts';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -42,6 +45,16 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
     return navigate(`/content?${searchParams.toString()}`);
   };
 
+  const availableContent = createMemo(() => {
+    if (!local.instance) {
+      return [];
+    } else if (local.instance.loader == ModLoader.Vanilla) {
+      return [ContentType.ResourcePack, ContentType.DataPack];
+    } else {
+      return undefined;
+    }
+  });
+
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
@@ -56,7 +69,9 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
               {t('instance.noContent')}
             </span>
             <InstallContentButton
+              instanceId={local.instance.id}
               onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
             />
           </div>
         }
@@ -64,9 +79,11 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
         {(items) => (
           <>
             <ContentControls
+              instanceId={local.instance.id}
               contentsCount={items().length ?? 0}
               onSearch={setSearch}
               onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
             />
             <ContentTable
               data={items()}

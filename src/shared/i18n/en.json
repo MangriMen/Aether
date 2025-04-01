@@ -23,7 +23,8 @@
     "installed": "Installed",
     "disable": "Disable",
     "enable": "Enable",
-    "delete": "Delete"
+    "delete": "Delete",
+    "add": "Add"
   },
   "account": {
     "title": "Account",
@@ -137,6 +138,7 @@
     "dataPacks": "Data Packs",
     "resourcePacks": "Resource Packs",
     "shaders": "Shaders",
-    "providerErrorOrNotFound": "Provider not found or error getting content"
+    "providerErrorOrNotFound": "Provider not found or error getting content",
+    "provider": "Provider"
   }
 }

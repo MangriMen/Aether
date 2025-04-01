@@ -84,7 +84,7 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
             <ContentBrowser
               instance={instance()}
               providers={contentProviders() ?? []}
-              availableContent={availableContent()}
+              contentTypes={availableContent()}
             />
           </>
         )}

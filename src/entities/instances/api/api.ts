@@ -11,6 +11,7 @@ import type {
   MinecraftProcessMetadata,
   ContentResponse,
   InstallContentPayload,
+  ContentType,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -133,3 +134,14 @@ export const getMetadataFieldToCheckInstalled = (provider: string) =>
     `${PLUGIN_INSTANCE_PREFIX}instance_get_metadata_field_to_check_installed`,
     { provider },
   );
+
+export const importContents = (
+  id: string,
+  paths: string[],
+  contentType: ContentType,
+) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_import_contents`, {
+    id,
+    paths,
+    contentType,
+  });

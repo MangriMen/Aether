@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use aether_core::state::{
-    ContentRequest, ContentResponse, ImportConfig, InstallContentPayload, Instance, InstanceFile,
-    MinecraftProcessMetadata,
+    ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload, Instance,
+    InstanceFile, MinecraftProcessMetadata,
 };
 use dashmap::DashMap;
 use uuid::Uuid;
@@ -35,7 +35,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_get_content_providers,
             instance_get_content_by_provider,
             instance_install_content,
-            instance_get_metadata_field_to_check_installed
+            instance_get_metadata_field_to_check_installed,
+            instance_import_contents
         ])
         .build()
 }
@@ -194,4 +195,18 @@ pub async fn instance_get_metadata_field_to_check_installed(
     provider: String,
 ) -> AetherLauncherResult<String> {
     Ok(aether_core::api::instance::get_metadata_field_to_check_installed(&provider).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import_contents(
+    id: &str,
+    paths: Vec<String>,
+    content_type: ContentType,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::import_contents(
+        id,
+        paths.iter().map(Path::new).collect(),
+        content_type,
+    )
+    .await?)
 }

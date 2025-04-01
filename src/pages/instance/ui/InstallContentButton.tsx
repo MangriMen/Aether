@@ -15,10 +15,17 @@ import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 import MdiPlusIcon from '@iconify/icons-mdi/plus';
 
 import { useTranslate } from '@/shared/model';
-import type { ContentType } from '@/entities/instances';
-import { CONTENT_TYPES } from '@/entities/instances';
+import type { ContentType, Instance } from '@/entities/instances';
+import {
+  CONTENT_TYPE_TO_TITLE,
+  CONTENT_TYPES,
+  importContents,
+} from '@/entities/instances';
+import { open } from '@tauri-apps/plugin-dialog';
+import { OPEN_FILTERS_BY_CONTENT_TYPE } from '../model';
 
 export type InstallContentButtonProps = ComponentProps<'div'> & {
+  instanceId: Instance['id'];
   onInstallContentClick?: () => void;
   contentTypes?: ContentType[];
   disabled?: boolean;
@@ -28,6 +35,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'instanceId',
     'onInstallContentClick',
     'disabled',
     'class',
@@ -36,6 +44,20 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
   const [{ t }] = useTranslate();
 
   const contentTypes = createMemo(() => props.contentTypes || CONTENT_TYPES);
+
+  const handleAddContents = async (contentType: ContentType) => {
+    const paths = await open({
+      multiple: true,
+      directory: false,
+      filters: OPEN_FILTERS_BY_CONTENT_TYPE[contentType],
+    });
+
+    if (!paths) {
+      return;
+    }
+
+    importContents(local.instanceId, paths, contentType);
+  };
 
   return (
     <div class={cn('flex', local.class)} {...others}>
@@ -53,12 +75,19 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
           class='rounded-l-none p-0 text-xl'
           size='sm'
           icon={MdiChevronDownIcon}
-          disabled
         />
         <DropdownMenuContent>
           <For each={contentTypes()}>
             {(contentType) => (
-              <DropdownMenuItem>Add {contentType}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddContents(contentType)}>
+                <span>
+                  {t('common.add')}
+                  &nbsp;
+                  <span class='lowercase'>
+                    {t(`content.${CONTENT_TYPE_TO_TITLE[contentType]}`)}
+                  </span>
+                </span>
+              </DropdownMenuItem>
             )}
           </For>
         </DropdownMenuContent>

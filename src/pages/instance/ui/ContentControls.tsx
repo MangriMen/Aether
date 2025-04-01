@@ -7,19 +7,25 @@ import {
 
 import { CombinedTextField } from '@/shared/ui';
 import { cn } from '@/shared/lib';
+import type { InstallContentButtonProps } from './InstallContentButton';
 import { InstallContentButton } from './InstallContentButton';
+import type { Instance } from '@/entities/instances';
 
-export type ContentControlsProps = ComponentProps<'div'> & {
-  contentsCount: number;
-  onSearch?: (query: string) => void;
-  onInstallContentClick?: () => void;
-};
+export type ContentControlsProps = ComponentProps<'div'> &
+  Pick<InstallContentButtonProps, 'contentTypes'> & {
+    instanceId: Instance['id'];
+    contentsCount: number;
+    onSearch?: (query: string) => void;
+    onInstallContentClick?: () => void;
+  };
 
 export const ContentControls: Component<ContentControlsProps> = (props) => {
   const [local, others] = splitProps(props, [
+    'instanceId',
     'contentsCount',
     'onSearch',
     'onInstallContentClick',
+    'contentTypes',
     'class',
   ]);
 
@@ -36,33 +42,10 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
         onChange={local.onSearch}
       />
       <InstallContentButton
+        instanceId={local.instanceId}
         onInstallContentClick={local.onInstallContentClick}
+        contentTypes={local.contentTypes}
       />
-      {/* <div class='flex'>
-        <Button
-          class='min-w-max rounded-r-none'
-          onClick={local.onInstallContent}
-        >
-          {t('instance.installContent')}
-        </Button>
-        <Separator orientation='vertical' />
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            as={IconButton}
-            class='rounded-l-none p-0 text-xl'
-            size='sm'
-            icon={MdiChevronDownIcon}
-            disabled
-          />
-          <DropdownMenuContent>
-            <For each={CONTENT_TYPES}>
-              {(contentType) => (
-                <DropdownMenuItem>Add {contentType}</DropdownMenuItem>
-              )}
-            </For>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div> */}
     </div>
   );
 };

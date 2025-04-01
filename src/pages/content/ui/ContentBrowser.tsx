@@ -1,4 +1,5 @@
 import {
+  CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
   ContentType,
   getMetadataFieldToCheckInstalled,
@@ -29,7 +30,6 @@ import {
 } from 'solid-js';
 import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
-import { CONTENT_TYPE_TO_TITLE } from '../model';
 import { debounce } from '@solid-primitives/scheduled';
 import { ContentListSkeleton } from './ContentListSkeleton';
 import { useContent } from '../lib';
@@ -37,14 +37,14 @@ import { useContent } from '../lib';
 export type ContentBrowserProps = ComponentProps<'div'> & {
   providers: Option<string>[];
   instance: Instance;
-  availableContent?: ContentType[];
+  contentTypes?: ContentType[];
 };
 
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const [local, others] = splitProps(props, [
     'providers',
     'instance',
-    'availableContent',
+    'contentTypes',
     'class',
   ]);
 
@@ -55,7 +55,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   );
 
   const availableContentTabs = createMemo(
-    () => local.availableContent ?? CONTENT_TYPES,
+    () => local.contentTypes ?? CONTENT_TYPES,
   );
 
   const [searchQuery, setSearchQuery] = createSignal<string | undefined>();
@@ -164,14 +164,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       class={cn('flex flex-col grow gap-2 overflow-hidden p-1', local.class)}
       {...others}
     >
-      <div class='flex gap-2'>
-        <CombinedSelect
-          options={local.providers}
-          value={provider()}
-          onChange={handleSetProvider}
-          optionValue='value'
-          optionTextValue='name'
-        />
+      <div class='flex justify-between gap-2'>
         <Tabs onChange={setContentType}>
           <TabsList>
             <For each={availableContentTabs()}>
@@ -183,15 +176,27 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
             </For>
           </TabsList>
         </Tabs>
+        <div class='flex items-center gap-2'>
+          <span class='text-muted-foreground'>{t('content.provider')}:</span>
+          <CombinedSelect
+            options={local.providers}
+            value={provider()}
+            onChange={handleSetProvider}
+            optionValue='value'
+            optionTextValue='name'
+            title='Provider'
+          />
+        </div>
       </div>
       <ContentFilters
         pageSize={pageSize()}
-        pageCount={content()?.data?.pageCount ?? 0}
+        pageCount={content()?.data?.pageCount ?? 10}
         currentPage={page()}
         onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         contentType={contentType()}
+        loading={!content().data?.items.length}
       />
       <Switch>
         <Match when={isContentLoading()}>

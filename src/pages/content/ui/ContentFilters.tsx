@@ -1,4 +1,4 @@
-import type { ContentType } from '@/entities/instances';
+import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
@@ -9,6 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
 } from '@/shared/ui';
 import {
   createMemo,
@@ -17,7 +18,6 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import { CONTENT_TYPE_TO_TITLE } from '../model';
 
 export type ContentFiltersProps = ComponentProps<'div'> & {
   pageCount: number;
@@ -27,6 +27,7 @@ export type ContentFiltersProps = ComponentProps<'div'> & {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   contentType?: ContentType;
+  loading?: boolean;
 };
 
 const PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50];
@@ -40,6 +41,7 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
     'onPageChange',
     'onPageSizeChange',
     'contentType',
+    'loading',
     'class',
   ]);
 
@@ -65,7 +67,7 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
         }}
         onChange={local.onSearch}
       />
-      <div class='flex justify-between'>
+      <div class='flex justify-between gap-2'>
         <Select
           options={PER_PAGE_OPTIONS}
           value={local.pageSize}
@@ -86,13 +88,19 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
           <SelectContent />
         </Select>
 
-        <Show when={local.pageCount > 1}>
-          <CombinedPagination
-            siblingCount={1}
-            count={local.pageCount}
-            page={local.currentPage}
-            onPageChange={local.onPageChange}
-          />
+        <Show
+          when={!local.loading}
+          fallback={<Skeleton width={200} radius={6} class='bg-secondary' />}
+        >
+          <Show when={local.pageCount > 1}>
+            <CombinedPagination
+              siblingCount={1}
+              count={local.pageCount}
+              page={local.currentPage}
+              onPageChange={local.onPageChange}
+              disabled={local.loading}
+            />
+          </Show>
         </Show>
       </div>
     </div>

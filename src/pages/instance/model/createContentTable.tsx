@@ -17,7 +17,7 @@ import type {
   RowModel,
 } from '@tanstack/solid-table';
 import type { InstanceFile } from '@/entities/instances';
-import { CONTENT_TABLE_COLUMNS } from './constants';
+import { CONTENT_TABLE_COLUMNS } from './contentTableColumns';
 
 export interface CreateContentTableProps {
   headerActions: Component<{

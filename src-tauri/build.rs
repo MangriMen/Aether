@@ -37,6 +37,7 @@ fn main() {
             "instance_get_content_by_provider",
             "instance_install_content",
             "instance_get_metadata_field_to_check_installed",
+            "instance_import_contents",
         ]),
     );
 
