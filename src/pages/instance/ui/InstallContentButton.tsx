@@ -65,6 +65,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
         class='min-w-max rounded-r-none'
         leadingIcon={MdiPlusIcon}
         onClick={local.onInstallContentClick}
+        disabled={local.disabled}
       >
         {t('instance.installContent')}
       </Button>
@@ -75,6 +76,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
           class='rounded-l-none p-0 text-xl'
           size='sm'
           icon={MdiChevronDownIcon}
+          disabled={local.disabled}
         />
         <DropdownMenuContent>
           <For each={contentTypes()}>

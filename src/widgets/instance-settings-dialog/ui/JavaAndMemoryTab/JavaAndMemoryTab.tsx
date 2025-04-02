@@ -14,7 +14,8 @@ import { useTranslate } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
-import { getMaxRam, useSettings } from '@/entities/settings';
+import { useMaxRam, useSettings } from '@/entities/settings';
+import { MIN_JRE_MEMORY } from '../../model';
 
 export type JavaAndMemoryTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
@@ -26,10 +27,11 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const settings = useSettings();
 
-  const [maxMemory] = createResource(
-    () => getMaxRam().then((value) => Math.floor(value / 1024 / 1024)),
-    { initialValue: 512 },
-  );
+  const maxRam = useMaxRam();
+
+  const [maxMemory] = createResource(() => maxRam / 1024 / 1024, {
+    initialValue: MIN_JRE_MEMORY,
+  });
 
   const handleChangeMemoryDebounce = debounce(
     async (id: Instance['id'], value: number | null) => {

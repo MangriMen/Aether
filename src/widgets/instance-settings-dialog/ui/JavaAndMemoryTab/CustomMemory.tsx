@@ -1,5 +1,5 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createEffect, createSignal, splitProps } from 'solid-js';
+import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
@@ -7,6 +7,7 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import { MemorySlider } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
+import { MIN_JRE_MEMORY } from '../../model';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   systemMaxMemory: number;
@@ -14,8 +15,6 @@ export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   instanceMaxMemory?: number;
   onChange?: (value: number | null) => void;
 };
-
-const minMemory = 512;
 
 const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -28,13 +27,15 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
+  const warningValue = createMemo(() => local.systemMaxMemory / 2);
+
   const [customMemory, setCustomMemory] = createSignal(false);
-  const [memory, setMemory] = createSignal(minMemory);
-  const [inputMemory, setInputMemory] = createSignal(minMemory.toString());
+  const [memory, setMemory] = createSignal(MIN_JRE_MEMORY);
+  const [inputMemory, setInputMemory] = createSignal(MIN_JRE_MEMORY.toString());
 
   const getClampedMemory = (value: number | null) => {
-    if (value === null || value < minMemory) {
-      return minMemory;
+    if (value === null || value < MIN_JRE_MEMORY) {
+      return MIN_JRE_MEMORY;
     } else if (value > local.systemMaxMemory) {
       return local.systemMaxMemory;
     }
@@ -46,7 +47,7 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
     clampCallback: boolean = true,
   ) => {
     const clampedMemory = getClampedMemory(value);
-    const defaultMemory = local.defaultMaxMemory ?? minMemory;
+    const defaultMemory = local.defaultMaxMemory ?? MIN_JRE_MEMORY;
     const memory = value ? clampedMemory : defaultMemory;
     setMemory(memory);
     setInputMemory(memory.toString());
@@ -87,9 +88,9 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
         <MemorySlider
           class='mt-4'
           disabled={!customMemory()}
-          minValue={minMemory}
+          minValue={MIN_JRE_MEMORY}
           maxValue={local.systemMaxMemory}
-          warningValue={local.systemMaxMemory / 2}
+          warningValue={warningValue()}
           value={[memory()]}
           onChange={(value) => setMemoryValue(value[0])}
         />

@@ -1,5 +1,6 @@
 import {
   ContentType,
+  InstanceInstallStage,
   refetchInstanceContent,
   useInstanceContent,
   type Instance,
@@ -8,6 +9,7 @@ import {
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
+  createEffect,
   createMemo,
   createSignal,
   Show,
@@ -32,6 +34,14 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   const navigate = useNavigate();
 
   const [{ t }] = useTranslate();
+
+  const isInstalling = createMemo(
+    () => local.instance.installStage !== InstanceInstallStage.Installed,
+  );
+
+  createEffect(() => {
+    console.log(local.instance.installStage);
+  });
 
   const instanceContent = useInstanceContent(() => local.instance.id);
 
@@ -72,6 +82,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
               instanceId={local.instance.id}
               onInstallContentClick={handleInstallContent}
               contentTypes={availableContent()}
+              disabled={isInstalling()}
             />
           </div>
         }
@@ -84,6 +95,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
               onSearch={setSearch}
               onInstallContentClick={handleInstallContent}
               contentTypes={availableContent()}
+              isInstalling={isInstalling()}
             />
             <ContentTable
               data={items()}

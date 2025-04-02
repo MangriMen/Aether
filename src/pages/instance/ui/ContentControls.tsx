@@ -15,6 +15,7 @@ export type ContentControlsProps = ComponentProps<'div'> &
   Pick<InstallContentButtonProps, 'contentTypes'> & {
     instanceId: Instance['id'];
     contentsCount: number;
+    isInstalling?: boolean;
     onSearch?: (query: string) => void;
     onInstallContentClick?: () => void;
   };
@@ -23,6 +24,7 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
   const [local, others] = splitProps(props, [
     'instanceId',
     'contentsCount',
+    'isInstalling',
     'onSearch',
     'onInstallContentClick',
     'contentTypes',
@@ -45,6 +47,7 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
         instanceId={local.instanceId}
         onInstallContentClick={local.onInstallContentClick}
         contentTypes={local.contentTypes}
+        disabled={local.isInstalling}
       />
     </div>
   );

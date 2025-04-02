@@ -1,11 +1,13 @@
 import {
   installInstance,
+  InstanceInstallStage,
   updateInstance,
   type InstanceSettingsTabProps,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { Button, Image, LabeledField, showToast } from '@/shared/ui';
 import {
+  createMemo,
   Show,
   splitProps,
   type Component,
@@ -48,6 +50,10 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     }
   };
 
+  const isInstalling = createMemo(
+    () => local.instance.installStage !== InstanceInstallStage.Installed,
+  );
+
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <LabeledField label='Currently installed'>
@@ -69,6 +75,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
                 size='sm'
                 variant='ghost'
                 onClick={handleUpdate}
+                disabled={isInstalling()}
               >
                 Update
               </Button>
@@ -79,6 +86,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               variant='ghostWarning'
               leadingIcon={MdiHammerIcon}
               onClick={handleRepair}
+              disabled={isInstalling()}
             >
               Repair
             </Button>
