@@ -1,5 +1,5 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, onCleanup, splitProps } from 'solid-js';
+import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
@@ -14,6 +14,8 @@ import { useTranslate } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
+import { useMaxRam, useSettings } from '@/entities/settings';
+import { MIN_JRE_MEMORY } from '../../model';
 
 export type JavaAndMemoryTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
@@ -22,6 +24,14 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslate();
+
+  const settings = useSettings();
+
+  const maxRam = useMaxRam();
+
+  const [maxMemory] = createResource(() => maxRam / 1024 / 1024, {
+    initialValue: MIN_JRE_MEMORY,
+  });
 
   const handleChangeMemoryDebounce = debounce(
     async (id: Instance['id'], value: number | null) => {
@@ -69,7 +79,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <CustomMemory
-        defaultValue={local.instance.memory?.maximum}
+        systemMaxMemory={maxMemory()}
+        defaultMaxMemory={settings?.memory.maximum}
+        instanceMaxMemory={local.instance.memory?.maximum}
         onChange={handleChangeMemory}
       />
       <CustomTextField

@@ -21,7 +21,9 @@ export type ContentTableProps = {
 
 export const ContentTable: Component<ContentTableProps> = (props) => {
   const { table, columns } = createContentTable({
-    headerActions: HeaderActions,
+    headerActions: (localProps) => (
+      <HeaderActions instanceId={props.instanceId} {...localProps} />
+    ),
     contentActions: (localProps) => (
       <ContentActions
         instanceId={props.instanceId}

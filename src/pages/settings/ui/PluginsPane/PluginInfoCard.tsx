@@ -66,7 +66,7 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
       </div>
       <div>
         <Button size='sm' onClick={togglePluginEnabled} loading={isLoading()}>
-          {isPluginEnabled() ? t('plugins.disable') : t('plugins.enable')}
+          {isPluginEnabled() ? t('common.disable') : t('common.enable')}
         </Button>
       </div>
 

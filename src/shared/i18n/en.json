@@ -15,7 +15,16 @@
     "authors": "Authors",
     "refresh": "Refresh",
     "remove": "Remove",
-    "type": "Type"
+    "type": "Type",
+    "perPage": "View",
+    "search": "Search",
+    "install": "Install",
+    "installing": "Installing",
+    "installed": "Installed",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete",
+    "add": "Add"
   },
   "account": {
     "title": "Account",
@@ -66,8 +75,9 @@
     "removeTitle": "Are you sure you want to delete instance {{name}}?",
     "removeDescription": "If you proceed, all data for your instance will be permanently erased, including your worlds. You will not be able to recover it.",
     "content": "Content",
-    "noContent": "You haven't added any content to this instance yet",
-    "showFile": "Show file"
+    "noContent": "You don't have any installed content",
+    "showFile": "Show file",
+    "installContent": "Install content"
   },
   "createInstance": {
     "title": "Create instance",
@@ -119,8 +129,16 @@
     "saveSettings": "Save settings",
     "custom": "Custom",
     "fromPlugin": "From plugin",
-    "disable": "Disable",
-    "enable": "Enable",
     "openPluginsFolder": "Open plugins folder"
+  },
+  "content": {
+    "title": "Content",
+    "backToInstance": "Back to instance",
+    "mods": "Mods",
+    "dataPacks": "Data Packs",
+    "resourcePacks": "Resource Packs",
+    "shaders": "Shaders",
+    "providerErrorOrNotFound": "Provider not found or error getting content",
+    "provider": "Provider"
   }
 }

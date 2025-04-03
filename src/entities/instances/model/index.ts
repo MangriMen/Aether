@@ -6,3 +6,5 @@ export * from './runningInstancesContext';
 export * from './runningInstancesResource';
 export * from './settings';
 export * from './importConfigsResource';
+export * from './contentItem';
+export * from './instanceContentResource';

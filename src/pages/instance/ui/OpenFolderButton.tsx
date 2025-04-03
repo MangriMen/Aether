@@ -15,7 +15,7 @@ export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
     instance: Instance;
   };
 
-const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
+export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['instance']);
 
   const [{ t }] = useTranslate();
@@ -36,5 +36,3 @@ const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
     />
   );
 };
-
-export default OpenFolderButton;

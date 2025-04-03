@@ -17,7 +17,7 @@ export const MainLayout: Component<MainLayoutProps> = (props) => {
         createInstanceDialog={CreateInstanceDialog}
         createOfflineAccountDialog={CreateOfflineAccountDialog}
       />
-      <div class='size-full overflow-hidden rounded-tl-2xl bg-background'>
+      <div class='size-full overflow-hidden rounded-tl-2xl border-l border-t border-secondary-dark bg-background'>
         {local.children}
       </div>
     </div>

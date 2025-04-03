@@ -1,4 +1,9 @@
-use aether_core::state::{ImportConfig, Instance, InstanceFile, MinecraftProcessMetadata};
+use std::{collections::HashMap, path::Path};
+
+use aether_core::state::{
+    ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload, Instance,
+    InstanceFile, MinecraftProcessMetadata,
+};
 use dashmap::DashMap;
 use uuid::Uuid;
 
@@ -19,11 +24,19 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_remove,
             instance_get_contents,
             instance_toggle_disable_content,
+            instance_disable_contents,
+            instance_enable_contents,
             instance_remove_content,
+            instance_remove_contents,
             instance_launch,
             instance_stop,
             instance_import,
-            instance_get_import_configs
+            instance_get_import_configs,
+            instance_get_content_providers,
+            instance_get_content_by_provider,
+            instance_install_content,
+            instance_get_metadata_field_to_check_installed,
+            instance_import_contents
         ])
         .build()
 }
@@ -119,8 +132,32 @@ pub async fn instance_toggle_disable_content(
 }
 
 #[tauri::command]
+pub async fn instance_disable_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::disable_contents(&id, &content_paths).await?)
+}
+
+#[tauri::command]
+pub async fn instance_enable_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::enable_contents(&id, &content_paths).await?)
+}
+
+#[tauri::command]
 pub async fn instance_remove_content(id: String, content_path: String) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::remove_content(&id, &content_path).await?)
+}
+
+#[tauri::command]
+pub async fn instance_remove_contents(
+    id: String,
+    content_paths: Vec<String>,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::remove_contents(&id, &content_paths).await?)
 }
 
 #[tauri::command]
@@ -131,4 +168,45 @@ pub async fn instance_launch(id: String) -> AetherLauncherResult<MinecraftProces
 #[tauri::command]
 pub async fn instance_stop(uuid: Uuid) -> AetherLauncherResult<()> {
     Ok(aether_core::api::process::kill(uuid).await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_content_providers() -> AetherLauncherResult<HashMap<String, String>> {
+    Ok(aether_core::api::instance::get_content_providers().await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_content_by_provider(
+    payload: ContentRequest,
+) -> AetherLauncherResult<ContentResponse> {
+    Ok(aether_core::api::instance::get_content_by_provider(&payload).await?)
+}
+
+#[tauri::command]
+pub async fn instance_install_content(
+    id: String,
+    payload: InstallContentPayload,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::install_content(&id, &payload).await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_metadata_field_to_check_installed(
+    provider: String,
+) -> AetherLauncherResult<String> {
+    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(&provider).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import_contents(
+    id: &str,
+    paths: Vec<String>,
+    content_type: ContentType,
+) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::import_contents(
+        id,
+        paths.iter().map(Path::new).collect(),
+        content_type,
+    )
+    .await?)
 }

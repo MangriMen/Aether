@@ -11,9 +11,9 @@ use launcher::{process_exit, setup_app};
 pub use utils::result::*;
 
 use api::{
-    get_action_on_instance_launch, get_loader_versions_manifest, get_minecraft_version_manifest,
-    get_progress_bars, initialize_state, load_enabled_plugins, reveal_in_explorer,
-    set_action_on_instance_launch,
+    get_action_on_instance_launch, get_loader_versions_manifest, get_max_ram,
+    get_minecraft_version_manifest, get_progress_bars, get_settings, initialize_state,
+    load_enabled_plugins, reveal_in_explorer, set_action_on_instance_launch,
 };
 
 fn main() {
@@ -26,6 +26,10 @@ fn main() {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Debug)
+                // .filter(|metadata| {
+                //     metadata.target().starts_with("aether_core")
+                //         || metadata.target().starts_with("aether")
+                // })
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())
@@ -41,6 +45,8 @@ fn main() {
             get_loader_versions_manifest,
             get_progress_bars,
             reveal_in_explorer,
+            get_settings,
+            get_max_ram,
             get_action_on_instance_launch,
             set_action_on_instance_launch
         ])

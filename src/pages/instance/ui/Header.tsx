@@ -5,9 +5,9 @@ import type { Instance } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 
-import InstanceHeaderInfo from './InstanceInfo';
-import OpenFolderButton from './OpenFolderButton';
-import SettingsButton from './SettingsButton';
+import { InstanceHeaderInfo } from './InstanceHeaderInfo';
+import { OpenFolderButton } from './OpenFolderButton';
+import { SettingsButton } from './SettingsButton';
 import { Image } from '@/shared/ui';
 
 export type HeaderProps = ComponentProps<'div'> & {

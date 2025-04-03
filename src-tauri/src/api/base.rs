@@ -35,7 +35,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
                 metadata_dir: user_data_dir.clone(),
                 max_concurrent_downloads: 10,
 
-                memory: MemorySettings { maximum: 1024 },
+                memory: MemorySettings { maximum: 2048 },
                 game_resolution: WindowSize(960, 540),
                 custom_env_vars: vec![],
                 extra_launch_args: vec![],

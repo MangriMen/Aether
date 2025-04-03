@@ -1,14 +1,13 @@
 import type { ModLoader } from '@/entities/minecrafts/@x/instances';
 import type { ContentType } from './contentType';
+import type {
+  Hooks,
+  MemorySettings,
+  WindowSize,
+} from '@/entities/settings/@x/instances';
 
 export interface InstancePluginSettings {
   preLaunch?: string;
-}
-
-export interface Hooks {
-  pre_launch: string;
-  wrapper: string;
-  post_exit: string;
 }
 
 export interface PackInfo {
@@ -55,17 +54,14 @@ export interface Instance {
 }
 
 export interface InstanceFile {
+  hash: string;
+  name?: string;
   fileName: string;
   size: number;
   contentType: ContentType;
   path: string;
   disabled: boolean;
-}
-
-export type WindowSize = [number, number];
-
-export interface MemorySettings {
-  maximum: number;
+  update: Record<string, Record<string, unknown>>;
 }
 
 export enum InstanceInstallStage {

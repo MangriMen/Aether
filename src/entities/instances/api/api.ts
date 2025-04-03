@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 import type {
+  ContentRequest,
   ImportHandler,
   Instance,
   InstanceCreateDto,
@@ -8,6 +9,9 @@ import type {
   InstanceFile,
   InstanceImportDto,
   MinecraftProcessMetadata,
+  ContentResponse,
+  InstallContentPayload,
+  ContentType,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -55,24 +59,6 @@ export const editInstance = async (
   instanceEditDto: InstanceEditDto,
 ) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, { id, instanceEditDto });
 
-export const getInstanceContents = (id: string) =>
-  invoke<Record<string, InstanceFile>>(
-    `${PLUGIN_INSTANCE_PREFIX}instance_get_contents`,
-    { id },
-  );
-
-export const toggleDisableInstanceContent = (id: string, contentPath: string) =>
-  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_toggle_disable_content`, {
-    id,
-    contentPath,
-  });
-
-export const removeInstanceContent = (id: string, contentPath: string) =>
-  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_content`, {
-    id,
-    contentPath,
-  });
-
 // Utils
 export const revealInExplorer = (path: string, exact = true) =>
   invoke('reveal_in_explorer', { path, exact });
@@ -88,3 +74,74 @@ export const getInstanceProcess = (id: string) =>
       id,
     },
   );
+
+// Content
+export const getInstanceContents = (id: string) =>
+  invoke<Record<string, InstanceFile>>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_contents`,
+    { id },
+  );
+
+export const toggleDisableInstanceContent = (id: string, contentPath: string) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_toggle_disable_content`, {
+    id,
+    contentPath,
+  });
+
+export const disableInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_disable_contents`, {
+    id,
+    contentPaths,
+  });
+
+export const enableInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_enable_contents`, {
+    id,
+    contentPaths,
+  });
+
+export const removeInstanceContent = (id: string, contentPath: string) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_content`, {
+    id,
+    contentPath,
+  });
+
+export const removeInstanceContents = (id: string, contentPaths: string[]) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_contents`, {
+    id,
+    contentPaths,
+  });
+
+export const getContentProviders = () =>
+  invoke<Record<string, string>>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_content_providers`,
+  );
+
+export const getContentByProvider = (payload: ContentRequest) =>
+  invoke<ContentResponse>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_content_by_provider`,
+    { payload },
+  );
+
+export const installContent = (id: string, payload: InstallContentPayload) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install_content`, {
+    id,
+    payload,
+  });
+
+export const getMetadataFieldToCheckInstalled = (provider: string) =>
+  invoke<string>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_get_metadata_field_to_check_installed`,
+    { provider },
+  );
+
+export const importContents = (
+  id: string,
+  paths: string[],
+  contentType: ContentType,
+) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_import_contents`, {
+    id,
+    paths,
+    contentType,
+  });

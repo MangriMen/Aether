@@ -6,3 +6,5 @@ export * from './InstanceStopButton';
 export * from './InstanceTitle';
 export * from './MemorySlider';
 export * from './RunningInstancesProvider';
+export * from './InstanceGameVersion';
+export * from './TimePlayed';

@@ -20,12 +20,3 @@ export const initializeRunningInstances = fetchRunningInstancesData;
 export const useRunningInstances = () => runningInstancesData;
 
 export const refetchRunningInstances = fetchRunningInstancesData;
-
-// export const createRunningInstanceDataResource = (id: Accessor<string>) =>
-//   createResource(id, (id) => {
-//     try {
-//       return getInstanceProcess(id);
-//     } catch {
-//       console.error("Can't get running instance");
-//     }
-//   });

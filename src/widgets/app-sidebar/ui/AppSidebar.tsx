@@ -31,6 +31,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     >
       <div class='flex flex-col items-center gap-2'>
         <HomeButton />
+        {/* <ContentButton /> */}
         <Separator />
         <CreateInstanceButton
           createInstanceDialog={local.createInstanceDialog}

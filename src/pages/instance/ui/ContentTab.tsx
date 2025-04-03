@@ -1,13 +1,16 @@
 import {
-  getInstanceContents,
+  ContentType,
+  InstanceInstallStage,
+  refetchInstanceContent,
+  useInstanceContent,
   type Instance,
-  type InstanceFile,
 } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
-  createResource,
+  createEffect,
+  createMemo,
   createSignal,
   Show,
   splitProps,
@@ -17,6 +20,9 @@ import {
 
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
+import { useNavigate } from '@solidjs/router';
+import { InstallContentButton } from './InstallContentButton';
+import { ModLoader } from '@/entities/minecrafts';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -25,41 +31,82 @@ export type ContentTabProps = ComponentProps<'div'> & {
 export const ContentTab: Component<ContentTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
+  const navigate = useNavigate();
+
   const [{ t }] = useTranslate();
 
-  const [contents, { refetch }] = createResource(
-    () => local.instance,
-    (instance) =>
-      getInstanceContents(instance.id)
-        .then((contentsObj) => Object.values<InstanceFile>(contentsObj))
-        .catch(() => []),
-    { initialValue: [] },
+  const isInstalling = createMemo(
+    () => local.instance.installStage !== InstanceInstallStage.Installed,
   );
 
+  createEffect(() => {
+    console.log(local.instance.installStage);
+  });
+
+  const instanceContent = useInstanceContent(() => local.instance.id);
+
   const [search, setSearch] = createSignal<string | undefined>();
+
+  const handleInstallContent = () => {
+    const searchParams = new URLSearchParams({
+      instance: local.instance.id,
+    });
+
+    return navigate(`/content?${searchParams.toString()}`);
+  };
+
+  const availableContent = createMemo(() => {
+    if (!local.instance) {
+      return [];
+    } else if (local.instance.loader == ModLoader.Vanilla) {
+      return [ContentType.ResourcePack, ContentType.DataPack];
+    } else {
+      return undefined;
+    }
+  });
 
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
-        when={contents.loading || contents()}
+        when={
+          instanceContent.array !== undefined &&
+          !!instanceContent.array.length &&
+          instanceContent.array
+        }
         fallback={
-          <span class='mx-auto mt-20 text-lg text-muted-foreground'>
-            {t('instance.noContent')}
-          </span>
+          <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
+            <span class='text-lg text-muted-foreground'>
+              {t('instance.noContent')}
+            </span>
+            <InstallContentButton
+              instanceId={local.instance.id}
+              onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
+              disabled={isInstalling()}
+            />
+          </div>
         }
       >
-        <ContentControls
-          contentsCount={contents().length}
-          onSearch={setSearch}
-        />
-        <ContentTable
-          data={contents()}
-          refetch={() => refetch()}
-          searchQuery={search()}
-          isLoading={contents.loading}
-          instanceId={local.instance.id}
-          instancePath={local.instance.path}
-        />
+        {(items) => (
+          <>
+            <ContentControls
+              instanceId={local.instance.id}
+              contentsCount={items().length ?? 0}
+              onSearch={setSearch}
+              onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
+              isInstalling={isInstalling()}
+            />
+            <ContentTable
+              data={items()}
+              refetch={() => refetchInstanceContent(local.instance.id)}
+              searchQuery={search()}
+              isLoading={instanceContent.loading}
+              instanceId={local.instance.id}
+              instancePath={local.instance.path}
+            />
+          </>
+        )}
       </Show>
     </div>
   );
