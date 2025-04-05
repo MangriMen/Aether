@@ -1,7 +1,9 @@
 use std::{collections::HashSet, path::PathBuf};
 
 use aether_core::{
-    features::settings::SettingsStorage, state::LauncherState, utils::io::read_json_async,
+    core::LauncherState,
+    features::settings::{Hooks, MemorySettings, Settings, SettingsStorage, WindowSize},
+    utils::io::read_json_async,
 };
 use tauri::AppHandle;
 
@@ -24,27 +26,27 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
     let mut need_update_settings = false;
 
-    let settings = read_json_async::<aether_core::features::settings::Settings>(settings_file)
+    let settings = read_json_async::<Settings>(settings_file)
         .await
         .unwrap_or_else(|_| {
             need_update_settings = true;
 
-            aether_core::features::settings::Settings {
+            Settings {
                 launcher_dir: user_data_dir.clone(),
                 metadata_dir: user_data_dir.clone(),
                 max_concurrent_downloads: 10,
 
-                memory: aether_core::features::settings::MemorySettings { maximum: 2048 },
-                game_resolution: aether_core::features::settings::WindowSize(960, 540),
+                memory: MemorySettings { maximum: 2048 },
+                game_resolution: WindowSize(960, 540),
                 custom_env_vars: vec![],
                 extra_launch_args: vec![],
-                hooks: aether_core::features::settings::Hooks::default(),
+                hooks: Hooks::default(),
 
                 enabled_plugins: HashSet::default(),
             }
         });
 
-    aether_core::state::LauncherState::init(&settings).await?;
+    LauncherState::init(&settings).await?;
 
     // let mut event_emitter = EventEmitter::new();
 
