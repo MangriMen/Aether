@@ -1,4 +1,7 @@
-use aether_core::state::{self, Instance, MemorySettings, ModLoader, WindowSize};
+use aether_core::{
+    features::settings::{MemorySettings, WindowSize},
+    state::{self, Instance, ModLoader},
+};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -17,8 +20,8 @@ pub struct InstanceLaunchDto {
     pub instance: Instance,
     pub env_args: Vec<(String, String)>,
     pub java_args: Vec<String>,
-    pub memory: state::MemorySettings,
-    pub resolution: state::WindowSize,
+    pub memory: MemorySettings,
+    pub resolution: WindowSize,
     pub credentials: state::Credentials,
 }
 

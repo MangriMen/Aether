@@ -1,8 +1,7 @@
 use std::{collections::HashSet, path::PathBuf};
 
 use aether_core::{
-    state::{Hooks, LauncherState, MemorySettings, Settings, WindowSize},
-    utils::io::read_json_async,
+    features::settings::SettingsStorage, state::LauncherState, utils::io::read_json_async,
 };
 use tauri::AppHandle;
 
@@ -25,21 +24,21 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
     let mut need_update_settings = false;
 
-    let settings = read_json_async::<aether_core::state::Settings>(settings_file)
+    let settings = read_json_async::<aether_core::features::settings::Settings>(settings_file)
         .await
         .unwrap_or_else(|_| {
             need_update_settings = true;
 
-            aether_core::state::Settings {
+            aether_core::features::settings::Settings {
                 launcher_dir: user_data_dir.clone(),
                 metadata_dir: user_data_dir.clone(),
                 max_concurrent_downloads: 10,
 
-                memory: MemorySettings { maximum: 2048 },
-                game_resolution: WindowSize(960, 540),
+                memory: aether_core::features::settings::MemorySettings { maximum: 2048 },
+                game_resolution: aether_core::features::settings::WindowSize(960, 540),
                 custom_env_vars: vec![],
                 extra_launch_args: vec![],
-                hooks: Hooks::default(),
+                hooks: aether_core::features::settings::Hooks::default(),
 
                 enabled_plugins: HashSet::default(),
             }
@@ -62,7 +61,10 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
 
     if need_update_settings {
-        if let Err(e) = aether_core::state::Settings::update(&state, &settings).await {
+        if let Err(e) = aether_core::features::settings::FsSettingsStorage
+            .upsert(&state, &settings)
+            .await
+        {
             log::error!("Failed to update settings: {}", e);
         }
     }
@@ -88,7 +90,7 @@ pub async fn load_enabled_plugins() -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
     let mut plugin_manager = state.plugin_manager.write().await;
 
-    let settings = Settings::get(&state).await?;
+    let settings = aether_core::api::settings::get().await?;
 
     for plugin in settings.enabled_plugins.iter() {
         if let Err(e) = plugin_manager.load_plugin(plugin).await {

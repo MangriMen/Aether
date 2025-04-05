@@ -1,4 +1,4 @@
-use aether_core::state::Settings;
+use aether_core::features::settings::Settings;
 use tauri::State;
 
 use crate::{
