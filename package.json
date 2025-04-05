@@ -2,6 +2,7 @@
   "name": "aether",
   "version": "0.4.1",
   "description": "",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -13,7 +14,9 @@
     "lint": "eslint && (npx steiger ./src || true)",
     "lint:fix": "eslint --fix && (npx steiger ./src --fix || true)"
   },
-  "license": "MIT",
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,css}": "bun lint"
+  },
   "dependencies": {
     "@kobalte/core": "^0.13.9",
     "@modular-forms/solid": "^0.25.0",
@@ -59,6 +62,7 @@
     "eslint-plugin-tailwindcss": "^3.18.0",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
     "postcss": "^8.5.1",
     "prettier": "^3.4.2",
     "steiger": "^0.5.5",
