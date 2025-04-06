@@ -1,4 +1,4 @@
-use aether_core::state::Account;
+use aether_core::features::auth::Account;
 use uuid::Uuid;
 
 use crate::AetherLauncherResult;

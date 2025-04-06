@@ -1,6 +1,9 @@
 use aether_core::{
-    features::settings::{MemorySettings, WindowSize},
-    state::{self, Instance, ModLoader},
+    features::{
+        auth::Credentials,
+        settings::{MemorySettings, WindowSize},
+    },
+    state::{Instance, ModLoader},
 };
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -22,7 +25,7 @@ pub struct InstanceLaunchDto {
     pub java_args: Vec<String>,
     pub memory: MemorySettings,
     pub resolution: WindowSize,
-    pub credentials: state::Credentials,
+    pub credentials: Credentials,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
