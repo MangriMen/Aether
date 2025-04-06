@@ -1,5 +1,5 @@
 use aether_core::core::LauncherState;
-use aether_core::state::{PluginMetadata, PluginSettings};
+use aether_core::features::plugins::{PluginMetadata, PluginSettings};
 
 use crate::AetherLauncherResult;
 
