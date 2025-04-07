@@ -1,8 +1,11 @@
 use std::{collections::HashMap, path::Path};
 
-use aether_core::state::{
-    ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload, Instance,
-    InstanceFile, MinecraftProcessMetadata,
+use aether_core::{
+    features::process::MinecraftProcessMetadata,
+    state::{
+        ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload,
+        Instance, InstanceFile,
+    },
 };
 use dashmap::DashMap;
 use uuid::Uuid;

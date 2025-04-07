@@ -1,4 +1,4 @@
-use aether_core::state::MinecraftProcessMetadata;
+use aether_core::features::process::MinecraftProcessMetadata;
 
 use crate::AetherLauncherResult;
 
