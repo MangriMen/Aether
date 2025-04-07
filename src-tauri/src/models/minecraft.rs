@@ -1,9 +1,9 @@
 use aether_core::{
+    features::instance::{Instance, ModLoader},
     features::{
         auth::Credentials,
         settings::{MemorySettings, WindowSize},
     },
-    state::{Instance, ModLoader},
 };
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
