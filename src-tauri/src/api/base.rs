@@ -2,7 +2,10 @@ use std::{collections::HashSet, path::PathBuf};
 
 use aether_core::{
     core::LauncherState,
-    features::settings::{Hooks, MemorySettings, Settings, SettingsStorage, WindowSize},
+    features::{
+        events::EventState,
+        settings::{Hooks, MemorySettings, Settings, SettingsStorage, WindowSize},
+    },
     utils::io::read_json_async,
 };
 use tauri::AppHandle;
@@ -58,7 +61,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     // let event_emitter_arc = Arc::new(tokio::sync::Mutex::new(event_emitter));
     // // let event_emitter_arc = event_state.lock().await.event_emitter.clone();
 
-    aether_core::state::EventState::init_with_app(app).await?;
+    EventState::init_with_app(app).await?;
 
     let state = LauncherState::get().await?;
 

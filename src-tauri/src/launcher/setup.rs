@@ -1,3 +1,4 @@
+use aether_core::features::events::LauncherEvent;
 use tauri::{App, Listener, Manager};
 
 use crate::state::load_settings;
@@ -11,12 +12,9 @@ pub fn setup_app(app: &mut App) -> tauri::Result<()> {
 
     let app_handle = app.handle().clone();
 
-    app.listen(
-        aether_core::event::LauncherEvent::Process.as_str(),
-        move |e| {
-            super::handle_instance_launch(&app_handle, e);
-        },
-    );
+    app.listen(LauncherEvent::Process.as_str(), move |e| {
+        super::handle_instance_launch(&app_handle, e);
+    });
 
     Ok(())
 }
