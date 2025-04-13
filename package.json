@@ -11,8 +11,11 @@
     "serve": "vite preview",
     "tauri": "tauri",
     "prepare": "husky || true",
-    "lint": "eslint && (npx steiger ./src || true)",
-    "lint:fix": "eslint --fix && (npx steiger ./src --fix || true)"
+    "lint": "eslint ",
+    "lint:fix": "eslint --fix",
+    "lint:arch": "(npx steiger ./src || true)",
+    "lint:fix:arch": "(npx steiger ./src --fix || true)",
+    "lint:full": "lint && lint:architecture"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx,css}": "bun lint"
