@@ -20,7 +20,7 @@ pub async fn get_accounts() -> AetherLauncherResult<Vec<Account>> {
 }
 
 #[tauri::command]
-pub async fn create_offline_account(username: String) -> AetherLauncherResult<()> {
+pub async fn create_offline_account(username: String) -> AetherLauncherResult<Uuid> {
     Ok(aether_core::api::credentials::create_offline_account(&username).await?)
 }
 

@@ -8,7 +8,7 @@ export const getAccounts = () =>
   invoke<Account[]>(`${PLUGIN_PREFIX}get_accounts`);
 
 export const createOfflineAccount = (username: string) =>
-  invoke(`${PLUGIN_PREFIX}create_offline_account`, { username });
+  invoke<string>(`${PLUGIN_PREFIX}create_offline_account`, { username });
 
 export const changeAccount = (id: Account['id']) =>
   invoke(`${PLUGIN_PREFIX}change_account`, { id });

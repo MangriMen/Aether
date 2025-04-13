@@ -1,4 +1,4 @@
-import type { ModLoader } from '@/entities/minecrafts';
+import type { ModLoader } from '@/entities/minecrafts/@x/instances';
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import { CombinedTooltip } from '@/shared/ui';
