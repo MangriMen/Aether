@@ -6,7 +6,7 @@ use aether_core::{
         events::EventState,
         settings::{Hooks, MemorySettings, Settings, SettingsStorage, WindowSize},
     },
-    utils::io::read_json_async,
+    shared::read_json_async,
 };
 use tauri::AppHandle;
 
