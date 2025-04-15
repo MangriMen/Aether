@@ -13,7 +13,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 
 #[tauri::command]
 pub async fn process_list() -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_all().await?)
+    Ok(aether_core::api::process::list().await?)
 }
 
 #[tauri::command]
