@@ -4,7 +4,7 @@ use aether_core::{
     core::LauncherState,
     features::{
         events::EventState,
-        settings::{Hooks, MemorySettings, Settings, SettingsStorage, WindowSize},
+        settings::{Hooks, MemorySettings, Settings, WindowSize},
     },
     shared::read_json_async,
 };
@@ -66,10 +66,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
 
     if need_update_settings {
-        if let Err(e) = aether_core::features::settings::FsSettingsStorage
-            .upsert(&state, &settings)
-            .await
-        {
+        if let Err(e) = aether_core::api::settings::upsert(&settings).await {
             log::error!("Failed to update settings: {}", e);
         }
     }
