@@ -9,5 +9,5 @@ export const loadEnabledPlugins = () => invoke('load_enabled_plugins');
 export const getMinecraftVersionManifest = () =>
   invoke<VersionManifest>('get_minecraft_version_manifest');
 
-export const getLoaderVersionsManifest = (loader: ModLoader) =>
-  invoke<LoaderManifest>('get_loader_versions_manifest', { loader });
+export const getLoaderVersionManifest = (loader: ModLoader) =>
+  invoke<LoaderManifest>('get_loader_version_manifest', { loader });

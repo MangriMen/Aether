@@ -30,7 +30,7 @@ import {
 } from '@/entities/instances';
 import type { LoaderVersion, Version } from '@/entities/minecrafts';
 import {
-  getLoaderVersionsManifest,
+  getLoaderVersionManifest,
   getMinecraftVersionManifest,
   ModLoader,
 } from '@/entities/minecrafts';
@@ -87,13 +87,13 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const versionManifest = createAsync(() => getMinecraftVersionManifest());
 
   const forgeVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Forge)),
+    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Forge)),
   );
   const fabricVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Fabric)),
+    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Fabric)),
   );
   const quiltVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionsManifest(ModLoader.Quilt)),
+    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Quilt)),
   );
 
   const loaderVersions = createMemo(() =>
