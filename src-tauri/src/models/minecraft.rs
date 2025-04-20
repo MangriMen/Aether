@@ -1,9 +1,8 @@
-use aether_core::{
-    features::instance::{Instance, ModLoader},
-    features::{
-        auth::Credentials,
-        settings::{MemorySettings, WindowSize},
-    },
+use aether_core::features::{
+    auth::Credentials,
+    instance::Instance,
+    minecraft::ModLoader,
+    settings::{MemorySettings, WindowSize},
 };
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Eq, PartialEq)]
