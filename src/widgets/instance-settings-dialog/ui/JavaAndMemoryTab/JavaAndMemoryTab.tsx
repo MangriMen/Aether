@@ -3,11 +3,7 @@ import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
-import type {
-  Instance,
-  InstanceEditDto,
-  InstanceSettingsTabProps,
-} from '@/entities/instances';
+import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
 import { editInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
@@ -35,10 +31,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const handleChangeMemoryDebounce = debounce(
     async (id: Instance['id'], value: number | null) => {
-      const dto: InstanceEditDto = {
+      editInstance(id, {
         memory: value ? { maximum: value } : undefined,
-      };
-      editInstance(id, dto);
+      });
     },
     300,
   );

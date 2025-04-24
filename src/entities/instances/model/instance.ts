@@ -75,45 +75,28 @@ export enum InstanceInstallStage {
   NotInstalled = 'not_installed',
 }
 
-export interface InstanceImportDto {
-  packType: string;
-  path: string;
-}
-
-export interface InstanceCreateDto {
+export interface NewInstance {
   name: string;
   gameVersion: string;
   modLoader: ModLoader;
   loaderVersion?: string;
   iconPath?: string;
   skipInstallProfile?: boolean;
+  packInfo?: PackInfo;
 }
 
-export interface InstanceEditDto {
+export interface EditInstance {
   name?: string;
-  javaPath?: string;
-  extraLaunchArgs?: string[];
-  customEnvVars?: Array<[string, string]>;
-  memory?: MemorySettings;
-  gameResolution?: WindowSize;
+  javaPath?: string | null;
+  extraLaunchArgs?: string[] | null;
+  customEnvVars?: Array<[string, string]> | null;
+  memory?: MemorySettings | null;
+  gameResolution?: WindowSize | null;
 }
 
-export interface InstanceLaunchDto {
-  instance: Instance;
-  envArgs: Array<[string, string]>;
-  javaArgs: string[];
-  memory: MemorySettings;
-  resolution: WindowSize;
-  credentials: Credentials;
-}
-
-export interface Credentials {
-  id: string;
-  username: string;
-  accessToken: string;
-  refreshToken: string;
-  expires: Date;
-  active: boolean;
+export interface InstanceImportDto {
+  packType: string;
+  path: string;
 }
 
 export interface ImportHandler {

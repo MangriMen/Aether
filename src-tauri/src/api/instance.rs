@@ -1,19 +1,17 @@
 use std::{collections::HashMap, path::Path};
 
-use aether_core::{
-    features::instance::{
-        ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload,
-        Instance, InstanceFile,
+use aether_core::features::{
+    events::emit_warning,
+    instance::{
+        ContentRequest, ContentResponse, ContentType, EditInstance, ImportConfig,
+        InstallContentPayload, Instance, InstanceFile, NewInstance,
     },
-    features::process::MinecraftProcessMetadata,
+    process::MinecraftProcessMetadata,
 };
 use dashmap::DashMap;
 use uuid::Uuid;
 
-use crate::{
-    models::minecraft::{InstanceCreateDto, InstanceEditDto, InstanceImportDto},
-    AetherLauncherResult,
-};
+use crate::{models::minecraft::InstanceImportDto, AetherLauncherResult};
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
@@ -45,20 +43,16 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 #[tauri::command]
-pub async fn instance_create(instance_create_dto: InstanceCreateDto) -> AetherLauncherResult<()> {
+pub async fn instance_create(new_instance: NewInstance) -> AetherLauncherResult<()> {
     tokio::spawn(async move {
-        aether_core::api::instance::create(
-            instance_create_dto.name,
-            instance_create_dto.game_version,
-            instance_create_dto.mod_loader,
-            instance_create_dto.loader_version,
-            instance_create_dto.icon_path,
-            instance_create_dto.skip_install_profile,
-            None,
-        )
-        .await
+        if let Err(err) = aether_core::api::instance::create(new_instance).await {
+            emit_warning(&format!("Error creating instance {}", err))
+                .await
+                .unwrap_or_else(|e| {
+                    log::error!("Error emitting warning: {}", e);
+                });
+        }
     });
-
     Ok(())
 }
 
@@ -87,9 +81,8 @@ pub async fn instance_get_import_configs() -> AetherLauncherResult<Vec<ImportCon
 }
 
 #[tauri::command]
-pub async fn instance_list() -> AetherLauncherResult<(Vec<Instance>, Vec<String>)> {
-    let res = aether_core::api::instance::get_all().await?;
-    Ok((res.0, res.1.iter().map(|err| err.to_string()).collect()))
+pub async fn instance_list() -> AetherLauncherResult<Vec<Instance>> {
+    Ok(aether_core::api::instance::list().await?)
 }
 
 #[tauri::command]
@@ -98,20 +91,8 @@ pub async fn instance_get(id: String) -> AetherLauncherResult<Instance> {
 }
 
 #[tauri::command]
-pub async fn instance_edit(
-    id: String,
-    instance_edit_dto: InstanceEditDto,
-) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::edit(
-        &id,
-        &instance_edit_dto.name,
-        &instance_edit_dto.java_path,
-        &instance_edit_dto.extra_launch_args,
-        &instance_edit_dto.custom_env_vars,
-        &instance_edit_dto.memory,
-        &instance_edit_dto.game_resolution,
-    )
-    .await?)
+pub async fn instance_edit(id: String, edit_instance: EditInstance) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::edit(&id, &edit_instance).await?)
 }
 
 #[tauri::command]

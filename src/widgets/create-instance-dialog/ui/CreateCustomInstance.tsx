@@ -22,7 +22,7 @@ import {
   showToast,
 } from '@/shared/ui';
 
-import type { InstanceCreateDto } from '@/entities/instances';
+import type { NewInstance } from '@/entities/instances';
 import {
   IncludeSnapshotsCheckbox,
   refetchInstances,
@@ -127,9 +127,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
     values,
   ) => {
+    console.log('Submit values', values);
     setIsCreating(true);
 
-    const payload: InstanceCreateDto = {
+    const payload: NewInstance = {
       name: values.name,
       gameVersion: values.gameVersion,
       modLoader: values.loader,

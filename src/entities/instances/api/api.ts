@@ -4,23 +4,23 @@ import type {
   ContentRequest,
   ImportHandler,
   Instance,
-  InstanceCreateDto,
-  InstanceEditDto,
+  NewInstance,
   InstanceFile,
   InstanceImportDto,
   MinecraftProcessMetadata,
   ContentResponse,
   InstallContentPayload,
   ContentType,
+  EditInstance,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
 
 const PLUGIN_PROCESS_PREFIX = 'plugin:process|';
 
-export const createInstance = (instanceCreateDto: InstanceCreateDto) =>
+export const createInstance = (newInstance: NewInstance) =>
   invoke<string>(`${PLUGIN_INSTANCE_PREFIX}instance_create`, {
-    instanceCreateDto,
+    newInstance,
   });
 
 export const installInstance = (id: Instance['id'], force: boolean = false) =>
@@ -40,7 +40,7 @@ export const getImportConfigs = () =>
   );
 
 export const listInstances = () =>
-  invoke<[Instance[], string[]]>(`${PLUGIN_INSTANCE_PREFIX}instance_list`);
+  invoke<Instance[]>(`${PLUGIN_INSTANCE_PREFIX}instance_list`);
 
 export const getInstance = (id: Instance['id']) =>
   invoke<Instance>(`${PLUGIN_INSTANCE_PREFIX}instance_get`, { id });
@@ -56,8 +56,12 @@ export const removeInstance = (id: Instance['id']) =>
 
 export const editInstance = async (
   id: Instance['id'],
-  instanceEditDto: InstanceEditDto,
-) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, { id, instanceEditDto });
+  editInstance: EditInstance,
+) =>
+  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, {
+    id,
+    instanceEditDto: editInstance,
+  });
 
 // Utils
 export const revealInExplorer = (path: string, exact = true) =>

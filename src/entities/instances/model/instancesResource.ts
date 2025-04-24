@@ -11,7 +11,7 @@ const [isMappedInstancesLoading, setIsMappedInstancesLoading] =
 const fetchInstances = async () => {
   try {
     setIsMappedInstancesLoading(true);
-    const [instances, _] = await listInstances();
+    const instances = await listInstances();
 
     for (const instance of instances) {
       mappedInstances.set(instance.id, instance);
