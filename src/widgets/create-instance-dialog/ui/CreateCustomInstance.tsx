@@ -127,7 +127,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
     values,
   ) => {
-    console.log('Submit values', values);
     setIsCreating(true);
 
     const payload: NewInstance = {

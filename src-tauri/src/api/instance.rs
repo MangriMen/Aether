@@ -189,8 +189,8 @@ pub async fn instance_import_contents(
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::import_contents(
         id,
-        paths.iter().map(Path::new).collect(),
         content_type,
+        paths.iter().map(Path::new).collect(),
     )
     .await?)
 }

@@ -9,7 +9,6 @@ import {
 import { cn } from '@/shared/lib';
 import { useTranslate } from '@/shared/model';
 import {
-  createEffect,
   createMemo,
   createSignal,
   Show,
@@ -38,10 +37,6 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   const isInstalling = createMemo(
     () => local.instance.installStage !== InstanceInstallStage.Installed,
   );
-
-  createEffect(() => {
-    console.log(local.instance.installStage);
-  });
 
   const instanceContent = useInstanceContent(() => local.instance.id);
 

@@ -60,7 +60,7 @@ export const editInstance = async (
 ) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, {
     id,
-    instanceEditDto: editInstance,
+    editInstance,
   });
 
 // Utils
