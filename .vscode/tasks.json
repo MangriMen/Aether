@@ -15,47 +15,47 @@
       "args": [
         "dev"
       ],
-      "problemMatcher": [
-        {
-          "owner": "vite",
-          "pattern": [
-            {
-              "regexp": "^\\s*(\\S.*?):(\\d+):(\\d+)\\s*(?:-(\\d+):(\\d+))?\\s*(warning|error)?\\s*(.*?)\\s*$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "endLine": 4,
-              "endColumn": 5,
-              "severity": 6,
-              "message": 7
-            }
-          ],
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": "^(\\s*VITE v\\d+\\.\\d+\\.\\d+)|(\\s*Building for production...)",
-            "endsPattern": "^(\\s*ready in \\d+ ms\\.)|(\\s*built in \\d+ ms\\.)"
-          }
-        },
-        {
-          "owner": "typescript",
-          "pattern": [
-            {
-              "regexp": "^\\s*(\\S.*?)\\((\\d+),(\\d+)\\):\\s*(error|warning|info)\\s*(TS\\d+)\\s*:\\s*(.*)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4,
-              "code": 5,
-              "message": 6
-            }
-          ],
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": "\\[TypeScript\\] Found \\d+ errors?",
-            "endsPattern": "\\[TypeScript\\] Found \\d+ errors?"
-          }
-        }
-      ]
+      // "problemMatcher": [
+      //   {
+      //     "owner": "vite",
+      //     "pattern": [
+      //       {
+      //         "regexp": "^\\s*(\\S.*?):(\\d+):(\\d+)\\s*(?:-(\\d+):(\\d+))?\\s*(warning|error)?\\s*(.*?)\\s*$",
+      //         "file": 1,
+      //         "line": 2,
+      //         "column": 3,
+      //         "endLine": 4,
+      //         "endColumn": 5,
+      //         "severity": 6,
+      //         "message": 7
+      //       }
+      //     ],
+      //     "background": {
+      //       "activeOnStart": true,
+      //       "beginsPattern": "^(\\s*VITE v\\d+\\.\\d+\\.\\d+)|(\\s*Building for production...)",
+      //       "endsPattern": "^(\\s*ready in \\d+ ms\\.)|(\\s*built in \\d+ ms\\.)"
+      //     }
+      //   },
+      //   {
+      //     "owner": "typescript",
+      //     "pattern": [
+      //       {
+      //         "regexp": "^\\s*(\\S.*?)\\((\\d+),(\\d+)\\):\\s*(error|warning|info)\\s*(TS\\d+)\\s*:\\s*(.*)$",
+      //         "file": 1,
+      //         "line": 2,
+      //         "column": 3,
+      //         "severity": 4,
+      //         "code": 5,
+      //         "message": 6
+      //       }
+      //     ],
+      //     "background": {
+      //       "activeOnStart": true,
+      //       "beginsPattern": "\\[TypeScript\\] Found \\d+ errors?",
+      //       "endsPattern": "\\[TypeScript\\] Found \\d+ errors?"
+      //     }
+      //   }
+      // ]
     },
     {
       "label": "ui:build",
