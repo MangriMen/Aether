@@ -93,7 +93,7 @@ pub async fn load_enabled_plugins() -> AetherLauncherResult<()> {
     let settings = aether_core::api::settings::get().await?;
 
     for plugin in settings.enabled_plugins.iter() {
-        if let Err(e) = plugin_service.load_plugin(plugin).await {
+        if let Err(e) = plugin_service.enable(plugin).await {
             log::error!("Failed to load plugin {}: {}", plugin, e);
         }
     }

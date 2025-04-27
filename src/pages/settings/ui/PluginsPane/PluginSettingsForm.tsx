@@ -55,6 +55,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
     if (form.submitting) {
       return;
     }
+
     setValues(form, {
       allowedHosts: settings?.allowed_hosts ?? [],
       allowedPaths: settings?.allowed_paths ?? [],

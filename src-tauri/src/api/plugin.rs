@@ -56,7 +56,7 @@ pub async fn call_plugin(id: String, data: String) -> AetherLauncherResult<()> {
 }
 
 #[tauri::command]
-pub async fn plugin_get_settings(id: String) -> AetherLauncherResult<PluginSettings> {
+pub async fn plugin_get_settings(id: String) -> AetherLauncherResult<Option<PluginSettings>> {
     Ok(aether_core::api::plugin::get_settings(&id).await?)
 }
 
