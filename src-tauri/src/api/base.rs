@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::PathBuf};
 
 use aether_core::{
-    core::LauncherState,
+    core::{domain::ServiceLocator, LauncherState},
     features::{
         events::EventState,
         settings::{Hooks, MemorySettings, Settings, WindowSize},
@@ -75,12 +75,10 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
         .await
         .unwrap();
 
-    let mut plugin_manager = state.plugin_manager.write().await;
+    let service_locator = ServiceLocator::get().await?;
+    let mut plugin_service = service_locator.plugin_service.write().await;
 
-    if let Err(e) = plugin_manager
-        .scan_plugins(&PathBuf::from(&state.locations.plugins_dir()))
-        .await
-    {
+    if let Err(e) = plugin_service.scan_plugins().await {
         log::error!("Failed to scan plugins: {}", e);
     }
 
@@ -89,13 +87,13 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
 #[tauri::command]
 pub async fn load_enabled_plugins() -> AetherLauncherResult<()> {
-    let state = LauncherState::get().await?;
-    let mut plugin_manager = state.plugin_manager.write().await;
+    let service_locator = ServiceLocator::get().await?;
+    let mut plugin_service = service_locator.plugin_service.write().await;
 
     let settings = aether_core::api::settings::get().await?;
 
     for plugin in settings.enabled_plugins.iter() {
-        if let Err(e) = plugin_manager.load_plugin(plugin).await {
+        if let Err(e) = plugin_service.load_plugin(plugin).await {
             log::error!("Failed to load plugin {}: {}", plugin, e);
         }
     }

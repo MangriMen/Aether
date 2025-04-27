@@ -1,5 +1,5 @@
 use aether_core::core::LauncherState;
-use aether_core::features::plugins::{PluginMetadata, PluginSettings};
+use aether_core::features::plugins::{EditPluginSettings, PluginManifest, PluginSettings};
 
 use crate::AetherLauncherResult;
 
@@ -26,12 +26,12 @@ pub async fn scan_plugins() -> AetherLauncherResult<()> {
 }
 
 #[tauri::command]
-pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginMetadata>> {
+pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginManifest>> {
     Ok(aether_core::api::plugin::list().await?)
 }
 
 #[tauri::command]
-pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginMetadata> {
+pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginManifest> {
     Ok(aether_core::api::plugin::get(&id).await?)
 }
 
@@ -63,7 +63,7 @@ pub async fn plugin_get_settings(id: String) -> AetherLauncherResult<PluginSetti
 #[tauri::command]
 pub async fn plugin_edit_settings(
     id: String,
-    settings: PluginSettings,
+    settings: EditPluginSettings,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::plugin::edit_settings(&id, &settings).await?)
 }
