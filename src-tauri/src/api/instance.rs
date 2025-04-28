@@ -3,8 +3,8 @@ use std::{collections::HashMap, path::Path};
 use aether_core::features::{
     events::emit_warning,
     instance::{
-        ContentRequest, ContentResponse, ContentType, EditInstance, ImportConfig,
-        InstallContentPayload, Instance, InstanceFile, NewInstance,
+        ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
+        ImportConfig, Instance, InstanceFile, NewInstance,
     },
     process::MinecraftProcessMetadata,
 };
@@ -161,15 +161,15 @@ pub async fn instance_get_content_providers() -> AetherLauncherResult<HashMap<St
 
 #[tauri::command]
 pub async fn instance_get_content_by_provider(
-    payload: ContentRequest,
-) -> AetherLauncherResult<ContentResponse> {
+    payload: ContentSearchParams,
+) -> AetherLauncherResult<ContentSearchResult> {
     Ok(aether_core::api::instance::get_content_by_provider(&payload).await?)
 }
 
 #[tauri::command]
 pub async fn instance_install_content(
     id: String,
-    payload: InstallContentPayload,
+    payload: ContentInstallParams,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::install_content(&id, &payload).await?)
 }
