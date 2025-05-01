@@ -37,5 +37,5 @@ pub async fn get_settings() -> AetherLauncherResult<Settings> {
 
 #[tauri::command]
 pub async fn get_max_ram() -> AetherLauncherResult<u64> {
-    Ok(aether_core::api::settings::get_max_ram())
+    Ok(aether_core::shared::infra::get_total_memory())
 }

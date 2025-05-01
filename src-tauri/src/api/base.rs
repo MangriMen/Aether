@@ -66,7 +66,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
 
     if need_update_settings {
-        if let Err(e) = aether_core::api::settings::upsert(&settings).await {
+        if let Err(e) = aether_core::api::settings::upsert(settings).await {
             log::error!("Failed to update settings: {}", e);
         }
     }
