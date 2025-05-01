@@ -20,5 +20,5 @@ pub async fn process_list() -> AetherLauncherResult<Vec<MinecraftProcessMetadata
 pub async fn process_get_by_instance_id(
     id: String,
 ) -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_by_instance_id(&id).await?)
+    Ok(aether_core::api::process::get_by_instance_id(id).await?)
 }
