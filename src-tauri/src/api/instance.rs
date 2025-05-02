@@ -146,7 +146,7 @@ pub async fn instance_remove_contents(
 
 #[tauri::command]
 pub async fn instance_launch(id: String) -> AetherLauncherResult<MinecraftProcessMetadata> {
-    Ok(aether_core::api::instance::run(&id).await?)
+    Ok(aether_core::api::instance::run(id).await?)
 }
 
 #[tauri::command]
