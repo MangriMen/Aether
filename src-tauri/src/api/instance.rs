@@ -58,12 +58,12 @@ pub async fn instance_create(new_instance: NewInstance) -> AetherLauncherResult<
 
 #[tauri::command]
 pub async fn instance_install(id: String, force: bool) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::install(&id, force).await?)
+    Ok(aether_core::api::instance::install(id, force).await?)
 }
 
 #[tauri::command]
 pub async fn instance_update(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::update(&id).await?)
+    Ok(aether_core::api::instance::update(id).await?)
 }
 
 #[tauri::command]
@@ -87,17 +87,17 @@ pub async fn instance_list() -> AetherLauncherResult<Vec<Instance>> {
 
 #[tauri::command]
 pub async fn instance_get(id: String) -> AetherLauncherResult<Instance> {
-    Ok(aether_core::api::instance::get(&id).await?)
+    Ok(aether_core::api::instance::get(id).await?)
 }
 
 #[tauri::command]
 pub async fn instance_edit(id: String, edit_instance: EditInstance) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::edit(&id, &edit_instance).await?)
+    Ok(aether_core::api::instance::edit(id, edit_instance).await?)
 }
 
 #[tauri::command]
 pub async fn instance_remove(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove(&id).await?)
+    Ok(aether_core::api::instance::remove(id).await?)
 }
 
 #[tauri::command]

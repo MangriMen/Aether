@@ -9,5 +9,5 @@ pub async fn get_minecraft_version_manifest() -> AetherLauncherResult<minecraft:
 
 #[tauri::command]
 pub async fn get_loader_version_manifest(loader: String) -> AetherLauncherResult<modded::Manifest> {
-    Ok(aether_core::api::metadata::get_loader_version_manifest(&loader).await?)
+    Ok(aether_core::api::metadata::get_loader_version_manifest(loader).await?)
 }
