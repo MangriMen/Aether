@@ -163,7 +163,7 @@ pub async fn instance_get_content_providers() -> AetherLauncherResult<HashMap<St
 pub async fn instance_get_content_by_provider(
     payload: ContentSearchParams,
 ) -> AetherLauncherResult<ContentSearchResult> {
-    Ok(aether_core::api::instance::get_content_by_provider(&payload).await?)
+    Ok(aether_core::api::instance::search_content(payload).await?)
 }
 
 #[tauri::command]
@@ -171,14 +171,14 @@ pub async fn instance_install_content(
     id: String,
     payload: ContentInstallParams,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::install_content(&id, &payload).await?)
+    Ok(aether_core::api::instance::install_content(id, payload).await?)
 }
 
 #[tauri::command]
 pub async fn instance_get_metadata_field_to_check_installed(
     provider: String,
 ) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(&provider).await?)
+    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
 }
 
 #[tauri::command]
