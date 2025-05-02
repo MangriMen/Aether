@@ -57,7 +57,7 @@ pub async fn call_plugin(id: String, data: String) -> AetherLauncherResult<()> {
 
 #[tauri::command]
 pub async fn plugin_get_settings(id: String) -> AetherLauncherResult<Option<PluginSettings>> {
-    Ok(aether_core::api::plugin::get_settings(&id).await?)
+    Ok(aether_core::api::plugin::get_settings(id).await?)
 }
 
 #[tauri::command]
@@ -65,11 +65,11 @@ pub async fn plugin_edit_settings(
     id: String,
     settings: EditPluginSettings,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::plugin::edit_settings(&id, &settings).await?)
+    Ok(aether_core::api::plugin::edit_settings(id, settings).await?)
 }
 
 #[tauri::command]
 pub async fn open_plugins_folder() -> AetherLauncherResult<()> {
     let state = LauncherState::get().await?;
-    crate::utils::file::reveal_in_explorer(&state.locations.plugins_dir(), true)
+    crate::utils::file::reveal_in_explorer(&state.location_info.plugins_dir(), true)
 }

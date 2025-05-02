@@ -71,7 +71,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
         }
     }
 
-    tokio::fs::create_dir_all(&state.locations.plugins_dir())
+    tokio::fs::create_dir_all(&state.location_info.plugins_dir())
         .await
         .unwrap();
 
