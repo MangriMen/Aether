@@ -27,12 +27,12 @@ pub async fn scan_plugins() -> AetherLauncherResult<()> {
 
 #[tauri::command]
 pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginManifest>> {
-    Ok(aether_core::api::plugin::list().await?)
+    Ok(aether_core::api::plugin::list_manifests().await?)
 }
 
 #[tauri::command]
 pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginManifest> {
-    Ok(aether_core::api::plugin::get(&id).await?)
+    Ok(aether_core::api::plugin::get_manifest(id).await?)
 }
 
 #[tauri::command]
@@ -42,12 +42,12 @@ pub async fn is_plugin_enabled(id: String) -> AetherLauncherResult<bool> {
 
 #[tauri::command]
 pub async fn enable_plugin(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::plugin::enable(&id).await?)
+    Ok(aether_core::api::plugin::enable(id).await?)
 }
 
 #[tauri::command]
 pub async fn disable_plugin(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::plugin::disable(&id).await?)
+    Ok(aether_core::api::plugin::disable(id).await?)
 }
 
 #[tauri::command]

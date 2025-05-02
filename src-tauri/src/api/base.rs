@@ -87,14 +87,11 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
 #[tauri::command]
 pub async fn load_enabled_plugins() -> AetherLauncherResult<()> {
-    let service_locator = ServiceLocator::get().await?;
-    let mut plugin_service = service_locator.plugin_service.write().await;
-
     let settings = aether_core::api::settings::get().await?;
 
-    for plugin in settings.enabled_plugins.iter() {
-        if let Err(e) = plugin_service.enable(plugin).await {
-            log::error!("Failed to load plugin {}: {}", plugin, e);
+    for plugin_id in settings.enabled_plugins.iter() {
+        if let Err(e) = aether_core::api::plugin::enable(plugin_id.to_string()).await {
+            log::error!("Failed to load plugin {}: {}", plugin_id, e);
         }
     }
 
