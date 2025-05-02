@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::PathBuf};
 
 use aether_core::features::{
     events::emit_warning,
@@ -104,15 +104,15 @@ pub async fn instance_remove(id: String) -> AetherLauncherResult<()> {
 pub async fn instance_get_contents(
     id: String,
 ) -> AetherLauncherResult<DashMap<String, InstanceFile>> {
-    Ok(aether_core::api::instance::get_contents(&id).await?)
+    Ok(aether_core::api::instance::get_contents(id).await?)
 }
 
 #[tauri::command]
 pub async fn instance_toggle_disable_content(
-    id: String,
-    content_path: String,
+    _id: String,
+    _content_path: String,
 ) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::toggle_disable_content(&id, &content_path).await?)
+    todo!()
 }
 
 #[tauri::command]
@@ -120,7 +120,7 @@ pub async fn instance_disable_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::disable_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
@@ -128,12 +128,12 @@ pub async fn instance_enable_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::enable_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::enable_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
 pub async fn instance_remove_content(id: String, content_path: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove_content(&id, &content_path).await?)
+    Ok(aether_core::api::instance::remove_content(id, content_path).await?)
 }
 
 #[tauri::command]
@@ -141,7 +141,7 @@ pub async fn instance_remove_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::remove_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
@@ -183,14 +183,14 @@ pub async fn instance_get_metadata_field_to_check_installed(
 
 #[tauri::command]
 pub async fn instance_import_contents(
-    id: &str,
-    paths: Vec<String>,
+    instance_id: String,
     content_type: ContentType,
+    source_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::import_contents(
-        id,
+        instance_id,
         content_type,
-        paths.iter().map(Path::new).collect(),
+        source_paths.iter().map(PathBuf::from).collect(),
     )
     .await?)
 }
