@@ -1,4 +1,4 @@
-use aether_core::features::events::{ProcessPayload, ProcessPayloadType};
+use aether_core::features::events::{ProcessEvent, ProcessEventType};
 use tauri::{AppHandle, Event, Manager, RunEvent, WebviewWindowBuilder};
 
 use crate::state::{ActionOnInstanceLaunch, SettingsState};
@@ -8,7 +8,7 @@ type ManualExitFlagState = std::sync::Mutex<ManualExitFlagStateInner>;
 
 pub fn handle_instance_launch(app_handle: &AppHandle, e: Event) {
     let app_handle = app_handle.clone();
-    let payload = serde_json::from_str::<ProcessPayload>(e.payload());
+    let payload = serde_json::from_str::<ProcessEvent>(e.payload());
 
     tauri::async_runtime::spawn(async move {
         async fn on_instance_launch(app_handle: tauri::AppHandle) {
@@ -71,10 +71,10 @@ pub fn handle_instance_launch(app_handle: &AppHandle, e: Event) {
 
         match payload {
             Ok(payload) => match payload.event {
-                ProcessPayloadType::Launched => {
+                ProcessEventType::Launched => {
                     on_instance_launch(app_handle.clone()).await;
                 }
-                ProcessPayloadType::Finished => {
+                ProcessEventType::Finished => {
                     on_instance_finish(app_handle.clone()).await;
                 }
             },
