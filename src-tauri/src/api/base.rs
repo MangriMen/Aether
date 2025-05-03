@@ -1,4 +1,4 @@
-use aether_core::{core::LauncherState, features::events::EventState};
+use aether_core::core::LauncherState;
 use tauri::AppHandle;
 
 use crate::AetherLauncherResult;
@@ -11,8 +11,7 @@ pub async fn initialize_state(app: AppHandle) -> AetherLauncherResult<()> {
 
     let launcher_dir = crate::utils::tauri::get_app_dir(&app);
 
-    LauncherState::init(launcher_dir.clone(), launcher_dir).await?;
-    EventState::init_with_app(app).await?;
+    LauncherState::init(launcher_dir.clone(), launcher_dir, app).await?;
 
     Ok(())
 }

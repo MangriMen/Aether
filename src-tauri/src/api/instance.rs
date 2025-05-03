@@ -1,7 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use aether_core::features::{
-    events::emit_warning,
     instance::{
         ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
         ImportConfig, Instance, InstanceFile, NewInstance,
@@ -46,11 +45,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 pub async fn instance_create(new_instance: NewInstance) -> AetherLauncherResult<()> {
     tokio::spawn(async move {
         if let Err(err) = aether_core::api::instance::create(new_instance).await {
-            emit_warning(&format!("Error creating instance {}", err))
-                .await
-                .unwrap_or_else(|e| {
-                    log::error!("Error emitting warning: {}", e);
-                });
+            // TODO: move to create
+            // emit_warning(&format!("Error creating instance {}", err))
+            //     .await
+            //     .unwrap_or_else(|e| {
+            //         log::error!("Error emitting warning: {}", e);
+            //     });
         }
     });
     Ok(())
