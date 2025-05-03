@@ -4,7 +4,7 @@ import type { VersionManifest, LoaderManifest, ModLoader } from '../model';
 
 export const initializeState = () => invoke('initialize_state');
 
-export const loadEnabledPlugins = () => invoke('load_enabled_plugins');
+export const initializePlugins = () => invoke('initialize_plugins');
 
 export const getMinecraftVersionManifest = () =>
   invoke<VersionManifest>('get_minecraft_version_manifest');

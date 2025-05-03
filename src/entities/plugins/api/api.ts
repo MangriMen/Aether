@@ -3,7 +3,7 @@ import type { PluginInfo, PluginMetadata, PluginSettings } from '../model';
 
 const PLUGIN_PREFIX = 'plugin:plugin|';
 
-export const scanPlugins = async () => invoke(`${PLUGIN_PREFIX}scan_plugins`);
+export const syncPlugins = async () => invoke(`${PLUGIN_PREFIX}sync_plugins`);
 
 export const listPlugins = async () =>
   invoke<PluginMetadata[]>(`${PLUGIN_PREFIX}list_plugins`);

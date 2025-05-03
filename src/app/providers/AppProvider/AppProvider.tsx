@@ -2,7 +2,7 @@ import { createSignal, onMount, Show } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import { initializeApp, initializeResources, showWindow } from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
-import { loadEnabledPlugins } from '@/entities/minecrafts';
+import { initializePlugins } from '@/entities/minecrafts';
 import { refetchPlugins } from '@/entities/plugins';
 
 export type AppProviderProps = {
@@ -38,7 +38,7 @@ export const AppProvider: Component<AppProviderProps> = (props) => {
   };
 
   const loadPlugins = async () => {
-    await loadEnabledPlugins();
+    await initializePlugins();
     await refetchPlugins();
   };
 

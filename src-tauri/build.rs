@@ -49,7 +49,7 @@ fn main() {
     let plugin_plugin = (
         "plugin",
         InlinedPlugin::new().commands(&[
-            "scan_plugins",
+            "sync_plugins",
             "list_plugins",
             "plugin_get",
             "is_plugin_enabled",

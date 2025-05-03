@@ -7,7 +7,7 @@ import MdiReloadIcon from '@iconify/icons-mdi/reload';
 import {
   openPluginsFolder,
   refetchPlugins,
-  scanPlugins,
+  syncPlugins,
 } from '@/entities/plugins';
 import { isAetherLauncherError, useTranslate } from '@/shared/model';
 
@@ -33,7 +33,7 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   };
 
   const handleRefreshPlugins = async () => {
-    await scanPlugins();
+    await syncPlugins();
     await refetchPlugins();
   };
 

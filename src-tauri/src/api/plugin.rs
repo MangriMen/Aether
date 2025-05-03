@@ -6,7 +6,7 @@ use crate::AetherLauncherResult;
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("plugin")
         .invoke_handler(tauri::generate_handler![
-            scan_plugins,
+            sync_plugins,
             list_plugins,
             plugin_get,
             is_plugin_enabled,
@@ -21,8 +21,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 #[tauri::command]
-pub async fn scan_plugins() -> AetherLauncherResult<()> {
-    Ok(aether_core::api::plugin::scan().await?)
+pub async fn sync_plugins() -> AetherLauncherResult<()> {
+    Ok(aether_core::api::plugin::sync().await?)
 }
 
 #[tauri::command]
@@ -52,7 +52,7 @@ pub async fn disable_plugin(id: String) -> AetherLauncherResult<()> {
 
 #[tauri::command]
 pub async fn call_plugin(id: String, data: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::plugin::call(&id, &data).await?)
+    Ok(aether_core::api::plugin::call(id, data).await?)
 }
 
 #[tauri::command]
