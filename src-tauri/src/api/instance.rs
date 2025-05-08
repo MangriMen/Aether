@@ -43,16 +43,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 
 #[tauri::command]
 pub async fn instance_create(new_instance: NewInstance) -> AetherLauncherResult<()> {
-    tokio::spawn(async move {
-        if let Err(err) = aether_core::api::instance::create(new_instance).await {
-            // TODO: move to create
-            // emit_warning(&format!("Error creating instance {}", err))
-            //     .await
-            //     .unwrap_or_else(|e| {
-            //         log::error!("Error emitting warning: {}", e);
-            //     });
-        }
-    });
+    tokio::spawn(async move { aether_core::api::instance::create(new_instance).await });
     Ok(())
 }
 
