@@ -13,5 +13,5 @@ pub async fn get_progress_bars() -> AetherLauncherResult<DashMap<Uuid, ProgressB
 
     let progress_bar_storage = lazy_locator.get_progress_bar_storage().await;
 
-    Ok(progress_bar_storage.list())
+    Ok(progress_bar_storage.list().await)
 }
