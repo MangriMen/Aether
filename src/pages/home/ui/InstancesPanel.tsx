@@ -1,17 +1,9 @@
 import type { Component, ComponentProps } from 'solid-js';
-import {
-  createEffect,
-  createMemo,
-  For,
-  Match,
-  Show,
-  splitProps,
-  Switch,
-} from 'solid-js';
+import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { refetchInstances, useInstances } from '@/entities/instances';
+import { useInstances } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 
@@ -26,27 +18,21 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
-  const [instances, { isLoading }] = useInstances();
-
-  const instancesArray = createMemo(() => Array.from(instances.values()));
-
-  createEffect(() => {
-    refetchInstances();
-  });
+  const instances = useInstances();
 
   return (
     <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
       <Switch>
-        <Match when={instances.size && !isLoading()}>
+        <Match when={instances.data?.length && !instances.isLoading}>
           <Show
-            when={instances.size}
+            when={instances.data?.length}
             fallback={
               <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
                 {t('home.noInstances')}
               </p>
             }
           >
-            <For each={instancesArray()}>
+            <For each={instances.data}>
               {(instance) => (
                 <InstanceControlledCard
                   instance={instance}

@@ -1,4 +1,4 @@
-import type { InstancePayload } from './instance';
+import type { InstanceEvent } from './instance';
 import type { LoadingPayload } from './loading';
 import type { ProcessPayload } from './process';
 import type { WarningPayload } from './warning';
@@ -10,7 +10,7 @@ export type LauncherEventPayload<T = LauncherEvent> = T extends 'loading'
   : T extends 'process'
     ? ProcessPayload
     : T extends 'instance'
-      ? InstancePayload
+      ? InstanceEvent
       : T extends 'warning'
         ? WarningPayload
         : never;

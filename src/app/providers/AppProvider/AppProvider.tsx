@@ -1,6 +1,11 @@
 import { createSignal, onMount, Show } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
-import { initializeApp, initializeResources, showWindow } from '../../lib';
+import {
+  initializeApp,
+  initializeResources,
+  showWindow,
+  useSetupListeners,
+} from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
 import { initializePlugins } from '@/entities/minecrafts';
 import { refetchPlugins } from '@/entities/plugins';
@@ -43,6 +48,8 @@ export const AppProvider: Component<AppProviderProps> = (props) => {
   };
 
   onMount(() => init());
+
+  useSetupListeners();
 
   return (
     <Show when={isInitialized()}>

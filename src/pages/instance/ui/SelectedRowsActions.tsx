@@ -10,11 +10,11 @@ import MdiDeleteIcon from '@iconify/icons-mdi/delete';
 import MdiCancelIcon from '@iconify/icons-mdi/cancel';
 import MdiCheckIcon from '@iconify/icons-mdi/check';
 import {
+  useDisableContents,
+  useEnableContents,
+  useRemoveContents,
   type Instance,
-  enableInstanceContents,
   type InstanceFile,
-  disableInstanceContents,
-  removeInstanceContents,
 } from '@/entities/instances';
 
 import type { RowModel } from '@tanstack/solid-table';
@@ -55,16 +55,20 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
     return selectedContents().map((content) => content.path);
   };
 
+  const { mutateAsync: enableInstanceContents } = useEnableContents();
+  const { mutateAsync: disableInstanceContents } = useDisableContents();
+  const { mutateAsync: removeInstanceContents } = useRemoveContents();
+
   const handleEnableContents = () => {
-    enableInstanceContents(local.instanceId, getContentPaths());
+    enableInstanceContents({ id: local.instanceId, paths: getContentPaths() });
   };
 
   const handleDisableContents = () => {
-    disableInstanceContents(local.instanceId, getContentPaths());
+    disableInstanceContents({ id: local.instanceId, paths: getContentPaths() });
   };
 
   const handleDeleteContents = () => {
-    removeInstanceContents(local.instanceId, getContentPaths());
+    removeInstanceContents({ id: local.instanceId, paths: getContentPaths() });
   };
 
   return (

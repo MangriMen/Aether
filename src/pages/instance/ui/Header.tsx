@@ -12,10 +12,15 @@ import { Image } from '@/shared/ui';
 
 export type HeaderProps = ComponentProps<'div'> & {
   instance: Instance;
+  instancePath?: string;
 };
 
 export const Header: Component<HeaderProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'class']);
+  const [local, others] = splitProps(props, [
+    'instance',
+    'instancePath',
+    'class',
+  ]);
 
   return (
     <div class='flex gap-3' {...others}>
@@ -23,7 +28,7 @@ export const Header: Component<HeaderProps> = (props) => {
       <InstanceHeaderInfo instance={local.instance} />
       <div class='ml-auto flex items-center gap-2'>
         <InstanceActionButton class='w-20 p-2' instance={local.instance} />
-        <OpenFolderButton instance={local.instance} />
+        <OpenFolderButton instancePath={local.instancePath} />
         <SettingsButton />
       </div>
     </div>

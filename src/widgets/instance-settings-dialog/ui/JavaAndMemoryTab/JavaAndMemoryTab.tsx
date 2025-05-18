@@ -3,8 +3,11 @@ import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
-import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
-import { editInstance } from '@/entities/instances';
+import {
+  useEditInstance,
+  type Instance,
+  type InstanceSettingsTabProps,
+} from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -29,10 +32,15 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     initialValue: MIN_JRE_MEMORY,
   });
 
+  const { mutateAsync: editInstance } = useEditInstance();
+
   const handleChangeMemoryDebounce = debounce(
     async (id: Instance['id'], value: number | null) => {
-      editInstance(id, {
-        memory: value ? { maximum: value } : undefined,
+      editInstance({
+        id,
+        edit: {
+          memory: value ? { maximum: value } : undefined,
+        },
       });
     },
     300,
@@ -44,8 +52,11 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const handleChangeArguments = async (value: string | null) => {
     const extraLaunchArgs = value?.split(' ');
-    await editInstance(local.instance.id, {
-      extraLaunchArgs,
+    await editInstance({
+      id: local.instance.id,
+      edit: {
+        extraLaunchArgs,
+      },
     });
   };
 
@@ -53,8 +64,11 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     const customEnvVars = value
       ?.split(' ')
       .map((variable) => variable.split('=', 2) as [string, string]);
-    await editInstance(local.instance.id, {
-      customEnvVars,
+    await editInstance({
+      id: local.instance.id,
+      edit: {
+        customEnvVars,
+      },
     });
   };
 

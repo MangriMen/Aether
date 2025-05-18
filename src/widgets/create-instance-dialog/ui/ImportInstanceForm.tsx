@@ -29,8 +29,7 @@ import {
 } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import { open } from '@tauri-apps/plugin-dialog';
-import type { ImportHandler } from '@/entities/instances';
-import { importInstance } from '@/entities/instances';
+import { useImportInstance, type ImportHandler } from '@/entities/instances';
 import { useTranslate } from '@/shared/model';
 
 export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
@@ -73,6 +72,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       .find((h) => h.packType === getValue(form, 'packType')),
   );
 
+  const { mutateAsync: importInstance } = useImportInstance();
   const handleSubmit: SubmitHandler<ImportInstanceValues> = (values) => {
     importInstance(values);
     local.onOpenChange?.(false);

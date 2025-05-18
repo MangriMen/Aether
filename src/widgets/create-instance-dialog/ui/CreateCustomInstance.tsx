@@ -25,8 +25,7 @@ import {
 import type { NewInstance } from '@/entities/instances';
 import {
   IncludeSnapshotsCheckbox,
-  refetchInstances,
-  createInstance,
+  useCreateInstance,
 } from '@/entities/instances';
 import type { LoaderVersion, Version } from '@/entities/minecrafts';
 import {
@@ -124,6 +123,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     filterGameVersions(loaderGameVersions(), shouldIncludeSnapshots()),
   );
 
+  const { mutateAsync: createInstance } = useCreateInstance();
   const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
     values,
   ) => {
@@ -138,7 +138,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
     try {
       props.onOpenChange?.(false);
-      refetchInstances();
 
       await createInstance(payload);
     } catch (e) {

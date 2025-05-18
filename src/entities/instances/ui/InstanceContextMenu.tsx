@@ -17,6 +17,7 @@ export type InstanceContextMenuProps = ContextMenuRootProps & {
   onOpenSettings?: ComponentProps<'button'>['onClick'];
   onRemove?: ComponentProps<'button'>['onClick'];
   isLoading?: boolean;
+  disableOpenFolder?: boolean;
 };
 
 export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
@@ -28,6 +29,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
     'onOpenSettings',
     'onRemove',
     'isLoading',
+    'disableOpenFolder',
     'children',
   ]);
 
@@ -48,7 +50,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         <ContextMenuItem
           class='w-full'
           onClick={local.onOpenFolder}
-          disabled={local.isLoading}
+          disabled={local.isLoading || local.disableOpenFolder}
         >
           {t('instance.openFolder')}
         </ContextMenuItem>

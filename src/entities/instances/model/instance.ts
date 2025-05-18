@@ -18,7 +18,6 @@ export interface PackInfo {
 
 export interface Instance {
   id: string;
-  path: string;
 
   name: string;
   iconPath?: string;

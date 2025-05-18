@@ -16,7 +16,7 @@ export type ContentTableProps = {
   isLoading?: boolean;
   refetch?: () => void;
   instanceId: string;
-  instancePath: string;
+  instancePath?: string;
 };
 
 export const ContentTable: Component<ContentTableProps> = (props) => {

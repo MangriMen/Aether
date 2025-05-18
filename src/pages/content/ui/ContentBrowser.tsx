@@ -2,8 +2,9 @@ import {
   CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
   ContentType,
-  getMetadataFieldToCheckInstalled,
-  useInstanceContent,
+  useContentByProvider,
+  useInstanceContents,
+  useMetadataFieldToCheckInstalled,
 } from '@/entities/instances';
 
 import type {
@@ -19,7 +20,6 @@ import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 import {
   createEffect,
   createMemo,
-  createResource,
   createSignal,
   For,
   Match,
@@ -32,7 +32,6 @@ import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
 import { debounce } from '@solid-primitives/scheduled';
 import { ContentListSkeleton } from './ContentListSkeleton';
-import { useContent } from '../lib';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {
   providers: Option<string>[];
@@ -78,10 +77,10 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     }
   };
 
-  const contentRequestPayload = createMemo((): ContentRequest | null => {
+  const contentRequestPayload = createMemo((): ContentRequest | undefined => {
     const currentProvider = provider();
     if (!currentProvider) {
-      return null;
+      return;
     }
 
     return {
@@ -95,20 +94,20 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     };
   });
 
-  const [content, { isLoading: isContentLoading }] = useContent(() =>
-    contentRequestPayload(),
+  const content = useContentByProvider(() => contentRequestPayload());
+
+  const instanceContent = useInstanceContents(() => local.instance.id);
+
+  const instanceContentArray = createMemo(() =>
+    instanceContent ? Object.values(instanceContent) : undefined,
   );
 
-  const instanceContent = useInstanceContent(() => local.instance.id);
-
-  const [compareMetadataField] = createResource(
+  const compareMetadataField = useMetadataFieldToCheckInstalled(
     () => provider()?.value,
-    getMetadataFieldToCheckInstalled,
   );
 
   const instanceContentFields = createMemo(() => {
-    const field = compareMetadataField();
-    if (!field) {
+    if (!compareMetadataField.data) {
       return [];
     }
     const providerValue = provider()?.value;
@@ -116,8 +115,8 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       return [];
     }
 
-    return instanceContent.array?.map(
-      (item) => item.update?.[providerValue]?.[field],
+    return instanceContentArray()?.map(
+      (item) => item.update?.[providerValue]?.[compareMetadataField.data],
     );
   });
 
@@ -126,8 +125,8 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   >([]);
 
   const items = createMemo(() =>
-    content().data?.items.map<ContentItemExtended>((item) => {
-      const field = compareMetadataField();
+    content.data?.items.map<ContentItemExtended>((item) => {
+      const field = compareMetadataField.data;
 
       const contentItemField = field ? item.providerData?.[field] : undefined;
       const installed =
@@ -146,12 +145,11 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const handleOnInstalled = (
     providerData: ContentItemExtended['providerData'],
   ) => {
-    const field = compareMetadataField();
-    if (!field) {
+    if (!compareMetadataField.data) {
       return;
     }
 
-    const data = providerData?.[field];
+    const data = providerData?.[compareMetadataField.data];
     if (!data) {
       return;
     }
@@ -190,19 +188,19 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       </div>
       <ContentFilters
         pageSize={pageSize()}
-        pageCount={content()?.data?.pageCount ?? 10}
+        pageCount={content.data?.pageCount ?? 10}
         currentPage={page()}
         onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         contentType={contentType()}
-        loading={!content().data?.items.length}
+        loading={!content.data?.items.length}
       />
       <Switch>
-        <Match when={isContentLoading()}>
+        <Match when={content.isLoading}>
           <ContentListSkeleton />
         </Match>
-        <Match when={content().error}>
+        <Match when={content.isError}>
           <span class='flex grow items-center justify-center text-xl font-medium text-muted-foreground'>
             {t('content.providerErrorOrNotFound')}
           </span>

@@ -5,7 +5,6 @@ import {
 } from '@solidjs/router';
 import {
   createMemo,
-  createResource,
   Show,
   splitProps,
   type Component,
@@ -14,7 +13,7 @@ import {
 import { InstanceInfo } from './InstanceInfo';
 import {
   ContentType,
-  getContentProviders,
+  useContentProviders,
   useInstance,
 } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
@@ -46,28 +45,21 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     return decodeURIComponent(instance);
   });
 
-  // eslint-disable-next-line solid/reactivity
-  const instance = useInstance(id);
+  const instance = useInstance(() => id());
 
-  const getTransformedContentProviders = async () => {
-    const res = await getContentProviders();
+  const contentProviders = useContentProviders();
 
-    return Object.entries(res).map(([key, value]) => ({
+  const transformedContentProviders = createMemo(() =>
+    Object.entries(contentProviders).map(([key, value]) => ({
       name: key,
       value,
-    }));
-  };
-
-  const [contentProviders] = createResource(getTransformedContentProviders, {
-    initialValue: [],
-  });
+    })),
+  );
 
   const availableContent = createMemo(() => {
-    const inst = instance();
-
-    if (!inst) {
+    if (!instance.data) {
       return [];
-    } else if (inst.loader == ModLoader.Vanilla) {
+    } else if (instance.data.loader == ModLoader.Vanilla) {
       return [ContentType.ResourcePack, ContentType.DataPack];
     } else {
       return undefined;
@@ -76,14 +68,14 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
 
   return (
     <div class='flex size-full flex-col gap-2 p-4' {...others}>
-      <Show when={instance()}>
+      <Show when={instance.data}>
         {(instance) => (
           <>
             <InstanceInfo instance={instance()} />
             <Separator />
             <ContentBrowser
               instance={instance()}
-              providers={contentProviders() ?? []}
+              providers={transformedContentProviders() ?? []}
               contentTypes={availableContent()}
             />
           </>

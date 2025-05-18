@@ -1,7 +1,7 @@
 import {
-  installInstance,
   InstanceInstallStage,
-  updateInstance,
+  useInstallInstance,
+  useUpdateInstance,
   type InstanceSettingsTabProps,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
@@ -22,6 +22,9 @@ export type InstallationTabProps = ComponentProps<'div'> &
 export const InstallationTab: Component<InstallationTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
+  const { mutateAsync: installInstance } = useInstallInstance();
+  const { mutateAsync: updateInstance } = useUpdateInstance();
+
   const handleUpdate = async () => {
     try {
       await updateInstance(local.instance.id);
@@ -38,7 +41,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
 
   const handleRepair = async () => {
     try {
-      await installInstance(local.instance.id, true);
+      await installInstance({ id: local.instance.id, force: true });
     } catch (e) {
       if (isAetherLauncherError(e)) {
         showToast({

@@ -1,5 +1,5 @@
-import { createEffect, Show } from 'solid-js';
-import { refetchImportConfigs, useImportConfigs } from '@/entities/instances';
+import { Show } from 'solid-js';
+import { useImportConfigs } from '@/entities/instances';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
 import { ImportInstanceForm } from './ImportInstanceForm';
@@ -13,13 +13,9 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
-  createEffect(() => {
-    refetchImportConfigs();
-  });
-
   return (
     <Show
-      when={importHandlers().length}
+      when={importHandlers.data?.length}
       fallback={
         <div class='flex h-full items-center justify-center'>
           <span class='whitespace-pre-line text-center text-lg text-muted-foreground'>
@@ -28,7 +24,10 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
         </div>
       }
     >
-      <ImportInstanceForm importHandlers={importHandlers} {...props} />
+      <ImportInstanceForm
+        importHandlers={() => importHandlers.data!}
+        {...props}
+      />
     </Show>
   );
 };

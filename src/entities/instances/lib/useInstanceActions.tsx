@@ -1,23 +1,25 @@
 import { useContext } from 'solid-js';
 
-import { isAetherLauncherError, isDebug } from '@/shared/model';
+import { isAetherLauncherError } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 import {
-  revealInExplorer,
-  refetchInstances,
   RunningInstancesContext,
   InstanceInstallStage,
-  launchInstance,
-  removeInstance,
-  stopInstance,
+  useLaunchInstance,
+  useStopInstance,
+  useRemoveInstance,
 } from '@/entities/instances';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(
     RunningInstancesContext,
   );
+
+  const { mutateAsync: launchInstance } = useLaunchInstance();
+  const { mutateAsync: stopInstance } = useStopInstance();
+  const { mutateAsync: removeInstance } = useRemoveInstance();
 
   const launch = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
@@ -74,22 +76,6 @@ export const useInstanceActions = () => {
     }
   };
 
-  const openFolder = async (instance: Instance) => {
-    try {
-      await revealInExplorer(instance.path);
-    } catch (e) {
-      if (isDebug()) {
-        console.error(e);
-      }
-
-      showToast({
-        title: 'Failed to open folder',
-        description: `Instance path: ${instance.path}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const remove = async (instance: Instance, force: boolean = false) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
@@ -124,7 +110,6 @@ export const useInstanceActions = () => {
 
     try {
       await removeInstance(instance.id);
-      refetchInstances();
     } catch (e) {
       if (isAetherLauncherError(e)) {
         showToast({
@@ -140,6 +125,5 @@ export const useInstanceActions = () => {
     launch,
     stop,
     remove,
-    openFolder,
   };
 };

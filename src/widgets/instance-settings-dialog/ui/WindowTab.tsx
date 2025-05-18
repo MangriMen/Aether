@@ -4,8 +4,10 @@ import { createEffect, createSignal, splitProps } from 'solid-js';
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import type { InstanceSettingsTabProps } from '@/entities/instances';
-import { editInstance } from '@/entities/instances';
+import {
+  useEditInstance,
+  type InstanceSettingsTabProps,
+} from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -37,13 +39,15 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
     }
   };
 
+  const { mutateAsync: editInstance } = useEditInstance();
+
   const setWindowResolution = (width: number | null, height: number | null) => {
     const gameResolution =
       width === null || height === null
         ? undefined
         : ([width, height] as [number, number]);
 
-    editInstance(local.instance.id, { gameResolution });
+    editInstance({ id: local.instance.id, edit: { gameResolution } });
   };
 
   const setWidthValue = (value: number | null) => {

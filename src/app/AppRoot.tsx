@@ -12,6 +12,11 @@ import { useSetup } from './lib/useSetup';
 import { MainLayout } from './layouts/MainLayout';
 import { RunningInstancesProvider } from '@/entities/instances';
 
+import { QueryClientProvider } from '@tanstack/solid-query';
+import { createQueryClient } from '@/shared/api';
+
+const queryClient = createQueryClient();
+
 export const AppRoot: Component<RouteSectionProps> = (props) => {
   useSetup();
 
@@ -22,16 +27,21 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
         themeLsKey={THEME_LS_KEY}
         themeAttribute={THEME_ATTRIBUTE}
       >
-        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
-          <AppLayout>
-            <AppProvider>
-              <RunningInstancesProvider>
-                <MainLayout>{props.children}</MainLayout>
-              </RunningInstancesProvider>
-            </AppProvider>
-          </AppLayout>
-          <Toaster />
-        </I18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <I18nProvider
+            resources={LOCALE_RESOURCES}
+            fallbackLocale={LOCALES.En}
+          >
+            <AppLayout>
+              <AppProvider>
+                <RunningInstancesProvider>
+                  <MainLayout>{props.children}</MainLayout>
+                </RunningInstancesProvider>
+              </AppProvider>
+            </AppLayout>
+            <Toaster />
+          </I18nProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ColorModeProvider>
   );

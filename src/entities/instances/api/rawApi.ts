@@ -18,43 +18,45 @@ const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
 
 const PLUGIN_PROCESS_PREFIX = 'plugin:process|';
 
-export const createInstance = (newInstance: NewInstance) =>
+export const createInstanceRaw = (newInstance: NewInstance) =>
   invoke<string>(`${PLUGIN_INSTANCE_PREFIX}instance_create`, {
     newInstance,
   });
 
-export const installInstance = (id: Instance['id'], force: boolean = false) =>
-  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install`, { id, force });
+export const installInstanceRaw = (
+  id: Instance['id'],
+  force: boolean = false,
+) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install`, { id, force });
 
-export const updateInstance = (id: Instance['id']) =>
+export const updateInstanceRaw = (id: Instance['id']) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_update`, { id });
 
-export const importInstance = (instanceImportDto: InstanceImportDto) =>
+export const importInstanceRaw = (instanceImportDto: InstanceImportDto) =>
   invoke<string>(`${PLUGIN_INSTANCE_PREFIX}instance_import`, {
     instanceImportDto,
   });
 
-export const getImportConfigs = () =>
+export const getImportConfigsRaw = () =>
   invoke<ImportHandler[]>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_import_configs`,
   );
 
-export const listInstances = () =>
+export const listInstancesRaw = () =>
   invoke<Instance[]>(`${PLUGIN_INSTANCE_PREFIX}instance_list`);
 
-export const getInstance = (id: Instance['id']) =>
+export const getInstanceRaw = (id: Instance['id']) =>
   invoke<Instance>(`${PLUGIN_INSTANCE_PREFIX}instance_get`, { id });
 
-export const launchInstance = (id: Instance['id']) =>
+export const launchInstanceRaw = (id: Instance['id']) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_launch`, { id });
 
-export const stopInstance = (uuid: string) =>
+export const stopInstanceRaw = (uuid: string) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_stop`, { uuid });
 
-export const removeInstance = (id: Instance['id']) =>
+export const removeInstanceRaw = (id: Instance['id']) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove`, { id });
 
-export const editInstance = async (
+export const editInstanceRaw = async (
   id: Instance['id'],
   editInstance: EditInstance,
 ) =>
@@ -64,14 +66,14 @@ export const editInstance = async (
   });
 
 // Utils
-export const revealInExplorer = (path: string, exact = true) =>
+export const revealInExplorerRaw = (path: string, exact = true) =>
   invoke('reveal_in_explorer', { path, exact });
 
 // Process
-export const listProcess = () =>
+export const listProcessRaw = () =>
   invoke<MinecraftProcessMetadata[]>(`${PLUGIN_PROCESS_PREFIX}process_list`);
 
-export const getInstanceProcess = (id: string) =>
+export const getInstanceProcessRaw = (id: string) =>
   invoke<MinecraftProcessMetadata[]>(
     `${PLUGIN_PROCESS_PREFIX}process_get_by_instance_id`,
     {
@@ -80,66 +82,72 @@ export const getInstanceProcess = (id: string) =>
   );
 
 // Content
-export const getInstanceContents = (id: string) =>
+export const getInstanceContentsRaw = (id: string) =>
   invoke<Record<string, InstanceFile>>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_contents`,
     { id },
   );
 
-export const toggleDisableInstanceContent = (id: string, contentPath: string) =>
+export const toggleDisableInstanceContentRaw = (
+  id: string,
+  contentPath: string,
+) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_toggle_disable_content`, {
     id,
     contentPath,
   });
 
-export const disableInstanceContents = (id: string, contentPaths: string[]) =>
+export const disableInstanceContentsRaw = (
+  id: string,
+  contentPaths: string[],
+) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_disable_contents`, {
     id,
     contentPaths,
   });
 
-export const enableInstanceContents = (id: string, contentPaths: string[]) =>
+export const enableInstanceContentsRaw = (id: string, contentPaths: string[]) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_enable_contents`, {
     id,
     contentPaths,
   });
 
-export const removeInstanceContent = (id: string, contentPath: string) =>
+export const removeInstanceContentRaw = (id: string, contentPath: string) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_content`, {
     id,
     contentPath,
   });
 
-export const removeInstanceContents = (id: string, contentPaths: string[]) =>
+export const removeInstanceContentsRaw = (id: string, contentPaths: string[]) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_contents`, {
     id,
     contentPaths,
   });
 
-export const getContentProviders = () =>
+export const getContentProvidersRaw = () =>
   invoke<Record<string, string>>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_content_providers`,
   );
 
-export const getContentByProvider = (payload: ContentRequest) =>
+export const getContentByProviderRaw = (payload: ContentRequest) =>
   invoke<ContentResponse>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_content_by_provider`,
     { payload },
   );
 
-export const installContent = (id: string, payload: InstallContentPayload) =>
+export const installContentRaw = (id: string, payload: InstallContentPayload) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install_content`, {
     id,
     payload,
   });
 
-export const getMetadataFieldToCheckInstalled = (provider: string) =>
+export const getMetadataFieldToCheckInstalledRaw = (provider: string) =>
   invoke<string>(
     `${PLUGIN_INSTANCE_PREFIX}instance_get_metadata_field_to_check_installed`,
     { provider },
   );
 
-export const importContents = (
+export const importContentsRaw = (
   id: string,
   paths: string[],
   contentType: ContentType,
@@ -149,3 +157,8 @@ export const importContents = (
     paths,
     contentType,
   });
+
+export const getInstanceDirRaw = (id: Instance['id']) =>
+  invoke<string>(`${PLUGIN_INSTANCE_PREFIX}instance_get_dir`, { id });
+
+export const testInvoke = () => invoke('test');

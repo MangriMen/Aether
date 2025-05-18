@@ -1,12 +1,14 @@
 import { listenEvent } from '@/entities/events/@x/instances';
 import { onCleanup, onMount } from 'solid-js';
-import { refetchInstance } from '../model/instancesResource';
 import { isDebug } from '@/shared/model';
 import type { UnlistenFn } from '@tauri-apps/api/event';
-import { refetchInstanceContent } from '../model';
+import { useQueryClient } from '@tanstack/solid-query';
+import { invalidateInstanceData } from '../api';
 
 export const useInstanceEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
+
+  const queryClient = useQueryClient();
 
   const startListen = async () => {
     unlistenFn = await listenEvent('instance', (e) => {
@@ -14,8 +16,7 @@ export const useInstanceEventsListener = () => {
         console.log('[EVENT][DEBUG]', e);
       }
 
-      refetchInstance(e.payload.instancePathId);
-      refetchInstanceContent(e.payload.instancePathId);
+      invalidateInstanceData(queryClient, e.payload.instanceId);
     });
   };
 

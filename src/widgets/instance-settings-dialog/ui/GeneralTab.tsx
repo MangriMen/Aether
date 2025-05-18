@@ -5,8 +5,11 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import type { Instance, InstanceSettingsTabProps } from '@/entities/instances';
-import { editInstance } from '@/entities/instances';
+import {
+  useEditInstance,
+  type Instance,
+  type InstanceSettingsTabProps,
+} from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -17,9 +20,11 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
+  const { mutateAsync: editInstance } = useEditInstance();
+
   const handleChangeNameThrottle = throttle(
     (id: Instance['id'], value: string) => {
-      editInstance(id, { name: value });
+      editInstance({ id, edit: { name: value } });
     },
     16,
   );

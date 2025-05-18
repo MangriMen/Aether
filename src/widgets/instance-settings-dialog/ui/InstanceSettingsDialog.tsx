@@ -23,8 +23,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
 
   const id = createMemo(() => decodeURIComponent(local.id));
 
-  // eslint-disable-next-line solid/reactivity
-  const instance = useInstance(id);
+  const instance = useInstance(() => id());
 
   const onOpenChange = (open: boolean) => {
     if (local.onOpenChange) {
@@ -37,7 +36,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   return (
     <Dialog defaultOpen onOpenChange={onOpenChange} {...others}>
       <DialogContent class='flex w-[900px] max-w-[calc(100%-80px)] flex-col bg-secondary-dark'>
-        <Show when={instance()} fallback={<span>Instance not found</span>}>
+        <Show when={instance.data} fallback={<span>Instance not found</span>}>
           {(instance) => (
             <>
               <InstanceSettingsDialogHeader instance={instance()} />

@@ -36,7 +36,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_get_content_by_provider,
             instance_install_content,
             instance_get_metadata_field_to_check_installed,
-            instance_import_contents
+            instance_import_contents,
+            instance_get_dir,
         ])
         .build()
 }
@@ -184,4 +185,9 @@ pub async fn instance_import_contents(
         source_paths.iter().map(PathBuf::from).collect(),
     )
     .await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_dir(id: String) -> AetherLauncherResult<PathBuf> {
+    Ok(aether_core::api::instance::get_dir(&id).await?)
 }

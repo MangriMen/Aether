@@ -14,17 +14,17 @@ import { splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
 import MdiDeleteIcon from '@iconify/icons-mdi/delete';
 import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
-import type { Instance, InstanceFile } from '@/entities/instances';
 import {
-  revealInExplorer,
-  removeInstanceContent,
-  toggleDisableInstanceContent,
+  useRemoveContent,
+  useRevealInExplorer,
+  useToggleDisableContent,
+  type InstanceFile,
 } from '@/entities/instances';
 import { useTranslate } from '@/shared/model';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;
-  instancePath: Instance['path'];
+  instancePath?: string;
   content: InstanceFile;
 };
 
@@ -38,16 +38,27 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
 
   const [{ t }] = useTranslate();
 
+  const { mutateAsync: toggleDisableInstanceContent } =
+    useToggleDisableContent();
+  const { mutateAsync: removeInstanceContent } = useRemoveContent();
+  const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+
   const handleToggleDisable = () => {
-    toggleDisableInstanceContent(local.instanceId, local.content.path);
+    toggleDisableInstanceContent({
+      id: local.instanceId,
+      path: local.content.path,
+    });
   };
 
   const handleRemove = () => {
-    removeInstanceContent(local.instanceId, local.content.path);
+    removeInstanceContent({ id: local.instanceId, path: local.content.path });
   };
 
   const handleShowFile = () => {
-    revealInExplorer(`${local.instancePath}/${local.content.path}`, false);
+    revealInExplorer({
+      path: `${local.instancePath}/${local.content.path}`,
+      exact: false,
+    });
   };
 
   return (
@@ -73,7 +84,10 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
           icon={MdiMoreIcon}
         />
         <DropdownMenuContent>
-          <DropdownMenuItem onClick={handleShowFile}>
+          <DropdownMenuItem
+            onClick={handleShowFile}
+            disabled={!local.instancePath}
+          >
             {t('instance.showFile')}
           </DropdownMenuItem>
         </DropdownMenuContent>

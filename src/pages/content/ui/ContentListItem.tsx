@@ -1,5 +1,5 @@
 import {
-  installContent,
+  useInstallContent,
   type ContentItemExtended,
   type InstallContentPayload,
 } from '@/entities/instances';
@@ -40,6 +40,8 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
 
   const [isInstalling, setIsInstalling] = createSignal(false);
 
+  const { mutateAsync: installContent } = useInstallContent();
+
   const handleInstallContent = async () => {
     if (!local.provider) {
       return;
@@ -55,7 +57,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     };
 
     setIsInstalling(true);
-    await installContent(local.instanceId, payload);
+    await installContent({ id: local.instanceId, payload });
     setIsInstalling(false);
     local.onInstalled?.(local.item.providerData);
   };

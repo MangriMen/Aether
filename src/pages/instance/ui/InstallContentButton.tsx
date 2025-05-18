@@ -19,7 +19,7 @@ import type { ContentType, Instance } from '@/entities/instances';
 import {
   CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
-  importContents,
+  useImportContents,
 } from '@/entities/instances';
 import { open } from '@tauri-apps/plugin-dialog';
 import { OPEN_FILTERS_BY_CONTENT_TYPE } from '../model';
@@ -45,6 +45,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
 
   const contentTypes = createMemo(() => props.contentTypes || CONTENT_TYPES);
 
+  const { mutateAsync: importContents } = useImportContents();
   const handleAddContents = async (contentType: ContentType) => {
     const paths = await open({
       multiple: true,
@@ -56,7 +57,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
       return;
     }
 
-    importContents(local.instanceId, paths, contentType);
+    importContents({ id: local.instanceId, paths, type: contentType });
   };
 
   return (

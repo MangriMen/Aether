@@ -5,24 +5,26 @@ import { splitProps, type Component, type ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instances';
-import { useInstanceActions } from '@/entities/instances';
-
 import { useTranslate } from '@/shared/model';
+import { useRevealInExplorer } from '@/entities/instances';
 
 export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {
-    instance: Instance;
+    instancePath?: string;
   };
 
 export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance']);
+  const [local, others] = splitProps(props, ['instancePath']);
 
   const [{ t }] = useTranslate();
 
-  const { openFolder: handleOpenFolder } = useInstanceActions();
-
-  const handleClick = () => handleOpenFolder(local.instance);
+  const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+  const handleClick = () => {
+    if (!local.instancePath) {
+      return;
+    }
+    revealInExplorer({ path: local.instancePath });
+  };
 
   return (
     <CombinedTooltip
@@ -32,6 +34,7 @@ export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
       variant='secondary'
       icon={MdiFolderIcon}
       onClick={handleClick}
+      disabled={!local.instancePath}
       {...others}
     />
   );

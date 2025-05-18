@@ -10,6 +10,8 @@ import {
   InstanceCard,
   InstanceContextMenu,
   useInstanceActions,
+  useInstanceDir,
+  useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
 import { useTranslate } from '@/shared/model';
@@ -22,6 +24,8 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const navigate = useNavigate();
 
   const id = createMemo(() => props.instance.id);
+
+  const instancePath = useInstanceDir(() => id());
 
   const [{ t }] = useTranslate();
 
@@ -36,7 +40,6 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     launch: launchInstance,
     remove: removeInstance,
     stop: stopInstance,
-    openFolder,
   } = useInstanceActions();
 
   const handleLaunch = (e: MouseEvent) => {
@@ -51,7 +54,14 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const handleRemove = () =>
     removeInstance(props.instance).then(() => closeRemoveModal());
 
-  const handleOpenFolder = () => openFolder(props.instance);
+  const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+  const handleOpenFolder = () => {
+    if (!instancePath.data) {
+      return;
+    }
+
+    revealInExplorer({ path: instancePath.data });
+  };
 
   const handleOpenSettings = () => {
     navigate(`/instance-settings/${encodeURIComponent(props.instance.id)}`);
@@ -72,6 +82,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         onOpenFolder={handleOpenFolder}
         onOpenSettings={handleOpenSettings}
         onRemove={openRemoveModal}
+        disableOpenFolder={!instancePath}
       >
         <ContextMenuTrigger
           as={InstanceCard}

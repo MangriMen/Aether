@@ -1,8 +1,7 @@
 import {
   ContentType,
   InstanceInstallStage,
-  refetchInstanceContent,
-  useInstanceContent,
+  useInstanceContents,
   type Instance,
 } from '@/entities/instances';
 
@@ -25,10 +24,15 @@ import { ModLoader } from '@/entities/minecrafts';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
+  instancePath?: string;
 };
 
 export const ContentTab: Component<ContentTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'class']);
+  const [local, others] = splitProps(props, [
+    'instance',
+    'instancePath',
+    'class',
+  ]);
 
   const navigate = useNavigate();
 
@@ -38,7 +42,10 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
     () => local.instance.installStage !== InstanceInstallStage.Installed,
   );
 
-  const instanceContent = useInstanceContent(() => local.instance.id);
+  const instanceContent = useInstanceContents(() => local.instance.id);
+  const instanceContentArray = createMemo(() =>
+    instanceContent.data ? Object.values(instanceContent.data) : undefined,
+  );
 
   const [search, setSearch] = createSignal<string | undefined>();
 
@@ -64,9 +71,9 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
         when={
-          instanceContent.array !== undefined &&
-          !!instanceContent.array.length &&
-          instanceContent.array
+          instanceContentArray() !== undefined &&
+          !!instanceContentArray()?.length &&
+          instanceContentArray()
         }
         fallback={
           <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
@@ -94,11 +101,11 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
             />
             <ContentTable
               data={items()}
-              refetch={() => refetchInstanceContent(local.instance.id)}
+              refetch={() => instanceContent.refetch()}
               searchQuery={search()}
-              isLoading={instanceContent.loading}
+              isLoading={instanceContent.isLoading}
               instanceId={local.instance.id}
-              instancePath={local.instance.path}
+              instancePath={local.instancePath}
             />
           </>
         )}
