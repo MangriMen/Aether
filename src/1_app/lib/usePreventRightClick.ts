@@ -1,5 +1,5 @@
 import { createEffect, onCleanup } from 'solid-js';
-import { createPreventRightClick } from '../../shared/lib/createPreventRightClick';
+import { createPreventRightClick } from '@/shared/lib/createPreventRightClick';
 import { RIGHT_CLICK_EXCLUDE_TAGS } from '../config';
 
 /**

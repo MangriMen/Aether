@@ -3,7 +3,7 @@ import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import { cn } from 'src/shared/lib';
+import { cn } from '@/shared/lib';
 
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 const ContextMenuPortal = ContextMenuPrimitive.Portal;

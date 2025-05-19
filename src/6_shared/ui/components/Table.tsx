@@ -2,7 +2,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { cn } from 'src/shared/lib';
+import { cn } from '@/shared/lib';
 
 const Table: Component<
   ComponentProps<'table'> & { disableWrapper?: boolean }

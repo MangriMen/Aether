@@ -3,7 +3,7 @@ import * as TooltipPrimitive from '@kobalte/core/tooltip';
 import { splitProps } from 'solid-js';
 import type { ValidComponent, Component } from 'solid-js';
 
-import { cn } from 'src/shared/lib';
+import { cn } from '@/shared/lib';
 
 type TooltipTriggerProps<T extends ValidComponent = 'button'> =
   TooltipPrimitive.TooltipTriggerProps<T>;

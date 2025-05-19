@@ -3,7 +3,7 @@ import * as SeparatorPrimitive from '@kobalte/core/separator';
 import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import { cn } from 'src/shared/lib';
+import { cn } from '@/shared/lib';
 
 type SeparatorRootProps<T extends ValidComponent = 'hr'> =
   SeparatorPrimitive.SeparatorRootProps<T> & { class?: string | undefined };

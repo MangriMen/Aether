@@ -3,7 +3,7 @@ import * as PopoverPrimitive from '@kobalte/core/popover';
 import type { Component, ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import { cn } from 'src/shared/lib';
+import { cn } from '@/shared/lib';
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
