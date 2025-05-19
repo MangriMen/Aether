@@ -77,7 +77,15 @@
     "content": "Content",
     "noContent": "You don't have any installed content",
     "showFile": "Show file",
-    "installContent": "Install content"
+    "installContent": "Install content",
+    "instanceCreated": "Instance {{name}} created",
+    "instanceUpdated": "Instance {{name}} updated",
+    "instanceInstalled": "Instance {{name}} installed",
+    "instanceImported": "Instance {{name}} imported",
+    "instanceLaunched": "Instance {{name}} launched",
+    "instanceStopped": "Instance stopped",
+    "instanceRemoved": "Instance {{name}} removed",
+    "instanceEdited": "Instance {{name}} edited"
   },
   "createInstance": {
     "title": "Create instance",

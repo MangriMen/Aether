@@ -77,7 +77,15 @@
     "content": "Контент",
     "noContent": "У вас ещё нет установленного контента",
     "showFile": "Показать файл",
-    "installContent": "Установить контент"
+    "installContent": "Установить контент",
+    "instanceUpdated": "Инстанс {{name}} обновлён",
+    "instanceCreated": "Инстанс {{name}} создан",
+    "instanceEdited": "Инстанс {{name}} изменён",
+    "instanceImported": "Инстанс {{name}} импортирован",
+    "instanceInstalled": "Инстанс {{name}} установлен",
+    "instanceLaunched": "Инстанс {{name}} запущен",
+    "instanceRemoved": "Инстанс {{name}} удалён",
+    "instanceStopped": "Инстанс остановлен"
   },
   "createInstance": {
     "title": "Создать инстанс",

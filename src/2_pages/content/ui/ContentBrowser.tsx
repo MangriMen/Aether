@@ -99,7 +99,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const instanceContent = useInstanceContents(() => local.instance.id);
 
   const instanceContentArray = createMemo(() =>
-    instanceContent ? Object.values(instanceContent) : undefined,
+    instanceContent.data ? Object.values(instanceContent.data) : undefined,
   );
 
   const compareMetadataField = useMetadataFieldToCheckInstalled(

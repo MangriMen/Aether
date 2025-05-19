@@ -50,10 +50,12 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
   const contentProviders = useContentProviders();
 
   const transformedContentProviders = createMemo(() =>
-    Object.entries(contentProviders).map(([key, value]) => ({
-      name: key,
-      value,
-    })),
+    contentProviders.data
+      ? Object.entries(contentProviders.data).map(([key, value]) => ({
+          name: key,
+          value,
+        }))
+      : [],
   );
 
   const availableContent = createMemo(() => {

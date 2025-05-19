@@ -18,7 +18,7 @@ import type {
   ContentType,
 } from '../model';
 import { showToast } from '@/shared/ui';
-import type { Accessor } from 'solid-js';
+import { type Accessor } from 'solid-js';
 
 // Ключи для кэширования контента
 export const contentKeys = {
@@ -51,7 +51,10 @@ export const useContentByProvider = (
   payload: Accessor<ContentRequest | undefined>,
 ) => {
   return useQuery(() => ({
-    queryKey: [...contentKeys.providerContent(payload()!.provider), payload()],
+    queryKey: [
+      ...contentKeys.providerContent(payload()?.provider ?? ''),
+      payload(),
+    ],
     queryFn: () => getContentByProviderRaw(payload()!),
     enabled: !!payload(),
   }));
