@@ -16,7 +16,7 @@ import {
 import type { Instance, InstanceImportDto, EditInstance } from '../model';
 import { showToast } from '@/shared/ui';
 import { QUERY_KEYS } from './query_keys';
-import type { Accessor } from 'solid-js';
+import { createMemo, type Accessor } from 'solid-js';
 import { useTranslate } from '@/6_shared/model';
 
 export const useInstances = () => {
@@ -27,32 +27,44 @@ export const useInstances = () => {
 };
 
 export const useInstance = (id: Accessor<string>) => {
-  const queryClient = useQueryClient();
   const instancesQuery = useInstances();
 
-  // Получаем экземпляр из общего списка
-  const getSharedInstance = () => {
-    const instances = queryClient.getQueryData<Instance[]>(
-      QUERY_KEYS.INSTANCE.LIST(),
-    );
+  // Реактивно получаем данные из списка
+  const sharedInstance = createMemo(() => {
+    const instances = instancesQuery.data;
     return instances?.find((inst) => inst.id === id());
-  };
+  });
 
-  // Запрос деталей экземпляра (только если нет в общем списке)
+  // Запрос деталей (только если нет в списке)
   const detailQuery = useQuery(() => ({
     queryKey: QUERY_KEYS.INSTANCE.GET(id()),
     queryFn: () => getInstanceRaw(id()),
-    initialData: getSharedInstance,
-    initialDataUpdatedAt: () =>
-      queryClient.getQueryState(QUERY_KEYS.INSTANCE.LIST())?.dataUpdatedAt,
-    enabled: !getSharedInstance() && !!id(),
+    enabled: !sharedInstance() && !!id(),
   }));
 
+  // Комбинированный результат
+  const data = createMemo(() => sharedInstance() ?? detailQuery.data);
+  const isLoading = createMemo(
+    () => instancesQuery.isLoading || detailQuery.isLoading,
+  );
+  const isError = createMemo(
+    () => instancesQuery.isError || detailQuery.isError,
+  );
+  const error = createMemo(() => instancesQuery.error || detailQuery.error);
+
   return {
-    data: getSharedInstance() || detailQuery.data,
-    isLoading: instancesQuery.isLoading || detailQuery.isLoading,
-    isError: instancesQuery.isError || detailQuery.isError,
-    error: instancesQuery.error || detailQuery.error,
+    get data() {
+      return data();
+    },
+    get isLoading() {
+      return isLoading();
+    },
+    get isError() {
+      return isError();
+    },
+    get error() {
+      return error();
+    },
     refetch: detailQuery.refetch,
   };
 };
@@ -96,9 +108,7 @@ export const useInstallInstance = () => {
         refetchType: 'none',
       });
 
-      const instanceName =
-        queryClient.getQueryData<Instance>(QUERY_KEYS.INSTANCE.GET(id))?.name ??
-        id;
+      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
 
       showToast({
         title: t('instance.instanceInstalled', { name: instanceName }),
@@ -119,9 +129,7 @@ export const useUpdateInstance = () => {
       // updateInstanceCacheData(queryClient, updatedInstance, id);
       invalidateInstanceData(queryClient, id);
 
-      const instanceName =
-        queryClient.getQueryData<Instance>(QUERY_KEYS.INSTANCE.GET(id))?.name ??
-        id;
+      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
 
       showToast({
         title: t('instance.instanceUpdated', { name: instanceName }),
@@ -159,9 +167,7 @@ export const useLaunchInstance = () => {
   return useMutation(() => ({
     mutationFn: (id: string) => launchInstanceRaw(id),
     onSuccess: (_, id) => {
-      const instanceName =
-        queryClient.getQueryData<Instance>(QUERY_KEYS.INSTANCE.GET(id))?.name ??
-        id;
+      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
 
       showToast({
         title: t('instance.instanceLaunched', { name: instanceName }),
@@ -194,9 +200,7 @@ export const useRemoveInstance = () => {
       // Удаляем из списка и детали
       removeInstanceData(queryClient, id);
 
-      const instanceName =
-        queryClient.getQueryData<Instance>(QUERY_KEYS.INSTANCE.GET(id))?.name ??
-        id;
+      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
       showToast({
         title: t('instance.instanceRemoved', { name: instanceName }),
         variant: 'success',
@@ -241,9 +245,6 @@ export const useEditInstance = () => {
     onSuccess: (_, { id }) => {
       // updateInstanceCacheData(queryClient, updatedInstance, id);
       invalidateInstanceData(queryClient, id);
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INSTANCE.LIST(),
-      });
       // showToast({
       //   title: t('instance.instanceEdited', { name: id }),
       //   variant: 'success',
@@ -268,8 +269,10 @@ export const invalidateInstanceData = (
   id: Instance['id'],
 ) => {
   queryClient.invalidateQueries({
+    queryKey: QUERY_KEYS.INSTANCE.LIST(),
+  });
+  queryClient.invalidateQueries({
     queryKey: QUERY_KEYS.INSTANCE.GET(id),
-    refetchType: 'all',
   });
   queryClient.invalidateQueries({
     queryKey: QUERY_KEYS.CONTENT.BY_INSTANCE(id),
@@ -285,3 +288,8 @@ export const removeInstanceData = (
   );
   queryClient.removeQueries({ queryKey: QUERY_KEYS.INSTANCE.GET(id) });
 };
+
+export const getInstanceFromCache = (
+  queryClient: QueryClient,
+  id: Instance['id'],
+) => queryClient.getQueryData<Instance>(QUERY_KEYS.INSTANCE.GET(id));
