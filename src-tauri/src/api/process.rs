@@ -1,4 +1,4 @@
-use aether_core::state::MinecraftProcessMetadata;
+use aether_core::features::process::MinecraftProcessMetadata;
 
 use crate::AetherLauncherResult;
 
@@ -13,12 +13,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 
 #[tauri::command]
 pub async fn process_list() -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_all().await?)
+    Ok(aether_core::api::process::list().await?)
 }
 
 #[tauri::command]
 pub async fn process_get_by_instance_id(
     id: String,
 ) -> AetherLauncherResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_by_instance_id(&id).await?)
+    Ok(aether_core::api::process::get_by_instance_id(id).await?)
 }

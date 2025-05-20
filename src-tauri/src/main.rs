@@ -11,9 +11,9 @@ use launcher::{process_exit, setup_app};
 pub use utils::result::*;
 
 use api::{
-    get_action_on_instance_launch, get_loader_versions_manifest, get_max_ram,
-    get_minecraft_version_manifest, get_progress_bars, get_settings, initialize_state,
-    load_enabled_plugins, reveal_in_explorer, set_action_on_instance_launch,
+    get_action_on_instance_launch, get_loader_version_manifest, get_max_ram,
+    get_minecraft_version_manifest, get_progress_bars, get_settings, initialize_plugins,
+    initialize_state, reveal_in_explorer, set_action_on_instance_launch,
 };
 
 fn main() {
@@ -40,9 +40,9 @@ fn main() {
         .plugin(api::plugin::init())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
-            load_enabled_plugins,
+            initialize_plugins,
             get_minecraft_version_manifest,
-            get_loader_versions_manifest,
+            get_loader_version_manifest,
             get_progress_bars,
             reveal_in_explorer,
             get_settings,

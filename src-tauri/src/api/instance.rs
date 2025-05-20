@@ -1,16 +1,16 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::PathBuf};
 
-use aether_core::state::{
-    ContentRequest, ContentResponse, ContentType, ImportConfig, InstallContentPayload, Instance,
-    InstanceFile, MinecraftProcessMetadata,
+use aether_core::features::{
+    instance::{
+        ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
+        ImportConfig, Instance, InstanceFile, NewInstance,
+    },
+    process::MinecraftProcessMetadata,
 };
 use dashmap::DashMap;
 use uuid::Uuid;
 
-use crate::{
-    models::minecraft::{InstanceCreateDto, InstanceEditDto, InstanceImportDto},
-    AetherLauncherResult,
-};
+use crate::{models::minecraft::InstanceImportDto, AetherLauncherResult};
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
@@ -36,37 +36,26 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_get_content_by_provider,
             instance_install_content,
             instance_get_metadata_field_to_check_installed,
-            instance_import_contents
+            instance_import_contents,
+            instance_get_dir,
         ])
         .build()
 }
 
 #[tauri::command]
-pub async fn instance_create(instance_create_dto: InstanceCreateDto) -> AetherLauncherResult<()> {
-    tokio::spawn(async move {
-        aether_core::api::instance::create(
-            instance_create_dto.name,
-            instance_create_dto.game_version,
-            instance_create_dto.mod_loader,
-            instance_create_dto.loader_version,
-            instance_create_dto.icon_path,
-            instance_create_dto.skip_install_profile,
-            None,
-        )
-        .await
-    });
-
+pub async fn instance_create(new_instance: NewInstance) -> AetherLauncherResult<()> {
+    tokio::spawn(async move { aether_core::api::instance::create(new_instance).await });
     Ok(())
 }
 
 #[tauri::command]
 pub async fn instance_install(id: String, force: bool) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::install(&id, force).await?)
+    Ok(aether_core::api::instance::install(id, force).await?)
 }
 
 #[tauri::command]
 pub async fn instance_update(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::update(&id).await?)
+    Ok(aether_core::api::instance::update(id).await?)
 }
 
 #[tauri::command]
@@ -84,51 +73,38 @@ pub async fn instance_get_import_configs() -> AetherLauncherResult<Vec<ImportCon
 }
 
 #[tauri::command]
-pub async fn instance_list() -> AetherLauncherResult<(Vec<Instance>, Vec<String>)> {
-    let res = aether_core::api::instance::get_all().await?;
-    Ok((res.0, res.1.iter().map(|err| err.to_string()).collect()))
+pub async fn instance_list() -> AetherLauncherResult<Vec<Instance>> {
+    Ok(aether_core::api::instance::list().await?)
 }
 
 #[tauri::command]
 pub async fn instance_get(id: String) -> AetherLauncherResult<Instance> {
-    Ok(aether_core::api::instance::get(&id).await?)
+    Ok(aether_core::api::instance::get(id).await?)
 }
 
 #[tauri::command]
-pub async fn instance_edit(
-    id: String,
-    instance_edit_dto: InstanceEditDto,
-) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::edit(
-        &id,
-        &instance_edit_dto.name,
-        &instance_edit_dto.java_path,
-        &instance_edit_dto.extra_launch_args,
-        &instance_edit_dto.custom_env_vars,
-        &instance_edit_dto.memory,
-        &instance_edit_dto.game_resolution,
-    )
-    .await?)
+pub async fn instance_edit(id: String, edit_instance: EditInstance) -> AetherLauncherResult<()> {
+    Ok(aether_core::api::instance::edit(id, edit_instance).await?)
 }
 
 #[tauri::command]
 pub async fn instance_remove(id: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove(&id).await?)
+    Ok(aether_core::api::instance::remove(id).await?)
 }
 
 #[tauri::command]
 pub async fn instance_get_contents(
     id: String,
 ) -> AetherLauncherResult<DashMap<String, InstanceFile>> {
-    Ok(aether_core::api::instance::get_contents(&id).await?)
+    Ok(aether_core::api::instance::get_contents(id).await?)
 }
 
 #[tauri::command]
 pub async fn instance_toggle_disable_content(
-    id: String,
-    content_path: String,
+    _id: String,
+    _content_path: String,
 ) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::toggle_disable_content(&id, &content_path).await?)
+    todo!()
 }
 
 #[tauri::command]
@@ -136,7 +112,7 @@ pub async fn instance_disable_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::disable_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
@@ -144,12 +120,12 @@ pub async fn instance_enable_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::enable_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::enable_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
 pub async fn instance_remove_content(id: String, content_path: String) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove_content(&id, &content_path).await?)
+    Ok(aether_core::api::instance::remove_content(id, content_path).await?)
 }
 
 #[tauri::command]
@@ -157,12 +133,12 @@ pub async fn instance_remove_contents(
     id: String,
     content_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::remove_contents(&id, &content_paths).await?)
+    Ok(aether_core::api::instance::remove_contents(id, content_paths).await?)
 }
 
 #[tauri::command]
 pub async fn instance_launch(id: String) -> AetherLauncherResult<MinecraftProcessMetadata> {
-    Ok(aether_core::api::instance::run(&id).await?)
+    Ok(aether_core::api::instance::run(id).await?)
 }
 
 #[tauri::command]
@@ -177,36 +153,41 @@ pub async fn instance_get_content_providers() -> AetherLauncherResult<HashMap<St
 
 #[tauri::command]
 pub async fn instance_get_content_by_provider(
-    payload: ContentRequest,
-) -> AetherLauncherResult<ContentResponse> {
-    Ok(aether_core::api::instance::get_content_by_provider(&payload).await?)
+    payload: ContentSearchParams,
+) -> AetherLauncherResult<ContentSearchResult> {
+    Ok(aether_core::api::instance::search_content(payload).await?)
 }
 
 #[tauri::command]
 pub async fn instance_install_content(
     id: String,
-    payload: InstallContentPayload,
+    payload: ContentInstallParams,
 ) -> AetherLauncherResult<()> {
-    Ok(aether_core::api::instance::install_content(&id, &payload).await?)
+    Ok(aether_core::api::instance::install_content(id, payload).await?)
 }
 
 #[tauri::command]
 pub async fn instance_get_metadata_field_to_check_installed(
     provider: String,
 ) -> AetherLauncherResult<String> {
-    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(&provider).await?)
+    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
 }
 
 #[tauri::command]
 pub async fn instance_import_contents(
-    id: &str,
-    paths: Vec<String>,
+    instance_id: String,
     content_type: ContentType,
+    source_paths: Vec<String>,
 ) -> AetherLauncherResult<()> {
     Ok(aether_core::api::instance::import_contents(
-        id,
-        paths.iter().map(Path::new).collect(),
+        instance_id,
         content_type,
+        source_paths.iter().map(PathBuf::from).collect(),
     )
     .await?)
+}
+
+#[tauri::command]
+pub async fn instance_get_dir(id: String) -> AetherLauncherResult<PathBuf> {
+    Ok(aether_core::api::instance::get_dir(&id).await?)
 }

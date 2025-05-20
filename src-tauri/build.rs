@@ -38,6 +38,7 @@ fn main() {
             "instance_install_content",
             "instance_get_metadata_field_to_check_installed",
             "instance_import_contents",
+            "instance_get_dir",
         ]),
     );
 
@@ -49,7 +50,7 @@ fn main() {
     let plugin_plugin = (
         "plugin",
         InlinedPlugin::new().commands(&[
-            "scan_plugins",
+            "sync_plugins",
             "list_plugins",
             "plugin_get",
             "is_plugin_enabled",
