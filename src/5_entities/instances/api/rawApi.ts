@@ -148,13 +148,13 @@ export const getMetadataFieldToCheckInstalledRaw = (provider: string) =>
   );
 
 export const importContentsRaw = (
-  id: string,
-  paths: string[],
+  instanceId: string,
+  sourcePaths: string[],
   contentType: ContentType,
 ) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_import_contents`, {
-    id,
-    paths,
+    instanceId,
+    sourcePaths,
     contentType,
   });
 
