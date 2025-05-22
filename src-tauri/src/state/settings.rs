@@ -1,11 +1,10 @@
 use std::fs;
 
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
-#[derive(
-    serde::Serialize, serde::Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default,
-)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ActionOnInstanceLaunch {
     #[default]
@@ -14,7 +13,7 @@ pub enum ActionOnInstanceLaunch {
     Close,
 }
 
-#[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct SettingsStateInner {
     pub action_on_instance_launch: ActionOnInstanceLaunch,
 }

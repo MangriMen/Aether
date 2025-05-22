@@ -3,8 +3,9 @@ use aether_core::features::{
     instance::Instance,
     settings::{MemorySettings, WindowSize},
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceLaunchDto {
     pub instance: Instance,
@@ -15,7 +16,7 @@ pub struct InstanceLaunchDto {
     pub credentials: Credentials,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceImportDto {
     pub pack_type: String,
