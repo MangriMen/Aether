@@ -4,13 +4,10 @@ import { splitProps } from 'solid-js';
 import { Separator } from '@/shared/ui';
 
 import type { Account, AccountType } from '@/entities/accounts';
-import {
-  AccountLoginMethods,
-  AccountsList,
-  useAccounts,
-} from '@/entities/accounts';
+import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 
 export type AccountSelectCardProps = ComponentProps<'div'> & {
+  accounts: Account[];
   onActivate: (id: Account['id']) => void;
   onCreate: (type: AccountType) => void;
   onLogout: (uuid: string) => void;
@@ -18,18 +15,17 @@ export type AccountSelectCardProps = ComponentProps<'div'> & {
 
 export const AccountsMenu: Component<AccountSelectCardProps> = (props) => {
   const [local, others] = splitProps(props, [
+    'accounts',
     'onActivate',
     'onCreate',
     'onLogout',
   ]);
 
-  const accountState = useAccounts();
-
   return (
     <div {...others}>
       <AccountsList
         class='max-h-48 overflow-y-auto px-3 pb-1 pt-3'
-        accounts={accountState()}
+        accounts={local.accounts}
         onActivate={local.onActivate}
         onRemove={local.onLogout}
       />

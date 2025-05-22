@@ -27,6 +27,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
   const mappedAccounts = createMemo(() =>
     local.accounts.reduce<{ active: Account | undefined; others: Account[] }>(
       (acc, account) => {
+        console.log(account.active, account.username);
         if (account.active) {
           acc.active = account;
         } else {

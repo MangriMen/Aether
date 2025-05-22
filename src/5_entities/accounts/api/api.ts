@@ -1,17 +1,47 @@
-import { invoke } from '@tauri-apps/api/core';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import { QUERY_KEYS } from './query_keys';
+import {
+  changeAccountRaw,
+  createOfflineAccountRaw,
+  listAccountsRaw,
+  logoutRaw,
+} from './rawApi';
 
-import type { Account } from '../model';
+export const useAccounts = () =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.ACCOUNT.LIST(),
+    queryFn: listAccountsRaw,
+  }));
 
-const PLUGIN_PREFIX = 'plugin:auth|';
+export const useCreateOfflineAccount = () => {
+  const queryClient = useQueryClient();
 
-export const getAccounts = () =>
-  invoke<Account[]>(`${PLUGIN_PREFIX}get_accounts`);
+  return useMutation(() => ({
+    mutationFn: createOfflineAccountRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
+    },
+  }));
+};
 
-export const createOfflineAccount = (username: string) =>
-  invoke<string>(`${PLUGIN_PREFIX}create_offline_account`, { username });
+export const useChangeAccount = () => {
+  const queryClient = useQueryClient();
 
-export const changeAccount = (id: Account['id']) =>
-  invoke(`${PLUGIN_PREFIX}change_account`, { id });
+  return useMutation(() => ({
+    mutationFn: changeAccountRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
+    },
+  }));
+};
 
-export const logout = (id: Account['id']) =>
-  invoke(`${PLUGIN_PREFIX}logout`, { id });
+export const useLogout = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: logoutRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
+    },
+  }));
+};

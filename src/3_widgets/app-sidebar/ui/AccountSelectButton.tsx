@@ -12,14 +12,16 @@ import {
 } from '@/shared/ui';
 
 import type { Account, AccountType } from '@/entities/accounts';
-import { changeAccount, logout, refetchAccounts } from '@/entities/accounts';
+import { useChangeAccount, useLogout } from '@/entities/accounts';
 
 import { useTranslate } from '@/shared/model';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 
 export type AccountSelectButtonProps = IconButtonProps & {
+  accounts: Account[];
   accountSelectCard: Component<
     ComponentProps<'div'> & {
+      accounts: Account[];
       onActivate: (id: Account['id']) => void;
       onCreate: (type: AccountType) => void;
       onLogout: (uuid: string) => void;
@@ -34,6 +36,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'accounts',
     'accountSelectCard',
     'createOfflineAccountDialog',
   ]);
@@ -44,14 +47,16 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
     setAccountCreationType(type);
   };
 
+  const { mutateAsync: changeAccount } = useChangeAccount();
+
   const handleSelect = async (id: Account['id']) => {
     await changeAccount(id);
-    refetchAccounts();
   };
+
+  const { mutateAsync: logout } = useLogout();
 
   const handleLogout = async (uuid: string) => {
     await logout(uuid);
-    refetchAccounts();
   };
 
   const [accountCreationType, setAccountCreationType] =
@@ -76,6 +81,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
         </PopoverTrigger>
         <PopoverContent class='w-max p-0'>
           <local.accountSelectCard
+            accounts={local.accounts}
             onCreate={handleCreate}
             onActivate={handleSelect}
             onLogout={handleLogout}
