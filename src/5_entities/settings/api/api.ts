@@ -1,6 +1,15 @@
-import { invoke } from '@tauri-apps/api/core';
-import type { Settings } from '../model';
+import { useQuery } from '@tanstack/solid-query';
+import { QUERY_KEYS } from './queryKeys';
+import { getMaxRamRaw, getSettingsRaw } from './rawApi';
 
-export const getMaxRam = () => invoke<number>('get_max_ram');
+export const useSettings = () =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.SETTINGS.GET(),
+    queryFn: getSettingsRaw,
+  }));
 
-export const getSettings = () => invoke<Settings>('get_settings');
+export const useMaxRam = () =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.SETTINGS.RAM(),
+    queryFn: getMaxRamRaw,
+  }));

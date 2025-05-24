@@ -28,7 +28,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const maxRam = useMaxRam();
 
-  const [maxMemory] = createResource(() => maxRam / 1024 / 1024, {
+  const [maxMemory] = createResource(() => (maxRam.data ?? 0) / 1024 / 1024, {
     initialValue: MIN_JRE_MEMORY,
   });
 
@@ -89,7 +89,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <CustomMemory
         systemMaxMemory={maxMemory()}
-        defaultMaxMemory={settings?.memory.maximum}
+        defaultMaxMemory={settings.data?.memory.maximum}
         instanceMaxMemory={local.instance.memory?.maximum}
         onChange={handleChangeMemory}
       />
