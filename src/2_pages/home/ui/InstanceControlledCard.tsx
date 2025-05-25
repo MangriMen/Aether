@@ -16,7 +16,10 @@ import {
 } from '@/entities/instances';
 import { useTranslate } from '@/shared/model';
 
-export type InstanceControlledCardProps = InstanceCardProps;
+export type InstanceControlledCardProps = Pick<
+  InstanceCardProps,
+  'instance' | 'instanceActionButton'
+>;
 
 export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   props,
@@ -36,19 +39,12 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     setShowRemoveModal(false);
   };
 
-  const {
-    launch: launchInstance,
-    remove: removeInstance,
-    stop: stopInstance,
-  } = useInstanceActions();
+  const { launch: launchInstance, remove: removeInstance } =
+    useInstanceActions();
 
   const handleLaunch = (e: MouseEvent) => {
     preventAll(e);
     launchInstance(props.instance);
-  };
-  const handleStop = (e: MouseEvent) => {
-    preventAll(e);
-    stopInstance(props.instance);
   };
 
   const handleRemove = () =>
@@ -86,11 +82,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
       >
         <ContextMenuTrigger
           as={InstanceCard}
-          isRunning={runningInstanceData()?.isRunning}
-          isLoading={runningInstanceData()?.isLoading}
           onClick={goToInstancePage}
-          onLaunchClick={handleLaunch}
-          onStopClick={handleStop}
           {...props}
         />
       </InstanceContextMenu>
