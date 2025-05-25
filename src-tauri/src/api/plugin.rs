@@ -1,5 +1,5 @@
 use aether_core::core::LauncherState;
-use aether_core::features::plugins::{EditPluginSettings, PluginManifest, PluginSettings};
+use aether_core::features::plugins::{EditPluginSettings, PluginDto, PluginSettings};
 
 use crate::AetherLauncherResult;
 
@@ -9,7 +9,6 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             sync_plugins,
             list_plugins,
             plugin_get,
-            is_plugin_enabled,
             enable_plugin,
             disable_plugin,
             call_plugin,
@@ -26,18 +25,13 @@ pub async fn sync_plugins() -> AetherLauncherResult<()> {
 }
 
 #[tauri::command]
-pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginManifest>> {
-    Ok(aether_core::api::plugin::list_manifests().await?)
+pub async fn list_plugins() -> AetherLauncherResult<Vec<PluginDto>> {
+    Ok(aether_core::api::plugin::list().await?)
 }
 
 #[tauri::command]
-pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginManifest> {
-    Ok(aether_core::api::plugin::get_manifest(id).await?)
-}
-
-#[tauri::command]
-pub async fn is_plugin_enabled(id: String) -> AetherLauncherResult<bool> {
-    Ok(aether_core::api::plugin::is_enabled(&id).await?)
+pub async fn plugin_get(id: String) -> AetherLauncherResult<PluginDto> {
+    Ok(aether_core::api::plugin::get(id).await?)
 }
 
 #[tauri::command]

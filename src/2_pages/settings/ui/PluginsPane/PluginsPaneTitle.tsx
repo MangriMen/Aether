@@ -4,11 +4,7 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
-import {
-  openPluginsFolder,
-  refetchPlugins,
-  syncPlugins,
-} from '@/entities/plugins';
+import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
 import { isAetherLauncherError, useTranslate } from '@/shared/model';
 
 export type PluginsPaneTitleProps = ComponentProps<'div'>;
@@ -20,7 +16,7 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
 
   const handleOpenPluginsFolder = async () => {
     try {
-      await openPluginsFolder();
+      await openPluginsFolderRaw();
     } catch (e) {
       if (isAetherLauncherError(e)) {
         showToast({
@@ -33,8 +29,7 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   };
 
   const handleRefreshPlugins = async () => {
-    await syncPlugins();
-    await refetchPlugins();
+    await syncPluginsRaw();
   };
 
   return (

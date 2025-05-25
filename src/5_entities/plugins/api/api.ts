@@ -1,34 +1,85 @@
-import { invoke } from '@tauri-apps/api/core';
-import type { PluginInfo, PluginMetadata, PluginSettings } from '../model';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import {
+  disablePluginRaw,
+  editPluginSettingsRaw,
+  enablePluginRaw,
+  getIsPluginEnabledRaw,
+  getPluginRaw,
+  getPluginSettingsRaw,
+  listPluginsRaw,
+  openPluginsFolderRaw,
+  syncPluginsRaw,
+} from './rawApi';
+import { QUERY_KEYS } from './query_keys';
+import type { Accessor } from 'solid-js';
 
-const PLUGIN_PREFIX = 'plugin:plugin|';
+export const useSyncPlugins = () =>
+  useMutation(() => ({
+    mutationFn: syncPluginsRaw,
+  }));
 
-export const syncPlugins = async () => invoke(`${PLUGIN_PREFIX}sync_plugins`);
+export const usePlugins = () =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.PLUGIN.LIST(),
+    queryFn: listPluginsRaw,
+  }));
 
-export const listPlugins = async () =>
-  invoke<PluginMetadata[]>(`${PLUGIN_PREFIX}list_plugins`);
+export const usePlugin = (id: Accessor<string>) =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.PLUGIN.GET(id()),
+    queryFn: () => getPluginRaw(id()),
+    enabled: !!id(),
+  }));
 
-export const getPlugin = async (id: PluginInfo['id']) =>
-  invoke<PluginMetadata>(`${PLUGIN_PREFIX}plugin_get`, { id });
+export const usePluginSettings = (id: Accessor<string>) =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.PLUGIN.SETTINGS(id()),
+    queryFn: () => getPluginSettingsRaw(id()),
+    enabled: !!id(),
+  }));
 
-export const enablePlugin = async (id: PluginInfo['id']) =>
-  invoke(`${PLUGIN_PREFIX}enable_plugin`, { id });
+export const useGetPluginEnabled = (id: Accessor<string>) =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.PLUGIN.ENABLED(id()),
+    queryFn: () => getIsPluginEnabledRaw(id()),
+    enabled: !!id(),
+  }));
 
-export const disablePlugin = async (id: PluginInfo['id']) =>
-  invoke(`${PLUGIN_PREFIX}disable_plugin`, { id });
+export const useEnablePlugin = () => {
+  const queryClient = useQueryClient();
 
-export const getIsPluginEnabled = async (id: PluginInfo['id']) =>
-  invoke<boolean>(`${PLUGIN_PREFIX}is_plugin_enabled`, { id });
+  return useMutation(() => ({
+    mutationFn: enablePluginRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+    },
+  }));
+};
 
-export const getPluginSettings = async (id: PluginInfo['id']) =>
-  invoke<PluginSettings | undefined>(`${PLUGIN_PREFIX}plugin_get_settings`, {
-    id,
-  });
+export const useDisablePlugin = () => {
+  const queryClient = useQueryClient();
 
-export const editPluginSettings = async (
-  id: PluginInfo['id'],
-  settings: PluginSettings,
-) => invoke(`${PLUGIN_PREFIX}plugin_edit_settings`, { id, settings });
+  return useMutation(() => ({
+    mutationFn: disablePluginRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+    },
+  }));
+};
 
-export const openPluginsFolder = async () =>
-  invoke(`${PLUGIN_PREFIX}open_plugins_folder`);
+export const useEditPluginSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation(() => ({
+    mutationFn: editPluginSettingsRaw,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PLUGIN.SETTINGS(variables.id),
+      });
+    },
+  }));
+};
+
+export const useOpenPluginFolder = () =>
+  useMutation(() => ({
+    mutationFn: openPluginsFolderRaw,
+  }));

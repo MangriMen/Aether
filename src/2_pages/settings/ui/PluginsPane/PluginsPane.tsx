@@ -20,10 +20,10 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
       {...props}
     >
       <Show
-        when={plugins?.size}
+        when={plugins.data?.length}
         fallback={<span>{t('plugins.noPlugins')}</span>}
       >
-        <PluginsList plugins={plugins} />
+        <PluginsList plugins={plugins.data} isLoading={plugins.isLoading} />
       </Show>
     </SettingsPane>
   );
