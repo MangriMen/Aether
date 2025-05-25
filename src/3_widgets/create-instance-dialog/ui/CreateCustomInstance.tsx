@@ -27,12 +27,12 @@ import {
   IncludeSnapshotsCheckbox,
   useCreateInstance,
 } from '@/entities/instances';
-import type { LoaderVersion, Version } from '@/5_entities/minecraft';
+import type { LoaderVersion, Version } from '@/entities/minecraft';
 import {
   getLoaderVersionManifest,
   getMinecraftVersionManifest,
   ModLoader,
-} from '@/5_entities/minecraft';
+} from '@/entities/minecraft';
 
 import { useTranslate } from '@/shared/model';
 

@@ -1,23 +1,26 @@
 import { usePlugins } from '@/entities/plugins';
-import { Show, type Component } from 'solid-js';
+import { Show, splitProps, type Component } from 'solid-js';
 import { useTranslate } from '@/shared/model';
 import { PluginsList } from './PluginsList';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
 import type { SettingsPaneProps } from '@/shared/ui';
 import { SettingsPane } from '@/shared/ui';
+import { cn } from '@/shared/lib';
 
 export type PluginsPaneProps = SettingsPaneProps;
 
 export const PluginsPane: Component<PluginsPaneProps> = (props) => {
+  const [local, others] = splitProps(props, ['class']);
+
   const [{ t }] = useTranslate();
 
   const plugins = usePlugins();
 
   return (
     <SettingsPane
-      class='container max-w-screen-lg'
+      class={cn('container max-w-screen-lg', local.class)}
       label={<PluginsPaneTitle />}
-      {...props}
+      {...others}
     >
       <Show
         when={plugins.data?.length}

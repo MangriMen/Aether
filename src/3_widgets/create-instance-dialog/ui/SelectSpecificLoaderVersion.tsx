@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { LoaderVersion } from '@/5_entities/minecraft';
+import type { LoaderVersion } from '@/entities/minecraft';
 
 import { useTranslate } from '@/shared/model';
 

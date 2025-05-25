@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib';
 import type { ToggleGroupRootProps } from '@/shared/ui';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-import type { ModLoader } from '@/5_entities/minecraft';
+import type { ModLoader } from '@/entities/minecraft';
 import type { Option } from '@/shared/model';
 
 export type LoaderChipsToggleGroupProps = ToggleGroupRootProps & {

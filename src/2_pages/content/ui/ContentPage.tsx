@@ -18,7 +18,7 @@ import {
 } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 import { ContentBrowser } from './ContentBrowser';
-import { ModLoader } from '@/5_entities/minecraft';
+import { ModLoader } from '@/entities/minecraft';
 
 export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
 

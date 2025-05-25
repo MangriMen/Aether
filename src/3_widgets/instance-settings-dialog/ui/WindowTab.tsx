@@ -4,10 +4,7 @@ import { createEffect, createSignal, splitProps } from 'solid-js';
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import {
-  useEditInstance,
-  type InstanceSettingsTabProps,
-} from '@/entities/instances';
+import { useEditInstance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
@@ -17,6 +14,7 @@ import {
   RESOLUTION_FIELD_CLASS,
 } from '../model/window';
 import { getClampedResolution } from '../lib';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 

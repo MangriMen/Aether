@@ -2,7 +2,6 @@ import {
   InstanceInstallStage,
   useInstallInstance,
   useUpdateInstance,
-  type InstanceSettingsTabProps,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { Button, Image, LabeledField, showToast } from '@/shared/ui';
@@ -15,6 +14,7 @@ import {
 } from 'solid-js';
 import MdiHammerIcon from '@iconify/icons-mdi/hammer';
 import { isAetherLauncherError } from '@/shared/model';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;

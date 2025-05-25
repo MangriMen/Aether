@@ -2,7 +2,7 @@ import { createSignal, onMount, Show } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
 import { initializeApp, showWindow } from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
-import { initializePlugins } from '@/5_entities/minecraft';
+import { initializePlugins } from '@/entities/minecraft';
 
 export type AppInitializeGuardProps = { children?: JSX.Element };
 

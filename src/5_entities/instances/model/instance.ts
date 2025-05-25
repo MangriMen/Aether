@@ -1,4 +1,4 @@
-import type { ModLoader } from '@/5_entities/minecraft/@x/instances';
+import type { ModLoader } from '@/entities/minecraft/@x/instances';
 import type { ContentType } from './contentType';
 import type {
   Hooks,

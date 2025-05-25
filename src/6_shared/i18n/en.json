@@ -44,7 +44,7 @@
   },
   "settings": {
     "title": "Settings",
-    "launcher": "Launcher",
+    "appearance": "Appearance",
     "colorScheme": "Color scheme",
     "colorSchemeDescription": "Select preferred color scheme",
     "systemColorMode": "System color mode",
@@ -63,7 +63,8 @@
     "actionOnInstanceLaunchDescription": "Select an action to perform when launching an instance.\n \"Do nothing\" will not hide the launcher on launch.\n \"Hide\"  hide launcher window.\n \"Close\" will close the launcher window but will not close application (saves memory).",
     "doNothing": "Do nothing",
     "hide": "Hide",
-    "close": "Close"
+    "close": "Close",
+    "plugins": "Plugins"
   },
   "instance": {
     "settings": "Settings",

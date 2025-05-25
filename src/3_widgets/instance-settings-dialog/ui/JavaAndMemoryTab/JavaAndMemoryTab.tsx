@@ -3,17 +3,14 @@ import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
-import {
-  useEditInstance,
-  type Instance,
-  type InstanceSettingsTabProps,
-} from '@/entities/instances';
+import { useEditInstance, type Instance } from '@/entities/instances';
 
 import { useTranslate } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
+import type { InstanceSettingsTabProps } from '../../model';
 import { MIN_JRE_MEMORY } from '../../model';
 
 export type JavaAndMemoryTabProps = ComponentProps<'div'> &

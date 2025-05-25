@@ -29,7 +29,9 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
           )}
           {...others}
         >
-          <h2 class='text-xl font-bold'>{local.label}</h2>
+          <Show when={local.label}>
+            <h2 class='text-2xl font-bold'>{local.label}</h2>
+          </Show>
           {local.children}
         </div>
       }

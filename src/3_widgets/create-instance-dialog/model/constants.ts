@@ -1,6 +1,6 @@
 import type { Option } from '@/shared/model';
 
-import { ModLoader } from '@/5_entities/minecraft';
+import { ModLoader } from '@/entities/minecraft';
 
 export const loaders: Option<ModLoader>[] = [
   { name: 'Vanilla', value: ModLoader.Vanilla },

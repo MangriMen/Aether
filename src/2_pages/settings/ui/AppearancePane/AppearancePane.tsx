@@ -7,9 +7,9 @@ import { cn } from '@/shared/lib';
 import ChangeLanguageEntry from './ChangeLanguageEntry';
 import { SelectTheme } from './SelectTheme';
 
-export type LauncherPaneProps = ComponentProps<'div'>;
+export type AppearancePaneProps = ComponentProps<'div'>;
 
-export const LauncherPane: Component<LauncherPaneProps> = (props) => {
+export const AppearancePane: Component<AppearancePaneProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
   const [{ t }] = useTranslate();
@@ -17,7 +17,7 @@ export const LauncherPane: Component<LauncherPaneProps> = (props) => {
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.launcher')}
+      label={t('settings.appearance')}
       {...others}
     >
       <SettingsEntry

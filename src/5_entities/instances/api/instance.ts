@@ -1,3 +1,5 @@
+// TODO: refactor
+/* eslint-disable sonarjs/no-commented-code */
 import type { QueryClient } from '@tanstack/solid-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import {
@@ -17,7 +19,7 @@ import type { Instance, InstanceImportDto, EditInstance } from '../model';
 import { showToast } from '@/shared/ui';
 import { QUERY_KEYS } from './query_keys';
 import { createMemo, type Accessor } from 'solid-js';
-import { useTranslate } from '@/6_shared/model';
+import { useTranslate } from '@/shared/model';
 
 export const useInstances = () => {
   return useQuery(() => ({

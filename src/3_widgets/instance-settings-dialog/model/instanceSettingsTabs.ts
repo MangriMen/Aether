@@ -5,12 +5,15 @@ import MdiToolsIcon from '@iconify/icons-mdi/tools';
 import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
 
-import type { InstanceSettingsTabProps } from '@/entities/instances';
-
 import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
 import { GeneralTab } from '../ui/GeneralTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
+import type { Instance } from '@/entities/instances';
+
+export type InstanceSettingsTabProps = {
+  instance: Instance;
+};
 
 export enum InstanceSettingsDialogTabs {
   General = 'general',
