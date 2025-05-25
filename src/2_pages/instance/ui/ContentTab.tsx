@@ -20,7 +20,7 @@ import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
 import { useNavigate } from '@solidjs/router';
 import { InstallContentButton } from './InstallContentButton';
-import { ModLoader } from '@/entities/minecrafts';
+import { ModLoader } from '@/5_entities/minecraft';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;

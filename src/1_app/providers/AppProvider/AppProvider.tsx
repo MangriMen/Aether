@@ -7,7 +7,7 @@ import {
   useSetupListeners,
 } from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
-import { initializePlugins } from '@/entities/minecrafts';
+import { initializePlugins } from '@/5_entities/minecraft';
 import { refetchPlugins } from '@/entities/plugins';
 
 export type AppProviderProps = {

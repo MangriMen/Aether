@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { Version } from '@/entities/minecrafts';
+import type { Version } from '@/5_entities/minecraft';
 
 export type SelectGameVersionProps<Option extends Version = Version> =
   SelectRootProps<Option, never, 'div'> & {
