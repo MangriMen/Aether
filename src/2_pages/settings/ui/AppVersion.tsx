@@ -6,9 +6,10 @@ import {
 import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn, useDeveloperModeCounter } from '@/shared/lib';
 
 import { getVersion } from '@tauri-apps/api/app';
+import { Button } from '@/shared/ui';
 
 export type AppVersionProps = ComponentProps<'div'>;
 
@@ -19,6 +20,8 @@ export const AppVersion: Component<AppVersionProps> = (props) => {
   const osPlatform = createMemo(() => getOsPlatform());
   const osVersion = createMemo(() => getOsVersion());
 
+  const handleClickLogo = useDeveloperModeCounter();
+
   return (
     <div
       class={cn(
@@ -27,6 +30,7 @@ export const AppVersion: Component<AppVersionProps> = (props) => {
       )}
       {...others}
     >
+      <Button class='size-2 p-0' variant='ghost' onClick={handleClickLogo} />
       <p class='m-0'>Aether {appVersion()}</p>
       <p class='m-0'>
         <span class='capitalize'>

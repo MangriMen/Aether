@@ -64,7 +64,8 @@
     "doNothing": "Ничего не делать",
     "hide": "Скрыть",
     "close": "Закрыть",
-    "plugins": "Плагины"
+    "plugins": "Плагины",
+    "experimental": "Экспериментальное"
   },
   "instance": {
     "settings": "Настройки",

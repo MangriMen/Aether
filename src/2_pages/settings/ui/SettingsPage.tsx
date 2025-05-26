@@ -4,6 +4,7 @@ import {
   For,
   splitProps,
   type ComponentProps,
+  createMemo,
 } from 'solid-js';
 
 import { AppVersion } from './AppVersion';
@@ -21,7 +22,7 @@ import {
   SettingsTabs,
 } from '../model/settingsTabs';
 import type { PolymorphicProps } from '@kobalte/core';
-import { useTranslate } from '@/shared/model';
+import { isDeveloperMode, useTranslate } from '@/shared/model';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
@@ -33,8 +34,28 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
 
   const [{ t }] = useTranslate();
 
+  const tabs_triggers = createMemo(() => {
+    if (!isDeveloperMode()) {
+      return SETTINGS_TABS_TRIGGER.filter(
+        (trigger) => trigger.value !== SettingsTabs.Experimental,
+      );
+    }
+
+    return SETTINGS_TABS_TRIGGER;
+  });
+
+  const tabs_contents = createMemo(() => {
+    if (!isDeveloperMode()) {
+      return SETTINGS_TABS_CONTENT.filter(
+        (trigger) => trigger.value !== SettingsTabs.Experimental,
+      );
+    }
+
+    return SETTINGS_TABS_CONTENT;
+  });
+
   return (
-    <div class='flex size-full flex-col bg-secondary-dark p-4' {...others}>
+    <div class='flex size-full flex-col p-4' {...others}>
       <Tabs
         class='flex size-full overflow-hidden'
         defaultValue={SettingsTabs.Appearance}
@@ -42,7 +63,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
         {...(others as TabsProps<T>)}
       >
         <SettingsTabsList class='w-56'>
-          <For each={SETTINGS_TABS_TRIGGER}>
+          <For each={tabs_triggers()}>
             {(tab) => (
               <SettingsTabsTrigger
                 value={tab.value}
@@ -56,7 +77,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
           </For>
           <AppVersion class='mt-auto self-start text-sm' />
         </SettingsTabsList>
-        <For each={SETTINGS_TABS_CONTENT}>
+        <For each={tabs_contents()}>
           {(tabContent) => (
             <SettingsTabsContent
               value={tabContent.value}

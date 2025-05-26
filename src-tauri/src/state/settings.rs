@@ -16,6 +16,7 @@ pub enum ActionOnInstanceLaunch {
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct SettingsStateInner {
     pub action_on_instance_launch: ActionOnInstanceLaunch,
+    pub mica: bool,
 }
 
 pub type SettingsState = Mutex<SettingsStateInner>;

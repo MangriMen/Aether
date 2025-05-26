@@ -1,9 +1,19 @@
-import { invoke } from '@tauri-apps/api/core';
-import type { ActionOnInstanceLaunchType } from '../model';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import { getMicaRaw, setMicaRaw } from './rawApi';
 
-export const getActionOnInstanceLaunch = () =>
-  invoke<ActionOnInstanceLaunchType>('get_action_on_instance_launch');
+export const useMica = () =>
+  useQuery(() => ({
+    queryKey: ['mica'],
+    queryFn: getMicaRaw,
+  }));
 
-export const setActionOnInstanceLaunch = (
-  actionOnInstanceLaunch: ActionOnInstanceLaunchType,
-) => invoke('set_action_on_instance_launch', { actionOnInstanceLaunch });
+export const useSetMica = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: setMicaRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mica'] });
+    },
+  }));
+};

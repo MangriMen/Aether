@@ -64,7 +64,8 @@
     "doNothing": "Do nothing",
     "hide": "Hide",
     "close": "Close",
-    "plugins": "Plugins"
+    "plugins": "Plugins",
+    "experimental": "Experimental"
   },
   "instance": {
     "settings": "Settings",

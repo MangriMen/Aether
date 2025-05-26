@@ -3,156 +3,160 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --transparency: 1;
+  }
+
   :root,
   [data-kb-theme='light'] {
-    --background: 0 0% 100%;
+    --background: 0 0% 100% / var(--transparency);
     --foreground: 240 10% 3.9%;
 
-    --muted: 240 4.8% 95.9%;
+    --muted: 240 4.8% 95.9% / var(--transparency);
     --muted-foreground: 240 3.8% 46.1%;
 
-    --popover: 0 0% 100%;
+    --popover: 0 0% 100% / var(--transparency);
     --popover-foreground: 240 10% 3.9%;
 
-    --border: 240 5.9% 80%;
-    --input: 240 5.9% 80%;
+    --border: 240 5.9% 80% / var(--transparency);
+    --input: 240 5.9% 80% / var(--transparency);
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100% / var(--transparency);
     --card-foreground: 240 10% 3.9%;
 
-    --primary: 240 5.9% 10%;
+    --primary: 240 5.9% 10% / var(--transparency);
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-dark: 240 4.8% 89.9%;
+    --secondary: 240 4.8% 95.9% / var(--transparency);
+    --secondary-dark: 240 4.8% 89.9% / var(--transparency);
     --secondary-foreground: 240 5.9% 10%;
 
-    --accent: 240 4.8% 95.9%;
+    --accent: 240 4.8% 95.9% / var(--transparency);
     --accent-foreground: 240 5.9% 10%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84.2% 60.2% / var(--transparency);
     --destructive-foreground: 0 0% 98%;
 
-    --info: 204 94% 94%;
+    --info: 204 94% 94% / var(--transparency);
     --info-foreground: 199 89% 48%;
 
-    --success: 160 84% 39%;
+    --success: 160 84% 39% / var(--transparency);
     --success-foreground: 149 80% 90%;
 
-    --warning: 48 96% 89%;
+    --warning: 48 96% 89% / var(--transparency);
     --warning-foreground: 25 95% 53%;
 
-    --error: 0 93% 94%;
+    --error: 0 93% 94% / var(--transparency);
     --error-foreground: 0 84% 60%;
 
-    --ring: 240 5.9% 10%;
+    --ring: 240 5.9% 10% / var(--transparency);
 
     --radius: 0.5rem;
   }
 
   .dark,
   [data-kb-theme='dark'] {
-    --background: 240 10% 3.9%;
+    --background: 240 10% 3.9% / var(--transparency);
     --foreground: 0 0% 98%;
 
-    --muted: 240 3.7% 15.9%;
+    --muted: 240 3.7% 15.9% / var(--transparency);
     --muted-foreground: 240 5% 64.9%;
 
-    --popover: 240 10% 3.9%;
+    --popover: 240 10% 3.9% / var(--transparency);
     --popover-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --border: 240 3.7% 15.9% / var(--transparency);
+    --input: 240 3.7% 15.9% / var(--transparency);
 
-    --card: 240 10% 3.9%;
+    --card: 240 10% 3.9% / var(--transparency);
     --card-foreground: 0 0% 98%;
 
-    --primary: 0 100% 98%;
+    --primary: 0 100% 98% / var(--transparency);
     --primary-foreground: 240 5.9% 10%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-dark: 0 0% 9%;
+    --secondary: 240 3.7% 15.9% / var(--transparency);
+    --secondary-dark: 0 0% 9% / var(--transparency);
     --secondary-foreground: 0 0% 98%;
 
-    --accent: 240 3.7% 15.9%;
+    --accent: 240 3.7% 15.9% / var(--transparency);
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 30.6% / var(--transparency);
     --destructive-foreground: 0 0% 98%;
 
-    --info: 204 94% 94%;
+    --info: 204 94% 94% / var(--transparency);
     --info-foreground: 199 89% 48%;
 
-    --success: 160 84% 39%;
+    --success: 160 84% 39% / var(--transparency);
     --success-foreground: 240 5.9% 10%;
 
-    --warning: 48 96% 89%;
+    --warning: 48 96% 89% / var(--transparency);
     --warning-foreground: 25 95% 53%;
 
-    --error: 0 93% 94%;
+    --error: 0 93% 94% / var(--transparency);
     --error-foreground: 0 84% 60%;
 
-    --ring: 240 4.9% 83.9%;
+    --ring: 240 4.9% 83.9% / var(--transparency);
 
     --radius: 0.5rem;
   }
 
   [data-theme='aether-light'] {
-    --background: 240 100% 99.6%;
+    --background: 240 100% 99.6% / var(--transparency);
     --foreground: 240 10% 3.9%;
 
-    --muted: 240 15.8% 96.3%;
+    --muted: 240 15.8% 96.3% / var(--transparency);
     --muted-foreground: 240 3.8% 46.1%;
 
-    --popover: 240 100% 99.6%;
+    --popover: 240 100% 99.6% / var(--transparency);
     --popover-foreground: 240 10% 3.9%;
 
-    --border: 240 5.9% 80%;
-    --input: 240 5.9% 80%;
+    --border: 240 5.9% 80% / var(--transparency);
+    --input: 240 5.9% 80% / var(--transparency);
 
-    --card: 240 100% 99.6%;
+    --card: 240 100% 99.6% / var(--transparency);
     --card-foreground: 240 10% 3.9%;
 
-    --primary: 200 18% 46%;
+    --primary: 200 18% 46% / var(--transparency);
     --primary-foreground: 204 15% 94%;
 
-    --secondary: 240 15.8% 96.3%;
-    --secondary-dark: 240 4.8% 89.9%;
+    --secondary: 240 15.8% 96.3% / var(--transparency);
+    --secondary-dark: 240 4.8% 89.9% / var(--transparency);
     --secondary-foreground: 240 5.9% 10%;
 
-    --accent: 240 15.8% 96.3%;
+    --accent: 240 15.8% 96.3% / var(--transparency);
     --accent-foreground: 240 5.9% 10%;
 
-    --ring: 240 5.9% 10%;
+    --ring: 240 5.9% 10% / var(--transparency);
   }
 
   [data-theme='aether-dark'] {
-    --background: 240 25% 5%;
+    --background: 240 25% 5% / var(--transparency);
     --foreground: 0 0% 98%;
 
-    --muted: 240 5% 16%;
+    --muted: 240 5% 16% / var(--transparency);
     --muted-foreground: 240 5% 64.9%;
 
-    --popover: 240 25% 5%;
+    --popover: 240 25% 5% / var(--transparency);
     --popover-foreground: 0 0% 98%;
 
-    --border: 240 5% 16%;
-    --input: 240 5% 16%;
+    --border: 240 5% 16% / var(--transparency);
+    --input: 240 5% 16% / var(--transparency);
 
-    --card: 240 25% 5%;
+    --card: 240 25% 5% / var(--transparency);
     --card-foreground: 0 0% 98%;
 
-    --primary: 200 18% 46%;
+    --primary: 200 18% 46% / var(--transparency);
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 5% 16%;
-    --secondary-dark: 240 6% 10%;
+    --secondary: 240 5% 16% / var(--transparency);
+    --secondary-dark: 240 6% 10% / var(--transparency);
     --secondary-foreground: 0 0% 98%;
 
-    --accent: 240 5% 16%;
+    --accent: 240 5% 16% / var(--transparency);
     --accent-foreground: 0 0% 98%;
 
-    --ring: 240 4.9% 83.9%;
+    --ring: 240 4.9% 83.9% / var(--transparency);
   }
 }
 
