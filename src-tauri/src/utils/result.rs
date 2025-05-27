@@ -28,4 +28,11 @@ impl From<anyhow::Error> for AetherLauncherError {
         }
     }
 }
+
+impl From<String> for AetherLauncherError {
+    fn from(value: String) -> Self {
+        AetherLauncherError { message: value }
+    }
+}
+
 pub type AetherLauncherResult<T, E = AetherLauncherError> = Result<T, E>;

@@ -1,19 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-import { getMicaRaw, setMicaRaw } from './rawApi';
+import { QUERY_KEYS } from './queryKeys';
+import { getAppSettingsRaw, updateAppSettingsRaw } from './rawApi';
 
-export const useMica = () =>
+export const useAppSettings = () =>
   useQuery(() => ({
-    queryKey: ['mica'],
-    queryFn: getMicaRaw,
+    queryKey: QUERY_KEYS.GET(),
+    queryFn: getAppSettingsRaw,
   }));
 
-export const useSetMica = () => {
+export const useUpdateAppSettings = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: setMicaRaw,
+    mutationFn: updateAppSettingsRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mica'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.GET() });
     },
   }));
 };

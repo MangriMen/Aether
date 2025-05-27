@@ -8,12 +8,9 @@ import {
   SettingsEntry,
 } from '@/shared/ui';
 import type { Component } from 'solid-js';
-import { createMemo, createResource } from 'solid-js';
+import { createMemo } from 'solid-js';
 import type { ActionOnInstanceLaunchType } from '../../model';
-import {
-  getActionOnInstanceLaunch,
-  setActionOnInstanceLaunch,
-} from '../../api';
+import { useAppSettings, useUpdateAppSettings } from '../../api';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;
@@ -36,14 +33,15 @@ export const SelectActionOnInstanceLaunchEntry: Component<
 > = (props) => {
   const [{ t }] = useTranslate();
 
-  const [value, { refetch }] = createResource(getActionOnInstanceLaunch);
+  const appSettings = useAppSettings();
 
   const currentOption = createMemo(() =>
     ACTION_ON_INSTANCE_LAUNCH_OPTIONS.find(
-      (option) => option.value === value(),
+      (option) => option.value === appSettings.data?.actionOnInstanceLaunch,
     ),
   );
 
+  const updateAppSettings = useUpdateAppSettings();
   const handleChangeActionOnInstanceLaunch = async (
     value: Option<ActionOnInstanceLaunchType> | null,
   ) => {
@@ -51,8 +49,9 @@ export const SelectActionOnInstanceLaunchEntry: Component<
       return;
     }
 
-    await setActionOnInstanceLaunch(value.value);
-    await refetch();
+    await updateAppSettings.mutateAsync({
+      actionOnInstanceLaunch: value.value,
+    });
   };
 
   return (

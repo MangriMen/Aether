@@ -1,3 +1,3 @@
 export * from './constants';
-export * from './types';
+export * from './appSettings';
 export * from './validation';

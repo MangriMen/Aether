@@ -1,3 +1,4 @@
+pub mod app_settings;
 pub mod auth;
 pub mod base;
 pub mod instance;
@@ -8,6 +9,7 @@ pub mod process;
 pub mod settings;
 pub mod utils;
 
+pub use app_settings::*;
 pub use base::*;
 pub use metadata::*;
 pub use minecraft::*;

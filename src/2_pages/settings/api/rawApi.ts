@@ -1,13 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { ActionOnInstanceLaunchType } from '../model';
+import type { AppSettings, UpdateAppSettings } from '../model';
 
-export const getActionOnInstanceLaunch = () =>
-  invoke<ActionOnInstanceLaunchType>('get_action_on_instance_launch');
+export const getAppSettingsRaw = () => invoke<AppSettings>('get_app_settings');
 
-export const setActionOnInstanceLaunch = (
-  actionOnInstanceLaunch: ActionOnInstanceLaunchType,
-) => invoke('set_action_on_instance_launch', { actionOnInstanceLaunch });
-
-export const getMicaRaw = () => invoke<boolean>('get_mica');
-
-export const setMicaRaw = (enabled: boolean) => invoke('set_mica', { enabled });
+export const updateAppSettingsRaw = (updateAppSettings: UpdateAppSettings) =>
+  invoke('update_app_settings', { updateAppSettings });

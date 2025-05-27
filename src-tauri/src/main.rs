@@ -11,9 +11,9 @@ use launcher::{process_exit, setup_app};
 pub use utils::result::*;
 
 use api::{
-    get_action_on_instance_launch, get_loader_version_manifest, get_max_ram, get_mica,
-    get_minecraft_version_manifest, get_progress_bars, get_settings, initialize_plugins,
-    initialize_state, reveal_in_explorer, set_action_on_instance_launch, set_mica,
+    get_app_settings, get_loader_version_manifest, get_max_ram, get_minecraft_version_manifest,
+    get_progress_bars, get_settings, initialize_plugins, initialize_state, reveal_in_explorer,
+    update_app_settings,
 };
 
 fn main() {
@@ -47,10 +47,8 @@ fn main() {
             reveal_in_explorer,
             get_settings,
             get_max_ram,
-            get_action_on_instance_launch,
-            set_action_on_instance_launch,
-            get_mica,
-            set_mica
+            get_app_settings,
+            update_app_settings,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
