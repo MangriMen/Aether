@@ -35,25 +35,39 @@ pub async fn update_app_settings(
         settings_state.action_on_instance_launch = action_on_instance_launch;
     }
 
+    let mut need_to_check_mica = true;
     if let Some(transparent) = update_app_settings.transparent {
         settings_state.transparent = transparent;
+
+        if !transparent {
+            settings_state.mica = false;
+
+            #[cfg(target_os = "windows")]
+            {
+                disable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
+                settings_state.mica = false;
+                need_to_check_mica = false;
+            }
+        }
     }
 
-    if let Some(mica) = update_app_settings.mica {
-        if !settings_state.transparent {
-            return Err("Mica can't be turned on without transparent"
-                .to_string()
-                .into());
-        }
-
-        #[cfg(target_os = "windows")]
-        {
-            if mica {
-                enable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
-            } else {
-                disable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
+    if need_to_check_mica {
+        if let Some(mica) = update_app_settings.mica {
+            if !settings_state.transparent {
+                return Err("Mica can't be turned on without transparent"
+                    .to_string()
+                    .into());
             }
-            settings_state.mica = mica;
+
+            #[cfg(target_os = "windows")]
+            {
+                if mica {
+                    enable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
+                } else {
+                    disable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
+                }
+                settings_state.mica = mica;
+            }
         }
     }
 

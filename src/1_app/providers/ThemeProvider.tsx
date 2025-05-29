@@ -13,6 +13,7 @@ import type {
 } from '@/shared/model';
 import { THEMES_MAP, THEME_BY_MODE, ThemeContext } from '@/shared/model';
 import { DEFAULT_THEME } from '../config';
+import { setTransparencyAttribute } from '@/shared/lib';
 
 export type ThemeObserverProps = {
   themeLsKey: string;
@@ -41,6 +42,7 @@ export const ThemeProvider: Component<ThemeObserverProps> = (props) => {
     rawTheme: DEFAULT_THEME,
     lightTheme: THEME_BY_MODE['light'][0].value,
     darkTheme: THEME_BY_MODE['dark'][0].value,
+    transparency: false,
   });
 
   const getThemeVariableNameByColorMode = (colorMode: ColorMode) =>
@@ -87,9 +89,16 @@ export const ThemeProvider: Component<ThemeObserverProps> = (props) => {
     );
   };
 
+  const setTransparency = (transparency: boolean) => {
+    localStorage.setItem('transparency', String(transparency));
+    setTransparencyAttribute(transparency);
+    setContextValue('transparency', transparency);
+  };
+
   const contextActions: ThemeContextActions = {
     setTheme,
     setThemeForColorMode,
+    setTransparency,
   };
 
   const context: ThemeContextType = [contextValue, contextActions];
@@ -109,7 +118,11 @@ export const ThemeProvider: Component<ThemeObserverProps> = (props) => {
     colorModeThemes.map((theme, index) => {
       setThemeForColorMode(COLOR_MODES[index], theme ?? COLOR_MODES[index]);
     });
+
+    const transparency = localStorage.getItem('transparency') === 'true';
+    setTransparency(transparency);
   };
+
   onMount(() => {
     initializeContext();
   });

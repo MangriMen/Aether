@@ -13,10 +13,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 
   return (
     <div
-      class={cn(
-        local.class,
-        'h-full bg-secondary-dark flex flex-col items-center pt-2 pb-3',
-      )}
+      class={cn(local.class, 'h-full flex flex-col items-center pt-2 pb-3')}
       {...others}
     >
       {local.children}

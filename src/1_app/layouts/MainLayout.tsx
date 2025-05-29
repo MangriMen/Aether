@@ -12,14 +12,12 @@ export const MainLayout: Component<MainLayoutProps> = (props) => {
   const [local, others] = splitProps(props, ['children']);
 
   return (
-    <div id='main-layout' class='flex h-full bg-secondary-dark' {...others}>
+    <div id='main-layout' class='flex h-full' {...others}>
       <AppSidebar
         createInstanceDialog={CreateInstanceDialog}
         createOfflineAccountDialog={CreateOfflineAccountDialog}
       />
-      <div class='size-full overflow-hidden rounded-tl-2xl border-l border-t border-secondary-dark bg-background'>
-        {local.children}
-      </div>
+      <div class='size-full overflow-hidden'>{local.children}</div>
     </div>
   );
 };

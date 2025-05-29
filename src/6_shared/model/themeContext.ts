@@ -8,11 +8,13 @@ export type ThemeContextValue = {
   rawTheme: ThemeConfig;
   lightTheme: Theme;
   darkTheme: Theme;
+  transparency: boolean;
 };
 
 export type ThemeContextActions = {
   setTheme: (theme: ThemeConfig) => void;
   setThemeForColorMode: (colorMode: ColorMode, theme: Theme) => void;
+  setTransparency: (transparency: boolean) => void;
 };
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];

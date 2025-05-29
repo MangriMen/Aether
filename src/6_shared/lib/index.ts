@@ -7,3 +7,4 @@ export * from './useMaximizeObserver';
 export * from './debounce';
 export * from './responseResult';
 export * from './useDeveloperModeCounter';
+export * from './setTransparencyAttribute';
