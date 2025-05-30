@@ -32,3 +32,6 @@ export const THEME_BY_MODE: Record<ColorMode, ThemeObject[]> = {
   light: THEMES.filter((t) => t.mode === 'light'),
   dark: THEMES.filter((t) => t.mode === 'dark'),
 };
+
+export const isSystemTheme = (theme: ThemeConfig): theme is 'system' =>
+  theme === 'system';

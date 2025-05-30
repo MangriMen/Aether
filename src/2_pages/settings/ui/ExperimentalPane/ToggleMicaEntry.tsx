@@ -1,54 +1,49 @@
-import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
-import { type Component } from 'solid-js';
+import {
+  CombinedTooltip,
+  SettingsEntry,
+  Switch,
+  SwitchControl,
+  SwitchThumb,
+} from '@/shared/ui';
+import { createMemo, type Component } from 'solid-js';
 import { useAppSettings, useUpdateAppSettings } from '../../api';
+import { useColorMode } from '@kobalte/core';
 
 export type ToggleMicaEntryProps = {
   class?: string;
 };
 
 export const ToggleMicaEntry: Component<ToggleMicaEntryProps> = (props) => {
-  const appSettings = useAppSettings();
+  const { colorMode } = useColorMode();
 
+  const appSettings = useAppSettings();
   const updateSettings = useUpdateAppSettings();
 
-  const enableMica = async () => {
-    await updateSettings.mutateAsync({
-      mica: true,
-    });
-
-    setTimeout(() => {
-      window.document.documentElement.style = `--transparency: ${0.2}`;
-    }, 100);
-  };
-
-  const disableMica = async () => {
-    window.document.documentElement.style = `--transparency: ${1}`;
-
-    setTimeout(() => {
-      updateSettings.mutateAsync({
-        mica: false,
-      });
-    }, 100);
-  };
-
   const handleSetMica = async (enabled: boolean) => {
-    if (enabled) {
-      await enableMica();
-    } else {
-      await disableMica();
-    }
+    updateSettings.mutateAsync({
+      mica: enabled ? colorMode() : 'off',
+    });
   };
+
+  const isDisabled = createMemo(() => !appSettings.data?.transparent);
 
   return (
     <SettingsEntry title={'Toggle mica'} {...props}>
-      <Switch
-        checked={appSettings.data?.mica ?? false}
+      <CombinedTooltip
+        label={
+          isDisabled()
+            ? "Can't turn on mica without window transparency"
+            : 'Toggle mica'
+        }
+        as={Switch}
+        disabled={isDisabled()}
+        checked={appSettings.data?.mica && appSettings.data.mica !== 'off'}
         onChange={handleSetMica}
       >
         <SwitchControl>
           <SwitchThumb />
         </SwitchControl>
-      </Switch>
+      </CombinedTooltip>
     </SettingsEntry>
   );
 };

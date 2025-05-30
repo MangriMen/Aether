@@ -19,9 +19,9 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       label={t('settings.experimental')}
       {...others}
     >
-      <ToggleMicaEntry />
       <ToggleWindowTransparencyEntry />
       <ToggleThemeTransparencyEntry />
+      <ToggleMicaEntry />
     </SettingsPane>
   );
 };

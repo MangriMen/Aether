@@ -1,26 +1,28 @@
 use tauri::{utils::config::WindowEffectsConfig, window::Effect, AppHandle, Manager};
 
-pub fn enable_mica(app_handle: AppHandle) -> tauri::Result<()> {
+use crate::state::MicaMode;
+
+pub fn set_mica(app_handle: AppHandle, mode: MicaMode) -> tauri::Result<()> {
     #[cfg(target_os = "windows")]
     {
         if let Some(main_window) = app_handle.get_webview_window("main") {
-            main_window.set_effects(WindowEffectsConfig {
-                effects: vec![Effect::Mica],
-                state: Some(tauri::window::EffectState::FollowsWindowActiveState),
-                radius: None,
-                color: None,
-            })?;
-        }
-    }
+            let effect = match mode {
+                MicaMode::Off => None,
+                MicaMode::Light => Some(Effect::MicaLight),
+                MicaMode::Dark => Some(Effect::MicaDark),
+                MicaMode::System => Some(Effect::Mica),
+            };
 
-    Ok(())
-}
-
-pub fn disable_mica(app_handle: AppHandle) -> tauri::Result<()> {
-    #[cfg(target_os = "windows")]
-    {
-        if let Some(main_window) = app_handle.get_webview_window("main") {
-            main_window.set_effects(None)?;
+            if let Some(effect) = effect {
+                main_window.set_effects(WindowEffectsConfig {
+                    effects: vec![effect],
+                    state: Some(tauri::window::EffectState::FollowsWindowActiveState),
+                    radius: None,
+                    color: None,
+                })?;
+            } else {
+                main_window.set_effects(None)?;
+            }
         }
     }
 

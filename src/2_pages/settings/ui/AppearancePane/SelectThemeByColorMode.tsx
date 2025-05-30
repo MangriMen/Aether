@@ -34,7 +34,8 @@ const THEME_BY_MODE_OPTIONS = Object.fromEntries(
 const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
   props,
 ) => {
-  const [themeContext, { setThemeForColorMode }] = useThemeContext();
+  const [themeContext, { setThemeByColorMode: setThemeForColorMode }] =
+    useThemeContext();
 
   const options = createMemo(() => THEME_BY_MODE_OPTIONS[props.colorMode]);
 

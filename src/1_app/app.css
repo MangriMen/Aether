@@ -168,8 +168,8 @@
       'calt' 1;
   }
 
-  :root[data-transparency='true'] body {
-    @apply bg-transparent;
+  body {
+    background: hsl(var(--secondary-dark) / var(--transparency));
   }
 
   #root {

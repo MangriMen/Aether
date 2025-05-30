@@ -13,11 +13,21 @@ pub enum ActionOnInstanceLaunch {
     Close,
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum MicaMode {
+    #[default]
+    Off,
+    Light,
+    Dark,
+    System,
+}
+
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsStateInner {
     pub action_on_instance_launch: ActionOnInstanceLaunch,
-    pub mica: bool,
+    pub mica: MicaMode,
     pub transparent: bool,
 }
 

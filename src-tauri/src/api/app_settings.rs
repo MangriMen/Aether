@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 
 use crate::{
-    state::{save_settings, ActionOnInstanceLaunch, SettingsState, SettingsStateInner},
-    utils::{disable_mica, enable_mica},
+    state::{save_settings, ActionOnInstanceLaunch, MicaMode, SettingsState, SettingsStateInner},
+    utils::set_mica,
     AetherLauncherResult,
 };
 
@@ -11,7 +11,7 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct UpdateAppSettings {
     pub action_on_instance_launch: Option<ActionOnInstanceLaunch>,
-    pub mica: Option<bool>,
+    pub mica: Option<MicaMode>,
     pub transparent: Option<bool>,
 }
 
@@ -40,12 +40,11 @@ pub async fn update_app_settings(
         settings_state.transparent = transparent;
 
         if !transparent {
-            settings_state.mica = false;
+            settings_state.mica = MicaMode::Off;
 
             #[cfg(target_os = "windows")]
             {
-                disable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
-                settings_state.mica = false;
+                set_mica(app_handle.clone(), MicaMode::Off).map_err(|e| e.to_string())?;
                 need_to_check_mica = false;
             }
         }
@@ -61,11 +60,7 @@ pub async fn update_app_settings(
 
             #[cfg(target_os = "windows")]
             {
-                if mica {
-                    enable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
-                } else {
-                    disable_mica(app_handle.clone()).map_err(|e| e.to_string())?;
-                }
+                set_mica(app_handle.clone(), mica).map_err(|e| e.to_string())?;
                 settings_state.mica = mica;
             }
         }

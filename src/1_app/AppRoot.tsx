@@ -4,7 +4,11 @@ import { type Component } from 'solid-js';
 import { Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
+import {
+  THEME_STATE_LS_KEY,
+  THEME_ATTRIBUTE,
+  TRANSPARENCY_PROPERTY,
+} from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
 import { AppInitializeGuard } from './providers/AppInitializeGuard/AppInitializeGuard';
@@ -24,9 +28,9 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
   return (
     <ColorModeProvider {...props}>
       <ThemeProvider
-        rawThemeLsKey={RAW_THEME_LS_KEY}
-        themeLsKey={THEME_LS_KEY}
+        themeStateKey={THEME_STATE_LS_KEY}
         themeAttribute={THEME_ATTRIBUTE}
+        transparencyProperty={TRANSPARENCY_PROPERTY}
       >
         <AppInitializeGuard>
           <QueryClientProvider client={queryClient}>

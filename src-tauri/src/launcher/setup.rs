@@ -1,7 +1,7 @@
 use aether_core::features::events::LauncherEvent;
 use tauri::{App, Listener, Manager};
 
-use crate::{state::load_settings, utils::enable_mica};
+use crate::{state::load_settings, utils::set_mica};
 
 use super::{build_main_window, ManualExitFlagStateInner};
 
@@ -20,9 +20,7 @@ pub fn setup_app(app: &mut App) -> tauri::Result<()> {
     let app_handle = app.handle().clone();
     build_main_window(app_handle, loaded_settings.transparent, false)?;
 
-    if loaded_settings.mica {
-        enable_mica(app.handle().clone())?;
-    }
+    set_mica(app.handle().clone(), loaded_settings.mica)?;
 
     Ok(())
 }
