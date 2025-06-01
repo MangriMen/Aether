@@ -1,0 +1,105 @@
+import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
+import { createMemo, type Component } from 'solid-js';
+import { useAppSettings, useUpdateAppSettings } from '../../api';
+import { isSystemTheme, useThemeContext, type Option } from '@/shared/model';
+import { useColorMode } from '@kobalte/core';
+import type { WindowEffect } from '../../model';
+
+export type SelectWindowEffectProps = {
+  class?: string;
+};
+
+type GeneralizedWindowEffect = 'off' | 'mica' | 'acrylic';
+
+export const SELECT_WINDOW_EFFECT_OPTIONS: Option<GeneralizedWindowEffect>[] = [
+  {
+    name: 'off',
+    value: 'off',
+  },
+  {
+    name: 'mica',
+    value: 'mica',
+  },
+  {
+    name: 'acrylic',
+    value: 'acrylic',
+  },
+];
+
+const WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT: Record<
+  WindowEffect,
+  GeneralizedWindowEffect
+> = {
+  off: 'off',
+  mica: 'off',
+  mica_light: 'mica',
+  mica_dark: 'mica',
+  acrylic: 'acrylic',
+};
+
+export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
+  props,
+) => {
+  const [theme] = useThemeContext();
+  const { colorMode } = useColorMode();
+
+  const appSettings = useAppSettings();
+  const updateSettings = useUpdateAppSettings();
+
+  const currentWindowEffectOption = createMemo(() => {
+    if (!appSettings.data?.windowEffect) {
+      return SELECT_WINDOW_EFFECT_OPTIONS[0];
+    }
+
+    return (
+      SELECT_WINDOW_EFFECT_OPTIONS.find(
+        (option) =>
+          option.value ===
+          WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT[
+            appSettings.data?.windowEffect
+          ],
+      ) ?? SELECT_WINDOW_EFFECT_OPTIONS[0]
+    );
+  });
+
+  const handleSetWindowEffect = async (
+    generalized_window_effect: Option<GeneralizedWindowEffect> | null,
+  ) => {
+    if (!generalized_window_effect) {
+      return;
+    }
+
+    if (generalized_window_effect.value === 'mica') {
+      updateSettings.mutateAsync({
+        windowEffect: isSystemTheme(theme.rawTheme)
+          ? 'mica'
+          : `mica_${colorMode()}`,
+      });
+    } else {
+      updateSettings.mutateAsync({
+        windowEffect: generalized_window_effect.value,
+      });
+    }
+  };
+
+  const isDisabled = createMemo(() => !appSettings.data?.transparent);
+
+  return (
+    <SettingsEntry title={'Toggle mica'} {...props}>
+      <CombinedTooltip
+        label={
+          isDisabled()
+            ? "Can't turn on window effects without window transparency"
+            : 'Toggle mica'
+        }
+        as={CombinedSelect}
+        optionValue='value'
+        optionTextValue='name'
+        value={currentWindowEffectOption()}
+        options={SELECT_WINDOW_EFFECT_OPTIONS}
+        onChange={handleSetWindowEffect}
+        disabled={isDisabled()}
+      />
+    </SettingsEntry>
+  );
+};

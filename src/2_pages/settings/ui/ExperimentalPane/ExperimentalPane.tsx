@@ -2,7 +2,7 @@ import { cn } from '@/shared/lib';
 import { SettingsPane } from '@/shared/ui';
 import { useTranslate } from '@/shared/model';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
-import { ToggleMicaEntry } from './ToggleMicaEntry';
+import { SelectWindowEffect } from './SelectWindowEffect';
 import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
 import { ToggleThemeTransparencyEntry } from './ToggleThemeTransparencyEntry';
 
@@ -21,7 +21,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
     >
       <ToggleWindowTransparencyEntry />
       <ToggleThemeTransparencyEntry />
-      <ToggleMicaEntry />
+      <SelectWindowEffect />
     </SettingsPane>
   );
 };

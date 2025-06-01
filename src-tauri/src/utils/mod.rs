@@ -1,7 +1,7 @@
 pub mod file;
-pub mod mica;
 pub mod result;
 pub mod tauri;
+pub mod window;
 
-pub use mica::*;
 pub use result::*;
+pub use window::*;

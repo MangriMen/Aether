@@ -15,13 +15,13 @@ export const useMicaUpdateListener = () => {
 
   const updateMicaDebounced = debounce(
     (rawTheme: string, colorMode: ColorMode) => {
-      const mode = appSettings.data?.mica;
-      if (!mode || mode === 'off') {
+      const window_effect = appSettings.data?.windowEffect;
+      if (!window_effect || window_effect === 'off') {
         return;
       }
 
       updateAppSettings.mutateAsync({
-        mica: isSystemTheme(rawTheme) ? 'system' : colorMode,
+        windowEffect: isSystemTheme(rawTheme) ? 'mica' : `mica_${colorMode}`,
       });
     },
     50,
