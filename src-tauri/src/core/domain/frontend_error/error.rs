@@ -1,10 +1,12 @@
 use std::{collections::HashMap, error::Error};
 
+use crate::core::FrontendErrorKind;
+
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct FrontendError {
-    pub code: String,
+    pub code: FrontendErrorKind,
     pub message: String,
     pub args: HashMap<String, String>,
 }
@@ -12,7 +14,7 @@ pub struct FrontendError {
 impl From<crate::Error> for FrontendError {
     fn from(value: crate::Error) -> Self {
         FrontendError {
-            code: "unknown".to_owned(),
+            code: FrontendErrorKind::Unknown,
             message: value.to_string(),
             args: HashMap::default(),
         }
@@ -22,7 +24,7 @@ impl From<crate::Error> for FrontendError {
 impl From<aether_core::Error> for FrontendError {
     fn from(value: aether_core::Error) -> Self {
         FrontendError {
-            code: "unknown".to_owned(),
+            code: FrontendErrorKind::Unknown,
             message: value.to_string(),
             args: HashMap::default(),
         }
@@ -32,7 +34,7 @@ impl From<aether_core::Error> for FrontendError {
 impl From<Box<dyn Error + 'static>> for FrontendError {
     fn from(value: Box<dyn Error + 'static>) -> Self {
         FrontendError {
-            code: "unknown".to_owned(),
+            code: FrontendErrorKind::Unknown,
             message: value.to_string(),
             args: HashMap::default(),
         }
@@ -42,7 +44,7 @@ impl From<Box<dyn Error + 'static>> for FrontendError {
 impl From<String> for FrontendError {
     fn from(value: String) -> Self {
         FrontendError {
-            code: "unknown".to_owned(),
+            code: FrontendErrorKind::Unknown,
             message: value,
             args: HashMap::default(),
         }
@@ -52,7 +54,7 @@ impl From<String> for FrontendError {
 impl From<anyhow::Error> for FrontendError {
     fn from(value: anyhow::Error) -> Self {
         FrontendError {
-            code: "unknown".to_owned(),
+            code: FrontendErrorKind::Unknown,
             message: value.to_string(),
             args: HashMap::default(),
         }

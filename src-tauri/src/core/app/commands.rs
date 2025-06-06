@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use aether_core::core::LauncherState;
 use tauri::AppHandle;
 
@@ -33,4 +35,9 @@ pub async fn load_enabled_plugins() -> FrontendResult<()> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn reveal_in_explorer(path: String, exact: bool) -> FrontendResult<()> {
+    Ok(shared::reveal_in_explorer(Path::new(&path), exact)?)
 }

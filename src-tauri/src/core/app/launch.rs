@@ -1,28 +1,35 @@
 use tauri::{Builder, Wry};
 
 use crate::{
-    core::{commands::*, handle_app_event, setup_app, utils::*},
+    core::commands::*,
     features::{
         app_settings::commands::*, auth, events::commands::*, instance, minecraft::commands::*,
         plugins, process, settings::commands::*,
     },
 };
 
-pub fn launch_app() {
-    get_tauri_app()
+use super::{events::handle_app_events, initialize::init_app};
+
+// Entry point for Tauri runtime and plugin setup
+pub fn launch_app() -> crate::Result<()> {
+    build_app()?.run(handle_app_events);
+    Ok(())
+}
+
+fn build_app() -> crate::Result<tauri::App> {
+    create_tauri_app()
         .build(tauri::generate_context!())
-        .expect("error while running tauri application")
-        .run(move |app, event| handle_app_event(app, &event));
+        .map_err(|e| crate::Error::LaunchError(e.to_string()))
 }
 
-pub fn get_tauri_app() -> Builder<Wry> {
+fn create_tauri_app() -> Builder<Wry> {
     Builder::default()
-        .setup(move |app| Ok(setup_app(app)?))
-        .pipe(setup_tauri_plugins)
-        .pipe(setup_commands)
+        .setup(move |app| Ok(init_app(app)?))
+        .pipe(with_tauri_plugins)
+        .pipe(with_feature_plugins)
 }
 
-fn setup_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
+fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -37,7 +44,7 @@ fn setup_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
 }
 
 /// Configures application-specific commands and plugins
-fn setup_commands(builder: Builder<Wry>) -> Builder<Wry> {
+fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .plugin(auth::init())
         .plugin(instance::init())
@@ -58,7 +65,7 @@ fn setup_commands(builder: Builder<Wry>) -> Builder<Wry> {
 }
 
 /// Helper trait for method chaining
-trait Pipe {
+pub trait Pipe {
     fn pipe<F>(self, f: F) -> Self
     where
         F: FnOnce(Self) -> Self,
