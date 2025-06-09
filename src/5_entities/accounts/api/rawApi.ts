@@ -8,10 +8,10 @@ export const listAccountsRaw = () =>
   invoke<Account[]>(`${PLUGIN_PREFIX}get_accounts`);
 
 export const createOfflineAccountRaw = (username: string) =>
-  invoke<string>(`${PLUGIN_PREFIX}create_offline_account`, { username });
+  invoke<Account>(`${PLUGIN_PREFIX}create_offline_account`, { username });
 
 export const changeAccountRaw = (id: Account['id']) =>
-  invoke(`${PLUGIN_PREFIX}change_account`, { id });
+  invoke<Account>(`${PLUGIN_PREFIX}change_account`, { id });
 
 export const logoutRaw = (id: Account['id']) =>
   invoke(`${PLUGIN_PREFIX}logout`, { id });
