@@ -150,5 +150,26 @@
     "shaders": "Шейдеры",
     "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
     "provider": "Провайдер"
+  },
+  "errors": {
+    "authError": {
+      "title": "Ошибка аутентификации",
+      "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+      "noActiveCredentials": "Не найдено активного аккаунта",
+      "storageFailure": "Ошибка хранилища"
+    },
+    "instanceError": {
+      "title": "Ошибка инстанса",
+      "credentialsError": {
+        "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+        "noActiveCredentials": "Не найдено активного аккаунта",
+        "storageFailure": "Ошибка хранилища"
+      },
+      "storageFailure": "Ошибка хранилища"
+    },
+    "settingsError": {
+      "title": "Ошибка настроек",
+      "storageFailure": "Ошибка хранилища"
+    }
   }
 }

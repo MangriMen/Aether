@@ -32,12 +32,9 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
         themeAttribute={THEME_ATTRIBUTE}
         transparencyProperty={TRANSPARENCY_PROPERTY}
       >
-        <AppInitializeGuard>
-          <QueryClientProvider client={queryClient}>
-            <I18nProvider
-              resources={LOCALE_RESOURCES}
-              fallbackLocale={LOCALES.En}
-            >
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+          <AppInitializeGuard>
+            <QueryClientProvider client={queryClient}>
               <AppGlobalsProvider>
                 <AppLayout>
                   <RunningInstancesProvider>
@@ -46,9 +43,9 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
                 </AppLayout>
                 <Toaster />
               </AppGlobalsProvider>
-            </I18nProvider>
-          </QueryClientProvider>
-        </AppInitializeGuard>
+            </QueryClientProvider>
+          </AppInitializeGuard>
+        </I18nProvider>
       </ThemeProvider>
     </ColorModeProvider>
   );

@@ -1,6 +1,5 @@
 import { useContext } from 'solid-js';
 
-import { isAetherLauncherError } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
@@ -31,19 +30,13 @@ export const useInstanceActions = () => {
       return;
     }
 
+    setIsLoading(instance.id, true);
     try {
-      setIsLoading(instance.id, true);
       await launchInstance(instance.id);
-    } catch (e) {
-      setIsLoading(instance.id, false);
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to launch ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
+    } catch {
+      /* empty */
     }
+    setIsLoading(instance.id, false);
   };
 
   const stop = async (instance: Instance) => {
@@ -61,23 +54,18 @@ export const useInstanceActions = () => {
       return;
     }
 
+    setIsLoading(instance.id, true);
     try {
-      setIsLoading(instance.id, true);
       await stopInstance(uuid);
-    } catch (e) {
-      setIsLoading(instance.id, false);
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to stop ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
+    } catch {
+      /* empty */
     }
+    setIsLoading(instance.id, false);
   };
 
   const remove = async (instance: Instance, force: boolean = false) => {
     const runningInstance = getRunningInstance(context, instance.id);
+
     if (
       !force &&
       (instance.installStage !== InstanceInstallStage.Installed ||
@@ -110,14 +98,8 @@ export const useInstanceActions = () => {
 
     try {
       await removeInstance(instance.id);
-    } catch (e) {
-      if (isAetherLauncherError(e)) {
-        showToast({
-          title: `Failed to remove ${instance.name}`,
-          description: e.message,
-          variant: 'destructive',
-        });
-      }
+    } catch {
+      /* empty */
     }
   };
 

@@ -150,5 +150,26 @@
     "shaders": "Shaders",
     "providerErrorOrNotFound": "Provider not found or error getting content",
     "provider": "Provider"
+  },
+  "errors": {
+    "authError": {
+      "title": "Auth error",
+      "credentialsNotFound": "Not found credentials with id: {{id}}",
+      "noActiveCredentials": "No active credentials found",
+      "storageFailure": "Storage failure"
+    },
+    "instanceError": {
+      "title": "Instance error",
+      "credentialsError": {
+        "credentialsNotFound": "Not found credentials with id: {{id}}",
+        "noActiveCredentials": "No active credentials found",
+        "storageFailure": "Storage failure"
+      },
+      "storageFailure": "Storage failure"
+    },
+    "settingsError": {
+      "title": "Settings error",
+      "storageFailure": "Storage failure"
+    }
   }
 }

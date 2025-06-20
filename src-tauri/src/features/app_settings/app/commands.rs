@@ -3,8 +3,8 @@ use tauri::{AppHandle, State};
 
 use crate::{
     features::app_settings::{
-        save_settings, set_window_effect, ActionOnInstanceLaunch, AppSettings, AppSettingsState,
-        WindowEffect,
+        save_settings, set_window_effect, ActionOnInstanceLaunch, AppSettings, AppSettingsError,
+        AppSettingsState, WindowEffect,
     },
     FrontendResult,
 };
@@ -47,11 +47,14 @@ pub async fn update_app_settings(
 
     if let Some(window_effect) = update_app_settings.window_effect {
         if !settings_state.transparent && window_effect != WindowEffect::Off {
-            return Err("Window effect can't be turned on without transparent"
-                .to_string()
-                .into());
+            return Err(crate::Error::AppSettingsError(
+                AppSettingsError::TransparentEffectIsRequired,
+            )
+            .into());
         }
-        set_window_effect(app_handle.clone(), window_effect).map_err(|e| e.to_string())?;
+        set_window_effect(app_handle.clone(), window_effect).map_err(|e| {
+            crate::Error::AppSettingsError(AppSettingsError::CanNotSetEffect(e.to_string()))
+        })?;
         settings_state.window_effect = window_effect;
     }
 

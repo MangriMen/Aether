@@ -1,62 +1,35 @@
-use std::{collections::HashMap, error::Error};
+use std::borrow::Cow;
 
-use crate::core::FrontendErrorKind;
+use serde::Serialize;
+use serializable_error::ToSerializableError;
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct FrontendError {
-    pub code: FrontendErrorKind,
+    pub code: Cow<'static, str>,
+    pub fields: Option<serde_json::Value>,
     pub message: String,
-    pub args: HashMap<String, String>,
-}
-
-impl From<crate::Error> for FrontendError {
-    fn from(value: crate::Error) -> Self {
-        FrontendError {
-            code: FrontendErrorKind::Unknown,
-            message: value.to_string(),
-            args: HashMap::default(),
-        }
-    }
 }
 
 impl From<aether_core::Error> for FrontendError {
     fn from(value: aether_core::Error) -> Self {
-        FrontendError {
-            code: FrontendErrorKind::Unknown,
-            message: value.to_string(),
-            args: HashMap::default(),
+        let serialized = value.raw.to_serializable();
+        Self {
+            code: serialized.code,
+            fields: serialized.fields,
+            message: serialized.message,
         }
     }
 }
 
-impl From<Box<dyn Error + 'static>> for FrontendError {
-    fn from(value: Box<dyn Error + 'static>) -> Self {
-        FrontendError {
-            code: FrontendErrorKind::Unknown,
-            message: value.to_string(),
-            args: HashMap::default(),
-        }
-    }
-}
-
-impl From<String> for FrontendError {
-    fn from(value: String) -> Self {
-        FrontendError {
-            code: FrontendErrorKind::Unknown,
-            message: value,
-            args: HashMap::default(),
-        }
-    }
-}
-
-impl From<anyhow::Error> for FrontendError {
-    fn from(value: anyhow::Error) -> Self {
-        FrontendError {
-            code: FrontendErrorKind::Unknown,
-            message: value.to_string(),
-            args: HashMap::default(),
+impl From<crate::Error> for FrontendError {
+    fn from(value: crate::Error) -> Self {
+        let serialized = value.to_serializable();
+        Self {
+            code: serialized.code,
+            fields: serialized.fields,
+            message: serialized.message,
         }
     }
 }

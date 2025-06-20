@@ -36,6 +36,9 @@ daedalus = "0.2.3"
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.4.0" }
 aether-core = { path = '../../aether-core/aether-core' }
 
+serializable_error = { path = "../../aether-core/serializable_error" }
+serializable_error_derive = { path = "../../aether-core/serializable_error_derive" }
+
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]

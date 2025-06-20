@@ -1,13 +1,17 @@
+use serializable_error_derive::SerializeError;
+
+use crate::features::app_settings::AppSettingsError;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, SerializeError)]
 pub enum Error {
+    #[error(transparent)]
+    AppSettingsError(#[from] AppSettingsError),
+
     #[error("Launch error: {0}")]
     LaunchError(String),
 
-    #[error("Core error")]
-    CoreError(#[from] aether_core::Error),
-
-    #[error("IO error")]
+    #[error(transparent)]
     IoError(#[from] std::io::Error),
 }

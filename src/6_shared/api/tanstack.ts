@@ -1,9 +1,10 @@
 import { QueryClient } from '@tanstack/solid-query';
-import { isAetherLauncherError } from '@/shared/model';
+import { isErrorKind, isLauncherError } from '@/shared/model';
 import { showToast } from '@/shared/ui';
+import { internalT as t } from '@/1_app/providers';
 
-export const createQueryClient = () =>
-  new QueryClient({
+export const createQueryClient = () => {
+  return new QueryClient({
     defaultOptions: {
       queries: {
         // 5 minutes
@@ -13,10 +14,18 @@ export const createQueryClient = () =>
       },
       mutations: {
         onError: (error) => {
-          if (isAetherLauncherError(error)) {
+          if (isLauncherError(error)) {
+            const kind = error.code.split('.')[0];
+            const description = `errors.${error.code}` as const;
+
+            const translatedTitle = isErrorKind(kind)
+              ? t(`errors.${kind}.title`)
+              : kind;
+
             showToast({
-              title: 'Action failed',
-              description: error.message,
+              title: translatedTitle,
+              description:
+                t(description, error.fields ?? undefined) || description,
               variant: 'destructive',
             });
           }
@@ -24,3 +33,4 @@ export const createQueryClient = () =>
       },
     },
   });
+};

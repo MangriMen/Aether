@@ -1,3 +1,3 @@
-pub mod app_settings;
+pub mod models;
 
-pub use app_settings::*;
+pub use models::*;
