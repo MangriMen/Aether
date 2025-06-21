@@ -27,7 +27,9 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const warningValue = createMemo(() => local.systemMaxMemory / 2);
+  const maxMemory = createMemo(() => Math.floor(local.systemMaxMemory));
+
+  const warningValue = createMemo(() => Math.floor(maxMemory() / 2));
 
   const [customMemory, setCustomMemory] = createSignal(false);
   const [memory, setMemory] = createSignal(MIN_JRE_MEMORY);
@@ -89,7 +91,7 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
           class='mt-4'
           disabled={!customMemory()}
           minValue={MIN_JRE_MEMORY}
-          maxValue={local.systemMaxMemory}
+          maxValue={maxMemory()}
           warningValue={warningValue()}
           value={[memory()]}
           onChange={(value) => setMemoryValue(value[0])}
