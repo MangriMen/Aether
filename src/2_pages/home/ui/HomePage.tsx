@@ -3,7 +3,7 @@ import { splitProps } from 'solid-js';
 
 import { TitledBlock } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import type { RouteSectionProps } from '@solidjs/router';
 import { InstancesPanel } from './InstancesPanel';
 
@@ -17,7 +17,7 @@ export const HomePage: Component<HomePageProps> = (props) => {
     'children',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <div class='flex size-full flex-col overflow-hidden p-4' {...others}>

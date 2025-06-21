@@ -34,7 +34,7 @@ import {
   ModLoader,
 } from '@/entities/minecraft';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import {
   CreateCustomInstanceSchema,
@@ -66,7 +66,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 ) => {
   const [local, others] = splitProps(props, ['class', 'onOpenChange']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
     validate: zodForm(CreateCustomInstanceSchema),

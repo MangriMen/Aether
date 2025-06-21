@@ -6,7 +6,7 @@ import type { ToggleGroupRootProps } from '@/shared/ui';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
 import type { Option } from '@/shared/model';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type LoaderVersionTypeChipsToggleGroupProps = Exclude<
   ToggleGroupRootProps,
@@ -20,7 +20,7 @@ export const LoaderVersionTypeChipsToggleGroup: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['loaderTypes', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <ToggleGroup class={cn('justify-start', local.class)} {...others}>

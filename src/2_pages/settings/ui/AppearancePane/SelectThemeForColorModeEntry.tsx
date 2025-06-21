@@ -3,7 +3,7 @@ import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { useTranslate, useThemeContext } from '@/shared/model';
+import { useTranslation, useThemeContext } from '@/shared/model';
 
 import SelectThemeForColorModeBlock from './SelectThemeForColorModeBlock';
 import { SettingsEntry } from '@/shared/ui';
@@ -14,7 +14,7 @@ const SelectThemeForColorModeEntry: Component<
   SelectThemeForColorModeEntryProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const [themeContext] = useThemeContext();
 
   const isSystemColorMode = createMemo(

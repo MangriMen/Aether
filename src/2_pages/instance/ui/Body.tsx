@@ -2,7 +2,7 @@ import type { TabsProps } from '@/shared/ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 import { splitProps, type Component } from 'solid-js';
 import { InstanceContentTabs } from '../model/content';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { ContentTab } from './ContentTab';
 import type { Instance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
@@ -19,7 +19,7 @@ export const Body: Component<BodyProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <Tabs

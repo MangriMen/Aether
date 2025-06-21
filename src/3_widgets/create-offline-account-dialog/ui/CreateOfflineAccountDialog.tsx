@@ -5,14 +5,14 @@ import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 
 import { useCreateOfflineAccount } from '@/entities/accounts';
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
 
 export const CreateOfflineAccountDialog: Component<
   CreateOfflineAccountDialogProps
 > = (props) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const { mutateAsync: createOfflineAccount } = useCreateOfflineAccount();
 

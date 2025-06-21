@@ -1,4 +1,4 @@
-import { useTranslate, type Option } from '@/shared/model';
+import { useTranslation, type Option } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -31,7 +31,7 @@ const ACTION_ON_INSTANCE_LAUNCH_OPTIONS: ActionOnInstanceLaunchOption[] = [
 export const SelectActionOnInstanceLaunchEntry: Component<
   SelectActionOnInstanceLaunchProps
 > = (props) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const appSettings = useAppSettings();
 

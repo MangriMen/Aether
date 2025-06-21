@@ -5,7 +5,7 @@ import { cn, debounce } from '@/shared/lib';
 
 import { useEditInstance, type Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
@@ -19,7 +19,7 @@ export type JavaAndMemoryTabProps = ComponentProps<'div'> &
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const settings = useSettings();
 

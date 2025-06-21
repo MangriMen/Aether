@@ -6,7 +6,7 @@ import {
 } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import {
   createMemo,
   createSignal,
@@ -36,7 +36,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
 
   const navigate = useNavigate();
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const isInstalling = createMemo(
     () => local.instance.installStage !== InstanceInstallStage.Installed,

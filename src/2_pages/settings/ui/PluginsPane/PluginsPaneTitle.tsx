@@ -5,14 +5,14 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
 import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
-import { isLauncherError, useTranslate } from '@/shared/model';
+import { isLauncherError, useTranslation } from '@/shared/model';
 
 export type PluginsPaneTitleProps = ComponentProps<'div'>;
 
 export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleOpenPluginsFolder = async () => {
     try {

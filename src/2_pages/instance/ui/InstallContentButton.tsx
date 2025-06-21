@@ -14,7 +14,7 @@ import { splitProps, For, createMemo } from 'solid-js';
 import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 import MdiPlusIcon from '@iconify/icons-mdi/plus';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import type { ContentType, Instance } from '@/entities/instances';
 import {
   CONTENT_TYPE_TO_TITLE,
@@ -41,7 +41,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const contentTypes = createMemo(() => props.contentTypes || CONTENT_TYPES);
 

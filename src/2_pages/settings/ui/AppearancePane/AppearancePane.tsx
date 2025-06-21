@@ -2,7 +2,7 @@ import { SettingsEntry, SettingsPane } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import SelectThemeForColorModeEntry from './SelectThemeForColorModeEntry';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { cn } from '@/shared/lib';
 import ChangeLanguageEntry from './ChangeLanguageEntry';
 import { SelectTheme } from './SelectTheme';
@@ -12,7 +12,7 @@ export type AppearancePaneProps = ComponentProps<'div'>;
 export const AppearancePane: Component<AppearancePaneProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <SettingsPane

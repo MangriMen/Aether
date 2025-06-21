@@ -13,7 +13,7 @@ import {
 
 import type { Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
@@ -32,7 +32,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 ) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <Tabs

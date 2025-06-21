@@ -19,7 +19,11 @@ import type { Instance, InstanceImportDto, EditInstance } from '../model';
 import { showToast } from '@/shared/ui';
 import { QUERY_KEYS } from './query_keys';
 import { createMemo, type Accessor } from 'solid-js';
-import { useTranslate } from '@/shared/model';
+import {
+  getTranslatedError,
+  isLauncherError,
+  useTranslation,
+} from '@/shared/model';
 
 export const useInstances = () => {
   return useQuery(() => ({
@@ -80,7 +84,7 @@ export const useInstanceDir = (id: Accessor<string>) => {
 };
 
 export const useCreateInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: createInstanceRaw,
@@ -98,7 +102,7 @@ export const useCreateInstance = () => {
 };
 
 export const useInstallInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
@@ -121,7 +125,7 @@ export const useInstallInstance = () => {
 };
 
 export const useUpdateInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
@@ -142,7 +146,7 @@ export const useUpdateInstance = () => {
 };
 
 export const useImportInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
@@ -163,7 +167,7 @@ export const useImportInstance = () => {
 };
 
 export const useLaunchInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
@@ -176,11 +180,20 @@ export const useLaunchInstance = () => {
         variant: 'success',
       });
     },
+    onError: (err, id) => {
+      if (isLauncherError(err)) {
+        showToast({
+          title: t('instance.launchError', { id: id }),
+          description: getTranslatedError(err, t),
+          variant: 'destructive',
+        });
+      }
+    },
   }));
 };
 
 export const useStopInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   return useMutation(() => ({
     mutationFn: (uuid: string) => stopInstanceRaw(uuid),
     onSuccess: () => {
@@ -189,11 +202,20 @@ export const useStopInstance = () => {
         variant: 'success',
       });
     },
+    onError: (err) => {
+      if (isLauncherError(err)) {
+        showToast({
+          title: t('instance.stopError'),
+          description: getTranslatedError(err, t),
+          variant: 'destructive',
+        });
+      }
+    },
   }));
 };
 
 export const useRemoveInstance = () => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
@@ -207,6 +229,15 @@ export const useRemoveInstance = () => {
         title: t('instance.instanceRemoved', { name: instanceName }),
         variant: 'success',
       });
+    },
+    onError: (err, id) => {
+      if (isLauncherError(err)) {
+        showToast({
+          title: t('instance.removeError', { id }),
+          description: getTranslatedError(err, t),
+          variant: 'destructive',
+        });
+      }
     },
   }));
 };

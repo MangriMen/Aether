@@ -14,7 +14,7 @@ import {
 import type { Account, AccountType } from '@/entities/accounts';
 import { useChangeAccount, useLogout } from '@/entities/accounts';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 
 export type AccountSelectButtonProps = IconButtonProps & {
@@ -41,7 +41,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
     'createOfflineAccountDialog',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleCreate = (type: AccountType) => {
     setAccountCreationType(type);

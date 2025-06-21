@@ -22,7 +22,7 @@ import {
   SettingsTabs,
 } from '../model/settingsTabs';
 import type { PolymorphicProps } from '@kobalte/core';
-import { isDeveloperMode, useTranslate } from '@/shared/model';
+import { isDeveloperMode, useTranslation } from '@/shared/model';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
@@ -32,7 +32,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
 ) => {
   const [_, others] = splitProps(props, ['params', 'location', 'data']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const tabs_triggers = createMemo(() => {
     if (!isDeveloperMode()) {

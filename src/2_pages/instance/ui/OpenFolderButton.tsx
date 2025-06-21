@@ -5,7 +5,7 @@ import { splitProps, type Component, type ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { useRevealInExplorer } from '@/entities/instances';
 
 export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
@@ -16,7 +16,7 @@ export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
 export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['instancePath']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
   const handleClick = () => {

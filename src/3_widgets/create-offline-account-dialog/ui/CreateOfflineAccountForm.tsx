@@ -17,7 +17,7 @@ import type {
   CreateOfflineAccountFormValues,
 } from '../model';
 import { CreateOfflineAccountFormSchema } from '../model';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;
@@ -29,7 +29,7 @@ export const CreateOfflineAccountForm: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['onCreate', 'onCancel']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [form, { Form, Field }] = createForm<CreateOfflineAccountFormValues>({
     validate: zodForm(CreateOfflineAccountFormSchema),

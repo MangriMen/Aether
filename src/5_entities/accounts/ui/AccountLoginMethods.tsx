@@ -7,7 +7,7 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { Button, CombinedTooltip } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import type { AccountType } from '../model';
 
@@ -20,7 +20,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
 ) => {
   const [local, others] = splitProps(props, ['onLogin', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const onOnline = () => {
     local.onLogin('online');

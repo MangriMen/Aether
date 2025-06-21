@@ -24,7 +24,8 @@
     "disable": "Disable",
     "enable": "Enable",
     "delete": "Delete",
-    "add": "Add"
+    "add": "Add",
+    "revealInExplorerError": "Failed to reveal in explorer"
   },
   "account": {
     "title": "Account",
@@ -35,7 +36,10 @@
     "activate": "Activate",
     "removeAccount": "Remove Account",
     "notFound": "Accounts not found",
-    "online": "Online"
+    "online": "Online",
+    "createOfflineError": "Failed to create offline account",
+    "logoutError": "Failed to logout from account",
+    "changeError": "Failed to change account"
   },
   "home": {
     "title": "Home",
@@ -87,7 +91,10 @@
     "instanceLaunched": "Instance {{name}} launched",
     "instanceStopped": "Instance stopped",
     "instanceRemoved": "Instance {{name}} removed",
-    "instanceEdited": "Instance {{name}} edited"
+    "instanceEdited": "Instance {{name}} edited",
+    "removeError": "Failed to remove instance {{id}}",
+    "stopError": "Failed to stop instance",
+    "launchError": "Failed to launch instance {{id}}"
   },
   "createInstance": {
     "title": "Create instance",
@@ -151,15 +158,13 @@
     "providerErrorOrNotFound": "Provider not found or error getting content",
     "provider": "Provider"
   },
-  "errors": {
+  "backendError": {
     "authError": {
-      "title": "Auth error",
       "credentialsNotFound": "Not found credentials with id: {{id}}",
       "noActiveCredentials": "No active credentials found",
       "storageFailure": "Storage failure"
     },
     "instanceError": {
-      "title": "Instance error",
       "credentialsError": {
         "credentialsNotFound": "Not found credentials with id: {{id}}",
         "noActiveCredentials": "No active credentials found",
@@ -168,7 +173,6 @@
       "storageFailure": "Storage failure"
     },
     "settingsError": {
-      "title": "Settings error",
       "storageFailure": "Storage failure"
     }
   }

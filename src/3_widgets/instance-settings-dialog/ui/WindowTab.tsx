@@ -6,7 +6,7 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 import { useEditInstance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import {
   DEFAULT_WINDOW_HEIGHT,
@@ -21,7 +21,7 @@ export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 export const WindowTab: Component<WindowTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [custom, setCustom] = createSignal(false);
 

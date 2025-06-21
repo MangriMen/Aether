@@ -96,11 +96,13 @@ export const useInstanceActions = () => {
       return;
     }
 
+    setIsLoading(instance.id, true);
     try {
       await removeInstance(instance.id);
     } catch {
       /* empty */
     }
+    setIsLoading(instance.id, false);
   };
 
   return {

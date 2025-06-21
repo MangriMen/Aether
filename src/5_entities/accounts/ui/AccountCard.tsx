@@ -8,7 +8,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 import type { Account, AccountType } from '../model';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import AccountButton from './AccountButton';
 
@@ -33,7 +33,7 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
     'removeButtonProps',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <div

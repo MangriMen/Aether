@@ -4,7 +4,7 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { Button, CombinedTooltip, type ButtonProps } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import type { Account, AccountType } from '../model';
 
@@ -25,7 +25,7 @@ const AccountButton = <T extends ValidComponent = 'button'>(
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <CombinedTooltip

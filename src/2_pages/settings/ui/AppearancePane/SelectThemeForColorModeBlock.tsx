@@ -4,7 +4,7 @@ import { createMemo, splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { FieldLabel } from '@/shared/ui';
 
-import { useThemeContext, useTranslate } from '@/shared/model';
+import { useThemeContext, useTranslation } from '@/shared/model';
 import SelectThemeByColorMode from './SelectThemeByColorMode';
 
 export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
@@ -14,7 +14,7 @@ const SelectThemeForColorModeBlock: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [themeContext] = useThemeContext();
 

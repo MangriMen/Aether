@@ -6,7 +6,7 @@ import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 import { MemorySlider } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { MIN_JRE_MEMORY } from '../../model';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
@@ -25,7 +25,7 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const warningValue = createMemo(() => local.systemMaxMemory / 2);
 

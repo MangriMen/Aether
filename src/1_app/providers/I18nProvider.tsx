@@ -29,11 +29,6 @@ export type I18nProviderProps<
   children?: JSX.Element;
 };
 
-// TODO: remove
-export let internalT: i18n.NullableTranslator<Dictionary> = (value): string =>
-  // @ts-expect-error mem
-  `${value}`;
-
 export const I18nProvider = (
   props: I18nProviderProps<Locale, RawDictionary>,
 ) => {
@@ -60,8 +55,6 @@ export const I18nProvider = (
   );
 
   const t = i18n.translator(dict, i18n.resolveTemplate);
-
-  internalT = t;
 
   const setLocale = (locale: Locale) => {
     dayjs.locale(locale);

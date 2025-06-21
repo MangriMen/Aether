@@ -11,7 +11,7 @@ import {
   DialogFooter,
   DialogHeader,
 } from './Dialog';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {
@@ -24,7 +24,7 @@ export type CombinedDialogProps = DialogRootProps &
   };
 
 export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const mergedProps = mergeProps(
     {

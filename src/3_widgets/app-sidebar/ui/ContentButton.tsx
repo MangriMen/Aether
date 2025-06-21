@@ -1,4 +1,4 @@
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 import { useNavigate } from '@solidjs/router';
 import type { Component, ComponentProps } from 'solid-js';
@@ -8,7 +8,7 @@ export type ContentButtonProps = ComponentProps<'div'>;
 
 export const ContentButton: Component<ContentButtonProps> = (props) => {
   const navigate = useNavigate();
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleClick = () => navigate('/content');
 

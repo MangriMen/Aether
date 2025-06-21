@@ -6,14 +6,14 @@ import { Separator } from '@/shared/ui';
 import type { Account, AccountType } from '@/entities/accounts';
 import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 
-export type AccountSelectCardProps = ComponentProps<'div'> & {
+export type AccountsMenuProps = ComponentProps<'div'> & {
   accounts: Account[];
   onActivate: (id: Account['id']) => void;
   onCreate: (type: AccountType) => void;
   onLogout: (uuid: string) => void;
 };
 
-export const AccountsMenu: Component<AccountSelectCardProps> = (props) => {
+export const AccountsMenu: Component<AccountsMenuProps> = (props) => {
   const [local, others] = splitProps(props, [
     'accounts',
     'onActivate',

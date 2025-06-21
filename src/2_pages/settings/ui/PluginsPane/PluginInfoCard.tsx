@@ -14,7 +14,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { PluginSettingsForm } from './PluginSettingsForm';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -23,7 +23,7 @@ export type PluginInfoCardProps = ComponentProps<'div'> & {
 export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const isPluginEnabled = createMemo(() => local.plugin.enabled);
 

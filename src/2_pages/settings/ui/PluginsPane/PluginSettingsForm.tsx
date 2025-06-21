@@ -20,7 +20,7 @@ import { EditAllowedPath } from './EditAllowedPath';
 import { AllowedPathField } from './AllowedPathField';
 import { AllowedHost } from './AllowedHost';
 import { AllowedPath } from './AllowedPath';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type PluginSettingsFormProps = {
   pluginManifest: PluginManifest;
@@ -37,7 +37,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const pluginId = createMemo(() => local.pluginManifest.metadata.id);
 

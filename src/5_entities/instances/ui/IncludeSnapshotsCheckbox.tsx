@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib';
 import type { CheckboxRootProps } from '@/shared/ui';
 import { Checkbox } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',
@@ -19,7 +19,7 @@ export const IncludeSnapshotsCheckbox: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['show', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <div

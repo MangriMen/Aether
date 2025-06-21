@@ -5,13 +5,13 @@ import type { Component } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type HomeButtonProps = IconButtonProps;
 
 const HomeButton: Component<HomeButtonProps> = (props) => {
   const navigate = useNavigate();
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleClick = () => navigate('/');
 

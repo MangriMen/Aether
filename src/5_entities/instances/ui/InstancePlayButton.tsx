@@ -5,7 +5,7 @@ import type { Component, ValidComponent } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type InstancePlayButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
@@ -13,7 +13,7 @@ export type InstancePlayButtonProps<T extends ValidComponent = 'button'> =
 export const InstancePlayButton: Component<InstancePlayButtonProps> = (
   props,
 ) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <CombinedTooltip

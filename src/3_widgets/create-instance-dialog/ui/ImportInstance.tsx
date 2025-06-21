@@ -3,7 +3,7 @@ import { useImportConfigs } from '@/entities/instances';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
 import { ImportInstanceForm } from './ImportInstanceForm';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type ImportInstanceProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
   Pick<DialogRootProps, 'onOpenChange'>;
@@ -11,7 +11,7 @@ export type ImportInstanceProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
 export const ImportInstance: Component<ImportInstanceProps> = (props) => {
   const importHandlers = useImportConfigs();
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <Show

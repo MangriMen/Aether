@@ -24,7 +24,8 @@
     "disable": "Отключить",
     "enable": "Включить",
     "delete": "Удалить",
-    "add": "Добавить"
+    "add": "Добавить",
+    "revealInExplorerError": "Не удалось показать в проводнике"
   },
   "account": {
     "title": "Аккаунт",
@@ -35,7 +36,10 @@
     "activate": "Активировать",
     "removeAccount": "Удалить аккаунт",
     "notFound": "Аккаунты не найдены",
-    "online": "Онлайн"
+    "online": "Онлайн",
+    "createOfflineError": "Не удалось создать оффлайн аккаунт",
+    "logoutError": "Не удалось выйти из аккаунта",
+    "changeError": "Не удалось сменить аккаунт"
   },
   "home": {
     "title": "Главная",
@@ -87,7 +91,10 @@
     "instanceInstalled": "Инстанс {{name}} установлен",
     "instanceLaunched": "Инстанс {{name}} запущен",
     "instanceRemoved": "Инстанс {{name}} удалён",
-    "instanceStopped": "Инстанс остановлен"
+    "instanceStopped": "Инстанс остановлен",
+    "removeError": "Ошибка удаления инстанса {{id}}",
+    "stopError": "Не удалось остановить инстанс",
+    "launchError": "Не удалось запустить инстанс {{id}}"
   },
   "createInstance": {
     "title": "Создать инстанс",
@@ -151,15 +158,13 @@
     "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
     "provider": "Провайдер"
   },
-  "errors": {
+  "backendError": {
     "authError": {
-      "title": "Ошибка аутентификации",
       "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
       "noActiveCredentials": "Не найдено активного аккаунта",
       "storageFailure": "Ошибка хранилища"
     },
     "instanceError": {
-      "title": "Ошибка инстанса",
       "credentialsError": {
         "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
         "noActiveCredentials": "Не найдено активного аккаунта",
@@ -168,7 +173,6 @@
       "storageFailure": "Ошибка хранилища"
     },
     "settingsError": {
-      "title": "Ошибка настроек",
       "storageFailure": "Ошибка хранилища"
     }
   }

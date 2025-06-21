@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib';
 import type { Account } from '../model';
 
 import { AccountCard } from './AccountCard';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type AccountsListProps = ComponentProps<'div'> & {
   accounts: Account[];
@@ -22,7 +22,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const mappedAccounts = createMemo(() =>
     local.accounts.reduce<{ active: Account | undefined; others: Account[] }>(

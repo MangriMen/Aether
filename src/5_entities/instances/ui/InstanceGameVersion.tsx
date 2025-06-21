@@ -1,6 +1,6 @@
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
 import { cn } from '@/shared/lib';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { CombinedTooltip } from '@/shared/ui';
 import { Icon } from '@iconify-icon/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
@@ -16,7 +16,7 @@ export const InstanceGameVersion: Component<InstanceGameVersionProps> = (
 ) => {
   const [local, others] = splitProps(props, ['loader', 'gameVersion', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <CombinedTooltip

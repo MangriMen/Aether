@@ -14,7 +14,7 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type InstanceControlledCardProps = Pick<
   InstanceCardProps,
@@ -30,7 +30,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   const instancePath = useInstanceDir(() => id());
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 

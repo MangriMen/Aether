@@ -1,11 +1,11 @@
-const ERROR_KINDS = ['authError', 'instanceError', 'settingsError'] as const;
-type ErrorKind = (typeof ERROR_KINDS)[number];
+import type { TFunction } from './i18nContext';
 
+type RootKind = 'authError' | 'instanceError' | 'settingsError';
 type ErrorCode =
-  | `${ErrorKind}.${string}`
-  | `${ErrorKind}.${string}.${string}`
-  | `${ErrorKind}.${string}.${string}.${string}`
-  | `${ErrorKind}.${string}.${string}.${string}.${string}`;
+  | `${RootKind}.${string}`
+  | `${RootKind}.${string}.${string}`
+  | `${RootKind}.${string}.${string}.${string}`
+  | `${RootKind}.${string}.${string}.${string}.${string}`;
 
 interface BaseError<Code extends ErrorCode, Fields> {
   code: Code;
@@ -36,5 +36,5 @@ export const isLauncherError = (error: unknown): error is LauncherError => {
   );
 };
 
-export const isErrorKind = (value: string): value is ErrorKind =>
-  ERROR_KINDS.includes(value as ErrorKind);
+export const getTranslatedError = (error: LauncherError, t: TFunction) =>
+  t(`backendError.${error.code}`, error.fields ?? undefined) || error.code;
