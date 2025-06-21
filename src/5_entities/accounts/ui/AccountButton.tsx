@@ -1,26 +1,28 @@
-import type { ComponentProps, ValidComponent } from 'solid-js';
+import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Button, CombinedTooltip, type ButtonProps } from '@/shared/ui';
+import { type ButtonProps } from '@/shared/ui';
+import { Button, CombinedTooltip } from '@/shared/ui';
 
 import { useTranslation } from '@/shared/model';
 
-import type { Account, AccountType } from '../model';
+import type { AccountType } from '../model';
+import type { PolymorphicProps } from '@kobalte/core';
 
 export type AccountButtonProps<T extends ValidComponent = 'button'> =
   ButtonProps<T> & {
-    username: Account['username'];
-    type: AccountType;
-    active?: boolean;
+    username: string;
+    active: boolean;
+    accountType: AccountType;
   };
 
-const AccountButton = <T extends ValidComponent = 'button'>(
-  props: ComponentProps<T> & AccountButtonProps<T>,
+export const AccountButton = <T extends ValidComponent = 'button'>(
+  props: Exclude<PolymorphicProps<T, AccountButtonProps<T>>, 'label'>,
 ) => {
   const [local, others] = splitProps(props, [
     'username',
-    'type',
+    'accountType',
     'active',
     'class',
   ]);
@@ -41,11 +43,9 @@ const AccountButton = <T extends ValidComponent = 'button'>(
       <div class='flex flex-col items-start'>
         <span class='font-bold'>{local.username}</span>
         <span class='capitalize text-muted-foreground'>
-          {t(`account.${local.type as AccountType}`)}
+          {t(`account.${local.accountType as AccountType}`)}
         </span>
       </div>
     </CombinedTooltip>
   );
 };
-
-export default AccountButton;

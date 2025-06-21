@@ -50,24 +50,3 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     </Sidebar>
   );
 };
-
-// <Sidebar class={cn('min-w-16 max-w-16 w-full ', local.class)} {...others}>
-//   <div class='flex flex-col items-center gap-2'>
-//     <AccountSelectButton
-//       accounts={accounts.data ?? []}
-//       accountSelectCard={AccountsMenu}
-//       createOfflineAccountDialog={local.createOfflineAccountDialog}
-//     />
-//   </div>
-//   <div class='flex grow flex-col items-center justify-center gap-2'>
-//     <HomeButton />
-//     {/* <ContentButton /> */}
-//     <Separator />
-//     <CreateInstanceButton
-//       createInstanceDialog={local.createInstanceDialog}
-//     />
-//   </div>
-//   <div class='flex flex-col items-center gap-2'>
-//     <SettingsButton />
-//   </div>
-// </Sidebar>

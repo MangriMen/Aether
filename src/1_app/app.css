@@ -181,6 +181,20 @@
   }
 }
 
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  [data-disable-animations='true'] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @layer utilities {
   .step {
     counter-increment: step;
@@ -212,4 +226,20 @@
 
 ::-webkit-scrollbar-corner {
   display: none;
+}
+
+/* List items reordering */
+
+.animate-list-item {
+  transition: all 0.2s ease-out;
+  transition-property: opacity, transform;
+}
+
+.animate-list-item-enter,
+.animate-list-item-exit-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.animate-list-item-exit-active {
+  position: absolute;
 }
