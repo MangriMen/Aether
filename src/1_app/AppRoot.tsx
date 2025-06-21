@@ -8,6 +8,7 @@ import {
   THEME_STATE_LS_KEY,
   THEME_ATTRIBUTE,
   TRANSPARENCY_PROPERTY,
+  DISABLE_ANIMATIONS_ATTRIBUTE,
 } from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
@@ -30,6 +31,7 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
       <ThemeProvider
         themeStateKey={THEME_STATE_LS_KEY}
         themeAttribute={THEME_ATTRIBUTE}
+        disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
         transparencyProperty={TRANSPARENCY_PROPERTY}
       >
         <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>

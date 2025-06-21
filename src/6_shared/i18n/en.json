@@ -69,7 +69,10 @@
     "hide": "Hide",
     "close": "Close",
     "plugins": "Plugins",
-    "experimental": "Experimental"
+    "experimental": "Experimental",
+    "animations": "Animations",
+    "prefersReducedMotionInfo": "Animations are disabled in the system - you can enable them in the app, but this may affect the smoothness of the interface and battery life",
+    "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance"
   },
   "instance": {
     "settings": "Settings",

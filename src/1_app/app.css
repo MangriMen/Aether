@@ -182,13 +182,6 @@
 }
 
 @layer base {
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation: none !important;
-      transition: none !important;
-    }
-  }
-
   [data-disable-animations='true'] * {
     animation: none !important;
     transition: none !important;

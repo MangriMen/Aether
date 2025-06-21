@@ -14,11 +14,19 @@ import type {
 import { THEMES_MAP, COLOR_MODE_TO_KEY, isSystemTheme } from '@/shared/model';
 import { DEFAULT_THEME_CONTEXT_VALUE } from '../config';
 import { makePersisted } from '@solid-primitives/storage';
-import { applyThemeToDocument, applyTransparencyToDocument } from './theme';
+import {
+  applyDisableAnimationsToDocument,
+  applyThemeToDocument,
+  applyTransparencyToDocument,
+} from './theme';
+import { makeMediaQueryListener } from '@solid-primitives/media';
+
+import { showPrefersReducedMotionInfo } from './showPrefersReducedMotionInfo';
 
 export const useCreateThemeContext = (
   themeStateKey: Accessor<string>,
   themeAttribute: Accessor<string>,
+  disableAnimationsAttribute: Accessor<string>,
   transparencyProperty: Accessor<string>,
 ): ThemeContextType => {
   const { colorMode: currentColorMode, setColorMode } = useColorMode();
@@ -45,10 +53,15 @@ export const useCreateThemeContext = (
     setState('transparency', transparency);
   };
 
+  const setDisableAnimations = (disableAnimations: boolean) => {
+    setState('disableAnimations', disableAnimations);
+  };
+
   const actions: ThemeContextActions = {
     setTheme: setRawTheme,
     setThemeByColorMode,
     setTransparency,
+    setDisableAnimations,
   };
 
   const setColorModeByTheme = (theme: ThemeConfig): void => {
@@ -58,6 +71,10 @@ export const useCreateThemeContext = (
 
   const updateThemeByColorMode = () => {
     setTheme(state[COLOR_MODE_TO_KEY[currentColorMode()]]);
+  };
+
+  const setPrefersReducedMotion = (prefersReducedMotion: boolean) => {
+    setState('prefersReducedMotion', prefersReducedMotion);
   };
 
   createEffect(
@@ -77,12 +94,28 @@ export const useCreateThemeContext = (
     ),
   );
 
+  makeMediaQueryListener('(prefers-reduced-motion: reduce)', (e) => {
+    setPrefersReducedMotion(e.matches);
+    setDisableAnimations(e.matches);
+
+    if (e.matches && state.disableAnimations) {
+      showPrefersReducedMotionInfo(() => setDisableAnimations(false));
+    }
+  });
+
   createEffect(() => {
     applyThemeToDocument(themeAttribute(), state.theme);
   });
 
   createEffect(() => {
     applyTransparencyToDocument(transparencyProperty(), state.transparency);
+  });
+
+  createEffect(() => {
+    applyDisableAnimationsToDocument(
+      disableAnimationsAttribute(),
+      state.disableAnimations,
+    );
   });
 
   onMount(() => {

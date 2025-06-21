@@ -9,12 +9,15 @@ export type ThemeContextValue = {
   lightTheme: Theme;
   darkTheme: Theme;
   transparency: number;
+  disableAnimations: boolean;
+  prefersReducedMotion: boolean;
 };
 
 export type ThemeContextActions = {
   setTheme: (theme: ThemeConfig) => void;
   setThemeByColorMode: (colorMode: ColorMode, theme: Theme) => void;
   setTransparency: (transparency: number) => void;
+  setDisableAnimations: (disableAnimations: boolean) => void;
 };
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];

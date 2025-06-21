@@ -7,11 +7,11 @@ import { FieldLabel } from '@/shared/ui';
 import { useThemeContext, useTranslation } from '@/shared/model';
 import SelectThemeByColorMode from './SelectThemeByColorMode';
 
-export type SelectThemeForColorModeBlockProps = ComponentProps<'div'>;
+export type SelectThemeForColorModeProps = ComponentProps<'div'>;
 
-const SelectThemeForColorModeBlock: Component<
-  SelectThemeForColorModeBlockProps
-> = (props) => {
+const SelectThemeForColorMode: Component<SelectThemeForColorModeProps> = (
+  props,
+) => {
   const [local, others] = splitProps(props, ['class']);
 
   const [{ t }] = useTranslation();
@@ -45,4 +45,4 @@ const SelectThemeForColorModeBlock: Component<
   );
 };
 
-export default SelectThemeForColorModeBlock;
+export default SelectThemeForColorMode;

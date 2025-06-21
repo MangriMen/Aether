@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib';
 
 import { useTranslation, useThemeContext } from '@/shared/model';
 
-import SelectThemeForColorModeBlock from './SelectThemeForColorModeBlock';
+import SelectThemeForColorMode from './SelectThemeForColorMode';
 import { SettingsEntry } from '@/shared/ui';
 
 export type SelectThemeForColorModeEntryProps = ComponentProps<'div'>;
@@ -28,7 +28,7 @@ const SelectThemeForColorModeEntry: Component<
       description={t('settings.systemColorModeDescription')}
       {...others}
     >
-      <SelectThemeForColorModeBlock />
+      <SelectThemeForColorMode />
     </SettingsEntry>
   );
 };

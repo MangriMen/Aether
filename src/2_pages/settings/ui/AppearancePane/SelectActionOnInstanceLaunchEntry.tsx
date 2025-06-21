@@ -61,7 +61,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
       {...props}
     >
       <Select
-        class='w-44'
+        class='w-40 min-w-40'
         multiple={false}
         options={ACTION_ON_INSTANCE_LAUNCH_OPTIONS}
         optionValue='value'
