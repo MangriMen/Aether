@@ -10,13 +10,13 @@ import { cn } from '@/shared/lib';
 
 // eslint-disable-next-line tailwindcss/no-custom-classname
 const toastVariants = cva(
-  'data-[opened]:animate-in data-[closed]:animate-out data-[swipe=end]:animate-out data-[closed]:fade-out-80 data-[closed]:slide-out-to-right-full data-[opened]:slide-in-from-top-full data-[opened]:sm:slide-in-from-bottom-full group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--kb-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--kb-toast-swipe-move-x)] data-[swipe=move]:transition-none',
+  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--kb-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--kb-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[opened]:animate-in data-[closed]:animate-out data-[swipe=end]:animate-out data-[closed]:fade-out-80 data-[closed]:slide-out-to-right-full data-[opened]:slide-in-from-top-full data-[opened]:sm:slide-in-from-bottom-full',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground border',
+        default: 'border bg-background text-foreground',
         destructive:
-          'destructive border-destructive bg-destructive text-destructive-foreground group',
+          'destructive group border-destructive bg-destructive text-destructive-foreground',
         success:
           'success border-success-foreground bg-success text-success-foreground',
         warning:
@@ -141,12 +141,14 @@ const ToastDescription = <T extends ValidComponent = 'div'>(
   );
 };
 
-function showToast(props: {
+interface ShowToastParams {
   title?: JSX.Element;
   description?: JSX.Element;
   variant?: ToastVariant;
   duration?: number;
-}) {
+}
+
+function showToast(props: ShowToastParams) {
   return ToastPrimitive.toaster.show((data) => (
     <Toast
       toastId={data.toastId}
@@ -200,6 +202,8 @@ function showToastPromise<T, U>(
 function closeToast(id: number) {
   return ToastPrimitive.toaster.dismiss(id);
 }
+
+export type { ShowToastParams };
 
 export {
   Toaster,

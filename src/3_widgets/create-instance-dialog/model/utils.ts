@@ -16,6 +16,7 @@ export const filterGameVersionsForLoader = (
     fabric?: MappedLoaderManifest;
     forge?: MappedLoaderManifest;
     quilt?: MappedLoaderManifest;
+    neoforge?: MappedLoaderManifest;
   },
 ) => {
   if (!loader || loader === ModLoader.Vanilla) {
@@ -25,11 +26,13 @@ export const filterGameVersionsForLoader = (
   return versions.filter((version) => {
     switch (loader) {
       case ModLoader.Fabric:
-        return !!loaderVersions.fabric?.gameVersions?.[version.id];
+        return !!loaderVersions.fabric?.gameVersions[version.id];
       case ModLoader.Forge:
-        return !!loaderVersions.forge?.gameVersions?.[version.id];
+        return !!loaderVersions.forge?.gameVersions[version.id];
       case ModLoader.Quilt:
-        return !!loaderVersions.quilt?.gameVersions?.[version.id];
+        return !!loaderVersions.quilt?.gameVersions[version.id];
+      case ModLoader.NeoForge:
+        return !!loaderVersions.neoforge?.gameVersions[version.id];
     }
   });
 };
@@ -41,6 +44,7 @@ export const getLoaderVersionsForGameVersion = (
     fabric?: MappedLoaderManifest;
     forge?: MappedLoaderManifest;
     quilt?: MappedLoaderManifest;
+    neoforge?: MappedLoaderManifest;
   },
 ) => {
   if (!loader || !gameVersion) {
@@ -49,16 +53,18 @@ export const getLoaderVersionsForGameVersion = (
 
   const dummyReplaceString = '${modrinth.gameVersion}';
   switch (loader) {
-    case ModLoader.Fabric:
-      return (
-        loaderVersions.fabric?.gameVersions[dummyReplaceString].loaders ?? []
-      );
     case ModLoader.Forge:
       return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
+    case ModLoader.Fabric:
+      return (
+        loaderVersions.fabric?.gameVersions[dummyReplaceString]?.loaders ?? []
+      );
     case ModLoader.Quilt:
       return (
-        loaderVersions.quilt?.gameVersions[dummyReplaceString].loaders ?? []
+        loaderVersions.quilt?.gameVersions[dummyReplaceString]?.loaders ?? []
       );
+    case ModLoader.NeoForge:
+      return loaderVersions.neoforge?.gameVersions[gameVersion]?.loaders ?? [];
     default:
       return [];
   }

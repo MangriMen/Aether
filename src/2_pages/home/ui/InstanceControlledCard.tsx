@@ -83,6 +83,8 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         <ContextMenuTrigger
           as={InstanceCard}
           onClick={goToInstancePage}
+          isLoading={runningInstanceData()?.isLoading}
+          isRunning={runningInstanceData()?.isRunning}
           {...props}
         />
       </InstanceContextMenu>

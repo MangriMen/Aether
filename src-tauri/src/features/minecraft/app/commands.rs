@@ -1,3 +1,4 @@
+use aether_core::features::minecraft::ModLoader;
 use daedalus::{minecraft, modded};
 
 use crate::FrontendResult;
@@ -8,6 +9,6 @@ pub async fn get_minecraft_version_manifest() -> FrontendResult<minecraft::Versi
 }
 
 #[tauri::command]
-pub async fn get_loader_version_manifest(loader: String) -> FrontendResult<modded::Manifest> {
+pub async fn get_loader_version_manifest(loader: ModLoader) -> FrontendResult<modded::Manifest> {
     Ok(aether_core::api::metadata::get_loader_version_manifest(loader).await?)
 }

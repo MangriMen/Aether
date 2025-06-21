@@ -6,12 +6,8 @@ import {
   listAccountsRaw,
   logoutRaw,
 } from './rawApi';
-import {
-  getTranslatedError,
-  isLauncherError,
-  useTranslation,
-} from '@/6_shared/model';
-import { showToast } from '@/6_shared/ui';
+import { useTranslation } from '@/6_shared/model';
+import { showError } from '@/6_shared/lib/showError';
 
 export const useAccounts = () =>
   useQuery(() => ({
@@ -30,13 +26,11 @@ export const useCreateOfflineAccount = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
     },
     onError: (err) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('account.createOfflineError'),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('account.createOfflineError'),
+        err,
+        t,
+      });
     },
   }));
 };
@@ -52,13 +46,11 @@ export const useChangeAccount = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
     },
     onError: (err) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('account.changeError'),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('account.changeError'),
+        err,
+        t,
+      });
     },
   }));
 };
@@ -74,13 +66,11 @@ export const useLogout = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ACCOUNT.LIST() });
     },
     onError: (err) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('account.logoutError'),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('account.logoutError'),
+        err,
+        t,
+      });
     },
   }));
 };

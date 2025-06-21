@@ -94,7 +94,9 @@
     "instanceEdited": "Instance {{name}} edited",
     "removeError": "Failed to remove instance {{id}}",
     "stopError": "Failed to stop instance",
-    "launchError": "Failed to launch instance {{id}}"
+    "launchError": "Failed to launch instance {{id}}",
+    "createError": "Failed to create instance",
+    "editError": "Failed to edit instance {{id}}"
   },
   "createInstance": {
     "title": "Create instance",

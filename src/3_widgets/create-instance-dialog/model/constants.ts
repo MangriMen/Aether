@@ -7,7 +7,7 @@ export const loaders: Option<ModLoader>[] = [
   { name: 'Forge', value: ModLoader.Forge },
   { name: 'Fabric', value: ModLoader.Fabric },
   { name: 'Quilt', value: ModLoader.Quilt },
-  // { name: 'NeoForge', value: ModLoader.NeoForge },
+  { name: 'NeoForge', value: ModLoader.NeoForge },
 ];
 
 export const loaderVersionTypes: Option[] = [

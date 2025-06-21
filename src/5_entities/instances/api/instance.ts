@@ -19,11 +19,8 @@ import type { Instance, InstanceImportDto, EditInstance } from '../model';
 import { showToast } from '@/shared/ui';
 import { QUERY_KEYS } from './query_keys';
 import { createMemo, type Accessor } from 'solid-js';
-import {
-  getTranslatedError,
-  isLauncherError,
-  useTranslation,
-} from '@/shared/model';
+import { useTranslation } from '@/shared/model';
+import { showError } from '@/6_shared/lib/showError';
 
 export const useInstances = () => {
   return useQuery(() => ({
@@ -88,14 +85,17 @@ export const useCreateInstance = () => {
 
   return useMutation(() => ({
     mutationFn: createInstanceRaw,
-    onSuccess: (_, createInstance) => {
+    onSuccess: () => {
       // queryClient.setQueryData(
       //   QUERY_KEYS.INSTANCE.LIST(),
       //   (old: Instance[] = []) => [...old, newInstance],
       // );
-      showToast({
-        title: t('instance.instanceCreated', { name: createInstance.name }),
-        variant: 'success',
+    },
+    onError: (err) => {
+      showError({
+        title: t('instance.createError'),
+        err,
+        t,
       });
     },
   }));
@@ -119,6 +119,7 @@ export const useInstallInstance = () => {
       showToast({
         title: t('instance.instanceInstalled', { name: instanceName }),
         variant: 'success',
+        duration: 1000,
       });
     },
   }));
@@ -140,6 +141,7 @@ export const useUpdateInstance = () => {
       showToast({
         title: t('instance.instanceUpdated', { name: instanceName }),
         variant: 'success',
+        duration: 1000,
       });
     },
   }));
@@ -161,6 +163,7 @@ export const useImportInstance = () => {
       showToast({
         title: t('instance.instanceImported', { name: newInstance }),
         variant: 'success',
+        duration: 1000,
       });
     },
   }));
@@ -168,48 +171,30 @@ export const useImportInstance = () => {
 
 export const useLaunchInstance = () => {
   const [{ t }] = useTranslation();
-  const queryClient = useQueryClient();
 
   return useMutation(() => ({
     mutationFn: (id: string) => launchInstanceRaw(id),
-    onSuccess: (_, id) => {
-      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
-
-      showToast({
-        title: t('instance.instanceLaunched', { name: instanceName }),
-        variant: 'success',
-      });
-    },
     onError: (err, id) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('instance.launchError', { id: id }),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('instance.launchError', { id: id }),
+        err,
+        t,
+      });
     },
   }));
 };
 
 export const useStopInstance = () => {
   const [{ t }] = useTranslation();
+
   return useMutation(() => ({
     mutationFn: (uuid: string) => stopInstanceRaw(uuid),
-    onSuccess: () => {
-      showToast({
-        title: t('instance.instanceStopped'),
-        variant: 'success',
-      });
-    },
     onError: (err) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('instance.stopError'),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('instance.stopError'),
+        err,
+        t,
+      });
     },
   }));
 };
@@ -221,29 +206,22 @@ export const useRemoveInstance = () => {
   return useMutation(() => ({
     mutationFn: (id: string) => removeInstanceRaw(id),
     onSuccess: (_, id) => {
-      // Удаляем из списка и детали
       removeInstanceData(queryClient, id);
-
-      const instanceName = getInstanceFromCache(queryClient, id)?.name ?? id;
-      showToast({
-        title: t('instance.instanceRemoved', { name: instanceName }),
-        variant: 'success',
-      });
     },
     onError: (err, id) => {
-      if (isLauncherError(err)) {
-        showToast({
-          title: t('instance.removeError', { id }),
-          description: getTranslatedError(err, t),
-          variant: 'destructive',
-        });
-      }
+      showError({
+        title: t('instance.removeError', { id }),
+        err,
+        t,
+      });
     },
   }));
 };
 
 export const useEditInstance = () => {
   const queryClient = useQueryClient();
+
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({ id, edit }: { id: string; edit: EditInstance }) =>
@@ -267,13 +245,18 @@ export const useEditInstance = () => {
 
       // return { prevInstance };
     },
-    onError: () => {
+    onError: (err, values) => {
       // if (context?.prevInstance) {
       //   queryClient.setQueryData(
       //     QUERY_KEYS.INSTANCE.GET(id),
       //     context.prevInstance,
       //   );
       // }
+      showError({
+        title: t('instance.editError', { id: values.id }),
+        err,
+        t,
+      });
     },
     onSuccess: (_, { id }) => {
       // updateInstanceCacheData(queryClient, updatedInstance, id);

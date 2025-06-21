@@ -1,6 +1,5 @@
 import type { FieldValues, SubmitHandler } from '@modular-forms/solid';
 import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
-import { createAsync } from '@solidjs/router';
 import type { Component } from 'solid-js';
 import {
   createMemo,
@@ -19,7 +18,6 @@ import {
   CombinedTextField,
   DialogFooter,
   LabeledField,
-  showToast,
 } from '@/shared/ui';
 
 import type { NewInstance } from '@/entities/instances';
@@ -29,9 +27,9 @@ import {
 } from '@/entities/instances';
 import type { LoaderVersion, Version } from '@/entities/minecraft';
 import {
-  getLoaderVersionManifest,
-  getMinecraftVersionManifest,
   ModLoader,
+  useLoaderVersionManifest,
+  useMinecraftVersionManifest,
 } from '@/entities/minecraft';
 
 import { useTranslation } from '@/shared/model';
@@ -83,16 +81,28 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const [shouldIncludeSnapshots, setShouldIncludeSnapshots] =
     createSignal(false);
 
-  const versionManifest = createAsync(() => getMinecraftVersionManifest());
+  const versionManifest = useMinecraftVersionManifest();
 
-  const forgeVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Forge)),
+  const forgeVersions = useLoaderVersionManifest(() => ModLoader.Forge);
+  const fabricVersions = useLoaderVersionManifest(() => ModLoader.Fabric);
+  const quiltVersions = useLoaderVersionManifest(() => ModLoader.Quilt);
+  const neoforgeVersions = useLoaderVersionManifest(() => ModLoader.NeoForge);
+
+  const forgeVersionsMapped = createMemo(() =>
+    forgeVersions.data ? loaderManifestToMapped(forgeVersions.data) : undefined,
   );
-  const fabricVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Fabric)),
+  const fabricVersionsMapped = createMemo(() =>
+    fabricVersions.data
+      ? loaderManifestToMapped(fabricVersions.data)
+      : undefined,
   );
-  const quiltVersions = createAsync(async () =>
-    loaderManifestToMapped(await getLoaderVersionManifest(ModLoader.Quilt)),
+  const quiltVersionsMapped = createMemo(() =>
+    quiltVersions.data ? loaderManifestToMapped(quiltVersions.data) : undefined,
+  );
+  const neoforgeVersionsMapped = createMemo(() =>
+    neoforgeVersions.data
+      ? loaderManifestToMapped(neoforgeVersions.data)
+      : undefined,
   );
 
   const loaderVersions = createMemo(() =>
@@ -100,9 +110,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       getValue(form, 'loader'),
       getValue(form, 'gameVersion'),
       {
-        fabric: fabricVersions(),
-        forge: forgeVersions(),
-        quilt: quiltVersions(),
+        fabric: fabricVersionsMapped(),
+        forge: forgeVersionsMapped(),
+        quilt: quiltVersionsMapped(),
+        neoforge: neoforgeVersionsMapped(),
       },
     ),
   );
@@ -110,11 +121,12 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const loaderGameVersions = createMemo(() =>
     filterGameVersionsForLoader(
       getValue(form, 'loader'),
-      versionManifest()?.versions ?? [],
+      versionManifest.data?.versions ?? [],
       {
-        fabric: fabricVersions(),
-        forge: forgeVersions(),
-        quilt: quiltVersions(),
+        fabric: fabricVersionsMapped(),
+        forge: forgeVersionsMapped(),
+        quilt: quiltVersionsMapped(),
+        neoforge: neoforgeVersionsMapped(),
       },
     ),
   );
@@ -136,16 +148,12 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       loaderVersion: values.loaderVersion,
     };
 
-    try {
-      props.onOpenChange?.(false);
+    props.onOpenChange?.(false);
 
+    try {
       await createInstance(payload);
-    } catch (e) {
-      console.error(e);
-      showToast({
-        title: `Failed to create instance ${payload.name}`,
-        variant: 'destructive',
-      });
+    } catch {
+      /* empty */
     }
 
     setIsCreating(false);

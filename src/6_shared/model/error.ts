@@ -36,5 +36,8 @@ export const isLauncherError = (error: unknown): error is LauncherError => {
   );
 };
 
-export const getTranslatedError = (error: LauncherError, t: TFunction) =>
+export const getTranslatedError = (
+  error: LauncherError,
+  t: TFunction,
+): string =>
   t(`backendError.${error.code}`, error.fields ?? undefined) || error.code;

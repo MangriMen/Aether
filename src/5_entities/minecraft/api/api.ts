@@ -1,13 +1,20 @@
-import { invoke } from '@tauri-apps/api/core';
+import { useQuery } from '@tanstack/solid-query';
+import {
+  getLoaderVersionManifestRaw,
+  getMinecraftVersionManifestRaw,
+} from './rawApi';
+import { QUERY_KEYS } from './query_keys';
+import type { Accessor } from 'solid-js';
+import type { ModLoader } from '../model';
 
-import type { VersionManifest, LoaderManifest, ModLoader } from '../model';
+export const useMinecraftVersionManifest = () =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.MINECRAFT.MINECRAFT_VERSION_MANIFEST(),
+    queryFn: getMinecraftVersionManifestRaw,
+  }));
 
-export const initializeState = () => invoke('initialize_state');
-
-export const initializePlugins = () => invoke('initialize_plugins');
-
-export const getMinecraftVersionManifest = () =>
-  invoke<VersionManifest>('get_minecraft_version_manifest');
-
-export const getLoaderVersionManifest = (loader: ModLoader) =>
-  invoke<LoaderManifest>('get_loader_version_manifest', { loader });
+export const useLoaderVersionManifest = (loader: Accessor<ModLoader>) =>
+  useQuery(() => ({
+    queryKey: QUERY_KEYS.MINECRAFT.LOADER_VERSION_MANIFEST(loader()),
+    queryFn: () => getLoaderVersionManifestRaw(loader()),
+  }));

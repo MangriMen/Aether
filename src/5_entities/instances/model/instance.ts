@@ -27,7 +27,7 @@ export interface Instance {
   // Main minecraft metadata
   gameVersion: string;
   loader: ModLoader;
-  loaderVersion?: string;
+  loaderVersion?: LoaderVersionPreference;
 
   // Launch arguments
   javaPath?: string;
@@ -74,11 +74,13 @@ export enum InstanceInstallStage {
   NotInstalled = 'not_installed',
 }
 
+export type LoaderVersionPreference = 'stable' | 'latest' | string;
+
 export interface NewInstance {
   name: string;
   gameVersion: string;
   modLoader: ModLoader;
-  loaderVersion?: string;
+  loaderVersion?: LoaderVersionPreference;
   iconPath?: string;
   skipInstallProfile?: boolean;
   packInfo?: PackInfo;
