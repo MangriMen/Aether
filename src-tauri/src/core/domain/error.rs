@@ -1,4 +1,4 @@
-use serializable_error_derive::SerializeError;
+use serr::SerializeError;
 
 use crate::features::app_settings::AppSettingsError;
 

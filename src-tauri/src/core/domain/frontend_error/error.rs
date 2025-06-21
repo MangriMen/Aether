@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use serde::Serialize;
-use serializable_error::ToSerializableError;
+use serr::ToSerializedError;
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 
@@ -14,7 +14,7 @@ pub struct FrontendError {
 
 impl From<aether_core::Error> for FrontendError {
     fn from(value: aether_core::Error) -> Self {
-        let serialized = value.raw.to_serializable();
+        let serialized = value.raw.to_serialized();
         Self {
             code: serialized.code,
             fields: serialized.fields,
@@ -25,7 +25,7 @@ impl From<aether_core::Error> for FrontendError {
 
 impl From<crate::Error> for FrontendError {
     fn from(value: crate::Error) -> Self {
-        let serialized = value.to_serializable();
+        let serialized = value.to_serialized();
         Self {
             code: serialized.code,
             fields: serialized.fields,
