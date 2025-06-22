@@ -11,6 +11,7 @@ export * from './CombinedTextField';
 export * from './CombinedTooltip';
 export * from './ContextMenu';
 export * from './DataTable';
+export * from './DelayedShow';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './FieldLabel';

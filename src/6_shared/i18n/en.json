@@ -101,7 +101,8 @@
     "stopError": "Failed to stop instance",
     "launchError": "Failed to launch instance {{id}}",
     "createError": "Failed to create instance",
-    "editError": "Failed to edit instance {{id}}"
+    "editError": "Failed to edit instance {{id}}",
+    "notFound": "Instance \"{{id}}\" not found"
   },
   "createInstance": {
     "title": "Create instance",
