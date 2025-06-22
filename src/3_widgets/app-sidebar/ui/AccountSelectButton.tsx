@@ -19,7 +19,7 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 
 export type AccountSelectButtonProps = IconButtonProps & {
   accounts: Account[];
-  accountSelectCard: Component<
+  accountsMenu: Component<
     ComponentProps<'div'> & {
       accounts: Account[];
       onActivate: (id: Account['id']) => void;
@@ -37,7 +37,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'accounts',
-    'accountSelectCard',
+    'accountsMenu',
     'createOfflineAccountDialog',
   ]);
 
@@ -80,7 +80,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
           />
         </PopoverTrigger>
         <PopoverContent class='w-max p-0'>
-          <local.accountSelectCard
+          <local.accountsMenu
             accounts={local.accounts}
             onCreate={handleCreate}
             onActivate={handleSelect}

@@ -42,7 +42,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       <div class='flex flex-col items-center gap-2'>
         <AccountSelectButton
           accounts={accounts.data ?? []}
-          accountSelectCard={AccountsMenu}
+          accountsMenu={AccountsMenu}
           createOfflineAccountDialog={local.createOfflineAccountDialog}
         />
         <SettingsButton />
