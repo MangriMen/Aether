@@ -164,7 +164,14 @@
     "resourcePacks": "Resource Packs",
     "shaders": "Shaders",
     "providerErrorOrNotFound": "Provider not found or error getting content",
-    "provider": "Provider"
+    "provider": "Provider",
+    "installed": "{{contentType}} installed successfully",
+    "mod": "Mod",
+    "datapack": "Data Pack",
+    "resourcepack": "Resource Pack",
+    "shaderpack": "Shader",
+    "imported": "{{contentType}} imported successfully",
+    "searchCount": "Search {{count}} contents"
   },
   "backendError": {
     "authError": {

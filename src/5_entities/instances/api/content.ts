@@ -19,6 +19,7 @@ import type {
 } from '../model';
 import { showToast } from '@/shared/ui';
 import { type Accessor } from 'solid-js';
+import { useTranslation } from '@/6_shared/model';
 
 // Ключи для кэширования контента
 export const contentKeys = {
@@ -143,6 +144,7 @@ export const useRemoveContents = () => {
 
 export const useInstallContent = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({
@@ -152,12 +154,14 @@ export const useInstallContent = () => {
       id: string;
       payload: InstallContentPayload;
     }) => installContentRaw(id, payload),
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, { id, payload }) => {
       queryClient.invalidateQueries({
         queryKey: contentKeys.instanceContents(id),
       });
       showToast({
-        title: 'Content installed',
+        title: t('content.installed', {
+          contentType: t(`content.${payload.contentType}`) || '',
+        }),
         variant: 'success',
       });
     },
@@ -166,6 +170,7 @@ export const useInstallContent = () => {
 
 export const useImportContents = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({
@@ -177,12 +182,14 @@ export const useImportContents = () => {
       paths: string[];
       type: ContentType;
     }) => importContentsRaw(id, paths, type),
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, { id, type }) => {
       queryClient.invalidateQueries({
         queryKey: contentKeys.instanceContents(id),
       });
       showToast({
-        title: 'Contents imported',
+        title: t('content.imported', {
+          contentType: t(`content.${type}`) || '',
+        }),
         variant: 'success',
       });
     },

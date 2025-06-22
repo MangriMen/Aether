@@ -164,7 +164,14 @@
     "resourcePacks": "Ресурс паки",
     "shaders": "Шейдеры",
     "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
-    "provider": "Провайдер"
+    "provider": "Провайдер",
+    "installed": "{{contentType}} успешно установлен",
+    "mod": "Мод",
+    "datapack": "Дата пак",
+    "resourcepack": "Ресурс пак",
+    "shaderpack": "Шейдер",
+    "imported": "{{contentType}} успешно импортирован",
+    "searchCount": "Искать контент {{count}}"
   },
   "backendError": {
     "authError": {
