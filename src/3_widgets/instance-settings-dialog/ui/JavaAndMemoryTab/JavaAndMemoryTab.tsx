@@ -10,8 +10,7 @@ import { useTranslation } from '@/shared/model';
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
-import type { InstanceSettingsTabProps } from '../../model';
-import { MIN_JRE_MEMORY } from '../../model';
+import { MIN_JRE_MEMORY, type InstanceSettingsTabProps } from '../../model';
 
 export type JavaAndMemoryTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
@@ -36,7 +35,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       editInstance({
         id,
         edit: {
-          memory: value ? { maximum: value } : undefined,
+          memory: value ? { maximum: value } : null,
         },
       });
     },
@@ -85,7 +84,8 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <CustomMemory
-        systemMaxMemory={maxMemory()}
+        minMemory={MIN_JRE_MEMORY}
+        maxMemory={maxMemory()}
         defaultMaxMemory={settings.data?.memory.maximum}
         instanceMaxMemory={local.instance.memory?.maximum}
         onChange={handleChangeMemory}

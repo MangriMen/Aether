@@ -15,7 +15,9 @@ export const AppRouter: Component = () => {
         <Route />
         <Route
           path='/instance-settings/:id'
-          component={(props) => <InstanceSettingsDialog id={props.params.id} />}
+          component={(props) => (
+            <InstanceSettingsDialog instanceId={props.params.id} />
+          )}
         />
       </Route>
       <Route path='/content' component={ContentPage} />
@@ -23,7 +25,9 @@ export const AppRouter: Component = () => {
         <Route />
         <Route
           path='settings'
-          component={(props) => <InstanceSettingsDialog id={props.params.id} />}
+          component={(props) => (
+            <InstanceSettingsDialog instanceId={props.params.id} />
+          )}
         />
       </Route>
       <Route path='/settings' component={SettingsPage} />

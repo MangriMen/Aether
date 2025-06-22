@@ -42,7 +42,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   const setWindowResolution = (width: number | null, height: number | null) => {
     const gameResolution =
       width === null || height === null
-        ? undefined
+        ? null
         : ([width, height] as [number, number]);
 
     editInstance({ id: local.instance.id, edit: { gameResolution } });
