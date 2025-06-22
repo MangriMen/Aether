@@ -1,5 +1,5 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
+import { createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
@@ -25,9 +25,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const maxRam = useMaxRam();
 
-  const [maxMemory] = createResource(() => (maxRam.data ?? 0) / 1024 / 1024, {
-    initialValue: MIN_JRE_MEMORY,
-  });
+  const maxMemory = createMemo(() =>
+    maxRam.data ? maxRam.data / 1024 / 1024 : MIN_JRE_MEMORY,
+  );
 
   const { mutateAsync: editInstance } = useEditInstance();
 
