@@ -25,7 +25,9 @@
     "enable": "Enable",
     "delete": "Delete",
     "add": "Add",
-    "revealInExplorerError": "Failed to reveal in explorer"
+    "revealInExplorerError": "Failed to reveal in explorer",
+    "appError": "Oops. Something went wrong.\nTry restarting the app or resetting the error",
+    "reset": "Reset"
   },
   "account": {
     "title": "Account",

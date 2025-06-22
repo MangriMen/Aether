@@ -1,6 +1,6 @@
 import { createEffect, onCleanup } from 'solid-js';
 import { createPreventRightClick } from '@/shared/lib/createPreventRightClick';
-import { RIGHT_CLICK_EXCLUDE_TAGS } from '../config';
+import { ALLOWED_CONTEXT_MENU_TAGS } from '../config';
 
 /**
  * Hook to prevent right click context menu
@@ -11,7 +11,7 @@ import { RIGHT_CLICK_EXCLUDE_TAGS } from '../config';
  * field or a select element.
  */
 export const usePreventRightClick = () => {
-  const preventRightClick = createPreventRightClick(RIGHT_CLICK_EXCLUDE_TAGS);
+  const preventRightClick = createPreventRightClick(ALLOWED_CONTEXT_MENU_TAGS);
 
   createEffect(() => {
     document.body.addEventListener('contextmenu', preventRightClick);
