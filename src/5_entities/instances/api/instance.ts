@@ -26,6 +26,7 @@ export const useInstances = () => {
   return useQuery(() => ({
     queryKey: QUERY_KEYS.INSTANCE.LIST(),
     queryFn: listInstancesRaw,
+    reconcile: 'id',
   }));
 };
 

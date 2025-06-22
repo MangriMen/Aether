@@ -13,6 +13,7 @@ export const useAccounts = () =>
   useQuery(() => ({
     queryKey: ACCOUNT_KEY.LIST(),
     queryFn: listAccountsRaw,
+    reconcile: 'id',
   }));
 
 export const useCreateOfflineAccount = () => {
