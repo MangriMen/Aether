@@ -1,7 +1,12 @@
 import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
 import { createMemo, type Component } from 'solid-js';
 import { useAppSettings, useUpdateAppSettings } from '../../api';
-import { isSystemTheme, useThemeContext, type Option } from '@/shared/model';
+import {
+  isSystemTheme,
+  useThemeContext,
+  useTranslation,
+  type Option,
+} from '@/shared/model';
 import { useColorMode } from '@kobalte/core';
 import type { WindowEffect } from '../../model';
 
@@ -24,7 +29,7 @@ export const SELECT_WINDOW_EFFECT_OPTIONS: Option<GeneralizedWindowEffect>[] = [
     name: 'acrylic',
     value: 'acrylic',
   },
-];
+] as const;
 
 const WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT: Record<
   WindowEffect,
@@ -40,25 +45,36 @@ const WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT: Record<
 export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
   props,
 ) => {
+  const [{ t }] = useTranslation();
+
   const [theme] = useThemeContext();
   const { colorMode } = useColorMode();
 
   const appSettings = useAppSettings();
   const updateSettings = useUpdateAppSettings();
 
+  const translatedWindowEffectOptions = createMemo(() =>
+    SELECT_WINDOW_EFFECT_OPTIONS.map((option) => ({
+      ...option,
+      name: t(
+        `settings.windowEffectVariant.${option.name as GeneralizedWindowEffect}`,
+      ),
+    })),
+  );
+
   const currentWindowEffectOption = createMemo(() => {
     if (!appSettings.data?.windowEffect) {
-      return SELECT_WINDOW_EFFECT_OPTIONS[0];
+      return translatedWindowEffectOptions()[0];
     }
 
     return (
-      SELECT_WINDOW_EFFECT_OPTIONS.find(
+      translatedWindowEffectOptions().find(
         (option) =>
           option.value ===
           WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT[
             appSettings.data?.windowEffect
           ],
-      ) ?? SELECT_WINDOW_EFFECT_OPTIONS[0]
+      ) ?? translatedWindowEffectOptions()[0]
     );
   });
 
@@ -85,18 +101,19 @@ export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
   const isDisabled = createMemo(() => !appSettings.data?.transparent);
 
   return (
-    <SettingsEntry title={'Toggle mica'} {...props}>
+    <SettingsEntry
+      title={t('settings.windowEffect')}
+      description={t('settings.windowEffectDescription')}
+      {...props}
+    >
       <CombinedTooltip
-        label={
-          isDisabled()
-            ? "Can't turn on window effects without window transparency"
-            : 'Toggle mica'
-        }
+        label={isDisabled() ? t('settings.windowEffectDisabled') : undefined}
+        disableTooltip={!isDisabled()}
         as={CombinedSelect}
         optionValue='value'
         optionTextValue='name'
         value={currentWindowEffectOption()}
-        options={SELECT_WINDOW_EFFECT_OPTIONS}
+        options={translatedWindowEffectOptions()}
         onChange={handleSetWindowEffect}
         disabled={isDisabled()}
       />

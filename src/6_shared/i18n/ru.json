@@ -74,7 +74,18 @@
     "experimental": "Экспериментальное",
     "animations": "Анимации",
     "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
-    "animationsDescription": "Плавные переходы и эффекты в интерфейсе\nМожно отключить для повышения производительности"
+    "animationsDescription": "Плавные переходы и эффекты в интерфейсе\nМожно отключить для повышения производительности",
+    "toggleWindowTransparency": "Включить прозрачность окна",
+    "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
+    "themeBackgroundOpacity": "Непрозрачность фона",
+    "windowEffect": "Эффект окна",
+    "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
+    "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
+    "windowEffectVariant": {
+      "off": "Выключено",
+      "mica": "Mica",
+      "acrylic": "Acrylic"
+    }
   },
   "instance": {
     "settings": "Настройки",

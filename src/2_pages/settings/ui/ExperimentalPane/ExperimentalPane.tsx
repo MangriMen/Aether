@@ -4,7 +4,7 @@ import { useTranslation } from '@/shared/model';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import { SelectWindowEffect } from './SelectWindowEffect';
 import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
-import { ToggleThemeTransparencyEntry } from './ToggleThemeTransparencyEntry';
+import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
 
@@ -20,7 +20,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       {...others}
     >
       <ToggleWindowTransparencyEntry />
-      <ToggleThemeTransparencyEntry />
+      <ThemeBackgroundOpacityEntry />
       <SelectWindowEffect />
     </SettingsPane>
   );

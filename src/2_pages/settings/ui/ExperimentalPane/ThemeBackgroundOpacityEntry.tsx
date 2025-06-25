@@ -1,14 +1,20 @@
-import { useThemeContext } from '@/shared/model';
+import { useThemeContext, useTranslation } from '@/shared/model';
 import { CombinedSlider, CombinedTextField, SettingsEntry } from '@/shared/ui';
 import { createMemo, type Component } from 'solid-js';
+import { useAppSettings } from '../../api';
 
 export type ToggleThemeTransparencyEntryProps = {
   class?: string;
 };
 
-export const ToggleThemeTransparencyEntry: Component<
+export const ThemeBackgroundOpacityEntry: Component<
   ToggleThemeTransparencyEntryProps
 > = (props) => {
+  const [{ t }] = useTranslation();
+
+  const appSettings = useAppSettings();
+  const isDisabled = createMemo(() => !appSettings.data?.transparent);
+
   const [theme, { setTransparency }] = useThemeContext();
 
   const currentTransparency = createMemo(() =>
@@ -33,7 +39,7 @@ export const ToggleThemeTransparencyEntry: Component<
   };
 
   return (
-    <SettingsEntry title={'Theme transparency'} {...props}>
+    <SettingsEntry title={t('settings.themeBackgroundOpacity')} {...props}>
       <div class='flex items-center gap-4'>
         <CombinedSlider
           class='w-36'
@@ -42,11 +48,13 @@ export const ToggleThemeTransparencyEntry: Component<
           defaultValue={[0]}
           value={[currentTransparency()]}
           onChange={handleChangeTransparencySlider}
+          disabled={isDisabled()}
         />
         <CombinedTextField
           class='w-[6ch]'
           value={currentTransparency().toString()}
           onChange={handleChangeTransparencyTextField}
+          disabled={isDisabled()}
         />
       </div>
     </SettingsEntry>

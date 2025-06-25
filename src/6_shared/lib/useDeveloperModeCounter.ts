@@ -1,22 +1,20 @@
-import { onCleanup, onMount } from 'solid-js';
+import type { Accessor } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
 import { isDeveloperMode, setIsDeveloperMode } from '../model';
 
-export const useDeveloperModeCounter = () => {
-  let counter = 0;
+export const useDeveloperModeCounter = (): [Accessor<number>, () => void] => {
+  const [count, setCount] = createSignal(0);
 
-  onMount(() => {
-    counter = 0;
-  });
-
-  onCleanup(() => {
-    counter = 0;
-  });
-
-  return () => {
-    counter++;
-    if (counter >= 5) {
-      setIsDeveloperMode(!isDeveloperMode());
-      counter = 0;
-    }
+  const increase = () => {
+    setCount(count() + 1);
   };
+
+  createEffect(() => {
+    if (count() >= 5) {
+      setIsDeveloperMode(!isDeveloperMode());
+      setCount(0);
+    }
+  });
+
+  return [count, increase];
 };

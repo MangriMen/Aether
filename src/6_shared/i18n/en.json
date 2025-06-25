@@ -74,7 +74,18 @@
     "experimental": "Experimental",
     "animations": "Animations",
     "prefersReducedMotionInfo": "Animations are disabled in the system - you can enable them in the app, but this may affect the smoothness of the interface and battery life",
-    "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance"
+    "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance",
+    "toggleWindowTransparency": "Toggle window transparency",
+    "toggleWindowTransparencyDescription": "Restart the app to apply transparency",
+    "themeBackgroundOpacity": "Background Opacity",
+    "windowEffect": "Window effect",
+    "windowEffectDescription": "Window effect applied when transparency is enabled",
+    "windowEffectDisabled": "It is not possible to enable window effects without window transparency",
+    "windowEffectVariant": {
+      "off": "Off",
+      "mica": "Mica",
+      "acrylic": "Acrylic"
+    }
   },
   "instance": {
     "settings": "Settings",

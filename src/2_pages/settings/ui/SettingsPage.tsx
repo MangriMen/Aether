@@ -7,7 +7,6 @@ import {
   createMemo,
 } from 'solid-js';
 
-import { AppVersion } from './AppVersion';
 import type { TabsProps } from '@/shared/ui';
 import {
   Button,
@@ -23,6 +22,7 @@ import {
 } from '../model/settingsTabs';
 import type { PolymorphicProps } from '@kobalte/core';
 import { isDeveloperMode, useTranslation } from '@/shared/model';
+import { VersionInfo } from './VersionInfo';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
@@ -75,7 +75,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
               </SettingsTabsTrigger>
             )}
           </For>
-          <AppVersion class='mt-auto self-start text-sm' />
+          <VersionInfo class='mt-auto self-start text-sm' />
         </SettingsTabsList>
         <For each={tabs_contents()}>
           {(tabContent) => (
