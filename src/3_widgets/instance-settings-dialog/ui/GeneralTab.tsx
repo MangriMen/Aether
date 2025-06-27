@@ -5,20 +5,17 @@ import { splitProps } from 'solid-js';
 import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import {
-  useEditInstance,
-  type Instance,
-  type InstanceSettingsTabProps,
-} from '@/entities/instances';
+import { useEditInstance, type Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 
 export const GeneralTab: Component<GeneralTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const { mutateAsync: editInstance } = useEditInstance();
 

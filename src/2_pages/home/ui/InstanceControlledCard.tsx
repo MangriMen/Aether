@@ -14,9 +14,12 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
-export type InstanceControlledCardProps = InstanceCardProps;
+export type InstanceControlledCardProps = Pick<
+  InstanceCardProps,
+  'instance' | 'instanceActionButton'
+>;
 
 export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   props,
@@ -27,7 +30,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   const instancePath = useInstanceDir(() => id());
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 
@@ -36,19 +39,12 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     setShowRemoveModal(false);
   };
 
-  const {
-    launch: launchInstance,
-    remove: removeInstance,
-    stop: stopInstance,
-  } = useInstanceActions();
+  const { launch: launchInstance, remove: removeInstance } =
+    useInstanceActions();
 
   const handleLaunch = (e: MouseEvent) => {
     preventAll(e);
     launchInstance(props.instance);
-  };
-  const handleStop = (e: MouseEvent) => {
-    preventAll(e);
-    stopInstance(props.instance);
   };
 
   const handleRemove = () =>
@@ -86,11 +82,9 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
       >
         <ContextMenuTrigger
           as={InstanceCard}
-          isRunning={runningInstanceData()?.isRunning}
-          isLoading={runningInstanceData()?.isLoading}
           onClick={goToInstancePage}
-          onLaunchClick={handleLaunch}
-          onStopClick={handleStop}
+          isLoading={runningInstanceData()?.isLoading}
+          isRunning={runningInstanceData()?.isRunning}
           {...props}
         />
       </InstanceContextMenu>

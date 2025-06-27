@@ -14,7 +14,7 @@ import {
 } from 'solid-js';
 import MdiDownload from '@iconify/icons-mdi/download';
 import MdiCheck from '@iconify/icons-mdi/check';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
   item: ContentItemExtended;
@@ -36,7 +36,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [isInstalling, setIsInstalling] = createSignal(false);
 

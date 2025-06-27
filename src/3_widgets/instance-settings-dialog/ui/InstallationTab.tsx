@@ -2,7 +2,6 @@ import {
   InstanceInstallStage,
   useInstallInstance,
   useUpdateInstance,
-  type InstanceSettingsTabProps,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { Button, Image, LabeledField, showToast } from '@/shared/ui';
@@ -14,7 +13,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import MdiHammerIcon from '@iconify/icons-mdi/hammer';
-import { isAetherLauncherError } from '@/shared/model';
+import { isLauncherError } from '@/shared/model';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
@@ -29,7 +29,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     try {
       await updateInstance(local.instance.id);
     } catch (e) {
-      if (isAetherLauncherError(e)) {
+      if (isLauncherError(e)) {
         showToast({
           title: 'Failed to update instance',
           variant: 'destructive',
@@ -43,7 +43,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     try {
       await installInstance({ id: local.instance.id, force: true });
     } catch (e) {
-      if (isAetherLauncherError(e)) {
+      if (isLauncherError(e)) {
         showToast({
           title: 'Failed to repair instance',
           variant: 'destructive',

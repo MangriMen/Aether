@@ -15,7 +15,7 @@ import type {
 
 import { cn } from '@/shared/lib';
 import type { Option } from '@/shared/model';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 import {
   createEffect,
@@ -47,7 +47,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [contentType, setContentType] = createSignal<ContentType>(
     ContentType.Mod,

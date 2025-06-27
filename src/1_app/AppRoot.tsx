@@ -4,16 +4,22 @@ import { type Component } from 'solid-js';
 import { Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import { RAW_THEME_LS_KEY, THEME_ATTRIBUTE, THEME_LS_KEY } from './config';
+import {
+  THEME_STATE_LS_KEY,
+  THEME_ATTRIBUTE,
+  TRANSPARENCY_PROPERTY,
+  DISABLE_ANIMATIONS_ATTRIBUTE,
+} from './config';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
-import { AppProvider } from './providers/AppProvider/AppProvider';
+import { AppInitializeGuard } from './providers/AppInitializeGuard/AppInitializeGuard';
 import { useSetup } from './lib/useSetup';
 import { MainLayout } from './layouts/MainLayout';
 import { RunningInstancesProvider } from '@/entities/instances';
 
 import { QueryClientProvider } from '@tanstack/solid-query';
 import { createQueryClient } from '@/shared/api';
+import { AppGlobalsProvider } from './providers/AppGlobalsProvider';
 
 const queryClient = createQueryClient();
 
@@ -23,25 +29,25 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
   return (
     <ColorModeProvider {...props}>
       <ThemeProvider
-        rawThemeLsKey={RAW_THEME_LS_KEY}
-        themeLsKey={THEME_LS_KEY}
+        themeStateKey={THEME_STATE_LS_KEY}
         themeAttribute={THEME_ATTRIBUTE}
+        disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
+        transparencyProperty={TRANSPARENCY_PROPERTY}
       >
-        <QueryClientProvider client={queryClient}>
-          <I18nProvider
-            resources={LOCALE_RESOURCES}
-            fallbackLocale={LOCALES.En}
-          >
-            <AppLayout>
-              <AppProvider>
-                <RunningInstancesProvider>
-                  <MainLayout>{props.children}</MainLayout>
-                </RunningInstancesProvider>
-              </AppProvider>
-            </AppLayout>
-            <Toaster />
-          </I18nProvider>
-        </QueryClientProvider>
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+          <AppInitializeGuard>
+            <QueryClientProvider client={queryClient}>
+              <AppGlobalsProvider>
+                <AppLayout>
+                  <RunningInstancesProvider>
+                    <MainLayout>{props.children}</MainLayout>
+                  </RunningInstancesProvider>
+                </AppLayout>
+                <Toaster />
+              </AppGlobalsProvider>
+            </QueryClientProvider>
+          </AppInitializeGuard>
+        </I18nProvider>
       </ThemeProvider>
     </ColorModeProvider>
   );

@@ -1,4 +1,4 @@
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
 import { Show } from 'solid-js';
 import type { Accessor, JSX } from 'solid-js';
@@ -14,7 +14,7 @@ export type AddNewItemProps<T> = {
 };
 
 export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const onAddNew = () => {
     props.setEditingIndex(-1);

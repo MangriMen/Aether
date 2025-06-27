@@ -7,7 +7,7 @@ import { useInstances } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import { InstanceControlledCard } from './InstanceControlledCard';
 
@@ -16,7 +16,7 @@ export type InstancesPanelProps = ComponentProps<'div'>;
 export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const instances = useInstances();
 

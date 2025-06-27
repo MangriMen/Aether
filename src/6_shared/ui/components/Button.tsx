@@ -77,7 +77,7 @@ const Button = <T extends ValidComponent = 'button'>(
       return icon;
     }
 
-    return <Icon class='text-xl' icon={icon} />;
+    return <Icon class='text-lg' icon={icon} />;
   };
 
   const leadingIcon = createMemo(() => getIconElement(local.leadingIcon));

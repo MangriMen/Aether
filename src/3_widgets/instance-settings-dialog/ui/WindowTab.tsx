@@ -4,12 +4,9 @@ import { createEffect, createSignal, splitProps } from 'solid-js';
 import { cn, stringToNumber } from '@/shared/lib';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-import {
-  useEditInstance,
-  type InstanceSettingsTabProps,
-} from '@/entities/instances';
+import { useEditInstance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import {
   DEFAULT_WINDOW_HEIGHT,
@@ -17,13 +14,14 @@ import {
   RESOLUTION_FIELD_CLASS,
 } from '../model/window';
 import { getClampedResolution } from '../lib';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 
 export const WindowTab: Component<WindowTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [custom, setCustom] = createSignal(false);
 
@@ -44,7 +42,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   const setWindowResolution = (width: number | null, height: number | null) => {
     const gameResolution =
       width === null || height === null
-        ? undefined
+        ? null
         : ([width, height] as [number, number]);
 
     editInstance({ id: local.instance.id, edit: { gameResolution } });

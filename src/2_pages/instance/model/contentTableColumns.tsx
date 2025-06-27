@@ -7,7 +7,7 @@ import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 import { Button, Checkbox } from '@/shared/ui';
 import type { InstanceFile } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
@@ -35,7 +35,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
     id: 'name',
     header: (props) => {
-      const [{ t }] = useTranslate();
+      const [{ t }] = useTranslation();
 
       return (
         <Button
@@ -79,7 +79,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
     accessorKey: 'contentType',
     id: 'type',
     header: (props) => {
-      const [{ t }] = useTranslate();
+      const [{ t }] = useTranslation();
 
       return (
         <Button

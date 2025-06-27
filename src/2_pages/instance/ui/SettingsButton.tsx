@@ -5,14 +5,14 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
 export const SettingsButton: Component<SettingsButtonProps> = (props) => {
   const navigate = useNavigate();
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleClick = () => navigate('settings');
 

@@ -7,7 +7,7 @@ import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
 import type { AddNewItemProps } from './AddNewSettingsItem';
 import { AddNewSettingsItem } from './AddNewSettingsItem';
 import type { PluginSettingsSchemaValues } from '../../model';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type AllowedItemFieldProps<T> = {
   form: FormStore<PluginSettingsSchemaValues>;
@@ -61,7 +61,7 @@ export const AllowedItems = <
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [editingIndex, setEditingIndex] = createSignal<number | null>(null);
 

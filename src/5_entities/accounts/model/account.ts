@@ -1,7 +1,7 @@
 export interface Account {
   id: string;
-  active: boolean;
   username: string;
+  active: boolean;
   accountType: AccountType;
 }
 

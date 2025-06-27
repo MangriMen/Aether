@@ -6,7 +6,7 @@ import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -17,7 +17,7 @@ const InstanceSettingsDialogHeader: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['instance']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <DialogHeader {...others}>

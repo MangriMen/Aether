@@ -24,7 +24,10 @@
     "disable": "Disable",
     "enable": "Enable",
     "delete": "Delete",
-    "add": "Add"
+    "add": "Add",
+    "revealInExplorerError": "Failed to reveal in explorer",
+    "appError": "Oops. Something went wrong.\nTry restarting the app or resetting the error",
+    "reset": "Reset"
   },
   "account": {
     "title": "Account",
@@ -35,7 +38,10 @@
     "activate": "Activate",
     "removeAccount": "Remove Account",
     "notFound": "Accounts not found",
-    "online": "Online"
+    "online": "Online",
+    "createOfflineError": "Failed to create offline account",
+    "logoutError": "Failed to logout from account",
+    "changeError": "Failed to change account"
   },
   "home": {
     "title": "Home",
@@ -44,7 +50,7 @@
   },
   "settings": {
     "title": "Settings",
-    "launcher": "Launcher",
+    "appearance": "Appearance",
     "colorScheme": "Color scheme",
     "colorSchemeDescription": "Select preferred color scheme",
     "systemColorMode": "System color mode",
@@ -63,7 +69,23 @@
     "actionOnInstanceLaunchDescription": "Select an action to perform when launching an instance.\n \"Do nothing\" will not hide the launcher on launch.\n \"Hide\"  hide launcher window.\n \"Close\" will close the launcher window but will not close application (saves memory).",
     "doNothing": "Do nothing",
     "hide": "Hide",
-    "close": "Close"
+    "close": "Close",
+    "plugins": "Plugins",
+    "experimental": "Experimental",
+    "animations": "Animations",
+    "prefersReducedMotionInfo": "Animations are disabled in the system - you can enable them in the app, but this may affect the smoothness of the interface and battery life",
+    "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance",
+    "toggleWindowTransparency": "Toggle window transparency",
+    "toggleWindowTransparencyDescription": "Restart the app to apply transparency",
+    "themeBackgroundOpacity": "Background Opacity",
+    "windowEffect": "Window effect",
+    "windowEffectDescription": "Window effect applied when transparency is enabled",
+    "windowEffectDisabled": "It is not possible to enable window effects without window transparency",
+    "windowEffectVariant": {
+      "off": "Off",
+      "mica": "Mica",
+      "acrylic": "Acrylic"
+    }
   },
   "instance": {
     "settings": "Settings",
@@ -85,7 +107,13 @@
     "instanceLaunched": "Instance {{name}} launched",
     "instanceStopped": "Instance stopped",
     "instanceRemoved": "Instance {{name}} removed",
-    "instanceEdited": "Instance {{name}} edited"
+    "instanceEdited": "Instance {{name}} edited",
+    "removeError": "Failed to remove instance {{id}}",
+    "stopError": "Failed to stop instance",
+    "launchError": "Failed to launch instance {{id}}",
+    "createError": "Failed to create instance",
+    "editError": "Failed to edit instance {{id}}",
+    "notFound": "Instance \"{{id}}\" not found"
   },
   "createInstance": {
     "title": "Create instance",
@@ -147,6 +175,31 @@
     "resourcePacks": "Resource Packs",
     "shaders": "Shaders",
     "providerErrorOrNotFound": "Provider not found or error getting content",
-    "provider": "Provider"
+    "provider": "Provider",
+    "installed": "{{contentType}} installed successfully",
+    "mod": "Mod",
+    "datapack": "Data Pack",
+    "resourcepack": "Resource Pack",
+    "shaderpack": "Shader",
+    "imported": "{{contentType}} imported successfully",
+    "searchCount": "Search {{count}} contents"
+  },
+  "backendError": {
+    "authError": {
+      "credentialsNotFound": "Not found credentials with id: {{id}}",
+      "noActiveCredentials": "No active credentials found",
+      "storageFailure": "Storage failure"
+    },
+    "instanceError": {
+      "credentialsError": {
+        "credentialsNotFound": "Not found credentials with id: {{id}}",
+        "noActiveCredentials": "No active credentials found",
+        "storageFailure": "Storage failure"
+      },
+      "storageFailure": "Storage failure"
+    },
+    "settingsError": {
+      "storageFailure": "Storage failure"
+    }
   }
 }

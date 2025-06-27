@@ -1,6 +1,8 @@
-import type { Plugin } from '@/entities/plugins';
-
-import { disablePlugin, enablePlugin, refetchPlugin } from '@/entities/plugins';
+import {
+  useDisablePlugin,
+  useEnablePlugin,
+  type Plugin,
+} from '@/entities/plugins';
 
 import { cn } from '@/shared/lib';
 import { Button, Separator, SettingsPane } from '@/shared/ui';
@@ -12,7 +14,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 import { PluginSettingsForm } from './PluginSettingsForm';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -21,11 +23,14 @@ export type PluginInfoCardProps = ComponentProps<'div'> & {
 export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const isPluginEnabled = createMemo(() => local.plugin.enabled);
 
   const [isLoading, setIsLoading] = createSignal(false);
+
+  const { mutateAsync: enablePlugin } = useEnablePlugin();
+  const { mutateAsync: disablePlugin } = useDisablePlugin();
 
   const togglePluginEnabled = async () => {
     if (isLoading()) {
@@ -35,14 +40,13 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
     setIsLoading(true);
     try {
       if (isPluginEnabled()) {
-        await disablePlugin(local.plugin.metadata.plugin.id);
+        await disablePlugin(local.plugin.manifest.metadata.id);
       } else {
-        await enablePlugin(local.plugin.metadata.plugin.id);
+        await enablePlugin(local.plugin.manifest.metadata.id);
       }
     } catch {
       /* empty */
     }
-    await refetchPlugin(local.plugin.metadata.plugin.id);
     setIsLoading(false);
   };
 
@@ -54,14 +58,16 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <div>
         <div class='flex items-end gap-2'>
-          <h2 class='text-xl font-bold'>{local.plugin.metadata.plugin.name}</h2>
+          <h2 class='text-xl font-bold'>
+            {local.plugin.manifest.metadata.name}
+          </h2>
           <span class='text-muted-foreground'>
-            {t('common.version')}: {local.plugin.metadata.plugin.version}
+            {t('common.version')}: {local.plugin.manifest.metadata.version}
           </span>
         </div>
         <span class='text-muted-foreground'>
           {t('common.authors')}:{' '}
-          {local.plugin.metadata.plugin.authors?.join(', ')}
+          {local.plugin.manifest.metadata.authors?.join(', ')}
         </span>
       </div>
       <div>
@@ -72,7 +78,7 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
 
       <Separator />
 
-      <p class='pb-1'>{local.plugin.metadata.plugin.description}</p>
+      <p class='pb-1'>{local.plugin.manifest.metadata.description}</p>
 
       <SettingsPane
         class={cn('p-0 bg-[unset]', {
@@ -82,7 +88,7 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         collapsible
       >
         <PluginSettingsForm
-          plugin={local.plugin.metadata}
+          pluginManifest={local.plugin.manifest}
           disabled={isSettingsFormDisabled()}
         />
       </SettingsPane>

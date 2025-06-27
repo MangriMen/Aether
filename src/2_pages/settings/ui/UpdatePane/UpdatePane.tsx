@@ -2,14 +2,14 @@ import { SettingsPane } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import { UpdateAppEntry } from './UpdateAppEntry';
 import { cn } from '@/shared/lib';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type UpdatePaneProps = ComponentProps<'div'>;
 
 export const UpdatePane: Component<UpdatePaneProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <SettingsPane

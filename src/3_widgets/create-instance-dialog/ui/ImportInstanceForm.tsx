@@ -30,7 +30,7 @@ import {
 import { cn } from '@/shared/lib';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useImportInstance, type ImportHandler } from '@/entities/instances';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
   Pick<DialogRootProps, 'onOpenChange'> & {
@@ -46,7 +46,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [form, { Form, Field }] = createForm({
     validate: zodForm(ImportInstanceSchema),

@@ -10,14 +10,14 @@ import type { LoadingPayload } from '@/entities/events';
 import { LoadingBarTypeEnum } from '@/entities/events';
 import { updateResource } from '@/entities/updates';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { getVersion } from '@tauri-apps/api/app';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [update, { refetch }] = updateResource;
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const checkUpdates = () => {
     refetch();

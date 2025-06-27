@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { LoaderVersion } from '@/entities/minecrafts';
+import type { LoaderVersion } from '@/entities/minecraft';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type SelectSpecificLoaderVersionProps<
   Option extends LoaderVersion = LoaderVersion,
@@ -30,7 +30,7 @@ export const SelectSpecificLoaderVersion = <
 ) => {
   const [local, others] = splitProps(props, ['errorMessage', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <Select

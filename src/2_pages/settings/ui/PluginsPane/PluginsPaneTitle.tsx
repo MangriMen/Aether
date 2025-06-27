@@ -4,25 +4,21 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
-import {
-  openPluginsFolder,
-  refetchPlugins,
-  syncPlugins,
-} from '@/entities/plugins';
-import { isAetherLauncherError, useTranslate } from '@/shared/model';
+import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
+import { isLauncherError, useTranslation } from '@/shared/model';
 
 export type PluginsPaneTitleProps = ComponentProps<'div'>;
 
 export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleOpenPluginsFolder = async () => {
     try {
-      await openPluginsFolder();
+      await openPluginsFolderRaw();
     } catch (e) {
-      if (isAetherLauncherError(e)) {
+      if (isLauncherError(e)) {
         showToast({
           title: 'Failed to open plugins folder',
           variant: 'destructive',
@@ -33,8 +29,7 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   };
 
   const handleRefreshPlugins = async () => {
-    await syncPlugins();
-    await refetchPlugins();
+    await syncPluginsRaw();
   };
 
   return (

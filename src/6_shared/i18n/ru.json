@@ -24,7 +24,10 @@
     "disable": "Отключить",
     "enable": "Включить",
     "delete": "Удалить",
-    "add": "Добавить"
+    "add": "Добавить",
+    "revealInExplorerError": "Не удалось показать в проводнике",
+    "appError": "Упс. Что-то пошло не так.\nПопробуйте перезапустить приложение или сбросить ошибку",
+    "reset": "Сбросить"
   },
   "account": {
     "title": "Аккаунт",
@@ -35,7 +38,10 @@
     "activate": "Активировать",
     "removeAccount": "Удалить аккаунт",
     "notFound": "Аккаунты не найдены",
-    "online": "Онлайн"
+    "online": "Онлайн",
+    "createOfflineError": "Не удалось создать оффлайн аккаунт",
+    "logoutError": "Не удалось выйти из аккаунта",
+    "changeError": "Не удалось сменить аккаунт"
   },
   "home": {
     "title": "Главная",
@@ -44,7 +50,7 @@
   },
   "settings": {
     "title": "Настройки",
-    "launcher": "Лаунчер",
+    "appearance": "Внешний вид",
     "colorScheme": "Цветовая схема",
     "colorSchemeDescription": "Выберите предпочитаемую цветовую схему",
     "systemColorMode": "Системная цветовая схема",
@@ -63,7 +69,23 @@
     "actionOnInstanceLaunchDescription": "Выберите действие, которое будет выполняться при запуске инстанса.\n \"Ничего не делать\" не скрывает лаунчер при запуске.\n \"Скрыть\" скрывает окно лаунчера.\n \"Закрыть\" закроет окно лаунчера, но не закроет приложение (экономит память).",
     "doNothing": "Ничего не делать",
     "hide": "Скрыть",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "plugins": "Плагины",
+    "experimental": "Экспериментальное",
+    "animations": "Анимации",
+    "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
+    "animationsDescription": "Плавные переходы и эффекты в интерфейсе\nМожно отключить для повышения производительности",
+    "toggleWindowTransparency": "Включить прозрачность окна",
+    "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
+    "themeBackgroundOpacity": "Непрозрачность фона",
+    "windowEffect": "Эффект окна",
+    "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
+    "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
+    "windowEffectVariant": {
+      "off": "Выключено",
+      "mica": "Mica",
+      "acrylic": "Acrylic"
+    }
   },
   "instance": {
     "settings": "Настройки",
@@ -85,7 +107,13 @@
     "instanceInstalled": "Инстанс {{name}} установлен",
     "instanceLaunched": "Инстанс {{name}} запущен",
     "instanceRemoved": "Инстанс {{name}} удалён",
-    "instanceStopped": "Инстанс остановлен"
+    "instanceStopped": "Инстанс остановлен",
+    "removeError": "Ошибка удаления инстанса {{id}}",
+    "stopError": "Не удалось остановить инстанс",
+    "launchError": "Не удалось запустить инстанс {{id}}",
+    "createError": "Не удалось создать инстанс",
+    "editError": "Не удалось изменить инстанс {{id}}",
+    "notFound": "Инстанс \"{{id}}\" не найден"
   },
   "createInstance": {
     "title": "Создать инстанс",
@@ -147,6 +175,31 @@
     "resourcePacks": "Ресурс паки",
     "shaders": "Шейдеры",
     "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
-    "provider": "Провайдер"
+    "provider": "Провайдер",
+    "installed": "{{contentType}} успешно установлен",
+    "mod": "Мод",
+    "datapack": "Дата пак",
+    "resourcepack": "Ресурс пак",
+    "shaderpack": "Шейдер",
+    "imported": "{{contentType}} успешно импортирован",
+    "searchCount": "Искать контент {{count}}"
+  },
+  "backendError": {
+    "authError": {
+      "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+      "noActiveCredentials": "Не найдено активного аккаунта",
+      "storageFailure": "Ошибка хранилища"
+    },
+    "instanceError": {
+      "credentialsError": {
+        "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+        "noActiveCredentials": "Не найдено активного аккаунта",
+        "storageFailure": "Ошибка хранилища"
+      },
+      "storageFailure": "Ошибка хранилища"
+    },
+    "settingsError": {
+      "storageFailure": "Ошибка хранилища"
+    }
   }
 }

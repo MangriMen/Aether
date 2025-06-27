@@ -1,6 +1,5 @@
-import type { Plugin, PluginInfo } from '@/entities/plugins';
+import type { Plugin, PluginMetadata } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
-import type { ReactiveMap } from '@solid-primitives/map';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
 import { PluginCard } from './PluginCard';
@@ -8,22 +7,22 @@ import { Separator } from '@/shared/ui';
 import { PluginInfoCard } from './PluginInfoCard';
 
 export type PluginsListProps = ComponentProps<'div'> & {
-  plugins: ReactiveMap<string, Plugin>;
+  plugins?: Plugin[];
+  isLoading: boolean;
 };
 
 export const PluginsList: Component<PluginsListProps> = (props) => {
   const [local, others] = splitProps(props, ['plugins', 'class']);
 
-  const pluginsValues = createMemo(() => Array.from(local.plugins.values()));
-
   const [selectedPluginId, setSelectedPluginId] = createSignal<
-    PluginInfo['id'] | null
+    PluginMetadata['id'] | null
   >(null);
 
-  const selectedPlugin = () => {
-    const id = selectedPluginId();
-    return id ? local.plugins.get(id) : null;
-  };
+  const selectedPlugin = createMemo(() =>
+    local.plugins?.find(
+      (plugin) => plugin.manifest.metadata.id === selectedPluginId(),
+    ),
+  );
 
   return (
     <div class={cn('flex size-full', local.class)} {...others}>
@@ -32,13 +31,13 @@ export const PluginsList: Component<PluginsListProps> = (props) => {
           'max-w-72': !!selectedPluginId(),
         })}
       >
-        <For each={pluginsValues()}>
+        <For each={local.plugins}>
           {(plugin) => (
             <PluginCard
               role='button'
-              isSelected={plugin.metadata.plugin.id === selectedPluginId()}
+              isSelected={plugin.manifest.metadata.id === selectedPluginId()}
               plugin={plugin}
-              onClick={() => setSelectedPluginId(plugin.metadata.plugin.id)}
+              onClick={() => setSelectedPluginId(plugin.manifest.metadata.id)}
             />
           )}
         </For>

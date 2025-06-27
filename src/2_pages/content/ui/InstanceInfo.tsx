@@ -5,7 +5,7 @@ import { Button, Image } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import MdiArrowLeftIcon from '@iconify/icons-mdi/arrow-left';
 import { useNavigate } from '@solidjs/router';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type InstanceInfoProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -16,7 +16,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
 
   const navigate = useNavigate();
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const handleBackToInstance = () => {
     navigate(`/instances/${encodeURIComponent(local.instance.id)}`);

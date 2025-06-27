@@ -1,0 +1,20 @@
+import { useTranslation } from '@/6_shared/model';
+import { SettingsEntry } from '@/6_shared/ui';
+import type { Component, ComponentProps } from 'solid-js';
+import { SelectTheme } from './SelectTheme';
+
+export type SelectThemeEntryProps = ComponentProps<'div'>;
+
+export const SelectThemeEntry: Component<SelectThemeEntryProps> = (props) => {
+  const [{ t }] = useTranslation();
+
+  return (
+    <SettingsEntry
+      title={t('settings.colorScheme')}
+      description={t('settings.colorSchemeDescription')}
+      {...props}
+    >
+      <SelectTheme />
+    </SettingsEntry>
+  );
+};

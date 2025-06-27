@@ -1,20 +1,16 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, createResource, onCleanup, splitProps } from 'solid-js';
+import { createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
-import {
-  useEditInstance,
-  type Instance,
-  type InstanceSettingsTabProps,
-} from '@/entities/instances';
+import { useEditInstance, type Instance } from '@/entities/instances';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
-import { MIN_JRE_MEMORY } from '../../model';
+import { MIN_JRE_MEMORY, type InstanceSettingsTabProps } from '../../model';
 
 export type JavaAndMemoryTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;
@@ -22,15 +18,15 @@ export type JavaAndMemoryTabProps = ComponentProps<'div'> &
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const settings = useSettings();
 
   const maxRam = useMaxRam();
 
-  const [maxMemory] = createResource(() => maxRam / 1024 / 1024, {
-    initialValue: MIN_JRE_MEMORY,
-  });
+  const maxMemory = createMemo(() =>
+    maxRam.data ? maxRam.data / 1024 / 1024 : MIN_JRE_MEMORY,
+  );
 
   const { mutateAsync: editInstance } = useEditInstance();
 
@@ -39,7 +35,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       editInstance({
         id,
         edit: {
-          memory: value ? { maximum: value } : undefined,
+          memory: value ? { maximum: value } : null,
         },
       });
     },
@@ -88,8 +84,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <CustomMemory
-        systemMaxMemory={maxMemory()}
-        defaultMaxMemory={settings?.memory.maximum}
+        minMemory={MIN_JRE_MEMORY}
+        maxMemory={maxMemory()}
+        defaultMaxMemory={settings.data?.memory.maximum}
         instanceMaxMemory={local.instance.memory?.maximum}
         onChange={handleChangeMemory}
       />

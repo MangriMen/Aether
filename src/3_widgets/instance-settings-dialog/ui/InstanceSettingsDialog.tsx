@@ -1,29 +1,34 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
-import { createMemo, Show, splitProps } from 'solid-js';
+import { createMemo, onMount, Show, splitProps } from 'solid-js';
 
 import { Dialog, DialogContent } from '@/shared/ui';
 
+import type { Instance } from '@/entities/instances';
 import { useInstance } from '@/entities/instances';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
 import { useNavigate } from '@solidjs/router';
+import { useQueryClient } from '@tanstack/solid-query';
+import { prefetchMaxRam } from '@/5_entities/settings';
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
-  id: string;
+  instanceId: Instance['id'];
 };
 
 export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['id', 'onOpenChange']);
+  const [local, others] = splitProps(props, ['instanceId', 'onOpenChange']);
 
   const navigate = useNavigate();
 
-  const id = createMemo(() => decodeURIComponent(local.id));
+  const instance_id = createMemo(() => decodeURIComponent(local.instanceId));
 
-  const instance = useInstance(() => id());
+  const queryClient = useQueryClient();
+
+  const instance = useInstance(() => instance_id());
 
   const onOpenChange = (open: boolean) => {
     if (local.onOpenChange) {
@@ -32,6 +37,10 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
       navigate(-1);
     }
   };
+
+  onMount(() => {
+    prefetchMaxRam(queryClient);
+  });
 
   return (
     <Dialog defaultOpen onOpenChange={onOpenChange} {...others}>

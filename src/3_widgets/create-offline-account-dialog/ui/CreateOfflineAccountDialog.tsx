@@ -3,20 +3,21 @@ import type { Component } from 'solid-js';
 
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 
-import { createOfflineAccount, refetchAccounts } from '@/entities/accounts';
+import { useCreateOfflineAccount } from '@/entities/accounts';
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
 
 export const CreateOfflineAccountDialog: Component<
   CreateOfflineAccountDialogProps
 > = (props) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
+
+  const { mutateAsync: createOfflineAccount } = useCreateOfflineAccount();
 
   const handleCreate = async (username: string) => {
     await createOfflineAccount(username);
-    refetchAccounts();
     closeDialog();
   };
 

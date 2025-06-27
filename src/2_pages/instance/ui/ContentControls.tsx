@@ -10,6 +10,7 @@ import { cn } from '@/shared/lib';
 import type { InstallContentButtonProps } from './InstallContentButton';
 import { InstallContentButton } from './InstallContentButton';
 import type { Instance } from '@/entities/instances';
+import { useTranslation } from '@/6_shared/model';
 
 export type ContentControlsProps = ComponentProps<'div'> &
   Pick<InstallContentButtonProps, 'contentTypes'> & {
@@ -31,8 +32,10 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
     'class',
   ]);
 
-  const searchPlaceholder = createMemo(
-    () => `Search ${local.contentsCount} contents`,
+  const [{ t }] = useTranslation();
+
+  const searchPlaceholder = createMemo(() =>
+    t('content.searchCount', { count: local.contentsCount }),
   );
 
   return (

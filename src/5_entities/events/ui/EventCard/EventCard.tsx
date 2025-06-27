@@ -6,12 +6,12 @@ import { Progress } from '@/shared/ui';
 import { LoadingBarTypeEnum } from '@/entities/events';
 
 import type { EventCardProps } from './types';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export const EventCard: Component<EventCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const clampedValue = createMemo(() => local.payload.fraction ?? 1);
 

@@ -11,7 +11,7 @@ import type { CreateInstanceButtonProps } from './CreateInstanceButton';
 import CreateInstanceButton from './CreateInstanceButton';
 import HomeButton from './HomeButton';
 import SettingsButton from './SettingsButton';
-import { AccountsMenu } from '@/entities/accounts';
+import { AccountsMenu, useAccounts } from '@/entities/accounts';
 
 export type AppSidebarProps = SidebarProps &
   Pick<CreateInstanceButtonProps, 'createInstanceDialog'> &
@@ -23,6 +23,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     'createOfflineAccountDialog',
     'class',
   ]);
+
+  const accounts = useAccounts();
 
   return (
     <Sidebar
@@ -39,7 +41,8 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
       </div>
       <div class='flex flex-col items-center gap-2'>
         <AccountSelectButton
-          accountSelectCard={AccountsMenu}
+          accounts={accounts.data ?? []}
+          accountsMenu={AccountsMenu}
           createOfflineAccountDialog={local.createOfflineAccountDialog}
         />
         <SettingsButton />

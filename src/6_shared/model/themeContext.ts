@@ -8,11 +8,16 @@ export type ThemeContextValue = {
   rawTheme: ThemeConfig;
   lightTheme: Theme;
   darkTheme: Theme;
+  transparency: number;
+  disableAnimations: boolean;
+  prefersReducedMotion: boolean;
 };
 
 export type ThemeContextActions = {
   setTheme: (theme: ThemeConfig) => void;
-  setThemeForColorMode: (colorMode: ColorMode, theme: Theme) => void;
+  setThemeByColorMode: (colorMode: ColorMode, theme: Theme) => void;
+  setTransparency: (transparency: number) => void;
+  setDisableAnimations: (disableAnimations: boolean) => void;
 };
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];
@@ -27,4 +32,12 @@ export const useThemeContext = () => {
   }
 
   return value;
+};
+
+export const COLOR_MODE_TO_KEY: Record<
+  ColorMode,
+  Extract<keyof ThemeContextValue, 'lightTheme' | 'darkTheme'>
+> = {
+  light: 'lightTheme',
+  dark: 'darkTheme',
 };

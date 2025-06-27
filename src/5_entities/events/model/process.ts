@@ -7,7 +7,7 @@ export enum ProcessPayloadType {
 
 export interface ProcessPayload {
   instanceId: string;
-  uuid: string;
+  processId: string;
   event: ProcessPayloadType;
   message: string;
 }

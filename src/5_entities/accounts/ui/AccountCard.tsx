@@ -1,49 +1,52 @@
 import MdiDelete from '@iconify/icons-mdi/delete';
-import type { Component, ComponentProps } from 'solid-js';
+import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import type { ButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import type { Account, AccountType } from '../model';
+import { useTranslation } from '@/shared/model';
 
-import { useTranslate } from '@/shared/model';
+import { AccountButton } from './AccountButton';
+import type { AccountType } from '../model';
+import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 
-import AccountButton from './AccountButton';
-
-export type AccountCardProps = ComponentProps<'div'> & {
-  username: Account['username'];
-  type: AccountType;
-  active?: boolean;
+export type AccountCardProps = { class?: string } & {
+  username: string;
+  active: boolean;
+  accountType: AccountType;
   accountButtonProps?: ButtonProps;
   removeButtonProps?: ButtonProps;
   onActivate?: () => void;
   onRemove?: () => void;
 };
 
-export const AccountCard: Component<AccountCardProps> = (props) => {
+export const AccountCard = <T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, AccountCardProps>,
+) => {
   const [local, others] = splitProps(props, [
     'username',
-    'type',
     'active',
+    'accountType',
     'onActivate',
     'onRemove',
     'accountButtonProps',
     'removeButtonProps',
+    'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
-    <div
-      class={cn('flex justify-between w-full border rounded-md h-12 ')}
+    <Polymorphic
+      class={cn('flex justify-between border rounded-md h-12', local.class)}
       {...others}
     >
       <AccountButton
-        active={local.active}
         username={local.username}
-        type={local.type}
+        active={local.active}
+        accountType={local.accountType}
         onClick={local.onActivate}
         {...local.accountButtonProps}
       />
@@ -59,6 +62,6 @@ export const AccountCard: Component<AccountCardProps> = (props) => {
           {...local.removeButtonProps}
         />
       </div>
-    </div>
+    </Polymorphic>
   );
 };

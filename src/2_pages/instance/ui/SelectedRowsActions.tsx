@@ -18,7 +18,7 @@ import {
 } from '@/entities/instances';
 
 import type { RowModel } from '@tanstack/solid-table';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { cn } from '@/shared/lib';
 
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
@@ -35,7 +35,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const selectedContents = createMemo(() =>
     local.selectedRows.rows.map((row) => row.original),

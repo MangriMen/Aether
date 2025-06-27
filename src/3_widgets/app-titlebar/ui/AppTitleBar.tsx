@@ -11,7 +11,7 @@ export type AppTitleBarProps = TitleBarProps;
 export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
   return (
     <>
-      <div class='fixed inset-x-0 top-0 h-[40px] w-full bg-secondary-dark' />
+      <div class='fixed inset-x-0 top-0 h-[40px] w-full' />
       <TitleBar
         id='title-bar'
         class='pointer-events-auto fixed inset-x-0 top-0 z-[100] justify-end gap-2 bg-transparent'

@@ -101,6 +101,8 @@ const SliderValueLabel = <T extends ValidComponent = 'label'>(
   return <SliderPrimitive.ValueLabel as={Label} {...props} />;
 };
 
+export type { SliderRootProps };
+
 export {
   Slider,
   SliderTrack,

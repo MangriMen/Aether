@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import type { LoaderVersion, Version } from '@/entities/minecrafts';
-import { ModLoader, VersionType } from '@/entities/minecrafts';
+import type { LoaderVersion, Version } from '@/entities/minecraft';
+import { ModLoader, VersionType } from '@/entities/minecraft';
 
 export const ModLoaderSchema: z.ZodType<ModLoader> = z.enum(
   [

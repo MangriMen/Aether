@@ -1,6 +1,6 @@
 import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedPagination,
   CombinedTextField,
@@ -45,7 +45,7 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const searchPlaceholder = createMemo(() => {
     const searchText = t('common.search');

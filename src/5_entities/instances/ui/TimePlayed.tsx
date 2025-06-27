@@ -2,7 +2,7 @@ import { cn } from '@/shared/lib';
 import { createMemo, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
 import MdiClockIcon from '@iconify/icons-mdi/clock';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { Icon } from '@iconify-icon/solid';
 import { formatTimePlayedHumanized } from '../lib';
 
@@ -18,7 +18,7 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
     'class',
   ]);
 
-  const [{ locale, t }] = useTranslate();
+  const [{ locale, t }] = useTranslation();
 
   const lastPlayedDate = createMemo(() => {
     return local.lastPlayed

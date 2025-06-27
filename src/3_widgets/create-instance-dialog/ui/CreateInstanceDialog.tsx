@@ -12,7 +12,7 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import { CreateCustomInstance } from './CreateCustomInstance';
 import type { DialogRootProps } from '@kobalte/core/dialog';
@@ -28,7 +28,7 @@ export type CreateInstanceDialogProps = DialogRootProps;
 export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
   props,
 ) => {
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   return (
     <Dialog {...props}>

@@ -20,7 +20,7 @@ import {
   useToggleDisableContent,
   type InstanceFile,
 } from '@/entities/instances';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;
@@ -36,7 +36,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
     'class',
   ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const { mutateAsync: toggleDisableInstanceContent } =
     useToggleDisableContent();

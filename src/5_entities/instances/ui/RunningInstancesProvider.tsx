@@ -61,6 +61,8 @@ export const RunningInstancesProvider: Component<
           isRunning: e.payload.event === ProcessPayloadType.Launched,
         },
       }));
+
+      console.log(contextValue);
     });
 
   createEffect(() => {

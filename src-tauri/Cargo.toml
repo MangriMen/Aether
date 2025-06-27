@@ -36,6 +36,10 @@ daedalus = "0.2.3"
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.4.0" }
 aether-core = { path = '../../aether-core/aether-core' }
 
+serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.1.0", features = [
+  "derive",
+] }
+
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]

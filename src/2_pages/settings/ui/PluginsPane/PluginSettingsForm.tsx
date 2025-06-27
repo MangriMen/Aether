@@ -1,18 +1,15 @@
-import { editPluginSettings, getPluginSettings } from '@/entities/plugins';
-import type { PluginSettings, PluginMetadata } from '@/entities/plugins';
+import {
+  type PluginManifest,
+  type PluginSettings,
+  usePluginSettings,
+  useEditPluginSettings,
+} from '@/entities/plugins';
 
 import { cn } from '@/shared/lib';
 import { Button, showToast } from '@/shared/ui';
 import type { SubmitHandler } from '@modular-forms/solid';
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import {
-  createEffect,
-  createMemo,
-  createResource,
-  createSignal,
-  splitProps,
-  type Component,
-} from 'solid-js';
+import { createEffect, createMemo, splitProps, type Component } from 'solid-js';
 import type { PluginSettingsSchemaValues } from '../../model';
 import { PluginSettingsSchema } from '../../model';
 
@@ -23,10 +20,10 @@ import { EditAllowedPath } from './EditAllowedPath';
 import { AllowedPathField } from './AllowedPathField';
 import { AllowedHost } from './AllowedHost';
 import { AllowedPath } from './AllowedPath';
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type PluginSettingsFormProps = {
-  plugin: PluginMetadata;
+  pluginManifest: PluginManifest;
   disabled: boolean;
   class?: string;
 };
@@ -34,14 +31,17 @@ export type PluginSettingsFormProps = {
 export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['plugin', 'disabled', 'class']);
+  const [local, others] = splitProps(props, [
+    'pluginManifest',
+    'disabled',
+    'class',
+  ]);
 
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
-  const pluginId = createMemo(() => local.plugin.plugin.id);
-  const [settings, { mutate }] = createResource(pluginId, getPluginSettings);
+  const pluginId = createMemo(() => local.pluginManifest.metadata.id);
 
-  const [isLoading, setIsLoading] = createSignal(false);
+  const settings = usePluginSettings(() => pluginId());
 
   const [form, { Form }] = createForm<PluginSettingsSchemaValues>({
     validate: zodForm(PluginSettingsSchema),
@@ -63,27 +63,36 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   };
 
   createEffect(() => {
-    resetForm(settings());
+    if (settings.data) {
+      resetForm(settings.data);
+    }
   });
+
+  const editPluginSettings = useEditPluginSettings();
+
+  const isLoading = createMemo(
+    () => settings.isLoading || editPluginSettings.isPending,
+  );
 
   const handleSubmit: SubmitHandler<PluginSettingsSchemaValues> = async (
     values,
   ) => {
-    const dto: PluginSettings = {
-      allowed_hosts: values.allowedHosts ?? [],
-      allowed_paths: values.allowedPaths ?? [],
-    };
-    setIsLoading(true);
     try {
-      await editPluginSettings(local.plugin.plugin.id, dto);
-      mutate(dto);
+      const newSettings: PluginSettings = {
+        allowed_hosts: values.allowedHosts ?? [],
+        allowed_paths: values.allowedPaths ?? [],
+      };
+      await editPluginSettings.mutateAsync({
+        id: local.pluginManifest.metadata.id,
+        settings: newSettings,
+      });
+      await settings.refetch();
     } catch {
       showToast({
-        title: `Failed to update "${local.plugin.plugin.name}" plugin settings`,
+        title: `Failed to update "${local.pluginManifest.metadata.name}" plugin settings`,
         variant: 'destructive',
       });
     }
-    setIsLoading(false);
   };
 
   return (
@@ -102,7 +111,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           label={t('plugins.allowedHosts')}
           name='allowedHosts'
           form={form}
-          unchangeableItems={local.plugin.wasm.allowed_hosts}
+          unchangeableItems={local.pluginManifest.runtime.allowed_hosts}
           allowedItem={AllowedHost}
           allowedItemField={AllowedHostsField}
           addNewItem={(onSubmitNew, onCancel) => (
@@ -113,7 +122,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           label={t('plugins.allowedPaths')}
           name='allowedPaths'
           form={form}
-          unchangeableItems={local.plugin.wasm.allowed_paths}
+          unchangeableItems={local.pluginManifest.runtime.allowed_paths}
           allowedItem={AllowedPath}
           allowedItemField={AllowedPathField}
           addNewItem={(onSubmitNew, onCancel) => (

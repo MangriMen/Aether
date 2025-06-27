@@ -23,7 +23,9 @@ export type I18nContextType<Locale, Dictionary extends BaseRecordDict> = [
 
 export const I18nContext = createContext<I18nContextType<Locale, Dictionary>>();
 
-export const useI18nContext = () => {
+export type TFunction = NullableTranslator<Dictionary>;
+
+const useI18nContext = () => {
   const value = useContext(I18nContext);
 
   if (!value) {
@@ -35,4 +37,4 @@ export const useI18nContext = () => {
   return value;
 };
 
-export const useTranslate = useI18nContext;
+export const useTranslation = useI18nContext;

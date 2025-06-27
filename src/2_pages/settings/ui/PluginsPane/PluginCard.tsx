@@ -23,12 +23,12 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
     >
       <Image class='h-12 w-max' />
       <div class='flex flex-col truncate font-normal'>
-        <span class='font-medium'>{local.plugin.metadata.plugin.name}</span>
+        <span class='font-medium'>{local.plugin.manifest.metadata.name}</span>
         <span class='w-full truncate'>
-          {local.plugin.metadata.plugin.description}
+          {local.plugin.manifest.metadata.description}
         </span>
         <span class='w-full truncate font-medium'>
-          {local.plugin.metadata.plugin.authors?.join(', ')}
+          {local.plugin.manifest.metadata.authors?.join(', ')}
         </span>
       </div>
     </div>

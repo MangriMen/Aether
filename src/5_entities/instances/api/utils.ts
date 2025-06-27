@@ -1,16 +1,19 @@
 import { useMutation } from '@tanstack/solid-query';
 import { revealInExplorerRaw } from './rawApi';
-import { showToast } from '@/shared/ui';
+import { useTranslation } from '@/6_shared/model';
+import { showError } from '@/6_shared/lib/showError';
 
 export const useRevealInExplorer = () => {
+  const [{ t }] = useTranslation();
+
   return useMutation(() => ({
     mutationFn: ({ path, exact }: { path: string; exact?: boolean }) =>
       revealInExplorerRaw(path, exact ?? true),
-    onError: (error) => {
-      showToast({
-        title: 'Failed to open explorer',
-        description: error.message,
-        variant: 'destructive',
+    onError: (err) => {
+      showError({
+        title: t('common.revealInExplorerError'),
+        err,
+        t,
       });
     },
   }));

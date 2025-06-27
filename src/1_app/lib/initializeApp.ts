@@ -1,4 +1,4 @@
-import { initializeState } from '@/entities/minecrafts';
+import { initializeState } from '@/entities/minecraft';
 
 import { AetherNamespace, AetherNamespaceMethods } from '../model';
 import { getCurrentWindow } from '@tauri-apps/api/window';

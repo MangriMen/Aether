@@ -5,7 +5,7 @@ import { createSignal, splitProps } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslate } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 
 export type CreateInstanceButtonProps = IconButtonProps & {
@@ -14,7 +14,7 @@ export type CreateInstanceButtonProps = IconButtonProps & {
 
 const CreateInstanceButton: Component<CreateInstanceButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['createInstanceDialog']);
-  const [{ t }] = useTranslate();
+  const [{ t }] = useTranslation();
 
   const [isCreateInstanceDialogOpen, setIsCreateInstanceDialogOpen] =
     createSignal(false);
