@@ -33,8 +33,7 @@ open = { version = "5", features = ["shellexecute-on-windows"] }
 
 daedalus = "0.2.3"
 
-# aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.4.0" }
-aether-core = { path = '../../aether-core/aether-core' }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.5.0" }
 
 serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.1.0", features = [
   "derive",
