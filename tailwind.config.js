@@ -1,2 +1,2 @@
-import { tailwindConfig } from './src/shared/config/tailwind.config';
+import { tailwindConfig } from './src/6_shared/config/tailwind.config';
 export default tailwindConfig;

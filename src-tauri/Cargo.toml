@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.4.1"
+version = "0.5.0"
 description = "Desktop application for managing Minecraft instances and mods"
 edition = "2021"
 
@@ -33,7 +33,11 @@ open = { version = "5", features = ["shellexecute-on-windows"] }
 
 daedalus = "0.2.3"
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.4.0" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.5.0" }
+
+serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.1.0", features = [
+  "derive",
+] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

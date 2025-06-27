@@ -1,23 +1,12 @@
 {
   "productName": "aether",
   "mainBinaryName": "aether",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "identifier": "com.mangrimen.aether",
   "app": {
     "security": {
       "csp": null
-    },
-    "windows": [
-      {
-        "title": "Aether",
-        "width": 1024,
-        "height": 640,
-        "minWidth": 768,
-        "minHeight": 480,
-        "decorations": false,
-        "visible": false
-      }
-    ]
+    }
   },
   "build": {
     "beforeDevCommand": "bun run dev",

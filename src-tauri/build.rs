@@ -25,11 +25,20 @@ fn main() {
             "instance_remove",
             "instance_get_contents",
             "instance_toggle_disable_content",
+            "instance_disable_contents",
+            "instance_enable_contents",
             "instance_remove_content",
+            "instance_remove_contents",
             "instance_launch",
             "instance_stop",
             "instance_import",
             "instance_get_import_configs",
+            "instance_get_content_providers",
+            "instance_get_content_by_provider",
+            "instance_install_content",
+            "instance_get_metadata_field_to_check_installed",
+            "instance_import_contents",
+            "instance_get_dir",
         ]),
     );
 
@@ -41,7 +50,7 @@ fn main() {
     let plugin_plugin = (
         "plugin",
         InlinedPlugin::new().commands(&[
-            "scan_plugins",
+            "sync_plugins",
             "list_plugins",
             "plugin_get",
             "is_plugin_enabled",
