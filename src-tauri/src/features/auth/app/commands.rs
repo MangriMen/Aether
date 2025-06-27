@@ -1,4 +1,4 @@
-use aether_core::features::auth::AccountDto;
+use aether_core::features::auth::AccountOutput;
 use uuid::Uuid;
 
 use crate::FrontendResult;
@@ -15,17 +15,17 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 #[tauri::command]
-pub async fn create_offline_account(username: String) -> FrontendResult<AccountDto> {
+pub async fn create_offline_account(username: String) -> FrontendResult<AccountOutput> {
     Ok(aether_core::api::auth::create_offline_account(username).await?)
 }
 
 #[tauri::command]
-pub async fn get_accounts() -> FrontendResult<Vec<AccountDto>> {
+pub async fn get_accounts() -> FrontendResult<Vec<AccountOutput>> {
     Ok(aether_core::api::auth::get_accounts().await?)
 }
 
 #[tauri::command]
-pub async fn change_account(id: Uuid) -> FrontendResult<AccountDto> {
+pub async fn change_account(id: Uuid) -> FrontendResult<AccountOutput> {
     Ok(aether_core::api::auth::change_account(id).await?)
 }
 
