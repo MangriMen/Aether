@@ -60,7 +60,7 @@
     "update": "Обновление",
     "checkForUpdates": "Проверить наличие обновлений",
     "checkForUpdatesDescriptionNoUpdates": "Нет доступных обновлений",
-    "checkForUpdatesDescription": "Доступна новая версия приложения!\nОно будет перезапущена после установки.",
+    "checkForUpdatesDescription": "Доступна новая версия приложения!\nПриложение будет перезапущенно автоматически после установки.",
     "installAndRestartApp": "Установить и перезапустить приложение",
     "releaseDate": "Дата выпуска",
     "light": "Светлая",
@@ -201,5 +201,8 @@
     "settingsError": {
       "storageFailure": "Ошибка хранилища"
     }
+  },
+  "update": {
+    "updateError": "Ошибка обновления лаунчера"
   }
 }

@@ -201,5 +201,8 @@
     "settingsError": {
       "storageFailure": "Storage failure"
     }
+  },
+  "update": {
+    "updateError": "Launcher update error"
   }
 }

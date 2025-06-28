@@ -1,1 +1,1 @@
-export * from './updateResource';
+export * from './checkIsUpdateAvailable';
