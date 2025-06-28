@@ -1,105 +1,42 @@
-import { emit } from '@tauri-apps/api/event';
 import { relaunch } from '@tauri-apps/plugin-process';
-import type { DownloadEvent } from '@tauri-apps/plugin-updater';
 import type { Component, ComponentProps } from 'solid-js';
-import { createSignal, Show } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 
 import { Button, SettingsEntry, showToast } from '@/shared/ui';
-
-import type { LoadingPayload } from '@/entities/events';
-import { LoadingBarTypeEnum } from '@/entities/events';
-import { updateResource } from '@/entities/updates';
+import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
 
 import { useTranslation } from '@/shared/model';
-import { getVersion } from '@tauri-apps/api/app';
+import { checkIsUpdateAvailable } from '@/5_entities/updates/model';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
-  const [update, { refetch }] = updateResource;
   const [{ t }] = useTranslation();
 
+  const update = useCheckUpdate();
+
+  const isUpdateAvailable = createMemo(() =>
+    update.data ? checkIsUpdateAvailable(update.data) : false,
+  );
+
   const checkUpdates = () => {
-    refetch();
+    update.refetch();
   };
 
-  const [isUpdating, setIsUpdating] = createSignal(false);
+  const { isUpdating, installUpdate } = useInstallUpdate();
 
-  let downloaded: number = 0;
-  let contentLength: number | undefined = 0;
-
-  const handleUpdatingEvent = async (event: DownloadEvent) => {
-    switch (event.event) {
-      case 'Started': {
-        contentLength = event.data.contentLength;
-
-        const payload: LoadingPayload = {
-          event: {
-            type: LoadingBarTypeEnum.LauncherUpdate,
-            version: update()?.version ?? '',
-            current_version: await getVersion(),
-          },
-          loaderUuid: '',
-          fraction: 0,
-          message: 'Start updating launcher',
-        };
-
-        emit('loading', payload);
-        break;
-      }
-      case 'Progress': {
-        downloaded += event.data.chunkLength;
-        if (contentLength) {
-          const payload: LoadingPayload = {
-            event: {
-              type: LoadingBarTypeEnum.LauncherUpdate,
-              version: update()?.version ?? '',
-              current_version: await getVersion(),
-            },
-            loaderUuid: '',
-            fraction: downloaded / contentLength,
-            message: 'Updating launcher',
-          };
-
-          emit('loading', payload);
-        }
-        break;
-      }
-      case 'Finished': {
-        const payload: LoadingPayload = {
-          event: {
-            type: LoadingBarTypeEnum.LauncherUpdate,
-            version: update()?.version ?? '',
-            current_version: await getVersion(),
-          },
-          loaderUuid: '',
-          fraction: null,
-          message: 'Finished updating',
-        };
-
-        emit('loading', payload);
-        break;
-      }
-    }
-  };
-
-  const downloadAndInstallUpdate = async () => {
-    if (!update()?.available) {
+  const handleInstallUpdate = async () => {
+    if (!update.data) {
       return;
     }
 
-    downloaded = 0;
-    contentLength = 0;
-
     try {
-      setIsUpdating(true);
-      await update()?.downloadAndInstall(handleUpdatingEvent);
+      await installUpdate(update.data);
 
       await relaunch();
     } catch {
-      setIsUpdating(false);
       showToast({
-        title: 'Error updating launcher',
+        title: t('update.updateError'),
         variant: 'destructive',
       });
     }
@@ -111,17 +48,19 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
       title={t('settings.checkForUpdates')}
       description={
         <Show
-          when={update()?.available}
+          when={isUpdateAvailable()}
           fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
         >
           <div class='flex flex-col'>
             {t('settings.checkForUpdatesDescription')}
-            <span>
-              {t('common.version')}: {update()?.version}
-            </span>
-            <Show when={update()?.date}>
+            <Show when={update.data?.version}>
               <span>
-                {t('settings.releaseDate')}: {update()?.date}
+                {t('common.version')}: {update.data?.version}
+              </span>
+            </Show>
+            <Show when={update.data?.date}>
+              <span>
+                {t('settings.releaseDate')}: {update.data?.date}
               </span>
             </Show>
           </div>
@@ -131,12 +70,11 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     >
       <div class='flex h-full flex-col justify-center gap-2'>
         <Show
-          when={update()?.available}
+          when={isUpdateAvailable()}
           fallback={
             <Button
               class='h-auto max-h-none'
-              loading={update.loading}
-              disabled={isUpdating()}
+              loading={update.isFetching}
               onClick={checkUpdates}
             >
               {t('settings.checkForUpdates')}
@@ -145,8 +83,8 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
         >
           <Button
             class='h-auto max-h-none'
-            disabled={!update()?.available || isUpdating()}
-            onClick={downloadAndInstallUpdate}
+            loading={isUpdating()}
+            onClick={handleInstallUpdate}
           >
             {t('settings.installAndRestartApp')}
           </Button>
