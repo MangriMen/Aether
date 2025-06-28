@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use uuid::Uuid;
@@ -52,7 +53,11 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 
 #[tauri::command]
 pub async fn instance_create(new_instance: NewInstance) -> FrontendResult<()> {
-    tokio::spawn(async move { aether_core::api::instance::create(new_instance).await });
+    tokio::spawn(async move {
+        if let Err(err) = aether_core::api::instance::create(new_instance).await {
+            debug!("{:?}", err)
+        }
+    });
     Ok(())
 }
 
