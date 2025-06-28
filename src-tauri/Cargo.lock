@@ -67,8 +67,8 @@ dependencies = [
 
 [[package]]
 name = "aether-core"
-version = "0.5.0"
-source = "git+https://github.com/MangriMen/aether-core.git#95dc8f31e75af408fc6773f5b785f82bdcbf26e1"
+version = "0.5.1"
+source = "git+https://github.com/MangriMen/aether-core.git#a799a692b6855c13fb3ca779b025801ac297b954"
 dependencies = [
  "anyhow",
  "async-event-emitter",
