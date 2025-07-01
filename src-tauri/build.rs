@@ -24,7 +24,6 @@ fn main() {
             "instance_edit",
             "instance_remove",
             "instance_get_contents",
-            "instance_toggle_disable_content",
             "instance_disable_contents",
             "instance_enable_contents",
             "instance_remove_content",
