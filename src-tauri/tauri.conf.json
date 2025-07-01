@@ -2,7 +2,7 @@
   "productName": "Aether",
   "mainBinaryName": "Aether",
   "version": "0.6.0",
-  "identifier": ".aether",
+  "identifier": "aether.launcher",
   "app": {
     "security": {
       "csp": null
