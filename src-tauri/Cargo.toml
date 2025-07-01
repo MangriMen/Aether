@@ -18,7 +18,7 @@ tauri-plugin-process = "2"
 tokio = { version = "1", features = ["full"] }
 
 anyhow = "1"
-thiserror = "1"
+thiserror = "2"
 log = "0.4"
 
 uuid = { version = "1.10", features = ["serde", "v4"] }
@@ -33,7 +33,7 @@ open = { version = "5", features = ["shellexecute-on-windows"] }
 
 daedalus = "0.2.3"
 
-aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.5.1" }
+aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.5.2" }
 
 serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.1.0", features = [
   "derive",
