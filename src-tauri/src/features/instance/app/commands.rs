@@ -32,7 +32,6 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_edit,
             instance_remove,
             instance_get_contents,
-            instance_toggle_disable_content,
             instance_disable_contents,
             instance_enable_contents,
             instance_remove_content,
@@ -108,14 +107,6 @@ pub async fn instance_remove(id: String) -> FrontendResult<()> {
 #[tauri::command]
 pub async fn instance_get_contents(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
     Ok(aether_core::api::instance::get_contents(id).await?)
-}
-
-#[tauri::command]
-pub async fn instance_toggle_disable_content(
-    _id: String,
-    _content_path: String,
-) -> FrontendResult<String> {
-    todo!()
 }
 
 #[tauri::command]
