@@ -15,9 +15,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import MdiDeleteIcon from '@iconify/icons-mdi/delete';
 import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
 import {
+  useDisableContents,
+  useEnableContents,
   useRemoveContent,
   useRevealInExplorer,
-  useToggleDisableContent,
   type InstanceFile,
 } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
@@ -38,16 +39,24 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const { mutateAsync: toggleDisableInstanceContent } =
-    useToggleDisableContent();
+  const { mutateAsync: disableContents } = useDisableContents();
+  const { mutateAsync: enableContents } = useEnableContents();
+
   const { mutateAsync: removeInstanceContent } = useRemoveContent();
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
 
   const handleToggleDisable = () => {
-    toggleDisableInstanceContent({
-      id: local.instanceId,
-      path: local.content.path,
-    });
+    if (local.content.disabled) {
+      enableContents({
+        id: local.instanceId,
+        paths: [local.content.path],
+      });
+    } else {
+      disableContents({
+        id: local.instanceId,
+        paths: [local.content.path],
+      });
+    }
   };
 
   const handleRemove = () => {

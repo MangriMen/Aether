@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import {
   getInstanceContentsRaw,
-  toggleDisableInstanceContentRaw,
   disableInstanceContentsRaw,
   enableInstanceContentsRaw,
   removeInstanceContentRaw,
@@ -21,7 +20,6 @@ import { showToast } from '@/shared/ui';
 import { type Accessor } from 'solid-js';
 import { useTranslation } from '@/6_shared/model';
 
-// Ключи для кэширования контента
 export const contentKeys = {
   all: ['contents'] as const,
   lists: () => [...contentKeys.all, 'list'] as const,
@@ -32,12 +30,11 @@ export const contentKeys = {
     [...contentKeys.all, 'provider', provider] as const,
 };
 
-// Запросы данных
 export const useInstanceContents = (id: Accessor<string>) => {
   return useQuery(() => ({
     queryKey: contentKeys.instanceContents(id()),
     queryFn: () => getInstanceContentsRaw(id()),
-    enabled: !!id, // Только если ID существует,
+    enabled: !!id,
   }));
 };
 
@@ -67,22 +64,7 @@ export const useMetadataFieldToCheckInstalled = (
   return useQuery(() => ({
     queryKey: [...contentKeys.providerContent(provider()!), 'metadata-field'],
     queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
-    enabled: !!provider(), // Только если провайдер существует
-  }));
-};
-
-// Мутации
-export const useToggleDisableContent = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation(() => ({
-    mutationFn: ({ id, path }: { id: string; path: string }) =>
-      toggleDisableInstanceContentRaw(id, path),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
-      });
-    },
+    enabled: !!provider(),
   }));
 };
 

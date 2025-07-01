@@ -88,15 +88,6 @@ export const getInstanceContentsRaw = (id: string) =>
     { id },
   );
 
-export const toggleDisableInstanceContentRaw = (
-  id: string,
-  contentPath: string,
-) =>
-  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_toggle_disable_content`, {
-    id,
-    contentPath,
-  });
-
 export const disableInstanceContentsRaw = (
   id: string,
   contentPaths: string[],
