@@ -34,6 +34,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   },
   {
     id: 'name',
+    accessorKey: 'name',
     header: (props) => {
       const [{ t }] = useTranslation();
 
@@ -76,8 +77,8 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
     ),
   },
   {
-    accessorKey: 'contentType',
     id: 'type',
+    accessorKey: 'contentType',
     header: (props) => {
       const [{ t }] = useTranslation();
 
