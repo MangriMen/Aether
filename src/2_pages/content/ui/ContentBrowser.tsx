@@ -68,7 +68,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     }
   });
 
-  const handleSearch = debounce(setSearchQuery, 300);
+  const handleSearch = debounce((query: string) => {
+    if (query.trim()) {
+      setPage(1);
+    }
+    setSearchQuery(query);
+  }, 300);
   const handlePageChange = (page: number) => setPage(page);
   const handlePageSizeChange = (pageSize: number) => setPageSize(pageSize);
   const handleSetProvider = (provider: Option<string> | null) => {
