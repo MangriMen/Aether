@@ -6,8 +6,8 @@ import {
   listAccountsRaw,
   logoutRaw,
 } from './tauriApiRaw';
-import { useTranslation } from '@/6_shared/model';
-import { showError } from '@/6_shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+import { showError } from '@/shared/lib/showError';
 
 export const useAccounts = () =>
   useQuery(() => ({

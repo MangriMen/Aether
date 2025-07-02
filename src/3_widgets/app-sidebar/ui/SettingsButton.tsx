@@ -9,8 +9,8 @@ import type { IconButtonProps } from '@/shared/ui';
 import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { useTranslation } from '@/shared/model';
-import { useCheckUpdate } from '@/5_entities/updates';
-import { checkIsUpdateAvailable } from '@/5_entities/updates/model';
+import { useCheckUpdate } from '@/entities/updates';
+import { checkIsUpdateAvailable } from '@/entities/updates/model';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

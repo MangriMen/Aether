@@ -1,5 +1,5 @@
-import { useTranslation } from '@/6_shared/model';
-import { SettingsEntry } from '@/6_shared/ui';
+import { useTranslation } from '@/shared/model';
+import { SettingsEntry } from '@/shared/ui';
 import type { Component, ComponentProps } from 'solid-js';
 import { SelectTheme } from './SelectTheme';
 

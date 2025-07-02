@@ -20,7 +20,7 @@ import { showToast } from '@/shared/ui';
 import { QUERY_KEYS } from './query_keys';
 import { createMemo, type Accessor } from 'solid-js';
 import { useTranslation } from '@/shared/model';
-import { showError } from '@/6_shared/lib/showError';
+import { showError } from '@/shared/lib/showError';
 
 export const useInstances = () => {
   return useQuery(() => ({

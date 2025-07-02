@@ -11,7 +11,7 @@ import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
 import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
-import { prefetchMaxRam } from '@/5_entities/settings';
+import { prefetchMaxRam } from '@/entities/settings';
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
   instanceId: Instance['id'];

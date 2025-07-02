@@ -18,7 +18,7 @@ import type {
 } from '../model';
 import { showToast } from '@/shared/ui';
 import { type Accessor } from 'solid-js';
-import { useTranslation } from '@/6_shared/model';
+import { useTranslation } from '@/shared/model';
 
 export const contentKeys = {
   all: ['contents'] as const,

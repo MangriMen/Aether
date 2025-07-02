@@ -6,7 +6,7 @@ import { Button, SettingsEntry, showToast } from '@/shared/ui';
 import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
 
 import { useTranslation } from '@/shared/model';
-import { checkIsUpdateAvailable } from '@/5_entities/updates/model';
+import { checkIsUpdateAvailable } from '@/entities/updates/model';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 

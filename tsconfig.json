@@ -18,7 +18,6 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
       "@/app/*": ["./src/1_app/*"],
       "@/pages/*": ["./src/2_pages/*"],
       "@/widgets/*": ["./src/3_widgets/*"],

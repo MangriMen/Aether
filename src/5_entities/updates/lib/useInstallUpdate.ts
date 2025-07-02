@@ -1,7 +1,7 @@
 import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
 import { checkIsUpdateAvailable } from '../model';
 import { createSignal } from 'solid-js';
-import { LoadingBarTypeEnum, type LoadingPayload } from '@/5_entities/events';
+import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
 import { getVersion } from '@tauri-apps/api/app';
 import { emit } from '@tauri-apps/api/event';
 
