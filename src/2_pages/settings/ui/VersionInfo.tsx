@@ -1,7 +1,7 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import { AppVersion } from './AppVersion';
 import { OsVersion } from './OsVersion';
-import { cn, useDeveloperModeCounter } from '@/6_shared/lib';
+import { cn, useDeveloperModeCounter } from '@/shared/lib';
 
 export type VersionInfoProps = ComponentProps<'div'>;
 

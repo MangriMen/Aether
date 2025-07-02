@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/solid-query';
 import { revealInExplorerRaw } from './rawApi';
-import { useTranslation } from '@/6_shared/model';
-import { showError } from '@/6_shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+import { showError } from '@/shared/lib/showError';
 
 export const useRevealInExplorer = () => {
   const [{ t }] = useTranslation();

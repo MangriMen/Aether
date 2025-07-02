@@ -1,6 +1,6 @@
-import { cn } from '@/6_shared/lib';
-import { useTranslation } from '@/6_shared/model';
-import { Button } from '@/6_shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 export type AppErrorBoundaryProps = ComponentProps<'div'> & {

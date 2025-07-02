@@ -8,7 +8,7 @@ import { useInstance, useInstanceDir } from '@/entities/instances';
 
 import { Header } from './Header';
 import { Body } from './Body';
-import { useTranslation } from '@/6_shared/model';
+import { useTranslation } from '@/shared/model';
 
 export type InstancePageProps = ComponentProps<'div'> & RouteSectionProps;
 

@@ -1,4 +1,4 @@
-import { Button, closeToast, showToast } from '@/6_shared/ui';
+import { Button, closeToast, showToast } from '@/shared/ui';
 import { createRoot } from 'solid-js';
 
 export const showPrefersReducedMotionInfo = (

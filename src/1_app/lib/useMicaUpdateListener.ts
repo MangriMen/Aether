@@ -1,6 +1,6 @@
-import { useAppSettings, useUpdateAppSettings } from '@/2_pages/settings/api';
-import { debounce } from '@/6_shared/lib';
-import { isSystemTheme, useThemeContext } from '@/6_shared/model';
+import { useAppSettings, useUpdateAppSettings } from '@/pages/settings/api';
+import { debounce } from '@/shared/lib';
+import { isSystemTheme, useThemeContext } from '@/shared/model';
 import type { ColorMode } from '@kobalte/core';
 import { useColorMode } from '@kobalte/core';
 import { createEffect, on } from 'solid-js';
