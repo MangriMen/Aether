@@ -100,20 +100,13 @@
     "noContent": "You don't have any installed content",
     "showFile": "Show file",
     "installContent": "Install content",
-    "instanceCreated": "Instance {{name}} created",
-    "instanceUpdated": "Instance {{name}} updated",
-    "instanceInstalled": "Instance {{name}} installed",
-    "instanceImported": "Instance {{name}} imported",
-    "instanceLaunched": "Instance {{name}} launched",
-    "instanceStopped": "Instance stopped",
-    "instanceRemoved": "Instance {{name}} removed",
-    "instanceEdited": "Instance {{name}} edited",
     "removeError": "Failed to remove instance {{id}}",
     "stopError": "Failed to stop instance",
     "launchError": "Failed to launch instance {{id}}",
     "createError": "Failed to create instance",
     "editError": "Failed to edit instance {{id}}",
-    "notFound": "Instance \"{{id}}\" not found"
+    "notFound": "Instance \"{{id}}\" not found",
+    "importError": "Failed to import instance"
   },
   "createInstance": {
     "title": "Create instance",

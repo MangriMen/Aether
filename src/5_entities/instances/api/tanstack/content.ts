@@ -10,37 +10,29 @@ import {
   installContentRaw,
   getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
-} from './rawApi';
+} from '../rawApi';
 import type {
   ContentRequest,
   InstallContentPayload,
   ContentType,
-} from '../model';
+} from '../../model';
 import { showToast } from '@/shared/ui';
 import { type Accessor } from 'solid-js';
 import { useTranslation } from '@/shared/model';
-
-export const contentKeys = {
-  all: ['contents'] as const,
-  lists: () => [...contentKeys.all, 'list'] as const,
-  instanceContents: (id: string) =>
-    [...contentKeys.all, 'instance', id] as const,
-  providers: () => [...contentKeys.all, 'providers'] as const,
-  providerContent: (provider: string) =>
-    [...contentKeys.all, 'provider', provider] as const,
-};
+import { CONTENT_QUERY_KEYS } from './content_query_keys';
 
 export const useInstanceContents = (id: Accessor<string>) => {
   return useQuery(() => ({
-    queryKey: contentKeys.instanceContents(id()),
+    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
     queryFn: () => getInstanceContentsRaw(id()),
     enabled: !!id,
+    reconcile: (oldData, newData) => ({ ...oldData, ...newData }),
   }));
 };
 
 export const useContentProviders = () => {
   return useQuery(() => ({
-    queryKey: contentKeys.providers(),
+    queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
     queryFn: getContentProvidersRaw,
   }));
 };
@@ -50,7 +42,7 @@ export const useContentByProvider = (
 ) => {
   return useQuery(() => ({
     queryKey: [
-      ...contentKeys.providerContent(payload()?.provider ?? ''),
+      ...CONTENT_QUERY_KEYS.BY_PROVIDER(payload()?.provider ?? ''),
       payload(),
     ],
     queryFn: () => getContentByProviderRaw(payload()!),
@@ -62,7 +54,7 @@ export const useMetadataFieldToCheckInstalled = (
   provider: Accessor<string | undefined>,
 ) => {
   return useQuery(() => ({
-    queryKey: [...contentKeys.providerContent(provider()!), 'metadata-field'],
+    queryKey: CONTENT_QUERY_KEYS.METADATA_FIELD(provider()!),
     queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
     enabled: !!provider(),
   }));
@@ -76,7 +68,7 @@ export const useDisableContents = () => {
       disableInstanceContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
     },
   }));
@@ -90,7 +82,7 @@ export const useEnableContents = () => {
       enableInstanceContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
     },
   }));
@@ -104,7 +96,7 @@ export const useRemoveContent = () => {
       removeInstanceContentRaw(id, path),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
     },
   }));
@@ -118,7 +110,7 @@ export const useRemoveContents = () => {
       removeInstanceContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
     },
   }));
@@ -138,7 +130,7 @@ export const useInstallContent = () => {
     }) => installContentRaw(id, payload),
     onSuccess: (_, { id, payload }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
       showToast({
         title: t('content.installed', {
@@ -166,7 +158,7 @@ export const useImportContents = () => {
     }) => importContentsRaw(id, paths, type),
     onSuccess: (_, { id, type }) => {
       queryClient.invalidateQueries({
-        queryKey: contentKeys.instanceContents(id),
+        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
       });
       showToast({
         title: t('content.imported', {

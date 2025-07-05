@@ -100,20 +100,13 @@
     "noContent": "У вас ещё нет установленного контента",
     "showFile": "Показать файл",
     "installContent": "Установить контент",
-    "instanceUpdated": "Инстанс {{name}} обновлён",
-    "instanceCreated": "Инстанс {{name}} создан",
-    "instanceEdited": "Инстанс {{name}} изменён",
-    "instanceImported": "Инстанс {{name}} импортирован",
-    "instanceInstalled": "Инстанс {{name}} установлен",
-    "instanceLaunched": "Инстанс {{name}} запущен",
-    "instanceRemoved": "Инстанс {{name}} удалён",
-    "instanceStopped": "Инстанс остановлен",
     "removeError": "Ошибка удаления инстанса {{id}}",
     "stopError": "Не удалось остановить инстанс",
     "launchError": "Не удалось запустить инстанс {{id}}",
     "createError": "Не удалось создать инстанс",
     "editError": "Не удалось изменить инстанс {{id}}",
-    "notFound": "Инстанс \"{{id}}\" не найден"
+    "notFound": "Инстанс \"{{id}}\" не найден",
+    "importError": "Не удалось импортировать инстанс"
   },
   "createInstance": {
     "title": "Создать инстанс",
