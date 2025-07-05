@@ -100,6 +100,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
           class='px-3'
           leadingIcon={local.item.installed ? MdiCheck : MdiDownload}
           onClick={handleInstallContent}
+          loading={isInstalling()}
           disabled={local.item.installed}
         >
           {installButtonText()}
