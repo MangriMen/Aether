@@ -20,15 +20,7 @@ import { showToast } from '@/shared/ui';
 import { type Accessor } from 'solid-js';
 import { useTranslation } from '@/shared/model';
 import { CONTENT_QUERY_KEYS } from './content_query_keys';
-
-export const useInstanceContents = (id: Accessor<string>) => {
-  return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
-    queryFn: () => getInstanceContentsRaw(id()),
-    enabled: !!id,
-    reconcile: (oldData, newData) => ({ ...oldData, ...newData }),
-  }));
-};
+import { invalidateInstanceContent } from './cache';
 
 export const useContentProviders = () => {
   return useQuery(() => ({
@@ -60,6 +52,14 @@ export const useMetadataFieldToCheckInstalled = (
   }));
 };
 
+export const useInstanceContents = (id: Accessor<string>) => {
+  return useQuery(() => ({
+    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
+    queryFn: () => getInstanceContentsRaw(id()),
+    enabled: !!id,
+  }));
+};
+
 export const useDisableContents = () => {
   const queryClient = useQueryClient();
 
@@ -67,9 +67,7 @@ export const useDisableContents = () => {
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
       disableInstanceContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
     },
   }));
 };
@@ -81,9 +79,7 @@ export const useEnableContents = () => {
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
       enableInstanceContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
     },
   }));
 };
@@ -95,9 +91,7 @@ export const useRemoveContent = () => {
     mutationFn: ({ id, path }: { id: string; path: string }) =>
       removeInstanceContentRaw(id, path),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
     },
   }));
 };
@@ -129,9 +123,8 @@ export const useInstallContent = () => {
       payload: InstallContentPayload;
     }) => installContentRaw(id, payload),
     onSuccess: (_, { id, payload }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
+
       showToast({
         title: t('content.installed', {
           contentType: t(`content.${payload.contentType}`) || '',
@@ -157,9 +150,8 @@ export const useImportContents = () => {
       type: ContentType;
     }) => importContentsRaw(id, paths, type),
     onSuccess: (_, { id, type }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
+
       showToast({
         title: t('content.imported', {
           contentType: t(`content.${type}`) || '',
