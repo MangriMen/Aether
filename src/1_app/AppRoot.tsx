@@ -1,7 +1,7 @@
 import type { RouteSectionProps } from '@solidjs/router';
 import { type Component } from 'solid-js';
 
-import { Toaster } from '@/shared/ui';
+import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
 
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import {
@@ -41,6 +41,7 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
                 <AppLayout>
                   <RunningInstancesProvider>
                     <MainLayout>{props.children}</MainLayout>
+                    <GlobalDialogRenderer />
                   </RunningInstancesProvider>
                 </AppLayout>
                 <Toaster />
