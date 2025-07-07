@@ -1,1 +1,1 @@
-export * from './EventCard';
+export * from './ProgressCard';

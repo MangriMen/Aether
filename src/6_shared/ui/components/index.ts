@@ -15,6 +15,7 @@ export * from './DelayedShow';
 export * from './Dialog';
 export * from './DropdownMenu';
 export * from './FieldLabel';
+export * from './GlobalDialogRenderer';
 export * from './IconButton';
 export * from './Image';
 export * from './Label';
