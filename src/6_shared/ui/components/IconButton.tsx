@@ -31,9 +31,9 @@ const iconButtonVariants = cva('aspect-square', {
       link: SVG_CHILD_FILL_VARIANTS.foreground,
     },
     size: {
-      default: 'size-10 rounded-md text-2xl',
-      sm: 'size-9 rounded-md',
-      lg: 'size-11 rounded-md',
+      default: 'size-9 rounded-md text-2xl',
+      sm: 'size-8 rounded-md',
+      lg: 'size-10 rounded-md',
     },
   },
   defaultVariants: {

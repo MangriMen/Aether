@@ -4,7 +4,7 @@ import type { TitleBarProps } from '@/shared/ui';
 import { TitleBar } from '@/shared/ui';
 
 import { WindowControls } from './WindowControls';
-import { NotificationMenuButton } from './NotificationMenuButton';
+import { ProgressMenuButton, ProgressPopover } from './ProgressMenu';
 
 export type AppTitleBarProps = TitleBarProps;
 
@@ -19,7 +19,7 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
         data-tauri-drag-region
         {...props}
       >
-        <NotificationMenuButton />
+        <ProgressMenuButton popoverComponent={ProgressPopover} />
         <WindowControls />
       </TitleBar>
     </>

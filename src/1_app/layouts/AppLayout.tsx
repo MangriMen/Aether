@@ -13,7 +13,10 @@ export const AppLayout: Component<AppLayoutProps> = (props) => {
       <AppTitleBar />
       <div class='mt-[40px] flex size-full flex-col overflow-hidden'>
         <ErrorBoundary
-          fallback={(_, reset) => <AppErrorBoundary reset={reset} />}
+          fallback={(err, reset) => {
+            console.error(err);
+            return <AppErrorBoundary reset={reset} />;
+          }}
         >
           {props.children}
         </ErrorBoundary>

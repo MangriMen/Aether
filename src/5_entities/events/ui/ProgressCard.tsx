@@ -1,14 +1,18 @@
-import type { Component } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
 import { Progress } from '@/shared/ui';
 
+import type { LoadingPayload } from '@/entities/events';
 import { LoadingBarTypeEnum } from '@/entities/events';
 
-import type { EventCardProps } from './types';
 import { useTranslation } from '@/shared/model';
 
-export const EventCard: Component<EventCardProps> = (props) => {
+export type ProgressCardProps = ComponentProps<'div'> & {
+  payload: LoadingPayload;
+};
+
+export const ProgressCard: Component<ProgressCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);
 
   const [{ t }] = useTranslation();
@@ -33,10 +37,7 @@ export const EventCard: Component<EventCardProps> = (props) => {
   });
 
   return (
-    <div
-      class='flex flex-col gap-2 rounded-md border bg-background p-3'
-      {...others}
-    >
+    <div class='flex flex-col gap-2' {...others}>
       <span class='font-bold'>{title()}</span>
       <Progress value={clampedValue()} minValue={0} maxValue={1} />
       <span class='text-muted-foreground'>
