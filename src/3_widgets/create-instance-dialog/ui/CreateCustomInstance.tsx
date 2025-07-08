@@ -39,8 +39,8 @@ import {
   filterGameVersions,
   filterGameVersionsForLoader,
   getLoaderVersionsForGameVersion,
-  loaders,
-  loaderVersionTypes,
+  LOADERS,
+  LOADER_VERSION_TYPES,
 } from '../model';
 
 import { loaderManifestToMapped } from '../lib';
@@ -70,7 +70,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     validate: zodForm(CreateCustomInstanceSchema),
     initialValues: {
       loader: ModLoader.Vanilla,
-      loaderVersionType: loaderVersionTypes[0].value,
+      loaderVersionType: LOADER_VERSION_TYPES[0].value,
     },
   });
 
@@ -187,7 +187,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
         <Field name='loader'>
           {(field) => (
             <LoaderChipsToggleGroup
-              loaders={loaders}
+              loaders={LOADERS}
               value={field.value}
               onChange={(value) => {
                 setValue(form, 'loader', value as ModLoader);
@@ -233,7 +233,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             <Field name='loaderVersionType'>
               {(field) => (
                 <LoaderVersionTypeChipsToggleGroup
-                  loaderTypes={loaderVersionTypes}
+                  loaderTypes={LOADER_VERSION_TYPES}
                   value={field.value}
                   onChange={(value) => {
                     if (value) {
