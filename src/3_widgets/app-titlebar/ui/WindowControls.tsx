@@ -27,7 +27,7 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
   };
 
   return (
-    <div class={cn('flex w-[120px]', local.class)} {...others}>
+    <div class={cn('flex w-[120px] h-full', local.class)} {...others}>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
         title='Minimize'
