@@ -14,7 +14,7 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
       <div class='fixed inset-x-0 top-0 h-[40px] w-full' />
       <TitleBar
         id='title-bar'
-        class='pointer-events-auto fixed inset-x-0 top-0 z-[100] justify-end gap-2 bg-transparent'
+        class='pointer-events-auto fixed inset-x-0 top-0 z-[100] items-center justify-end gap-2 bg-transparent'
         data-ignore-outside-click
         data-tauri-drag-region
         {...props}
