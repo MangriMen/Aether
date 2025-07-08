@@ -34,14 +34,14 @@ import { useTranslation } from '@/shared/model';
 
 export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
   Pick<DialogRootProps, 'onOpenChange'> & {
-    importHandlers: Accessor<ImportHandler[]>;
+    importConfigs: Accessor<ImportHandler[] | undefined>;
   };
 
 export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
-    'importHandlers',
+    'importConfigs',
     'onOpenChange',
     'class',
   ]);
@@ -53,23 +53,23 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   });
 
   createEffect(() => {
-    const importConfigs = local.importHandlers();
+    const configs = local.importConfigs();
 
-    if (!importConfigs.length) {
+    if (!configs?.length) {
       return;
     }
 
     reset(form, {
       initialValues: {
-        packType: importConfigs[0].packType,
+        packType: configs[0].packType,
       },
     });
   });
 
   const currentImportHandler = createMemo(() =>
     local
-      .importHandlers()
-      .find((h) => h.packType === getValue(form, 'packType')),
+      .importConfigs()
+      ?.find((h) => h.packType === getValue(form, 'packType')),
   );
 
   const { mutateAsync: importInstance } = useImportInstance();
@@ -119,7 +119,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                 }
               }}
             >
-              <For each={local.importHandlers()}>
+              <For each={local.importConfigs()}>
                 {(handler) => (
                   <ToggleGroupItem value={handler.packType}>
                     {handler.title}

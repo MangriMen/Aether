@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import { For, type Component } from 'solid-js';
 
 import {
   Dialog,
@@ -14,50 +14,56 @@ import {
 
 import { useTranslation } from '@/shared/model';
 
-import { CreateCustomInstance } from './CreateCustomInstance';
 import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { TabContentProps, TabKey } from '../model';
+import { TAB_VALUES, TABS } from '../model';
+import { CreateCustomInstance } from './CreateCustomInstance';
 import { ImportInstance } from './ImportInstance';
+import { Dynamic } from 'solid-js/web';
 
-enum CreateInstanceDialogTabs {
-  Custom = 'custom',
-  Import = 'import',
-}
+const TAB_CONTENTS: Record<TabKey, Component<TabContentProps>> = {
+  [TABS.Custom]: CreateCustomInstance,
+  [TABS.Import]: ImportInstance,
+};
 
-export type CreateInstanceDialogProps = DialogRootProps;
-
-export const CreateInstanceDialog: Component<CreateInstanceDialogProps> = (
-  props,
-) => {
+export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
   const [{ t }] = useTranslation();
 
   return (
     <Dialog {...props}>
-      <DialogContent class='bg-secondary-dark'>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('createInstance.title')}</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue={CreateInstanceDialogTabs.Custom}>
-          <TabsList class='bg-secondary-dark p-0'>
-            <TabsTrigger value={CreateInstanceDialogTabs.Custom}>
-              {t(`createInstance.${CreateInstanceDialogTabs.Custom}`)}
-            </TabsTrigger>
-            <TabsTrigger value={CreateInstanceDialogTabs.Import}>
-              {t(`createInstance.${CreateInstanceDialogTabs.Import}`)}
-            </TabsTrigger>
+        <Tabs defaultValue={TABS.Custom}>
+          <TabsList class='bg-secondary-dark px-1'>
+            <For each={TAB_VALUES}>
+              {(tabValue) => (
+                <TabsTrigger value={tabValue}>
+                  {t(`createInstance.${tabValue}`)}
+                </TabsTrigger>
+              )}
+            </For>
           </TabsList>
           <Separator class='mb-4 mt-2' />
-          <TabsContent
-            class='min-h-[294px]'
-            value={CreateInstanceDialogTabs.Custom}
-          >
-            <CreateCustomInstance onOpenChange={props.onOpenChange} />
-          </TabsContent>
-          <TabsContent
-            class='flex min-h-[294px] grow flex-col'
-            value={CreateInstanceDialogTabs.Import}
-          >
-            <ImportInstance class='grow' onOpenChange={props.onOpenChange} />
-          </TabsContent>
+          <div class='animate-tab-content-wrapper flex min-h-[305px] flex-1 flex-col'>
+            <For each={TAB_VALUES}>
+              {(tabValue) => (
+                <TabsContent
+                  forceMount
+                  class='animate-tab-content flex flex-col'
+                  value={tabValue}
+                  tabIndex={-1}
+                >
+                  <Dynamic
+                    class='grow'
+                    component={TAB_CONTENTS[tabValue]}
+                    onOpenChange={props.onOpenChange}
+                  />
+                </TabsContent>
+              )}
+            </For>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
