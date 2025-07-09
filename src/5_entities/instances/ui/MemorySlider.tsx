@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { SliderRootProps } from '@kobalte/core/slider';
 import type { Component, ValidComponent } from 'solid-js';
-import { createEffect, createSignal, splitProps } from 'solid-js';
+import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -26,7 +26,7 @@ export const MemorySlider: Component<MemorySliderProps> = (props) => {
 
   const [value, setValue] = createSignal<number[]>();
 
-  const isValueGreaterThanWarning = () => {
+  const isValueGreaterThanWarning = createMemo(() => {
     if (!local.warningValue) {
       return;
     }
@@ -36,8 +36,9 @@ export const MemorySlider: Component<MemorySliderProps> = (props) => {
       return;
     }
 
-    return val[0] >= local.warningValue;
-  };
+    const singleValue = val[0];
+    return singleValue >= local.warningValue;
+  });
 
   const onChange = (value: number[]) => {
     setValue(value);

@@ -1,11 +1,12 @@
 import type { Component } from 'solid-js';
-import { createSignal, splitProps } from 'solid-js';
+import { createEffect, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import type { CombinedTextFieldProps } from '@/shared/ui';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
-export type CustomTextFieldProps = CombinedTextFieldProps & {
+export type CustomTextFieldProps = Omit<CombinedTextFieldProps, 'value'> & {
+  value: string | null;
   fieldLabel?: string;
   placeholder?: string;
   onChange?: (value: string | null) => void;
@@ -13,6 +14,7 @@ export type CustomTextFieldProps = CombinedTextFieldProps & {
 
 const CustomTextField: Component<CustomTextFieldProps> = (props) => {
   const [local, others] = splitProps(props, [
+    'value',
     'fieldLabel',
     'placeholder',
     'label',
@@ -21,38 +23,45 @@ const CustomTextField: Component<CustomTextFieldProps> = (props) => {
     'class',
   ]);
 
-  const [custom, setCustom] = createSignal(!!others.defaultValue);
-  const [value, setValue] = createSignal(others.defaultValue);
+  const [isCustom, setIsCustom] = createSignal(false);
 
-  const handleSetCustom = (val: boolean) => {
-    setCustom(val);
-    if (!val) {
-      local.onChange?.(null);
+  createEffect(() => {
+    setIsCustom(Boolean(others.defaultValue));
+  });
+
+  const [textFieldValue, setTextFieldValue] = createSignal(others.defaultValue);
+
+  const handleChangeIsCustom = (value: boolean) => {
+    setIsCustom(value);
+
+    if (value) {
+      local.onChange?.(textFieldValue() ?? null);
     } else {
-      local.onChange?.(value() ?? null);
+      local.onChange?.(null);
+      setTextFieldValue(others.defaultValue);
     }
   };
 
-  const handleChange = (value: string) => {
-    setValue(value);
+  const handleChangeTextField = (value: string) => {
+    setTextFieldValue(value);
     local.onChange?.(value);
   };
 
   return (
     <LabeledField class={cn('text-base', local.class)} label={local.fieldLabel}>
       <Checkbox
-        checked={custom()}
-        onChange={handleSetCustom}
         label={local.label}
+        checked={isCustom()}
+        onChange={handleChangeIsCustom}
       />
       <CombinedTextField
-        disabled={!custom()}
-        value={value()}
-        onChange={setValue}
+        disabled={!isCustom()}
+        value={textFieldValue()}
+        onChange={setTextFieldValue}
         inputProps={{
           type: 'text',
           placeholder: local.placeholder,
-          onBlur: (e) => handleChange(e.target.value),
+          onBlur: (e) => handleChangeTextField(e.target.value),
           ...local.inputProps,
         }}
         {...others}

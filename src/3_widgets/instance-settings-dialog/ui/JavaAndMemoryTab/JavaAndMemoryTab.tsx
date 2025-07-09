@@ -1,5 +1,5 @@
-import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, onCleanup, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createEffect, createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
@@ -11,9 +11,19 @@ import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
 import { MIN_JRE_MEMORY, type InstanceSettingsTabProps } from '../../model';
+import {
+  createForm,
+  getError,
+  setValue,
+  setValues,
+  zodForm,
+} from '@modular-forms/solid';
+import type { JavaAndMemorySettingsSchemaValues } from '../../model/javaAndMemoryValidation';
+import { JavaAndMemorySettingsSchema } from '../../model/javaAndMemoryValidation';
 
-export type JavaAndMemoryTabProps = ComponentProps<'div'> &
-  InstanceSettingsTabProps;
+export type JavaAndMemoryTabProps = {
+  class?: string;
+} & InstanceSettingsTabProps;
 
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
@@ -21,7 +31,6 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const settings = useSettings();
-
   const maxRam = useMaxRam();
 
   const maxMemory = createMemo(() =>
@@ -30,7 +39,16 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
 
   const { mutateAsync: editInstance } = useEditInstance();
 
-  const handleChangeMemoryDebounce = debounce(
+  const [form, { Form, Field }] = createForm<JavaAndMemorySettingsSchemaValues>(
+    {
+      validate: zodForm(JavaAndMemorySettingsSchema),
+      initialValues: {
+        memory: { maximum: null },
+      },
+    },
+  );
+
+  const setMemoryDebounce = debounce(
     async (id: Instance['id'], value: number | null) => {
       editInstance({
         id,
@@ -42,12 +60,8 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     300,
   );
 
-  const handleChangeMemory = (value: number | null) => {
-    handleChangeMemoryDebounce(local.instance.id, value);
-  };
-
-  const handleChangeArguments = async (value: string | null) => {
-    const extraLaunchArgs = value?.split(' ');
+  const setArguments = async (value: string | null) => {
+    const extraLaunchArgs = value !== null ? value?.split(' ') : null;
     await editInstance({
       id: local.instance.id,
       edit: {
@@ -56,10 +70,15 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     });
   };
 
-  const handleChangeEnvironmentVariables = async (value: string | null) => {
-    const customEnvVars = value
-      ?.split(' ')
-      .map((variable) => variable.split('=', 2) as [string, string]);
+  const setEnvironmentVariables = async (value: string | null) => {
+    const customEnvVars =
+      value !== null
+        ? value
+            .split(' ')
+            .map((variable) => variable.split('=', 2) as [string, string])
+        : null;
+
+    console.log(customEnvVars);
     await editInstance({
       id: local.instance.id,
       edit: {
@@ -78,32 +97,90 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   );
 
   onCleanup(() => {
-    handleChangeMemoryDebounce.callAndClear();
+    setMemoryDebounce.callAndClear();
   });
 
+  createEffect(() => {
+    const memory = local.instance.memory?.maximum ?? null;
+    setValues(form, {
+      memory: {
+        maximum: memory,
+      },
+    });
+  });
+
+  const handleChangeMemory = (value: number | null) => {
+    setValue(form, 'memory.maximum', value);
+    const error = getError(form, 'memory.maximum');
+
+    if (error) {
+      return;
+    }
+
+    setMemoryDebounce(local.instance.id, value);
+  };
+
+  const handleChangeArguments = (value: string | null) => {
+    const fieldName = 'extraLaunchArgs';
+    setValue(form, fieldName, value);
+    const error = getError(form, fieldName);
+
+    if (error) {
+      return;
+    }
+
+    setArguments(value);
+  };
+
+  const handleChangeEnvironmentVariables = (value: string | null) => {
+    const fieldName = 'customEnvVars';
+    setValue(form, fieldName, value);
+    const error = getError(form, fieldName);
+
+    if (error) {
+      return;
+    }
+
+    setEnvironmentVariables(value);
+  };
+
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <CustomMemory
-        minMemory={MIN_JRE_MEMORY}
-        maxMemory={maxMemory()}
-        defaultMaxMemory={settings.data?.memory.maximum}
-        instanceMaxMemory={local.instance.memory?.maximum}
-        onChange={handleChangeMemory}
-      />
-      <CustomTextField
-        defaultValue={defaultJavaArguments()}
-        fieldLabel={t('instanceSettings.javaArguments')}
-        label={t('instanceSettings.customArguments')}
-        placeholder={t('instanceSettings.enterArguments')}
-        onChange={handleChangeArguments}
-      />
-      <CustomTextField
-        defaultValue={defaultEnvironmentVariables()}
-        fieldLabel={t('instanceSettings.environmentVariables')}
-        label={t('instanceSettings.customEnvironmentVariables')}
-        placeholder={t('instanceSettings.enterVariables')}
-        onChange={handleChangeEnvironmentVariables}
-      />
-    </div>
+    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
+      <Field name='memory.maximum' type='number'>
+        {(field) => (
+          <CustomMemory
+            minValue={MIN_JRE_MEMORY}
+            maxValue={maxMemory()}
+            defaultValue={settings.data?.memory.maximum}
+            value={field.value}
+            onChange={handleChangeMemory}
+          />
+        )}
+      </Field>
+      <Field name='extraLaunchArgs' type='string'>
+        {(field) => (
+          <CustomTextField
+            fieldLabel={t('instanceSettings.javaArguments')}
+            label={t('instanceSettings.customArguments')}
+            placeholder={t('instanceSettings.enterArguments')}
+            defaultValue={defaultJavaArguments()}
+            value={field.value ?? null}
+            onChange={handleChangeArguments}
+          />
+        )}
+      </Field>
+      <Field name='customEnvVars' type='string'>
+        {(field) => (
+          <CustomTextField
+            fieldLabel={t('instanceSettings.environmentVariables')}
+            label={t('instanceSettings.customEnvironmentVariables')}
+            placeholder={t('instanceSettings.enterVariables')}
+            defaultValue={defaultEnvironmentVariables()}
+            value={field.value ?? null}
+            onChange={handleChangeEnvironmentVariables}
+          />
+        )}
+      </Field>
+    </Form>
   );
 };

@@ -8,7 +8,7 @@ import { CombinedTextField } from '@/shared/ui';
 import { useEditInstance, type Instance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
-import type { InstanceSettingsTabProps } from '../model';
+import type { InstanceSettingsTabProps } from '../../model';
 
 export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 

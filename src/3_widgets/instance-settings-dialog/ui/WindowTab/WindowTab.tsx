@@ -12,9 +12,9 @@ import {
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_WIDTH,
   RESOLUTION_FIELD_CLASS,
-} from '../model/window';
-import { getClampedResolution } from '../lib';
-import type { InstanceSettingsTabProps } from '../model';
+} from '../../model/window';
+import { getClampedResolution } from '../../lib';
+import type { InstanceSettingsTabProps } from '../../model';
 
 export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
 

@@ -9,71 +9,93 @@ import { MemorySlider } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 
 export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
-  minMemory: number;
-  maxMemory: number;
-  defaultMaxMemory?: number;
-  instanceMaxMemory?: number;
+  minValue: number;
+  maxValue: number;
+  value?: number | null;
+  defaultValue?: number;
   onChange?: (value: number | null) => void;
 };
 
 const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const [local, others] = splitProps(props, [
-    'minMemory',
-    'maxMemory',
-    'defaultMaxMemory',
-    'instanceMaxMemory',
+    'minValue',
+    'maxValue',
+    'value',
+    'defaultValue',
     'onChange',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
-  const minMemory = createMemo(() => Math.max(Math.floor(local.minMemory), 0));
-  const maxMemory = createMemo(() => Math.floor(local.maxMemory));
+  const minMemory = createMemo(() => Math.max(Math.floor(local.minValue), 0));
+  const maxMemory = createMemo(() => Math.floor(local.maxValue));
   const warningMemory = createMemo(() => Math.floor(maxMemory() / 2));
 
-  const [customMemory, setCustomMemory] = createSignal(false);
-  const [memory, setMemory] = createSignal(0);
-  const [inputMemory, setInputMemory] = createSignal('0');
+  const defaultMemory = createMemo(() => local.defaultValue ?? minMemory());
+
+  const [isCustom, setIsCustom] = createSignal(false);
+
+  createEffect(() => {
+    setIsCustom(Boolean(local.value));
+  });
 
   const getClampedMemory = (value: number | null) => {
-    if (value === null || value < minMemory()) {
+    if (value === null) {
+      return value;
+    }
+
+    if (value < minMemory()) {
       return minMemory();
     } else if (value > maxMemory()) {
       return maxMemory();
     }
+
     return value;
   };
 
-  const setMemoryValue = (
-    value: number | null,
-    clampCallback: boolean = true,
-  ) => {
-    const clampedMemory = getClampedMemory(value);
-    const defaultMemory = local.defaultMaxMemory ?? minMemory();
-    const memory = value ? clampedMemory : defaultMemory;
-    setMemory(memory);
-    setInputMemory(memory.toString());
-    local.onChange?.(clampCallback ? clampedMemory : value);
+  const setMemoryValue = (value: number | null) => {
+    local.onChange?.(getClampedMemory(value));
   };
 
-  const handleSetCustomMemory = (value: boolean) => {
-    setCustomMemory(value);
-    if (!value) {
-      setMemoryValue(null, false);
+  const handleChangeIsCustom = (value: boolean) => {
+    setIsCustom(value);
+
+    if (value) {
+      const clampedMemory = getClampedMemory(defaultMemory() ?? 0);
+      local.onChange?.(clampedMemory);
     } else {
-      setMemoryValue(memory());
+      local.onChange?.(null);
     }
   };
 
-  createEffect(() => {
-    setCustomMemory(!!local.instanceMaxMemory);
+  const handleChangeTextField = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const value = input.value;
+    if (typeof value !== 'string') {
+      return;
+    }
+    const parsedValue = stringToNumber(value);
+    setMemoryValue(parsedValue);
+  };
 
-    const clampedMemory = getClampedMemory(
-      local.instanceMaxMemory ?? local.defaultMaxMemory ?? null,
-    );
-    setInputMemory(clampedMemory.toString());
-    setMemory(clampedMemory);
+  const sliderDefaultValue = createMemo(() => [defaultMemory()]);
+
+  const sliderValue = createMemo(() =>
+    local.value !== null && local.value !== undefined
+      ? [local.value]
+      : sliderDefaultValue(),
+  );
+
+  const [textFieldValue, setTextFieldValue] = createSignal('0');
+
+  const textFieldDefaultValue = createMemo(() => String(defaultMemory()));
+  createEffect(() => {
+    const value =
+      local.value !== null && local.value !== undefined
+        ? String(local.value)
+        : textFieldDefaultValue();
+    setTextFieldValue(value);
   });
 
   return (
@@ -83,33 +105,30 @@ const CustomMemory: Component<CustomMemoryProps> = (props) => {
       {...others}
     >
       <Checkbox
-        checked={customMemory()}
-        onChange={handleSetCustomMemory}
         label={t('instanceSettings.customMemorySettings')}
+        checked={isCustom()}
+        onChange={handleChangeIsCustom}
       />
+
       <div class='flex items-start gap-4'>
         <MemorySlider
           class='mt-4'
-          disabled={!customMemory()}
           minValue={minMemory()}
           maxValue={maxMemory()}
           warningValue={warningMemory()}
-          value={[memory()]}
+          disabled={!isCustom()}
+          value={sliderValue()}
           onChange={(value) => setMemoryValue(value[0])}
         />
         <CombinedTextField
           class='w-[9ch]'
-          disabled={!customMemory()}
-          value={inputMemory()}
-          onChange={setInputMemory}
+          disabled={!isCustom()}
+          value={textFieldValue()}
+          onChange={setTextFieldValue}
           inputProps={{
             type: 'text',
-            onBlur: (e) => setMemoryValue(stringToNumber(e.target.value)),
-            onKeyPress: (e) =>
-              e.key === 'Enter' &&
-              setMemoryValue(
-                stringToNumber((e.target as HTMLInputElement).value),
-              ),
+            onBlur: (e) => handleChangeTextField(e),
+            onKeyPress: (e) => e.key === 'Enter' && handleChangeTextField(e),
           }}
         />
       </div>

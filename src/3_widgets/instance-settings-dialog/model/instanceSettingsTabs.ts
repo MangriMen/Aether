@@ -5,7 +5,7 @@ import MdiToolsIcon from '@iconify/icons-mdi/tools';
 import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
 
-import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
+import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab/WindowTab';
 import { GeneralTab } from '../ui/GeneralTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
