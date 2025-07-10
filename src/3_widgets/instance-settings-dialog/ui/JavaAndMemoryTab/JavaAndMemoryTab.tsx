@@ -3,14 +3,19 @@ import { createEffect, createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
-import { useEditInstance, type Instance } from '@/entities/instances';
+import { useEditInstance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
 import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
-import { MIN_JRE_MEMORY, type InstanceSettingsTabProps } from '../../model';
+import {
+  MEMORY_SLIDER_HANDLE_DEBOUNCE,
+  MIN_JRE_MEMORY,
+  type InstanceSettingsTabProps,
+} from '../../model';
+import type { FieldPath } from '@modular-forms/solid';
 import {
   createForm,
   getError,
@@ -20,6 +25,15 @@ import {
 } from '@modular-forms/solid';
 import type { JavaAndMemorySettingsSchemaValues } from '../../model/javaAndMemoryValidation';
 import { JavaAndMemorySettingsSchema } from '../../model/javaAndMemoryValidation';
+import {
+  bytesToMegabytes,
+  stringToEnvVars,
+  stringToExtraLaunchArgs,
+  envVarsToString,
+  extraLaunchArgsToString,
+} from '../../lib';
+
+type JavaFieldPath = FieldPath<JavaAndMemorySettingsSchemaValues>;
 
 export type JavaAndMemoryTabProps = {
   class?: string;
@@ -34,10 +48,21 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const maxRam = useMaxRam();
 
   const maxMemory = createMemo(() =>
-    maxRam.data ? maxRam.data / 1024 / 1024 : MIN_JRE_MEMORY,
+    maxRam.data ? bytesToMegabytes(maxRam.data) : MIN_JRE_MEMORY,
   );
 
-  const { mutateAsync: editInstance } = useEditInstance();
+  const defaultExtraLaunchArgs = createMemo(() => {
+    if (!local.instance.extraLaunchArgs) {
+      return;
+    }
+    return extraLaunchArgsToString(local.instance.extraLaunchArgs);
+  });
+  const defaultCustomEnvVars = createMemo(() => {
+    if (!local.instance.customEnvVars) {
+      return;
+    }
+    return envVarsToString(local.instance.customEnvVars);
+  });
 
   const [form, { Form, Field }] = createForm<JavaAndMemorySettingsSchemaValues>(
     {
@@ -48,100 +73,72 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     },
   );
 
-  const setMemoryDebounce = debounce(
-    async (id: Instance['id'], value: number | null) => {
-      editInstance({
-        id,
-        edit: {
-          memory: value ? { maximum: value } : null,
-        },
-      });
-    },
-    300,
-  );
-
-  const setArguments = async (value: string | null) => {
-    const extraLaunchArgs = value !== null ? value?.split(' ') : null;
-    await editInstance({
-      id: local.instance.id,
-      edit: {
-        extraLaunchArgs,
-      },
-    });
-  };
-
-  const setEnvironmentVariables = async (value: string | null) => {
-    const customEnvVars =
-      value !== null
-        ? value
-            .split(' ')
-            .map((variable) => variable.split('=', 2) as [string, string])
-        : null;
-
-    console.log(customEnvVars);
-    await editInstance({
-      id: local.instance.id,
-      edit: {
-        customEnvVars,
-      },
-    });
-  };
-
-  const defaultJavaArguments = createMemo(() =>
-    local.instance.extraLaunchArgs?.join(' '),
-  );
-  const defaultEnvironmentVariables = createMemo(() =>
-    local.instance.customEnvVars
-      ?.map(([key, value]) => `${key}=${value}`)
-      ?.join(' '),
-  );
-
-  onCleanup(() => {
-    setMemoryDebounce.callAndClear();
-  });
-
   createEffect(() => {
     const memory = local.instance.memory?.maximum ?? null;
     setValues(form, {
       memory: {
         maximum: memory,
       },
+      extraLaunchArgs: defaultExtraLaunchArgs() ?? null,
+      customEnvVars: defaultCustomEnvVars() ?? null,
     });
   });
 
-  const handleChangeMemory = (value: number | null) => {
-    setValue(form, 'memory.maximum', value);
-    const error = getError(form, 'memory.maximum');
+  const { mutateAsync: editInstance } = useEditInstance();
 
-    if (error) {
-      return;
+  const editInstanceDebounced = debounce(
+    editInstance,
+    MEMORY_SLIDER_HANDLE_DEBOUNCE,
+  );
+  onCleanup(() => {
+    editInstanceDebounced.callAndClear();
+  });
+
+  const updateMemory = (value: number | null) => {
+    const fieldName: Extract<JavaFieldPath, 'memory.maximum'> =
+      'memory.maximum';
+
+    setValue(form, fieldName, value);
+
+    if (!getError(form, fieldName)) {
+      editInstanceDebounced({
+        id: local.instance.id,
+        edit: {
+          memory: value ? { maximum: value } : null,
+        },
+      });
     }
-
-    setMemoryDebounce(local.instance.id, value);
   };
 
-  const handleChangeArguments = (value: string | null) => {
-    const fieldName = 'extraLaunchArgs';
+  const updateExtraLaunchArgs = (value: string | null) => {
+    const fieldName: Extract<JavaFieldPath, 'extraLaunchArgs'> =
+      'extraLaunchArgs';
+
     setValue(form, fieldName, value);
-    const error = getError(form, fieldName);
 
-    if (error) {
-      return;
+    if (!getError(form, fieldName)) {
+      editInstance({
+        id: local.instance.id,
+        edit: {
+          extraLaunchArgs: value ? stringToExtraLaunchArgs(value) : null,
+        },
+      });
     }
-
-    setArguments(value);
   };
 
-  const handleChangeEnvironmentVariables = (value: string | null) => {
-    const fieldName = 'customEnvVars';
+  const updateEnvVars = (value: string | null) => {
+    const fieldName: Extract<JavaFieldPath, 'customEnvVars'> = 'customEnvVars';
+
     setValue(form, fieldName, value);
-    const error = getError(form, fieldName);
 
-    if (error) {
-      return;
+    if (!getError(form, fieldName)) {
+      editInstance({
+        id: local.instance.id,
+        edit: {
+          customEnvVars: value ? stringToEnvVars(value) : null,
+        },
+      });
     }
-
-    setEnvironmentVariables(value);
   };
 
   return (
@@ -153,7 +150,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
             maxValue={maxMemory()}
             defaultValue={settings.data?.memory.maximum}
             value={field.value}
-            onChange={handleChangeMemory}
+            onChange={updateMemory}
           />
         )}
       </Field>
@@ -163,9 +160,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
             fieldLabel={t('instanceSettings.javaArguments')}
             label={t('instanceSettings.customArguments')}
             placeholder={t('instanceSettings.enterArguments')}
-            defaultValue={defaultJavaArguments()}
-            value={field.value ?? null}
-            onChange={handleChangeArguments}
+            defaultValue={defaultExtraLaunchArgs()}
+            value={field.value}
+            onChange={updateExtraLaunchArgs}
           />
         )}
       </Field>
@@ -175,9 +172,9 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
             fieldLabel={t('instanceSettings.environmentVariables')}
             label={t('instanceSettings.customEnvironmentVariables')}
             placeholder={t('instanceSettings.enterVariables')}
-            defaultValue={defaultEnvironmentVariables()}
-            value={field.value ?? null}
-            onChange={handleChangeEnvironmentVariables}
+            defaultValue={defaultCustomEnvVars()}
+            value={field.value}
+            onChange={updateEnvVars}
           />
         )}
       </Field>

@@ -6,7 +6,7 @@ import type { CombinedTextFieldProps } from '@/shared/ui';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 
 export type CustomTextFieldProps = Omit<CombinedTextFieldProps, 'value'> & {
-  value: string | null;
+  value?: string | null;
   fieldLabel?: string;
   placeholder?: string;
   onChange?: (value: string | null) => void;
