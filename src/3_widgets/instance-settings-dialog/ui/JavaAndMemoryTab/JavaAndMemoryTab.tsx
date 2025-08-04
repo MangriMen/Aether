@@ -8,7 +8,6 @@ import { useEditInstance } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 
 import CustomTextField from './CustomTextField';
-import CustomMemory from './CustomMemory';
 import { useMaxRam, useSettings } from '@/entities/settings';
 import {
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
@@ -32,8 +31,7 @@ import {
   envVarsToString,
   extraLaunchArgsToString,
 } from '../../lib';
-import { OverridableField } from '../../../../6_shared/ui/components/OverridableField';
-import { MemoryInput } from './MemoryInput';
+import { MemoryEntry } from './MemoryEntry';
 
 type JavaFieldPath = FieldPath<JavaAndMemorySettingsSchemaValues>;
 
@@ -147,7 +145,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Field name='memory.maximum' type='number'>
         {(field) => (
-          <CustomMemory
+          <MemoryEntry
             minValue={MIN_JRE_MEMORY}
             maxValue={maxMemory()}
             defaultValue={settings.data?.memory.maximum}

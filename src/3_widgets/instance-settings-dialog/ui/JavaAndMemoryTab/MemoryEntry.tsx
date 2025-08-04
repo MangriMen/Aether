@@ -1,11 +1,11 @@
 import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
-import { OverridableField, type LabeledField } from '@/shared/ui';
+import { OverridableField } from '@/shared/ui';
 import { useTranslation } from '@/shared/model';
 import { MemoryInput } from './MemoryInput';
 
-export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
+export type MemoryEntryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   minValue: number;
   maxValue: number;
   value?: number | null;
@@ -13,7 +13,7 @@ export type CustomMemoryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   onChange?: (value: number | null) => void;
 };
 
-export const CustomMemory: Component<CustomMemoryProps> = (props) => {
+export const MemoryEntry: Component<MemoryEntryProps> = (props) => {
   const [local, others] = splitProps(props, [
     'minValue',
     'maxValue',
@@ -29,36 +29,44 @@ export const CustomMemory: Component<CustomMemoryProps> = (props) => {
   const maxMemory = createMemo(() => Math.floor(local.maxValue));
   const warningMemory = createMemo(() => Math.floor(maxMemory() / 2));
 
-  const defaultMemory = createMemo(() => local.defaultValue ?? minMemory());
+  const value = createMemo(() =>
+    local.value != null ? [local.value] : undefined,
+  );
+
+  const defaultMemory = createMemo(() => {
+    if (local.defaultValue === undefined) {
+      return [minMemory()];
+    }
+
+    return [local.defaultValue];
+  });
 
   const getClampedMemory = (value: number | null) => {
     if (value === null) return null;
     return Math.max(minMemory(), Math.min(value, maxMemory()));
   };
 
-  const handleChangeMemory = (value: number[]) => {
-    local.onChange?.(getClampedMemory(value[0]));
+  const handleChangeMemory = (value: number[] | null) => {
+    local.onChange?.(value ? getClampedMemory(value[0]) : value);
   };
 
   return (
-    <OverridableField<typeof LabeledField, number>
-      overrideValue={null}
-      value={local.value ?? null}
-      defaultValue={defaultMemory()}
-      onChange={local.onChange}
-      class={local.class}
+    <OverridableField
       fieldLabel={t('instanceSettings.memoryAllocation')}
       checkboxLabel={t('instanceSettings.customMemorySettings')}
+      nullValue={null}
+      value={value()}
+      defaultValue={defaultMemory()}
+      onChange={handleChangeMemory}
+      class={local.class}
       {...others}
     >
-      {(disabled) => (
+      {(props) => (
         <MemoryInput
+          {...props}
           minValue={minMemory()}
           maxValue={maxMemory()}
           warningValue={warningMemory()}
-          disabled={disabled}
-          value={local.value !== null ? [local.value] : [defaultMemory()]}
-          onChange={handleChangeMemory}
         />
       )}
     </OverridableField>
