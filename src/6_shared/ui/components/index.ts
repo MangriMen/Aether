@@ -20,6 +20,7 @@ export * from './IconButton';
 export * from './Image';
 export * from './Label';
 export * from './LabeledField';
+export * from './OverridableField';
 export * from './Pagination';
 export * from './Popover';
 export * from './Progress';

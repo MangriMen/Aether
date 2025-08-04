@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { SliderRootProps } from '@kobalte/core/slider';
 import type { Component, ValidComponent } from 'solid-js';
-import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -18,56 +18,36 @@ export type MemorySliderProps<T extends ValidComponent = 'div'> =
   };
 
 export const MemorySlider: Component<MemorySliderProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'warningValue',
-    'onChange',
-    'class',
-  ]);
+  const [local, others] = splitProps(props, ['warningValue', 'class']);
 
-  const [value, setValue] = createSignal<number[]>();
+  const value = createMemo(
+    () => others.value ?? others.defaultValue ?? [others.minValue ?? 0],
+  );
 
-  const isValueGreaterThanWarning = createMemo(() => {
-    if (!local.warningValue) {
-      return;
+  const isWarningLimitPassed = createMemo(() => {
+    if (local.warningValue === undefined) {
+      return false;
     }
 
     const val = value();
     if (val?.length !== 1) {
-      return;
+      return false;
     }
 
-    const singleValue = val[0];
-    return singleValue >= local.warningValue;
-  });
-
-  const onChange = (value: number[]) => {
-    setValue(value);
-    local.onChange?.(value);
-  };
-
-  createEffect(() => {
-    setValue(others.value ?? others.defaultValue ?? [others.minValue ?? 0]);
+    return val[0] >= local.warningValue;
   });
 
   return (
-    <Slider
-      class={cn('flex flex-col gap-3', local.class)}
-      onChange={onChange}
-      {...others}
-    >
+    <Slider class={cn('flex flex-col gap-3', local.class)} {...others}>
       <SliderTrack>
         <SliderFill
           class={cn({
-            'bg-warning-foreground': local.warningValue
-              ? isValueGreaterThanWarning()
-              : false,
+            'bg-warning-foreground': isWarningLimitPassed(),
           })}
         />
         <SliderThumb
           class={cn({
-            'border-warning-foreground': local.warningValue
-              ? isValueGreaterThanWarning()
-              : false,
+            'border-warning-foreground': isWarningLimitPassed(),
           })}
         />
       </SliderTrack>

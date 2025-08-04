@@ -32,6 +32,8 @@ import {
   envVarsToString,
   extraLaunchArgsToString,
 } from '../../lib';
+import { OverridableField } from '../../../../6_shared/ui/components/OverridableField';
+import { MemoryInput } from './MemoryInput';
 
 type JavaFieldPath = FieldPath<JavaAndMemorySettingsSchemaValues>;
 
