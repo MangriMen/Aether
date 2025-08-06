@@ -4,19 +4,18 @@ import { createMemo, splitProps } from 'solid-js';
 import { OverridableField } from '@/shared/ui';
 import { useTranslation } from '@/shared/model';
 import { MemoryInput } from './MemoryInput';
+import { MIN_JRE_MEMORY } from '../../model';
+import { bytesToMegabytes } from '../../lib';
+import { useMaxRam } from '@/entities/settings';
 
-export type MemoryEntryProps = Omit<ComponentProps<'div'>, 'onChange'> & {
-  minValue: number;
-  maxValue: number;
+export type MemoryFieldProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   value?: number | null;
   defaultValue?: number;
   onChange?: (value: number | null) => void;
 };
 
-export const MemoryEntry: Component<MemoryEntryProps> = (props) => {
+export const MemoryField: Component<MemoryFieldProps> = (props) => {
   const [local, others] = splitProps(props, [
-    'minValue',
-    'maxValue',
     'value',
     'defaultValue',
     'onChange',
@@ -25,8 +24,12 @@ export const MemoryEntry: Component<MemoryEntryProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const minMemory = createMemo(() => Math.max(Math.floor(local.minValue), 0));
-  const maxMemory = createMemo(() => Math.floor(local.maxValue));
+  const maxRam = useMaxRam();
+
+  const minMemory = createMemo(() => Math.max(Math.floor(MIN_JRE_MEMORY), 0));
+  const maxMemory = createMemo(() =>
+    maxRam.data ? Math.floor(bytesToMegabytes(maxRam.data)) : MIN_JRE_MEMORY,
+  );
   const warningMemory = createMemo(() => Math.floor(maxMemory() / 2));
 
   const value = createMemo(() =>

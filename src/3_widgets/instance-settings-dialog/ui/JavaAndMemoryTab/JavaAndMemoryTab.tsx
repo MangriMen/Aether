@@ -1,39 +1,31 @@
 import type { Component } from 'solid-js';
-import { createEffect, createMemo, onCleanup, splitProps } from 'solid-js';
+import { createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
+import type { EditInstance } from '@/entities/instances';
 import { useEditInstance } from '@/entities/instances';
 
-import { useTranslation } from '@/shared/model';
-
-import CustomTextField from './CustomTextField';
-import { useMaxRam, useSettings } from '@/entities/settings';
+import { useSettings } from '@/entities/settings';
 import {
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  MIN_JRE_MEMORY,
   type InstanceSettingsTabProps,
 } from '../../model';
-import type { FieldPath } from '@modular-forms/solid';
 import {
-  createForm,
-  getError,
-  setValue,
-  setValues,
-  zodForm,
-} from '@modular-forms/solid';
-import type { JavaAndMemorySettingsSchemaValues } from '../../model/javaAndMemoryValidation';
-import { JavaAndMemorySettingsSchema } from '../../model/javaAndMemoryValidation';
-import {
-  bytesToMegabytes,
   stringToEnvVars,
   stringToExtraLaunchArgs,
   envVarsToString,
   extraLaunchArgsToString,
 } from '../../lib';
-import { MemoryEntry } from './MemoryEntry';
-
-type JavaFieldPath = FieldPath<JavaAndMemorySettingsSchemaValues>;
+import { MemoryField } from './MemoryField';
+import { useFieldOnChangeWithMapping } from '../../lib/useFieldMapper';
+import {
+  useJavaAndMemoryForm,
+  useResetJavaAndMemoryFormValues,
+} from '../../lib/useJavaAndMemoryForm';
+import { ExtraLaunchArgsField } from './ExtraLaunchArgsField';
+import { CustomEnvVarsField } from './CustomEnvVarsField';
+import { setValue } from '@modular-forms/solid';
 
 export type JavaAndMemoryTabProps = {
   class?: string;
@@ -42,139 +34,88 @@ export type JavaAndMemoryTabProps = {
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
-  const [{ t }] = useTranslation();
-
   const settings = useSettings();
-  const maxRam = useMaxRam();
 
-  const maxMemory = createMemo(() =>
-    maxRam.data ? bytesToMegabytes(maxRam.data) : MIN_JRE_MEMORY,
-  );
+  const [form, { Form, Field }] = useJavaAndMemoryForm();
 
-  const defaultExtraLaunchArgs = createMemo(() => {
-    if (!local.instance.extraLaunchArgs) {
-      return;
-    }
-    return extraLaunchArgsToString(local.instance.extraLaunchArgs);
-  });
-  const defaultCustomEnvVars = createMemo(() => {
-    if (!local.instance.customEnvVars) {
-      return;
-    }
-    return envVarsToString(local.instance.customEnvVars);
-  });
-
-  const [form, { Form, Field }] = createForm<JavaAndMemorySettingsSchemaValues>(
-    {
-      validate: zodForm(JavaAndMemorySettingsSchema),
-      initialValues: {
-        memory: { maximum: null },
-      },
-    },
-  );
-
-  createEffect(() => {
-    const memory = local.instance.memory?.maximum ?? null;
-    setValues(form, {
-      memory: {
-        maximum: memory,
-      },
-      extraLaunchArgs: defaultExtraLaunchArgs() ?? null,
-      customEnvVars: defaultCustomEnvVars() ?? null,
-    });
-  });
+  useResetJavaAndMemoryFormValues(form, () => local.instance);
 
   const { mutateAsync: editInstance } = useEditInstance();
 
-  const editInstanceDebounced = debounce(
-    editInstance,
+  const editInstanceSimple = (edit: EditInstance) =>
+    editInstance({ id: local.instance.id, edit });
+
+  // eslint-disable-next-line solid/reactivity
+  const editInstanceSimpleDebounced = debounce(
+    editInstanceSimple,
     MEMORY_SLIDER_HANDLE_DEBOUNCE,
   );
   onCleanup(() => {
-    editInstanceDebounced.callAndClear();
+    editInstanceSimpleDebounced.callAndClear();
   });
 
-  const updateMemory = (value: number | null) => {
-    const fieldName: Extract<JavaFieldPath, 'memory.maximum'> =
-      'memory.maximum';
+  const updateMemory = useFieldOnChangeWithMapping(
+    form,
+    'memory.maximum',
+    (value) => ({
+      memory: value ? { maximum: value } : null,
+    }),
+    editInstanceSimpleDebounced,
+  );
 
-    setValue(form, fieldName, value);
+  const updateExtraLaunchArgs = useFieldOnChangeWithMapping(
+    form,
+    'extraLaunchArgs',
+    (value) => ({
+      extraLaunchArgs: value ? stringToExtraLaunchArgs(value) : null,
+    }),
+    editInstanceSimple,
+  );
 
-    if (!getError(form, fieldName)) {
-      editInstanceDebounced({
-        id: local.instance.id,
-        edit: {
-          memory: value ? { maximum: value } : null,
-        },
-      });
-    }
-  };
+  const updateEnvVars = useFieldOnChangeWithMapping(
+    form,
+    'customEnvVars',
+    (value) => ({
+      customEnvVars: value ? stringToEnvVars(value) : null,
+    }),
+    editInstanceSimple,
+  );
 
-  const updateExtraLaunchArgs = (value: string | null) => {
-    const fieldName: Extract<JavaFieldPath, 'extraLaunchArgs'> =
-      'extraLaunchArgs';
-
-    setValue(form, fieldName, value);
-
-    if (!getError(form, fieldName)) {
-      editInstance({
-        id: local.instance.id,
-        edit: {
-          extraLaunchArgs: value ? stringToExtraLaunchArgs(value) : null,
-        },
-      });
-    }
-  };
-
-  const updateEnvVars = (value: string | null) => {
-    const fieldName: Extract<JavaFieldPath, 'customEnvVars'> = 'customEnvVars';
-
-    setValue(form, fieldName, value);
-
-    if (!getError(form, fieldName)) {
-      editInstance({
-        id: local.instance.id,
-        edit: {
-          customEnvVars: value ? stringToEnvVars(value) : null,
-        },
-      });
-    }
-  };
+  const defaultExtraLaunchArgs = createMemo(() =>
+    extraLaunchArgsToString(local.instance.extraLaunchArgs),
+  );
+  const defaultCustomEnvVars = createMemo(() =>
+    envVarsToString(local.instance.customEnvVars),
+  );
 
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Field name='memory.maximum' type='number'>
         {(field) => (
-          <MemoryEntry
-            minValue={MIN_JRE_MEMORY}
-            maxValue={maxMemory()}
-            defaultValue={settings.data?.memory.maximum}
+          <MemoryField
             value={field.value}
+            defaultValue={settings.data?.memory.maximum}
             onChange={updateMemory}
           />
         )}
       </Field>
       <Field name='extraLaunchArgs' type='string'>
         {(field) => (
-          <CustomTextField
-            fieldLabel={t('instanceSettings.javaArguments')}
-            label={t('instanceSettings.customArguments')}
-            placeholder={t('instanceSettings.enterArguments')}
-            defaultValue={defaultExtraLaunchArgs()}
+          <ExtraLaunchArgsField
             value={field.value}
-            onChange={updateExtraLaunchArgs}
+            defaultValue={defaultExtraLaunchArgs()}
+            onChange={(value) => setValue(form, 'extraLaunchArgs', value)}
+            onBlur={updateExtraLaunchArgs}
           />
         )}
       </Field>
       <Field name='customEnvVars' type='string'>
         {(field) => (
-          <CustomTextField
-            fieldLabel={t('instanceSettings.environmentVariables')}
-            label={t('instanceSettings.customEnvironmentVariables')}
-            placeholder={t('instanceSettings.enterVariables')}
+          <CustomEnvVarsField
+            value={field.value ?? undefined}
             defaultValue={defaultCustomEnvVars()}
-            value={field.value}
-            onChange={updateEnvVars}
+            onChange={(value) => setValue(form, 'customEnvVars', value)}
+            onBlur={updateEnvVars}
           />
         )}
       </Field>
