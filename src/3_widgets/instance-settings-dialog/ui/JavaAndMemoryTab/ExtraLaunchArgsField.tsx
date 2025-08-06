@@ -1,10 +1,8 @@
-import { cn } from '@/shared/lib';
+import { cn, useIsCustomCheckbox } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import {
-  createEffect,
   createMemo,
-  createSignal,
   splitProps,
   type Component,
   type ComponentProps,
@@ -35,20 +33,11 @@ export const ExtraLaunchArgsField: Component<ExtraLaunchArgsFieldProps> = (
 
   const value = createMemo(() => local.value ?? '');
 
-  const [isCustom, setIsCustom] = createSignal(false);
-
-  createEffect(() => {
-    if (local.value) {
-      setIsCustom(true);
-    }
+  const [isCustom, setIsCustom] = useIsCustomCheckbox({
+    value: () => value(),
+    resetValue: () => '',
+    onOverrideValue: () => local.onBlur,
   });
-
-  const disabled = createMemo(() => !isCustom());
-
-  const handleChangeIsCustom = (isChecked: boolean) => {
-    setIsCustom(isChecked);
-    local.onBlur?.(isChecked ? (local.value ?? null) : null);
-  };
 
   return (
     <LabeledField
@@ -59,10 +48,10 @@ export const ExtraLaunchArgsField: Component<ExtraLaunchArgsFieldProps> = (
       <Checkbox
         label={t('instanceSettings.customArguments')}
         checked={isCustom()}
-        onChange={handleChangeIsCustom}
+        onChange={setIsCustom}
       />
       <CombinedTextField
-        disabled={disabled()}
+        disabled={!isCustom()}
         value={value()}
         defaultValue={local.defaultValue}
         onChange={local.onChange}

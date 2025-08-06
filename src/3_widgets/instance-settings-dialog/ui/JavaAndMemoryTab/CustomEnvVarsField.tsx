@@ -1,10 +1,8 @@
-import { cn } from '@/shared/lib';
+import { cn, useIsCustomCheckbox } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import {
-  createEffect,
   createMemo,
-  createSignal,
   splitProps,
   type Component,
   type ComponentProps,
@@ -16,8 +14,8 @@ export type CustomEnvVarsFieldProps = Omit<
 > & {
   value: string | null | undefined;
   defaultValue?: string;
-  onChange?: (value: string | null) => void;
-  onBlur?: (value: string | null) => void;
+  onChange?: (value: string) => void;
+  onBlur?: (value: string) => void;
 };
 
 export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
@@ -35,20 +33,11 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
 
   const value = createMemo(() => local.value ?? '');
 
-  const [isCustom, setIsCustom] = createSignal(false);
-
-  createEffect(() => {
-    if (local.value) {
-      setIsCustom(true);
-    }
+  const [isCustom, setIsCustom] = useIsCustomCheckbox({
+    value: () => value(),
+    resetValue: () => '',
+    onOverrideValue: () => local.onBlur,
   });
-
-  const disabled = createMemo(() => !isCustom());
-
-  const handleChangeIsCustom = (isChecked: boolean) => {
-    setIsCustom(isChecked);
-    local.onBlur?.(isChecked ? (local.value ?? null) : null);
-  };
 
   return (
     <LabeledField
@@ -59,10 +48,10 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
       <Checkbox
         label={t('instanceSettings.customEnvironmentVariables')}
         checked={isCustom()}
-        onChange={handleChangeIsCustom}
+        onChange={setIsCustom}
       />
       <CombinedTextField
-        disabled={disabled()}
+        disabled={!isCustom()}
         value={value()}
         defaultValue={local.defaultValue}
         onChange={local.onChange}

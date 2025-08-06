@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js';
-import { createMemo, onCleanup, splitProps } from 'solid-js';
+import { onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
@@ -11,12 +11,7 @@ import {
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
   type InstanceSettingsTabProps,
 } from '../../model';
-import {
-  stringToEnvVars,
-  stringToExtraLaunchArgs,
-  envVarsToString,
-  extraLaunchArgsToString,
-} from '../../lib';
+import { stringToEnvVars, stringToExtraLaunchArgs } from '../../lib';
 import { MemoryField } from './MemoryField';
 import { useFieldOnChangeWithMapping } from '../../lib/useFieldMapper';
 import {
@@ -81,13 +76,6 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     editInstanceSimple,
   );
 
-  const defaultExtraLaunchArgs = createMemo(() =>
-    extraLaunchArgsToString(local.instance.extraLaunchArgs),
-  );
-  const defaultCustomEnvVars = createMemo(() =>
-    envVarsToString(local.instance.customEnvVars),
-  );
-
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Field name='memory.maximum' type='number'>
@@ -103,7 +91,6 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
         {(field) => (
           <ExtraLaunchArgsField
             value={field.value}
-            defaultValue={defaultExtraLaunchArgs()}
             onChange={(value) => setValue(form, 'extraLaunchArgs', value)}
             onBlur={updateExtraLaunchArgs}
           />
@@ -113,7 +100,6 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
         {(field) => (
           <CustomEnvVarsField
             value={field.value ?? undefined}
-            defaultValue={defaultCustomEnvVars()}
             onChange={(value) => setValue(form, 'customEnvVars', value)}
             onBlur={updateEnvVars}
           />

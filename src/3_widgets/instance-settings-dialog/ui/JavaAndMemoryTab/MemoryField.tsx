@@ -1,12 +1,13 @@
 import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
-import { OverridableField } from '@/shared/ui';
+import { Checkbox, LabeledField } from '@/shared/ui';
 import { useTranslation } from '@/shared/model';
 import { MemoryInput } from './MemoryInput';
 import { MIN_JRE_MEMORY } from '../../model';
 import { bytesToMegabytes } from '../../lib';
 import { useMaxRam } from '@/entities/settings';
+import { cn, useIsCustomCheckbox } from '@/shared/lib';
 
 export type MemoryFieldProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   value?: number | null;
@@ -53,25 +54,32 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
     local.onChange?.(value ? getClampedMemory(value[0]) : value);
   };
 
+  const [isCustom, setIsCustom] = useIsCustomCheckbox({
+    value: () => value() ?? null,
+    resetValue: () => null,
+    onOverrideValue: handleChangeMemory,
+  });
+
   return (
-    <OverridableField
-      fieldLabel={t('instanceSettings.memoryAllocation')}
-      checkboxLabel={t('instanceSettings.customMemorySettings')}
-      nullValue={null}
-      value={value()}
-      defaultValue={defaultMemory()}
-      onChange={handleChangeMemory}
-      class={local.class}
+    <LabeledField
+      class={cn('text-base', local.class)}
+      label={t('instanceSettings.environmentVariables')}
       {...others}
     >
-      {(props) => (
-        <MemoryInput
-          {...props}
-          minValue={minMemory()}
-          maxValue={maxMemory()}
-          warningValue={warningMemory()}
-        />
-      )}
-    </OverridableField>
+      <Checkbox
+        label={t('instanceSettings.customEnvironmentVariables')}
+        checked={isCustom()}
+        onChange={setIsCustom}
+      />
+      <MemoryInput
+        disabled={!isCustom()}
+        value={value()}
+        defaultValue={defaultMemory()}
+        minValue={minMemory()}
+        maxValue={maxMemory()}
+        warningValue={warningMemory()}
+        onChange={handleChangeMemory}
+      />
+    </LabeledField>
   );
 };
