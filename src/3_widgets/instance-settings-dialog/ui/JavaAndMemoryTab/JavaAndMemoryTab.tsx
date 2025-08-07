@@ -6,7 +6,6 @@ import { cn, debounce } from '@/shared/lib';
 import type { EditInstance } from '@/entities/instances';
 import { useEditInstance } from '@/entities/instances';
 
-import { useSettings } from '@/entities/settings';
 import {
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
   type InstanceSettingsTabProps,
@@ -27,9 +26,7 @@ export type JavaAndMemoryTabProps = {
 } & InstanceSettingsTabProps;
 
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'class']);
-
-  const settings = useSettings();
+  const [local, others] = splitProps(props, ['instance', 'settings', 'class']);
 
   const [form, { Form, Field }] = useJavaAndMemoryForm();
 
@@ -82,7 +79,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
         {(field) => (
           <MemoryField
             value={field.value}
-            defaultValue={settings.data?.memory.maximum}
+            defaultValue={local.settings?.memory.maximum}
             onChange={updateMemory}
           />
         )}

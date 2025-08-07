@@ -1,9 +1,10 @@
-import type { Component, ComponentProps } from 'solid-js';
-import { createEffect, createSignal, splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
 
-import { cn, stringToNumber } from '@/shared/lib';
-import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
+import { cn } from '@/shared/lib';
+import { Checkbox } from '@/shared/ui';
 
+import type { EditInstance } from '@/entities/instances';
 import { useEditInstance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
@@ -11,110 +12,73 @@ import { useTranslation } from '@/shared/model';
 import {
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_WIDTH,
-  RESOLUTION_FIELD_CLASS,
 } from '../../model/window';
-import { getClampedResolution } from '../../lib';
-import type { InstanceSettingsTabProps } from '../../model';
+import { type InstanceSettingsTabProps } from '../../model';
+import { ResolutionField } from './ResolutionField';
+import { getValue } from '@modular-forms/solid';
+import { useResetWindowFormValues, useWindowForm } from '../../lib';
 
-export type WindowTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
+export type WindowTabProps = { class?: string } & InstanceSettingsTabProps;
 
 export const WindowTab: Component<WindowTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'class']);
+  const [local, others] = splitProps(props, ['instance', 'settings', 'class']);
 
   const [{ t }] = useTranslation();
 
-  const [custom, setCustom] = createSignal(false);
+  const defaultResolution = createMemo(() => ({
+    width: local.settings?.gameResolution?.[0] ?? DEFAULT_WINDOW_WIDTH,
+    height: local.settings?.gameResolution?.[1] ?? DEFAULT_WINDOW_HEIGHT,
+  }));
 
-  const [width, setWidth] = createSignal(DEFAULT_WINDOW_WIDTH.toString());
-  const [height, setHeight] = createSignal(DEFAULT_WINDOW_HEIGHT.toString());
-
-  const handleSetCustom = (val: boolean) => {
-    setCustom(val);
-    if (!val) {
-      setWindowResolution(null, null);
-    } else {
-      setWindowResolution(stringToNumber(width()), stringToNumber(height()));
-    }
-  };
+  const [form, { Form }] = useWindowForm();
+  useResetWindowFormValues(form, () => local.instance);
 
   const { mutateAsync: editInstance } = useEditInstance();
 
-  const setWindowResolution = (width: number | null, height: number | null) => {
-    const gameResolution =
-      width === null || height === null
-        ? null
-        : ([width, height] as [number, number]);
+  const editInstanceSimple = (edit: EditInstance) =>
+    editInstance({ id: local.instance.id, edit });
 
-    editInstance({ id: local.instance.id, edit: { gameResolution } });
-  };
-
-  const setWidthValue = (value: number | null) => {
-    const clamped = getClampedResolution(value, DEFAULT_WINDOW_WIDTH);
-    setWidth(clamped.toString());
-    setWindowResolution(clamped, stringToNumber(height()));
-  };
-
-  const setHeightValue = (value: number | null) => {
-    const clamped = getClampedResolution(value, DEFAULT_WINDOW_HEIGHT);
-    setHeight(clamped.toString());
-    setWindowResolution(stringToNumber(width()), clamped);
-  };
+  const [isCustom, setIsCustom] = createSignal(false);
 
   createEffect(() => {
-    setCustom(!!local.instance.gameResolution);
-    setWidth(
-      getClampedResolution(
-        local.instance.gameResolution?.[0] ?? null,
-        DEFAULT_WINDOW_WIDTH,
-      ).toString(),
-    );
-    setHeight(
-      getClampedResolution(
-        local.instance.gameResolution?.[1] ?? null,
-        DEFAULT_WINDOW_HEIGHT,
-      ).toString(),
-    );
+    if (local.instance.gameResolution) {
+      setIsCustom(true);
+    }
   });
 
+  const handleChangeIsCustom = (value: boolean) => {
+    setIsCustom(value);
+
+    if (value) {
+      const width = getValue(form, 'resolution.width');
+      const height = getValue(form, 'resolution.height');
+
+      if (width && height) {
+        editInstanceSimple({ gameResolution: [Number(width), Number(height)] });
+      }
+    } else {
+      editInstanceSimple({ gameResolution: null });
+    }
+  };
+
+  const handleResolutionSubmit = (width: number, height: number) =>
+    editInstanceSimple({ gameResolution: [width, height] });
+
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Checkbox
         class='text-sm'
-        checked={custom()}
-        onChange={handleSetCustom}
+        checked={isCustom()}
+        onChange={handleChangeIsCustom}
         label={t('instanceSettings.customWindowSettings')}
       />
-      <LabeledField class='text-lg' label={t('instanceSettings.resolution')}>
-        <div class='flex items-center gap-3'>
-          <CombinedTextField
-            disabled={!custom()}
-            class={RESOLUTION_FIELD_CLASS}
-            value={width()}
-            onChange={setWidth}
-            inputProps={{
-              type: 'number',
-              onBlur: (value) =>
-                setWidthValue(stringToNumber(value.target.value)),
-              min: 0,
-              max: 65535,
-            }}
-          />
-          <span class='text-muted-foreground'>&times;</span>
-          <CombinedTextField
-            disabled={!custom()}
-            class={RESOLUTION_FIELD_CLASS}
-            value={height()}
-            onChange={setHeight}
-            inputProps={{
-              type: 'number',
-              onBlur: (value) =>
-                setHeightValue(stringToNumber(value.target.value)),
-              min: 0,
-              max: 65535,
-            }}
-          />
-        </div>
-      </LabeledField>
-    </div>
+      <ResolutionField
+        form={form}
+        defaultWidth={defaultResolution().width}
+        defaultHeight={defaultResolution().height}
+        disabled={!isCustom()}
+        onSubmit={handleResolutionSubmit}
+      />
+    </Form>
   );
 };

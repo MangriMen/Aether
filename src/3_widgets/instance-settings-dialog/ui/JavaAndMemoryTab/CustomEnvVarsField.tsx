@@ -14,8 +14,8 @@ export type CustomEnvVarsFieldProps = Omit<
 > & {
   value: string | null | undefined;
   defaultValue?: string;
-  onChange?: (value: string) => void;
-  onBlur?: (value: string) => void;
+  onChange?: (value: string | null) => void;
+  onBlur?: (value: string | null) => void;
 };
 
 export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
@@ -34,9 +34,8 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
   const value = createMemo(() => local.value ?? '');
 
   const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    value: () => value(),
-    resetValue: () => '',
-    onOverrideValue: () => local.onBlur,
+    isCustom: () => !!value(),
+    onChange: (isCustom) => local.onBlur?.(isCustom ? value() : null),
   });
 
   return (

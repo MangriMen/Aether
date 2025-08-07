@@ -1,4 +1,5 @@
 import {
+  type FieldValues,
   type FormStore,
   getError,
   setValue,
@@ -6,19 +7,13 @@ import {
   type FieldPathValue,
 } from '@modular-forms/solid';
 
-import type { JavaAndMemorySettingsSchemaValues } from '../model/javaAndMemoryValidation';
-
-type JavaFieldPath = FieldPath<JavaAndMemorySettingsSchemaValues>;
-type JavaFieldValue<
-  TFieldPath extends FieldPath<JavaAndMemorySettingsSchemaValues>,
-> = FieldPathValue<JavaAndMemorySettingsSchemaValues, TFieldPath>;
-
 export const useFieldOnChangeWithMapping = <
-  TFieldPath extends JavaFieldPath,
-  TFieldValue extends JavaFieldValue<TFieldPath>,
+  TFieldValues extends FieldValues,
+  TFieldPath extends FieldPath<TFieldValues>,
+  TFieldValue extends FieldPathValue<TFieldValues, TFieldPath>,
   TSyncValue = unknown,
 >(
-  form: FormStore<JavaAndMemorySettingsSchemaValues>,
+  form: FormStore<TFieldValues>,
   path: TFieldPath,
   syncMapper: (value: TFieldValue) => TSyncValue,
   onSync: (value: TSyncValue) => void,

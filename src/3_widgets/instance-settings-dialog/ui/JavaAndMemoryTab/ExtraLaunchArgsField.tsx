@@ -34,9 +34,8 @@ export const ExtraLaunchArgsField: Component<ExtraLaunchArgsFieldProps> = (
   const value = createMemo(() => local.value ?? '');
 
   const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    value: () => value(),
-    resetValue: () => '',
-    onOverrideValue: () => local.onBlur,
+    isCustom: () => !!value(),
+    onChange: (isCustom) => local.onBlur?.(isCustom ? value() : null),
   });
 
   return (

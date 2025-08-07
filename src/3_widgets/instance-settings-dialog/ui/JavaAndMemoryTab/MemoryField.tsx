@@ -55,9 +55,9 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
   };
 
   const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    value: () => value() ?? null,
-    resetValue: () => null,
-    onOverrideValue: handleChangeMemory,
+    isCustom: () => !!value(),
+    onChange: (isCustom) =>
+      handleChangeMemory(isCustom ? (value() ?? null) : null),
   });
 
   return (

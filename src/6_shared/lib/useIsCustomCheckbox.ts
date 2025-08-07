@@ -1,33 +1,29 @@
 import type { Accessor } from 'solid-js';
-import { createEffect, createSignal, untrack } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
 
-export interface UseIsCustomCheckboxProps<T> {
-  value: Accessor<T>;
-  resetValue: Accessor<T>;
-  onOverrideValue?: (value: T) => void;
+export interface UseIsCustomCheckboxProps {
+  isCustom: Accessor<boolean>;
+  onChange: (isCustom: boolean) => void;
 }
 
-export const useIsCustomCheckbox = <T>({
-  value,
-  resetValue,
-  onOverrideValue,
-}: UseIsCustomCheckboxProps<T>): [
+export const useIsCustomCheckbox = ({
+  isCustom,
+  onChange,
+}: UseIsCustomCheckboxProps): [
   get: Accessor<boolean>,
   set: (value: boolean) => void,
 ] => {
-  const [isCustom, setIsCustom] = createSignal(false);
+  const [_isCustom, _setIsCustom] = createSignal(false);
 
   createEffect(() => {
-    if (value()) {
-      setIsCustom(true);
+    if (isCustom()) {
+      _setIsCustom(true);
     }
   });
 
   const handleChangeIsCustom = (isChecked: boolean) => {
-    setIsCustom(isChecked);
-    untrack(() => {
-      onOverrideValue?.(isChecked ? value() : resetValue());
-    });
+    _setIsCustom(isChecked);
+    onChange?.(isChecked);
   };
 
   return [isCustom, handleChangeIsCustom];
