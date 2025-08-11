@@ -1,5 +1,6 @@
 import { cn, useIsCustomCheckbox } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import type { CombinedTextFieldProps } from '@/shared/ui';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import {
   createMemo,
@@ -13,9 +14,9 @@ export type CustomEnvVarsFieldProps = Omit<
   'onChange' | 'onBlur'
 > & {
   value: string | null | undefined;
-  defaultValue?: string;
+  inputProps?: CombinedTextFieldProps['inputProps'];
   onChange?: (value: string | null) => void;
-  onBlur?: (value: string | null) => void;
+  onIsCustomChange?: (value: string | null) => void;
 };
 
 export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
@@ -23,9 +24,9 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'value',
-    'defaultValue',
     'onChange',
-    'onBlur',
+    'onIsCustomChange',
+    'inputProps',
     'class',
   ]);
 
@@ -34,8 +35,8 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
   const value = createMemo(() => local.value ?? '');
 
   const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    isCustom: () => !!value(),
-    onChange: (isCustom) => local.onBlur?.(isCustom ? value() : null),
+    isCustom: () => local.value !== null,
+    onChange: (isCustom) => local.onIsCustomChange?.(isCustom ? value() : null),
   });
 
   return (
@@ -52,12 +53,11 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
       <CombinedTextField
         disabled={!isCustom()}
         value={value()}
-        defaultValue={local.defaultValue}
         onChange={local.onChange}
         inputProps={{
+          ...local.inputProps,
           type: 'text',
           placeholder: t('instanceSettings.enterVariables'),
-          onBlur: (e) => local.onBlur?.(e.target.value),
         }}
       />
     </LabeledField>

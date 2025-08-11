@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const ResolutionPartSchema = z
   .string()
+  .trim()
   .min(1, 'instanceSettings.windowError.resolution.emptyValue' as const)
   .regex(
     /^\d+$/,

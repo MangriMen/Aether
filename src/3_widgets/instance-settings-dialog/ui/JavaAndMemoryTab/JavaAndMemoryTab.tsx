@@ -7,12 +7,17 @@ import type { EditInstance } from '@/entities/instances';
 import { useEditInstance } from '@/entities/instances';
 
 import {
+  JavaAndMemorySettingsSchema,
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
+  MemoryMaximumSchema,
   type InstanceSettingsTabProps,
 } from '../../model';
-import { stringToEnvVars, stringToExtraLaunchArgs } from '../../lib';
+import {
+  stringToEnvVars,
+  stringToExtraLaunchArgs,
+  useFieldOnChangeSync,
+} from '../../lib';
 import { MemoryField } from './MemoryField';
-import { useFieldOnChangeWithMapping } from '../../lib/useFieldMapper';
 import {
   useJavaAndMemoryForm,
   useResetJavaAndMemoryFormValues,
@@ -46,7 +51,8 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     editInstanceSimpleDebounced.callAndClear();
   });
 
-  const updateMemory = useFieldOnChangeWithMapping(
+  const updateMemory = useFieldOnChangeSync(
+    MemoryMaximumSchema,
     form,
     'memory.maximum',
     (value) => ({
@@ -55,7 +61,8 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     editInstanceSimpleDebounced,
   );
 
-  const updateExtraLaunchArgs = useFieldOnChangeWithMapping(
+  const updateExtraLaunchArgs = useFieldOnChangeSync(
+    JavaAndMemorySettingsSchema,
     form,
     'extraLaunchArgs',
     (value) => ({
@@ -64,13 +71,17 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     editInstanceSimple,
   );
 
-  const updateEnvVars = useFieldOnChangeWithMapping(
+  const updateEnvVars = useFieldOnChangeSync(
+    JavaAndMemorySettingsSchema,
     form,
     'customEnvVars',
     (value) => ({
       customEnvVars: value ? stringToEnvVars(value) : null,
     }),
-    editInstanceSimple,
+    async (value, formValue) => {
+      await editInstanceSimple(value);
+      setValue(form, 'customEnvVars', formValue);
+    },
   );
 
   return (
@@ -78,27 +89,51 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       <Field name='memory.maximum' type='number'>
         {(field) => (
           <MemoryField
-            value={field.value}
+            value={field.value ?? null}
             defaultValue={local.settings?.memory.maximum}
-            onChange={updateMemory}
+            onChange={(value) => {
+              setValue(form, 'memory.maximum', value);
+              updateMemory();
+            }}
           />
         )}
       </Field>
       <Field name='extraLaunchArgs' type='string'>
-        {(field) => (
+        {(field, inputProps) => (
           <ExtraLaunchArgsField
             value={field.value}
-            onChange={(value) => setValue(form, 'extraLaunchArgs', value)}
-            onBlur={updateExtraLaunchArgs}
+            onIsCustomChange={(value) => {
+              setValue(form, 'extraLaunchArgs', value);
+              updateExtraLaunchArgs();
+            }}
+            inputProps={{
+              type: 'text',
+              ...inputProps,
+              onBlur: (e) => {
+                inputProps.onBlur(e);
+                updateExtraLaunchArgs();
+              },
+            }}
           />
         )}
       </Field>
       <Field name='customEnvVars' type='string'>
-        {(field) => (
+        {(field, inputProps) => (
           <CustomEnvVarsField
-            value={field.value ?? undefined}
+            value={field.value}
             onChange={(value) => setValue(form, 'customEnvVars', value)}
-            onBlur={updateEnvVars}
+            onIsCustomChange={(value) => {
+              setValue(form, 'customEnvVars', value);
+              updateEnvVars();
+            }}
+            inputProps={{
+              type: 'text',
+              ...inputProps,
+              onBlur: (e) => {
+                inputProps.onBlur(e);
+                updateEnvVars();
+              },
+            }}
           />
         )}
       </Field>

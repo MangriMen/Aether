@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+export const MemoryMaximumSchema = z.number().optional().nullable();
+
 export const MemorySchema = z.object({
-  maximum: z.number().nullable(),
+  maximum: MemoryMaximumSchema,
 });
 
 export type MemorySchemaValues = z.infer<typeof MemorySchema>;

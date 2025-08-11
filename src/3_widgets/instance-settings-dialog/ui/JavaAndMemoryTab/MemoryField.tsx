@@ -55,19 +55,19 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
   };
 
   const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    isCustom: () => !!value(),
+    isCustom: () => local.value !== null,
     onChange: (isCustom) =>
-      handleChangeMemory(isCustom ? (value() ?? null) : null),
+      handleChangeMemory(isCustom ? defaultMemory() : null),
   });
 
   return (
     <LabeledField
       class={cn('text-base', local.class)}
-      label={t('instanceSettings.environmentVariables')}
+      label={t('instanceSettings.memoryAllocation')}
       {...others}
     >
       <Checkbox
-        label={t('instanceSettings.customEnvironmentVariables')}
+        label={t('instanceSettings.customMemorySettings')}
         checked={isCustom()}
         onChange={setIsCustom}
       />

@@ -1,42 +1,69 @@
-import { throttle } from '@solid-primitives/scheduled';
-import type { Component, ComponentProps } from 'solid-js';
-import { splitProps } from 'solid-js';
+import type { Component } from 'solid-js';
+import { createEffect, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import { useEditInstance, type Instance } from '@/entities/instances';
+import { type EditInstance, useEditInstance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
-import type { InstanceSettingsTabProps } from '../../model';
+import {
+  GeneralSettingsSchema,
+  type InstanceSettingsTabProps,
+} from '../../model';
 
-export type GeneralTabProps = ComponentProps<'div'> & InstanceSettingsTabProps;
+import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { useFieldOnChangeSync } from '../../lib';
+
+export type GeneralTabProps = { class?: string } & InstanceSettingsTabProps;
 
 export const GeneralTab: Component<GeneralTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const [{ t }] = useTranslation();
 
+  const [form, { Form, Field }] = createForm({
+    validate: zodForm(GeneralSettingsSchema),
+    validateOn: 'blur',
+    revalidateOn: 'blur',
+  });
+
+  createEffect(() => {
+    setValues(form, { name: local.instance.name });
+  });
+
   const { mutateAsync: editInstance } = useEditInstance();
 
-  const handleChangeNameThrottle = throttle(
-    (id: Instance['id'], value: string) => {
-      editInstance({ id, edit: { name: value } });
-    },
-    16,
+  const editInstanceSimple = (edit: EditInstance) =>
+    editInstance({ id: local.instance.id, edit });
+
+  const updateMemory = useFieldOnChangeSync(
+    GeneralSettingsSchema,
+    form,
+    'name',
+    (value) => ({ name: value }),
+    editInstanceSimple,
   );
 
-  const handleChangeName = (value: string) => {
-    handleChangeNameThrottle(local.instance.id, value);
-  };
-
   return (
-    <div class={cn('flex flex-col', local.class)} {...others}>
-      <CombinedTextField
-        label={t('common.name')}
-        defaultValue={local.instance.name}
-        onChange={handleChangeName}
-      />
-    </div>
+    <Form class={cn('flex flex-col', local.class)} {...others}>
+      <Field name='name' type='string'>
+        {(field, inputProps) => (
+          <CombinedTextField
+            label={t('common.name')}
+            value={field.value ?? ''}
+            errorMessage={field.error}
+            inputProps={{
+              type: 'text',
+              ...inputProps,
+              onBlur: (e) => {
+                inputProps.onBlur(e);
+                updateMemory();
+              },
+            }}
+          />
+        )}
+      </Field>
+    </Form>
   );
 };
