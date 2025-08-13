@@ -7,7 +7,12 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [
-    vitePluginChecker({ typescript: true }),
+    vitePluginChecker({
+      typescript: true,
+      overlay: {
+        initialIsOpen: false,
+      },
+    }),
     solid(),
     solidSvg(),
     tsconfigPaths(),

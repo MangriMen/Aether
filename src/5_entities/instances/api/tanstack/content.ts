@@ -56,7 +56,7 @@ export const useInstanceContents = (id: Accessor<string>) => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
     queryFn: () => getInstanceContentsRaw(id()),
-    enabled: !!id,
+    enabled: !!id(),
   }));
 };
 
