@@ -12,7 +12,7 @@ import {
   type InstanceSettingsTabProps,
 } from '../../model';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
 import { useFieldOnChangeSync } from '../../lib';
 
 export type GeneralTabProps = { class?: string } & InstanceSettingsTabProps;
@@ -42,7 +42,13 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
     form,
     'name',
     (value) => ({ name: value }),
-    editInstanceSimple,
+    async (value) => {
+      try {
+        await editInstanceSimple(value);
+      } catch {
+        reset(form, 'name', { initialValue: local.instance.name });
+      }
+    },
   );
 
   return (
