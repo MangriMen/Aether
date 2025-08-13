@@ -142,7 +142,14 @@
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
     "resolution": "Разрешение",
-    "window": "Окно"
+    "window": "Окно",
+    "windowError": {
+      "resolution": {
+        "emptyValue": "Элемент разрешения должен быть не пустым",
+        "invalidValue": "Элемент разрешения должен быть числом",
+        "invalidRange": "Элемент разрешения должен быть в диапазоне [1, 65535]"
+      }
+    }
   },
   "plugins": {
     "addItem": "Добавить элемент",
