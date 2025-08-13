@@ -142,7 +142,14 @@
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
     "resolution": "Resolution",
-    "window": "Window"
+    "window": "Window",
+    "windowError": {
+      "resolution": {
+        "emptyValue": "Resolution part must be non empty value",
+        "invalidValue": "Resolution part must be valid number",
+        "invalidRange": "Resolution part must be in range [1, 65535]"
+      }
+    }
   },
   "plugins": {
     "addItem": "Add item",

@@ -32,6 +32,7 @@ export default [
       'prefer-object-spread': 'warn',
       curly: 'error',
       'no-debugger': 'warn',
+      "no-console": "warn"
     },
   },
   js.configs.recommended,

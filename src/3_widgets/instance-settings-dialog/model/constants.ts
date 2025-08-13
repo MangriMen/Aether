@@ -1,1 +1,3 @@
 export const MIN_JRE_MEMORY = 512;
+
+export const MEMORY_SLIDER_HANDLE_DEBOUNCE = 300;

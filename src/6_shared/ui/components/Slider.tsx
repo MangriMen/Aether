@@ -38,7 +38,7 @@ const SliderTrack = <T extends ValidComponent = 'div'>(
   return (
     <SliderPrimitive.Track
       class={cn(
-        'relative h-1 w-full grow rounded-full bg-secondary data-[disabled]:opacity-50',
+        'relative h-1 w-full grow rounded-full bg-secondary data-[disabled]:opacity-50 data-[disabled]:pointer-events-none',
         local.class,
       )}
       {...others}
