@@ -71,7 +71,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
                 variant={null}
                 leadingIcon={tab.icon}
               >
-                {t(`settings.${tab.title}`)}
+                {t(`settings.tab.${tab.title}`)}
               </SettingsTabsTrigger>
             )}
           </For>

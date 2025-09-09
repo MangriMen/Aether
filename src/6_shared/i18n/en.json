@@ -168,11 +168,17 @@
     "ongoingTasks": "Ongoing tasks"
   },
   "settings": {
+    "tab": {
+      "appearance": "Appearance",
+      "globalInstanceSettings": "Global instance settings",
+      "update": "Update",
+      "plugins": "Plugins",
+      "experimental": "Experimental"
+    },
     "actionOnInstanceLaunch": "Launcher behavior on instance launch",
     "actionOnInstanceLaunchDescription": "Select an action to perform when launching an instance.\n \"Do nothing\" will not hide the launcher on launch.\n \"Hide\"  hide launcher window.\n \"Close\" will close the launcher window but will not close application (saves memory).",
     "animations": "Animations",
     "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance",
-    "appearance": "Appearance",
     "checkForUpdates": "Check for updates",
     "checkForUpdatesDescription": "An updated version of the application is now available!\nIt will restart automatically after installation.",
     "checkForUpdatesDescriptionNoUpdates": "No updates available",
@@ -181,13 +187,11 @@
     "colorSchemeDescription": "Select preferred color scheme",
     "dark": "Dark",
     "doNothing": "Do nothing",
-    "experimental": "Experimental",
     "hide": "Hide",
     "installAndRestartApp": "Install and restart app",
     "language": "Language",
     "languageDescription": "Select your language",
     "light": "Light",
-    "plugins": "Plugins",
     "prefersReducedMotionInfo": "Animations are disabled in the system - you can enable them in the app, but this may affect the smoothness of the interface and battery life",
     "releaseDate": "Release date",
     "systemColorMode": "System color mode",
@@ -196,7 +200,6 @@
     "title": "Settings",
     "toggleWindowTransparency": "Toggle window transparency",
     "toggleWindowTransparencyDescription": "Restart the app to apply transparency",
-    "update": "Update",
     "windowEffect": "Window effect",
     "windowEffectDescription": "Window effect applied when transparency is enabled",
     "windowEffectDisabled": "It is not possible to enable window effects without window transparency",
@@ -204,7 +207,8 @@
       "acrylic": "Acrylic",
       "mica": "Mica",
       "off": "Off"
-    }
+    },
+    "changeError": "Failed to change settings"
   },
   "update": {
     "updateError": "Launcher update error"

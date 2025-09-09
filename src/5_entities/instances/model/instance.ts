@@ -1,6 +1,7 @@
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
 import type { ContentType } from './contentType';
 import type {
+  GlobalInstanceSettings,
   Hooks,
   MemorySettings,
   WindowSize,
@@ -16,7 +17,24 @@ export interface PackInfo {
   canUpdate: boolean;
 }
 
-export interface Instance {
+export interface InstanceSettings extends Partial<GlobalInstanceSettings> {
+  forceFullscreen?: boolean;
+}
+
+export interface EditInstanceSettings {
+  // Game settings
+  forceFullscreen?: boolean;
+  gameResolution?: WindowSize | null;
+
+  // Java launch settings
+  memory?: MemorySettings | null;
+  extraLaunchArgs?: string[] | null;
+  customEnvVars?: Array<[string, string]> | null;
+
+  hooks: Hooks;
+}
+
+export interface Instance extends InstanceSettings {
   id: string;
 
   name: string;
@@ -29,15 +47,7 @@ export interface Instance {
   loader: ModLoader;
   loaderVersion?: LoaderVersionPreference;
 
-  // Launch arguments
-  javaPath?: string;
-  extraLaunchArgs?: string[];
-  customEnvVars?: Array<[string, string]>;
-
-  // Minecraft runtime settings
-  memory?: MemorySettings;
-  forceFullscreen?: boolean;
-  gameResolution?: WindowSize;
+  javaPath?: string | null;
 
   // Additional information
   created: Date;
@@ -46,8 +56,6 @@ export interface Instance {
 
   timePlayed: number;
   recent_time_played: number;
-
-  hooks: Hooks;
 
   packInfo?: PackInfo;
 }

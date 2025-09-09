@@ -23,4 +23,5 @@ export const WindowSchema = z.object({
   resolution: ResolutionSchema,
 });
 
-export type WindowSchemaValues = z.input<typeof WindowSchema>;
+export type WindowSchemaValuesInput = z.input<typeof WindowSchema>;
+export type WindowSchemaValuesOutput = z.output<typeof WindowSchema>;

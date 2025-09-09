@@ -19,7 +19,6 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import { RESOLUTION_FIELD_CLASS, RESOLUTION_OPTIONS } from '../../model/window';
 import {
   Field,
   getValue,
@@ -27,21 +26,25 @@ import {
   validate,
   type FormStore,
 } from '@modular-forms/solid';
-import type { WindowSchemaValuesInput } from '../../model';
 
 import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
 import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
 import { Icon } from '@iconify-icon/solid';
 import type { PhysicalSize } from '@tauri-apps/api/window';
 import { currentMonitor } from '@tauri-apps/api/window';
+import type { WindowSchemaValuesInput } from '@/widgets/instance-settings-dialog';
+import {
+  RESOLUTION_FIELD_CLASS,
+  RESOLUTION_OPTIONS,
+} from '@/widgets/instance-settings-dialog/model/window';
 
 export type ResolutionFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange' | 'onSubmit'
 > & {
   form: FormStore<WindowSchemaValuesInput>;
-  defaultWidth?: number;
-  defaultHeight?: number;
+  defaultWidth?: number | string;
+  defaultHeight?: number | string;
   disabled?: boolean;
   errorMessage?: string;
   onSubmit?: (width: number, height: number) => void;
@@ -158,7 +161,7 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
               return (
                 <CombinedTextField
                   class={RESOLUTION_FIELD_CLASS}
-                  value={field.value ?? local.defaultWidth?.toString()}
+                  value={field.value ?? local.defaultWidth?.toString() ?? ''}
                   disabled={local.disabled}
                   errorMessage={translateError(t, field.error)}
                   inputProps={{
@@ -179,7 +182,7 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
             {(field, inputProps) => (
               <CombinedTextField
                 class={RESOLUTION_FIELD_CLASS}
-                value={field.value ?? local.defaultHeight?.toString()}
+                value={field.value ?? local.defaultHeight?.toString() ?? ''}
                 disabled={local.disabled}
                 errorMessage={translateError(t, field.error)}
                 inputProps={{

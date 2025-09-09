@@ -1,1 +1,1 @@
-export * from '../model/settings';
+export * from '../model/globalInstanceSettings';

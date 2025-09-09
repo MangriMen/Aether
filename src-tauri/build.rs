@@ -62,11 +62,23 @@ fn main() {
         ]),
     );
 
+    let settings_plugin = (
+        "settings",
+        InlinedPlugin::new().commands(&[
+            "get",
+            "edit",
+            "get_max_ram",
+            "get_global_instance_settings",
+            "edit_global_instance_settings",
+        ]),
+    );
+
     let mut plugins = HashMap::from([
         account_plugin,
         instance_plugin,
         process_plugin,
         plugin_plugin,
+        settings_plugin,
     ]);
 
     let mut attributes = tauri_build::Attributes::new().codegen(tauri_build::CodegenContext::new());

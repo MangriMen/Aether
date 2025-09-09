@@ -16,7 +16,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.experimental')}
+      label={t('settings.tab.experimental')}
       {...others}
     >
       <ToggleWindowTransparencyEntry />

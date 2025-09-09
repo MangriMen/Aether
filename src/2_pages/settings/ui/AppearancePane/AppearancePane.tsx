@@ -18,7 +18,7 @@ export const AppearancePane: Component<AppearancePaneProps> = (props) => {
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.appearance')}
+      label={t('settings.tab.appearance')}
       {...others}
     >
       <SelectThemeEntry />

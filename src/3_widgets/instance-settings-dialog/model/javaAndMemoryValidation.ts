@@ -8,13 +8,25 @@ export const MemorySchema = z.object({
 
 export type MemorySchemaValues = z.infer<typeof MemorySchema>;
 
-export const JavaAndMemorySettingsSchema = z.object({
-  javaPath: z.string().nullable(),
+export const JavaAndMemorySettingsSchemaRequired = z.object({
   memory: MemorySchema,
   extraLaunchArgs: z.string().nullable(),
   customEnvVars: z.string().nullable(),
 });
 
-export type JavaAndMemorySettingsSchemaValues = z.infer<
+export const JavaAndMemorySettingsSchema =
+  JavaAndMemorySettingsSchemaRequired.extend({
+    javaPath: z.string().nullable(),
+  });
+
+export type JavaAndMemorySettingsSchemaRequiredValues = z.infer<
+  typeof JavaAndMemorySettingsSchemaRequired
+>;
+
+export type JavaAndMemorySettingsSchemaValuesInput = z.input<
+  typeof JavaAndMemorySettingsSchema
+>;
+
+export type JavaAndMemorySettingsSchemaValuesOutput = z.output<
   typeof JavaAndMemorySettingsSchema
 >;

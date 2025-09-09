@@ -1,13 +1,12 @@
-import type { FormStore } from '@modular-forms/solid';
+import type { FormStore, PartialValues } from '@modular-forms/solid';
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import type { Instance } from '@/entities/instances';
 import type { Accessor } from 'solid-js';
 import { createEffect } from 'solid-js';
-import type { WindowSchemaValues } from '../model';
+import type { WindowSchemaValuesInput } from '../model';
 import { WindowSchema } from '../model';
 
 export const useWindowForm = (): ReturnType<
-  typeof createForm<WindowSchemaValues>
+  typeof createForm<WindowSchemaValuesInput>
 > => {
   const [form, components] = createForm({
     validate: zodForm(WindowSchema),
@@ -20,16 +19,17 @@ export const useWindowForm = (): ReturnType<
 };
 
 export const useResetWindowFormValues = (
-  form: FormStore<WindowSchemaValues>,
-  instance: Accessor<Instance>,
+  form: FormStore<WindowSchemaValuesInput>,
+  initialValues: Accessor<PartialValues<WindowSchemaValuesInput> | undefined>,
 ) => {
   createEffect(() => {
-    const resolution = instance().gameResolution;
-    if (resolution) {
+    const { width, height } = initialValues()?.resolution ?? {};
+
+    if (width && height) {
       setValues(form, {
         resolution: {
-          width: resolution[0].toString(),
-          height: resolution[1].toString(),
+          width,
+          height,
         },
       });
     }

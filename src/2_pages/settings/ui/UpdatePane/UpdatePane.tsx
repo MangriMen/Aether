@@ -14,7 +14,7 @@ export const UpdatePane: Component<UpdatePaneProps> = (props) => {
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.update')}
+      label={t('settings.tab.update')}
       {...others}
     >
       <UpdateAppEntry />
