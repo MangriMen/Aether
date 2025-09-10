@@ -1,0 +1,70 @@
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import type { CombinedTextFieldProps } from '@/shared/ui';
+import { CombinedTextField } from '@/shared/ui';
+import {
+  createMemo,
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
+import { OverrideCheckbox } from './OverrideCheckbox';
+
+export type OverridableExtraLaunchArgsFieldProps = Omit<
+  ComponentProps<'div'>,
+  'onChange' | 'onBlur'
+> & {
+  value: string | null | undefined;
+  onChange?: (value: string | null) => void;
+  inputProps?: CombinedTextFieldProps['inputProps'];
+  overridable?: boolean;
+  onOverrideChange?: (value: string | null) => void;
+};
+
+export const OverridableExtraLaunchArgsField: Component<
+  OverridableExtraLaunchArgsFieldProps
+> = (props) => {
+  const [local, others] = splitProps(props, [
+    'value',
+    'onChange',
+    'inputProps',
+    'overridable',
+    'onOverrideChange',
+    'class',
+  ]);
+
+  const [{ t }] = useTranslation();
+
+  const value = createMemo(() => local.value ?? '');
+
+  const isOverride = createMemo(() => local.value !== null);
+
+  return (
+    <div class={cn('flex flex-col gap-1', local.class)} {...others}>
+      <span class='text-lg font-medium'>
+        {t('instanceSettings.javaArguments')}
+      </span>
+      <Show when={local.overridable}>
+        <OverrideCheckbox
+          class='mb-1'
+          label={t('instanceSettings.customArguments')}
+          enabledValue={value}
+          disabledValue={() => null}
+          checked={isOverride()}
+          onOverrideChange={local.onOverrideChange}
+        />
+      </Show>
+      <CombinedTextField
+        disabled={!isOverride()}
+        value={value()}
+        onChange={local.onChange}
+        inputProps={{
+          type: 'text',
+          placeholder: t('instanceSettings.enterArguments'),
+          ...local.inputProps,
+        }}
+      />
+    </div>
+  );
+};

@@ -1,25 +1,32 @@
 import type { Component, ComponentProps } from 'solid-js';
-import { createMemo, splitProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
-import { Checkbox, LabeledField } from '@/shared/ui';
 import { useTranslation } from '@/shared/model';
 import { MemoryInput } from './MemoryInput';
-import { MIN_JRE_MEMORY } from '../../model';
-import { bytesToMegabytes } from '../../lib';
+import { MIN_JRE_MEMORY } from '../../../3_widgets/instance-settings-dialog/model';
+import { bytesToMegabytes } from '../../../3_widgets/instance-settings-dialog/lib';
 import { useMaxRam } from '@/entities/settings';
-import { cn, useIsCustomCheckbox } from '@/shared/lib';
+import { cn } from '@/shared/lib';
+import { OverrideCheckbox } from '@/entities/settings/ui/OverrideCheckbox';
 
-export type MemoryFieldProps = Omit<ComponentProps<'div'>, 'onChange'> & {
+export type OverridableMemoryFieldProps = Omit<
+  ComponentProps<'div'>,
+  'onChange'
+> & {
   value?: number | null;
   defaultValue?: number;
   onChange?: (value: number | null) => void;
+  overridable?: boolean;
 };
 
-export const MemoryField: Component<MemoryFieldProps> = (props) => {
+export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
+  props,
+) => {
   const [local, others] = splitProps(props, [
     'value',
     'defaultValue',
     'onChange',
+    'overridable',
     'class',
   ]);
 
@@ -54,25 +61,24 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
     local.onChange?.(value ? getClampedMemory(value[0]) : value);
   };
 
-  const [isCustom, setIsCustom] = useIsCustomCheckbox({
-    isCustom: () => local.value !== null,
-    onChange: (isCustom) =>
-      handleChangeMemory(isCustom ? defaultMemory() : null),
-  });
+  const isOverride = createMemo(() => local.value !== null);
 
   return (
-    <LabeledField
-      class={cn('text-base', local.class)}
-      label={t('instanceSettings.memoryAllocation')}
-      {...others}
-    >
-      <Checkbox
-        label={t('instanceSettings.customMemorySettings')}
-        checked={isCustom()}
-        onChange={setIsCustom}
-      />
+    <div class={cn('flex flex-col gap-1', local.class)} {...others}>
+      <span class='text-lg font-medium'>
+        {t('instanceSettings.memoryAllocation')}
+      </span>
+      <Show when={local.overridable}>
+        <OverrideCheckbox
+          label={t('instanceSettings.customMemorySettings')}
+          checked={isOverride()}
+          enabledValue={defaultMemory}
+          disabledValue={() => null}
+          onOverrideChange={handleChangeMemory}
+        />
+      </Show>
       <MemoryInput
-        disabled={!isCustom()}
+        disabled={!isOverride()}
         value={value()}
         defaultValue={defaultMemory()}
         minValue={minMemory()}
@@ -80,6 +86,6 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
         warningValue={warningMemory()}
         onChange={handleChangeMemory}
       />
-    </LabeledField>
+    </div>
   );
 };

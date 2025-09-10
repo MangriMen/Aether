@@ -1,3 +1,4 @@
+import { OverridableEnvVarsField } from '@/entities/settings';
 import { cn, debounce } from '@/shared/lib';
 import type {
   JavaAndMemorySettingsSchemaValuesInput,
@@ -11,11 +12,10 @@ import {
 import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
 import {
   useJavaAndMemoryFormRequired,
-  useResetJavaAndMemoryFormValues,
+  useResetJavaAndMemoryFormRequiredValues,
 } from '@/widgets/instance-settings-dialog/lib/useJavaAndMemoryForm';
-import { CustomEnvVarsField } from '@/widgets/instance-settings-dialog/ui/JavaAndMemoryTab/CustomEnvVarsField';
-import { ExtraLaunchArgsField } from '@/widgets/instance-settings-dialog/ui/JavaAndMemoryTab/ExtraLaunchArgsField';
-import { MemoryField } from '@/widgets/instance-settings-dialog/ui/JavaAndMemoryTab/MemoryField';
+import { OverridableExtraLaunchArgsField } from '@/entities/settings/ui/OverridableExtraLaunchArgsField';
+import { OverridableMemoryField } from '@/entities/settings/ui/OverridableMemoryField';
 import { setValue } from '@modular-forms/solid';
 import {
   type Accessor,
@@ -49,7 +49,7 @@ export const JavaAndMemorySettingsForm: Component<
 
   const [form, { Form, Field }] = useJavaAndMemoryFormRequired();
 
-  useResetJavaAndMemoryFormValues(form, local.initialValues);
+  useResetJavaAndMemoryFormRequiredValues(form, local.initialValues);
 
   const onChangePartialDebounced = createMemo(() =>
     debounce(local.onChangePartial, MEMORY_SLIDER_HANDLE_DEBOUNCE),
@@ -62,16 +62,10 @@ export const JavaAndMemorySettingsForm: Component<
     MemoryMaximumSchema,
     form,
     'memory.maximum',
-    (value) => ({
-      memory: { maximum: value },
-    }),
+    (value) => value,
     (value) => {
-      if (value.memory.maximum === null || value.memory.maximum === undefined) {
-        return;
-      }
-
       onChangePartialDebounced()({
-        memory: { maximum: value.memory.maximum },
+        memory: { maximum: value },
       });
     },
   );
@@ -93,17 +87,16 @@ export const JavaAndMemorySettingsForm: Component<
     form,
     'customEnvVars',
     (value) => value,
-    async (value, formValue) => {
+    (value) => {
       local.onChangePartial({ customEnvVars: value });
-      setValue(form, 'customEnvVars', formValue);
     },
   );
 
   return (
-    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <Form class={cn('flex flex-col gap-4', local.class)} {...others}>
       <Field name='memory.maximum' type='number'>
         {(field) => (
-          <MemoryField
+          <OverridableMemoryField
             value={field.value ?? null}
             defaultValue={local.initialValues()?.memory?.maximum ?? undefined}
             onChange={(value) => {
@@ -115,15 +108,11 @@ export const JavaAndMemorySettingsForm: Component<
       </Field>
       <Field name='extraLaunchArgs' type='string'>
         {(field, inputProps) => (
-          <ExtraLaunchArgsField
+          <OverridableExtraLaunchArgsField
             value={field.value}
-            onIsCustomChange={(value) => {
-              setValue(form, 'extraLaunchArgs', value);
-              updateExtraLaunchArgs();
-            }}
             inputProps={{
-              type: 'text',
               ...inputProps,
+              type: 'text',
               onBlur: (e) => {
                 inputProps.onBlur(e);
                 updateExtraLaunchArgs();
@@ -134,16 +123,11 @@ export const JavaAndMemorySettingsForm: Component<
       </Field>
       <Field name='customEnvVars' type='string'>
         {(field, inputProps) => (
-          <CustomEnvVarsField
+          <OverridableEnvVarsField
             value={field.value}
-            onChange={(value) => setValue(form, 'customEnvVars', value)}
-            onIsCustomChange={(value) => {
-              setValue(form, 'customEnvVars', value);
-              updateEnvVars();
-            }}
             inputProps={{
-              type: 'text',
               ...inputProps,
+              type: 'text',
               onBlur: (e) => {
                 inputProps.onBlur(e);
                 updateEnvVars();

@@ -19,7 +19,11 @@ export const JavaAndMemorySettingsSchema =
     javaPath: z.string().nullable(),
   });
 
-export type JavaAndMemorySettingsSchemaRequiredValues = z.infer<
+export type JavaAndMemorySettingsSchemaRequiredInput = z.infer<
+  typeof JavaAndMemorySettingsSchemaRequired
+>;
+
+export type JavaAndMemorySettingsSchemaRequiredOutput = z.output<
   typeof JavaAndMemorySettingsSchemaRequired
 >;
 

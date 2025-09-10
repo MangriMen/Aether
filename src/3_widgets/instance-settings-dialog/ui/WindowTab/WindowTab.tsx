@@ -17,21 +17,30 @@ import { type InstanceSettingsTabProps } from '../../model';
 import { ResolutionField } from './ResolutionField';
 import { getValue } from '@modular-forms/solid';
 import { useResetWindowFormValues, useWindowForm } from '../../lib';
+import { instanceToWindowSettingsValues } from '../../model/converter';
 
 export type WindowTabProps = { class?: string } & InstanceSettingsTabProps;
 
 export const WindowTab: Component<WindowTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'settings', 'class']);
+  const [local, others] = splitProps(props, [
+    'instance',
+    'globalSettings',
+    'class',
+  ]);
 
   const [{ t }] = useTranslation();
 
   const defaultResolution = createMemo(() => ({
-    width: local.settings?.gameResolution?.[0] ?? DEFAULT_WINDOW_WIDTH,
-    height: local.settings?.gameResolution?.[1] ?? DEFAULT_WINDOW_HEIGHT,
+    width: local.globalSettings?.gameResolution?.[0] ?? DEFAULT_WINDOW_WIDTH,
+    height: local.globalSettings?.gameResolution?.[1] ?? DEFAULT_WINDOW_HEIGHT,
   }));
 
+  const windowSettingsFormValues = createMemo(() =>
+    instanceToWindowSettingsValues(local.instance),
+  );
+
   const [form, { Form }] = useWindowForm();
-  useResetWindowFormValues(form, () => local.instance);
+  useResetWindowFormValues(form, () => windowSettingsFormValues());
 
   const { mutateAsync: editInstance } = useEditInstance();
 

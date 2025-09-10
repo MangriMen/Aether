@@ -1,3 +1,4 @@
+import type { HooksSettingsSchemaValuesInput } from '@/entities/settings';
 import type { GlobalInstanceSettings } from '@/entities/settings/model/globalInstanceSettings';
 import type {
   JavaAndMemorySettingsSchemaValuesInput,
@@ -40,4 +41,12 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
       : null,
     customEnvVars: customEnvVars ? envVarsToString(customEnvVars) : null,
   };
+};
+
+export const instanceSettingsToHooksSettingsValues = (
+  settings: GlobalInstanceSettings,
+): PartialValues<HooksSettingsSchemaValuesInput> => {
+  const hooks = settings.hooks;
+
+  return { ...hooks };
 };

@@ -1,6 +1,6 @@
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
+import { Separator, SettingsPane } from '@/shared/ui';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import { HooksSettings } from './HooksSettings';
 import { WindowSettings } from './WindowSettings';
@@ -22,7 +22,9 @@ export const GlobalInstanceSettingsPane: Component<
       {...others}
     >
       <WindowSettings />
+      <Separator />
       <JavaAndMemorySettings />
+      <Separator />
       <HooksSettings />
     </SettingsPane>
   );

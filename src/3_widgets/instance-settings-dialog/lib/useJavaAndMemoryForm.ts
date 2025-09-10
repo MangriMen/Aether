@@ -1,7 +1,8 @@
 import type { FormStore, PartialValues } from '@modular-forms/solid';
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import type {
-  JavaAndMemorySettingsSchemaRequiredValues,
+  JavaAndMemorySettingsSchemaRequiredInput,
+  JavaAndMemorySettingsSchemaRequiredOutput,
   JavaAndMemorySettingsSchemaValuesInput,
 } from '../model/javaAndMemoryValidation';
 import {
@@ -29,10 +30,10 @@ export const useJavaAndMemoryForm = (): ReturnType<
 };
 
 export const useJavaAndMemoryFormRequired = (): ReturnType<
-  typeof createForm<JavaAndMemorySettingsSchemaRequiredValues>
+  typeof createForm<JavaAndMemorySettingsSchemaRequiredOutput>
 > => {
   const [form, components] =
-    createForm<JavaAndMemorySettingsSchemaRequiredValues>({
+    createForm<JavaAndMemorySettingsSchemaRequiredOutput>({
       validate: zodForm(JavaAndMemorySettingsSchemaRequired),
       initialValues: {
         memory: { maximum: 512 },
@@ -44,15 +45,47 @@ export const useJavaAndMemoryFormRequired = (): ReturnType<
   return [form, components];
 };
 
-export const useResetJavaAndMemoryFormValues = (
-  form: FormStore<
-    | JavaAndMemorySettingsSchemaValuesInput
-    | JavaAndMemorySettingsSchemaRequiredValues
+export const useResetJavaAndMemoryFormRequiredValues = (
+  form: FormStore<JavaAndMemorySettingsSchemaRequiredInput>,
+  settings: Accessor<
+    PartialValues<JavaAndMemorySettingsSchemaRequiredInput> | undefined
   >,
+) => {
+  createEffect(() => {
+    const maximum = settings()?.memory?.maximum;
+    if (maximum) {
+      setValues(form, { memory: { maximum } });
+    }
+  });
+
+  createEffect(() => {
+    const extraLaunchArgs = settings()?.extraLaunchArgs;
+    setValues(form, {
+      extraLaunchArgs,
+    });
+  });
+
+  createEffect(() => {
+    const customEnvVars = settings()?.customEnvVars;
+    setValues(form, {
+      customEnvVars,
+    });
+  });
+};
+
+export const useResetJavaAndMemoryFormValues = (
+  form: FormStore<JavaAndMemorySettingsSchemaValuesInput>,
   settings: Accessor<
     PartialValues<JavaAndMemorySettingsSchemaValuesInput> | undefined
   >,
 ) => {
+  createEffect(() => {
+    const javaPath = settings()?.javaPath;
+    setValues(form, {
+      javaPath,
+    });
+  });
+
   createEffect(() => {
     const maximum = settings()?.memory?.maximum;
     if (maximum) {

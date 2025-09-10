@@ -5,7 +5,7 @@ import type {
   FieldPathValue,
 } from '@modular-forms/solid';
 
-import { getValue, validate } from '@modular-forms/solid';
+import { getValue, setValue, validate } from '@modular-forms/solid';
 import type { ZodObject, ZodTypeAny } from 'zod';
 
 export const useFieldOnChangeSync = <
@@ -19,9 +19,13 @@ export const useFieldOnChangeSync = <
   form: FormStore<TFieldValues>,
   path: TFieldPath,
   syncMapper: (value: TFieldValue) => TSyncValue,
-  onSync: (value: TSyncValue, formValue: TFieldValue) => unknown,
+  onSync: (value: TSyncValue) => unknown,
 ) => {
-  return async () => {
+  return async (value?: TFieldValue) => {
+    if (value !== undefined) {
+      setValue(form, path, value);
+    }
+
     const valid = await validate(form, path, {
       shouldActive: false,
       shouldFocus: false,
@@ -45,6 +49,6 @@ export const useFieldOnChangeSync = <
       finalValue = parsed.data;
     }
 
-    onSync(syncMapper(finalValue), finalValue);
+    onSync(syncMapper(finalValue));
   };
 };

@@ -1,5 +1,5 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import type { Component } from 'solid-js';
+import type { Component, JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -13,7 +13,7 @@ import {
 } from './TextField';
 
 export type CombinedTextFieldProps = TextFieldRootProps & {
-  label?: string;
+  label?: JSX.Element;
   errorMessage?: string;
   inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
 };

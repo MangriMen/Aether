@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js';
-import { onCleanup, splitProps } from 'solid-js';
+import { createMemo, onCleanup, splitProps } from 'solid-js';
 
 import { cn, debounce } from '@/shared/lib';
 
@@ -17,25 +17,37 @@ import {
   stringToExtraLaunchArgs,
   useFieldOnChangeSync,
 } from '../../lib';
-import { MemoryField } from './MemoryField';
 import {
   useJavaAndMemoryForm,
   useResetJavaAndMemoryFormValues,
 } from '../../lib/useJavaAndMemoryForm';
-import { ExtraLaunchArgsField } from './ExtraLaunchArgsField';
-import { CustomEnvVarsField } from './CustomEnvVarsField';
-import { setValue } from '@modular-forms/solid';
+import { OverridableExtraLaunchArgsField } from '../../../../5_entities/settings/ui/OverridableExtraLaunchArgsField';
+import { instanceToJavaAndMemorySettingsValues } from '../../model/converter';
+import {
+  OverridableMemoryField,
+  OverridableEnvVarsField,
+} from '@/entities/settings';
 
 export type JavaAndMemoryTabProps = {
   class?: string;
 } & InstanceSettingsTabProps;
 
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'settings', 'class']);
+  const [local, others] = splitProps(props, [
+    'instance',
+    'globalSettings',
+    'class',
+  ]);
 
   const [form, { Form, Field }] = useJavaAndMemoryForm();
 
-  useResetJavaAndMemoryFormValues(form, () => local.instance);
+  const javaAndMemorySettingsFormValues = createMemo(() =>
+    instanceToJavaAndMemorySettingsValues(local.instance),
+  );
+
+  useResetJavaAndMemoryFormValues(form, () =>
+    javaAndMemorySettingsFormValues(),
+  );
 
   const { mutateAsync: editInstance } = useEditInstance();
 
@@ -78,33 +90,30 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     (value) => ({
       customEnvVars: value ? stringToEnvVars(value) : null,
     }),
-    async (value, formValue) => {
-      await editInstanceSimple(value);
-      setValue(form, 'customEnvVars', formValue);
-    },
+    (value) => editInstanceSimple(value),
   );
 
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Field name='memory.maximum' type='number'>
         {(field) => (
-          <MemoryField
+          <OverridableMemoryField
+            overridable
             value={field.value ?? null}
-            defaultValue={local.settings?.memory.maximum}
+            defaultValue={local.globalSettings?.memory.maximum}
             onChange={(value) => {
-              setValue(form, 'memory.maximum', value);
-              updateMemory();
+              updateMemory(value);
             }}
           />
         )}
       </Field>
       <Field name='extraLaunchArgs' type='string'>
         {(field, inputProps) => (
-          <ExtraLaunchArgsField
+          <OverridableExtraLaunchArgsField
+            overridable
             value={field.value}
-            onIsCustomChange={(value) => {
-              setValue(form, 'extraLaunchArgs', value);
-              updateExtraLaunchArgs();
+            onOverrideChange={(value) => {
+              updateExtraLaunchArgs(value);
             }}
             inputProps={{
               type: 'text',
@@ -119,12 +128,11 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       </Field>
       <Field name='customEnvVars' type='string'>
         {(field, inputProps) => (
-          <CustomEnvVarsField
+          <OverridableEnvVarsField
+            overridable
             value={field.value}
-            onChange={(value) => setValue(form, 'customEnvVars', value)}
-            onIsCustomChange={(value) => {
-              setValue(form, 'customEnvVars', value);
-              updateEnvVars();
+            onOverrideChange={(value) => {
+              updateEnvVars(value);
             }}
             inputProps={{
               type: 'text',
