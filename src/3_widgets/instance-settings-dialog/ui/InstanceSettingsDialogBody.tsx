@@ -11,7 +11,7 @@ import {
   Tabs,
 } from '@/shared/ui';
 
-import type { Instance } from '@/entities/instances';
+import { useEditInstance, type Instance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
 
@@ -37,6 +37,8 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 
   const globalSettings = useDefaultInstanceSettings();
 
+  const editInstance = useEditInstance();
+
   return (
     <Tabs
       class={cn('h-96 flex overflow-hidden', local.class)}
@@ -53,7 +55,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
               variant={null}
               leadingIcon={tab.icon}
             >
-              {t(`instanceSettings.${tab.title}`)}
+              {t(`instanceSettings.tab.${tab.title}`)}
             </SettingsTabsTrigger>
           )}
         </For>
@@ -64,6 +66,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
             value={tabContent.value}
             as={tabContent.component}
             instance={local.instance}
+            editInstance={editInstance.mutateAsync}
             globalSettings={globalSettings.data}
           />
         )}

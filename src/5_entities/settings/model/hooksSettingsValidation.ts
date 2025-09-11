@@ -1,9 +1,18 @@
 import { z } from 'zod';
 
 export const HooksSettingsSchema = z.object({
-  pre_launch: z.string(),
-  wrapper: z.string(),
-  post_exit: z.string(),
+  preLaunch: z
+    .string()
+    .nullable()
+    .transform((value) => (value === '' ? null : value)),
+  wrapper: z
+    .string()
+    .nullable()
+    .transform((value) => (value === '' ? null : value)),
+  postExit: z
+    .string()
+    .nullable()
+    .transform((value) => (value === '' ? null : value)),
 });
 
 export type HooksSettingsSchemaValuesInput = z.input<

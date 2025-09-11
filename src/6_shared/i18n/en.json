@@ -129,6 +129,13 @@
     "stopError": "Failed to stop instance"
   },
   "instanceSettings": {
+    "tab": {
+      "general": "General",
+      "installation": "Installation",
+      "javaAndMemory": "Java and memory",
+      "window": "Window",
+      "hooks": "Hooks"
+    },
     "customArguments": "Custom arguments",
     "customEnvironmentVariables": "Custom environment variables",
     "customMemorySettings": "Custom memory settings",
@@ -136,13 +143,9 @@
     "enterArguments": "Enter arguments here (e.g. -Xmx1024m)",
     "enterVariables": "Enter variables here (e.g. JAVA_HOME=C:\\Program Files\\Java\\jdk-17)",
     "environmentVariables": "Environment variables",
-    "general": "General",
-    "installation": "Installation",
-    "javaAndMemory": "Java and memory",
     "javaArguments": "Java arguments",
     "memoryAllocation": "Memory allocation",
     "resolution": "Resolution",
-    "window": "Window",
     "windowError": {
       "resolution": {
         "emptyValue": "Resolution part must be non empty value",

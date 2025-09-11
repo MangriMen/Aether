@@ -129,6 +129,13 @@
     "stopError": "Не удалось остановить инстанс"
   },
   "instanceSettings": {
+    "tab": {
+      "general": "Общие",
+      "installation": "Установка",
+      "javaAndMemory": "Java и память",
+      "window": "Окно",
+      "hooks": "Хуки"
+    },
     "customArguments": "Пользовательские аргументы",
     "customEnvironmentVariables": "Пользовательские переменные окружения",
     "customMemorySettings": "Пользовательские настройки памяти",
@@ -136,13 +143,9 @@
     "enterArguments": "Введите аргументы здесь (например -Xmx1024m)",
     "enterVariables": "Введите переменные здесь (например JAVA_HOME=C:\\Program Files\\Java\\jdk-17)",
     "environmentVariables": "Переменные окружения",
-    "general": "Общие",
-    "installation": "Установка",
-    "javaAndMemory": "Java и память",
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
     "resolution": "Разрешение",
-    "window": "Окно",
     "windowError": {
       "resolution": {
         "emptyValue": "Элемент разрешения должен быть не пустым",

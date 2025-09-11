@@ -17,9 +17,9 @@ import { type InstanceSettingsTabProps } from '../../model';
 import { ResolutionField } from './ResolutionField';
 import { getValue } from '@modular-forms/solid';
 import { useResetWindowFormValues, useWindowForm } from '../../lib';
-import { instanceToWindowSettingsValues } from '../../model/converter';
+import { instanceSettingsToWindowSettingsValues } from '../../model/converter';
 
-export type WindowTabProps = { class?: string } & InstanceSettingsTabProps;
+export type WindowTabProps = InstanceSettingsTabProps & { class?: string };
 
 export const WindowTab: Component<WindowTabProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -36,7 +36,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   }));
 
   const windowSettingsFormValues = createMemo(() =>
-    instanceToWindowSettingsValues(local.instance),
+    instanceSettingsToWindowSettingsValues(local.instance),
   );
 
   const [form, { Form }] = useWindowForm();

@@ -1,20 +1,8 @@
-import { createMemo } from 'solid-js';
-
-import {
-  useEditDefaultInstanceSettings,
-  useDefaultInstanceSettings,
-} from '@/entities/settings';
-import type { JavaAndMemorySettingsSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
-import type { EditDefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
+import { useJavaAndMemorySettingsHandler } from '../../lib';
 import {
   JavaAndMemorySettingsForm,
   type JavaAndMemorySettingsFormProps,
 } from './JavaAndMemorySettingsForm';
-import { instanceSettingsToJavaAndMemorySettingsValues } from '../../model';
-import {
-  stringToEnvVars,
-  stringToExtraLaunchArgs,
-} from '@/widgets/instance-settings-dialog/lib';
 
 export type JavaAndMemorySettingsProps = Omit<
   JavaAndMemorySettingsFormProps,
@@ -22,39 +10,12 @@ export type JavaAndMemorySettingsProps = Omit<
 >;
 
 export const JavaAndMemorySettings = (props: JavaAndMemorySettingsProps) => {
-  const settings = useDefaultInstanceSettings();
-  const editSettings = useEditDefaultInstanceSettings();
-
-  const javaAndMemorySettingsInitialValues = createMemo(() =>
-    settings.data
-      ? instanceSettingsToJavaAndMemorySettingsValues(settings.data)
-      : undefined,
-  );
-
-  const onJavaAndMemorySettingsValuesChange = (
-    values: Partial<JavaAndMemorySettingsSchemaValuesOutput>,
-  ) => {
-    const dto: EditDefaultInstanceSettings = {};
-
-    if (values.memory?.maximum) {
-      dto.memory = { maximum: values.memory.maximum };
-    }
-
-    if (values.extraLaunchArgs) {
-      dto.extraLaunchArgs = stringToExtraLaunchArgs(values.extraLaunchArgs);
-    }
-
-    if (values.customEnvVars) {
-      dto.customEnvVars = stringToEnvVars(values.customEnvVars);
-    }
-
-    editSettings.mutateAsync(dto);
-  };
+  const { initialValues, onChange } = useJavaAndMemorySettingsHandler();
 
   return (
     <JavaAndMemorySettingsForm
-      initialValues={javaAndMemorySettingsInitialValues}
-      onChangePartial={onJavaAndMemorySettingsValuesChange}
+      initialValues={initialValues}
+      onChangePartial={onChange}
       {...props}
     />
   );

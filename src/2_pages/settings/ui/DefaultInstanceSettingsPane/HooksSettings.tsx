@@ -1,14 +1,10 @@
-import { createMemo, type Component } from 'solid-js';
+import { type Component } from 'solid-js';
 import {
   type HooksSettingsFormProps,
-  type HooksSettingsSchemaValuesOutput,
   HooksSettingsForm,
-  useEditDefaultInstanceSettings,
-  useDefaultInstanceSettings,
-  type EditDefaultInstanceSettings,
 } from '@/entities/settings';
 
-import { instanceSettingsToHooksSettingsValues } from '../../model';
+import { useDefaultHooksSettingsHandler } from '../../lib';
 
 export type HooksSettingsProps = Omit<
   HooksSettingsFormProps,
@@ -16,35 +12,12 @@ export type HooksSettingsProps = Omit<
 >;
 
 export const HooksSettings: Component<HooksSettingsProps> = (props) => {
-  const settings = useDefaultInstanceSettings();
-  const editSettings = useEditDefaultInstanceSettings();
-
-  const hooksSettingsInitialValues = createMemo(() =>
-    settings.data
-      ? instanceSettingsToHooksSettingsValues(settings.data)
-      : undefined,
-  );
-
-  const onHooksSettingsValuesChange = (
-    values: Partial<HooksSettingsSchemaValuesOutput>,
-  ) => {
-    const dto: EditDefaultInstanceSettings = {};
-
-    if (values.pre_launch && values.wrapper && values.post_exit) {
-      dto.hooks = {
-        pre_launch: values.pre_launch,
-        wrapper: values.wrapper,
-        post_exit: values.post_exit,
-      };
-    }
-
-    editSettings.mutateAsync(dto);
-  };
+  const { initialValues, onChange } = useDefaultHooksSettingsHandler();
 
   return (
     <HooksSettingsForm
-      initialValues={hooksSettingsInitialValues}
-      onChangePartial={onHooksSettingsValuesChange}
+      initialValues={initialValues}
+      onChangePartial={onChange}
       {...props}
     />
   );

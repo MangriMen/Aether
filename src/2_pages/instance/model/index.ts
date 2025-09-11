@@ -1,4 +1,4 @@
-export * from './content';
 export * from './constants';
-export * from './createContentTable';
+export * from './content';
 export * from './contentTableColumns';
+export * from './createContentTable';

@@ -31,7 +31,7 @@ export interface EditInstanceSettings {
   extraLaunchArgs?: string[] | null;
   customEnvVars?: Array<[string, string]> | null;
 
-  hooks: Hooks;
+  hooks?: Partial<Hooks>;
 }
 
 export interface Instance extends InstanceSettings {
@@ -115,3 +115,6 @@ export interface ImportHandler {
   fileName: string;
   fileExtensions: string[];
 }
+
+export const isEditInstanceSettingsEmpty = (dto: EditInstanceSettings) =>
+  Object.values(dto).every((value) => value === undefined);

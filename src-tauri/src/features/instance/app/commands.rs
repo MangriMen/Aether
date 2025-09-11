@@ -95,7 +95,7 @@ pub async fn instance_get(id: String) -> FrontendResult<Instance> {
 }
 
 #[tauri::command]
-pub async fn instance_edit(id: String, edit_instance: EditInstance) -> FrontendResult<()> {
+pub async fn instance_edit(id: String, edit_instance: EditInstance) -> FrontendResult<Instance> {
     Ok(aether_core::api::instance::edit(id, edit_instance).await?)
 }
 

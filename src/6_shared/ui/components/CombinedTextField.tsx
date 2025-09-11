@@ -4,7 +4,11 @@ import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { TextFieldInputProps, TextFieldRootProps } from './TextField';
+import type {
+  TextFieldInputProps,
+  TextFieldLabelProps,
+  TextFieldRootProps,
+} from './TextField';
 import {
   TextField,
   TextFieldErrorMessage,
@@ -15,6 +19,7 @@ import {
 export type CombinedTextFieldProps = TextFieldRootProps & {
   label?: JSX.Element;
   errorMessage?: string;
+  labelProps?: TextFieldLabelProps<'label'>;
   inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
 };
 
@@ -22,6 +27,7 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
   const [local, others] = splitProps(props, [
     'label',
     'errorMessage',
+    'labelProps',
     'inputProps',
     'class',
   ]);
@@ -32,10 +38,8 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       {...others}
     >
-      <TextFieldLabel class='flex flex-col gap-2'>
-        {local.label}
-        <TextFieldInput type='text' {...local.inputProps} />
-      </TextFieldLabel>
+      <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
+      <TextFieldInput type='text' {...local.inputProps} />
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
     </TextField>
   );

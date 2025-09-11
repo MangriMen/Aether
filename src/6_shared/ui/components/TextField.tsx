@@ -1,5 +1,6 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import * as TextFieldPrimitive from '@kobalte/core/text-field';
+import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
 import type { ValidComponent } from 'solid-js';
@@ -86,7 +87,7 @@ const labelVariants = cva(
     variants: {
       variant: {
         label: 'data-[invalid]:text-destructive',
-        description: 'font-normal text-muted-foreground',
+        description: 'font-medium text-muted-foreground',
         error: 'text-destructive',
       },
     },
@@ -97,15 +98,19 @@ const labelVariants = cva(
 );
 
 type TextFieldLabelProps<T extends ValidComponent = 'label'> =
-  TextFieldPrimitive.TextFieldLabelProps<T> & { class?: string | undefined };
+  TextFieldPrimitive.TextFieldLabelProps<T> &
+    VariantProps<typeof labelVariants> & { class?: string | undefined };
 
 const TextFieldLabel = <T extends ValidComponent = 'label'>(
   props: PolymorphicProps<T, TextFieldLabelProps<T>>,
 ) => {
-  const [local, others] = splitProps(props as TextFieldLabelProps, ['class']);
+  const [local, others] = splitProps(props as TextFieldLabelProps, [
+    'variant',
+    'class',
+  ]);
   return (
     <TextFieldPrimitive.Label
-      class={cn(labelVariants(), local.class)}
+      class={cn(labelVariants({ variant: local.variant }), local.class)}
       {...others}
     />
   );

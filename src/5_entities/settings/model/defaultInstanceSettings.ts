@@ -15,9 +15,17 @@ export interface MemorySettings {
 }
 
 export interface Hooks {
-  pre_launch: string;
-  wrapper: string;
-  post_exit: string;
+  preLaunch: string | null;
+  wrapper: string | null;
+  postExit: string | null;
 }
 
-export type EditDefaultInstanceSettings = Partial<DefaultInstanceSettings>;
+export type EditDefaultInstanceSettings = Partial<
+  Omit<DefaultInstanceSettings, 'hooks'>
+> & {
+  hooks?: Partial<Hooks>;
+};
+
+export const isEditDefaultInstanceSettingsEmpty = (
+  dto: EditDefaultInstanceSettings,
+) => Object.values(dto).every((value) => value === undefined);

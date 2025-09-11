@@ -22,15 +22,15 @@ import {
   useResetJavaAndMemoryFormValues,
 } from '../../lib/useJavaAndMemoryForm';
 import { OverridableExtraLaunchArgsField } from '../../../../5_entities/settings/ui/OverridableExtraLaunchArgsField';
-import { instanceToJavaAndMemorySettingsValues } from '../../model/converter';
 import {
   OverridableMemoryField,
   OverridableEnvVarsField,
 } from '@/entities/settings';
+import { instanceSettingsToJavaAndMemorySettingsValues } from '../../model/converter';
 
-export type JavaAndMemoryTabProps = {
+export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {
   class?: string;
-} & InstanceSettingsTabProps;
+};
 
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -42,7 +42,7 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [form, { Form, Field }] = useJavaAndMemoryForm();
 
   const javaAndMemorySettingsFormValues = createMemo(() =>
-    instanceToJavaAndMemorySettingsValues(local.instance),
+    instanceSettingsToJavaAndMemorySettingsValues(local.instance),
   );
 
   useResetJavaAndMemoryFormValues(form, () =>

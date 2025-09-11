@@ -15,7 +15,7 @@ import {
 import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
 import { useFieldOnChangeSync } from '../../lib';
 
-export type GeneralTabProps = { class?: string } & InstanceSettingsTabProps;
+export type GeneralTabProps = InstanceSettingsTabProps & { class?: string };
 
 export const GeneralTab: Component<GeneralTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);

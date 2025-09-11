@@ -2,6 +2,7 @@ import MdiCoffeeOutlineIcon from '@iconify/icons-mdi/coffee-outline';
 import MdiInfoOutlineIcon from '@iconify/icons-mdi/info-outline';
 import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
 import MdiToolsIcon from '@iconify/icons-mdi/tools';
+import MdiArrowDecisionOutline from '@iconify/icons-mdi/arrow-decision-outline';
 import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
 
@@ -9,11 +10,13 @@ import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab/Windo
 import { GeneralTab } from '../ui/GeneralTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
-import type { Instance } from '@/entities/instances';
+import type { EditInstance, Instance } from '@/entities/instances';
 import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
+import { HooksTab } from '../ui/HooksTab/HooksTab';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;
+  editInstance: (args: { id: string; edit: EditInstance }) => Promise<unknown>;
   globalSettings?: DefaultInstanceSettings;
 };
 
@@ -22,11 +25,12 @@ export enum InstanceSettingsDialogTabs {
   Installation = 'installation',
   Window = 'window',
   JavaAndMemory = 'java-and-memory',
+  Hooks = 'hooks',
 }
 
 export const INSTANCE_SETTINGS_TABS_TRIGGER: {
   icon: IconifyIcon;
-  title: 'general' | 'installation' | 'window' | 'javaAndMemory';
+  title: 'general' | 'installation' | 'window' | 'javaAndMemory' | 'hooks';
   value: InstanceSettingsDialogTabs;
 }[] = [
   {
@@ -49,6 +53,11 @@ export const INSTANCE_SETTINGS_TABS_TRIGGER: {
     title: 'javaAndMemory',
     value: InstanceSettingsDialogTabs.JavaAndMemory,
   },
+  {
+    icon: MdiArrowDecisionOutline,
+    title: 'hooks',
+    value: InstanceSettingsDialogTabs.Hooks,
+  },
 ];
 
 export const INSTANCE_SETTINGS_TABS_CONTENT: {
@@ -70,5 +79,9 @@ export const INSTANCE_SETTINGS_TABS_CONTENT: {
   {
     component: JavaAndMemoryTab,
     value: InstanceSettingsDialogTabs.JavaAndMemory,
+  },
+  {
+    component: HooksTab,
+    value: InstanceSettingsDialogTabs.Hooks,
   },
 ];
