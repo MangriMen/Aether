@@ -170,7 +170,7 @@
   "settings": {
     "tab": {
       "appearance": "Внешний вид",
-      "globalInstanceSettings": "Глобальные настройки инстансов",
+      "defaultInstanceSettings": "Глобальные настройки инстансов",
       "update": "Обновление",
       "plugins": "Плагины",
       "experimental": "Экспериментальное"

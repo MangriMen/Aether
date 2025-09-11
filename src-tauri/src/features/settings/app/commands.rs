@@ -1,5 +1,5 @@
 use aether_core::features::settings::{
-    EditGlobalInstanceSettings, GlobalInstanceSettings, Settings,
+    DefaultInstanceSettings, EditDefaultInstanceSettings, Settings,
 };
 
 use crate::FrontendResult;
@@ -10,8 +10,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             get,
             edit,
             get_max_ram,
-            get_global_instance_settings,
-            edit_global_instance_settings
+            get_default_instance_settings,
+            edit_default_instance_settings
         ])
         .build()
 }
@@ -32,13 +32,13 @@ pub async fn get_max_ram() -> FrontendResult<u64> {
 }
 
 #[tauri::command]
-pub async fn get_global_instance_settings() -> FrontendResult<GlobalInstanceSettings> {
-    Ok(aether_core::api::settings::get_global_instance_settings().await?)
+pub async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettings> {
+    Ok(aether_core::api::settings::get_default_instance_settings().await?)
 }
 
 #[tauri::command]
-pub async fn edit_global_instance_settings(
-    edit_settings: EditGlobalInstanceSettings,
-) -> FrontendResult<GlobalInstanceSettings> {
-    Ok(aether_core::api::settings::upsert_global_instance_settings(edit_settings).await?)
+pub async fn edit_default_instance_settings(
+    edit_settings: EditDefaultInstanceSettings,
+) -> FrontendResult<DefaultInstanceSettings> {
+    Ok(aether_core::api::settings::upsert_default_instance_settings(edit_settings).await?)
 }

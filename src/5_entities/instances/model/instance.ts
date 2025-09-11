@@ -1,7 +1,7 @@
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
 import type { ContentType } from './contentType';
 import type {
-  GlobalInstanceSettings,
+  DefaultInstanceSettings,
   Hooks,
   MemorySettings,
   WindowSize,
@@ -17,7 +17,7 @@ export interface PackInfo {
   canUpdate: boolean;
 }
 
-export interface InstanceSettings extends Partial<GlobalInstanceSettings> {
+export interface InstanceSettings extends Partial<DefaultInstanceSettings> {
   forceFullscreen?: boolean;
 }
 

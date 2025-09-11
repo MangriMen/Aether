@@ -21,7 +21,7 @@ import {
   InstanceSettingsDialogTabs,
 } from '../model';
 import { cn } from '@/shared/lib';
-import { useGlobalInstanceSettings } from '@/entities/settings';
+import { useDefaultInstanceSettings } from '@/entities/settings';
 
 export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
   TabsProps<T> & {
@@ -35,7 +35,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 
   const [{ t }] = useTranslation();
 
-  const globalSettings = useGlobalInstanceSettings();
+  const globalSettings = useDefaultInstanceSettings();
 
   return (
     <Tabs

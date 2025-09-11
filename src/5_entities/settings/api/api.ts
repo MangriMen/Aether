@@ -1,16 +1,16 @@
 import type { QueryClient } from '@tanstack/solid-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import {
-  editGlobalInstanceSettingsRaw,
+  editDefaultInstanceSettingsRaw,
   editSettingsRaw,
-  getGlobalInstanceSettingsRaw,
+  getDefaultInstanceSettingsRaw,
   getMaxRamRaw,
   getSettingsRaw,
 } from './rawApi';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { SETTINGS_QUERY_KEYS } from './settingsQueryKeys';
-import { GLOBAL_INSTANCE_SETTINGS_QUERY_KEYS } from './globalInstanceSettingsQueryKeys';
+import { DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS } from './defaultInstanceSettingsQueryKeys';
 
 export const useSettings = () =>
   useQuery(() => ({
@@ -49,22 +49,22 @@ export const useMaxRam = () => useQuery(MAX_RAM_QUERY);
 export const prefetchMaxRam = (queryClient: QueryClient) =>
   queryClient.prefetchQuery(MAX_RAM_QUERY());
 
-export const useGlobalInstanceSettings = () =>
+export const useDefaultInstanceSettings = () =>
   useQuery(() => ({
-    queryKey: GLOBAL_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
-    queryFn: getGlobalInstanceSettingsRaw,
+    queryKey: DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
+    queryFn: getDefaultInstanceSettingsRaw,
   }));
 
-export const useEditGlobalInstanceSettings = () => {
+export const useEditDefaultInstanceSettings = () => {
   const queryClient = useQueryClient();
 
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: editGlobalInstanceSettingsRaw,
+    mutationFn: editDefaultInstanceSettingsRaw,
     onSuccess: (data) => {
       queryClient.setQueryData(
-        GLOBAL_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
+        DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
         () => data,
       );
     },

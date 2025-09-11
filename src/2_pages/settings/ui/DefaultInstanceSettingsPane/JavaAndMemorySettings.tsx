@@ -1,11 +1,11 @@
 import { createMemo } from 'solid-js';
 
 import {
-  useEditGlobalInstanceSettings,
-  useGlobalInstanceSettings,
+  useEditDefaultInstanceSettings,
+  useDefaultInstanceSettings,
 } from '@/entities/settings';
 import type { JavaAndMemorySettingsSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
-import type { EditGlobalInstanceSettings } from '@/entities/settings/model/globalInstanceSettings';
+import type { EditDefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
 import {
   JavaAndMemorySettingsForm,
   type JavaAndMemorySettingsFormProps,
@@ -22,8 +22,8 @@ export type JavaAndMemorySettingsProps = Omit<
 >;
 
 export const JavaAndMemorySettings = (props: JavaAndMemorySettingsProps) => {
-  const settings = useGlobalInstanceSettings();
-  const editSettings = useEditGlobalInstanceSettings();
+  const settings = useDefaultInstanceSettings();
+  const editSettings = useEditDefaultInstanceSettings();
 
   const javaAndMemorySettingsInitialValues = createMemo(() =>
     settings.data
@@ -34,7 +34,7 @@ export const JavaAndMemorySettings = (props: JavaAndMemorySettingsProps) => {
   const onJavaAndMemorySettingsValuesChange = (
     values: Partial<JavaAndMemorySettingsSchemaValuesOutput>,
   ) => {
-    const dto: EditGlobalInstanceSettings = {};
+    const dto: EditDefaultInstanceSettings = {};
 
     if (values.memory?.maximum) {
       dto.memory = { maximum: values.memory.maximum };

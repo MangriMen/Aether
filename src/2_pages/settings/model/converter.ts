@@ -1,5 +1,5 @@
 import type { HooksSettingsSchemaValuesInput } from '@/entities/settings';
-import type { GlobalInstanceSettings } from '@/entities/settings/model/globalInstanceSettings';
+import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
 import type {
   JavaAndMemorySettingsSchemaValuesInput,
   WindowSchemaValuesInput,
@@ -11,7 +11,7 @@ import {
 import type { PartialValues } from '@modular-forms/solid';
 
 export const instanceSettingsToWindowSettingsValues = (
-  settings: GlobalInstanceSettings,
+  settings: DefaultInstanceSettings,
 ): PartialValues<WindowSchemaValuesInput> => {
   const resolution = settings.gameResolution;
 
@@ -26,7 +26,7 @@ export const instanceSettingsToWindowSettingsValues = (
 };
 
 export const instanceSettingsToJavaAndMemorySettingsValues = (
-  settings: GlobalInstanceSettings,
+  settings: DefaultInstanceSettings,
 ): PartialValues<JavaAndMemorySettingsSchemaValuesInput> => {
   const maximum = settings.memory.maximum;
   const extraLaunchArgs = settings.extraLaunchArgs;
@@ -44,7 +44,7 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
 };
 
 export const instanceSettingsToHooksSettingsValues = (
-  settings: GlobalInstanceSettings,
+  settings: DefaultInstanceSettings,
 ): PartialValues<HooksSettingsSchemaValuesInput> => {
   const hooks = settings.hooks;
 

@@ -170,7 +170,7 @@
   "settings": {
     "tab": {
       "appearance": "Appearance",
-      "globalInstanceSettings": "Global instance settings",
+      "defaultInstanceSettings": "Default instance settings",
       "update": "Update",
       "plugins": "Plugins",
       "experimental": "Experimental"

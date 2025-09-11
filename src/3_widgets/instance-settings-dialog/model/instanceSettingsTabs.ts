@@ -10,11 +10,11 @@ import { GeneralTab } from '../ui/GeneralTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
 import type { Instance } from '@/entities/instances';
-import type { GlobalInstanceSettings } from '@/entities/settings/model/globalInstanceSettings';
+import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;
-  globalSettings?: GlobalInstanceSettings;
+  globalSettings?: DefaultInstanceSettings;
 };
 
 export enum InstanceSettingsDialogTabs {

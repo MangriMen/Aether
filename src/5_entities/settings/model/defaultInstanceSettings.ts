@@ -1,4 +1,4 @@
-export interface GlobalInstanceSettings {
+export interface DefaultInstanceSettings {
   extraLaunchArgs: string[];
   customEnvVars: Array<[string, string]>;
 
@@ -20,4 +20,4 @@ export interface Hooks {
   post_exit: string;
 }
 
-export type EditGlobalInstanceSettings = Partial<GlobalInstanceSettings>;
+export type EditDefaultInstanceSettings = Partial<DefaultInstanceSettings>;

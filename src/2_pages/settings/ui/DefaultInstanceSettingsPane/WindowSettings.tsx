@@ -4,12 +4,12 @@ import {
   type WindowSettingsFormProps,
 } from './WindowSettingsForm';
 import {
-  useEditGlobalInstanceSettings,
-  useGlobalInstanceSettings,
+  useEditDefaultInstanceSettings,
+  useDefaultInstanceSettings,
 } from '@/entities/settings';
 import { instanceSettingsToWindowSettingsValues } from '../../model';
 import type { WindowSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
-import type { EditGlobalInstanceSettings } from '@/entities/settings/model/globalInstanceSettings';
+import type { EditDefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
 
 export type WindowSettingsProps = Omit<
   WindowSettingsFormProps,
@@ -17,8 +17,8 @@ export type WindowSettingsProps = Omit<
 >;
 
 export const WindowSettings = (props: WindowSettingsProps) => {
-  const settings = useGlobalInstanceSettings();
-  const editSettings = useEditGlobalInstanceSettings();
+  const settings = useDefaultInstanceSettings();
+  const editSettings = useEditDefaultInstanceSettings();
 
   const windowSettingsInitialValues = createMemo(() =>
     settings.data
@@ -29,7 +29,7 @@ export const WindowSettings = (props: WindowSettingsProps) => {
   const onWindowSettingsValuesChange = (
     values: Partial<WindowSchemaValuesOutput>,
   ) => {
-    const dto: EditGlobalInstanceSettings = {};
+    const dto: EditDefaultInstanceSettings = {};
 
     if (values.resolution) {
       dto.gameResolution = [values.resolution.width, values.resolution.height];

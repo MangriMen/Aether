@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Settings } from '../model';
 import type {
-  EditGlobalInstanceSettings,
-  GlobalInstanceSettings,
-} from '../model/globalInstanceSettings';
+  EditDefaultInstanceSettings,
+  DefaultInstanceSettings,
+} from '../model/defaultInstanceSettings';
 
 const PLUGIN_SETTINGS_PREFIX = 'plugin:settings|';
 
@@ -16,16 +16,16 @@ export const editSettingsRaw = (editSettings: Settings) =>
 export const getMaxRamRaw = () =>
   invoke<number>(`${PLUGIN_SETTINGS_PREFIX}get_max_ram`);
 
-export const getGlobalInstanceSettingsRaw = () =>
-  invoke<GlobalInstanceSettings>(
-    `${PLUGIN_SETTINGS_PREFIX}get_global_instance_settings`,
+export const getDefaultInstanceSettingsRaw = () =>
+  invoke<DefaultInstanceSettings>(
+    `${PLUGIN_SETTINGS_PREFIX}get_default_instance_settings`,
   );
 
-export const editGlobalInstanceSettingsRaw = (
-  editSettings: EditGlobalInstanceSettings,
+export const editDefaultInstanceSettingsRaw = (
+  editSettings: EditDefaultInstanceSettings,
 ) =>
-  invoke<GlobalInstanceSettings>(
-    `${PLUGIN_SETTINGS_PREFIX}edit_global_instance_settings`,
+  invoke<DefaultInstanceSettings>(
+    `${PLUGIN_SETTINGS_PREFIX}edit_default_instance_settings`,
     {
       editSettings,
     },

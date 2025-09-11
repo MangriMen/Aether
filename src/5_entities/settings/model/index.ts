@@ -1,3 +1,3 @@
 export * from './settings';
-export * from './globalInstanceSettings';
+export * from './defaultInstanceSettings';
 export * from './hooksSettingsValidation';

@@ -68,8 +68,8 @@ fn main() {
             "get",
             "edit",
             "get_max_ram",
-            "get_global_instance_settings",
-            "edit_global_instance_settings",
+            "get_default_instance_settings",
+            "edit_default_instance_settings",
         ]),
     );
 

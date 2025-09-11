@@ -9,11 +9,11 @@ import MdiPuzzleIcon from '@iconify/icons-mdi/puzzle';
 import MdiTestTubeIcon from '@iconify/icons-mdi/test-tube';
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
-import { GlobalInstanceSettingsPane } from '../ui/GlobalInstanceSettingsPane/GlobalInstanceSettingsPane';
+import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
 
 export enum SettingsTabs {
   Appearance = 'appearance',
-  GlobalInstanceSettings = 'globalInstanceSettings',
+  DefaultInstanceSettings = 'defaultInstanceSettings',
   Update = 'update',
   Plugins = 'plugins',
   Experimental = 'experimental',
@@ -24,7 +24,7 @@ export const SETTINGS_TABS_TRIGGER: {
   title:
     | 'appearance'
     | 'update'
-    | 'globalInstanceSettings'
+    | 'defaultInstanceSettings'
     | 'plugins'
     | 'experimental';
   value: SettingsTabs;
@@ -36,8 +36,8 @@ export const SETTINGS_TABS_TRIGGER: {
   },
   {
     icon: MdiGamepadSquare,
-    title: 'globalInstanceSettings',
-    value: SettingsTabs.GlobalInstanceSettings,
+    title: 'defaultInstanceSettings',
+    value: SettingsTabs.DefaultInstanceSettings,
   },
   {
     icon: MdiPuzzleIcon,
@@ -65,8 +65,8 @@ export const SETTINGS_TABS_CONTENT: {
     value: SettingsTabs.Appearance,
   },
   {
-    component: GlobalInstanceSettingsPane,
-    value: SettingsTabs.GlobalInstanceSettings,
+    component: DefaultInstanceSettingsPane,
+    value: SettingsTabs.DefaultInstanceSettings,
   },
   {
     component: PluginsPane,

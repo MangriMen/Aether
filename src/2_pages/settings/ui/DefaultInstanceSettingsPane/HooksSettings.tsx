@@ -3,9 +3,9 @@ import {
   type HooksSettingsFormProps,
   type HooksSettingsSchemaValuesOutput,
   HooksSettingsForm,
-  useEditGlobalInstanceSettings,
-  useGlobalInstanceSettings,
-  type EditGlobalInstanceSettings,
+  useEditDefaultInstanceSettings,
+  useDefaultInstanceSettings,
+  type EditDefaultInstanceSettings,
 } from '@/entities/settings';
 
 import { instanceSettingsToHooksSettingsValues } from '../../model';
@@ -16,8 +16,8 @@ export type HooksSettingsProps = Omit<
 >;
 
 export const HooksSettings: Component<HooksSettingsProps> = (props) => {
-  const settings = useGlobalInstanceSettings();
-  const editSettings = useEditGlobalInstanceSettings();
+  const settings = useDefaultInstanceSettings();
+  const editSettings = useEditDefaultInstanceSettings();
 
   const hooksSettingsInitialValues = createMemo(() =>
     settings.data
@@ -28,7 +28,7 @@ export const HooksSettings: Component<HooksSettingsProps> = (props) => {
   const onHooksSettingsValuesChange = (
     values: Partial<HooksSettingsSchemaValuesOutput>,
   ) => {
-    const dto: EditGlobalInstanceSettings = {};
+    const dto: EditDefaultInstanceSettings = {};
 
     if (values.pre_launch && values.wrapper && values.post_exit) {
       dto.hooks = {

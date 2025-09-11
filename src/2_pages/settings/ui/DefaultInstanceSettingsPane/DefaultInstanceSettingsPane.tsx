@@ -6,10 +6,10 @@ import { HooksSettings } from './HooksSettings';
 import { WindowSettings } from './WindowSettings';
 import { JavaAndMemorySettings } from './JavaAndMemorySettings';
 
-export type GlobalInstanceSettingsPaneProps = ComponentProps<'div'>;
+export type DefaultInstanceSettingsPaneProps = ComponentProps<'div'>;
 
-export const GlobalInstanceSettingsPane: Component<
-  GlobalInstanceSettingsPaneProps
+export const DefaultInstanceSettingsPane: Component<
+  DefaultInstanceSettingsPaneProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
@@ -18,7 +18,7 @@ export const GlobalInstanceSettingsPane: Component<
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.tab.globalInstanceSettings')}
+      label={t('settings.tab.defaultInstanceSettings')}
       {...others}
     >
       <WindowSettings />
