@@ -54,7 +54,7 @@ export const SETTINGS_TABS_TRIGGER: {
     title: 'experimental',
     value: SettingsTabs.Experimental,
   },
-];
+] as const;
 
 export const SETTINGS_TABS_CONTENT: {
   component: Component<ComponentProps<'div'>>;
@@ -80,4 +80,4 @@ export const SETTINGS_TABS_CONTENT: {
     component: ExperimentalPane,
     value: SettingsTabs.Experimental,
   },
-];
+] as const;

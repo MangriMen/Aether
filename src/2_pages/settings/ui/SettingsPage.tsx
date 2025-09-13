@@ -4,7 +4,6 @@ import {
   For,
   splitProps,
   type ComponentProps,
-  createMemo,
 } from 'solid-js';
 
 import type { TabsProps } from '@/shared/ui';
@@ -15,14 +14,11 @@ import {
   SettingsTabsTrigger,
   Tabs,
 } from '@/shared/ui';
-import {
-  SETTINGS_TABS_CONTENT,
-  SETTINGS_TABS_TRIGGER,
-  SettingsTabs,
-} from '../model/settingsTabs';
+import { SettingsTabs } from '../model/settingsTabs';
 import type { PolymorphicProps } from '@kobalte/core';
-import { isDeveloperMode, useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 import { VersionInfo } from './VersionInfo';
+import { useSettingsPagePrefetch, useSettingsPageTabs } from '../lib';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
@@ -34,25 +30,9 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
 
   const [{ t }] = useTranslation();
 
-  const tabs_triggers = createMemo(() => {
-    if (!isDeveloperMode()) {
-      return SETTINGS_TABS_TRIGGER.filter(
-        (trigger) => trigger.value !== SettingsTabs.Experimental,
-      );
-    }
+  const [tabsTriggers, tabsContents] = useSettingsPageTabs();
 
-    return SETTINGS_TABS_TRIGGER;
-  });
-
-  const tabs_contents = createMemo(() => {
-    if (!isDeveloperMode()) {
-      return SETTINGS_TABS_CONTENT.filter(
-        (trigger) => trigger.value !== SettingsTabs.Experimental,
-      );
-    }
-
-    return SETTINGS_TABS_CONTENT;
-  });
+  useSettingsPagePrefetch();
 
   return (
     <div class='flex size-full flex-col p-4' {...others}>
@@ -63,21 +43,20 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
         {...(others as TabsProps<T>)}
       >
         <SettingsTabsList class='w-56'>
-          <For each={tabs_triggers()}>
+          <For each={tabsTriggers()}>
             {(tab) => (
               <SettingsTabsTrigger
                 value={tab.value}
                 as={Button}
                 variant={null}
                 leadingIcon={tab.icon}
-              >
-                {t(`settings.tab.${tab.title}`)}
-              </SettingsTabsTrigger>
+                children={t(`settings.tab.${tab.title}`)}
+              />
             )}
           </For>
           <VersionInfo class='mt-auto self-start text-sm' />
         </SettingsTabsList>
-        <For each={tabs_contents()}>
+        <For each={tabsContents()}>
           {(tabContent) => (
             <SettingsTabsContent
               value={tabContent.value}

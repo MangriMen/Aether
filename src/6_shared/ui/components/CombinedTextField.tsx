@@ -1,6 +1,6 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, JSX } from 'solid-js';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -38,7 +38,9 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       {...others}
     >
-      <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
+      <Show when={local.label}>
+        <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
+      </Show>
       <TextFieldInput type='text' {...local.inputProps} />
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
     </TextField>
