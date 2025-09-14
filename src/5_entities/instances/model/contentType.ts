@@ -1,6 +1,6 @@
 export const ContentType = {
-  DataPack: 'datapack',
   Mod: 'mod',
+  DataPack: 'datapack',
   ResourcePack: 'resourcepack',
   ShaderPack: 'shaderpack',
 } as const;
@@ -11,10 +11,10 @@ export type ContentType = (typeof ContentType)[keyof typeof ContentType];
 
 export const CONTENT_TYPE_TO_TITLE: Record<
   ContentType,
-  'dataPacks' | 'mods' | 'resourcePacks' | 'shaders'
+  'mods' | 'dataPacks' | 'resourcePacks' | 'shaders'
 > = {
-  datapack: 'dataPacks',
   mod: 'mods',
+  datapack: 'dataPacks',
   resourcepack: 'resourcePacks',
   shaderpack: 'shaders',
 } as const;

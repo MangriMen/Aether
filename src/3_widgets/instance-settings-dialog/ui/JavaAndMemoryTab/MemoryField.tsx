@@ -1,21 +1,19 @@
 import type { Component, ComponentProps } from 'solid-js';
-
 import { createMemo, splitProps } from 'solid-js';
 
+import { Checkbox, LabeledField } from '@/shared/ui';
+import { useTranslation } from '@/shared/model';
+import { MemoryInput } from './MemoryInput';
+import { MIN_JRE_MEMORY } from '../../model';
+import { bytesToMegabytes } from '../../lib';
 import { useMaxRam } from '@/entities/settings';
 import { cn, useIsCustomCheckbox } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Checkbox, LabeledField } from '@/shared/ui';
 
-import { bytesToMegabytes } from '../../lib';
-import { MIN_JRE_MEMORY } from '../../model';
-import { MemoryInput } from './MemoryInput';
-
-export type MemoryFieldProps = {
+export type MemoryFieldProps = Omit<ComponentProps<'div'>, 'onChange'> & {
+  value?: number | null;
   defaultValue?: number;
-  onChange?: (value: null | number) => void;
-  value?: null | number;
-} & Omit<ComponentProps<'div'>, 'onChange'>;
+  onChange?: (value: number | null) => void;
+};
 
 export const MemoryField: Component<MemoryFieldProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -47,12 +45,12 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
     return [local.defaultValue];
   });
 
-  const getClampedMemory = (value: null | number) => {
+  const getClampedMemory = (value: number | null) => {
     if (value === null) return null;
     return Math.max(minMemory(), Math.min(value, maxMemory()));
   };
 
-  const handleChangeMemory = (value: null | number[]) => {
+  const handleChangeMemory = (value: number[] | null) => {
     local.onChange?.(value ? getClampedMemory(value[0]) : value);
   };
 
@@ -69,18 +67,18 @@ export const MemoryField: Component<MemoryFieldProps> = (props) => {
       {...others}
     >
       <Checkbox
-        checked={isCustom()}
         label={t('instanceSettings.customMemorySettings')}
+        checked={isCustom()}
         onChange={setIsCustom}
       />
       <MemoryInput
-        defaultValue={defaultMemory()}
         disabled={!isCustom()}
-        maxValue={maxMemory()}
-        minValue={minMemory()}
-        onChange={handleChangeMemory}
         value={value()}
+        defaultValue={defaultMemory()}
+        minValue={minMemory()}
+        maxValue={maxMemory()}
         warningValue={warningMemory()}
+        onChange={handleChangeMemory}
       />
     </LabeledField>
   );

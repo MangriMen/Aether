@@ -1,14 +1,13 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
-
 import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { FieldLabel } from '@/shared/ui';
 
-export type SettingsEntryProps = {
-  description?: JSX.Element | string;
-  title?: JSX.Element | string;
-} & ComponentProps<'div'>;
+export type SettingsEntryProps = ComponentProps<'div'> & {
+  title?: string | JSX.Element;
+  description?: string | JSX.Element;
+};
 
 export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
   const [local, others] = splitProps(props, [

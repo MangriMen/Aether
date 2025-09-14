@@ -1,14 +1,11 @@
-import { type Component, Show, splitProps } from 'solid-js';
-
-import type { SettingsPaneProps } from '@/shared/ui';
-
 import { usePlugins } from '@/entities/plugins';
-import { cn } from '@/shared/lib';
+import { Show, splitProps, type Component } from 'solid-js';
 import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
-
 import { PluginsList } from './PluginsList';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
+import type { SettingsPaneProps } from '@/shared/ui';
+import { SettingsPane } from '@/shared/ui';
+import { cn } from '@/shared/lib';
 
 export type PluginsPaneProps = SettingsPaneProps;
 
@@ -26,10 +23,10 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
       {...others}
     >
       <Show
-        fallback={<span>{t('plugins.noPlugins')}</span>}
         when={plugins.data?.length}
+        fallback={<span>{t('plugins.noPlugins')}</span>}
       >
-        <PluginsList isLoading={plugins.isLoading} plugins={plugins.data} />
+        <PluginsList plugins={plugins.data} isLoading={plugins.isLoading} />
       </Show>
     </SettingsPane>
   );

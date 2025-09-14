@@ -1,9 +1,7 @@
-import { type Component } from 'solid-js';
-
-import { useTranslation } from '@/shared/model';
 import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
-
+import { type Component } from 'solid-js';
 import { useAppSettings, useUpdateAppSettings } from '../../api';
+import { useTranslation } from '@/shared/model';
 
 export type ToggleWindowTransparencyEntryProps = {
   class?: string;
@@ -25,8 +23,8 @@ export const ToggleWindowTransparencyEntry: Component<
 
   return (
     <SettingsEntry
-      description={t('settings.toggleWindowTransparencyDescription')}
       title={t('settings.toggleWindowTransparency')}
+      description={t('settings.toggleWindowTransparencyDescription')}
       {...props}
     >
       <Switch

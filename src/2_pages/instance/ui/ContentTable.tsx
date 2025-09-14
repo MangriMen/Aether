@@ -1,39 +1,39 @@
-import type { Component } from 'solid-js';
-
-import { createEffect } from 'solid-js';
-
 import { type InstanceFile } from '@/entities/instances';
+
 import { cn } from '@/shared/lib';
 import { CombinedPagination, DataTable } from '@/shared/ui';
+import type { Component } from 'solid-js';
+import { createEffect } from 'solid-js';
+
+import { ContentActions } from './ContentActions';
 
 import { createContentTable } from '../model';
-import { ContentActions } from './ContentActions';
 import { HeaderActions } from './HeaderActions';
 
 export type ContentTableProps = {
   data: InstanceFile[];
-  instanceId: string;
-  instancePath?: string;
+  searchQuery?: string;
   isLoading?: boolean;
   refetch?: () => void;
-  searchQuery?: string;
+  instanceId: string;
+  instancePath?: string;
 };
 
 export const ContentTable: Component<ContentTableProps> = (props) => {
-  const { columns, table } = createContentTable({
-    contentActions: (localProps) => (
-      <ContentActions
-        content={localProps.file}
-        instanceId={props.instanceId}
-        instancePath={props.instancePath}
-      />
-    ),
-    data: () => props.data,
+  const { table, columns } = createContentTable({
     headerActions: (localProps) => (
       <HeaderActions instanceId={props.instanceId} {...localProps} />
     ),
-    isLoading: () => !!props.isLoading,
+    contentActions: (localProps) => (
+      <ContentActions
+        instanceId={props.instanceId}
+        instancePath={props.instancePath}
+        content={localProps.file}
+      />
+    ),
+    data: () => props.data,
     refetch: () => props.refetch?.(),
+    isLoading: () => !!props.isLoading,
   });
 
   const handleSearch = (query: string) =>
@@ -51,10 +51,10 @@ export const ContentTable: Component<ContentTableProps> = (props) => {
       <DataTable columns={columns()} table={table} />
       <CombinedPagination
         class={cn('self-end', { hidden: table.getPageCount() < 2 })}
-        count={table.getPageCount()}
-        onPageChange={(page) => table.setPageIndex(page - 1)}
-        page={table.getState().pagination.pageIndex + 1}
         siblingCount={1}
+        count={table.getPageCount()}
+        page={table.getState().pagination.pageIndex + 1}
+        onPageChange={(page) => table.setPageIndex(page - 1)}
       />
     </>
   );

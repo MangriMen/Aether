@@ -1,12 +1,11 @@
 /* eslint-disable sonarjs/table-header */
 import type { Component, ComponentProps } from 'solid-js';
-
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
 const Table: Component<
-  { disableWrapper?: boolean } & ComponentProps<'table'>
+  ComponentProps<'table'> & { disableWrapper?: boolean }
 > = (props) => {
   const [local, others] = splitProps(props, ['disableWrapper', 'class']);
 
@@ -18,8 +17,8 @@ const Table: Component<
   ));
   return (
     <Show
-      fallback={<div class='relative w-full overflow-auto'>{table()}</div>}
       when={local.disableWrapper}
+      fallback={<div class='relative w-full overflow-auto'>{table()}</div>}
     >
       {table()}
     </Show>
@@ -96,11 +95,11 @@ const TableCaption: Component<ComponentProps<'caption'>> = (props) => {
 
 export {
   Table,
+  TableHeader,
   TableBody,
-  TableCaption,
-  TableCell,
   TableFooter,
   TableHead,
-  TableHeader,
   TableRow,
+  TableCell,
+  TableCaption,
 };

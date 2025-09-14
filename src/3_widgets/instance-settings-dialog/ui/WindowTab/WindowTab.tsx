@@ -1,22 +1,22 @@
 import type { Component } from 'solid-js';
-
-import { getValue } from '@modular-forms/solid';
 import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
 
-import type { EditInstance } from '@/entities/instances';
-
-import { useEditInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 import { Checkbox } from '@/shared/ui';
 
-import { useResetWindowFormValues, useWindowForm } from '../../lib';
-import { type InstanceSettingsTabProps } from '../../model';
+import type { EditInstance } from '@/entities/instances';
+import { useEditInstance } from '@/entities/instances';
+
+import { useTranslation } from '@/shared/model';
+
 import {
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_WIDTH,
 } from '../../model/window';
+import { type InstanceSettingsTabProps } from '../../model';
 import { ResolutionField } from './ResolutionField';
+import { getValue } from '@modular-forms/solid';
+import { useResetWindowFormValues, useWindowForm } from '../../lib';
 
 export type WindowTabProps = { class?: string } & InstanceSettingsTabProps;
 
@@ -26,8 +26,8 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const defaultResolution = createMemo(() => ({
-    height: local.settings?.gameResolution?.[1] ?? DEFAULT_WINDOW_HEIGHT,
     width: local.settings?.gameResolution?.[0] ?? DEFAULT_WINDOW_WIDTH,
+    height: local.settings?.gameResolution?.[1] ?? DEFAULT_WINDOW_HEIGHT,
   }));
 
   const [form, { Form }] = useWindowForm();
@@ -36,7 +36,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   const { mutateAsync: editInstance } = useEditInstance();
 
   const editInstanceSimple = (edit: EditInstance) =>
-    editInstance({ edit, id: local.instance.id });
+    editInstance({ id: local.instance.id, edit });
 
   const [isCustom, setIsCustom] = createSignal(false);
 
@@ -67,16 +67,16 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <Checkbox
-        checked={isCustom()}
         class='text-sm'
-        label={t('instanceSettings.customWindowSettings')}
+        checked={isCustom()}
         onChange={handleChangeIsCustom}
+        label={t('instanceSettings.customWindowSettings')}
       />
       <ResolutionField
-        defaultHeight={defaultResolution().height}
-        defaultWidth={defaultResolution().width}
-        disabled={!isCustom()}
         form={form}
+        defaultWidth={defaultResolution().width}
+        defaultHeight={defaultResolution().height}
+        disabled={!isCustom()}
         onSubmit={handleResolutionSubmit}
       />
     </Form>

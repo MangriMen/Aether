@@ -1,6 +1,5 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
-
 import { createStore, produce } from 'solid-js/store';
 
 export type DialogComponentProps = DialogRootProps;
@@ -11,17 +10,17 @@ export type DialogItem<T extends DialogComponentProps = DialogComponentProps> =
     props: DialogComponentProps | null;
   };
 
-export type GlobalDialogType<
-  T extends DialogComponentProps = DialogComponentProps,
-> = {
-  dialogs: Record<string, DialogItem<T>>;
-};
-
 export type NonNullableDialogItem<
   T extends DialogComponentProps = DialogComponentProps,
 > = {
   dialog: Component<T>;
   props: DialogComponentProps;
+};
+
+export type GlobalDialogType<
+  T extends DialogComponentProps = DialogComponentProps,
+> = {
+  dialogs: Record<string, DialogItem<T>>;
 };
 
 let globalDialogStore:

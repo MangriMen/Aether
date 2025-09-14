@@ -1,28 +1,26 @@
-import type { ValidComponent } from 'solid-js';
-
 import MdiDelete from '@iconify/icons-mdi/delete';
-import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
+import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import type { ButtonProps } from '@/shared/ui';
-
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import type { ButtonProps } from '@/shared/ui';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import type { AccountType } from '../model';
+import { useTranslation } from '@/shared/model';
 
 import { AccountButton } from './AccountButton';
+import type { AccountType } from '../model';
+import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 
-export type AccountCardProps = {
-  accountButtonProps?: ButtonProps;
-  accountType: AccountType;
+export type AccountCardProps = { class?: string } & {
+  username: string;
   active: boolean;
+  accountType: AccountType;
+  accountButtonProps?: ButtonProps;
+  removeButtonProps?: ButtonProps;
   onActivate?: () => void;
   onRemove?: () => void;
-  removeButtonProps?: ButtonProps;
-  username: string;
-} & { class?: string };
+};
 
 export const AccountCard = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, AccountCardProps>,
@@ -46,21 +44,21 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
       {...others}
     >
       <AccountButton
-        accountType={local.accountType}
-        active={local.active}
-        onClick={local.onActivate}
         username={local.username}
+        active={local.active}
+        accountType={local.accountType}
+        onClick={local.onActivate}
         {...local.accountButtonProps}
       />
 
       <div class='flex items-start justify-start'>
         <CombinedTooltip
+          label={t('account.removeAccount')}
           as={IconButton}
           class='aspect-square size-full rounded-l-none p-0 hover:bg-destructive focus:z-10'
-          icon={MdiDelete}
-          label={t('account.removeAccount')}
-          onClick={local.onRemove}
           variant='ghost'
+          icon={MdiDelete}
+          onClick={local.onRemove}
           {...local.removeButtonProps}
         />
       </div>

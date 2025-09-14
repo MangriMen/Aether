@@ -1,25 +1,24 @@
 import {
-  type Component,
-  type ComponentProps,
+  useDisablePlugin,
+  useEnablePlugin,
+  type Plugin,
+} from '@/entities/plugins';
+
+import { cn } from '@/shared/lib';
+import { Button, Separator, SettingsPane } from '@/shared/ui';
+import {
   createMemo,
   createSignal,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
-
-import {
-  type Plugin,
-  useDisablePlugin,
-  useEnablePlugin,
-} from '@/entities/plugins';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, Separator, SettingsPane } from '@/shared/ui';
-
 import { PluginSettingsForm } from './PluginSettingsForm';
+import { useTranslation } from '@/shared/model';
 
-export type PluginInfoCardProps = {
+export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: Plugin;
-} & ComponentProps<'div'>;
+};
 
 export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
@@ -72,7 +71,7 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         </span>
       </div>
       <div>
-        <Button loading={isLoading()} onClick={togglePluginEnabled} size='sm'>
+        <Button size='sm' onClick={togglePluginEnabled} loading={isLoading()}>
           {isPluginEnabled() ? t('common.disable') : t('common.enable')}
         </Button>
       </div>
@@ -85,12 +84,12 @@ export const PluginInfoCard: Component<PluginInfoCardProps> = (props) => {
         class={cn('p-0 bg-[unset]', {
           'text-muted-foreground': isSettingsFormDisabled(),
         })}
-        collapsible
         label={`${t('settings.title')} ${isSettingsFormDisabled() ? '(' + t('plugins.disableToChangeSettings') + ')' : ''}`}
+        collapsible
       >
         <PluginSettingsForm
-          disabled={isSettingsFormDisabled()}
           pluginManifest={local.plugin.manifest}
+          disabled={isSettingsFormDisabled()}
         />
       </SettingsPane>
     </div>

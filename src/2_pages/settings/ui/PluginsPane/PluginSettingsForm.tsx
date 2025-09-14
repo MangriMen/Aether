@@ -1,33 +1,31 @@
-import type { SubmitHandler } from '@modular-forms/solid';
-
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import { type Component, createEffect, createMemo, splitProps } from 'solid-js';
-
 import {
   type PluginManifest,
   type PluginSettings,
-  useEditPluginSettings,
   usePluginSettings,
+  useEditPluginSettings,
 } from '@/entities/plugins';
+
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
-
+import type { SubmitHandler } from '@modular-forms/solid';
+import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createEffect, createMemo, splitProps, type Component } from 'solid-js';
 import type { PluginSettingsSchemaValues } from '../../model';
-
 import { PluginSettingsSchema } from '../../model';
-import { AllowedHost } from './AllowedHost';
-import { AllowedHostsField } from './AllowedHostsField';
+
 import { AllowedItems } from './AllowedItems';
-import { AllowedPath } from './AllowedPath';
-import { AllowedPathField } from './AllowedPathField';
+import { AllowedHostsField } from './AllowedHostsField';
 import { EditAllowedHost } from './EditAllowedHost';
 import { EditAllowedPath } from './EditAllowedPath';
+import { AllowedPathField } from './AllowedPathField';
+import { AllowedHost } from './AllowedHost';
+import { AllowedPath } from './AllowedPath';
+import { useTranslation } from '@/shared/model';
 
 export type PluginSettingsFormProps = {
-  class?: string;
-  disabled: boolean;
   pluginManifest: PluginManifest;
+  disabled: boolean;
+  class?: string;
 };
 
 export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
@@ -46,11 +44,11 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   const settings = usePluginSettings(() => pluginId());
 
   const [form, { Form }] = createForm<PluginSettingsSchemaValues>({
+    validate: zodForm(PluginSettingsSchema),
     initialValues: {
       allowedHosts: [],
       allowedPaths: [],
     },
-    validate: zodForm(PluginSettingsSchema),
   });
 
   const resetForm = (settings?: PluginSettings) => {
@@ -110,28 +108,28 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         disabled={local.disabled}
       >
         <AllowedItems
-          addNewItem={(onSubmitNew, onCancel) => (
-            <EditAllowedHost onCancel={onCancel} onOk={onSubmitNew} />
-          )}
-          allowedItem={AllowedHost}
-          allowedItemField={AllowedHostsField}
-          form={form}
           label={t('plugins.allowedHosts')}
           name='allowedHosts'
+          form={form}
           unchangeableItems={local.pluginManifest.runtime.allowed_hosts}
+          allowedItem={AllowedHost}
+          allowedItemField={AllowedHostsField}
+          addNewItem={(onSubmitNew, onCancel) => (
+            <EditAllowedHost onOk={onSubmitNew} onCancel={onCancel} />
+          )}
         />
         <AllowedItems
-          addNewItem={(onSubmitNew, onCancel) => (
-            <EditAllowedPath onCancel={onCancel} onOk={onSubmitNew} />
-          )}
-          allowedItem={AllowedPath}
-          allowedItemField={AllowedPathField}
-          form={form}
           label={t('plugins.allowedPaths')}
           name='allowedPaths'
+          form={form}
           unchangeableItems={local.pluginManifest.runtime.allowed_paths}
+          allowedItem={AllowedPath}
+          allowedItemField={AllowedPathField}
+          addNewItem={(onSubmitNew, onCancel) => (
+            <EditAllowedPath onOk={onSubmitNew} onCancel={onCancel} />
+          )}
         />
-        <Button class='w-max' loading={isLoading()} type='submit'>
+        <Button class='w-max' type='submit' loading={isLoading()}>
           {t('plugins.saveSettings')}
         </Button>
       </fieldset>

@@ -1,22 +1,23 @@
-import {
-  type Component,
-  type ComponentProps,
-  createMemo,
-  splitProps,
-} from 'solid-js';
-
-import type { CombinedTextFieldProps } from '@/shared/ui';
-
 import { cn, useIsCustomCheckbox } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import type { CombinedTextFieldProps } from '@/shared/ui';
 import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
+import {
+  createMemo,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
-export type ExtraLaunchArgsFieldProps = {
+export type ExtraLaunchArgsFieldProps = Omit<
+  ComponentProps<'div'>,
+  'onChange' | 'onBlur'
+> & {
+  value: string | null | undefined;
   inputProps?: CombinedTextFieldProps['inputProps'];
-  onChange?: (value: null | string) => void;
-  onIsCustomChange?: (value: null | string) => void;
-  value: null | string | undefined;
-} & Omit<ComponentProps<'div'>, 'onBlur' | 'onChange'>;
+  onChange?: (value: string | null) => void;
+  onIsCustomChange?: (value: string | null) => void;
+};
 
 export const ExtraLaunchArgsField: Component<ExtraLaunchArgsFieldProps> = (
   props,
@@ -45,19 +46,19 @@ export const ExtraLaunchArgsField: Component<ExtraLaunchArgsFieldProps> = (
       {...others}
     >
       <Checkbox
-        checked={isCustom()}
         label={t('instanceSettings.customArguments')}
+        checked={isCustom()}
         onChange={setIsCustom}
       />
       <CombinedTextField
         disabled={!isCustom()}
+        value={value()}
+        onChange={local.onChange}
         inputProps={{
           ...local.inputProps,
-          placeholder: t('instanceSettings.enterArguments'),
           type: 'text',
+          placeholder: t('instanceSettings.enterArguments'),
         }}
-        onChange={local.onChange}
-        value={value()}
       />
     </LabeledField>
   );

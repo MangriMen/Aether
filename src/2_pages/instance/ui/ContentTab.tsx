@@ -1,31 +1,31 @@
-import { useNavigate } from '@solidjs/router';
 import {
-  type Component,
-  type ComponentProps,
+  ContentType,
+  InstanceInstallStage,
+  useInstanceContents,
+  type Instance,
+} from '@/entities/instances';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import {
   createMemo,
   createSignal,
   Show,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
-
-import {
-  ContentType,
-  type Instance,
-  InstanceInstallStage,
-  useInstanceContents,
-} from '@/entities/instances';
-import { ModLoader } from '@/entities/minecraft';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
+import { useNavigate } from '@solidjs/router';
 import { InstallContentButton } from './InstallContentButton';
+import { ModLoader } from '@/entities/minecraft';
 
-export type ContentTabProps = {
+export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;
   instancePath?: string;
-} & ComponentProps<'div'>;
+};
 
 export const ContentTab: Component<ContentTabProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -70,42 +70,42 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
       <Show
+        when={
+          instanceContentArray() !== undefined &&
+          !!instanceContentArray()?.length &&
+          instanceContentArray()
+        }
         fallback={
           <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
             <span class='text-lg text-muted-foreground'>
               {t('instance.noContent')}
             </span>
             <InstallContentButton
-              contentTypes={availableContent()}
-              disabled={isInstalling()}
               instanceId={local.instance.id}
               onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
+              disabled={isInstalling()}
             />
           </div>
-        }
-        when={
-          instanceContentArray() !== undefined &&
-          !!instanceContentArray()?.length &&
-          instanceContentArray()
         }
       >
         {(items) => (
           <>
             <ContentControls
-              contentsCount={items().length ?? 0}
-              contentTypes={availableContent()}
               instanceId={local.instance.id}
-              isInstalling={isInstalling()}
-              onInstallContentClick={handleInstallContent}
+              contentsCount={items().length ?? 0}
               onSearch={setSearch}
+              onInstallContentClick={handleInstallContent}
+              contentTypes={availableContent()}
+              isInstalling={isInstalling()}
             />
             <ContentTable
               data={items()}
-              instanceId={local.instance.id}
-              instancePath={local.instancePath}
-              isLoading={instanceContent.isLoading}
               refetch={() => instanceContent.refetch()}
               searchQuery={search()}
+              isLoading={instanceContent.isLoading}
+              instanceId={local.instance.id}
+              instancePath={local.instancePath}
             />
           </>
         )}

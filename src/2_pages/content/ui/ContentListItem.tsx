@@ -1,30 +1,29 @@
-import MdiCheck from '@iconify/icons-mdi/check';
-import MdiDownload from '@iconify/icons-mdi/download';
 import {
-  type Component,
-  type ComponentProps,
+  useInstallContent,
+  type ContentItemExtended,
+  type InstallContentPayload,
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { Button, Image } from '@/shared/ui';
+import {
   createMemo,
   createSignal,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
-
-import {
-  type ContentItemExtended,
-  type InstallContentPayload,
-  useInstallContent,
-} from '@/entities/instances';
-import { cn } from '@/shared/lib';
+import MdiDownload from '@iconify/icons-mdi/download';
+import MdiCheck from '@iconify/icons-mdi/check';
 import { useTranslation } from '@/shared/model';
-import { Button, Image } from '@/shared/ui';
 
-export type ContentListItemProps = {
-  gameVersion: string;
-  instanceId: string;
+export type ContentListItemProps = ComponentProps<'div'> & {
   item: ContentItemExtended;
+  instanceId: string;
+  gameVersion: string;
   loader?: string;
-  onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
   provider?: string;
-} & ComponentProps<'div'>;
+  onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
+};
 
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -49,10 +48,10 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     }
 
     const payload: InstallContentPayload = {
-      contentType: local.item.contentType,
-      contentVersion: undefined,
       gameVersion: local.gameVersion,
       loader: local.loader,
+      contentType: local.item.contentType,
+      contentVersion: undefined,
       provider: local.provider,
       providerData: local.item.providerData,
     };
@@ -99,10 +98,10 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       <div class='ml-auto flex flex-col justify-end'>
         <Button
           class='px-3'
-          disabled={local.item.installed}
           leadingIcon={local.item.installed ? MdiCheck : MdiDownload}
-          loading={isInstalling()}
           onClick={handleInstallContent}
+          loading={isInstalling()}
+          disabled={local.item.installed}
         >
           {installButtonText()}
         </Button>

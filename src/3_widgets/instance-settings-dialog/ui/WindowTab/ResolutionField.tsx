@@ -1,29 +1,5 @@
-import type { PhysicalSize } from '@tauri-apps/api/window';
-
-import { Icon } from '@iconify-icon/solid';
-import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
-import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
-import {
-  Field,
-  type FormStore,
-  getValue,
-  setValues,
-  validate,
-} from '@modular-forms/solid';
-import { currentMonitor } from '@tauri-apps/api/window';
-import {
-  type Component,
-  type ComponentProps,
-  createMemo,
-  createSignal,
-  For,
-  onMount,
-  splitProps,
-} from 'solid-js';
-
-import type { TFunction } from '@/shared/model';
-
 import { cn } from '@/shared/lib';
+import type { TFunction } from '@/shared/model';
 import { useTranslation } from '@/shared/model';
 import {
   CombinedTextField,
@@ -34,19 +10,42 @@ import {
   IconButton,
   LabeledField,
 } from '@/shared/ui';
-
+import {
+  createMemo,
+  createSignal,
+  For,
+  onMount,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
+import { RESOLUTION_FIELD_CLASS, RESOLUTION_OPTIONS } from '../../model/window';
+import {
+  Field,
+  getValue,
+  setValues,
+  validate,
+  type FormStore,
+} from '@modular-forms/solid';
 import type { WindowSchemaValues } from '../../model';
 
-import { RESOLUTION_FIELD_CLASS, RESOLUTION_OPTIONS } from '../../model/window';
+import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
+import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
+import { Icon } from '@iconify-icon/solid';
+import type { PhysicalSize } from '@tauri-apps/api/window';
+import { currentMonitor } from '@tauri-apps/api/window';
 
-export type ResolutionFieldProps = {
-  defaultHeight?: number;
+export type ResolutionFieldProps = Omit<
+  ComponentProps<'div'>,
+  'onChange' | 'onSubmit'
+> & {
+  form: FormStore<WindowSchemaValues>;
   defaultWidth?: number;
+  defaultHeight?: number;
   disabled?: boolean;
   errorMessage?: string;
-  form: FormStore<WindowSchemaValues>;
   onSubmit?: (width: number, height: number) => void;
-} & Omit<ComponentProps<'div'>, 'onChange' | 'onSubmit'>;
+};
 
 const knownErrors = [
   'instanceSettings.windowError.resolution.emptyValue',
@@ -88,8 +87,8 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
   ]) => {
     setValues(local.form, {
       resolution: {
-        height: height.toString(),
         width: width.toString(),
+        height: height.toString(),
       },
     });
     handleResolutionSubmit();
@@ -154,44 +153,44 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
     >
       <div class='flex gap-2'>
         <div class='flex items-start gap-2'>
-          <Field name='resolution.width' of={local.form}>
+          <Field of={local.form} name='resolution.width'>
             {(field, inputProps) => {
               return (
                 <CombinedTextField
                   class={RESOLUTION_FIELD_CLASS}
+                  value={field.value ?? local.defaultWidth?.toString()}
                   disabled={local.disabled}
                   errorMessage={translateError(t, field.error)}
                   inputProps={{
-                    maxLength: 5,
                     type: 'text',
+                    maxLength: 5,
                     ...inputProps,
                     onBlur: (e) => {
                       inputProps.onBlur(e);
                       handleResolutionSubmit();
                     },
                   }}
-                  value={field.value ?? local.defaultWidth?.toString()}
                 />
               );
             }}
           </Field>
           <span class='mt-1 text-xl text-muted-foreground'>&times;</span>
-          <Field name='resolution.height' of={local.form}>
+          <Field of={local.form} name='resolution.height'>
             {(field, inputProps) => (
               <CombinedTextField
                 class={RESOLUTION_FIELD_CLASS}
+                value={field.value ?? local.defaultHeight?.toString()}
                 disabled={local.disabled}
                 errorMessage={translateError(t, field.error)}
                 inputProps={{
-                  maxLength: 5,
                   type: 'text',
+                  maxLength: 5,
                   ...inputProps,
                   onBlur: (e) => {
                     inputProps.onBlur(e);
                     handleResolutionSubmit();
                   },
                 }}
-                value={field.value ?? local.defaultHeight?.toString()}
               />
             )}
           </Field>
@@ -200,8 +199,8 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
           <DropdownMenuTrigger
             as={IconButton}
             class='relative flex size-10 flex-col gap-0'
-            disabled={local.disabled}
             variant='secondary'
+            disabled={local.disabled}
           >
             <Icon class='absolute top-1' icon={MdiMonitorIcon} />
             <Icon class='absolute top-5' icon={MdiMenuDownIcon} />

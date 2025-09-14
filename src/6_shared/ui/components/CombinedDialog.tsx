@@ -1,13 +1,9 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
-
 import { mergeProps, Show, splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-
-import type { DialogContentProps } from './Dialog';
-
 import { Button } from './Button';
+import type { DialogContentProps } from './Dialog';
 import {
   Dialog,
   DialogContent,
@@ -15,24 +11,25 @@ import {
   DialogFooter,
   DialogHeader,
 } from './Dialog';
+import { useTranslation } from '@/shared/model';
 
-export type CombinedDialogProps = {
-  buttonCancelText?: string;
-  buttonOkText?: string;
-  description?: string;
-  header?: string;
-  onCancel?: ComponentProps<'button'>['onClick'];
-  onOk?: ComponentProps<'button'>['onClick'];
-} & DialogRootProps &
-  Pick<DialogContentProps, 'variant'>;
+export type CombinedDialogProps = DialogRootProps &
+  Pick<DialogContentProps, 'variant'> & {
+    header?: string;
+    description?: string;
+    buttonOkText?: string;
+    buttonCancelText?: string;
+    onOk?: ComponentProps<'button'>['onClick'];
+    onCancel?: ComponentProps<'button'>['onClick'];
+  };
 
 export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const mergedProps = mergeProps(
     {
-      buttonCancelText: t('common.cancel') || 'Cancel',
       buttonOkText: t('common.ok') || 'Ok',
+      buttonCancelText: t('common.cancel') || 'Cancel',
     },
     props,
   );
@@ -59,10 +56,10 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
           </DialogDescription>
         </Show>
         <DialogFooter>
-          <Button onClick={local.onOk} variant='destructive'>
+          <Button variant='destructive' onClick={local.onOk}>
             {local.buttonOkText}
           </Button>
-          <Button onClick={local.onCancel} variant='secondary'>
+          <Button variant='secondary' onClick={local.onCancel}>
             {local.buttonCancelText}
           </Button>
         </DialogFooter>

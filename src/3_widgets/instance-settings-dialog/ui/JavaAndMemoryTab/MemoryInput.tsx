@@ -1,3 +1,5 @@
+import type { MemorySliderProps } from '@/entities/instances';
+import { MemorySlider } from '@/entities/instances';
 import type { Component, ComponentProps, ValidComponent } from 'solid-js';
 
 import {
@@ -8,33 +10,31 @@ import {
   splitProps,
 } from 'solid-js';
 
-import type { MemorySliderProps } from '@/entities/instances';
-
-import { MemorySlider } from '@/entities/instances';
-import { cn, isNil } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-export type MemoryInputProps<T extends ValidComponent = 'div'> =
-  MemoryInputBaseProps<T> & MemorySliderInheritedProps<T>;
+import { cn, isNil } from '@/shared/lib';
+
 type MemoryInputBaseProps<T extends ValidComponent = 'div'> = Omit<
   ComponentProps<T>,
   'onChange'
 >;
-
 type MemorySliderInheritedProps<T extends ValidComponent = 'div'> = Pick<
   MemorySliderProps<T>,
-  | 'defaultValue'
-  | 'disabled'
-  | 'maxValue'
   | 'minValue'
-  | 'onChange'
+  | 'maxValue'
   | 'value'
+  | 'defaultValue'
+  | 'onChange'
   | 'warningValue'
+  | 'disabled'
 >;
 
+export type MemoryInputProps<T extends ValidComponent = 'div'> =
+  MemoryInputBaseProps<T> & MemorySliderInheritedProps<T>;
+
 const DEFAULT_PROPS = {
-  maxValue: 100,
   minValue: 0,
+  maxValue: 100,
 } as const;
 
 export const MemoryInput: Component<MemoryInputProps> = (props) => {
@@ -92,21 +92,21 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
       <MemorySlider
         class='mt-4'
         disabled={merged.disabled}
-        maxValue={maxValue()}
         minValue={minValue()}
+        maxValue={maxValue()}
         value={sliderValue()}
         {...memorySliderProps}
       />
       <CombinedTextField
         class='w-[9ch]'
         disabled={merged.disabled}
+        value={textFieldValue()}
+        onChange={setTextFieldValue}
         inputProps={{
+          type: 'text',
           onBlur: handleChangeTextField,
           onKeyPress: handleChangeTextField,
-          type: 'text',
         }}
-        onChange={setTextFieldValue}
-        value={textFieldValue()}
       />
     </div>
   );

@@ -1,8 +1,6 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
-
-import { Icon } from '@iconify-icon/solid';
-import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 import { createEffect, createSignal, splitProps } from 'solid-js';
+import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
 
 import { cn } from '@/shared/lib';
 import {
@@ -10,11 +8,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/shared/ui';
+import { Icon } from '@iconify-icon/solid';
 
-export type CollapsibleSettingsPaneProps = {
-  defaultOpened?: boolean;
+export type CollapsibleSettingsPaneProps = ComponentProps<'div'> & {
   label?: JSX.Element;
-} & ComponentProps<'div'>;
+  defaultOpened?: boolean;
+};
 
 export const CollapsibleSettingsPane: Component<
   CollapsibleSettingsPaneProps
@@ -34,12 +33,12 @@ export const CollapsibleSettingsPane: Component<
 
   return (
     <Collapsible
+      open={isOpened()}
+      onOpenChange={setIsOpened}
       class={cn(
         'flex flex-col rounded-lg bg-secondary-dark px-6 py-4 gap-2',
         local.class,
       )}
-      onOpenChange={setIsOpened}
-      open={isOpened()}
       {...others}
     >
       <CollapsibleTrigger class='justify-center text-left'>

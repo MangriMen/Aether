@@ -1,27 +1,26 @@
 import type { ColorMode } from '@kobalte/core';
-
 import { createContext, useContext } from 'solid-js';
 
 import type { Theme, ThemeConfig } from '@/shared/model';
 
+export type ThemeContextValue = {
+  theme: Theme;
+  rawTheme: ThemeConfig;
+  lightTheme: Theme;
+  darkTheme: Theme;
+  transparency: number;
+  disableAnimations: boolean;
+  prefersReducedMotion: boolean;
+};
+
 export type ThemeContextActions = {
-  setDisableAnimations: (disableAnimations: boolean) => void;
   setTheme: (theme: ThemeConfig) => void;
   setThemeByColorMode: (colorMode: ColorMode, theme: Theme) => void;
   setTransparency: (transparency: number) => void;
+  setDisableAnimations: (disableAnimations: boolean) => void;
 };
 
 export type ThemeContextType = [ThemeContextValue, ThemeContextActions];
-
-export type ThemeContextValue = {
-  darkTheme: Theme;
-  disableAnimations: boolean;
-  lightTheme: Theme;
-  prefersReducedMotion: boolean;
-  rawTheme: ThemeConfig;
-  theme: Theme;
-  transparency: number;
-};
 
 export const ThemeContext = createContext<ThemeContextType>();
 
@@ -37,8 +36,8 @@ export const useThemeContext = () => {
 
 export const COLOR_MODE_TO_KEY: Record<
   ColorMode,
-  Extract<keyof ThemeContextValue, 'darkTheme' | 'lightTheme'>
+  Extract<keyof ThemeContextValue, 'lightTheme' | 'darkTheme'>
 > = {
-  dark: 'darkTheme',
   light: 'lightTheme',
+  dark: 'darkTheme',
 };

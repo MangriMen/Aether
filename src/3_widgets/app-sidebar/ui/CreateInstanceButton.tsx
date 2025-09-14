@@ -1,17 +1,16 @@
-import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { Component, ComponentProps } from 'solid-js';
-
 import MdiPlusIcon from '@iconify/icons-mdi/plus';
+import type { Component, ComponentProps } from 'solid-js';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
-
-import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-export type CreateInstanceButtonProps = {
+import { useTranslation } from '@/shared/model';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+
+export type CreateInstanceButtonProps = IconButtonProps & {
   createInstanceDialog: Component<ComponentProps<'div'> & DialogRootProps>;
-} & IconButtonProps;
+};
 
 const CreateInstanceButton: Component<CreateInstanceButtonProps> = (props) => {
   const [local, others] = splitProps(props, ['createInstanceDialog']);
@@ -25,17 +24,17 @@ const CreateInstanceButton: Component<CreateInstanceButtonProps> = (props) => {
   return (
     <>
       <CombinedTooltip
-        as={IconButton}
-        icon={MdiPlusIcon}
         label={t('common.createInstance')}
-        onClick={handleClick}
         placement='right'
+        as={IconButton}
+        onClick={handleClick}
+        icon={MdiPlusIcon}
         {...others}
       />
 
       <local.createInstanceDialog
-        onOpenChange={setIsCreateInstanceDialogOpen}
         open={isCreateInstanceDialogOpen()}
+        onOpenChange={setIsCreateInstanceDialogOpen}
       />
     </>
   );

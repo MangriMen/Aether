@@ -1,18 +1,16 @@
-import type { Accessor, JSX } from 'solid-js';
-
-import { Show } from 'solid-js';
-
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
+import { Show } from 'solid-js';
+import type { Accessor, JSX } from 'solid-js';
 
 export type AddNewItemProps<T> = {
+  editingIndex: Accessor<number | null>;
+  setEditingIndex: (value: number | null) => void;
+  onAddNew: (value: T) => void;
   children: (
     onSubmitNew: (value: T) => void,
     onCancel: () => void,
   ) => JSX.Element;
-  editingIndex: Accessor<null | number>;
-  onAddNew: (value: T) => void;
-  setEditingIndex: (value: null | number) => void;
 };
 
 export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
@@ -33,15 +31,15 @@ export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
 
   return (
     <Show
+      when={props.editingIndex() === -1}
       fallback={
         <Button
-          children={t('plugins.addItem')}
           class='size-max px-2 py-1'
-          onClick={onAddNew}
           size='sm'
+          onClick={onAddNew}
+          children={t('plugins.addItem')}
         />
       }
-      when={props.editingIndex() === -1}
     >
       {props.children(onSubmitNew, close)}
     </Show>

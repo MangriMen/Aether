@@ -1,30 +1,29 @@
 import type { Component, ComponentProps } from 'solid-js';
-
 import { mergeProps, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-type Size = 'lg' | 'md' | 'sm' | 'xl' | 'xs';
+type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 const sizes: Record<Size, { radius: number; strokeWidth: number }> = {
-  lg: { radius: 52, strokeWidth: 8 },
-  md: { radius: 32, strokeWidth: 6 },
-  sm: { radius: 19, strokeWidth: 4 },
-  xl: { radius: 80, strokeWidth: 10 },
   xs: { radius: 15, strokeWidth: 3 },
+  sm: { radius: 19, strokeWidth: 4 },
+  md: { radius: 32, strokeWidth: 6 },
+  lg: { radius: 52, strokeWidth: 8 },
+  xl: { radius: 80, strokeWidth: 10 },
 };
 
-type ProgressCircleProps = {
-  radius?: number;
-  showAnimation?: boolean;
-  size?: Size;
-  strokeWidth?: number;
+type ProgressCircleProps = ComponentProps<'div'> & {
   value?: number;
-} & ComponentProps<'div'>;
+  size?: Size;
+  radius?: number;
+  strokeWidth?: number;
+  showAnimation?: boolean;
+};
 
 const ProgressCircle: Component<ProgressCircleProps> = (rawProps) => {
   const props = mergeProps(
-    { showAnimation: true, size: 'md' as Size },
+    { size: 'md' as Size, showAnimation: true },
     rawProps,
   );
   const [local, others] = splitProps(props, [
@@ -51,38 +50,38 @@ const ProgressCircle: Component<ProgressCircleProps> = (rawProps) => {
       {...others}
     >
       <svg
-        class='-rotate-90'
+        width={radius() * 2}
         height={radius() * 2}
         viewBox={`0 0 ${radius() * 2} ${radius() * 2}`}
-        width={radius() * 2}
+        class='-rotate-90'
       >
         <circle
-          class={cn('stroke-secondary transition-colors ease-linear')}
+          r={normalizedRadius()}
           cx={radius()}
           cy={radius()}
+          stroke-width={strokeWidth()}
           fill='transparent'
-          r={normalizedRadius()}
           stroke=''
           stroke-linecap='round'
-          stroke-width={strokeWidth()}
+          class={cn('stroke-secondary transition-colors ease-linear')}
         />
         {value() >= 0 ? (
           <circle
+            r={normalizedRadius()}
+            cx={radius()}
+            cy={radius()}
+            stroke-width={strokeWidth()}
+            stroke-dasharray={circumference() + ' ' + circumference()}
+            stroke-dashoffset={offset()}
+            fill='transparent'
+            stroke=''
+            stroke-linecap='round'
             class={cn(
               'stroke-primary transition-colors ease-linear',
               local.showAnimation
                 ? 'transition-all duration-300 ease-in-out'
                 : '',
             )}
-            cx={radius()}
-            cy={radius()}
-            fill='transparent'
-            r={normalizedRadius()}
-            stroke=''
-            stroke-dasharray={circumference() + ' ' + circumference()}
-            stroke-dashoffset={offset()}
-            stroke-linecap='round'
-            stroke-width={strokeWidth()}
           />
         ) : null}
       </svg>

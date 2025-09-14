@@ -1,26 +1,24 @@
 import {
-  type RouteSectionProps,
   useNavigate,
   useSearchParams,
+  type RouteSectionProps,
 } from '@solidjs/router';
 import {
-  type Component,
-  type ComponentProps,
   createMemo,
   Show,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
-
+import { InstanceInfo } from './InstanceInfo';
 import {
   ContentType,
   useContentProviders,
   useInstance,
 } from '@/entities/instances';
-import { ModLoader } from '@/entities/minecraft';
 import { Separator } from '@/shared/ui';
-
 import { ContentBrowser } from './ContentBrowser';
-import { InstanceInfo } from './InstanceInfo';
+import { ModLoader } from '@/entities/minecraft';
 
 export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -78,9 +76,9 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
             <InstanceInfo instance={instance()} />
             <Separator />
             <ContentBrowser
-              contentTypes={availableContent()}
               instance={instance()}
               providers={transformedContentProviders() ?? []}
+              contentTypes={availableContent()}
             />
           </>
         )}

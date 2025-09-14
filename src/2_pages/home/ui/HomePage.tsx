@@ -1,11 +1,10 @@
-import type { RouteSectionProps } from '@solidjs/router';
 import type { Component, ComponentProps } from 'solid-js';
-
 import { splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
 import { TitledBlock } from '@/shared/ui';
 
+import { useTranslation } from '@/shared/model';
+import type { RouteSectionProps } from '@solidjs/router';
 import { InstancesPanel } from './InstancesPanel';
 
 export type HomePageProps = ComponentProps<'div'> & RouteSectionProps;

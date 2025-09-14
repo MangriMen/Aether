@@ -1,12 +1,5 @@
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  PaginationState,
-  RowModel,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/solid-table';
 import type { Accessor, Component } from 'solid-js';
+import { createMemo, createSignal } from 'solid-js';
 
 import {
   createSolidTable,
@@ -15,44 +8,49 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
 } from '@tanstack/solid-table';
-import { createMemo, createSignal } from 'solid-js';
-
+import type {
+  ColumnFiltersState,
+  SortingState,
+  RowSelectionState,
+  PaginationState,
+  ColumnDef,
+  RowModel,
+} from '@tanstack/solid-table';
 import type { InstanceFile } from '@/entities/instances';
-
 import { CONTENT_TABLE_COLUMNS } from './contentTableColumns';
 
 export interface CreateContentTableProps {
-  contentActions: Component<{ file: InstanceFile }>;
-  data: Accessor<InstanceFile[]>;
   headerActions: Component<{
     allRowsSelected?: boolean;
+    someRowsSelected?: boolean;
     refetch?: () => void;
     selectedRows: RowModel<InstanceFile>;
-    someRowsSelected?: boolean;
   }>;
-  isLoading: Accessor<boolean>;
+  contentActions: Component<{ file: InstanceFile }>;
+  data: Accessor<InstanceFile[]>;
   refetch: () => void;
+  isLoading: Accessor<boolean>;
 }
 
 export const createContentTable = (props: CreateContentTableProps) => {
   const columns = createMemo(() => {
     const actionsColumn: ColumnDef<InstanceFile> = {
+      id: 'actions',
+      header: (rowProps) => (
+        <div class='flex justify-end'>
+          <props.headerActions
+            allRowsSelected={rowProps.table.getIsAllPageRowsSelected()}
+            someRowsSelected={rowProps.table.getIsSomePageRowsSelected()}
+            selectedRows={rowProps.table.getSelectedRowModel()}
+            refetch={props.refetch}
+          />
+        </div>
+      ),
       cell: (rowProps) => (
         <div class='flex justify-end'>
           <props.contentActions file={rowProps.cell.row.original} />
         </div>
       ),
-      header: (rowProps) => (
-        <div class='flex justify-end'>
-          <props.headerActions
-            allRowsSelected={rowProps.table.getIsAllPageRowsSelected()}
-            refetch={props.refetch}
-            selectedRows={rowProps.table.getSelectedRowModel()}
-            someRowsSelected={rowProps.table.getIsSomePageRowsSelected()}
-          />
-        </div>
-      ),
-      id: 'actions',
     };
 
     return [...CONTENT_TABLE_COLUMNS, actionsColumn];
@@ -71,35 +69,35 @@ export const createContentTable = (props: CreateContentTableProps) => {
   });
 
   const table = createSolidTable({
-    get columns() {
-      return columns();
-    },
     get data() {
       return props.data();
     },
+    get columns() {
+      return columns();
+    },
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
-    onRowSelectionChange: setRowSelection,
+    getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
     state: {
-      get columnFilters() {
-        return columnFilters();
-      },
       get pagination() {
         return pagination();
-      },
-      get rowSelection() {
-        return rowSelection();
       },
       get sorting() {
         return sorting();
       },
+      get columnFilters() {
+        return columnFilters();
+      },
+      get rowSelection() {
+        return rowSelection();
+      },
     },
   });
 
-  return { columns, table };
+  return { table, columns };
 };

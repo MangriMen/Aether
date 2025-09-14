@@ -1,7 +1,6 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import type { ValidComponent } from 'solid-js';
-
 import * as CollapsiblePrimitive from '@kobalte/core/collapsible';
+import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -10,9 +9,10 @@ const Collapsible = CollapsiblePrimitive.Root;
 
 const CollapsibleTrigger = CollapsiblePrimitive.Trigger;
 
-type CollapsibleContentProps<T extends ValidComponent = 'div'> = {
-  class?: string | undefined;
-} & CollapsiblePrimitive.CollapsibleContentProps<T>;
+type CollapsibleContentProps<T extends ValidComponent = 'div'> =
+  CollapsiblePrimitive.CollapsibleContentProps<T> & {
+    class?: string | undefined;
+  };
 
 const CollapsibleContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, CollapsibleContentProps<T>>,
@@ -31,4 +31,4 @@ const CollapsibleContent = <T extends ValidComponent = 'div'>(
   );
 };
 export type { CollapsibleContentProps };
-export { Collapsible, CollapsibleContent, CollapsibleTrigger };
+export { Collapsible, CollapsibleTrigger, CollapsibleContent };

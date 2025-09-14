@@ -1,8 +1,7 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
-
 import { initializeState } from '@/entities/minecraft';
 
 import { AetherNamespace, AetherNamespaceMethods } from '../model';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export const initializeWindowMethods = () => {
   window[AetherNamespace] = AetherNamespaceMethods;

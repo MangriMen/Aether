@@ -1,25 +1,24 @@
 import type { Component } from 'solid-js';
-
 import { For, splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import type { ToggleGroupRootProps } from '@/shared/ui';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
 import type { ModLoader } from '@/entities/minecraft';
 import type { Option } from '@/shared/model';
-import type { ToggleGroupRootProps } from '@/shared/ui';
 
-import { cn } from '@/shared/lib';
-import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
-
-export type LoaderChipsToggleGroupProps = {
+export type LoaderChipsToggleGroupProps = ToggleGroupRootProps & {
   loaders: Option<ModLoader>[];
   onChange: (value: ModLoader) => void;
-} & ToggleGroupRootProps;
+};
 
 export const LoaderChipsToggleGroup: Component<LoaderChipsToggleGroupProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, ['loaders', 'onChange', 'class']);
 
-  const handleChange = (value: null | string | string[]) => {
+  const handleChange = (value: string | string[] | null) => {
     if (!value || typeof value === 'object') {
       return;
     }

@@ -1,7 +1,5 @@
 import type { Accessor } from 'solid-js';
-
 import { createEffect, createSignal } from 'solid-js';
-
 import { isDeveloperMode, setIsDeveloperMode } from '../model';
 
 export const useDeveloperModeCounter = (): [Accessor<number>, () => void] => {

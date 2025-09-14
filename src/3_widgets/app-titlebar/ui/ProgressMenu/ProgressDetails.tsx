@@ -1,17 +1,16 @@
+import { ProgressCard, type LoadingPayload } from '@/entities/events';
+import { cn } from '@/shared/lib';
 import {
+  For,
+  splitProps,
   type Accessor,
   type Component,
   type ComponentProps,
-  For,
-  splitProps,
 } from 'solid-js';
 
-import { type LoadingPayload, ProgressCard } from '@/entities/events';
-import { cn } from '@/shared/lib';
-
-export type ProgressDetailsProps = {
+export type ProgressDetailsProps = ComponentProps<'div'> & {
   payloads: Accessor<LoadingPayload[]>;
-} & ComponentProps<'div'>;
+};
 
 export const ProgressDetails: Component<ProgressDetailsProps> = (props) => {
   const [local, others] = splitProps(props, ['payloads', 'class']);

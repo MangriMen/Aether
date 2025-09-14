@@ -11,11 +11,11 @@ export const DEFAULT_LIGHT_THEME = 'light';
 export const DEFAULT_DARK_THEME = 'dark';
 
 export const DEFAULT_THEME_CONTEXT_VALUE: ThemeContextValue = {
-  darkTheme: DEFAULT_DARK_THEME,
-  disableAnimations: false,
-  lightTheme: DEFAULT_LIGHT_THEME,
-  prefersReducedMotion: false,
-  rawTheme: DEFAULT_THEME,
   theme: DEFAULT_THEME,
+  rawTheme: DEFAULT_THEME,
+  lightTheme: DEFAULT_LIGHT_THEME,
+  darkTheme: DEFAULT_DARK_THEME,
   transparency: 1,
+  disableAnimations: false,
+  prefersReducedMotion: false,
 };

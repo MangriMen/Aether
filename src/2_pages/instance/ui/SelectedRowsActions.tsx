@@ -1,31 +1,30 @@
-import type { RowModel } from '@tanstack/solid-table';
-
-import MdiCancelIcon from '@iconify/icons-mdi/cancel';
-import MdiCheckIcon from '@iconify/icons-mdi/check';
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 import {
-  type Component,
-  type ComponentProps,
   createMemo,
   Show,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
-
+import MdiDeleteIcon from '@iconify/icons-mdi/delete';
+import MdiCancelIcon from '@iconify/icons-mdi/cancel';
+import MdiCheckIcon from '@iconify/icons-mdi/check';
 import {
-  type Instance,
-  type InstanceFile,
   useDisableContents,
   useEnableContents,
   useRemoveContents,
+  type Instance,
+  type InstanceFile,
 } from '@/entities/instances';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-export type SelectedRowsActionsProps = {
+import type { RowModel } from '@tanstack/solid-table';
+import { useTranslation } from '@/shared/model';
+import { cn } from '@/shared/lib';
+
+export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];
   selectedRows: RowModel<InstanceFile>;
-} & ComponentProps<'div'>;
+};
 
 export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
   props,
@@ -79,34 +78,34 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
     >
       <Show when={selectionDisableStatus().enabled > 0}>
         <CombinedTooltip
+          label={t('common.disable')}
           as={IconButton}
           class='size-8 p-0 text-lg'
-          icon={MdiCancelIcon}
-          label={t('common.disable')}
-          onClick={handleDisableContents}
-          size='sm'
           variant='ghost'
+          size='sm'
+          icon={MdiCancelIcon}
+          onClick={handleDisableContents}
         />
       </Show>
       <Show when={selectionDisableStatus().disabled > 0}>
         <CombinedTooltip
+          label={t('common.enable')}
           as={IconButton}
           class='size-8 p-0 text-lg'
-          icon={MdiCheckIcon}
-          label={t('common.enable')}
-          onClick={handleEnableContents}
-          size='sm'
           variant='ghost'
+          size='sm'
+          icon={MdiCheckIcon}
+          onClick={handleEnableContents}
         />
       </Show>
       <CombinedTooltip
+        label={t('common.delete')}
         as={IconButton}
         class='size-8 p-0 text-lg'
-        icon={MdiDeleteIcon}
-        label={t('common.delete')}
-        onClick={handleDeleteContents}
-        size='sm'
         variant='destructive'
+        size='sm'
+        icon={MdiDeleteIcon}
+        onClick={handleDeleteContents}
       />
     </div>
   );

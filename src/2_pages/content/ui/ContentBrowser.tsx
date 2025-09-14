@@ -1,23 +1,3 @@
-import { debounce } from '@solid-primitives/scheduled';
-import {
-  type Component,
-  type ComponentProps,
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  Match,
-  splitProps,
-  Switch,
-} from 'solid-js';
-
-import type {
-  ContentItemExtended,
-  ContentRequest,
-  Instance,
-} from '@/entities/instances';
-import type { Option } from '@/shared/model';
-
 import {
   CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
@@ -26,19 +6,38 @@ import {
   useInstanceContents,
   useMetadataFieldToCheckInstalled,
 } from '@/entities/instances';
+
+import type {
+  ContentItemExtended,
+  ContentRequest,
+  Instance,
+} from '@/entities/instances';
+
 import { cn } from '@/shared/lib';
+import type { Option } from '@/shared/model';
 import { useTranslation } from '@/shared/model';
 import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
-
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Match,
+  splitProps,
+  Switch,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
+import { debounce } from '@solid-primitives/scheduled';
 import { ContentListSkeleton } from './ContentListSkeleton';
 
-export type ContentBrowserProps = {
-  contentTypes?: ContentType[];
-  instance: Instance;
+export type ContentBrowserProps = ComponentProps<'div'> & {
   providers: Option<string>[];
-} & ComponentProps<'div'>;
+  instance: Instance;
+  contentTypes?: ContentType[];
+};
 
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -59,7 +58,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   );
 
   const [searchQuery, setSearchQuery] = createSignal<string | undefined>();
-  const [provider, setProvider] = createSignal<null | Option<string>>(null);
+  const [provider, setProvider] = createSignal<Option<string> | null>(null);
   const [page, setPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
 
@@ -77,7 +76,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   }, 300);
   const handlePageChange = (page: number) => setPage(page);
   const handlePageSizeChange = (pageSize: number) => setPageSize(pageSize);
-  const handleSetProvider = (provider: null | Option<string>) => {
+  const handleSetProvider = (provider: Option<string> | null) => {
     if (provider) {
       setProvider(provider);
     }
@@ -91,12 +90,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
     return {
       contentType: contentType(),
-      gameVersions: [local.instance.gameVersion],
-      loader: local.instance.loader,
+      provider: currentProvider.value,
       page: page(),
       pageSize: pageSize(),
-      provider: currentProvider.value,
       query: searchQuery(),
+      gameVersions: [local.instance.gameVersion],
+      loader: local.instance.loader,
     };
   });
 
@@ -183,24 +182,24 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         <div class='flex items-center gap-2'>
           <span class='text-muted-foreground'>{t('content.provider')}:</span>
           <CombinedSelect
-            onChange={handleSetProvider}
             options={local.providers}
-            optionTextValue='name'
-            optionValue='value'
-            title='Provider'
             value={provider()}
+            onChange={handleSetProvider}
+            optionValue='value'
+            optionTextValue='name'
+            title='Provider'
           />
         </div>
       </div>
       <ContentFilters
-        contentType={contentType()}
+        pageSize={pageSize()}
+        pageCount={content.data?.pageCount ?? 10}
         currentPage={page()}
-        loading={!content.data?.items.length}
+        onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-        onSearch={handleSearch}
-        pageCount={content.data?.pageCount ?? 10}
-        pageSize={pageSize()}
+        contentType={contentType()}
+        loading={!content.data?.items.length}
       />
       <Switch>
         <Match when={content.isLoading}>
@@ -214,12 +213,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         <Match when={items()}>
           {(items) => (
             <ContentList
-              gameVersion={local.instance.gameVersion}
-              instanceId={local.instance.id}
               items={items() ?? []}
+              instanceId={local.instance.id}
+              gameVersion={local.instance.gameVersion}
               loader={local.instance.loader}
-              onInstalled={handleOnInstalled}
               provider={provider()?.value}
+              onInstalled={handleOnInstalled}
             />
           )}
         </Match>

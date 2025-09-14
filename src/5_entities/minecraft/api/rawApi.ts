@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { LoaderManifest, ModLoader, VersionManifest } from '../model';
+import type { VersionManifest, LoaderManifest, ModLoader } from '../model';
 
 export const initializeState = () => invoke('initialize_state');
 

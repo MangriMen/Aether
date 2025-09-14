@@ -1,8 +1,8 @@
-import { type Component, type ComponentProps, Show } from 'solid-js';
+import { Show, type Component, type ComponentProps } from 'solid-js';
 
-export type AppInitializeErrorProps = {
+export type AppInitializeErrorProps = ComponentProps<'div'> & {
   message?: string;
-} & ComponentProps<'div'>;
+};
 
 export const AppInitializeError: Component<AppInitializeErrorProps> = (
   props,

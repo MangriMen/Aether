@@ -1,9 +1,6 @@
 import type { ColorMode } from '@kobalte/core';
-import type { Accessor } from 'solid-js';
-
 import { useColorMode } from '@kobalte/core';
-import { makeMediaQueryListener } from '@solid-primitives/media';
-import { makePersisted } from '@solid-primitives/storage';
+import type { Accessor } from 'solid-js';
 import { createEffect, on, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
@@ -14,16 +11,17 @@ import type {
   ThemeContextType,
   ThemeContextValue,
 } from '@/shared/model';
-
-import { COLOR_MODE_TO_KEY, isSystemTheme, THEMES_MAP } from '@/shared/model';
-
+import { THEMES_MAP, COLOR_MODE_TO_KEY, isSystemTheme } from '@/shared/model';
 import { DEFAULT_THEME_CONTEXT_VALUE } from '../config';
-import { showPrefersReducedMotionInfo } from './showPrefersReducedMotionInfo';
+import { makePersisted } from '@solid-primitives/storage';
 import {
   applyDisableAnimationsToDocument,
   applyThemeToDocument,
   applyTransparencyToDocument,
 } from './theme';
+import { makeMediaQueryListener } from '@solid-primitives/media';
+
+import { showPrefersReducedMotionInfo } from './showPrefersReducedMotionInfo';
 
 export const useCreateThemeContext = (
   themeStateKey: Accessor<string>,
@@ -60,10 +58,10 @@ export const useCreateThemeContext = (
   };
 
   const actions: ThemeContextActions = {
-    setDisableAnimations,
     setTheme: setRawTheme,
     setThemeByColorMode,
     setTransparency,
+    setDisableAnimations,
   };
 
   const setColorModeByTheme = (theme: ThemeConfig): void => {

@@ -1,6 +1,5 @@
-import type { Component, ComponentProps } from 'solid-js';
-
 import MdiCubeOutline from '@iconify/icons-mdi/cube-outline';
+import type { Component, ComponentProps } from 'solid-js';
 import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -21,10 +20,10 @@ export const Image: Component<InstanceImageProps> = (props) => {
       {...others}
     >
       <Show
-        fallback={<ResponsiveIcon icon={MdiCubeOutline} />}
         when={local.src}
+        fallback={<ResponsiveIcon icon={MdiCubeOutline} />}
       >
-        {(path) => <img alt='Instance' class='size-full p-1' src={path()} />}
+        {(path) => <img class='size-full p-1' src={path()} alt='Instance' />}
       </Show>
     </div>
   );

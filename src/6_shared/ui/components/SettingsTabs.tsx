@@ -1,11 +1,9 @@
-import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-
 import type { TabsContentProps, TabsListProps, TabsTriggerProps } from './Tabs';
-
 import { TabsContent, TabsList, TabsTrigger } from './Tabs';
+import { cn } from '@/shared/lib';
+import type { PolymorphicProps } from '@kobalte/core';
 
 export const SettingsTabsList = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsListProps<T>>,
