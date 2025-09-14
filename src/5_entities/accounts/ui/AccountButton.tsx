@@ -1,21 +1,20 @@
+import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { type ButtonProps } from '@/shared/ui';
 import { Button, CombinedTooltip } from '@/shared/ui';
 
-import { useTranslation } from '@/shared/model';
-
 import type { AccountType } from '../model';
-import type { PolymorphicProps } from '@kobalte/core';
 
-export type AccountButtonProps<T extends ValidComponent = 'button'> =
-  ButtonProps<T> & {
-    username: string;
-    active: boolean;
-    accountType: AccountType;
-  };
+export type AccountButtonProps<T extends ValidComponent = 'button'> = {
+  accountType: AccountType;
+  active: boolean;
+  username: string;
+} & ButtonProps<T>;
 
 export const AccountButton = <T extends ValidComponent = 'button'>(
   props: Exclude<PolymorphicProps<T, AccountButtonProps<T>>, 'label'>,
@@ -31,12 +30,12 @@ export const AccountButton = <T extends ValidComponent = 'button'>(
 
   return (
     <CombinedTooltip
-      label={t('account.activate')}
-      disableTooltip={local.active}
       as={Button}
       class={cn('size-full rounded-r-none justify-start px-2', local.class, {
         'bg-muted pointer-events-none': local.active,
       })}
+      disableTooltip={local.active}
+      label={t('account.activate')}
       variant='ghost'
       {...others}
     >

@@ -1,11 +1,12 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
-export type InstanceTitleProps = ComponentProps<'div'> & {
-  name?: string;
-  loader?: string;
+export type InstanceTitleProps = {
   gameVersion?: string;
-};
+  loader?: string;
+  name?: string;
+} & ComponentProps<'div'>;
 
 export const InstanceTitle: Component<InstanceTitleProps> = (props) => {
   const [local, others] = splitProps(props, ['name', 'loader', 'gameVersion']);

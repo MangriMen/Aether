@@ -1,5 +1,3 @@
-import type { MemorySliderProps } from '@/entities/instances';
-import { MemorySlider } from '@/entities/instances';
 import type { Component, ComponentProps, ValidComponent } from 'solid-js';
 
 import {
@@ -10,31 +8,33 @@ import {
   splitProps,
 } from 'solid-js';
 
+import type { MemorySliderProps } from '@/entities/instances';
+
+import { MemorySlider } from '@/entities/instances';
+import { cn, isNil } from '@/shared/lib';
 import { CombinedTextField } from '@/shared/ui';
 
-import { cn, isNil } from '@/shared/lib';
-
+export type MemoryInputProps<T extends ValidComponent = 'div'> =
+  MemoryInputBaseProps<T> & MemorySliderInheritedProps<T>;
 type MemoryInputBaseProps<T extends ValidComponent = 'div'> = Omit<
   ComponentProps<T>,
   'onChange'
 >;
+
 type MemorySliderInheritedProps<T extends ValidComponent = 'div'> = Pick<
   MemorySliderProps<T>,
-  | 'minValue'
-  | 'maxValue'
-  | 'value'
   | 'defaultValue'
-  | 'onChange'
-  | 'warningValue'
   | 'disabled'
+  | 'maxValue'
+  | 'minValue'
+  | 'onChange'
+  | 'value'
+  | 'warningValue'
 >;
 
-export type MemoryInputProps<T extends ValidComponent = 'div'> =
-  MemoryInputBaseProps<T> & MemorySliderInheritedProps<T>;
-
 const DEFAULT_PROPS = {
-  minValue: 0,
   maxValue: 100,
+  minValue: 0,
 } as const;
 
 export const MemoryInput: Component<MemoryInputProps> = (props) => {
@@ -92,21 +92,21 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
       <MemorySlider
         class='mt-4'
         disabled={merged.disabled}
-        minValue={minValue()}
         maxValue={maxValue()}
+        minValue={minValue()}
         value={sliderValue()}
         {...memorySliderProps}
       />
       <CombinedTextField
         class='w-[9ch]'
         disabled={merged.disabled}
-        value={textFieldValue()}
-        onChange={setTextFieldValue}
         inputProps={{
-          type: 'text',
           onBlur: handleChangeTextField,
           onKeyPress: handleChangeTextField,
+          type: 'text',
         }}
+        onChange={setTextFieldValue}
+        value={textFieldValue()}
       />
     </div>
   );

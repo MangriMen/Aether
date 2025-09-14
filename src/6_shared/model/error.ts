@@ -1,18 +1,5 @@
 import type { TFunction } from './i18nContext';
 
-type RootKind = 'authError' | 'instanceError' | 'settingsError';
-type ErrorCode =
-  | `${RootKind}.${string}`
-  | `${RootKind}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}.${string}`;
-
-interface BaseError<Code extends ErrorCode, Fields> {
-  code: Code;
-  fields: Fields;
-  message: string;
-}
-
 export type LauncherError =
   | BaseError<'authError.credentialsNotFound', { id: string }>
   | BaseError<'authError.noActiveCredentials', null>
@@ -25,6 +12,19 @@ export type LauncherError =
   | BaseError<'instanceError.credentialsError.storageFailure', null>
   | BaseError<'instanceError.storageFailure', null>
   | BaseError<'settingsError.storageFailure', null>;
+interface BaseError<Code extends ErrorCode, Fields> {
+  code: Code;
+  fields: Fields;
+  message: string;
+}
+
+type ErrorCode =
+  | `${RootKind}.${string}.${string}.${string}.${string}`
+  | `${RootKind}.${string}.${string}.${string}`
+  | `${RootKind}.${string}.${string}`
+  | `${RootKind}.${string}`;
+
+type RootKind = 'authError' | 'instanceError' | 'settingsError';
 
 export const isLauncherError = (error: unknown): error is LauncherError => {
   return (

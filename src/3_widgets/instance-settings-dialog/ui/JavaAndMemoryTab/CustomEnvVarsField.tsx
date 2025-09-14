@@ -1,23 +1,22 @@
-import { cn, useIsCustomCheckbox } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import type { CombinedTextFieldProps } from '@/shared/ui';
-import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
 import {
-  createMemo,
-  splitProps,
   type Component,
   type ComponentProps,
+  createMemo,
+  splitProps,
 } from 'solid-js';
 
-export type CustomEnvVarsFieldProps = Omit<
-  ComponentProps<'div'>,
-  'onChange' | 'onBlur'
-> & {
-  value: string | null | undefined;
+import type { CombinedTextFieldProps } from '@/shared/ui';
+
+import { cn, useIsCustomCheckbox } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Checkbox, CombinedTextField, LabeledField } from '@/shared/ui';
+
+export type CustomEnvVarsFieldProps = {
   inputProps?: CombinedTextFieldProps['inputProps'];
-  onChange?: (value: string | null) => void;
-  onIsCustomChange?: (value: string | null) => void;
-};
+  onChange?: (value: null | string) => void;
+  onIsCustomChange?: (value: null | string) => void;
+  value: null | string | undefined;
+} & Omit<ComponentProps<'div'>, 'onBlur' | 'onChange'>;
 
 export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
   props,
@@ -46,19 +45,19 @@ export const CustomEnvVarsField: Component<CustomEnvVarsFieldProps> = (
       {...others}
     >
       <Checkbox
-        label={t('instanceSettings.customEnvironmentVariables')}
         checked={isCustom()}
+        label={t('instanceSettings.customEnvironmentVariables')}
         onChange={setIsCustom}
       />
       <CombinedTextField
         disabled={!isCustom()}
-        value={value()}
-        onChange={local.onChange}
         inputProps={{
           ...local.inputProps,
-          type: 'text',
           placeholder: t('instanceSettings.enterVariables'),
+          type: 'text',
         }}
+        onChange={local.onChange}
+        value={value()}
       />
     </LabeledField>
   );

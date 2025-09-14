@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import { type Accessor, createMemo } from 'solid-js';
+
+import { showError } from '@/shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+
+import type { EditInstance, InstanceImportDto } from '../../model';
+
 import {
   createInstanceRaw,
-  importInstanceRaw,
-  listInstancesRaw,
-  getInstanceRaw,
-  removeInstanceRaw,
   editInstanceRaw,
   getInstanceDirRaw,
+  getInstanceRaw,
+  importInstanceRaw,
+  listInstancesRaw,
+  removeInstanceRaw,
 } from '../rawApi';
-import type { InstanceImportDto, EditInstance } from '../../model';
-import { INSTANCE_QUERY_KEYS } from './instance_query_keys';
-import { createMemo, type Accessor } from 'solid-js';
-import { useTranslation } from '@/shared/model';
-import { showError } from '@/shared/lib/showError';
 import { invalidateInstanceData } from './cache';
+import { INSTANCE_QUERY_KEYS } from './instance_query_keys';
 
 const INSTANCE_RECONCILE = 'id';
 
@@ -24,9 +27,9 @@ export const useCreateInstance = () => {
     mutationFn: createInstanceRaw,
     onError: (err) => {
       showError({
-        title: t('instance.createError'),
         err,
         t,
+        title: t('instance.createError'),
       });
     },
   }));
@@ -39,9 +42,9 @@ export const useImportInstance = () => {
     mutationFn: (dto: InstanceImportDto) => importInstanceRaw(dto),
     onError: (err) => {
       showError({
-        title: t('instance.importError'),
         err,
         t,
+        title: t('instance.importError'),
       });
     },
   }));
@@ -49,8 +52,8 @@ export const useImportInstance = () => {
 
 export const useInstances = () => {
   return useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.LIST(),
     queryFn: listInstancesRaw,
+    queryKey: INSTANCE_QUERY_KEYS.LIST(),
     reconcile: INSTANCE_RECONCILE,
   }));
 };
@@ -68,9 +71,9 @@ export const useInstance = (id: Accessor<string>) => {
 
   // Try to fetch instance if not found in cache
   const instanceQuery = useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.GET(id()),
-    queryFn: () => getInstanceRaw(id()),
     enabled: shouldFetch(),
+    queryFn: () => getInstanceRaw(id()),
+    queryKey: INSTANCE_QUERY_KEYS.GET(id()),
     reconcile: INSTANCE_RECONCILE,
   }));
 
@@ -85,14 +88,14 @@ export const useInstance = (id: Accessor<string>) => {
     get data() {
       return data();
     },
-    get isLoading() {
-      return isLoading();
-    },
     get isError() {
       return isError();
     },
     get isFetching() {
       return instances.isFetching || instanceQuery.isFetching;
+    },
+    get isLoading() {
+      return isLoading();
     },
   };
 };
@@ -102,17 +105,17 @@ export const useEditInstance = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: ({ id, edit }: { id: string; edit: EditInstance }) =>
+    mutationFn: ({ edit, id }: { edit: EditInstance; id: string }) =>
       editInstanceRaw(id, edit),
-    onSuccess: (_, { id }) => {
-      invalidateInstanceData(queryClient, id);
-    },
     onError: (err, values) => {
       showError({
-        title: t('instance.editError', { id: values.id }),
         err,
         t,
+        title: t('instance.editError', { id: values.id }),
       });
+    },
+    onSuccess: (_, { id }) => {
+      invalidateInstanceData(queryClient, id);
     },
   }));
 };
@@ -123,23 +126,23 @@ export const useRemoveInstance = () => {
 
   return useMutation(() => ({
     mutationFn: (id: string) => removeInstanceRaw(id),
-    onSuccess: (_, id) => {
-      invalidateInstanceData(queryClient, id);
-    },
     onError: (err, id) => {
       showError({
-        title: t('instance.removeError', { id }),
         err,
         t,
+        title: t('instance.removeError', { id }),
       });
+    },
+    onSuccess: (_, id) => {
+      invalidateInstanceData(queryClient, id);
     },
   }));
 };
 
 export const useInstanceDir = (id: Accessor<string>) => {
   return useQuery(() => ({
-    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id())],
-    queryFn: () => getInstanceDirRaw(id()),
     enabled: !!id(),
+    queryFn: () => getInstanceDirRaw(id()),
+    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id())],
   }));
 };

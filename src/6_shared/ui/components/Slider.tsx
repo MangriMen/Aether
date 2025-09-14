@@ -1,15 +1,15 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as SliderPrimitive from '@kobalte/core/slider';
 import type { JSX, ValidComponent } from 'solid-js';
+
+import * as SliderPrimitive from '@kobalte/core/slider';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { Label } from '@/shared/ui';
 
-type SliderRootProps<T extends ValidComponent = 'div'> =
-  SliderPrimitive.SliderRootProps<T> & {
-    class?: string | undefined;
-  };
+type SliderRootProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & SliderPrimitive.SliderRootProps<T>;
 
 const Slider = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SliderRootProps<T>>,
@@ -26,10 +26,9 @@ const Slider = <T extends ValidComponent = 'div'>(
   );
 };
 
-type SliderTrackProps<T extends ValidComponent = 'div'> =
-  SliderPrimitive.SliderTrackProps<T> & {
-    class?: string | undefined;
-  };
+type SliderTrackProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & SliderPrimitive.SliderTrackProps<T>;
 
 const SliderTrack = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SliderTrackProps<T>>,
@@ -46,10 +45,9 @@ const SliderTrack = <T extends ValidComponent = 'div'>(
   );
 };
 
-type SliderFillProps<T extends ValidComponent = 'div'> =
-  SliderPrimitive.SliderFillProps<T> & {
-    class?: string | undefined;
-  };
+type SliderFillProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & SliderPrimitive.SliderFillProps<T>;
 
 const SliderFill = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SliderFillProps<T>>,
@@ -63,11 +61,10 @@ const SliderFill = <T extends ValidComponent = 'div'>(
   );
 };
 
-type SliderThumbProps<T extends ValidComponent = 'span'> =
-  SliderPrimitive.SliderThumbProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type SliderThumbProps<T extends ValidComponent = 'span'> = {
+  children?: JSX.Element;
+  class?: string | undefined;
+} & SliderPrimitive.SliderThumbProps<T>;
 
 const SliderThumb = <T extends ValidComponent = 'span'>(
   props: PolymorphicProps<T, SliderThumbProps<T>>,
@@ -105,9 +102,9 @@ export type { SliderRootProps };
 
 export {
   Slider,
-  SliderTrack,
   SliderFill,
-  SliderThumb,
   SliderLabel,
+  SliderThumb,
+  SliderTrack,
   SliderValueLabel,
 };

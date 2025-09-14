@@ -1,20 +1,23 @@
-import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
-import { createMemo, type Component } from 'solid-js';
-import { useAppSettings, useUpdateAppSettings } from '../../api';
+import { useColorMode } from '@kobalte/core';
+import { type Component, createMemo } from 'solid-js';
+
 import {
   isSystemTheme,
+  type Option,
   useThemeContext,
   useTranslation,
-  type Option,
 } from '@/shared/model';
-import { useColorMode } from '@kobalte/core';
+import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
+
 import type { WindowEffect } from '../../model';
+
+import { useAppSettings, useUpdateAppSettings } from '../../api';
 
 export type SelectWindowEffectProps = {
   class?: string;
 };
 
-type GeneralizedWindowEffect = 'off' | 'mica' | 'acrylic';
+type GeneralizedWindowEffect = 'acrylic' | 'mica' | 'off';
 
 export const SELECT_WINDOW_EFFECT_OPTIONS: Option<GeneralizedWindowEffect>[] = [
   {
@@ -35,11 +38,11 @@ const WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT: Record<
   WindowEffect,
   GeneralizedWindowEffect
 > = {
-  off: 'off',
-  mica: 'off',
-  mica_light: 'mica',
-  mica_dark: 'mica',
   acrylic: 'acrylic',
+  mica: 'off',
+  mica_dark: 'mica',
+  mica_light: 'mica',
+  off: 'off',
 };
 
 export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
@@ -79,7 +82,7 @@ export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
   });
 
   const handleSetWindowEffect = async (
-    generalized_window_effect: Option<GeneralizedWindowEffect> | null,
+    generalized_window_effect: null | Option<GeneralizedWindowEffect>,
   ) => {
     if (!generalized_window_effect) {
       return;
@@ -102,20 +105,20 @@ export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
 
   return (
     <SettingsEntry
-      title={t('settings.windowEffect')}
       description={t('settings.windowEffectDescription')}
+      title={t('settings.windowEffect')}
       {...props}
     >
       <CombinedTooltip
-        label={isDisabled() ? t('settings.windowEffectDisabled') : undefined}
-        disableTooltip={!isDisabled()}
         as={CombinedSelect}
-        optionValue='value'
-        optionTextValue='name'
-        value={currentWindowEffectOption()}
-        options={translatedWindowEffectOptions()}
-        onChange={handleSetWindowEffect}
         disabled={isDisabled()}
+        disableTooltip={!isDisabled()}
+        label={isDisabled() ? t('settings.windowEffectDisabled') : undefined}
+        onChange={handleSetWindowEffect}
+        options={translatedWindowEffectOptions()}
+        optionTextValue='name'
+        optionValue='value'
+        value={currentWindowEffectOption()}
       />
     </SettingsEntry>
   );

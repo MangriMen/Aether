@@ -1,14 +1,15 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
+import type { Instance } from '@/entities/instances';
+
+import { InstanceGameVersion, TimePlayed } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 
-import type { Instance } from '@/entities/instances';
-import { InstanceGameVersion, TimePlayed } from '@/entities/instances';
-
-export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
+export type InstanceHeaderInfoProps = {
   instance: Instance;
-};
+} & ComponentProps<'div'>;
 
 export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
   props,
@@ -24,8 +25,8 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
         {local.instance.name}
       </span>
       <InstanceGameVersion
-        loader={local.instance.loader}
         gameVersion={local.instance.gameVersion}
+        loader={local.instance.loader}
       />
       <TimePlayed
         lastPlayed={local.instance.lastPlayed}

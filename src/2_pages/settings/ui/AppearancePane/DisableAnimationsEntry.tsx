@@ -1,6 +1,7 @@
+import { type Component, type ComponentProps, Show } from 'solid-js';
+
 import { useThemeContext, useTranslation } from '@/shared/model';
 import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
-import { Show, type Component, type ComponentProps } from 'solid-js';
 
 export type DisableAnimationsEntryProps = ComponentProps<'div'>;
 
@@ -17,7 +18,6 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
 
   return (
     <SettingsEntry
-      title={t('settings.animations')}
       description={
         <div class='flex flex-col gap-2'>
           <span>{t('settings.animationsDescription')}</span>
@@ -28,6 +28,7 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
           </Show>
         </div>
       }
+      title={t('settings.animations')}
       {...props}
     >
       <div class='flex min-w-44 flex-col items-end'>

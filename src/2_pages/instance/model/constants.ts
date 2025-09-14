@@ -1,41 +1,42 @@
-import { ContentType } from '@/entities/instances';
 import type { DialogFilter } from '@tauri-apps/plugin-dialog';
 
+import { ContentType } from '@/entities/instances';
+
 const ALL_FILTER: DialogFilter = {
-  name: 'All',
   extensions: ['*'],
+  name: 'All',
 };
 
 export const OPEN_FILTERS_BY_CONTENT_TYPE: Record<
   ContentType,
   DialogFilter[] | undefined
 > = {
-  [ContentType.Mod]: [
+  [ContentType.DataPack]: [
     {
-      name: 'Mod',
-      extensions: ['jar'],
+      extensions: ['zip'],
+      name: 'Data Pack',
     },
     ALL_FILTER,
   ],
-  [ContentType.DataPack]: [
+  [ContentType.Mod]: [
     {
-      name: 'Data Pack',
-      extensions: ['zip'],
+      extensions: ['jar'],
+      name: 'Mod',
     },
     ALL_FILTER,
   ],
   [ContentType.ResourcePack]: [
     {
-      name: 'Resource Pack',
       extensions: ['zip'],
+      name: 'Resource Pack',
     },
     ALL_FILTER,
   ],
 
   [ContentType.ShaderPack]: [
     {
-      name: 'Shader Pack',
       extensions: ['zip'],
+      name: 'Shader Pack',
     },
     ALL_FILTER,
   ],

@@ -1,15 +1,17 @@
-import type { Instance } from '@/entities/instances';
-import { InstanceGameVersion } from '@/entities/instances';
-import { cn } from '@/shared/lib';
-import { Button, Image } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import MdiArrowLeftIcon from '@iconify/icons-mdi/arrow-left';
 import { useNavigate } from '@solidjs/router';
-import { useTranslation } from '@/shared/model';
+import { type Component, type ComponentProps, splitProps } from 'solid-js';
 
-export type InstanceInfoProps = ComponentProps<'div'> & {
+import type { Instance } from '@/entities/instances';
+
+import { InstanceGameVersion } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, Image } from '@/shared/ui';
+
+export type InstanceInfoProps = {
   instance: Instance;
-};
+} & ComponentProps<'div'>;
 
 export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
@@ -31,15 +33,15 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
         </span>
         <InstanceGameVersion
           class='font-medium'
-          loader={local.instance.loader}
           gameVersion={local.instance.gameVersion}
+          loader={local.instance.loader}
         />
       </div>
       <Button
         class='ml-auto'
         leadingIcon={MdiArrowLeftIcon}
-        variant='secondary'
         onClick={handleBackToInstance}
+        variant='secondary'
       >
         {t('content.backToInstance')}
       </Button>

@@ -1,12 +1,16 @@
-import { Show, splitProps } from 'solid-js';
-import { useImportConfigs } from '@/entities/instances';
 import type { Component, ComponentProps } from 'solid-js';
-import { ImportInstanceForm } from './ImportInstanceForm';
-import { useTranslation } from '@/shared/model';
+
+import { Show, splitProps } from 'solid-js';
+
+import { useImportConfigs } from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { TabContentProps } from '../model';
 
-export type ImportInstanceProps = TabContentProps & ComponentProps<'div'>;
+import { ImportInstanceForm } from './ImportInstanceForm';
+
+export type ImportInstanceProps = ComponentProps<'div'> & TabContentProps;
 
 export const ImportInstance: Component<ImportInstanceProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
@@ -18,7 +22,6 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
       <Show
-        when={importConfigs.data?.length}
         fallback={
           <div class='flex grow items-center justify-center'>
             <span class='whitespace-pre-line text-center text-lg text-muted-foreground'>
@@ -26,6 +29,7 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
             </span>
           </div>
         }
+        when={importConfigs.data?.length}
       >
         <ImportInstanceForm importConfigs={() => importConfigs.data} />
       </Show>

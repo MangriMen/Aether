@@ -1,15 +1,18 @@
-import { cn } from '@/shared/lib';
-import { createMemo, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
-import MdiClockIcon from '@iconify/icons-mdi/clock';
-import { useTranslation } from '@/shared/model';
+
 import { Icon } from '@iconify-icon/solid';
+import MdiClockIcon from '@iconify/icons-mdi/clock';
+import { createMemo, Show, splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import { formatTimePlayedHumanized } from '../lib';
 
-export type LastPlayedDateProps = ComponentProps<'span'> & {
+export type LastPlayedDateProps = {
   lastPlayed: string | undefined;
   timePlayed: number;
-};
+} & ComponentProps<'span'>;
 
 export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -42,7 +45,7 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
       {...others}
     >
       <Icon icon={MdiClockIcon} />
-      <Show when={local.lastPlayed} fallback={t('instance.neverPlayed')}>
+      <Show fallback={t('instance.neverPlayed')} when={local.lastPlayed}>
         <span
           class='mt-auto inline-flex items-center gap-1 capitalize'
           title={lastPlayedDateTitle()}

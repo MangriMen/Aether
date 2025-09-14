@@ -4,12 +4,10 @@ import {
   createMemo,
   createResource,
   createSignal,
+  type JSX,
   onMount,
   splitProps,
-  type JSX,
 } from 'solid-js';
-
-import { dayjs } from '@/shared/lib';
 
 import type {
   Dictionary,
@@ -17,16 +15,19 @@ import type {
   Locale,
   RawDictionary,
 } from '@/shared/model';
+
+import { dayjs } from '@/shared/lib';
 import { getSystemLocale, I18nContext } from '@/shared/model';
+
 import { LOCALE_LS_KEY } from '../config';
 
 export type I18nProviderProps<
   Locale extends string,
   Dictionary extends i18n.BaseRecordDict,
 > = {
-  resources: Record<Locale, Dictionary>;
-  fallbackLocale: Locale;
   children?: JSX.Element;
+  fallbackLocale: Locale;
+  resources: Record<Locale, Dictionary>;
 };
 
 export const I18nProvider = (
@@ -64,8 +65,8 @@ export const I18nProvider = (
 
   const context: I18nContextType<Locale, Dictionary> = [
     {
-      locale,
       dict,
+      locale,
       t,
     },
     {

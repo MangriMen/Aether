@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { LoaderVersion, Version } from '@/entities/minecraft';
+
 import { ModLoader, VersionType } from '@/entities/minecraft';
 
 export const ModLoaderSchema: z.ZodType<ModLoader> = z.enum(
@@ -15,7 +16,12 @@ export const ModLoaderSchema: z.ZodType<ModLoader> = z.enum(
 );
 
 export const VersionSchema: z.ZodType<Version> = z.object({
+  compliance_level: z.number(),
   id: z.string().min(1),
+  original_sha1: z.string().min(1).optional(),
+  release_time: z.string().min(1),
+  sha1: z.string().min(1),
+  time: z.string().min(1),
   type: z.enum([
     VersionType.Release,
     VersionType.Snapshot,
@@ -23,30 +29,25 @@ export const VersionSchema: z.ZodType<Version> = z.object({
     VersionType.OldBeta,
   ]),
   url: z.string().min(1),
-  time: z.string().min(1),
-  release_time: z.string().min(1),
-  sha1: z.string().min(1),
-  compliance_level: z.number(),
-  original_sha1: z.string().min(1).optional(),
 });
 
 export const LoaderVersionSchema: z.ZodType<LoaderVersion> = z.object({
   id: z.string().min(0),
-  url: z.string().min(0),
   stable: z.boolean(),
+  url: z.string().min(0),
 });
 
 export const CreateCustomInstanceSchema = z
   .object({
-    name: z
-      .string({ required_error: 'Name is required' })
-      .min(1, { message: 'Name is required' }),
     gameVersion: z
       .string({ required_error: 'Game version is required' })
       .min(1, { message: 'Game version is required' }),
     loader: ModLoaderSchema,
-    loaderVersionType: z.string().optional(),
     loaderVersion: z.string().optional(),
+    loaderVersionType: z.string().optional(),
+    name: z
+      .string({ required_error: 'Name is required' })
+      .min(1, { message: 'Name is required' }),
   })
   .superRefine((data, ctx) => {
     if (data.loaderVersionType === 'other' && !data.loaderVersion) {

@@ -1,11 +1,11 @@
-import MdiSettingsIcon from '@iconify/icons-mdi/settings';
 import type { PolymorphicProps } from '@kobalte/core';
-import { useNavigate } from '@solidjs/router';
 import type { Component, ValidComponent } from 'solid-js';
 
-import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
+import MdiSettingsIcon from '@iconify/icons-mdi/settings';
+import { useNavigate } from '@solidjs/router';
 
 import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
@@ -18,12 +18,12 @@ export const SettingsButton: Component<SettingsButtonProps> = (props) => {
 
   return (
     <CombinedTooltip
-      label={t('instance.settings')}
       as={IconButton}
       class='aspect-square p-2'
-      variant='secondary'
       icon={MdiSettingsIcon}
+      label={t('instance.settings')}
       onClick={handleClick}
+      variant='secondary'
       {...props}
     />
   );

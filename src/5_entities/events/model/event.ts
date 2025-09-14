@@ -3,7 +3,7 @@ import type { LoadingPayload } from './loading';
 import type { ProcessPayload } from './process';
 import type { WarningPayload } from './warning';
 
-export type LauncherEvent = 'loading' | 'process' | 'instance' | 'warning';
+export type LauncherEvent = 'instance' | 'loading' | 'process' | 'warning';
 
 export type LauncherEventPayload<T = LauncherEvent> = T extends 'loading'
   ? LoadingPayload

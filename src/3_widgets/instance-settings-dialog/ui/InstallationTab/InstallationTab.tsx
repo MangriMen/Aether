@@ -1,19 +1,21 @@
+import MdiHammerIcon from '@iconify/icons-mdi/hammer';
+import {
+  type Component,
+  type ComponentProps,
+  createMemo,
+  Show,
+  splitProps,
+} from 'solid-js';
+
 import {
   InstanceInstallStage,
   useInstallInstance,
   useUpdateInstance,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { Button, Image, LabeledField, showToast } from '@/shared/ui';
-import {
-  createMemo,
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
-import MdiHammerIcon from '@iconify/icons-mdi/hammer';
 import { isLauncherError } from '@/shared/model';
+import { Button, Image, LabeledField, showToast } from '@/shared/ui';
+
 import type { InstanceSettingsTabProps } from '../../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &
@@ -31,9 +33,9 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     } catch (e) {
       if (isLauncherError(e)) {
         showToast({
+          description: e.message,
           title: 'Failed to update instance',
           variant: 'destructive',
-          description: e.message,
         });
       }
     }
@@ -41,13 +43,13 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
 
   const handleRepair = async () => {
     try {
-      await installInstance({ id: local.instance.id, force: true });
+      await installInstance({ force: true, id: local.instance.id });
     } catch (e) {
       if (isLauncherError(e)) {
         showToast({
+          description: e.message,
           title: 'Failed to repair instance',
           variant: 'destructive',
-          description: e.message,
         });
       }
     }
@@ -75,21 +77,21 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
             <Show when={local.instance.packInfo}>
               <Button
                 class='text-base'
+                disabled={isInstalling()}
+                onClick={handleUpdate}
                 size='sm'
                 variant='ghost'
-                onClick={handleUpdate}
-                disabled={isInstalling()}
               >
                 Update
               </Button>
             </Show>
             <Button
               class='text-base'
-              size='sm'
-              variant='ghostWarning'
+              disabled={isInstalling()}
               leadingIcon={MdiHammerIcon}
               onClick={handleRepair}
-              disabled={isInstalling()}
+              size='sm'
+              variant='ghostWarning'
             >
               Repair
             </Button>

@@ -1,6 +1,9 @@
+import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { FieldValues, SubmitHandler } from '@modular-forms/solid';
-import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
 import type { Component } from 'solid-js';
+import type { z } from 'zod';
+
+import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
 import {
   createMemo,
   createSignal,
@@ -10,7 +13,20 @@ import {
   Switch,
 } from 'solid-js';
 
+import type { NewInstance } from '@/entities/instances';
+import type { LoaderVersion, Version } from '@/entities/minecraft';
+
+import {
+  IncludeSnapshotsCheckbox,
+  useCreateInstance,
+} from '@/entities/instances';
+import {
+  ModLoader,
+  useLoaderVersionManifest,
+  useMinecraftVersionManifest,
+} from '@/entities/minecraft';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   Collapsible,
@@ -20,44 +36,27 @@ import {
   LabeledField,
 } from '@/shared/ui';
 
-import type { NewInstance } from '@/entities/instances';
-import {
-  IncludeSnapshotsCheckbox,
-  useCreateInstance,
-} from '@/entities/instances';
-import type { LoaderVersion, Version } from '@/entities/minecraft';
-import {
-  ModLoader,
-  useLoaderVersionManifest,
-  useMinecraftVersionManifest,
-} from '@/entities/minecraft';
-
-import { useTranslation } from '@/shared/model';
-
+import { loaderManifestToMapped } from '../lib';
 import {
   CreateCustomInstanceSchema,
   filterGameVersions,
   filterGameVersionsForLoader,
   getLoaderVersionsForGameVersion,
-  LOADERS,
   LOADER_VERSION_TYPES,
+  LOADERS,
 } from '../model';
-
-import { loaderManifestToMapped } from '../lib';
-import { SelectGameVersion } from './SelectGameVersion';
-import { LoaderVersionTypeChipsToggleGroup } from './LoaderVersionTypeChipsToggleGroup';
 import { LoaderChipsToggleGroup } from './LoaderChipsToggleGroup';
+import { LoaderVersionTypeChipsToggleGroup } from './LoaderVersionTypeChipsToggleGroup';
+import { SelectGameVersion } from './SelectGameVersion';
 import { SelectSpecificLoaderVersion } from './SelectSpecificLoaderVersion';
-import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { z } from 'zod';
+
+export type CreateCustomInstanceFormValues = FieldValues &
+  z.infer<typeof CreateCustomInstanceSchema>;
 
 export type CreateCustomInstanceProps = { class?: string } & Pick<
   DialogRootProps,
   'onOpenChange'
 >;
-
-export type CreateCustomInstanceFormValues = FieldValues &
-  z.infer<typeof CreateCustomInstanceSchema>;
 
 export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   props,
@@ -66,12 +65,12 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
-    validate: zodForm(CreateCustomInstanceSchema),
+  const [form, { Field, Form }] = createForm<CreateCustomInstanceFormValues>({
     initialValues: {
       loader: ModLoader.Vanilla,
       loaderVersionType: LOADER_VERSION_TYPES[0].value,
     },
+    validate: zodForm(CreateCustomInstanceSchema),
   });
 
   const [isCreating, setIsCreating] = createSignal(false);
@@ -112,8 +111,8 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       {
         fabric: fabricVersionsMapped(),
         forge: forgeVersionsMapped(),
-        quilt: quiltVersionsMapped(),
         neoforge: neoforgeVersionsMapped(),
+        quilt: quiltVersionsMapped(),
       },
     ),
   );
@@ -125,8 +124,8 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       {
         fabric: fabricVersionsMapped(),
         forge: forgeVersionsMapped(),
-        quilt: quiltVersionsMapped(),
         neoforge: neoforgeVersionsMapped(),
+        quilt: quiltVersionsMapped(),
       },
     ),
   );
@@ -142,10 +141,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     setIsCreating(true);
 
     const payload: NewInstance = {
-      name: values.name,
       gameVersion: values.gameVersion,
-      modLoader: values.loader,
       loaderVersion: values.loaderVersion,
+      modLoader: values.loader,
+      name: values.name,
     };
 
     props.onOpenChange?.(false);
@@ -169,16 +168,16 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       <Field name='name'>
         {(field, props) => (
           <CombinedTextField
-            label={t('common.name')}
-            value={field.value}
             errorMessage={field.error}
             inputProps={{
+              autocomplete: 'off',
               class: 'max-w-[36ch]',
               maxLength: 32,
-              autocomplete: 'off',
               type: 'text',
               ...props,
             }}
+            label={t('common.name')}
+            value={field.value}
           />
         )}
       </Field>
@@ -188,11 +187,11 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
           {(field) => (
             <LoaderChipsToggleGroup
               loaders={LOADERS}
-              value={field.value}
               onChange={(value) => {
                 setValue(form, 'loader', value as ModLoader);
                 setValue(form, 'loaderVersion', undefined);
               }}
+              value={field.value}
             />
           )}
         </Field>
@@ -204,11 +203,11 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             {(field, props) => (
               <SelectGameVersion
                 class='max-w-[31.5ch]'
-                placeholder={t('createInstance.gameVersionPlaceholder')}
-                options={filteredGameVersions()}
                 errorMessage={field.error}
+                options={filteredGameVersions()}
+                placeholder={t('createInstance.gameVersionPlaceholder')}
                 {...props}
-                onChange={(value: Version | null) => {
+                onChange={(value: null | Version) => {
                   if (value) {
                     setValue(form, 'gameVersion', value.id);
                   }
@@ -217,10 +216,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             )}
           </Field>
           <IncludeSnapshotsCheckbox
-            class='mt-2'
-            show={isAdvanced()}
             checked={shouldIncludeSnapshots()}
+            class='mt-2'
             onChange={setShouldIncludeSnapshots}
+            show={isAdvanced()}
           />
         </div>
       </LabeledField>
@@ -234,12 +233,12 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
               {(field) => (
                 <LoaderVersionTypeChipsToggleGroup
                   loaderTypes={LOADER_VERSION_TYPES}
-                  value={field.value}
                   onChange={(value) => {
                     if (value) {
                       setValue(form, 'loaderVersionType', value);
                     }
                   }}
+                  value={field.value}
                 />
               )}
             </Field>
@@ -247,20 +246,20 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
           <Show when={getValue(form, 'loaderVersionType') === 'other'}>
             <Show
-              when={getValue(form, 'gameVersion') !== undefined}
               fallback={
                 <span class='italic'>
                   {t('createInstance.loaderVersionNoGameVersion')}
                 </span>
               }
+              when={getValue(form, 'gameVersion') !== undefined}
             >
               <LabeledField label={t('createInstance.loaderVersion')}>
                 <Field name='loaderVersion'>
                   {(field, props) => (
                     <SelectSpecificLoaderVersion
-                      placeholder={t('createInstance.loaderVersionPlaceholder')}
-                      options={loaderVersions()}
                       errorMessage={field.error}
+                      options={loaderVersions()}
+                      placeholder={t('createInstance.loaderVersionPlaceholder')}
                       {...props}
                       onChange={(value: LoaderVersion | null) => {
                         if (value) {
@@ -279,8 +278,8 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       <DialogFooter>
         <Button
           class='mb-2 sm:mb-0 sm:mr-auto'
-          variant='secondary'
           onClick={() => setIsAdvanced(!isAdvanced())}
+          variant='secondary'
         >
           <Switch>
             <Match when={isAdvanced()}>
@@ -292,11 +291,11 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
           </Switch>
         </Button>
 
-        <Button type='submit' disabled={isCreating()}>
+        <Button disabled={isCreating()} type='submit'>
           {t('common.create')}
         </Button>
 
-        <Button variant='secondary' onClick={() => props.onOpenChange?.(false)}>
+        <Button onClick={() => props.onOpenChange?.(false)} variant='secondary'>
           {t('common.cancel')}
         </Button>
       </DialogFooter>

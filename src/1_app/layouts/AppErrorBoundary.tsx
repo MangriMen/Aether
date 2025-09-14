@@ -1,11 +1,12 @@
+import { type Component, type ComponentProps, splitProps } from 'solid-js';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-export type AppErrorBoundaryProps = ComponentProps<'div'> & {
+export type AppErrorBoundaryProps = {
   reset: () => void;
-};
+} & ComponentProps<'div'>;
 
 export const AppErrorBoundary: Component<AppErrorBoundaryProps> = (props) => {
   const [local, others] = splitProps(props, ['reset', 'class']);

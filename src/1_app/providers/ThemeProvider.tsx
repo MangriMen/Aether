@@ -1,15 +1,17 @@
 import type { Component, JSX } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { ThemeContext } from '@/shared/model';
+
 import { useCreateThemeContext } from '../lib';
 
 export type ThemeProviderProps = {
-  themeStateKey: string;
-  themeAttribute: string;
-  disableAnimationsAttribute: string;
-  transparencyProperty: string;
   children: JSX.Element;
+  disableAnimationsAttribute: string;
+  themeAttribute: string;
+  themeStateKey: string;
+  transparencyProperty: string;
 };
 
 export const ThemeProvider: Component<ThemeProviderProps> = (props) => {

@@ -1,19 +1,20 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
 
 import { InstanceActionButton } from '@/features/instance-action-button';
+import { Image } from '@/shared/ui';
 
 import { InstanceHeaderInfo } from './InstanceHeaderInfo';
 import { OpenFolderButton } from './OpenFolderButton';
 import { SettingsButton } from './SettingsButton';
-import { Image } from '@/shared/ui';
 
-export type HeaderProps = ComponentProps<'div'> & {
+export type HeaderProps = {
   instance: Instance;
   instancePath?: string;
-};
+} & ComponentProps<'div'>;
 
 export const Header: Component<HeaderProps> = (props) => {
   const [local, others] = splitProps(props, [

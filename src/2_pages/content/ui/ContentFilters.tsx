@@ -1,3 +1,11 @@
+import {
+  type Component,
+  type ComponentProps,
+  createMemo,
+  Show,
+  splitProps,
+} from 'solid-js';
+
 import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -11,24 +19,17 @@ import {
   SelectValue,
   Skeleton,
 } from '@/shared/ui';
-import {
-  createMemo,
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
 
-export type ContentFiltersProps = ComponentProps<'div'> & {
-  pageCount: number;
-  pageSize: number;
+export type ContentFiltersProps = {
+  contentType?: ContentType;
   currentPage: number;
-  onSearch: (query: string) => void;
+  loading?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  contentType?: ContentType;
-  loading?: boolean;
-};
+  onSearch: (query: string) => void;
+  pageCount: number;
+  pageSize: number;
+} & ComponentProps<'div'>;
 
 const PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50];
 
@@ -60,25 +61,25 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
     <div class={cn('flex gap-2 justify-between', local.class)} {...others}>
       <CombinedTextField
         class='w-full'
-        name='search'
         inputProps={{
-          type: 'text',
           placeholder: searchPlaceholder(),
+          type: 'text',
         }}
+        name='search'
         onChange={local.onSearch}
       />
       <div class='flex justify-between gap-2'>
         <Select
-          options={PER_PAGE_OPTIONS}
-          value={local.pageSize}
+          itemComponent={(props) => (
+            <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
+          )}
           onChange={(value) => {
             if (value) {
               local.onPageSizeChange(value);
             }
           }}
-          itemComponent={(props) => (
-            <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
-          )}
+          options={PER_PAGE_OPTIONS}
+          value={local.pageSize}
         >
           <SelectTrigger class='gap-1.5 whitespace-nowrap px-2'>
             <SelectValue<number>>
@@ -89,16 +90,16 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
         </Select>
 
         <Show
+          fallback={<Skeleton class='bg-secondary' radius={6} width={200} />}
           when={!local.loading}
-          fallback={<Skeleton width={200} radius={6} class='bg-secondary' />}
         >
           <Show when={local.pageCount > 1}>
             <CombinedPagination
-              siblingCount={1}
               count={local.pageCount}
-              page={local.currentPage}
-              onPageChange={local.onPageChange}
               disabled={local.loading}
+              onPageChange={local.onPageChange}
+              page={local.currentPage}
+              siblingCount={1}
             />
           </Show>
         </Show>

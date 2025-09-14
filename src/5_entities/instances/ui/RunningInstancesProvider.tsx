@@ -1,16 +1,18 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import type { Component, JSX } from 'solid-js';
+
 import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import type { Instance, RunningInstancesContextValue } from '../model';
-import { RunningInstancesContext } from '../model';
 import {
-  ProcessPayloadType,
   listenEvent,
+  ProcessPayloadType,
 } from '@/entities/events/@x/instances';
+import { debugLog } from '@/shared/lib/log';
 
-import { isDebug } from '@/shared/model';
+import type { Instance, RunningInstancesContextValue } from '../model';
+
+import { RunningInstancesContext } from '../model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
 
@@ -32,9 +34,9 @@ export const RunningInstancesProvider: Component<
       setIsLoading: (id, value) => {
         if (!context[1].get(contextValue, id)) {
           setContextValue('instances', id, () => ({
-            payload: undefined,
             isLoading: value,
             isRunning: false,
+            payload: undefined,
           }));
           return;
         }
@@ -43,26 +45,22 @@ export const RunningInstancesProvider: Component<
     },
   ];
 
-  let processListenerUnlistenFn: UnlistenFn | undefined;
+  let processListenerUnlistenFn: undefined | UnlistenFn;
 
   const stopProcessListener = () => processListenerUnlistenFn?.();
 
   const startProcessListener = () =>
     listenEvent('process', (e) => {
-      if (isDebug()) {
-        console.log('[EVENT][DEBUG]', e);
-      }
+      debugLog('[EVENT][DEBUG]', e);
 
       setContextValue('instances', (instances) => ({
         ...instances,
         [e.payload.instanceId]: {
-          payload: e.payload,
           isLoading: false,
           isRunning: e.payload.event === ProcessPayloadType.Launched,
+          payload: e.payload,
         },
       }));
-
-      console.log(contextValue);
     });
 
   createEffect(() => {

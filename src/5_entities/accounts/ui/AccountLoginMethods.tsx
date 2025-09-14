@@ -1,19 +1,19 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import { Icon } from '@iconify-icon/solid';
 import MdiCloudOffOutline from '@iconify/icons-mdi/cloud-off-outline';
 import MdiSignIn from '@iconify/icons-mdi/login-variant';
-import { Icon } from '@iconify-icon/solid';
-import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Button, CombinedTooltip } from '@/shared/ui';
-
 import { useTranslation } from '@/shared/model';
+import { Button, CombinedTooltip } from '@/shared/ui';
 
 import type { AccountType } from '../model';
 
-export type AccountLoginMethodsProps = ComponentProps<'div'> & {
+export type AccountLoginMethodsProps = {
   onLogin: (type: AccountType) => void;
-};
+} & ComponentProps<'div'>;
 
 export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
   props,
@@ -33,13 +33,13 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
   return (
     <div class={cn('flex gap-2', local.class)} {...others}>
       <CombinedTooltip
-        label={t('account.signInMinecraft')}
         as={Button}
-        variant='outline'
         class='px-2'
-        onClick={onOnline}
         // TODO: implement minecraft login
         disabled
+        label={t('account.signInMinecraft')}
+        onClick={onOnline}
+        variant='outline'
       >
         <span class='flex items-center gap-2'>
           {t('account.signIn')}
@@ -47,11 +47,11 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
         </span>
       </CombinedTooltip>
       <CombinedTooltip
-        label={t('account.signInOffline')}
         as={Button}
-        variant='outline'
         class='px-2'
+        label={t('account.signInOffline')}
         onClick={onOffline}
+        variant='outline'
       >
         <span class='flex items-center gap-2'>
           {t('account.offline')}

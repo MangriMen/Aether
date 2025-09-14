@@ -1,19 +1,21 @@
 import { useMutation } from '@tanstack/solid-query';
-import { installInstanceRaw, updateInstanceRaw } from '../rawApi';
-import { useTranslation } from '@/shared/model';
+
 import { showError } from '@/shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+
+import { installInstanceRaw, updateInstanceRaw } from '../rawApi';
 
 export const useInstallInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: ({ id, force }: { id: string; force?: boolean }) =>
+    mutationFn: ({ force, id }: { force?: boolean; id: string }) =>
       installInstanceRaw(id, force ?? false),
     onError: (err, { id }) => {
       showError({
-        title: t('instance.removeError', { id }),
         err,
         t,
+        title: t('instance.removeError', { id }),
       });
     },
   }));
@@ -26,9 +28,9 @@ export const useUpdateInstance = () => {
     mutationFn: (id: string) => updateInstanceRaw(id),
     onError: (err, id) => {
       showError({
-        title: t('instance.removeError', { id }),
         err,
         t,
+        title: t('instance.removeError', { id }),
       });
     },
   }));

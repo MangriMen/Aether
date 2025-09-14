@@ -1,5 +1,6 @@
-import { Button, closeToast, showToast } from '@/shared/ui';
 import { createRoot } from 'solid-js';
+
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const showPrefersReducedMotionInfo = (
   onEnableAnimations: () => void,
@@ -12,7 +13,6 @@ export const showPrefersReducedMotionInfo = (
     };
 
     const number = showToast({
-      title: 'В системе отключены анимации',
       description: (
         <div class='flex flex-col gap-2'>
           <span>
@@ -24,6 +24,7 @@ export const showPrefersReducedMotionInfo = (
           </Button>
         </div>
       ),
+      title: 'В системе отключены анимации',
     });
   });
 };

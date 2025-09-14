@@ -1,16 +1,18 @@
+import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { JSX, ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
 
 import * as PaginationPrimitive from '@kobalte/core/pagination';
-import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+
 import { buttonVariants } from './Button';
 
 const PaginationItems = PaginationPrimitive.Items;
 
-type PaginationRootProps<T extends ValidComponent = 'nav'> =
-  PaginationPrimitive.PaginationRootProps<T> & { class?: string | undefined };
+type PaginationRootProps<T extends ValidComponent = 'nav'> = {
+  class?: string | undefined;
+} & PaginationPrimitive.PaginationRootProps<T>;
 
 const Pagination = <T extends ValidComponent = 'nav'>(
   props: PolymorphicProps<T, PaginationRootProps<T>>,
@@ -27,8 +29,9 @@ const Pagination = <T extends ValidComponent = 'nav'>(
   );
 };
 
-type PaginationItemProps<T extends ValidComponent = 'button'> =
-  PaginationPrimitive.PaginationItemProps<T> & { class?: string | undefined };
+type PaginationItemProps<T extends ValidComponent = 'button'> = {
+  class?: string | undefined;
+} & PaginationPrimitive.PaginationItemProps<T>;
 
 const PaginationItem = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, PaginationItemProps<T>>,
@@ -48,10 +51,9 @@ const PaginationItem = <T extends ValidComponent = 'button'>(
   );
 };
 
-type PaginationEllipsisProps<T extends ValidComponent = 'div'> =
-  PaginationPrimitive.PaginationEllipsisProps<T> & {
-    class?: string | undefined;
-  };
+type PaginationEllipsisProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & PaginationPrimitive.PaginationEllipsisProps<T>;
 
 const PaginationEllipsis = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, PaginationEllipsisProps<T>>,
@@ -65,14 +67,14 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
       {...others}
     >
       <svg
-        xmlns='http://www.w3.org/2000/svg'
-        viewBox='0 0 24 24'
+        class='size-4'
         fill='none'
         stroke='currentColor'
-        stroke-width='2'
         stroke-linecap='round'
         stroke-linejoin='round'
-        class='size-4'
+        stroke-width='2'
+        viewBox='0 0 24 24'
+        xmlns='http://www.w3.org/2000/svg'
       >
         <circle cx='12' cy='12' r='1' />
         <circle cx='19' cy='12' r='1' />
@@ -83,11 +85,10 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
   );
 };
 
-type PaginationPreviousProps<T extends ValidComponent = 'button'> =
-  PaginationPrimitive.PaginationPreviousProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type PaginationPreviousProps<T extends ValidComponent = 'button'> = {
+  children?: JSX.Element;
+  class?: string | undefined;
+} & PaginationPrimitive.PaginationPreviousProps<T>;
 
 const PaginationPrevious = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, PaginationPreviousProps<T>>,
@@ -110,14 +111,14 @@ const PaginationPrevious = <T extends ValidComponent = 'button'>(
       {local.children ?? (
         <>
           <svg
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 24 24'
+            class='size-4'
             fill='none'
             stroke='currentColor'
-            stroke-width='2'
             stroke-linecap='round'
             stroke-linejoin='round'
-            class='size-4'
+            stroke-width='2'
+            viewBox='0 0 24 24'
+            xmlns='http://www.w3.org/2000/svg'
           >
             <path d='M15 6l-6 6l6 6' />
           </svg>
@@ -128,11 +129,10 @@ const PaginationPrevious = <T extends ValidComponent = 'button'>(
   );
 };
 
-type PaginationNextProps<T extends ValidComponent = 'button'> =
-  PaginationPrimitive.PaginationNextProps<T> & {
-    class?: string | undefined;
-    children?: JSX.Element;
-  };
+type PaginationNextProps<T extends ValidComponent = 'button'> = {
+  children?: JSX.Element;
+  class?: string | undefined;
+} & PaginationPrimitive.PaginationNextProps<T>;
 
 const PaginationNext = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, PaginationNextProps<T>>,
@@ -156,14 +156,14 @@ const PaginationNext = <T extends ValidComponent = 'button'>(
         <>
           {/* <span>Next</span> */}
           <svg
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 24 24'
+            class='size-4'
             fill='none'
             stroke='currentColor'
-            stroke-width='2'
             stroke-linecap='round'
             stroke-linejoin='round'
-            class='size-4'
+            stroke-width='2'
+            viewBox='0 0 24 24'
+            xmlns='http://www.w3.org/2000/svg'
           >
             <path d='M9 6l6 6l-6 6' />
           </svg>
@@ -177,9 +177,9 @@ export type { PaginationRootProps };
 
 export {
   Pagination,
-  PaginationItems,
-  PaginationItem,
   PaginationEllipsis,
-  PaginationPrevious,
+  PaginationItem,
+  PaginationItems,
   PaginationNext,
+  PaginationPrevious,
 };

@@ -1,9 +1,10 @@
 import type { Component } from 'solid-js';
-import { splitProps, createMemo, Show } from 'solid-js';
 
-import type { IconButtonProps } from '@/shared/ui';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
+import type { IconButtonProps } from '@/shared/ui';
+
 import {
   InstanceInstallStage,
   InstancePlayButton,
@@ -12,9 +13,9 @@ import {
   useRunningInstancesContext,
 } from '@/entities/instances';
 
-export type InstanceActionButtonProps = IconButtonProps & {
+export type InstanceActionButtonProps = {
   instance: Instance;
-};
+} & IconButtonProps;
 
 export const InstanceActionButton: Component<InstanceActionButtonProps> = (
   props,
@@ -58,12 +59,12 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
 
   return (
     <Show
-      when={isPlayButton()}
       fallback={<InstanceStopButton onClick={handleStop} {...others} />}
+      when={isPlayButton()}
     >
       <InstancePlayButton
-        loading={isPlayButtonLoading()}
         disabled={isPlayButtonDisabled()}
+        loading={isPlayButtonLoading()}
         onClick={handleLaunch}
         {...others}
       />

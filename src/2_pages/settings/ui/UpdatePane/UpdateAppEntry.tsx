@@ -1,12 +1,12 @@
-import { relaunch } from '@tauri-apps/plugin-process';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { relaunch } from '@tauri-apps/plugin-process';
 import { createMemo, Show } from 'solid-js';
 
-import { Button, SettingsEntry, showToast } from '@/shared/ui';
 import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
-
-import { useTranslation } from '@/shared/model';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { useTranslation } from '@/shared/model';
+import { Button, SettingsEntry, showToast } from '@/shared/ui';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 
@@ -23,7 +23,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     update.refetch();
   };
 
-  const { isUpdating, installUpdate } = useInstallUpdate();
+  const { installUpdate, isUpdating } = useInstallUpdate();
 
   const handleInstallUpdate = async () => {
     if (!update.data) {
@@ -45,11 +45,10 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <SettingsEntry
       class='items-start'
-      title={t('settings.checkForUpdates')}
       description={
         <Show
-          when={isUpdateAvailable()}
           fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
+          when={isUpdateAvailable()}
         >
           <div class='flex flex-col'>
             {t('settings.checkForUpdatesDescription')}
@@ -66,11 +65,11 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
           </div>
         </Show>
       }
+      title={t('settings.checkForUpdates')}
       {...props}
     >
       <div class='flex h-full flex-col justify-center gap-2'>
         <Show
-          when={isUpdateAvailable()}
           fallback={
             <Button
               class='h-auto max-h-none'
@@ -80,6 +79,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
               {t('settings.checkForUpdates')}
             </Button>
           }
+          when={isUpdateAvailable()}
         >
           <Button
             class='h-auto max-h-none'

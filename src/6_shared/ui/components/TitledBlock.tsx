@@ -1,11 +1,12 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-export type TitledBlockProps = ComponentProps<'div'> & {
+export type TitledBlockProps = {
   title?: string;
-};
+} & ComponentProps<'div'>;
 
 export const TitledBlock: Component<TitledBlockProps> = (props) => {
   const [local, others] = splitProps(props, ['title', 'class', 'children']);

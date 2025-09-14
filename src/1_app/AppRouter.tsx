@@ -1,36 +1,38 @@
-import { Route, Router } from '@solidjs/router';
 import type { Component } from 'solid-js';
 
-import { AppRoot } from './AppRoot';
+import { Route, Router } from '@solidjs/router';
+
 import { ContentPage } from '@/pages/content';
-import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
+import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
+
+import { AppRoot } from './AppRoot';
 
 export const AppRouter: Component = () => {
   return (
     <Router root={AppRoot}>
-      <Route path='/' component={HomePage}>
+      <Route component={HomePage} path='/'>
         <Route />
         <Route
+          component={(props) => (
+            <InstanceSettingsDialog instanceId={props.params.id} />
+          )}
           path='/instance-settings/:id'
-          component={(props) => (
-            <InstanceSettingsDialog instanceId={props.params.id} />
-          )}
         />
       </Route>
-      <Route path='/content' component={ContentPage} />
-      <Route path='/instances/:id' component={InstancePage}>
+      <Route component={ContentPage} path='/content' />
+      <Route component={InstancePage} path='/instances/:id'>
         <Route />
         <Route
-          path='settings'
           component={(props) => (
             <InstanceSettingsDialog instanceId={props.params.id} />
           )}
+          path='settings'
         />
       </Route>
-      <Route path='/settings' component={SettingsPage} />
+      <Route component={SettingsPage} path='/settings' />
     </Router>
   );
 };

@@ -1,7 +1,10 @@
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import type { LoaderVersion } from '@/entities/minecraft';
 import type { SelectRootProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Badge,
   Select,
@@ -12,16 +15,12 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { LoaderVersion } from '@/entities/minecraft';
-
-import { useTranslation } from '@/shared/model';
-
 export type SelectSpecificLoaderVersionProps<
   Option extends LoaderVersion = LoaderVersion,
-> = SelectRootProps<Option, never, 'div'> & {
-  multiple?: false;
+> = {
   errorMessage?: string;
-};
+  multiple?: false;
+} & SelectRootProps<Option, never, 'div'>;
 
 export const SelectSpecificLoaderVersion = <
   T extends LoaderVersion = LoaderVersion,
@@ -35,10 +34,10 @@ export const SelectSpecificLoaderVersion = <
   return (
     <Select
       class={cn('flex flex-col gap-2 w-full', local.class)}
-      virtualized
-      validationState={local.errorMessage ? 'invalid' : 'valid'}
-      optionValue={'id'}
       optionTextValue={'id'}
+      optionValue={'id'}
+      validationState={local.errorMessage ? 'invalid' : 'valid'}
+      virtualized
       {...others}
     >
       <SelectTrigger>
@@ -46,9 +45,6 @@ export const SelectSpecificLoaderVersion = <
       </SelectTrigger>
       <SelectContent
         class='h-[170px]'
-        virtualized
-        options={others.options}
-        optionValue={'id'}
         itemComponent={(props) => (
           <SelectItem item={props.item} style={props.style}>
             <div class='inline-flex gap-2'>
@@ -63,6 +59,9 @@ export const SelectSpecificLoaderVersion = <
             </div>
           </SelectItem>
         )}
+        options={others.options}
+        optionValue={'id'}
+        virtualized
       />
       <SelectErrorMessage>{local.errorMessage}</SelectErrorMessage>
     </Select>

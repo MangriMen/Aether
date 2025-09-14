@@ -1,4 +1,5 @@
 import type { Accessor } from 'solid-js';
+
 import { createEffect, createSignal } from 'solid-js';
 
 export interface UseIsCustomCheckboxProps {

@@ -1,10 +1,12 @@
-import { Field } from '@modular-forms/solid';
-
-import { Show } from 'solid-js';
 import type { Component } from 'solid-js';
+
+import { Field } from '@modular-forms/solid';
+import { Show } from 'solid-js';
+
+import type { AllowedItemFieldProps } from './AllowedItems';
+
 import { AllowedHost } from './AllowedHost';
 import { EditAllowedHost } from './EditAllowedHost';
-import type { AllowedItemFieldProps } from './AllowedItems';
 
 export const AllowedHostsField: Component<AllowedItemFieldProps<string>> = (
   props,
@@ -26,22 +28,22 @@ export const AllowedHostsField: Component<AllowedItemFieldProps<string>> = (
   };
 
   return (
-    <Field of={props.form} name={`${props.name}.${props.index()}`}>
+    <Field name={`${props.name}.${props.index()}`} of={props.form}>
       {(field) => (
         <Show
-          when={props.editing}
           fallback={
             <AllowedHost
-              value={field.value}
               onEdit={handleEdit}
               onRemove={handleRemove}
+              value={field.value}
             />
           }
+          when={props.editing}
         >
           <EditAllowedHost
-            value={field.value}
-            onOk={handleEdited}
             onCancel={handleCancel}
+            onOk={handleEdited}
+            value={field.value}
           />
         </Show>
       )}

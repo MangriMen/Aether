@@ -1,4 +1,5 @@
-import { createMemo, type Accessor } from 'solid-js';
+import { type Accessor, createMemo } from 'solid-js';
+
 import type { Account } from '../model';
 
 export const useSortedAccounts = (

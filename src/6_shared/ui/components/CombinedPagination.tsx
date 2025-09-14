@@ -1,7 +1,11 @@
 import type { Component } from 'solid-js';
+
 import { createMemo, splitProps } from 'solid-js';
 
+import type { PartialBy } from '@/shared/model';
+
 import type { PaginationRootProps } from './Pagination';
+
 import {
   Pagination,
   PaginationEllipsis,
@@ -10,11 +14,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from './Pagination';
-import type { PartialBy } from '@/shared/model';
 
 export type CombinedPaginationProps = PartialBy<
   PaginationRootProps<'div'>,
-  'itemComponent' | 'ellipsisComponent'
+  'ellipsisComponent' | 'itemComponent'
 >;
 
 export const CombinedPagination: Component<CombinedPaginationProps> = (
@@ -39,8 +42,8 @@ export const CombinedPagination: Component<CombinedPaginationProps> = (
 
   return (
     <Pagination
-      itemComponent={itemComponent()}
       ellipsisComponent={ellipsisComponent()}
+      itemComponent={itemComponent()}
       {...others}
     >
       <PaginationPrevious />

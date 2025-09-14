@@ -1,10 +1,8 @@
-import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
-
-import type { Accessor, Component, ComponentProps } from 'solid-js';
-import { createEffect, createMemo, For, splitProps } from 'solid-js';
-
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { SubmitHandler } from '@modular-forms/solid';
+import type { Accessor, Component, ComponentProps } from 'solid-js';
+
+import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import {
   createForm,
   getValue,
@@ -12,8 +10,12 @@ import {
   setValue,
   zodForm,
 } from '@modular-forms/solid';
-import type { ImportInstanceValues } from '../model';
-import { ImportInstanceSchema } from '../model';
+import { open } from '@tauri-apps/plugin-dialog';
+import { createEffect, createMemo, For, splitProps } from 'solid-js';
+
+import { type ImportHandler, useImportInstance } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   CombinedTooltip,
@@ -27,15 +29,15 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@/shared/ui';
-import { cn } from '@/shared/lib';
-import { open } from '@tauri-apps/plugin-dialog';
-import { useImportInstance, type ImportHandler } from '@/entities/instances';
-import { useTranslation } from '@/shared/model';
 
-export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
-  Pick<DialogRootProps, 'onOpenChange'> & {
-    importConfigs: Accessor<ImportHandler[] | undefined>;
-  };
+import type { ImportInstanceValues } from '../model';
+
+import { ImportInstanceSchema } from '../model';
+
+export type ImportInstanceFormProps = {
+  importConfigs: Accessor<ImportHandler[] | undefined>;
+} & Omit<ComponentProps<'form'>, 'onSubmit'> &
+  Pick<DialogRootProps, 'onOpenChange'>;
 
 export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   props,
@@ -48,7 +50,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm({
+  const [form, { Field, Form }] = createForm({
     validate: zodForm(ImportInstanceSchema),
   });
 
@@ -86,14 +88,14 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     }
 
     const file = await open({
-      multiple: false,
       directory: false,
       filters: [
         {
-          name: importHandler.fileName,
           extensions: importHandler.fileExtensions,
+          name: importHandler.fileName,
         },
       ],
+      multiple: false,
     });
 
     if (file) {
@@ -112,12 +114,12 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
           {(field) => (
             <ToggleGroup
               class='justify-start'
-              value={field.value}
               onChange={(value) => {
                 if (value) {
                   setValue(form, 'packType', value);
                 }
               }}
+              value={field.value}
             >
               <For each={local.importConfigs()}>
                 {(handler) => (
@@ -134,27 +136,27 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
         <Field name='path'>
           {(field, props) => (
             <TextField
-              validationState={field.error ? 'invalid' : 'valid'}
               class='flex w-full flex-col gap-2'
+              validationState={field.error ? 'invalid' : 'valid'}
             >
               <TextFieldLabel class='relative flex flex-col gap-2'>
                 {currentImportHandler()?.fieldLabel}
                 <TextFieldInput
-                  value={field.value ?? ''}
-                  type='text'
+                  autocomplete='off'
                   class='pr-10'
                   required
-                  autocomplete='off'
+                  type='text'
+                  value={field.value ?? ''}
                   {...props}
                 />
                 <CombinedTooltip
-                  label={t('common.browse')}
                   as={IconButton}
                   class='absolute bottom-1 right-1 aspect-square h-3/6 p-0'
-                  variant='secondary'
-                  type='button'
-                  onClick={onBrowse}
                   icon={FileFindOutlineIcon}
+                  label={t('common.browse')}
+                  onClick={onBrowse}
+                  type='button'
+                  variant='secondary'
                 />
               </TextFieldLabel>
               <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>
@@ -164,7 +166,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       </div>
       <DialogFooter class='mt-auto'>
         <Button type='submit'>{t('createInstance.import')}</Button>
-        <Button variant='secondary' onClick={() => props.onOpenChange?.(false)}>
+        <Button onClick={() => props.onOpenChange?.(false)} variant='secondary'>
           {t('common.cancel')}
         </Button>
       </DialogFooter>

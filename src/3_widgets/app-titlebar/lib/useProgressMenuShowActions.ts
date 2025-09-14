@@ -1,4 +1,4 @@
-import { createEffect, type Accessor } from 'solid-js';
+import { type Accessor, createEffect } from 'solid-js';
 
 export const useProgressMenuShowActions = (
   payloadsCount: Accessor<number>,

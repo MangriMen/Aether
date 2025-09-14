@@ -1,8 +1,10 @@
 import type { SubmitHandler } from '@modular-forms/solid';
-import { createForm, reset, zodForm } from '@modular-forms/solid';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { createForm, reset, zodForm } from '@modular-forms/solid';
 import { splitProps } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   DialogFooter,
@@ -16,13 +18,13 @@ import type {
   CreateOfflineAccountFormSchemaErrors,
   CreateOfflineAccountFormValues,
 } from '../model';
-import { CreateOfflineAccountFormSchema } from '../model';
-import { useTranslation } from '@/shared/model';
 
-export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
-  onCreate: (username: string) => void;
+import { CreateOfflineAccountFormSchema } from '../model';
+
+export type CreateOfflineAccountFormProps = {
   onCancel: () => void;
-};
+  onCreate: (username: string) => void;
+} & ComponentProps<'div'>;
 
 export const CreateOfflineAccountForm: Component<
   CreateOfflineAccountFormProps
@@ -31,7 +33,7 @@ export const CreateOfflineAccountForm: Component<
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm<CreateOfflineAccountFormValues>({
+  const [form, { Field, Form }] = createForm<CreateOfflineAccountFormValues>({
     validate: zodForm(CreateOfflineAccountFormSchema),
   });
 
@@ -52,14 +54,14 @@ export const CreateOfflineAccountForm: Component<
         <Field name='username'>
           {(field, props) => (
             <TextField
-              validationState={field.error ? 'invalid' : 'valid'}
               class='flex flex-col gap-3'
+              validationState={field.error ? 'invalid' : 'valid'}
             >
               <TextFieldLabel class='flex flex-col gap-3'>
                 {t('common.username')}
                 <TextFieldInput
-                  id='username'
                   autocomplete='off'
+                  id='username'
                   required
                   type='text'
                   value={field.value}
@@ -77,7 +79,7 @@ export const CreateOfflineAccountForm: Component<
 
         <DialogFooter>
           <Button type='submit'>{t('common.create')}</Button>
-          <Button variant={'secondary'} onClick={handleCancel}>
+          <Button onClick={handleCancel} variant={'secondary'}>
             {t('common.cancel')}
           </Button>
         </DialogFooter>

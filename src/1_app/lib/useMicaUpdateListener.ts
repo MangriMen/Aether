@@ -1,9 +1,11 @@
+import type { ColorMode } from '@kobalte/core';
+
+import { useColorMode } from '@kobalte/core';
+import { createEffect, on } from 'solid-js';
+
 import { useAppSettings, useUpdateAppSettings } from '@/pages/settings/api';
 import { debounce } from '@/shared/lib';
 import { isSystemTheme, useThemeContext } from '@/shared/model';
-import type { ColorMode } from '@kobalte/core';
-import { useColorMode } from '@kobalte/core';
-import { createEffect, on } from 'solid-js';
 
 export const useMicaUpdateListener = () => {
   const { colorMode } = useColorMode();

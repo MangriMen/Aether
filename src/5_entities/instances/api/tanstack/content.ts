@@ -1,31 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-import {
-  getInstanceContentsRaw,
-  disableInstanceContentsRaw,
-  enableInstanceContentsRaw,
-  removeInstanceContentRaw,
-  removeInstanceContentsRaw,
-  getContentProvidersRaw,
-  getContentByProviderRaw,
-  installContentRaw,
-  getMetadataFieldToCheckInstalledRaw,
-  importContentsRaw,
-} from '../rawApi';
+import { type Accessor } from 'solid-js';
+
+import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
+
 import type {
   ContentRequest,
-  InstallContentPayload,
   ContentType,
+  InstallContentPayload,
 } from '../../model';
-import { showToast } from '@/shared/ui';
-import { type Accessor } from 'solid-js';
-import { useTranslation } from '@/shared/model';
-import { CONTENT_QUERY_KEYS } from './content_query_keys';
+
+import {
+  disableInstanceContentsRaw,
+  enableInstanceContentsRaw,
+  getContentByProviderRaw,
+  getContentProvidersRaw,
+  getInstanceContentsRaw,
+  getMetadataFieldToCheckInstalledRaw,
+  importContentsRaw,
+  installContentRaw,
+  removeInstanceContentRaw,
+  removeInstanceContentsRaw,
+} from '../rawApi';
 import { invalidateInstanceContent } from './cache';
+import { CONTENT_QUERY_KEYS } from './content_query_keys';
 
 export const useContentProviders = () => {
   return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
     queryFn: getContentProvidersRaw,
+    queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
   }));
 };
 
@@ -33,12 +36,12 @@ export const useContentByProvider = (
   payload: Accessor<ContentRequest | undefined>,
 ) => {
   return useQuery(() => ({
+    enabled: !!payload(),
+    queryFn: () => getContentByProviderRaw(payload()!),
     queryKey: [
       ...CONTENT_QUERY_KEYS.BY_PROVIDER(payload()?.provider ?? ''),
       payload(),
     ],
-    queryFn: () => getContentByProviderRaw(payload()!),
-    enabled: !!payload(),
   }));
 };
 
@@ -46,17 +49,17 @@ export const useMetadataFieldToCheckInstalled = (
   provider: Accessor<string | undefined>,
 ) => {
   return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.METADATA_FIELD(provider()!),
-    queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
     enabled: !!provider(),
+    queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
+    queryKey: CONTENT_QUERY_KEYS.METADATA_FIELD(provider()!),
   }));
 };
 
 export const useInstanceContents = (id: Accessor<string>) => {
   return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
-    queryFn: () => getInstanceContentsRaw(id()),
     enabled: !!id(),
+    queryFn: () => getInstanceContentsRaw(id()),
+    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
   }));
 };
 

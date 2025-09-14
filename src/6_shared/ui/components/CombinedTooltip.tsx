@@ -1,16 +1,17 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import { splitProps } from 'solid-js';
-import type { ValidComponent, JSX } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 
-import type { TooltipTriggerProps, TooltipRootProps } from './Tooltip';
+import { splitProps } from 'solid-js';
+
+import type { TooltipRootProps, TooltipTriggerProps } from './Tooltip';
+
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
-export type CombinedTooltipProps<T extends ValidComponent = 'button'> =
-  TooltipRootProps &
-    TooltipTriggerProps<T> & {
-      label?: string | JSX.Element;
-      disableTooltip?: boolean;
-    };
+export type CombinedTooltipProps<T extends ValidComponent = 'button'> = {
+  disableTooltip?: boolean;
+  label?: JSX.Element | string;
+} & TooltipRootProps &
+  TooltipTriggerProps<T>;
 
 const TOOLTIP_ROOT_KEYS = [
   'getAnchorRect',
