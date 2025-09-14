@@ -1,21 +1,25 @@
-import type { Plugin, PluginMetadata } from '@/entities/plugins';
-import { cn } from '@/shared/lib';
-import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
-import { PluginCard } from './PluginCard';
+
+import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
+
+import type { Plugin, PluginMetadata } from '@/entities/plugins';
+
+import { cn } from '@/shared/lib';
 import { Separator } from '@/shared/ui';
+
+import { PluginCard } from './PluginCard';
 import { PluginInfoCard } from './PluginInfoCard';
 
-export type PluginsListProps = ComponentProps<'div'> & {
-  plugins?: Plugin[];
+export type PluginsListProps = {
   isLoading: boolean;
-};
+  plugins?: Plugin[];
+} & ComponentProps<'div'>;
 
 export const PluginsList: Component<PluginsListProps> = (props) => {
   const [local, others] = splitProps(props, ['plugins', 'class']);
 
   const [selectedPluginId, setSelectedPluginId] = createSignal<
-    PluginMetadata['id'] | null
+    null | PluginMetadata['id']
   >(null);
 
   const selectedPlugin = createMemo(() =>
@@ -34,10 +38,10 @@ export const PluginsList: Component<PluginsListProps> = (props) => {
         <For each={local.plugins}>
           {(plugin) => (
             <PluginCard
-              role='button'
               isSelected={plugin.manifest.metadata.id === selectedPluginId()}
-              plugin={plugin}
               onClick={() => setSelectedPluginId(plugin.manifest.metadata.id)}
+              plugin={plugin}
+              role='button'
             />
           )}
         </For>

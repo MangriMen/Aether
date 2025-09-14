@@ -1,6 +1,7 @@
 import type { VariantProps } from 'class-variance-authority';
-import { cva } from 'class-variance-authority';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -8,26 +9,26 @@ import { cn } from '@/shared/lib';
 const badgeVariants = cva(
   'inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0',
   {
+    defaultVariants: {
+      variant: 'default',
+    },
     variants: {
       variant: {
         default: 'border-transparent bg-primary text-primary-foreground',
-        secondary: 'border-transparent bg-secondary text-secondary-foreground',
+        error: 'border-error-foreground bg-error text-error-foreground',
         outline: 'text-foreground',
+        secondary: 'border-transparent bg-secondary text-secondary-foreground',
         success: 'border-success-foreground bg-success text-success-foreground',
         warning: 'border-warning-foreground bg-warning text-warning-foreground',
-        error: 'border-error-foreground bg-error text-error-foreground',
       },
-    },
-    defaultVariants: {
-      variant: 'default',
     },
   },
 );
 
-type BadgeProps = ComponentProps<'div'> &
-  VariantProps<typeof badgeVariants> & {
-    round?: boolean;
-  };
+type BadgeProps = {
+  round?: boolean;
+} & ComponentProps<'div'> &
+  VariantProps<typeof badgeVariants>;
 
 const Badge: Component<BadgeProps> = (props) => {
   const [local, others] = splitProps(props, ['class', 'variant', 'round']);

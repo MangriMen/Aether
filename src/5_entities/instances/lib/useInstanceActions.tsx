@@ -1,15 +1,15 @@
 import { useContext } from 'solid-js';
 
-import { Button, closeToast, showToast } from '@/shared/ui';
-
 import type { Instance } from '@/entities/instances';
+
 import {
-  RunningInstancesContext,
   InstanceInstallStage,
+  RunningInstancesContext,
   useLaunchInstance,
-  useStopInstance,
   useRemoveInstance,
+  useStopInstance,
 } from '@/entities/instances';
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(
@@ -79,18 +79,18 @@ export const useInstanceActions = () => {
       };
 
       const id = showToast({
-        title: `Failed to remove ${instance.name}`,
         description: (
           <div class='inline-flex w-full flex-col gap-2'>
             Instance still installing or running
             <Button
-              class='w-full'
-              variant='secondary'
-              onClick={handleForceRemove}
               children='Remove force'
+              class='w-full'
+              onClick={handleForceRemove}
+              variant='secondary'
             />
           </div>
         ),
+        title: `Failed to remove ${instance.name}`,
         variant: 'destructive',
       });
       return;
@@ -107,7 +107,7 @@ export const useInstanceActions = () => {
 
   return {
     launch,
-    stop,
     remove,
+    stop,
   };
 };

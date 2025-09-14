@@ -1,7 +1,9 @@
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import type { Version } from '@/entities/minecraft';
 import type { SelectRootProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
 import {
   Select,
   SelectContent,
@@ -11,13 +13,10 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-import type { Version } from '@/entities/minecraft';
-
-export type SelectGameVersionProps<Option extends Version = Version> =
-  SelectRootProps<Option, never, 'div'> & {
-    multiple?: false;
-    errorMessage?: string;
-  };
+export type SelectGameVersionProps<Option extends Version = Version> = {
+  errorMessage?: string;
+  multiple?: false;
+} & SelectRootProps<Option, never, 'div'>;
 
 export function SelectGameVersion<T extends Version = Version>(
   props: SelectGameVersionProps<T>,
@@ -27,11 +26,11 @@ export function SelectGameVersion<T extends Version = Version>(
   return (
     <Select
       class={cn('flex flex-col gap-2 w-full', local.class)}
-      virtualized
-      value={local.value}
-      validationState={local.errorMessage ? 'invalid' : 'valid'}
-      optionValue={'id'}
       optionTextValue={'id'}
+      optionValue={'id'}
+      validationState={local.errorMessage ? 'invalid' : 'valid'}
+      value={local.value}
+      virtualized
       {...others}
     >
       <SelectTrigger>
@@ -41,14 +40,14 @@ export function SelectGameVersion<T extends Version = Version>(
       </SelectTrigger>
       <SelectContent
         class='h-[170px]'
-        virtualized
-        options={others.options}
-        optionValue={'id'}
         itemComponent={(props) => (
           <SelectItem item={props.item} style={props.style}>
             {props.item.textValue}
           </SelectItem>
         )}
+        options={others.options}
+        optionValue={'id'}
+        virtualized
       />
       <SelectErrorMessage>{local.errorMessage}</SelectErrorMessage>
     </Select>

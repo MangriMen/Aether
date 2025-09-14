@@ -1,14 +1,14 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as TabsPrimitive from '@kobalte/core/tabs';
 import type { ValidComponent } from 'solid-js';
+
+import * as TabsPrimitive from '@kobalte/core/tabs';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-type TabsProps<T extends ValidComponent = 'div'> =
-  TabsPrimitive.TabsRootProps<T> & {
-    class?: string | undefined;
-  };
+type TabsProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & TabsPrimitive.TabsRootProps<T>;
 
 const Tabs = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsProps<T>>,
@@ -22,10 +22,9 @@ const Tabs = <T extends ValidComponent = 'div'>(
   );
 };
 
-type TabsListProps<T extends ValidComponent = 'div'> =
-  TabsPrimitive.TabsListProps<T> & {
-    class?: string | undefined;
-  };
+type TabsListProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & TabsPrimitive.TabsListProps<T>;
 
 const TabsList = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsListProps<T>>,
@@ -42,10 +41,9 @@ const TabsList = <T extends ValidComponent = 'div'>(
   );
 };
 
-type TabsTriggerProps<T extends ValidComponent = 'button'> =
-  TabsPrimitive.TabsTriggerProps<T> & {
-    class?: string | undefined;
-  };
+type TabsTriggerProps<T extends ValidComponent = 'button'> = {
+  class?: string | undefined;
+} & TabsPrimitive.TabsTriggerProps<T>;
 
 const TabsTrigger = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, TabsTriggerProps<T>>,
@@ -62,10 +60,9 @@ const TabsTrigger = <T extends ValidComponent = 'button'>(
   );
 };
 
-type TabsContentProps<T extends ValidComponent = 'div'> =
-  TabsPrimitive.TabsContentProps<T> & {
-    class?: string | undefined;
-  };
+type TabsContentProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & TabsPrimitive.TabsContentProps<T>;
 
 const TabsContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsContentProps<T>>,
@@ -82,10 +79,9 @@ const TabsContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type TabsIndicatorProps<T extends ValidComponent = 'div'> =
-  TabsPrimitive.TabsIndicatorProps<T> & {
-    class?: string | undefined;
-  };
+type TabsIndicatorProps<T extends ValidComponent = 'div'> = {
+  class?: string | undefined;
+} & TabsPrimitive.TabsIndicatorProps<T>;
 
 const TabsIndicator = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsIndicatorProps<T>>,
@@ -102,6 +98,6 @@ const TabsIndicator = <T extends ValidComponent = 'div'>(
   );
 };
 
-export type { TabsProps, TabsListProps, TabsTriggerProps, TabsContentProps };
+export type { TabsContentProps, TabsListProps, TabsProps, TabsTriggerProps };
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, TabsIndicator };
+export { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger };

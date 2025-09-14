@@ -1,3 +1,3 @@
 export const isNil = <T>(
-  value: T | null | undefined,
+  value: null | T | undefined,
 ): value is null | undefined => value === null || value === undefined;

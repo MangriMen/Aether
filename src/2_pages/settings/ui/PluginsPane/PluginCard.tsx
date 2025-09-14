@@ -1,12 +1,14 @@
+import { type Component, type ComponentProps, splitProps } from 'solid-js';
+
 import type { Plugin } from '@/entities/plugins';
+
 import { cn } from '@/shared/lib';
 import { Image } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-export type PluginCardProps = ComponentProps<'div'> & {
-  plugin: Plugin;
+export type PluginCardProps = {
   isSelected?: boolean;
-};
+  plugin: Plugin;
+} & ComponentProps<'div'>;
 
 export const PluginCard: Component<PluginCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'isSelected', 'class']);
@@ -17,8 +19,8 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
         'flex w-full items-center gap-2 text-sm px-2 py-1 rounded-md hover:bg-secondary/50 data-[active]:bg-secondary data-[active]:hover:bg-secondary data-[disabled]:text-muted-foreground',
         local.class,
       )}
-      data-disabled={!local.plugin.enabled ? '' : undefined}
       data-active={local.isSelected ? '' : undefined}
+      data-disabled={!local.plugin.enabled ? '' : undefined}
       {...others}
     >
       <Image class='h-12 w-max' />

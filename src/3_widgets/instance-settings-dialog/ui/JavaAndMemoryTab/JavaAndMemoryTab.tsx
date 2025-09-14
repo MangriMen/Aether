@@ -1,30 +1,31 @@
 import type { Component } from 'solid-js';
+
+import { setValue } from '@modular-forms/solid';
 import { onCleanup, splitProps } from 'solid-js';
 
+import type { EditInstance } from '@/entities/instances';
+
+import { useEditInstance } from '@/entities/instances';
 import { cn, debounce } from '@/shared/lib';
 
-import type { EditInstance } from '@/entities/instances';
-import { useEditInstance } from '@/entities/instances';
-
-import {
-  JavaAndMemorySettingsSchema,
-  MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  MemoryMaximumSchema,
-  type InstanceSettingsTabProps,
-} from '../../model';
 import {
   stringToEnvVars,
   stringToExtraLaunchArgs,
   useFieldOnChangeSync,
 } from '../../lib';
-import { MemoryField } from './MemoryField';
 import {
   useJavaAndMemoryForm,
   useResetJavaAndMemoryFormValues,
 } from '../../lib/useJavaAndMemoryForm';
-import { ExtraLaunchArgsField } from './ExtraLaunchArgsField';
+import {
+  type InstanceSettingsTabProps,
+  JavaAndMemorySettingsSchema,
+  MEMORY_SLIDER_HANDLE_DEBOUNCE,
+  MemoryMaximumSchema,
+} from '../../model';
 import { CustomEnvVarsField } from './CustomEnvVarsField';
-import { setValue } from '@modular-forms/solid';
+import { ExtraLaunchArgsField } from './ExtraLaunchArgsField';
+import { MemoryField } from './MemoryField';
 
 export type JavaAndMemoryTabProps = {
   class?: string;
@@ -33,14 +34,14 @@ export type JavaAndMemoryTabProps = {
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'settings', 'class']);
 
-  const [form, { Form, Field }] = useJavaAndMemoryForm();
+  const [form, { Field, Form }] = useJavaAndMemoryForm();
 
   useResetJavaAndMemoryFormValues(form, () => local.instance);
 
   const { mutateAsync: editInstance } = useEditInstance();
 
   const editInstanceSimple = (edit: EditInstance) =>
-    editInstance({ id: local.instance.id, edit });
+    editInstance({ edit, id: local.instance.id });
 
   // eslint-disable-next-line solid/reactivity
   const editInstanceSimpleDebounced = debounce(
@@ -89,23 +90,18 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
       <Field name='memory.maximum' type='number'>
         {(field) => (
           <MemoryField
-            value={field.value ?? null}
             defaultValue={local.settings?.memory.maximum}
             onChange={(value) => {
               setValue(form, 'memory.maximum', value);
               updateMemory();
             }}
+            value={field.value ?? null}
           />
         )}
       </Field>
       <Field name='extraLaunchArgs' type='string'>
         {(field, inputProps) => (
           <ExtraLaunchArgsField
-            value={field.value}
-            onIsCustomChange={(value) => {
-              setValue(form, 'extraLaunchArgs', value);
-              updateExtraLaunchArgs();
-            }}
             inputProps={{
               type: 'text',
               ...inputProps,
@@ -114,18 +110,17 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
                 updateExtraLaunchArgs();
               },
             }}
+            onIsCustomChange={(value) => {
+              setValue(form, 'extraLaunchArgs', value);
+              updateExtraLaunchArgs();
+            }}
+            value={field.value}
           />
         )}
       </Field>
       <Field name='customEnvVars' type='string'>
         {(field, inputProps) => (
           <CustomEnvVarsField
-            value={field.value}
-            onChange={(value) => setValue(form, 'customEnvVars', value)}
-            onIsCustomChange={(value) => {
-              setValue(form, 'customEnvVars', value);
-              updateEnvVars();
-            }}
             inputProps={{
               type: 'text',
               ...inputProps,
@@ -134,6 +129,12 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
                 updateEnvVars();
               },
             }}
+            onChange={(value) => setValue(form, 'customEnvVars', value)}
+            onIsCustomChange={(value) => {
+              setValue(form, 'customEnvVars', value);
+              updateEnvVars();
+            }}
+            value={field.value}
           />
         )}
       </Field>

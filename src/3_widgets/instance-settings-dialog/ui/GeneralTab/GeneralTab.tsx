@@ -1,19 +1,18 @@
 import type { Component } from 'solid-js';
+
+import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect, splitProps } from 'solid-js';
 
+import { type EditInstance, useEditInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
 
-import { type EditInstance, useEditInstance } from '@/entities/instances';
-
-import { useTranslation } from '@/shared/model';
+import { useFieldOnChangeSync } from '../../lib';
 import {
   GeneralSettingsSchema,
   type InstanceSettingsTabProps,
 } from '../../model';
-
-import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
-import { useFieldOnChangeSync } from '../../lib';
 
 export type GeneralTabProps = { class?: string } & InstanceSettingsTabProps;
 
@@ -22,10 +21,10 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm({
+  const [form, { Field, Form }] = createForm({
+    revalidateOn: 'blur',
     validate: zodForm(GeneralSettingsSchema),
     validateOn: 'blur',
-    revalidateOn: 'blur',
   });
 
   createEffect(() => {
@@ -35,7 +34,7 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
   const { mutateAsync: editInstance } = useEditInstance();
 
   const editInstanceSimple = (edit: EditInstance) =>
-    editInstance({ id: local.instance.id, edit });
+    editInstance({ edit, id: local.instance.id });
 
   const updateMemory = useFieldOnChangeSync(
     GeneralSettingsSchema,
@@ -56,8 +55,6 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
       <Field name='name' type='string'>
         {(field, inputProps) => (
           <CombinedTextField
-            label={t('common.name')}
-            value={field.value ?? ''}
             errorMessage={field.error}
             inputProps={{
               type: 'text',
@@ -67,6 +64,8 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
                 updateMemory();
               },
             }}
+            label={t('common.name')}
+            value={field.value ?? ''}
           />
         )}
       </Field>

@@ -1,18 +1,19 @@
-import { cn } from '@/shared/lib';
-import { Button, CombinedTextField } from '@/shared/ui';
 import {
+  type Component,
+  type ComponentProps,
   createEffect,
   createSignal,
   splitProps,
-  type Component,
-  type ComponentProps,
 } from 'solid-js';
 
-export type EditAllowedPathProps = ComponentProps<'div'> & {
-  value?: [string, string];
-  onOk?: (value: [string, string]) => void;
+import { cn } from '@/shared/lib';
+import { Button, CombinedTextField } from '@/shared/ui';
+
+export type EditAllowedPathProps = {
   onCancel?: () => void;
-};
+  onOk?: (value: [string, string]) => void;
+  value?: [string, string];
+} & ComponentProps<'div'>;
 
 export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -42,29 +43,29 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
       <CombinedTextField
         class='w-full'
         inputProps={{
-          type: 'text',
           class: 'h-max py-1 px-1',
+          type: 'text',
         }}
-        value={src()}
         onChange={setSrc}
+        value={src()}
       />
       <CombinedTextField
         class='w-full'
         inputProps={{
-          type: 'text',
           class: 'h-max py-1 px-1',
+          type: 'text',
         }}
-        value={dest()}
         onChange={setDest}
+        value={dest()}
       />
-      <Button class='h-full' size='sm' onClick={handleSubmit}>
+      <Button class='h-full' onClick={handleSubmit} size='sm'>
         Ok
       </Button>
       <Button
         class='h-full'
-        variant='secondary'
-        size='sm'
         onClick={local.onCancel}
+        size='sm'
+        variant='secondary'
       >
         Cancel
       </Button>

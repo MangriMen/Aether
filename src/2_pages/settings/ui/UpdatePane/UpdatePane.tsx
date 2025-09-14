@@ -1,8 +1,10 @@
-import { SettingsPane } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
-import { UpdateAppEntry } from './UpdateAppEntry';
+import { type Component, type ComponentProps, splitProps } from 'solid-js';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { SettingsPane } from '@/shared/ui';
+
+import { UpdateAppEntry } from './UpdateAppEntry';
 
 export type UpdatePaneProps = ComponentProps<'div'>;
 

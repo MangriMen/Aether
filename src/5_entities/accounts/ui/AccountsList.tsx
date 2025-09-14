@@ -1,19 +1,20 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { For, splitProps } from 'solid-js';
+import { TransitionGroup } from 'solid-transition-group';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 import type { Account } from '../model';
 
 import { AccountCard } from './AccountCard';
-import { useTranslation } from '@/shared/model';
-import { TransitionGroup } from 'solid-transition-group';
 
-export type AccountsListProps = ComponentProps<'ul'> & {
+export type AccountsListProps = {
   accounts: Account[];
   onActivate: (id: Account['id']) => void;
   onRemove: (id: Account['id']) => void;
-};
+} & ComponentProps<'ul'>;
 
 export const AccountsList: Component<AccountsListProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -43,13 +44,13 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
         >
           {(account) => (
             <AccountCard
-              class='animate-list-item w-[210.625px]'
-              as='li'
-              username={account.username}
-              active={account.active}
               accountType={account.accountType}
+              active={account.active}
+              as='li'
+              class='animate-list-item w-[210.625px]'
               onActivate={() => local.onActivate(account.id)}
               onRemove={() => local.onRemove(account.id)}
+              username={account.username}
             />
           )}
         </For>

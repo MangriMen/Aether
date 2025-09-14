@@ -1,19 +1,17 @@
 import type { Component } from 'solid-js';
+
 import { For, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import type { Option } from '@/shared/model';
 import type { ToggleGroupRootProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
-import type { Option } from '@/shared/model';
-import { useTranslation } from '@/shared/model';
-
-export type LoaderVersionTypeChipsToggleGroupProps = Exclude<
-  ToggleGroupRootProps,
-  'onChange'
-> & {
+export type LoaderVersionTypeChipsToggleGroupProps = {
   loaderTypes: Option[];
-};
+} & Exclude<ToggleGroupRootProps, 'onChange'>;
 
 export const LoaderVersionTypeChipsToggleGroup: Component<
   LoaderVersionTypeChipsToggleGroupProps
@@ -28,7 +26,7 @@ export const LoaderVersionTypeChipsToggleGroup: Component<
         {(versionType) => (
           <ToggleGroupItem value={versionType.value}>
             {t(
-              `createInstance.loaderVersion${versionType.name as 'Stable' | 'Latest' | 'Other'}`,
+              `createInstance.loaderVersion${versionType.name as 'Latest' | 'Other' | 'Stable'}`,
             )}
           </ToggleGroupItem>
         )}

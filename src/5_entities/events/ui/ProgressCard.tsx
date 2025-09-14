@@ -1,16 +1,16 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { createMemo, splitProps } from 'solid-js';
 
+import type { LoadingPayload } from '@/entities/events';
+
+import { LoadingBarTypeEnum } from '@/entities/events';
+import { useTranslation } from '@/shared/model';
 import { Progress } from '@/shared/ui';
 
-import type { LoadingPayload } from '@/entities/events';
-import { LoadingBarTypeEnum } from '@/entities/events';
-
-import { useTranslation } from '@/shared/model';
-
-export type ProgressCardProps = ComponentProps<'div'> & {
+export type ProgressCardProps = {
   payload: LoadingPayload;
-};
+} & ComponentProps<'div'>;
 
 export const ProgressCard: Component<ProgressCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);
@@ -25,21 +25,21 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         return t('events.javaDownloading', {
           version: local.payload.event.version,
         });
-      case LoadingBarTypeEnum.MinecraftDownload:
-        return local.payload.event.instance_name;
-      case LoadingBarTypeEnum.PluginDownload:
-        return `[Plugin] ${local.payload.event.plugin_name}`;
       case LoadingBarTypeEnum.LauncherUpdate:
         return t('events.launcherUpdating', {
           version: local.payload.event.version,
         });
+      case LoadingBarTypeEnum.MinecraftDownload:
+        return local.payload.event.instance_name;
+      case LoadingBarTypeEnum.PluginDownload:
+        return `[Plugin] ${local.payload.event.plugin_name}`;
     }
   });
 
   return (
     <div class='flex flex-col gap-2' {...others}>
       <span class='font-bold'>{title()}</span>
-      <Progress value={clampedValue()} minValue={0} maxValue={1} />
+      <Progress maxValue={1} minValue={0} value={clampedValue()} />
       <span class='text-muted-foreground'>
         {`${Math.round(clampedValue() * 100)}%`}
         &nbsp;

@@ -1,6 +1,8 @@
+import { type Component, createMemo } from 'solid-js';
+
 import { useThemeContext, useTranslation } from '@/shared/model';
 import { CombinedSlider, CombinedTextField, SettingsEntry } from '@/shared/ui';
-import { createMemo, type Component } from 'solid-js';
+
 import { useAppSettings } from '../../api';
 
 export type ToggleThemeTransparencyEntryProps = {
@@ -43,18 +45,18 @@ export const ThemeBackgroundOpacityEntry: Component<
       <div class='flex items-center gap-4'>
         <CombinedSlider
           class='w-36'
-          minValue={0}
-          maxValue={100}
           defaultValue={[0]}
-          value={[currentTransparency()]}
-          onChange={handleChangeTransparencySlider}
           disabled={isDisabled()}
+          maxValue={100}
+          minValue={0}
+          onChange={handleChangeTransparencySlider}
+          value={[currentTransparency()]}
         />
         <CombinedTextField
           class='w-[6ch]'
-          value={currentTransparency().toString()}
-          onChange={handleChangeTransparencyTextField}
           disabled={isDisabled()}
+          onChange={handleChangeTransparencyTextField}
+          value={currentTransparency().toString()}
         />
       </div>
     </SettingsEntry>

@@ -1,8 +1,11 @@
+import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { createMemo, createSignal, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import type { IconButtonProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
 import {
   IconButton,
   Popover,
@@ -10,16 +13,15 @@ import {
   PopoverTrigger,
 } from '@/shared/ui';
 
-import type { PolymorphicProps } from '@kobalte/core';
 import type { ProgressPopover } from './ProgressPopover';
+
+import { useProgressMenuShowActions } from '../../lib';
 import { useProgressStore } from '../../model';
 import { ProgressBadge } from './ProgressBadge';
-import { useProgressMenuShowActions } from '../../lib';
 
-export type ProgressMenuButtonProps<T extends ValidComponent = 'button'> =
-  PolymorphicProps<T, IconButtonProps<T>> & {
-    popoverComponent: typeof ProgressPopover;
-  };
+export type ProgressMenuButtonProps<T extends ValidComponent = 'button'> = {
+  popoverComponent: typeof ProgressPopover;
+} & PolymorphicProps<T, IconButtonProps<T>>;
 
 export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
   props,
@@ -37,7 +39,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
   );
 
   return (
-    <Popover open={isOpen()} onOpenChange={setIsOpen}>
+    <Popover onOpenChange={setIsOpen} open={isOpen()}>
       <PopoverTrigger
         as={IconButton}
         class={cn('aspect-square p-0 px-1', local.class, {
@@ -50,8 +52,8 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
         <ProgressBadge />
       </PopoverTrigger>
       <PopoverContent
-        class='bg-background/20 p-3'
         as={local.popoverComponent}
+        class='bg-background/20 p-3'
         payloads={payloadValues}
       />
     </Popover>

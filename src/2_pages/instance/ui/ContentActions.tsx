@@ -1,4 +1,18 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import MdiDeleteIcon from '@iconify/icons-mdi/delete';
+import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
+import { splitProps } from 'solid-js';
+
+import {
+  type InstanceFile,
+  useDisableContents,
+  useEnableContents,
+  useRemoveContent,
+  useRevealInExplorer,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,
   DropdownMenu,
@@ -10,24 +24,12 @@ import {
   SwitchControl,
   SwitchThumb,
 } from '@/shared/ui';
-import { splitProps } from 'solid-js';
-import type { Component, ComponentProps } from 'solid-js';
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
-import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
-import {
-  useDisableContents,
-  useEnableContents,
-  useRemoveContent,
-  useRevealInExplorer,
-  type InstanceFile,
-} from '@/entities/instances';
-import { useTranslation } from '@/shared/model';
 
-export type ContentActionsProps = ComponentProps<'div'> & {
+export type ContentActionsProps = {
+  content: InstanceFile;
   instanceId: string;
   instancePath?: string;
-  content: InstanceFile;
-};
+} & ComponentProps<'div'>;
 
 export const ContentActions: Component<ContentActionsProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -65,8 +67,8 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
 
   const handleShowFile = () => {
     revealInExplorer({
-      path: `${local.instancePath}/${local.content.path}`,
       exact: false,
+      path: `${local.instancePath}/${local.content.path}`,
     });
   };
 
@@ -78,24 +80,24 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         </SwitchControl>
       </Switch>
       <CombinedTooltip
-        label={t('common.remove')}
         as={IconButton}
-        variant='ghost'
         class='p-0'
         icon={MdiDeleteIcon}
+        label={t('common.remove')}
         onClick={handleRemove}
+        variant='ghost'
       />
       <DropdownMenu>
         <DropdownMenuTrigger
           as={IconButton}
-          variant='ghost'
           class='p-0'
           icon={MdiMoreIcon}
+          variant='ghost'
         />
         <DropdownMenuContent>
           <DropdownMenuItem
-            onClick={handleShowFile}
             disabled={!local.instancePath}
+            onClick={handleShowFile}
           >
             {t('instance.showFile')}
           </DropdownMenuItem>

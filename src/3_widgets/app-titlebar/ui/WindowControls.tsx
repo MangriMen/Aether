@@ -1,6 +1,7 @@
+import type { Component, ComponentProps } from 'solid-js';
+
 import { Icon } from '@iconify-icon/solid';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -30,22 +31,22 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
     <div class={cn('flex w-[120px] h-full', local.class)} {...others}>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
-        title='Minimize'
         onClick={handleMinimize}
+        title='Minimize'
       >
         <Icon class='text-base text-muted-foreground' icon='mdi-minimize' />
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
-        title='Maximize'
         onClick={toggleMaximize}
+        title='Maximize'
       >
         <Icon class='text-base text-muted-foreground' icon={maximizeIcon()} />
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max brightness-110 hover:bg-destructive'
-        title='Close'
         onClick={handleClose}
+        title='Close'
       >
         <Icon class='text-base text-muted-foreground' icon='mdi-close' />
       </TitleBarButton>

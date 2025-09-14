@@ -1,14 +1,14 @@
-import { type RouteSectionProps } from '@solidjs/router';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { type RouteSectionProps } from '@solidjs/router';
 import { createMemo, Match, splitProps, Switch } from 'solid-js';
 
+import { useInstance, useInstanceDir } from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
 import { DelayedShow, Separator, Skeleton } from '@/shared/ui';
 
-import { useInstance, useInstanceDir } from '@/entities/instances';
-
-import { Header } from './Header';
 import { Body } from './Body';
-import { useTranslation } from '@/shared/model';
+import { Header } from './Header';
 
 export type InstancePageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -30,7 +30,6 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
   return (
     <div class='flex size-full flex-col gap-2 p-4' {...others}>
       <DelayedShow
-        when={instance.data}
         fallback={
           <Switch>
             <Match when={instance.isLoading}>
@@ -44,6 +43,7 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
             </Match>
           </Switch>
         }
+        when={instance.data}
       >
         {(instance) => (
           <>

@@ -1,4 +1,5 @@
 import type { Accessor, JSX } from 'solid-js';
+
 import {
   createSignal,
   mergeProps,
@@ -8,23 +9,23 @@ import {
   splitProps,
 } from 'solid-js';
 
+type DelayedShowProps<
+  T,
+  TRenderFunction extends (item: Accessor<NonNullable<T>>) => JSX.Element,
+> = {
+  // Time in ms to wait before showing fallback. Nothing is rendered during the delay. Default: 200.
+  delay?: number;
+} & ShowProps<T, TRenderFunction>;
 type RequiredParameter<T> = T extends () => unknown ? never : T;
+
 type ShowProps<
   T,
   TRenderFunction extends (item: Accessor<NonNullable<T>>) => JSX.Element,
 > = {
-  when: T | undefined | null | false;
-  keyed?: false;
-  fallback?: JSX.Element;
   children: JSX.Element | RequiredParameter<TRenderFunction>;
-};
-
-type DelayedShowProps<
-  T,
-  TRenderFunction extends (item: Accessor<NonNullable<T>>) => JSX.Element,
-> = ShowProps<T, TRenderFunction> & {
-  // Time in ms to wait before showing fallback. Nothing is rendered during the delay. Default: 200.
-  delay?: number;
+  fallback?: JSX.Element;
+  keyed?: false;
+  when: false | null | T | undefined;
 };
 
 export const DelayedShow = <

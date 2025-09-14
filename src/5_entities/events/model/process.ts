@@ -1,15 +1,15 @@
 import type { LauncherEventPayload } from './event';
 
 export enum ProcessPayloadType {
-  Launched = 'launched',
   Finished = 'finished',
+  Launched = 'launched',
 }
 
 export interface ProcessPayload {
-  instanceId: string;
-  processId: string;
   event: ProcessPayloadType;
+  instanceId: string;
   message: string;
+  processId: string;
 }
 
 export const isProcessPayload = (

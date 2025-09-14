@@ -1,11 +1,11 @@
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton, showToast } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
-
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
+import { type Component, type ComponentProps, splitProps } from 'solid-js';
+
 import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton, showToast } from '@/shared/ui';
 
 export type PluginsPaneTitleProps = ComponentProps<'div'>;
 
@@ -20,9 +20,9 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
     } catch (e) {
       if (isLauncherError(e)) {
         showToast({
+          description: e.message,
           title: 'Failed to open plugins folder',
           variant: 'destructive',
-          description: e.message,
         });
       }
     }
@@ -40,15 +40,15 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
       {t('plugins.title')}
       <div class='flex gap-2'>
         <CombinedTooltip
-          label={t('plugins.openPluginsFolder')}
           as={IconButton}
           icon={MdiFolderIcon}
+          label={t('plugins.openPluginsFolder')}
           onClick={handleOpenPluginsFolder}
         />
         <CombinedTooltip
-          label={t('common.refresh')}
           as={IconButton}
           icon={MdiReloadIcon}
+          label={t('common.refresh')}
           onClick={handleRefreshPlugins}
         />
       </div>

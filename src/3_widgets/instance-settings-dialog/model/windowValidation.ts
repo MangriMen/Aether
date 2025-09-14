@@ -15,8 +15,8 @@ export const ResolutionPartSchema = z
   );
 
 export const ResolutionSchema = z.object({
-  width: ResolutionPartSchema,
   height: ResolutionPartSchema,
+  width: ResolutionPartSchema,
 });
 
 export const WindowSchema = z.object({

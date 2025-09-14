@@ -1,9 +1,13 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
+
 import { mergeProps, Show, splitProps } from 'solid-js';
 
-import { Button } from './Button';
+import { useTranslation } from '@/shared/model';
+
 import type { DialogContentProps } from './Dialog';
+
+import { Button } from './Button';
 import {
   Dialog,
   DialogContent,
@@ -11,25 +15,24 @@ import {
   DialogFooter,
   DialogHeader,
 } from './Dialog';
-import { useTranslation } from '@/shared/model';
 
-export type CombinedDialogProps = DialogRootProps &
-  Pick<DialogContentProps, 'variant'> & {
-    header?: string;
-    description?: string;
-    buttonOkText?: string;
-    buttonCancelText?: string;
-    onOk?: ComponentProps<'button'>['onClick'];
-    onCancel?: ComponentProps<'button'>['onClick'];
-  };
+export type CombinedDialogProps = {
+  buttonCancelText?: string;
+  buttonOkText?: string;
+  description?: string;
+  header?: string;
+  onCancel?: ComponentProps<'button'>['onClick'];
+  onOk?: ComponentProps<'button'>['onClick'];
+} & DialogRootProps &
+  Pick<DialogContentProps, 'variant'>;
 
 export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const mergedProps = mergeProps(
     {
-      buttonOkText: t('common.ok') || 'Ok',
       buttonCancelText: t('common.cancel') || 'Cancel',
+      buttonOkText: t('common.ok') || 'Ok',
     },
     props,
   );
@@ -56,10 +59,10 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
           </DialogDescription>
         </Show>
         <DialogFooter>
-          <Button variant='destructive' onClick={local.onOk}>
+          <Button onClick={local.onOk} variant='destructive'>
             {local.buttonOkText}
           </Button>
-          <Button variant='secondary' onClick={local.onCancel}>
+          <Button onClick={local.onCancel} variant='secondary'>
             {local.buttonCancelText}
           </Button>
         </DialogFooter>

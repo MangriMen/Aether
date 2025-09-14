@@ -1,4 +1,8 @@
-import { useTranslation, type Option } from '@/shared/model';
+import type { Component } from 'solid-js';
+
+import { createMemo } from 'solid-js';
+
+import { type Option, useTranslation } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -7,25 +11,25 @@ import {
   SelectValue,
   SettingsEntry,
 } from '@/shared/ui';
-import type { Component } from 'solid-js';
-import { createMemo } from 'solid-js';
+
 import type { ActionOnInstanceLaunchType } from '../../model';
+
 import { useAppSettings, useUpdateAppSettings } from '../../api';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;
 };
 
-type ActionOnInstanceLaunchName = 'doNothing' | 'hide' | 'close';
+type ActionOnInstanceLaunchName = 'close' | 'doNothing' | 'hide';
 type ActionOnInstanceLaunchOption = Option<
   ActionOnInstanceLaunchType,
   ActionOnInstanceLaunchName
 >;
 
 const ACTION_ON_INSTANCE_LAUNCH_OPTIONS: ActionOnInstanceLaunchOption[] = [
-  { value: 'nothing', name: 'doNothing' },
-  { value: 'hide', name: 'hide' },
-  { value: 'close', name: 'close' },
+  { name: 'doNothing', value: 'nothing' },
+  { name: 'hide', value: 'hide' },
+  { name: 'close', value: 'close' },
 ];
 
 export const SelectActionOnInstanceLaunchEntry: Component<
@@ -43,7 +47,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
 
   const updateAppSettings = useUpdateAppSettings();
   const handleChangeActionOnInstanceLaunch = async (
-    value: Option<ActionOnInstanceLaunchType> | null,
+    value: null | Option<ActionOnInstanceLaunchType>,
   ) => {
     if (!value) {
       return;
@@ -56,18 +60,12 @@ export const SelectActionOnInstanceLaunchEntry: Component<
 
   return (
     <SettingsEntry
-      title={t('settings.actionOnInstanceLaunch')}
       description={t('settings.actionOnInstanceLaunchDescription')}
+      title={t('settings.actionOnInstanceLaunch')}
       {...props}
     >
       <Select
         class='w-40 min-w-40'
-        multiple={false}
-        options={ACTION_ON_INSTANCE_LAUNCH_OPTIONS}
-        optionValue='value'
-        optionTextValue='name'
-        value={currentOption()}
-        onChange={handleChangeActionOnInstanceLaunch}
         itemComponent={(props) => (
           <SelectItem item={props.item}>
             {t(
@@ -75,6 +73,12 @@ export const SelectActionOnInstanceLaunchEntry: Component<
             )}
           </SelectItem>
         )}
+        multiple={false}
+        onChange={handleChangeActionOnInstanceLaunch}
+        options={ACTION_ON_INSTANCE_LAUNCH_OPTIONS}
+        optionTextValue='name'
+        optionValue='value'
+        value={currentOption()}
       >
         <SelectTrigger>
           <SelectValue<ActionOnInstanceLaunchOption>>

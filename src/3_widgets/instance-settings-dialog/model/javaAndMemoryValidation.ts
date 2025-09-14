@@ -9,10 +9,10 @@ export const MemorySchema = z.object({
 export type MemorySchemaValues = z.infer<typeof MemorySchema>;
 
 export const JavaAndMemorySettingsSchema = z.object({
+  customEnvVars: z.string().nullable(),
+  extraLaunchArgs: z.string().nullable(),
   javaPath: z.string().nullable(),
   memory: MemorySchema,
-  extraLaunchArgs: z.string().nullable(),
-  customEnvVars: z.string().nullable(),
 });
 
 export type JavaAndMemorySettingsSchemaValues = z.infer<

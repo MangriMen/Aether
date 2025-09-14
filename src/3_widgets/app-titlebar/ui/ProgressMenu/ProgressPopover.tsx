@@ -1,16 +1,20 @@
-import type { LoadingPayload } from '@/entities/events';
-import { ProgressCard } from '@/entities/events';
-import { For, splitProps } from 'solid-js';
 import type { Accessor, Component, ComponentProps } from 'solid-js';
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
-import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+
 import OpenInNewIcon from '@iconify/icons-mdi/open-in-new';
+import { For, splitProps } from 'solid-js';
+
+import type { LoadingPayload } from '@/entities/events';
+
+import { ProgressCard } from '@/entities/events';
+import { cn } from '@/shared/lib';
+import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
+
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
 
-export type ProgressPopoverProps = ComponentProps<'div'> & {
+export type ProgressPopoverProps = {
   payloads: Accessor<LoadingPayload[]>;
-};
+} & ComponentProps<'div'>;
 
 export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
   const [local, others] = splitProps(props, ['payloads', 'class']);
@@ -28,13 +32,13 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
       <div class='flex items-center justify-between gap-2'>
         <span class='text-lg font-medium'>{t('progress.ongoingTasks')}</span>
         <CombinedTooltip
-          label={t('progress.seeDetails')}
           as={IconButton}
           class='self-end'
-          variant='ghost'
-          size='sm'
           icon={OpenInNewIcon}
+          label={t('progress.seeDetails')}
           onClick={handleOpenDetails}
+          size='sm'
+          variant='ghost'
         />
       </div>
       <div class='flex max-h-[244px] flex-col gap-3 overflow-hidden'>

@@ -1,18 +1,20 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
+import type { Account, AccountType } from '@/entities/accounts';
+
+import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 import { Separator } from '@/shared/ui';
 
-import type { Account, AccountType } from '@/entities/accounts';
-import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 import { useSortedAccounts } from '../lib';
 
-export type AccountsMenuProps = ComponentProps<'div'> & {
+export type AccountsMenuProps = {
   accounts: Account[];
   onActivate: (id: Account['id']) => void;
   onCreate: (type: AccountType) => void;
   onLogout: (id: Account['id']) => void;
-};
+} & ComponentProps<'div'>;
 
 export const AccountsMenu: Component<AccountsMenuProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -27,8 +29,8 @@ export const AccountsMenu: Component<AccountsMenuProps> = (props) => {
   return (
     <div {...others}>
       <AccountsList
-        class='max-h-48 overflow-y-auto p-3'
         accounts={sortedAccounts()}
+        class='max-h-48 overflow-y-auto p-3'
         onActivate={local.onActivate}
         onRemove={local.onLogout}
       />

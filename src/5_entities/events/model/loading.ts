@@ -1,16 +1,10 @@
 import type { LauncherEventPayload } from './event';
 
 export enum LoadingBarTypeEnum {
-  MinecraftDownload = 'minecraft_download',
   JavaDownload = 'java_download',
-  PluginDownload = 'plugin_download',
   LauncherUpdate = 'launcher_update',
-}
-
-export interface MinecraftDownload {
-  type: LoadingBarTypeEnum.MinecraftDownload;
-  instance_name: string;
-  instance_id: string;
+  MinecraftDownload = 'minecraft_download',
+  PluginDownload = 'plugin_download',
 }
 
 export interface JavaDownload {
@@ -18,36 +12,42 @@ export interface JavaDownload {
   version: number;
 }
 
-export interface PluginDownload {
-  type: LoadingBarTypeEnum.PluginDownload;
-  plugin_name: string;
-}
-
 export interface LauncherUpdate {
+  current_version: string;
   type: LoadingBarTypeEnum.LauncherUpdate;
   version: string;
-  current_version: string;
 }
 
-export type LoadingBarType =
-  | MinecraftDownload
-  | JavaDownload
-  | PluginDownload
-  | LauncherUpdate;
-
 export interface LoadingBar {
+  barType: LoadingBarType;
+  current: number;
   loadingBarUuid: string;
   message: string;
   total: number;
-  current: number;
-  barType: LoadingBarType;
 }
+
+export type LoadingBarType =
+  | JavaDownload
+  | LauncherUpdate
+  | MinecraftDownload
+  | PluginDownload;
 
 export interface LoadingPayload {
   event: LoadingBarType;
+  fraction: null | number; // by convention, if optional, it means the loading is done
   loaderUuid: string;
-  fraction: number | null; // by convention, if optional, it means the loading is done
   message: string;
+}
+
+export interface MinecraftDownload {
+  instance_id: string;
+  instance_name: string;
+  type: LoadingBarTypeEnum.MinecraftDownload;
+}
+
+export interface PluginDownload {
+  plugin_name: string;
+  type: LoadingBarTypeEnum.PluginDownload;
 }
 
 export const isLoadingPayload = (

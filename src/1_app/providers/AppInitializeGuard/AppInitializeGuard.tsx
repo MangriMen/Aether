@@ -1,8 +1,12 @@
-import { createSignal, onMount, Show } from 'solid-js';
 import type { Component, JSX } from 'solid-js';
+
+import { createSignal, onMount, Show } from 'solid-js';
+
+import { initializePlugins } from '@/entities/minecraft';
+import { debugError } from '@/shared/lib/log';
+
 import { initializeApp, showWindow } from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
-import { initializePlugins } from '@/entities/minecraft';
 
 export type AppInitializeGuardProps = { children?: JSX.Element };
 
@@ -21,7 +25,7 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
     try {
       await initializeApp();
     } catch (e) {
-      console.error(e);
+      debugError(e);
       if (e instanceof Error) {
         setInitializeError(e.message);
       }
@@ -35,7 +39,7 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
         await initializePlugins();
       }
     } catch (e) {
-      console.error(e);
+      debugError(e);
     }
   };
 
@@ -44,8 +48,8 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
   return (
     <Show when={isInitialized()}>
       <Show
-        when={!initializeError()}
         fallback={<AppInitializeError message={initializeError()} />}
+        when={!initializeError()}
       >
         {props.children}
       </Show>

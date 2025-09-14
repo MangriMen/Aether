@@ -1,14 +1,16 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
+
 import { Show, splitProps } from 'solid-js';
 
-import { CollapsibleSettingsPane } from './CollapsibleSettingsPane';
 import { cn } from '@/shared/lib';
 
-export type SettingsPaneProps = ComponentProps<'div'> & {
-  label?: JSX.Element;
+import { CollapsibleSettingsPane } from './CollapsibleSettingsPane';
+
+export type SettingsPaneProps = {
   collapsible?: boolean;
   defaultOpened?: boolean;
-};
+  label?: JSX.Element;
+} & ComponentProps<'div'>;
 
 export const SettingsPane: Component<SettingsPaneProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -20,7 +22,6 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
 
   return (
     <Show
-      when={local.collapsible}
       fallback={
         <div
           class={cn('flex flex-col gap-4 rounded-lg px-6 py-4', local.class)}
@@ -32,11 +33,12 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
           {local.children}
         </div>
       }
+      when={local.collapsible}
     >
       <CollapsibleSettingsPane
+        children={local.children}
         class={local.class}
         label={local.label}
-        children={local.children}
         {...others}
       />
     </Show>

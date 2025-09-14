@@ -2,16 +2,16 @@ import { invoke } from '@tauri-apps/api/core';
 
 import type {
   ContentRequest,
+  ContentResponse,
+  ContentType,
+  EditInstance,
   ImportHandler,
+  InstallContentPayload,
   Instance,
-  NewInstance,
   InstanceFile,
   InstanceImportDto,
   MinecraftProcessMetadata,
-  ContentResponse,
-  InstallContentPayload,
-  ContentType,
-  EditInstance,
+  NewInstance,
 } from '../model';
 
 const PLUGIN_INSTANCE_PREFIX = 'plugin:instance|';
@@ -26,7 +26,7 @@ export const createInstanceRaw = (newInstance: NewInstance) =>
 export const installInstanceRaw = (
   id: Instance['id'],
   force: boolean = false,
-) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install`, { id, force });
+) => invoke(`${PLUGIN_INSTANCE_PREFIX}instance_install`, { force, id });
 
 export const updateInstanceRaw = (id: Instance['id']) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_update`, { id });
@@ -61,13 +61,13 @@ export const editInstanceRaw = async (
   editInstance: EditInstance,
 ) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, {
-    id,
     editInstance,
+    id,
   });
 
 // Utils
 export const revealInExplorerRaw = (path: string, exact = true) =>
-  invoke('reveal_in_explorer', { path, exact });
+  invoke('reveal_in_explorer', { exact, path });
 
 // Process
 export const listProcessRaw = () =>
@@ -93,26 +93,26 @@ export const disableInstanceContentsRaw = (
   contentPaths: string[],
 ) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_disable_contents`, {
-    id,
     contentPaths,
+    id,
   });
 
 export const enableInstanceContentsRaw = (id: string, contentPaths: string[]) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_enable_contents`, {
-    id,
     contentPaths,
+    id,
   });
 
 export const removeInstanceContentRaw = (id: string, contentPath: string) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_content`, {
-    id,
     contentPath,
+    id,
   });
 
 export const removeInstanceContentsRaw = (id: string, contentPaths: string[]) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_remove_contents`, {
-    id,
     contentPaths,
+    id,
   });
 
 export const getContentProvidersRaw = () =>
@@ -144,9 +144,9 @@ export const importContentsRaw = (
   contentType: ContentType,
 ) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_import_contents`, {
+    contentType,
     instanceId,
     sourcePaths,
-    contentType,
   });
 
 export const getInstanceDirRaw = (id: Instance['id']) =>

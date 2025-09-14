@@ -1,9 +1,12 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
-import { createMemo, type ValidComponent } from 'solid-js';
-import { ProgressDetails } from './ProgressDetails';
-import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { PolymorphicProps } from '@kobalte/core';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+
+import { createMemo, type ValidComponent } from 'solid-js';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
+
 import { useProgressStore } from '../../model';
+import { ProgressDetails } from './ProgressDetails';
 
 export type ProgressDetailsDialogProps = DialogRootProps;
 

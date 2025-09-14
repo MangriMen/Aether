@@ -1,11 +1,13 @@
 import type { ConfigColorMode } from '@kobalte/core';
-import { useColorMode } from '@kobalte/core';
 import type { Component } from 'solid-js';
+
+import { useColorMode } from '@kobalte/core';
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
-import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
 import type { SelectRootProps } from '@/shared/ui';
+
+import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -25,7 +27,7 @@ const THEME_OPTIONS: Option<ThemeConfig>[] = [
 
 export type SelectThemeProps = Pick<
   SelectRootProps<Option<ThemeConfig>, never>,
-  'name' | 'id'
+  'id' | 'name'
 >;
 
 export const SelectTheme: Component<SelectThemeProps> = (props) => {
@@ -40,7 +42,7 @@ export const SelectTheme: Component<SelectThemeProps> = (props) => {
     THEME_OPTIONS.find((option) => option.value === currentTheme()),
   );
 
-  const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {
+  const handleChangeTheme = (theme: null | Option<ThemeConfig>) => {
     if (!theme) {
       return;
     }
@@ -62,12 +64,7 @@ export const SelectTheme: Component<SelectThemeProps> = (props) => {
   return (
     <Select
       class='w-32'
-      options={THEME_OPTIONS}
-      optionValue='name'
-      optionTextValue='name'
       defaultValue={currentOption()}
-      value={currentOption()}
-      onChange={handleChangeTheme}
       itemComponent={(props) => (
         <>
           <Show when={props.item.rawValue.value === 'system'}>
@@ -76,6 +73,11 @@ export const SelectTheme: Component<SelectThemeProps> = (props) => {
           <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
         </>
       )}
+      onChange={handleChangeTheme}
+      options={THEME_OPTIONS}
+      optionTextValue='name'
+      optionValue='name'
+      value={currentOption()}
       {...props}
     >
       <SelectTrigger>

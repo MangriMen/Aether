@@ -1,9 +1,12 @@
 import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
-import { checkIsUpdateAvailable } from '../model';
-import { createSignal } from 'solid-js';
-import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
+
 import { getVersion } from '@tauri-apps/api/app';
 import { emit } from '@tauri-apps/api/event';
+import { createSignal } from 'solid-js';
+
+import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
+
+import { checkIsUpdateAvailable } from '../model';
 
 export const useInstallUpdate = () => {
   const [isUpdating, setIsUpdating] = createSignal(false);
@@ -18,18 +21,16 @@ export const useInstallUpdate = () => {
 
   const handleUpdateDownload = async (event: DownloadEvent, update: Update) => {
     switch (event.event) {
-      case 'Started': {
-        contentLength = event.data.contentLength;
-
+      case 'Finished': {
         emit('loading', {
           event: {
+            current_version: await getVersion(),
             type: LoadingBarTypeEnum.LauncherUpdate,
             version: update?.version ?? '',
-            current_version: await getVersion(),
           },
+          fraction: null,
           loaderUuid: '',
-          fraction: 0,
-          message: 'launcherUpdate.started',
+          message: 'launcherUpdate.finished',
         } satisfies LoadingPayload);
         break;
       }
@@ -38,34 +39,36 @@ export const useInstallUpdate = () => {
         if (contentLength) {
           emit('loading', {
             event: {
+              current_version: await getVersion(),
               type: LoadingBarTypeEnum.LauncherUpdate,
               version: update?.version ?? '',
-              current_version: await getVersion(),
             },
-            loaderUuid: '',
             fraction: downloaded / contentLength,
+            loaderUuid: '',
             message: 'launcherUpdate.progress',
           } satisfies LoadingPayload);
         }
         break;
       }
-      case 'Finished': {
+      case 'Started': {
+        contentLength = event.data.contentLength;
+
         emit('loading', {
           event: {
+            current_version: await getVersion(),
             type: LoadingBarTypeEnum.LauncherUpdate,
             version: update?.version ?? '',
-            current_version: await getVersion(),
           },
+          fraction: 0,
           loaderUuid: '',
-          fraction: null,
-          message: 'launcherUpdate.finished',
+          message: 'launcherUpdate.started',
         } satisfies LoadingPayload);
         break;
       }
     }
   };
 
-  const installUpdate = async (update: Update | null) => {
+  const installUpdate = async (update: null | Update) => {
     if (!checkIsUpdateAvailable(update)) {
       return;
     }
@@ -83,5 +86,5 @@ export const useInstallUpdate = () => {
     setIsUpdating(false);
   };
 
-  return { isUpdating, installUpdate };
+  return { installUpdate, isUpdating };
 };

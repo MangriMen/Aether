@@ -1,12 +1,12 @@
 import type {
-  FieldValues,
-  FormStore,
   FieldPath,
   FieldPathValue,
+  FieldValues,
+  FormStore,
 } from '@modular-forms/solid';
+import type { ZodObject, ZodTypeAny } from 'zod';
 
 import { getValue, validate } from '@modular-forms/solid';
-import type { ZodObject, ZodTypeAny } from 'zod';
 
 export const useFieldOnChangeSync = <
   TFieldValues extends FieldValues,
@@ -15,7 +15,7 @@ export const useFieldOnChangeSync = <
   TSyncValue = unknown,
 >(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: ZodTypeAny | ZodObject<any>,
+  schema: ZodObject<any> | ZodTypeAny,
   form: FormStore<TFieldValues>,
   path: TFieldPath,
   syncMapper: (value: TFieldValue) => TSyncValue,

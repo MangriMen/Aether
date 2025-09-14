@@ -1,23 +1,27 @@
 import type { FormStore } from '@modular-forms/solid';
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import type { JavaAndMemorySettingsSchemaValues } from '../model/javaAndMemoryValidation';
-import { JavaAndMemorySettingsSchema } from '../model/javaAndMemoryValidation';
-import type { Instance } from '@/entities/instances';
 import type { Accessor } from 'solid-js';
+
+import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect } from 'solid-js';
-import { extraLaunchArgsToString } from './parseExtraLaunchArgs';
+
+import type { Instance } from '@/entities/instances';
+
+import type { JavaAndMemorySettingsSchemaValues } from '../model/javaAndMemoryValidation';
+
+import { JavaAndMemorySettingsSchema } from '../model/javaAndMemoryValidation';
 import { envVarsToString } from './parseEnvVars';
+import { extraLaunchArgsToString } from './parseExtraLaunchArgs';
 
 export const useJavaAndMemoryForm = (): ReturnType<
   typeof createForm<JavaAndMemorySettingsSchemaValues>
 > => {
   const [form, components] = createForm<JavaAndMemorySettingsSchemaValues>({
-    validate: zodForm(JavaAndMemorySettingsSchema),
     initialValues: {
-      memory: { maximum: null },
-      extraLaunchArgs: null,
       customEnvVars: null,
+      extraLaunchArgs: null,
+      memory: { maximum: null },
     },
+    validate: zodForm(JavaAndMemorySettingsSchema),
   });
 
   return [form, components];

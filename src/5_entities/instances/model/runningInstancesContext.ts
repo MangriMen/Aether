@@ -1,13 +1,8 @@
 import { createContext, useContext } from 'solid-js';
 
-import type { Instance } from './instance';
 import type { ProcessPayload } from '@/entities/events/@x/instances';
 
-export type RunningInstancesInstanceData = {
-  payload?: ProcessPayload;
-  isLoading: boolean;
-  isRunning: boolean;
-};
+import type { Instance } from './instance';
 
 export type RunningInstancesContextValue = [
   {
@@ -21,6 +16,12 @@ export type RunningInstancesContextValue = [
     setIsLoading: (id: Instance['id'], value: boolean) => void;
   },
 ];
+
+export type RunningInstancesInstanceData = {
+  isLoading: boolean;
+  isRunning: boolean;
+  payload?: ProcessPayload;
+};
 
 const DEFAULT_VALUE: RunningInstancesContextValue = [
   { instances: {} },

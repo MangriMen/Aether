@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { SliderRootProps } from '@kobalte/core/slider';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -12,10 +13,9 @@ import {
   SliderTrack,
 } from '@/shared/ui';
 
-export type MemorySliderProps<T extends ValidComponent = 'div'> =
-  PolymorphicProps<T, SliderRootProps<T>> & {
-    warningValue?: number;
-  };
+export type MemorySliderProps<T extends ValidComponent = 'div'> = {
+  warningValue?: number;
+} & PolymorphicProps<T, SliderRootProps<T>>;
 
 export const MemorySlider: Component<MemorySliderProps> = (props) => {
   const [local, others] = splitProps(props, ['warningValue', 'class']);

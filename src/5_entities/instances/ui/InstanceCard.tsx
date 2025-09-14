@@ -1,21 +1,21 @@
-import { Match, splitProps, Switch } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { Match, splitProps, Switch } from 'solid-js';
 
 import { type Instance } from '@/entities/instances';
-
-import { InstanceTitle } from './InstanceTitle';
+import { cn } from '@/shared/lib';
 import { Image } from '@/shared/ui';
 
-export type InstanceCardProps = ComponentProps<'div'> & {
+import { InstanceTitle } from './InstanceTitle';
+
+export type InstanceCardProps = {
   instance: Instance;
   instanceActionButton: Component<
-    ComponentProps<'button'> & { instance: Instance }
+    { instance: Instance } & ComponentProps<'button'>
   >;
   isLoading?: boolean;
   isRunning?: boolean;
-};
+} & ComponentProps<'div'>;
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -36,9 +36,9 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     >
       <Image src={local.instance.iconPath} />
       <InstanceTitle
-        name={local.instance.name}
-        loader={local.instance.loader}
         gameVersion={local.instance.gameVersion}
+        loader={local.instance.loader}
+        name={local.instance.name}
       />
       <Switch>
         <Match when={local.isLoading}>

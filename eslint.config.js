@@ -8,6 +8,7 @@ import sonarjs from 'eslint-plugin-sonarjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import tailwind from 'eslint-plugin-tailwindcss';
 import solid from 'eslint-plugin-solid/configs/recommended';
+import perfectionist from 'eslint-plugin-perfectionist';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -32,7 +33,7 @@ export default [
       'prefer-object-spread': 'warn',
       curly: 'error',
       'no-debugger': 'warn',
-      "no-console": "warn"
+      'no-console': 'warn',
     },
   },
   js.configs.recommended,
@@ -51,6 +52,7 @@ export default [
     },
   },
   eslintPluginPrettierRecommended,
+  perfectionist.configs['recommended-alphabetical'],
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {

@@ -1,11 +1,11 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
 
+import { useCreateOfflineAccount } from '@/entities/accounts';
+import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 
-import { useCreateOfflineAccount } from '@/entities/accounts';
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
-import { useTranslation } from '@/shared/model';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
 
@@ -30,8 +30,8 @@ export const CreateOfflineAccountDialog: Component<
       <DialogContent class='max-w-80'>
         <DialogHeader>{t('createOfflineAccount.title')}</DialogHeader>
         <CreateOfflineAccountForm
-          onCreate={handleCreate}
           onCancel={closeDialog}
+          onCreate={handleCreate}
         />
       </DialogContent>
     </Dialog>

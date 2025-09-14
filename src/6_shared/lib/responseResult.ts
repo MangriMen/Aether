@@ -1,7 +1,7 @@
 export type Result<T> =
   | { data: T; error: undefined }
-  | { data: undefined; error: unknown }
-  | { data: undefined; error: undefined };
+  | { data: undefined; error: undefined }
+  | { data: undefined; error: unknown };
 
 export const toResponseResult = async <R, A>(
   func: (...args: A[]) => Promise<R>,

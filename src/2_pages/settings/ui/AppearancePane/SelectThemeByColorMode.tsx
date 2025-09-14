@@ -4,9 +4,11 @@ import type {
   PolymorphicProps,
 } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
+
 import { THEME_BY_MODE, useThemeContext } from '@/shared/model';
 import {
   Select,
@@ -16,10 +18,9 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =
-  PolymorphicProps<T, { disabled?: boolean; onChange?: never }> & {
-    colorMode: ColorMode;
-  };
+export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> = {
+  colorMode: ColorMode;
+} & PolymorphicProps<T, { disabled?: boolean; onChange?: never }>;
 
 const THEME_BY_MODE_OPTIONS = Object.fromEntries(
   Object.entries(THEME_BY_MODE).map(([colorMode, themes]) => [
@@ -45,7 +46,7 @@ const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
     options().find((option) => option.value === currentTheme()),
   );
 
-  const handleChangeTheme = (theme: Option<ThemeConfig> | null) => {
+  const handleChangeTheme = (theme: null | Option<ThemeConfig>) => {
     if (!theme) {
       return;
     }
@@ -61,16 +62,16 @@ const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
   return (
     <Select
       class='w-32'
-      multiple={false}
-      options={options()}
-      optionValue='name'
-      optionTextValue='name'
       defaultValue={currentOption()}
-      value={currentOption()}
-      onChange={handleChangeTheme}
       itemComponent={(props) => (
         <SelectItem item={props.item}>{props.item.rawValue.name}</SelectItem>
       )}
+      multiple={false}
+      onChange={handleChangeTheme}
+      options={options()}
+      optionTextValue='name'
+      optionValue='name'
+      value={currentOption()}
       {...props}
     >
       <SelectTrigger>
