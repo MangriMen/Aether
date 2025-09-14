@@ -1,4 +1,4 @@
 export * from './constants';
 export * from './appSettings';
-export * from './validation';
-export * from './converter';
+export * from './pluginSettingsValidation';
+export * from './defaultInstanceSettingsConverter';

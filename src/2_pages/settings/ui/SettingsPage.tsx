@@ -18,7 +18,7 @@ import { SettingsTabs } from '../model/settingsTabs';
 import type { PolymorphicProps } from '@kobalte/core';
 import { useTranslation } from '@/shared/model';
 import { VersionInfo } from './VersionInfo';
-import { useSettingsPagePrefetch, useSettingsPageTabs } from '../lib';
+import { useOnMountSettingsPage, useSettingsPageTabs } from '../lib';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
@@ -32,7 +32,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
 
   const [tabsTriggers, tabsContents] = useSettingsPageTabs();
 
-  useSettingsPagePrefetch();
+  useOnMountSettingsPage();
 
   return (
     <div class='flex size-full flex-col p-4' {...others}>

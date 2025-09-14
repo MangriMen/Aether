@@ -1,4 +1,5 @@
 export type ActionOnInstanceLaunchType = 'hide' | 'close' | 'nothing';
+
 export type WindowEffect =
   | 'off'
   | 'mica_light'
@@ -12,4 +13,4 @@ export interface AppSettings {
   windowEffect: WindowEffect;
 }
 
-export type UpdateAppSettings = Partial<AppSettings>;
+export type EditAppSettings = Partial<AppSettings>;
