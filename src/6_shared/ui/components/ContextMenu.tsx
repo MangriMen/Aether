@@ -1,7 +1,6 @@
+import * as ContextMenuPrimitive from '@kobalte/core/context-menu';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
-
-import * as ContextMenuPrimitive from '@kobalte/core/context-menu';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -18,9 +17,10 @@ const ContextMenu: Component<ContextMenuPrimitive.ContextMenuRootProps> = (
   return <ContextMenuPrimitive.Root gutter={4} {...props} />;
 };
 
-type ContextMenuContentProps<T extends ValidComponent = 'div'> = {
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuContentProps<T>;
+type ContextMenuContentProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuContentProps<T> & {
+    class?: string | undefined;
+  };
 
 const ContextMenuContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuContentProps<T>>,
@@ -41,9 +41,10 @@ const ContextMenuContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuItemProps<T extends ValidComponent = 'div'> = {
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuItemProps<T>;
+type ContextMenuItemProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuItemProps<T> & {
+    class?: string | undefined;
+  };
 
 const ContextMenuItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuItemProps<T>>,
@@ -70,9 +71,10 @@ const ContextMenuShortcut: Component<ComponentProps<'span'>> = (props) => {
   );
 };
 
-type ContextMenuSeparatorProps<T extends ValidComponent = 'hr'> = {
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuSeparatorProps<T>;
+type ContextMenuSeparatorProps<T extends ValidComponent = 'hr'> =
+  ContextMenuPrimitive.ContextMenuSeparatorProps<T> & {
+    class?: string | undefined;
+  };
 
 const ContextMenuSeparator = <T extends ValidComponent = 'hr'>(
   props: PolymorphicProps<T, ContextMenuSeparatorProps<T>>,
@@ -88,10 +90,11 @@ const ContextMenuSeparator = <T extends ValidComponent = 'hr'>(
   );
 };
 
-type ContextMenuSubTriggerProps<T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuSubTriggerProps<T>;
+type ContextMenuSubTriggerProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuSubTriggerProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const ContextMenuSubTrigger = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuSubTriggerProps<T>>,
@@ -110,14 +113,14 @@ const ContextMenuSubTrigger = <T extends ValidComponent = 'div'>(
     >
       {local.children}
       <svg
-        class='ml-auto size-4'
+        xmlns='http://www.w3.org/2000/svg'
+        viewBox='0 0 24 24'
         fill='none'
         stroke='currentColor'
+        stroke-width='2'
         stroke-linecap='round'
         stroke-linejoin='round'
-        stroke-width='2'
-        viewBox='0 0 24 24'
-        xmlns='http://www.w3.org/2000/svg'
+        class='ml-auto size-4'
       >
         <path d='M9 6l6 6l-6 6' />
       </svg>
@@ -125,9 +128,10 @@ const ContextMenuSubTrigger = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuSubContentProps<T extends ValidComponent = 'div'> = {
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuSubContentProps<T>;
+type ContextMenuSubContentProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuSubContentProps<T> & {
+    class?: string | undefined;
+  };
 
 const ContextMenuSubContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuSubContentProps<T>>,
@@ -146,10 +150,11 @@ const ContextMenuSubContent = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuCheckboxItemProps<T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuCheckboxItemProps<T>;
+type ContextMenuCheckboxItemProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuCheckboxItemProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const ContextMenuCheckboxItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuCheckboxItemProps<T>>,
@@ -169,14 +174,14 @@ const ContextMenuCheckboxItem = <T extends ValidComponent = 'div'>(
       <span class='absolute left-2 flex size-3.5 items-center justify-center'>
         <ContextMenuPrimitive.ItemIndicator>
           <svg
-            class='size-4'
+            xmlns='http://www.w3.org/2000/svg'
+            viewBox='0 0 24 24'
             fill='none'
             stroke='currentColor'
+            stroke-width='2'
             stroke-linecap='round'
             stroke-linejoin='round'
-            stroke-width='2'
-            viewBox='0 0 24 24'
-            xmlns='http://www.w3.org/2000/svg'
+            class='size-4'
           >
             <path d='M5 12l5 5l10 -10' />
           </svg>
@@ -187,9 +192,10 @@ const ContextMenuCheckboxItem = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ContextMenuGroupLabelProps<T extends ValidComponent = 'span'> = {
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuGroupLabelProps<T>;
+type ContextMenuGroupLabelProps<T extends ValidComponent = 'span'> =
+  ContextMenuPrimitive.ContextMenuGroupLabelProps<T> & {
+    class?: string | undefined;
+  };
 
 const ContextMenuGroupLabel = <T extends ValidComponent = 'span'>(
   props: PolymorphicProps<T, ContextMenuGroupLabelProps<T>>,
@@ -205,10 +211,11 @@ const ContextMenuGroupLabel = <T extends ValidComponent = 'span'>(
   );
 };
 
-type ContextMenuRadioItemProps<T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & ContextMenuPrimitive.ContextMenuRadioItemProps<T>;
+type ContextMenuRadioItemProps<T extends ValidComponent = 'div'> =
+  ContextMenuPrimitive.ContextMenuRadioItemProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const ContextMenuRadioItem = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ContextMenuRadioItemProps<T>>,
@@ -228,14 +235,14 @@ const ContextMenuRadioItem = <T extends ValidComponent = 'div'>(
       <span class='absolute left-2 flex size-3.5 items-center justify-center'>
         <ContextMenuPrimitive.ItemIndicator>
           <svg
-            class='size-2 fill-current'
+            xmlns='http://www.w3.org/2000/svg'
+            viewBox='0 0 24 24'
             fill='none'
             stroke='currentColor'
+            stroke-width='2'
             stroke-linecap='round'
             stroke-linejoin='round'
-            stroke-width='2'
-            viewBox='0 0 24 24'
-            xmlns='http://www.w3.org/2000/svg'
+            class='size-2 fill-current'
           >
             <path d='M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' />
           </svg>
@@ -248,18 +255,18 @@ const ContextMenuRadioItem = <T extends ValidComponent = 'div'>(
 
 export {
   ContextMenu,
-  ContextMenuCheckboxItem,
+  ContextMenuTrigger,
+  ContextMenuPortal,
   ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuShortcut,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+  ContextMenuCheckboxItem,
   ContextMenuGroup,
   ContextMenuGroupLabel,
-  ContextMenuItem,
-  ContextMenuPortal,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
 };

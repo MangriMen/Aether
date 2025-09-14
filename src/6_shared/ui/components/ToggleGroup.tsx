@@ -1,9 +1,8 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import type { VariantProps } from 'class-variance-authority';
-import type { JSX, ValidComponent } from 'solid-js';
-
 import * as ToggleGroupPrimitive from '@kobalte/core/toggle-group';
+import type { VariantProps } from 'class-variance-authority';
 import { createContext, splitProps, useContext } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -14,11 +13,12 @@ const ToggleGroupContext = createContext<VariantProps<typeof toggleVariants>>({
   variant: 'default',
 });
 
-type ToggleGroupRootProps<T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & ToggleGroupPrimitive.ToggleGroupRootProps<T> &
-  VariantProps<typeof toggleVariants>;
+type ToggleGroupRootProps<T extends ValidComponent = 'div'> =
+  ToggleGroupPrimitive.ToggleGroupRootProps<T> &
+    VariantProps<typeof toggleVariants> & {
+      class?: string | undefined;
+      children?: JSX.Element;
+    };
 
 const ToggleGroup = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ToggleGroupRootProps<T>>,
@@ -51,10 +51,9 @@ const ToggleGroup = <T extends ValidComponent = 'div'>(
   );
 };
 
-type ToggleGroupItemProps<T extends ValidComponent = 'button'> = {
-  class?: string | undefined;
-} & ToggleGroupPrimitive.ToggleGroupItemProps<T> &
-  VariantProps<typeof toggleVariants>;
+type ToggleGroupItemProps<T extends ValidComponent = 'button'> =
+  ToggleGroupPrimitive.ToggleGroupItemProps<T> &
+    VariantProps<typeof toggleVariants> & { class?: string | undefined };
 
 const ToggleGroupItem = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, ToggleGroupItemProps<T>>,
@@ -80,6 +79,6 @@ const ToggleGroupItem = <T extends ValidComponent = 'button'>(
   );
 };
 
-export type { ToggleGroupItemProps, ToggleGroupRootProps };
+export type { ToggleGroupRootProps, ToggleGroupItemProps };
 
 export { ToggleGroup, ToggleGroupItem };

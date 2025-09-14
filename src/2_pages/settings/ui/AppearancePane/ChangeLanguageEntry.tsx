@@ -1,12 +1,12 @@
-import { type Component, type ComponentProps, createMemo } from 'solid-js';
+import { createMemo, type Component, type ComponentProps } from 'solid-js';
 
 import type { Locale, Option } from '@/shared/model';
 
 import { useTranslation } from '@/shared/model';
-import { SettingsEntry } from '@/shared/ui';
 
 import { LOCALE_OPTIONS } from '../../model';
 import SelectLanguage from './SelectLanguage';
+import { SettingsEntry } from '@/shared/ui';
 
 export type ChangeLanguageEntryProps = ComponentProps<'div'>;
 
@@ -17,7 +17,7 @@ const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
     LOCALE_OPTIONS.find((option) => option.value === locale()),
   );
 
-  const handleChangeLocale = (locale: null | Option<Locale>) => {
+  const handleChangeLocale = (locale: Option<Locale> | null) => {
     if (!locale) {
       return;
     }
@@ -27,15 +27,15 @@ const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
 
   return (
     <SettingsEntry
-      description={t('settings.languageDescription')}
       title={t('settings.language')}
+      description={t('settings.languageDescription')}
       {...props}
     >
       <SelectLanguage
         class='w-32'
-        onChange={handleChangeLocale}
         options={LOCALE_OPTIONS}
         value={currentOption()}
+        onChange={handleChangeLocale}
       />
     </SettingsEntry>
   );

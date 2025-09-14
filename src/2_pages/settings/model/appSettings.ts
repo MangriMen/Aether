@@ -1,4 +1,11 @@
-export type ActionOnInstanceLaunchType = 'close' | 'hide' | 'nothing';
+export type ActionOnInstanceLaunchType = 'hide' | 'close' | 'nothing';
+export type WindowEffect =
+  | 'off'
+  | 'mica_light'
+  | 'mica_dark'
+  | 'mica'
+  | 'acrylic';
+
 export interface AppSettings {
   actionOnInstanceLaunch: ActionOnInstanceLaunchType;
   transparent: boolean;
@@ -6,10 +13,3 @@ export interface AppSettings {
 }
 
 export type UpdateAppSettings = Partial<AppSettings>;
-
-export type WindowEffect =
-  | 'acrylic'
-  | 'mica_dark'
-  | 'mica_light'
-  | 'mica'
-  | 'off';

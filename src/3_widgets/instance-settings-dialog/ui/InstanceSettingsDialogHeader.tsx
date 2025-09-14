@@ -1,15 +1,16 @@
-import { Icon } from '@iconify-icon/solid';
 import MdiRightArrowIcon from '@iconify/icons-mdi/chevron-right';
-import { type Component, type ComponentProps, splitProps } from 'solid-js';
+import { Icon } from '@iconify-icon/solid';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
+
+import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
 import type { Instance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
-import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
-export type InstanceSettingsDialogHeaderProps = {
+export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {
   instance: Instance;
-} & ComponentProps<'div'>;
+};
 
 const InstanceSettingsDialogHeader: Component<
   InstanceSettingsDialogHeaderProps

@@ -1,33 +1,30 @@
-import type { FormStore } from '@modular-forms/solid';
 import type { Accessor, Component, ComponentProps } from 'solid-js';
-
-import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
 import { createSignal, For, Show, splitProps } from 'solid-js';
-
-import { useTranslation } from '@/shared/model';
 import { LabeledField } from '@/shared/ui';
+import type { FormStore } from '@modular-forms/solid';
+import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
 
-import type { PluginSettingsSchemaValues } from '../../model';
 import type { AddNewItemProps } from './AddNewSettingsItem';
-
 import { AddNewSettingsItem } from './AddNewSettingsItem';
+import type { PluginSettingsSchemaValues } from '../../model';
+import { useTranslation } from '@/shared/model';
 
 export type AllowedItemFieldProps<T> = {
-  editing: boolean;
   form: FormStore<PluginSettingsSchemaValues>;
-  index: Accessor<number>;
   name: keyof PluginSettingsSchemaValues;
-  onCancelEdit: (index: null) => void;
+  index: Accessor<number>;
+  editing: boolean;
   onEdit: (index: number) => void;
-  onEdited: (index: number, value: T) => void;
   onRemove: (index: number) => void;
+  onEdited: (index: number, value: T) => void;
+  onCancelEdit: (index: null) => void;
 };
 
 export type AllowedItemProps<T> = {
-  changeable?: boolean;
+  value?: T;
   onEdit?: () => void;
   onRemove?: () => void;
-  value?: T;
+  changeable?: boolean;
 };
 
 export type AllowedItemsFieldArrayProps<
@@ -35,15 +32,15 @@ export type AllowedItemsFieldArrayProps<
     keyof PluginSettingsSchemaValues = keyof PluginSettingsSchemaValues,
   TValue extends
     PluginSettingsSchemaValues[TName][number] = PluginSettingsSchemaValues[TName][number],
-> = {
-  addNewItem: AddNewItemProps<TValue>['children'];
+> = ComponentProps<'div'> & {
+  name: TName;
+  form: FormStore<PluginSettingsSchemaValues>;
   allowedItem: Component<AllowedItemProps<TValue>>;
   allowedItemField: Component<AllowedItemFieldProps<TValue>>;
-  form: FormStore<PluginSettingsSchemaValues>;
-  label?: string;
-  name: TName;
+  addNewItem: AddNewItemProps<TValue>['children'];
   unchangeableItems?: TValue[];
-} & ComponentProps<'div'>;
+  label?: string;
+};
 
 export const AllowedItems = <
   TName extends
@@ -66,7 +63,7 @@ export const AllowedItems = <
 
   const [{ t }] = useTranslation();
 
-  const [editingIndex, setEditingIndex] = createSignal<null | number>(null);
+  const [editingIndex, setEditingIndex] = createSignal<number | null>(null);
 
   const handleAddNew = (value: TValue) =>
     insert(local.form, local.name, { value });
@@ -97,7 +94,7 @@ export const AllowedItems = <
             <For each={local.unchangeableItems}>
               {(item) => (
                 <li>
-                  <local.allowedItem changeable={false} value={item} />
+                  <local.allowedItem value={item} changeable={false} />
                 </li>
               )}
             </For>
@@ -106,20 +103,20 @@ export const AllowedItems = <
       </Show>
       <LabeledField class='px-1' label={t('plugins.custom')}>
         <ol class='flex flex-col rounded-lg bg-black/20'>
-          <FieldArray name={local.name} of={local.form}>
+          <FieldArray of={local.form} name={local.name}>
             {(fieldArray) => (
               <For each={fieldArray.items}>
                 {(_, index) => (
                   <li>
                     <local.allowedItemField
-                      editing={editingIndex() === index()}
+                      name={local.name}
                       form={local.form}
                       index={index}
-                      name={local.name}
-                      onCancelEdit={setEditingIndex}
+                      editing={editingIndex() === index()}
                       onEdit={setEditingIndex}
-                      onEdited={handleEdited}
                       onRemove={handleRemove}
+                      onEdited={handleEdited}
+                      onCancelEdit={setEditingIndex}
                     />
                   </li>
                 )}
@@ -128,10 +125,10 @@ export const AllowedItems = <
           </FieldArray>
         </ol>
         <AddNewSettingsItem
-          children={local.addNewItem}
           editingIndex={editingIndex}
-          onAddNew={handleAddNew}
           setEditingIndex={setEditingIndex}
+          onAddNew={handleAddNew}
+          children={local.addNewItem}
         />
       </LabeledField>
     </LabeledField>

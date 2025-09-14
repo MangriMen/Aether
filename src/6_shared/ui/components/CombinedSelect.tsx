@@ -1,13 +1,6 @@
-import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
-import type { SelectValueOptions } from '@kobalte/core/select';
-import type { Component, JSX, ValidComponent } from 'solid-js';
-
 import { createMemo, Show, splitProps } from 'solid-js';
-
-import type { PartialBy } from '@/shared/model';
-
+import type { Component, JSX, ValidComponent } from 'solid-js';
 import type { SelectRootProps } from './Select';
-
 import {
   Select,
   SelectContent,
@@ -15,17 +8,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from './Select';
+import type { PartialBy } from '@/shared/model';
+import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
+import type { SelectValueOptions } from '@kobalte/core/select';
 
 export type CombinedSelectProps<
   Option,
   OptGroup,
   T extends ValidComponent = 'div',
-> = {
-  selectValueComponent?: Component<SelectValueOptions<Option>> | JSX.Element;
-} & PartialBy<
+> = PartialBy<
   PolymorphicProps<T, SelectRootProps<Option, OptGroup, T>>,
   'itemComponent'
->;
+> & {
+  selectValueComponent?: JSX.Element | Component<SelectValueOptions<Option>>;
+};
 
 export const CombinedSelect = <
   Option,
@@ -49,11 +45,11 @@ export const CombinedSelect = <
   );
 
   const getSelectedValue = (state: {
-    clear: () => void;
-    remove: (option: Option) => void;
     selectedOption: () => Option;
     selectedOptions: () => Option[];
-  }): null | string => {
+    remove: (option: Option) => void;
+    clear: () => void;
+  }): string | null => {
     if (!state) {
       return null;
     }
@@ -78,6 +74,7 @@ export const CombinedSelect = <
   return (
     <Select itemComponent={itemComponent()} {...others}>
       <Show
+        when={local.children}
         fallback={
           <SelectTrigger class='gap-1.5 whitespace-nowrap px-2'>
             <SelectValue<Option>>
@@ -85,7 +82,6 @@ export const CombinedSelect = <
             </SelectValue>
           </SelectTrigger>
         }
-        when={local.children}
       >
         {local.children}
       </Show>

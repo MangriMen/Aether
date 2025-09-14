@@ -1,17 +1,16 @@
-import type { PolymorphicProps } from '@kobalte/core';
-import type { Component, ValidComponent } from 'solid-js';
-
-import { Icon } from '@iconify-icon/solid';
 import MdiCogIcon from '@iconify/icons-mdi/cog';
+import { Icon } from '@iconify-icon/solid';
+import type { PolymorphicProps } from '@kobalte/core';
 import { useNavigate } from '@solidjs/router';
 import { createMemo, Show } from 'solid-js';
+import type { Component, ValidComponent } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
+import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
+import { useTranslation } from '@/shared/model';
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
-import { useTranslation } from '@/shared/model';
-import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
@@ -30,16 +29,16 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
 
   return (
     <CombinedTooltip
-      as={IconButton}
-      class='relative'
       label={
         isUpdateAvailable()
           ? `${t('settings.title')}${t('common.updateAvailable')}`
           : `${t('settings.title')}`
       }
-      onClick={handleClick}
       placement='right'
+      as={IconButton}
+      class='relative'
       variant='ghost'
+      onClick={handleClick}
       {...props}
     >
       <Show when={isUpdateAvailable()}>

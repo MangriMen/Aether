@@ -1,9 +1,5 @@
-import type { DialogRootProps } from '@kobalte/core/dialog';
+import { For, type Component } from 'solid-js';
 
-import { type Component, For } from 'solid-js';
-import { Dynamic } from 'solid-js/web';
-
-import { useTranslation } from '@/shared/model';
 import {
   Dialog,
   DialogContent,
@@ -16,11 +12,14 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 
-import type { TabContentProps, TabKey } from '../model';
+import { useTranslation } from '@/shared/model';
 
+import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { TabContentProps, TabKey } from '../model';
 import { TAB_VALUES, TABS } from '../model';
 import { CreateCustomInstance } from './CreateCustomInstance';
 import { ImportInstance } from './ImportInstance';
+import { Dynamic } from 'solid-js/web';
 
 const TAB_CONTENTS: Record<TabKey, Component<TabContentProps>> = {
   [TABS.Custom]: CreateCustomInstance,
@@ -51,10 +50,10 @@ export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
             <For each={TAB_VALUES}>
               {(tabValue) => (
                 <TabsContent
-                  class='animate-tab-content flex flex-col'
                   forceMount
-                  tabIndex={-1}
+                  class='animate-tab-content flex flex-col'
                   value={tabValue}
+                  tabIndex={-1}
                 >
                   <Dynamic
                     class='grow'

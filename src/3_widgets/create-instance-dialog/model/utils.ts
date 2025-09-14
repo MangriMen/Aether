@@ -1,5 +1,4 @@
 import type { MappedLoaderManifest, Version } from '@/entities/minecraft';
-
 import { ModLoader, VersionType } from '@/entities/minecraft';
 
 export const filterGameVersions = (
@@ -16,8 +15,8 @@ export const filterGameVersionsForLoader = (
   loaderVersions: {
     fabric?: MappedLoaderManifest;
     forge?: MappedLoaderManifest;
-    neoforge?: MappedLoaderManifest;
     quilt?: MappedLoaderManifest;
+    neoforge?: MappedLoaderManifest;
   },
 ) => {
   if (!loader || loader === ModLoader.Vanilla) {
@@ -30,10 +29,10 @@ export const filterGameVersionsForLoader = (
         return !!loaderVersions.fabric?.gameVersions[version.id];
       case ModLoader.Forge:
         return !!loaderVersions.forge?.gameVersions[version.id];
-      case ModLoader.NeoForge:
-        return !!loaderVersions.neoforge?.gameVersions[version.id];
       case ModLoader.Quilt:
         return !!loaderVersions.quilt?.gameVersions[version.id];
+      case ModLoader.NeoForge:
+        return !!loaderVersions.neoforge?.gameVersions[version.id];
     }
   });
 };
@@ -44,8 +43,8 @@ export const getLoaderVersionsForGameVersion = (
   loaderVersions: {
     fabric?: MappedLoaderManifest;
     forge?: MappedLoaderManifest;
-    neoforge?: MappedLoaderManifest;
     quilt?: MappedLoaderManifest;
+    neoforge?: MappedLoaderManifest;
   },
 ) => {
   if (!loader || !gameVersion) {
@@ -54,18 +53,18 @@ export const getLoaderVersionsForGameVersion = (
 
   const dummyReplaceString = '${modrinth.gameVersion}';
   switch (loader) {
+    case ModLoader.Forge:
+      return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
     case ModLoader.Fabric:
       return (
         loaderVersions.fabric?.gameVersions[dummyReplaceString]?.loaders ?? []
       );
-    case ModLoader.Forge:
-      return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
-    case ModLoader.NeoForge:
-      return loaderVersions.neoforge?.gameVersions[gameVersion]?.loaders ?? [];
     case ModLoader.Quilt:
       return (
         loaderVersions.quilt?.gameVersions[dummyReplaceString]?.loaders ?? []
       );
+    case ModLoader.NeoForge:
+      return loaderVersions.neoforge?.gameVersions[gameVersion]?.loaders ?? [];
     default:
       return [];
   }

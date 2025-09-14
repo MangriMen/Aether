@@ -1,12 +1,12 @@
 import type { Component, ComponentProps } from 'solid-js';
-
 import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { useThemeContext, useTranslation } from '@/shared/model';
-import { SettingsEntry } from '@/shared/ui';
+
+import { useTranslation, useThemeContext } from '@/shared/model';
 
 import SelectThemeForColorMode from './SelectThemeForColorMode';
+import { SettingsEntry } from '@/shared/ui';
 
 export type SelectThemeForColorModeEntryProps = ComponentProps<'div'>;
 
@@ -24,8 +24,8 @@ const SelectThemeForColorModeEntry: Component<
   return (
     <SettingsEntry
       class={cn(local.class, { 'text-muted-foreground': !isSystemColorMode() })}
-      description={t('settings.systemColorModeDescription')}
       title={t('settings.systemColorMode')}
+      description={t('settings.systemColorModeDescription')}
       {...others}
     >
       <SelectThemeForColorMode />

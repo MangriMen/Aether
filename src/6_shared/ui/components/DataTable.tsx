@@ -1,11 +1,10 @@
+import { createMemo, For, Show } from 'solid-js';
 import type { ColumnDef, Table as SolidTable } from '@tanstack/solid-table';
-
 import {
   createSolidTable,
   flexRender,
   getCoreRowModel,
 } from '@tanstack/solid-table';
-import { createMemo, For, Show } from 'solid-js';
 
 import {
   Table,
@@ -21,8 +20,8 @@ type DataTableProps<TData, TValue> = {
   isLoading?: boolean;
   noContentPlaceholder?: string;
 } & (
-  | { columnsCount?: never; data: TData[]; table?: never }
-  | { columnsCount?: number; data?: never; table?: SolidTable<TData> }
+  | { data: TData[]; columnsCount?: never; table?: never }
+  | { data?: never; columnsCount?: number; table?: SolidTable<TData> }
 );
 
 export const DataTable = <TData, TValue>(
@@ -32,11 +31,11 @@ export const DataTable = <TData, TValue>(
     () =>
       props.table ??
       createSolidTable({
-        get columns() {
-          return props.columns;
-        },
         get data() {
           return props.data ?? [];
+        },
+        get columns() {
+          return props.columns;
         },
         getCoreRowModel: getCoreRowModel(),
       }),
@@ -67,17 +66,17 @@ export const DataTable = <TData, TValue>(
         </TableHeader>
         <TableBody>
           <Show
+            when={table().getRowModel().rows?.length}
             fallback={
               <TableRow>
                 <TableCell
-                  class='h-24 text-center'
                   colSpan={props.columns.length}
+                  class='h-24 text-center'
                 >
                   {props.noContentPlaceholder}
                 </TableCell>
               </TableRow>
             }
-            when={table().getRowModel().rows?.length}
           >
             <For each={table().getRowModel().rows}>
               {(row) => (

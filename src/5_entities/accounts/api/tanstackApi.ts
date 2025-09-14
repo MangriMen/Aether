@@ -1,8 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-
-import { showError } from '@/shared/lib/showError';
-import { useTranslation } from '@/shared/model';
-
 import { ACCOUNT_KEY } from './key';
 import {
   changeAccountRaw,
@@ -10,11 +6,13 @@ import {
   listAccountsRaw,
   logoutRaw,
 } from './tauriApiRaw';
+import { useTranslation } from '@/shared/model';
+import { showError } from '@/shared/lib/showError';
 
 export const useAccounts = () =>
   useQuery(() => ({
-    queryFn: listAccountsRaw,
     queryKey: ACCOUNT_KEY.LIST(),
+    queryFn: listAccountsRaw,
     reconcile: 'id',
   }));
 
@@ -25,16 +23,16 @@ export const useCreateOfflineAccount = () => {
 
   return useMutation(() => ({
     mutationFn: createOfflineAccountRaw,
-    onError: (err) => {
-      showError({
-        err,
-        t,
-        title: t('account.createOfflineError'),
-      });
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ACCOUNT_KEY.LIST(),
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('account.createOfflineError'),
+        err,
+        t,
       });
     },
   }));
@@ -47,16 +45,16 @@ export const useChangeAccount = () => {
 
   return useMutation(() => ({
     mutationFn: changeAccountRaw,
-    onError: (err) => {
-      showError({
-        err,
-        t,
-        title: t('account.changeError'),
-      });
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ACCOUNT_KEY.LIST(),
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('account.changeError'),
+        err,
+        t,
       });
     },
   }));
@@ -69,16 +67,16 @@ export const useLogout = () => {
 
   return useMutation(() => ({
     mutationFn: logoutRaw,
-    onError: (err) => {
-      showError({
-        err,
-        t,
-        title: t('account.logoutError'),
-      });
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ACCOUNT_KEY.LIST(),
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('account.logoutError'),
+        err,
+        t,
       });
     },
   }));

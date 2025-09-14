@@ -1,12 +1,10 @@
-import { type Component, type ComponentProps, splitProps } from 'solid-js';
-
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
-
+import { useTranslation } from '@/shared/model';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import { SelectWindowEffect } from './SelectWindowEffect';
-import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
 import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
+import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
 

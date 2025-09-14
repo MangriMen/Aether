@@ -1,9 +1,7 @@
-import type { Component, ComponentProps } from 'solid-js';
-
-import { createMemo, For, splitProps } from 'solid-js';
-
 import { cn } from '@/shared/lib';
 import { Skeleton } from '@/shared/ui';
+import { createMemo, For, splitProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
 export type ContentListSkeletonProps = ComponentProps<'div'>;
 
@@ -18,12 +16,12 @@ const ContentListItemSkeleton: Component<ComponentProps<'div'>> = (props) => {
       )}
       {...others}
     >
-      <Skeleton class='bg-secondary' height={96} radius={8} width={96} />
+      <Skeleton radius={8} width={96} height={96} class='bg-secondary' />
       <div class='flex flex-col gap-2 text-muted-foreground'>
         <span class='inline-flex gap-2 text-lg font-bold text-foreground'>
-          <Skeleton class='bg-secondary' height={24} radius={4} width={240} />
+          <Skeleton class='bg-secondary' radius={4} height={24} width={240} />
         </span>
-        <Skeleton class='bg-secondary' height={24} radius={4} width={400} />
+        <Skeleton class='bg-secondary' radius={4} height={24} width={400} />
       </div>
     </div>
   );

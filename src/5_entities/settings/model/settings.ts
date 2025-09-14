@@ -1,28 +1,28 @@
-export interface Hooks {
-  post_exit: string;
-  pre_launch: string;
-  wrapper: string;
+export interface Settings {
+  launcherDir?: string;
+  metadataDir?: string;
+
+  maxConcurrentDownloads: number;
+
+  memory: MemorySettings;
+
+  gameResolution: WindowSize;
+  customEnvVars: Array<[string, string]>;
+  extraLaunchArgs: string[];
+
+  hooks: Hooks;
+
+  enabledPlugins: Set<string>;
 }
+
+export type WindowSize = [number, number];
 
 export interface MemorySettings {
   maximum: number;
 }
 
-export interface Settings {
-  customEnvVars: Array<[string, string]>;
-  enabledPlugins: Set<string>;
-
-  extraLaunchArgs: string[];
-
-  gameResolution: WindowSize;
-
-  hooks: Hooks;
-  launcherDir?: string;
-  maxConcurrentDownloads: number;
-
-  memory: MemorySettings;
-
-  metadataDir?: string;
+export interface Hooks {
+  pre_launch: string;
+  wrapper: string;
+  post_exit: string;
 }
-
-export type WindowSize = [number, number];

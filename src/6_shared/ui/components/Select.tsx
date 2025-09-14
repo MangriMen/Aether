@@ -1,12 +1,11 @@
 import type { Collection, CollectionNode } from '@kobalte/core';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import type { VirtualItem } from '@tanstack/solid-virtual';
-import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
-
 import * as SelectPrimitive from '@kobalte/core/select';
+import type { VirtualItem } from '@tanstack/solid-virtual';
 import { createVirtualizer } from '@tanstack/solid-virtual';
 import { cva } from 'class-variance-authority';
-import { createMemo, For, Show, splitProps } from 'solid-js';
+import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
+import { createMemo, Show, splitProps, For } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -14,15 +13,20 @@ const Select = SelectPrimitive.Root;
 const SelectValue = SelectPrimitive.Value;
 const SelectHiddenSelect = SelectPrimitive.HiddenSelect;
 
-type SelectRootProps<Option, OptGroup, T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
+type SelectRootProps<
+  Option,
+  OptGroup,
+  T extends ValidComponent = 'div',
+> = SelectPrimitive.SelectRootProps<Option, OptGroup, T> & {
   class?: string | undefined;
-} & SelectPrimitive.SelectRootProps<Option, OptGroup, T>;
+  children?: JSX.Element;
+};
 
-type SelectTriggerProps<T extends ValidComponent = 'button'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & SelectPrimitive.SelectTriggerProps<T>;
+type SelectTriggerProps<T extends ValidComponent = 'button'> =
+  SelectPrimitive.SelectTriggerProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const SelectTrigger = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, SelectTriggerProps<T>>,
@@ -42,14 +46,14 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
       {local.children}
       <SelectPrimitive.Icon
         as='svg'
-        class='size-4 opacity-50'
+        xmlns='http://www.w3.org/2000/svg'
+        viewBox='0 0 24 24'
         fill='none'
         stroke='currentColor'
+        stroke-width='2'
         stroke-linecap='round'
         stroke-linejoin='round'
-        stroke-width='2'
-        viewBox='0 0 24 24'
-        xmlns='http://www.w3.org/2000/svg'
+        class='size-4 opacity-50'
       >
         <path d='M8 9l4 -4l4 4' />
         <path d='M16 15l-4 4l-4 -4' />
@@ -58,39 +62,39 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
   );
 };
 
+type SelectContentProps<T extends ValidComponent = 'div'> =
+  SelectPrimitive.SelectContentProps<T> & { class?: string | undefined };
+
+type SelectVirtualizedItemComponentProps<Option> =
+  SelectPrimitive.SelectRootItemComponentProps<Option> & {
+    style: JSX.CSSProperties;
+  };
+
 type NonVirtualizedSelectProps = {
-  itemComponent?: never;
+  virtualized?: false;
   options?: never;
   optionValue?: never;
-  virtualized?: false;
+  itemComponent?: never;
 };
 
-type SelectContentProps<T extends ValidComponent = 'div'> = {
-  class?: string | undefined;
-} & SelectPrimitive.SelectContentProps<T>;
-
-type SelectContentVirtualizedProps<
-  Option,
-  OptGroup,
-  T extends ValidComponent = 'div',
-> = (
-  | NonVirtualizedSelectProps
-  | VirtualizedSelectContentProps<Option, OptGroup>
-) &
-  SelectContentProps<T>;
-
-type SelectVirtualizedItemComponentProps<Option> = {
-  style: JSX.CSSProperties;
-} & SelectPrimitive.SelectRootItemComponentProps<Option>;
+type VirtualizedSelectProps<Option, OptGroup> = Pick<
+  SelectPrimitive.SelectRootOptions<Option, OptGroup>,
+  'optionValue'
+> & {
+  options: Array<Option>;
+  itemComponent?: Component<SelectVirtualizedItemComponentProps<Option>>;
+};
 
 type VirtualizedSelectContentProps<Option, OptGroup> = {
   virtualized: true;
 } & VirtualizedSelectProps<Option, OptGroup>;
 
-type VirtualizedSelectProps<Option, OptGroup> = {
-  itemComponent?: Component<SelectVirtualizedItemComponentProps<Option>>;
-  options: Array<Option>;
-} & Pick<SelectPrimitive.SelectRootOptions<Option, OptGroup>, 'optionValue'>;
+type SelectContentVirtualizedProps<
+  Option,
+  OptGroup,
+  T extends ValidComponent = 'div',
+> = SelectContentProps<T> &
+  (NonVirtualizedSelectProps | VirtualizedSelectContentProps<Option, OptGroup>);
 
 const SelectContent = <Option, T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SelectContentVirtualizedProps<Option, T>>,
@@ -113,14 +117,14 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
         {...(others as SelectContentProps)}
       >
         <Show
-          fallback={<SelectPrimitive.Listbox class='m-0 max-h-full p-1' />}
           when={local.virtualized && !!local.options}
+          fallback={<SelectPrimitive.Listbox class='m-0 max-h-full p-1' />}
         >
           <SelectListboxVirtualized
             class='max-h-full px-1'
-            itemComponent={local.itemComponent}
             options={local.options ?? []}
             optionValue={local.optionValue}
+            itemComponent={local.itemComponent}
           />
         </Show>
       </SelectPrimitive.Content>
@@ -132,10 +136,10 @@ type SelectListboxProps<
   Option,
   OptGroup = never,
   T extends ValidComponent = 'ul',
-> = {
+> = SelectPrimitive.SelectListboxProps<Option, OptGroup, T> & {
   class?: string | undefined;
   style?: JSX.CSSProperties;
-} & SelectPrimitive.SelectListboxProps<Option, OptGroup, T>;
+};
 
 type SelectListboxVirtualizedProps<
   Option,
@@ -175,10 +179,10 @@ const SelectListboxVirtualized = <
   const virtualizer = createMemo(() => {
     return createVirtualizer({
       count: props.options.length,
-      estimateSize: () => 32,
-      getItemKey: (index: number) => getOptionValue(props.options[index]),
-      getScrollElement: () => listboxRef ?? null,
       overscan: 5,
+      getScrollElement: () => listboxRef ?? null,
+      getItemKey: (index: number) => getOptionValue(props.options[index]),
+      estimateSize: () => 32,
     });
   });
 
@@ -197,12 +201,12 @@ const SelectListboxVirtualized = <
   };
 
   const getItemStyle = (virtualRow: VirtualItem): JSX.CSSProperties => ({
-    height: `${virtualRow.size}px`,
-    left: 0,
     position: 'absolute',
     top: 0,
-    transform: `translateY(${virtualRow.start}px)`,
+    left: 0,
     width: '100%',
+    height: `${virtualRow.size}px`,
+    transform: `translateY(${virtualRow.start}px)`,
   });
 
   const renderVirtualItem = (
@@ -242,8 +246,8 @@ const SelectListboxVirtualized = <
         <div
           style={{
             height: `${virtualizer().getTotalSize()}px`,
-            position: 'relative',
             width: '100%',
+            position: 'relative',
           }}
         >
           <For each={virtualizer().getVirtualItems()}>
@@ -255,10 +259,11 @@ const SelectListboxVirtualized = <
   );
 };
 
-type SelectItemProps<T extends ValidComponent = 'li'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & SelectPrimitive.SelectItemProps<T>;
+type SelectItemProps<T extends ValidComponent = 'li'> =
+  SelectPrimitive.SelectItemProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const SelectItem = <T extends ValidComponent = 'li'>(
   props: PolymorphicProps<T, SelectItemProps<T>>,
@@ -277,16 +282,16 @@ const SelectItem = <T extends ValidComponent = 'li'>(
     >
       <SelectPrimitive.ItemIndicator class='absolute right-2 flex size-3.5 items-center justify-center'>
         <svg
-          class='size-4'
+          xmlns='http://www.w3.org/2000/svg'
+          viewBox='0 0 24 24'
           fill='none'
           stroke='currentColor'
+          stroke-width='2'
           stroke-linecap='round'
           stroke-linejoin='round'
-          stroke-width='2'
-          viewBox='0 0 24 24'
-          xmlns='http://www.w3.org/2000/svg'
+          class='size-4'
         >
-          <path d='M0 0h24v24H0z' fill='none' stroke='none' />
+          <path stroke='none' d='M0 0h24v24H0z' fill='none' />
           <path d='M5 12l5 5l10 -10' />
         </svg>
       </SelectPrimitive.ItemIndicator>
@@ -298,23 +303,24 @@ const SelectItem = <T extends ValidComponent = 'li'>(
 const labelVariants = cva(
   'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
   {
-    defaultVariants: {
-      variant: 'label',
-    },
     variants: {
       variant: {
+        label: 'data-[invalid]:text-destructive',
         description: 'font-normal text-muted-foreground',
         error: 'text-destructive',
-        label: 'data-[invalid]:text-destructive',
       },
+    },
+    defaultVariants: {
+      variant: 'label',
     },
   },
 );
 
-type SelectErrorMessageProps<T extends ValidComponent = 'div'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-} & SelectPrimitive.SelectErrorMessageProps<T>;
+type SelectErrorMessageProps<T extends ValidComponent = 'div'> =
+  SelectPrimitive.SelectErrorMessageProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
 
 const SelectErrorMessage = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SelectErrorMessageProps<T>>,
@@ -332,19 +338,19 @@ const SelectErrorMessage = <T extends ValidComponent = 'div'>(
 };
 
 export type {
-  SelectContentProps,
-  SelectErrorMessageProps,
-  SelectItemProps,
   SelectRootProps,
   SelectTriggerProps,
+  SelectContentProps,
+  SelectItemProps,
+  SelectErrorMessageProps,
 };
 
 export {
   Select,
-  SelectContent,
-  SelectErrorMessage,
-  SelectHiddenSelect,
-  SelectItem,
-  SelectTrigger,
   SelectValue,
+  SelectHiddenSelect,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectErrorMessage,
 };

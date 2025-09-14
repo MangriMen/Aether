@@ -1,12 +1,10 @@
-import type { Component } from 'solid-js';
-
 import { Field } from '@modular-forms/solid';
+
 import { Show } from 'solid-js';
-
+import type { Component } from 'solid-js';
 import type { AllowedItemFieldProps } from './AllowedItems';
-
-import { AllowedPath } from './AllowedPath';
 import { EditAllowedPath } from './EditAllowedPath';
+import { AllowedPath } from './AllowedPath';
 
 export const AllowedPathField: Component<
   AllowedItemFieldProps<[string, string]>
@@ -28,22 +26,22 @@ export const AllowedPathField: Component<
   };
 
   return (
-    <Field name={`${props.name}.${props.index()}`} of={props.form}>
+    <Field of={props.form} name={`${props.name}.${props.index()}`}>
       {(field) => (
         <Show
+          when={props.editing}
           fallback={
             <AllowedPath
+              value={field.value}
               onEdit={handleEdit}
               onRemove={handleRemove}
-              value={field.value}
             />
           }
-          when={props.editing}
         >
           <EditAllowedPath
-            onCancel={handleCancel}
-            onOk={handleEdited}
             value={field.value}
+            onOk={handleEdited}
+            onCancel={handleCancel}
           />
         </Show>
       )}

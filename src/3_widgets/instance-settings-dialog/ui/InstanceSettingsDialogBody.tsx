@@ -1,14 +1,8 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
-
 import { For, splitProps } from 'solid-js';
 
-import type { Instance } from '@/entities/instances';
 import type { TabsProps } from '@/shared/ui';
-
-import { useSettings } from '@/entities/settings';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 import {
   Button,
   SettingsTabsContent,
@@ -17,16 +11,22 @@ import {
   Tabs,
 } from '@/shared/ui';
 
+import type { Instance } from '@/entities/instances';
+
+import { useTranslation } from '@/shared/model';
+
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
   INSTANCE_SETTINGS_TABS_TRIGGER,
   InstanceSettingsDialogTabs,
 } from '../model';
+import { cn } from '@/shared/lib';
+import { useSettings } from '@/entities/settings';
 
 export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
-  {
+  TabsProps<T> & {
     instance: Instance;
-  } & TabsProps<T>;
+  };
 
 const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, InstanceSettingsDialogBodyProps<T>>,
@@ -48,10 +48,10 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
         <For each={INSTANCE_SETTINGS_TABS_TRIGGER}>
           {(tab) => (
             <SettingsTabsTrigger
-              as={Button}
-              leadingIcon={tab.icon}
               value={tab.value}
+              as={Button}
               variant={null}
+              leadingIcon={tab.icon}
             >
               {t(`instanceSettings.${tab.title}`)}
             </SettingsTabsTrigger>
@@ -61,10 +61,10 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
       <For each={INSTANCE_SETTINGS_TABS_CONTENT}>
         {(tabContent) => (
           <SettingsTabsContent
+            value={tabContent.value}
             as={tabContent.component}
             instance={local.instance}
             settings={settings.data}
-            value={tabContent.value}
           />
         )}
       </For>

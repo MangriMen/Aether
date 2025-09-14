@@ -1,17 +1,15 @@
-import MdiArrowLeftIcon from '@iconify/icons-mdi/arrow-left';
-import { useNavigate } from '@solidjs/router';
-import { type Component, type ComponentProps, splitProps } from 'solid-js';
-
 import type { Instance } from '@/entities/instances';
-
 import { InstanceGameVersion } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 import { Button, Image } from '@/shared/ui';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import MdiArrowLeftIcon from '@iconify/icons-mdi/arrow-left';
+import { useNavigate } from '@solidjs/router';
+import { useTranslation } from '@/shared/model';
 
-export type InstanceInfoProps = {
+export type InstanceInfoProps = ComponentProps<'div'> & {
   instance: Instance;
-} & ComponentProps<'div'>;
+};
 
 export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
@@ -33,15 +31,15 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
         </span>
         <InstanceGameVersion
           class='font-medium'
-          gameVersion={local.instance.gameVersion}
           loader={local.instance.loader}
+          gameVersion={local.instance.gameVersion}
         />
       </div>
       <Button
         class='ml-auto'
         leadingIcon={MdiArrowLeftIcon}
-        onClick={handleBackToInstance}
         variant='secondary'
+        onClick={handleBackToInstance}
       >
         {t('content.backToInstance')}
       </Button>

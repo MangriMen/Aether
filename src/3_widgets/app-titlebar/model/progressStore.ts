@@ -1,6 +1,5 @@
-import { createStore } from 'solid-js/store';
-
 import { type LoadingPayload } from '@/entities/events';
+import { createStore } from 'solid-js/store';
 
 export interface ProgressStore {
   payloads: Record<string, LoadingPayload>;

@@ -1,10 +1,11 @@
-import type { Component } from 'solid-js';
-
 import { useNavigate } from '@solidjs/router';
+import type { Component } from 'solid-js';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { InstanceCardProps } from '@/entities/instances';
+import { preventAll } from '@/shared/lib';
+import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
 
+import type { InstanceCardProps } from '@/entities/instances';
 import {
   InstanceCard,
   InstanceContextMenu,
@@ -13,9 +14,7 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
-import { preventAll } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
 
 export type InstanceControlledCardProps = Pick<
   InstanceCardProps,
@@ -74,31 +73,31 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   return (
     <>
       <InstanceContextMenu
-        disableOpenFolder={!instancePath}
         isLoading={runningInstanceData()?.isLoading}
+        onPlay={handleLaunch}
         onOpenFolder={handleOpenFolder}
         onOpenSettings={handleOpenSettings}
-        onPlay={handleLaunch}
         onRemove={openRemoveModal}
+        disableOpenFolder={!instancePath}
       >
         <ContextMenuTrigger
           as={InstanceCard}
+          onClick={goToInstancePage}
           isLoading={runningInstanceData()?.isLoading}
           isRunning={runningInstanceData()?.isRunning}
-          onClick={goToInstancePage}
           {...props}
         />
       </InstanceContextMenu>
 
       <CombinedDialog
-        buttonOkText={t('common.remove')}
-        description={t('instance.removeDescription')}
-        header={t('instance.removeTitle', { name: props.instance.name })}
-        onCancel={closeRemoveModal}
-        onOk={handleRemove}
-        onOpenChange={setShowRemoveModal}
-        open={showRemoveModal()}
         variant='destructive'
+        open={showRemoveModal()}
+        onOpenChange={setShowRemoveModal}
+        header={t('instance.removeTitle', { name: props.instance.name })}
+        description={t('instance.removeDescription')}
+        buttonOkText={t('common.remove')}
+        onOk={handleRemove}
+        onCancel={closeRemoveModal}
       />
     </>
   );

@@ -1,22 +1,21 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
-
 import { onCleanup, onMount } from 'solid-js';
-
-import { debugLog } from '@/shared/lib/log';
+import { listenEvent } from '../api';
+import { isDebug } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import { listenEvent } from '../api';
-
 export const useWarningEventsListener = () => {
-  let unlistenFn: undefined | UnlistenFn = undefined;
+  let unlistenFn: UnlistenFn | undefined = undefined;
 
   const startListen = async () => {
     unlistenFn = await listenEvent('warning', (e) => {
-      debugLog('[EVENT][DEBUG]', e);
+      if (isDebug()) {
+        console.log('[EVENT][DEBUG]', e);
+      }
 
       showToast({
-        description: e.payload.message,
         title: 'Warning',
+        description: e.payload.message,
         variant: 'warningFilled',
       });
     });

@@ -1,44 +1,44 @@
 import type { ContentType } from './contentType';
 
 export interface ContentItem {
-  author: string;
-  contentType: ContentType;
-  description?: string;
-  iconUrl: string;
   id: string;
   name: string;
-  providerData?: Record<string, unknown>;
+  description?: string;
+  author: string;
   url: string;
+  iconUrl: string;
   versions: string[];
-}
-
-export interface ContentItemExtended extends ContentItem {
-  installed: boolean;
+  contentType: ContentType;
+  providerData?: Record<string, unknown>;
 }
 
 export interface ContentRequest {
   contentType: ContentType;
-  gameVersions?: string[];
-  loader?: string;
+  provider: string;
   page: number;
   pageSize: number;
-  provider: string;
   query?: string;
+  gameVersions?: string[];
+  loader?: string;
 }
 
 export interface ContentResponse {
-  items: ContentItem[];
   page: number;
-  pageCount: number;
   pageSize: number;
+  pageCount: number;
   provider: string;
+  items: ContentItem[];
 }
 
 export interface InstallContentPayload {
-  contentType: ContentType;
-  contentVersion?: string;
   gameVersion: string;
   loader?: string;
+  contentType: ContentType;
+  contentVersion?: string;
   provider: string;
   providerData?: unknown;
+}
+
+export interface ContentItemExtended extends ContentItem {
+  installed: boolean;
 }

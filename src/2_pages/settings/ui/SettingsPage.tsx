@@ -1,17 +1,13 @@
-import type { PolymorphicProps } from '@kobalte/core';
 import type { RouteSectionProps } from '@solidjs/router';
-
 import {
-  type ComponentProps,
-  createMemo,
+  type ValidComponent,
   For,
   splitProps,
-  type ValidComponent,
+  type ComponentProps,
+  createMemo,
 } from 'solid-js';
 
 import type { TabsProps } from '@/shared/ui';
-
-import { isDeveloperMode, useTranslation } from '@/shared/model';
 import {
   Button,
   SettingsTabsContent,
@@ -19,12 +15,13 @@ import {
   SettingsTabsTrigger,
   Tabs,
 } from '@/shared/ui';
-
 import {
   SETTINGS_TABS_CONTENT,
   SETTINGS_TABS_TRIGGER,
   SettingsTabs,
 } from '../model/settingsTabs';
+import type { PolymorphicProps } from '@kobalte/core';
+import { isDeveloperMode, useTranslation } from '@/shared/model';
 import { VersionInfo } from './VersionInfo';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
@@ -69,10 +66,10 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
           <For each={tabs_triggers()}>
             {(tab) => (
               <SettingsTabsTrigger
-                as={Button}
-                leadingIcon={tab.icon}
                 value={tab.value}
+                as={Button}
                 variant={null}
+                leadingIcon={tab.icon}
               >
                 {t(`settings.${tab.title}`)}
               </SettingsTabsTrigger>
@@ -83,8 +80,8 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
         <For each={tabs_contents()}>
           {(tabContent) => (
             <SettingsTabsContent
-              as={tabContent.component}
               value={tabContent.value}
+              as={tabContent.component}
             />
           )}
         </For>

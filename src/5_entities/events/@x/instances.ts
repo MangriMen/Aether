@@ -1,2 +1,2 @@
-export * from '../api/listeners';
 export * from '../model/process';
+export * from '../api/listeners';

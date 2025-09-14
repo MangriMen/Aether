@@ -1,14 +1,12 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import type { ValidComponent } from 'solid-js';
-
 import * as SeparatorPrimitive from '@kobalte/core/separator';
+import type { ValidComponent } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-type SeparatorRootProps<T extends ValidComponent = 'hr'> = {
-  class?: string | undefined;
-} & SeparatorPrimitive.SeparatorRootProps<T>;
+type SeparatorRootProps<T extends ValidComponent = 'hr'> =
+  SeparatorPrimitive.SeparatorRootProps<T> & { class?: string | undefined };
 
 const Separator = <T extends ValidComponent = 'hr'>(
   props: PolymorphicProps<T, SeparatorRootProps<T>>,
@@ -19,12 +17,12 @@ const Separator = <T extends ValidComponent = 'hr'>(
   ]);
   return (
     <SeparatorPrimitive.Root
+      orientation={local.orientation ?? 'horizontal'}
       class={cn(
         'shrink-0 bg-border',
         local.orientation === 'vertical' ? 'h-full w-px' : 'h-px w-full',
         local.class,
       )}
-      orientation={local.orientation ?? 'horizontal'}
       {...others}
     />
   );

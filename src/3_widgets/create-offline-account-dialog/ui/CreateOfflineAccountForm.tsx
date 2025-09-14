@@ -1,10 +1,8 @@
 import type { SubmitHandler } from '@modular-forms/solid';
-import type { Component, ComponentProps } from 'solid-js';
-
 import { createForm, reset, zodForm } from '@modular-forms/solid';
+import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
 import {
   Button,
   DialogFooter,
@@ -18,13 +16,13 @@ import type {
   CreateOfflineAccountFormSchemaErrors,
   CreateOfflineAccountFormValues,
 } from '../model';
-
 import { CreateOfflineAccountFormSchema } from '../model';
+import { useTranslation } from '@/shared/model';
 
-export type CreateOfflineAccountFormProps = {
-  onCancel: () => void;
+export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;
-} & ComponentProps<'div'>;
+  onCancel: () => void;
+};
 
 export const CreateOfflineAccountForm: Component<
   CreateOfflineAccountFormProps
@@ -33,7 +31,7 @@ export const CreateOfflineAccountForm: Component<
 
   const [{ t }] = useTranslation();
 
-  const [form, { Field, Form }] = createForm<CreateOfflineAccountFormValues>({
+  const [form, { Form, Field }] = createForm<CreateOfflineAccountFormValues>({
     validate: zodForm(CreateOfflineAccountFormSchema),
   });
 
@@ -54,14 +52,14 @@ export const CreateOfflineAccountForm: Component<
         <Field name='username'>
           {(field, props) => (
             <TextField
-              class='flex flex-col gap-3'
               validationState={field.error ? 'invalid' : 'valid'}
+              class='flex flex-col gap-3'
             >
               <TextFieldLabel class='flex flex-col gap-3'>
                 {t('common.username')}
                 <TextFieldInput
-                  autocomplete='off'
                   id='username'
+                  autocomplete='off'
                   required
                   type='text'
                   value={field.value}
@@ -79,7 +77,7 @@ export const CreateOfflineAccountForm: Component<
 
         <DialogFooter>
           <Button type='submit'>{t('common.create')}</Button>
-          <Button onClick={handleCancel} variant={'secondary'}>
+          <Button variant={'secondary'} onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
         </DialogFooter>

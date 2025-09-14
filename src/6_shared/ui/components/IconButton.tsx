@@ -1,12 +1,11 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
-import type { PolymorphicProps } from '@kobalte/core';
-import type { VariantProps } from 'class-variance-authority';
-import type { JSX, ValidComponent } from 'solid-js';
-
-import { Icon } from '@iconify-icon/solid';
 import MdiLoadingIcon from '@iconify/icons-mdi/loading';
+import type { IconifyIcon } from '@iconify-icon/solid';
+import { Icon } from '@iconify-icon/solid';
+import type { PolymorphicProps } from '@kobalte/core';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
+import type { JSX, ValidComponent } from 'solid-js';
 import { Match, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -15,41 +14,42 @@ import { buttonVariants } from './Button';
 
 const SVG_CHILD_FILL_VARIANTS = {
   background: '[&_svg]:fill-background',
-  destructive: '[&_svg]:fill-destructive-foreground',
   foreground: '[&_svg]:fill-foreground',
+  destructive: '[&_svg]:fill-destructive-foreground',
   success: '[&_svg]:fill-success-foreground',
 };
 
 const iconButtonVariants = cva('aspect-square', {
-  defaultVariants: {
-    size: 'default',
-    variant: 'default',
-  },
   variants: {
-    size: {
-      default: 'size-9 rounded-md text-2xl',
-      lg: 'size-10 rounded-md',
-      sm: 'size-8 rounded-md',
-    },
     variant: {
       default: SVG_CHILD_FILL_VARIANTS.background,
       destructive: SVG_CHILD_FILL_VARIANTS.destructive,
-      ghost: SVG_CHILD_FILL_VARIANTS.foreground,
-      link: SVG_CHILD_FILL_VARIANTS.foreground,
+      success: SVG_CHILD_FILL_VARIANTS.success,
       outline: SVG_CHILD_FILL_VARIANTS.foreground,
       secondary: SVG_CHILD_FILL_VARIANTS.background,
-      success: SVG_CHILD_FILL_VARIANTS.success,
+      ghost: SVG_CHILD_FILL_VARIANTS.foreground,
+      link: SVG_CHILD_FILL_VARIANTS.foreground,
     },
+    size: {
+      default: 'size-9 rounded-md text-2xl',
+      sm: 'size-8 rounded-md',
+      lg: 'size-10 rounded-md',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+    size: 'default',
   },
 });
 
-type IconButtonProps<T extends ValidComponent = 'button'> = {
-  children?: JSX.Element;
-  class?: string | undefined;
-  icon?: IconifyIcon;
-  loading?: boolean;
-} & ButtonPrimitive.ButtonRootProps<T> &
-  VariantProps<typeof iconButtonVariants>;
+type IconButtonProps<T extends ValidComponent = 'button'> =
+  ButtonPrimitive.ButtonRootProps<T> &
+    VariantProps<typeof iconButtonVariants> & {
+      icon?: IconifyIcon;
+      loading?: boolean;
+      class?: string | undefined;
+      children?: JSX.Element;
+    };
 
 const IconButton = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, IconButtonProps<T>>,
@@ -67,8 +67,8 @@ const IconButton = <T extends ValidComponent = 'button'>(
   return (
     <ButtonPrimitive.Root
       class={cn(
-        buttonVariants({ size: local.size, variant: local.variant }),
-        iconButtonVariants({ size: local.size, variant: local.variant }),
+        buttonVariants({ variant: local.variant, size: local.size }),
+        iconButtonVariants({ variant: local.variant, size: local.size }),
         local.class,
       )}
       disabled={local.disabled || local.loading}

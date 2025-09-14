@@ -1,8 +1,4 @@
-import type { Accessor } from 'solid-js';
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-
-import { QUERY_KEYS } from './query_keys';
 import {
   disablePluginRaw,
   editPluginSettingsRaw,
@@ -14,6 +10,8 @@ import {
   openPluginsFolderRaw,
   syncPluginsRaw,
 } from './rawApi';
+import { QUERY_KEYS } from './query_keys';
+import type { Accessor } from 'solid-js';
 
 export const useSyncPlugins = () =>
   useMutation(() => ({
@@ -22,29 +20,29 @@ export const useSyncPlugins = () =>
 
 export const usePlugins = () =>
   useQuery(() => ({
-    queryFn: listPluginsRaw,
     queryKey: QUERY_KEYS.PLUGIN.LIST(),
+    queryFn: listPluginsRaw,
   }));
 
 export const usePlugin = (id: Accessor<string>) =>
   useQuery(() => ({
-    enabled: !!id(),
-    queryFn: () => getPluginRaw(id()),
     queryKey: QUERY_KEYS.PLUGIN.GET(id()),
+    queryFn: () => getPluginRaw(id()),
+    enabled: !!id(),
   }));
 
 export const usePluginSettings = (id: Accessor<string>) =>
   useQuery(() => ({
-    enabled: !!id(),
-    queryFn: () => getPluginSettingsRaw(id()),
     queryKey: QUERY_KEYS.PLUGIN.SETTINGS(id()),
+    queryFn: () => getPluginSettingsRaw(id()),
+    enabled: !!id(),
   }));
 
 export const useGetPluginEnabled = (id: Accessor<string>) =>
   useQuery(() => ({
-    enabled: !!id(),
-    queryFn: () => getIsPluginEnabledRaw(id()),
     queryKey: QUERY_KEYS.PLUGIN.ENABLED(id()),
+    queryFn: () => getIsPluginEnabledRaw(id()),
+    enabled: !!id(),
   }));
 
 export const useEnablePlugin = () => {

@@ -1,19 +1,18 @@
+import { cn } from '@/shared/lib';
+import { Button, CombinedTextField } from '@/shared/ui';
 import {
-  type Component,
-  type ComponentProps,
   createEffect,
   createSignal,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { Button, CombinedTextField } from '@/shared/ui';
-
-export type EditAllowedHostProps = {
-  onCancel?: () => void;
-  onOk?: (value: string) => void;
+export type EditAllowedHostProps = ComponentProps<'div'> & {
   value?: string;
-} & ComponentProps<'div'>;
+  onOk?: (value: string) => void;
+  onCancel?: () => void;
+};
 
 export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -44,24 +43,24 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
       <CombinedTextField
         class='w-full'
         inputProps={{
-          class: 'h-max py-1 px-1',
-          onKeyDown: (e) => e.key === 'Enter' && handleSubmit(),
           ref: (el) => {
             inputRef = el;
           },
           type: 'text',
+          class: 'h-max py-1 px-1',
+          onKeyDown: (e) => e.key === 'Enter' && handleSubmit(),
         }}
-        onChange={setValue}
         value={value()}
+        onChange={setValue}
       />
-      <Button class='h-full' onClick={handleSubmit} size='sm'>
+      <Button class='h-full' size='sm' onClick={handleSubmit}>
         Ok
       </Button>
       <Button
         class='h-full'
-        onClick={local.onCancel}
-        size='sm'
         variant='secondary'
+        size='sm'
+        onClick={local.onCancel}
       >
         Cancel
       </Button>

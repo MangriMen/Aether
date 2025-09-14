@@ -1,22 +1,18 @@
-import type { RowModel } from '@tanstack/solid-table';
-
+import { Show, type Component } from 'solid-js';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
-import { type Component, Show } from 'solid-js';
-
+import { Button } from '@/shared/ui';
+import { SelectedRowsActions } from './SelectedRowsActions';
+import { useTranslation } from '@/shared/model';
+import type { RowModel } from '@tanstack/solid-table';
 import type { Instance, InstanceFile } from '@/entities/instances';
 
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
-
-import { SelectedRowsActions } from './SelectedRowsActions';
-
 export type HeaderActionsProps = {
-  allRowsSelected?: boolean;
   instanceId: Instance['id'];
-  isLoading?: boolean;
-  refetch?: () => void;
-  selectedRows: RowModel<InstanceFile>;
+  allRowsSelected?: boolean;
   someRowsSelected?: boolean;
+  refetch?: () => void;
+  isLoading?: boolean;
+  selectedRows: RowModel<InstanceFile>;
 };
 
 export const HeaderActions: Component<HeaderActionsProps> = (props) => {
@@ -24,19 +20,19 @@ export const HeaderActions: Component<HeaderActionsProps> = (props) => {
 
   return (
     <Show
+      when={props.allRowsSelected || props.someRowsSelected}
       fallback={
         <Show when={props.refetch}>
           <Button
-            children={t('common.refresh')}
+            variant='ghost'
+            size='sm'
             leadingIcon={MdiReloadIcon}
             loading={props.isLoading}
             onClick={props.refetch}
-            size='sm'
-            variant='ghost'
+            children={t('common.refresh')}
           />
         </Show>
       }
-      when={props.allRowsSelected || props.someRowsSelected}
     >
       <SelectedRowsActions
         instanceId={props.instanceId}

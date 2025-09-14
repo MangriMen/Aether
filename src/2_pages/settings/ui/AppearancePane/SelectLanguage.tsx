@@ -1,9 +1,8 @@
 import { splitProps } from 'solid-js';
 
+import { cn } from '@/shared/lib';
 import type { Locale, Option } from '@/shared/model';
 import type { SelectRootProps } from '@/shared/ui';
-
-import { cn } from '@/shared/lib';
 import {
   Select,
   SelectContent,
@@ -13,10 +12,11 @@ import {
   SelectValue,
 } from '@/shared/ui';
 
-export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> = {
-  errorMessage?: string;
-  multiple?: false;
-} & SelectRootProps<Opt, never, 'div'>;
+export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =
+  SelectRootProps<Opt, never, 'div'> & {
+    multiple?: false;
+    errorMessage?: string;
+  };
 
 const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
   props: SelectLanguageProps<T>,
@@ -26,12 +26,12 @@ const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
   return (
     <Select
       class={cn('flex flex-col gap-2', local.class)}
+      validationState={local.errorMessage ? 'invalid' : 'valid'}
+      optionTextValue={'name'}
+      optionValue={'value'}
       itemComponent={(props) => (
         <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
       )}
-      optionTextValue={'name'}
-      optionValue={'value'}
-      validationState={local.errorMessage ? 'invalid' : 'valid'}
       {...others}
     >
       <SelectTrigger>

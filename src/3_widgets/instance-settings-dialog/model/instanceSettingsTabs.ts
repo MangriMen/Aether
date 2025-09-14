@@ -1,35 +1,32 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
-import type { Component } from 'solid-js';
-
 import MdiCoffeeOutlineIcon from '@iconify/icons-mdi/coffee-outline';
 import MdiInfoOutlineIcon from '@iconify/icons-mdi/info-outline';
 import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
 import MdiToolsIcon from '@iconify/icons-mdi/tools';
-
-import type { Instance } from '@/entities/instances';
-import type { Settings } from '@/entities/settings';
+import type { IconifyIcon } from '@iconify-icon/solid';
+import type { Component } from 'solid-js';
 
 import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab/WindowTab';
-
 import { GeneralTab } from '../ui/GeneralTab';
-import { InstallationTab } from '../ui/InstallationTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
-
-export enum InstanceSettingsDialogTabs {
-  General = 'general',
-  Installation = 'installation',
-  JavaAndMemory = 'java-and-memory',
-  Window = 'window',
-}
+import { InstallationTab } from '../ui/InstallationTab';
+import type { Instance } from '@/entities/instances';
+import type { Settings } from '@/entities/settings';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;
   settings?: Settings;
 };
 
+export enum InstanceSettingsDialogTabs {
+  General = 'general',
+  Installation = 'installation',
+  Window = 'window',
+  JavaAndMemory = 'java-and-memory',
+}
+
 export const INSTANCE_SETTINGS_TABS_TRIGGER: {
   icon: IconifyIcon;
-  title: 'general' | 'installation' | 'javaAndMemory' | 'window';
+  title: 'general' | 'installation' | 'window' | 'javaAndMemory';
   value: InstanceSettingsDialogTabs;
 }[] = [
   {

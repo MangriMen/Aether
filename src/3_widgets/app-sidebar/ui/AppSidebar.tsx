@@ -1,27 +1,21 @@
 import type { Component } from 'solid-js';
-
 import { splitProps } from 'solid-js';
 
-import type { SidebarProps } from '@/shared/ui';
-
-import { AccountsMenu, useAccounts } from '@/entities/accounts';
 import { cn } from '@/shared/lib';
+import type { SidebarProps } from '@/shared/ui';
 import { Separator, Sidebar } from '@/shared/ui';
 
 import type { AccountSelectButtonProps } from './AccountSelectButton';
-import type { CreateInstanceButtonProps } from './CreateInstanceButton';
-
 import { AccountSelectButton } from './AccountSelectButton';
+import type { CreateInstanceButtonProps } from './CreateInstanceButton';
 import CreateInstanceButton from './CreateInstanceButton';
 import HomeButton from './HomeButton';
 import SettingsButton from './SettingsButton';
+import { AccountsMenu, useAccounts } from '@/entities/accounts';
 
-export type AppSidebarProps = Pick<
-  AccountSelectButtonProps,
-  'createOfflineAccountDialog'
-> &
+export type AppSidebarProps = SidebarProps &
   Pick<CreateInstanceButtonProps, 'createInstanceDialog'> &
-  SidebarProps;
+  Pick<AccountSelectButtonProps, 'createOfflineAccountDialog'>;
 
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const [local, others] = splitProps(props, [

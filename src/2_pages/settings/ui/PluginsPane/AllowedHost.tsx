@@ -1,22 +1,21 @@
-import MdiCloseIcon from '@iconify/icons-mdi/close';
-import MdiPencilIcon from '@iconify/icons-mdi/pencil';
+import { cn } from '@/shared/lib';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 import {
-  type Component,
-  type ComponentProps,
   mergeProps,
   Show,
   splitProps,
+  type Component,
+  type ComponentProps,
 } from 'solid-js';
+import MdiPencilIcon from '@iconify/icons-mdi/pencil';
+import MdiCloseIcon from '@iconify/icons-mdi/close';
 
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
-
-export type AllowedHostProps = {
-  changeable?: boolean;
+export type AllowedHostProps = ComponentProps<'div'> & {
+  value?: string;
   onEdit?: () => void;
   onRemove?: () => void;
-  value?: string;
-} & ComponentProps<'div'>;
+  changeable?: boolean;
+};
 
 export const AllowedHost: Component<AllowedHostProps> = (props) => {
   const [_local, others] = splitProps(props, [
@@ -41,22 +40,22 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
       <Show when={local.changeable}>
         <div class='flex items-center opacity-0 transition-opacity group-hover:opacity-100'>
           <CombinedTooltip
+            label='Edit'
             as={IconButton}
             class='size-max p-1'
-            icon={MdiPencilIcon}
-            label='Edit'
-            onClick={local.onEdit}
-            size='sm'
             variant='ghost'
+            size='sm'
+            icon={MdiPencilIcon}
+            onClick={local.onEdit}
           />
           <CombinedTooltip
+            label='Remove'
             as={IconButton}
             class='size-max p-1'
-            icon={MdiCloseIcon}
-            label='Remove'
-            onClick={local.onRemove}
-            size='sm'
             variant='ghost'
+            size='sm'
+            icon={MdiCloseIcon}
+            onClick={local.onRemove}
           />
         </div>
       </Show>

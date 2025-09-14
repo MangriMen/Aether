@@ -1,14 +1,8 @@
-import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { Component, ComponentProps } from 'solid-js';
-
 import MdiAccount from '@iconify/icons-mdi/account';
+import type { Component, ComponentProps } from 'solid-js';
 import { createSignal, splitProps } from 'solid-js';
 
-import type { Account, AccountType } from '@/entities/accounts';
 import type { IconButtonProps } from '@/shared/ui';
-
-import { useChangeAccount, useLogout } from '@/entities/accounts';
-import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,
   IconButton,
@@ -17,20 +11,26 @@ import {
   PopoverTrigger,
 } from '@/shared/ui';
 
-export type AccountSelectButtonProps = {
+import type { Account, AccountType } from '@/entities/accounts';
+import { useChangeAccount, useLogout } from '@/entities/accounts';
+
+import { useTranslation } from '@/shared/model';
+import type { DialogRootProps } from '@kobalte/core/dialog';
+
+export type AccountSelectButtonProps = IconButtonProps & {
   accounts: Account[];
   accountsMenu: Component<
-    {
+    ComponentProps<'div'> & {
       accounts: Account[];
       onActivate: (id: Account['id']) => void;
       onCreate: (type: AccountType) => void;
       onLogout: (uuid: string) => void;
-    } & ComponentProps<'div'>
+    }
   >;
   createOfflineAccountDialog: Component<
     ComponentProps<'div'> & DialogRootProps
   >;
-} & IconButtonProps;
+};
 
 export const AccountSelectButton: Component<AccountSelectButtonProps> = (
   props,
@@ -71,27 +71,27 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
       <Popover>
         <PopoverTrigger>
           <CombinedTooltip
-            as={IconButton}
-            icon={MdiAccount}
             label={t('common.account')}
             placement='right'
+            as={IconButton}
             variant='ghost'
+            icon={MdiAccount}
             {...others}
           />
         </PopoverTrigger>
         <PopoverContent class='w-max p-0'>
           <local.accountsMenu
             accounts={local.accounts}
-            onActivate={handleSelect}
             onCreate={handleCreate}
+            onActivate={handleSelect}
             onLogout={handleLogout}
           />
         </PopoverContent>
       </Popover>
 
       <local.createOfflineAccountDialog
-        onOpenChange={closeAccountCreationDialog}
         open={accountCreationType() === 'offline'}
+        onOpenChange={closeAccountCreationDialog}
       />
     </>
   );

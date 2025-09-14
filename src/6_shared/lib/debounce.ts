@@ -7,15 +7,15 @@ export type ScheduleCallback = <Args extends unknown[]>(
 ) => Scheduled<Args>;
 export interface Scheduled<Args extends unknown[]> {
   (...args: Args): void;
-  callAndClear: VoidFunction;
   clear: VoidFunction;
+  callAndClear: VoidFunction;
 }
 
 export const debounce: ScheduleCallback = (callback, wait) => {
   if (isServer) {
     return Object.assign(() => void 0, {
-      callAndClear: () => void 0,
       clear: () => void 0,
+      callAndClear: () => void 0,
     });
   }
   let timeoutId: number | undefined;
@@ -34,5 +34,5 @@ export const debounce: ScheduleCallback = (callback, wait) => {
     };
     timeoutId = setTimeout(timeoutFn, wait);
   };
-  return Object.assign(debounced, { callAndClear, clear });
+  return Object.assign(debounced, { clear, callAndClear });
 };
