@@ -34,7 +34,7 @@ pub struct AppSettings {
 
 pub type AppSettingsState = Mutex<AppSettings>;
 
-fn get_settings_path(app_handle: &AppHandle) -> std::path::PathBuf {
+fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path::PathBuf {
     app_handle
         .path()
         .app_config_dir()
@@ -42,7 +42,7 @@ fn get_settings_path(app_handle: &AppHandle) -> std::path::PathBuf {
         .join("aether_settings.json")
 }
 
-pub fn load_settings(app_handle: AppHandle) -> AppSettings {
+pub fn load_settings<R: tauri::Runtime>(app_handle: AppHandle<R>) -> AppSettings {
     let path = get_settings_path(&app_handle);
 
     if let Ok(contents) = fs::read_to_string(&path) {
@@ -61,7 +61,7 @@ pub fn load_settings(app_handle: AppHandle) -> AppSettings {
     }
 }
 
-pub async fn save_settings(app_handle: AppHandle, state: &AppSettings) {
+pub async fn save_settings<R: tauri::Runtime>(app_handle: AppHandle<R>, state: &AppSettings) {
     let path = get_settings_path(&app_handle);
 
     tokio::fs::write(&path, serde_json::to_string(state).unwrap())

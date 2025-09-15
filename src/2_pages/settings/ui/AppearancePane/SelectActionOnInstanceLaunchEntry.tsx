@@ -1,3 +1,8 @@
+import {
+  useAppSettings,
+  useEditAppSettings,
+  type ActionOnInstanceLaunchType,
+} from '@/entities/settings';
 import { useTranslation, type Option } from '@/shared/model';
 import {
   Select,
@@ -9,8 +14,6 @@ import {
 } from '@/shared/ui';
 import type { Component } from 'solid-js';
 import { createMemo } from 'solid-js';
-import type { ActionOnInstanceLaunchType } from '../../model';
-import { useAppSettings, useUpdateAppSettings } from '../../api';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;
@@ -41,7 +44,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
     ),
   );
 
-  const updateAppSettings = useUpdateAppSettings();
+  const updateAppSettings = useEditAppSettings();
   const handleChangeActionOnInstanceLaunch = async (
     value: Option<ActionOnInstanceLaunchType> | null,
   ) => {

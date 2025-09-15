@@ -70,6 +70,8 @@ fn main() {
             "get_max_ram",
             "get_default_instance_settings",
             "edit_default_instance_settings",
+            "get_app_settings",
+            "edit_app_settings",
         ]),
     );
 

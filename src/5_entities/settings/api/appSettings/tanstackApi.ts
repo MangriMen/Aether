@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { APP_SETTINGS_QUERY_KEYS } from './appSettingsQueryKeys';
-import { getAppSettingsRaw, updateAppSettingsRaw } from './rawApi';
+import { getAppSettingsRaw, editAppSettingsRaw } from './tauriApi';
 
 export const useAppSettings = () =>
   useQuery(() => ({
@@ -8,11 +8,11 @@ export const useAppSettings = () =>
     queryFn: getAppSettingsRaw,
   }));
 
-export const useUpdateAppSettings = () => {
+export const useEditAppSettings = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: updateAppSettingsRaw,
+    mutationFn: editAppSettingsRaw,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: APP_SETTINGS_QUERY_KEYS.GET(),

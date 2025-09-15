@@ -1,16 +1,9 @@
 import type { QueryClient } from '@tanstack/solid-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-import {
-  editDefaultInstanceSettingsRaw,
-  editSettingsRaw,
-  getDefaultInstanceSettingsRaw,
-  getMaxRamRaw,
-  getSettingsRaw,
-} from './rawApi';
+import { editSettingsRaw, getMaxRamRaw, getSettingsRaw } from './tauriApi';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { SETTINGS_QUERY_KEYS } from './settingsQueryKeys';
-import { DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS } from './defaultInstanceSettingsQueryKeys';
 
 export const useSettings = () =>
   useQuery(() => ({
@@ -48,32 +41,3 @@ export const useMaxRam = () => useQuery(MAX_RAM_QUERY);
 
 export const prefetchMaxRam = (queryClient: QueryClient) =>
   queryClient.prefetchQuery(MAX_RAM_QUERY());
-
-export const useDefaultInstanceSettings = () =>
-  useQuery(() => ({
-    queryKey: DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
-    queryFn: getDefaultInstanceSettingsRaw,
-  }));
-
-export const useEditDefaultInstanceSettings = () => {
-  const queryClient = useQueryClient();
-
-  const [{ t }] = useTranslation();
-
-  return useMutation(() => ({
-    mutationFn: editDefaultInstanceSettingsRaw,
-    onSuccess: (data) => {
-      queryClient.setQueryData(
-        DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS.GET(),
-        () => data,
-      );
-    },
-    onError: (err) => {
-      showError({
-        title: t('settings.changeError'),
-        err,
-        t,
-      });
-    },
-  }));
-};

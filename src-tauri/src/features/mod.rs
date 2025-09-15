@@ -1,4 +1,3 @@
-pub mod app_settings;
 pub mod auth;
 pub mod events;
 pub mod instance;

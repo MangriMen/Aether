@@ -4,10 +4,13 @@ use tauri::{
     AppHandle, Manager,
 };
 
-use crate::features::app_settings::WindowEffect;
+use crate::features::settings::WindowEffect;
 
 /// Applies the specified window effect to the main application window
-pub fn set_window_effect(app_handle: AppHandle, window_effect: WindowEffect) -> tauri::Result<()> {
+pub fn set_window_effect<R: tauri::Runtime>(
+    app_handle: AppHandle<R>,
+    window_effect: WindowEffect,
+) -> tauri::Result<()> {
     let Some(main_window) = app_handle.get_webview_window("main") else {
         return Ok(());
     };
@@ -34,7 +37,10 @@ fn map_to_tauri_effect(window_effect: WindowEffect) -> Option<Effect> {
 }
 
 /// Applies the specified effect to the window with default configuration
-fn apply_window_effect(window: &tauri::WebviewWindow, effect: Effect) -> tauri::Result<()> {
+fn apply_window_effect<R: tauri::Runtime>(
+    window: &tauri::WebviewWindow<R>,
+    effect: Effect,
+) -> tauri::Result<()> {
     let effects_config = WindowEffectsConfig {
         effects: vec![effect],
         state: Some(EffectState::FollowsWindowActiveState),
