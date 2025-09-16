@@ -62,6 +62,7 @@ export default [
     plugins: { perfectionist },
     rules: {
       'perfectionist/sort-imports': ['error'],
+      'perfectionist/sort-exports': ['error'],
     },
   },
   sonarjs.configs.recommended,

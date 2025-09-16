@@ -1,3 +1,3 @@
-export * from './tauriApi';
-export * from './tanstackApi';
 export * from './defaultInstanceSettingsQueryKeys';
+export * from './tanstackApi';
+export * from './tauriApi';
