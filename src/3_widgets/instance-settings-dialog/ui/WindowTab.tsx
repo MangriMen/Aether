@@ -1,23 +1,23 @@
 import type { Component } from 'solid-js';
-import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
-
-import { cn } from '@/shared/lib';
-import { Checkbox } from '@/shared/ui';
-
-import type { EditInstance } from '@/entities/instances';
-import { useEditInstance } from '@/entities/instances';
-
-import { useTranslation } from '@/shared/model';
-
-import type { InstanceSettingsTabProps } from '../model';
-import { instanceSettingsToWindowSettingsValues } from '../model';
-import { DEFAULT_RESOLUTION, ResolutionField } from '@/entities/settings';
 
 import { getValue } from '@modular-forms/solid';
+import { createEffect, createMemo, createSignal, splitProps } from 'solid-js';
+
+import type { EditInstance } from '@/entities/instances';
+
+import { useEditInstance } from '@/entities/instances';
+import { DEFAULT_RESOLUTION, ResolutionField } from '@/entities/settings';
 import {
   useResetWindowFormValues,
   useWindowForm,
 } from '@/features/instance-settings/window-settings-form';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Checkbox } from '@/shared/ui';
+
+import type { InstanceSettingsTabProps } from '../model';
+
+import { instanceSettingsToWindowSettingsValues } from '../model';
 
 export type WindowTabProps = InstanceSettingsTabProps & { class?: string };
 

@@ -1,9 +1,12 @@
 import type { QueryClient } from '@tanstack/solid-query';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
-import { editSettingsRaw, getMaxRamRaw, getSettingsRaw } from './tauriApi';
+
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
+
 import { SETTINGS_QUERY_KEYS } from './settingsQueryKeys';
+import { editSettingsRaw, getMaxRamRaw, getSettingsRaw } from './tauriApi';
 
 export const useSettings = () =>
   useQuery(() => ({

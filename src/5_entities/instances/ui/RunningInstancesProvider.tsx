@@ -1,16 +1,18 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import type { Component, JSX } from 'solid-js';
+
 import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import type { Instance, RunningInstancesContextValue } from '../model';
-import { RunningInstancesContext } from '../model';
 import {
   ProcessPayloadType,
   listenEvent,
 } from '@/entities/events/@x/instances';
-
 import { isDebug } from '@/shared/model';
+
+import type { Instance, RunningInstancesContextValue } from '../model';
+
+import { RunningInstancesContext } from '../model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
 

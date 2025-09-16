@@ -1,12 +1,14 @@
 import type { Accessor } from 'solid-js';
+
 import { createMemo } from 'solid-js';
+
+import { isDeveloperMode } from '@/shared/model';
 
 import {
   SETTINGS_TABS_CONTENT,
   SETTINGS_TABS_TRIGGER,
   SettingsTabs,
 } from '../model/settingsTabs';
-import { isDeveloperMode } from '@/shared/model';
 
 export const useSettingsPageTabs = (): [
   Accessor<typeof SETTINGS_TABS_TRIGGER>,

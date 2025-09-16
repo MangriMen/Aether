@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
+
 import { DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS } from './defaultInstanceSettingsQueryKeys';
 import {
   editDefaultInstanceSettingsRaw,

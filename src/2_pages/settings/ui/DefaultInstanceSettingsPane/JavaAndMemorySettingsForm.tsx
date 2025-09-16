@@ -1,9 +1,22 @@
-import { OverridableEnvVarsField } from '@/entities/settings';
-import { cn, debounce } from '@/shared/lib';
+import { setValue } from '@modular-forms/solid';
+import {
+  type Accessor,
+  onCleanup,
+  splitProps,
+  type Component,
+  type ComponentProps,
+  createMemo,
+} from 'solid-js';
+
 import type {
   JavaAndMemorySettingsSchemaValuesInput,
   JavaAndMemorySettingsSchemaValuesOutput,
 } from '@/widgets/instance-settings-dialog';
+
+import { OverridableEnvVarsField } from '@/entities/settings';
+import { OverridableExtraLaunchArgsField } from '@/entities/settings/ui/OverridableExtraLaunchArgsField';
+import { OverridableMemoryField } from '@/entities/settings/ui/OverridableMemoryField';
+import { cn, debounce } from '@/shared/lib';
 import {
   JavaAndMemorySettingsSchema,
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
@@ -14,17 +27,6 @@ import {
   useJavaAndMemoryFormRequired,
   useResetJavaAndMemoryFormRequiredValues,
 } from '@/widgets/instance-settings-dialog/lib/useJavaAndMemoryForm';
-import { OverridableExtraLaunchArgsField } from '@/entities/settings/ui/OverridableExtraLaunchArgsField';
-import { OverridableMemoryField } from '@/entities/settings/ui/OverridableMemoryField';
-import { setValue } from '@modular-forms/solid';
-import {
-  type Accessor,
-  onCleanup,
-  splitProps,
-  type Component,
-  type ComponentProps,
-  createMemo,
-} from 'solid-js';
 
 export type JavaAndMemorySettingsFormProps = Omit<
   ComponentProps<'form'>,

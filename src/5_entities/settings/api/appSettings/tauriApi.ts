@@ -1,4 +1,5 @@
 import type { AppSettings, EditAppSettings } from '../../model/appSettings';
+
 import { invokeSettings } from '../tauriApi';
 
 export const getAppSettingsRaw = () =>

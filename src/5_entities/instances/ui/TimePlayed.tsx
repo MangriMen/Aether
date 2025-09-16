@@ -1,9 +1,12 @@
-import { cn } from '@/shared/lib';
-import { createMemo, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
-import MdiClockIcon from '@iconify/icons-mdi/clock';
-import { useTranslation } from '@/shared/model';
+
 import { Icon } from '@iconify-icon/solid';
+import MdiClockIcon from '@iconify/icons-mdi/clock';
+import { createMemo, Show, splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import { formatTimePlayedHumanized } from '../lib';
 
 export type LastPlayedDateProps = ComponentProps<'span'> & {

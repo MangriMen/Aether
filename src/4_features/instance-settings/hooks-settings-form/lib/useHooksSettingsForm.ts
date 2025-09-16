@@ -1,7 +1,9 @@
 import type { FormStore, PartialValues } from '@modular-forms/solid';
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import type { Accessor } from 'solid-js';
+
+import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect } from 'solid-js';
+
 import {
   HooksSettingsSchema,
   type HooksSettingsSchemaValuesInput,

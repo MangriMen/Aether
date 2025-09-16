@@ -1,10 +1,11 @@
-import { createMemo, For, Show } from 'solid-js';
 import type { ColumnDef, Table as SolidTable } from '@tanstack/solid-table';
+
 import {
   createSolidTable,
   flexRender,
   getCoreRowModel,
 } from '@tanstack/solid-table';
+import { createMemo, For, Show } from 'solid-js';
 
 import {
   Table,

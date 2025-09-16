@@ -1,14 +1,17 @@
+import { createMemo } from 'solid-js';
+
+import type { WindowSchemaValuesOutput } from '@/features/instance-settings/window-settings-form';
+
 import {
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
 } from '@/entities/settings';
-import { createMemo } from 'solid-js';
+
 import {
   defaultInstanceSettingsToWindowSettingsValues,
   windowSettingsValuesToEditDefaultInstanceSettings,
 } from '../model';
-import type { WindowSchemaValuesOutput } from '@/features/instance-settings/window-settings-form';
 
 export const useWindowSettingsHandler = () => {
   const settings = useDefaultInstanceSettings();

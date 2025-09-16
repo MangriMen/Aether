@@ -1,7 +1,9 @@
 import { useMutation } from '@tanstack/solid-query';
-import { installInstanceRaw, updateInstanceRaw } from '../rawApi';
-import { useTranslation } from '@/shared/model';
+
 import { showError } from '@/shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+
+import { installInstanceRaw, updateInstanceRaw } from '../rawApi';
 
 export const useInstallInstance = () => {
   const [{ t }] = useTranslation();

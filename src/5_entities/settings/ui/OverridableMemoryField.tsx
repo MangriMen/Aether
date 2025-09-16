@@ -1,13 +1,15 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { MemoryInput } from './MemoryInput';
-import { MIN_JRE_MEMORY } from '../../../3_widgets/instance-settings-dialog/model';
-import { bytesToMegabytes } from '../../../3_widgets/instance-settings-dialog/lib';
 import { useMaxRam } from '@/entities/settings';
-import { cn } from '@/shared/lib';
 import { OverrideCheckbox } from '@/entities/settings/ui/OverrideCheckbox';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
+import { bytesToMegabytes } from '../../../3_widgets/instance-settings-dialog/lib';
+import { MIN_JRE_MEMORY } from '../../../3_widgets/instance-settings-dialog/model';
+import { MemoryInput } from './MemoryInput';
 
 export type OverridableMemoryFieldProps = Omit<
   ComponentProps<'div'>,

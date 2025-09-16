@@ -1,11 +1,15 @@
-import type { LoadingPayload } from '@/entities/events';
-import { ProgressCard } from '@/entities/events';
-import { For, splitProps } from 'solid-js';
 import type { Accessor, Component, ComponentProps } from 'solid-js';
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
-import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+
 import OpenInNewIcon from '@iconify/icons-mdi/open-in-new';
+import { For, splitProps } from 'solid-js';
+
+import type { LoadingPayload } from '@/entities/events';
+
+import { ProgressCard } from '@/entities/events';
+import { cn } from '@/shared/lib';
+import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
+
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
 
 export type ProgressPopoverProps = ComponentProps<'div'> & {

@@ -1,8 +1,11 @@
-import { listenEvent } from '@/entities/events/@x/instances';
-import { onCleanup, onMount } from 'solid-js';
-import { isDebug } from '@/shared/model';
 import type { UnlistenFn } from '@tauri-apps/api/event';
+
 import { useQueryClient } from '@tanstack/solid-query';
+import { onCleanup, onMount } from 'solid-js';
+
+import { listenEvent } from '@/entities/events/@x/instances';
+import { isDebug } from '@/shared/model';
+
 import { invalidateInstanceData } from '../api';
 
 export const useInstanceEventsListener = () => {

@@ -1,5 +1,3 @@
-import { cn } from '@/shared/lib';
-import { Button, CombinedTextField } from '@/shared/ui';
 import {
   createEffect,
   createSignal,
@@ -7,6 +5,9 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { Button, CombinedTextField } from '@/shared/ui';
 
 export type EditAllowedPathProps = ComponentProps<'div'> & {
   value?: [string, string];

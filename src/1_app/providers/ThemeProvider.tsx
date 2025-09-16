@@ -1,7 +1,9 @@
 import type { Component, JSX } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { ThemeContext } from '@/shared/model';
+
 import { useCreateThemeContext } from '../lib';
 
 export type ThemeProviderProps = {

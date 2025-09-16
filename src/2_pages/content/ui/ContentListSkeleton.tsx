@@ -1,7 +1,9 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import { createMemo, For, splitProps } from 'solid-js';
+
 import { cn } from '@/shared/lib';
 import { Skeleton } from '@/shared/ui';
-import { createMemo, For, splitProps } from 'solid-js';
-import type { Component, ComponentProps } from 'solid-js';
 
 export type ContentListSkeletonProps = ComponentProps<'div'>;
 

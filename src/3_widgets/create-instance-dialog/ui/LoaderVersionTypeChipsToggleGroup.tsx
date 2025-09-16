@@ -1,12 +1,13 @@
 import type { Component } from 'solid-js';
+
 import { For, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import type { ToggleGroupRootProps } from '@/shared/ui';
-import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
-
 import type { Option } from '@/shared/model';
+import type { ToggleGroupRootProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
 
 export type LoaderVersionTypeChipsToggleGroupProps = Exclude<
   ToggleGroupRootProps,

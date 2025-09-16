@@ -1,8 +1,14 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
+
 import { For, splitProps } from 'solid-js';
 
 import type { TabsProps } from '@/shared/ui';
+
+import { useEditInstance, type Instance } from '@/entities/instances';
+import { useDefaultInstanceSettings } from '@/entities/settings';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   SettingsTabsContent,
@@ -11,17 +17,11 @@ import {
   Tabs,
 } from '@/shared/ui';
 
-import { useEditInstance, type Instance } from '@/entities/instances';
-
-import { useTranslation } from '@/shared/model';
-
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,
   INSTANCE_SETTINGS_TABS_TRIGGER,
   InstanceSettingsDialogTabs,
 } from '../model';
-import { cn } from '@/shared/lib';
-import { useDefaultInstanceSettings } from '@/entities/settings';
 
 export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
   TabsProps<T> & {

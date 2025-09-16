@@ -1,3 +1,5 @@
+import type { PartialValues } from '@modular-forms/solid';
+
 import type {
   EditInstanceSettings,
   InstanceSettings,
@@ -14,13 +16,13 @@ import type {
   JavaAndMemorySettingsSchemaValuesInput,
   JavaAndMemorySettingsSchemaValuesOutput,
 } from '@/widgets/instance-settings-dialog';
+
 import {
   envVarsToString,
   extraLaunchArgsToString,
   stringToEnvVars,
   stringToExtraLaunchArgs,
 } from '@/widgets/instance-settings-dialog/lib';
-import type { PartialValues } from '@modular-forms/solid';
 
 export const instanceSettingsToWindowSettingsValues = (
   settings: InstanceSettings | undefined,

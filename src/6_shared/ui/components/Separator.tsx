@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as SeparatorPrimitive from '@kobalte/core/separator';
 import type { ValidComponent } from 'solid-js';
+
+import * as SeparatorPrimitive from '@kobalte/core/separator';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

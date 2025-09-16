@@ -1,11 +1,13 @@
 import type { ConfigColorMode } from '@kobalte/core';
-import { useColorMode } from '@kobalte/core';
 import type { Component } from 'solid-js';
+
+import { useColorMode } from '@kobalte/core';
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
-import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
 import type { SelectRootProps } from '@/shared/ui';
+
+import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
 import {
   Select,
   SelectContent,

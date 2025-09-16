@@ -1,5 +1,6 @@
 /* eslint-disable sonarjs/table-header */
 import type { Component, ComponentProps } from 'solid-js';
+
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

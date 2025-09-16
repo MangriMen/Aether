@@ -1,6 +1,7 @@
 import type { TFunction } from '../model';
-import { getTranslatedError, isDebug, isLauncherError } from '../model';
 import type { ShowToastParams } from '../ui';
+
+import { getTranslatedError, isDebug, isLauncherError } from '../model';
 import { showToast } from '../ui';
 
 export interface ShowErrorParams extends Omit<ShowToastParams, 'description'> {

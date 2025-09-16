@@ -1,10 +1,14 @@
-import { Show, splitProps } from 'solid-js';
-import { useImportConfigs } from '@/entities/instances';
 import type { Component, ComponentProps } from 'solid-js';
-import { ImportInstanceForm } from './ImportInstanceForm';
-import { useTranslation } from '@/shared/model';
+
+import { Show, splitProps } from 'solid-js';
+
+import { useImportConfigs } from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { TabContentProps } from '../model';
+
+import { ImportInstanceForm } from './ImportInstanceForm';
 
 export type ImportInstanceProps = TabContentProps & ComponentProps<'div'>;
 

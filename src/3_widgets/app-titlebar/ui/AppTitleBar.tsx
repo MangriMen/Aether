@@ -1,10 +1,11 @@
 import type { Component } from 'solid-js';
 
 import type { TitleBarProps } from '@/shared/ui';
+
 import { TitleBar } from '@/shared/ui';
 
-import { WindowControls } from './WindowControls';
 import { ProgressMenuButton, ProgressPopover } from './ProgressMenu';
+import { WindowControls } from './WindowControls';
 
 export type AppTitleBarProps = TitleBarProps;
 

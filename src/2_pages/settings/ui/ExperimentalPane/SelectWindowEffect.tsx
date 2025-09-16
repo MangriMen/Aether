@@ -1,17 +1,18 @@
-import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
+import { useColorMode } from '@kobalte/core';
 import { createMemo, type Component } from 'solid-js';
+
+import {
+  useAppSettings,
+  useEditAppSettings,
+  type WindowEffect,
+} from '@/entities/settings';
 import {
   isSystemTheme,
   useThemeContext,
   useTranslation,
   type Option,
 } from '@/shared/model';
-import { useColorMode } from '@kobalte/core';
-import {
-  useAppSettings,
-  useEditAppSettings,
-  type WindowEffect,
-} from '@/entities/settings';
+import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
 
 export type SelectWindowEffectProps = {
   class?: string;

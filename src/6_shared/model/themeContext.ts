@@ -1,4 +1,5 @@
 import type { ColorMode } from '@kobalte/core';
+
 import { createContext, useContext } from 'solid-js';
 
 import type { Theme, ThemeConfig } from '@/shared/model';

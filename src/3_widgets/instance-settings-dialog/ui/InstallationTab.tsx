@@ -1,10 +1,4 @@
-import {
-  InstanceInstallStage,
-  useInstallInstance,
-  useUpdateInstance,
-} from '@/entities/instances';
-import { cn } from '@/shared/lib';
-import { Button, Image, LabeledField, showToast } from '@/shared/ui';
+import MdiHammerIcon from '@iconify/icons-mdi/hammer';
 import {
   createMemo,
   Show,
@@ -12,8 +6,16 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import MdiHammerIcon from '@iconify/icons-mdi/hammer';
+
+import {
+  InstanceInstallStage,
+  useInstallInstance,
+  useUpdateInstance,
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
 import { isLauncherError } from '@/shared/model';
+import { Button, Image, LabeledField, showToast } from '@/shared/ui';
+
 import type { InstanceSettingsTabProps } from '../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &

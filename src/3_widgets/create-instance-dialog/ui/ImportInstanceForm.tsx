@@ -1,10 +1,8 @@
-import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
-
-import type { Accessor, Component, ComponentProps } from 'solid-js';
-import { createEffect, createMemo, For, splitProps } from 'solid-js';
-
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { SubmitHandler } from '@modular-forms/solid';
+import type { Accessor, Component, ComponentProps } from 'solid-js';
+
+import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import {
   createForm,
   getValue,
@@ -12,8 +10,12 @@ import {
   setValue,
   zodForm,
 } from '@modular-forms/solid';
-import type { ImportInstanceValues } from '../model';
-import { ImportInstanceSchema } from '../model';
+import { open } from '@tauri-apps/plugin-dialog';
+import { createEffect, createMemo, For, splitProps } from 'solid-js';
+
+import { useImportInstance, type ImportHandler } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   CombinedTooltip,
@@ -27,10 +29,10 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@/shared/ui';
-import { cn } from '@/shared/lib';
-import { open } from '@tauri-apps/plugin-dialog';
-import { useImportInstance, type ImportHandler } from '@/entities/instances';
-import { useTranslation } from '@/shared/model';
+
+import type { ImportInstanceValues } from '../model';
+
+import { ImportInstanceSchema } from '../model';
 
 export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
   Pick<DialogRootProps, 'onOpenChange'> & {

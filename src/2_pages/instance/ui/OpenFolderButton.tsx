@@ -1,12 +1,13 @@
-import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import type { PolymorphicProps } from '@kobalte/core';
+
+import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import { splitProps, type Component, type ValidComponent } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslation } from '@/shared/model';
 import { useRevealInExplorer } from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {

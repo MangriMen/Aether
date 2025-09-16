@@ -1,6 +1,7 @@
+import type { Component, ComponentProps } from 'solid-js';
+
 import { Icon } from '@iconify-icon/solid';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

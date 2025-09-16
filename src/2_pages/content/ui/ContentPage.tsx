@@ -10,15 +10,17 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import { InstanceInfo } from './InstanceInfo';
+
 import {
   ContentType,
   useContentProviders,
   useInstance,
 } from '@/entities/instances';
-import { Separator } from '@/shared/ui';
-import { ContentBrowser } from './ContentBrowser';
 import { ModLoader } from '@/entities/minecraft';
+import { Separator } from '@/shared/ui';
+
+import { ContentBrowser } from './ContentBrowser';
+import { InstanceInfo } from './InstanceInfo';
 
 export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
 

@@ -1,18 +1,21 @@
+import type { IconifyIcon } from '@iconify-icon/solid';
+import type { Component } from 'solid-js';
+
+import MdiArrowDecisionOutline from '@iconify/icons-mdi/arrow-decision-outline';
 import MdiCoffeeOutlineIcon from '@iconify/icons-mdi/coffee-outline';
 import MdiInfoOutlineIcon from '@iconify/icons-mdi/info-outline';
 import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
 import MdiToolsIcon from '@iconify/icons-mdi/tools';
-import MdiArrowDecisionOutline from '@iconify/icons-mdi/arrow-decision-outline';
-import type { IconifyIcon } from '@iconify-icon/solid';
-import type { Component } from 'solid-js';
 
-import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
-import { GeneralTab } from '../ui/GeneralTab';
-import { InstallationTab } from '../ui/InstallationTab';
 import type { EditInstance, Instance } from '@/entities/instances';
 import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
-import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
+
+import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
+
+import { GeneralTab } from '../ui/GeneralTab';
 import { HooksTab } from '../ui/HooksTab';
+import { InstallationTab } from '../ui/InstallationTab';
+import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;

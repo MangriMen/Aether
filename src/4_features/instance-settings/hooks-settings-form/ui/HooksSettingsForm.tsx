@@ -1,19 +1,22 @@
 import type { PartialValues } from '@modular-forms/solid';
+
 import {
   splitProps,
   type Accessor,
   type Component,
   type ComponentProps,
 } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { CombinedTextField, LabeledField } from '@/shared/ui';
+import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
+
+import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
 import {
   HooksSettingsSchema,
   type HooksSettingsSchemaValuesInput,
   type HooksSettingsSchemaValuesOutput,
 } from '../model';
-import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
-import { cn } from '@/shared/lib';
-import { CombinedTextField, LabeledField } from '@/shared/ui';
-import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
 
 export type HooksSettingsFormProps = Omit<
   ComponentProps<'form'>,

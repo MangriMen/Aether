@@ -4,9 +4,11 @@ import type {
   PolymorphicProps,
 } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
+
 import { THEME_BY_MODE, useThemeContext } from '@/shared/model';
 import {
   Select,

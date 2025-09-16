@@ -1,9 +1,10 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import * as TextFieldPrimitive from '@kobalte/core/text-field';
 import type { VariantProps } from 'class-variance-authority';
+import type { ValidComponent } from 'solid-js';
+
+import * as TextFieldPrimitive from '@kobalte/core/text-field';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
-import type { ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 

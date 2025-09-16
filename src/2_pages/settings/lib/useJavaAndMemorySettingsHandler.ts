@@ -1,10 +1,13 @@
+import { createMemo } from 'solid-js';
+
+import type { JavaAndMemorySettingsSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
+
 import {
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
 } from '@/entities/settings';
-import { createMemo } from 'solid-js';
-import type { JavaAndMemorySettingsSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
+
 import {
   defaultInstanceSettingsToJavaAndMemorySettingsValues,
   javaAndMemorySettingsValuesToEditDefaultInstanceSettings,

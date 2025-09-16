@@ -1,7 +1,3 @@
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import type { CombinedTextFieldProps } from '@/shared/ui';
-import { CombinedTextField } from '@/shared/ui';
 import {
   createMemo,
   Show,
@@ -9,6 +5,13 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
+
+import type { CombinedTextFieldProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField } from '@/shared/ui';
+
 import { OverrideCheckbox } from './OverrideCheckbox';
 
 export type OverridableExtraLaunchArgsFieldProps = Omit<

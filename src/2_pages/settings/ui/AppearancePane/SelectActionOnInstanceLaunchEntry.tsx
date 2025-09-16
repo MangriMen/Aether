@@ -1,3 +1,7 @@
+import type { Component } from 'solid-js';
+
+import { createMemo } from 'solid-js';
+
 import {
   useAppSettings,
   useEditAppSettings,
@@ -12,8 +16,6 @@ import {
   SelectValue,
   SettingsEntry,
 } from '@/shared/ui';
-import type { Component } from 'solid-js';
-import { createMemo } from 'solid-js';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;

@@ -1,16 +1,19 @@
 import type { FormStore, PartialValues } from '@modular-forms/solid';
+import type { Accessor } from 'solid-js';
+
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createEffect } from 'solid-js';
+
 import type {
   JavaAndMemorySettingsSchemaRequiredInput,
   JavaAndMemorySettingsSchemaRequiredOutput,
   JavaAndMemorySettingsSchemaValuesInput,
 } from '../model/javaAndMemoryValidation';
+
 import {
   JavaAndMemorySettingsSchema,
   JavaAndMemorySettingsSchemaRequired,
 } from '../model/javaAndMemoryValidation';
-import type { Accessor } from 'solid-js';
-import { createEffect } from 'solid-js';
 
 export const useJavaAndMemoryForm = (): ReturnType<
   typeof createForm<JavaAndMemorySettingsSchemaValuesInput>

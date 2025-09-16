@@ -1,5 +1,30 @@
-import { cn } from '@/shared/lib';
+import type { PhysicalSize } from '@tauri-apps/api/window';
+
+import { Icon } from '@iconify-icon/solid';
+import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
+import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
+import {
+  Field,
+  getValue,
+  setValues,
+  validate,
+  type FormStore,
+} from '@modular-forms/solid';
+import { currentMonitor } from '@tauri-apps/api/window';
+import {
+  createMemo,
+  createSignal,
+  For,
+  onMount,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
+
+import type { WindowSchemaValuesInput } from '@/features/instance-settings/window-settings-form';
 import type { TFunction } from '@/shared/model';
+
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
   CombinedTextField,
@@ -10,29 +35,7 @@ import {
   IconButton,
   LabeledField,
 } from '@/shared/ui';
-import {
-  createMemo,
-  createSignal,
-  For,
-  onMount,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
-import {
-  Field,
-  getValue,
-  setValues,
-  validate,
-  type FormStore,
-} from '@modular-forms/solid';
 
-import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
-import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
-import { Icon } from '@iconify-icon/solid';
-import type { PhysicalSize } from '@tauri-apps/api/window';
-import { currentMonitor } from '@tauri-apps/api/window';
-import type { WindowSchemaValuesInput } from '@/features/instance-settings/window-settings-form';
 import { RESOLUTION_OPTIONS } from '../model';
 
 export type ResolutionFieldProps = Omit<

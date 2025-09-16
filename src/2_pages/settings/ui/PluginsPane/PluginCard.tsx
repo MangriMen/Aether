@@ -1,7 +1,9 @@
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
+
 import type { Plugin } from '@/entities/plugins';
+
 import { cn } from '@/shared/lib';
 import { Image } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 export type PluginCardProps = ComponentProps<'div'> & {
   plugin: Plugin;

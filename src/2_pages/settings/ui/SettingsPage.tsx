@@ -1,4 +1,6 @@
+import type { PolymorphicProps } from '@kobalte/core';
 import type { RouteSectionProps } from '@solidjs/router';
+
 import {
   type ValidComponent,
   For,
@@ -7,6 +9,8 @@ import {
 } from 'solid-js';
 
 import type { TabsProps } from '@/shared/ui';
+
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   SettingsTabsContent,
@@ -14,11 +18,10 @@ import {
   SettingsTabsTrigger,
   Tabs,
 } from '@/shared/ui';
-import { SettingsTabs } from '../model/settingsTabs';
-import type { PolymorphicProps } from '@kobalte/core';
-import { useTranslation } from '@/shared/model';
-import { VersionInfo } from './VersionInfo';
+
 import { useOnMountSettingsPage, useSettingsPageTabs } from '../lib';
+import { SettingsTabs } from '../model/settingsTabs';
+import { VersionInfo } from './VersionInfo';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;

@@ -1,10 +1,11 @@
-import { createMemo } from 'solid-js';
-import type { Component, ComponentProps } from 'solid-js';
 import type { Platform } from '@tauri-apps/plugin-os';
+import type { Component, ComponentProps } from 'solid-js';
+
 import {
   version as getOsVersion,
   platform as getOsPlatform,
 } from '@tauri-apps/plugin-os';
+import { createMemo } from 'solid-js';
 
 const OS_PLATFORM_TO_DISPLAY: Record<Platform, string> = {
   linux: 'Linux',

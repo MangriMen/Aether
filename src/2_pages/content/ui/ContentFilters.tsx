@@ -1,3 +1,11 @@
+import {
+  createMemo,
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
+
 import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -11,13 +19,6 @@ import {
   SelectValue,
   Skeleton,
 } from '@/shared/ui';
-import {
-  createMemo,
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
 
 export type ContentFiltersProps = ComponentProps<'div'> & {
   pageCount: number;

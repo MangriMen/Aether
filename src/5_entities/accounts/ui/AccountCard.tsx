@@ -1,16 +1,18 @@
-import MdiDelete from '@iconify/icons-mdi/delete';
 import type { ValidComponent } from 'solid-js';
+
+import MdiDelete from '@iconify/icons-mdi/delete';
+import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import type { ButtonProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslation } from '@/shared/model';
+import type { AccountType } from '../model';
 
 import { AccountButton } from './AccountButton';
-import type { AccountType } from '../model';
-import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 
 export type AccountCardProps = { class?: string } & {
   username: string;

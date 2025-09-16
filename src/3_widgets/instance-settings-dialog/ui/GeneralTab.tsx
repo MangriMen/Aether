@@ -1,16 +1,15 @@
 import type { Component } from 'solid-js';
-import { createEffect, splitProps } from 'solid-js';
-
-import { cn } from '@/shared/lib';
-import { CombinedTextField } from '@/shared/ui';
-
-import { type EditInstance, useEditInstance } from '@/entities/instances';
-
-import { useTranslation } from '@/shared/model';
 
 import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
-import { GeneralSettingsSchema, type InstanceSettingsTabProps } from '../model';
+import { createEffect, splitProps } from 'solid-js';
+
+import { type EditInstance, useEditInstance } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField } from '@/shared/ui';
+
 import { useFieldOnChangeSync } from '../lib';
+import { GeneralSettingsSchema, type InstanceSettingsTabProps } from '../model';
 
 export type GeneralTabProps = InstanceSettingsTabProps & { class?: string };
 

@@ -1,5 +1,6 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
+
 import { createStore, produce } from 'solid-js/store';
 
 export type DialogComponentProps = DialogRootProps;

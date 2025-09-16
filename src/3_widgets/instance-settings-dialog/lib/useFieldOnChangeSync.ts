@@ -4,9 +4,9 @@ import type {
   FieldPath,
   FieldPathValue,
 } from '@modular-forms/solid';
+import type { ZodObject, ZodTypeAny } from 'zod';
 
 import { getValue, setValue, validate } from '@modular-forms/solid';
-import type { ZodObject, ZodTypeAny } from 'zod';
 
 export const useFieldOnChangeSync = <
   TFieldValues extends FieldValues,

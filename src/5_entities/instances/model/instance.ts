@@ -1,11 +1,12 @@
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
-import type { ContentType } from './contentType';
 import type {
   DefaultInstanceSettings,
   Hooks,
   MemorySettings,
   WindowSize,
 } from '@/entities/settings/@x/instances';
+
+import type { ContentType } from './contentType';
 
 export interface InstancePluginSettings {
   preLaunch?: string;

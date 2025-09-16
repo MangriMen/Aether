@@ -1,12 +1,13 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import type { CheckboxRootProps } from '@/shared/ui';
-import { Checkbox } from '@/shared/ui';
 
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { Checkbox } from '@/shared/ui';
 
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',

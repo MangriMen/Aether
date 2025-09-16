@@ -1,4 +1,5 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
+
 import { createMemo, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

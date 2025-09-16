@@ -1,14 +1,16 @@
-import { cn } from '@/shared/lib';
+import type { PartialValues } from '@modular-forms/solid';
 
 import { splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
-import type { PartialValues } from '@modular-forms/solid';
 import { ResolutionField } from '@/entities/settings';
+import { cn } from '@/shared/lib';
+
 import type {
   WindowSchemaValuesInput,
   WindowSchemaValuesOutput,
 } from '../model';
+
 import { useResetWindowFormValues, useWindowForm } from '../lib';
 
 export type WindowSettingsFormProps = Omit<

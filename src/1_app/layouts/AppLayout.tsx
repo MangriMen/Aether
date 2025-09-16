@@ -1,6 +1,7 @@
 import { ErrorBoundary, type Component, type JSX } from 'solid-js';
 
 import { AppTitleBar } from '@/widgets/app-titlebar';
+
 import { AppErrorBoundary } from './AppErrorBoundary';
 
 export type AppLayoutProps = {

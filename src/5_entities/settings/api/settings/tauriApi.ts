@@ -1,4 +1,5 @@
 import type { Settings } from '../../model';
+
 import { invokeSettings } from '../tauriApi';
 
 export const getSettingsRaw = () => invokeSettings<Settings>(`get`);

@@ -1,8 +1,11 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
+
 import { onCleanup, onMount } from 'solid-js';
-import { listenEvent } from '../api';
+
 import { isDebug } from '@/shared/model';
 import { showToast } from '@/shared/ui';
+
+import { listenEvent } from '../api';
 
 export const useWarningEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;

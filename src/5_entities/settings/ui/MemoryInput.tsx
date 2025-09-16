@@ -1,5 +1,3 @@
-import type { MemorySliderProps } from '@/entities/instances';
-import { MemorySlider } from '@/entities/instances';
 import type { Component, ComponentProps, ValidComponent } from 'solid-js';
 
 import {
@@ -10,9 +8,11 @@ import {
   splitProps,
 } from 'solid-js';
 
-import { CombinedTextField } from '@/shared/ui';
+import type { MemorySliderProps } from '@/entities/instances';
 
+import { MemorySlider } from '@/entities/instances';
 import { cn, isNil } from '@/shared/lib';
+import { CombinedTextField } from '@/shared/ui';
 
 type MemoryInputBaseProps<T extends ValidComponent = 'div'> = Omit<
   ComponentProps<T>,

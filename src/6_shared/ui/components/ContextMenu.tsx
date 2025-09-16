@@ -1,6 +1,7 @@
-import * as ContextMenuPrimitive from '@kobalte/core/context-menu';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
+
+import * as ContextMenuPrimitive from '@kobalte/core/context-menu';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
