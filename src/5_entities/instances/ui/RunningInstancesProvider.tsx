@@ -8,7 +8,7 @@ import {
   ProcessPayloadType,
   listenEvent,
 } from '@/entities/events/@x/instances';
-import { isDebug } from '@/shared/model';
+import { logDebug } from '@/shared/lib';
 
 import type { Instance, RunningInstancesContextValue } from '../model';
 
@@ -51,9 +51,7 @@ export const RunningInstancesProvider: Component<
 
   const startProcessListener = () =>
     listenEvent('process', (e) => {
-      if (isDebug()) {
-        console.log('[EVENT][DEBUG]', e);
-      }
+      logDebug('[EVENT][DEBUG]', e);
 
       setContextValue('instances', (instances) => ({
         ...instances,
@@ -63,8 +61,6 @@ export const RunningInstancesProvider: Component<
           isRunning: e.payload.event === ProcessPayloadType.Launched,
         },
       }));
-
-      console.log(contextValue);
     });
 
   createEffect(() => {

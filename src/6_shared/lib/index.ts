@@ -6,6 +6,7 @@ export { default as dayjs } from './dayjs';
 export * from './debounce';
 export * from './event';
 export * from './isNil';
+export * from './log';
 export * from './responseResult';
 export * from './useDeveloperModeCounter';
 export * from './useMaximizeObserver';

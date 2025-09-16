@@ -4,5 +4,6 @@ export const AetherNamespace = '_AETHER_';
 
 export const AetherNamespaceMethods = {
   toggleDebug: () =>
-    console.info(setIsDebug(!isDebug()) ? 'Debug enabled' : 'Debug disabled'),
+    // eslint-disable-next-line no-console
+    console.debug(setIsDebug(!isDebug()) ? 'Debug enabled' : 'Debug disabled'),
 };
