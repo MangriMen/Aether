@@ -1,4 +1,3 @@
-import type { HooksSettingsSchemaValuesOutput } from '@/entities/settings';
 import {
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
@@ -9,6 +8,7 @@ import {
   defaultInstanceSettingsToHooksSettingsValues,
   hooksSettingsValuesToEditDefaultInstanceSettings,
 } from '../model';
+import type { HooksSettingsSchemaValuesOutput } from '@/features/instance-settings/hooks-settings-form';
 
 export const useDefaultHooksSettingsHandler = () => {
   const settings = useDefaultInstanceSettings();

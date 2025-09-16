@@ -1,7 +1,7 @@
 import { splitProps, type Component } from 'solid-js';
-import type { InstanceSettingsTabProps } from '../../model';
-import { HooksSettingsForm } from '@/entities/settings';
-import { useHooksSettingsHandler } from '../../lib';
+import { HooksSettingsForm } from '@/features/instance-settings/hooks-settings-form';
+import { useHooksSettingsHandler } from '../lib';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type HooksTabProps = InstanceSettingsTabProps & { class?: string };
 

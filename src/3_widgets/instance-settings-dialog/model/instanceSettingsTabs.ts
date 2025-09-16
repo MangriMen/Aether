@@ -6,13 +6,13 @@ import MdiArrowDecisionOutline from '@iconify/icons-mdi/arrow-decision-outline';
 import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component } from 'solid-js';
 
-import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab/WindowTab';
+import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
 import { GeneralTab } from '../ui/GeneralTab';
-import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab/JavaAndMemoryTab';
 import { InstallationTab } from '../ui/InstallationTab';
 import type { EditInstance, Instance } from '@/entities/instances';
 import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
-import { HooksTab } from '../ui/HooksTab/HooksTab';
+import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
+import { HooksTab } from '../ui/HooksTab';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;

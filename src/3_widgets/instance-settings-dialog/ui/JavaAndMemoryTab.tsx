@@ -1,32 +1,32 @@
 import type { Component } from 'solid-js';
+
 import { createMemo, onCleanup, splitProps } from 'solid-js';
 
+import type { EditInstance } from '@/entities/instances';
+
+import { useEditInstance } from '@/entities/instances';
+import {
+  OverridableEnvVarsField,
+  OverridableExtraLaunchArgsField,
+  OverridableMemoryField,
+} from '@/entities/settings';
 import { cn, debounce } from '@/shared/lib';
 
-import type { EditInstance } from '@/entities/instances';
-import { useEditInstance } from '@/entities/instances';
+import type { InstanceSettingsTabProps } from '../model';
 
-import {
-  JavaAndMemorySettingsSchema,
-  MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  MemoryMaximumSchema,
-  type InstanceSettingsTabProps,
-} from '../../model';
 import {
   stringToEnvVars,
   stringToExtraLaunchArgs,
   useFieldOnChangeSync,
-} from '../../lib';
-import {
   useJavaAndMemoryForm,
   useResetJavaAndMemoryFormValues,
-} from '../../lib/useJavaAndMemoryForm';
-import { OverridableExtraLaunchArgsField } from '../../../../5_entities/settings/ui/OverridableExtraLaunchArgsField';
+} from '../lib';
 import {
-  OverridableMemoryField,
-  OverridableEnvVarsField,
-} from '@/entities/settings';
-import { instanceSettingsToJavaAndMemorySettingsValues } from '../../model/converter';
+  JavaAndMemorySettingsSchema,
+  MEMORY_SLIDER_HANDLE_DEBOUNCE,
+  MemoryMaximumSchema,
+  instanceSettingsToJavaAndMemorySettingsValues,
+} from '../model';
 
 export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {
   class?: string;

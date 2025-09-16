@@ -14,7 +14,7 @@ import {
 } from 'solid-js';
 import MdiHammerIcon from '@iconify/icons-mdi/hammer';
 import { isLauncherError } from '@/shared/model';
-import type { InstanceSettingsTabProps } from '../../model';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;

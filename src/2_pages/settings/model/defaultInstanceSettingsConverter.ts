@@ -1,16 +1,18 @@
 import type {
-  HooksSettingsSchemaValuesInput,
-  HooksSettingsSchemaValuesOutput,
-} from '@/entities/settings';
-import type {
   DefaultInstanceSettings,
   EditDefaultInstanceSettings,
 } from '@/entities/settings/model/defaultInstanceSettings';
 import type {
-  JavaAndMemorySettingsSchemaValuesInput,
-  JavaAndMemorySettingsSchemaValuesOutput,
+  HooksSettingsSchemaValuesInput,
+  HooksSettingsSchemaValuesOutput,
+} from '@/features/instance-settings/hooks-settings-form';
+import type {
   WindowSchemaValuesInput,
   WindowSchemaValuesOutput,
+} from '@/features/instance-settings/window-settings-form';
+import type {
+  JavaAndMemorySettingsSchemaValuesInput,
+  JavaAndMemorySettingsSchemaValuesOutput,
 } from '@/widgets/instance-settings-dialog';
 import {
   envVarsToString,

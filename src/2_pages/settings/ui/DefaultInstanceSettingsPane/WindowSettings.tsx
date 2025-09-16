@@ -2,7 +2,7 @@ import { useWindowSettingsHandler } from '../../lib';
 import {
   WindowSettingsForm,
   type WindowSettingsFormProps,
-} from './WindowSettingsForm';
+} from '../../../../4_features/instance-settings/window-settings-form/ui/WindowSettingsForm';
 
 export type WindowSettingsProps = Omit<
   WindowSettingsFormProps,

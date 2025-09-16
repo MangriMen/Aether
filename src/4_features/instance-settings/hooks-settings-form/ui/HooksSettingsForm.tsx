@@ -12,8 +12,7 @@ import {
 } from '../model';
 import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
 import { cn } from '@/shared/lib';
-import { CombinedTextField } from '@/shared/ui';
-import { LabeledEntry } from './LabeledEntry';
+import { CombinedTextField, LabeledField } from '@/shared/ui';
 import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
 
 export type HooksSettingsFormProps = Omit<
@@ -63,7 +62,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
       <span class='text-lg font-medium'>Hooks</span>
-      <LabeledEntry label='Pre launch'>
+      <LabeledField label='Pre launch'>
         <Field name='preLaunch' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
@@ -82,8 +81,8 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
             />
           )}
         </Field>
-      </LabeledEntry>
-      <LabeledEntry label='Wrapper'>
+      </LabeledField>
+      <LabeledField label='Wrapper'>
         <Field name='wrapper' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
@@ -102,8 +101,8 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
             />
           )}
         </Field>
-      </LabeledEntry>
-      <LabeledEntry label='Post exit'>
+      </LabeledField>
+      <LabeledField label='Post exit'>
         <Field name='postExit' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
@@ -122,7 +121,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
             />
           )}
         </Field>
-      </LabeledEntry>
+      </LabeledField>
     </Form>
   );
 };

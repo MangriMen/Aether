@@ -3,16 +3,13 @@ import { cn } from '@/shared/lib';
 import { splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
-import { ResolutionField } from './ResolutionField';
-import {
-  useResetWindowFormValues,
-  useWindowForm,
-} from '@/widgets/instance-settings-dialog/lib';
+import type { PartialValues } from '@modular-forms/solid';
+import { ResolutionField } from '@/entities/settings';
 import type {
   WindowSchemaValuesInput,
   WindowSchemaValuesOutput,
-} from '@/widgets/instance-settings-dialog';
-import type { PartialValues } from '@modular-forms/solid';
+} from '../model';
+import { useResetWindowFormValues, useWindowForm } from '../lib';
 
 export type WindowSettingsFormProps = Omit<
   ComponentProps<'form'>,

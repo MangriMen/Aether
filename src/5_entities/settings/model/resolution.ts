@@ -1,7 +1,4 @@
-export const DEFAULT_WINDOW_WIDTH = 1280;
-export const DEFAULT_WINDOW_HEIGHT = 720;
-
-export const RESOLUTION_FIELD_CLASS = 'w-[7ch]';
+export const DEFAULT_RESOLUTION = [1280, 720] as const;
 
 export const RESOLUTION_OPTIONS: { name: string; value: [number, number] }[] = [
   { name: '7680x4320', value: [7680, 4320] },

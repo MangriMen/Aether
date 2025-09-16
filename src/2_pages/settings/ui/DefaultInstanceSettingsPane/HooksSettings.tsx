@@ -2,7 +2,7 @@ import { type Component } from 'solid-js';
 import {
   type HooksSettingsFormProps,
   HooksSettingsForm,
-} from '@/entities/settings';
+} from '@/features/instance-settings/hooks-settings-form';
 
 import { useDefaultHooksSettingsHandler } from '../../lib';
 

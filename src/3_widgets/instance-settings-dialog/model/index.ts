@@ -1,5 +1,5 @@
 export * from './constants';
-export * from './instanceSettingsTabs';
-export * from './windowValidation';
+export * from './converter';
 export * from './generalValidation';
+export * from './instanceSettingsTabs';
 export * from './javaAndMemoryValidation';

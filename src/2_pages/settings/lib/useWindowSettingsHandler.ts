@@ -8,7 +8,7 @@ import {
   defaultInstanceSettingsToWindowSettingsValues,
   windowSettingsValuesToEditDefaultInstanceSettings,
 } from '../model';
-import type { WindowSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
+import type { WindowSchemaValuesOutput } from '@/features/instance-settings/window-settings-form';
 
 export const useWindowSettingsHandler = () => {
   const settings = useDefaultInstanceSettings();

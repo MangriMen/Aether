@@ -7,13 +7,10 @@ import { CombinedTextField } from '@/shared/ui';
 import { type EditInstance, useEditInstance } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
-import {
-  GeneralSettingsSchema,
-  type InstanceSettingsTabProps,
-} from '../../model';
 
 import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
-import { useFieldOnChangeSync } from '../../lib';
+import { GeneralSettingsSchema, type InstanceSettingsTabProps } from '../model';
+import { useFieldOnChangeSync } from '../lib';
 
 export type GeneralTabProps = InstanceSettingsTabProps & { class?: string };
 

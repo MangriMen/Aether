@@ -4,7 +4,7 @@ import {
   type Instance,
 } from '@/entities/instances';
 
-import type { HooksSettingsSchemaValuesOutput } from '@/entities/settings';
+import type { HooksSettingsSchemaValuesOutput } from '@/features/instance-settings/hooks-settings-form';
 import type { Accessor } from 'solid-js';
 import { createMemo } from 'solid-js';
 import {

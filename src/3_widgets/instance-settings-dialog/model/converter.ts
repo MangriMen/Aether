@@ -5,12 +5,14 @@ import type {
 import type {
   HooksSettingsSchemaValuesInput,
   HooksSettingsSchemaValuesOutput,
-} from '@/entities/settings';
+} from '@/features/instance-settings/hooks-settings-form';
+import type {
+  WindowSchemaValuesInput,
+  WindowSchemaValuesOutput,
+} from '@/features/instance-settings/window-settings-form';
 import type {
   JavaAndMemorySettingsSchemaValuesInput,
   JavaAndMemorySettingsSchemaValuesOutput,
-  WindowSchemaValuesInput,
-  WindowSchemaValuesOutput,
 } from '@/widgets/instance-settings-dialog';
 import {
   envVarsToString,
