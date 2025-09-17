@@ -1,6 +1,6 @@
 import { createMemo } from 'solid-js';
 
-import type { WindowSchemaValuesOutput } from '@/features/instance-settings/window-settings-form';
+import type { WindowSettingsSchemaOutput } from '@/features/instance-settings/window-settings-form';
 
 import {
   isEditDefaultInstanceSettingsEmpty,
@@ -21,7 +21,7 @@ export const useWindowSettingsHandler = () => {
     defaultInstanceSettingsToWindowSettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<WindowSchemaValuesOutput>) => {
+  const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
     const dto = windowSettingsValuesToEditDefaultInstanceSettings(values);
 
     if (isEditDefaultInstanceSettingsEmpty(dto)) {

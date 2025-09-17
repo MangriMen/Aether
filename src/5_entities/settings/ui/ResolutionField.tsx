@@ -21,7 +21,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { WindowSchemaValuesInput } from '@/features/instance-settings/window-settings-form';
+import type { WindowSettingsSchemaInput } from '@/features/instance-settings/window-settings-form';
 import type { TFunction } from '@/shared/model';
 
 import { cn } from '@/shared/lib';
@@ -42,7 +42,7 @@ export type ResolutionFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange' | 'onSubmit'
 > & {
-  form: FormStore<WindowSchemaValuesInput>;
+  form: FormStore<WindowSettingsSchemaInput>;
   defaultWidth?: number | string;
   defaultHeight?: number | string;
   disabled?: boolean;

@@ -4,12 +4,12 @@ import type { Accessor } from 'solid-js';
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect } from 'solid-js';
 
-import type { WindowSchemaValuesInput } from '../model';
+import type { WindowSettingsSchemaInput } from '../model';
 
 import { WindowSchema } from '../model';
 
 export const useWindowForm = (): ReturnType<
-  typeof createForm<WindowSchemaValuesInput>
+  typeof createForm<WindowSettingsSchemaInput>
 > => {
   const [form, components] = createForm({
     validate: zodForm(WindowSchema),
@@ -22,8 +22,8 @@ export const useWindowForm = (): ReturnType<
 };
 
 export const useResetWindowFormValues = (
-  form: FormStore<WindowSchemaValuesInput>,
-  initialValues: Accessor<PartialValues<WindowSchemaValuesInput> | undefined>,
+  form: FormStore<WindowSettingsSchemaInput>,
+  initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
     const { width, height } = initialValues()?.resolution ?? {};

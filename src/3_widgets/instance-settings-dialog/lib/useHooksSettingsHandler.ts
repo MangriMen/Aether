@@ -2,7 +2,7 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { HooksSettingsSchemaValuesOutput } from '@/features/instance-settings/hooks-settings-form';
+import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks-settings-form';
 
 import {
   type EditInstance,
@@ -30,7 +30,7 @@ export const useHooksSettingsHandler = ({
     instanceSettingsToHooksSettingsValues(instance()),
   );
 
-  const onChange = (values: Partial<HooksSettingsSchemaValuesOutput>) => {
+  const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
     const edit = hooksSettingsValuesToEditInstanceSettings(values);
 
     if (isEditInstanceSettingsEmpty(edit)) {

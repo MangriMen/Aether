@@ -4,11 +4,10 @@ import { createForm, reset, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect, splitProps } from 'solid-js';
 
 import { type EditInstance, useEditInstance } from '@/entities/instances';
-import { cn } from '@/shared/lib';
+import { cn, useFieldOnChangeSync } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
 
-import { useFieldOnChangeSync } from '../lib';
 import { GeneralSettingsSchema, type InstanceSettingsTabProps } from '../model';
 
 export type GeneralTabProps = InstanceSettingsTabProps & { class?: string };

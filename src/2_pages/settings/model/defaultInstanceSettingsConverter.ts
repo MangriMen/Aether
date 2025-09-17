@@ -5,17 +5,17 @@ import type {
   EditDefaultInstanceSettings,
 } from '@/entities/settings/model/defaultInstanceSettings';
 import type {
-  HooksSettingsSchemaValuesInput,
-  HooksSettingsSchemaValuesOutput,
+  HooksSettingsSchemaInput,
+  HooksSettingsSchemaOutput,
 } from '@/features/instance-settings/hooks-settings-form';
 import type {
-  WindowSchemaValuesInput,
-  WindowSchemaValuesOutput,
-} from '@/features/instance-settings/window-settings-form';
+  JavaAndMemorySettingsSchemaInput,
+  JavaAndMemorySettingsSchemaOutput,
+} from '@/features/instance-settings/java-and-memory-settings-form';
 import type {
-  JavaAndMemorySettingsSchemaValuesInput,
-  JavaAndMemorySettingsSchemaValuesOutput,
-} from '@/widgets/instance-settings-dialog';
+  WindowSettingsSchemaInput,
+  WindowSettingsSchemaOutput,
+} from '@/features/instance-settings/window-settings-form';
 
 import {
   envVarsToString,
@@ -26,7 +26,7 @@ import {
 
 export const defaultInstanceSettingsToWindowSettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<WindowSchemaValuesInput> | undefined => {
+): PartialValues<WindowSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -45,7 +45,7 @@ export const defaultInstanceSettingsToWindowSettingsValues = (
 
 export const defaultInstanceSettingsToJavaAndMemorySettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<JavaAndMemorySettingsSchemaValuesInput> | undefined => {
+): PartialValues<JavaAndMemorySettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -67,7 +67,7 @@ export const defaultInstanceSettingsToJavaAndMemorySettingsValues = (
 
 export const defaultInstanceSettingsToHooksSettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<HooksSettingsSchemaValuesInput> | undefined => {
+): PartialValues<HooksSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -82,7 +82,7 @@ export const defaultInstanceSettingsToHooksSettingsValues = (
 };
 
 export const windowSettingsValuesToEditDefaultInstanceSettings = (
-  values: Partial<WindowSchemaValuesOutput>,
+  values: Partial<WindowSettingsSchemaOutput>,
 ): EditDefaultInstanceSettings => {
   const dto: EditDefaultInstanceSettings = {};
 
@@ -94,7 +94,7 @@ export const windowSettingsValuesToEditDefaultInstanceSettings = (
 };
 
 export const javaAndMemorySettingsValuesToEditDefaultInstanceSettings = (
-  values: Partial<JavaAndMemorySettingsSchemaValuesOutput>,
+  values: Partial<JavaAndMemorySettingsSchemaOutput>,
 ): EditDefaultInstanceSettings => {
   const dto: EditDefaultInstanceSettings = {};
 
@@ -114,7 +114,7 @@ export const javaAndMemorySettingsValuesToEditDefaultInstanceSettings = (
 };
 
 export const hooksSettingsValuesToEditDefaultInstanceSettings = (
-  values: Partial<HooksSettingsSchemaValuesOutput>,
+  values: Partial<HooksSettingsSchemaOutput>,
 ): EditDefaultInstanceSettings => {
   const dto: EditDefaultInstanceSettings = {};
 

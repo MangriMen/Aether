@@ -7,8 +7,8 @@ import { ResolutionField } from '@/entities/settings';
 import { cn } from '@/shared/lib';
 
 import type {
-  WindowSchemaValuesInput,
-  WindowSchemaValuesOutput,
+  WindowSettingsSchemaInput,
+  WindowSettingsSchemaOutput,
 } from '../model';
 
 import { useResetWindowFormValues, useWindowForm } from '../lib';
@@ -17,8 +17,8 @@ export type WindowSettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
 > & {
-  initialValues: Accessor<PartialValues<WindowSchemaValuesInput> | undefined>;
-  onChangePartial?: (values: Partial<WindowSchemaValuesOutput>) => void;
+  initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>;
+  onChangePartial?: (values: Partial<WindowSettingsSchemaOutput>) => void;
 };
 
 export const WindowSettingsForm: Component<WindowSettingsFormProps> = (

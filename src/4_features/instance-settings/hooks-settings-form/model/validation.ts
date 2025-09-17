@@ -15,9 +15,5 @@ export const HooksSettingsSchema = z.object({
     .transform((value) => (value === '' ? null : value)),
 });
 
-export type HooksSettingsSchemaValuesInput = z.input<
-  typeof HooksSettingsSchema
->;
-export type HooksSettingsSchemaValuesOutput = z.output<
-  typeof HooksSettingsSchema
->;
+export type HooksSettingsSchemaInput = z.input<typeof HooksSettingsSchema>;
+export type HooksSettingsSchemaOutput = z.output<typeof HooksSettingsSchema>;

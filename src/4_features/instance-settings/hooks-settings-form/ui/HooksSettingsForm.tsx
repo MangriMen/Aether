@@ -7,25 +7,22 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn, useFieldOnChangeSync } from '@/shared/lib';
 import { CombinedTextField, LabeledField } from '@/shared/ui';
-import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
 
 import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
 import {
   HooksSettingsSchema,
-  type HooksSettingsSchemaValuesInput,
-  type HooksSettingsSchemaValuesOutput,
+  type HooksSettingsSchemaInput,
+  type HooksSettingsSchemaOutput,
 } from '../model';
 
 export type HooksSettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
 > & {
-  initialValues: Accessor<
-    PartialValues<HooksSettingsSchemaValuesInput> | undefined
-  >;
-  onChangePartial?: (values: Partial<HooksSettingsSchemaValuesOutput>) => void;
+  initialValues: Accessor<PartialValues<HooksSettingsSchemaInput> | undefined>;
+  onChangePartial?: (values: Partial<HooksSettingsSchemaOutput>) => void;
 };
 
 export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {

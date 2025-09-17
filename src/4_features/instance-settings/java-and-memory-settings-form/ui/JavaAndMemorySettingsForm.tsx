@@ -1,43 +1,36 @@
-import { setValue } from '@modular-forms/solid';
-import {
-  type Accessor,
-  onCleanup,
-  splitProps,
-  type Component,
-  type ComponentProps,
-  createMemo,
-} from 'solid-js';
+import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import type {
-  JavaAndMemorySettingsSchemaValuesInput,
-  JavaAndMemorySettingsSchemaValuesOutput,
-} from '@/widgets/instance-settings-dialog';
+import { setValue } from '@modular-forms/solid';
+import { onCleanup, splitProps, createMemo } from 'solid-js';
 
 import { OverridableEnvVarsField } from '@/entities/settings';
 import { OverridableExtraLaunchArgsField } from '@/entities/settings/ui/OverridableExtraLaunchArgsField';
 import { OverridableMemoryField } from '@/entities/settings/ui/OverridableMemoryField';
-import { cn, debounce } from '@/shared/lib';
+import { cn, debounce, useFieldOnChangeSync } from '@/shared/lib';
+
+import type {
+  JavaAndMemorySettingsSchemaInput,
+  JavaAndMemorySettingsSchemaOutput,
+} from '../model';
+
+import {
+  useJavaAndMemorySettingsForm,
+  useResetJavaAndMemorySettingsForm,
+} from '../lib';
 import {
   JavaAndMemorySettingsSchema,
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
   MemoryMaximumSchema,
-} from '@/widgets/instance-settings-dialog';
-import { useFieldOnChangeSync } from '@/widgets/instance-settings-dialog/lib';
-import {
-  useJavaAndMemoryFormRequired,
-  useResetJavaAndMemoryFormRequiredValues,
-} from '@/widgets/instance-settings-dialog/lib/useJavaAndMemoryForm';
+} from '../model';
 
 export type JavaAndMemorySettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
 > & {
   initialValues: Accessor<
-    Partial<JavaAndMemorySettingsSchemaValuesInput> | undefined
+    Partial<JavaAndMemorySettingsSchemaInput> | undefined
   >;
-  onChangePartial: (
-    values: Partial<JavaAndMemorySettingsSchemaValuesOutput>,
-  ) => void;
+  onChangePartial: (values: Partial<JavaAndMemorySettingsSchemaOutput>) => void;
 };
 
 export const JavaAndMemorySettingsForm: Component<
@@ -49,9 +42,8 @@ export const JavaAndMemorySettingsForm: Component<
     'class',
   ]);
 
-  const [form, { Form, Field }] = useJavaAndMemoryFormRequired();
-
-  useResetJavaAndMemoryFormRequiredValues(form, local.initialValues);
+  const [form, { Form, Field }] = useJavaAndMemorySettingsForm();
+  useResetJavaAndMemorySettingsForm(form, local.initialValues);
 
   const onChangePartialDebounced = createMemo(() =>
     debounce(local.onChangePartial, MEMORY_SLIDER_HANDLE_DEBOUNCE),

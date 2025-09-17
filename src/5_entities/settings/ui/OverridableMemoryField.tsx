@@ -4,11 +4,11 @@ import { createMemo, Show, splitProps } from 'solid-js';
 
 import { useMaxRam } from '@/entities/settings';
 import { OverrideCheckbox } from '@/entities/settings/ui/OverrideCheckbox';
+import { MIN_JRE_MEMORY } from '@/features/instance-settings/java-and-memory-settings-form';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 import { bytesToMegabytes } from '../../../3_widgets/instance-settings-dialog/lib';
-import { MIN_JRE_MEMORY } from '../../../3_widgets/instance-settings-dialog/model';
 import { MemoryInput } from './MemoryInput';
 
 export type OverridableMemoryFieldProps = Omit<

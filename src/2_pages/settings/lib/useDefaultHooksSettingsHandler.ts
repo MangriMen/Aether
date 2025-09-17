@@ -1,6 +1,6 @@
 import { createMemo } from 'solid-js';
 
-import type { HooksSettingsSchemaValuesOutput } from '@/features/instance-settings/hooks-settings-form';
+import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks-settings-form';
 
 import {
   isEditDefaultInstanceSettingsEmpty,
@@ -21,7 +21,7 @@ export const useDefaultHooksSettingsHandler = () => {
     defaultInstanceSettingsToHooksSettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<HooksSettingsSchemaValuesOutput>) => {
+  const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
     const dto = hooksSettingsValuesToEditDefaultInstanceSettings(values);
 
     if (isEditDefaultInstanceSettingsEmpty(dto)) {

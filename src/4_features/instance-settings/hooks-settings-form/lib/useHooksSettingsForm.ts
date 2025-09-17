@@ -4,13 +4,10 @@ import type { Accessor } from 'solid-js';
 import { createForm, setValues, zodForm } from '@modular-forms/solid';
 import { createEffect } from 'solid-js';
 
-import {
-  HooksSettingsSchema,
-  type HooksSettingsSchemaValuesInput,
-} from '../model';
+import { HooksSettingsSchema, type HooksSettingsSchemaInput } from '../model';
 
 export const useHooksSettingsForm = (): ReturnType<
-  typeof createForm<HooksSettingsSchemaValuesInput>
+  typeof createForm<HooksSettingsSchemaInput>
 > => {
   const [form, components] = createForm({
     validate: zodForm(HooksSettingsSchema),
@@ -20,10 +17,8 @@ export const useHooksSettingsForm = (): ReturnType<
 };
 
 export const useResetHooksSettingsFormValues = (
-  form: FormStore<HooksSettingsSchemaValuesInput>,
-  initialValues: Accessor<
-    PartialValues<HooksSettingsSchemaValuesInput> | undefined
-  >,
+  form: FormStore<HooksSettingsSchemaInput>,
+  initialValues: Accessor<PartialValues<HooksSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
     const preLaunch = initialValues()?.preLaunch;

@@ -1,6 +1,6 @@
 import { createMemo } from 'solid-js';
 
-import type { JavaAndMemorySettingsSchemaValuesOutput } from '@/widgets/instance-settings-dialog';
+import type { JavaAndMemorySettingsSchemaOutput } from '@/features/instance-settings/java-and-memory-settings-form';
 
 import {
   isEditDefaultInstanceSettingsEmpty,
@@ -21,9 +21,7 @@ export const useJavaAndMemorySettingsHandler = () => {
     defaultInstanceSettingsToJavaAndMemorySettingsValues(settings.data),
   );
 
-  const onChange = (
-    values: Partial<JavaAndMemorySettingsSchemaValuesOutput>,
-  ) => {
+  const onChange = (values: Partial<JavaAndMemorySettingsSchemaOutput>) => {
     const dto =
       javaAndMemorySettingsValuesToEditDefaultInstanceSettings(values);
 

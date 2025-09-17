@@ -9,4 +9,5 @@ export * from './isNil';
 export * from './log';
 export * from './responseResult';
 export * from './useDeveloperModeCounter';
+export * from './useFieldOnChangeSync';
 export * from './useMaximizeObserver';

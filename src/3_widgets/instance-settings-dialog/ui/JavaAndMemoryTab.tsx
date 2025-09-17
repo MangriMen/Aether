@@ -10,22 +10,19 @@ import {
   OverridableExtraLaunchArgsField,
   OverridableMemoryField,
 } from '@/entities/settings';
-import { cn, debounce } from '@/shared/lib';
-
-import type { InstanceSettingsTabProps } from '../model';
-
-import {
-  stringToEnvVars,
-  stringToExtraLaunchArgs,
-  useFieldOnChangeSync,
-  useJavaAndMemoryForm,
-  useResetJavaAndMemoryFormValues,
-} from '../lib';
 import {
   JavaAndMemorySettingsSchema,
   MEMORY_SLIDER_HANDLE_DEBOUNCE,
   MemoryMaximumSchema,
+  useJavaAndMemorySettingsForm,
+  useResetJavaAndMemorySettingsForm,
+} from '@/features/instance-settings/java-and-memory-settings-form';
+import { cn, debounce, useFieldOnChangeSync } from '@/shared/lib';
+
+import { stringToEnvVars, stringToExtraLaunchArgs } from '../lib';
+import {
   instanceSettingsToJavaAndMemorySettingsValues,
+  type InstanceSettingsTabProps,
 } from '../model';
 
 export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {
@@ -39,13 +36,12 @@ export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
     'class',
   ]);
 
-  const [form, { Form, Field }] = useJavaAndMemoryForm();
+  const [form, { Form, Field }] = useJavaAndMemorySettingsForm();
 
   const javaAndMemorySettingsFormValues = createMemo(() =>
     instanceSettingsToJavaAndMemorySettingsValues(local.instance),
   );
-
-  useResetJavaAndMemoryFormValues(form, () =>
+  useResetJavaAndMemorySettingsForm(form, () =>
     javaAndMemorySettingsFormValues(),
   );
 
