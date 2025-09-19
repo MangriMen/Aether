@@ -1,6 +1,6 @@
 export interface DefaultInstanceSettings {
-  extraLaunchArgs: string[];
-  customEnvVars: Array<[string, string]>;
+  launchArgs: string[];
+  envVars: Array<[string, string]>;
 
   memory: MemorySettings;
   gameResolution: WindowSize;

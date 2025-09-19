@@ -1,29 +1,10 @@
-import type { Component } from 'solid-js';
+import { splitProps, type Component } from 'solid-js';
 
-import { createMemo, onCleanup, splitProps } from 'solid-js';
+import { JavaAndMemorySettingsForm } from '@/features/instance-settings/java-and-memory-settings-form';
 
-import type { EditInstance } from '@/entities/instances';
+import type { InstanceSettingsTabProps } from '../model';
 
-import { useEditInstance } from '@/entities/instances';
-import {
-  OverridableEnvVarsField,
-  OverridableExtraLaunchArgsField,
-  OverridableMemoryField,
-} from '@/entities/settings';
-import {
-  JavaAndMemorySettingsSchema,
-  MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  MemoryMaximumSchema,
-  useJavaAndMemorySettingsForm,
-  useResetJavaAndMemorySettingsForm,
-} from '@/features/instance-settings/java-and-memory-settings-form';
-import { cn, debounce, useFieldOnChangeSync } from '@/shared/lib';
-
-import { stringToEnvVars, stringToExtraLaunchArgs } from '../lib';
-import {
-  instanceSettingsToJavaAndMemorySettingsValues,
-  type InstanceSettingsTabProps,
-} from '../model';
+import { useJavaAndMemorySettingsHandler } from '../lib/useJavaAndMemorySettingsHandler';
 
 export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {
   class?: string;
@@ -32,115 +13,24 @@ export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {
 export const JavaAndMemoryTab: Component<JavaAndMemoryTabProps> = (props) => {
   const [local, others] = splitProps(props, [
     'instance',
-    'globalSettings',
-    'class',
+    'editInstance',
+    'defaultSettings',
   ]);
 
-  const [form, { Form, Field }] = useJavaAndMemorySettingsForm();
-
-  const javaAndMemorySettingsFormValues = createMemo(() =>
-    instanceSettingsToJavaAndMemorySettingsValues(local.instance),
-  );
-  useResetJavaAndMemorySettingsForm(form, () =>
-    javaAndMemorySettingsFormValues(),
-  );
-
-  const { mutateAsync: editInstance } = useEditInstance();
-
-  const editInstanceSimple = (edit: EditInstance) =>
-    editInstance({ id: local.instance.id, edit });
-
-  // eslint-disable-next-line solid/reactivity
-  const editInstanceSimpleDebounced = debounce(
-    editInstanceSimple,
-    MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  );
-  onCleanup(() => {
-    editInstanceSimpleDebounced.callAndClear();
-  });
-
-  const updateMemory = useFieldOnChangeSync(
-    MemoryMaximumSchema,
-    form,
-    'memory.maximum',
-    (value) => ({
-      memory: value ? { maximum: value } : null,
-    }),
-    editInstanceSimpleDebounced,
-  );
-
-  const updateExtraLaunchArgs = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'extraLaunchArgs',
-    (value) => ({
-      extraLaunchArgs: value ? stringToExtraLaunchArgs(value) : null,
-    }),
-    editInstanceSimple,
-  );
-
-  const updateEnvVars = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'customEnvVars',
-    (value) => ({
-      customEnvVars: value ? stringToEnvVars(value) : null,
-    }),
-    (value) => editInstanceSimple(value),
-  );
+  const { initialValues, defaultValues, onChange } =
+    useJavaAndMemorySettingsHandler({
+      instance: () => local.instance,
+      defaultSettings: () => local.defaultSettings,
+      editInstance: () => local.editInstance,
+    });
 
   return (
-    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <Field name='memory.maximum' type='number'>
-        {(field) => (
-          <OverridableMemoryField
-            overridable
-            value={field.value ?? null}
-            defaultValue={local.globalSettings?.memory.maximum}
-            onChange={(value) => {
-              updateMemory(value);
-            }}
-          />
-        )}
-      </Field>
-      <Field name='extraLaunchArgs' type='string'>
-        {(field, inputProps) => (
-          <OverridableExtraLaunchArgsField
-            overridable
-            value={field.value}
-            onOverrideChange={(value) => {
-              updateExtraLaunchArgs(value);
-            }}
-            inputProps={{
-              type: 'text',
-              ...inputProps,
-              onBlur: (e) => {
-                inputProps.onBlur(e);
-                updateExtraLaunchArgs();
-              },
-            }}
-          />
-        )}
-      </Field>
-      <Field name='customEnvVars' type='string'>
-        {(field, inputProps) => (
-          <OverridableEnvVarsField
-            overridable
-            value={field.value}
-            onOverrideChange={(value) => {
-              updateEnvVars(value);
-            }}
-            inputProps={{
-              type: 'text',
-              ...inputProps,
-              onBlur: (e) => {
-                inputProps.onBlur(e);
-                updateEnvVars();
-              },
-            }}
-          />
-        )}
-      </Field>
-    </Form>
+    <JavaAndMemorySettingsForm
+      overridable
+      initialValues={initialValues}
+      defaultValues={defaultValues}
+      onChangePartial={onChange}
+      {...others}
+    />
   );
 };

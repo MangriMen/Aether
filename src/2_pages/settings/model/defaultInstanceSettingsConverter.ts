@@ -19,9 +19,9 @@ import type {
 
 import {
   envVarsToString,
-  extraLaunchArgsToString,
+  launchArgsToString,
   stringToEnvVars,
-  stringToExtraLaunchArgs,
+  stringToLaunchArgs,
 } from '@/widgets/instance-settings-dialog/lib';
 
 export const defaultInstanceSettingsToWindowSettingsValues = (
@@ -51,17 +51,15 @@ export const defaultInstanceSettingsToJavaAndMemorySettingsValues = (
   }
 
   const maximum = settings.memory.maximum;
-  const extraLaunchArgs = settings.extraLaunchArgs;
-  const customEnvVars = settings.customEnvVars;
+  const launchArgs = settings.launchArgs;
+  const envVars = settings.envVars;
 
   return {
     memory: {
       maximum,
     },
-    extraLaunchArgs: extraLaunchArgs
-      ? extraLaunchArgsToString(extraLaunchArgs)
-      : null,
-    customEnvVars: customEnvVars ? envVarsToString(customEnvVars) : null,
+    launchArgs: launchArgsToString(launchArgs),
+    envVars: envVarsToString(envVars),
   };
 };
 
@@ -102,12 +100,12 @@ export const javaAndMemorySettingsValuesToEditDefaultInstanceSettings = (
     dto.memory = { maximum: values.memory.maximum };
   }
 
-  if (values.extraLaunchArgs) {
-    dto.extraLaunchArgs = stringToExtraLaunchArgs(values.extraLaunchArgs);
+  if (values.launchArgs) {
+    dto.launchArgs = stringToLaunchArgs(values.launchArgs);
   }
 
-  if (values.customEnvVars) {
-    dto.customEnvVars = stringToEnvVars(values.customEnvVars);
+  if (values.envVars) {
+    dto.envVars = stringToEnvVars(values.envVars);
   }
 
   return dto;

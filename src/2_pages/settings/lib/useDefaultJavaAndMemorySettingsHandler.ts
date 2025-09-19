@@ -13,7 +13,7 @@ import {
   javaAndMemorySettingsValuesToEditDefaultInstanceSettings,
 } from '../model';
 
-export const useJavaAndMemorySettingsHandler = () => {
+export const useDefaultJavaAndMemorySettingsHandler = () => {
   const settings = useDefaultInstanceSettings();
   const editSettings = useEditDefaultInstanceSettings();
 

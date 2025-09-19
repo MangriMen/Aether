@@ -67,7 +67,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
             as={tabContent.component}
             instance={local.instance}
             editInstance={editInstance.mutateAsync}
-            globalSettings={globalSettings.data}
+            defaultSettings={globalSettings.data}
           />
         )}
       </For>

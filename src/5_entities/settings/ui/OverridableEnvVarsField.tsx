@@ -19,6 +19,7 @@ export type OverridableEnvVarsFieldProps = Omit<
   'onChange' | 'onBlur'
 > & {
   value: string | null | undefined;
+  defaultValue?: string;
   onChange?: (value: string | null) => void;
   inputProps?: CombinedTextFieldProps['inputProps'];
   overridable?: boolean;
@@ -30,6 +31,7 @@ export const OverridableEnvVarsField: Component<
 > = (props) => {
   const [local, others] = splitProps(props, [
     'value',
+    'defaultValue',
     'onChange',
     'inputProps',
     'overridable',
@@ -39,7 +41,7 @@ export const OverridableEnvVarsField: Component<
 
   const [{ t }] = useTranslation();
 
-  const value = createMemo(() => local.value ?? '');
+  const value = createMemo(() => local.value ?? local.defaultValue ?? '');
 
   const isOverride = createMemo(() => local.value !== null);
 

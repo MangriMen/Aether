@@ -14,22 +14,24 @@ import { CombinedTextField } from '@/shared/ui';
 
 import { OverrideCheckbox } from './OverrideCheckbox';
 
-export type OverridableExtraLaunchArgsFieldProps = Omit<
+export type OverridableLaunchArgsFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange' | 'onBlur'
 > & {
   value: string | null | undefined;
+  defaultValue?: string;
   onChange?: (value: string | null) => void;
   inputProps?: CombinedTextFieldProps['inputProps'];
   overridable?: boolean;
   onOverrideChange?: (value: string | null) => void;
 };
 
-export const OverridableExtraLaunchArgsField: Component<
-  OverridableExtraLaunchArgsFieldProps
+export const OverridableLaunchArgsField: Component<
+  OverridableLaunchArgsFieldProps
 > = (props) => {
   const [local, others] = splitProps(props, [
     'value',
+    'defaultValue',
     'onChange',
     'inputProps',
     'overridable',
@@ -39,7 +41,7 @@ export const OverridableExtraLaunchArgsField: Component<
 
   const [{ t }] = useTranslation();
 
-  const value = createMemo(() => local.value ?? '');
+  const value = createMemo(() => local.value ?? local.defaultValue ?? '');
 
   const isOverride = createMemo(() => local.value !== null);
 

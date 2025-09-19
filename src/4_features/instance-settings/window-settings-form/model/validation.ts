@@ -19,9 +19,9 @@ export const ResolutionSchema = z.object({
   height: ResolutionPartSchema,
 });
 
-export const WindowSchema = z.object({
-  resolution: ResolutionSchema,
+export const WindowSettingsSchema = z.object({
+  resolution: ResolutionSchema.nullable(),
 });
 
-export type WindowSettingsSchemaInput = z.input<typeof WindowSchema>;
-export type WindowSettingsSchemaOutput = z.output<typeof WindowSchema>;
+export type WindowSettingsSchemaInput = z.input<typeof WindowSettingsSchema>;
+export type WindowSettingsSchemaOutput = z.output<typeof WindowSettingsSchema>;

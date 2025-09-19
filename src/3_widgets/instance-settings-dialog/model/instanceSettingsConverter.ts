@@ -19,9 +19,9 @@ import type {
 
 import {
   envVarsToString,
-  extraLaunchArgsToString,
+  launchArgsToString,
   stringToEnvVars,
-  stringToExtraLaunchArgs,
+  stringToLaunchArgs,
 } from '@/widgets/instance-settings-dialog/lib';
 
 export const instanceSettingsToWindowSettingsValues = (
@@ -50,18 +50,18 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
     return;
   }
 
-  const maximum = settings.memory?.maximum;
-  const extraLaunchArgs = settings.extraLaunchArgs;
-  const customEnvVars = settings.customEnvVars;
+  const { memory } = settings;
+
+  const maximum = memory === null ? null : memory?.maximum;
+  const launchArgs = settings.launchArgs;
+  const envVars = settings.envVars;
 
   return {
     memory: {
       maximum,
     },
-    extraLaunchArgs: extraLaunchArgs
-      ? extraLaunchArgsToString(extraLaunchArgs)
-      : null,
-    customEnvVars: customEnvVars ? envVarsToString(customEnvVars) : null,
+    launchArgs: launchArgs ? launchArgsToString(launchArgs) : null,
+    envVars: envVars ? envVarsToString(envVars) : null,
   };
 };
 
@@ -84,8 +84,11 @@ export const windowSettingsValuesToEditInstanceSettings = (
 ): EditInstanceSettings => {
   const dto: EditInstanceSettings = {};
 
-  if (values.resolution) {
-    dto.gameResolution = [values.resolution.width, values.resolution.height];
+  if (values.resolution !== undefined) {
+    dto.gameResolution =
+      values.resolution === null
+        ? null
+        : [values.resolution.width, values.resolution.height];
   }
 
   return dto;
@@ -96,16 +99,18 @@ export const javaAndMemorySettingsValuesToEditInstanceSettings = (
 ): EditInstanceSettings => {
   const dto: EditInstanceSettings = {};
 
-  if (values.memory?.maximum) {
-    dto.memory = { maximum: values.memory.maximum };
+  const { memory } = values;
+
+  if (memory !== undefined && memory.maximum !== undefined) {
+    dto.memory = memory.maximum !== null ? { maximum: memory.maximum } : null;
   }
 
-  if (values.extraLaunchArgs) {
-    dto.extraLaunchArgs = stringToExtraLaunchArgs(values.extraLaunchArgs);
+  if (values.launchArgs) {
+    dto.launchArgs = stringToLaunchArgs(values.launchArgs);
   }
 
-  if (values.customEnvVars) {
-    dto.customEnvVars = stringToEnvVars(values.customEnvVars);
+  if (values.envVars) {
+    dto.envVars = stringToEnvVars(values.envVars);
   }
 
   return dto;

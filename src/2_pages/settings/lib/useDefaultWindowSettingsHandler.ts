@@ -13,7 +13,7 @@ import {
   windowSettingsValuesToEditDefaultInstanceSettings,
 } from '../model';
 
-export const useWindowSettingsHandler = () => {
+export const useDefaultWindowSettingsHandler = () => {
   const settings = useDefaultInstanceSettings();
   const editSettings = useEditDefaultInstanceSettings();
 

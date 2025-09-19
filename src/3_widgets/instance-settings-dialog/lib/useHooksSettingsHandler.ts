@@ -13,7 +13,7 @@ import {
 import {
   hooksSettingsValuesToEditInstanceSettings,
   instanceSettingsToHooksSettingsValues,
-} from '../model/converter';
+} from '../model/instanceSettingsConverter';
 
 export interface UseHooksSettingsHandler {
   instance: Accessor<Instance>;

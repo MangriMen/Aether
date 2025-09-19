@@ -4,7 +4,7 @@ import { setValue } from '@modular-forms/solid';
 import { onCleanup, splitProps, createMemo } from 'solid-js';
 
 import { OverridableEnvVarsField } from '@/entities/settings';
-import { OverridableExtraLaunchArgsField } from '@/entities/settings/ui/OverridableExtraLaunchArgsField';
+import { OverridableLaunchArgsField } from '@/entities/settings';
 import { OverridableMemoryField } from '@/entities/settings/ui/OverridableMemoryField';
 import { cn, debounce, useFieldOnChangeSync } from '@/shared/lib';
 
@@ -27,7 +27,11 @@ export type JavaAndMemorySettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
 > & {
+  overridable?: boolean;
   initialValues: Accessor<
+    Partial<JavaAndMemorySettingsSchemaInput> | undefined
+  >;
+  defaultValues?: Accessor<
     Partial<JavaAndMemorySettingsSchemaInput> | undefined
   >;
   onChangePartial: (values: Partial<JavaAndMemorySettingsSchemaOutput>) => void;
@@ -37,7 +41,9 @@ export const JavaAndMemorySettingsForm: Component<
   JavaAndMemorySettingsFormProps
 > = (props) => {
   const [local, others] = splitProps(props, [
+    'overridable',
     'initialValues',
+    'defaultValues',
     'onChangePartial',
     'class',
   ]);
@@ -64,14 +70,14 @@ export const JavaAndMemorySettingsForm: Component<
     },
   );
 
-  const updateExtraLaunchArgs = useFieldOnChangeSync(
+  const updateLaunchArgs = useFieldOnChangeSync(
     JavaAndMemorySettingsSchema,
     form,
-    'extraLaunchArgs',
+    'launchArgs',
     (value) => value,
     (value) => {
       local.onChangePartial({
-        extraLaunchArgs: value,
+        launchArgs: value,
       });
     },
   );
@@ -79,10 +85,10 @@ export const JavaAndMemorySettingsForm: Component<
   const updateEnvVars = useFieldOnChangeSync(
     JavaAndMemorySettingsSchema,
     form,
-    'customEnvVars',
+    'envVars',
     (value) => value,
     (value) => {
-      local.onChangePartial({ customEnvVars: value });
+      local.onChangePartial({ envVars: value });
     },
   );
 
@@ -91,8 +97,9 @@ export const JavaAndMemorySettingsForm: Component<
       <Field name='memory.maximum' type='number'>
         {(field) => (
           <OverridableMemoryField
+            overridable={local.overridable}
             value={field.value ?? null}
-            defaultValue={local.initialValues()?.memory?.maximum ?? undefined}
+            defaultValue={local.defaultValues?.()?.memory?.maximum ?? undefined}
             onChange={(value) => {
               setValue(form, 'memory.maximum', value);
               updateMemory();
@@ -100,25 +107,29 @@ export const JavaAndMemorySettingsForm: Component<
           />
         )}
       </Field>
-      <Field name='extraLaunchArgs' type='string'>
+      <Field name='launchArgs' type='string'>
         {(field, inputProps) => (
-          <OverridableExtraLaunchArgsField
+          <OverridableLaunchArgsField
+            overridable={local.overridable}
             value={field.value}
+            onOverrideChange={updateLaunchArgs}
             inputProps={{
               ...inputProps,
               type: 'text',
               onBlur: (e) => {
                 inputProps.onBlur(e);
-                updateExtraLaunchArgs();
+                updateLaunchArgs();
               },
             }}
           />
         )}
       </Field>
-      <Field name='customEnvVars' type='string'>
+      <Field name='envVars' type='string'>
         {(field, inputProps) => (
           <OverridableEnvVarsField
+            overridable={local.overridable}
             value={field.value}
+            onOverrideChange={updateEnvVars}
             inputProps={{
               ...inputProps,
               type: 'text',

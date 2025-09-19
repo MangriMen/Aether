@@ -2,7 +2,7 @@ import type { JavaAndMemorySettingsFormProps } from '@/features/instance-setting
 
 import { JavaAndMemorySettingsForm } from '@/features/instance-settings/java-and-memory-settings-form';
 
-import { useJavaAndMemorySettingsHandler } from '../../lib';
+import { useDefaultJavaAndMemorySettingsHandler } from '../../lib';
 
 export type JavaAndMemorySettingsProps = Omit<
   JavaAndMemorySettingsFormProps,
@@ -10,7 +10,7 @@ export type JavaAndMemorySettingsProps = Omit<
 >;
 
 export const JavaAndMemorySettings = (props: JavaAndMemorySettingsProps) => {
-  const { initialValues, onChange } = useJavaAndMemorySettingsHandler();
+  const { initialValues, onChange } = useDefaultJavaAndMemorySettingsHandler();
 
   return (
     <JavaAndMemorySettingsForm

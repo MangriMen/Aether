@@ -29,8 +29,8 @@ export interface EditInstanceSettings {
 
   // Java launch settings
   memory?: MemorySettings | null;
-  extraLaunchArgs?: string[] | null;
-  customEnvVars?: Array<[string, string]> | null;
+  launchArgs?: string[] | null;
+  envVars?: Array<[string, string]> | null;
 
   hooks?: Partial<Hooks>;
 }
@@ -98,8 +98,8 @@ export interface NewInstance {
 export interface EditInstance {
   name?: string;
   javaPath?: string | null;
-  extraLaunchArgs?: string[] | null;
-  customEnvVars?: Array<[string, string]> | null;
+  launchArgs?: string[] | null;
+  envVars?: Array<[string, string]> | null;
   memory?: MemorySettings | null;
   gameResolution?: WindowSize | null;
 }

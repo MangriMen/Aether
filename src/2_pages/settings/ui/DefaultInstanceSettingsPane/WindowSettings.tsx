@@ -1,8 +1,8 @@
-import {
-  WindowSettingsForm,
-  type WindowSettingsFormProps,
-} from '../../../../4_features/instance-settings/window-settings-form/ui/WindowSettingsForm';
-import { useWindowSettingsHandler } from '../../lib';
+import type { WindowSettingsFormProps } from '@/features/instance-settings/window-settings-form';
+
+import { WindowSettingsForm } from '@/features/instance-settings/window-settings-form';
+
+import { useDefaultWindowSettingsHandler } from '../../lib';
 
 export type WindowSettingsProps = Omit<
   WindowSettingsFormProps,
@@ -10,7 +10,7 @@ export type WindowSettingsProps = Omit<
 >;
 
 export const WindowSettings = (props: WindowSettingsProps) => {
-  const { initialValues, onChange } = useWindowSettingsHandler();
+  const { initialValues, onChange } = useDefaultWindowSettingsHandler();
 
   return (
     <WindowSettingsForm

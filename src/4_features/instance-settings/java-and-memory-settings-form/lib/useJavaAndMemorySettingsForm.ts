@@ -16,8 +16,8 @@ export const useJavaAndMemorySettingsForm = (): ReturnType<
     validate: zodForm(JavaAndMemorySettingsSchema),
     initialValues: {
       memory: { maximum: 512 },
-      extraLaunchArgs: '',
-      customEnvVars: '',
+      launchArgs: '',
+      envVars: '',
     },
   });
 
@@ -32,22 +32,22 @@ export const useResetJavaAndMemorySettingsForm = (
 ) => {
   createEffect(() => {
     const maximum = settings()?.memory?.maximum;
-    if (maximum) {
+    if (maximum !== undefined) {
       setValues(form, { memory: { maximum } });
     }
   });
 
   createEffect(() => {
-    const extraLaunchArgs = settings()?.extraLaunchArgs;
+    const launchArgs = settings()?.launchArgs;
     setValues(form, {
-      extraLaunchArgs,
+      launchArgs,
     });
   });
 
   createEffect(() => {
-    const customEnvVars = settings()?.customEnvVars;
+    const envVars = settings()?.envVars;
     setValues(form, {
-      customEnvVars,
+      envVars,
     });
   });
 };

@@ -6,13 +6,13 @@ import { createEffect } from 'solid-js';
 
 import type { WindowSettingsSchemaInput } from '../model';
 
-import { WindowSchema } from '../model';
+import { WindowSettingsSchema } from '../model';
 
 export const useWindowForm = (): ReturnType<
   typeof createForm<WindowSettingsSchemaInput>
 > => {
   const [form, components] = createForm({
-    validate: zodForm(WindowSchema),
+    validate: zodForm(WindowSettingsSchema),
     initialValues: {
       resolution: undefined,
     },

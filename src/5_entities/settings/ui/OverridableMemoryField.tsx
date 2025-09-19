@@ -3,12 +3,12 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { useMaxRam } from '@/entities/settings';
-import { OverrideCheckbox } from '@/entities/settings/ui/OverrideCheckbox';
+import { OverrideCheckbox } from '@/entities/settings';
 import { MIN_JRE_MEMORY } from '@/features/instance-settings/java-and-memory-settings-form';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import { bytesToMegabytes } from '../../../3_widgets/instance-settings-dialog/lib';
+import { bytesToMegabytes } from '../model';
 import { MemoryInput } from './MemoryInput';
 
 export type OverridableMemoryFieldProps = Omit<

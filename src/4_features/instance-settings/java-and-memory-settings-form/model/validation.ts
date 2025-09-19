@@ -8,8 +8,8 @@ export const MemorySchema = z.object({
 
 export const JavaAndMemorySettingsSchema = z.object({
   memory: MemorySchema,
-  extraLaunchArgs: z.string().nullable(),
-  customEnvVars: z.string().nullable(),
+  launchArgs: z.string().nullable(),
+  envVars: z.string().nullable(),
 });
 
 export type JavaAndMemorySettingsSchemaInput = z.input<

@@ -10,17 +10,16 @@ import MdiToolsIcon from '@iconify/icons-mdi/tools';
 import type { EditInstance, Instance } from '@/entities/instances';
 import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
 
-import { WindowTab } from '@/widgets/instance-settings-dialog/ui/WindowTab';
-
 import { GeneralTab } from '../ui/GeneralTab';
 import { HooksTab } from '../ui/HooksTab';
 import { InstallationTab } from '../ui/InstallationTab';
 import { JavaAndMemoryTab } from '../ui/JavaAndMemoryTab';
+import { WindowTab } from '../ui/WindowTab';
 
 export type InstanceSettingsTabProps = {
   instance: Instance;
   editInstance: (args: { id: string; edit: EditInstance }) => Promise<unknown>;
-  globalSettings?: DefaultInstanceSettings;
+  defaultSettings?: DefaultInstanceSettings;
 };
 
 export enum InstanceSettingsDialogTabs {

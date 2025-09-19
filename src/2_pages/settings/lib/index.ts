@@ -1,5 +1,5 @@
 export * from './useDefaultHooksSettingsHandler';
-export * from './useJavaAndMemorySettingsHandler';
+export * from './useDefaultJavaAndMemorySettingsHandler';
+export * from './useDefaultWindowSettingsHandler';
 export * from './useOnMountSettingsPage';
 export * from './useSettingsPageTabs';
-export * from './useWindowSettingsHandler';
