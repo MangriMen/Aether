@@ -1,7 +1,9 @@
 import type { PartialValues } from '@modular-forms/solid';
 
 import type {
+  EditInstance,
   EditInstanceSettings,
+  Instance,
   InstanceSettings,
 } from '@/entities/instances';
 import type {
@@ -23,6 +25,21 @@ import {
   stringToEnvVars,
   stringToLaunchArgs,
 } from '@/widgets/instance-settings-dialog/lib';
+
+import type {
+  GeneralSettingsSchemaInput,
+  GeneralSettingsSchemaOutput,
+} from './generalValidation';
+
+export const instanceToGeneralSettingsValues = (
+  instance: Instance | undefined,
+): PartialValues<GeneralSettingsSchemaInput> | undefined => {
+  if (!instance) {
+    return;
+  }
+
+  return { name: instance.name };
+};
 
 export const instanceSettingsToWindowSettingsValues = (
   settings: InstanceSettings | undefined,
@@ -77,6 +94,18 @@ export const instanceSettingsToHooksSettingsValues = (
     wrapper: settings.hooks?.wrapper,
     postExit: settings.hooks?.postExit,
   };
+};
+
+export const generalSettingsValuesToEditInstance = (
+  values: Partial<GeneralSettingsSchemaOutput>,
+) => {
+  const dto: EditInstance = {};
+
+  if (values.name !== undefined) {
+    dto.name = values.name;
+  }
+
+  return dto;
 };
 
 export const windowSettingsValuesToEditInstanceSettings = (

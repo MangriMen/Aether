@@ -8,7 +8,7 @@ import type { WindowSettingsSchemaInput } from '../model';
 
 import { WindowSettingsSchema } from '../model';
 
-export const useWindowForm = (): ReturnType<
+export const useWindowSettingsForm = (): ReturnType<
   typeof createForm<WindowSettingsSchemaInput>
 > => {
   const [form, components] = createForm({
@@ -21,7 +21,7 @@ export const useWindowForm = (): ReturnType<
   return [form, components];
 };
 
-export const useResetWindowFormValues = (
+export const useResetWindowSettingsFormValues = (
   form: FormStore<WindowSettingsSchemaInput>,
   initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>,
 ) => {

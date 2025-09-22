@@ -26,6 +26,7 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
 
   return (
     <WindowSettingsForm
+      overridable
       initialValues={initialValues}
       defaultValues={defaultValues}
       onChangePartial={onChange}

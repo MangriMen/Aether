@@ -95,13 +95,9 @@ export interface NewInstance {
   packInfo?: PackInfo;
 }
 
-export interface EditInstance {
+export interface EditInstance extends EditInstanceSettings {
   name?: string;
   javaPath?: string | null;
-  launchArgs?: string[] | null;
-  envVars?: Array<[string, string]> | null;
-  memory?: MemorySettings | null;
-  gameResolution?: WindowSize | null;
 }
 
 export interface InstanceImportDto {
@@ -119,3 +115,6 @@ export interface ImportHandler {
 
 export const isEditInstanceSettingsEmpty = (dto: EditInstanceSettings) =>
   Object.values(dto).every((value) => value === undefined);
+
+export const isEditInstanceEmpty = (dto: EditInstance) =>
+  isEditInstanceSettingsEmpty(dto) && dto.name === undefined;

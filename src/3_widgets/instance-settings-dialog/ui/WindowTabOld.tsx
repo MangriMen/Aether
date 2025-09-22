@@ -8,8 +8,8 @@ import type { EditInstance } from '@/entities/instances';
 import { useEditInstance } from '@/entities/instances';
 import { DEFAULT_RESOLUTION, ResolutionField } from '@/entities/settings';
 import {
-  useResetWindowFormValues,
-  useWindowForm,
+  useResetWindowSettingsFormValues,
+  useWindowSettingsForm,
 } from '@/features/instance-settings/window-settings-form';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -39,8 +39,8 @@ export const WindowTabOld: Component<WindowTabOldProps> = (props) => {
     instanceSettingsToWindowSettingsValues(local.instance),
   );
 
-  const [form, { Form }] = useWindowForm();
-  useResetWindowFormValues(form, () => windowSettingsFormValues());
+  const [form, { Form }] = useWindowSettingsForm();
+  useResetWindowSettingsFormValues(form, () => windowSettingsFormValues());
 
   const { mutateAsync: editInstance } = useEditInstance();
 

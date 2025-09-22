@@ -1,1 +1,1 @@
-export * from './useWindowForm';
+export * from './useWindowSettingsForm';
