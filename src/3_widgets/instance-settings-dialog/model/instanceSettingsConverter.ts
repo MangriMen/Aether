@@ -134,12 +134,14 @@ export const javaAndMemorySettingsValuesToEditInstanceSettings = (
     dto.memory = memory.maximum !== null ? { maximum: memory.maximum } : null;
   }
 
-  if (values.launchArgs) {
-    dto.launchArgs = stringToLaunchArgs(values.launchArgs);
+  if (values.launchArgs !== undefined) {
+    dto.launchArgs =
+      values.launchArgs === null ? null : stringToLaunchArgs(values.launchArgs);
   }
 
-  if (values.envVars) {
-    dto.envVars = stringToEnvVars(values.envVars);
+  if (values.envVars !== undefined) {
+    dto.envVars =
+      values.envVars === null ? null : stringToEnvVars(values.envVars);
   }
 
   return dto;
