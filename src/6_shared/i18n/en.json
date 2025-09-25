@@ -140,6 +140,7 @@
     "customEnvironmentVariables": "Custom environment variables",
     "customMemorySettings": "Custom memory settings",
     "customWindowSettings": "Custom window settings",
+    "customHooksSettings": "Custom launch hooks",
     "enterArguments": "Enter arguments here (e.g. -Xmx1024m)",
     "enterVariables": "Enter variables here (e.g. JAVA_HOME=C:\\Program Files\\Java\\jdk-17)",
     "environmentVariables": "Environment variables",
@@ -173,7 +174,7 @@
   "settings": {
     "tab": {
       "appearance": "Appearance",
-      "defaultInstanceSettings": "Default instance settings",
+      "defaultInstanceSettings": "Instance settings",
       "update": "Update",
       "plugins": "Plugins",
       "experimental": "Experimental"

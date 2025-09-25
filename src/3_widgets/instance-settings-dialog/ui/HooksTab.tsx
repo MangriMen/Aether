@@ -18,6 +18,7 @@ export const HooksTab: Component<HooksTabProps> = (props) => {
 
   return (
     <HooksSettingsForm
+      overridable
       initialValues={initialValues}
       onChangePartial={onChange}
       {...others}

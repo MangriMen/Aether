@@ -53,7 +53,11 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
                 as={Button}
                 variant={null}
                 leadingIcon={tab.icon}
-                children={t(`settings.tab.${tab.title}`)}
+                children={
+                  <span class='overflow-hidden text-ellipsis'>
+                    {t(`settings.tab.${tab.title}`)}
+                  </span>
+                }
               />
             )}
           </For>
