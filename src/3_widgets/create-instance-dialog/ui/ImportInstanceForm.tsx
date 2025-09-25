@@ -146,7 +146,6 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                   type='text'
                   class='pr-10'
                   required
-                  autocomplete='off'
                   {...props}
                 />
                 <CombinedTooltip

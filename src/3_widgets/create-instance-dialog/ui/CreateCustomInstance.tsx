@@ -174,7 +174,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             inputProps={{
               class: 'max-w-[36ch]',
               maxLength: 32,
-              autocomplete: 'off',
               type: 'text',
               ...props,
             }}

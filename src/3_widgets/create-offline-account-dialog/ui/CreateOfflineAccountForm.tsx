@@ -61,7 +61,6 @@ export const CreateOfflineAccountForm: Component<
                 {t('common.username')}
                 <TextFieldInput
                   id='username'
-                  autocomplete='off'
                   required
                   type='text'
                   value={field.value}
