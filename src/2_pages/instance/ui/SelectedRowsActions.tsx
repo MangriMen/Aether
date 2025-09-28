@@ -1,4 +1,8 @@
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import type { RowModel } from '@tanstack/solid-table';
+
+import MdiCancelIcon from '@iconify/icons-mdi/cancel';
+import MdiCheckIcon from '@iconify/icons-mdi/check';
+import MdiDeleteIcon from '@iconify/icons-mdi/delete';
 import {
   createMemo,
   Show,
@@ -6,9 +10,7 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
-import MdiCancelIcon from '@iconify/icons-mdi/cancel';
-import MdiCheckIcon from '@iconify/icons-mdi/check';
+
 import {
   useDisableContents,
   useEnableContents,
@@ -16,10 +18,9 @@ import {
   type Instance,
   type InstanceFile,
 } from '@/entities/instances';
-
-import type { RowModel } from '@tanstack/solid-table';
-import { useTranslation } from '@/shared/model';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];

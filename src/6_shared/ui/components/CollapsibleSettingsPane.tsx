@@ -1,6 +1,8 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
-import { createEffect, createSignal, splitProps } from 'solid-js';
+
+import { Icon } from '@iconify-icon/solid';
 import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
+import { createEffect, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import {
@@ -8,7 +10,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/shared/ui';
-import { Icon } from '@iconify-icon/solid';
 
 export type CollapsibleSettingsPaneProps = ComponentProps<'div'> & {
   label?: JSX.Element;

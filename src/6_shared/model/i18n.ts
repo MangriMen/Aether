@@ -1,4 +1,5 @@
 import type { Flatten } from '@solid-primitives/i18n';
+
 import { enDictionary, ruDictionary } from '../i18n';
 
 export const LOCALES = {

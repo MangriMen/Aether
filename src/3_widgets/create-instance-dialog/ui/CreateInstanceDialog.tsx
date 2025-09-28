@@ -1,5 +1,9 @@
-import { For, type Component } from 'solid-js';
+import type { DialogRootProps } from '@kobalte/core/dialog';
 
+import { For, type Component } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
+
+import { useTranslation } from '@/shared/model';
 import {
   Dialog,
   DialogContent,
@@ -12,14 +16,11 @@ import {
   TabsTrigger,
 } from '@/shared/ui';
 
-import { useTranslation } from '@/shared/model';
-
-import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { TabContentProps, TabKey } from '../model';
+
 import { TAB_VALUES, TABS } from '../model';
 import { CreateCustomInstance } from './CreateCustomInstance';
 import { ImportInstance } from './ImportInstance';
-import { Dynamic } from 'solid-js/web';
 
 const TAB_CONTENTS: Record<TabKey, Component<TabContentProps>> = {
   [TABS.Custom]: CreateCustomInstance,

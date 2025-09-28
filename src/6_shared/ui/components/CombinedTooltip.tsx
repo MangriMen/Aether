@@ -1,8 +1,10 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import { splitProps } from 'solid-js';
 import type { ValidComponent, JSX } from 'solid-js';
 
+import { splitProps } from 'solid-js';
+
 import type { TooltipTriggerProps, TooltipRootProps } from './Tooltip';
+
 import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
 
 export type CombinedTooltipProps<T extends ValidComponent = 'button'> =

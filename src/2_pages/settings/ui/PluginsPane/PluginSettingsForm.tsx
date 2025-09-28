@@ -1,26 +1,28 @@
+import type { SubmitHandler } from '@modular-forms/solid';
+
+import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createEffect, createMemo, splitProps, type Component } from 'solid-js';
+
 import {
   type PluginManifest,
   type PluginSettings,
   usePluginSettings,
   useEditPluginSettings,
 } from '@/entities/plugins';
-
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
-import type { SubmitHandler } from '@modular-forms/solid';
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import { createEffect, createMemo, splitProps, type Component } from 'solid-js';
-import type { PluginSettingsSchemaValues } from '../../model';
-import { PluginSettingsSchema } from '../../model';
 
-import { AllowedItems } from './AllowedItems';
+import type { PluginSettingsSchemaValues } from '../../model';
+
+import { PluginSettingsSchema } from '../../model';
+import { AllowedHost } from './AllowedHost';
 import { AllowedHostsField } from './AllowedHostsField';
+import { AllowedItems } from './AllowedItems';
+import { AllowedPath } from './AllowedPath';
+import { AllowedPathField } from './AllowedPathField';
 import { EditAllowedHost } from './EditAllowedHost';
 import { EditAllowedPath } from './EditAllowedPath';
-import { AllowedPathField } from './AllowedPathField';
-import { AllowedHost } from './AllowedHost';
-import { AllowedPath } from './AllowedPath';
-import { useTranslation } from '@/shared/model';
 
 export type PluginSettingsFormProps = {
   pluginManifest: PluginManifest;

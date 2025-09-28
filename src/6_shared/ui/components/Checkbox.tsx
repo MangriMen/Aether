@@ -1,6 +1,7 @@
-import * as CheckboxPrimitive from '@kobalte/core/checkbox';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { JSX, ValidComponent } from 'solid-js';
+
+import * as CheckboxPrimitive from '@kobalte/core/checkbox';
 import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

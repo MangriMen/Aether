@@ -3,10 +3,10 @@ import { createMemo, type Component, type ComponentProps } from 'solid-js';
 import type { Locale, Option } from '@/shared/model';
 
 import { useTranslation } from '@/shared/model';
+import { SettingsEntry } from '@/shared/ui';
 
 import { LOCALE_OPTIONS } from '../../model';
 import SelectLanguage from './SelectLanguage';
-import { SettingsEntry } from '@/shared/ui';
 
 export type ChangeLanguageEntryProps = ComponentProps<'div'>;
 

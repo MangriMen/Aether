@@ -1,10 +1,12 @@
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
-import type { ContentType } from './contentType';
 import type {
+  DefaultInstanceSettings,
   Hooks,
   MemorySettings,
   WindowSize,
 } from '@/entities/settings/@x/instances';
+
+import type { ContentType } from './contentType';
 
 export interface InstancePluginSettings {
   preLaunch?: string;
@@ -16,7 +18,24 @@ export interface PackInfo {
   canUpdate: boolean;
 }
 
-export interface Instance {
+export interface InstanceSettings extends Partial<DefaultInstanceSettings> {
+  forceFullscreen?: boolean;
+}
+
+export interface EditInstanceSettings {
+  // Game settings
+  forceFullscreen?: boolean;
+  gameResolution?: WindowSize | null;
+
+  // Java launch settings
+  memory?: MemorySettings | null;
+  launchArgs?: string[] | null;
+  envVars?: Array<[string, string]> | null;
+
+  hooks?: Partial<Hooks>;
+}
+
+export interface Instance extends InstanceSettings {
   id: string;
 
   name: string;
@@ -29,15 +48,7 @@ export interface Instance {
   loader: ModLoader;
   loaderVersion?: LoaderVersionPreference;
 
-  // Launch arguments
-  javaPath?: string;
-  extraLaunchArgs?: string[];
-  customEnvVars?: Array<[string, string]>;
-
-  // Minecraft runtime settings
-  memory?: MemorySettings;
-  forceFullscreen?: boolean;
-  gameResolution?: WindowSize;
+  javaPath?: string | null;
 
   // Additional information
   created: Date;
@@ -46,8 +57,6 @@ export interface Instance {
 
   timePlayed: number;
   recent_time_played: number;
-
-  hooks: Hooks;
 
   packInfo?: PackInfo;
 }
@@ -86,13 +95,9 @@ export interface NewInstance {
   packInfo?: PackInfo;
 }
 
-export interface EditInstance {
+export interface EditInstance extends EditInstanceSettings {
   name?: string;
   javaPath?: string | null;
-  extraLaunchArgs?: string[] | null;
-  customEnvVars?: Array<[string, string]> | null;
-  memory?: MemorySettings | null;
-  gameResolution?: WindowSize | null;
 }
 
 export interface InstanceImportDto {
@@ -107,3 +112,9 @@ export interface ImportHandler {
   fileName: string;
   fileExtensions: string[];
 }
+
+export const isEditInstanceSettingsEmpty = (dto: EditInstanceSettings) =>
+  Object.values(dto).every((value) => value === undefined);
+
+export const isEditInstanceEmpty = (dto: EditInstance) =>
+  isEditInstanceSettingsEmpty(dto) && dto.name === undefined;

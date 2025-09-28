@@ -1,10 +1,12 @@
-import { Field } from '@modular-forms/solid';
-
-import { Show } from 'solid-js';
 import type { Component } from 'solid-js';
+
+import { Field } from '@modular-forms/solid';
+import { Show } from 'solid-js';
+
+import type { AllowedItemFieldProps } from './AllowedItems';
+
 import { AllowedHost } from './AllowedHost';
 import { EditAllowedHost } from './EditAllowedHost';
-import type { AllowedItemFieldProps } from './AllowedItems';
 
 export const AllowedHostsField: Component<AllowedItemFieldProps<string>> = (
   props,

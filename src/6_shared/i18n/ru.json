@@ -129,20 +129,24 @@
     "stopError": "Не удалось остановить инстанс"
   },
   "instanceSettings": {
+    "tab": {
+      "general": "Общие",
+      "installation": "Установка",
+      "javaAndMemory": "Java и память",
+      "window": "Окно",
+      "hooks": "Хуки"
+    },
     "customArguments": "Пользовательские аргументы",
     "customEnvironmentVariables": "Пользовательские переменные окружения",
     "customMemorySettings": "Пользовательские настройки памяти",
     "customWindowSettings": "Пользовательские настройки окна",
+    "customHooksSettings": "Пользовательские хуки запуска",
     "enterArguments": "Введите аргументы здесь (например -Xmx1024m)",
     "enterVariables": "Введите переменные здесь (например JAVA_HOME=C:\\Program Files\\Java\\jdk-17)",
     "environmentVariables": "Переменные окружения",
-    "general": "Общие",
-    "installation": "Установка",
-    "javaAndMemory": "Java и память",
     "javaArguments": "Аргументы Java",
     "memoryAllocation": "Выделение памяти",
     "resolution": "Разрешение",
-    "window": "Окно",
     "windowError": {
       "resolution": {
         "emptyValue": "Элемент разрешения должен быть не пустым",
@@ -168,11 +172,17 @@
     "ongoingTasks": "Текущие задачи"
   },
   "settings": {
+    "tab": {
+      "appearance": "Внешний вид",
+      "defaultInstanceSettings": "Настройки инстансов",
+      "update": "Обновление",
+      "plugins": "Плагины",
+      "experimental": "Экспериментальное"
+    },
     "actionOnInstanceLaunch": "Поведение лаунчера при запуске инстанса",
     "actionOnInstanceLaunchDescription": "Выберите действие, которое будет выполняться при запуске инстанса.\n \"Ничего не делать\" не скрывает лаунчер при запуске.\n \"Скрыть\" скрывает окно лаунчера.\n \"Закрыть\" закроет окно лаунчера, но не закроет приложение (экономит память).",
     "animations": "Анимации",
     "animationsDescription": "Плавные переходы и эффекты в интерфейсе\nМожно отключить для повышения производительности",
-    "appearance": "Внешний вид",
     "checkForUpdates": "Проверить наличие обновлений",
     "checkForUpdatesDescription": "Доступна новая версия приложения!\nПриложение будет перезапущенно автоматически после установки.",
     "checkForUpdatesDescriptionNoUpdates": "Нет доступных обновлений",
@@ -181,13 +191,11 @@
     "colorSchemeDescription": "Выберите предпочитаемую цветовую схему",
     "dark": "Тёмная",
     "doNothing": "Ничего не делать",
-    "experimental": "Экспериментальное",
     "hide": "Скрыть",
     "installAndRestartApp": "Установить и перезапустить приложение",
     "language": "Язык",
     "languageDescription": "Выберите ваш язык",
     "light": "Светлая",
-    "plugins": "Плагины",
     "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
     "releaseDate": "Дата выпуска",
     "systemColorMode": "Системная цветовая схема",
@@ -196,7 +204,6 @@
     "title": "Настройки",
     "toggleWindowTransparency": "Включить прозрачность окна",
     "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
-    "update": "Обновление",
     "windowEffect": "Эффект окна",
     "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
     "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
@@ -204,7 +211,8 @@
       "acrylic": "Acrylic",
       "mica": "Mica",
       "off": "Выключено"
-    }
+    },
+    "changeError": "Не удалось изменить настройки"
   },
   "update": {
     "updateError": "Ошибка обновления лаунчера"

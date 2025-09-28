@@ -1,8 +1,11 @@
+import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
+
 import { createMemo, createSignal, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import type { IconButtonProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
 import {
   IconButton,
   Popover,
@@ -10,11 +13,11 @@ import {
   PopoverTrigger,
 } from '@/shared/ui';
 
-import type { PolymorphicProps } from '@kobalte/core';
 import type { ProgressPopover } from './ProgressPopover';
+
+import { useProgressMenuShowActions } from '../../lib';
 import { useProgressStore } from '../../model';
 import { ProgressBadge } from './ProgressBadge';
-import { useProgressMenuShowActions } from '../../lib';
 
 export type ProgressMenuButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {

@@ -1,12 +1,13 @@
-import MdiLoadingIcon from '@iconify/icons-mdi/loading';
 import type { IconifyIcon } from '@iconify-icon/solid';
-import { Icon } from '@iconify-icon/solid';
-import * as ButtonPrimitive from '@kobalte/core/button';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { VariantProps } from 'class-variance-authority';
+import type { JSX, ValidComponent } from 'solid-js';
+
+import { Icon } from '@iconify-icon/solid';
+import MdiLoadingIcon from '@iconify/icons-mdi/loading';
+import * as ButtonPrimitive from '@kobalte/core/button';
 import { cva } from 'class-variance-authority';
 import { splitProps, Show, createMemo } from 'solid-js';
-import type { JSX, ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 

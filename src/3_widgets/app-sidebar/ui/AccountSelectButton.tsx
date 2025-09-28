@@ -1,8 +1,14 @@
-import MdiAccount from '@iconify/icons-mdi/account';
+import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
+
+import MdiAccount from '@iconify/icons-mdi/account';
 import { createSignal, splitProps } from 'solid-js';
 
+import type { Account, AccountType } from '@/entities/accounts';
 import type { IconButtonProps } from '@/shared/ui';
+
+import { useChangeAccount, useLogout } from '@/entities/accounts';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,
   IconButton,
@@ -10,12 +16,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/shared/ui';
-
-import type { Account, AccountType } from '@/entities/accounts';
-import { useChangeAccount, useLogout } from '@/entities/accounts';
-
-import { useTranslation } from '@/shared/model';
-import type { DialogRootProps } from '@kobalte/core/dialog';
 
 export type AccountSelectButtonProps = IconButtonProps & {
   accounts: Account[];

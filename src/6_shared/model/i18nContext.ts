@@ -3,7 +3,9 @@ import type {
   NullableTranslator,
 } from '@solid-primitives/i18n';
 import type { Accessor, Resource } from 'solid-js';
+
 import { createContext, useContext } from 'solid-js';
+
 import type { Dictionary, Locale } from './i18n';
 
 export type I18nContextValue<Locale, Dictionary extends BaseRecordDict> = {

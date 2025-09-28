@@ -1,4 +1,18 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import MdiDeleteIcon from '@iconify/icons-mdi/delete';
+import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
+import { splitProps } from 'solid-js';
+
+import {
+  useDisableContents,
+  useEnableContents,
+  useRemoveContent,
+  useRevealInExplorer,
+  type InstanceFile,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,
   DropdownMenu,
@@ -10,18 +24,6 @@ import {
   SwitchControl,
   SwitchThumb,
 } from '@/shared/ui';
-import { splitProps } from 'solid-js';
-import type { Component, ComponentProps } from 'solid-js';
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
-import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
-import {
-  useDisableContents,
-  useEnableContents,
-  useRemoveContent,
-  useRevealInExplorer,
-  type InstanceFile,
-} from '@/entities/instances';
-import { useTranslation } from '@/shared/model';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;

@@ -1,14 +1,18 @@
-import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
+import { useColorMode } from '@kobalte/core';
 import { createMemo, type Component } from 'solid-js';
-import { useAppSettings, useUpdateAppSettings } from '../../api';
+
+import {
+  useAppSettings,
+  useEditAppSettings,
+  type WindowEffect,
+} from '@/entities/settings';
 import {
   isSystemTheme,
   useThemeContext,
   useTranslation,
   type Option,
 } from '@/shared/model';
-import { useColorMode } from '@kobalte/core';
-import type { WindowEffect } from '../../model';
+import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
 
 export type SelectWindowEffectProps = {
   class?: string;
@@ -51,7 +55,7 @@ export const SelectWindowEffect: Component<SelectWindowEffectProps> = (
   const { colorMode } = useColorMode();
 
   const appSettings = useAppSettings();
-  const updateSettings = useUpdateAppSettings();
+  const updateSettings = useEditAppSettings();
 
   const translatedWindowEffectOptions = createMemo(() =>
     SELECT_WINDOW_EFFECT_OPTIONS.map((option) => ({

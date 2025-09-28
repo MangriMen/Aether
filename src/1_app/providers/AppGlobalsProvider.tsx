@@ -1,4 +1,5 @@
 import type { JSX } from 'solid-js';
+
 import { useSetupListeners } from '../lib';
 
 export type AppGlobalsProviderProps = { children?: JSX.Element };

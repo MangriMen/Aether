@@ -1,8 +1,10 @@
 import type { Component, ComponentProps, JSX } from 'solid-js';
+
 import { Show, splitProps } from 'solid-js';
 
-import { CollapsibleSettingsPane } from './CollapsibleSettingsPane';
 import { cn } from '@/shared/lib';
+
+import { CollapsibleSettingsPane } from './CollapsibleSettingsPane';
 
 export type SettingsPaneProps = ComponentProps<'div'> & {
   label?: JSX.Element;

@@ -1,13 +1,13 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import { Icon } from '@iconify-icon/solid';
 import MdiCloudOffOutline from '@iconify/icons-mdi/cloud-off-outline';
 import MdiSignIn from '@iconify/icons-mdi/login-variant';
-import { Icon } from '@iconify-icon/solid';
-import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Button, CombinedTooltip } from '@/shared/ui';
-
 import { useTranslation } from '@/shared/model';
+import { Button, CombinedTooltip } from '@/shared/ui';
 
 import type { AccountType } from '../model';
 

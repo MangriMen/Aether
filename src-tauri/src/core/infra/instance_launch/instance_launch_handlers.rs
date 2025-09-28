@@ -2,7 +2,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     core::window_ops::{close_all_windows, hide_all_windows, recreate_windows, show_all_windows},
-    features::app_settings::{ActionOnInstanceLaunch, AppSettingsState},
+    features::settings::{ActionOnInstanceLaunch, AppSettingsState},
 };
 
 /// Handles app behavior when Minecraft instance launches

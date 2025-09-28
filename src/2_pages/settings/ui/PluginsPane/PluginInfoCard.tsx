@@ -1,20 +1,21 @@
 import {
-  useDisablePlugin,
-  useEnablePlugin,
-  type Plugin,
-} from '@/entities/plugins';
-
-import { cn } from '@/shared/lib';
-import { Button, Separator, SettingsPane } from '@/shared/ui';
-import {
   createMemo,
   createSignal,
   splitProps,
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import { PluginSettingsForm } from './PluginSettingsForm';
+
+import {
+  useDisablePlugin,
+  useEnablePlugin,
+  type Plugin,
+} from '@/entities/plugins';
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { Button, Separator, SettingsPane } from '@/shared/ui';
+
+import { PluginSettingsForm } from './PluginSettingsForm';
 
 export type PluginInfoCardProps = ComponentProps<'div'> & {
   plugin: Plugin;

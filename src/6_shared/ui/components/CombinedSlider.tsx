@@ -1,5 +1,11 @@
+import type { PolymorphicProps } from '@kobalte/core';
+
 import { Show, splitProps, type ValidComponent } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+
 import type { SliderRootProps } from './Slider';
+
 import {
   Slider,
   SliderFill,
@@ -7,8 +13,6 @@ import {
   SliderTrack,
   SliderValueLabel,
 } from './Slider';
-import type { PolymorphicProps } from '@kobalte/core';
-import { cn } from '@/shared/lib';
 
 export type CombinedSliderProps<T extends ValidComponent = 'div'> =
   SliderRootProps<T> & {

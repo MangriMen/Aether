@@ -1,6 +1,6 @@
-import { createAsync } from '@solidjs/router';
 import type { Component, ComponentProps } from 'solid-js';
 
+import { createAsync } from '@solidjs/router';
 import { getVersion } from '@tauri-apps/api/app';
 
 export type AppVersionProps = ComponentProps<'span'>;

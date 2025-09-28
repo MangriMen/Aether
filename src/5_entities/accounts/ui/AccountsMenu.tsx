@@ -1,10 +1,12 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
+import type { Account, AccountType } from '@/entities/accounts';
+
+import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 import { Separator } from '@/shared/ui';
 
-import type { Account, AccountType } from '@/entities/accounts';
-import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
 import { useSortedAccounts } from '../lib';
 
 export type AccountsMenuProps = ComponentProps<'div'> & {

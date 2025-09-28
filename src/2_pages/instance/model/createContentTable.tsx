@@ -1,13 +1,3 @@
-import type { Accessor, Component } from 'solid-js';
-import { createMemo, createSignal } from 'solid-js';
-
-import {
-  createSolidTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-} from '@tanstack/solid-table';
 import type {
   ColumnFiltersState,
   SortingState,
@@ -16,7 +6,19 @@ import type {
   ColumnDef,
   RowModel,
 } from '@tanstack/solid-table';
+import type { Accessor, Component } from 'solid-js';
+
+import {
+  createSolidTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+} from '@tanstack/solid-table';
+import { createMemo, createSignal } from 'solid-js';
+
 import type { InstanceFile } from '@/entities/instances';
+
 import { CONTENT_TABLE_COLUMNS } from './contentTableColumns';
 
 export interface CreateContentTableProps {

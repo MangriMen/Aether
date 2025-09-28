@@ -1,12 +1,13 @@
-import MdiPlusIcon from '@iconify/icons-mdi/plus';
+import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
+
+import MdiPlusIcon from '@iconify/icons-mdi/plus';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { useTranslation } from '@/shared/model';
-import type { DialogRootProps } from '@kobalte/core/dialog';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type CreateInstanceButtonProps = IconButtonProps & {
   createInstanceDialog: Component<ComponentProps<'div'> & DialogRootProps>;

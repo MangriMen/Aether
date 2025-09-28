@@ -3,7 +3,7 @@ use tauri::{App, AppHandle, Listener, Manager};
 
 use crate::{
     core::{build_main_window, instance_launch_listener, PreventExitStateInner},
-    features::app_settings::{load_settings, set_window_effect, AppSettings},
+    features::settings::{load_settings, set_window_effect, AppSettings},
 };
 
 pub(super) fn init_app(app: &mut App) -> tauri::Result<()> {

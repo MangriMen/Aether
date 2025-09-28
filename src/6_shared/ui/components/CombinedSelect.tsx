@@ -1,6 +1,13 @@
-import { createMemo, Show, splitProps } from 'solid-js';
+import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
+import type { SelectValueOptions } from '@kobalte/core/select';
 import type { Component, JSX, ValidComponent } from 'solid-js';
+
+import { createMemo, Show, splitProps } from 'solid-js';
+
+import type { PartialBy } from '@/shared/model';
+
 import type { SelectRootProps } from './Select';
+
 import {
   Select,
   SelectContent,
@@ -8,9 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './Select';
-import type { PartialBy } from '@/shared/model';
-import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
-import type { SelectValueOptions } from '@kobalte/core/select';
 
 export type CombinedSelectProps<
   Option,

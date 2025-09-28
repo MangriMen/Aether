@@ -1,11 +1,12 @@
+import type { RouteSectionProps } from '@solidjs/router';
+import type { Component } from 'solid-js';
+
 import {
   COLOR_MODE_STORAGE_KEY,
   ColorModeProvider as KobalteColorModeProvider,
   ColorModeScript,
   createLocalStorageManager,
 } from '@kobalte/core';
-import type { RouteSectionProps } from '@solidjs/router';
-import type { Component } from 'solid-js';
 
 export type ColorModeObserverProps = RouteSectionProps;
 
