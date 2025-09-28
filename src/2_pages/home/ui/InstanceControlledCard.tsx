@@ -1,11 +1,10 @@
-import { useNavigate } from '@solidjs/router';
 import type { Component } from 'solid-js';
+
+import { useNavigate } from '@solidjs/router';
 import { createMemo, createSignal } from 'solid-js';
 
-import { preventAll } from '@/shared/lib';
-import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
-
 import type { InstanceCardProps } from '@/entities/instances';
+
 import {
   InstanceCard,
   InstanceContextMenu,
@@ -14,7 +13,9 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
+import { preventAll } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
 
 export type InstanceControlledCardProps = Pick<
   InstanceCardProps,

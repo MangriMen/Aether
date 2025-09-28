@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as SliderPrimitive from '@kobalte/core/slider';
 import type { JSX, ValidComponent } from 'solid-js';
+
+import * as SliderPrimitive from '@kobalte/core/slider';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

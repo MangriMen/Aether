@@ -1,25 +1,25 @@
 import type { RouteSectionProps } from '@solidjs/router';
+
+import { QueryClientProvider } from '@tanstack/solid-query';
 import { type Component } from 'solid-js';
 
+import { RunningInstancesProvider } from '@/entities/instances';
+import { createQueryClient } from '@/shared/api';
+import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
 
-import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import {
   THEME_STATE_LS_KEY,
   THEME_ATTRIBUTE,
   TRANSPARENCY_PROPERTY,
   DISABLE_ANIMATIONS_ATTRIBUTE,
 } from './config';
-import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { AppLayout } from './layouts/AppLayout';
-import { AppInitializeGuard } from './providers/AppInitializeGuard/AppInitializeGuard';
-import { useSetup } from './lib/useSetup';
 import { MainLayout } from './layouts/MainLayout';
-import { RunningInstancesProvider } from '@/entities/instances';
-
-import { QueryClientProvider } from '@tanstack/solid-query';
-import { createQueryClient } from '@/shared/api';
+import { useSetup } from './lib/useSetup';
+import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import { AppGlobalsProvider } from './providers/AppGlobalsProvider';
+import { AppInitializeGuard } from './providers/AppInitializeGuard/AppInitializeGuard';
 
 const queryClient = createQueryClient();
 

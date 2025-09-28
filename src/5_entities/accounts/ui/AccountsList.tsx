@@ -1,13 +1,14 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { For, splitProps } from 'solid-js';
+import { TransitionGroup } from 'solid-transition-group';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 import type { Account } from '../model';
 
 import { AccountCard } from './AccountCard';
-import { useTranslation } from '@/shared/model';
-import { TransitionGroup } from 'solid-transition-group';
 
 export type AccountsListProps = ComponentProps<'ul'> & {
   accounts: Account[];

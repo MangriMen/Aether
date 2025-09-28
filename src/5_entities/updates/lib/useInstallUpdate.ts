@@ -1,9 +1,12 @@
 import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
-import { checkIsUpdateAvailable } from '../model';
-import { createSignal } from 'solid-js';
-import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
+
 import { getVersion } from '@tauri-apps/api/app';
 import { emit } from '@tauri-apps/api/event';
+import { createSignal } from 'solid-js';
+
+import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
+
+import { checkIsUpdateAvailable } from '../model';
 
 export const useInstallUpdate = () => {
   const [isUpdating, setIsUpdating] = createSignal(false);

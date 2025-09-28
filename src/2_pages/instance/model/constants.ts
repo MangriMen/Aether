@@ -1,5 +1,6 @@
-import { ContentType } from '@/entities/instances';
 import type { DialogFilter } from '@tauri-apps/plugin-dialog';
+
+import { ContentType } from '@/entities/instances';
 
 const ALL_FILTER: DialogFilter = {
   name: 'All',

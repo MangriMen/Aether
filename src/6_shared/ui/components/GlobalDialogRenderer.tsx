@@ -1,7 +1,9 @@
-import type { NonNullableDialogItem } from '@/shared/model';
-import { useGlobalDialog } from '@/shared/model';
 import { createMemo, For } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
+
+import type { NonNullableDialogItem } from '@/shared/model';
+
+import { useGlobalDialog } from '@/shared/model';
 
 export const GlobalDialogRenderer = () => {
   const [store] = useGlobalDialog();

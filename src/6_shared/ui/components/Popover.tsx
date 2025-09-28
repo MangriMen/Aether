@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as PopoverPrimitive from '@kobalte/core/popover';
 import type { Component, ValidComponent } from 'solid-js';
+
+import * as PopoverPrimitive from '@kobalte/core/popover';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

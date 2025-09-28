@@ -1,10 +1,12 @@
+import { Icon } from '@iconify-icon/solid';
+import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
+
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip } from '@/shared/ui';
-import { Icon } from '@iconify-icon/solid';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
-import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
 
 export type InstanceGameVersionProps = ComponentProps<'div'> & {
   loader: ModLoader;

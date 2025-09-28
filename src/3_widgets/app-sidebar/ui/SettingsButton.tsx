@@ -1,16 +1,17 @@
-import MdiCogIcon from '@iconify/icons-mdi/cog';
-import { Icon } from '@iconify-icon/solid';
 import type { PolymorphicProps } from '@kobalte/core';
-import { useNavigate } from '@solidjs/router';
-import { createMemo, Show } from 'solid-js';
 import type { Component, ValidComponent } from 'solid-js';
 
-import type { IconButtonProps } from '@/shared/ui';
-import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
+import { Icon } from '@iconify-icon/solid';
+import MdiCogIcon from '@iconify/icons-mdi/cog';
+import { useNavigate } from '@solidjs/router';
+import { createMemo, Show } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import type { IconButtonProps } from '@/shared/ui';
+
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { useTranslation } from '@/shared/model';
+import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

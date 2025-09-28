@@ -1,14 +1,14 @@
+import type { PolymorphicProps } from '@kobalte/core';
 import type { ValidComponent } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { type ButtonProps } from '@/shared/ui';
 import { Button, CombinedTooltip } from '@/shared/ui';
 
-import { useTranslation } from '@/shared/model';
-
 import type { AccountType } from '../model';
-import type { PolymorphicProps } from '@kobalte/core';
 
 export type AccountButtonProps<T extends ValidComponent = 'button'> =
   ButtonProps<T> & {

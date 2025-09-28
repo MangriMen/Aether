@@ -1,9 +1,13 @@
-import type { Plugin, PluginMetadata } from '@/entities/plugins';
-import { cn } from '@/shared/lib';
-import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 import type { Component, ComponentProps } from 'solid-js';
-import { PluginCard } from './PluginCard';
+
+import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
+
+import type { Plugin, PluginMetadata } from '@/entities/plugins';
+
+import { cn } from '@/shared/lib';
 import { Separator } from '@/shared/ui';
+
+import { PluginCard } from './PluginCard';
 import { PluginInfoCard } from './PluginInfoCard';
 
 export type PluginsListProps = ComponentProps<'div'> & {

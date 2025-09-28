@@ -1,7 +1,8 @@
 import type { IconifyIconProps } from '@iconify-icon/solid';
+import type { Component } from 'solid-js';
+
 import { Icon } from '@iconify-icon/solid';
 import { createElementSize } from '@solid-primitives/resize-observer';
-import type { Component } from 'solid-js';
 import { createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

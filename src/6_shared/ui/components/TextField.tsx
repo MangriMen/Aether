@@ -1,8 +1,10 @@
 import type { PolymorphicProps } from '@kobalte/core';
+import type { VariantProps } from 'class-variance-authority';
+import type { ValidComponent } from 'solid-js';
+
 import * as TextFieldPrimitive from '@kobalte/core/text-field';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
-import type { ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -55,6 +57,7 @@ const TextFieldInput = <T extends ValidComponent = 'input'>(
         'flex h-10 w-full rounded-md border border-input data-[invalid]:border-destructive bg-secondary px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
         local.class,
       )}
+      autocomplete='off'
       {...others}
     />
   );
@@ -86,7 +89,7 @@ const labelVariants = cva(
     variants: {
       variant: {
         label: 'data-[invalid]:text-destructive',
-        description: 'font-normal text-muted-foreground',
+        description: 'font-medium text-muted-foreground',
         error: 'text-destructive',
       },
     },
@@ -97,15 +100,19 @@ const labelVariants = cva(
 );
 
 type TextFieldLabelProps<T extends ValidComponent = 'label'> =
-  TextFieldPrimitive.TextFieldLabelProps<T> & { class?: string | undefined };
+  TextFieldPrimitive.TextFieldLabelProps<T> &
+    VariantProps<typeof labelVariants> & { class?: string | undefined };
 
 const TextFieldLabel = <T extends ValidComponent = 'label'>(
   props: PolymorphicProps<T, TextFieldLabelProps<T>>,
 ) => {
-  const [local, others] = splitProps(props as TextFieldLabelProps, ['class']);
+  const [local, others] = splitProps(props as TextFieldLabelProps, [
+    'variant',
+    'class',
+  ]);
   return (
     <TextFieldPrimitive.Label
-      class={cn(labelVariants(), local.class)}
+      class={cn(labelVariants({ variant: local.variant }), local.class)}
       {...others}
     />
   );

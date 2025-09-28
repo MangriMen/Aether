@@ -1,12 +1,12 @@
-import { relaunch } from '@tauri-apps/plugin-process';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { relaunch } from '@tauri-apps/plugin-process';
 import { createMemo, Show } from 'solid-js';
 
-import { Button, SettingsEntry, showToast } from '@/shared/ui';
 import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
-
-import { useTranslation } from '@/shared/model';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { useTranslation } from '@/shared/model';
+import { Button, SettingsEntry, showToast } from '@/shared/ui';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 

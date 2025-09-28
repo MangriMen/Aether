@@ -1,4 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import { type Accessor } from 'solid-js';
+
+import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
+
+import type {
+  ContentRequest,
+  InstallContentPayload,
+  ContentType,
+} from '../../model';
+
 import {
   getInstanceContentsRaw,
   disableInstanceContentsRaw,
@@ -11,16 +22,8 @@ import {
   getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
 } from '../rawApi';
-import type {
-  ContentRequest,
-  InstallContentPayload,
-  ContentType,
-} from '../../model';
-import { showToast } from '@/shared/ui';
-import { type Accessor } from 'solid-js';
-import { useTranslation } from '@/shared/model';
-import { CONTENT_QUERY_KEYS } from './content_query_keys';
 import { invalidateInstanceContent } from './cache';
+import { CONTENT_QUERY_KEYS } from './content_query_keys';
 
 export const useContentProviders = () => {
   return useQuery(() => ({

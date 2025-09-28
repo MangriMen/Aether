@@ -1,7 +1,8 @@
-import { updateMaximize } from '@/shared/model';
 import { throttle } from '@solid-primitives/scheduled';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { createEffect, onCleanup } from 'solid-js';
+
+import { updateMaximize } from '@/shared/model';
 
 const RESIZE_MAXIMIZE_THROTTLE_TIMEOUT = 400;
 

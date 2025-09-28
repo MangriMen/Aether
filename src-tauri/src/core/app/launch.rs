@@ -3,8 +3,7 @@ use tauri::{Builder, Wry};
 use crate::{
     core::commands::*,
     features::{
-        app_settings::commands::*, auth, events::commands::*, instance, minecraft::commands::*,
-        plugins, process, settings::commands::*,
+        auth, events::commands::*, instance, minecraft::commands::*, plugins, process, settings,
     },
 };
 
@@ -50,6 +49,7 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(instance::init())
         .plugin(process::init())
         .plugin(plugins::init())
+        .plugin(settings::init())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
             initialize_plugins,
@@ -57,10 +57,6 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
             get_loader_version_manifest,
             get_progress_bars,
             reveal_in_explorer,
-            get_settings,
-            get_max_ram,
-            get_app_settings,
-            update_app_settings,
         ])
 }
 

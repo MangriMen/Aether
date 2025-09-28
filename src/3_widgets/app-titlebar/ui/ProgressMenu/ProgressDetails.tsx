@@ -1,5 +1,3 @@
-import { ProgressCard, type LoadingPayload } from '@/entities/events';
-import { cn } from '@/shared/lib';
 import {
   For,
   splitProps,
@@ -7,6 +5,9 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
+
+import { ProgressCard, type LoadingPayload } from '@/entities/events';
+import { cn } from '@/shared/lib';
 
 export type ProgressDetailsProps = ComponentProps<'div'> & {
   payloads: Accessor<LoadingPayload[]>;

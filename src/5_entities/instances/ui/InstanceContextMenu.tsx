@@ -1,15 +1,15 @@
+import type { ContextMenuRootProps } from '@kobalte/core/context-menu';
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/shared/ui';
-import type { ContextMenuRootProps } from '@kobalte/core/context-menu';
-
-import { useTranslation } from '@/shared/model';
 
 export type InstanceContextMenuProps = ContextMenuRootProps & {
   onPlay?: ComponentProps<'button'>['onClick'];

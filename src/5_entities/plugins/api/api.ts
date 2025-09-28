@@ -1,4 +1,8 @@
+import type { Accessor } from 'solid-js';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+
+import { QUERY_KEYS } from './query_keys';
 import {
   disablePluginRaw,
   editPluginSettingsRaw,
@@ -10,8 +14,6 @@ import {
   openPluginsFolderRaw,
   syncPluginsRaw,
 } from './rawApi';
-import { QUERY_KEYS } from './query_keys';
-import type { Accessor } from 'solid-js';
 
 export const useSyncPlugins = () =>
   useMutation(() => ({

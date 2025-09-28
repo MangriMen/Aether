@@ -1,10 +1,10 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 import { AppSidebar } from '@/widgets/app-sidebar';
-
-import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
+import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 
 export type MainLayoutProps = ComponentProps<'div'>;
 

@@ -1,4 +1,5 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { splitProps } from 'solid-js';
 
 export type InstanceTitleProps = ComponentProps<'div'> & {

@@ -1,13 +1,16 @@
-import type { Accessor, Component, ComponentProps } from 'solid-js';
-import { createSignal, For, Show, splitProps } from 'solid-js';
-import { LabeledField } from '@/shared/ui';
 import type { FormStore } from '@modular-forms/solid';
-import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
+import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import type { AddNewItemProps } from './AddNewSettingsItem';
-import { AddNewSettingsItem } from './AddNewSettingsItem';
-import type { PluginSettingsSchemaValues } from '../../model';
+import { FieldArray, insert, remove, replace } from '@modular-forms/solid';
+import { createSignal, For, Show, splitProps } from 'solid-js';
+
 import { useTranslation } from '@/shared/model';
+import { LabeledField } from '@/shared/ui';
+
+import type { PluginSettingsSchemaValues } from '../../model';
+import type { AddNewItemProps } from './AddNewSettingsItem';
+
+import { AddNewSettingsItem } from './AddNewSettingsItem';
 
 export type AllowedItemFieldProps<T> = {
   form: FormStore<PluginSettingsSchemaValues>;

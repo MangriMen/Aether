@@ -1,6 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import * as CollapsiblePrimitive from '@kobalte/core/collapsible';
 import type { ValidComponent } from 'solid-js';
+
+import * as CollapsiblePrimitive from '@kobalte/core/collapsible';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';

@@ -60,7 +60,7 @@ export const editInstanceRaw = async (
   id: Instance['id'],
   editInstance: EditInstance,
 ) =>
-  invoke(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, {
+  invoke<Instance>(`${PLUGIN_INSTANCE_PREFIX}instance_edit`, {
     id,
     editInstance,
   });

@@ -1,8 +1,7 @@
 import { useContext } from 'solid-js';
 
-import { Button, closeToast, showToast } from '@/shared/ui';
-
 import type { Instance } from '@/entities/instances';
+
 import {
   RunningInstancesContext,
   InstanceInstallStage,
@@ -10,6 +9,7 @@ import {
   useStopInstance,
   useRemoveInstance,
 } from '@/entities/instances';
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(
