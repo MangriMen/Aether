@@ -1,10 +1,14 @@
-import { Show, type Component } from 'solid-js';
-import MdiReloadIcon from '@iconify/icons-mdi/reload';
-import { Button } from '@/shared/ui';
-import { SelectedRowsActions } from './SelectedRowsActions';
-import { useTranslation } from '@/shared/model';
 import type { RowModel } from '@tanstack/solid-table';
+
+import MdiReloadIcon from '@iconify/icons-mdi/reload';
+import { Show, type Component } from 'solid-js';
+
 import type { Instance, InstanceFile } from '@/entities/instances';
+
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
+
+import { SelectedRowsActions } from './SelectedRowsActions';
 
 export type HeaderActionsProps = {
   instanceId: Instance['id'];

@@ -1,10 +1,11 @@
+import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { JSX, ValidComponent } from 'solid-js';
-import { splitProps } from 'solid-js';
 
 import * as PaginationPrimitive from '@kobalte/core/pagination';
-import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+
 import { buttonVariants } from './Button';
 
 const PaginationItems = PaginationPrimitive.Items;

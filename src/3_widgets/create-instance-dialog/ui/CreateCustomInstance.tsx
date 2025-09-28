@@ -1,6 +1,9 @@
+import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { FieldValues, SubmitHandler } from '@modular-forms/solid';
-import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
 import type { Component } from 'solid-js';
+import type { z } from 'zod';
+
+import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
 import {
   createMemo,
   createSignal,
@@ -10,7 +13,20 @@ import {
   Switch,
 } from 'solid-js';
 
+import type { NewInstance } from '@/entities/instances';
+import type { LoaderVersion, Version } from '@/entities/minecraft';
+
+import {
+  IncludeSnapshotsCheckbox,
+  useCreateInstance,
+} from '@/entities/instances';
+import {
+  ModLoader,
+  useLoaderVersionManifest,
+  useMinecraftVersionManifest,
+} from '@/entities/minecraft';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   Collapsible,
@@ -20,20 +36,7 @@ import {
   LabeledField,
 } from '@/shared/ui';
 
-import type { NewInstance } from '@/entities/instances';
-import {
-  IncludeSnapshotsCheckbox,
-  useCreateInstance,
-} from '@/entities/instances';
-import type { LoaderVersion, Version } from '@/entities/minecraft';
-import {
-  ModLoader,
-  useLoaderVersionManifest,
-  useMinecraftVersionManifest,
-} from '@/entities/minecraft';
-
-import { useTranslation } from '@/shared/model';
-
+import { loaderManifestToMapped } from '../lib';
 import {
   CreateCustomInstanceSchema,
   filterGameVersions,
@@ -42,14 +45,10 @@ import {
   LOADERS,
   LOADER_VERSION_TYPES,
 } from '../model';
-
-import { loaderManifestToMapped } from '../lib';
-import { SelectGameVersion } from './SelectGameVersion';
-import { LoaderVersionTypeChipsToggleGroup } from './LoaderVersionTypeChipsToggleGroup';
 import { LoaderChipsToggleGroup } from './LoaderChipsToggleGroup';
+import { LoaderVersionTypeChipsToggleGroup } from './LoaderVersionTypeChipsToggleGroup';
+import { SelectGameVersion } from './SelectGameVersion';
 import { SelectSpecificLoaderVersion } from './SelectSpecificLoaderVersion';
-import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { z } from 'zod';
 
 export type CreateCustomInstanceProps = { class?: string } & Pick<
   DialogRootProps,
@@ -175,7 +174,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             inputProps={{
               class: 'max-w-[36ch]',
               maxLength: 32,
-              autocomplete: 'off',
               type: 'text',
               ...props,
             }}

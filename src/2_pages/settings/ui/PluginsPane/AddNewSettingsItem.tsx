@@ -1,7 +1,9 @@
+import type { Accessor, JSX } from 'solid-js';
+
+import { Show } from 'solid-js';
+
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
-import { Show } from 'solid-js';
-import type { Accessor, JSX } from 'solid-js';
 
 export type AddNewItemProps<T> = {
   editingIndex: Accessor<number | null>;

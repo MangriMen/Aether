@@ -1,9 +1,10 @@
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
-import * as ToastPrimitive from '@kobalte/core/toast';
 import type { VariantProps } from 'class-variance-authority';
+import type { JSX, ValidComponent } from 'solid-js';
+
+import * as ToastPrimitive from '@kobalte/core/toast';
 import { cva } from 'class-variance-authority';
 import { Match, splitProps, Switch } from 'solid-js';
-import type { JSX, ValidComponent } from 'solid-js';
 import { Portal } from 'solid-js/web';
 
 import { cn } from '@/shared/lib';

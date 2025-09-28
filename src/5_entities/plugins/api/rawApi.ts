@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+
 import type { Plugin, PluginMetadata, PluginSettings } from '../model';
 
 const PLUGIN_PREFIX = 'plugin:plugin|';

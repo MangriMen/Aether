@@ -1,6 +1,6 @@
 use serr::SerializeError;
 
-use crate::features::app_settings::AppSettingsError;
+use crate::features::settings::AppSettingsError;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

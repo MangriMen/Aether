@@ -1,5 +1,5 @@
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import MdiCloseIcon from '@iconify/icons-mdi/close';
+import MdiPencilIcon from '@iconify/icons-mdi/pencil';
 import {
   mergeProps,
   Show,
@@ -7,8 +7,9 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import MdiPencilIcon from '@iconify/icons-mdi/pencil';
-import MdiCloseIcon from '@iconify/icons-mdi/close';
+
+import { cn } from '@/shared/lib';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type AllowedHostProps = ComponentProps<'div'> & {
   value?: string;

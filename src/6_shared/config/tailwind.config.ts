@@ -1,5 +1,6 @@
-import resolveConfig from 'tailwindcss/resolveConfig';
 import type { Config } from 'tailwindcss/types/config';
+
+import resolveConfig from 'tailwindcss/resolveConfig';
 
 //@ts-expect-error cannot find a declaration
 import presets from './ui.presets.cjs';

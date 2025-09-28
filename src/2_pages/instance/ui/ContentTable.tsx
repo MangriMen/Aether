@@ -1,13 +1,13 @@
-import { type InstanceFile } from '@/entities/instances';
-
-import { cn } from '@/shared/lib';
-import { CombinedPagination, DataTable } from '@/shared/ui';
 import type { Component } from 'solid-js';
+
 import { createEffect } from 'solid-js';
 
-import { ContentActions } from './ContentActions';
+import { type InstanceFile } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { CombinedPagination, DataTable } from '@/shared/ui';
 
 import { createContentTable } from '../model';
+import { ContentActions } from './ContentActions';
 import { HeaderActions } from './HeaderActions';
 
 export type ContentTableProps = {

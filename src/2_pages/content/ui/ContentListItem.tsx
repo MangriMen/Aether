@@ -1,10 +1,5 @@
-import {
-  useInstallContent,
-  type ContentItemExtended,
-  type InstallContentPayload,
-} from '@/entities/instances';
-import { cn } from '@/shared/lib';
-import { Button, Image } from '@/shared/ui';
+import MdiCheck from '@iconify/icons-mdi/check';
+import MdiDownload from '@iconify/icons-mdi/download';
 import {
   createMemo,
   createSignal,
@@ -12,9 +7,15 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
-import MdiDownload from '@iconify/icons-mdi/download';
-import MdiCheck from '@iconify/icons-mdi/check';
+
+import {
+  useInstallContent,
+  type ContentItemExtended,
+  type InstallContentPayload,
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { Button, Image } from '@/shared/ui';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
   item: ContentItemExtended;

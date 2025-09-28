@@ -1,9 +1,13 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
+
 import { mergeProps, Show, splitProps } from 'solid-js';
 
-import { Button } from './Button';
+import { useTranslation } from '@/shared/model';
+
 import type { DialogContentProps } from './Dialog';
+
+import { Button } from './Button';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
 } from './Dialog';
-import { useTranslation } from '@/shared/model';
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {

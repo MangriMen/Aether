@@ -1,10 +1,12 @@
-import { Field } from '@modular-forms/solid';
-
-import { Show } from 'solid-js';
 import type { Component } from 'solid-js';
+
+import { Field } from '@modular-forms/solid';
+import { Show } from 'solid-js';
+
 import type { AllowedItemFieldProps } from './AllowedItems';
-import { EditAllowedPath } from './EditAllowedPath';
+
 import { AllowedPath } from './AllowedPath';
+import { EditAllowedPath } from './EditAllowedPath';
 
 export const AllowedPathField: Component<
   AllowedItemFieldProps<[string, string]>

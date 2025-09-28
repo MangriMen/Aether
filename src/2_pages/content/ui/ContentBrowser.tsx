@@ -1,22 +1,4 @@
-import {
-  CONTENT_TYPE_TO_TITLE,
-  CONTENT_TYPES,
-  ContentType,
-  useContentByProvider,
-  useInstanceContents,
-  useMetadataFieldToCheckInstalled,
-} from '@/entities/instances';
-
-import type {
-  ContentItemExtended,
-  ContentRequest,
-  Instance,
-} from '@/entities/instances';
-
-import { cn } from '@/shared/lib';
-import type { Option } from '@/shared/model';
-import { useTranslation } from '@/shared/model';
-import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
+import { debounce } from '@solid-primitives/scheduled';
 import {
   createEffect,
   createMemo,
@@ -28,9 +10,28 @@ import {
   type Component,
   type ComponentProps,
 } from 'solid-js';
+
+import type {
+  ContentItemExtended,
+  ContentRequest,
+  Instance,
+} from '@/entities/instances';
+import type { Option } from '@/shared/model';
+
+import {
+  CONTENT_TYPE_TO_TITLE,
+  CONTENT_TYPES,
+  ContentType,
+  useContentByProvider,
+  useInstanceContents,
+  useMetadataFieldToCheckInstalled,
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
+
 import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
-import { debounce } from '@solid-primitives/scheduled';
 import { ContentListSkeleton } from './ContentListSkeleton';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {

@@ -1,9 +1,11 @@
-import { useAppSettings, useUpdateAppSettings } from '@/pages/settings/api';
-import { debounce } from '@/shared/lib';
-import { isSystemTheme, useThemeContext } from '@/shared/model';
 import type { ColorMode } from '@kobalte/core';
+
 import { useColorMode } from '@kobalte/core';
 import { createEffect, on } from 'solid-js';
+
+import { useAppSettings, useEditAppSettings } from '@/entities/settings';
+import { debounce } from '@/shared/lib';
+import { isSystemTheme, useThemeContext } from '@/shared/model';
 
 export const useMicaUpdateListener = () => {
   const { colorMode } = useColorMode();
@@ -11,7 +13,7 @@ export const useMicaUpdateListener = () => {
   const [theme] = useThemeContext();
 
   const appSettings = useAppSettings();
-  const updateAppSettings = useUpdateAppSettings();
+  const updateAppSettings = useEditAppSettings();
 
   const updateMicaDebounced = debounce(
     (rawTheme: string, colorMode: ColorMode) => {

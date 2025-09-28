@@ -1,12 +1,14 @@
-import { Route, Router } from '@solidjs/router';
 import type { Component } from 'solid-js';
 
-import { AppRoot } from './AppRoot';
+import { Route, Router } from '@solidjs/router';
+
 import { ContentPage } from '@/pages/content';
-import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
+import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
+
+import { AppRoot } from './AppRoot';
 
 export const AppRouter: Component = () => {
   return (

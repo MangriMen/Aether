@@ -1,4 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+
+import { showError } from '@/shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+
 import { ACCOUNT_KEY } from './key';
 import {
   changeAccountRaw,
@@ -6,8 +10,6 @@ import {
   listAccountsRaw,
   logoutRaw,
 } from './tauriApiRaw';
-import { useTranslation } from '@/shared/model';
-import { showError } from '@/shared/lib/showError';
 
 export const useAccounts = () =>
   useQuery(() => ({

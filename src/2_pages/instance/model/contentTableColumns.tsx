@@ -1,13 +1,14 @@
-import { Show } from 'solid-js';
 import type { ColumnDef } from '@tanstack/solid-table';
 
 import { Icon } from '@iconify-icon/solid';
-
 import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
-import { Button, Checkbox } from '@/shared/ui';
+import { Show } from 'solid-js';
+
 import type { InstanceFile } from '@/entities/instances';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { Button, Checkbox } from '@/shared/ui';
 
 export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {

@@ -1,17 +1,18 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
+
+import { useNavigate } from '@solidjs/router';
+import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, onMount, Show, splitProps } from 'solid-js';
 
-import { Dialog, DialogContent } from '@/shared/ui';
-
 import type { Instance } from '@/entities/instances';
+
 import { useInstance } from '@/entities/instances';
+import { prefetchMaxRam } from '@/entities/settings';
+import { Dialog, DialogContent } from '@/shared/ui';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
-import { useNavigate } from '@solidjs/router';
-import { useQueryClient } from '@tanstack/solid-query';
-import { prefetchMaxRam } from '@/entities/settings';
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
   instanceId: Instance['id'];

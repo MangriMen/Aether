@@ -1,8 +1,10 @@
 import type { SubmitHandler } from '@modular-forms/solid';
-import { createForm, reset, zodForm } from '@modular-forms/solid';
 import type { Component, ComponentProps } from 'solid-js';
+
+import { createForm, reset, zodForm } from '@modular-forms/solid';
 import { splitProps } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   DialogFooter,
@@ -16,8 +18,8 @@ import type {
   CreateOfflineAccountFormSchemaErrors,
   CreateOfflineAccountFormValues,
 } from '../model';
+
 import { CreateOfflineAccountFormSchema } from '../model';
-import { useTranslation } from '@/shared/model';
 
 export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;
@@ -59,7 +61,6 @@ export const CreateOfflineAccountForm: Component<
                 {t('common.username')}
                 <TextFieldInput
                   id='username'
-                  autocomplete='off'
                   required
                   type='text'
                   value={field.value}

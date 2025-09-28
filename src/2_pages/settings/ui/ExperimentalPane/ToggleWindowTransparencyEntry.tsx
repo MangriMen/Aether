@@ -1,7 +1,8 @@
-import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
 import { type Component } from 'solid-js';
-import { useAppSettings, useUpdateAppSettings } from '../../api';
+
+import { useAppSettings, useEditAppSettings } from '@/entities/settings';
 import { useTranslation } from '@/shared/model';
+import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
 
 export type ToggleWindowTransparencyEntryProps = {
   class?: string;
@@ -13,7 +14,7 @@ export const ToggleWindowTransparencyEntry: Component<
   const [{ t }] = useTranslation();
 
   const appSettings = useAppSettings();
-  const updateSettings = useUpdateAppSettings();
+  const updateSettings = useEditAppSettings();
 
   const handleSetTransparency = async (enabled: boolean) => {
     await updateSettings.mutateAsync({

@@ -2,7 +2,7 @@ use tauri::{AppHandle, Manager, WebviewWindow};
 
 use crate::{
     core::{build_main_window, PreventExitState},
-    features::app_settings::AppSettings,
+    features::settings::AppSettings,
 };
 
 /// Hides all windows

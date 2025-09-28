@@ -1,10 +1,14 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
+
 import { onCleanup, onMount } from 'solid-js';
-import { getLoadingBars, listenEvent } from '../api';
-import { isDebug } from '@/shared/model';
-import { useProgressStore } from '@/widgets/app-titlebar';
-import type { LoadingPayload } from '../model';
 import { produce } from 'solid-js/store';
+
+import { logDebug } from '@/shared/lib';
+import { useProgressStore } from '@/widgets/app-titlebar';
+
+import type { LoadingPayload } from '../model';
+
+import { getLoadingBars, listenEvent } from '../api';
 
 export const useProgressEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -56,9 +60,7 @@ export const useProgressEventsListener = () => {
     fetchEvents();
 
     unlistenFn = await listenEvent('loading', (e) => {
-      if (isDebug()) {
-        console.log('[EVENT][DEBUG]', e);
-      }
+      logDebug('[EVENT][DEBUG]', e);
 
       if (e.payload.fraction === null) {
         delayedRemoveEvent(e.payload);

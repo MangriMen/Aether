@@ -9,15 +9,16 @@ import {
   type JSX,
 } from 'solid-js';
 
-import { dayjs } from '@/shared/lib';
-
 import type {
   Dictionary,
   I18nContextType,
   Locale,
   RawDictionary,
 } from '@/shared/model';
+
+import { dayjs } from '@/shared/lib';
 import { getSystemLocale, I18nContext } from '@/shared/model';
+
 import { LOCALE_LS_KEY } from '../config';
 
 export type I18nProviderProps<

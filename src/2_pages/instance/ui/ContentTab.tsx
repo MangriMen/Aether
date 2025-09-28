@@ -1,12 +1,4 @@
-import {
-  ContentType,
-  InstanceInstallStage,
-  useInstanceContents,
-  type Instance,
-} from '@/entities/instances';
-
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useNavigate } from '@solidjs/router';
 import {
   createMemo,
   createSignal,
@@ -16,11 +8,19 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import {
+  ContentType,
+  InstanceInstallStage,
+  useInstanceContents,
+  type Instance,
+} from '@/entities/instances';
+import { ModLoader } from '@/entities/minecraft';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
-import { useNavigate } from '@solidjs/router';
 import { InstallContentButton } from './InstallContentButton';
-import { ModLoader } from '@/entities/minecraft';
 
 export type ContentTabProps = ComponentProps<'div'> & {
   instance: Instance;

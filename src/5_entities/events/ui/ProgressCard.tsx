@@ -1,12 +1,12 @@
 import type { Component, ComponentProps } from 'solid-js';
+
 import { createMemo, splitProps } from 'solid-js';
 
-import { Progress } from '@/shared/ui';
-
 import type { LoadingPayload } from '@/entities/events';
-import { LoadingBarTypeEnum } from '@/entities/events';
 
+import { LoadingBarTypeEnum } from '@/entities/events';
 import { useTranslation } from '@/shared/model';
+import { Progress } from '@/shared/ui';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
   payload: LoadingPayload;

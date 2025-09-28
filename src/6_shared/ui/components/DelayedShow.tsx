@@ -1,4 +1,5 @@
 import type { Accessor, JSX } from 'solid-js';
+
 import {
   createSignal,
   mergeProps,

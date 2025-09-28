@@ -1,10 +1,12 @@
-import { cn } from '@/shared/lib';
-import { SettingsPane } from '@/shared/ui';
-import { useTranslation } from '@/shared/model';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { SettingsPane } from '@/shared/ui';
+
 import { SelectWindowEffect } from './SelectWindowEffect';
-import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
 import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
+import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
 
@@ -16,7 +18,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.experimental')}
+      label={t('settings.tab.experimental')}
       {...others}
     >
       <ToggleWindowTransparencyEntry />

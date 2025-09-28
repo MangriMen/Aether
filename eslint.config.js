@@ -3,16 +3,18 @@ import js from '@eslint/js';
 import ts from 'typescript-eslint';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import tsParser from '@typescript-eslint/parser';
-import importX from 'eslint-plugin-import-x';
 import sonarjs from 'eslint-plugin-sonarjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import tailwind from 'eslint-plugin-tailwindcss';
 import solid from 'eslint-plugin-solid/configs/recommended';
+import perfectionist from 'eslint-plugin-perfectionist';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { files: ['**/*.{js,mjs,jsx,mjsx,ts,tsx,mtsx}'] },
-  { ignores: ['*.cjs', 'eslint.config.js', 'dist', 'src-tauri'] },
+  { files: ['**/*.{js,jsx,ts,tsx}'] },
+  {
+    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri'],
+  },
   {
     languageOptions: {
       parser: tsParser,
@@ -32,7 +34,7 @@ export default [
       'prefer-object-spread': 'warn',
       curly: 'error',
       'no-debugger': 'warn',
-      "no-console": "warn"
+      'no-console': 'warn',
     },
   },
   js.configs.recommended,
@@ -47,23 +49,29 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
-      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          fixStyle: 'separate-type-imports',
+        },
+      ],
     },
   },
   eslintPluginPrettierRecommended,
-  importX.flatConfigs.recommended,
-  importX.flatConfigs.typescript,
   {
+    plugins: { perfectionist },
     rules: {
-      'import-x/no-dynamic-require': 'warn',
-      'import-x/no-nodejs-modules': 'warn',
+      'perfectionist/sort-imports': ['error'],
+      'perfectionist/sort-exports': ['error'],
     },
   },
   sonarjs.configs.recommended,
   {
     rules: {
+      'sonarjs/aws-restricted-ip-admin-access': 'off',
       'sonarjs/no-unused-vars': 'off',
       'sonarjs/todo-tag': 'off',
+      'sonarjs/no-skipped-tests': 'off',
     },
   },
   jsxA11y.flatConfigs.recommended,
@@ -78,7 +86,7 @@ export default [
       'tailwindcss/no-custom-classname': [
         'warn',
         {
-          cssFiles: ['src/**/*.css'],
+          cssFiles: ['src/1_app/app.css'],
         },
       ],
     },

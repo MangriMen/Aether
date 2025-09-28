@@ -1,11 +1,11 @@
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, IconButton, showToast } from '@/shared/ui';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
-
 import MdiFolderIcon from '@iconify/icons-mdi/folder';
 import MdiReloadIcon from '@iconify/icons-mdi/reload';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
+
 import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton, showToast } from '@/shared/ui';
 
 export type PluginsPaneTitleProps = ComponentProps<'div'>;
 

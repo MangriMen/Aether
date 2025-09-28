@@ -1,6 +1,9 @@
-import type { ContentItemExtended } from '@/entities/instances';
-import { cn } from '@/shared/lib';
 import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
+
+import type { ContentItemExtended } from '@/entities/instances';
+
+import { cn } from '@/shared/lib';
+
 import { ContentListItem } from './ContentListItem';
 
 export type ContentListProps = ComponentProps<'div'> & {
