@@ -31,7 +31,7 @@ fn main() {
             "instance_launch",
             "instance_stop",
             "instance_import",
-            "instance_get_import_configs",
+            "instance_list_import_configs",
             "instance_get_content_providers",
             "instance_get_content_by_provider",
             "instance_install_content",

@@ -2,11 +2,11 @@ import { invoke } from '@tauri-apps/api/core';
 
 import type {
   ContentRequest,
-  ImportHandler,
+  ImportConfig,
   Instance,
   NewInstance,
   InstanceFile,
-  InstanceImportDto,
+  ImportInstance,
   MinecraftProcessMetadata,
   ContentResponse,
   InstallContentPayload,
@@ -31,14 +31,14 @@ export const installInstanceRaw = (
 export const updateInstanceRaw = (id: Instance['id']) =>
   invoke(`${PLUGIN_INSTANCE_PREFIX}instance_update`, { id });
 
-export const importInstanceRaw = (instanceImportDto: InstanceImportDto) =>
+export const importInstanceRaw = (importInstance: ImportInstance) =>
   invoke<string>(`${PLUGIN_INSTANCE_PREFIX}instance_import`, {
-    instanceImportDto,
+    importInstance,
   });
 
 export const getImportConfigsRaw = () =>
-  invoke<ImportHandler[]>(
-    `${PLUGIN_INSTANCE_PREFIX}instance_get_import_configs`,
+  invoke<ImportConfig[]>(
+    `${PLUGIN_INSTANCE_PREFIX}instance_list_import_configs`,
   );
 
 export const listInstancesRaw = () =>

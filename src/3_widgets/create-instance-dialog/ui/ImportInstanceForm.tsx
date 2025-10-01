@@ -13,7 +13,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import IconFileFindOutline from '~icons/mdi/file-find-outline';
 import { createEffect, createMemo, For, splitProps } from 'solid-js';
 
-import { useImportInstance, type ImportHandler } from '@/entities/instances';
+import { useImportInstance, type ImportConfig } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
@@ -36,7 +36,7 @@ import { ImportInstanceSchema } from '../model';
 
 export type ImportInstanceFormProps = Omit<ComponentProps<'form'>, 'onSubmit'> &
   Pick<DialogRootProps, 'onOpenChange'> & {
-    importConfigs: Accessor<ImportHandler[] | undefined>;
+    importConfigs: Accessor<ImportConfig[] | undefined>;
   };
 
 export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
@@ -63,7 +63,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
     reset(form, {
       initialValues: {
-        packType: configs[0].packType,
+        pluginId: configs[0].pluginId,
       },
     });
   });
@@ -71,7 +71,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   const currentImportHandler = createMemo(() =>
     local
       .importConfigs()
-      ?.find((h) => h.packType === getValue(form, 'packType')),
+      ?.find((h) => h.pluginId === getValue(form, 'pluginId')),
   );
 
   const { mutateAsync: importInstance } = useImportInstance();
@@ -99,7 +99,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     });
 
     if (file) {
-      setValue(form, 'path', file);
+      setValue(form, 'pathOrUrl', file);
     }
   };
 
@@ -110,20 +110,20 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       {...others}
     >
       <LabeledField label={t('common.type')}>
-        <Field name='packType'>
+        <Field name='pluginId'>
           {(field) => (
             <ToggleGroup
               class='justify-start'
               value={field.value}
               onChange={(value) => {
                 if (value) {
-                  setValue(form, 'packType', value);
+                  setValue(form, 'pluginId', value);
                 }
               }}
             >
               <For each={local.importConfigs()}>
                 {(handler) => (
-                  <ToggleGroupItem value={handler.packType}>
+                  <ToggleGroupItem value={handler.pluginId}>
                     {handler.title}
                   </ToggleGroupItem>
                 )}
@@ -133,7 +133,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
         </Field>
       </LabeledField>
       <div class='flex w-full items-end gap-4'>
-        <Field name='path'>
+        <Field name='pathOrUrl'>
           {(field, props) => (
             <TextField
               validationState={field.error ? 'invalid' : 'valid'}

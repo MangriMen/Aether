@@ -1,25 +1,17 @@
 use dashmap::DashMap;
 use log::debug;
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use uuid::Uuid;
 
 use aether_core::features::{
     instance::{
         ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
-        ImportConfig, Instance, InstanceFile, NewInstance,
+        ImportConfig, ImportInstance, Instance, InstanceFile, NewInstance,
     },
     process::MinecraftProcessMetadata,
 };
 
 use crate::FrontendResult;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct InstanceImportDto {
-    pub pack_type: String,
-    pub path: String,
-}
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
@@ -39,7 +31,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_launch,
             instance_stop,
             instance_import,
-            instance_get_import_configs,
+            instance_list_import_configs,
             instance_get_content_providers,
             instance_get_content_by_provider,
             instance_install_content,
@@ -71,17 +63,13 @@ pub async fn instance_update(id: String) -> FrontendResult<()> {
 }
 
 #[tauri::command]
-pub async fn instance_import(instance_import_dto: InstanceImportDto) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::import(
-        &instance_import_dto.pack_type,
-        &instance_import_dto.path,
-    )
-    .await?)
+pub async fn instance_import(import_instance: ImportInstance) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::import(import_instance).await?)
 }
 
 #[tauri::command]
-pub async fn instance_get_import_configs() -> FrontendResult<Vec<ImportConfig>> {
-    Ok(aether_core::api::instance::get_import_configs().await?)
+pub async fn instance_list_import_configs() -> FrontendResult<Vec<ImportConfig>> {
+    Ok(aether_core::api::instance::list_import_configs().await?)
 }
 
 #[tauri::command]

@@ -100,13 +100,13 @@ export interface EditInstance extends EditInstanceSettings {
   javaPath?: string | null;
 }
 
-export interface InstanceImportDto {
-  packType: string;
-  path: string;
+export interface ImportInstance {
+  pathOrUrl: string;
+  pluginId: string | undefined;
 }
 
-export interface ImportHandler {
-  packType: string;
+export interface ImportConfig {
+  pluginId: string;
   title: string;
   fieldLabel: string;
   fileName: string;
