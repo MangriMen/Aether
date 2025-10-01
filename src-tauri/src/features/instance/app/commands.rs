@@ -16,34 +16,34 @@ use crate::FrontendResult;
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
         .invoke_handler(tauri::generate_handler![
-            instance_create,
-            instance_install,
-            instance_update,
-            instance_list,
-            instance_get,
-            instance_edit,
-            instance_remove,
-            instance_get_contents,
-            instance_disable_contents,
-            instance_enable_contents,
-            instance_remove_content,
-            instance_remove_contents,
-            instance_launch,
-            instance_stop,
-            instance_import,
-            instance_list_import_configs,
-            instance_get_content_providers,
-            instance_get_content_by_provider,
-            instance_install_content,
-            instance_get_metadata_field_to_check_installed,
-            instance_import_contents,
-            instance_get_dir,
+            create,
+            import,
+            list,
+            get,
+            get_dir,
+            install,
+            update,
+            edit,
+            remove,
+            launch,
+            stop,
+            list_import_configs,
+            import_contents,
+            get_contents,
+            install_content,
+            enable_contents,
+            disable_contents,
+            remove_content,
+            remove_contents,
+            get_content_providers,
+            get_content_by_provider,
+            get_metadata_field_to_check_installed,
         ])
         .build()
 }
 
 #[tauri::command]
-pub async fn instance_create(new_instance: NewInstance) -> FrontendResult<()> {
+async fn create(new_instance: NewInstance) -> FrontendResult<()> {
     tokio::spawn(async move {
         if let Err(err) = aether_core::api::instance::create(new_instance).await {
             debug!("{:?}", err)
@@ -53,118 +53,62 @@ pub async fn instance_create(new_instance: NewInstance) -> FrontendResult<()> {
 }
 
 #[tauri::command]
-pub async fn instance_install(id: String, force: bool) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install(id, force).await?)
-}
-
-#[tauri::command]
-pub async fn instance_update(id: String) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::update(id).await?)
-}
-
-#[tauri::command]
-pub async fn instance_import(import_instance: ImportInstance) -> FrontendResult<()> {
+async fn import(import_instance: ImportInstance) -> FrontendResult<()> {
     Ok(aether_core::api::instance::import(import_instance).await?)
 }
 
 #[tauri::command]
-pub async fn instance_list_import_configs() -> FrontendResult<Vec<ImportConfig>> {
-    Ok(aether_core::api::instance::list_import_configs().await?)
-}
-
-#[tauri::command]
-pub async fn instance_list() -> FrontendResult<Vec<Instance>> {
+async fn list() -> FrontendResult<Vec<Instance>> {
     Ok(aether_core::api::instance::list().await?)
 }
 
 #[tauri::command]
-pub async fn instance_get(id: String) -> FrontendResult<Instance> {
+async fn get(id: String) -> FrontendResult<Instance> {
     Ok(aether_core::api::instance::get(id).await?)
 }
 
 #[tauri::command]
-pub async fn instance_edit(id: String, edit_instance: EditInstance) -> FrontendResult<Instance> {
+async fn get_dir(id: String) -> FrontendResult<PathBuf> {
+    Ok(aether_core::api::instance::get_dir(&id).await?)
+}
+
+#[tauri::command]
+async fn install(id: String, force: bool) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::install(id, force).await?)
+}
+
+#[tauri::command]
+async fn update(id: String) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::update(id).await?)
+}
+
+#[tauri::command]
+async fn edit(id: String, edit_instance: EditInstance) -> FrontendResult<Instance> {
     Ok(aether_core::api::instance::edit(id, edit_instance).await?)
 }
 
 #[tauri::command]
-pub async fn instance_remove(id: String) -> FrontendResult<()> {
+async fn remove(id: String) -> FrontendResult<()> {
     Ok(aether_core::api::instance::remove(id).await?)
 }
 
 #[tauri::command]
-pub async fn instance_get_contents(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
-    Ok(aether_core::api::instance::get_contents(id).await?)
-}
-
-#[tauri::command]
-pub async fn instance_disable_contents(
-    id: String,
-    content_paths: Vec<String>,
-) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
-}
-
-#[tauri::command]
-pub async fn instance_enable_contents(
-    id: String,
-    content_paths: Vec<String>,
-) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::enable_contents(id, content_paths).await?)
-}
-
-#[tauri::command]
-pub async fn instance_remove_content(id: String, content_path: String) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::remove_content(id, content_path).await?)
-}
-
-#[tauri::command]
-pub async fn instance_remove_contents(
-    id: String,
-    content_paths: Vec<String>,
-) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::remove_contents(id, content_paths).await?)
-}
-
-#[tauri::command]
-pub async fn instance_launch(id: String) -> FrontendResult<MinecraftProcessMetadata> {
+async fn launch(id: String) -> FrontendResult<MinecraftProcessMetadata> {
     Ok(aether_core::api::instance::run(id).await?)
 }
 
 #[tauri::command]
-pub async fn instance_stop(uuid: Uuid) -> FrontendResult<()> {
+async fn stop(uuid: Uuid) -> FrontendResult<()> {
     Ok(aether_core::api::process::kill(uuid).await?)
 }
 
 #[tauri::command]
-pub async fn instance_get_content_providers() -> FrontendResult<HashMap<String, String>> {
-    Ok(aether_core::api::instance::get_content_providers().await?)
+async fn list_import_configs() -> FrontendResult<Vec<ImportConfig>> {
+    Ok(aether_core::api::instance::list_import_configs().await?)
 }
 
 #[tauri::command]
-pub async fn instance_get_content_by_provider(
-    payload: ContentSearchParams,
-) -> FrontendResult<ContentSearchResult> {
-    Ok(aether_core::api::instance::search_content(payload).await?)
-}
-
-#[tauri::command]
-pub async fn instance_install_content(
-    id: String,
-    payload: ContentInstallParams,
-) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install_content(id, payload).await?)
-}
-
-#[tauri::command]
-pub async fn instance_get_metadata_field_to_check_installed(
-    provider: String,
-) -> FrontendResult<String> {
-    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
-}
-
-#[tauri::command]
-pub async fn instance_import_contents(
+async fn import_contents(
     instance_id: String,
     content_type: ContentType,
     source_paths: Vec<String>,
@@ -178,6 +122,48 @@ pub async fn instance_import_contents(
 }
 
 #[tauri::command]
-pub async fn instance_get_dir(id: String) -> FrontendResult<PathBuf> {
-    Ok(aether_core::api::instance::get_dir(&id).await?)
+async fn get_contents(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
+    Ok(aether_core::api::instance::get_contents(id).await?)
+}
+
+#[tauri::command]
+async fn install_content(id: String, payload: ContentInstallParams) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::install_content(id, payload).await?)
+}
+
+#[tauri::command]
+async fn enable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::enable_contents(id, content_paths).await?)
+}
+
+#[tauri::command]
+async fn disable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
+}
+
+#[tauri::command]
+async fn remove_content(id: String, content_path: String) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::remove_content(id, content_path).await?)
+}
+
+#[tauri::command]
+async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::remove_contents(id, content_paths).await?)
+}
+
+#[tauri::command]
+async fn get_content_providers() -> FrontendResult<HashMap<String, String>> {
+    Ok(aether_core::api::instance::get_content_providers().await?)
+}
+
+#[tauri::command]
+async fn get_content_by_provider(
+    payload: ContentSearchParams,
+) -> FrontendResult<ContentSearchResult> {
+    Ok(aether_core::api::instance::search_content(payload).await?)
+}
+
+#[tauri::command]
+async fn get_metadata_field_to_check_installed(provider: String) -> FrontendResult<String> {
+    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
 }
