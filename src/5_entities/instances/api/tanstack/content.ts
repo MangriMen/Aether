@@ -21,7 +21,7 @@ import {
   installContentRaw,
   getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
-} from '../rawApi';
+} from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './content_query_keys';
 

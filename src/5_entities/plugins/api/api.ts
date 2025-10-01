@@ -7,13 +7,12 @@ import {
   disablePluginRaw,
   editPluginSettingsRaw,
   enablePluginRaw,
-  getIsPluginEnabledRaw,
   getPluginRaw,
   getPluginSettingsRaw,
   listPluginsRaw,
   openPluginsFolderRaw,
   syncPluginsRaw,
-} from './rawApi';
+} from './tauriApi';
 
 export const useSyncPlugins = () =>
   useMutation(() => ({
@@ -37,13 +36,6 @@ export const usePluginSettings = (id: Accessor<string>) =>
   useQuery(() => ({
     queryKey: QUERY_KEYS.PLUGIN.SETTINGS(id()),
     queryFn: () => getPluginSettingsRaw(id()),
-    enabled: !!id(),
-  }));
-
-export const useGetPluginEnabled = (id: Accessor<string>) =>
-  useQuery(() => ({
-    queryKey: QUERY_KEYS.PLUGIN.ENABLED(id()),
-    queryFn: () => getIsPluginEnabledRaw(id()),
     enabled: !!id(),
   }));
 
