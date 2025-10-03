@@ -2,7 +2,7 @@ import IconMdiFolder from '~icons/mdi/folder';
 import IconMdiReload from '~icons/mdi/reload';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
+import { useOpenPluginFolder, useSyncPlugins } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton, showToast } from '@/shared/ui';
@@ -14,9 +14,12 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
+  const openPluginsFolder = useOpenPluginFolder();
+  const syncPlugins = useSyncPlugins();
+
   const handleOpenPluginsFolder = async () => {
     try {
-      await openPluginsFolderRaw();
+      await openPluginsFolder.mutateAsync();
     } catch (e) {
       if (isLauncherError(e)) {
         showToast({
@@ -29,7 +32,7 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
   };
 
   const handleRefreshPlugins = async () => {
-    await syncPluginsRaw();
+    await syncPlugins.mutateAsync();
   };
 
   return (
