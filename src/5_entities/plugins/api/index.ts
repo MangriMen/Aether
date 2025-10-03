@@ -1,2 +1,2 @@
-export * from './api';
+export * from './tanstackApi';
 export * from './tauriApi';

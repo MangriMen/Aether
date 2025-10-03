@@ -165,7 +165,8 @@
     "noPlugins": "Плагины не найдены",
     "openPluginsFolder": "Открыть папку плагинов",
     "saveSettings": "Сохранить настройки",
-    "title": "Плагины"
+    "title": "Плагины",
+    "syncError": "Ошибка синхронизации"
   },
   "progress": {
     "seeDetails": "Показать детали",
