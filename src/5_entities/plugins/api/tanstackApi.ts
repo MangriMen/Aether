@@ -2,6 +2,9 @@ import type { Accessor } from 'solid-js';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { showError } from '@/shared/lib/showError';
+import { useTranslation } from '@/shared/model';
+
 import { QUERY_KEYS } from './query_keys';
 import {
   disablePluginRaw,
@@ -14,10 +17,24 @@ import {
   syncPluginsRaw,
 } from './tauriApi';
 
-export const useSyncPlugins = () =>
-  useMutation(() => ({
+export const useSyncPlugins = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
     mutationFn: syncPluginsRaw,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+    },
+    onError: (err) => {
+      showError({
+        title: t('plugins.syncError'),
+        err,
+        t,
+      });
+    },
   }));
+};
 
 export const usePlugins = () =>
   useQuery(() => ({

@@ -165,7 +165,8 @@
     "noPlugins": "No plugins found",
     "openPluginsFolder": "Open plugins folder",
     "saveSettings": "Save settings",
-    "title": "Plugins"
+    "title": "Plugins",
+    "syncError": "Sync error"
   },
   "progress": {
     "seeDetails": "See details",
