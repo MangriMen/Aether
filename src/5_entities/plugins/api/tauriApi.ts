@@ -12,10 +12,10 @@ export const getPluginRaw = async (id: PluginMetadata['id']) =>
   invokePlugin<Plugin>(`get`, { id });
 
 export const enablePluginRaw = async (id: PluginMetadata['id']) =>
-  invokePlugin(`plugin`, { id });
+  invokePlugin(`enable`, { id });
 
 export const disablePluginRaw = async (id: PluginMetadata['id']) =>
-  invokePlugin(`plugin`, { id });
+  invokePlugin(`disable`, { id });
 
 export const getPluginSettingsRaw = async (id: PluginMetadata['id']) =>
   invokePlugin<PluginSettings | undefined>(`get_settings`, {
