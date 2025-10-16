@@ -13,9 +13,10 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
 
-import type { PluginSettingsSchemaValues } from '../../model';
-
-import { PluginSettingsSchema } from '../../model';
+import {
+  PluginSettingsSchema,
+  type PluginSettingsSchemaValues,
+} from '../model';
 import { AllowedHost } from './AllowedHost';
 import { AllowedHostsField } from './AllowedHostsField';
 import { AllowedItems } from './AllowedItems';
@@ -26,7 +27,7 @@ import { EditAllowedPath } from './EditAllowedPath';
 
 export type PluginSettingsFormProps = {
   pluginManifest: PluginManifest;
-  disabled: boolean;
+  disabled?: boolean;
   class?: string;
 };
 

@@ -32,6 +32,7 @@ export * from './SettingsPane';
 export * from './SettingsTabs';
 export * from './Sidebar';
 export * from './Skeleton';
+export * from './SkeletonList';
 export * from './Slider';
 export * from './Switch';
 export * from './Table';

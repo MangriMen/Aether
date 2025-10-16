@@ -7,7 +7,7 @@ import { createSignal, For, Show, splitProps } from 'solid-js';
 import { useTranslation } from '@/shared/model';
 import { LabeledField } from '@/shared/ui';
 
-import type { PluginSettingsSchemaValues } from '../../model';
+import type { PluginSettingsSchemaValues } from '../model';
 import type { AddNewItemProps } from './AddNewSettingsItem';
 
 import { AddNewSettingsItem } from './AddNewSettingsItem';

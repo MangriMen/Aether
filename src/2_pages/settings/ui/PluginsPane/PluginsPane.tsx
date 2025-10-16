@@ -6,8 +6,8 @@ import { usePlugins } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
+import { PluginsView } from '@/widgets/plugins-view';
 
-import { PluginsList } from './PluginsList';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
 
 export type PluginsPaneProps = SettingsPaneProps;
@@ -26,10 +26,10 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
       {...others}
     >
       <Show
-        when={plugins.data?.length}
+        when={!plugins.isError || (plugins.data && plugins.data.length === 0)}
         fallback={<span>{t('plugins.noPlugins')}</span>}
       >
-        <PluginsList plugins={plugins.data} isLoading={plugins.isLoading} />
+        <PluginsView plugins={plugins.data} isLoading={plugins.isLoading} />
       </Show>
     </SettingsPane>
   );
