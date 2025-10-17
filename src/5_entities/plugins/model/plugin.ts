@@ -1,11 +1,5 @@
 import type { PluginManifest } from './plugin_manifest';
-
-export type PluginState =
-  | 'NotLoaded'
-  | 'Loading'
-  | 'Loaded'
-  | 'Unloading'
-  | 'Failed';
+import type { PluginState } from './plugin_state';
 
 export interface Plugin {
   manifest: PluginManifest;

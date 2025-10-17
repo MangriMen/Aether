@@ -105,11 +105,14 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
       {...others}
     >
       <fieldset
-        class={cn('flex flex-col gap-4', {
+        class={cn('flex flex-col gap-2', {
           'text-muted-foreground': local.disabled,
         })}
         disabled={local.disabled}
       >
+        <Button class='w-max' type='submit' size='sm' loading={isLoading()}>
+          {t('plugins.saveSettings')}
+        </Button>
         <AllowedItems
           label={t('plugins.allowedHosts')}
           name='allowedHosts'
@@ -132,9 +135,6 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
             <EditAllowedPath onOk={onSubmitNew} onCancel={onCancel} />
           )}
         />
-        <Button class='w-max' type='submit' loading={isLoading()}>
-          {t('plugins.saveSettings')}
-        </Button>
       </fieldset>
     </Form>
   );

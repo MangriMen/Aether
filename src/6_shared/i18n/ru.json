@@ -217,5 +217,16 @@
   },
   "update": {
     "updateError": "Ошибка обновления лаунчера"
+  },
+  "plugin": {
+    "description": "Описание",
+    "settings": "Настройки"
+  },
+  "pluginSettings": {
+    "hostPathPlaceholder": "Введите путь на хосте",
+    "pluginPathPlaceholder": "Введите путь в плагине",
+    "hostUrlPlaceholder": "Введите домен хоста без протокола, например\n\"example.com\"",
+    "host": "Хост",
+    "plugin": "Плагин"
   }
 }

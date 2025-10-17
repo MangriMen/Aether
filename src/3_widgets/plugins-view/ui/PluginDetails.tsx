@@ -10,8 +10,8 @@ import { cn } from '@/shared/lib';
 import { Separator } from '@/shared/ui';
 
 import { PluginDetailsActions } from './PluginDetailsActions';
+import { PluginDetailsBody } from './PluginDetailsBody';
 import { PluginDetailsInfo } from './PluginDetailsInfo';
-import { PluginSettings } from './PluginSettings';
 
 export type PluginDetailsProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -32,9 +32,10 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
 
       <Separator />
 
-      <p class='pb-1'>{local.plugin.manifest.metadata.description}</p>
-
-      <PluginSettings plugin={local.plugin} disabled={isSettingsDisabled()} />
+      <PluginDetailsBody
+        plugin={local.plugin}
+        isSettingsDisabled={isSettingsDisabled()}
+      />
     </div>
   );
 };

@@ -1,10 +1,14 @@
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
 import type { Plugin } from '@/entities/plugins';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
 
 import { PluginSettingsForm } from './PluginSettingsForm';
 
@@ -19,18 +23,24 @@ export const PluginSettings: Component<PluginSettingsProps> = (props) => {
   const [{ t }] = useTranslation();
 
   return (
-    <SettingsPane
-      class={cn('p-0 bg-[unset]', {
-        'text-muted-foreground': local.disabled,
-      })}
-      label={`${t('settings.title')} ${local.disabled ? '(' + t('plugins.disableToChangeSettings') + ')' : ''}`}
-      collapsible
+    <div
+      class={cn(
+        {
+          'text-muted-foreground': local.disabled,
+        },
+        local.class,
+      )}
       {...others}
     >
+      <Show when={local.disabled}>
+        <span class='text-xl font-medium leading-10 text-accent-foreground'>
+          {t('plugins.disableToChangeSettings')}
+        </span>
+      </Show>
       <PluginSettingsForm
         pluginManifest={local.plugin.manifest}
         disabled={local.disabled}
       />
-    </SettingsPane>
+    </div>
   );
 };

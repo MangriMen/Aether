@@ -7,6 +7,7 @@ import {
 } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { Button, CombinedTextField } from '@/shared/ui';
 
 export type EditAllowedHostProps = ComponentProps<'div'> & {
@@ -22,6 +23,8 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
     'onCancel',
     'class',
   ]);
+
+  const [{ t }] = useTranslation();
 
   let inputRef: HTMLInputElement | undefined;
 
@@ -50,12 +53,13 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
           type: 'text',
           class: 'h-max py-1 px-1',
           onKeyDown: (e) => e.key === 'Enter' && handleSubmit(),
+          placeholder: t('pluginSettings.hostUrlPlaceholder'),
         }}
         value={value()}
         onChange={setValue}
       />
       <Button class='h-full' size='sm' onClick={handleSubmit}>
-        Ok
+        {t('common.ok')}
       </Button>
       <Button
         class='h-full'
@@ -63,7 +67,7 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
         size='sm'
         onClick={local.onCancel}
       >
-        Cancel
+        {t('common.cancel')}
       </Button>
     </div>
   );

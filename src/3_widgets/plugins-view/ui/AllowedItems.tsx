@@ -87,13 +87,15 @@ export const AllowedItems = <
 
   return (
     <LabeledField
-      class='px-1'
       label={<span class='text-base font-medium'>{local.label}</span>}
       {...others}
     >
       <Show when={local.unchangeableItems?.length}>
-        <LabeledField class='px-1' label={t('plugins.fromPlugin')}>
-          <ol class='flex flex-col rounded-lg bg-black/20'>
+        <LabeledField
+          class='px-1 text-sm'
+          label={<span class='font-normal'>{t('plugins.fromPlugin')}</span>}
+        >
+          <ol class='flex flex-col'>
             <For each={local.unchangeableItems}>
               {(item) => (
                 <li>
@@ -104,8 +106,11 @@ export const AllowedItems = <
           </ol>
         </LabeledField>
       </Show>
-      <LabeledField class='px-1' label={t('plugins.custom')}>
-        <ol class='flex flex-col rounded-lg bg-black/20'>
+      <LabeledField
+        class='px-1 text-sm'
+        label={<span class='font-normal'>{t('plugins.custom')}</span>}
+      >
+        <ol class='flex flex-col'>
           <FieldArray of={local.form} name={local.name}>
             {(fieldArray) => (
               <For each={fieldArray.items}>

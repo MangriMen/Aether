@@ -1,7 +1,7 @@
 import {
-  createMemo,
-  createSignal,
+  Match,
   splitProps,
+  Switch,
   type Component,
   type ComponentProps,
 } from 'solid-js';
@@ -9,6 +9,7 @@ import {
 import {
   useDisablePlugin,
   useEnablePlugin,
+  usePluginStates,
   type Plugin,
 } from '@/entities/plugins';
 import { useTranslation } from '@/shared/model';
@@ -25,39 +26,41 @@ export const TogglePluginButton: Component<TogglePluginButtonProps> = (
 
   const [{ t }] = useTranslation();
 
-  const isPluginEnabled = createMemo(() => local.plugin.state === 'Loaded');
+  const { isDisabled, isLoading, isEnabled } = usePluginStates(
+    () => local.plugin.state,
+  );
 
   const { mutateAsync: enablePlugin } = useEnablePlugin();
   const { mutateAsync: disablePlugin } = useDisablePlugin();
-
-  const [isLoading, setIsLoading] = createSignal(false);
 
   const togglePluginEnabled = async () => {
     if (isLoading()) {
       return;
     }
 
-    setIsLoading(true);
     try {
-      if (isPluginEnabled()) {
-        await disablePlugin(local.plugin.manifest.metadata.id);
+      const id = local.plugin.manifest.metadata.id;
+      if (isEnabled()) {
+        await disablePlugin(id);
       } else {
-        await enablePlugin(local.plugin.manifest.metadata.id);
+        await enablePlugin(id);
       }
     } catch {
       /* empty */
     }
-    setIsLoading(false);
   };
 
   return (
     <Button
       size='sm'
-      onClick={togglePluginEnabled}
       loading={isLoading()}
+      onClick={togglePluginEnabled}
       {...others}
     >
-      {isPluginEnabled() ? t('common.disable') : t('common.enable')}
+      <Switch>
+        <Match when={isDisabled() || isLoading()}>{t('common.enable')}</Match>
+        <Match when={isEnabled()}>{t('common.disable')}</Match>
+      </Switch>
     </Button>
   );
 };

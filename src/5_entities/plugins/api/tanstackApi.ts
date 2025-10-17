@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 
-import { QUERY_KEYS } from './query_keys';
+import { PLUGIN_QUERY_KEYS } from './query_keys';
 import {
   disablePluginRaw,
   editPluginSettingsRaw,
@@ -24,7 +24,7 @@ export const useSyncPlugins = () => {
   return useMutation(() => ({
     mutationFn: syncPluginsRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+      queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.LIST() });
     },
     onError: (err) => {
       showError({
@@ -38,20 +38,20 @@ export const useSyncPlugins = () => {
 
 export const usePlugins = () =>
   useQuery(() => ({
-    queryKey: QUERY_KEYS.PLUGIN.LIST(),
+    queryKey: PLUGIN_QUERY_KEYS.LIST(),
     queryFn: listPluginsRaw,
   }));
 
 export const usePlugin = (id: Accessor<string>) =>
   useQuery(() => ({
-    queryKey: QUERY_KEYS.PLUGIN.GET(id()),
+    queryKey: PLUGIN_QUERY_KEYS.GET(id()),
     queryFn: () => getPluginRaw(id()),
     enabled: !!id(),
   }));
 
 export const usePluginSettings = (id: Accessor<string>) =>
   useQuery(() => ({
-    queryKey: QUERY_KEYS.PLUGIN.SETTINGS(id()),
+    queryKey: PLUGIN_QUERY_KEYS.SETTINGS(id()),
     queryFn: () => getPluginSettingsRaw(id()),
     enabled: !!id(),
   }));
@@ -62,7 +62,7 @@ export const useEnablePlugin = () => {
   return useMutation(() => ({
     mutationFn: enablePluginRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+      queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.LIST() });
     },
   }));
 };
@@ -73,7 +73,7 @@ export const useDisablePlugin = () => {
   return useMutation(() => ({
     mutationFn: disablePluginRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PLUGIN.LIST() });
+      queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.LIST() });
     },
   }));
 };
@@ -84,7 +84,7 @@ export const useEditPluginSettings = () => {
     mutationFn: editPluginSettingsRaw,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.PLUGIN.SETTINGS(variables.id),
+        queryKey: PLUGIN_QUERY_KEYS.SETTINGS(variables.id),
       });
     },
   }));

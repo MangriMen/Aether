@@ -1,9 +1,10 @@
 import type { Accessor, JSX } from 'solid-js';
 
+import MdiPlusIcon from '@iconify/icons-mdi/plus';
 import { Show } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type AddNewItemProps<T> = {
   editingIndex: Accessor<number | null>;
@@ -35,11 +36,13 @@ export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
     <Show
       when={props.editingIndex() === -1}
       fallback={
-        <Button
-          class='size-max px-2 py-1'
+        <CombinedTooltip
+          class='size-max p-1'
+          label={t('plugins.addItem')}
+          as={IconButton}
           size='sm'
+          icon={MdiPlusIcon}
           onClick={onAddNew}
-          children={t('plugins.addItem')}
         />
       }
     >

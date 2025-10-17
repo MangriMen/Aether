@@ -7,6 +7,7 @@ import {
 } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import { Button, CombinedTextField } from '@/shared/ui';
 
 export type EditAllowedPathProps = ComponentProps<'div'> & {
@@ -22,6 +23,8 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
     'onCancel',
     'class',
   ]);
+
+  const [{ t }] = useTranslation();
 
   const [src, setSrc] = createSignal('');
   const [dest, setDest] = createSignal('');
@@ -45,6 +48,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         inputProps={{
           type: 'text',
           class: 'h-max py-1 px-1',
+          placeholder: t('pluginSettings.hostPathPlaceholder'),
         }}
         value={src()}
         onChange={setSrc}
@@ -54,12 +58,13 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         inputProps={{
           type: 'text',
           class: 'h-max py-1 px-1',
+          placeholder: t('pluginSettings.pluginPathPlaceholder'),
         }}
         value={dest()}
         onChange={setDest}
       />
       <Button class='h-full' size='sm' onClick={handleSubmit}>
-        Ok
+        {t('common.ok')}
       </Button>
       <Button
         class='h-full'
@@ -67,7 +72,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         size='sm'
         onClick={local.onCancel}
       >
-        Cancel
+        {t('common.cancel')}
       </Button>
     </div>
   );

@@ -217,5 +217,16 @@
   },
   "update": {
     "updateError": "Launcher update error"
+  },
+  "plugin": {
+    "description": "Description",
+    "settings": "Settings"
+  },
+  "pluginSettings": {
+    "hostPathPlaceholder": "Enter host path",
+    "pluginPathPlaceholder": "Enter plugin path",
+    "hostUrlPlaceholder": "Enter host domain without protocol, e.g. \"example.com\"",
+    "host": "Host",
+    "plugin": "Plugin"
   }
 }

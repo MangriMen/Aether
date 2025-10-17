@@ -32,7 +32,7 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex items-center select-none justify-between gap-2 rounded-sm h-[30px] hover:bg-secondary/50 group',
+        'flex items-center select-none justify-between gap-2 rounded-sm h-[30px] bg-black/20 hover:bg-secondary/50 group px-2',
         local.class,
       )}
       {...others}
