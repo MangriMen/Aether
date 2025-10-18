@@ -2,8 +2,12 @@ import type { SubmitHandler } from '@modular-forms/solid';
 
 import { createMemo, type Accessor } from 'solid-js';
 
-import type { PluginMetadata, PluginSettings } from '@/entities/plugins';
-import type { PluginSettingsSchemaValues } from '@/features/plugin-settings-form';
+import type {
+  EditPluginSettings,
+  PluginMetadata,
+  PluginSettings,
+} from '@/entities/plugins';
+import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 import {
   pluginSettingsToPluginSettingsValues,
@@ -14,7 +18,10 @@ export interface UsePluginSettingsHandler {
   pluginId: Accessor<PluginMetadata['id']>;
   pluginSettings: Accessor<PluginSettings | undefined>;
   editPluginSettings: Accessor<
-    (args: { id: PluginMetadata['id']; settings: PluginSettings }) => void
+    (args: {
+      id: PluginMetadata['id'];
+      editSettings: EditPluginSettings;
+    }) => void
   >;
 }
 
@@ -27,10 +34,10 @@ export const usePluginSettingsHandler = ({
     pluginSettingsToPluginSettingsValues(pluginSettings()),
   );
 
-  const onSubmit: SubmitHandler<PluginSettingsSchemaValues> = (values) => {
+  const onSubmit: SubmitHandler<PluginSettingsSchemaInput> = (values) => {
     editPluginSettings()({
       id: pluginId(),
-      settings: pluginSettingsValuesToPluginSettings(values),
+      editSettings: pluginSettingsValuesToPluginSettings(values),
     });
   };
 

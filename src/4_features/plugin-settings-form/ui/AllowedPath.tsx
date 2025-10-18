@@ -1,10 +1,7 @@
 import IconMdiArrowRightBold from '~icons/mdi/arrow-right-bold';
-import IconMdiClose from '~icons/mdi/close';
 import IconMdiMonitor from '~icons/mdi/monitor';
-import IconMdiPencil from '~icons/mdi/pencil';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
 import {
-  mergeProps,
   Show,
   splitProps,
   type Component,
@@ -13,72 +10,57 @@ import {
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+
+import type { AllowedItemProps } from '../model';
 
 import { AllowedPathComponent } from './AllowedPathComponent';
 
-export type AllowedPathProps = ComponentProps<'div'> & {
-  value?: [string, string];
-  onEdit?: () => void;
-  onRemove?: () => void;
-  changeable?: boolean;
-};
+export type AllowedPathProps = ComponentProps<'div'> &
+  AllowedItemProps<[string, string], [string, string]>;
 
 export const AllowedPath: Component<AllowedPathProps> = (props) => {
-  const [_local, others] = splitProps(props, [
+  const [local, others] = splitProps(props, [
     'value',
-    'onEdit',
-    'onRemove',
-    'changeable',
+    'error',
+    'leadingItems',
     'class',
   ]);
-
-  const local = mergeProps({ changeable: true }, _local);
 
   const [{ t }] = useTranslation();
 
   return (
     <div
       class={cn(
-        'flex items-center select-none justify-between gap-2 rounded-sm h-[30px] hover:bg-secondary/50 group px-1',
+        'group flex min-h-[30px] select-none items-start justify-between gap-2 rounded-sm py-1 px-2 hover:bg-secondary/50',
         local.class,
       )}
       {...others}
     >
-      <div class='grid w-full grid-cols-[1fr,auto,1fr] items-center'>
-        <AllowedPathComponent
-          label={t('pluginSettings.host')}
-          icon={IconMdiMonitor}
-          value={local.value?.[0]}
-        />
-        <IconMdiArrowRightBold class='mx-2' />
-        <AllowedPathComponent
-          label={t('pluginSettings.plugin')}
-          icon={IconMdiPuzzle}
-          value={local.value?.[1]}
-        />
-      </div>
-      <Show when={local.changeable}>
-        <div class='flex items-center opacity-0 transition-opacity group-hover:opacity-100'>
-          <CombinedTooltip
-            label='Edit'
-            as={IconButton}
-            class='size-max p-1'
-            variant='ghost'
-            size='sm'
-            icon={IconMdiPencil}
-            onClick={local.onEdit}
+      <div class='grid w-full grid-cols-[1fr,auto,1fr] items-start'>
+        <div class='flex flex-col'>
+          <AllowedPathComponent
+            label={t('pluginSettings.host')}
+            icon={IconMdiMonitor}
+            value={local.value?.[0]}
           />
-          <CombinedTooltip
-            label='Remove'
-            as={IconButton}
-            class='size-max p-1'
-            variant='ghost'
-            size='sm'
-            icon={IconMdiClose}
-            onClick={local.onRemove}
-          />
+          <span class='text-destructive'>{local.error?.[0]}</span>
         </div>
+        <IconMdiArrowRightBold class='mx-2 mt-[3px]' />
+        <div class='flex flex-col'>
+          <AllowedPathComponent
+            label={t('pluginSettings.plugin')}
+            icon={IconMdiPuzzle}
+            value={local.value?.[1]}
+          />
+          <span class='text-destructive'>{local.error?.[1]}</span>
+        </div>
+      </div>
+      <Show when={local.leadingItems}>
+        {(leadingItems) => (
+          <div class='flex items-center opacity-0 transition-opacity group-hover:opacity-100'>
+            {leadingItems()}
+          </div>
+        )}
       </Show>
     </div>
   );

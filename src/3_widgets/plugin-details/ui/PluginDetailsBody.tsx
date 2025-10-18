@@ -27,11 +27,12 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn(local.class)}
+      class={cn('flex flex-col', local.class)}
       defaultValue={PluginDetailsTabs.Description}
+      orientation='horizontal'
       {...others}
     >
-      <TabsList>
+      <TabsList class='self-start'>
         <TabsTrigger value={PluginDetailsTabs.Description}>
           {t('plugin.description')}
         </TabsTrigger>
@@ -43,12 +44,12 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
         value={PluginDetailsTabs.Description}
         as={PluginDescriptionTab}
         plugin={local.plugin}
-        class='flex-1 overflow-y-auto'
+        class='flex-1 overflow-hidden'
       />
       <TabsContent
         value={PluginDetailsTabs.Settings}
         as={PluginSettingsTab}
-        class='flex-1 overflow-y-auto'
+        class='flex-1 overflow-hidden'
         plugin={local.plugin}
         disabled={local.isSettingsDisabled}
       />

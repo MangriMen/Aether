@@ -33,6 +33,7 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
       <Separator />
 
       <PluginDetailsBody
+        class='grow'
         plugin={local.plugin}
         isSettingsDisabled={isSettingsDisabled()}
       />

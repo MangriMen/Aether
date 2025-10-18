@@ -45,6 +45,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
   return (
     <div
       class={cn(
+        'flex flex-col',
         {
           'text-muted-foreground': local.disabled,
         },
@@ -58,7 +59,8 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         </span>
       </Show>
       <PluginSettingsForm
-        pluginManifest={local.plugin.manifest}
+        class='grow'
+        runtimeConfig={local.plugin.manifest.runtime}
         initialValues={initialValues}
         onSubmit={onSubmit}
         isLoading={isLoading()}

@@ -10,16 +10,17 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTextField } from '@/shared/ui';
 
-export type EditAllowedHostProps = ComponentProps<'div'> & {
-  value?: string;
-  onOk?: (value: string) => void;
-  onCancel?: () => void;
-};
+import type { EditAllowedItemProps } from '../model';
+
+export type EditAllowedHostProps = ComponentProps<'div'> &
+  EditAllowedItemProps<string, string>;
 
 export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
   const [local, others] = splitProps(props, [
+    'name',
     'value',
-    'onOk',
+    'error',
+    'onSave',
     'onCancel',
     'class',
   ]);
@@ -31,7 +32,7 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
   const [value, setValue] = createSignal('');
 
   const handleSubmit = () => {
-    local.onOk?.(value());
+    local.onSave?.(value());
   };
 
   createEffect(() => {
@@ -40,35 +41,36 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
   });
 
   return (
-    <div
-      class={cn('flex gap-2 h-full w-full items-center', local.class)}
-      {...others}
-    >
-      <CombinedTextField
-        class='w-full'
-        inputProps={{
-          ref: (el) => {
-            inputRef = el;
-          },
-          type: 'text',
-          class: 'h-max py-1 px-1',
-          onKeyDown: (e) => e.key === 'Enter' && handleSubmit(),
-          placeholder: t('pluginSettings.hostUrlPlaceholder'),
-        }}
-        value={value()}
-        onChange={setValue}
-      />
-      <Button class='h-full' size='sm' onClick={handleSubmit}>
-        {t('common.ok')}
-      </Button>
-      <Button
-        class='h-full'
-        variant='secondary'
-        size='sm'
-        onClick={local.onCancel}
-      >
-        {t('common.cancel')}
-      </Button>
+    <div class={cn('flex flex-col', local.class)} {...others}>
+      <div class='flex size-full items-center gap-2'>
+        <CombinedTextField
+          class='w-full'
+          name={local.name}
+          inputProps={{
+            ref: (el) => {
+              inputRef = el;
+            },
+            type: 'text',
+            class: 'h-max py-1 px-1',
+            onKeyDown: (e) => e.key === 'Enter' && handleSubmit(),
+            placeholder: t('pluginSettings.hostUrlPlaceholder'),
+          }}
+          value={value()}
+          onChange={setValue}
+          errorMessage={local.error}
+        />
+        <Button class='h-full' size='sm' onClick={handleSubmit}>
+          {t('common.ok')}
+        </Button>
+        <Button
+          class='h-full'
+          variant='secondary'
+          size='sm'
+          onClick={local.onCancel}
+        >
+          {t('common.cancel')}
+        </Button>
+      </div>
     </div>
   );
 };

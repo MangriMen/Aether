@@ -10,16 +10,16 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTextField } from '@/shared/ui';
 
-export type EditAllowedPathProps = ComponentProps<'div'> & {
-  value?: [string, string];
-  onOk?: (value: [string, string]) => void;
-  onCancel?: () => void;
-};
+import type { EditAllowedItemProps } from '../model';
+
+export type EditAllowedPathProps = ComponentProps<'div'> &
+  EditAllowedItemProps<[string, string], [string, string]>;
 
 export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
   const [local, others] = splitProps(props, [
     'value',
-    'onOk',
+    'error',
+    'onSave',
     'onCancel',
     'class',
   ]);
@@ -30,7 +30,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
   const [dest, setDest] = createSignal('');
 
   const handleSubmit = () => {
-    local.onOk?.([src(), dest()]);
+    local.onSave?.([src(), dest()]);
   };
 
   createEffect(() => {
@@ -40,7 +40,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
 
   return (
     <div
-      class={cn('flex gap-2 h-full w-full items-center', local.class)}
+      class={cn('flex size-full items-start gap-2', local.class)}
       {...others}
     >
       <CombinedTextField
@@ -52,6 +52,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         }}
         value={src()}
         onChange={setSrc}
+        errorMessage={local.error?.[0]}
       />
       <CombinedTextField
         class='w-full'
@@ -62,16 +63,12 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         }}
         value={dest()}
         onChange={setDest}
+        errorMessage={local.error?.[1]}
       />
-      <Button class='h-full' size='sm' onClick={handleSubmit}>
+      <Button size='sm' onClick={handleSubmit}>
         {t('common.ok')}
       </Button>
-      <Button
-        class='h-full'
-        variant='secondary'
-        size='sm'
-        onClick={local.onCancel}
-      >
+      <Button variant='secondary' size='sm' onClick={local.onCancel}>
         {t('common.cancel')}
       </Button>
     </div>

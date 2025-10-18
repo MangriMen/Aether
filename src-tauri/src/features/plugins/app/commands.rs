@@ -56,8 +56,8 @@ async fn get_settings(id: String) -> FrontendResult<Option<PluginSettings>> {
 }
 
 #[tauri::command]
-async fn edit_settings(id: String, settings: EditPluginSettings) -> FrontendResult<()> {
-    Ok(aether_core::api::plugin::edit_settings(id, settings).await?)
+async fn edit_settings(id: String, edit_settings: EditPluginSettings) -> FrontendResult<()> {
+    Ok(aether_core::api::plugin::edit_settings(id, edit_settings).await?)
 }
 
 #[tauri::command]

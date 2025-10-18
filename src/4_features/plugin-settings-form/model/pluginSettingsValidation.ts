@@ -2,15 +2,24 @@ import { z } from 'zod';
 
 export const PluginSettingsSchema = z.object({
   allowedHosts: z
-    .string()
-    .array()
+    .array(
+      z
+        .string()
+        .trim()
+        .refine((value) => value.length > 0, 'Not allowed empty domain name'),
+    )
     .optional()
     .transform((value) => value ?? []),
   allowedPaths: z
-    .tuple([z.string(), z.string()])
-    .array()
+    .array(
+      z.tuple([
+        z.string(), //.refine(() => false, 'HER'),
+        z.string(), //.refine(() => false, 'PER'),
+      ]),
+    )
     .optional()
     .transform((value) => value ?? []),
 });
 
-export type PluginSettingsSchemaValues = z.infer<typeof PluginSettingsSchema>;
+export type PluginSettingsSchemaInput = z.input<typeof PluginSettingsSchema>;
+export type PluginSettingsSchemaOutput = z.output<typeof PluginSettingsSchema>;

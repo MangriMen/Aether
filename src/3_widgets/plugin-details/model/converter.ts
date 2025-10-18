@@ -1,18 +1,18 @@
 import type { PluginSettings } from '@/entities/plugins';
-import type { PluginSettingsSchemaValues } from '@/features/plugin-settings-form';
+import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 export const pluginSettingsToPluginSettingsValues = (
   settings: PluginSettings | undefined,
-): PluginSettingsSchemaValues | undefined => {
+): PluginSettingsSchemaInput | undefined => {
   return {
-    allowedHosts: settings?.allowed_hosts ?? [],
-    allowedPaths: settings?.allowed_paths ?? [],
+    allowedHosts: [...(settings?.allowedHosts ?? [])],
+    allowedPaths: [...(settings?.allowedPaths ?? [])],
   };
 };
 
 export const pluginSettingsValuesToPluginSettings = (
-  values: PluginSettingsSchemaValues,
+  values: PluginSettingsSchemaInput,
 ): PluginSettings => ({
-  allowed_hosts: values.allowedHosts ?? [],
-  allowed_paths: values.allowedPaths ?? [],
+  allowedHosts: [...(values.allowedHosts ?? [])],
+  allowedPaths: [...(values.allowedPaths ?? [])],
 });

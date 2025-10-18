@@ -1,9 +1,10 @@
-import type { SubmitHandler } from '@modular-forms/solid';
 import type { Accessor } from 'solid-js';
 
+import { type SubmitHandler } from '@modular-forms/solid';
 import { splitProps, type Component } from 'solid-js';
 
-import { type PluginManifest } from '@/entities/plugins';
+import type { RuntimeConfig } from '@/entities/plugins';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
@@ -12,21 +13,21 @@ import {
   usePluginSettingsForm,
   useResetPluginSettingsFormValues,
 } from '../lib';
-import { type PluginSettingsSchemaValues } from '../model';
+import { type PluginSettingsSchemaInput } from '../model';
 import { AllowedHost } from './AllowedHost';
-import { AllowedHostsField } from './AllowedHostsField';
+import { AllowedHostsCustomItems } from './AllowedHostsCustomItems';
 import { AllowedItems } from './AllowedItems';
 import { AllowedPath } from './AllowedPath';
-import { AllowedPathField } from './AllowedPathField';
-import { EditAllowedHost } from './EditAllowedHost';
-import { EditAllowedPath } from './EditAllowedPath';
+import { AllowedPathsCustomItems } from './AllowedPathsCustomItems';
+import { FixedItemsList } from './FixedItemsList';
 
 export type PluginSettingsFormProps = {
-  initialValues: Accessor<PluginSettingsSchemaValues | undefined>;
-  pluginManifest: PluginManifest;
+  initialValues: Accessor<PluginSettingsSchemaInput | undefined>;
+  runtimeConfig: RuntimeConfig;
   isLoading?: boolean;
   disabled?: boolean;
-  onSubmit?: SubmitHandler<PluginSettingsSchemaValues>;
+  onSubmit?: SubmitHandler<PluginSettingsSchemaInput>;
+  onChangePartial?: (values: Partial<PluginSettingsSchemaInput>) => void;
   class?: string;
 };
 
@@ -35,7 +36,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'initialValues',
-    'pluginManifest',
+    'runtimeConfig',
     'isLoading',
     'disabled',
     'onSubmit',
@@ -49,12 +50,12 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
 
   return (
     <Form
-      class={cn('flex flex-col gap-4', local.class)}
+      class={cn('flex flex-auto flex-col overflow-hidden', local.class)}
       onSubmit={local.onSubmit}
       {...others}
     >
       <fieldset
-        class={cn('flex flex-col gap-2', {
+        class={cn('flex grow basis-0 flex-col gap-2 overflow-y-auto', {
           'text-muted-foreground': local.disabled,
         })}
         disabled={local.disabled}
@@ -64,25 +65,27 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         </Button>
         <AllowedItems
           label={t('plugins.allowedHosts')}
-          name='allowedHosts'
-          form={form}
-          unchangeableItems={local.pluginManifest.runtime.allowed_hosts}
-          allowedItem={AllowedHost}
-          allowedItemField={AllowedHostsField}
-          addNewItem={(onSubmitNew, onCancel) => (
-            <EditAllowedHost onOk={onSubmitNew} onCancel={onCancel} />
-          )}
+          fixedItems={
+            local.runtimeConfig.allowed_hosts?.length ? (
+              <FixedItemsList
+                items={local.runtimeConfig.allowed_hosts}
+                item={AllowedHost}
+              />
+            ) : undefined
+          }
+          customItems={<AllowedHostsCustomItems form={form} />}
         />
         <AllowedItems
           label={t('plugins.allowedPaths')}
-          name='allowedPaths'
-          form={form}
-          unchangeableItems={local.pluginManifest.runtime.allowed_paths}
-          allowedItem={AllowedPath}
-          allowedItemField={AllowedPathField}
-          addNewItem={(onSubmitNew, onCancel) => (
-            <EditAllowedPath onOk={onSubmitNew} onCancel={onCancel} />
-          )}
+          fixedItems={
+            local.runtimeConfig.allowed_paths?.length ? (
+              <FixedItemsList
+                items={local.runtimeConfig.allowed_paths}
+                item={AllowedPath}
+              />
+            ) : undefined
+          }
+          customItems={<AllowedPathsCustomItems form={form} />}
         />
       </fieldset>
     </Form>

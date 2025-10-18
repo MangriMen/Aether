@@ -21,7 +21,7 @@ export const AllowedPathComponent: Component<AllowedPathComponentProps> = (
       {...others}
     >
       {local.icon?.({})}
-      <span class='grow rounded-md bg-black/20 px-2'>{local.value}</span>
+      <span class='grow'>{local.value}</span>
     </CombinedTooltip>
   );
 };

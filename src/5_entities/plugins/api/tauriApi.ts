@@ -1,6 +1,11 @@
 import { createPluginInvoke } from '@/shared/lib';
 
-import type { Plugin, PluginMetadata, PluginSettings } from '../model';
+import type {
+  EditPluginSettings,
+  Plugin,
+  PluginMetadata,
+  PluginSettings,
+} from '../model';
 
 const invokePlugin = createPluginInvoke('plugin');
 
@@ -24,11 +29,11 @@ export const getPluginSettingsRaw = async (id: PluginMetadata['id']) =>
 
 export const editPluginSettingsRaw = async ({
   id,
-  settings,
+  editSettings,
 }: {
   id: PluginMetadata['id'];
-  settings: PluginSettings;
-}) => invokePlugin(`edit_settings`, { id, settings });
+  editSettings: EditPluginSettings;
+}) => invokePlugin(`edit_settings`, { id, editSettings });
 
 export const openPluginsFolderRaw = async () =>
   invokePlugin(`open_plugins_folder`);
