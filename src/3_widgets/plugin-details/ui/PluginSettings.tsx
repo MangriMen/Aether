@@ -7,10 +7,9 @@ import {
 
 import type { Plugin } from '@/entities/plugins';
 
+import { PluginSettingsForm } from '@/features/plugin-settings-form';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-
-import { PluginSettingsForm } from './PluginSettingsForm';
 
 export type PluginSettingsProps = ComponentProps<'div'> & {
   plugin: Plugin;

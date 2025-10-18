@@ -1,6 +1,6 @@
 import type { Accessor, JSX } from 'solid-js';
 
-import MdiPlusIcon from '@iconify/icons-mdi/plus';
+import IconMdiPlus from '~icons/mdi/plus';
 import { Show } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
@@ -41,7 +41,7 @@ export const AddNewSettingsItem = <T,>(props: AddNewItemProps<T>) => {
           label={t('plugins.addItem')}
           as={IconButton}
           size='sm'
-          icon={MdiPlusIcon}
+          icon={IconMdiPlus}
           onClick={onAddNew}
         />
       }

@@ -166,7 +166,8 @@
     "openPluginsFolder": "Открыть папку плагинов",
     "saveSettings": "Сохранить настройки",
     "title": "Плагины",
-    "syncError": "Ошибка синхронизации"
+    "syncError": "Ошибка синхронизации",
+    "openPluginsFolderError": "Не удалось открыть папку плагинов"
   },
   "progress": {
     "seeDetails": "Показать детали",

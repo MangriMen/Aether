@@ -166,7 +166,8 @@
     "openPluginsFolder": "Open plugins folder",
     "saveSettings": "Save settings",
     "title": "Plugins",
-    "syncError": "Sync error"
+    "syncError": "Sync error",
+    "openPluginsFolderError": "Failed to open plugins folder"
   },
   "progress": {
     "seeDetails": "See details",

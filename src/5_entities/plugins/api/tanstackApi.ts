@@ -90,7 +90,17 @@ export const useEditPluginSettings = () => {
   }));
 };
 
-export const useOpenPluginFolder = () =>
-  useMutation(() => ({
+export const useOpenPluginFolder = () => {
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
     mutationFn: openPluginsFolderRaw,
+    onError: (err) => {
+      showError({
+        title: t('plugins.openPluginsFolderError'),
+        err,
+        t,
+      });
+    },
   }));
+};
