@@ -228,6 +228,7 @@
     "pluginPathPlaceholder": "Введите путь в плагине",
     "hostUrlPlaceholder": "Введите домен хоста без протокола, например\n\"example.com\"",
     "host": "Хост",
-    "plugin": "Плагин"
+    "plugin": "Плагин",
+    "failedToUpdateSettings": "Не удалось обновить настройки плагина {{name}}"
   }
 }

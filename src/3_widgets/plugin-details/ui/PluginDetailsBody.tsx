@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
 import { PluginDetailsTabs } from '../model';
 import { PluginDescriptionTab } from './PluginDescriptionTab';
-import { PluginSettings } from './PluginSettings';
+import { PluginSettingsTab } from './PluginSettingsTab';
 
 export type PluginDetailsBodyProps = TabsProps & {
   plugin: Plugin;
@@ -47,7 +47,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
       />
       <TabsContent
         value={PluginDetailsTabs.Settings}
-        as={PluginSettings}
+        as={PluginSettingsTab}
         class='flex-1 overflow-y-auto'
         plugin={local.plugin}
         disabled={local.isSettingsDisabled}

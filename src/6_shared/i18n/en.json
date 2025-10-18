@@ -228,6 +228,7 @@
     "pluginPathPlaceholder": "Enter plugin path",
     "hostUrlPlaceholder": "Enter host domain without protocol, e.g. \"example.com\"",
     "host": "Host",
-    "plugin": "Plugin"
+    "plugin": "Plugin",
+    "failedToUpdateSettings": "Failed to update {{name}} plugin settings"
   }
 }

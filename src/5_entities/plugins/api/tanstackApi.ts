@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 
+import type { Plugin } from '../model';
+
 import { PLUGIN_QUERY_KEYS } from './query_keys';
 import {
   disablePluginRaw,
@@ -79,12 +81,32 @@ export const useDisablePlugin = () => {
 };
 
 export const useEditPluginSettings = () => {
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
+
   return useMutation(() => ({
     mutationFn: editPluginSettingsRaw,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: PLUGIN_QUERY_KEYS.SETTINGS(variables.id),
+      });
+    },
+    onError: (err, variables) => {
+      // TODO: rewrite caching logic to get query data for plugin
+      // instead of finding in list
+      const plugin = queryClient
+        .getQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.LIST())
+        ?.find((plugin) => plugin.manifest.metadata.id === variables.id);
+
+      showError({
+        title: t('pluginSettings.failedToUpdateSettings', {
+          name:
+            plugin?.manifest.metadata.name ??
+            plugin?.manifest.metadata.id ??
+            '"unknown"',
+        }),
+        err,
+        t,
       });
     },
   }));

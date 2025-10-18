@@ -1,22 +1,18 @@
 import type { SubmitHandler } from '@modular-forms/solid';
+import type { Accessor } from 'solid-js';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import { createEffect, createMemo, splitProps, type Component } from 'solid-js';
+import { splitProps, type Component } from 'solid-js';
 
-import {
-  type PluginManifest,
-  type PluginSettings,
-  usePluginSettings,
-  useEditPluginSettings,
-} from '@/entities/plugins';
+import { type PluginManifest } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button, showToast } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 
 import {
-  PluginSettingsSchema,
-  type PluginSettingsSchemaValues,
-} from '../model';
+  usePluginSettingsForm,
+  useResetPluginSettingsFormValues,
+} from '../lib';
+import { type PluginSettingsSchemaValues } from '../model';
 import { AllowedHost } from './AllowedHost';
 import { AllowedHostsField } from './AllowedHostsField';
 import { AllowedItems } from './AllowedItems';
@@ -26,8 +22,11 @@ import { EditAllowedHost } from './EditAllowedHost';
 import { EditAllowedPath } from './EditAllowedPath';
 
 export type PluginSettingsFormProps = {
+  initialValues: Accessor<PluginSettingsSchemaValues | undefined>;
   pluginManifest: PluginManifest;
+  isLoading?: boolean;
   disabled?: boolean;
+  onSubmit?: SubmitHandler<PluginSettingsSchemaValues>;
   class?: string;
 };
 
@@ -35,73 +34,23 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   props,
 ) => {
   const [local, others] = splitProps(props, [
+    'initialValues',
     'pluginManifest',
+    'isLoading',
     'disabled',
+    'onSubmit',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
-  const pluginId = createMemo(() => local.pluginManifest.metadata.id);
-
-  const settings = usePluginSettings(() => pluginId());
-
-  const [form, { Form }] = createForm<PluginSettingsSchemaValues>({
-    validate: zodForm(PluginSettingsSchema),
-    initialValues: {
-      allowedHosts: [],
-      allowedPaths: [],
-    },
-  });
-
-  const resetForm = (settings?: PluginSettings) => {
-    if (form.submitting) {
-      return;
-    }
-
-    setValues(form, {
-      allowedHosts: settings?.allowed_hosts ?? [],
-      allowedPaths: settings?.allowed_paths ?? [],
-    });
-  };
-
-  createEffect(() => {
-    if (settings.data) {
-      resetForm(settings.data);
-    }
-  });
-
-  const editPluginSettings = useEditPluginSettings();
-
-  const isLoading = createMemo(
-    () => settings.isLoading || editPluginSettings.isPending,
-  );
-
-  const handleSubmit: SubmitHandler<PluginSettingsSchemaValues> = async (
-    values,
-  ) => {
-    try {
-      const newSettings: PluginSettings = {
-        allowed_hosts: values.allowedHosts ?? [],
-        allowed_paths: values.allowedPaths ?? [],
-      };
-      await editPluginSettings.mutateAsync({
-        id: local.pluginManifest.metadata.id,
-        settings: newSettings,
-      });
-      await settings.refetch();
-    } catch {
-      showToast({
-        title: `Failed to update "${local.pluginManifest.metadata.name}" plugin settings`,
-        variant: 'destructive',
-      });
-    }
-  };
+  const [form, { Form }] = usePluginSettingsForm();
+  useResetPluginSettingsFormValues(form, local.initialValues);
 
   return (
     <Form
       class={cn('flex flex-col gap-4', local.class)}
-      onSubmit={handleSubmit}
+      onSubmit={local.onSubmit}
       {...others}
     >
       <fieldset
@@ -110,7 +59,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         })}
         disabled={local.disabled}
       >
-        <Button class='w-max' type='submit' size='sm' loading={isLoading()}>
+        <Button class='w-max' type='submit' size='sm' loading={local.isLoading}>
           {t('plugins.saveSettings')}
         </Button>
         <AllowedItems
