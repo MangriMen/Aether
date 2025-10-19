@@ -1,14 +1,19 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { createMemo, splitProps } from 'solid-js';
+import IconMdiClose from '~icons/mdi/close';
+import IconMdiMinimize from '~icons/mdi/minus';
+import IconMdiSquareRounded from '~icons/mdi/square';
+import IconMdiSquareRoundedOutline from '~icons/mdi/square-rounded-outline';
+import { Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { isMaximized, toggleMaximize } from '@/shared/model';
 import { TitleBarButton } from '@/shared/ui';
 
 export type WindowControlsProps = ComponentProps<'div'>;
+
+const iconClass = 'text-base text-muted-foreground';
 
 export const WindowControls: Component<WindowControlsProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
@@ -18,10 +23,6 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
   const handleMinimize = () => {
     appWindow.minimize();
   };
-
-  const maximizeIcon = createMemo(() =>
-    isMaximized() ? 'mdi-square-rounded' : 'mdi-square-rounded-outline',
-  );
 
   const handleClose = () => {
     appWindow.close();
@@ -34,21 +35,26 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
         title='Minimize'
         onClick={handleMinimize}
       >
-        <Icon class='text-base text-muted-foreground' icon='mdi-minimize' />
+        <IconMdiMinimize class={iconClass} />
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max'
         title='Maximize'
         onClick={toggleMaximize}
       >
-        <Icon class='text-base text-muted-foreground' icon={maximizeIcon()} />
+        <Show
+          when={isMaximized()}
+          fallback={<IconMdiSquareRoundedOutline class={iconClass} />}
+        >
+          <IconMdiSquareRounded class={iconClass} />
+        </Show>
       </TitleBarButton>
       <TitleBarButton
         class='aspect-square h-full min-w-max brightness-110 hover:bg-destructive'
         title='Close'
         onClick={handleClose}
       >
-        <Icon class='text-base text-muted-foreground' icon='mdi-close' />
+        <IconMdiClose class={iconClass} />
       </TitleBarButton>
     </div>
   );

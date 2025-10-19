@@ -1,6 +1,6 @@
 import type { RowModel } from '@tanstack/solid-table';
 
-import MdiReloadIcon from '@iconify/icons-mdi/reload';
+import IconMdiReload from '~icons/mdi/reload';
 import { Show, type Component } from 'solid-js';
 
 import type { Instance, InstanceFile } from '@/entities/instances';
@@ -30,7 +30,7 @@ export const HeaderActions: Component<HeaderActionsProps> = (props) => {
           <Button
             variant='ghost'
             size='sm'
-            leadingIcon={MdiReloadIcon}
+            leadingIcon={IconMdiReload}
             loading={props.isLoading}
             onClick={props.refetch}
             children={t('common.refresh')}

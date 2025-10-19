@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 
-import MdiHomeVariantIcon from '@iconify/icons-mdi/home-variant';
 import { useNavigate } from '@solidjs/router';
+import IconMdiHomeVariant from '~icons/mdi/home-variant';
 
 import type { IconButtonProps } from '@/shared/ui';
 
@@ -22,7 +22,7 @@ const HomeButton: Component<HomeButtonProps> = (props) => {
       placement='right'
       as={IconButton}
       variant='ghost'
-      icon={MdiHomeVariantIcon}
+      icon={IconMdiHomeVariant}
       onClick={handleClick}
       {...props}
     />

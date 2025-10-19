@@ -1,7 +1,7 @@
 import type { ValidComponent } from 'solid-js';
 
-import MdiDelete from '@iconify/icons-mdi/delete';
 import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
+import IconMdiDelete from '~icons/mdi/delete';
 import { splitProps } from 'solid-js';
 
 import type { ButtonProps } from '@/shared/ui';
@@ -59,7 +59,7 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
           as={IconButton}
           class='aspect-square size-full rounded-l-none p-0 hover:bg-destructive focus:z-10'
           variant='ghost'
-          icon={MdiDelete}
+          icon={IconMdiDelete}
           onClick={local.onRemove}
           {...local.removeButtonProps}
         />

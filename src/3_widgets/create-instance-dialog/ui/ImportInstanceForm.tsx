@@ -2,7 +2,6 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { SubmitHandler } from '@modular-forms/solid';
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import FileFindOutlineIcon from '@iconify/icons-mdi/file-find-outline';
 import {
   createForm,
   getValue,
@@ -11,6 +10,7 @@ import {
   zodForm,
 } from '@modular-forms/solid';
 import { open } from '@tauri-apps/plugin-dialog';
+import IconFileFindOutline from '~icons/mdi/file-find-outline';
 import { createEffect, createMemo, For, splitProps } from 'solid-js';
 
 import { useImportInstance, type ImportHandler } from '@/entities/instances';
@@ -155,7 +155,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                   variant='secondary'
                   type='button'
                   onClick={onBrowse}
-                  icon={FileFindOutlineIcon}
+                  icon={IconFileFindOutline}
                 />
               </TextFieldLabel>
               <TextFieldErrorMessage>{field.error}</TextFieldErrorMessage>

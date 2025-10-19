@@ -1,11 +1,9 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
 import type { PolymorphicProps } from '@kobalte/core';
 import type { VariantProps } from 'class-variance-authority';
-import type { JSX, ValidComponent } from 'solid-js';
+import type { Component, JSX, ValidComponent } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiLoadingIcon from '@iconify/icons-mdi/loading';
 import * as ButtonPrimitive from '@kobalte/core/button';
+import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
 import { Match, splitProps, Switch } from 'solid-js';
 
@@ -46,7 +44,7 @@ const iconButtonVariants = cva('aspect-square', {
 type IconButtonProps<T extends ValidComponent = 'button'> =
   ButtonPrimitive.ButtonRootProps<T> &
     VariantProps<typeof iconButtonVariants> & {
-      icon?: IconifyIcon;
+      icon?: Component;
       loading?: boolean;
       class?: string | undefined;
       children?: JSX.Element;
@@ -77,9 +75,9 @@ const IconButton = <T extends ValidComponent = 'button'>(
     >
       <Switch fallback={local.children}>
         <Match when={local.loading}>
-          <Icon class='animate-spin' icon={MdiLoadingIcon} />
+          <IconMdiLoading class='animate-spin' />
         </Match>
-        <Match when={local.icon}>{(icon) => <Icon icon={icon()} />}</Match>
+        <Match when={local.icon}>{local.icon?.({})}</Match>
       </Switch>
     </ButtonPrimitive.Root>
   );

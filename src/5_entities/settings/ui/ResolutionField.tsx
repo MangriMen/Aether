@@ -1,8 +1,5 @@
 import type { PhysicalSize } from '@tauri-apps/api/window';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiMenuDownIcon from '@iconify/icons-mdi/menu-down';
-import MdiMonitorIcon from '@iconify/icons-mdi/monitor-screenshot';
 import {
   Field,
   getValue,
@@ -11,6 +8,8 @@ import {
   type FormStore,
 } from '@modular-forms/solid';
 import { currentMonitor } from '@tauri-apps/api/window';
+import IconMdiMenuDown from '~icons/mdi/menu-down';
+import IconMdiMonitor from '~icons/mdi/monitor-screenshot';
 import {
   createMemo,
   createSignal,
@@ -207,8 +206,8 @@ export const ResolutionField: Component<ResolutionFieldProps> = (props) => {
             variant='secondary'
             disabled={local.disabled}
           >
-            <Icon class='absolute top-1' icon={MdiMonitorIcon} />
-            <Icon class='absolute top-5' icon={MdiMenuDownIcon} />
+            <IconMdiMonitor class='absolute top-1' />
+            <IconMdiMenuDown class='absolute top-5' />
           </DropdownMenuTrigger>
           <DropdownMenuContent class='max-h-[230px] overflow-auto'>
             <For each={filteredResolutions()}>

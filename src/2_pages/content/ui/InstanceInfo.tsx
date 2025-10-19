@@ -1,5 +1,5 @@
-import MdiArrowLeftIcon from '@iconify/icons-mdi/arrow-left';
 import { useNavigate } from '@solidjs/router';
+import IconMdiArrowLeft from '~icons/mdi/arrow-left';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
@@ -39,7 +39,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
       </div>
       <Button
         class='ml-auto'
-        leadingIcon={MdiArrowLeftIcon}
+        leadingIcon={IconMdiArrowLeft}
         variant='secondary'
         onClick={handleBackToInstance}
       >
