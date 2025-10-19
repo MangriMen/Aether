@@ -1,3 +1,6 @@
+import type { UserConfig } from 'vite';
+
+import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
 import vitePluginChecker from 'vite-plugin-checker';
 import solid from 'vite-plugin-solid';
@@ -7,21 +10,33 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [
-    vitePluginChecker({
-      typescript: true,
-      overlay: {
-        initialIsOpen: false,
-      },
-    }),
+    vitePluginCheckerConfig,
     solid(),
+    iconsConfig,
     solidSvg(),
     tsconfigPaths(),
   ],
+  build: buildConfig,
+  ...developmentConfig,
+}));
 
-  build: {
-    chunkSizeWarningLimit: 1500,
+const vitePluginCheckerConfig = vitePluginChecker({
+  typescript: true,
+  overlay: {
+    initialIsOpen: false,
   },
+});
 
+const iconsConfig = Icons({
+  compiler: 'solid',
+  autoInstall: false,
+});
+
+const buildConfig: UserConfig['build'] = {
+  chunkSizeWarningLimit: 1500,
+};
+
+const developmentConfig: UserConfig = {
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors
@@ -35,4 +50,4 @@ export default defineConfig(async () => ({
       ignored: ['**/src-tauri/**'],
     },
   },
-}));
+};

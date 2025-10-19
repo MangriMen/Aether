@@ -1,9 +1,8 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiCogIcon from '@iconify/icons-mdi/cog';
 import { useNavigate } from '@solidjs/router';
+import IconMdiCog from '~icons/mdi/cog';
 import { createMemo, Show } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
@@ -45,7 +44,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
       <Show when={isUpdateAvailable()}>
         <Badge class='absolute right-2 top-1 aspect-square size-2 p-0' />
       </Show>
-      <Icon icon={MdiCogIcon} />
+      <IconMdiCog />
     </CombinedTooltip>
   );
 };

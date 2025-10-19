@@ -1,5 +1,5 @@
-import MdiCloseIcon from '@iconify/icons-mdi/close';
-import MdiPencilIcon from '@iconify/icons-mdi/pencil';
+import IconMdiClose from '~icons/mdi/close';
+import IconMdiPencil from '~icons/mdi/pencil';
 import {
   mergeProps,
   Show,
@@ -50,7 +50,7 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
             class='size-max p-1'
             variant='ghost'
             size='sm'
-            icon={MdiPencilIcon}
+            icon={IconMdiPencil}
             onClick={local.onEdit}
           />
           <CombinedTooltip
@@ -59,7 +59,7 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
             class='size-max p-1'
             variant='ghost'
             size='sm'
-            icon={MdiCloseIcon}
+            icon={IconMdiClose}
             onClick={local.onRemove}
           />
         </div>

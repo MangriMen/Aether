@@ -1,7 +1,7 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiAccount from '@iconify/icons-mdi/account';
+import IconMdiAccount from '~icons/mdi/account';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { Account, AccountType } from '@/entities/accounts';
@@ -75,7 +75,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
             placement='right'
             as={IconButton}
             variant='ghost'
-            icon={MdiAccount}
+            icon={IconMdiAccount}
             {...others}
           />
         </PopoverTrigger>

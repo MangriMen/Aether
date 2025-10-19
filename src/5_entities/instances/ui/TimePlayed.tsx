@@ -1,7 +1,6 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiClockIcon from '@iconify/icons-mdi/clock';
+import IconMdiClock from '~icons/mdi/clock';
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -44,7 +43,7 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
       class={cn('mt-auto inline-flex items-center gap-1', local.class)}
       {...others}
     >
-      <Icon icon={MdiClockIcon} />
+      <IconMdiClock />
       <Show when={local.lastPlayed} fallback={t('instance.neverPlayed')}>
         <span
           class='mt-auto inline-flex items-center gap-1 capitalize'

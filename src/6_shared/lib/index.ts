@@ -5,6 +5,7 @@ export * from './createPreventRightClick';
 export { default as dayjs } from './dayjs';
 export * from './debounce';
 export * from './event';
+export * from './isComponent';
 export * from './isNil';
 export * from './log';
 export * from './responseResult';

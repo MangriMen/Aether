@@ -1,5 +1,4 @@
-import { Icon } from '@iconify-icon/solid';
-import MdiRightArrowIcon from '@iconify/icons-mdi/chevron-right';
+import IconMdiChevronRight from '~icons/mdi/chevron-right';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
@@ -25,7 +24,7 @@ const InstanceSettingsDialogHeader: Component<
           <Image class='size-8' />
           <span>{local.instance.name}</span>
         </div>
-        <Icon class='text-xl' icon={MdiRightArrowIcon} />
+        <IconMdiChevronRight class='text-xl' />
         <span class='text-foreground'>{t('instance.settings')}</span>
       </DialogTitle>
     </DialogHeader>

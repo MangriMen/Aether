@@ -1,7 +1,7 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiPlusIcon from '@iconify/icons-mdi/plus';
+import IconMdiPlus from '~icons/mdi/plus';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
@@ -29,7 +29,7 @@ const CreateInstanceButton: Component<CreateInstanceButtonProps> = (props) => {
         placement='right'
         as={IconButton}
         onClick={handleClick}
-        icon={MdiPlusIcon}
+        icon={IconMdiPlus}
         {...others}
       />
 

@@ -1,5 +1,5 @@
-import MdiFolderIcon from '@iconify/icons-mdi/folder';
-import MdiReloadIcon from '@iconify/icons-mdi/reload';
+import IconMdiFolder from '~icons/mdi/folder';
+import IconMdiReload from '~icons/mdi/reload';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { openPluginsFolderRaw, syncPluginsRaw } from '@/entities/plugins';
@@ -42,13 +42,13 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
         <CombinedTooltip
           label={t('plugins.openPluginsFolder')}
           as={IconButton}
-          icon={MdiFolderIcon}
+          icon={IconMdiFolder}
           onClick={handleOpenPluginsFolder}
         />
         <CombinedTooltip
           label={t('common.refresh')}
           as={IconButton}
-          icon={MdiReloadIcon}
+          icon={IconMdiReload}
           onClick={handleRefreshPlugins}
         />
       </div>
