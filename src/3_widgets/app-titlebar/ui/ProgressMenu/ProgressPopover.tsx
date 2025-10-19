@@ -1,6 +1,6 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import OpenInNewIcon from '@iconify/icons-mdi/open-in-new';
+import IconOpenInNew from '~icons/mdi/open-in-new';
 import { For, splitProps } from 'solid-js';
 
 import type { LoadingPayload } from '@/entities/events';
@@ -37,7 +37,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
           class='self-end'
           variant='ghost'
           size='sm'
-          icon={OpenInNewIcon}
+          icon={IconOpenInNew}
           onClick={handleOpenDetails}
         />
       </div>

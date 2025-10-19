@@ -1,6 +1,6 @@
 import type { PolymorphicProps } from '@kobalte/core';
 
-import MdiFolderIcon from '@iconify/icons-mdi/folder';
+import IconMdiFolder from '~icons/mdi/folder';
 import { splitProps, type Component, type ValidComponent } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
@@ -33,7 +33,7 @@ export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
       as={IconButton}
       class='aspect-square p-2'
       variant='secondary'
-      icon={MdiFolderIcon}
+      icon={IconMdiFolder}
       onClick={handleClick}
       disabled={!local.instancePath}
       {...others}

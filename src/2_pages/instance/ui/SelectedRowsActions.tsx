@@ -1,8 +1,8 @@
 import type { RowModel } from '@tanstack/solid-table';
 
-import MdiCancelIcon from '@iconify/icons-mdi/cancel';
-import MdiCheckIcon from '@iconify/icons-mdi/check';
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
+import IconMdiCancel from '~icons/mdi/cancel';
+import IconMdiCheck from '~icons/mdi/check';
+import IconMdiDelete from '~icons/mdi/delete';
 import {
   createMemo,
   Show,
@@ -84,7 +84,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
           class='size-8 p-0 text-lg'
           variant='ghost'
           size='sm'
-          icon={MdiCancelIcon}
+          icon={IconMdiCancel}
           onClick={handleDisableContents}
         />
       </Show>
@@ -95,7 +95,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
           class='size-8 p-0 text-lg'
           variant='ghost'
           size='sm'
-          icon={MdiCheckIcon}
+          icon={IconMdiCheck}
           onClick={handleEnableContents}
         />
       </Show>
@@ -105,7 +105,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
         class='size-8 p-0 text-lg'
         variant='destructive'
         size='sm'
-        icon={MdiDeleteIcon}
+        icon={IconMdiDelete}
         onClick={handleDeleteContents}
       />
     </div>

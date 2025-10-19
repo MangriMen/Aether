@@ -1,13 +1,11 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
 import type { PolymorphicProps } from '@kobalte/core/polymorphic';
 import type { VariantProps } from 'class-variance-authority';
-import type { JSX, ValidComponent } from 'solid-js';
+import type { Component, JSX, ValidComponent } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiLoadingIcon from '@iconify/icons-mdi/loading';
 import * as ButtonPrimitive from '@kobalte/core/button';
+import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
-import { splitProps, Show, createMemo } from 'solid-js';
+import { splitProps, Show } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
@@ -48,8 +46,8 @@ type ButtonProps<T extends ValidComponent = 'button'> =
   ButtonPrimitive.ButtonRootProps<T> &
     VariantProps<typeof buttonVariants> & {
       loading?: boolean;
-      leadingIcon?: IconifyIcon | JSX.Element;
-      trailingIcon?: IconifyIcon | JSX.Element;
+      leadingIcon?: Component;
+      trailingIcon?: Component;
       class?: string | undefined;
       children?: JSX.Element;
     };
@@ -68,22 +66,6 @@ const Button = <T extends ValidComponent = 'button'>(
     'children',
   ]);
 
-  const isIconifyIcon = (
-    value: IconifyIcon | JSX.Element,
-  ): value is IconifyIcon =>
-    value !== null && typeof value === 'object' && 'body' in value;
-
-  const getIconElement = (icon: IconifyIcon | JSX.Element) => {
-    if (!icon || !isIconifyIcon(icon)) {
-      return icon;
-    }
-
-    return <Icon class='text-lg' icon={icon} />;
-  };
-
-  const leadingIcon = createMemo(() => getIconElement(local.leadingIcon));
-  const trailingIcon = createMemo(() => getIconElement(local.trailingIcon));
-
   return (
     <ButtonPrimitive.Root
       class={cn(
@@ -94,7 +76,7 @@ const Button = <T extends ValidComponent = 'button'>(
       disabled={local.disabled || local.loading}
       {...others}
     >
-      <Show when={local.leadingIcon}>{leadingIcon()}</Show>
+      {local.leadingIcon?.({})}
       {local.children}
       <Show when={local.loading}>
         <div
@@ -103,10 +85,10 @@ const Button = <T extends ValidComponent = 'button'>(
             buttonVariants({ variant: local.variant }),
           )}
         >
-          <Icon class='animate-spin text-2xl' icon={MdiLoadingIcon} />
+          <IconMdiLoading class='animate-spin text-2xl' />
         </div>
       </Show>
-      <Show when={local.trailingIcon}>{trailingIcon()}</Show>
+      {local.trailingIcon?.({})}
     </ButtonPrimitive.Root>
   );
 };

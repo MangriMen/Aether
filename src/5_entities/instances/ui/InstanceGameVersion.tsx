@@ -1,5 +1,4 @@
-import { Icon } from '@iconify-icon/solid';
-import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
+import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { ModLoader } from '@/entities/minecraft/@x/instances';
@@ -27,7 +26,7 @@ export const InstanceGameVersion: Component<InstanceGameVersionProps> = (
       class={cn('capitalize inline-flex items-center gap-1', local.class)}
       {...others}
     >
-      <Icon icon={MdiGamepadSquare} />
+      <IconMdiGamepadSquare />
       {local.loader} {local.gameVersion}
     </CombinedTooltip>
   );

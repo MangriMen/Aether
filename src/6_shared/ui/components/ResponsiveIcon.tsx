@@ -1,16 +1,17 @@
-import type { IconifyIconProps } from '@iconify-icon/solid';
-import type { Component } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
 import { createElementSize } from '@solid-primitives/resize-observer';
 import { createMemo, createSignal, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-export type ResponsiveIconProps = IconifyIconProps;
+export type ResponsiveIconProps = {
+  icon: Component<ComponentProps<'svg'>>;
+  class?: string;
+};
 
 export const ResponsiveIcon: Component<ResponsiveIconProps> = (props) => {
-  const [local, others] = splitProps(props, ['class']);
+  const [local, others] = splitProps(props, ['icon', 'class']);
   const [target, setTarget] = createSignal<HTMLElement>();
 
   const size = createElementSize(target);
@@ -24,7 +25,7 @@ export const ResponsiveIcon: Component<ResponsiveIconProps> = (props) => {
   }));
 
   return (
-    <Icon
+    <local.icon
       ref={setTarget}
       class={cn(
         'inline-flex size-full items-center justify-center',
