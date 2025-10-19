@@ -63,7 +63,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <LabeledField label='Currently installed'>
         <div class='flex items-center gap-3 rounded-lg bg-background p-3 text-muted-foreground'>
-          <Image class='h-full w-max p-0' />
+          <Image class='size-10 p-2' />
           <div class='flex flex-col'>
             <div class='text-base font-medium'>
               Minecraft {local.instance.gameVersion}
@@ -76,7 +76,6 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
           <div class='ml-auto flex items-center gap-1'>
             <Show when={local.instance.packInfo}>
               <Button
-                class='text-base'
                 size='sm'
                 variant='ghost'
                 onClick={handleUpdate}
@@ -86,7 +85,6 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               </Button>
             </Show>
             <Button
-              class='text-base'
               size='sm'
               variant='ghostWarning'
               leadingIcon={IconMdiHammer}

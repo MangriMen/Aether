@@ -75,6 +75,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
             placement='right'
             as={IconButton}
             variant='ghost'
+            size='lg'
             icon={IconMdiAccount}
             {...others}
           />

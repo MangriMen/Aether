@@ -24,7 +24,6 @@ export const AddNewItem = <T,>(props: AddNewItemProps<T>) => {
       when={props.isAdding}
       fallback={
         <CombinedTooltip
-          class='size-max p-1'
           label={t('plugins.addItem')}
           as={IconButton}
           size='sm'
