@@ -11,12 +11,7 @@ export const PluginSettingsSchema = z.object({
     .optional()
     .transform((value) => value ?? []),
   allowedPaths: z
-    .array(
-      z.tuple([
-        z.string(), //.refine(() => false, 'HER'),
-        z.string(), //.refine(() => false, 'PER'),
-      ]),
-    )
+    .array(z.tuple([z.string(), z.string()]))
     .optional()
     .transform((value) => value ?? []),
 });

@@ -7,7 +7,6 @@ import type { RuntimeConfig } from '@/entities/plugins';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
 
 import {
   usePluginSettingsForm,
@@ -39,6 +38,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
     'runtimeConfig',
     'isLoading',
     'disabled',
+    'onChangePartial',
     'onSubmit',
     'class',
   ]);
@@ -60,9 +60,9 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         })}
         disabled={local.disabled}
       >
-        <Button class='w-max' type='submit' size='sm' loading={local.isLoading}>
+        {/* <Button class='w-max' type='submit' size='sm' loading={local.isLoading}>
           {t('plugins.saveSettings')}
-        </Button>
+        </Button> */}
         <AllowedItems
           label={t('plugins.allowedHosts')}
           fixedItems={
@@ -73,7 +73,12 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
               />
             ) : undefined
           }
-          customItems={<AllowedHostsCustomItems form={form} />}
+          customItems={
+            <AllowedHostsCustomItems
+              form={form}
+              onChangePartial={local.onChangePartial}
+            />
+          }
         />
         <AllowedItems
           label={t('plugins.allowedPaths')}
@@ -85,7 +90,12 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
               />
             ) : undefined
           }
-          customItems={<AllowedPathsCustomItems form={form} />}
+          customItems={
+            <AllowedPathsCustomItems
+              form={form}
+              onChangePartial={local.onChangePartial}
+            />
+          }
         />
       </fieldset>
     </Form>

@@ -11,7 +11,7 @@ import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form'
 
 import {
   pluginSettingsToPluginSettingsValues,
-  pluginSettingsValuesToPluginSettings,
+  pluginSettingsValuesToEditPluginSettings,
 } from '../model';
 
 export interface UsePluginSettingsHandler {
@@ -34,12 +34,15 @@ export const usePluginSettingsHandler = ({
     pluginSettingsToPluginSettingsValues(pluginSettings()),
   );
 
-  const onSubmit: SubmitHandler<PluginSettingsSchemaInput> = (values) => {
+  const onChangePartial = (values: Partial<PluginSettingsSchemaInput>) => {
     editPluginSettings()({
       id: pluginId(),
-      editSettings: pluginSettingsValuesToPluginSettings(values),
+      editSettings: pluginSettingsValuesToEditPluginSettings(values),
     });
   };
 
-  return { initialValues, onSubmit };
+  const onSubmit: SubmitHandler<PluginSettingsSchemaInput> = (values) =>
+    onChangePartial(values);
+
+  return { initialValues, onChangePartial, onSubmit };
 };

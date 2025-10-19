@@ -15,6 +15,7 @@ export const useCustomItemsEditing = <
 >(
   form: Accessor<FormStore<TFieldValues>>,
   name: TFieldName,
+  onChange?: () => void,
 ) => {
   const [editingIndex, setEditingIndex] = createSignal<number | null>(null);
 
@@ -28,6 +29,7 @@ export const useCustomItemsEditing = <
   ) => {
     endAdding();
     insert(form(), name, { value });
+    onChange?.();
   };
 
   const handleEdit = (
@@ -39,12 +41,14 @@ export const useCustomItemsEditing = <
       value,
     });
     setEditingIndex(null);
+    onChange?.();
   };
 
   const handleRemove = (index: number) => {
     remove(form(), name, {
       at: index,
     });
+    onChange?.();
   };
 
   return {

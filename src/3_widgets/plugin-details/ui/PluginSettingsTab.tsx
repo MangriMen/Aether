@@ -32,7 +32,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
   );
   const editPluginSettings = useEditPluginSettings();
 
-  const { initialValues, onSubmit } = usePluginSettingsHandler({
+  const { initialValues, onChangePartial } = usePluginSettingsHandler({
     pluginId: () => local.plugin.manifest.metadata.id,
     pluginSettings: () => pluginSettings.data,
     editPluginSettings: () => editPluginSettings.mutateAsync,
@@ -54,7 +54,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
       {...others}
     >
       <Show when={local.disabled}>
-        <span class='text-xl font-medium leading-10 text-accent-foreground'>
+        <span class='text-xl font-medium leading-10 brightness-125'>
           {t('plugins.disableToChangeSettings')}
         </span>
       </Show>
@@ -62,7 +62,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         class='grow'
         runtimeConfig={local.plugin.manifest.runtime}
         initialValues={initialValues}
-        onSubmit={onSubmit}
+        onChangePartial={onChangePartial}
         isLoading={isLoading()}
         disabled={local.disabled}
       />

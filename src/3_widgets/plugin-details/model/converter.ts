@@ -1,4 +1,4 @@
-import type { PluginSettings } from '@/entities/plugins';
+import type { EditPluginSettings, PluginSettings } from '@/entities/plugins';
 import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 export const pluginSettingsToPluginSettingsValues = (
@@ -10,9 +10,18 @@ export const pluginSettingsToPluginSettingsValues = (
   };
 };
 
-export const pluginSettingsValuesToPluginSettings = (
+export const pluginSettingsValuesToEditPluginSettings = (
   values: PluginSettingsSchemaInput,
-): PluginSettings => ({
-  allowedHosts: [...(values.allowedHosts ?? [])],
-  allowedPaths: [...(values.allowedPaths ?? [])],
-});
+): EditPluginSettings => {
+  const dto: EditPluginSettings = {};
+
+  if (values.allowedHosts !== undefined) {
+    dto.allowedHosts = [...values.allowedHosts];
+  }
+
+  if (values.allowedPaths !== undefined) {
+    dto.allowedPaths = [...values.allowedPaths];
+  }
+
+  return dto;
+};

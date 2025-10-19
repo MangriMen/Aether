@@ -1,11 +1,13 @@
+import { useQueryClient } from '@tanstack/solid-query';
 import {
   createMemo,
+  onMount,
   splitProps,
   type Component,
   type ComponentProps,
 } from 'solid-js';
 
-import { type Plugin } from '@/entities/plugins';
+import { prefetchPluginSettings, type Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { Separator } from '@/shared/ui';
 
@@ -20,10 +22,16 @@ export type PluginDetailsProps = ComponentProps<'div'> & {
 export const PluginDetails: Component<PluginDetailsProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'class']);
 
+  const queryClient = useQueryClient();
+
   const isSettingsDisabled = createMemo(() => {
     const state = local.plugin.state;
     return state === 'Loaded' || state === 'Loading' || state === 'Unloading';
   });
+
+  const pluginId = () => local.plugin.manifest.metadata.id;
+
+  onMount(() => prefetchPluginSettings(queryClient, pluginId));
 
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>

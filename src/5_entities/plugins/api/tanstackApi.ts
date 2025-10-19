@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/solid-query';
 import type { Accessor } from 'solid-js';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
@@ -51,12 +52,19 @@ export const usePlugin = (id: Accessor<string>) =>
     enabled: !!id(),
   }));
 
+const pluginSettingsQuery = (id: Accessor<string>) => ({
+  queryKey: PLUGIN_QUERY_KEYS.SETTINGS(id()),
+  queryFn: () => getPluginSettingsRaw(id()),
+  enabled: !!id(),
+});
+
 export const usePluginSettings = (id: Accessor<string>) =>
-  useQuery(() => ({
-    queryKey: PLUGIN_QUERY_KEYS.SETTINGS(id()),
-    queryFn: () => getPluginSettingsRaw(id()),
-    enabled: !!id(),
-  }));
+  useQuery(() => pluginSettingsQuery(id));
+
+export const prefetchPluginSettings = (
+  queryClient: QueryClient,
+  id: Accessor<string>,
+) => queryClient.prefetchQuery(pluginSettingsQuery(id));
 
 export const useEnablePlugin = () => {
   const queryClient = useQueryClient();
