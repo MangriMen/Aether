@@ -1,7 +1,6 @@
 import type { ColumnDef } from '@tanstack/solid-table';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
+import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { Show } from 'solid-js';
 
 import type { InstanceFile } from '@/entities/instances';
@@ -46,14 +45,13 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
           onClick={() =>
             props.column.toggleSorting(props.column.getIsSorted() === 'asc')
           }
-          trailingIcon={
-            <Icon
+          trailingIcon={() => (
+            <IconMdiChevronDown
               class={cn('text-lg transition-transform', {
                 'rotate-180': props.column.getIsSorted() === 'asc',
               })}
-              icon={MdiChevronDownIcon}
             />
-          }
+          )}
           children={<>{t('common.name')}</>}
         />
       );
@@ -90,14 +88,13 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
           onClick={() =>
             props.column.toggleSorting(props.column.getIsSorted() === 'asc')
           }
-          trailingIcon={
-            <Icon
+          trailingIcon={() => (
+            <IconMdiChevronDown
               class={cn('text-lg transition-transform', {
                 'rotate-180': props.column.getIsSorted() === 'asc',
               })}
-              icon={MdiChevronDownIcon}
             />
-          }
+          )}
           children={<>{t('common.type')}</>}
         />
       );

@@ -1,4 +1,4 @@
-import MdiHammerIcon from '@iconify/icons-mdi/hammer';
+import IconMdiHammer from '~icons/mdi/hammer';
 import {
   createMemo,
   Show,
@@ -89,7 +89,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               class='text-base'
               size='sm'
               variant='ghostWarning'
-              leadingIcon={MdiHammerIcon}
+              leadingIcon={IconMdiHammer}
               onClick={handleRepair}
               disabled={isInstalling()}
             >

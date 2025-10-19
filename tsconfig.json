@@ -26,7 +26,11 @@
       "@/entities/*": ["./src/5_entities/*"],
       "@/shared/*": ["./src/6_shared/*"]
     },
-    "types": ["vite-plugin-solid-svg/types-component-solid", "vite/client"]
+    "types": [
+      "vite-plugin-solid-svg/types-component-solid",
+      "vite/client",
+      "unplugin-icons/types/solid"
+    ]
   },
   "include": ["src"],
   "references": [

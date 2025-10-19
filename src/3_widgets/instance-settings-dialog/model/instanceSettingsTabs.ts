@@ -1,11 +1,10 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
-import type { Component } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
-import MdiArrowDecisionOutline from '@iconify/icons-mdi/arrow-decision-outline';
-import MdiCoffeeOutlineIcon from '@iconify/icons-mdi/coffee-outline';
-import MdiInfoOutlineIcon from '@iconify/icons-mdi/info-outline';
-import MdiMonitorIcon from '@iconify/icons-mdi/monitor';
-import MdiToolsIcon from '@iconify/icons-mdi/tools';
+import IconMdiArrowDecisionOutline from '~icons/mdi/arrow-decision-outline';
+import IconMdiCoffeeOutline from '~icons/mdi/coffee-outline';
+import IconMdiInformationOutline from '~icons/mdi/information-outline';
+import IconMdiMonitor from '~icons/mdi/monitor';
+import IconMdiTools from '~icons/mdi/tools';
 
 import type { EditInstance, Instance } from '@/entities/instances';
 import type { DefaultInstanceSettings } from '@/entities/settings/model/defaultInstanceSettings';
@@ -31,32 +30,32 @@ export enum InstanceSettingsDialogTabs {
 }
 
 export const INSTANCE_SETTINGS_TABS_TRIGGER: {
-  icon: IconifyIcon;
+  icon: Component<ComponentProps<'svg'>>;
   title: 'general' | 'installation' | 'window' | 'javaAndMemory' | 'hooks';
   value: InstanceSettingsDialogTabs;
 }[] = [
   {
-    icon: MdiInfoOutlineIcon,
+    icon: IconMdiInformationOutline,
     title: 'general',
     value: InstanceSettingsDialogTabs.General,
   },
   {
-    icon: MdiToolsIcon,
+    icon: IconMdiTools,
     title: 'installation',
     value: InstanceSettingsDialogTabs.Installation,
   },
   {
-    icon: MdiMonitorIcon,
+    icon: IconMdiMonitor,
     title: 'window',
     value: InstanceSettingsDialogTabs.Window,
   },
   {
-    icon: MdiCoffeeOutlineIcon,
+    icon: IconMdiCoffeeOutline,
     title: 'javaAndMemory',
     value: InstanceSettingsDialogTabs.JavaAndMemory,
   },
   {
-    icon: MdiArrowDecisionOutline,
+    icon: IconMdiArrowDecisionOutline,
     title: 'hooks',
     value: InstanceSettingsDialogTabs.Hooks,
   },

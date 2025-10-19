@@ -1,7 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiPackage from '@iconify/icons-mdi/package';
 import { useNavigate } from '@solidjs/router';
+import IconMdiPackage from '~icons/mdi/package';
 
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
@@ -20,7 +20,7 @@ export const ContentButton: Component<ContentButtonProps> = (props) => {
       placement='right'
       as={IconButton}
       variant='ghost'
-      icon={MdiPackage}
+      icon={IconMdiPackage}
       onClick={handleClick}
       {...props}
     />

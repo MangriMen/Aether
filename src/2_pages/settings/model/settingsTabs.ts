@@ -1,11 +1,10 @@
-import type { IconifyIcon } from '@iconify-icon/solid';
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiBrushIcon from '@iconify/icons-mdi/brush-variant';
-import MdiGamepadSquare from '@iconify/icons-mdi/gamepad-square';
-import MdiPuzzleIcon from '@iconify/icons-mdi/puzzle';
-import MdiTestTubeIcon from '@iconify/icons-mdi/test-tube';
-import MdiUpdateIcon from '@iconify/icons-mdi/update';
+import IconMdiBrush from '~icons/mdi/brush-variant';
+import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
+import IconMdiPuzzle from '~icons/mdi/puzzle';
+import IconMdiTestTube from '~icons/mdi/test-tube';
+import IconMdiUpdate from '~icons/mdi/update';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
@@ -22,7 +21,7 @@ export enum SettingsTabs {
 }
 
 export const SETTINGS_TABS_TRIGGER: {
-  icon?: IconifyIcon;
+  icon?: Component<ComponentProps<'svg'>>;
   title:
     | 'appearance'
     | 'update'
@@ -32,27 +31,27 @@ export const SETTINGS_TABS_TRIGGER: {
   value: SettingsTabs;
 }[] = [
   {
-    icon: MdiBrushIcon,
+    icon: IconMdiBrush,
     title: 'appearance',
     value: SettingsTabs.Appearance,
   },
   {
-    icon: MdiGamepadSquare,
+    icon: IconMdiGamepadSquare,
     title: 'defaultInstanceSettings',
     value: SettingsTabs.DefaultInstanceSettings,
   },
   {
-    icon: MdiPuzzleIcon,
+    icon: IconMdiPuzzle,
     title: 'plugins',
     value: SettingsTabs.Plugins,
   },
   {
-    icon: MdiUpdateIcon,
+    icon: IconMdiUpdate,
     title: 'update',
     value: SettingsTabs.Update,
   },
   {
-    icon: MdiTestTubeIcon,
+    icon: IconMdiTestTube,
     title: 'experimental',
     value: SettingsTabs.Experimental,
   },

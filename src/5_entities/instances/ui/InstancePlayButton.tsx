@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
 
-import MdiPlayIcon from '@iconify/icons-mdi/play';
+import IconMdiPlay from '~icons/mdi/play';
 
 import type { IconButtonProps } from '@/shared/ui';
 
@@ -21,7 +21,7 @@ export const InstancePlayButton: Component<InstancePlayButtonProps> = (
       label={t('instance.launch')}
       as={IconButton}
       variant='success'
-      icon={MdiPlayIcon}
+      icon={IconMdiPlay}
       {...props}
     />
   );

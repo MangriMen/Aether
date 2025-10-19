@@ -1,11 +1,12 @@
-import MdiCheck from '@iconify/icons-mdi/check';
-import MdiDownload from '@iconify/icons-mdi/download';
+import IconMdiCheck from '~icons/mdi/check';
+import IconMdiDownload from '~icons/mdi/download';
 import {
   createMemo,
   createSignal,
   splitProps,
   type Component,
   type ComponentProps,
+  Show,
 } from 'solid-js';
 
 import {
@@ -99,7 +100,11 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       <div class='ml-auto flex flex-col justify-end'>
         <Button
           class='px-3'
-          leadingIcon={local.item.installed ? MdiCheck : MdiDownload}
+          leadingIcon={() => (
+            <Show when={local.item.installed} fallback={<IconMdiDownload />}>
+              <IconMdiCheck />
+            </Show>
+          )}
           onClick={handleInstallContent}
           loading={isInstalling()}
           disabled={local.item.installed}

@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
 
-import MdiStopIcon from '@iconify/icons-mdi/stop';
+import IconMdiStop from '~icons/mdi/stop';
 
 import type { IconButtonProps } from '@/shared/ui';
 
@@ -21,7 +21,7 @@ export const InstanceStopButton: Component<InstanceStopButtonProps> = (
       label={t('instance.stop')}
       as={IconButton}
       variant='destructive'
-      icon={MdiStopIcon}
+      icon={IconMdiStop}
       {...props}
     />
   );

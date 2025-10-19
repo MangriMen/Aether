@@ -1,8 +1,8 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiChevronDownIcon from '@iconify/icons-mdi/chevron-down';
-import MdiPlusIcon from '@iconify/icons-mdi/plus';
 import { open } from '@tauri-apps/plugin-dialog';
+import IconMdiChevronDown from '~icons/mdi/chevron-down';
+import IconMdiPlus from '~icons/mdi/plus';
 import { splitProps, For, createMemo } from 'solid-js';
 
 import type { ContentType, Instance } from '@/entities/instances';
@@ -66,7 +66,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
     <div class={cn('flex', local.class)} {...others}>
       <Button
         class='min-w-max rounded-r-none'
-        leadingIcon={MdiPlusIcon}
+        leadingIcon={IconMdiPlus}
         onClick={local.onInstallContentClick}
         disabled={local.disabled}
       >
@@ -77,7 +77,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
         <DropdownMenuTrigger
           as={IconButton}
           class='rounded-l-none p-0 text-xl'
-          icon={MdiChevronDownIcon}
+          icon={IconMdiChevronDown}
           disabled={local.disabled}
         />
         <DropdownMenuContent>

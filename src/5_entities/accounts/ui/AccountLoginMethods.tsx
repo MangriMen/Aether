@@ -1,8 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { Icon } from '@iconify-icon/solid';
-import MdiCloudOffOutline from '@iconify/icons-mdi/cloud-off-outline';
-import MdiSignIn from '@iconify/icons-mdi/login-variant';
+import IconMdiCloudOffOutline from '~icons/mdi/cloud-off-outline';
+import IconMdiLoginVariant from '~icons/mdi/login-variant';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
@@ -43,7 +42,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
       >
         <span class='flex items-center gap-2'>
           {t('account.signIn')}
-          <Icon class='text-2xl' icon={MdiSignIn} />
+          <IconMdiLoginVariant class='text-2xl' />
         </span>
       </CombinedTooltip>
       <CombinedTooltip
@@ -55,7 +54,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
       >
         <span class='flex items-center gap-2'>
           {t('account.offline')}
-          <Icon class='text-2xl' icon={MdiCloudOffOutline} />
+          <IconMdiCloudOffOutline class='text-2xl' />
         </span>
       </CombinedTooltip>
     </div>

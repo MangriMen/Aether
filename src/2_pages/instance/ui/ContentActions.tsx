@@ -1,7 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import MdiDeleteIcon from '@iconify/icons-mdi/delete';
-import MdiMoreIcon from '@iconify/icons-mdi/dots-vertical';
+import IconMdiDelete from '~icons/mdi/delete';
+import IconMdiMore from '~icons/mdi/dots-vertical';
 import { splitProps } from 'solid-js';
 
 import {
@@ -84,7 +84,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         as={IconButton}
         variant='ghost'
         class='p-0'
-        icon={MdiDeleteIcon}
+        icon={IconMdiDelete}
         onClick={handleRemove}
       />
       <DropdownMenu>
@@ -92,7 +92,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
           as={IconButton}
           variant='ghost'
           class='p-0'
-          icon={MdiMoreIcon}
+          icon={IconMdiMore}
         />
         <DropdownMenuContent>
           <DropdownMenuItem
