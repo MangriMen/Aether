@@ -15,8 +15,10 @@ import {
   enablePluginRaw,
   getPluginRaw,
   getPluginSettingsRaw,
+  importPluginsRaw,
   listPluginsRaw,
   openPluginsFolderRaw,
+  removePluginRaw,
   syncPluginsRaw,
 } from './tauriApi';
 
@@ -128,6 +130,48 @@ export const useOpenPluginFolder = () => {
     onError: (err) => {
       showError({
         title: t('plugins.openPluginsFolderError'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useImportPlugins = () => {
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: importPluginsRaw,
+    onError: (err) => {
+      showError({
+        title: t('plugins.failedToImport'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useRemovePlugin = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: removePluginRaw,
+    onError: (err, id) => {
+      // TODO: rewrite caching logic to get query data for plugin
+      // instead of finding in list
+      const plugin = queryClient
+        .getQueryData<Plugin[]>(PLUGIN_QUERY_KEYS.LIST())
+        ?.find((plugin) => plugin.manifest.metadata.id === id);
+
+      showError({
+        title: t('plugins.failedToRemove', {
+          name:
+            plugin?.manifest.metadata.name ??
+            plugin?.manifest.metadata.id ??
+            '"unknown"',
+        }),
         err,
         t,
       });

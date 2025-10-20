@@ -1,11 +1,10 @@
 import { splitProps, type Component, type ComponentProps, For } from 'solid-js';
 
+import { PluginControlledCard } from '@/features/plugin-controlled-card/ui/PluginControlledCard';
 import { cn } from '@/shared/lib';
 import { DelayedShow, SkeletonList } from '@/shared/ui';
 
 import type { Plugin, PluginMetadata } from '../model';
-
-import { PluginCard } from './PluginCard';
 
 export type PluginsListProps = ComponentProps<'div'> & {
   plugins?: Plugin[];
@@ -37,7 +36,7 @@ export const PluginsList: Component<PluginsListProps> = (props) => {
                 local.onPluginSelect?.(plugin.manifest.metadata.id)
               }
             >
-              <PluginCard
+              <PluginControlledCard
                 plugin={plugin}
                 isSelected={
                   local.selectedPluginId === plugin.manifest.metadata.id

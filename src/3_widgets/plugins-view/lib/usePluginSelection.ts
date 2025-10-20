@@ -1,6 +1,6 @@
 import type { Accessor } from 'solid-js';
 
-import { createMemo, createSignal } from 'solid-js';
+import { createEffect, createMemo, createSignal } from 'solid-js';
 
 import type { Plugin, PluginMetadata } from '@/entities/plugins';
 
@@ -43,6 +43,13 @@ export const usePluginSelection = (
       setSelectedPluginId(undefined);
     }
   };
+
+  createEffect(() => {
+    if (selectedPlugin() === undefined) {
+      unselectPlugin();
+      setHasSelectedPlugin(false);
+    }
+  });
 
   return {
     selectedPluginId,

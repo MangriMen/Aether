@@ -49,9 +49,11 @@ fn main() {
     let plugin_plugin = (
         "plugin",
         InlinedPlugin::new().commands(&[
+            "import",
             "sync",
             "list",
             "get",
+            "remove",
             "enable",
             "disable",
             "call",

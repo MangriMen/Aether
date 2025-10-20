@@ -7,10 +7,12 @@ import type { Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { Image } from '@/shared/ui';
 
-export type PluginCardProps = ComponentProps<'div'> & {
+export type PluginCardBaseProps = {
   plugin: Plugin;
   isSelected?: boolean;
 };
+
+export type PluginCardProps = ComponentProps<'div'> & PluginCardBaseProps;
 
 export const PluginCard: Component<PluginCardProps> = (props) => {
   const [local, others] = splitProps(props, ['plugin', 'isSelected', 'class']);

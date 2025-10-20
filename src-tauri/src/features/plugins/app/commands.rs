@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use aether_core::core::LauncherState;
 use aether_core::features::plugins::{EditPluginSettings, PluginDto, PluginSettings};
 
@@ -7,9 +9,11 @@ use crate::FrontendResult;
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("plugin")
         .invoke_handler(tauri::generate_handler![
+            import,
             sync,
             list,
             get,
+            remove,
             enable,
             disable,
             call,
@@ -18,6 +22,11 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             open_plugins_folder,
         ])
         .build()
+}
+
+#[tauri::command]
+async fn import(paths: Vec<PathBuf>) -> FrontendResult<()> {
+    Ok(aether_core::api::plugin::import(paths).await?)
 }
 
 #[tauri::command]
@@ -33,6 +42,11 @@ async fn list() -> FrontendResult<Vec<PluginDto>> {
 #[tauri::command]
 async fn get(id: String) -> FrontendResult<PluginDto> {
     Ok(aether_core::api::plugin::get(id).await?)
+}
+
+#[tauri::command]
+async fn remove(id: String) -> FrontendResult<()> {
+    Ok(aether_core::api::plugin::remove(id).await?)
 }
 
 #[tauri::command]

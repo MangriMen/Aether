@@ -9,12 +9,18 @@ import type {
 
 const invokePlugin = createPluginInvoke('plugin');
 
+export const importPluginsRaw = async (paths: string[]) =>
+  invokePlugin('import', { paths });
+
 export const syncPluginsRaw = async () => invokePlugin(`sync`);
 
 export const listPluginsRaw = async () => invokePlugin<Plugin[]>(`list`);
 
 export const getPluginRaw = async (id: PluginMetadata['id']) =>
   invokePlugin<Plugin>(`get`, { id });
+
+export const removePluginRaw = async (id: PluginMetadata['id']) =>
+  invokePlugin('remove', { id });
 
 export const enablePluginRaw = async (id: PluginMetadata['id']) =>
   invokePlugin(`enable`, { id });

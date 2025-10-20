@@ -167,7 +167,10 @@
     "saveSettings": "Save settings",
     "title": "Plugins",
     "syncError": "Sync error",
-    "openPluginsFolderError": "Failed to open plugins folder"
+    "openPluginsFolderError": "Failed to open plugins folder",
+    "importFromPackage": "Import",
+    "failedToRemove": "Failed to remove plugin {{name}}",
+    "failedToImport": "Failed to import plugin"
   },
   "progress": {
     "seeDetails": "See details",

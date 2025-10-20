@@ -167,7 +167,10 @@
     "saveSettings": "Сохранить настройки",
     "title": "Плагины",
     "syncError": "Ошибка синхронизации",
-    "openPluginsFolderError": "Не удалось открыть папку плагинов"
+    "openPluginsFolderError": "Не удалось открыть папку плагинов",
+    "importFromPackage": "Импортировать",
+    "failedToRemove": "Не удалось удалить плагин {{name}}",
+    "failedToImport": "Не удалось импортировать плагин"
   },
   "progress": {
     "seeDetails": "Показать детали",
