@@ -2,8 +2,8 @@ import type { QueryClient } from '@tanstack/solid-query';
 
 import type { Instance } from '../../model';
 
-import { CONTENT_QUERY_KEYS } from './content_query_keys';
-import { INSTANCE_QUERY_KEYS } from './instance_query_keys';
+import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
+import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 
 export const invalidateInstanceData = (
   queryClient: QueryClient,

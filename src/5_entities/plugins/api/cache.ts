@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/query-core';
 
 import type { PluginMetadata } from '../model';
 
-import { PLUGIN_QUERY_KEYS } from './query_keys';
+import { PLUGIN_QUERY_KEYS } from './queryKeys';
 
 export const invalidatePluginsData = (queryClient: QueryClient) => {
   queryClient.invalidateQueries({

@@ -8,7 +8,7 @@ import { useTranslation } from '@/shared/model';
 
 import type { Plugin } from '../model';
 
-import { PLUGIN_QUERY_KEYS } from './query_keys';
+import { PLUGIN_QUERY_KEYS } from './queryKeys';
 import {
   disablePluginRaw,
   editPluginSettingsRaw,

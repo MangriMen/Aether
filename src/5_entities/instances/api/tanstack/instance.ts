@@ -16,7 +16,7 @@ import {
   getInstanceDirRaw,
 } from '../tauriApi';
 import { invalidateInstanceData } from './cache';
-import { INSTANCE_QUERY_KEYS } from './instance_query_keys';
+import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 
 const INSTANCE_RECONCILE = 'id';
 

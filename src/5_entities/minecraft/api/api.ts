@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/solid-query';
 
 import type { ModLoader } from '../model';
 
-import { QUERY_KEYS } from './query_keys';
+import { QUERY_KEYS } from './queryKeys';
 import {
   getLoaderVersionManifestRaw,
   getMinecraftVersionManifestRaw,

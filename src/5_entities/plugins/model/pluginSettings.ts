@@ -1,4 +1,4 @@
-import type { PathMapping } from './plugin_manifest';
+import type { PathMapping } from './pluginManifest';
 
 export interface PluginSettings {
   allowedHosts: string[];

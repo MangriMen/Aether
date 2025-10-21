@@ -23,7 +23,7 @@ import {
   importContentsRaw,
 } from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
-import { CONTENT_QUERY_KEYS } from './content_query_keys';
+import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {
   return useQuery(() => ({

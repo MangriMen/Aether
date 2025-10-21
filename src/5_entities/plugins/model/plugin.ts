@@ -1,5 +1,5 @@
-import type { PluginManifest } from './plugin_manifest';
-import type { PluginState } from './plugin_state';
+import type { PluginManifest } from './pluginManifest';
+import type { PluginState } from './pluginState';
 
 export interface Plugin {
   manifest: PluginManifest;

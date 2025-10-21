@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/solid-query';
 
 import { getImportConfigsRaw } from '../tauriApi';
-import { CONFIG_QUERY_KEYS } from './config_query_keys';
+import { CONFIG_QUERY_KEYS } from './configQueryKeys';
 
 export const useImportConfigs = () => {
   return useQuery(() => ({
