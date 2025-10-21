@@ -15,8 +15,8 @@ export interface PluginMetadata {
 }
 
 export interface RuntimeConfig {
-  allowed_hosts?: string[];
-  allowed_paths?: PathMapping[];
+  allowedHosts?: string[];
+  allowedPaths?: PathMapping[];
 }
 
 export type PathMapping = [string, string]; // (path on disk, plugin path)
@@ -25,11 +25,11 @@ export type LoadConfig =
   | {
       type: 'extism';
       file: string;
-      memory_limit?: number;
+      memoryLimit?: number;
     }
   | {
       type: 'native';
-      lib_path: string;
+      libPath: string;
     };
 
 export interface ApiConfig {

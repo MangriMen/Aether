@@ -66,9 +66,9 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         <AllowedItems
           label={t('plugins.allowedHosts')}
           fixedItems={
-            local.runtimeConfig.allowed_hosts?.length ? (
+            local.runtimeConfig.allowedHosts?.length ? (
               <FixedItemsList
-                items={local.runtimeConfig.allowed_hosts}
+                items={local.runtimeConfig.allowedHosts}
                 item={AllowedHost}
               />
             ) : undefined
@@ -83,9 +83,9 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
         <AllowedItems
           label={t('plugins.allowedPaths')}
           fixedItems={
-            local.runtimeConfig.allowed_paths?.length ? (
+            local.runtimeConfig.allowedPaths?.length ? (
               <FixedItemsList
-                items={local.runtimeConfig.allowed_paths}
+                items={local.runtimeConfig.allowedPaths}
                 item={AllowedPath}
               />
             ) : undefined
