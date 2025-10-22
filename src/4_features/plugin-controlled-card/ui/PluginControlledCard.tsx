@@ -28,8 +28,7 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
   const enablePlugin = useEnablePlugin();
   const disablePlugin = useDisablePlugin();
 
-  const handleToggleEnabled = async (e: MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleEnabled = async () => {
     if (isLoading()) {
       return;
     }
@@ -48,8 +47,7 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
 
   const removePlugin = useRemovePlugin();
 
-  const handleRemove = async (e: MouseEvent) => {
-    e.stopPropagation();
+  const handleRemove = async () => {
     await removePlugin.mutateAsync(local.plugin.manifest.metadata.id);
   };
 

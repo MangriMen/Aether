@@ -3,6 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps, Switch, Match } from 'solid-js';
 
+import { stopPropagation } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
   ContextMenu,
@@ -34,7 +35,11 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
   return (
     <ContextMenu {...others}>
       {local.children}
-      <ContextMenuContent>
+      <ContextMenuContent
+        onClick={stopPropagation}
+        onMouseDown={stopPropagation}
+        onKeyDown={stopPropagation}
+      >
         <ContextMenuItem
           class='w-full hover:!bg-success hover:text-success-foreground'
           onClick={local.onToggleEnabled}

@@ -10,6 +10,7 @@ export * from './isComponent';
 export * from './isNil';
 export * from './log';
 export * from './responseResult';
+export * from './stopPropagation';
 export * from './useDeveloperModeCounter';
 export * from './useFieldOnChangeSync';
 export * from './useMaximizeObserver';
