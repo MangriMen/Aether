@@ -4,6 +4,7 @@ export * from './i18n';
 export * from './i18nContext';
 export * from './option';
 export * from './settings';
+export * from './tabConfig';
 export * from './theme';
 export * from './themeContext';
 export * from './typescript';

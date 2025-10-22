@@ -5,13 +5,12 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { Plugin } from '@/entities/plugins';
-
 import { cn } from '@/shared/lib';
 
-export type PluginDescriptionTabProps = ComponentProps<'div'> & {
-  plugin: Plugin;
-};
+import type { PluginDetailsTabProps } from '../model';
+
+export type PluginDescriptionTabProps = ComponentProps<'div'> &
+  PluginDetailsTabProps;
 
 export const PluginDescriptionTab: Component<PluginDescriptionTabProps> = (
   props,

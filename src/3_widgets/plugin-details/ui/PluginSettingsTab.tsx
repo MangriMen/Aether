@@ -6,24 +6,24 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import {
-  useEditPluginSettings,
-  usePluginSettings,
-  type Plugin,
-} from '@/entities/plugins';
+import { useEditPluginSettings, usePluginSettings } from '@/entities/plugins';
 import { PluginSettingsForm } from '@/features/plugin-settings-form';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import type { PluginDetailsTabProps } from '../model';
+
 import { usePluginSettingsHandler } from '../lib';
 
-export type PluginSettingsTabProps = ComponentProps<'div'> & {
-  plugin: Plugin;
-  disabled?: boolean;
-};
+export type PluginSettingsTabProps = ComponentProps<'div'> &
+  PluginDetailsTabProps;
 
 export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['plugin', 'disabled', 'class']);
+  const [local, others] = splitProps(props, [
+    'plugin',
+    'isSettingsDisabled',
+    'class',
+  ]);
 
   const [{ t }] = useTranslation();
 
@@ -47,13 +47,13 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
       class={cn(
         'flex flex-col',
         {
-          'text-muted-foreground': local.disabled,
+          'text-muted-foreground': local.isSettingsDisabled,
         },
         local.class,
       )}
       {...others}
     >
-      <Show when={local.disabled}>
+      <Show when={local.isSettingsDisabled}>
         <span class='text-xl font-medium leading-10 brightness-125'>
           {t('plugins.disableToChangeSettings')}
         </span>
@@ -64,7 +64,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         initialValues={initialValues}
         onChangePartial={onChangePartial}
         isLoading={isLoading()}
-        disabled={local.disabled}
+        disabled={local.isSettingsDisabled}
       />
     </div>
   );

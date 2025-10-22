@@ -1,4 +1,4 @@
-import { splitProps, type Component } from 'solid-js';
+import { splitProps, type Component, For, createMemo } from 'solid-js';
 
 import type { Plugin } from '@/entities/plugins';
 import type { TabsProps } from '@/shared/ui';
@@ -7,9 +7,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
 
-import { PluginDetailsTabs } from '../model';
-import { PluginDescriptionTab } from './PluginDescriptionTab';
-import { PluginSettingsTab } from './PluginSettingsTab';
+import { PLUGIN_DETAILS_TABS, PluginDetailsTabs } from '../model';
 
 export type PluginDetailsBodyProps = TabsProps & {
   plugin: Plugin;
@@ -25,6 +23,15 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
+  const tabs = createMemo(() => {
+    if (!local.plugin.capabilities) {
+      return PLUGIN_DETAILS_TABS.filter(
+        (tab) => tab.value !== PluginDetailsTabs.Capabilities,
+      );
+    }
+    return PLUGIN_DETAILS_TABS;
+  });
+
   return (
     <Tabs
       class={cn('flex flex-col', local.class)}
@@ -33,26 +40,25 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
       {...others}
     >
       <TabsList class='self-start'>
-        <TabsTrigger value={PluginDetailsTabs.Description}>
-          {t('plugin.description')}
-        </TabsTrigger>
-        <TabsTrigger value={PluginDetailsTabs.Settings}>
-          {t('plugin.settings')}
-        </TabsTrigger>
+        <For each={tabs()}>
+          {(tab) => (
+            <TabsTrigger value={tab.value}>
+              {t(`plugin.${tab.label}`)}
+            </TabsTrigger>
+          )}
+        </For>
       </TabsList>
-      <TabsContent
-        value={PluginDetailsTabs.Description}
-        as={PluginDescriptionTab}
-        plugin={local.plugin}
-        class='flex-1 overflow-hidden'
-      />
-      <TabsContent
-        value={PluginDetailsTabs.Settings}
-        as={PluginSettingsTab}
-        class='flex-1 overflow-hidden'
-        plugin={local.plugin}
-        disabled={local.isSettingsDisabled}
-      />
+      <For each={tabs()}>
+        {(tab) => (
+          <TabsContent
+            class='flex-1 overflow-hidden'
+            value={tab.value}
+            as={tab.component}
+            plugin={local.plugin}
+            isSettingsDisabled={local.isSettingsDisabled}
+          />
+        )}
+      </For>
     </Tabs>
   );
 };

@@ -1,16 +1,22 @@
 import type { Component, ComponentProps } from 'solid-js';
 
 import IconMdiCubeOutline from '~icons/mdi/cube-outline';
-import { Show, splitProps } from 'solid-js';
+import { createSignal, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { ResponsiveIcon } from '@/shared/ui';
 
 export type InstanceImageProps = ComponentProps<'div'> &
-  Pick<ComponentProps<'img'>, 'src'>;
+  Pick<ComponentProps<'img'>, 'src' | 'alt'>;
 
 export const Image: Component<InstanceImageProps> = (props) => {
-  const [local, others] = splitProps(props, ['src', 'class']);
+  const [local, others] = splitProps(props, ['src', 'alt', 'class']);
+
+  const [isValidSrc, setIsValidSrc] = createSignal(true);
+
+  const handleError = () => {
+    setIsValidSrc(false);
+  };
 
   return (
     <div
@@ -21,10 +27,15 @@ export const Image: Component<InstanceImageProps> = (props) => {
       {...others}
     >
       <Show
-        when={local.src}
+        when={local.src && isValidSrc()}
         fallback={<ResponsiveIcon icon={IconMdiCubeOutline} />}
       >
-        {(path) => <img class='size-full p-1' src={path()} alt='Instance' />}
+        <img
+          class='size-full p-1'
+          src={local.src}
+          alt={local.alt}
+          onError={handleError}
+        />
       </Show>
     </div>
   );
