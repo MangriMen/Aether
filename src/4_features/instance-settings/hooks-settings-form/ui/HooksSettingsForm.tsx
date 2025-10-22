@@ -107,7 +107,9 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
 
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <h2 class='text-lg font-medium'>Hooks</h2>
+      <h2 class='text-lg font-medium'>
+        {t('instanceSettings.hookSettings.title')}
+      </h2>
       <Show when={local.overridable}>
         <OverrideCheckbox
           class='mb-1'
@@ -118,18 +120,20 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
           onOverrideChange={handleOverrideChange}
         />
       </Show>
-      <LabeledField label='Pre launch'>
+      <LabeledField label={t('instanceSettings.hookSettings.preLaunch')}>
         <Field name='preLaunch' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
               disabled={!isOverride()}
               value={field.value ?? ''}
-              label='Ran before the instance is launched'
+              label={t('instanceSettings.hookSettings.preLaunchLabel')}
               labelProps={{ variant: 'description' }}
               inputProps={{
                 ...inputProps,
                 type: 'text',
-                placeholder: 'Enter pre-launch command',
+                placeholder: t(
+                  'instanceSettings.hookSettings.enterCommandPlaceholder',
+                ),
                 onBlur: (e) => {
                   inputProps.onBlur(e);
                   updatePreLaunch();
@@ -139,18 +143,20 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
           )}
         </Field>
       </LabeledField>
-      <LabeledField label='Wrapper'>
+      <LabeledField label={t('instanceSettings.hookSettings.wrapper')}>
         <Field name='wrapper' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
               disabled={!isOverride()}
               value={field.value ?? ''}
-              label='Wrapper command for launching Minecraft'
+              label={t('instanceSettings.hookSettings.wrapperLabel')}
               labelProps={{ variant: 'description' }}
               inputProps={{
                 ...inputProps,
                 type: 'text',
-                placeholder: 'Enter wrapper command',
+                placeholder: t(
+                  'instanceSettings.hookSettings.enterCommandPlaceholder',
+                ),
                 onBlur: (e) => {
                   inputProps.onBlur(e);
                   updateWrapper();
@@ -160,18 +166,20 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
           )}
         </Field>
       </LabeledField>
-      <LabeledField label='Post exit'>
+      <LabeledField label={t('instanceSettings.hookSettings.postExit')}>
         <Field name='postExit' type='string'>
           {(field, inputProps) => (
             <CombinedTextField
               disabled={!isOverride()}
               value={field.value ?? ''}
-              label='Ran after the game closes'
+              label={t('instanceSettings.hookSettings.postExitLabel')}
               labelProps={{ variant: 'description' }}
               inputProps={{
                 ...inputProps,
                 type: 'text',
-                placeholder: 'Enter post-exit command',
+                placeholder: t(
+                  'instanceSettings.hookSettings.enterCommandPlaceholder',
+                ),
                 onBlur: (e) => {
                   inputProps.onBlur(e);
                   updatePostExit();

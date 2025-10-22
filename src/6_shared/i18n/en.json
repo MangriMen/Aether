@@ -153,6 +153,16 @@
         "invalidValue": "Resolution part must be valid number",
         "invalidRange": "Resolution part must be in range [1, 65535]"
       }
+    },
+    "hookSettings": {
+      "preLaunch": "Pre launch",
+      "preLaunchLabel": "Runs before the game starts",
+      "wrapper": "Wrapper",
+      "wrapperLabel": "Wrapper command for launching Minecraft",
+      "postExit": "Post exit",
+      "postExitLabel": "Runs after the game closes",
+      "enterCommandPlaceholder": "Enter command",
+      "title": "Hooks"
     }
   },
   "plugins": {

@@ -153,6 +153,16 @@
         "invalidValue": "Элемент разрешения должен быть числом",
         "invalidRange": "Элемент разрешения должен быть в диапазоне [1, 65535]"
       }
+    },
+    "hookSettings": {
+      "postExit": "После выхода",
+      "postExitLabel": "Запускается после закрытия игры",
+      "preLaunch": "До запуска",
+      "preLaunchLabel": "Вызывается перед запуском игры",
+      "wrapper": "Обёртка",
+      "wrapperLabel": "Команда-обёртка для запуска Minecraft",
+      "enterCommandPlaceholder": "Введите команду",
+      "title": "Хуки"
     }
   },
   "plugins": {
