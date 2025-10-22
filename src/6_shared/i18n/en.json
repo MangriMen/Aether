@@ -59,7 +59,9 @@
     "type": "Type",
     "updateAvailable": "Update available",
     "username": "Username",
-    "version": "Version"
+    "version": "Version",
+    "update": "Update",
+    "repair": "Repair"
   },
   "content": {
     "backToInstance": "Back to instance",

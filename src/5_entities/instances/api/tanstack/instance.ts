@@ -14,6 +14,7 @@ import {
   removeInstanceRaw,
   editInstanceRaw,
   getInstanceDirRaw,
+  listImportersRaw,
 } from '../tauriApi';
 import { invalidateInstanceData } from './cache';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
@@ -32,6 +33,13 @@ export const useCreateInstance = () => {
         t,
       });
     },
+  }));
+};
+
+export const useImporters = () => {
+  return useQuery(() => ({
+    queryKey: INSTANCE_QUERY_KEYS.IMPORTER.LIST(),
+    queryFn: listImportersRaw,
   }));
 };
 

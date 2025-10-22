@@ -13,7 +13,7 @@ import {
   useUpdateInstance,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { isLauncherError } from '@/shared/model';
+import { isLauncherError, useTranslation } from '@/shared/model';
 import { Button, Image, LabeledField, showToast } from '@/shared/ui';
 
 import type { InstanceSettingsTabProps } from '../model';
@@ -23,6 +23,8 @@ export type InstallationTabProps = ComponentProps<'div'> &
 
 export const InstallationTab: Component<InstallationTabProps> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
+
+  const [{ t }] = useTranslation();
 
   const { mutateAsync: installInstance } = useInstallInstance();
   const { mutateAsync: updateInstance } = useUpdateInstance();
@@ -62,38 +64,40 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <LabeledField label='Currently installed'>
-        <div class='flex items-center gap-3 rounded-lg bg-background p-3 text-muted-foreground'>
-          <Image class='size-10 p-2' />
-          <div class='flex flex-col'>
-            <div class='text-base font-medium'>
-              Minecraft {local.instance.gameVersion}
+        <div class='flex flex-col gap-1 rounded-lg bg-background p-3 text-muted-foreground'>
+          <div class='flex items-center gap-3'>
+            <Image class='size-12 p-1' />
+            <div class='flex flex-col'>
+              <div class='text-base font-medium'>
+                Minecraft {local.instance.gameVersion}
+              </div>
+              <div class='capitalize'>{local.instance.loader}</div>
             </div>
-            <div class='capitalize'>{local.instance.loader}</div>
-            <Show when={local.instance.packInfo}>
-              <div>Managed by: {local.instance.packInfo?.packType}</div>
-            </Show>
-          </div>
-          <div class='ml-auto flex items-center gap-1'>
-            <Show when={local.instance.packInfo}>
+            <div class='ml-auto flex items-center gap-1'>
+              <Show when={local.instance.packInfo}>
+                <Button
+                  size='sm'
+                  variant='ghost'
+                  onClick={handleUpdate}
+                  disabled={isInstalling()}
+                >
+                  {t('common.update')}
+                </Button>
+              </Show>
               <Button
                 size='sm'
-                variant='ghost'
-                onClick={handleUpdate}
+                variant='ghostWarning'
+                leadingIcon={IconMdiHammer}
+                onClick={handleRepair}
                 disabled={isInstalling()}
               >
-                Update
+                {t('common.repair')}
               </Button>
-            </Show>
-            <Button
-              size='sm'
-              variant='ghostWarning'
-              leadingIcon={IconMdiHammer}
-              onClick={handleRepair}
-              disabled={isInstalling()}
-            >
-              Repair
-            </Button>
+            </div>
           </div>
+          <Show when={local.instance.packInfo}>
+            <span>Modpack: {local.instance.packInfo?.packType}</span>
+          </Show>
         </div>
       </LabeledField>
     </div>

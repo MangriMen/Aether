@@ -1,3 +1,5 @@
+import type { PluginMetadata } from './pluginManifest';
+
 /**
  * Describes the declarative capabilities of a plugin, such as supported importers.
  */
@@ -5,10 +7,18 @@ export interface PluginCapabilities {
   /**
    * List of supported modpack importers provided by the plugin.
    */
-  importers: Importer[];
+  importers: ImporterCapability[];
 }
 
-export interface Importer {
+export interface ImporterCapability {
+  /**
+   * Unique identifier for the importer (lowercase, kebab/underscore allowed).
+   */
+  id: string;
+  /**
+   * Display name of the importer.
+   */
+  name: string;
   /**
    * Optional description of what this importer does.
    */
@@ -18,11 +28,12 @@ export interface Importer {
    */
   icon?: string;
   /**
-   * Unique identifier for the importer (lowercase, kebab/underscore allowed).
+   * Optional field label for the importer
    */
-  id: string;
-  /**
-   * Display name of the importer.
-   */
-  name: string;
+  fieldLabel?: string;
+}
+
+export interface PluginImporters {
+  plugin_id: PluginMetadata['id'];
+  importers: ImporterCapability[];
 }

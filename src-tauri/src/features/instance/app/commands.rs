@@ -6,8 +6,9 @@ use uuid::Uuid;
 use aether_core::features::{
     instance::{
         ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
-        ImportConfig, ImportInstance, Instance, InstanceFile, NewInstance,
+        ImportInstance, Instance, InstanceFile, NewInstance,
     },
+    plugins::PluginImporters,
     process::MinecraftProcessMetadata,
 };
 
@@ -27,7 +28,6 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             remove,
             launch,
             stop,
-            list_import_configs,
             import_contents,
             get_contents,
             install_content,
@@ -38,6 +38,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             get_content_providers,
             get_content_by_provider,
             get_metadata_field_to_check_installed,
+            list_importers
         ])
         .build()
 }
@@ -103,11 +104,6 @@ async fn stop(uuid: Uuid) -> FrontendResult<()> {
 }
 
 #[tauri::command]
-async fn list_import_configs() -> FrontendResult<Vec<ImportConfig>> {
-    Ok(aether_core::api::instance::list_import_configs().await?)
-}
-
-#[tauri::command]
 async fn import_contents(
     instance_id: String,
     content_type: ContentType,
@@ -166,4 +162,9 @@ async fn get_content_by_provider(
 #[tauri::command]
 async fn get_metadata_field_to_check_installed(provider: String) -> FrontendResult<String> {
     Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
+}
+
+#[tauri::command]
+async fn list_importers() -> FrontendResult<Vec<PluginImporters>> {
+    Ok(aether_core::api::instance::list_importers().await?)
 }

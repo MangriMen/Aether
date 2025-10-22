@@ -7,4 +7,12 @@ export const INSTANCE_QUERY_KEYS = {
     SELF: () => [...INSTANCE_QUERY_KEYS.SELF, 'process'],
     BY_INSTANCE: (id: string) => [...INSTANCE_QUERY_KEYS.PROCESS.SELF(), id],
   },
+  IMPORTER: {
+    SELF: () => [...INSTANCE_QUERY_KEYS.SELF, 'importer'],
+    LIST: () => [
+      ...INSTANCE_QUERY_KEYS.SELF,
+      ...INSTANCE_QUERY_KEYS.IMPORTER.SELF(),
+      'list',
+    ],
+  },
 } as const;

@@ -101,16 +101,9 @@ export interface EditInstance extends EditInstanceSettings {
 }
 
 export interface ImportInstance {
-  pathOrUrl: string;
-  pluginId: string | undefined;
-}
-
-export interface ImportConfig {
   pluginId: string;
-  title: string;
-  fieldLabel: string;
-  fileName: string;
-  fileExtensions: string[];
+  importerId: string;
+  path: string;
 }
 
 export const isEditInstanceSettingsEmpty = (dto: EditInstanceSettings) =>

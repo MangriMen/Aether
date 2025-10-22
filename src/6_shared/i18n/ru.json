@@ -59,7 +59,9 @@
     "type": "Тип",
     "updateAvailable": "Доступно обновление",
     "username": "Имя пользователя",
-    "version": "Версия"
+    "version": "Версия",
+    "repair": "Починка",
+    "update": "Обновить"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
