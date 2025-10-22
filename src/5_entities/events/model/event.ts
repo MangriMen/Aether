@@ -11,14 +11,13 @@ export type LauncherEvent =
   | 'warning'
   | 'plugin';
 
-export type LauncherEventPayload<T = LauncherEvent> = T extends 'loading'
-  ? LoadingPayload
-  : T extends 'process'
-    ? ProcessPayload
-    : T extends 'instance'
-      ? InstanceEvent
-      : T extends 'warning'
-        ? WarningPayload
-        : T extends 'plugin'
-          ? PluginPayload
-          : never;
+export interface LauncherEventPayloadMap {
+  loading: LoadingPayload;
+  process: ProcessPayload;
+  instance: InstanceEvent;
+  warning: WarningPayload;
+  plugin: PluginPayload;
+}
+
+export type LauncherEventPayload<T extends string = LauncherEvent> =
+  T extends LauncherEvent ? LauncherEventPayloadMap[T] : unknown;
