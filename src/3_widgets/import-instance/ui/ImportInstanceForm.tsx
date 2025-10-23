@@ -84,7 +84,12 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
             name={field.name}
             value={field.value}
             errorMessage={field.error}
-            inputProps={{ type: 'text', class: 'pr-9', ...fieldProps }}
+            inputProps={{
+              type: 'text',
+              value: field.value,
+              class: 'pr-9',
+              ...fieldProps,
+            }}
             leadingIcons={
               <div class='mr-1 flex h-full items-center justify-center'>
                 <CombinedTooltip

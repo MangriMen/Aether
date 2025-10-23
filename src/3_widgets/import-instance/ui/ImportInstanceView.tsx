@@ -41,7 +41,7 @@ export const ImportInstanceView: Component<ImportInstanceViewProps> = (
       <For each={tabs()}>
         {(tab) => (
           <TabsContent
-            class='flex-1 overflow-hidden'
+            class='flex-1 overflow-hidden px-1'
             value={tab.value}
             as={tab.component}
             footerButtons={local.footerButtons}

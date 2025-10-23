@@ -17,11 +17,7 @@ export const importerToTab = ({
     label: importer.name,
     icon: () => <Image src={importer.icon} alt='' />,
     component: (props) => (
-      <ImportInstanceForm
-        pluginId={pluginId}
-        importer={importer}
-        footerButtons={props.footerButtons}
-      />
+      <ImportInstanceForm pluginId={pluginId} importer={importer} {...props} />
     ),
   };
 };
