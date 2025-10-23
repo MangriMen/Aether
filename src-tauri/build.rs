@@ -38,7 +38,6 @@ fn main() {
             "get_content_providers",
             "get_content_by_provider",
             "get_metadata_field_to_check_installed",
-            "list_importers",
         ]),
     );
 
@@ -61,6 +60,7 @@ fn main() {
             "get_settings",
             "edit_settings",
             "open_plugins_folder",
+            "list_importers",
         ]),
     );
 

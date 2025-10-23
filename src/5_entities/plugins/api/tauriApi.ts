@@ -1,3 +1,5 @@
+import type { PluginImporters } from '@/entities/plugins';
+
 import { createPluginInvoke } from '@/shared/lib';
 
 import type {
@@ -43,3 +45,6 @@ export const editPluginSettingsRaw = async ({
 
 export const openPluginsFolderRaw = async () =>
   invokePlugin(`open_plugins_folder`);
+
+export const listImportersRaw = () =>
+  invokePlugin<PluginImporters[]>('list_importers');

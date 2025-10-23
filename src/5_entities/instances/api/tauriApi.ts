@@ -1,7 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { PluginImporters } from '@/entities/plugins';
-
 import { createPluginInvoke } from '@/shared/lib';
 
 import type {
@@ -30,9 +28,6 @@ export const installInstanceRaw = (
 
 export const updateInstanceRaw = (id: Instance['id']) =>
   invokeInstance(`update`, { id });
-
-export const listImportersRaw = () =>
-  invokeInstance<PluginImporters[]>('list_importers');
 
 export const importInstanceRaw = (importInstance: ImportInstance) =>
   invokeInstance<string>(`import`, {

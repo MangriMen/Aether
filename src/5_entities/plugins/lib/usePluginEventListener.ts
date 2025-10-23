@@ -6,7 +6,11 @@ import { onCleanup, onMount } from 'solid-js';
 import { listenEvent, PluginEventTypeEnum } from '@/entities/events';
 import { logDebug } from '@/shared/lib';
 
-import { invalidatePluginData, invalidatePluginsData } from '../api';
+import {
+  invalidateImporters,
+  invalidatePluginData,
+  invalidatePluginsData,
+} from '../api';
 
 export const usePluginEventListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -20,11 +24,13 @@ export const usePluginEventListener = () => {
       switch (e.payload.event.type) {
         case PluginEventTypeEnum.Sync:
           invalidatePluginsData(queryClient);
+          invalidateImporters(queryClient);
           break;
         case PluginEventTypeEnum.Add:
         case PluginEventTypeEnum.Edit:
         case PluginEventTypeEnum.Remove:
           invalidatePluginData(queryClient, e.payload.event.plugin_id);
+          invalidateImporters(queryClient);
           break;
       }
     });

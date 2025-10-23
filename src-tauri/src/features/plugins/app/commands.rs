@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use aether_core::core::LauncherState;
-use aether_core::features::plugins::{EditPluginSettings, PluginDto, PluginSettings};
+use aether_core::features::plugins::{
+    EditPluginSettings, PluginDto, PluginImporters, PluginSettings,
+};
 
 use crate::shared::file::reveal_in_explorer;
 use crate::FrontendResult;
@@ -20,6 +22,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             get_settings,
             edit_settings,
             open_plugins_folder,
+            list_importers,
         ])
         .build()
 }
@@ -81,4 +84,9 @@ async fn open_plugins_folder() -> FrontendResult<()> {
         &state.location_info.plugins_dir(),
         true,
     )?)
+}
+
+#[tauri::command]
+async fn list_importers() -> FrontendResult<Vec<PluginImporters>> {
+    Ok(aether_core::api::plugin::list_importers().await?)
 }

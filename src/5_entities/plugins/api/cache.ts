@@ -21,3 +21,9 @@ export const invalidatePluginData = (
     queryKey: PLUGIN_QUERY_KEYS.GET(pluginId),
   });
 };
+
+export const invalidateImporters = (queryClient: QueryClient) => {
+  queryClient.invalidateQueries({
+    queryKey: PLUGIN_QUERY_KEYS.IMPORTERS(),
+  });
+};

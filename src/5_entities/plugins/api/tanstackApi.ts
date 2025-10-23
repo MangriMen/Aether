@@ -16,6 +16,7 @@ import {
   getPluginRaw,
   getPluginSettingsRaw,
   importPluginsRaw,
+  listImportersRaw,
   listPluginsRaw,
   openPluginsFolderRaw,
   removePluginRaw,
@@ -176,5 +177,12 @@ export const useRemovePlugin = () => {
         t,
       });
     },
+  }));
+};
+
+export const useImporters = () => {
+  return useQuery(() => ({
+    queryKey: PLUGIN_QUERY_KEYS.IMPORTERS(),
+    queryFn: listImportersRaw,
   }));
 };

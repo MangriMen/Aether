@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { Show, splitProps } from 'solid-js';
 
-import { useImporters } from '@/entities/instances';
+import { useImporters } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, DialogFooter } from '@/shared/ui';
