@@ -1,5 +1,3 @@
-import type { PluginMetadata } from './pluginManifest';
-
 /**
  * Describes the declarative capabilities of a plugin, such as supported importers.
  */
@@ -31,9 +29,4 @@ export interface ImporterCapability {
    * Optional field label for the importer
    */
   fieldLabel?: string;
-}
-
-export interface PluginImporters {
-  plugin_id: PluginMetadata['id'];
-  importers: ImporterCapability[];
 }

@@ -1,3 +1,4 @@
+export * from './importer';
 export * from './plugin';
 export * from './pluginCapabilities';
 export * from './pluginManifest';

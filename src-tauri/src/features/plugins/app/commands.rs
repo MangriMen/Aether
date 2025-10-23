@@ -1,9 +1,7 @@
 use std::path::PathBuf;
 
 use aether_core::core::LauncherState;
-use aether_core::features::plugins::{
-    EditPluginSettings, PluginDto, PluginImporters, PluginSettings,
-};
+use aether_core::features::plugins::{EditPluginSettings, Importer, PluginDto, PluginSettings};
 
 use crate::shared::file::reveal_in_explorer;
 use crate::FrontendResult;
@@ -87,6 +85,6 @@ async fn open_plugins_folder() -> FrontendResult<()> {
 }
 
 #[tauri::command]
-async fn list_importers() -> FrontendResult<Vec<PluginImporters>> {
+async fn list_importers() -> FrontendResult<Vec<Importer>> {
     Ok(aether_core::api::plugin::list_importers().await?)
 }
