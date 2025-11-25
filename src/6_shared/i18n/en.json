@@ -128,7 +128,8 @@
     "settings": "Settings",
     "showFile": "Show file",
     "stop": "Stop",
-    "stopError": "Failed to stop instance"
+    "stopError": "Failed to stop instance",
+    "updateError": "Failed to update instance {{id}}"
   },
   "instanceSettings": {
     "tab": {

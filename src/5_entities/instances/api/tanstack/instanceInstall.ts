@@ -28,7 +28,7 @@ export const useUpdateInstance = () => {
     mutationFn: (id: string) => updateInstanceRaw(id),
     onError: (err, id) => {
       showError({
-        title: t('instance.removeError', { id }),
+        title: t('instance.updateError', { id }),
         err,
         t,
       });

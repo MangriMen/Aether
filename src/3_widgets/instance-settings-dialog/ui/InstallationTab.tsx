@@ -13,8 +13,8 @@ import {
   useUpdateInstance,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { isLauncherError, useTranslation } from '@/shared/model';
-import { Button, Image, LabeledField, showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/model';
+import { Button, Image, LabeledField } from '@/shared/ui';
 
 import type { InstanceSettingsTabProps } from '../model';
 
@@ -30,31 +30,11 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   const { mutateAsync: updateInstance } = useUpdateInstance();
 
   const handleUpdate = async () => {
-    try {
-      await updateInstance(local.instance.id);
-    } catch (e) {
-      if (isLauncherError(e)) {
-        showToast({
-          title: 'Failed to update instance',
-          variant: 'destructive',
-          description: e.message,
-        });
-      }
-    }
+    await updateInstance(local.instance.id);
   };
 
   const handleRepair = async () => {
-    try {
-      await installInstance({ id: local.instance.id, force: true });
-    } catch (e) {
-      if (isLauncherError(e)) {
-        showToast({
-          title: 'Failed to repair instance',
-          variant: 'destructive',
-          description: e.message,
-        });
-      }
-    }
+    await installInstance({ id: local.instance.id, force: true });
   };
 
   const isInstalling = createMemo(
@@ -96,7 +76,13 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
             </div>
           </div>
           <Show when={local.instance.packInfo}>
-            <span>Modpack: {local.instance.packInfo?.packType}</span>
+            <span class='inline-flex gap-1'>
+              Modpack:
+              <span>{local.instance.packInfo?.modpackId}</span>
+              <span class='text-muted-foreground'>
+                ({local.instance.packInfo?.version})
+              </span>
+            </span>
           </Show>
         </div>
       </LabeledField>

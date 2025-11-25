@@ -13,9 +13,8 @@ export interface InstancePluginSettings {
 }
 
 export interface PackInfo {
-  packType: string;
+  modpackId: string;
   version: string;
-  canUpdate: boolean;
 }
 
 export interface InstanceSettings extends Partial<DefaultInstanceSettings> {

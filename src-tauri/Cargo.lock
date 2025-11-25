@@ -5296,8 +5296,8 @@ dependencies = [
 
 [[package]]
 name = "serr"
-version = "0.1.0"
-source = "git+https://github.com/MangriMen/serr.git#49b73d87f7106c029821c5c64afac0955a1939a6"
+version = "0.2.0"
+source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
 dependencies = [
  "serde",
  "serde_json",
@@ -5306,8 +5306,8 @@ dependencies = [
 
 [[package]]
 name = "serr_derive"
-version = "0.1.0"
-source = "git+https://github.com/MangriMen/serr.git#49b73d87f7106c029821c5c64afac0955a1939a6"
+version = "0.2.0"
+source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
 dependencies = [
  "Inflector",
  "proc-macro2",
