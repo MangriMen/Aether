@@ -20,6 +20,11 @@
       "storageFailure": "Ошибка хранилища"
     },
     "instanceError": {
+      "importerNotFound": "Не найден импортер {{importer_id}}",
+      "importFailed": "Не удалось импортировать инстанс с помощью импортера {{importer_id}}.",
+      "packInfoNotFound": "Не найдена информация о модпаке в инстансе",
+      "updaterNotFound": "Не найден апдейтер для модпака {{modpack_id}}",
+      "updateFailed": "Не удалось обновить инстанс с модпаком {{modpack_id}}.",
       "credentialsError": {
         "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
         "noActiveCredentials": "Не найдено активного аккаунта",
@@ -60,7 +65,7 @@
     "updateAvailable": "Доступно обновление",
     "username": "Имя пользователя",
     "version": "Версия",
-    "repair": "Починка",
+    "repair": "Исправить",
     "update": "Обновить"
   },
   "content": {
@@ -129,7 +134,11 @@
     "showFile": "Показать файл",
     "stop": "Остановить",
     "stopError": "Не удалось остановить инстанс",
-    "updateError": "Ошибка обновления инстанса {{id}}"
+    "updateError": "Ошибка обновления инстанса {{id}}",
+    "instanceSettings": {
+      "currentlyInstalled": "Текущая установка",
+      "modpack": "Модпак"
+    }
   },
   "instanceSettings": {
     "tab": {

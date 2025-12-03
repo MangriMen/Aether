@@ -37,8 +37,9 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       {...others}
     >
       <div class='grid w-full grid-cols-[1fr,auto,1fr] items-start'>
-        <div class='flex flex-col'>
+        <div class='flex h-full flex-col'>
           <AllowedPathComponent
+            class='grow'
             label={t('pluginSettings.host')}
             icon={IconMdiMonitor}
             value={local.value?.[0]}
@@ -46,8 +47,9 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
           <span class='text-destructive'>{local.error?.[0]}</span>
         </div>
         <IconMdiArrowRightBold class='mx-2 my-auto' />
-        <div class='flex flex-col'>
+        <div class='flex h-full grow'>
           <AllowedPathComponent
+            class='grow'
             label={t('pluginSettings.plugin')}
             icon={IconMdiPuzzle}
             value={local.value?.[1]}

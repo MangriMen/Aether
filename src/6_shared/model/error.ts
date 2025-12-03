@@ -17,6 +17,11 @@ export type LauncherError =
   | BaseError<'authError.credentialsNotFound', { id: string }>
   | BaseError<'authError.noActiveCredentials', null>
   | BaseError<'authError.storageFailure', null>
+  | BaseError<'instanceError.importerNotFound', { importer_id: string }>
+  | BaseError<'instanceError.importFailed', { importer_id: string }>
+  | BaseError<'instanceError.packInfoNotFound', null>
+  | BaseError<'instanceError.updaterNotFound', { modpack_id: string }>
+  | BaseError<'instanceError.updateFailed', { modpack_id: string }>
   | BaseError<
       'instanceError.credentialsError.credentialsNotFound',
       { id: string }

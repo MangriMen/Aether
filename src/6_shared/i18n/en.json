@@ -20,6 +20,11 @@
       "storageFailure": "Storage failure"
     },
     "instanceError": {
+      "importerNotFound": "Not found importer {{importer_id}}",
+      "importFailed": "Failed to import instance with importer {{importer_id}}",
+      "packInfoNotFound": "Not found modpack info in instance",
+      "updaterNotFound": "Not found updater for modpack {{modpack_id}}",
+      "updateFailed": "Failed to update instance with modpack {{modpack_id}}",
       "credentialsError": {
         "credentialsNotFound": "Not found credentials with id: {{id}}",
         "noActiveCredentials": "No active credentials found",
@@ -129,7 +134,11 @@
     "showFile": "Show file",
     "stop": "Stop",
     "stopError": "Failed to stop instance",
-    "updateError": "Failed to update instance {{id}}"
+    "updateError": "Failed to update instance {{id}}",
+    "instanceSettings": {
+      "currentlyInstalled": "CurrentlyInstalled",
+      "modpack": "Modpack"
+    }
   },
   "instanceSettings": {
     "tab": {

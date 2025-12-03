@@ -1,3 +1,5 @@
+import { open } from '@tauri-apps/plugin-dialog';
+import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import {
   createEffect,
   createSignal,
@@ -8,7 +10,12 @@ import {
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button, CombinedTextField } from '@/shared/ui';
+import {
+  Button,
+  CombinedTextField,
+  CombinedTooltip,
+  IconButton,
+} from '@/shared/ui';
 
 import type { EditAllowedItemProps } from '../model';
 
@@ -33,6 +40,18 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
     local.onSave?.([src(), dest()]);
   };
 
+  const handleBrowse = async () => {
+    const file = await open({
+      multiple: false,
+      directory: true,
+    });
+
+    if (file) {
+      setSrc(file);
+      setDest(file);
+    }
+  };
+
   createEffect(() => {
     setSrc(local.value?.[0] ?? '');
     setDest(local.value?.[1] ?? '');
@@ -53,6 +72,20 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         value={src()}
         onChange={setSrc}
         errorMessage={local.error?.[0]}
+        leadingIcons={
+          <div class='mr-1 flex h-full items-center justify-center'>
+            <CombinedTooltip
+              label={t('common.browse')}
+              as={IconButton}
+              variant='ghost'
+              class='size-7 bg-secondary-dark/50 enabled:hover:bg-secondary-dark'
+              type='button'
+              size='sm'
+              onClick={handleBrowse}
+              icon={IconMdiFileFindOutline}
+            />
+          </div>
+        }
       />
       <CombinedTextField
         class='w-full'

@@ -43,49 +43,66 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
 
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <LabeledField label='Currently installed'>
-        <div class='flex flex-col gap-1 rounded-lg bg-background p-3 text-muted-foreground'>
-          <div class='flex items-center gap-3'>
+      <LabeledField
+        label={
+          <span class='text-lg font-medium'>
+            {t('instance.instanceSettings.currentlyInstalled')}
+          </span>
+        }
+      >
+        <div class='flex items-center gap-3 rounded-lg bg-background p-3 text-muted-foreground'>
+          <Image class='size-12 p-1' />
+          <div class='flex flex-col'>
+            <div class='text-base font-medium'>
+              Minecraft {local.instance.gameVersion}
+            </div>
+            <div class='capitalize'>{local.instance.loader}</div>
+          </div>
+          <div class='ml-auto flex items-center gap-1'>
+            <Button
+              size='sm'
+              variant='ghostWarning'
+              leadingIcon={IconMdiHammer}
+              onClick={handleRepair}
+              disabled={isInstalling()}
+            >
+              {t('common.repair')}
+            </Button>
+          </div>
+        </div>
+      </LabeledField>
+
+      <Show when={local.instance.packInfo}>
+        <LabeledField
+          label={
+            <span class='text-lg font-medium'>
+              {t('instance.instanceSettings.modpack')}
+            </span>
+          }
+        >
+          <div class='flex items-center gap-3 rounded-lg bg-background p-3 text-muted-foreground'>
             <Image class='size-12 p-1' />
+
             <div class='flex flex-col'>
-              <div class='text-base font-medium'>
-                Minecraft {local.instance.gameVersion}
-              </div>
-              <div class='capitalize'>{local.instance.loader}</div>
+              {/* TODO: add modpack name to packInfo */}
+              <span class='text-base font-medium capitalize'>
+                {local.instance.packInfo?.modpackId}
+              </span>
+              <span>{local.instance.packInfo?.version}</span>
             </div>
             <div class='ml-auto flex items-center gap-1'>
-              <Show when={local.instance.packInfo}>
-                <Button
-                  size='sm'
-                  variant='ghost'
-                  onClick={handleUpdate}
-                  disabled={isInstalling()}
-                >
-                  {t('common.update')}
-                </Button>
-              </Show>
               <Button
                 size='sm'
-                variant='ghostWarning'
-                leadingIcon={IconMdiHammer}
-                onClick={handleRepair}
+                variant='ghost'
+                onClick={handleUpdate}
                 disabled={isInstalling()}
               >
-                {t('common.repair')}
+                {t('common.update')}
               </Button>
             </div>
           </div>
-          <Show when={local.instance.packInfo}>
-            <span class='inline-flex gap-1'>
-              Modpack:
-              <span>{local.instance.packInfo?.modpackId}</span>
-              <span class='text-muted-foreground'>
-                ({local.instance.packInfo?.version})
-              </span>
-            </span>
-          </Show>
-        </div>
-      </LabeledField>
+        </LabeledField>
+      </Show>
     </div>
   );
 };
