@@ -45,7 +45,7 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
           />
           <span class='text-destructive'>{local.error?.[0]}</span>
         </div>
-        <IconMdiArrowRightBold class='mx-2 mt-[3px]' />
+        <IconMdiArrowRightBold class='mx-2 my-auto' />
         <div class='flex flex-col'>
           <AllowedPathComponent
             label={t('pluginSettings.plugin')}
