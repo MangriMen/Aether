@@ -2,9 +2,7 @@
   "identifier": "migrated",
   "description": "permissions that were migrated from v1",
   "local": true,
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:default",
@@ -17,6 +15,7 @@
     "core:window:allow-hide",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-theme",
     "shell:allow-open",
     "shell:default",
     "log:default",

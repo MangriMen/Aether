@@ -4,7 +4,8 @@ import type { Accessor } from 'solid-js';
 import { useColorMode } from '@kobalte/core';
 import { makeMediaQueryListener } from '@solid-primitives/media';
 import { makePersisted } from '@solid-primitives/storage';
-import { createEffect, on, onMount } from 'solid-js';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { batch, createEffect, on, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import type {
@@ -15,9 +16,13 @@ import type {
   ThemeContextValue,
 } from '@/shared/model';
 
+import { debounce } from '@/shared/lib';
 import { THEMES_MAP, COLOR_MODE_TO_KEY, isSystemTheme } from '@/shared/model';
 
-import { DEFAULT_THEME_CONTEXT_VALUE } from '../config';
+import {
+  COLOR_MODE_CHANGE_DEBOUNCE_DELAY,
+  DEFAULT_THEME_CONTEXT_VALUE,
+} from '../config';
 import { showPrefersReducedMotionInfo } from './showPrefersReducedMotionInfo';
 import {
   applyDisableAnimationsToDocument,
@@ -75,30 +80,68 @@ export const useCreateThemeContext = (
     setTheme(state[COLOR_MODE_TO_KEY[currentColorMode()]]);
   };
 
+  const updateThemeByColorModeDebounced = debounce(
+    updateThemeByColorMode,
+    COLOR_MODE_CHANGE_DEBOUNCE_DELAY,
+  );
+
   const setPrefersReducedMotion = (prefersReducedMotion: boolean) => {
     setState('prefersReducedMotion', prefersReducedMotion);
   };
 
+  const syncWindowTheme = async (rawTheme: ThemeConfig) => {
+    const window = getCurrentWindow();
+    const currentWindowTheme = await window.theme();
+
+    if (isSystemTheme(rawTheme)) {
+      if (currentWindowTheme === null) {
+        return;
+      } else {
+        window.setTheme(undefined);
+        return;
+      }
+    }
+    const colorMode = currentColorMode();
+
+    if (currentWindowTheme !== colorMode) {
+      window.setTheme(colorMode);
+    }
+  };
+
   createEffect(
     on(
-      [
-        () => state.rawTheme,
-        () => state.lightTheme,
-        () => state.darkTheme,
-        currentColorMode,
-      ],
+      [() => state.rawTheme, () => state.lightTheme, () => state.darkTheme],
       ([rawTheme]) => {
-        setColorModeByTheme(rawTheme);
+        batch(() => {
+          setColorModeByTheme(rawTheme);
 
-        if (isSystemTheme(rawTheme)) updateThemeByColorMode();
-        else setTheme(rawTheme);
+          if (isSystemTheme(rawTheme)) {
+            updateThemeByColorMode();
+          } else {
+            setTheme(rawTheme);
+          }
+
+          syncWindowTheme(rawTheme);
+        });
       },
     ),
   );
 
+  createEffect(
+    on([currentColorMode], () => {
+      if (!isSystemTheme(state.rawTheme)) {
+        return;
+      }
+
+      updateThemeByColorModeDebounced();
+    }),
+  );
+
   makeMediaQueryListener('(prefers-reduced-motion: reduce)', (e) => {
-    setPrefersReducedMotion(e.matches);
-    setDisableAnimations(e.matches);
+    batch(() => {
+      setPrefersReducedMotion(e.matches);
+      setDisableAnimations(e.matches);
+    });
 
     if (e.matches && state.disableAnimations) {
       showPrefersReducedMotionInfo(() => setDisableAnimations(false));

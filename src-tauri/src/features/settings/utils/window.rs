@@ -19,6 +19,7 @@ pub fn set_window_effect<R: tauri::Runtime>(
     main_window.set_effects(None)?;
 
     if let Some(effect) = map_to_tauri_effect(window_effect) {
+        log::debug!("Set window effect {:?}", effect);
         apply_window_effect(&main_window, effect)?;
     }
 

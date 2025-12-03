@@ -40,7 +40,7 @@ const WINDOW_EFFECT_TO_GENERALIZED_WINDOW_EFFECT: Record<
   GeneralizedWindowEffect
 > = {
   off: 'off',
-  mica: 'off',
+  mica: 'mica',
   mica_light: 'mica',
   mica_dark: 'mica',
   acrylic: 'acrylic',
