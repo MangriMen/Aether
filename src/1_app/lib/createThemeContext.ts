@@ -30,7 +30,7 @@ import {
   applyTransparencyToDocument,
 } from './theme';
 
-export const useCreateThemeContext = (
+export const createThemeContext = (
   themeStateKey: Accessor<string>,
   themeAttribute: Accessor<string>,
   disableAnimationsAttribute: Accessor<string>,
