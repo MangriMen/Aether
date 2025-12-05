@@ -21,7 +21,7 @@ export const Image: Component<InstanceImageProps> = (props) => {
   return (
     <div
       class={cn(
-        'size-24 rounded-lg border bg-secondary flex items-center justify-center p-1',
+        'size-24 rounded-lg flex items-center justify-center p-1',
         local.class,
       )}
       {...others}

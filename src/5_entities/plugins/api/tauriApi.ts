@@ -47,3 +47,5 @@ export const openPluginsFolderRaw = async () =>
 
 export const listImportersRaw = () =>
   invokePlugin<Importer[]>('list_importers');
+
+export const getApiVersion = () => invokePlugin<string>('get_api_version');

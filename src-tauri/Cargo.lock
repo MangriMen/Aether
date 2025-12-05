@@ -58,6 +58,7 @@ dependencies = [
  "dashmap",
  "log",
  "open",
+ "semver",
  "serde",
  "serde_json",
  "serr",

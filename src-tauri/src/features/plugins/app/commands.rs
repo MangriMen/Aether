@@ -21,6 +21,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             edit_settings,
             open_plugins_folder,
             list_importers,
+            get_api_version
         ])
         .build()
 }
@@ -87,4 +88,9 @@ async fn open_plugins_folder() -> FrontendResult<()> {
 #[tauri::command]
 async fn list_importers() -> FrontendResult<Vec<Importer>> {
     Ok(aether_core::api::plugin::list_importers().await?)
+}
+
+#[tauri::command]
+async fn get_api_version() -> FrontendResult<semver::Version> {
+    Ok(aether_core::api::plugin::get_api_version().await?)
 }

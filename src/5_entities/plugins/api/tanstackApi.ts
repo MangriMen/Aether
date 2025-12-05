@@ -13,6 +13,7 @@ import {
   disablePluginRaw,
   editPluginSettingsRaw,
   enablePluginRaw,
+  getApiVersion,
   getPluginRaw,
   getPluginSettingsRaw,
   importPluginsRaw,
@@ -184,5 +185,12 @@ export const useImporters = () => {
   return useQuery(() => ({
     queryKey: PLUGIN_QUERY_KEYS.IMPORTERS(),
     queryFn: listImportersRaw,
+  }));
+};
+
+export const useApiVersion = () => {
+  return useQuery(() => ({
+    queryKey: PLUGIN_QUERY_KEYS.API_VERSION(),
+    queryFn: getApiVersion,
   }));
 };

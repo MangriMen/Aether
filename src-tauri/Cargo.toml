@@ -39,6 +39,7 @@ aether-core = { path = "../../aether-core/aether-core" }
 serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.2.0", features = [
   "derive",
 ] }
+semver = "1.0.27"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

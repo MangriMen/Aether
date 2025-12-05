@@ -248,7 +248,8 @@
     "description": "Описание",
     "settings": "Настройки",
     "capabilities": "Возможности",
-    "importers": "Импортеры"
+    "importers": "Импортеры",
+    "incompatibleApiVersion": "Версия API несовместима. Использование плагина может привести к сбою или повреждению данных"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Введите путь на хосте",

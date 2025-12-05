@@ -61,6 +61,7 @@ fn main() {
             "edit_settings",
             "open_plugins_folder",
             "list_importers",
+            "get_api_version",
         ]),
     );
 

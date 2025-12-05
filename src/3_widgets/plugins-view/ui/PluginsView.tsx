@@ -66,7 +66,7 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
         )}
         onTransitionEnd={unselectPluginAnimated}
       >
-        <Separator class='mx-2 shrink-0' orientation='vertical' />
+        <Separator class='ml-4 shrink-0' orientation='vertical' />
         <Show when={selectedPlugin()}>
           {(plugin) => <local.pluginDetails class='flex-1' plugin={plugin()} />}
         </Show>

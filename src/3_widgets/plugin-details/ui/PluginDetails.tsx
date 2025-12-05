@@ -9,7 +9,7 @@ import {
 
 import { prefetchPluginSettings, type Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
-import { Separator } from '@/shared/ui';
+import { Image, Separator } from '@/shared/ui';
 
 import { PluginDetailsActions } from './PluginDetailsActions';
 import { PluginDetailsBody } from './PluginDetailsBody';
@@ -34,14 +34,19 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
   onMount(() => prefetchPluginSettings(queryClient, pluginId));
 
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <PluginDetailsInfo plugin={local.plugin} />
-      <PluginDetailsActions plugin={local.plugin} />
+    <div class={cn('flex flex-col gap-4', local.class)} {...others}>
+      <div class='ml-4 flex items-center gap-4'>
+        <Image class='h-[124px] w-max' />
+        <div class='flex flex-col gap-2'>
+          <PluginDetailsInfo plugin={local.plugin} />
+          <PluginDetailsActions plugin={local.plugin} />
+        </div>
+      </div>
 
       <Separator />
 
       <PluginDetailsBody
-        class='grow'
+        class='ml-4 grow'
         plugin={local.plugin}
         isSettingsDisabled={isSettingsDisabled()}
       />

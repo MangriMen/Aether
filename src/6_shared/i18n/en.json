@@ -248,7 +248,8 @@
     "description": "Description",
     "settings": "Settings",
     "capabilities": "Capabilities",
-    "importers": "Importers"
+    "importers": "Importers",
+    "incompatibleApiVersion": "The API version is incompatible. Using the plugin may cause a crash or data corruption"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Enter host path",

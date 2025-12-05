@@ -5,4 +5,5 @@ export const PLUGIN_QUERY_KEYS = {
   ENABLED: (id: string) => [...PLUGIN_QUERY_KEYS.SELF, 'enabled', id],
   SETTINGS: (id: string) => [...PLUGIN_QUERY_KEYS.SELF, 'settings', id],
   IMPORTERS: () => [...PLUGIN_QUERY_KEYS.LIST(), 'importers'],
+  API_VERSION: () => [...PLUGIN_QUERY_KEYS.LIST(), 'api_version'],
 } as const;

@@ -30,7 +30,7 @@ export const PluginImporter: Component<PluginImporterProps> = (props) => {
       {...others}
     >
       <CollapsibleTrigger class='flex items-center gap-2'>
-        <Image class='size-8' src={local.importer.icon} />
+        <Image class='size-8 border' src={local.importer.icon} />
         <span class='inline-flex items-center gap-1'>
           <span>{local.importer.name}</span>
           <span class='text-muted-foreground'>({local.importer.id})</span>
@@ -42,7 +42,7 @@ export const PluginImporter: Component<PluginImporterProps> = (props) => {
         />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <span class='text-sm text-muted-foreground'>
+        <span class='ml-0.5 text-sm text-muted-foreground'>
           {local.importer.description}
         </span>
       </CollapsibleContent>
