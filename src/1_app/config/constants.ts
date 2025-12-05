@@ -4,4 +4,4 @@ export const ALLOWED_CONTEXT_MENU_TAGS = new Set([
   'TEXTAREA',
 ]);
 
-export const COLOR_MODE_CHANGE_DEBOUNCE_DELAY = 250;
+export const COLOR_MODE_CHANGE_DEBOUNCE_DELAY = 200;

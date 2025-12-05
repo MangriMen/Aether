@@ -2,6 +2,7 @@ export * from './cn';
 export * from './converter';
 export * from './createInvoke';
 export * from './createOverrideHandler';
+export * from './createPrefersReducedMotion';
 export * from './createPreventRightClick';
 export { default as dayjs } from './dayjs';
 export * from './debounce';
