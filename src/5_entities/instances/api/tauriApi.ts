@@ -71,31 +71,22 @@ export const getInstanceProcessRaw = (id: string) =>
   });
 
 // Content
-export const getInstanceContentsRaw = (id: string) =>
-  invokeInstance<Record<string, InstanceFile>>(`get_contents`, { id });
+export const listContentRaw = (id: string) =>
+  invokeInstance<Record<string, InstanceFile>>(`list_content`, { id });
 
-export const disableInstanceContentsRaw = (
-  id: string,
-  contentPaths: string[],
-) =>
+export const disableContentRaw = (id: string, contentPaths: string[]) =>
   invokeInstance(`disable_contents`, {
     id,
     contentPaths,
   });
 
-export const enableInstanceContentsRaw = (id: string, contentPaths: string[]) =>
+export const enableContentRaw = (id: string, contentPaths: string[]) =>
   invokeInstance(`enable_contents`, {
     id,
     contentPaths,
   });
 
-export const removeInstanceContentRaw = (id: string, contentPath: string) =>
-  invokeInstance(`remove_content`, {
-    id,
-    contentPath,
-  });
-
-export const removeInstanceContentsRaw = (id: string, contentPaths: string[]) =>
+export const removeContentsRaw = (id: string, contentPaths: string[]) =>
   invokeInstance(`remove_contents`, {
     id,
     contentPaths,

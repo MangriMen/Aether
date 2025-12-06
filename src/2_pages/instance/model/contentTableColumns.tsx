@@ -70,7 +70,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
             'text-muted-foreground': !!props.cell.row.original.name,
           })}
         >
-          {props.cell.row.original.fileName.replace('.disabled', '')}
+          {props.cell.row.original.fileName}
         </span>
       </span>
     ),

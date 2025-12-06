@@ -52,24 +52,22 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
     ),
   );
 
-  const getContentPaths = () => {
-    return selectedContents().map((content) => content.path);
-  };
+  const getContentIds = () => selectedContents().map((content) => content.id);
 
   const { mutateAsync: enableInstanceContents } = useEnableContents();
   const { mutateAsync: disableInstanceContents } = useDisableContents();
   const { mutateAsync: removeInstanceContents } = useRemoveContents();
 
   const handleEnableContents = () => {
-    enableInstanceContents({ id: local.instanceId, paths: getContentPaths() });
+    enableInstanceContents({ id: local.instanceId, paths: getContentIds() });
   };
 
   const handleDisableContents = () => {
-    disableInstanceContents({ id: local.instanceId, paths: getContentPaths() });
+    disableInstanceContents({ id: local.instanceId, paths: getContentIds() });
   };
 
   const handleDeleteContents = () => {
-    removeInstanceContents({ id: local.instanceId, paths: getContentPaths() });
+    removeInstanceContents({ id: local.instanceId, paths: getContentIds() });
   };
 
   return (

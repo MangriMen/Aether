@@ -28,11 +28,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             launch,
             stop,
             import_contents,
-            get_contents,
+            list_content,
             install_content,
             enable_contents,
             disable_contents,
-            remove_content,
             remove_contents,
             get_content_providers,
             get_content_by_provider,
@@ -116,8 +115,8 @@ async fn import_contents(
 }
 
 #[tauri::command]
-async fn get_contents(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
-    Ok(aether_core::api::instance::get_contents(id).await?)
+async fn list_content(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
+    Ok(aether_core::api::instance::list_content(id).await?)
 }
 
 #[tauri::command]
@@ -133,11 +132,6 @@ async fn enable_contents(id: String, content_paths: Vec<String>) -> FrontendResu
 #[tauri::command]
 async fn disable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
     Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
-}
-
-#[tauri::command]
-async fn remove_content(id: String, content_path: String) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::remove_content(id, content_path).await?)
 }
 
 #[tauri::command]

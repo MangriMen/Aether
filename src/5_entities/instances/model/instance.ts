@@ -61,6 +61,7 @@ export interface Instance extends InstanceSettings {
 }
 
 export interface InstanceFile {
+  id: string;
   hash: string;
   name?: string;
   fileName: string;
