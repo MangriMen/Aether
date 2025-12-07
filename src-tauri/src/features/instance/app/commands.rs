@@ -6,7 +6,7 @@ use uuid::Uuid;
 use aether_core::features::{
     instance::{
         ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
-        ImportInstance, Instance, InstanceFile, NewInstance,
+        ImportInstance, Instance, ContentFile, NewInstance,
     },
     process::MinecraftProcessMetadata,
 };
@@ -115,7 +115,7 @@ async fn import_contents(
 }
 
 #[tauri::command]
-async fn list_content(id: String) -> FrontendResult<DashMap<String, InstanceFile>> {
+async fn list_content(id: String) -> FrontendResult<DashMap<String, ContentFile>> {
     Ok(aether_core::api::instance::list_content(id).await?)
 }
 

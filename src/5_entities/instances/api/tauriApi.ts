@@ -6,7 +6,7 @@ import type {
   ContentRequest,
   Instance,
   NewInstance,
-  InstanceFile,
+  ContentFile,
   ImportInstance,
   MinecraftProcessMetadata,
   ContentResponse,
@@ -72,7 +72,7 @@ export const getInstanceProcessRaw = (id: string) =>
 
 // Content
 export const listContentRaw = (id: string) =>
-  invokeInstance<Record<string, InstanceFile>>(`list_content`, { id });
+  invokeInstance<Record<string, ContentFile>>(`list_content`, { id });
 
 export const disableContentRaw = (id: string, contentPaths: string[]) =>
   invokeInstance(`disable_contents`, {
