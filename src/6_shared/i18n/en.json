@@ -249,7 +249,8 @@
     "settings": "Settings",
     "capabilities": "Capabilities",
     "importers": "Importers",
-    "incompatibleApiVersion": "The API version is incompatible. Using the plugin may cause a crash or data corruption"
+    "incompatibleApiVersion": "The API version is incompatible. Using the plugin may cause a crash or data corruption",
+    "updaters": "Updaters"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Enter host path",

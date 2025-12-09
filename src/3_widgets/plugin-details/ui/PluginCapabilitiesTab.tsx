@@ -6,7 +6,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { PluginImporter } from '@/entities/plugins';
+import { PluginCapabilityCard } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
@@ -29,7 +29,13 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
           <div class='flex flex-col gap-2'>
             <span class='text-lg font-medium'>{t('plugin.importers')}</span>
             <For each={capabilities().importers}>
-              {(importer) => <PluginImporter importer={importer} />}
+              {(importer) => <PluginCapabilityCard capability={importer} />}
+            </For>
+          </div>
+          <div class='flex flex-col gap-2'>
+            <span class='text-lg font-medium'>{t('plugin.updaters')}</span>
+            <For each={capabilities().updaters}>
+              {(importer) => <PluginCapabilityCard capability={importer} />}
             </For>
           </div>
         </div>

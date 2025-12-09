@@ -1,5 +1,5 @@
+export * from './capabilities';
 export * from './checkIsApiCompatible';
-export * from './importer';
 export * from './plugin';
 export * from './pluginCapabilities';
 export * from './pluginManifest';

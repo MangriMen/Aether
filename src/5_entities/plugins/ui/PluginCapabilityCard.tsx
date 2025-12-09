@@ -11,14 +11,14 @@ import {
   Image,
 } from '@/shared/ui';
 
-import type { ImporterCapability } from '../model';
+import type { ImporterCapability, UpdaterCapability } from '../model';
 
 export type PluginImporterProps = ComponentProps<'div'> & {
-  importer: ImporterCapability;
+  capability: ImporterCapability | UpdaterCapability;
 };
 
-export const PluginImporter: Component<PluginImporterProps> = (props) => {
-  const [local, others] = splitProps(props, ['importer', 'class']);
+export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {
+  const [local, others] = splitProps(props, ['capability', 'class']);
 
   const [isOpened, setIsOpened] = createSignal(false);
 
@@ -30,10 +30,10 @@ export const PluginImporter: Component<PluginImporterProps> = (props) => {
       {...others}
     >
       <CollapsibleTrigger class='flex items-center gap-2'>
-        <Image class='size-8 border' src={local.importer.icon} />
+        <Image class='size-8 border' src={local.capability.icon} />
         <span class='inline-flex items-center gap-1'>
-          <span>{local.importer.name}</span>
-          <span class='text-muted-foreground'>({local.importer.id})</span>
+          <span>{local.capability.name}</span>
+          <span class='text-muted-foreground'>({local.capability.id})</span>
         </span>
         <IconMdiChevronDown
           class={cn('ml-auto -rotate-180 transition-transform', {
@@ -43,7 +43,7 @@ export const PluginImporter: Component<PluginImporterProps> = (props) => {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <span class='ml-0.5 text-sm text-muted-foreground'>
-          {local.importer.description}
+          {local.capability.description}
         </span>
       </CollapsibleContent>
     </Collapsible>

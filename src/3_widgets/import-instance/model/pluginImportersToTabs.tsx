@@ -1,4 +1,4 @@
-import type { Importer } from '@/entities/plugins';
+import type { ImporterCapabilityEntry } from '@/entities/plugins';
 
 import { Image } from '@/shared/ui';
 
@@ -9,7 +9,7 @@ import { ImportInstanceForm } from '../ui/ImportInstanceForm';
 export const importerToTab = ({
   pluginId,
   capability: importer,
-}: Importer): ImporterTabConfig => {
+}: ImporterCapabilityEntry): ImporterTabConfig => {
   const key = `${pluginId}_${importer.id}`;
 
   return {

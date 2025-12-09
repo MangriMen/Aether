@@ -249,7 +249,8 @@
     "settings": "Настройки",
     "capabilities": "Возможности",
     "importers": "Импортеры",
-    "incompatibleApiVersion": "Версия API несовместима. Использование плагина может привести к сбою или повреждению данных"
+    "incompatibleApiVersion": "Версия API несовместима. Использование плагина может привести к сбою или повреждению данных",
+    "updaters": "Апдейтеры"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Введите путь на хосте",

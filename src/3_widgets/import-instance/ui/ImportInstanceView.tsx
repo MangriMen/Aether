@@ -2,7 +2,7 @@ import type { JSX } from 'solid-js';
 
 import { createMemo, For, splitProps, type Component } from 'solid-js';
 
-import type { Importer } from '@/entities/plugins';
+import type { ImporterCapabilityEntry } from '@/entities/plugins';
 import type { TabsProps } from '@/shared/ui';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
@@ -12,7 +12,7 @@ import type { ImporterTabConfig } from '../model';
 import { importerToTab } from '../model';
 
 export type ImportInstanceViewProps = TabsProps & {
-  importers: Importer[];
+  importers: ImporterCapabilityEntry[];
   footerButtons: JSX.Element;
   onSubmit?: () => void;
 };

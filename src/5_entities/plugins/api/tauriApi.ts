@@ -2,10 +2,10 @@ import { createPluginInvoke } from '@/shared/lib';
 
 import type {
   EditPluginSettings,
-  Importer,
   Plugin,
   PluginMetadata,
   PluginSettings,
+  ImporterCapabilityEntry,
 } from '../model';
 
 const invokePlugin = createPluginInvoke('plugin');
@@ -46,6 +46,6 @@ export const openPluginsFolderRaw = async () =>
   invokePlugin(`open_plugins_folder`);
 
 export const listImportersRaw = () =>
-  invokePlugin<Importer[]>('list_importers');
+  invokePlugin<ImporterCapabilityEntry[]>('list_importers');
 
 export const getApiVersion = () => invokePlugin<string>('get_api_version');
