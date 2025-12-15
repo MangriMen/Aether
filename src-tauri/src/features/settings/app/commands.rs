@@ -26,39 +26,39 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 #[tauri::command]
-pub async fn get() -> FrontendResult<Settings> {
+async fn get() -> FrontendResult<Settings> {
     Ok(aether_core::api::settings::get().await?)
 }
 
 #[tauri::command]
-pub async fn edit(edit_settings: Settings) -> FrontendResult<Settings> {
+async fn edit(edit_settings: Settings) -> FrontendResult<Settings> {
     Ok(aether_core::api::settings::upsert(edit_settings).await?)
 }
 
 #[tauri::command]
-pub async fn get_max_ram() -> FrontendResult<u64> {
+async fn get_max_ram() -> FrontendResult<u64> {
     Ok(aether_core::shared::infra::get_total_memory())
 }
 
 #[tauri::command]
-pub async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettings> {
+async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettings> {
     Ok(aether_core::api::settings::get_default_instance_settings().await?)
 }
 
 #[tauri::command]
-pub async fn edit_default_instance_settings(
+async fn edit_default_instance_settings(
     edit_settings: EditDefaultInstanceSettings,
 ) -> FrontendResult<DefaultInstanceSettings> {
     Ok(aether_core::api::settings::upsert_default_instance_settings(edit_settings).await?)
 }
 
 #[tauri::command]
-pub async fn get_app_settings(state: State<'_, AppSettingsState>) -> FrontendResult<AppSettings> {
+async fn get_app_settings(state: State<'_, AppSettingsState>) -> FrontendResult<AppSettings> {
     get_app_settings_use_case(state).await
 }
 
 #[tauri::command]
-pub async fn edit_app_settings<R: tauri::Runtime>(
+async fn edit_app_settings<R: tauri::Runtime>(
     app_handle: AppHandle<R>,
     state: State<'_, AppSettingsState>,
     edit_app_settings: EditAppSettings,

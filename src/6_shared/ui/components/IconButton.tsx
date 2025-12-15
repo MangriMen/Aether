@@ -30,9 +30,9 @@ const iconButtonVariants = cva('aspect-square', {
       link: SVG_CHILD_FILL_VARIANTS.foreground,
     },
     size: {
-      default: 'size-9 rounded-md text-2xl',
-      sm: 'size-8 rounded-md',
-      lg: 'size-10 rounded-md',
+      default: 'size-9 rounded-md p-2 text-base',
+      sm: 'size-6 rounded-md p-1 text-sm',
+      lg: 'size-10 rounded-md p-2 text-xl',
     },
   },
   defaultVariants: {
@@ -75,7 +75,7 @@ const IconButton = <T extends ValidComponent = 'button'>(
     >
       <Switch fallback={local.children}>
         <Match when={local.loading}>
-          <IconMdiLoading class='animate-spin' />
+          <IconMdiLoading class='animate-spin text-xl' />
         </Match>
         <Match when={local.icon}>{local.icon?.({})}</Match>
       </Switch>

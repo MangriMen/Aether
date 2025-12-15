@@ -60,8 +60,8 @@ export const CreateCustomInstanceSchema = z
   });
 
 export const ImportInstanceSchema = z.object({
-  packType: z.string().min(1),
-  path: z.string().min(1, {
+  pluginId: z.string().min(1),
+  pathOrUrl: z.string().min(1, {
     message: 'Path is required',
   }),
 });

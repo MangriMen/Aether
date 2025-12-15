@@ -1,4 +1,4 @@
-import { Show, splitProps, type Component } from 'solid-js';
+import { createMemo, Show, splitProps, type Component } from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/ui';
 
@@ -6,8 +6,9 @@ import { usePlugins } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
+import { PluginDetails } from '@/widgets/plugin-details';
+import { PluginsView } from '@/widgets/plugins-view';
 
-import { PluginsList } from './PluginsList';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
 
 export type PluginsPaneProps = SettingsPaneProps;
@@ -19,6 +20,10 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
 
   const plugins = usePlugins();
 
+  const isPluginsLoadedWithoutErrors = createMemo(
+    () => !plugins.isError || (plugins.data && plugins.data.length === 0),
+  );
+
   return (
     <SettingsPane
       class={cn('container max-w-screen-lg', local.class)}
@@ -26,10 +31,14 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
       {...others}
     >
       <Show
-        when={plugins.data?.length}
+        when={isPluginsLoadedWithoutErrors()}
         fallback={<span>{t('plugins.noPlugins')}</span>}
       >
-        <PluginsList plugins={plugins.data} isLoading={plugins.isLoading} />
+        <PluginsView
+          plugins={plugins.data}
+          isLoading={plugins.isLoading}
+          pluginDetails={PluginDetails}
+        />
       </Show>
     </SettingsPane>
   );

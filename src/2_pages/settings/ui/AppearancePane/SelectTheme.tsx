@@ -1,13 +1,11 @@
-import type { ConfigColorMode } from '@kobalte/core';
 import type { Component } from 'solid-js';
 
-import { useColorMode } from '@kobalte/core';
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
 import type { Option, ThemeConfig } from '@/shared/model';
 import type { SelectRootProps } from '@/shared/ui';
 
-import { THEME_TO_MODE, THEMES, useThemeContext } from '@/shared/model';
+import { THEMES, useThemeContext } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -31,12 +29,14 @@ export type SelectThemeProps = Pick<
 >;
 
 export const SelectTheme: Component<SelectThemeProps> = (props) => {
-  const colorModeContext = useColorMode();
   const [themeContext, { setTheme }] = useThemeContext();
 
   const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>(
     themeContext.rawTheme,
   );
+  createEffect(() => {
+    setCurrentTheme(themeContext.rawTheme);
+  });
 
   const currentOption = createMemo(() =>
     THEME_OPTIONS.find((option) => option.value === currentTheme()),
@@ -47,19 +47,8 @@ export const SelectTheme: Component<SelectThemeProps> = (props) => {
       return;
     }
 
-    handleChangeColorMode(THEME_TO_MODE[theme.value]);
-
-    setCurrentTheme(theme.value);
     setTheme(theme.value);
   };
-
-  const handleChangeColorMode = (colorMode: ConfigColorMode) => {
-    colorModeContext.setColorMode(colorMode);
-  };
-
-  createEffect(() => {
-    setCurrentTheme(themeContext.rawTheme);
-  });
 
   return (
     <Select

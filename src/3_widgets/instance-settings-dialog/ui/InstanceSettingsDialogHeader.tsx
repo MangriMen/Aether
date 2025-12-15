@@ -24,7 +24,7 @@ const InstanceSettingsDialogHeader: Component<
           <Image class='size-8' />
           <span>{local.instance.name}</span>
         </div>
-        <IconMdiChevronRight class='text-xl' />
+        <IconMdiChevronRight />
         <span class='text-foreground'>{t('instance.settings')}</span>
       </DialogTitle>
     </DialogHeader>

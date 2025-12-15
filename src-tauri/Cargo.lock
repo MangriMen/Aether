@@ -58,6 +58,7 @@ dependencies = [
  "dashmap",
  "log",
  "open",
+ "semver",
  "serde",
  "serde_json",
  "serr",
@@ -76,9 +77,10 @@ dependencies = [
 
 [[package]]
 name = "aether-core"
-version = "0.6.0"
-source = "git+https://github.com/MangriMen/aether-core.git#518df7d8aaed699e8f3a58e53beda106de7f17bf"
+version = "0.7.0"
+source = "git+https://github.com/MangriMen/aether-core.git#1fd834d0072d98fe570a060ee8cb27e23981ec2d"
 dependencies = [
+ "aether-core-plugin-api",
  "anyhow",
  "async-event-emitter",
  "async-trait",
@@ -112,6 +114,7 @@ dependencies = [
  "sys-info",
  "sysinfo",
  "tauri",
+ "tempfile",
  "thiserror 2.0.16",
  "tokio",
  "tokio-stream",
@@ -123,6 +126,15 @@ dependencies = [
  "url",
  "uuid",
  "zip",
+]
+
+[[package]]
+name = "aether-core-plugin-api"
+version = "0.1.0"
+source = "git+https://github.com/MangriMen/aether-core.git#1fd834d0072d98fe570a060ee8cb27e23981ec2d"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -5020,9 +5032,9 @@ dependencies = [
 
 [[package]]
 name = "schemars"
-version = "1.0.4"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82d20c4491bc164fa2f6c5d44565947a52ad80b9505d8e36f8d54c27c739fcd0"
+checksum = "9558e172d4e8533736ba97870c4b2cd63f84b382a3d6eb063da41b91cce17289"
 dependencies = [
  "dyn-clone",
  "ref-cast",
@@ -5252,7 +5264,7 @@ dependencies = [
  "indexmap 1.9.3",
  "indexmap 2.11.4",
  "schemars 0.9.0",
- "schemars 1.0.4",
+ "schemars 1.1.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -5296,8 +5308,8 @@ dependencies = [
 
 [[package]]
 name = "serr"
-version = "0.1.0"
-source = "git+https://github.com/MangriMen/serr.git#49b73d87f7106c029821c5c64afac0955a1939a6"
+version = "0.2.0"
+source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
 dependencies = [
  "serde",
  "serde_json",
@@ -5306,8 +5318,8 @@ dependencies = [
 
 [[package]]
 name = "serr_derive"
-version = "0.1.0"
-source = "git+https://github.com/MangriMen/serr.git#49b73d87f7106c029821c5c64afac0955a1939a6"
+version = "0.2.0"
+source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
 dependencies = [
  "Inflector",
  "proc-macro2",

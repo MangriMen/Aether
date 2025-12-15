@@ -37,6 +37,17 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Debug)
+                .level_for(
+                    "tao::platform_impl::platform::event_loop::runner",
+                    log::LevelFilter::Off,
+                )
+                .level_for("hyper_util", log::LevelFilter::Info)
+                .level_for("wasmtime", log::LevelFilter::Info)
+                .level_for("wasmtime_cache", log::LevelFilter::Info)
+                .level_for("wasmtime_cranelift", log::LevelFilter::Info)
+                .level_for("cranelift_codegen", log::LevelFilter::Info)
+                .level_for("tauri_plugin_updater", log::LevelFilter::Info)
+                .level_for("extism::plugin", log::LevelFilter::Debug)
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())

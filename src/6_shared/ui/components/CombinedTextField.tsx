@@ -23,6 +23,7 @@ export type CombinedTextFieldProps = TextFieldRootProps & {
   errorMessage?: string;
   labelProps?: TextFieldLabelProps<'label'>;
   inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
+  leadingIcons?: JSX.Element;
 };
 
 export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
@@ -31,6 +32,7 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
     'errorMessage',
     'labelProps',
     'inputProps',
+    'leadingIcons',
     'class',
   ]);
 
@@ -43,7 +45,10 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
       <Show when={local.label}>
         <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
       </Show>
-      <TextFieldInput type='text' {...local.inputProps} />
+      <div class='relative flex'>
+        <TextFieldInput type='text' {...local.inputProps} />
+        <div class='absolute inset-y-0 right-0'>{local.leadingIcons}</div>
+      </div>
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
     </TextField>
   );

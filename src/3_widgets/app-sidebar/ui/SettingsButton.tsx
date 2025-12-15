@@ -38,6 +38,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
       as={IconButton}
       class='relative'
       variant='ghost'
+      size='lg'
       onClick={handleClick}
       {...props}
     >

@@ -15,21 +15,21 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 #[tauri::command]
-pub async fn create_offline_account(username: String) -> FrontendResult<AccountOutput> {
+async fn create_offline_account(username: String) -> FrontendResult<AccountOutput> {
     Ok(aether_core::api::auth::create_offline_account(username).await?)
 }
 
 #[tauri::command]
-pub async fn get_accounts() -> FrontendResult<Vec<AccountOutput>> {
+async fn get_accounts() -> FrontendResult<Vec<AccountOutput>> {
     Ok(aether_core::api::auth::get_accounts().await?)
 }
 
 #[tauri::command]
-pub async fn change_account(id: Uuid) -> FrontendResult<AccountOutput> {
+async fn change_account(id: Uuid) -> FrontendResult<AccountOutput> {
     Ok(aether_core::api::auth::change_account(id).await?)
 }
 
 #[tauri::command]
-pub async fn logout(id: Uuid) -> FrontendResult<()> {
+async fn logout(id: Uuid) -> FrontendResult<()> {
     Ok(aether_core::api::auth::logout(id).await?)
 }

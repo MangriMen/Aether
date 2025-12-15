@@ -24,4 +24,5 @@ const Skeleton = <T extends ValidComponent = 'div'>(
   );
 };
 
+export type { SkeletonRootProps };
 export { Skeleton };

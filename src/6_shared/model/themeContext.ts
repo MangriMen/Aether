@@ -35,7 +35,7 @@ export const useThemeContext = () => {
   return value;
 };
 
-export const COLOR_MODE_TO_KEY: Record<
+export const COLOR_MODE_TO_THEME_KEY: Record<
   ColorMode,
   Extract<keyof ThemeContextValue, 'lightTheme' | 'darkTheme'>
 > = {

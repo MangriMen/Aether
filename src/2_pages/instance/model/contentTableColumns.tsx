@@ -3,13 +3,13 @@ import type { ColumnDef } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { Show } from 'solid-js';
 
-import type { InstanceFile } from '@/entities/instances';
+import type { ContentFile } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Checkbox } from '@/shared/ui';
 
-export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
+export const CONTENT_TABLE_COLUMNS: ColumnDef<ContentFile>[] = [
   {
     id: 'select',
     header: (props) => (
@@ -35,6 +35,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
   {
     id: 'name',
     accessorKey: 'name',
+    accessorFn: (row) => row.name ?? row.filename,
     header: (props) => {
       const [{ t }] = useTranslation();
 
@@ -70,7 +71,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<InstanceFile>[] = [
             'text-muted-foreground': !!props.cell.row.original.name,
           })}
         >
-          {props.cell.row.original.fileName.replace('.disabled', '')}
+          {props.cell.row.original.filename}
         </span>
       </span>
     ),
