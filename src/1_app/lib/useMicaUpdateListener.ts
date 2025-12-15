@@ -18,13 +18,21 @@ export const useMicaUpdateListener = () => {
   const updateMicaDebounced = debounce(
     (rawTheme: string, colorMode: ColorMode) => {
       const window_effect = appSettings.data?.windowEffect;
-      if (!window_effect || window_effect === 'off') {
-        return;
-      }
 
-      updateAppSettings.mutateAsync({
-        windowEffect: isSystemTheme(rawTheme) ? 'mica' : `mica_${colorMode}`,
-      });
+      switch (window_effect) {
+        case 'mica':
+        case 'mica_dark':
+        case 'mica_light':
+          updateAppSettings.mutateAsync({
+            windowEffect: isSystemTheme(rawTheme)
+              ? 'mica'
+              : `mica_${colorMode}`,
+          });
+          break;
+
+        default:
+          break;
+      }
     },
     50,
   );

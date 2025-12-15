@@ -11,19 +11,18 @@ import type {
 } from '../../model';
 
 import {
-  getInstanceContentsRaw,
-  disableInstanceContentsRaw,
-  enableInstanceContentsRaw,
-  removeInstanceContentRaw,
-  removeInstanceContentsRaw,
+  listContentRaw,
+  disableContentRaw,
+  enableContentRaw,
+  removeContentsRaw,
   getContentProvidersRaw,
   getContentByProviderRaw,
   installContentRaw,
   getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
-} from '../rawApi';
+} from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
-import { CONTENT_QUERY_KEYS } from './content_query_keys';
+import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {
   return useQuery(() => ({
@@ -58,7 +57,7 @@ export const useMetadataFieldToCheckInstalled = (
 export const useInstanceContents = (id: Accessor<string>) => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
-    queryFn: () => getInstanceContentsRaw(id()),
+    queryFn: () => listContentRaw(id()),
     enabled: !!id(),
   }));
 };
@@ -68,7 +67,7 @@ export const useDisableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      disableInstanceContentsRaw(id, paths),
+      disableContentRaw(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -80,19 +79,7 @@ export const useEnableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      enableInstanceContentsRaw(id, paths),
-    onSuccess: (_, { id }) => {
-      invalidateInstanceContent(queryClient, id);
-    },
-  }));
-};
-
-export const useRemoveContent = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation(() => ({
-    mutationFn: ({ id, path }: { id: string; path: string }) =>
-      removeInstanceContentRaw(id, path),
+      enableContentRaw(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -104,11 +91,9 @@ export const useRemoveContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      removeInstanceContentsRaw(id, paths),
+      removeContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
-      });
+      invalidateInstanceContent(queryClient, id);
     },
   }));
 };

@@ -30,9 +30,9 @@ const buttonVariants = cva(
           'text-warning-foreground enabled:hover:bg-warning-foreground enabled:hover:text-secondary',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 py-1.5',
-        lg: 'h-10 rounded-md px-6 py-3',
+        default: 'h-9 px-4 py-2 text-sm leading-4',
+        sm: 'h-8 rounded-md px-3 py-1.5 text-sm leading-4',
+        lg: 'h-10 rounded-md px-6 py-2 text-base leading-5',
       },
     },
     defaultVariants: {
@@ -85,7 +85,7 @@ const Button = <T extends ValidComponent = 'button'>(
             buttonVariants({ variant: local.variant }),
           )}
         >
-          <IconMdiLoading class='animate-spin text-2xl' />
+          <IconMdiLoading class='animate-spin text-xl' />
         </div>
       </Show>
       {local.trailingIcon?.({})}

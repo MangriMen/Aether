@@ -28,11 +28,11 @@ const CreateInstanceButton: Component<CreateInstanceButtonProps> = (props) => {
         label={t('common.createInstance')}
         placement='right'
         as={IconButton}
+        size='lg'
         onClick={handleClick}
         icon={IconMdiPlus}
         {...others}
       />
-
       <local.createInstanceDialog
         open={isCreateInstanceDialogOpen()}
         onOpenChange={setIsCreateInstanceDialogOpen}

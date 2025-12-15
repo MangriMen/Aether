@@ -28,6 +28,18 @@ export const THEME_TO_MODE: Record<ThemeConfig, ConfigColorMode> = {
   system: 'system',
 };
 
+const THEME_TO_COLOR_MODE_MAP = THEMES.reduce<
+  Record<ThemeConfig, ConfigColorMode>
+>((acc, theme) => {
+  acc[theme.value] = theme.mode;
+  return acc;
+}, {});
+
+export const THEME_TO_COLOR_MODE: Record<ThemeConfig, ConfigColorMode> = {
+  ...THEME_TO_COLOR_MODE_MAP,
+  system: 'system',
+} as const;
+
 export const THEME_BY_MODE: Record<ColorMode, ThemeObject[]> = {
   light: THEMES.filter((t) => t.mode === 'light'),
   dark: THEMES.filter((t) => t.mode === 'dark'),

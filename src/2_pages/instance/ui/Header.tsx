@@ -28,7 +28,7 @@ export const Header: Component<HeaderProps> = (props) => {
       <Image src={local.instance.iconPath} />
       <InstanceHeaderInfo instance={local.instance} />
       <div class='ml-auto flex items-center gap-2'>
-        <InstanceActionButton class='w-20 p-2' instance={local.instance} />
+        <InstanceActionButton class='w-20' instance={local.instance} />
         <OpenFolderButton instancePath={local.instancePath} />
         <SettingsButton />
       </div>

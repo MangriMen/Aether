@@ -4,7 +4,7 @@ import { createMemo, type Accessor } from 'solid-js';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 
-import type { InstanceImportDto, EditInstance } from '../../model';
+import type { ImportInstance, EditInstance } from '../../model';
 
 import {
   createInstanceRaw,
@@ -14,9 +14,9 @@ import {
   removeInstanceRaw,
   editInstanceRaw,
   getInstanceDirRaw,
-} from '../rawApi';
+} from '../tauriApi';
 import { invalidateInstanceData } from './cache';
-import { INSTANCE_QUERY_KEYS } from './instance_query_keys';
+import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 
 const INSTANCE_RECONCILE = 'id';
 
@@ -39,7 +39,7 @@ export const useImportInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: (dto: InstanceImportDto) => importInstanceRaw(dto),
+    mutationFn: (dto: ImportInstance) => importInstanceRaw(dto),
     onError: (err) => {
       showError({
         title: t('instance.importError'),

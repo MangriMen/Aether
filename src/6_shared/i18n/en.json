@@ -20,6 +20,11 @@
       "storageFailure": "Storage failure"
     },
     "instanceError": {
+      "importerNotFound": "Not found importer {{importer_id}}",
+      "importFailed": "Failed to import instance with importer {{importer_id}}",
+      "packInfoNotFound": "Not found modpack info in instance",
+      "updaterNotFound": "Not found updater for modpack {{modpack_id}}",
+      "updateFailed": "Failed to update instance with modpack {{modpack_id}}",
       "credentialsError": {
         "credentialsNotFound": "Not found credentials with id: {{id}}",
         "noActiveCredentials": "No active credentials found",
@@ -59,7 +64,9 @@
     "type": "Type",
     "updateAvailable": "Update available",
     "username": "Username",
-    "version": "Version"
+    "version": "Version",
+    "update": "Update",
+    "repair": "Repair"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -126,7 +133,12 @@
     "settings": "Settings",
     "showFile": "Show file",
     "stop": "Stop",
-    "stopError": "Failed to stop instance"
+    "stopError": "Failed to stop instance",
+    "updateError": "Failed to update instance {{id}}",
+    "instanceSettings": {
+      "currentlyInstalled": "CurrentlyInstalled",
+      "modpack": "Modpack"
+    }
   },
   "instanceSettings": {
     "tab": {
@@ -153,6 +165,16 @@
         "invalidValue": "Resolution part must be valid number",
         "invalidRange": "Resolution part must be in range [1, 65535]"
       }
+    },
+    "hookSettings": {
+      "preLaunch": "Pre launch",
+      "preLaunchLabel": "Runs before the game starts",
+      "wrapper": "Wrapper",
+      "wrapperLabel": "Wrapper command for launching Minecraft",
+      "postExit": "Post exit",
+      "postExitLabel": "Runs after the game closes",
+      "enterCommandPlaceholder": "Enter command",
+      "title": "Hooks"
     }
   },
   "plugins": {
@@ -165,7 +187,12 @@
     "noPlugins": "No plugins found",
     "openPluginsFolder": "Open plugins folder",
     "saveSettings": "Save settings",
-    "title": "Plugins"
+    "title": "Plugins",
+    "syncError": "Sync error",
+    "openPluginsFolderError": "Failed to open plugins folder",
+    "importFromPackage": "Import",
+    "failedToRemove": "Failed to remove plugin {{name}}",
+    "failedToImport": "Failed to import plugin"
   },
   "progress": {
     "seeDetails": "See details",
@@ -174,13 +201,13 @@
   "settings": {
     "tab": {
       "appearance": "Appearance",
-      "defaultInstanceSettings": "Instance settings",
+      "defaultInstanceSettings": "Game settings",
       "update": "Update",
       "plugins": "Plugins",
       "experimental": "Experimental"
     },
-    "actionOnInstanceLaunch": "Launcher behavior on instance launch",
-    "actionOnInstanceLaunchDescription": "Select an action to perform when launching an instance.\n \"Do nothing\" will not hide the launcher on launch.\n \"Hide\"  hide launcher window.\n \"Close\" will close the launcher window but will not close application (saves memory).",
+    "actionOnInstanceLaunch": "Launcher behavior on game launch",
+    "actionOnInstanceLaunchDescription": "Select an action to perform when launching an game:\n\"Do nothing\" will not hide the launcher on launch.\n\"Hide\" hide launcher window.\n\"Close\" will close the launcher window but will not close application (saves memory).",
     "animations": "Animations",
     "animationsDescription": "Smooth transitions and effects in the interface\nCan be disabled for better performance",
     "checkForUpdates": "Check for updates",
@@ -216,5 +243,21 @@
   },
   "update": {
     "updateError": "Launcher update error"
+  },
+  "plugin": {
+    "description": "Description",
+    "settings": "Settings",
+    "capabilities": "Capabilities",
+    "importers": "Importers",
+    "incompatibleApiVersion": "The API version is incompatible. Using the plugin may cause a crash or data corruption",
+    "updaters": "Updaters"
+  },
+  "pluginSettings": {
+    "hostPathPlaceholder": "Enter host path",
+    "pluginPathPlaceholder": "Enter plugin path",
+    "hostUrlPlaceholder": "Enter host domain without protocol, e.g. \"example.com\"",
+    "host": "Host",
+    "plugin": "Plugin",
+    "failedToUpdateSettings": "Failed to update {{name}} plugin settings"
   }
 }

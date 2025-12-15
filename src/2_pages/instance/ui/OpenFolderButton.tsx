@@ -31,7 +31,7 @@ export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
     <CombinedTooltip
       label={t('instance.openFolder')}
       as={IconButton}
-      class='aspect-square p-2'
+      size='lg'
       variant='secondary'
       icon={IconMdiFolder}
       onClick={handleClick}
