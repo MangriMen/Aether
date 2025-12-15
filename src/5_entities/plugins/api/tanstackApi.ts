@@ -8,6 +8,11 @@ import { useTranslation } from '@/shared/model';
 
 import type { Plugin } from '../model';
 
+import {
+  invalidateImporters,
+  invalidatePluginData,
+  invalidatePluginsData,
+} from './cache';
 import { PLUGIN_QUERY_KEYS } from './queryKeys';
 import {
   disablePluginRaw,
@@ -76,7 +81,8 @@ export const useEnablePlugin = () => {
   return useMutation(() => ({
     mutationFn: enablePluginRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.LIST() });
+      invalidatePluginsData(queryClient);
+      invalidateImporters(queryClient);
     },
   }));
 };
@@ -87,7 +93,8 @@ export const useDisablePlugin = () => {
   return useMutation(() => ({
     mutationFn: disablePluginRaw,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_KEYS.LIST() });
+      invalidatePluginsData(queryClient);
+      invalidateImporters(queryClient);
     },
   }));
 };
@@ -160,6 +167,11 @@ export const useRemovePlugin = () => {
 
   return useMutation(() => ({
     mutationFn: removePluginRaw,
+    onSuccess: (_, id) => {
+      invalidatePluginsData(queryClient);
+      invalidatePluginData(queryClient, id);
+      invalidateImporters(queryClient);
+    },
     onError: (err, id) => {
       // TODO: rewrite caching logic to get query data for plugin
       // instead of finding in list
