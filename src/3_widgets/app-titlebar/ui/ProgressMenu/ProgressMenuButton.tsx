@@ -53,7 +53,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
         <ProgressBadge />
       </PopoverTrigger>
       <PopoverContent
-        class='bg-background/20 p-3'
+        class='bg-secondary-dark p-3'
         as={local.popoverComponent}
         payloads={payloadValues}
       />

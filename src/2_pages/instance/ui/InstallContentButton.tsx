@@ -76,7 +76,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
       <DropdownMenu>
         <DropdownMenuTrigger
           as={IconButton}
-          class='rounded-l-none p-0 text-xl'
+          class='rounded-l-none'
           icon={IconMdiChevronDown}
           disabled={local.disabled}
         />

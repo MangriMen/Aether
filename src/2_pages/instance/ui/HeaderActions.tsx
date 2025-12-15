@@ -3,7 +3,7 @@ import type { RowModel } from '@tanstack/solid-table';
 import IconMdiReload from '~icons/mdi/reload';
 import { Show, type Component } from 'solid-js';
 
-import type { Instance, InstanceFile } from '@/entities/instances';
+import type { Instance, ContentFile } from '@/entities/instances';
 
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
@@ -16,7 +16,7 @@ export type HeaderActionsProps = {
   someRowsSelected?: boolean;
   refetch?: () => void;
   isLoading?: boolean;
-  selectedRows: RowModel<InstanceFile>;
+  selectedRows: RowModel<ContentFile>;
 };
 
 export const HeaderActions: Component<HeaderActionsProps> = (props) => {

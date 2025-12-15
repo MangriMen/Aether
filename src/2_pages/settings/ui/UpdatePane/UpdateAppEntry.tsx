@@ -72,20 +72,12 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
         <Show
           when={isUpdateAvailable()}
           fallback={
-            <Button
-              class='h-auto max-h-none'
-              loading={update.isFetching}
-              onClick={checkUpdates}
-            >
+            <Button loading={update.isFetching} onClick={checkUpdates}>
               {t('settings.checkForUpdates')}
             </Button>
           }
         >
-          <Button
-            class='h-auto max-h-none'
-            loading={isUpdating()}
-            onClick={handleInstallUpdate}
-          >
+          <Button loading={isUpdating()} onClick={handleInstallUpdate}>
             {t('settings.installAndRestartApp')}
           </Button>
         </Show>

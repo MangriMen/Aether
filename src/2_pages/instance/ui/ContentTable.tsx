@@ -2,7 +2,7 @@ import type { Component } from 'solid-js';
 
 import { createEffect } from 'solid-js';
 
-import { type InstanceFile } from '@/entities/instances';
+import { type ContentFile } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { CombinedPagination, DataTable } from '@/shared/ui';
 
@@ -11,7 +11,7 @@ import { ContentActions } from './ContentActions';
 import { HeaderActions } from './HeaderActions';
 
 export type ContentTableProps = {
-  data: InstanceFile[];
+  data: ContentFile[];
   searchQuery?: string;
   isLoading?: boolean;
   refetch?: () => void;

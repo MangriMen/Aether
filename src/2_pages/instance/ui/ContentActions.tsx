@@ -7,9 +7,9 @@ import { splitProps } from 'solid-js';
 import {
   useDisableContents,
   useEnableContents,
-  useRemoveContent,
+  useRemoveContents,
   useRevealInExplorer,
-  type InstanceFile,
+  type ContentFile,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -28,7 +28,7 @@ import {
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;
   instancePath?: string;
-  content: InstanceFile;
+  content: ContentFile;
 };
 
 export const ContentActions: Component<ContentActionsProps> = (props) => {
@@ -44,30 +44,33 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
   const { mutateAsync: disableContents } = useDisableContents();
   const { mutateAsync: enableContents } = useEnableContents();
 
-  const { mutateAsync: removeInstanceContent } = useRemoveContent();
+  const { mutateAsync: removeInstanceContents } = useRemoveContents();
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
 
   const handleToggleDisable = () => {
     if (local.content.disabled) {
       enableContents({
         id: local.instanceId,
-        paths: [local.content.path],
+        paths: [local.content.contentPath],
       });
     } else {
       disableContents({
         id: local.instanceId,
-        paths: [local.content.path],
+        paths: [local.content.contentPath],
       });
     }
   };
 
   const handleRemove = () => {
-    removeInstanceContent({ id: local.instanceId, path: local.content.path });
+    removeInstanceContents({
+      id: local.instanceId,
+      paths: [local.content.contentPath],
+    });
   };
 
   const handleShowFile = () => {
     revealInExplorer({
-      path: `${local.instancePath}/${local.content.path}`,
+      path: `${local.instancePath}/${local.content.instanceRelativePath}`,
       exact: false,
     });
   };

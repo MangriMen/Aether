@@ -20,7 +20,7 @@ export const SettingsButton: Component<SettingsButtonProps> = (props) => {
     <CombinedTooltip
       label={t('instance.settings')}
       as={IconButton}
-      class='aspect-square p-2'
+      size='lg'
       variant='secondary'
       icon={IconMdiSettings}
       onClick={handleClick}

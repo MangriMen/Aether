@@ -4,7 +4,7 @@ import { splitProps } from 'solid-js';
 
 import { ThemeContext } from '@/shared/model';
 
-import { useCreateThemeContext } from '../lib';
+import { createThemeContext } from '../lib';
 
 export type ThemeProviderProps = {
   themeStateKey: string;
@@ -22,7 +22,7 @@ export const ThemeProvider: Component<ThemeProviderProps> = (props) => {
     'transparencyProperty',
   ]);
 
-  const context = useCreateThemeContext(
+  const context = createThemeContext(
     () => local.themeStateKey,
     () => local.themeAttribute,
     () => local.disableAnimationsAttribute,

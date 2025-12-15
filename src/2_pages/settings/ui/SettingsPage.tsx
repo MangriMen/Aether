@@ -51,6 +51,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
               <SettingsTabsTrigger
                 value={tab.value}
                 as={Button}
+                class='h-auto'
                 variant={null}
                 leadingIcon={tab.icon}
                 children={

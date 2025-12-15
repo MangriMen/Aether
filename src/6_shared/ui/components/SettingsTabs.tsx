@@ -24,7 +24,7 @@ export const SettingsTabsTrigger = <T extends ValidComponent = 'button'>(
 ) => (
   <TabsTrigger
     {...props}
-    class={cn('w-full justify-start gap-2 h-auto', props.class)}
+    class={cn('w-full justify-start gap-2', props.class)}
   />
 );
 

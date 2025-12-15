@@ -42,7 +42,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
       >
         <span class='flex items-center gap-2'>
           {t('account.signIn')}
-          <IconMdiLoginVariant class='text-2xl' />
+          <IconMdiLoginVariant />
         </span>
       </CombinedTooltip>
       <CombinedTooltip
@@ -54,7 +54,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
       >
         <span class='flex items-center gap-2'>
           {t('account.offline')}
-          <IconMdiCloudOffOutline class='text-2xl' />
+          <IconMdiCloudOffOutline />
         </span>
       </CombinedTooltip>
     </div>

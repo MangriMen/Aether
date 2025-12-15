@@ -1,6 +1,9 @@
-import type { PluginManifest } from './plugin_manifest';
+import type { PluginCapabilities } from './pluginCapabilities';
+import type { PluginManifest } from './pluginManifest';
+import type { PluginState } from './pluginState';
 
 export interface Plugin {
   manifest: PluginManifest;
-  enabled: boolean;
+  capabilities?: PluginCapabilities;
+  state: PluginState;
 }

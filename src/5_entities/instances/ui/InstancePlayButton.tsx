@@ -21,6 +21,7 @@ export const InstancePlayButton: Component<InstancePlayButtonProps> = (
       label={t('instance.launch')}
       as={IconButton}
       variant='success'
+      size='lg'
       icon={IconMdiPlay}
       {...props}
     />

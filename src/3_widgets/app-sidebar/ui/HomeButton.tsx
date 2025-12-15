@@ -22,6 +22,7 @@ const HomeButton: Component<HomeButtonProps> = (props) => {
       placement='right'
       as={IconButton}
       variant='ghost'
+      size='lg'
       icon={IconMdiHomeVariant}
       onClick={handleClick}
       {...props}
