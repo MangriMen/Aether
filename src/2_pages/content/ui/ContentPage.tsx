@@ -54,8 +54,8 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
   const transformedContentProviders = createMemo(() =>
     contentProviders.data
       ? Object.entries(contentProviders.data).map(([key, value]) => ({
-          name: key,
-          value,
+          name: value,
+          value: key,
         }))
       : [],
   );

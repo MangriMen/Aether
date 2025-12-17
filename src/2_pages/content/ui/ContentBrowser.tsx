@@ -200,7 +200,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         contentType={contentType()}
-        loading={!content.data?.items.length}
+        loading={content.isLoading}
       />
       <Switch>
         <Match when={content.isLoading}>

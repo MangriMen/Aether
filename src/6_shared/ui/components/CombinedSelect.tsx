@@ -80,7 +80,7 @@ export const CombinedSelect = <
       <Show
         when={local.children}
         fallback={
-          <SelectTrigger class='gap-1.5 whitespace-nowrap px-2'>
+          <SelectTrigger class='gap-1.5 whitespace-nowrap'>
             <SelectValue<Option>>
               {(state) => getSelectedValue(state)}
             </SelectValue>

@@ -81,7 +81,7 @@ export const ContentFilters: Component<ContentFiltersProps> = (props) => {
             <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
           )}
         >
-          <SelectTrigger class='gap-1.5 whitespace-nowrap px-2'>
+          <SelectTrigger class='gap-1.5 whitespace-nowrap'>
             <SelectValue<number>>
               {(state) => `${t('common.perPage')}: ${state.selectedOption()}`}
             </SelectValue>
