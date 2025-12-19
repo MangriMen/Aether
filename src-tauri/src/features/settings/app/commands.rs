@@ -1,5 +1,5 @@
 use aether_core::features::settings::{
-    DefaultInstanceSettings, EditDefaultInstanceSettings, Settings,
+    app::EditDefaultInstanceSettings, DefaultInstanceSettings, Settings,
 };
 use tauri::{AppHandle, State};
 
