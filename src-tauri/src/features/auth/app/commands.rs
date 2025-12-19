@@ -1,4 +1,4 @@
-use aether_core::features::auth::AccountOutput;
+use aether_core::features::auth::app::AccountOutput;
 use uuid::Uuid;
 
 use crate::FrontendResult;
