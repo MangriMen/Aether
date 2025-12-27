@@ -6,3 +6,7 @@ export interface Settings {
 
   enabledPlugins: Set<string>;
 }
+
+export interface EditSettings {
+  maxConcurrentDownloads: number;
+}

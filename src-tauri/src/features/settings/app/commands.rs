@@ -1,5 +1,6 @@
 use aether_core::features::settings::{
-    app::EditDefaultInstanceSettings, DefaultInstanceSettings, Settings,
+    app::{EditDefaultInstanceSettings, EditSettings},
+    DefaultInstanceSettings, Settings,
 };
 use tauri::{AppHandle, State};
 
@@ -31,8 +32,8 @@ async fn get() -> FrontendResult<Settings> {
 }
 
 #[tauri::command]
-async fn edit(edit_settings: Settings) -> FrontendResult<Settings> {
-    Ok(aether_core::api::settings::upsert(edit_settings).await?)
+async fn edit(edit_settings: EditSettings) -> FrontendResult<Settings> {
+    Ok(aether_core::api::settings::edit(edit_settings).await?)
 }
 
 #[tauri::command]
