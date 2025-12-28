@@ -22,6 +22,11 @@ Aether Launcher is a convenient launcher for managing your Minecraft installatio
 ### Installation
 To download the installer, visit the [releases page](https://github.com/MangriMen/aether/releases).
 
+### Disclaimer
+- **Aether** is intended for **educational and experimental purposes only**.
+- We **do not condone piracy** — users are encouraged to purchase a legitimate Minecraft license.
+- Respect all relevant licensing agreements and support Minecraft developers.
+
 ---
 
 ## Русский
@@ -41,3 +46,8 @@ Aether Launcher - это удобный лаунчер для управлени
 
 ### Установка
 Для загрузки установщика перейдите на [страницу релизов](https://github.com/MangriMen/aether/releases).
+
+### Отказ от ответственности
+- **Aether** предназначен **только для образовательных и экспериментальных целей**.
+- Мы **не одобряем пиратство** — пользователям рекомендуется приобретать легальную лицензию Minecraft.
+- Соблюдайте все соответствующие лицензионные соглашения и поддерживайте разработчиков Minecraft.
