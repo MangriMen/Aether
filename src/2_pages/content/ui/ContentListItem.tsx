@@ -58,6 +58,10 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       providerData: local.item.providerData,
     };
 
+    if (local.item.contentType !== 'mod') {
+      payload.loader = undefined;
+    }
+
     setIsInstalling(true);
     await installContent({ id: local.instanceId, payload });
     setIsInstalling(false);
