@@ -21,7 +21,7 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
       class={cn('flex flex-col text-muted-foreground', local.class)}
       {...others}
     >
-      <span class='text-2xl font-bold text-foreground'>
+      <span class='text-2xl font-bold text-foreground [word-break:break-word]'>
         {local.instance.name}
       </span>
       <InstanceGameVersion

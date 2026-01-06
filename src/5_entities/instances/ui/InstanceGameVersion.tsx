@@ -23,7 +23,10 @@ export const InstanceGameVersion: Component<InstanceGameVersionProps> = (
     <CombinedTooltip
       label={t('common.gameVersion')}
       as='span'
-      class={cn('capitalize inline-flex items-center gap-1', local.class)}
+      class={cn(
+        'capitalize inline-flex max-w-max items-center gap-1',
+        local.class,
+      )}
       {...others}
     >
       <IconMdiGamepadSquare />

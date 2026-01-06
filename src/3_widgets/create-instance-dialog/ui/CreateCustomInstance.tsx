@@ -173,7 +173,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             errorMessage={field.error}
             inputProps={{
               class: 'max-w-[36ch]',
-              maxLength: 32,
+              maxLength: 64,
               type: 'text',
               ...props,
             }}

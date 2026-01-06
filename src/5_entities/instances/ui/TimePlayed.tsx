@@ -5,6 +5,7 @@ import { createMemo, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { CombinedTooltip } from '@/shared/ui';
 
 import { formatTimePlayedHumanized } from '../lib';
 
@@ -45,12 +46,13 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
     >
       <IconMdiClock />
       <Show when={local.lastPlayed} fallback={t('instance.neverPlayed')}>
-        <span
+        <CombinedTooltip
+          as='span'
+          label={lastPlayedDateTitle()}
           class='mt-auto inline-flex items-center gap-1 capitalize'
-          title={lastPlayedDateTitle()}
         >
           {lastPlayedText()}
-        </span>
+        </CombinedTooltip>
       </Show>
     </span>
   );
