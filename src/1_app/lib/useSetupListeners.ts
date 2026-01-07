@@ -6,6 +6,7 @@ import { useInstanceEventsListener } from '@/entities/instances';
 import { usePluginEventListener } from '@/entities/plugins';
 
 import { useMicaUpdateListener } from './useMicaUpdateListener';
+import { useTransparencyUpdateListener } from './useTransparencyUpdateListener';
 
 export const useSetupListeners = () => {
   useInstanceEventsListener();
@@ -14,4 +15,5 @@ export const useSetupListeners = () => {
   usePluginEventListener();
 
   useMicaUpdateListener();
+  useTransparencyUpdateListener();
 };

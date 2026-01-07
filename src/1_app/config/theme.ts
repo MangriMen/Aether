@@ -15,6 +15,7 @@ export const DEFAULT_THEME_CONTEXT_VALUE: ThemeContextValue = {
   rawTheme: DEFAULT_THEME,
   lightTheme: DEFAULT_LIGHT_THEME,
   darkTheme: DEFAULT_DARK_THEME,
+  transparencyEnabled: false,
   transparency: 1,
   disableAnimations: false,
   prefersReducedMotion: false,

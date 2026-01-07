@@ -16,12 +16,12 @@ export const showPrefersReducedMotionInfo = (
     const [{ t }] = useTranslation();
 
     const number = showToast({
-      title: t('settings.animationsDisabled'),
+      title: <span>{t('settings.animationsDisabled')}</span>,
       description: (
         <div class='flex flex-col gap-2'>
           <span>{t('settings.animationsDisabledDescription')}</span>
-          <Button class='self-end' onClick={handleEnableAnimations}>
-            Включить
+          <Button class='self-start' onClick={handleEnableAnimations}>
+            {t('common.enable')}
           </Button>
         </div>
       ),
