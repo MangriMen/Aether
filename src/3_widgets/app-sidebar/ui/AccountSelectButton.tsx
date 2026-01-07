@@ -69,17 +69,19 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
   return (
     <>
       <Popover>
-        <PopoverTrigger>
-          <CombinedTooltip
-            label={t('common.account')}
-            placement='right'
-            as={IconButton}
-            variant='ghost'
-            size='lg'
-            icon={IconMdiAccount}
-            {...others}
-          />
-        </PopoverTrigger>
+        <PopoverTrigger
+          as={() => (
+            <CombinedTooltip
+              label={t('common.account')}
+              placement='right'
+              as={IconButton}
+              variant='ghost'
+              size='lg'
+              icon={IconMdiAccount}
+              {...others}
+            />
+          )}
+        />
         <PopoverContent class='w-max p-0'>
           <local.accountsMenu
             accounts={local.accounts}

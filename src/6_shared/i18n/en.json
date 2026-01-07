@@ -239,7 +239,9 @@
       "mica": "Mica",
       "off": "Off"
     },
-    "changeError": "Failed to change settings"
+    "changeError": "Failed to change settings",
+    "animationsDisabled": "Animations are disabled in the system",
+    "animationsDisabledDescription": "You can enable them in the app, but this may impact the smoothness of the interface and battery life"
   },
   "update": {
     "updateError": "Launcher update error"

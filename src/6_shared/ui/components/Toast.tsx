@@ -49,7 +49,7 @@ const Toaster = <T extends ValidComponent = 'ol'>(
       <ToastPrimitive.Region>
         <ToastPrimitive.List
           class={cn(
-            'fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse gap-2 p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]',
+            'fixed top-0 z-[100] flex max-h-screen w-[calc(100%-48px)] flex-col-reverse gap-2 p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col sm:max-w-[420px]',
             local.class,
           )}
           {...others}
