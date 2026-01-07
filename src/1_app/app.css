@@ -107,8 +107,8 @@
     --popover: 240 100% 99.6%;
     --popover-foreground: 240 10% 3.9%;
 
-    --border: 240 5.9% 80%;
-    --input: 240 5.9% 80%;
+    --border: 240 5.9% 80% / 0.4;
+    --input: 240 5.9% 80% / 0.4;
 
     --card: 240 100% 99.6%;
     --card-foreground: 240 10% 3.9%;
@@ -136,8 +136,8 @@
     --popover: 240 25% 5%;
     --popover-foreground: 0 0% 98%;
 
-    --border: 240 5% 16%;
-    --input: 240 5% 16%;
+    --border: 240 5% 16% / 0.4;
+    --input: 240 5% 16% / 0.4;
 
     --card: 240 25% 5%;
     --card-foreground: 0 0% 98%;
