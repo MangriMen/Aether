@@ -82,7 +82,12 @@
     "searchCount": "Search {{count}} contents",
     "shaderpack": "Shader",
     "shaders": "Shaders",
-    "title": "Content"
+    "title": "Content",
+    "failedToInstall": "Failed to install content",
+    "failedToImport": "Failed to import content",
+    "failedToRemove": "Failed to remove content",
+    "failedToEnable": "Failed to enable content",
+    "failedToDisable": "Failed to disable content"
   },
   "createInstance": {
     "custom": "Custom",
