@@ -15,7 +15,7 @@ export const ROUTES = {
 
   SETTINGS: (tab?: SettingsTab) =>
     tab ? `/settings/${encodeURIComponent(tab)}` : '/settings',
-};
+} as const;
 
 // Patterns for Route definition
 export const ROUTE_PATTERNS = {
@@ -25,4 +25,4 @@ export const ROUTE_PATTERNS = {
   INSTANCE_SETTINGS: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',
   SETTINGS: '/settings/:tab?',
-};
+} as const;

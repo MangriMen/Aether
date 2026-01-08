@@ -17,7 +17,7 @@ export const AppRouter: Component = () => {
       <Route path={ROUTE_PATTERNS.HOME} component={HomePage}>
         <Route />
         <Route
-          path={ROUTE_PATTERNS.INSTANCE_SETTINGS}
+          path={ROUTE_PATTERNS.INSTANCE_DIALOG}
           component={(props) => (
             <InstanceSettingsDialog instanceId={props.params.id} />
           )}

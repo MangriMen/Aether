@@ -62,7 +62,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   };
 
   const handleOpenSettings = () => {
-    navigate(ROUTES.INSTANCE_SETTINGS(props.instance.id));
+    navigate(ROUTES.INSTANCE_DIALOG(props.instance.id));
   };
 
   const goToInstancePage = () => {
