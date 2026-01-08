@@ -6,6 +6,7 @@ import type { Instance } from '@/entities/instances';
 
 import { InstanceGameVersion, TimePlayed } from '@/entities/instances';
 import { cn } from '@/shared/lib';
+import { CombinedTooltip } from '@/shared/ui';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -21,9 +22,13 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
       class={cn('flex flex-col text-muted-foreground', local.class)}
       {...others}
     >
-      <span class='text-2xl font-bold text-foreground [word-break:break-word]'>
+      <CombinedTooltip
+        label={local.instance.name}
+        as='span'
+        class='line-clamp-2 text-2xl font-bold text-foreground [word-break:break-word]'
+      >
         {local.instance.name}
-      </span>
+      </CombinedTooltip>
       <InstanceGameVersion
         loader={local.instance.loader}
         gameVersion={local.instance.gameVersion}

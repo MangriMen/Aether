@@ -29,7 +29,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
     <div class={cn('flex gap-2 items-center', local.class)} {...others}>
       <Image class='h-14 w-max' />
       <div class='flex flex-col justify-between text-muted-foreground'>
-        <span class='text-lg font-bold text-foreground'>
+        <span class='line-clamp-2 text-lg font-bold text-foreground'>
           {local.instance.name}
         </span>
         <InstanceGameVersion
@@ -39,7 +39,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
         />
       </div>
       <Button
-        class='ml-auto'
+        class='ml-auto min-w-max'
         leadingIcon={IconMdiArrowLeft}
         variant='secondary'
         onClick={handleBackToInstance}
