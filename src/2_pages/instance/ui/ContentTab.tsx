@@ -15,6 +15,7 @@ import {
   type Instance,
 } from '@/entities/instances';
 import { ModLoader } from '@/entities/minecraft';
+import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
@@ -54,7 +55,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
       instance: local.instance.id,
     });
 
-    return navigate(`/content?${searchParams.toString()}`);
+    return navigate(`${ROUTES.CONTENT}?${searchParams.toString()}`);
   };
 
   const availableContent = createMemo(() => {

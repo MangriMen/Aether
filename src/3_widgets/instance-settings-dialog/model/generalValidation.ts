@@ -1,9 +1,10 @@
 import z from 'zod';
 
-export const NameSchema = z.string();
-// .trim()
-// .min(1, 'generalSettingsError.name.minLength')
-// .max(90, 'generalSettingsError.name.maxLength')
+export const NameSchema = z
+  .string()
+  .trim()
+  .min(1, 'generalSettingsError.name.minLength')
+  .max(64, 'generalSettingsError.name.maxLength');
 // .regex(/^[a-zA-Z0-9]+$/, 'generalSettingsError.name.invalidSymbol')
 
 export const GeneralSettingsSchema = z.object({

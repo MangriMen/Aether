@@ -5,7 +5,7 @@ import IconMdiAccount from '~icons/mdi/account';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { Account, AccountType } from '@/entities/accounts';
-import type { IconButtonProps } from '@/shared/ui';
+import type { CombinedTooltipProps, IconButtonProps } from '@/shared/ui';
 
 import { useChangeAccount, useLogout } from '@/entities/accounts';
 import { useTranslation } from '@/shared/model';
@@ -69,17 +69,20 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
   return (
     <>
       <Popover>
-        <PopoverTrigger>
-          <CombinedTooltip
-            label={t('common.account')}
-            placement='right'
-            as={IconButton}
-            variant='ghost'
-            size='lg'
-            icon={IconMdiAccount}
-            {...others}
-          />
-        </PopoverTrigger>
+        <PopoverTrigger
+          as={(props: CombinedTooltipProps) => (
+            <CombinedTooltip
+              label={t('common.account')}
+              placement='right'
+              as={IconButton}
+              variant='ghost'
+              size='lg'
+              icon={IconMdiAccount}
+              {...others}
+              {...props}
+            />
+          )}
+        />
         <PopoverContent class='w-max p-0'>
           <local.accountsMenu
             accounts={local.accounts}

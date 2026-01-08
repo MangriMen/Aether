@@ -46,7 +46,7 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
     >
       <PluginsList
         class={cn(
-          'shrink-0 grow min-w-[var(--min-list-width)] transition-[max-width] duration-200 max-w-full',
+          'shrink-0 grow min-w-[var(--min-list-width)] transition-[max-width] duration-200 max-w-full p-px',
           {
             'max-w-[var(--min-list-width)]': hasSelectedPlugin(),
           },

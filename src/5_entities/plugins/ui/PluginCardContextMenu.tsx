@@ -41,7 +41,7 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
         onKeyDown={stopPropagation}
       >
         <ContextMenuItem
-          class='w-full hover:!bg-success hover:text-success-foreground'
+          class='w-full hover:!bg-primary hover:text-primary-foreground'
           onClick={local.onToggleEnabled}
           disabled={local.isLoading}
         >

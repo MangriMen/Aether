@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss/types/config';
 
+import typographyPlugin from '@tailwindcss/typography';
 import resolveConfig from 'tailwindcss/resolveConfig';
 
 //@ts-expect-error cannot find a declaration
@@ -60,6 +61,8 @@ export const tailwindConfig: Config = {
       },
     },
   },
+
+  plugins: [typographyPlugin],
 };
 
 export const resolvedTailwindConfig = resolveConfig(tailwindConfig);

@@ -30,24 +30,13 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
 
   return (
     <div
-      class={cn(
-        'flex w-[120px] min-w-[120px] h-full text-muted-foreground',
-        local.class,
-      )}
+      class={cn('flex h-full text-muted-foreground', local.class)}
       {...others}
     >
-      <TitleBarButton
-        class='min-w-max'
-        title='Minimize'
-        onClick={handleMinimize}
-      >
+      <TitleBarButton title='Minimize' onClick={handleMinimize}>
         <IconMdiMinimize class={iconClass} />
       </TitleBarButton>
-      <TitleBarButton
-        class='min-w-max'
-        title='Maximize'
-        onClick={toggleMaximize}
-      >
+      <TitleBarButton title='Maximize' onClick={toggleMaximize}>
         <Show
           when={isMaximized()}
           fallback={<IconMdiSquareRoundedOutline class={iconClass} />}
@@ -56,7 +45,7 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
         </Show>
       </TitleBarButton>
       <TitleBarButton
-        class='min-w-max enabled:hover:bg-destructive/40'
+        class='enabled:hover:bg-destructive/75'
         title='Close'
         onClick={handleClose}
       >

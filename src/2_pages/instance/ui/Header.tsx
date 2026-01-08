@@ -24,13 +24,15 @@ export const Header: Component<HeaderProps> = (props) => {
   ]);
 
   return (
-    <div class='flex gap-3' {...others}>
-      <Image src={local.instance.iconPath} />
-      <InstanceHeaderInfo instance={local.instance} />
+    <div class='flex gap-6' {...others}>
+      <div class='flex gap-3 overflow-hidden'>
+        <Image class='min-w-max' src={local.instance.iconPath} />
+        <InstanceHeaderInfo class='w-full' instance={local.instance} />
+      </div>
       <div class='ml-auto flex items-center gap-2'>
         <InstanceActionButton class='w-20' instance={local.instance} />
         <OpenFolderButton instancePath={local.instancePath} />
-        <SettingsButton />
+        <SettingsButton instanceId={local.instance.id} />
       </div>
     </div>
   );
