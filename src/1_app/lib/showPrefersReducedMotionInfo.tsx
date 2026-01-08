@@ -1,5 +1,6 @@
 import { createRoot } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const showPrefersReducedMotionInfo = (
@@ -12,16 +13,15 @@ export const showPrefersReducedMotionInfo = (
       dispose();
     };
 
+    const [{ t }] = useTranslation();
+
     const number = showToast({
-      title: 'В системе отключены анимации',
+      title: <span>{t('settings.animationsDisabled')}</span>,
       description: (
         <div class='flex flex-col gap-2'>
-          <span>
-            Вы можете включить их в приложении, но это может повлиять на
-            плавность интерфейса и заряд батареи
-          </span>
-          <Button class='self-end' onClick={handleEnableAnimations}>
-            Включить
+          <span>{t('settings.animationsDisabledDescription')}</span>
+          <Button class='self-start' onClick={handleEnableAnimations}>
+            {t('common.enable')}
           </Button>
         </div>
       ),

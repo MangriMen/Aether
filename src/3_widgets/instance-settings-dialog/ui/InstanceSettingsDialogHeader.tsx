@@ -21,8 +21,10 @@ const InstanceSettingsDialogHeader: Component<
     <DialogHeader {...others}>
       <DialogTitle class='flex items-center gap-1 text-muted-foreground'>
         <div class='flex items-center gap-2'>
-          <Image class='size-8' />
-          <span>{local.instance.name}</span>
+          <Image class='size-8 min-w-max' />
+          <span class='line-clamp-1 leading-8 [word-break:break-word]'>
+            {local.instance.name}
+          </span>
         </div>
         <IconMdiChevronRight />
         <span class='text-foreground'>{t('instance.settings')}</span>

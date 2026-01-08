@@ -3,6 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import IconMdiPackage from '~icons/mdi/package';
 
+import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
@@ -12,7 +13,7 @@ export const ContentButton: Component<ContentButtonProps> = (props) => {
   const navigate = useNavigate();
   const [{ t }] = useTranslation();
 
-  const handleClick = () => navigate('/content');
+  const handleClick = () => navigate(ROUTES.CONTENT);
 
   return (
     <CombinedTooltip

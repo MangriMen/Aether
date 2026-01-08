@@ -5,6 +5,7 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import type { Instance } from '@/entities/instances';
 
 import { InstanceGameVersion } from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Image } from '@/shared/ui';
@@ -21,14 +22,14 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const handleBackToInstance = () => {
-    navigate(`/instances/${encodeURIComponent(local.instance.id)}`);
+    navigate(ROUTES.INSTANCE(local.instance.id));
   };
 
   return (
     <div class={cn('flex gap-2 items-center', local.class)} {...others}>
       <Image class='h-14 w-max' />
       <div class='flex flex-col justify-between text-muted-foreground'>
-        <span class='text-lg font-bold text-foreground'>
+        <span class='line-clamp-2 text-lg font-bold text-foreground'>
           {local.instance.name}
         </span>
         <InstanceGameVersion
@@ -38,7 +39,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
         />
       </div>
       <Button
-        class='ml-auto'
+        class='ml-auto min-w-max'
         leadingIcon={IconMdiArrowLeft}
         variant='secondary'
         onClick={handleBackToInstance}

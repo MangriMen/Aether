@@ -13,6 +13,7 @@ import {
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
 import { preventAll } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
@@ -61,11 +62,11 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   };
 
   const handleOpenSettings = () => {
-    navigate(`/instance-settings/${encodeURIComponent(props.instance.id)}`);
+    navigate(ROUTES.INSTANCE_DIALOG(props.instance.id));
   };
 
   const goToInstancePage = () => {
-    navigate(`/instances/${encodeURIComponent(props.instance.id)}`);
+    navigate(ROUTES.INSTANCE(props.instance.id));
   };
 
   const context = useRunningInstancesContext();
@@ -96,6 +97,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         onOpenChange={setShowRemoveModal}
         header={t('instance.removeTitle', { name: props.instance.name })}
         description={t('instance.removeDescription')}
+        buttonOkVariant='destructive'
         buttonOkText={t('common.remove')}
         onOk={handleRemove}
         onCancel={closeRemoveModal}

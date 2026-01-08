@@ -54,7 +54,7 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
       {/* // TODO: find a way to make this work
       //@ts-expect-error no declaration */}
       <TooltipTrigger {...(others as TooltipTriggerProps<T>)} />
-      <TooltipContent>{local.label}</TooltipContent>
+      <TooltipContent class='max-w-[90vw]'>{local.label}</TooltipContent>
     </Tooltip>
   );
 };

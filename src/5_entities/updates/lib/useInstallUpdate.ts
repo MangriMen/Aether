@@ -1,90 +1,48 @@
-import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
+import type { Update } from '@tauri-apps/plugin-updater';
 
-import { getVersion } from '@tauri-apps/api/app';
-import { emit } from '@tauri-apps/api/event';
-import { createSignal } from 'solid-js';
+import { relaunch } from '@tauri-apps/plugin-process';
+import { createMemo } from 'solid-js';
 
-import { LoadingBarTypeEnum, type LoadingPayload } from '@/entities/events';
+import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
 
 import { checkIsUpdateAvailable } from '../model';
+import { useUpdateStore } from '../model/updateStore';
+import { installUpdate } from './installUpdate';
 
 export const useInstallUpdate = () => {
-  const [isUpdating, setIsUpdating] = createSignal(false);
+  const [store, setStore] = useUpdateStore();
 
-  let downloaded: number = 0;
-  let contentLength: number | undefined = 0;
+  const [{ t }] = useTranslation();
 
-  const resetCounters = () => {
-    downloaded = 0;
-    contentLength = 0;
-  };
-
-  const handleUpdateDownload = async (event: DownloadEvent, update: Update) => {
-    switch (event.event) {
-      case 'Started': {
-        contentLength = event.data.contentLength;
-
-        emit('loading', {
-          event: {
-            type: LoadingBarTypeEnum.LauncherUpdate,
-            version: update?.version ?? '',
-            current_version: await getVersion(),
-          },
-          loaderUuid: '',
-          fraction: 0,
-          message: 'launcherUpdate.started',
-        } satisfies LoadingPayload);
-        break;
-      }
-      case 'Progress': {
-        downloaded += event.data.chunkLength;
-        if (contentLength) {
-          emit('loading', {
-            event: {
-              type: LoadingBarTypeEnum.LauncherUpdate,
-              version: update?.version ?? '',
-              current_version: await getVersion(),
-            },
-            loaderUuid: '',
-            fraction: downloaded / contentLength,
-            message: 'launcherUpdate.progress',
-          } satisfies LoadingPayload);
-        }
-        break;
-      }
-      case 'Finished': {
-        emit('loading', {
-          event: {
-            type: LoadingBarTypeEnum.LauncherUpdate,
-            version: update?.version ?? '',
-            current_version: await getVersion(),
-          },
-          loaderUuid: '',
-          fraction: null,
-          message: 'launcherUpdate.finished',
-        } satisfies LoadingPayload);
-        break;
-      }
-    }
-  };
-
-  const installUpdate = async (update: Update | null) => {
+  const updateApp = async (update: Update | null) => {
     if (!checkIsUpdateAvailable(update)) {
       return;
     }
 
-    resetCounters();
-
-    setIsUpdating(true);
+    setStore('isUpdating', true);
     try {
-      await update?.downloadAndInstall((event) =>
-        handleUpdateDownload(event, update),
-      );
+      await installUpdate(update);
+    } catch (e) {
+      showToast({
+        title: t('update.updateError'),
+        variant: 'destructive',
+      });
+      throw e;
+    }
+    setStore('isUpdating', false);
+  };
+
+  const updateAndRestart = async (update: Update | null) => {
+    try {
+      await updateApp(update);
+      await relaunch();
     } catch {
       /* empty */
     }
-    setIsUpdating(false);
   };
 
-  return { isUpdating, installUpdate };
+  const isUpdating = createMemo(() => store.isUpdating);
+
+  return { isUpdating, updateAndRestart };
 };

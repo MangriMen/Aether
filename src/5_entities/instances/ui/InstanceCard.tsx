@@ -30,11 +30,11 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     <div
       class={cn(
         local.class,
-        'group flex flex-col cursor-pointer gap-2 border rounded-md p-2 size-max overflow-hidden relative active:animate-bump-out',
+        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-secondary/40 hover:bg-secondary/80 active:bg-secondary/20 drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
       )}
       {...others}
     >
-      <Image src={local.instance.iconPath} />
+      <Image class='mx-auto min-w-max' src={local.instance.iconPath} />
       <InstanceTitle
         name={local.instance.name}
         loader={local.instance.loader}
@@ -59,7 +59,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         </Match>
       </Switch>
       <local.instanceActionButton
-        class='absolute bottom-1/3 left-1/2 p-0 pr-0.5 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
+        class='absolute right-4 top-[72px] p-0 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
         instance={local.instance}
       />
     </div>

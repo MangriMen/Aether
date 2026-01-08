@@ -28,13 +28,13 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
 
   return (
     <ColorModeProvider {...props}>
-      <ThemeProvider
-        themeStateKey={THEME_STATE_LS_KEY}
-        themeAttribute={THEME_ATTRIBUTE}
-        disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
-        transparencyProperty={TRANSPARENCY_PROPERTY}
-      >
-        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+      <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+        <ThemeProvider
+          themeStateKey={THEME_STATE_LS_KEY}
+          themeAttribute={THEME_ATTRIBUTE}
+          disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
+          transparencyProperty={TRANSPARENCY_PROPERTY}
+        >
           <AppInitializeGuard>
             <QueryClientProvider client={queryClient}>
               <AppGlobalsProvider>
@@ -48,8 +48,8 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
               </AppGlobalsProvider>
             </QueryClientProvider>
           </AppInitializeGuard>
-        </I18nProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </I18nProvider>
     </ColorModeProvider>
   );
 };
