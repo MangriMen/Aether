@@ -221,6 +221,10 @@
   .animate-tab-content:not([data-selected]) {
     @apply -translate-x-full;
   }
+
+  .p-page {
+    @apply p-4 pt-0;
+  }
 }
 
 @media (max-width: 640px) {

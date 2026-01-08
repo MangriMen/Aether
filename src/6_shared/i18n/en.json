@@ -62,7 +62,6 @@
     "revealInExplorerError": "Failed to reveal in explorer",
     "search": "Search",
     "type": "Type",
-    "updateAvailable": "Update available",
     "username": "Username",
     "version": "Version",
     "update": "Update",
@@ -219,7 +218,7 @@
     "dark": "Dark",
     "doNothing": "Do nothing",
     "hide": "Hide",
-    "installAndRestartApp": "Install and restart app",
+    "installAndRestart": "Update and restart",
     "language": "Language",
     "languageDescription": "Select your language",
     "light": "Light",
@@ -241,10 +240,20 @@
     },
     "changeError": "Failed to change settings",
     "animationsDisabled": "Animations are disabled in the system",
-    "animationsDisabledDescription": "You can enable them in the app, but this may impact the smoothness of the interface and battery life"
+    "animationsDisabledDescription": "You can enable them in the app, but this may impact the smoothness of the interface and battery life",
+    "updateAvailable": "New version is available!",
+    "goToUpdatePage": "Go update page",
+    "updateIsReadyToInstall": "is available to install!",
+    "updateNotificationStyle": "Update notification style",
+    "whatsNew": "What's new",
+    "update": "Update"
   },
   "update": {
-    "updateError": "Launcher update error"
+    "updateError": "Launcher update error",
+    "banner": "Banner",
+    "toast": "Toast",
+    "restartWarningTitle": "Update and restart",
+    "restartWarningDescription": "New version will be downloaded and applied. The application will restart immediately after the download finishes."
   },
   "plugin": {
     "description": "Description",

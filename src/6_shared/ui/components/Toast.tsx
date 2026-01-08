@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib';
 
 // eslint-disable-next-line tailwindcss/no-custom-classname
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--kb-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--kb-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[opened]:animate-in data-[closed]:animate-out data-[swipe=end]:animate-out data-[closed]:fade-out-80 data-[closed]:slide-out-to-right-full data-[opened]:slide-in-from-top-full data-[opened]:sm:slide-in-from-bottom-full',
+  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--kb-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--kb-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[opened]:animate-in data-[closed]:animate-out data-[swipe=end]:animate-out data-[closed]:fade-out-80 data-[closed]:slide-out-to-right-full data-[opened]:slide-in-from-top-full data-[opened]:sm:slide-in-from-bottom-full',
   {
     variants: {
       variant: {
@@ -26,6 +26,7 @@ const toastVariants = cva(
         warningFilled:
           'warning border-warning-foreground bg-warning-foreground text-warning',
         error: 'error border-error-foreground bg-error text-error-foreground',
+        specific: 'border bg-primary text-primary-foreground',
       },
     },
     defaultVariants: {
@@ -147,6 +148,7 @@ interface ShowToastParams {
   description?: JSX.Element;
   variant?: ToastVariant;
   duration?: number;
+  persistent?: boolean;
 }
 
 function showToast(props: ShowToastParams) {
@@ -155,6 +157,7 @@ function showToast(props: ShowToastParams) {
       toastId={data.toastId}
       variant={props.variant}
       duration={props.duration}
+      persistent={props.persistent}
     >
       <div class='grid w-full gap-1'>
         {props.title && <ToastTitle>{props.title}</ToastTitle>}

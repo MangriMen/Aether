@@ -13,7 +13,10 @@ export const TitleBarButton: Component<TitleBarButtonProps> = (props) => {
 
   return (
     <IconButton
-      class={cn('size-10 hover:text-primary-foreground', local.class)}
+      class={cn(
+        'min-w-max w-[40px] h-[30px] hover:text-primary-foreground',
+        local.class,
+      )}
       variant='ghost'
       {...others}
     />

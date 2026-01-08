@@ -13,7 +13,7 @@ export const AppLayout: Component<AppLayoutProps> = (props) => {
   return (
     <>
       <AppTitleBar />
-      <div class='mt-[40px] flex size-full flex-col overflow-hidden'>
+      <div class='mt-[30px] flex size-full flex-col overflow-hidden'>
         <ErrorBoundary
           fallback={(err, reset) => {
             logError(err);

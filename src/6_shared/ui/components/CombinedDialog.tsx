@@ -5,6 +5,7 @@ import { mergeProps, Show, splitProps } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
 
+import type { ButtonProps } from './Button';
 import type { DialogContentProps } from './Dialog';
 
 import { Button } from './Button';
@@ -22,6 +23,7 @@ export type CombinedDialogProps = DialogRootProps &
     description?: string;
     buttonOkText?: string;
     buttonCancelText?: string;
+    buttonOkVariant?: ButtonProps['variant'];
     onOk?: ComponentProps<'button'>['onClick'];
     onCancel?: ComponentProps<'button'>['onClick'];
   };
@@ -41,6 +43,7 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
     'variant',
     'header',
     'description',
+    'buttonOkVariant',
     'buttonOkText',
     'buttonCancelText',
     'onOk',
@@ -59,7 +62,7 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
           </DialogDescription>
         </Show>
         <DialogFooter>
-          <Button variant='destructive' onClick={local.onOk}>
+          <Button variant={local.buttonOkVariant} onClick={local.onOk}>
             {local.buttonOkText}
           </Button>
           <Button variant='secondary' onClick={local.onCancel}>

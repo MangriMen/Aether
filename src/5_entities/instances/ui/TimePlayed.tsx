@@ -3,7 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiClock from '~icons/mdi/clock';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn, dayjs, formatTime } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip } from '@/shared/ui';
 
@@ -21,23 +21,23 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
     'class',
   ]);
 
-  const [{ locale, t }] = useTranslation();
+  const [{ t }] = useTranslation();
 
   const lastPlayedDate = createMemo(() => {
-    return local.lastPlayed
-      ? new Date(Date.parse(local.lastPlayed))
-      : undefined;
+    return local.lastPlayed ? dayjs(local.lastPlayed) : undefined;
   });
 
   const lastPlayedText = createMemo(() =>
     formatTimePlayedHumanized(local.timePlayed),
   );
 
-  const lastPlayedDateTitle = createMemo(() =>
-    t('instance.lastPlayed', {
-      date: lastPlayedDate()?.toLocaleString(locale()) ?? '',
-    }),
-  );
+  const lastPlayedDateTitle = createMemo(() => {
+    const date = lastPlayedDate();
+
+    return t('instance.lastPlayed', {
+      date: date ? formatTime(date) : '',
+    });
+  });
 
   return (
     <span

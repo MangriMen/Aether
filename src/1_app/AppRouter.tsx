@@ -32,7 +32,9 @@ export const AppRouter: Component = () => {
           )}
         />
       </Route>
-      <Route path='/settings' component={SettingsPage} />
+      <Route path='/settings/:tab?' component={SettingsPage}>
+        <Route />
+      </Route>
     </Router>
   );
 };

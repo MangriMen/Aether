@@ -31,7 +31,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
     <CombinedTooltip
       label={
         isUpdateAvailable()
-          ? `${t('settings.title')}${t('common.updateAvailable')}`
+          ? `${t('settings.title')} (${t('settings.updateAvailable')})`
           : `${t('settings.title')}`
       }
       placement='right'
