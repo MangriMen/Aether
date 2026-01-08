@@ -63,9 +63,15 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     }
 
     setIsInstalling(true);
-    await installContent({ id: local.instanceId, payload });
+
+    try {
+      await installContent({ id: local.instanceId, payload });
+      local.onInstalled?.(local.item.providerData);
+    } catch {
+      /* empty */
+    }
+
     setIsInstalling(false);
-    local.onInstalled?.(local.item.providerData);
   };
 
   const installButtonText = createMemo(() => {

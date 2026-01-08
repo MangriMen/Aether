@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { type Accessor } from 'solid-js';
 
+import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
@@ -64,6 +65,7 @@ export const useInstanceContents = (id: Accessor<string>) => {
 
 export const useDisableContents = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
@@ -71,11 +73,19 @@ export const useDisableContents = () => {
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToDisable'),
+        err,
+        t,
+      });
+    },
   }));
 };
 
 export const useEnableContents = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
@@ -83,17 +93,32 @@ export const useEnableContents = () => {
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToEnable'),
+        err,
+        t,
+      });
+    },
   }));
 };
 
 export const useRemoveContents = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
       removeContentsRaw(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToRemove'),
+        err,
+        t,
+      });
     },
   }));
 };
@@ -118,6 +143,13 @@ export const useInstallContent = () => {
           contentType: t(`content.${payload.contentType}`) || '',
         }),
         variant: 'success',
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToInstall'),
+        err,
+        t,
       });
     },
   }));
@@ -145,6 +177,13 @@ export const useImportContents = () => {
           contentType: t(`content.${type}`) || '',
         }),
         variant: 'success',
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToImport'),
+        err,
+        t,
       });
     },
   }));

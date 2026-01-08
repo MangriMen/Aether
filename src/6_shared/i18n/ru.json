@@ -82,7 +82,12 @@
     "searchCount": "Искать контент {{count}}",
     "shaderpack": "Шейдер",
     "shaders": "Шейдеры",
-    "title": "Контент"
+    "title": "Контент",
+    "failedToInstall": "Не удалось установить контент",
+    "failedToImport": "Не удалось импортировать контент",
+    "failedToRemove": "Не удалось удалить контент",
+    "failedToDisable": "Не удалось отключить контент",
+    "failedToEnable": "Не удалось включить контент"
   },
   "createInstance": {
     "custom": "Пользовательский",
