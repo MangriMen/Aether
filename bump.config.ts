@@ -7,12 +7,12 @@ export default defineConfig({
   all: true,
   execute: async (ctx) => {
     await tauri({ lock: true })(ctx);
-    syncCargoLock();
+    await syncCargoLock();
   },
 });
 
-const syncCargoLock = () => {
-  execa('cargo', ['update', '--workspace', '--offline'], {
+const syncCargoLock = async () => {
+  await execa('cargo', ['update', '--workspace', '--offline'], {
     cwd: './src-tauri',
     stdio: 'inherit',
   });
