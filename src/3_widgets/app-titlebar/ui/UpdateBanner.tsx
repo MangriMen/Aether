@@ -15,9 +15,9 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTooltip } from '@/shared/ui';
 
-export type UpdateBadgeProps = ComponentProps<'button'>;
+export type UpdateBannerProps = ComponentProps<'button'>;
 
-export const UpdateBadge: Component<UpdateBadgeProps> = (props) => {
+export const UpdateBanner: Component<UpdateBannerProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
   const [{ t }] = useTranslation();
@@ -39,10 +39,7 @@ export const UpdateBadge: Component<UpdateBadgeProps> = (props) => {
       <CombinedTooltip
         label={t('settings.goToUpdatePage')}
         as={Button}
-        class={cn(
-          'rounded-t-none bg-primary/40 border-primary border',
-          local.class,
-        )}
+        class={cn('mt-auto bg-primary/40 border-primary border', local.class)}
         onClick={handleGoToUpdate}
         size='sm'
         {...others}

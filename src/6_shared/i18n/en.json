@@ -249,11 +249,12 @@
     "update": "Update"
   },
   "update": {
-    "updateError": "Launcher update error",
+    "updateError": "Failed to install update",
     "banner": "Banner",
     "toast": "Toast",
     "restartWarningTitle": "Update and restart",
-    "restartWarningDescription": "New version will be downloaded and applied. The application will restart immediately after the download finishes."
+    "restartWarningDescription": "New version will be downloaded and applied. The application will restart immediately after the download finishes.",
+    "fetchError": "Failed to check updates"
   },
   "plugin": {
     "description": "Description",

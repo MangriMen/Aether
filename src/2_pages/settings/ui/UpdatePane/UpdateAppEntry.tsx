@@ -1,22 +1,21 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { relaunch } from '@tauri-apps/plugin-process';
-import { createMemo, Show } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
-import { dayjs, formatTime } from '@/shared/lib';
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import {
-  Button,
-  MarkdownRenderer,
-  SettingsEntry,
-  showToast,
-} from '@/shared/ui';
+import { Button, SettingsEntry, showToast } from '@/shared/ui';
+
+import { UpdateDescription } from './UpdateDescription';
+import { WhatsNew } from './WhatsNew';
 
 export type UpdateAppEntryProps = ComponentProps<'div'>;
 
 export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
+  const [local, others] = splitProps(props, ['class']);
+
   const [{ t }] = useTranslation();
 
   const update = useCheckUpdate();
@@ -25,89 +24,88 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     update.data ? checkIsUpdateAvailable(update.data) : false,
   );
 
-  const checkUpdates = () => {
-    update.refetch();
+  const handleCheckUpdates = async () => {
+    const result = await update.refetch();
+
+    if (result.isError) {
+      showToast({
+        title: t('update.fetchError'),
+        variant: 'destructive',
+      });
+    }
   };
 
-  const { isUpdating, updateAndRestart: installUpdate } = useInstallUpdate();
+  const { isUpdating, updateAndRestart } = useInstallUpdate();
 
   const handleInstallUpdate = async () => {
     if (!update.data) {
       return;
     }
 
-    try {
-      await installUpdate(update.data);
-
-      await relaunch();
-    } catch {
-      showToast({
-        title: t('update.updateError'),
-        variant: 'destructive',
-      });
-    }
+    await updateAndRestart(update.data);
   };
-
-  const date = createMemo(() =>
-    update.data?.date ? formatTime(dayjs(update.data.date)) : '',
-  );
-
-  const markdownText =
-    '### Bug fixes\n* Fix shaders/resource packs in modded instances\n\nSee the assets to download this version and install.';
 
   return (
     <div>
       <SettingsEntry
-        class='items-start'
+        class={cn('items-start', local.class)}
         title={t('settings.checkForUpdates')}
         description={
-          <Show
-            when={isUpdateAvailable()}
-            fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
-          >
-            <div class='flex flex-col'>
-              {t('settings.checkForUpdatesDescription')}
-              <Show when={update.data?.version}>
-                <span>
-                  {t('common.version')}: {update.data?.version}
-                </span>
-              </Show>
-              <Show when={update.data?.date}>
-                <span>
-                  {t('settings.releaseDate')}: {date()}
-                </span>
-              </Show>
-            </div>
-          </Show>
+          <UpdateDescription
+            isUpdateAvailable={isUpdateAvailable()}
+            update={update.data}
+          />
         }
-        {...props}
+        {...others}
       >
         <div class='mt-6 flex h-full min-w-max flex-col justify-start gap-2'>
-          <Show
-            when={isUpdateAvailable()}
-            fallback={
-              <Button loading={update.isFetching} onClick={checkUpdates}>
-                {t('settings.checkForUpdates')}
-              </Button>
-            }
-          >
-            <Button loading={isUpdating()} onClick={handleInstallUpdate}>
-              {t('settings.installAndRestart')}
-            </Button>
-          </Show>
+          <UpdateButton
+            isUpdateAvailable={isUpdateAvailable()}
+            isFetching={update.isFetching}
+            isUpdating={isUpdating()}
+            onCheckUpdates={handleCheckUpdates}
+            onSubmitUpdate={handleInstallUpdate}
+          />
         </div>
       </SettingsEntry>
       <Show when={update.data?.body}>
-        {(_body) => (
-          <div class='mt-2 flex flex-col gap-2'>
-            <span class='text-xl font-medium'>{t('settings.whatsNew')}</span>
-            <MarkdownRenderer
-              class='min-w-full rounded-md border-2 border-secondary-dark p-4 dark:border-secondary'
-              children={markdownText}
-            />
-          </div>
-        )}
+        {(body) => <WhatsNew changelogBody={body()} />}
       </Show>
     </div>
+  );
+};
+
+interface UpdateButtonProps {
+  isUpdateAvailable: boolean;
+  isFetching: boolean;
+  isUpdating: boolean;
+  onCheckUpdates: () => void;
+  onSubmitUpdate: () => void;
+}
+
+const UpdateButton: Component<UpdateButtonProps> = (props) => {
+  const [{ t }] = useTranslation();
+
+  return (
+    <Show
+      when={props.isUpdateAvailable}
+      fallback={
+        <Button
+          variant='default'
+          loading={props.isFetching}
+          onClick={props.onCheckUpdates}
+        >
+          {t('settings.checkForUpdates')}
+        </Button>
+      }
+    >
+      <Button
+        variant='default'
+        loading={props.isUpdating}
+        onClick={props.onSubmitUpdate}
+      >
+        {t('settings.installAndRestart')}
+      </Button>
+    </Show>
   );
 };

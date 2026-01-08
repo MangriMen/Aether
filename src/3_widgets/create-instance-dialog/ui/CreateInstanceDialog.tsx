@@ -37,7 +37,7 @@ export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
           <DialogTitle>{t('createInstance.title')}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue={TABS.Custom}>
-          <TabsList class='bg-secondary-dark px-1'>
+          <TabsList class='bg-secondary-dark'>
             <For each={TAB_VALUES}>
               {(tabValue) => (
                 <TabsTrigger value={tabValue}>

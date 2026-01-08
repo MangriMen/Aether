@@ -23,18 +23,23 @@ export const useInstallUpdate = () => {
     setStore('isUpdating', true);
     try {
       await installUpdate(update);
-    } catch {
+    } catch (e) {
       showToast({
         title: t('update.updateError'),
         variant: 'destructive',
       });
+      throw e;
     }
     setStore('isUpdating', false);
   };
 
   const updateAndRestart = async (update: Update | null) => {
-    await updateApp(update);
-    await relaunch();
+    try {
+      await updateApp(update);
+      await relaunch();
+    } catch {
+      /* empty */
+    }
   };
 
   const isUpdating = createMemo(() => store.isUpdating);

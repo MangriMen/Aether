@@ -202,11 +202,11 @@
   }
 
   .animate-tab-content-wrapper {
-    @apply grid overflow-x-hidden p-0.5;
+    @apply grid overflow-x-hidden;
   }
 
   .animate-tab-content {
-    @apply row-start-1 col-start-1 overflow-hidden p-1 w-full h-[calc(100%-4px-4px)]
+    @apply row-start-1 col-start-1 overflow-hidden p-0.5 w-full h-[calc(100%-4px-4px)]
       transition-[transform,opacity,visibility] duration-200 max-h-0 opacity-0 invisible;
   }
 
@@ -223,7 +223,15 @@
   }
 
   .p-page {
-    @apply p-4 pt-0;
+    @apply p-4 pt-px;
+  }
+
+  .h-titlebar {
+    @apply h-10;
+  }
+
+  .mt-titlebar {
+    @apply mt-10;
   }
 }
 

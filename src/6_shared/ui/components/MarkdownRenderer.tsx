@@ -22,12 +22,15 @@ export const MarkdownRenderer: Component<MarkdownRendererProps> = (props) => {
   );
 
   return (
-    <Show when={!sanitizedMarkdown.loading} fallback={<ProgressCircle />}>
+    <Show
+      when={Boolean(sanitizedMarkdown.latest)}
+      fallback={<ProgressCircle />}
+    >
       <div
-        class={cn('prose dark:prose-invert', local.class)}
+        class={cn('prose max-w-none dark:prose-invert', local.class)}
         // Mute warning because we are use sanitized text in inner html
         // eslint-disable-next-line solid/no-innerhtml
-        innerHTML={sanitizedMarkdown()}
+        innerHTML={sanitizedMarkdown.latest}
         {...others}
       />
     </Show>

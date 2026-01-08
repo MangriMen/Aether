@@ -13,6 +13,7 @@ export * from './isNil';
 export * from './log';
 export * from './parseMarkdown';
 export * from './responseResult';
+export * from './showError';
 export * from './stopPropagation';
 export * from './useDeveloperModeCounter';
 export * from './useFieldOnChangeSync';

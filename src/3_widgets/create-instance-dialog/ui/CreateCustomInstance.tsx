@@ -276,7 +276,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
       <DialogFooter>
         <Button
-          class='mb-2 sm:mb-0 sm:mr-auto'
+          class='mr-auto'
           variant='secondary'
           onClick={() => setIsAdvanced(!isAdvanced())}
         >

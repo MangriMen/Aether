@@ -59,7 +59,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         </Match>
       </Switch>
       <local.instanceActionButton
-        class='absolute right-4 top-[72px] p-0 pr-0.5 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
+        class='absolute right-4 top-[72px] p-0 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
         instance={local.instance}
       />
     </div>
