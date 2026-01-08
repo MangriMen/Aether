@@ -12,13 +12,17 @@ import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import { PluginsPane } from '../ui/PluginsPane/PluginsPane';
 import { UpdatePane } from '../ui/UpdatePane/UpdatePane';
 
-export enum SettingsTabs {
-  Appearance = 'appearance',
-  DefaultInstanceSettings = 'defaultInstanceSettings',
-  Update = 'update',
-  Plugins = 'plugins',
-  Experimental = 'experimental',
-}
+export const SettingsTab = {
+  Appearance: 'appearance',
+  DefaultInstanceSettings: 'defaultInstanceSettings',
+  Update: 'update',
+  Plugins: 'plugins',
+  Experimental: 'experimental',
+} as const;
+
+export type SettingsTab = (typeof SettingsTab)[keyof typeof SettingsTab];
+
+export const SettingsTabs = new Set(Object.values(SettingsTab));
 
 export const SETTINGS_TABS_TRIGGER: {
   icon?: Component<ComponentProps<'svg'>>;
@@ -28,57 +32,60 @@ export const SETTINGS_TABS_TRIGGER: {
     | 'defaultInstanceSettings'
     | 'plugins'
     | 'experimental';
-  value: SettingsTabs;
+  value: SettingsTab;
 }[] = [
   {
     icon: IconMdiBrush,
     title: 'appearance',
-    value: SettingsTabs.Appearance,
+    value: SettingsTab.Appearance,
   },
   {
     icon: IconMdiGamepadSquare,
     title: 'defaultInstanceSettings',
-    value: SettingsTabs.DefaultInstanceSettings,
+    value: SettingsTab.DefaultInstanceSettings,
   },
   {
     icon: IconMdiPuzzle,
     title: 'plugins',
-    value: SettingsTabs.Plugins,
+    value: SettingsTab.Plugins,
   },
   {
     icon: IconMdiUpdate,
     title: 'update',
-    value: SettingsTabs.Update,
+    value: SettingsTab.Update,
   },
   {
     icon: IconMdiTestTube,
     title: 'experimental',
-    value: SettingsTabs.Experimental,
+    value: SettingsTab.Experimental,
   },
 ] as const;
 
 export const SETTINGS_TABS_CONTENT: {
   component: Component<ComponentProps<'div'>>;
-  value: SettingsTabs;
+  value: SettingsTab;
 }[] = [
   {
     component: AppearancePane,
-    value: SettingsTabs.Appearance,
+    value: SettingsTab.Appearance,
   },
   {
     component: DefaultInstanceSettingsPane,
-    value: SettingsTabs.DefaultInstanceSettings,
+    value: SettingsTab.DefaultInstanceSettings,
   },
   {
     component: PluginsPane,
-    value: SettingsTabs.Plugins,
+    value: SettingsTab.Plugins,
   },
   {
     component: UpdatePane,
-    value: SettingsTabs.Update,
+    value: SettingsTab.Update,
   },
   {
     component: ExperimentalPane,
-    value: SettingsTabs.Experimental,
+    value: SettingsTab.Experimental,
   },
 ] as const;
+
+export const isSettingsTab = (value: string): value is SettingsTab =>
+  SettingsTabs.has(value as SettingsTab);

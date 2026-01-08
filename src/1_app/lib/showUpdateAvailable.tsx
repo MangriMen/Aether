@@ -7,6 +7,8 @@ import {
   UpdateAndRestartWarningDialog,
   useInstallUpdate,
 } from '@/entities/updates';
+import { SettingsTab } from '@/pages/settings/model/settingsTabs';
+import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
 
@@ -24,7 +26,7 @@ export const showUpdateAvailable = (update: Update) => {
 
     const goToUpdatePage = () => {
       closeToast(number);
-      navigate('/settings/update');
+      navigate(ROUTES.SETTINGS(SettingsTab.Update));
       dispose();
     };
 

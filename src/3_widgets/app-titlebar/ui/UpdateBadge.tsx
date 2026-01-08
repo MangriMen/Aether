@@ -9,6 +9,8 @@ import {
 
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { SettingsTab } from '@/pages/settings/model/settingsTabs';
+import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTooltip } from '@/shared/ui';
@@ -29,7 +31,7 @@ export const UpdateBadge: Component<UpdateBadgeProps> = (props) => {
   const navigate = useNavigate();
 
   const handleGoToUpdate = () => {
-    navigate('/settings/update');
+    navigate(ROUTES.SETTINGS(SettingsTab.Update));
   };
 
   return (

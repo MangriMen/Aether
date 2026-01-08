@@ -5,6 +5,7 @@ import IconMdiHomeVariant from '~icons/mdi/home-variant';
 
 import type { IconButtonProps } from '@/shared/ui';
 
+import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
@@ -14,7 +15,7 @@ const HomeButton: Component<HomeButtonProps> = (props) => {
   const navigate = useNavigate();
   const [{ t }] = useTranslation();
 
-  const handleClick = () => navigate('/');
+  const handleClick = () => navigate(ROUTES.HOME);
 
   return (
     <CombinedTooltip

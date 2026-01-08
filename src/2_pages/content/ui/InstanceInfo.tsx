@@ -5,6 +5,7 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 import type { Instance } from '@/entities/instances';
 
 import { InstanceGameVersion } from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Image } from '@/shared/ui';
@@ -21,7 +22,7 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const handleBackToInstance = () => {
-    navigate(`/instances/${encodeURIComponent(local.instance.id)}`);
+    navigate(ROUTES.INSTANCE(local.instance.id));
   };
 
   return (

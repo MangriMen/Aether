@@ -7,7 +7,7 @@ import { isDeveloperMode } from '@/shared/model';
 import {
   SETTINGS_TABS_CONTENT,
   SETTINGS_TABS_TRIGGER,
-  SettingsTabs,
+  SettingsTab,
 } from '../model/settingsTabs';
 
 export const useSettingsPageTabs = (): [
@@ -17,7 +17,7 @@ export const useSettingsPageTabs = (): [
   const tabsTriggers = createMemo(() => {
     if (!isDeveloperMode()) {
       return SETTINGS_TABS_TRIGGER.filter(
-        (trigger) => trigger.value !== SettingsTabs.Experimental,
+        (trigger) => trigger.value !== SettingsTab.Experimental,
       );
     }
 
@@ -27,7 +27,7 @@ export const useSettingsPageTabs = (): [
   const tabsContents = createMemo(() => {
     if (!isDeveloperMode()) {
       return SETTINGS_TABS_CONTENT.filter(
-        (trigger) => trigger.value !== SettingsTabs.Experimental,
+        (trigger) => trigger.value !== SettingsTab.Experimental,
       );
     }
 

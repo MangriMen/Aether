@@ -9,6 +9,7 @@ import type { IconButtonProps } from '@/shared/ui';
 
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
@@ -25,7 +26,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
     update.data ? checkIsUpdateAvailable(update.data) : false,
   );
 
-  const handleClick = () => navigate('/settings');
+  const handleClick = () => navigate(ROUTES.SETTINGS());
 
   return (
     <CombinedTooltip

@@ -14,6 +14,7 @@ import type { TabsProps } from '@/shared/ui';
 
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import {
   Badge,
@@ -25,25 +26,39 @@ import {
 } from '@/shared/ui';
 
 import { useOnMountSettingsPage, useSettingsPageTabs } from '../lib';
-import { SettingsTabs } from '../model/settingsTabs';
+import { isSettingsTab, SettingsTab } from '../model/settingsTabs';
 import { VersionInfo } from './VersionInfo';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
 
+const defaultTab = SettingsTab.Appearance;
+
 export const SettingsPage = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SettingsPageProps<T>>,
 ) => {
-  const [_, others] = splitProps(props, ['params', 'location', 'data']);
+  const [local, others] = splitProps(props, ['params', 'location', 'data']);
 
   const navigate = useNavigate();
 
-  const currentTab = createMemo(
-    () => props.params.tab ?? SettingsTabs.Appearance,
-  );
+  const currentTab = createMemo(() => {
+    const tab = local.params.tab;
+
+    if (!tab) {
+      return defaultTab;
+    }
+
+    const decoded = decodeURIComponent(tab);
+
+    return isSettingsTab(decoded) ? decoded : defaultTab;
+  });
 
   const handleChangeTab = (tab: string) => {
-    navigate(`/settings/${tab}`);
+    if (isSettingsTab(tab)) {
+      navigate(ROUTES.SETTINGS(tab));
+    } else {
+      navigate(ROUTES.SETTINGS(defaultTab));
+    }
   };
 
   const [{ t }] = useTranslation();
@@ -64,7 +79,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
         class='flex size-full overflow-hidden'
         value={currentTab()}
         onChange={handleChangeTab}
-        defaultValue={SettingsTabs.Appearance}
+        defaultValue={defaultTab}
         orientation='vertical'
         {...(others as TabsProps<T>)}
       >
@@ -81,7 +96,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
                   <span class='overflow-hidden text-ellipsis'>
                     <Show
                       when={
-                        tab.value === SettingsTabs.Update && isUpdateAvailable()
+                        tab.value === SettingsTab.Update && isUpdateAvailable()
                       }
                     >
                       <Badge class='absolute inset-y-0 right-2 my-auto aspect-square size-2 p-0' />
