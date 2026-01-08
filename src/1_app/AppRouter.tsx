@@ -6,6 +6,7 @@ import { ContentPage } from '@/pages/content';
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
+import { ROUTE_PATTERNS } from '@/shared/config';
 import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
 
 import { AppRoot } from './AppRoot';
@@ -13,26 +14,28 @@ import { AppRoot } from './AppRoot';
 export const AppRouter: Component = () => {
   return (
     <Router root={AppRoot}>
-      <Route path='/' component={HomePage}>
+      <Route path={ROUTE_PATTERNS.HOME} component={HomePage}>
         <Route />
         <Route
-          path='/instance-settings/:id'
+          path={ROUTE_PATTERNS.INSTANCE_DIALOG}
           component={(props) => (
             <InstanceSettingsDialog instanceId={props.params.id} />
           )}
         />
       </Route>
-      <Route path='/content' component={ContentPage} />
-      <Route path='/instances/:id' component={InstancePage}>
+      <Route path={ROUTE_PATTERNS.CONTENT} component={ContentPage} />
+      <Route path={ROUTE_PATTERNS.INSTANCE} component={InstancePage}>
         <Route />
         <Route
-          path='settings'
+          path={ROUTE_PATTERNS.INSTANCE_SETTINGS}
           component={(props) => (
             <InstanceSettingsDialog instanceId={props.params.id} />
           )}
         />
       </Route>
-      <Route path='/settings' component={SettingsPage} />
+      <Route path={ROUTE_PATTERNS.SETTINGS} component={SettingsPage}>
+        <Route />
+      </Route>
     </Router>
   );
 };

@@ -15,19 +15,20 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground enabled:hover:bg-primary/90',
+          'bg-primary text-primary-foreground enabled:hover:bg-primary/90 enabled:active:bg-primary/70',
         destructive:
-          'bg-destructive text-destructive-foreground enabled:hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground enabled:hover:bg-destructive/90 enabled:active:bg-destructive/70',
         success:
-          'bg-success text-success-foreground enabled:hover:bg-success/90',
+          'bg-success text-success-foreground enabled:hover:bg-success/90 enabled:active:bg-success/70',
         outline:
-          'border border-input hover:bg-accent enabled:hover:text-accent-foreground',
+          'border-2 border-input hover:bg-accent enabled:hover:text-accent-foreground enabled:active:bg-accent/80',
         secondary:
-          'bg-secondary text-secondary-foreground enabled:hover:bg-secondary/80',
-        ghost: 'enabled:hover:bg-accent enabled:hover:text-accent-foreground',
+          'bg-secondary text-secondary-foreground enabled:hover:bg-secondary/80 enabled:active:bg-secondary/60',
+        ghost:
+          'enabled:hover:bg-accent enabled:hover:text-accent-foreground enabled:active:bg-accent/80',
         link: 'text-primary underline-offset-4 enabled:hover:underline',
         ghostWarning:
-          'text-warning-foreground enabled:hover:bg-warning-foreground enabled:hover:text-secondary',
+          'text-warning-foreground enabled:hover:bg-warning-foreground enabled:hover:text-secondary enabled:active:bg-warning-foreground/80',
       },
       size: {
         default: 'h-9 px-4 py-2 text-sm leading-4',

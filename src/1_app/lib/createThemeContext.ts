@@ -23,6 +23,7 @@ import {
   COLOR_MODE_CHANGE_DEBOUNCE_DELAY,
   DEFAULT_THEME_CONTEXT_VALUE,
 } from '../config';
+import { migrateThemeContext } from './migrateThemeContext';
 import { useThemeContextDomSync } from './useDomThemeSync';
 import { useGlobalColorMode } from './useGlobalColorMode';
 import { useReducedMotionSync } from './useReducedMotionSync';
@@ -38,6 +39,7 @@ export const createThemeContext = (
     setRawTheme,
     setTheme,
     setThemeByColorMode,
+    setTransparencyEnabled,
     setTransparency,
     setDisableAnimations,
     setPrefersReducedMotion,
@@ -113,6 +115,7 @@ export const createThemeContext = (
   const actions: ThemeContextActions = {
     setTheme: setRawTheme,
     setThemeByColorMode: setThemeByColorMode,
+    setTransparencyEnabled: setTransparencyEnabled,
     setTransparency: setTransparency,
     setDisableAnimations: setDisableAnimations,
   };
@@ -127,6 +130,10 @@ const createContext = (themeStateKey: Accessor<string>) => {
     { name: themeStateKey() },
   );
 
+  onMount(() => {
+    setState(migrateThemeContext(state));
+  });
+
   const setRawTheme = (theme: ThemeConfig) => {
     setState('rawTheme', theme);
   };
@@ -137,6 +144,10 @@ const createContext = (themeStateKey: Accessor<string>) => {
 
   const setThemeByColorMode = (colorMode: ColorMode, theme: Theme) => {
     setState(COLOR_MODE_TO_THEME_KEY[colorMode], theme);
+  };
+
+  const setTransparencyEnabled = (isEnabled: boolean) => {
+    setState('transparencyEnabled', isEnabled);
   };
 
   const setTransparency = (transparency: number) => {
@@ -156,6 +167,7 @@ const createContext = (themeStateKey: Accessor<string>) => {
     setRawTheme,
     setTheme,
     setThemeByColorMode,
+    setTransparencyEnabled,
     setTransparency,
     setDisableAnimations,
     setPrefersReducedMotion,

@@ -17,6 +17,7 @@ import {
   useInstance,
 } from '@/entities/instances';
 import { ModLoader } from '@/entities/minecraft';
+import { ROUTES } from '@/shared/config';
 import { Separator } from '@/shared/ui';
 
 import { ContentBrowser } from './ContentBrowser';
@@ -40,7 +41,7 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     const instance = searchParams['instance'];
 
     if (instance === undefined || typeof instance !== 'string') {
-      navigate('/');
+      navigate(ROUTES.HOME);
       return '';
     }
 

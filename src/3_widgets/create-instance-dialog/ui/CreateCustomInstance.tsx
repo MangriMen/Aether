@@ -173,7 +173,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             errorMessage={field.error}
             inputProps={{
               class: 'max-w-[36ch]',
-              maxLength: 32,
+              maxLength: 64,
               type: 'text',
               ...props,
             }}
@@ -276,7 +276,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
       <DialogFooter>
         <Button
-          class='mb-2 sm:mb-0 sm:mr-auto'
+          class='mr-auto'
           variant='secondary'
           onClick={() => setIsAdvanced(!isAdvanced())}
         >

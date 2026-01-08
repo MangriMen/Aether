@@ -62,7 +62,6 @@
     "revealInExplorerError": "Не удалось показать в проводнике",
     "search": "Искать",
     "type": "Тип",
-    "updateAvailable": "Доступно обновление",
     "username": "Имя пользователя",
     "version": "Версия",
     "repair": "Исправить",
@@ -219,7 +218,7 @@
     "dark": "Тёмная",
     "doNothing": "Ничего не делать",
     "hide": "Скрыть",
-    "installAndRestartApp": "Установить и перезапустить приложение",
+    "installAndRestart": "Обновить и перезапустить",
     "language": "Язык",
     "languageDescription": "Выберите ваш язык",
     "light": "Светлая",
@@ -239,10 +238,23 @@
       "mica": "Mica",
       "off": "Выключено"
     },
-    "changeError": "Не удалось изменить настройки"
+    "changeError": "Не удалось изменить настройки",
+    "animationsDisabled": "В системе отключены анимации",
+    "animationsDisabledDescription": "Вы можете включить их в приложении, но это может повлиять на плавность интерфейса и время автономной работы",
+    "updateAvailable": "Доступна новая версия!",
+    "goToUpdatePage": "Перейти на страницу",
+    "updateIsReadyToInstall": "доступна для установки!",
+    "updateNotificationStyle": "Стиль уведомлений обновлений",
+    "whatsNew": "Что нового",
+    "update": "Обновить"
   },
   "update": {
-    "updateError": "Ошибка обновления лаунчера"
+    "updateError": "Не удалось установить обновление",
+    "banner": "Баннер",
+    "toast": "Всплывающее",
+    "restartWarningDescription": "Новая версия будет загружена и установлена. \nПриложение перезапустится сразу после завершения загрузки.",
+    "restartWarningTitle": "Обновить и перезапустить",
+    "fetchError": "Не удалось проверить обновления"
   },
   "plugin": {
     "description": "Описание",

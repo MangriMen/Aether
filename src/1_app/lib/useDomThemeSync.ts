@@ -19,7 +19,11 @@ export const useThemeContextDomSync = (
   });
 
   createEffect(() => {
-    setTransparencyToDocument(transparencyProperty(), state.transparency);
+    if (state.transparencyEnabled) {
+      setTransparencyToDocument(transparencyProperty(), state.transparency);
+    } else {
+      setTransparencyToDocument(transparencyProperty(), 1);
+    }
   });
 
   createEffect(() => {

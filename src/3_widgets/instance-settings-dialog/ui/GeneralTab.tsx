@@ -54,6 +54,7 @@ export const GeneralTab: Component<GeneralTabProps> = (props) => {
             errorMessage={field.error}
             inputProps={{
               type: 'text',
+              maxLength: 64,
               ...inputProps,
               onBlur: (e) => {
                 inputProps.onBlur(e);
