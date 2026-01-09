@@ -1,3 +1,4 @@
+export * from './openTranslationInBrowser';
 export * from './useDefaultHooksSettingsHandler';
 export * from './useDefaultJavaAndMemorySettingsHandler';
 export * from './useDefaultWindowSettingsHandler';

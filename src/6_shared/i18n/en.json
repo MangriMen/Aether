@@ -65,7 +65,9 @@
     "username": "Username",
     "version": "Version",
     "update": "Update",
-    "repair": "Repair"
+    "repair": "Repair",
+    "failedToOpenBrowser": "Failed to open browser",
+    "copyToClipboard": "Copy to clipboard"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -259,7 +261,13 @@
     "toast": "Toast",
     "restartWarningTitle": "Update and restart",
     "restartWarningDescription": "New version will be downloaded and applied. The application will restart immediately after the download finishes.",
-    "fetchError": "Failed to check updates"
+    "fetchError": "Failed to check updates",
+    "changelogCopiedToClipboard": "Changelog copied to clipboard!",
+    "changelogIsTooLong": "Changelog is too long",
+    "changelogIsTooLongDescription": "Only the first part was sent. You can copy the full text and translate it manually",
+    "failedToOpenBrowserWithChangelogDescription": "Please copy the text to translate it manually",
+    "translateChangelogInBrowser": "Translate changelog in browser",
+    "failedToCopyChangelogToClipboard": "Failed to copy changelog to clipboard"
   },
   "plugin": {
     "description": "Description",
