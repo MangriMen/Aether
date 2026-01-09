@@ -20,6 +20,8 @@
     "shell:default",
     "log:default",
     "dialog:default",
-    "os:default"
+    "os:default",
+    "opener:default",
+    "clipboard-manager:allow-write-text"
   ]
 }
