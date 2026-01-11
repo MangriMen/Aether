@@ -65,7 +65,9 @@
     "username": "Имя пользователя",
     "version": "Версия",
     "repair": "Исправить",
-    "update": "Обновить"
+    "update": "Обновить",
+    "failedToOpenBrowser": "Не удалось открыть браузер",
+    "copyToClipboard": "Скопировать в буфер обмена"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -82,7 +84,12 @@
     "searchCount": "Искать контент {{count}}",
     "shaderpack": "Шейдер",
     "shaders": "Шейдеры",
-    "title": "Контент"
+    "title": "Контент",
+    "failedToInstall": "Не удалось установить контент",
+    "failedToImport": "Не удалось импортировать контент",
+    "failedToRemove": "Не удалось удалить контент",
+    "failedToDisable": "Не удалось отключить контент",
+    "failedToEnable": "Не удалось включить контент"
   },
   "createInstance": {
     "custom": "Пользовательский",
@@ -254,7 +261,13 @@
     "toast": "Всплывающее",
     "restartWarningDescription": "Новая версия будет загружена и установлена. \nПриложение перезапустится сразу после завершения загрузки.",
     "restartWarningTitle": "Обновить и перезапустить",
-    "fetchError": "Не удалось проверить обновления"
+    "fetchError": "Не удалось проверить обновления",
+    "changelogCopiedToClipboard": "Список изменений скопирован в буфер обмена!",
+    "changelogIsTooLong": "Список изменений слишком длинный",
+    "changelogIsTooLongDescription": "Отправлена ​​только первая часть. Вы можете скопировать полный текст и перевести его вручную",
+    "failedToOpenBrowserWithChangelogDescription": "Пожалуйста, скопируйте текст, чтобы перевести его вручную",
+    "translateChangelogInBrowser": "Перевести журнал изменений в браузере",
+    "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена"
   },
   "plugin": {
     "description": "Описание",

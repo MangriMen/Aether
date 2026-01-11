@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.8.4"
+version = "0.8.5"
 description = "Desktop application for managing Minecraft instances and mods"
 edition = "2021"
 
@@ -39,6 +39,8 @@ serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.2.0", featu
   "derive",
 ] }
 semver = "1.0.27"
+tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

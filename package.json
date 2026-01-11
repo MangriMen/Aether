@@ -1,6 +1,6 @@
 {
   "name": "aether",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "",
   "license": "MIT",
   "type": "module",
@@ -35,8 +35,10 @@
     "@tanstack/solid-table": "^8.21.3",
     "@tanstack/solid-virtual": "^3.13.9",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-clipboard-manager": "~2",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-log": "^2",
+    "@tauri-apps/plugin-opener": "~2",
     "@tauri-apps/plugin-os": "^2",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-shell": "^2",
