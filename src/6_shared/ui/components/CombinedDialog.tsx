@@ -1,5 +1,5 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component, ComponentProps, JSX } from 'solid-js';
 
 import { mergeProps, Show, splitProps } from 'solid-js';
 
@@ -19,8 +19,8 @@ import {
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {
-    header?: string;
-    description?: string;
+    header?: JSX.Element;
+    description?: JSX.Element;
     buttonOkText?: string;
     buttonCancelText?: string;
     buttonOkVariant?: ButtonProps['variant'];

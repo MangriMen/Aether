@@ -16,7 +16,11 @@ import {
 import { ROUTES } from '@/shared/config';
 import { preventAll } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { CombinedDialog, ContextMenuTrigger } from '@/shared/ui';
+import {
+  CombinedDialog,
+  CombinedTooltip,
+  ContextMenuTrigger,
+} from '@/shared/ui';
 
 export type InstanceControlledCardProps = Pick<
   InstanceCardProps,
@@ -95,7 +99,15 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         variant='destructive'
         open={showRemoveModal()}
         onOpenChange={setShowRemoveModal}
-        header={t('instance.removeTitle', { name: props.instance.name })}
+        header={
+          <CombinedTooltip
+            label={props.instance.name}
+            as='span'
+            class='line-clamp-2'
+          >
+            {t('instance.removeTitle', { name: props.instance.name })}
+          </CombinedTooltip>
+        }
         description={t('instance.removeDescription')}
         buttonOkVariant='destructive'
         buttonOkText={t('common.remove')}
