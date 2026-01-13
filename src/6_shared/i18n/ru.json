@@ -67,7 +67,8 @@
     "repair": "Исправить",
     "update": "Обновить",
     "failedToOpenBrowser": "Не удалось открыть браузер",
-    "copyToClipboard": "Скопировать в буфер обмена"
+    "copyToClipboard": "Скопировать в буфер обмена",
+    "close": "Закрыть"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -144,7 +145,11 @@
     "instanceSettings": {
       "currentlyInstalled": "Текущая установка",
       "modpack": "Модпак"
-    }
+    },
+    "failedToRemove": "Не удалось удалить {{name}}",
+    "removeForce": "Удалить принудительно",
+    "failedToRemoveDescription": "Инстанс все еще устанавливается или запущен",
+    "instanceNotFound": "Инстанс не найден"
   },
   "instanceSettings": {
     "tab": {
@@ -202,7 +207,8 @@
   },
   "progress": {
     "seeDetails": "Показать детали",
-    "ongoingTasks": "Текущие задачи"
+    "ongoingTasks": "Текущие задачи",
+    "dialogTitle": "Подробности прогресса"
   },
   "settings": {
     "tab": {
@@ -284,5 +290,10 @@
     "host": "Хост",
     "plugin": "Плагин",
     "failedToUpdateSettings": "Не удалось обновить настройки плагина {{name}}"
+  },
+  "pagination": {
+    "morePages": "Больше страниц",
+    "next": "Следующая",
+    "previous": "Предыдущая"
   }
 }

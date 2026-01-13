@@ -9,6 +9,7 @@ import {
   useStopInstance,
   useRemoveInstance,
 } from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const useInstanceActions = () => {
@@ -19,6 +20,8 @@ export const useInstanceActions = () => {
   const { mutateAsync: launchInstance } = useLaunchInstance();
   const { mutateAsync: stopInstance } = useStopInstance();
   const { mutateAsync: removeInstance } = useRemoveInstance();
+
+  const [{ t }] = useTranslation();
 
   const launch = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
@@ -79,15 +82,19 @@ export const useInstanceActions = () => {
       };
 
       const id = showToast({
-        title: `Failed to remove ${instance.name}`,
+        title: (
+          <span class='line-clamp-2'>
+            {t('instance.failedToRemove', { name: instance.name })}
+          </span>
+        ),
         description: (
           <div class='inline-flex w-full flex-col gap-2'>
-            Instance still installing or running
+            {t('instance.failedToRemoveDescription')}
             <Button
               class='w-full'
               variant='secondary'
               onClick={handleForceRemove}
-              children='Remove force'
+              children={t('instance.removeForce')}
             />
           </div>
         ),
