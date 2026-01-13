@@ -5,6 +5,7 @@ import * as PaginationPrimitive from '@kobalte/core/pagination';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 import { buttonVariants } from './Button';
 
@@ -60,6 +61,9 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props as PaginationEllipsisProps, [
     'class',
   ]);
+
+  const [{ t }] = useTranslation();
+
   return (
     <PaginationPrimitive.Ellipsis
       class={cn('flex size-10 items-center justify-center', local.class)}
@@ -79,7 +83,7 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
         <circle cx='19' cy='12' r='1' />
         <circle cx='5' cy='12' r='1' />
       </svg>
-      <span class='sr-only'>More pages</span>
+      <span class='sr-only'>{t('pagination.morePages')}</span>
     </PaginationPrimitive.Ellipsis>
   );
 };
@@ -97,6 +101,9 @@ const PaginationPrevious = <T extends ValidComponent = 'button'>(
     'class',
     'children',
   ]);
+
+  const [{ t }] = useTranslation();
+
   return (
     <PaginationPrimitive.Previous
       class={cn(
@@ -122,7 +129,7 @@ const PaginationPrevious = <T extends ValidComponent = 'button'>(
           >
             <path d='M15 6l-6 6l6 6' />
           </svg>
-          {/* <span>Previous</span> */}
+          <span class='sr-only'>{t('pagination.previous')}</span>
         </>
       )}
     </PaginationPrimitive.Previous>
@@ -142,6 +149,9 @@ const PaginationNext = <T extends ValidComponent = 'button'>(
     'class',
     'children',
   ]);
+
+  const [{ t }] = useTranslation();
+
   return (
     <PaginationPrimitive.Next
       class={cn(
@@ -155,7 +165,7 @@ const PaginationNext = <T extends ValidComponent = 'button'>(
     >
       {local.children ?? (
         <>
-          {/* <span>Next</span> */}
+          <span class='sr-only'>{t('pagination.next')}</span>
           <svg
             xmlns='http://www.w3.org/2000/svg'
             viewBox='0 0 24 24'

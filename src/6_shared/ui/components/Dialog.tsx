@@ -8,6 +8,7 @@ import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -80,6 +81,8 @@ const DialogContent = <T extends ValidComponent = 'div'>(
       ? e.preventDefault()
       : undefined;
 
+  const [{ t }] = useTranslation();
+
   return (
     <DialogPortal>
       <DialogOverlay variant={local.variant} />
@@ -106,7 +109,7 @@ const DialogContent = <T extends ValidComponent = 'div'>(
             <path d='M18 6l-12 12' />
             <path d='M6 6l12 12' />
           </svg>
-          <span class='sr-only'>Close</span>
+          <span class='sr-only'>{t('common.close')}</span>
         </DialogPrimitive.CloseButton>
       </DialogPrimitive.Content>
     </DialogPortal>
