@@ -3,6 +3,7 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 
 import { createMemo, type ValidComponent } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
 
 import { useProgressStore } from '../../model';
@@ -13,6 +14,8 @@ export type ProgressDetailsDialogProps = DialogRootProps;
 export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ProgressDetailsDialogProps>,
 ) => {
+  const [{ t }] = useTranslation();
+
   const [progressStore] = useProgressStore();
 
   const progressValues = createMemo(() =>
@@ -23,7 +26,7 @@ export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
     <Dialog {...props}>
       <DialogContent class='max-h-[calc(100%-128px)] max-w-[calc(100%-128px)] bg-secondary-dark'>
         <DialogHeader>
-          <DialogTitle>Progress details</DialogTitle>
+          <DialogTitle>{t('progress.dialogTitle')}</DialogTitle>
         </DialogHeader>
         <ProgressDetails payloads={progressValues} />
       </DialogContent>

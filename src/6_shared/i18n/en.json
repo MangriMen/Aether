@@ -67,7 +67,8 @@
     "update": "Update",
     "repair": "Repair",
     "failedToOpenBrowser": "Failed to open browser",
-    "copyToClipboard": "Copy to clipboard"
+    "copyToClipboard": "Copy to clipboard",
+    "close": "Close"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -144,7 +145,11 @@
     "instanceSettings": {
       "currentlyInstalled": "CurrentlyInstalled",
       "modpack": "Modpack"
-    }
+    },
+    "failedToRemove": "Failed to remove {{name}}",
+    "failedToRemoveDescription": "Instance still installing or running",
+    "removeForce": "Force remove",
+    "instanceNotFound": "Instance not found"
   },
   "instanceSettings": {
     "tab": {
@@ -202,7 +207,8 @@
   },
   "progress": {
     "seeDetails": "See details",
-    "ongoingTasks": "Ongoing tasks"
+    "ongoingTasks": "Ongoing tasks",
+    "dialogTitle": "Progress details"
   },
   "settings": {
     "tab": {
@@ -284,5 +290,10 @@
     "host": "Host",
     "plugin": "Plugin",
     "failedToUpdateSettings": "Failed to update {{name}} plugin settings"
+  },
+  "pagination": {
+    "morePages": "More pages",
+    "previous": "Previous",
+    "next": "Next"
   }
 }
