@@ -5,8 +5,9 @@ use uuid::Uuid;
 
 use aether_core::features::{
     instance::{
-        ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType, EditInstance,
-        ImportInstance, Instance, ContentFile, NewInstance,
+        app::{EditInstance, ImportInstance, NewInstance},
+        ContentFile, ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType,
+        Instance,
     },
     process::MinecraftProcessMetadata,
 };

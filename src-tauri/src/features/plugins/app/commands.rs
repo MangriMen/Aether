@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use aether_core::core::LauncherState;
 use aether_core::features::plugins::{
-    CapabilityEntry, EditPluginSettings, ImporterCapability, PluginDto, PluginSettings,
-    UpdaterCapability,
+    app::{EditPluginSettings, PluginDto},
+    CapabilityEntry, ImporterCapability, PluginSettings, UpdaterCapability,
 };
 
 use crate::shared::file::reveal_in_explorer;
