@@ -49,7 +49,7 @@ dependencies = [
 
 [[package]]
 name = "aether"
-version = "0.8.6"
+version = "0.8.7"
 dependencies = [
  "aether-core",
  "anyhow",
@@ -79,8 +79,8 @@ dependencies = [
 
 [[package]]
 name = "aether-core"
-version = "0.7.4"
-source = "git+https://github.com/MangriMen/aether-core.git#db161e142f0166598fa7ad9e2d480c10ed2359f9"
+version = "0.7.6"
+source = "git+https://github.com/MangriMen/aether-core.git#6c3b3f0ad5948380a312165ef0099e886407b0ad"
 dependencies = [
  "aether-core-plugin-api",
  "anyhow",
@@ -133,7 +133,7 @@ dependencies = [
 [[package]]
 name = "aether-core-plugin-api"
 version = "0.1.0"
-source = "git+https://github.com/MangriMen/aether-core.git#db161e142f0166598fa7ad9e2d480c10ed2359f9"
+source = "git+https://github.com/MangriMen/aether-core.git#6c3b3f0ad5948380a312165ef0099e886407b0ad"
 dependencies = [
  "serde",
  "serde_json",

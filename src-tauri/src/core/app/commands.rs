@@ -28,7 +28,7 @@ pub async fn initialize_plugins() -> FrontendResult<()> {
 pub async fn load_enabled_plugins() -> FrontendResult<()> {
     let settings = aether_core::api::settings::get().await?;
 
-    for plugin_id in settings.enabled_plugins.iter() {
+    for plugin_id in settings.enabled_plugins().iter() {
         if let Err(e) = aether_core::api::plugin::enable(plugin_id.to_string()).await {
             log::error!("Failed to load plugin {}: {}", plugin_id, e);
         }
