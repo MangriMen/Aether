@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix neoforge installation
+
+### Changed
+
+- Some refactoring to improve readability and stability
+
 ## [0.8.6] - 2026-01-13
 
 ### Fixed
 
 - Fixed some missing translations
-
 - Fixed deletion of disabled content
 
 ## [0.8.5] - 2026-01-11
@@ -20,9 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added changelog translation button.
-
 - Added toast notifications for errors that occur when interacting with content, such as enabling, disabling, or deleting.
-
 - Add automatic changelog insert at tauri updater json file.
 
 ### Fixed
