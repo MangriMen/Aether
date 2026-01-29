@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.8.6"
+version = "0.8.7"
 description = "Desktop application for managing Minecraft instances and mods"
 edition = "2021"
 
