@@ -16,10 +16,9 @@ import {
   disableContentRaw,
   enableContentRaw,
   removeContentsRaw,
-  getContentProvidersRaw,
-  getContentByProviderRaw,
+  listContentProvidersRaw,
+  searchContentRaw,
   installContentRaw,
-  getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
 } from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
@@ -28,11 +27,11 @@ import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 export const useContentProviders = () => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
-    queryFn: getContentProvidersRaw,
+    queryFn: listContentProvidersRaw,
   }));
 };
 
-export const useContentByProvider = (
+export const useSearchContent = (
   payload: Accessor<ContentRequest | undefined>,
 ) => {
   return useQuery(() => ({
@@ -40,18 +39,8 @@ export const useContentByProvider = (
       ...CONTENT_QUERY_KEYS.BY_PROVIDER(payload()?.provider ?? ''),
       payload(),
     ],
-    queryFn: () => getContentByProviderRaw(payload()!),
+    queryFn: () => searchContentRaw(payload()!),
     enabled: !!payload(),
-  }));
-};
-
-export const useMetadataFieldToCheckInstalled = (
-  provider: Accessor<string | undefined>,
-) => {
-  return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.METADATA_FIELD(provider()!),
-    queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
-    enabled: !!provider(),
   }));
 };
 

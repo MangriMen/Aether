@@ -16,15 +16,15 @@ import type {
   ContentRequest,
   Instance,
 } from '@/entities/instances';
-import type { Option } from '@/shared/model';
+import type { ContentProviderCapabilityMetadata } from '@/entities/instances/model/capabilities';
+import type { CapabilityEntry, Option } from '@/shared/model';
 
 import {
   CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
   ContentType,
-  useContentByProvider,
+  useSearchContent,
   useInstanceContents,
-  useMetadataFieldToCheckInstalled,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -35,7 +35,7 @@ import { ContentList } from './ContentList';
 import { ContentListSkeleton } from './ContentListSkeleton';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {
-  providers: Option<string>[];
+  providers: Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[];
   instance: Instance;
   contentTypes?: ContentType[];
 };
@@ -59,7 +59,9 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   );
 
   const [searchQuery, setSearchQuery] = createSignal<string | undefined>();
-  const [provider, setProvider] = createSignal<Option<string> | null>(null);
+  const [provider, setProvider] = createSignal<Option<
+    CapabilityEntry<ContentProviderCapabilityMetadata>
+  > | null>(null);
   const [page, setPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal(20);
 
@@ -77,7 +79,9 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   }, 300);
   const handlePageChange = (page: number) => setPage(page);
   const handlePageSizeChange = (pageSize: number) => setPageSize(pageSize);
-  const handleSetProvider = (provider: Option<string> | null) => {
+  const handleSetProvider = (
+    provider: Option<CapabilityEntry<ContentProviderCapabilityMetadata>> | null,
+  ) => {
     if (provider) {
       setProvider(provider);
     }
@@ -91,7 +95,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
     return {
       contentType: contentType(),
-      provider: currentProvider.value,
+      provider: currentProvider.value.capability.id,
       page: page(),
       pageSize: pageSize(),
       query: searchQuery(),
@@ -100,7 +104,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     };
   });
 
-  const content = useContentByProvider(() => contentRequestPayload());
+  const content = useSearchContent(() => contentRequestPayload());
 
   const instanceContent = useInstanceContents(() => local.instance.id);
 
@@ -108,21 +112,23 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     instanceContent.data ? Object.values(instanceContent.data) : undefined,
   );
 
-  const compareMetadataField = useMetadataFieldToCheckInstalled(
-    () => provider()?.value,
+  const compareMetadataField = createMemo(
+    () => provider()?.value.capability.providerDataContentIdField,
   );
 
   const instanceContentFields = createMemo(() => {
-    if (!compareMetadataField.data) {
+    const field = compareMetadataField();
+    if (!field) {
       return [];
     }
-    const providerValue = provider()?.value;
+
+    const providerValue = provider()?.value.capability.id;
     if (!providerValue) {
       return [];
     }
 
     return instanceContentArray()?.map(
-      (item) => item.update?.[providerValue]?.[compareMetadataField.data],
+      (item) => item.update?.[providerValue]?.[field],
     );
   });
 
@@ -132,7 +138,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
   const items = createMemo(() =>
     content.data?.items.map<ContentItemExtended>((item) => {
-      const field = compareMetadataField.data;
+      const field = compareMetadataField();
 
       const contentItemField = field ? item.providerData?.[field] : undefined;
       const installed =
@@ -151,11 +157,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const handleOnInstalled = (
     providerData: ContentItemExtended['providerData'],
   ) => {
-    if (!compareMetadataField.data) {
+    const field = compareMetadataField();
+    if (!field) {
       return;
     }
 
-    const data = providerData?.[compareMetadataField.data];
+    const data = providerData?.[field];
     if (!data) {
       return;
     }
@@ -218,7 +225,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
               instanceId={local.instance.id}
               gameVersion={local.instance.gameVersion}
               loader={local.instance.loader}
-              provider={provider()?.value}
+              provider={provider()?.value.capability.id}
               onInstalled={handleOnInstalled}
             />
           )}

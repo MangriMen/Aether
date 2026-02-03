@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
+import type { CapabilityEntry } from '@/shared/model';
+
 import { createPluginInvoke } from '@/shared/lib';
 
 import type {
@@ -14,6 +16,7 @@ import type {
   ContentType,
   EditInstance,
 } from '../model';
+import type { ContentProviderCapabilityMetadata } from '../model/capabilities';
 
 export const invokeInstance = createPluginInvoke('instance');
 export const invokeProcess = createPluginInvoke('process');
@@ -92,11 +95,13 @@ export const removeContentsRaw = (id: string, contentPaths: string[]) =>
     contentPaths,
   });
 
-export const getContentProvidersRaw = () =>
-  invokeInstance<Record<string, string>>(`get_content_providers`);
+export const listContentProvidersRaw = () =>
+  invokeInstance<Array<CapabilityEntry<ContentProviderCapabilityMetadata>>>(
+    `list_content_providers`,
+  );
 
-export const getContentByProviderRaw = (payload: ContentRequest) =>
-  invokeInstance<ContentResponse>(`get_content_by_provider`, {
+export const searchContentRaw = (payload: ContentRequest) =>
+  invokeInstance<ContentResponse>(`search_content`, {
     payload,
   });
 
@@ -105,9 +110,6 @@ export const installContentRaw = (id: string, payload: InstallContentPayload) =>
     id,
     payload,
   });
-
-export const getMetadataFieldToCheckInstalledRaw = (provider: string) =>
-  invokeInstance<string>(`get_metadata_field_to_check_installed`, { provider });
 
 export const importContentsRaw = (
   instanceId: string,

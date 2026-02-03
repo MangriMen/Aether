@@ -11,6 +11,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import type { ContentProviderCapabilityMetadata } from '@/entities/instances';
+import type { CapabilityEntry } from '@/shared/model';
+
 import {
   ContentType,
   useContentProviders,
@@ -18,6 +21,7 @@ import {
 } from '@/entities/instances';
 import { ModLoader } from '@/entities/minecraft';
 import { ROUTES } from '@/shared/config';
+import { type Option } from '@/shared/model';
 import { Separator } from '@/shared/ui';
 
 import { ContentBrowser } from './ContentBrowser';
@@ -52,11 +56,13 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
 
   const contentProviders = useContentProviders();
 
-  const transformedContentProviders = createMemo(() =>
+  const transformedContentProviders = createMemo<
+    Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[]
+  >(() =>
     contentProviders.data
-      ? Object.entries(contentProviders.data).map(([key, value]) => ({
-          name: value,
-          value: key,
+      ? contentProviders.data.map((value) => ({
+          name: value.capability.name,
+          value: value,
         }))
       : [],
   );

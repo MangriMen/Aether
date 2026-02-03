@@ -1,3 +1,4 @@
+export * from './capability_entry';
 export * from './error';
 export * from './globalDialog';
 export * from './i18n';
