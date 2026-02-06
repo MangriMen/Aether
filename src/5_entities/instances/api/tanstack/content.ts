@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
 import { type Accessor } from 'solid-js';
 
 import { showError } from '@/shared/lib/showError';
@@ -41,13 +46,14 @@ export const useSearchContent = (
     ],
     queryFn: () => searchContentRaw(payload()!),
     enabled: !!payload(),
+    placeholderData: keepPreviousData,
   }));
 };
 
-export const useInstanceContents = (id: Accessor<string>) => {
+export const useInstanceContents = (id: Accessor<string | undefined>) => {
   return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
-    queryFn: () => listContentRaw(id()),
+    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id() ?? ''),
+    queryFn: () => listContentRaw(id() ?? ''),
     enabled: !!id(),
   }));
 };

@@ -8,7 +8,7 @@ const ALL_FILTER: DialogFilter = {
 };
 
 export const OPEN_FILTERS_BY_CONTENT_TYPE: Record<
-  ContentType,
+  Exclude<ContentType, typeof ContentType.Modpack>,
   DialogFilter[] | undefined
 > = {
   [ContentType.Mod]: [

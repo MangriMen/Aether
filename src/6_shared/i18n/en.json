@@ -76,6 +76,8 @@
     "dataPacks": "Data Packs",
     "imported": "{{contentType}} imported successfully",
     "installed": "{{contentType}} installed successfully",
+    "modpack": "Modpack",
+    "modpacks": "Modpacks",
     "mod": "Mod",
     "mods": "Mods",
     "provider": "Provider",

@@ -8,8 +8,8 @@ import { ContentListItem } from './ContentListItem';
 
 export type ContentListProps = ComponentProps<'div'> & {
   items: ContentItemExtended[];
-  instanceId: string;
-  gameVersion: string;
+  instanceId?: string;
+  gameVersion?: string;
   loader?: string;
   provider?: string;
   onInstalled?: (providerData: ContentItemExtended['providerData']) => void;

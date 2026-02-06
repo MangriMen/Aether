@@ -58,7 +58,7 @@ export const useInstances = () => {
   }));
 };
 
-export const useInstance = (id: Accessor<string>) => {
+export const useInstance = (id: Accessor<string | undefined>) => {
   const instances = useInstances();
 
   const instanceFromCache = createMemo(() =>
@@ -71,8 +71,8 @@ export const useInstance = (id: Accessor<string>) => {
 
   // Try to fetch instance if not found in cache
   const instanceQuery = useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.GET(id()),
-    queryFn: () => getInstanceRaw(id()),
+    queryKey: INSTANCE_QUERY_KEYS.GET(id() ?? ''),
+    queryFn: () => getInstanceRaw(id() ?? ''),
     enabled: shouldFetch(),
     reconcile: INSTANCE_RECONCILE,
   }));

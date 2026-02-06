@@ -5,13 +5,10 @@ import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import IconMdiPlus from '~icons/mdi/plus';
 import { splitProps, For, createMemo } from 'solid-js';
 
-import type { ContentType, Instance } from '@/entities/instances';
+import type { AtomicContentType, Instance } from '@/entities/instances';
 
-import {
-  CONTENT_TYPE_TO_TITLE,
-  CONTENT_TYPES,
-  useImportContents,
-} from '@/entities/instances';
+import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
+import { CONTENT_TYPE_TO_TITLE, useImportContents } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
@@ -29,7 +26,7 @@ import { OPEN_FILTERS_BY_CONTENT_TYPE } from '../model';
 export type InstallContentButtonProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];
   onInstallContentClick?: () => void;
-  contentTypes?: ContentType[];
+  contentTypes?: AtomicContentType[];
   disabled?: boolean;
 };
 
@@ -45,10 +42,16 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
 
   const [{ t }] = useTranslation();
 
-  const contentTypes = createMemo(() => props.contentTypes || CONTENT_TYPES);
+  const contentTypes = createMemo(
+    () => props.contentTypes || ATOMIC_CONTENT_TYPES,
+  );
 
   const { mutateAsync: importContents } = useImportContents();
   const handleAddContents = async (contentType: ContentType) => {
+    if (contentType === ContentType.Modpack) {
+      return;
+    }
+
     const paths = await open({
       multiple: true,
       directory: false,

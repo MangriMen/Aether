@@ -20,8 +20,8 @@ import { Button, Image } from '@/shared/ui';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
   item: ContentItemExtended;
-  instanceId: string;
-  gameVersion: string;
+  instanceId?: string;
+  gameVersion?: string;
   loader?: string;
   provider?: string;
   onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
@@ -45,7 +45,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const { mutateAsync: installContent } = useInstallContent();
 
   const handleInstallContent = async () => {
-    if (!local.provider) {
+    if (!local.provider || !local.instanceId || !local.gameVersion) {
       return;
     }
 

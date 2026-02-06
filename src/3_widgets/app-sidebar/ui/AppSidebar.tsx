@@ -12,6 +12,7 @@ import type { AccountSelectButtonProps } from './AccountSelectButton';
 import type { CreateInstanceButtonProps } from './CreateInstanceButton';
 
 import { AccountSelectButton } from './AccountSelectButton';
+import { ContentButton } from './ContentButton';
 import CreateInstanceButton from './CreateInstanceButton';
 import HomeButton from './HomeButton';
 import SettingsButton from './SettingsButton';
@@ -36,7 +37,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
     >
       <div class='flex flex-col items-center gap-2'>
         <HomeButton />
-        {/* <ContentButton /> */}
+        <ContentButton />
         <Separator />
         <CreateInstanceButton
           createInstanceDialog={local.createInstanceDialog}

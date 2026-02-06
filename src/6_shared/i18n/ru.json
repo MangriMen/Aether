@@ -76,6 +76,8 @@
     "dataPacks": "Дата паки",
     "imported": "{{contentType}} успешно импортирован",
     "installed": "{{contentType}} успешно установлен",
+    "modpack": "Модпак",
+    "modpacks": "Модпаки",
     "mod": "Мод",
     "mods": "Моды",
     "provider": "Провайдер",

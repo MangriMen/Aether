@@ -3,7 +3,6 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  For,
   Match,
   splitProps,
   Switch,
@@ -20,7 +19,6 @@ import type { ContentProviderCapabilityMetadata } from '@/entities/instances/mod
 import type { CapabilityEntry, Option } from '@/shared/model';
 
 import {
-  CONTENT_TYPE_TO_TITLE,
   CONTENT_TYPES,
   ContentType,
   useSearchContent,
@@ -28,15 +26,16 @@ import {
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { CombinedSelect, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
+import { CombinedSelect } from '@/shared/ui';
 
 import { ContentFilters } from './ContentFilters';
 import { ContentList } from './ContentList';
 import { ContentListSkeleton } from './ContentListSkeleton';
+import { ContentTypeTabs } from './ContentTypeTabs';
 
 export type ContentBrowserProps = ComponentProps<'div'> & {
   providers: Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[];
-  instance: Instance;
+  instance?: Instance;
   contentTypes?: ContentType[];
 };
 
@@ -53,6 +52,10 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   const [contentType, setContentType] = createSignal<ContentType>(
     ContentType.Mod,
   );
+
+  createEffect(() => {
+    setContentType(local.instance ? ContentType.Mod : ContentType.Modpack);
+  });
 
   const availableContentTabs = createMemo(
     () => local.contentTypes ?? CONTENT_TYPES,
@@ -93,20 +96,26 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       return;
     }
 
+    const gameVersions = local.instance
+      ? [local.instance.gameVersion]
+      : undefined;
+
+    const loader = local.instance?.loader;
+
     return {
       contentType: contentType(),
       provider: currentProvider.value.capability.id,
       page: page(),
       pageSize: pageSize(),
       query: searchQuery(),
-      gameVersions: [local.instance.gameVersion],
-      loader: local.instance.loader,
+      gameVersions,
+      loader,
     };
   });
 
   const content = useSearchContent(() => contentRequestPayload());
 
-  const instanceContent = useInstanceContents(() => local.instance.id);
+  const instanceContent = useInstanceContents(() => local.instance?.id);
 
   const instanceContentArray = createMemo(() =>
     instanceContent.data ? Object.values(instanceContent.data) : undefined,
@@ -176,17 +185,10 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       {...others}
     >
       <div class='flex justify-between gap-2'>
-        <Tabs onChange={setContentType}>
-          <TabsList>
-            <For each={availableContentTabs()}>
-              {(contentType) => (
-                <TabsTrigger value={contentType}>
-                  {t(`content.${CONTENT_TYPE_TO_TITLE[contentType]}`)}
-                </TabsTrigger>
-              )}
-            </For>
-          </TabsList>
-        </Tabs>
+        <ContentTypeTabs
+          onChange={setContentType}
+          items={availableContentTabs()}
+        />
         <div class='flex items-center gap-2'>
           <span class='text-muted-foreground'>{t('content.provider')}:</span>
           <CombinedSelect
@@ -201,16 +203,16 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       </div>
       <ContentFilters
         pageSize={pageSize()}
-        pageCount={content.data?.pageCount ?? 10}
+        pageCount={content.data?.pageCount}
         currentPage={page()}
         onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         contentType={contentType()}
-        loading={content.isLoading}
+        loading={content.isFetching}
       />
       <Switch>
-        <Match when={content.isLoading}>
+        <Match when={content.isFetching}>
           <ContentListSkeleton />
         </Match>
         <Match when={content.isError}>
@@ -221,10 +223,10 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         <Match when={items()}>
           {(items) => (
             <ContentList
-              items={items() ?? []}
-              instanceId={local.instance.id}
-              gameVersion={local.instance.gameVersion}
-              loader={local.instance.loader}
+              items={items()}
+              instanceId={local.instance?.id}
+              gameVersion={local.instance?.gameVersion}
+              loader={local.instance?.loader}
               provider={provider()?.value.capability.id}
               onInstalled={handleOnInstalled}
             />
