@@ -50,12 +50,14 @@ export const useSearchContent = (
   }));
 };
 
+export const instanceContentsQuery = (id: string | undefined) => ({
+  queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
+  queryFn: () => listContentRaw(id ?? ''),
+  enabled: !!id,
+});
+
 export const useInstanceContents = (id: Accessor<string | undefined>) => {
-  return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id() ?? ''),
-    queryFn: () => listContentRaw(id() ?? ''),
-    enabled: !!id(),
-  }));
+  return useQuery(() => instanceContentsQuery(id()));
 };
 
 export const useDisableContents = () => {

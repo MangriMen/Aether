@@ -24,7 +24,7 @@ export type ContentFiltersProps = ComponentProps<'div'> & {
   loading?: boolean;
 };
 
-export const ContentFilters: Component<ContentFiltersProps> = (props) => {
+export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
   const [local, others] = splitProps(props, [
     'pageCount',
     'pageSize',

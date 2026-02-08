@@ -39,6 +39,7 @@ export interface InstallContentPayload {
   providerData?: unknown;
 }
 
-export interface ContentItemExtended extends ContentItem {
-  installed: boolean;
+export interface ContentFilters {
+  gameVersions?: string[];
+  loaders?: string[];
 }

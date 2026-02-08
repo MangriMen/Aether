@@ -7,18 +7,15 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentProviderCapabilityMetadata } from '@/entities/instances';
-import type { CapabilityEntry } from '@/shared/model';
+import type { ContentFilters } from '@/entities/instances';
 
-import {
-  ContentType,
-  useContentProviders,
-  useInstance,
-} from '@/entities/instances';
-import { ModLoader } from '@/entities/minecraft';
-import { type Option } from '@/shared/model';
+import { useContentProviders, useInstance } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 
+import type { ContentFiltersLock } from '../model/contentFiltersLock';
+
+import { getAvailableContentTypes, parseSearchParams } from '../lib';
+import { getFiltersFromInstance } from '../lib/getFiltersFromInstance';
 import { contentProvidersToOptions } from '../model';
 import { ContentBrowser } from './ContentBrowser';
 import { InstanceInfo } from './InstanceInfo';
@@ -35,34 +32,26 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
 
   const [searchParams] = useSearchParams();
 
-  const id = createMemo(() => {
-    const instance = searchParams['instance'];
+  const pageSearchParams = createMemo(() => parseSearchParams(searchParams));
 
-    if (instance === undefined || typeof instance !== 'string') {
-      return undefined;
-    }
-
-    return decodeURIComponent(instance);
-  });
-
-  const instance = useInstance(() => id());
+  const instance = useInstance(() => pageSearchParams().instanceId);
 
   const contentProviders = useContentProviders();
 
-  const transformedContentProviders = createMemo<
-    Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[]
-  >(() => contentProvidersToOptions(contentProviders.data) ?? []);
+  const contentProvidersOptions = createMemo(
+    () => contentProvidersToOptions(contentProviders.data) ?? [],
+  );
 
-  const availableContent = createMemo(() => {
-    if (!id()) {
-      return undefined;
-    } else if (!instance.data) {
-      return [];
-    } else if (instance.data.loader == ModLoader.Vanilla) {
-      return [ContentType.ResourcePack, ContentType.DataPack];
-    } else {
-      return undefined;
-    }
+  const availableContentTypes = createMemo(() =>
+    getAvailableContentTypes(instance.data, !!pageSearchParams().instanceId),
+  );
+
+  const filtersData = createMemo<{
+    filters?: ContentFilters;
+    filtersLock?: ContentFiltersLock;
+  }>(() => {
+    const filtersFromInstance = getFiltersFromInstance(instance.data);
+    return filtersFromInstance;
   });
 
   return (
@@ -77,8 +66,10 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
       </Show>
       <ContentBrowser
         instance={instance.data}
-        providers={transformedContentProviders()}
-        contentTypes={availableContent()}
+        providers={contentProvidersOptions()}
+        types={availableContentTypes()}
+        filters={filtersData().filters}
+        filtersLock={filtersData().filtersLock}
       />
     </div>
   );

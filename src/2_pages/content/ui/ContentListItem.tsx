@@ -2,87 +2,71 @@ import IconMdiCheck from '~icons/mdi/check';
 import IconMdiDownload from '~icons/mdi/download';
 import {
   createMemo,
-  createSignal,
   splitProps,
   type Component,
   type ComponentProps,
   Show,
 } from 'solid-js';
 
-import {
-  useInstallContent,
-  type ContentItemExtended,
-  type InstallContentPayload,
-} from '@/entities/instances';
+import type { ContentItem } from '@/entities/instances';
+
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Image } from '@/shared/ui';
 
+import { useContentContext } from '../model/contentContext';
+
 export type ContentListItemProps = ComponentProps<'div'> & {
-  item: ContentItemExtended;
+  item: ContentItem;
   instanceId?: string;
-  gameVersion?: string;
-  loader?: string;
-  provider?: string;
-  onInstalled?: (providerData: ContentItemExtended['providerData']) => void;
 };
 
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'item',
-    'instanceId',
-    'gameVersion',
-    'loader',
-    'provider',
-    'onInstalled',
-    'class',
-  ]);
+  const [local, others] = splitProps(props, ['item', 'instanceId', 'class']);
 
   const [{ t }] = useTranslation();
 
-  const [isInstalling, setIsInstalling] = createSignal(false);
+  const [
+    context,
+    { installContent, createIsContentInstalling, createIsContentInstalled },
+  ] = useContentContext();
 
-  const { mutateAsync: installContent } = useInstallContent();
+  const contentMetadataId = createMemo(() => {
+    const providerDataContentIdField = context.providerDataContentIdField;
+    const providerData = local.item.providerData;
 
-  const handleInstallContent = async () => {
-    if (!local.provider || !local.instanceId || !local.gameVersion) {
+    if (!providerDataContentIdField || !providerData) {
       return;
     }
 
-    const payload: InstallContentPayload = {
-      gameVersion: local.gameVersion,
-      loader: local.loader,
-      contentType: local.item.contentType,
-      contentVersion: undefined,
-      provider: local.provider,
-      providerData: local.item.providerData,
-    };
+    const metadataId = providerData[providerDataContentIdField];
 
-    if (local.item.contentType !== 'mod') {
-      payload.loader = undefined;
+    if (typeof metadataId !== 'string') {
+      return;
     }
 
-    setIsInstalling(true);
+    return metadataId;
+  });
 
-    try {
-      await installContent({ id: local.instanceId, payload });
-      local.onInstalled?.(local.item.providerData);
-    } catch {
-      /* empty */
-    }
-
-    setIsInstalling(false);
-  };
+  const isInstalling = createIsContentInstalling(() => contentMetadataId());
+  const isInstalled = createIsContentInstalled(
+    () => contentMetadataId(),
+    () => local.instanceId,
+  );
 
   const installButtonText = createMemo(() => {
     if (isInstalling()) {
       return t('common.installing');
-    } else if (local.item.installed) {
+    } else if (isInstalled()) {
       return t('common.installed');
     } else {
       return t('common.install');
     }
   });
+
+  const handleInstall = () => {
+    installContent(local.item);
+  };
 
   return (
     <div
@@ -111,13 +95,13 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
         <Button
           class='px-3'
           leadingIcon={() => (
-            <Show when={local.item.installed} fallback={<IconMdiDownload />}>
+            <Show when={isInstalled()} fallback={<IconMdiDownload />}>
               <IconMdiCheck />
             </Show>
           )}
-          onClick={handleInstallContent}
+          onClick={handleInstall}
           loading={isInstalling()}
-          disabled={local.item.installed}
+          disabled={isInstalled()}
         >
           {installButtonText()}
         </Button>
