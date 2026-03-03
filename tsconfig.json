@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -19,12 +23,24 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/app/*": ["./src/1_app/*"],
-      "@/pages/*": ["./src/2_pages/*"],
-      "@/widgets/*": ["./src/3_widgets/*"],
-      "@/features/*": ["./src/4_features/*"],
-      "@/entities/*": ["./src/5_entities/*"],
-      "@/shared/*": ["./src/6_shared/*"]
+      "@/app/*": [
+        "./src/1_app/*"
+      ],
+      "@/pages/*": [
+        "./src/2_pages/*"
+      ],
+      "@/widgets/*": [
+        "./src/3_widgets/*"
+      ],
+      "@/features/*": [
+        "./src/4_features/*"
+      ],
+      "@/entities/*": [
+        "./src/5_entities/*"
+      ],
+      "@/shared/*": [
+        "./src/6_shared/*"
+      ]
     },
     "types": [
       "vite-plugin-solid-svg/types-component-solid",
@@ -32,7 +48,9 @@
       "unplugin-icons/types/solid"
     ]
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     {
       "path": "./tsconfig.node.json"
