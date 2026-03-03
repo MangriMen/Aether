@@ -139,10 +139,10 @@ export const useRemoveInstance = () => {
   }));
 };
 
-export const useInstanceDir = (id: Accessor<string>) => {
+export const useInstanceDir = (id: Accessor<string | undefined>) => {
   return useQuery(() => ({
-    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id())],
-    queryFn: () => getInstanceDirRaw(id()),
+    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id() ?? '')],
+    queryFn: () => getInstanceDirRaw(id() ?? ''),
     enabled: !!id(),
   }));
 };
