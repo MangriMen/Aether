@@ -6,3 +6,6 @@ tsconfig.tsbuildinfo
 # IDE
 .vscode
 !.vscode/extensions.json
+
+# LLM
+.roo/rules

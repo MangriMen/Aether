@@ -1,3 +1,10 @@
+import { isContentType } from '@/entities/instances';
+import {
+  parseSearchParamToNumber,
+  parseSearchParamToString,
+  parseSearchParamToStringArray,
+} from '@/shared/lib/parseSearchParamsField';
+
 import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
 
 export const parseSearchParams = <
@@ -5,13 +12,20 @@ export const parseSearchParams = <
 >(
   searchParams: T,
 ): ContentPageSearchParams => {
-  const instanceIdRaw = searchParams['instance'];
-  const instanceId =
-    typeof instanceIdRaw === 'string'
-      ? decodeURIComponent(instanceIdRaw)
-      : undefined;
+  const contentTypeString = parseSearchParamToString(
+    searchParams['contentType'],
+  );
 
   return {
-    instanceId,
+    instanceId: parseSearchParamToString(searchParams['instance']),
+    page: parseSearchParamToNumber(searchParams['page']),
+    pageSize: parseSearchParamToNumber(searchParams['pageSize']),
+    query: parseSearchParamToString(searchParams['query']),
+    provider: parseSearchParamToString(searchParams['provider']),
+    contentType: isContentType(contentTypeString)
+      ? contentTypeString
+      : undefined,
+    gameVersions: parseSearchParamToStringArray(searchParams['gameVersions']),
+    loaders: parseSearchParamToStringArray(searchParams['loaders']),
   };
 };

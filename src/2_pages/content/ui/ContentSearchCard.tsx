@@ -17,6 +17,7 @@ export type ContentFiltersProps = ComponentProps<'div'> & {
   pageCount: number | undefined;
   pageSize: number;
   currentPage: number;
+  searchQuery?: string;
   onSearch: (query: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -29,6 +30,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
     'pageCount',
     'pageSize',
     'currentPage',
+    'searchQuery',
     'onSearch',
     'onPageChange',
     'onPageSizeChange',
@@ -47,6 +49,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
   return (
     <div class={cn('flex gap-2 justify-between', local.class)} {...others}>
       <ContentSearch
+        value={local.searchQuery}
         contentType={local.contentType}
         onSearch={local.onSearch}
       />

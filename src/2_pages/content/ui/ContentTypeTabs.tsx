@@ -6,7 +6,7 @@ import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 
-export type ContentTypeTabsProps = ComponentProps<'div'> & {
+export type ContentTypeTabsProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   items: ContentType[];
   value?: ContentType;
   defaultValue?: ContentType;

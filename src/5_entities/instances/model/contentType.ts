@@ -29,3 +29,13 @@ export const CONTENT_TYPE_TO_TITLE: Record<
   resourcepack: 'resourcePacks',
   shaderpack: 'shaders',
 } as const;
+
+export const isContentType = (
+  contentType: unknown,
+): contentType is ContentType => {
+  if (contentType === undefined || contentType === null) {
+    return false;
+  }
+
+  return CONTENT_TYPES.includes(contentType as ContentType);
+};

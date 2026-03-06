@@ -3,7 +3,7 @@ import type { Store } from 'solid-js/store';
 
 import { createContext, useContext } from 'solid-js';
 
-import type { ContentItem } from '@/entities/instances';
+import type { ContentItem, Instance } from '@/entities/instances';
 
 import type { InstalledContentIndexStore } from './installedContentIndexStore';
 
@@ -14,10 +14,14 @@ export type ContentContextValue<
   installingContentIds: Record<string, boolean>;
   providerId?: string;
   providerDataContentIdField?: string;
+  instanceId?: string;
 };
 
 export type ContentContextActions = {
-  installContent: (item: ContentItem) => Promise<void>;
+  installContent: (
+    item: ContentItem,
+    instanceId?: Instance['id'],
+  ) => Promise<void>;
   getInstancesForContent: (contentId: string) => string[];
   createIsContentInstalled: (
     contentId: Accessor<string | undefined>,

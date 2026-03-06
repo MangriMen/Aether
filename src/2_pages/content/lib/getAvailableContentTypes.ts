@@ -7,9 +7,9 @@ import { ModLoader } from '@/entities/minecraft';
 
 export const getAvailableContentTypes = (
   instance?: Instance,
-  hasInstanceId?: boolean,
+  isInstanceContentPage?: boolean,
 ): ContentType[] | undefined => {
-  if (!hasInstanceId) {
+  if (!isInstanceContentPage) {
     // Undefined means all content types
     return;
   }

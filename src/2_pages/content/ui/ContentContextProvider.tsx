@@ -8,6 +8,7 @@ import type {
   ContentFilters,
   ContentItem,
   InstallContentPayload,
+  Instance,
 } from '@/entities/instances';
 
 import {
@@ -54,6 +55,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     },
     get providerDataContentIdField() {
       return local.providerDataContentIdField;
+    },
+    get instanceId() {
+      return local.instanceId;
     },
   });
 
@@ -114,7 +118,10 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   const { mutateAsync: installContent } = useInstallContent();
 
-  const handleInstallContent = async (item: ContentItem) => {
+  const handleInstallContent = async (
+    item: ContentItem,
+    instanceId?: Instance['id'],
+  ) => {
     const field = store.providerDataContentIdField;
     const providerData = item.providerData;
 
@@ -129,11 +136,11 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     }
 
     const providerId = store.providerId;
-    const instanceId = local.instanceId;
+    const finalInstanceId = instanceId ?? local.instanceId;
     const gameVersion = local.filters?.gameVersions?.[0];
     const loader = local.filters?.loaders?.[0];
 
-    if (!providerId || !instanceId || !gameVersion) {
+    if (!providerId || !finalInstanceId || !gameVersion) {
       return;
     }
 
@@ -153,7 +160,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     setStore('installingContentIds', contentId, true);
 
     try {
-      await installContent({ id: instanceId, payload });
+      await installContent({ id: finalInstanceId, payload });
     } catch {
       /* empty */
     } finally {

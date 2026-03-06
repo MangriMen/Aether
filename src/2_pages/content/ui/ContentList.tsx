@@ -8,22 +8,17 @@ import { ContentListItem } from './ContentListItem';
 
 export type ContentListProps = ComponentProps<'div'> & {
   items: ContentItem[];
-  instanceId?: string;
 };
 
 export const ContentList: Component<ContentListProps> = (props) => {
-  const [local, others] = splitProps(props, ['items', 'instanceId', 'class']);
+  const [local, others] = splitProps(props, ['items', 'class']);
 
   return (
     <div
       class={cn('flex flex-col gap-2 overflow-y-auto', local.class)}
       {...others}
     >
-      <For each={local.items}>
-        {(item) => (
-          <ContentListItem item={item} instanceId={local.instanceId} />
-        )}
-      </For>
+      <For each={local.items}>{(item) => <ContentListItem item={item} />}</For>
     </div>
   );
 };

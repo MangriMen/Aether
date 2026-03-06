@@ -9,17 +9,14 @@ export const getFiltersFromInstance = (
     return { filters: undefined, filtersLock: undefined };
   }
 
-  const instanceGameVersion = instance?.gameVersion;
-  const instanceLoader = instance?.loader;
-
   return {
     filters: {
-      gameVersions: instanceGameVersion ? [instanceGameVersion] : undefined,
-      loaders: instanceLoader ? [instanceLoader] : undefined,
+      gameVersions: [instance.gameVersion],
+      loaders: [instance.loader],
     },
     filtersLock: {
-      gameVersion: !!instanceGameVersion,
-      loader: !!instanceLoader,
+      gameVersion: true,
+      loader: true,
     },
   };
 };

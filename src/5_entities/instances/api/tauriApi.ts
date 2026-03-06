@@ -5,13 +5,13 @@ import type { CapabilityEntry } from '@/shared/model';
 import { createPluginInvoke } from '@/shared/lib';
 
 import type {
-  ContentRequest,
+  ContentSearchParams,
   Instance,
   NewInstance,
   ContentFile,
   ImportInstance,
   MinecraftProcessMetadata,
-  ContentResponse,
+  ContentSearchResponse,
   InstallContentPayload,
   ContentType,
   EditInstance,
@@ -100,8 +100,8 @@ export const listContentProvidersRaw = () =>
     `list_content_providers`,
   );
 
-export const searchContentRaw = (payload: ContentRequest) =>
-  invokeInstance<ContentResponse>(`search_content`, {
+export const searchContentRaw = (payload: ContentSearchParams) =>
+  invokeInstance<ContentSearchResponse>(`search_content`, {
     payload,
   });
 

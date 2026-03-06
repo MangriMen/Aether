@@ -11,7 +11,7 @@ import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
 import type {
-  ContentRequest,
+  ContentSearchParams,
   InstallContentPayload,
   ContentType,
 } from '../../model';
@@ -37,7 +37,7 @@ export const useContentProviders = () => {
 };
 
 export const useSearchContent = (
-  payload: Accessor<ContentRequest | undefined>,
+  payload: Accessor<ContentSearchParams | undefined>,
 ) => {
   return useQuery(() => ({
     queryKey: [

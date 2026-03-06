@@ -7,6 +7,25 @@ import { Skeleton } from '@/shared/ui';
 
 export type ContentListSkeletonProps = ComponentProps<'div'>;
 
+export const ContentListSkeleton: Component<ContentListSkeletonProps> = (
+  props,
+) => {
+  const [local, others] = splitProps(props, ['class']);
+
+  const items = createMemo(() => {
+    return new Array(3).fill(0);
+  });
+
+  return (
+    <div
+      class={cn('flex flex-col gap-2 overflow-y-auto', local.class)}
+      {...others}
+    >
+      <For each={items()}>{() => <ContentListItemSkeleton />}</For>
+    </div>
+  );
+};
+
 const ContentListItemSkeleton: Component<ComponentProps<'div'>> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
@@ -25,25 +44,6 @@ const ContentListItemSkeleton: Component<ComponentProps<'div'>> = (props) => {
         </span>
         <Skeleton class='bg-secondary' radius={4} height={24} width={400} />
       </div>
-    </div>
-  );
-};
-
-export const ContentListSkeleton: Component<ContentListSkeletonProps> = (
-  props,
-) => {
-  const [local, others] = splitProps(props, ['class']);
-
-  const items = createMemo(() => {
-    return new Array(3).fill(0);
-  });
-
-  return (
-    <div
-      class={cn('flex flex-col gap-2 overflow-y-auto', local.class)}
-      {...others}
-    >
-      <For each={items()}>{(_) => <ContentListItemSkeleton />}</For>
     </div>
   );
 };

@@ -1,3 +1,5 @@
+import type { ContentSearchOutputValues } from '@/pages/content/model/validation';
+
 import type { ContentType } from './contentType';
 
 export interface ContentItem {
@@ -12,7 +14,7 @@ export interface ContentItem {
   providerData?: Record<string, unknown>;
 }
 
-export interface ContentRequest {
+export interface ContentSearchParams {
   contentType: ContentType;
   provider: string;
   page: number;
@@ -22,7 +24,7 @@ export interface ContentRequest {
   loader?: string;
 }
 
-export interface ContentResponse {
+export interface ContentSearchResponse {
   page: number;
   pageSize: number;
   pageCount: number;
@@ -39,7 +41,4 @@ export interface InstallContentPayload {
   providerData?: unknown;
 }
 
-export interface ContentFilters {
-  gameVersions?: string[];
-  loaders?: string[];
-}
+export type ContentFilters = Partial<ContentSearchOutputValues>;

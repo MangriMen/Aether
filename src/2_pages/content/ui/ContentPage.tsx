@@ -12,10 +12,13 @@ import type { ContentFilters } from '@/entities/instances';
 import { useContentProviders, useInstance } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 
-import type { ContentFiltersLock } from '../model/contentFiltersLock';
-
-import { getAvailableContentTypes, parseSearchParams } from '../lib';
-import { getFiltersFromInstance } from '../lib/getFiltersFromInstance';
+import {
+  getAvailableContentTypes,
+  getFiltersFromSearchParams,
+  parseSearchParams,
+  getFiltersFromInstance,
+  mergeContentFilters,
+} from '../lib';
 import { contentProvidersToOptions } from '../model';
 import { ContentBrowser } from './ContentBrowser';
 import { InstanceInfo } from './InstanceInfo';
@@ -30,11 +33,17 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     'children',
   ]);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const pageSearchParams = createMemo(() => parseSearchParams(searchParams));
+  const params = createMemo(() => parseSearchParams(searchParams));
 
-  const instance = useInstance(() => pageSearchParams().instanceId);
+  const instance = useInstance(() => params().instanceId);
+
+  const isInstanceContentPage = createMemo(() => !!params().instanceId);
+
+  const availableContentTypes = createMemo(() =>
+    getAvailableContentTypes(instance.data, isInstanceContentPage()),
+  );
 
   const contentProviders = useContentProviders();
 
@@ -42,27 +51,42 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     () => contentProvidersToOptions(contentProviders.data) ?? [],
   );
 
-  const availableContentTypes = createMemo(() =>
-    getAvailableContentTypes(instance.data, !!pageSearchParams().instanceId),
+  const filtersData = createMemo(() =>
+    mergeContentFilters(
+      getFiltersFromInstance(instance.data),
+      getFiltersFromSearchParams(params()),
+    ),
   );
 
-  const filtersData = createMemo<{
-    filters?: ContentFilters;
-    filtersLock?: ContentFiltersLock;
-  }>(() => {
-    const filtersFromInstance = getFiltersFromInstance(instance.data);
-    return filtersFromInstance;
-  });
+  const handleFiltersChange = (filters: ContentFilters) => {
+    setSearchParams({
+      page: filters.page ? encodeURIComponent(filters.page) : undefined,
+      pageSize: filters.pageSize
+        ? encodeURIComponent(filters.pageSize)
+        : undefined,
+      query: filters.query ? encodeURIComponent(filters.query) : undefined,
+      provider: filters.provider
+        ? encodeURIComponent(filters.provider)
+        : undefined,
+      contentType: filters.contentType
+        ? encodeURIComponent(filters.contentType)
+        : undefined,
+      gameVersions: filters.gameVersions
+        ? filters.gameVersions.map((x) => encodeURIComponent(x))
+        : undefined,
+      loaders: filters.loaders
+        ? filters.loaders.map((x) => encodeURIComponent(x))
+        : undefined,
+    });
+  };
 
   return (
     <div class='flex size-full flex-col gap-2 p-4' {...others}>
-      <Show when={instance.data}>
-        {(instance) => (
-          <>
-            <InstanceInfo instance={instance()} />
-            <Separator />
-          </>
-        )}
+      <Show when={isInstanceContentPage()}>
+        <>
+          <InstanceInfo instance={instance.data} />
+          <Separator />
+        </>
       </Show>
       <ContentBrowser
         instance={instance.data}
@@ -70,6 +94,7 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
         types={availableContentTypes()}
         filters={filtersData().filters}
         filtersLock={filtersData().filtersLock}
+        onFiltersChange={handleFiltersChange}
       />
     </div>
   );
