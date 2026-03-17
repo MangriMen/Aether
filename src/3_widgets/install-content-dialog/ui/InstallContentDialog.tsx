@@ -4,11 +4,16 @@ import { For, type Component } from 'solid-js';
 
 import type { ContentItem, Instance } from '@/entities/instances';
 
-import { ContentInstallButton, useInstances } from '@/entities/instances';
+import {
+  ContentInstallButton,
+  useCheckCompatibility,
+  useInstances,
+} from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
 
 export type InstallContentDialogProps = {
+  provider: string;
   item: ContentItem;
   onClose: () => void;
   installContent: (
@@ -30,6 +35,14 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
 ) => {
   const [{ t }] = useTranslation();
   const instances = useInstances();
+
+  const checkCompatibility = useCheckCompatibility(
+    () => instances.data?.map((instance) => instance.id) ?? [],
+    () => ({
+      provider: props.provider,
+      contentItem: props.item,
+    }),
+  );
 
   return (
     <Dialog defaultOpen={true}>
@@ -53,6 +66,9 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
               const handleInstall = () =>
                 props.installContent(props.item, instance.id);
 
+              const isCompatible = () =>
+                checkCompatibility.data?.[instance.id].isCompatible ?? false;
+
               return (
                 <div class='flex items-center justify-between rounded border p-2'>
                   <span>{instance.name}</span>
@@ -60,6 +76,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
                     isInstalled={isInstalled()}
                     isInstalling={isInstalling()}
                     onClick={handleInstall}
+                    isCompatible={isCompatible()}
                   />
                 </div>
               );

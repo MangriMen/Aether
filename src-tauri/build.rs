@@ -37,6 +37,7 @@ fn main() {
             "remove_contents",
             "list_content_providers",
             "search_content",
+            "check_compatibility",
         ]),
     );
 

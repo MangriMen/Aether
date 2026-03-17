@@ -14,6 +14,8 @@ import type {
   ContentSearchParams,
   InstallContentPayload,
   ContentType,
+  Instance,
+  ContentItem,
 } from '../../model';
 
 import {
@@ -25,6 +27,7 @@ import {
   searchContentRaw,
   installContentRaw,
   importContentsRaw,
+  checkCompatibility,
 } from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
@@ -183,5 +186,23 @@ export const useImportContents = () => {
         t,
       });
     },
+  }));
+};
+
+export const useCheckCompatibility = (
+  instanceIds: Accessor<Instance['id'][]>,
+  checkParams: Accessor<{
+    provider: string;
+    contentItem: ContentItem;
+  }>,
+) => {
+  return useQuery(() => ({
+    queryKey: [
+      'compatibility',
+      instanceIds(),
+      checkParams().provider,
+      checkParams().contentItem,
+    ],
+    queryFn: () => checkCompatibility(instanceIds(), checkParams()),
   }));
 };

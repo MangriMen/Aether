@@ -68,7 +68,8 @@
     "update": "Обновить",
     "failedToOpenBrowser": "Не удалось открыть браузер",
     "copyToClipboard": "Скопировать в буфер обмена",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "incompatible": "Несовместимый"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",

@@ -15,6 +15,7 @@ import type {
   InstallContentPayload,
   ContentType,
   EditInstance,
+  ContentItem,
 } from '../model';
 import type { ContentProviderCapabilityMetadata } from '../model/capabilities';
 
@@ -124,3 +125,17 @@ export const importContentsRaw = (
 
 export const getInstanceDirRaw = (id: Instance['id']) =>
   invokeInstance<string>(`get_dir`, { id });
+
+export const checkCompatibility = (
+  instanceIds: Instance['id'][],
+  checkParams: {
+    provider: string;
+    contentItem: ContentItem;
+  },
+) =>
+  invokeInstance<
+    Record<string, { isCompatible: boolean; isInstalled: boolean }>
+  >('check_compatibility', {
+    instanceIds,
+    checkParams,
+  });

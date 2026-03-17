@@ -29,10 +29,15 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
     if (context.instanceId) {
       installContent(item());
     } else {
+      if (!context.providerId) {
+        console.error('Provider id is undefined');
+      }
+
       showDialog(
         'installContent',
         () => (
           <InstallContentDialog
+            provider={context.providerId ?? ''}
             installContent={installContent}
             createIsContentInstalled={createIsContentInstalled}
             createIsContentInstalling={createIsContentInstalling}

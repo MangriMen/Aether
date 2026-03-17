@@ -1,12 +1,18 @@
 use dashmap::DashMap;
 use log::debug;
-use std::path::PathBuf;
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 use uuid::Uuid;
 
 use aether_core::{
     features::{
         instance::{
-            app::{EditInstance, ImportInstance, NewInstance},
+            app::{
+                ContentCompatibilityCheckParams, ContentCompatibilityResult, EditInstance,
+                ImportInstance, NewInstance,
+            },
             ContentFile, ContentInstallParams, ContentProviderCapabilityMetadata,
             ContentSearchParams, ContentSearchResult, ContentType, ImporterCapabilityMetadata,
             Instance,
@@ -41,6 +47,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             remove_contents,
             list_content_providers,
             search_content,
+            check_compatibility
         ])
         .build()
 }
@@ -164,4 +171,12 @@ async fn list_content_providers(
 #[tauri::command]
 async fn search_content(payload: ContentSearchParams) -> FrontendResult<ContentSearchResult> {
     Ok(aether_core::api::instance::search_content(payload).await?)
+}
+
+#[tauri::command]
+async fn check_compatibility(
+    instance_ids: HashSet<String>,
+    check_params: ContentCompatibilityCheckParams,
+) -> FrontendResult<HashMap<String, ContentCompatibilityResult>> {
+    Ok(aether_core::api::instance::check_compatibility(instance_ids, check_params).await?)
 }

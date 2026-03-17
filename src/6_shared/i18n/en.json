@@ -68,7 +68,8 @@
     "repair": "Repair",
     "failedToOpenBrowser": "Failed to open browser",
     "copyToClipboard": "Copy to clipboard",
-    "close": "Close"
+    "close": "Close",
+    "incompatible": "Incompatible"
   },
   "content": {
     "backToInstance": "Back to instance",
