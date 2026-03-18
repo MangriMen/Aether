@@ -135,10 +135,15 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
+    const instance = instanceId
+      ? instances.data?.find((instance) => instance.id === instanceId)
+      : undefined;
+
     const providerId = store.providerId;
-    const finalInstanceId = instanceId ?? local.instanceId;
-    const gameVersion = local.filters?.gameVersions?.[0];
-    const loader = local.filters?.loaders?.[0];
+    const finalInstanceId = instance?.id ?? local.instanceId;
+    const gameVersion =
+      instance?.gameVersion ?? local.filters?.gameVersions?.[0];
+    const loader = instance?.loader ?? local.filters?.loaders?.[0];
 
     if (!providerId || !finalInstanceId || !gameVersion) {
       return;

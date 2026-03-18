@@ -1,7 +1,6 @@
 import type { Accessor } from 'solid-js';
 
-import type { ContentItem } from '@/entities/instances';
-
+import { ContentType, type ContentItem } from '@/entities/instances';
 import { showDialog, closeDialog } from '@/shared/model';
 import { InstallContentDialog } from '@/widgets/install-content-dialog';
 
@@ -28,16 +27,15 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
   const requestInstall = () => {
     if (context.instanceId) {
       installContent(item());
+    } else if (item().contentType === ContentType.Modpack) {
+      console.log('install modpack');
     } else {
-      if (!context.providerId) {
-        console.error('Provider id is undefined');
-      }
-
       showDialog(
         'installContent',
         () => (
           <InstallContentDialog
-            provider={context.providerId ?? ''}
+            providerId={context.providerId}
+            providerDataContentIdField={context.providerDataContentIdField}
             installContent={installContent}
             createIsContentInstalled={createIsContentInstalled}
             createIsContentInstalling={createIsContentInstalling}

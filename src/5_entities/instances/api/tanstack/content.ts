@@ -204,5 +204,6 @@ export const useCheckCompatibility = (
       checkParams().contentItem,
     ],
     queryFn: () => checkCompatibility(instanceIds(), checkParams()),
+    enabled: Boolean(checkParams().provider),
   }));
 };

@@ -1,19 +1,25 @@
 import type { Accessor } from 'solid-js';
 
-import { For, type Component } from 'solid-js';
+import IconMdiMagnify from '~icons/mdi/magnify';
+import { createMemo, createSignal, For, Show, type Component } from 'solid-js';
 
 import type { ContentItem, Instance } from '@/entities/instances';
 
-import {
-  ContentInstallButton,
-  useCheckCompatibility,
-  useInstances,
-} from '@/entities/instances';
+import { useCheckCompatibility, useInstances } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
+import {
+  CombinedTextField,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui';
+
+import { InstallContentDialogListItem } from './InstallContentDialogListItem';
 
 export type InstallContentDialogProps = {
-  provider: string;
+  providerId?: string;
+  providerDataContentIdField?: string;
   item: ContentItem;
   onClose: () => void;
   installContent: (
@@ -39,9 +45,29 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
   const checkCompatibility = useCheckCompatibility(
     () => instances.data?.map((instance) => instance.id) ?? [],
     () => ({
-      provider: props.provider,
+      provider: props.providerId ?? '',
       contentItem: props.item,
     }),
+  );
+
+  const itemId = createMemo(() => {
+    if (!props.item.providerData || !props.providerDataContentIdField) {
+      return undefined;
+    }
+
+    const id = props.item.providerData[props.providerDataContentIdField];
+
+    if (typeof id !== 'string') {
+      return undefined;
+    }
+
+    return id;
+  });
+
+  const [searchQuery, setSearchQuery] = createSignal('');
+
+  const filteredInstances = createMemo(() =>
+    instances.data?.filter((instance) => instance.name.includes(searchQuery())),
   );
 
   return (
@@ -50,39 +76,43 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
         <DialogHeader>
           <DialogTitle>{t('instance.installContent')}</DialogTitle>
         </DialogHeader>
-        <div class='flex flex-col gap-2'>
-          <For each={instances.data}>
-            {(instance) => {
-              const isInstalled = props.createIsContentInstalled(
-                () => props.item.providerData?.id as string,
-                () => instance.id,
-              );
-
-              const isInstalling = props.createIsContentInstalling(
-                () => props.item.providerData?.id as string,
-                () => instance.id,
-              );
-
-              const handleInstall = () =>
-                props.installContent(props.item, instance.id);
-
-              const isCompatible = () =>
-                checkCompatibility.data?.[instance.id].isCompatible ?? false;
-
-              return (
-                <div class='flex items-center justify-between rounded border p-2'>
-                  <span>{instance.name}</span>
-                  <ContentInstallButton
-                    isInstalled={isInstalled()}
-                    isInstalling={isInstalling()}
-                    onClick={handleInstall}
-                    isCompatible={isCompatible()}
-                  />
-                </div>
-              );
+        <Show
+          when={!checkCompatibility.isError}
+          fallback={
+            <div>{t('instance.unableToGetCompatibilityStatistics')}</div>
+          }
+        >
+          <CombinedTextField
+            value={searchQuery()}
+            onChange={setSearchQuery}
+            inputProps={{
+              class: 'pl-10',
+              placeholder: t('instance.searchInstance'),
+              type: 'text',
             }}
-          </For>
-        </div>
+            leadingIcons={
+              <div class='my-px flex h-full items-center px-2.5'>
+                <IconMdiMagnify />
+              </div>
+            }
+          />
+          <div class='flex flex-col gap-2'>
+            <For each={filteredInstances()}>
+              {(instance) => (
+                <InstallContentDialogListItem
+                  itemId={itemId()}
+                  item={props.item}
+                  instance={instance}
+                  checkCompatibilityData={checkCompatibility.data}
+                  isLoadingCheckCompatibilityData={checkCompatibility.isLoading}
+                  installContent={props.installContent}
+                  createIsContentInstalled={props.createIsContentInstalled}
+                  createIsContentInstalling={props.createIsContentInstalling}
+                />
+              )}
+            </For>
+          </div>
+        </Show>
       </DialogContent>
     </Dialog>
   );

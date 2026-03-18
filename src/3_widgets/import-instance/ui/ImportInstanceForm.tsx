@@ -90,7 +90,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
               class: 'pr-9',
               ...fieldProps,
             }}
-            leadingIcons={
+            trailingIcons={
               <div class='mr-1 flex h-full items-center justify-center'>
                 <CombinedTooltip
                   label={t('common.browse')}

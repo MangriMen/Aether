@@ -18,7 +18,7 @@ import { Button } from '@/shared/ui';
 export type ContentInstallButtonProps = {
   isInstalling: boolean;
   isInstalled: boolean;
-  isCompatible?: boolean;
+  isLoading?: boolean;
 };
 
 export const ContentInstallButton: Component<
@@ -29,7 +29,7 @@ export const ContentInstallButton: Component<
   const [_local, others] = splitProps(props, [
     'isInstalling',
     'isInstalled',
-    'isCompatible',
+    'isLoading',
     'class',
   ]);
 
@@ -38,7 +38,6 @@ export const ContentInstallButton: Component<
   const installButtonText = createMemo(() => {
     if (local.isInstalling) return t('common.installing');
     if (local.isInstalled) return t('common.installed');
-    if (!local.isCompatible) return t('common.incompatible');
     return t('common.install');
   });
 
@@ -50,8 +49,8 @@ export const ContentInstallButton: Component<
           <IconMdiCheck />
         </Show>
       )}
-      loading={local.isInstalling}
-      disabled={local.isInstalled || !local.isCompatible}
+      loading={local.isInstalling || local.isLoading}
+      disabled={local.isInstalled || local.isLoading}
       {...others}
     >
       {installButtonText()}

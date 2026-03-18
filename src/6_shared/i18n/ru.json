@@ -152,7 +152,10 @@
     "failedToRemove": "Не удалось удалить {{name}}",
     "removeForce": "Удалить принудительно",
     "failedToRemoveDescription": "Инстанс все еще устанавливается или запущен",
-    "instanceNotFound": "Инстанс не найден"
+    "instanceNotFound": "Инстанс не найден",
+    "notCompatibleWithContent": "Этот инстанс несовместим с этим контентом",
+    "searchInstance": "Поиск инстанса",
+    "unableToGetCompatibilityStatistics": "Не удалось получить статистику совместимости"
   },
   "instanceSettings": {
     "tab": {

@@ -152,7 +152,10 @@
     "failedToRemove": "Failed to remove {{name}}",
     "failedToRemoveDescription": "Instance still installing or running",
     "removeForce": "Force remove",
-    "instanceNotFound": "Instance not found"
+    "instanceNotFound": "Instance not found",
+    "notCompatibleWithContent": "This instance is not compatible with this content",
+    "searchInstance": "Search instance",
+    "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics"
   },
   "instanceSettings": {
     "tab": {

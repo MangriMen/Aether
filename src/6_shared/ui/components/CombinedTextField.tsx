@@ -24,6 +24,7 @@ export type CombinedTextFieldProps = TextFieldRootProps & {
   labelProps?: TextFieldLabelProps<'label'>;
   inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
   leadingIcons?: JSX.Element;
+  trailingIcons?: JSX.Element;
 };
 
 export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
@@ -33,6 +34,7 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
     'labelProps',
     'inputProps',
     'leadingIcons',
+    'trailingIcons',
     'class',
   ]);
 
@@ -46,8 +48,9 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
         <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
       </Show>
       <div class='relative flex'>
+        <div class='absolute inset-y-0 left-0'>{local.leadingIcons}</div>
         <TextFieldInput type='text' {...local.inputProps} />
-        <div class='absolute inset-y-0 right-0'>{local.leadingIcons}</div>
+        <div class='absolute inset-y-0 right-0'>{local.trailingIcons}</div>
       </div>
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
     </TextField>

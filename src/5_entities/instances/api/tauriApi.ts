@@ -15,9 +15,12 @@ import type {
   InstallContentPayload,
   ContentType,
   EditInstance,
-  ContentItem,
 } from '../model';
 import type { ContentProviderCapabilityMetadata } from '../model/capabilities';
+import type {
+  ContentCompatibilityCheckParams,
+  ContentCompatibilityResult,
+} from '../model/compatibility';
 
 export const invokeInstance = createPluginInvoke('instance');
 export const invokeProcess = createPluginInvoke('process');
@@ -127,15 +130,13 @@ export const getInstanceDirRaw = (id: Instance['id']) =>
   invokeInstance<string>(`get_dir`, { id });
 
 export const checkCompatibility = (
-  instanceIds: Instance['id'][],
-  checkParams: {
-    provider: string;
-    contentItem: ContentItem;
-  },
+  instanceIds: Array<Instance['id']>,
+  checkParams: ContentCompatibilityCheckParams,
 ) =>
-  invokeInstance<
-    Record<string, { isCompatible: boolean; isInstalled: boolean }>
-  >('check_compatibility', {
-    instanceIds,
-    checkParams,
-  });
+  invokeInstance<Record<Instance['id'], ContentCompatibilityResult>>(
+    'check_compatibility',
+    {
+      instanceIds,
+      checkParams,
+    },
+  );
