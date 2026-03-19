@@ -4,6 +4,7 @@ import type { ContentType } from './contentType';
 
 export interface ContentItem {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   author: string;
@@ -11,7 +12,6 @@ export interface ContentItem {
   iconUrl: string;
   versions: string[];
   contentType: ContentType;
-  providerData?: Record<string, unknown>;
 }
 
 export interface ContentSearchParams {
@@ -35,10 +35,10 @@ export interface ContentSearchResponse {
 export interface InstallContentPayload {
   gameVersion: string;
   loader?: string;
+  contentId: string;
   contentType: ContentType;
   contentVersion?: string;
   provider: string;
-  providerData?: unknown;
 }
 
 export type ContentFilters = Partial<ContentSearchOutputValues>;

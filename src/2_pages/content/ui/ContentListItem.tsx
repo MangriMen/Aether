@@ -13,9 +13,8 @@ export type ContentListItemProps = ComponentProps<'div'> & {
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const [local, others] = splitProps(props, ['item', 'class']);
 
-  const { requestInstall, isInstalling, isInstalled } = useContentListItem(
-    () => local.item,
-  );
+  const { requestInstall, isInstalling, isInstalled, isLoading } =
+    useContentListItem(() => local.item);
 
   return (
     <div
@@ -30,6 +29,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
         <ContentInstallButton
           isInstalling={isInstalling()}
           isInstalled={isInstalled()}
+          isLoading={isLoading()}
           onClick={requestInstall}
         />
       </div>

@@ -5,9 +5,11 @@ import type { Component, JSX, ValidComponent } from 'solid-js';
 import * as ButtonPrimitive from '@kobalte/core/button';
 import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
-import { splitProps, Show } from 'solid-js';
+import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
+
+import { DelayedShow } from './DelayedShow';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
@@ -79,7 +81,7 @@ const Button = <T extends ValidComponent = 'button'>(
     >
       {local.leadingIcon?.({})}
       {local.children}
-      <Show when={local.loading}>
+      <DelayedShow when={local.loading}>
         <div
           class={cn(
             'absolute m-auto size-full',
@@ -88,7 +90,7 @@ const Button = <T extends ValidComponent = 'button'>(
         >
           <IconMdiLoading class='animate-spin text-xl' />
         </div>
-      </Show>
+      </DelayedShow>
       {local.trailingIcon?.({})}
     </ButtonPrimitive.Root>
   );

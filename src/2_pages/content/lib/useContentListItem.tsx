@@ -1,45 +1,63 @@
-import type { Accessor } from 'solid-js';
+import { useQueryClient } from '@tanstack/solid-query';
+import { createSignal, type Accessor } from 'solid-js';
 
-import { ContentType, type ContentItem } from '@/entities/instances';
+import {
+  CHECK_COMPATIBILITY_QUERY,
+  ContentType,
+  useInstances,
+  type ContentItem,
+} from '@/entities/instances';
 import { showDialog, closeDialog } from '@/shared/model';
 import { InstallContentDialog } from '@/widgets/install-content-dialog';
 
 import { useContentContext } from '../model/contentContext';
 
 export const useContentListItem = (item: Accessor<ContentItem>) => {
-  const [
-    context,
-    { installContent, createIsContentInstalling, createIsContentInstalled },
-  ] = useContentContext();
+  const [context, { installContent, createIsInstalling, createIsInstalled }] =
+    useContentContext();
 
-  const contentMetadataId = () =>
-    getContentMetadataId(
-      item().providerData,
-      context.providerDataContentIdField,
-    );
-
-  const isInstalling = createIsContentInstalling(() => contentMetadataId());
-  const isInstalled = createIsContentInstalled(
-    () => contentMetadataId(),
+  const isInstalling = createIsInstalling(() => item().id);
+  const isInstalled = createIsInstalled(
+    () => item().id,
     () => context.instanceId,
   );
+  const [isLoading, setIsLoading] = createSignal(false);
 
-  const requestInstall = () => {
-    if (context.instanceId) {
-      installContent(item());
-    } else if (item().contentType === ContentType.Modpack) {
-      console.log('install modpack');
-    } else {
+  const queryClient = useQueryClient();
+  const instances = useInstances();
+
+  const prefetchCompatibility = async () => {
+    setIsLoading(true);
+
+    try {
+      const instanceIds = instances.data?.map((instance) => instance.id) ?? [];
+
+      await queryClient.prefetchQuery(
+        CHECK_COMPATIBILITY_QUERY(instanceIds, {
+          provider: context.providerId,
+          contentItem: item(),
+        }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const showInstallContentDialog = async () => {
+    try {
+      await prefetchCompatibility();
+    } finally {
       showDialog(
         'installContent',
         () => (
           <InstallContentDialog
-            providerId={context.providerId}
-            providerDataContentIdField={context.providerDataContentIdField}
-            installContent={installContent}
-            createIsContentInstalled={createIsContentInstalled}
-            createIsContentInstalling={createIsContentInstalling}
             item={item()}
+            manager={{
+              providerId: () => context.providerId,
+              installContent,
+              createIsInstalled,
+              createIsInstalling,
+            }}
             onClose={() => closeDialog('installContent')}
           />
         ),
@@ -48,22 +66,20 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
     }
   };
 
+  const requestInstall = async () => {
+    if (context.instanceId) {
+      installContent(item());
+    } else if (item().contentType === ContentType.Modpack) {
+      console.log('install modpack');
+    } else {
+      showInstallContentDialog();
+    }
+  };
+
   return {
     requestInstall,
     isInstalling,
     isInstalled,
+    isLoading,
   };
-};
-
-const getContentMetadataId = (
-  providerData: Record<string, unknown> | undefined,
-  providerDataContentIdField: string | undefined,
-) => {
-  if (!providerDataContentIdField || !providerData) {
-    return;
-  }
-
-  const metadataId = providerData[providerDataContentIdField];
-
-  return typeof metadataId === 'string' ? metadataId : undefined;
 };

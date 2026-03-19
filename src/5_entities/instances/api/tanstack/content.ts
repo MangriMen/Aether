@@ -6,6 +6,8 @@ import {
 } from '@tanstack/solid-query';
 import { type Accessor } from 'solid-js';
 
+import type { PartialBy } from '@/shared/model';
+
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
@@ -15,8 +17,8 @@ import type {
   InstallContentPayload,
   ContentType,
   Instance,
-  ContentItem,
 } from '../../model';
+import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
 
 import {
   listContentRaw,
@@ -189,21 +191,27 @@ export const useImportContents = () => {
   }));
 };
 
-export const useCheckCompatibility = (
-  instanceIds: Accessor<Instance['id'][]>,
-  checkParams: Accessor<{
-    provider: string;
-    contentItem: ContentItem;
-  }>,
+export const CHECK_COMPATIBILITY_QUERY = (
+  ids: Instance['id'][],
+  params: PartialBy<ContentCompatibilityCheckParams, 'provider'>,
 ) => {
-  return useQuery(() => ({
+  const isEnabled = Boolean(params.provider && ids.length > 0);
+
+  return {
     queryKey: [
       'compatibility',
-      instanceIds(),
-      checkParams().provider,
-      checkParams().contentItem,
-    ],
-    queryFn: () => checkCompatibility(instanceIds(), checkParams()),
-    enabled: Boolean(checkParams().provider),
-  }));
+      ids,
+      params.provider,
+      params.contentItem.id,
+    ] as const,
+    queryFn: () =>
+      checkCompatibility(ids, params as ContentCompatibilityCheckParams),
+    enabled: isEnabled,
+    placeholderData: keepPreviousData,
+  };
 };
+
+export const useCheckCompatibility = (
+  instanceIds: Accessor<Instance['id'][]>,
+  checkParams: Accessor<PartialBy<ContentCompatibilityCheckParams, 'provider'>>,
+) => useQuery(() => CHECK_COMPATIBILITY_QUERY(instanceIds(), checkParams()));

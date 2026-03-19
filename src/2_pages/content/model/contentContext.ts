@@ -13,7 +13,6 @@ export type ContentContextValue<
   installedContentIndex: Store<T>;
   installingContentIds: Record<string, boolean>;
   providerId?: string;
-  providerDataContentIdField?: string;
   instanceId?: string;
 };
 
@@ -23,11 +22,11 @@ export type ContentContextActions = {
     instanceId?: Instance['id'],
   ) => Promise<void>;
   getInstancesForContent: (contentId: string) => string[];
-  createIsContentInstalled: (
+  createIsInstalled: (
     contentId: Accessor<string | undefined>,
     instanceId: Accessor<string | undefined>,
   ) => Accessor<boolean>;
-  createIsContentInstalling: (
+  createIsInstalling: (
     contentId: Accessor<string | undefined>,
   ) => Accessor<boolean>;
 };

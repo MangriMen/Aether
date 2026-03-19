@@ -2,13 +2,7 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import IconMdiCheck from '~icons/mdi/check';
 import IconMdiDownload from '~icons/mdi/download';
-import {
-  createMemo,
-  mergeProps,
-  Show,
-  splitProps,
-  type Component,
-} from 'solid-js';
+import { createMemo, Show, splitProps, type Component } from 'solid-js';
 
 import type { ButtonProps } from '@/shared/ui';
 
@@ -26,20 +20,21 @@ export const ContentInstallButton: Component<
 > = (props) => {
   const [{ t }] = useTranslation();
 
-  const [_local, others] = splitProps(props, [
+  const [local, others] = splitProps(props, [
     'isInstalling',
     'isInstalled',
     'isLoading',
     'class',
   ]);
 
-  const local = mergeProps({ isCompatible: true }, _local);
-
   const installButtonText = createMemo(() => {
     if (local.isInstalling) return t('common.installing');
     if (local.isInstalled) return t('common.installed');
     return t('common.install');
   });
+
+  const isLoading = createMemo(() => local.isInstalling || local.isLoading);
+  const isDisabled = createMemo(() => local.isInstalled || local.isLoading);
 
   return (
     <Button
@@ -49,8 +44,8 @@ export const ContentInstallButton: Component<
           <IconMdiCheck />
         </Show>
       )}
-      loading={local.isInstalling || local.isLoading}
-      disabled={local.isInstalled || local.isLoading}
+      loading={isLoading()}
+      disabled={isDisabled()}
       {...others}
     >
       {installButtonText()}

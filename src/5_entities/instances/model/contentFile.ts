@@ -9,5 +9,5 @@ export interface ContentFile {
   instanceRelativePath: string;
   name?: string;
   size: number;
-  update: Record<string, Record<string, unknown>>;
+  update: Record<string, { contentId: string }>;
 }

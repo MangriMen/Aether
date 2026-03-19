@@ -208,9 +208,6 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
   return (
     <ContentContextProvider
       providerId={provider()?.value.capability.id}
-      providerDataContentIdField={
-        provider()?.value.capability.providerDataContentIdField
-      }
       filters={local.filters}
       instanceId={local.instance?.id}
     >

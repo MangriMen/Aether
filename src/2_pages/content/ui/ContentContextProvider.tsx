@@ -31,7 +31,6 @@ export type ContentContextProviderProps = {
   instanceId?: string;
   filters?: ContentFilters;
   providerId?: string;
-  providerDataContentIdField?: string;
 };
 
 export const ContentContextProvider: Component<ContentContextProviderProps> = (
@@ -41,7 +40,6 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     'instanceId',
     'filters',
     'providerId',
-    'providerDataContentIdField',
   ]);
 
   const [installedContentIndex, setInstalledContentIndex] =
@@ -52,9 +50,6 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     installingContentIds: {},
     get providerId() {
       return local.providerId;
-    },
-    get providerDataContentIdField() {
-      return local.providerDataContentIdField;
     },
     get instanceId() {
       return local.instanceId;
@@ -71,9 +66,8 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   createComputed(() => {
     const providerId = store.providerId;
-    const field = store.providerDataContentIdField;
 
-    if (!providerId || !field) {
+    if (!providerId) {
       return;
     }
 
@@ -97,7 +91,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       const instanceId = instance.id;
 
       for (const content of Object.values(contents.data)) {
-        const contentId = content.update?.[providerId]?.[field];
+        const contentId = content.update?.[providerId]?.contentId;
 
         if (contentId === undefined || typeof contentId !== 'string') {
           continue;
@@ -122,16 +116,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     item: ContentItem,
     instanceId?: Instance['id'],
   ) => {
-    const field = store.providerDataContentIdField;
-    const providerData = item.providerData;
+    const contentId = item.id;
 
-    if (!field || !providerData) {
-      return;
-    }
-
-    const contentId = providerData[field];
-
-    if (!contentId || typeof contentId !== 'string') {
+    if (!contentId) {
       return;
     }
 
@@ -152,10 +139,10 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     const payload: InstallContentPayload = {
       gameVersion: gameVersion,
       loader: loader,
+      contentId: item.id,
       contentType: item.contentType,
       contentVersion: undefined,
       provider: providerId,
-      providerData: item.providerData,
     };
 
     if (item.contentType !== 'mod') {
@@ -175,7 +162,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   const actions: ContentContextActions = {
     installContent: handleInstallContent,
-    createIsContentInstalling: (contentId) => {
+    createIsInstalling: (contentId) => {
       // We return a standard accessor.
       // The linter complains because it's defined inside an object.
       // eslint-disable-next-line solid/reactivity
@@ -191,7 +178,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
         return store.installingContentIds[contentId_];
       };
     },
-    createIsContentInstalled: (contentId, instanceId) => {
+    createIsInstalled: (contentId, instanceId) => {
       return () => {
         const contentId_ = contentId();
 

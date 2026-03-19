@@ -1,9 +1,14 @@
-import type { Accessor } from 'solid-js';
-
 import IconMdiMagnify from '~icons/mdi/magnify';
-import { createMemo, createSignal, For, Show, type Component } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  For,
+  Show,
+  splitProps,
+  type Component,
+} from 'solid-js';
 
-import type { ContentItem, Instance } from '@/entities/instances';
+import type { ContentItem } from '@/entities/instances';
 
 import { useCheckCompatibility, useInstances } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
@@ -15,59 +20,44 @@ import {
   DialogTitle,
 } from '@/shared/ui';
 
+import type { ContentManager } from '../model';
+
 import { InstallContentDialogListItem } from './InstallContentDialogListItem';
 
 export type InstallContentDialogProps = {
-  providerId?: string;
-  providerDataContentIdField?: string;
   item: ContentItem;
+  manager: ContentManager;
   onClose: () => void;
-  installContent: (
-    item: ContentItem,
-    instanceId?: Instance['id'],
-  ) => Promise<void>;
-  createIsContentInstalling: (
-    contentId: Accessor<string | undefined>,
-    instanceId: Accessor<string | undefined>,
-  ) => Accessor<boolean>;
-  createIsContentInstalled: (
-    contentId: Accessor<string | undefined>,
-    instanceId: Accessor<string | undefined>,
-  ) => Accessor<boolean>;
 };
 
 export const InstallContentDialog: Component<InstallContentDialogProps> = (
   props,
 ) => {
+  const [local, _] = splitProps(props, ['item', 'manager', 'onClose']);
+
   const [{ t }] = useTranslation();
   const instances = useInstances();
 
-  const checkCompatibility = useCheckCompatibility(
+  const instanceIds = createMemo(
     () => instances.data?.map((instance) => instance.id) ?? [],
-    () => ({
-      provider: props.providerId ?? '',
-      contentItem: props.item,
-    }),
   );
 
-  const itemId = createMemo(() => {
-    if (!props.item.providerData || !props.providerDataContentIdField) {
-      return undefined;
-    }
-
-    const id = props.item.providerData[props.providerDataContentIdField];
-
-    if (typeof id !== 'string') {
-      return undefined;
-    }
-
-    return id;
+  const contentCheckParams = () => ({
+    provider: local.manager.providerId(),
+    contentItem: props.item,
   });
+
+  const checkCompatibility = useCheckCompatibility(
+    () => instanceIds(),
+    () => contentCheckParams(),
+  );
 
   const [searchQuery, setSearchQuery] = createSignal('');
 
   const filteredInstances = createMemo(() =>
-    instances.data?.filter((instance) => instance.name.includes(searchQuery())),
+    instances.data?.filter((instance) =>
+      instance.name.toLowerCase().includes(searchQuery().toLowerCase()),
+    ),
   );
 
   return (
@@ -100,14 +90,12 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
             <For each={filteredInstances()}>
               {(instance) => (
                 <InstallContentDialogListItem
-                  itemId={itemId()}
                   item={props.item}
                   instance={instance}
+                  manager={local.manager}
                   checkCompatibilityData={checkCompatibility.data}
                   isLoadingCheckCompatibilityData={checkCompatibility.isLoading}
-                  installContent={props.installContent}
-                  createIsContentInstalled={props.createIsContentInstalled}
-                  createIsContentInstalling={props.createIsContentInstalling}
+                  onCloseDialog={local.onClose}
                 />
               )}
             </For>

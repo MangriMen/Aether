@@ -17,6 +17,5 @@ export interface ImporterCapabilityMetadata extends CapabilityMetadata {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UpdaterCapabilityMetadata extends CapabilityMetadata {}
 
-export interface ContentProviderCapabilityMetadata extends CapabilityMetadata {
-  providerDataContentIdField: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ContentProviderCapabilityMetadata extends CapabilityMetadata {}

@@ -1,4 +1,4 @@
-import type { Accessor, Component, ComponentProps } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
 import { A } from '@solidjs/router';
 import { createMemo, Show, splitProps } from 'solid-js';
@@ -15,77 +15,73 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, Image } from '@/shared/ui';
 
+import type { ContentManager } from '../model';
+
 export interface InstallContentDialogListItemProps {
   item: ContentItem;
-  itemId: string | undefined;
   instance: Instance;
+  manager: ContentManager;
   checkCompatibilityData:
     | Record<Instance['id'], ContentCompatibilityResult>
     | undefined;
   isLoadingCheckCompatibilityData?: boolean;
-  installContent: (
-    item: ContentItem,
-    instanceId?: Instance['id'],
-  ) => Promise<void>;
-  createIsContentInstalling: (
-    contentId: Accessor<string | undefined>,
-    instanceId: Accessor<string | undefined>,
-  ) => Accessor<boolean>;
-  createIsContentInstalled: (
-    contentId: Accessor<string | undefined>,
-    instanceId: Accessor<string | undefined>,
-  ) => Accessor<boolean>;
+  onCloseDialog?: () => void;
 }
 
 export const InstallContentDialogListItem: Component<
   ComponentProps<'div'> & InstallContentDialogListItemProps
 > = (props) => {
   const [local, others] = splitProps(props, [
-    'itemId',
+    'manager',
     'item',
     'instance',
-    'installContent',
-    'createIsContentInstalled',
-    'createIsContentInstalling',
     'checkCompatibilityData',
     'isLoadingCheckCompatibilityData',
+    'onCloseDialog',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
-  const isInstalled = createMemo(() =>
-    local.createIsContentInstalled(
-      () => local.itemId,
+  const isInstalledMemo = createMemo(() =>
+    local.manager.createIsInstalled(
+      () => local.item.id,
       () => local.instance.id,
-    )(),
+    ),
   );
+  const isInstalled = () => isInstalledMemo()();
 
-  const isInstalling = createMemo(() =>
-    local.createIsContentInstalling(
-      () => local.itemId,
+  const isInstallingMemo = createMemo(() =>
+    local.manager.createIsInstalling(
+      () => local.item.id,
       () => local.instance.id,
-    )(),
+    ),
   );
-
-  const handleInstall = () =>
-    local.installContent(local.item, local.instance.id);
+  const isInstalling = () => isInstallingMemo()();
 
   const isCompatible = () =>
     local.checkCompatibilityData?.[local.instance.id].isCompatible;
+
+  const isFulfilledCompatible = () =>
+    local.isLoadingCheckCompatibilityData || isCompatible();
+
+  const handleInstall = () =>
+    local.manager.installContent(local.item, local.instance.id);
 
   return (
     <CombinedTooltip
       as='div'
       label={t('instance.notCompatibleWithContent')}
-      disableTooltip={local.isLoadingCheckCompatibilityData || isCompatible()}
+      disableTooltip={isFulfilledCompatible()}
       class={cn('flex items-center justify-between rounded py-1.5', {
-        'text-muted-foreground':
-          !local.isLoadingCheckCompatibilityData && !isCompatible(),
+        'text-muted-foreground': !isFulfilledCompatible(),
       })}
       {...others}
     >
-      <A href={ROUTES.INSTANCE(local.instance.id)}>
+      <A
+        href={ROUTES.INSTANCE(local.instance.id)}
+        onClick={local.onCloseDialog}
+      >
         <div class='flex items-center gap-1 hover:underline'>
           <Image class='h-8 w-max' src={local.instance.iconPath} />
           {local.instance.name}
