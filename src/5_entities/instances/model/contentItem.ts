@@ -1,6 +1,6 @@
 import type { ContentSearchOutputValues } from '@/pages/content/model/validation';
 
-import type { ContentType } from './contentType';
+import type { AtomicContentType, ContentType } from './contentType';
 
 export interface ContentItem {
   id: string;
@@ -32,13 +32,24 @@ export interface ContentSearchResponse {
   items: ContentItem[];
 }
 
-export interface InstallContentPayload {
+export interface AtomicInstallParams {
+  instanceId: string;
   gameVersion: string;
   loader?: string;
   contentId: string;
-  contentType: ContentType;
+  contentType: AtomicContentType;
   contentVersion?: string;
   provider: string;
 }
+
+export interface ModpackInstallParams {
+  contentId: string;
+  contentVersion?: string;
+  provider: string;
+}
+
+export type InstallContentParams =
+  | { type: 'atomic'; data: AtomicInstallParams }
+  | { type: 'modpack'; data: ModpackInstallParams };
 
 export type ContentFilters = Partial<ContentSearchOutputValues>;

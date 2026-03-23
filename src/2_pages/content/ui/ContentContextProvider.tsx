@@ -7,12 +7,13 @@ import { createStore } from 'solid-js/store';
 import type {
   ContentFilters,
   ContentItem,
-  InstallContentPayload,
+  InstallContentParams,
   Instance,
 } from '@/entities/instances';
 
 import {
   instanceContentsQuery,
+  isAtomicContentType,
   useInstallContent,
   useInstances,
 } from '@/entities/instances';
@@ -112,7 +113,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   const { mutateAsync: installContent } = useInstallContent();
 
-  const handleInstallContent = async (
+  const handleInstallAtomicContent = async (
     item: ContentItem,
     instanceId?: Instance['id'],
   ) => {
@@ -136,27 +137,80 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
-    const payload: InstallContentPayload = {
-      gameVersion: gameVersion,
-      loader: loader,
-      contentId: item.id,
-      contentType: item.contentType,
-      contentVersion: undefined,
-      provider: providerId,
+    if (!isAtomicContentType(item.contentType)) {
+      return;
+    }
+
+    const payload: InstallContentParams = {
+      type: 'atomic',
+      data: {
+        instanceId: finalInstanceId,
+        gameVersion: gameVersion,
+        loader: loader,
+        contentId: item.id,
+        contentType: item.contentType,
+        contentVersion: undefined,
+        provider: providerId,
+      },
     };
 
     if (item.contentType !== 'mod') {
-      payload.loader = undefined;
+      payload.data.loader = undefined;
     }
 
     setStore('installingContentIds', contentId, true);
 
     try {
-      await installContent({ id: finalInstanceId, payload });
+      await installContent(payload);
     } catch {
       /* empty */
     } finally {
       setStore('installingContentIds', contentId, false);
+    }
+  };
+
+  const handleInstallModpack = async (item: ContentItem) => {
+    const contentId = item.id;
+
+    if (!contentId) {
+      return;
+    }
+
+    const provider = store.providerId;
+
+    if (!provider) {
+      return;
+    }
+
+    const payload: InstallContentParams = {
+      type: 'modpack',
+      data: {
+        contentId,
+        provider,
+      },
+    };
+
+    try {
+      await installContent(payload);
+    } catch {
+      // empty
+    }
+  };
+
+  const handleInstallContent = async (
+    item: ContentItem,
+    instanceId?: Instance['id'],
+  ) => {
+    const contentId = item.id;
+
+    if (!contentId) {
+      return;
+    }
+
+    if (item.contentType === 'modpack') {
+      handleInstallModpack(item);
+    } else {
+      handleInstallAtomicContent(item, instanceId);
     }
   };
 

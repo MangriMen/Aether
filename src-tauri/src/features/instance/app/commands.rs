@@ -143,8 +143,8 @@ async fn list_content(id: String) -> FrontendResult<DashMap<String, ContentFile>
 }
 
 #[tauri::command]
-async fn install_content(id: String, payload: ContentInstallParams) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install_content(id, payload).await?)
+async fn install_content(payload: ContentInstallParams) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::install_content(payload).await?)
 }
 
 #[tauri::command]

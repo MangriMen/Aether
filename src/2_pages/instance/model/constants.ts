@@ -1,5 +1,7 @@
 import type { DialogFilter } from '@tauri-apps/plugin-dialog';
 
+import type { AtomicContentType } from '@/entities/instances';
+
 import { ContentType } from '@/entities/instances';
 
 const ALL_FILTER: DialogFilter = {
@@ -8,7 +10,7 @@ const ALL_FILTER: DialogFilter = {
 };
 
 export const OPEN_FILTERS_BY_CONTENT_TYPE: Record<
-  Exclude<ContentType, typeof ContentType.Modpack>,
+  AtomicContentType,
   DialogFilter[] | undefined
 > = {
   [ContentType.Mod]: [

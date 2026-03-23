@@ -12,14 +12,10 @@ import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import type {
-  ContentSearchParams,
-  InstallContentPayload,
-  ContentType,
-  Instance,
-} from '../../model';
+import type { ContentSearchParams, Instance } from '../../model';
 import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
 
+import { ContentType } from '../../model';
 import {
   listContentRaw,
   disableContentRaw,
@@ -130,19 +126,20 @@ export const useInstallContent = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InstallContentPayload;
-    }) => installContentRaw(id, payload),
-    onSuccess: (_, { id, payload }) => {
-      invalidateInstanceContent(queryClient, id);
+    mutationFn: installContentRaw,
+    onSuccess: (_, payload) => {
+      if (payload.type === 'atomic') {
+        invalidateInstanceContent(queryClient, payload.data.instanceId);
+      }
+
+      const contentType =
+        payload.type === 'atomic'
+          ? payload.data.contentType
+          : ContentType.Modpack;
 
       showToast({
         title: t('content.installed', {
-          contentType: t(`content.${payload.contentType}`) || '',
+          contentType: t(`content.${contentType}`) || '',
         }),
         variant: 'success',
       });

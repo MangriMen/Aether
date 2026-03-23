@@ -1,41 +1,41 @@
-export const AtomicContentType = {
+export const ContentType = {
+  Modpack: 'modpack',
   Mod: 'mod',
   DataPack: 'datapack',
   ResourcePack: 'resourcepack',
   ShaderPack: 'shaderpack',
 } as const;
 
-export const ATOMIC_CONTENT_TYPES = Object.values(AtomicContentType);
-
-export type AtomicContentType =
-  (typeof AtomicContentType)[keyof typeof AtomicContentType];
-
-export const ContentType = {
-  Modpack: 'modpack',
-  ...AtomicContentType,
-} as const;
-
-export const CONTENT_TYPES = Object.values(ContentType);
-
 export type ContentType = (typeof ContentType)[keyof typeof ContentType];
 
-export const CONTENT_TYPE_TO_TITLE: Record<
+export type AtomicContentType = Exclude<
   ContentType,
-  'modpacks' | 'mods' | 'dataPacks' | 'resourcePacks' | 'shaders'
-> = {
-  modpack: 'modpacks',
-  mod: 'mods',
-  datapack: 'dataPacks',
-  resourcepack: 'resourcePacks',
-  shaderpack: 'shaders',
-} as const;
+  typeof ContentType.Modpack
+>;
 
-export const isContentType = (
-  contentType: unknown,
-): contentType is ContentType => {
-  if (contentType === undefined || contentType === null) {
-    return false;
-  }
+export const CONTENT_TYPES = Object.values(
+  ContentType,
+) as readonly ContentType[];
 
-  return CONTENT_TYPES.includes(contentType as ContentType);
-};
+export const ATOMIC_CONTENT_TYPES: readonly AtomicContentType[] = [
+  ContentType.Mod,
+  ContentType.DataPack,
+  ContentType.ResourcePack,
+  ContentType.ShaderPack,
+];
+
+export const CONTENT_TYPE_TO_TITLE = {
+  [ContentType.Mod]: 'mods',
+  [ContentType.DataPack]: 'dataPacks',
+  [ContentType.ResourcePack]: 'resourcePacks',
+  [ContentType.ShaderPack]: 'shaders',
+  [ContentType.Modpack]: 'modpacks',
+} as const satisfies Record<ContentType, string>;
+
+export const isContentType = (value: unknown): value is ContentType =>
+  typeof value === 'string' && CONTENT_TYPES.includes(value as ContentType);
+
+export const isAtomicContentType = (
+  value: unknown,
+): value is AtomicContentType =>
+  isContentType(value) && value !== ContentType.Modpack;

@@ -70,7 +70,7 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
     if (context.instanceId) {
       installContent(item());
     } else if (item().contentType === ContentType.Modpack) {
-      console.log('install modpack');
+      installContent(item());
     } else {
       showInstallContentDialog();
     }

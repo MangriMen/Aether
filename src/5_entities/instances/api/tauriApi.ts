@@ -12,7 +12,7 @@ import type {
   ImportInstance,
   MinecraftProcessMetadata,
   ContentSearchResponse,
-  InstallContentPayload,
+  InstallContentParams,
   ContentType,
   EditInstance,
 } from '../model';
@@ -109,9 +109,8 @@ export const searchContentRaw = (payload: ContentSearchParams) =>
     payload,
   });
 
-export const installContentRaw = (id: string, payload: InstallContentPayload) =>
+export const installContentRaw = (payload: InstallContentParams) =>
   invokeInstance(`install_content`, {
-    id,
     payload,
   });
 

@@ -48,7 +48,7 @@ import { ContentTypeTabs } from './ContentTypeTabs';
 
 export type ContentBrowserProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
   providers: Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[];
-  types?: ContentType[];
+  types?: readonly ContentType[];
   instance?: Instance;
   filters?: ContentFilters;
   filtersLock?: ContentFiltersLock;
