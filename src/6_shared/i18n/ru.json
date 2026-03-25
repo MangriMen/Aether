@@ -93,7 +93,8 @@
     "failedToImport": "Не удалось импортировать контент",
     "failedToRemove": "Не удалось удалить контент",
     "failedToDisable": "Не удалось отключить контент",
-    "failedToEnable": "Не удалось включить контент"
+    "failedToEnable": "Не удалось включить контент",
+    "noResultsFound": "Результаты не найдены"
   },
   "createInstance": {
     "custom": "Пользовательский",

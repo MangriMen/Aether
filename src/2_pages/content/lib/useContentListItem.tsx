@@ -27,6 +27,10 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
   const instances = useInstances();
 
   const prefetchCompatibility = async () => {
+    if (isLoading()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -34,10 +38,12 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
 
       await queryClient.prefetchQuery(
         CHECK_COMPATIBILITY_QUERY(instanceIds, {
-          provider: context.providerId,
+          providerId: context.providerId,
           contentItem: item(),
         }),
       );
+    } catch {
+      /* empty */
     } finally {
       setIsLoading(false);
     }
@@ -46,6 +52,8 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
   const showInstallContentDialog = async () => {
     try {
       await prefetchCompatibility();
+    } catch {
+      /* empty */
     } finally {
       showDialog(
         'installContent',
@@ -67,6 +75,10 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
   };
 
   const requestInstall = async () => {
+    if (isInstalling() || isLoading()) {
+      return;
+    }
+
     if (context.instanceId) {
       installContent(item());
     } else if (item().contentType === ContentType.Modpack) {

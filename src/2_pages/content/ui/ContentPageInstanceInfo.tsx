@@ -10,11 +10,13 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, DelayedShow, Image, Skeleton } from '@/shared/ui';
 
-export type InstanceInfoProps = ComponentProps<'div'> & {
+export type ContentPageInstanceInfoProps = ComponentProps<'div'> & {
   instance?: Instance;
 };
 
-export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
+export const ContentPageInstanceInfo: Component<
+  ContentPageInstanceInfoProps
+> = (props) => {
   const [local, others] = splitProps(props, ['instance', 'class']);
 
   const navigate = useNavigate();
@@ -30,12 +32,12 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
   };
 
   return (
-    <div class={cn('flex gap-2 items-center', local.class)} {...others}>
+    <div class={cn('flex gap-2 items-center h-14', local.class)} {...others}>
       <DelayedShow
         when={local.instance}
-        fallback={<Skeleton class='p-1' width={48} height={48} radius={4} />}
+        fallback={<Skeleton class='p-1' width={56} height={56} radius={4} />}
       >
-        <Image class='h-14 w-max' />
+        <Image class='h-14 w-max' src={local.instance?.iconPath} />
       </DelayedShow>
       <div class='flex flex-col justify-between text-muted-foreground'>
         <DelayedShow
@@ -43,9 +45,9 @@ export const InstanceInfo: Component<InstanceInfoProps> = (props) => {
           fallback={<Skeleton class='mb-1' width={96} height={20} radius={4} />}
         >
           {(name) => (
-            <span class='line-clamp-2 text-lg font-bold text-foreground'>
+            <h2 class='line-clamp-2 text-lg font-bold text-foreground'>
               {name()}
-            </span>
+            </h2>
           )}
         </DelayedShow>
         <DelayedShow

@@ -1,277 +1,130 @@
 import {
-  createForm,
-  getValue,
-  getValues,
-  reset,
-  setValue,
-  zodForm,
-} from '@modular-forms/solid';
-import { debounce } from '@solid-primitives/scheduled';
-import {
   createEffect,
   createMemo,
   createSignal,
-  Match,
   mergeProps,
-  on,
   splitProps,
-  Switch,
   type Component,
   type ComponentProps,
 } from 'solid-js';
 
-import type {
-  ContentFilters,
-  ContentSearchParams,
-  Instance,
-} from '@/entities/instances';
-import type { ContentProviderCapabilityMetadata } from '@/entities/instances/model/capabilities';
-import type { CapabilityEntry, Option } from '@/shared/model';
+import type { ContentFilters, ContentSearchParams } from '@/entities/instances';
+import type { ContentType } from '@/entities/instances';
+import type { Option } from '@/shared/model';
 
-import { ContentType } from '@/entities/instances';
 import { CONTENT_TYPES, useSearchContent } from '@/entities/instances';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedSelect } from '@/shared/ui';
+import { cn, debounce } from '@/shared/lib';
 
-import type { ContentFiltersLock } from '../model/contentFiltersLock';
+import type { ContentProviderEntry } from '../model';
 
-import {
-  ContentSearchSchema,
-  type ContentSearchInputValues,
-} from '../model/validation';
-import { ContentContextProvider } from './ContentContextProvider';
+import { useContentBrowserFilters } from '../lib/useContentBrowserFilters';
+import { SEARCH_QUERY_DEBOUNCE_DELAY } from '../model/constants';
 import { ContentList } from './ContentList';
-import { ContentListSkeleton } from './ContentListSkeleton';
+import { ContentProviderSelect } from './ContentProviderSelect';
 import { ContentSearchCard } from './ContentSearchCard';
 import { ContentTypeTabs } from './ContentTypeTabs';
 
-export type ContentBrowserProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
-  providers: Option<CapabilityEntry<ContentProviderCapabilityMetadata>>[];
+export type ContentBrowserProps = ComponentProps<'div'> & {
+  providers: Option<ContentProviderEntry>[];
+  isProvidersLoading?: boolean;
+  isProvidersError?: boolean;
   types?: readonly ContentType[];
-  instance?: Instance;
-  filters?: ContentFilters;
-  filtersLock?: ContentFiltersLock;
   onFiltersChange?: (filters: ContentFilters) => void;
 };
 
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
-  const [_local, others] = splitProps(props, [
+  const merged = mergeProps({ types: CONTENT_TYPES }, props);
+
+  const [local, others] = splitProps(merged, [
     'providers',
-    'instance',
+    'isProvidersLoading',
     'types',
-    'filters',
-    'filtersLock',
     'onFiltersChange',
     'class',
   ]);
 
-  const local = mergeProps(
-    {
-      types: CONTENT_TYPES,
-    },
-    _local,
+  const { state, actions } = useContentBrowserFilters(
+    () => local.providers,
+    () => local.types,
+    (filters) => local.onFiltersChange?.(filters),
   );
 
-  const [{ t }] = useTranslation();
+  const [localQuery, setLocalQuery] = createSignal('');
+  createEffect(() => setLocalQuery(state.query()));
 
-  const [form, { Form, Field }] = createForm<ContentSearchInputValues>({
-    validate: zodForm(ContentSearchSchema),
-    initialValues: {
-      page: 1,
-      pageSize: 20,
-      provider: undefined,
-      contentType: ContentType.Mod,
-      gameVersions: undefined,
-      loaders: undefined,
-    },
-  });
+  const debounceSetQuery = debounce(
+    (query: string) => actions.setQuery(query),
+    SEARCH_QUERY_DEBOUNCE_DELAY,
+  );
 
-  const findProvider = (
-    pluginId: string | undefined,
-    capabilityId: string | undefined,
-  ) => {
-    return local.providers.find(
-      (x) =>
-        x.value.pluginId === pluginId && x.value.capability.id === capabilityId,
-    );
+  const handleSearch = (query: string) => {
+    setLocalQuery(query);
+    debounceSetQuery(query);
   };
 
-  createEffect(() => {
-    const providerStr = local.filters?.provider?.split('_');
-    const provider = findProvider(providerStr?.[0], providerStr?.[1])?.value;
-    const firstProvider = local.providers[0];
-    const defaultProvider = firstProvider
-      ? {
-          pluginId: firstProvider.value.pluginId,
-          capabilityId: firstProvider.value.capability.id,
-        }
-      : undefined;
+  const contentSearchParams = createMemo(
+    (): ContentSearchParams | undefined => {
+      const currentProvider = state.provider()?.value;
 
-    reset(form, {
-      initialValues: {
-        page: local.filters?.page,
-        pageSize: local.filters?.pageSize,
-        provider: provider ?? defaultProvider,
-        contentType: local.filters?.contentType ?? local.types[0],
-        gameVersions: local.filters?.gameVersions,
-        loaders: local.filters?.loaders,
-      },
-    });
-  });
-
-  createEffect(
-    on([() => form, () => getValues(form)], ([_, values]) => {
-      const filters = ContentSearchSchema.safeParse(values);
-
-      if (filters.error) {
+      if (!currentProvider) {
         return;
       }
 
-      local.onFiltersChange?.(filters.data);
-    }),
+      return {
+        contentType: state.contentType(),
+        providerId: {
+          pluginId: currentProvider.pluginId,
+          capabilityId: currentProvider.capability.id,
+        },
+        page: state.page(),
+        pageSize: state.pageSize(),
+        query: state.query(),
+        gameVersions: state.gameVersions(),
+        loader: state.loader(),
+      };
+    },
   );
-
-  const contentType = createMemo(
-    () => getValue(form, 'contentType') ?? ContentType.Mod,
-  );
-  const searchQuery = createMemo(() => getValue(form, 'query'));
-  const handleChangeContentType = (type: ContentType) => {
-    setValue(form, 'contentType', type, {
-      shouldDirty: true,
-      shouldTouched: true,
-      shouldValidate: true,
-    });
-  };
-
-  const [provider, setProvider] = createSignal<Option<
-    CapabilityEntry<ContentProviderCapabilityMetadata>
-  > | null>(null);
-  const [page, setPage] = createSignal(1);
-  const [pageSize, setPageSize] = createSignal(20);
-
-  createEffect(() => {
-    if (local.providers.length) {
-      setProvider(local.providers[0]);
-    }
-  });
-
-  const handleSearch = (query: string) => {
-    if (query.trim()) {
-      setPage(1);
-    }
-
-    setValue(form, 'query', query);
-  };
-
-  const handlePageChange = (page: number) => setPage(page);
-  const handlePageSizeChange = (pageSize: number) => setPageSize(pageSize);
-  const handleSetProvider = (
-    provider: Option<CapabilityEntry<ContentProviderCapabilityMetadata>> | null,
-  ) => {
-    if (provider) {
-      setProvider(provider);
-      setValue(form, 'provider.capabilityId', provider.value.capability.id);
-      setValue(form, 'provider.pluginId', provider.value.pluginId);
-    }
-  };
-
-  const [contentSearchParams, setContentSearchParams] = createSignal<
-    ContentSearchParams | undefined
-  >(undefined);
-
-  const updateSearchParams = debounce((params: ContentSearchParams) => {
-    setContentSearchParams(params);
-  }, 300);
-
-  createEffect(() => {
-    const currentProvider = provider();
-    if (!currentProvider) {
-      return;
-    }
-
-    const dto = {
-      contentType: contentType(),
-      provider: currentProvider.value.capability.id,
-      page: page(),
-      pageSize: pageSize(),
-      query: searchQuery(),
-      gameVersions: local.filters?.gameVersions,
-      loader: local.filters?.loaders?.[0],
-    };
-
-    updateSearchParams(dto);
-  });
 
   const content = useSearchContent(() => contentSearchParams());
 
   return (
-    <ContentContextProvider
-      providerId={provider()?.value.capability.id}
-      filters={local.filters}
-      instanceId={local.instance?.id}
+    <div
+      class={cn('flex flex-col grow gap-2 overflow-hidden p-0.5', local.class)}
+      {...others}
     >
-      <Form
-        class={cn('flex flex-col grow gap-2 overflow-hidden p-1', local.class)}
-        {...others}
-      >
-        <div class='flex justify-between gap-2'>
-          <Field name='contentType'>
-            {(field) => (
-              <ContentTypeTabs
-                value={field.value}
-                onChange={handleChangeContentType}
-                items={local.types}
-              />
-            )}
-          </Field>
-          <div class='flex items-center gap-2'>
-            <span class='text-muted-foreground'>{t('content.provider')}:</span>
-            <Field name='provider.capabilityId'>
-              {(capabilityId) => (
-                <Field name='provider.pluginId'>
-                  {(pluginId) => {
-                    return (
-                      <CombinedSelect
-                        options={local.providers}
-                        value={findProvider(pluginId.value, capabilityId.value)}
-                        onChange={handleSetProvider}
-                        optionValue='value'
-                        optionTextValue='name'
-                        title={t('content.provider')}
-                      />
-                    );
-                  }}
-                </Field>
-              )}
-            </Field>
-          </div>
-        </div>
-        <ContentSearchCard
-          pageSize={pageSize()}
-          pageCount={content.data?.pageCount}
-          currentPage={page()}
-          searchQuery={form.internal.fields.query?.value.get() ?? ''}
-          onSearch={handleSearch}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-          contentType={contentType()}
-          loading={content.isFetching}
+      <div class='flex justify-between gap-2'>
+        <ContentTypeTabs
+          items={local.types}
+          value={state.contentType()}
+          onChange={actions.setContentType}
+          disabled={local.isProvidersLoading}
+          isLoading={local.types.length === 0 || local.isProvidersLoading}
         />
-        <Switch>
-          <Match when={content.isFetching}>
-            <ContentListSkeleton />
-          </Match>
-          <Match when={content.isError}>
-            <span class='flex grow items-center justify-center text-xl font-medium text-muted-foreground'>
-              {t('content.providerErrorOrNotFound')}
-            </span>
-          </Match>
-          <Match when={content.data?.items}>
-            {(items) => <ContentList items={items()} />}
-          </Match>
-        </Switch>
-      </Form>
-    </ContentContextProvider>
+        <ContentProviderSelect
+          options={local.providers}
+          value={state.provider()}
+          onChange={actions.setProvider}
+          isLoading={local.isProvidersLoading}
+        />
+      </div>
+
+      <ContentSearchCard
+        page={state.page()}
+        pageSize={state.pageSize()}
+        pageCount={content.data?.pageCount}
+        contentType={state.contentType()}
+        searchQuery={localQuery()}
+        isLoading={content.isFetching || local.isProvidersLoading}
+        onSearch={handleSearch}
+        onPageChange={actions.setPage}
+        onPageSizeChange={actions.setPageSize}
+      />
+
+      <ContentList
+        isLoading={content.isFetching || local.isProvidersLoading}
+        isError={content.isError}
+        items={content.data?.items}
+      />
+    </div>
   );
 };

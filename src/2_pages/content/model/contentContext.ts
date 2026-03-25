@@ -3,8 +3,14 @@ import type { Store } from 'solid-js/store';
 
 import { createContext, useContext } from 'solid-js';
 
-import type { ContentItem, Instance } from '@/entities/instances';
+import type {
+  ContentFilters,
+  ContentItem,
+  Instance,
+  ProviderId,
+} from '@/entities/instances';
 
+import type { ContentFiltersLock } from './contentFiltersLock';
 import type { InstalledContentIndexStore } from './installedContentIndexStore';
 
 export type ContentContextValue<
@@ -12,8 +18,10 @@ export type ContentContextValue<
 > = {
   installedContentIndex: Store<T>;
   installingContentIds: Record<string, boolean>;
-  providerId?: string;
+  providerId?: ProviderId;
   instanceId?: string;
+  filters?: ContentFilters;
+  filtersLock?: ContentFiltersLock;
 };
 
 export type ContentContextActions = {

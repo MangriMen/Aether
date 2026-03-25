@@ -14,7 +14,7 @@ export const getFiltersFromSearchParams = (
       page: searchParams.page,
       pageSize: searchParams.pageSize,
       query: searchParams.query,
-      provider: searchParams.provider,
+      providerId: searchParams.providerId,
       contentType: searchParams.contentType,
       gameVersions: searchParams.gameVersions,
       loaders: searchParams.loaders,

@@ -4,16 +4,16 @@ import { ContentType } from '@/entities/instances';
 
 const ContentTypeSchema = z.nativeEnum(ContentType);
 
+const ProviderIdSchema = z.object({
+  pluginId: z.string(),
+  capabilityId: z.string(),
+});
+
 export const ContentSearchSchema = z.object({
-  page: z.number(),
-  pageSize: z.number(),
+  page: z.number().min(1),
+  pageSize: z.number().min(1),
   query: z.string(),
-  provider: z
-    .object({
-      pluginId: z.string(),
-      capabilityId: z.string(),
-    })
-    .transform((value) => `${value.pluginId}_${value.capabilityId}`),
+  providerId: ProviderIdSchema,
   contentType: ContentTypeSchema,
   gameVersions: z.string().array(),
   loaders: z.string().array(),

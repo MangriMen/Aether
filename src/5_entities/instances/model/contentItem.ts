@@ -2,6 +2,11 @@ import type { ContentSearchOutputValues } from '@/pages/content/model/validation
 
 import type { AtomicContentType, ContentType } from './contentType';
 
+export interface ProviderId {
+  pluginId: string;
+  capabilityId: string;
+}
+
 export interface ContentItem {
   id: string;
   slug: string;
@@ -16,7 +21,7 @@ export interface ContentItem {
 
 export interface ContentSearchParams {
   contentType: ContentType;
-  provider: string;
+  providerId: ProviderId;
   page: number;
   pageSize: number;
   query?: string;
@@ -28,7 +33,7 @@ export interface ContentSearchResponse {
   page: number;
   pageSize: number;
   pageCount: number;
-  provider: string;
+  providerId: ProviderId;
   items: ContentItem[];
 }
 
@@ -39,13 +44,13 @@ export interface AtomicInstallParams {
   contentId: string;
   contentType: AtomicContentType;
   contentVersion?: string;
-  provider: string;
+  providerId: ProviderId;
 }
 
 export interface ModpackInstallParams {
   contentId: string;
   contentVersion?: string;
-  provider: string;
+  providerId: ProviderId;
 }
 
 export type InstallContentParams =
@@ -53,3 +58,14 @@ export type InstallContentParams =
   | { type: 'modpack'; data: ModpackInstallParams };
 
 export type ContentFilters = Partial<ContentSearchOutputValues>;
+
+export const PROVIDER_ID_SEPARATOR = '#' as const;
+
+export type ProviderIdString =
+  `${string}${typeof PROVIDER_ID_SEPARATOR}${string}`;
+
+export const providerIdToString = (
+  providerId: ProviderId,
+): ProviderIdString => {
+  return `${providerId.pluginId}${PROVIDER_ID_SEPARATOR}${providerId.capabilityId}`;
+};

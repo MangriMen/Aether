@@ -93,7 +93,8 @@
     "failedToImport": "Failed to import content",
     "failedToRemove": "Failed to remove content",
     "failedToEnable": "Failed to enable content",
-    "failedToDisable": "Failed to disable content"
+    "failedToDisable": "Failed to disable content",
+    "noResultsFound": "No results found"
   },
   "createInstance": {
     "custom": "Custom",

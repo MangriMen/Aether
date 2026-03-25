@@ -9,6 +9,8 @@ import {
 } from 'solid-js';
 
 import type { ContentItem } from '@/entities/instances';
+import type { ContentCompatibilityCheckParams } from '@/entities/instances/model/compatibility';
+import type { PartialBy } from '@/shared/model';
 
 import { useCheckCompatibility, useInstances } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
@@ -42,8 +44,11 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
     () => instances.data?.map((instance) => instance.id) ?? [],
   );
 
-  const contentCheckParams = () => ({
-    provider: local.manager.providerId(),
+  const contentCheckParams = (): PartialBy<
+    ContentCompatibilityCheckParams,
+    'providerId'
+  > => ({
+    providerId: local.manager.providerId(),
     contentItem: props.item,
   });
 
@@ -60,8 +65,14 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
     ),
   );
 
+  const handleOnOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      local.onClose();
+    }
+  };
+
   return (
-    <Dialog defaultOpen={true}>
+    <Dialog defaultOpen={true} onOpenChange={handleOnOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('instance.installContent')}</DialogTitle>

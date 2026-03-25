@@ -1,7 +1,7 @@
-import type { ContentItem } from './contentItem';
+import type { ContentItem, ProviderId } from './contentItem';
 
 export interface ContentCompatibilityCheckParams {
-  provider: string;
+  providerId: ProviderId;
   contentItem: ContentItem;
 }
 

@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import { Show, type Component } from 'solid-js';
 
 import type { ContentItem } from '@/entities/instances';
 
@@ -17,12 +17,17 @@ export const ContentItemInfo: Component<ContentItemInfoProps> = (props) => {
       />
       <div class='flex flex-col text-muted-foreground'>
         <span class='text-lg font-bold text-foreground'>
-          <a href={props.item.url} target='_blank'>
+          <a href={props.item.url} target='_blank' rel='noreferrer'>
             {props.item.name}
-          </a>{' '}
-          <span class='text-base font-semibold text-muted-foreground'>
-            by {props.item.author}
-          </span>
+          </a>
+          &#32;
+          <Show when={props.item.author}>
+            {(author) => (
+              <span class='text-base font-semibold text-muted-foreground'>
+                by {author()}
+              </span>
+            )}
+          </Show>
         </span>
         <span>{props.item.description}</span>
       </div>

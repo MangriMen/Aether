@@ -88,7 +88,7 @@ export const InstallContentDialogListItem: Component<
         </div>
       </A>
 
-      <Show when={isCompatible()}>
+      <Show when={isFulfilledCompatible()}>
         <ContentInstallButton
           isInstalled={isInstalled()}
           isInstalling={isInstalling()}

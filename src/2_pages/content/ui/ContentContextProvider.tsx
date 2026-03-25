@@ -9,9 +9,11 @@ import type {
   ContentItem,
   InstallContentParams,
   Instance,
+  ProviderId,
 } from '@/entities/instances';
 
 import {
+  getContentIdFromUpdateInfo,
   instanceContentsQuery,
   isAtomicContentType,
   useInstallContent,
@@ -23,15 +25,17 @@ import type {
   ContentContextType,
   ContentContextValue,
 } from '../model/contentContext';
+import type { ContentFiltersLock } from '../model/contentFiltersLock';
 
 import { ContentContext } from '../model/contentContext';
 import { createInstalledContentIndexStore } from '../model/installedContentIndexStore';
 
 export type ContentContextProviderProps = {
   children: JSX.Element;
-  instanceId?: string;
-  filters?: ContentFilters;
-  providerId?: string;
+  instanceId: string | undefined;
+  providerId: ProviderId | undefined;
+  filters: ContentFilters | undefined;
+  filtersLock: ContentFiltersLock | undefined;
 };
 
 export const ContentContextProvider: Component<ContentContextProviderProps> = (
@@ -39,8 +43,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'instanceId',
-    'filters',
     'providerId',
+    'filters',
+    'filtersLock',
   ]);
 
   const [installedContentIndex, setInstalledContentIndex] =
@@ -49,11 +54,17 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
   const [store, setStore] = createStore<ContentContextValue>({
     installedContentIndex: installedContentIndex,
     installingContentIds: {},
+    get instanceId() {
+      return local.instanceId;
+    },
     get providerId() {
       return local.providerId;
     },
-    get instanceId() {
-      return local.instanceId;
+    get filters() {
+      return local.filters;
+    },
+    get filtersLock() {
+      return local.filtersLock;
     },
   });
 
@@ -92,11 +103,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       const instanceId = instance.id;
 
       for (const content of Object.values(contents.data)) {
-        const contentId = content.update?.[providerId]?.contentId;
-
-        if (contentId === undefined || typeof contentId !== 'string') {
-          continue;
-        }
+        const contentId = getContentIdFromUpdateInfo(content, providerId);
 
         if (!newContentMap[contentId]) {
           newContentMap[contentId] = [];
@@ -123,12 +130,14 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
-    const instance = instanceId
-      ? instances.data?.find((instance) => instance.id === instanceId)
+    const finalInstanceId = instanceId ?? local.instanceId;
+
+    const instance = finalInstanceId
+      ? instances.data?.find((instance) => instance.id === finalInstanceId)
       : undefined;
 
     const providerId = store.providerId;
-    const finalInstanceId = instance?.id ?? local.instanceId;
+
     const gameVersion =
       instance?.gameVersion ?? local.filters?.gameVersions?.[0];
     const loader = instance?.loader ?? local.filters?.loaders?.[0];
@@ -150,7 +159,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
         contentId: item.id,
         contentType: item.contentType,
         contentVersion: undefined,
-        provider: providerId,
+        providerId: providerId,
       },
     };
 
@@ -176,9 +185,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
-    const provider = store.providerId;
+    const providerId = store.providerId;
 
-    if (!provider) {
+    if (!providerId) {
       return;
     }
 
@@ -186,7 +195,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       type: 'modpack',
       data: {
         contentId,
-        provider,
+        providerId,
       },
     };
 

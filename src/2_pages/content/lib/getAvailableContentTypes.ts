@@ -1,26 +1,22 @@
-import {
-  CONTENT_TYPES,
-  ContentType,
-  type Instance,
-} from '@/entities/instances';
+import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
 import { ModLoader } from '@/entities/minecraft';
 
 export const getAvailableContentTypes = (
-  instance?: Instance,
-  isInstanceContentPage?: boolean,
+  instanceLoader: ModLoader | undefined,
+  isInstanceContentPage: boolean,
 ): readonly ContentType[] | undefined => {
   if (!isInstanceContentPage) {
     // Undefined means all content types
     return;
   }
 
-  if (!instance) {
+  if (!instanceLoader) {
     return [];
   }
 
-  if (instance.loader === ModLoader.Vanilla) {
+  if (instanceLoader === ModLoader.Vanilla) {
     return [ContentType.ResourcePack, ContentType.DataPack];
   }
 
-  return CONTENT_TYPES;
+  return ATOMIC_CONTENT_TYPES;
 };

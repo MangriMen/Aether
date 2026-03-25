@@ -1,4 +1,4 @@
-import { useSearchParams, type RouteSectionProps } from '@solidjs/router';
+import { type RouteSectionProps } from '@solidjs/router';
 import {
   createMemo,
   Show,
@@ -12,16 +12,12 @@ import type { ContentFilters } from '@/entities/instances';
 import { useContentProviders, useInstance } from '@/entities/instances';
 import { Separator } from '@/shared/ui';
 
-import {
-  getAvailableContentTypes,
-  getFiltersFromSearchParams,
-  parseSearchParams,
-  getFiltersFromInstance,
-  mergeContentFilters,
-} from '../lib';
+import { useContentPageSearchParams } from '../lib/useContentFilters';
+import { useContentPageState } from '../lib/useContentPageState';
 import { contentProvidersToOptions } from '../model';
 import { ContentBrowser } from './ContentBrowser';
-import { InstanceInfo } from './InstanceInfo';
+import { ContentContextProvider } from './ContentContextProvider';
+import { ContentPageInstanceInfo } from './ContentPageInstanceInfo';
 
 export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
 
@@ -33,69 +29,48 @@ export const ContentPage: Component<ContentPageProps> = (props) => {
     'children',
   ]);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const params = createMemo(() => parseSearchParams(searchParams));
-
-  const instance = useInstance(() => params().instanceId);
-
-  const isInstanceContentPage = createMemo(() => !!params().instanceId);
-
-  const availableContentTypes = createMemo(() =>
-    getAvailableContentTypes(instance.data, isInstanceContentPage()),
-  );
+  const [params, setParams] = useContentPageSearchParams();
 
   const contentProviders = useContentProviders();
-
   const contentProvidersOptions = createMemo(
     () => contentProvidersToOptions(contentProviders.data) ?? [],
   );
 
-  const filtersData = createMemo(() =>
-    mergeContentFilters(
-      getFiltersFromInstance(instance.data),
-      getFiltersFromSearchParams(params()),
-    ),
+  const instance = useInstance(() => params().instanceId);
+
+  const contentPageState = useContentPageState(
+    () => instance.data,
+    () => params(),
   );
 
   const handleFiltersChange = (filters: ContentFilters) => {
-    setSearchParams({
-      page: filters.page ? encodeURIComponent(filters.page) : undefined,
-      pageSize: filters.pageSize
-        ? encodeURIComponent(filters.pageSize)
-        : undefined,
-      query: filters.query ? encodeURIComponent(filters.query) : undefined,
-      provider: filters.provider
-        ? encodeURIComponent(filters.provider)
-        : undefined,
-      contentType: filters.contentType
-        ? encodeURIComponent(filters.contentType)
-        : undefined,
-      gameVersions: filters.gameVersions
-        ? filters.gameVersions.map((x) => encodeURIComponent(x))
-        : undefined,
-      loaders: filters.loaders
-        ? filters.loaders.map((x) => encodeURIComponent(x))
-        : undefined,
+    setParams({
+      ...filters,
+      instanceId: params().instanceId,
     });
   };
 
   return (
-    <div class='flex size-full flex-col gap-2 p-4' {...others}>
-      <Show when={isInstanceContentPage()}>
-        <>
-          <InstanceInfo instance={instance.data} />
-          <Separator />
-        </>
-      </Show>
-      <ContentBrowser
-        instance={instance.data}
-        providers={contentProvidersOptions()}
-        types={availableContentTypes()}
-        filters={filtersData().filters}
-        filtersLock={filtersData().filtersLock}
-        onFiltersChange={handleFiltersChange}
-      />
-    </div>
+    <ContentContextProvider
+      instanceId={params().instanceId}
+      providerId={params().providerId}
+      filters={contentPageState().filters}
+      filtersLock={contentPageState().filtersLock}
+    >
+      <div class='flex size-full flex-col gap-2 p-4' {...others}>
+        <Show when={contentPageState().isInstanceContentPage}>
+          <>
+            <ContentPageInstanceInfo instance={instance.data} />
+            <Separator />
+          </>
+        </Show>
+        <ContentBrowser
+          providers={contentProvidersOptions()}
+          isProvidersLoading={contentProviders.isLoading}
+          types={contentPageState().availableContentTypes}
+          onFiltersChange={handleFiltersChange}
+        />
+      </div>
+    </ContentContextProvider>
   );
 };

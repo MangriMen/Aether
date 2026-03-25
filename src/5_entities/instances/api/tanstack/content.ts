@@ -40,15 +40,18 @@ export const useContentProviders = () => {
 export const useSearchContent = (
   payload: Accessor<ContentSearchParams | undefined>,
 ) => {
-  return useQuery(() => ({
-    queryKey: [
-      ...CONTENT_QUERY_KEYS.BY_PROVIDER(payload()?.provider ?? ''),
-      payload(),
-    ],
-    queryFn: () => searchContentRaw(payload()!),
-    enabled: !!payload(),
-    placeholderData: keepPreviousData,
-  }));
+  return useQuery(() => {
+    const data = payload();
+
+    return {
+      queryKey: data
+        ? CONTENT_QUERY_KEYS.SEARCH(data)
+        : CONTENT_QUERY_KEYS.SEARCH_EMPTY(),
+      queryFn: () => searchContentRaw(data!),
+      enabled: Boolean(data),
+      placeholderData: keepPreviousData,
+    };
+  });
 };
 
 export const instanceContentsQuery = (id: string | undefined) => ({
@@ -190,15 +193,15 @@ export const useImportContents = () => {
 
 export const CHECK_COMPATIBILITY_QUERY = (
   ids: Instance['id'][],
-  params: PartialBy<ContentCompatibilityCheckParams, 'provider'>,
+  params: PartialBy<ContentCompatibilityCheckParams, 'providerId'>,
 ) => {
-  const isEnabled = Boolean(params.provider && ids.length > 0);
+  const isEnabled = Boolean(params.providerId) && ids.length > 0;
 
   return {
     queryKey: [
       'compatibility',
       ids,
-      params.provider,
+      params.providerId,
       params.contentItem.id,
     ] as const,
     queryFn: () =>
@@ -210,5 +213,7 @@ export const CHECK_COMPATIBILITY_QUERY = (
 
 export const useCheckCompatibility = (
   instanceIds: Accessor<Instance['id'][]>,
-  checkParams: Accessor<PartialBy<ContentCompatibilityCheckParams, 'provider'>>,
+  checkParams: Accessor<
+    PartialBy<ContentCompatibilityCheckParams, 'providerId'>
+  >,
 ) => useQuery(() => CHECK_COMPATIBILITY_QUERY(instanceIds(), checkParams()));

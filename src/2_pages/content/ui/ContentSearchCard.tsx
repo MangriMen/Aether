@@ -1,5 +1,6 @@
 import {
   createMemo,
+  For,
   Show,
   splitProps,
   type Component,
@@ -13,29 +14,31 @@ import { CombinedPagination, Skeleton } from '@/shared/ui';
 import { ContentSearch } from './ContentSearch';
 import { ItemsPerPageSelect } from './ItemsPerPageSelect';
 
-export type ContentFiltersProps = ComponentProps<'div'> & {
-  pageCount: number | undefined;
+export type ContentFiltersProps = ComponentProps<'nav'> & {
+  page: number;
   pageSize: number;
-  currentPage: number;
+  pageCount: number | undefined;
   searchQuery?: string;
   onSearch: (query: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   contentType?: ContentType;
-  loading?: boolean;
+  isLoading?: boolean;
 };
+
+const DEFAULT_PAGINATION_COUNT_ARRAY = Array.from({ length: 6 });
 
 export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
   const [local, others] = splitProps(props, [
+    'page',
     'pageCount',
     'pageSize',
-    'currentPage',
     'searchQuery',
     'onSearch',
     'onPageChange',
     'onPageSizeChange',
     'contentType',
-    'loading',
+    'isLoading',
     'class',
   ]);
 
@@ -43,35 +46,45 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
     !local.pageCount || local.pageCount < 1 ? 1 : local.pageCount,
   );
   const isPaginationDisabled = createMemo(
-    () => !!local.loading || !local.pageCount || local.pageCount < 1,
+    () => !!local.isLoading || !local.pageCount || local.pageCount < 1,
   );
 
   return (
-    <div class={cn('flex gap-2 justify-between', local.class)} {...others}>
+    <nav
+      class={cn('flex gap-2 justify-between', local.class)}
+      aria-label='Content pagination'
+      {...others}
+    >
       <ContentSearch
-        value={local.searchQuery}
+        value={local.searchQuery ?? ''}
         contentType={local.contentType}
         onSearch={local.onSearch}
       />
       <div class='flex justify-between gap-2'>
         <ItemsPerPageSelect
           value={local.pageSize}
-          onChange={local.onPageChange}
+          onChange={local.onPageSizeChange}
         />
 
         <Show
           when={local.pageCount !== undefined}
-          fallback={<Skeleton width={200} radius={6} class='bg-secondary' />}
+          fallback={
+            <div class='flex h-full gap-1'>
+              <For each={DEFAULT_PAGINATION_COUNT_ARRAY}>
+                {() => <Skeleton width={40} radius={6} class='bg-secondary' />}
+              </For>
+            </div>
+          }
         >
           <CombinedPagination
             siblingCount={1}
             count={fixedPageCount()}
-            page={local.currentPage}
+            page={local.page}
             onPageChange={local.onPageChange}
             disabled={isPaginationDisabled()}
           />
         </Show>
       </div>
-    </div>
+    </nav>
   );
 };
