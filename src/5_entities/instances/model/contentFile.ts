@@ -10,11 +10,11 @@ export interface ContentFile {
   contentPath: string;
   contentType: ContentType;
   disabled: boolean;
-  filename: string;
+  fileName: string;
   hash: string;
-  instanceRelativePath: string;
   name?: string;
   size: number;
+  updateProviderId?: ProviderId;
   update: Record<ProviderIdString, { contentId: string }>;
 }
 

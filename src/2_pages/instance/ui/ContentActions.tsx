@@ -70,7 +70,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
 
   const handleShowFile = () => {
     revealInExplorer({
-      path: `${local.instancePath}/${local.content.instanceRelativePath}`,
+      path: `${local.instancePath}/${local.content.contentPath}${local.content.disabled ? '.disabled' : ''}`,
       exact: false,
     });
   };

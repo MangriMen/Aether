@@ -199,10 +199,14 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       },
     };
 
+    setStore('installingContentIds', contentId, true);
+
     try {
       await installContent(payload);
     } catch {
       // empty
+    } finally {
+      setStore('installingContentIds', contentId, false);
     }
   };
 

@@ -35,7 +35,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<ContentFile>[] = [
   {
     id: 'name',
     accessorKey: 'name',
-    accessorFn: (row) => row.name ?? row.filename,
+    accessorFn: (row) => row.name ?? row.fileName,
     header: (props) => {
       const [{ t }] = useTranslation();
 
@@ -71,7 +71,7 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<ContentFile>[] = [
             'text-muted-foreground': !!props.cell.row.original.name,
           })}
         >
-          {props.cell.row.original.filename}
+          {props.cell.row.original.fileName}
         </span>
       </span>
     ),
