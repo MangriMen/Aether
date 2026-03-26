@@ -31,7 +31,7 @@ serde_json = "1"
 dashmap = { version = "6", features = ["serde"] }
 open = { version = "5", features = ["shellexecute-on-windows"] }
 
-daedalus = "0.2.3"
+daedalus = { git = "https://github.com/modrinth/code", version = "0.2.3" }
 
 # aether-core = { git = 'https://github.com/MangriMen/aether-core.git', version = "0.7.6" }
 aether-core = { path = "../../aether-core/aether-core" }

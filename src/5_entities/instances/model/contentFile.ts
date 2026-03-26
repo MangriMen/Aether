@@ -22,5 +22,5 @@ export const getContentIdFromUpdateInfo = (
   contentFile: ContentFile,
   providerId: ProviderId,
 ) => {
-  return contentFile.update[providerIdToString(providerId)].contentId;
+  return contentFile.update?.[providerIdToString(providerId)].contentId;
 };
