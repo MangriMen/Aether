@@ -95,7 +95,8 @@
     "failedToDisable": "Не удалось отключить контент",
     "failedToEnable": "Не удалось включить контент",
     "noResultsFound": "Результаты не найдены",
-    "noMatchingInstances": "Подходящих инстансов не найдено"
+    "noMatchingInstances": "Подходящих инстансов не найдено",
+    "openInBrowser": "Открыть в браузере"
   },
   "createInstance": {
     "custom": "Пользовательский",
@@ -303,5 +304,12 @@
     "morePages": "Больше страниц",
     "next": "Следующая",
     "previous": "Предыдущая"
+  },
+  "contentVersion": {
+    "downloads": "Загрузки",
+    "gameVersion": "Версия игры",
+    "platforms": "Платформы",
+    "published": "Опубликовано",
+    "name": "Имя"
   }
 }

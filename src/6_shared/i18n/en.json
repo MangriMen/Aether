@@ -95,7 +95,8 @@
     "failedToEnable": "Failed to enable content",
     "failedToDisable": "Failed to disable content",
     "noResultsFound": "No results found",
-    "noMatchingInstances": "No matching instances found"
+    "noMatchingInstances": "No matching instances found",
+    "openInBrowser": "Open in browser"
   },
   "createInstance": {
     "custom": "Custom",
@@ -303,5 +304,12 @@
     "morePages": "More pages",
     "previous": "Previous",
     "next": "Next"
+  },
+  "contentVersion": {
+    "gameVersion": "Game version",
+    "platforms": "Platforms",
+    "published": "Published",
+    "downloads": "Downloads",
+    "name": "Name"
   }
 }

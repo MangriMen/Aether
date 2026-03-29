@@ -1,4 +1,5 @@
 export * from './contentSearchParams';
+export * from './formatDownloads';
 export * from './getAvailableContentTypes';
 export * from './getFiltersFromInstance';
 export * from './getFiltersFromSearchParams';

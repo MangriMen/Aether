@@ -1,3 +1,5 @@
+import type { SearchParams } from '@solidjs/router';
+
 import { isContentType } from '@/entities/instances';
 import {
   parseSearchParamToNumber,
@@ -8,7 +10,7 @@ import {
 import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
 
 export const decodeContentSearchParams = (
-  searchParams: Partial<Record<string, string | string[] | undefined>>,
+  searchParams: Partial<SearchParams>,
 ): ContentPageSearchParams => {
   const {
     contentType: contentType_,
@@ -47,7 +49,7 @@ export const decodeContentSearchParams = (
 
 export const encodeContentSearchParams = (
   filters: Partial<ContentPageSearchParams>,
-): Record<string, string | string[] | undefined> => {
+): SearchParams => {
   return {
     instance: filters.instanceId,
     page: filters.page?.toString(),

@@ -36,6 +36,7 @@ export type ContentContextProviderProps = {
   providerId: ProviderId | undefined;
   filters: ContentFilters | undefined;
   filtersLock: ContentFiltersLock | undefined;
+  onFiltersChange?: (filters: ContentFilters) => void;
 };
 
 export const ContentContextProvider: Component<ContentContextProviderProps> = (
@@ -46,6 +47,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     'providerId',
     'filters',
     'filtersLock',
+    'onFiltersChange',
   ]);
 
   const [installedContentIndex, setInstalledContentIndex] =
@@ -121,8 +123,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
   const { mutateAsync: installContent } = useInstallContent();
 
   const handleInstallAtomicContent = async (
-    item: ContentItem,
+    item: Pick<ContentItem, 'id' | 'contentType'>,
     instanceId?: Instance['id'],
+    contentVersion?: string,
   ) => {
     const contentId = item.id;
 
@@ -154,12 +157,12 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       type: 'atomic',
       data: {
         instanceId: finalInstanceId,
-        gameVersion: gameVersion,
-        loader: loader,
+        gameVersion,
+        loader,
         contentId: item.id,
         contentType: item.contentType,
-        contentVersion: undefined,
-        providerId: providerId,
+        contentVersion,
+        providerId,
       },
     };
 
@@ -178,7 +181,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     }
   };
 
-  const handleInstallModpack = async (item: ContentItem) => {
+  const handleInstallModpack = async (
+    item: Pick<ContentItem, 'id' | 'contentType'>,
+  ) => {
     const contentId = item.id;
 
     if (!contentId) {
@@ -211,8 +216,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
   };
 
   const handleInstallContent = async (
-    item: ContentItem,
+    item: Pick<ContentItem, 'id' | 'contentType'>,
     instanceId?: Instance['id'],
+    contentVersion?: string,
   ) => {
     const contentId = item.id;
 
@@ -223,7 +229,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     if (item.contentType === 'modpack') {
       handleInstallModpack(item);
     } else {
-      handleInstallAtomicContent(item, instanceId);
+      handleInstallAtomicContent(item, instanceId, contentVersion);
     }
   };
 
@@ -270,6 +276,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     },
     getInstancesForContent: (contentId) =>
       installedContentIndex.content[contentId] ?? [],
+    setFilters: (filters) => {
+      local.onFiltersChange?.(filters);
+    },
   };
 
   const context: ContentContextType = [store, actions];

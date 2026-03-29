@@ -17,9 +17,8 @@ import { resolveContentFilters } from './resolveContentFilters';
 export const useContentBrowserFilters = (
   providers: Accessor<Option<ContentProviderEntry>[]>,
   types: Accessor<readonly ContentType[]>,
-  onFiltersChange?: (filters: ContentFilters) => void,
 ) => {
-  const [context] = useContentContext();
+  const [context, { setFilters: onFiltersChange }] = useContentContext();
 
   const defaultContentType = () =>
     types()[0] ?? DEFAULT_FORM_VALUES.contentType;

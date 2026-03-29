@@ -38,6 +38,8 @@ fn main() {
             "list_content_providers",
             "search_content",
             "check_compatibility",
+            "get_content",
+            "list_content_version",
         ]),
     );
 

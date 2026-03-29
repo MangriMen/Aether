@@ -10,12 +10,12 @@ use aether_core::{
     features::{
         instance::{
             app::{
-                ContentCompatibilityCheckParams, ContentCompatibilityResult, EditInstance,
-                ImportInstance, NewInstance,
+                ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentGetParams,
+                ContentListVersionParams, EditInstance, ImportInstance, NewInstance,
             },
-            ContentFile, ContentInstallParams, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentType, ImporterCapabilityMetadata,
-            Instance,
+            ContentFile, ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
+            ImporterCapabilityMetadata, Instance,
         },
         process::MinecraftProcessMetadata,
     },
@@ -47,7 +47,9 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             remove_contents,
             list_content_providers,
             search_content,
-            check_compatibility
+            check_compatibility,
+            get_content,
+            list_content_version
         ])
         .build()
 }
@@ -179,4 +181,16 @@ async fn check_compatibility(
     check_params: ContentCompatibilityCheckParams,
 ) -> FrontendResult<HashMap<String, ContentCompatibilityResult>> {
     Ok(aether_core::api::instance::check_compatibility(instance_ids, check_params).await?)
+}
+
+#[tauri::command]
+async fn get_content(params: ContentGetParams) -> FrontendResult<ContentItem> {
+    Ok(aether_core::api::instance::get_content(params).await?)
+}
+
+#[tauri::command]
+async fn list_content_version(
+    params: ContentListVersionParams,
+) -> FrontendResult<Vec<ContentVersion>> {
+    Ok(aether_core::api::instance::list_content_version(params).await?)
 }

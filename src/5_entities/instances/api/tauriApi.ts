@@ -15,6 +15,10 @@ import type {
   InstallContentParams,
   ContentType,
   EditInstance,
+  ContentItem,
+  ContentVersion,
+  ContentGetParams,
+  ContentListVersionParams,
 } from '../model';
 import type { ContentProviderCapabilityMetadata } from '../model/capabilities';
 import type {
@@ -139,3 +143,8 @@ export const checkCompatibility = (
       checkParams,
     },
   );
+export const getContentRaw = (params: ContentGetParams) =>
+  invokeInstance<ContentItem>('get_content', { params });
+
+export const listContentVersionRaw = (params: ContentListVersionParams) =>
+  invokeInstance<ContentVersion[]>(`list_content_version`, { params });

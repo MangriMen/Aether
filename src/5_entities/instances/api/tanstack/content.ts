@@ -12,7 +12,12 @@ import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import type { ContentSearchParams, Instance } from '../../model';
+import type {
+  ContentGetParams,
+  ContentListVersionParams,
+  ContentSearchParams,
+  Instance,
+} from '../../model';
 import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
 
 import { ContentType } from '../../model';
@@ -26,6 +31,8 @@ import {
   installContentRaw,
   importContentsRaw,
   checkCompatibility,
+  listContentVersionRaw,
+  getContentRaw,
 } from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
@@ -198,12 +205,10 @@ export const CHECK_COMPATIBILITY_QUERY = (
   const isEnabled = Boolean(params.providerId) && ids.length > 0;
 
   return {
-    queryKey: [
-      'compatibility',
+    queryKey: CONTENT_QUERY_KEYS.COMPATIBILITY(
       ids,
-      params.providerId,
-      params.contentItem.id,
-    ] as const,
+      params as ContentCompatibilityCheckParams,
+    ),
     queryFn: () =>
       checkCompatibility(ids, params as ContentCompatibilityCheckParams),
     enabled: isEnabled,
@@ -217,3 +222,33 @@ export const useCheckCompatibility = (
     PartialBy<ContentCompatibilityCheckParams, 'providerId'>
   >,
 ) => useQuery(() => CHECK_COMPATIBILITY_QUERY(instanceIds(), checkParams()));
+
+export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
+  return useQuery(() => {
+    const params_ = params();
+
+    return {
+      queryKey: params_
+        ? CONTENT_QUERY_KEYS.GET(params_)
+        : CONTENT_QUERY_KEYS.GET_EMPTY(),
+      queryFn: () => getContentRaw(params_!),
+      enabled: Boolean(params_),
+    };
+  });
+};
+
+export const useContentVersion = (
+  params: Accessor<ContentListVersionParams | undefined>,
+) => {
+  return useQuery(() => {
+    const params_ = params();
+
+    return {
+      queryKey: params_
+        ? CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION(params_)
+        : CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION_EMPTY(),
+      queryFn: () => listContentVersionRaw(params_!),
+      enabled: Boolean(params_),
+    };
+  });
+};

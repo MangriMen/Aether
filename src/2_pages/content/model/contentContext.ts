@@ -26,8 +26,9 @@ export type ContentContextValue<
 
 export type ContentContextActions = {
   installContent: (
-    item: ContentItem,
+    item: Pick<ContentItem, 'id' | 'contentType'>,
     instanceId?: Instance['id'],
+    contentVersion?: string,
   ) => Promise<void>;
   getInstancesForContent: (contentId: string) => string[];
   createIsInstalled: (
@@ -37,6 +38,7 @@ export type ContentContextActions = {
   createIsInstalling: (
     contentId: Accessor<string | undefined>,
   ) => Accessor<boolean>;
+  setFilters?: (filters: ContentFilters) => void;
 };
 
 export type ContentContextType = [ContentContextValue, ContentContextActions];

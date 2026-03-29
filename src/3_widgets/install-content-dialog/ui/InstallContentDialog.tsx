@@ -99,7 +99,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
           />
           <div class='flex flex-col gap-2'>
             <Show
-              when={filteredInstances.length > 0}
+              when={filteredInstances.length <= 0}
               fallback={
                 <span class='self-center text-muted-foreground'>
                   {t('content.noMatchingInstances')}
