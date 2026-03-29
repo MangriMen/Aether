@@ -85,7 +85,7 @@
     "providerErrorOrNotFound": "Provider not found or error getting content",
     "resourcepack": "Resource Pack",
     "resourcePacks": "Resource Packs",
-    "searchCount": "Search {{count}} contents",
+    "searchCount": "Search contents ({{count}})",
     "shaderpack": "Shader",
     "shaders": "Shaders",
     "title": "Content",
@@ -94,7 +94,8 @@
     "failedToRemove": "Failed to remove content",
     "failedToEnable": "Failed to enable content",
     "failedToDisable": "Failed to disable content",
-    "noResultsFound": "No results found"
+    "noResultsFound": "No results found",
+    "noMatchingInstances": "No matching instances found"
   },
   "createInstance": {
     "custom": "Custom",

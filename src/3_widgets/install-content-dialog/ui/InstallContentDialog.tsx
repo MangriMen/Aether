@@ -98,18 +98,29 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
             }
           />
           <div class='flex flex-col gap-2'>
-            <For each={filteredInstances()}>
-              {(instance) => (
-                <InstallContentDialogListItem
-                  item={props.item}
-                  instance={instance}
-                  manager={local.manager}
-                  checkCompatibilityData={checkCompatibility.data}
-                  isLoadingCheckCompatibilityData={checkCompatibility.isLoading}
-                  onCloseDialog={local.onClose}
-                />
-              )}
-            </For>
+            <Show
+              when={filteredInstances.length > 0}
+              fallback={
+                <span class='self-center text-muted-foreground'>
+                  {t('content.noMatchingInstances')}
+                </span>
+              }
+            >
+              <For each={filteredInstances()}>
+                {(instance) => (
+                  <InstallContentDialogListItem
+                    item={props.item}
+                    instance={instance}
+                    manager={local.manager}
+                    checkCompatibilityData={checkCompatibility.data}
+                    isLoadingCheckCompatibilityData={
+                      checkCompatibility.isLoading
+                    }
+                    onCloseDialog={local.onClose}
+                  />
+                )}
+              </For>
+            </Show>
           </div>
         </Show>
       </DialogContent>

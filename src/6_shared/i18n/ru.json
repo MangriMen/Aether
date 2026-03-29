@@ -85,7 +85,7 @@
     "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
     "resourcepack": "Ресурс пак",
     "resourcePacks": "Ресурс паки",
-    "searchCount": "Искать контент {{count}}",
+    "searchCount": "Искать контент ({{count}})",
     "shaderpack": "Шейдер",
     "shaders": "Шейдеры",
     "title": "Контент",
@@ -94,7 +94,8 @@
     "failedToRemove": "Не удалось удалить контент",
     "failedToDisable": "Не удалось отключить контент",
     "failedToEnable": "Не удалось включить контент",
-    "noResultsFound": "Результаты не найдены"
+    "noResultsFound": "Результаты не найдены",
+    "noMatchingInstances": "Подходящих инстансов не найдено"
   },
   "createInstance": {
     "custom": "Пользовательский",
