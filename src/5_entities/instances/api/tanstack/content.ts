@@ -1,26 +1,31 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
 import { type Accessor } from 'solid-js';
+
+import type { PartialBy } from '@/shared/model';
 
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import type {
-  ContentRequest,
-  InstallContentPayload,
-  ContentType,
-} from '../../model';
+import type { ContentSearchParams, Instance } from '../../model';
+import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
 
+import { ContentType } from '../../model';
 import {
   listContentRaw,
   disableContentRaw,
   enableContentRaw,
   removeContentsRaw,
-  getContentProvidersRaw,
-  getContentByProviderRaw,
+  listContentProvidersRaw,
+  searchContentRaw,
   installContentRaw,
-  getMetadataFieldToCheckInstalledRaw,
   importContentsRaw,
+  checkCompatibility,
 } from '../tauriApi';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
@@ -28,39 +33,35 @@ import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 export const useContentProviders = () => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
-    queryFn: getContentProvidersRaw,
+    queryFn: listContentProvidersRaw,
   }));
 };
 
-export const useContentByProvider = (
-  payload: Accessor<ContentRequest | undefined>,
+export const useSearchContent = (
+  payload: Accessor<ContentSearchParams | undefined>,
 ) => {
-  return useQuery(() => ({
-    queryKey: [
-      ...CONTENT_QUERY_KEYS.BY_PROVIDER(payload()?.provider ?? ''),
-      payload(),
-    ],
-    queryFn: () => getContentByProviderRaw(payload()!),
-    enabled: !!payload(),
-  }));
+  return useQuery(() => {
+    const data = payload();
+
+    return {
+      queryKey: data
+        ? CONTENT_QUERY_KEYS.SEARCH(data)
+        : CONTENT_QUERY_KEYS.SEARCH_EMPTY(),
+      queryFn: () => searchContentRaw(data!),
+      enabled: Boolean(data),
+      placeholderData: keepPreviousData,
+    };
+  });
 };
 
-export const useMetadataFieldToCheckInstalled = (
-  provider: Accessor<string | undefined>,
-) => {
-  return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.METADATA_FIELD(provider()!),
-    queryFn: () => getMetadataFieldToCheckInstalledRaw(provider()!),
-    enabled: !!provider(),
-  }));
-};
+export const instanceContentsQuery = (id: string | undefined) => ({
+  queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
+  queryFn: () => listContentRaw(id ?? ''),
+  enabled: !!id,
+});
 
-export const useInstanceContents = (id: Accessor<string>) => {
-  return useQuery(() => ({
-    queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id()),
-    queryFn: () => listContentRaw(id()),
-    enabled: !!id(),
-  }));
+export const useInstanceContents = (id: Accessor<string | undefined>) => {
+  return useQuery(() => instanceContentsQuery(id()));
 };
 
 export const useDisableContents = () => {
@@ -128,19 +129,20 @@ export const useInstallContent = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InstallContentPayload;
-    }) => installContentRaw(id, payload),
-    onSuccess: (_, { id, payload }) => {
-      invalidateInstanceContent(queryClient, id);
+    mutationFn: installContentRaw,
+    onSuccess: (_, payload) => {
+      if (payload.type === 'atomic') {
+        invalidateInstanceContent(queryClient, payload.data.instanceId);
+      }
+
+      const contentType =
+        payload.type === 'atomic'
+          ? payload.data.contentType
+          : ContentType.Modpack;
 
       showToast({
         title: t('content.installed', {
-          contentType: t(`content.${payload.contentType}`) || '',
+          contentType: t(`content.${contentType}`) || '',
         }),
         variant: 'success',
       });
@@ -188,3 +190,30 @@ export const useImportContents = () => {
     },
   }));
 };
+
+export const CHECK_COMPATIBILITY_QUERY = (
+  ids: Instance['id'][],
+  params: PartialBy<ContentCompatibilityCheckParams, 'providerId'>,
+) => {
+  const isEnabled = Boolean(params.providerId) && ids.length > 0;
+
+  return {
+    queryKey: [
+      'compatibility',
+      ids,
+      params.providerId,
+      params.contentItem.id,
+    ] as const,
+    queryFn: () =>
+      checkCompatibility(ids, params as ContentCompatibilityCheckParams),
+    enabled: isEnabled,
+    placeholderData: keepPreviousData,
+  };
+};
+
+export const useCheckCompatibility = (
+  instanceIds: Accessor<Instance['id'][]>,
+  checkParams: Accessor<
+    PartialBy<ContentCompatibilityCheckParams, 'providerId'>
+  >,
+) => useQuery(() => CHECK_COMPATIBILITY_QUERY(instanceIds(), checkParams()));

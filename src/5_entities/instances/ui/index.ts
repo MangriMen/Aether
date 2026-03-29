@@ -1,3 +1,4 @@
+export * from './ContentInstallButton';
 export * from './IncludeSnapshotsCheckbox';
 export * from './InstanceCard';
 export * from './InstanceContextMenu';

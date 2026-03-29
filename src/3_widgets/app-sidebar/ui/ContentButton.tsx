@@ -1,7 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
 import { useNavigate } from '@solidjs/router';
-import IconMdiPackage from '~icons/mdi/package';
+import IconMdiPackage from '~icons/mdi/package-variant';
 
 import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';

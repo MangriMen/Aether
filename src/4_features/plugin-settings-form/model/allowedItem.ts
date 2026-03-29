@@ -6,15 +6,19 @@ export interface AllowedItemProps<T, E> {
   leadingItems?: JSX.Element;
 }
 
-export interface EditAllowedItemProps<T, E>
-  extends Omit<AllowedItemProps<T, E>, 'leadingItems'> {
+export interface EditAllowedItemProps<T, E> extends Omit<
+  AllowedItemProps<T, E>,
+  'leadingItems'
+> {
   name?: string;
   onSave?: (value: T) => void;
   onCancel?: () => void;
 }
 
-export interface EditableAllowedItemProps<T, E>
-  extends EditAllowedItemProps<T, E> {
+export interface EditableAllowedItemProps<T, E> extends EditAllowedItemProps<
+  T,
+  E
+> {
   item: Component<AllowedItemProps<T, E>>;
   editItem: Component<EditAllowedItemProps<T, E>>;
   editable?: boolean;

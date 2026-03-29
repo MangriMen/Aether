@@ -72,7 +72,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         value={src()}
         onChange={setSrc}
         errorMessage={local.error?.[0]}
-        leadingIcons={
+        trailingIcons={
           <div class='mr-1 flex h-full items-center justify-center'>
             <CombinedTooltip
               label={t('common.browse')}

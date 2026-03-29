@@ -1,15 +1,25 @@
 use dashmap::DashMap;
 use log::debug;
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 use uuid::Uuid;
 
-use aether_core::features::{
-    instance::{
-        app::{EditInstance, ImportInstance, NewInstance},
-        ContentFile, ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType,
-        Instance,
+use aether_core::{
+    features::{
+        instance::{
+            app::{
+                ContentCompatibilityCheckParams, ContentCompatibilityResult, EditInstance,
+                ImportInstance, NewInstance,
+            },
+            ContentFile, ContentInstallParams, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentType, ImporterCapabilityMetadata,
+            Instance,
+        },
+        process::MinecraftProcessMetadata,
     },
-    process::MinecraftProcessMetadata,
+    shared::CapabilityEntry,
 };
 
 use crate::FrontendResult;
@@ -19,6 +29,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .invoke_handler(tauri::generate_handler![
             create,
             import,
+            list_importers,
             list,
             get,
             get_dir,
@@ -34,9 +45,9 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             enable_contents,
             disable_contents,
             remove_contents,
-            get_content_providers,
-            get_content_by_provider,
-            get_metadata_field_to_check_installed,
+            list_content_providers,
+            search_content,
+            check_compatibility
         ])
         .build()
 }
@@ -54,6 +65,11 @@ async fn create(new_instance: NewInstance) -> FrontendResult<()> {
 #[tauri::command]
 async fn import(import_instance: ImportInstance) -> FrontendResult<()> {
     Ok(aether_core::api::instance::import(import_instance).await?)
+}
+
+#[tauri::command]
+async fn list_importers() -> FrontendResult<Vec<CapabilityEntry<ImporterCapabilityMetadata>>> {
+    Ok(aether_core::api::instance::list_importers().await?)
 }
 
 #[tauri::command]
@@ -80,6 +96,12 @@ async fn install(id: String, force: bool) -> FrontendResult<()> {
 async fn update(id: String) -> FrontendResult<()> {
     Ok(aether_core::api::instance::update(id).await?)
 }
+
+// #[tauri::command]
+// async fn list_updaters() -> FrontendResult<Vec<CapabilityEntry<UpdaterCapabilityMetadata>>> {
+//     // Ok(aether_core::api::instance::list().await?)
+//     todo!()
+// }
 
 #[tauri::command]
 async fn edit(id: String, edit_instance: EditInstance) -> FrontendResult<Instance> {
@@ -121,8 +143,8 @@ async fn list_content(id: String) -> FrontendResult<DashMap<String, ContentFile>
 }
 
 #[tauri::command]
-async fn install_content(id: String, payload: ContentInstallParams) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install_content(id, payload).await?)
+async fn install_content(payload: ContentInstallParams) -> FrontendResult<()> {
+    Ok(aether_core::api::instance::install_content(payload).await?)
 }
 
 #[tauri::command]
@@ -141,18 +163,20 @@ async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResu
 }
 
 #[tauri::command]
-async fn get_content_providers() -> FrontendResult<HashMap<String, String>> {
-    Ok(aether_core::api::instance::get_content_providers().await?)
+async fn list_content_providers(
+) -> FrontendResult<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>> {
+    Ok(aether_core::api::instance::list_content_providers().await?)
 }
 
 #[tauri::command]
-async fn get_content_by_provider(
-    payload: ContentSearchParams,
-) -> FrontendResult<ContentSearchResult> {
+async fn search_content(payload: ContentSearchParams) -> FrontendResult<ContentSearchResult> {
     Ok(aether_core::api::instance::search_content(payload).await?)
 }
 
 #[tauri::command]
-async fn get_metadata_field_to_check_installed(provider: String) -> FrontendResult<String> {
-    Ok(aether_core::api::instance::get_metadata_field_to_check_installed(provider).await?)
+async fn check_compatibility(
+    instance_ids: HashSet<String>,
+    check_params: ContentCompatibilityCheckParams,
+) -> FrontendResult<HashMap<String, ContentCompatibilityResult>> {
+    Ok(aether_core::api::instance::check_compatibility(instance_ids, check_params).await?)
 }

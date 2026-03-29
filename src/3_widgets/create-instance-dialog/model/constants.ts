@@ -10,7 +10,7 @@ export const LOADERS: Option<ModLoader>[] = [
   { name: 'NeoForge', value: ModLoader.NeoForge },
 ];
 
-export const LOADER_VERSION_TYPES: Option[] = [
+export const LOADER_VERSION_TYPES: Option<string>[] = [
   {
     name: 'Stable',
     value: 'stable',
@@ -23,4 +23,4 @@ export const LOADER_VERSION_TYPES: Option[] = [
     name: 'Other',
     value: 'other',
   },
-];
+] as const;

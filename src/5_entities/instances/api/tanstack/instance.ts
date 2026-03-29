@@ -58,7 +58,7 @@ export const useInstances = () => {
   }));
 };
 
-export const useInstance = (id: Accessor<string>) => {
+export const useInstance = (id: Accessor<string | undefined>) => {
   const instances = useInstances();
 
   const instanceFromCache = createMemo(() =>
@@ -71,8 +71,8 @@ export const useInstance = (id: Accessor<string>) => {
 
   // Try to fetch instance if not found in cache
   const instanceQuery = useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.GET(id()),
-    queryFn: () => getInstanceRaw(id()),
+    queryKey: INSTANCE_QUERY_KEYS.GET(id() ?? ''),
+    queryFn: () => getInstanceRaw(id() ?? ''),
     enabled: shouldFetch(),
     reconcile: INSTANCE_RECONCILE,
   }));
@@ -139,10 +139,10 @@ export const useRemoveInstance = () => {
   }));
 };
 
-export const useInstanceDir = (id: Accessor<string>) => {
+export const useInstanceDir = (id: Accessor<string | undefined>) => {
   return useQuery(() => ({
-    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id())],
-    queryFn: () => getInstanceDirRaw(id()),
+    queryKey: [...INSTANCE_QUERY_KEYS.DIR(id() ?? '')],
+    queryFn: () => getInstanceDirRaw(id() ?? ''),
     enabled: !!id(),
   }));
 };

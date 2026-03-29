@@ -1,7 +1,15 @@
-import type { ContentType } from './contentType';
+import type { ContentSearchOutputValues } from '@/pages/content/model/validation';
+
+import type { AtomicContentType, ContentType } from './contentType';
+
+export interface ProviderId {
+  pluginId: string;
+  capabilityId: string;
+}
 
 export interface ContentItem {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   author: string;
@@ -9,12 +17,11 @@ export interface ContentItem {
   iconUrl: string;
   versions: string[];
   contentType: ContentType;
-  providerData?: Record<string, unknown>;
 }
 
-export interface ContentRequest {
+export interface ContentSearchParams {
   contentType: ContentType;
-  provider: string;
+  providerId: ProviderId;
   page: number;
   pageSize: number;
   query?: string;
@@ -22,23 +29,43 @@ export interface ContentRequest {
   loader?: string;
 }
 
-export interface ContentResponse {
+export interface ContentSearchResponse {
   page: number;
   pageSize: number;
   pageCount: number;
-  provider: string;
+  providerId: ProviderId;
   items: ContentItem[];
 }
 
-export interface InstallContentPayload {
+export interface AtomicInstallParams {
+  instanceId: string;
   gameVersion: string;
   loader?: string;
-  contentType: ContentType;
+  contentId: string;
+  contentType: AtomicContentType;
   contentVersion?: string;
-  provider: string;
-  providerData?: unknown;
+  providerId: ProviderId;
 }
 
-export interface ContentItemExtended extends ContentItem {
-  installed: boolean;
+export interface ModpackInstallParams {
+  contentId: string;
+  contentVersion?: string;
+  providerId: ProviderId;
 }
+
+export type InstallContentParams =
+  | { type: 'atomic'; data: AtomicInstallParams }
+  | { type: 'modpack'; data: ModpackInstallParams };
+
+export type ContentFilters = Partial<ContentSearchOutputValues>;
+
+export const PROVIDER_ID_SEPARATOR = '#' as const;
+
+export type ProviderIdString =
+  `${string}${typeof PROVIDER_ID_SEPARATOR}${string}`;
+
+export const providerIdToString = (
+  providerId: ProviderId,
+): ProviderIdString => {
+  return `${providerId.pluginId}${PROVIDER_ID_SEPARATOR}${providerId.capabilityId}`;
+};

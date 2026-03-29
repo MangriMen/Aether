@@ -1,3 +1,4 @@
+export * from './capabilities';
 export * from './contentFile';
 export * from './contentItem';
 export * from './contentType';

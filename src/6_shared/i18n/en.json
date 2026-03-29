@@ -68,7 +68,8 @@
     "repair": "Repair",
     "failedToOpenBrowser": "Failed to open browser",
     "copyToClipboard": "Copy to clipboard",
-    "close": "Close"
+    "close": "Close",
+    "incompatible": "Incompatible"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -76,13 +77,15 @@
     "dataPacks": "Data Packs",
     "imported": "{{contentType}} imported successfully",
     "installed": "{{contentType}} installed successfully",
+    "modpack": "Modpack",
+    "modpacks": "Modpacks",
     "mod": "Mod",
     "mods": "Mods",
     "provider": "Provider",
     "providerErrorOrNotFound": "Provider not found or error getting content",
     "resourcepack": "Resource Pack",
     "resourcePacks": "Resource Packs",
-    "searchCount": "Search {{count}} contents",
+    "searchCount": "Search contents ({{count}})",
     "shaderpack": "Shader",
     "shaders": "Shaders",
     "title": "Content",
@@ -90,7 +93,9 @@
     "failedToImport": "Failed to import content",
     "failedToRemove": "Failed to remove content",
     "failedToEnable": "Failed to enable content",
-    "failedToDisable": "Failed to disable content"
+    "failedToDisable": "Failed to disable content",
+    "noResultsFound": "No results found",
+    "noMatchingInstances": "No matching instances found"
   },
   "createInstance": {
     "custom": "Custom",
@@ -149,7 +154,10 @@
     "failedToRemove": "Failed to remove {{name}}",
     "failedToRemoveDescription": "Instance still installing or running",
     "removeForce": "Force remove",
-    "instanceNotFound": "Instance not found"
+    "instanceNotFound": "Instance not found",
+    "notCompatibleWithContent": "This instance is not compatible with this content",
+    "searchInstance": "Search instance",
+    "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics"
   },
   "instanceSettings": {
     "tab": {

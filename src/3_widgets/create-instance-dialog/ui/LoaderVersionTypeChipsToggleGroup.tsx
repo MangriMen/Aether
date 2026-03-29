@@ -13,7 +13,7 @@ export type LoaderVersionTypeChipsToggleGroupProps = Exclude<
   ToggleGroupRootProps,
   'onChange'
 > & {
-  loaderTypes: Option[];
+  loaderTypes: Option<string>[];
 };
 
 export const LoaderVersionTypeChipsToggleGroup: Component<

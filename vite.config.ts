@@ -11,11 +11,24 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineConfig(async () => ({
   plugins: [
     vitePluginCheckerConfig,
-    solid(),
+    solid({
+      hot: process.env.NODE_ENV !== 'test',
+    }),
     iconsConfig,
     solidSvg(),
     tsconfigPaths(),
   ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    transformMode: {
+      web: [/\.[jt]sx?$/],
+    },
+    // isolates context for solid-js
+    deps: {
+      registerNodeLoader: false,
+    },
+  },
   build: buildConfig,
   ...developmentConfig,
 }));

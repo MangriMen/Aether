@@ -42,7 +42,7 @@ const PaginationItem = <T extends ValidComponent = 'button'>(
         buttonVariants({
           variant: 'ghost',
         }),
-        'size-10 p-0 data-[current]:border',
+        'size-10 p-0 data-[current]:bg-secondary',
         local.class,
       )}
       {...others}

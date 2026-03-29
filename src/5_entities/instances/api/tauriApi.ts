@@ -1,19 +1,26 @@
 import { invoke } from '@tauri-apps/api/core';
 
+import type { CapabilityEntry } from '@/shared/model';
+
 import { createPluginInvoke } from '@/shared/lib';
 
 import type {
-  ContentRequest,
+  ContentSearchParams,
   Instance,
   NewInstance,
   ContentFile,
   ImportInstance,
   MinecraftProcessMetadata,
-  ContentResponse,
-  InstallContentPayload,
+  ContentSearchResponse,
+  InstallContentParams,
   ContentType,
   EditInstance,
 } from '../model';
+import type { ContentProviderCapabilityMetadata } from '../model/capabilities';
+import type {
+  ContentCompatibilityCheckParams,
+  ContentCompatibilityResult,
+} from '../model/compatibility';
 
 export const invokeInstance = createPluginInvoke('instance');
 export const invokeProcess = createPluginInvoke('process');
@@ -92,22 +99,20 @@ export const removeContentsRaw = (id: string, contentPaths: string[]) =>
     contentPaths,
   });
 
-export const getContentProvidersRaw = () =>
-  invokeInstance<Record<string, string>>(`get_content_providers`);
+export const listContentProvidersRaw = () =>
+  invokeInstance<Array<CapabilityEntry<ContentProviderCapabilityMetadata>>>(
+    `list_content_providers`,
+  );
 
-export const getContentByProviderRaw = (payload: ContentRequest) =>
-  invokeInstance<ContentResponse>(`get_content_by_provider`, {
+export const searchContentRaw = (payload: ContentSearchParams) =>
+  invokeInstance<ContentSearchResponse>(`search_content`, {
     payload,
   });
 
-export const installContentRaw = (id: string, payload: InstallContentPayload) =>
+export const installContentRaw = (payload: InstallContentParams) =>
   invokeInstance(`install_content`, {
-    id,
     payload,
   });
-
-export const getMetadataFieldToCheckInstalledRaw = (provider: string) =>
-  invokeInstance<string>(`get_metadata_field_to_check_installed`, { provider });
 
 export const importContentsRaw = (
   instanceId: string,
@@ -122,3 +127,15 @@ export const importContentsRaw = (
 
 export const getInstanceDirRaw = (id: Instance['id']) =>
   invokeInstance<string>(`get_dir`, { id });
+
+export const checkCompatibility = (
+  instanceIds: Array<Instance['id']>,
+  checkParams: ContentCompatibilityCheckParams,
+) =>
+  invokeInstance<Record<Instance['id'], ContentCompatibilityResult>>(
+    'check_compatibility',
+    {
+      instanceIds,
+      checkParams,
+    },
+  );

@@ -16,7 +16,7 @@ import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
-  instanceId: Instance['id'];
+  instanceId?: Instance['id'];
 };
 
 export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
@@ -28,11 +28,13 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
 
   const navigate = useNavigate();
 
-  const instance_id = createMemo(() => decodeURIComponent(local.instanceId));
+  const instanceId = createMemo(() =>
+    local.instanceId ? decodeURIComponent(local.instanceId) : undefined,
+  );
 
   const queryClient = useQueryClient();
 
-  const instance = useInstance(() => instance_id());
+  const instance = useInstance(() => instanceId());
 
   const onOpenChange = (open: boolean) => {
     if (local.onOpenChange) {

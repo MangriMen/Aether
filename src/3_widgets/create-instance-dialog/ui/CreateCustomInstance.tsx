@@ -201,6 +201,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
           <Field name='gameVersion'>
             {(field, props) => (
               <SelectGameVersion
+                value={filteredGameVersions().find((v) => v.id === field.value)}
                 class='max-w-[31.5ch]'
                 placeholder={t('createInstance.gameVersionPlaceholder')}
                 options={filteredGameVersions()}
