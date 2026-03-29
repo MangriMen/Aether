@@ -4,7 +4,7 @@ use std::{
 };
 
 use dashmap::DashMap;
-use log::debug;
+use futures::TryStreamExt;
 use path_slash::PathBufExt;
 
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
         instance::{ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::{read_async, sha1_async, IoError},
+    shared::{read_async, IoError},
 };
 
 pub struct ListContentUseCase<PS: PackStorage> {
@@ -34,21 +34,24 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
     ) -> Result<DashMap<String, ContentFile>, InstanceError> {
         let instance_dir = self.location_info.instance_dir(&instance_id);
 
-        let entries_by_path = self.get_entries_by_path(&instance_id).await?;
+        let entries_by_path = Arc::new(self.get_entries_by_path(&instance_id).await?);
 
-        let mut files = DashMap::new();
+        let files = Arc::new(DashMap::new());
         for content_type in ContentType::iterator() {
             self.process_content_directory(
                 &instance_id,
                 &instance_dir,
                 content_type,
-                &entries_by_path,
-                &mut files,
+                entries_by_path.clone(),
+                files.clone(),
             )
             .await?
         }
 
-        Ok(files)
+        match Arc::try_unwrap(files) {
+            Ok(map) => Ok(map),
+            Err(arc) => Ok((*arc).clone()),
+        }
     }
 
     async fn get_entries_by_path(
@@ -69,31 +72,43 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
         instance_id: &str,
         instance_dir: &Path,
         content_type: ContentType,
-        entries_by_path: &DashMap<String, PackEntry>,
-        files: &mut DashMap<String, ContentFile>,
+        entries_by_path: Arc<DashMap<String, PackEntry>>,
+        files: Arc<DashMap<String, ContentFile>>,
     ) -> Result<(), InstanceError> {
         let content_dir = instance_dir.join(content_type.get_folder());
 
-        if !content_dir.exists() {
+        if tokio::fs::try_exists(&content_dir).await.is_err() {
             return Ok(());
         }
 
-        for entry in
-            std::fs::read_dir(&content_dir).map_err(|e| IoError::with_path(e, &content_dir))?
-        {
-            let entry_path = entry.map_err(IoError::from)?.path();
+        let read_dir = tokio::fs::read_dir(&content_dir)
+            .await
+            .map_err(IoError::from)?;
 
-            if !entry_path.is_file() {
-                continue;
-            }
+        tokio_stream::wrappers::ReadDirStream::new(read_dir)
+            .map_err(|e| InstanceError::from(IoError::from(e)))
+            .try_for_each_concurrent(8, |entry| {
+                let entries_ref = Arc::clone(&entries_by_path);
+                let files_ref = Arc::clone(&files);
 
-            if let Some(file) = self
-                .process_content_file(instance_id, &entry_path, content_type, entries_by_path)
-                .await?
-            {
-                files.insert(file.instance_relative_path.clone(), file);
-            }
-        }
+                async move {
+                    let path = entry.path();
+
+                    if !path.is_file() {
+                        return Ok(());
+                    }
+
+                    if let Some(file) = self
+                        .process_content_file(instance_id, &path, content_type, &entries_ref)
+                        .await?
+                    {
+                        files_ref.insert(file.content_path.clone(), file);
+                    }
+
+                    Ok(())
+                }
+            })
+            .await?;
 
         Ok(())
     }
@@ -110,63 +125,65 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
             None => return Ok(None),
         };
 
-        let file_size = file_path.metadata().map_err(IoError::from)?.len();
+        let file_size = tokio::fs::metadata(file_path)
+            .await
+            .map_err(IoError::from)?
+            .len();
+
+        let is_disabled = file_name.ends_with(".disabled");
 
         let original_path = PathBuf::from(content_type.get_folder())
             .join(file_name)
             .to_slash_lossy()
             .to_string();
 
-        let pack_file_path = original_path.trim_end_matches(".disabled").to_string();
-        let non_disabled_file_name = PathBuf::from(pack_file_path.clone())
-            .file_name()
-            .map(|x| x.to_string_lossy().to_string())
-            .unwrap_or(file_name.to_string());
-
-        let pack_file = match entries_by_path.get(&pack_file_path) {
-            Some(entry) => {
-                self.pack_storage
-                    .get_pack_file(instance_id, &entry.file)
-                    .await?
-            }
-            None => {
-                let pack_file = file_to_pack_file(file_path, file_name).await?;
-                self.pack_storage
-                    .update_pack_file(instance_id, &pack_file_path, &pack_file)
-                    .await?;
-                pack_file
-            }
+        let content_path = if is_disabled {
+            original_path.trim_end_matches(".disabled").to_string()
+        } else {
+            original_path
         };
 
-        Ok(Some(ContentFile {
-            content_path: pack_file_path,
-            name: pack_file.name,
-            hash: pack_file.hash,
-            filename: non_disabled_file_name,
+        let pack_file = self
+            .get_or_create_pack_file(
+                instance_id,
+                file_path,
+                file_name,
+                &content_path,
+                entries_by_path,
+            )
+            .await?;
+
+        Ok(Some(ContentFile::from_pack_file(
+            pack_file,
+            content_path,
             content_type,
-            size: file_size,
-            disabled: file_name.ends_with(".disabled"),
-            instance_relative_path: original_path,
-            update: pack_file.update,
-        }))
+            file_size,
+            is_disabled,
+        )))
     }
-}
 
-async fn file_to_pack_file(file_path: &Path, file_name: &str) -> Result<PackFile, InstanceError> {
-    let file_content = read_async(&file_path).await?;
-    let hash = sha1_async(file_content).await.map_err(|error| {
-        debug!("Failed to compute sha1: {error}");
-        InstanceError::HashConstructError
-    })?;
+    async fn get_or_create_pack_file(
+        &self,
+        instance_id: &str,
+        file_path: &Path,
+        file_name: &str,
+        content_path: &str,
+        entries_by_path: &DashMap<String, PackEntry>,
+    ) -> Result<PackFile, InstanceError> {
+        if let Some(entry) = entries_by_path.get(content_path) {
+            return self
+                .pack_storage
+                .get_pack_file(instance_id, &entry.file)
+                .await;
+        }
 
-    Ok(PackFile {
-        file_name: file_name.to_string(),
-        name: None,
-        hash: hash.clone(),
-        download: None,
-        option: None,
-        side: None,
-        update_provider: None,
-        update: None,
-    })
+        let file_content = read_async(file_path).await?;
+        let pack_file = PackFile::from_contents(file_name.to_owned(), file_content).await;
+
+        self.pack_storage
+            .update_pack_file(instance_id, content_path, &pack_file)
+            .await?;
+
+        Ok(pack_file)
+    }
 }

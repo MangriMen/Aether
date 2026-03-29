@@ -1,10 +1,10 @@
-use bytes::Bytes;
-use tokio::task::{spawn_blocking, JoinError};
+use tokio::task::spawn_blocking;
 
-pub async fn sha1_async<T>(input: T) -> Result<String, JoinError>
+pub async fn sha1_async<T>(input: T) -> String
 where
-    T: Into<Bytes> + Send,
+    T: AsRef<[u8]> + Send + 'static,
 {
-    let bytes = input.into();
-    spawn_blocking(move || sha1_smol::Sha1::from(bytes).hexdigest()).await
+    spawn_blocking(move || sha1_smol::Sha1::from(input.as_ref()).hexdigest())
+        .await
+        .expect("sha1_async: task panicked")
 }

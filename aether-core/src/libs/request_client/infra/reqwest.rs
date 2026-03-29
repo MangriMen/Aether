@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use log::debug;
 use reqwest::Response;
 
 use crate::{
@@ -60,14 +59,7 @@ impl<PS: ProgressService> ReqwestClient<PS> {
     }
 
     async fn verify_sha1(&self, bytes: Bytes, expected_sha1: String) -> Result<(), RequestError> {
-        let actual_sha1 = sha1_async(bytes).await.map_err(|error| {
-            debug!("Failed to compute sha1: {error}");
-
-            RequestError::HashError {
-                actual: "<sha1 computation failed>".to_owned(),
-                expected: expected_sha1.clone(),
-            }
-        })?;
+        let actual_sha1 = sha1_async(bytes).await;
 
         if actual_sha1 == *expected_sha1 {
             Ok(())

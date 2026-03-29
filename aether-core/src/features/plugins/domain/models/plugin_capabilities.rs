@@ -1,54 +1,92 @@
+use std::ops::Deref;
+
 use serde::{Deserialize, Serialize};
+
+use crate::features::{
+    instance::{
+        CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
+        UpdaterCapabilityMetadata,
+    },
+    plugins::AsCapabilityMetadata,
+};
 
 /// Describes the declarative capabilities of a plugin, such as supported importers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginCapabilities {
-    /// List of supported modpack importers provided by the plugin.
-    pub importers: Vec<ImporterCapability>,
-    pub updaters: Vec<UpdaterCapability>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub importers: Vec<PluginImporterCapability>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub updaters: Vec<PluginUpdaterCapability>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub content_providers: Vec<PluginContentProviderCapability>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ImporterCapability {
-    /// Identifier for the importer (lowercase, kebab/underscore allowed).
-    pub id: String,
-
-    /// Display name of the importer.
-    pub name: String,
-
-    /// Optional description of what this importer does.
-    pub description: Option<String>,
-
-    /// Optional icon file name or URL for the importer.
-    pub icon: Option<String>,
-
-    /// Optional field label for the importer.
-    pub field_label: Option<String>,
-
+pub struct PluginImporterCapability {
+    #[serde(flatten)]
+    pub metadata: ImporterCapabilityMetadata,
     /// Plugin function name to handle this capability call.
     pub handler: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdaterCapability {
-    /// Identifier for the updater (lowercase, kebab/underscore allowed).
-    pub id: String,
-
-    /// Display name of the updater.
-    pub name: String,
-
-    /// Optional description of what this updater does.
-    pub description: Option<String>,
-
-    /// Optional icon file name or URL for the updater.
-    pub icon: Option<String>,
-
-    /// Optional field label for the updater.
-    pub field_label: Option<String>,
-
+pub struct PluginUpdaterCapability {
+    #[serde(flatten)]
+    pub metadata: UpdaterCapabilityMetadata,
     /// Plugin function name to handle this capability call.
     pub handler: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginContentProviderCapability {
+    #[serde(flatten)]
+    pub metadata: ContentProviderCapabilityMetadata,
+    /// Plugin function name to handle this capability call.
+    pub search_handler: String,
+    pub install_atomic_handler: String,
+    pub install_modpack_handler: String,
+    pub check_compatibility_handler: String,
+}
+
+impl Deref for PluginImporterCapability {
+    type Target = ImporterCapabilityMetadata;
+    fn deref(&self) -> &Self::Target {
+        &self.metadata
+    }
+}
+
+impl Deref for PluginUpdaterCapability {
+    type Target = UpdaterCapabilityMetadata;
+    fn deref(&self) -> &Self::Target {
+        &self.metadata
+    }
+}
+
+impl Deref for PluginContentProviderCapability {
+    type Target = ContentProviderCapabilityMetadata;
+    fn deref(&self) -> &Self::Target {
+        &self.metadata
+    }
+}
+
+impl AsCapabilityMetadata for PluginImporterCapability {
+    fn as_metadata(&self) -> &CapabilityMetadata {
+        &self.metadata.base
+    }
+}
+
+impl AsCapabilityMetadata for PluginUpdaterCapability {
+    fn as_metadata(&self) -> &CapabilityMetadata {
+        &self.metadata.base
+    }
+}
+
+impl AsCapabilityMetadata for PluginContentProviderCapability {
+    fn as_metadata(&self) -> &CapabilityMetadata {
+        &self.metadata.base
+    }
 }

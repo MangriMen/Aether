@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use dashmap::DashMap;
 
@@ -6,13 +9,15 @@ use crate::{
     core::{domain::LazyLocator, LauncherState},
     features::instance::{
         app::{
-            ChangeContentState, ChangeContentStateUseCase, ContentStateAction,
-            GetProviderMetadataUseCase, ImportContent, ImportContentUseCase, InstallContentUseCase,
-            ListContentUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
-            SearchContentUseCase,
+            ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentStateAction,
+            ImportContent, ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
+            ListProvidersUseCase, RemoveContent, RemoveContentUseCase, SearchContentUseCase,
         },
-        ContentFile, ContentInstallParams, ContentSearchParams, ContentSearchResult, ContentType,
+        ContentFile, ContentInstallParams, ContentProviderCapabilityMetadata, ContentSearchParams,
+        ContentSearchResult, ContentType,
     },
+    shared::CapabilityEntry,
 };
 
 pub async fn list_content(instance_id: String) -> crate::Result<DashMap<String, ContentFile>> {
@@ -88,15 +93,12 @@ pub async fn import_contents(
         lazy_locator.get_pack_storage().await,
         state.location_info.clone(),
     )
-    .execute(ImportContent::multiple(
-        instance_id,
-        content_type,
-        source_paths,
-    ))
+    .execute(ImportContent::new(instance_id, content_type, source_paths))
     .await?)
 }
 
-pub async fn get_content_providers() -> crate::Result<HashMap<String, String>> {
+pub async fn list_content_providers(
+) -> crate::Result<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>> {
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(
@@ -118,26 +120,27 @@ pub async fn search_content(
     )
 }
 
-pub async fn get_metadata_field_to_check_installed(provider_id: String) -> crate::Result<String> {
-    let lazy_locator = LazyLocator::get().await?;
-
-    Ok(
-        GetProviderMetadataUseCase::new(lazy_locator.get_content_provider_registry().await)
-            .execute(provider_id)
-            .await?,
-    )
-}
-
-pub async fn install_content(
-    instance_id: String,
-    install_params: ContentInstallParams,
-) -> crate::Result<()> {
+pub async fn install_content(install_params: ContentInstallParams) -> crate::Result<()> {
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(InstallContentUseCase::new(
         lazy_locator.get_pack_storage().await,
         lazy_locator.get_content_provider_registry().await,
     )
-    .execute(instance_id, install_params)
+    .execute(install_params)
+    .await?)
+}
+
+pub async fn check_compatibility(
+    instance_ids: HashSet<String>,
+    check_params: ContentCompatibilityCheckParams,
+) -> crate::Result<HashMap<String, ContentCompatibilityResult>> {
+    let lazy_locator = LazyLocator::get().await?;
+
+    Ok(CheckContentCompatibilityUseCase::new(
+        lazy_locator.get_content_provider_registry().await,
+        lazy_locator.get_instance_storage().await,
+    )
+    .execute(instance_ids, check_params)
     .await?)
 }

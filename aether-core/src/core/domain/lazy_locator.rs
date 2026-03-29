@@ -17,7 +17,7 @@ use crate::{
                 EventEmittingInstanceStorage, FsInstanceStorage, FsPackStorage,
                 InstanceEventHandler, ModrinthContentProvider,
             },
-            ContentProviderRegistry, InstanceWatcherServiceImpl,
+            ContentProvider, Importer, InstanceWatcherServiceImpl, Updater,
         },
         java::infra::FsJavaStorage,
         minecraft::infra::{
@@ -26,16 +26,15 @@ use crate::{
         plugins::{
             infra::{
                 ExtismPluginLoader, FsPluginSettingsStorage, FsPluginStorage,
-                MemoryCapabilityRegistry, PluginInfrastructureListener, ZipPluginExtractor,
+                PluginInfrastructureListener, ZipPluginExtractor,
             },
-            ImporterCapability, LoadConfigType, PluginLoaderRegistry, PluginRegistry,
-            UpdaterCapability,
+            LoadConfigType, PluginLoaderRegistry, PluginRegistry,
         },
         process::infra::InMemoryProcessStorage,
         settings::infra::{FsDefaultInstanceSettingsStorage, FsSettingsStorage},
     },
     libs::request_client::ReqwestClient,
-    shared::FileCache,
+    shared::{CapabilityRegistry, FileCache, MemoryCapabilityRegistry},
 };
 
 use super::{ErrorKind, LauncherState};
@@ -44,8 +43,9 @@ static LAZY_LOCATOR: OnceCell<Arc<LazyLocator>> = OnceCell::const_new();
 
 pub type ProgressServiceType = ProgressServiceImpl<TauriEventEmitter, InMemoryProgressBarStorage>;
 
-pub type ImporterRegistry = MemoryCapabilityRegistry<ImporterCapability>;
-pub type UpdaterRegistry = MemoryCapabilityRegistry<UpdaterCapability>;
+pub type ImporterRegistry = MemoryCapabilityRegistry<Arc<dyn Importer>>;
+pub type UpdaterRegistry = MemoryCapabilityRegistry<Arc<dyn Updater>>;
+pub type ContentProviderRegistry = MemoryCapabilityRegistry<Arc<dyn ContentProvider>>;
 
 pub type MinecraftMetadataCache = FileCache<MinecraftMetadataResolver>;
 
@@ -70,9 +70,6 @@ pub struct LazyLocator {
         >,
     >,
     pack_storage: OnceCell<Arc<FsPackStorage>>,
-    content_provider_registry: OnceCell<
-        Arc<ContentProviderRegistry<ModrinthContentProvider<ReqwestClient<ProgressServiceType>>>>,
-    >,
     plugin_settings_storage: OnceCell<Arc<FsPluginSettingsStorage>>,
     plugin_registry: OnceCell<Arc<PluginRegistry<TauriEventEmitter>>>,
     plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry<ExtismPluginLoader>>>,
@@ -87,8 +84,16 @@ pub struct LazyLocator {
     plugin_extractor: OnceCell<Arc<ZipPluginExtractor>>,
     importers_registry: OnceCell<Arc<ImporterRegistry>>,
     updaters_registry: OnceCell<Arc<UpdaterRegistry>>,
+    content_provider_registry: OnceCell<Arc<ContentProviderRegistry>>,
     plugin_infrastructure_listener: OnceCell<
-        Arc<PluginInfrastructureListener<TauriEventEmitter, ImporterRegistry, UpdaterRegistry>>,
+        Arc<
+            PluginInfrastructureListener<
+                TauriEventEmitter,
+                ImporterRegistry,
+                UpdaterRegistry,
+                ContentProviderRegistry,
+            >,
+        >,
     >,
 }
 
@@ -131,7 +136,6 @@ impl LazyLocator {
                     java_storage: OnceCell::new(),
                     metadata_storage: OnceCell::new(),
                     pack_storage: OnceCell::new(),
-                    content_provider_registry: OnceCell::new(),
                     plugin_settings_storage: OnceCell::new(),
                     plugin_registry: OnceCell::new(),
                     plugin_loader_registry: OnceCell::new(),
@@ -144,6 +148,7 @@ impl LazyLocator {
                     plugin_extractor: OnceCell::new(),
                     importers_registry: OnceCell::new(),
                     updaters_registry: OnceCell::new(),
+                    content_provider_registry: OnceCell::new(),
                     plugin_infrastructure_listener: OnceCell::new(),
                 })
             })
@@ -294,27 +299,6 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_content_provider_registry(
-        &self,
-    ) -> Arc<ContentProviderRegistry<ModrinthContentProvider<ReqwestClient<ProgressServiceType>>>>
-    {
-        self.content_provider_registry
-            .get_or_init(|| async {
-                let providers = HashMap::from([(
-                    "modrinth".to_string(),
-                    ModrinthContentProvider::new(
-                        self.state.location_info.clone(),
-                        None,
-                        self.get_request_client().await,
-                    ),
-                )]);
-
-                Arc::new(ContentProviderRegistry::new(providers))
-            })
-            .await
-            .clone()
-    }
-
     pub async fn get_plugin_settings_storage(&self) -> Arc<FsPluginSettingsStorage> {
         self.plugin_settings_storage
             .get_or_init(|| async {
@@ -428,28 +412,72 @@ impl LazyLocator {
 
     pub async fn get_importers_registry(&self) -> Arc<ImporterRegistry> {
         self.importers_registry
-            .get_or_init(|| async { Arc::new(MemoryCapabilityRegistry::default()) })
+            .get_or_init(|| async { Arc::new(MemoryCapabilityRegistry::new("importer")) })
             .await
             .clone()
     }
 
     pub async fn get_updaters_registry(&self) -> Arc<UpdaterRegistry> {
         self.updaters_registry
-            .get_or_init(|| async { Arc::new(MemoryCapabilityRegistry::default()) })
+            .get_or_init(|| async { Arc::new(MemoryCapabilityRegistry::new("updater")) })
+            .await
+            .clone()
+    }
+
+    pub async fn get_content_provider_registry(&self) -> Arc<ContentProviderRegistry> {
+        self.content_provider_registry
+            .get_or_init(|| async {
+                let registry: Arc<ContentProviderRegistry> =
+                    Arc::new(MemoryCapabilityRegistry::new("content_provider"));
+
+                let providers = [Arc::new(ModrinthContentProvider::new(
+                    self.state.location_info.clone(),
+                    None,
+                    self.get_request_client().await,
+                ))];
+
+                for provider in providers {
+                    let meta = provider.metadata();
+
+                    if let Err(err) = registry
+                        .add(
+                            ModrinthContentProvider::ID.to_owned(),
+                            meta.id.to_string(),
+                            provider.clone(),
+                        )
+                        .await
+                    {
+                        tracing::error!(
+                            "Failed to register content provider {}: {}",
+                            meta.id.to_string(),
+                            err
+                        );
+                    }
+                }
+
+                registry
+            })
             .await
             .clone()
     }
 
     pub async fn get_plugin_infrastructure_listener(
         &self,
-    ) -> Arc<PluginInfrastructureListener<TauriEventEmitter, ImporterRegistry, UpdaterRegistry>>
-    {
+    ) -> Arc<
+        PluginInfrastructureListener<
+            TauriEventEmitter,
+            ImporterRegistry,
+            UpdaterRegistry,
+            ContentProviderRegistry,
+        >,
+    > {
         self.plugin_infrastructure_listener
             .get_or_init(|| async {
                 Arc::new(PluginInfrastructureListener::new(
                     self.get_plugin_registry().await,
                     self.get_importers_registry().await,
                     self.get_updaters_registry().await,
+                    self.get_content_provider_registry().await,
                 ))
             })
             .await

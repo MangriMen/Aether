@@ -3,15 +3,13 @@ use std::{
     sync::Arc,
 };
 
-use log::debug;
-
 use crate::{
     features::{
         events::{EventEmitter, EventEmitterExt, InstanceEventType},
         instance::{ContentType, InstanceError, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::{read_async, sha1_async, IoError},
+    shared::{read_async, IoError},
 };
 
 pub struct ImportContent {
@@ -21,19 +19,7 @@ pub struct ImportContent {
 }
 
 impl ImportContent {
-    pub fn single(instance_id: String, content_type: ContentType, source_path: PathBuf) -> Self {
-        Self {
-            instance_id,
-            content_type,
-            source_paths: vec![source_path],
-        }
-    }
-
-    pub fn multiple(
-        instance_id: String,
-        content_type: ContentType,
-        source_paths: Vec<PathBuf>,
-    ) -> Self {
+    pub fn new(instance_id: String, content_type: ContentType, source_paths: Vec<PathBuf>) -> Self {
         Self {
             instance_id,
             content_type,
@@ -124,9 +110,12 @@ impl<E: EventEmitter, PS: PackStorage> ImportContentUseCase<E, PS> {
             });
         }
 
-        let pack_file = file_to_pack_file(path, file_name).await?;
+        let file_content = read_async(path).await?;
 
-        Ok((content_path, pack_file))
+        Ok((
+            content_path,
+            PackFile::from_contents(file_name.to_owned(), file_content).await,
+        ))
     }
 
     async fn copy_import_files(
@@ -154,6 +143,10 @@ impl<E: EventEmitter, PS: PackStorage> ImportContentUseCase<E, PS> {
             source_paths,
         } = input;
 
+        if content_type == ContentType::Modpack {
+            return Err(InstanceError::UnsupportedContentType { content_type });
+        }
+
         let (content_paths, pack_files) = self
             .prepare_import_data(&instance_id, content_type, source_paths.as_slice())
             .await?;
@@ -171,23 +164,4 @@ impl<E: EventEmitter, PS: PackStorage> ImportContentUseCase<E, PS> {
 
         Ok(())
     }
-}
-
-async fn file_to_pack_file(file_path: &Path, file_name: &str) -> Result<PackFile, InstanceError> {
-    let file_content = read_async(&file_path).await?;
-    let hash = sha1_async(file_content).await.map_err(|error| {
-        debug!("Failed to compute sha1: {error}");
-        InstanceError::HashConstructError
-    })?;
-
-    Ok(PackFile {
-        file_name: file_name.to_string(),
-        name: None,
-        hash: hash.clone(),
-        download: None,
-        option: None,
-        side: None,
-        update_provider: None,
-        update: None,
-    })
 }

@@ -255,7 +255,6 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         &'a str,
         &'a HashMap<String, daedalus::minecraft::LibraryDownload>,
     )> {
-        use crate::shared::OsExt;
         use daedalus::minecraft::Os;
 
         let native_os = Os::native_arch(java_arch);

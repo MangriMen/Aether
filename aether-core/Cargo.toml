@@ -37,7 +37,7 @@ serde_json = "1.0"
 serde_ini = "0.2.0"
 toml = "0.8.19"
 
-daedalus = "0.2.3"
+daedalus = { git = "https://github.com/modrinth/code", version = "0.2.3" }
 
 uuid = { version = "1.10", features = ["serde", "v4"] }
 

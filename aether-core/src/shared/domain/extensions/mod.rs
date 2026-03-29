@@ -1,3 +1,3 @@
-pub mod daedalus_os_ext;
+pub mod arch;
 
-pub use daedalus_os_ext::*;
+pub use arch::*;

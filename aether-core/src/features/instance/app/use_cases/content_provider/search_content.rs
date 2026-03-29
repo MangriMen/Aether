@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
-use crate::features::instance::{
-    ContentProvider, ContentProviderRegistry, ContentSearchParams, ContentSearchResult,
-    InstanceError,
+use crate::{
+    features::instance::{
+        ContentProvider, ContentSearchParams, ContentSearchResult, InstanceError,
+    },
+    shared::CapabilityRegistry,
 };
 
-pub struct SearchContentUseCase<CP: ContentProvider> {
-    provider_registry: Arc<ContentProviderRegistry<CP>>,
+pub struct SearchContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
+    provider_registry: Arc<CP>,
 }
 
-impl<CP: ContentProvider> SearchContentUseCase<CP> {
-    pub fn new(provider_registry: Arc<ContentProviderRegistry<CP>>) -> Self {
+impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> SearchContentUseCase<CP> {
+    pub fn new(provider_registry: Arc<CP>) -> Self {
         Self { provider_registry }
     }
 
@@ -18,9 +20,17 @@ impl<CP: ContentProvider> SearchContentUseCase<CP> {
         &self,
         search_params: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError> {
+        let provider_id = &search_params.provider_id;
+
         let provider = self
             .provider_registry
-            .get(&search_params.provider.to_string())?;
-        provider.search(&search_params).await
+            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
+            .await
+            .map_err(|_| InstanceError::ContentProviderNotFound {
+                plugin_id: provider_id.plugin_id.to_string(),
+                capability_id: provider_id.capability_id.to_string(),
+            })?;
+
+        provider.capability.search(search_params).await
     }
 }

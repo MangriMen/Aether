@@ -1,3 +1,4 @@
+mod capabilities;
 mod content;
 mod content_file;
 mod content_type;
@@ -7,6 +8,7 @@ mod instance;
 mod pack;
 mod pack_info;
 
+pub use capabilities::*;
 pub use content::*;
 pub use content_file::*;
 pub use content_type::*;
