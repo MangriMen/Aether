@@ -96,7 +96,12 @@
     "failedToEnable": "Не удалось включить контент",
     "noResultsFound": "Результаты не найдены",
     "noMatchingInstances": "Подходящих инстансов не найдено",
-    "openInBrowser": "Открыть в браузере"
+    "openInBrowser": "Открыть в браузере",
+    "item": {
+      "description": "Описание",
+      "versions": "Версии"
+    },
+    "alreadyInstalled": "Этот контент уже установлен"
   },
   "createInstance": {
     "custom": "Пользовательский",

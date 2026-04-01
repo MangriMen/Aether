@@ -10,7 +10,6 @@ import { createContentVersionsTable } from '../lib/createContentVersionsTable';
 export type ContentVersionsTableProps = ComponentProps<'div'> & {
   data: ContentVersion[];
   isLoading?: boolean;
-  slug?: string;
   contentType?: ContentType;
 };
 
@@ -20,23 +19,25 @@ export const ContentVersionsTable: Component<ContentVersionsTableProps> = (
   const [local, others] = splitProps(props, [
     'data',
     'isLoading',
-    'slug',
     'contentType',
     'class',
   ]);
 
   const { table, columns } = createContentVersionsTable({
     data: () => local.data,
-    slug: () => local.slug,
     contentType: () => local.contentType,
   });
 
   return (
     <div
-      class={cn('flex flex-col overflow-auto gap-4 p-1', local.class)}
+      class={cn('flex flex-col gap-4 p-1 overflow-hidden', local.class)}
       {...others}
     >
-      <DataTable columns={columns()} table={table} />
+      <DataTable
+        columns={columns()}
+        table={table}
+        isLoading={local.isLoading}
+      />
       <CombinedPagination
         class={cn('self-end', { hidden: table.getPageCount() < 2 })}
         siblingCount={1}

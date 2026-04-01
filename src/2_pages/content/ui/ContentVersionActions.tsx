@@ -1,6 +1,9 @@
-import MdiDownloadIcon from '~icons/mdi/download';
+import IconMdiCheck from '~icons/mdi/check';
+import IconMdiDownload from '~icons/mdi/download';
 import IconMdiOpenInNew from '~icons/mdi/open-in-new';
+import IconMdiSwapVertical from '~icons/mdi/swap-vertical';
 import {
+  createMemo,
   Show,
   splitProps,
   type Component,
@@ -16,7 +19,6 @@ import { useContentContext } from '../model';
 
 export type ContentVersionActionsProps = ComponentProps<'div'> & {
   version: ContentVersion;
-  slug?: string;
   contentType?: ContentType;
 };
 
@@ -25,12 +27,12 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'version',
-    'slug',
     'contentType',
     'class',
   ]);
 
-  const [, { installContent }] = useContentContext();
+  const [context, { installContent, createInstalledVersion }] =
+    useContentContext();
 
   const handleInstall = () => {
     if (!local.contentType) {
@@ -47,12 +49,34 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
     );
   };
 
+  const installedVersionMemo = createMemo(() =>
+    createInstalledVersion(
+      () => local.version.contentId,
+      () => context.instanceId,
+    ),
+  );
+
+  const installedVersion = () => installedVersionMemo()();
+
+  const isCurrentVersionInstalled = createMemo(
+    () => installedVersion() === local.version.id,
+  );
+
+  const installIcon = createMemo(() => {
+    if (isCurrentVersionInstalled()) {
+      return IconMdiCheck;
+    }
+
+    return installedVersion() ? IconMdiSwapVertical : IconMdiDownload;
+  });
+
   return (
     <div class={cn('flex gap-1', local.class)} {...others}>
       <IconButton
-        class='bg-transparent group-hover:bg-primary'
-        icon={MdiDownloadIcon}
+        class='bg-transparent enabled:group-hover:bg-primary'
+        icon={installIcon()}
         onClick={handleInstall}
+        disabled={isCurrentVersionInstalled()}
       />
       <Show when={local.version.webUrl}>
         {(href) => (

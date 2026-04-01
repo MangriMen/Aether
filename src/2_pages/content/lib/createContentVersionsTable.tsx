@@ -25,7 +25,6 @@ import { ContentVersionActions } from '../ui/ContentVersionActions';
 
 export interface ContentVersionsTableProps {
   data: Accessor<ContentVersion[]>;
-  slug: Accessor<string | undefined>;
   contentType: Accessor<ContentType | undefined>;
 }
 
@@ -53,7 +52,6 @@ export const createContentVersionsTable = (
           <ContentVersionActions
             class='justify-end'
             version={cellProps.row.original}
-            slug={props.slug()}
             contentType={props.contentType()}
           />
         ),

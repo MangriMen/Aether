@@ -89,7 +89,10 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
-    const newContentMap: Record<string, string[]> = {};
+    const newContentMap: Record<
+      string,
+      Record<string, string | undefined>
+    > = {};
 
     instancesContents.forEach((contents, index) => {
       if (!contents.data) {
@@ -108,11 +111,11 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
         const contentId = getContentIdFromUpdateInfo(content, providerId);
 
         if (!newContentMap[contentId]) {
-          newContentMap[contentId] = [];
+          newContentMap[contentId] = {};
         }
 
-        if (!newContentMap[contentId].includes(instanceId)) {
-          newContentMap[contentId].push(instanceId);
+        if (!newContentMap[contentId][instanceId]) {
+          newContentMap[contentId][instanceId] = content.version;
         }
       }
     });
@@ -271,11 +274,29 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
           return false;
         }
 
-        return instances.includes(instanceId_);
+        return instances[instanceId_] !== undefined;
       };
     },
-    getInstancesForContent: (contentId) =>
-      installedContentIndex.content[contentId] ?? [],
+    createInstalledVersion: (contentId, instanceId) => {
+      return () => {
+        const contentId_ = contentId();
+
+        if (!contentId_) {
+          return;
+        }
+
+        const instanceId_ = instanceId();
+
+        if (!instanceId_) {
+          return;
+        }
+
+        const version =
+          installedContentIndex.content[contentId_]?.[instanceId_];
+
+        return version;
+      };
+    },
     setFilters: (filters) => {
       local.onFiltersChange?.(filters);
     },

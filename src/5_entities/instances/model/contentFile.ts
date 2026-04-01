@@ -14,6 +14,7 @@ export interface ContentFile {
   hash: string;
   name?: string;
   size: number;
+  version?: string;
   updateProviderId?: ProviderId;
   update: Record<ProviderIdString, { contentId: string }>;
 }

@@ -30,7 +30,6 @@ export type ContentContextActions = {
     instanceId?: Instance['id'],
     contentVersion?: string,
   ) => Promise<void>;
-  getInstancesForContent: (contentId: string) => string[];
   createIsInstalled: (
     contentId: Accessor<string | undefined>,
     instanceId: Accessor<string | undefined>,
@@ -38,6 +37,10 @@ export type ContentContextActions = {
   createIsInstalling: (
     contentId: Accessor<string | undefined>,
   ) => Accessor<boolean>;
+  createInstalledVersion: (
+    contentId: Accessor<string | undefined>,
+    instanceId: Accessor<string | undefined>,
+  ) => Accessor<string | undefined>;
   setFilters?: (filters: ContentFilters) => void;
 };
 

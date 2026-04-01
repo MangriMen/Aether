@@ -63,7 +63,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
 
   const [{ t }] = useTranslation();
 
-  const [tabsTriggers, tabsContents] = useSettingsPageTabs();
+  const tabs = useSettingsPageTabs();
 
   const update = useCheckUpdate();
 
@@ -84,7 +84,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
         {...(others as TabsProps<T>)}
       >
         <SettingsTabsList class='w-56'>
-          <For each={tabsTriggers()}>
+          <For each={tabs()}>
             {(tab) => (
               <SettingsTabsTrigger
                 value={tab.value}
@@ -101,7 +101,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
                     >
                       <Badge class='absolute inset-y-0 right-2 my-auto aspect-square size-2 p-0' />
                     </Show>
-                    {t(`settings.tab.${tab.title}`)}
+                    {t(`settings.tab.${tab.label}`)}
                   </span>
                 }
               />
@@ -109,7 +109,7 @@ export const SettingsPage = <T extends ValidComponent = 'div'>(
           </For>
           <VersionInfo class='mt-auto self-start text-sm' />
         </SettingsTabsList>
-        <For each={tabsContents()}>
+        <For each={tabs()}>
           {(tabContent) => (
             <SettingsTabsContent
               value={tabContent.value}

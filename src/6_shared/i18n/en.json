@@ -96,7 +96,12 @@
     "failedToDisable": "Failed to disable content",
     "noResultsFound": "No results found",
     "noMatchingInstances": "No matching instances found",
-    "openInBrowser": "Open in browser"
+    "openInBrowser": "Open in browser",
+    "item": {
+      "description": "Description",
+      "versions": "Versions"
+    },
+    "alreadyInstalled": "This content is already installed"
   },
   "createInstance": {
     "custom": "Custom",

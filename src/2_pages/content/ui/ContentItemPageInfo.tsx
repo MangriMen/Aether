@@ -2,17 +2,27 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import MdiDownloadIcon from '~icons/mdi/download';
 import MdiOpenInNewIcon from '~icons/mdi/open-in-new';
-import { splitProps } from 'solid-js';
+import { createMemo, splitProps } from 'solid-js';
 
 import type { ContentItem } from '@/entities/instances';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button, CombinedTooltip, IconButton, Image } from '@/shared/ui';
+import {
+  Button,
+  CombinedTooltip,
+  DelayedShow,
+  IconButton,
+  Image,
+  Skeleton,
+} from '@/shared/ui';
+
+import { useContentContext } from '../model';
 
 export type ContentItemPageInfoProps = {
-  item: ContentItem;
+  item: ContentItem | undefined;
   contentPageHref?: string;
+  isLoading?: boolean;
 };
 
 export const ContentItemPageInfo: Component<
@@ -21,31 +31,67 @@ export const ContentItemPageInfo: Component<
   const [local, others] = splitProps(props, [
     'item',
     'contentPageHref',
+    'isLoading',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
+  const [context, { createIsInstalled, createIsInstalling }] =
+    useContentContext();
+
+  const isInstalledMemo = createMemo(() =>
+    createIsInstalled(
+      () => local.item?.id,
+      () => context.instanceId,
+    ),
+  );
+  const isInstalled = () => isInstalledMemo()();
+
+  const isInstallingMemo = createMemo(() =>
+    createIsInstalling(() => local.item?.id),
+  );
+  const isInstalling = () => isInstallingMemo()();
+
+  const itemIsLoading = createMemo(() => !local.item && local.isLoading);
+
   return (
     <div class={cn('flex gap-2', local.class)} {...others}>
       <Image
         class='aspect-square size-24'
-        src={local.item.iconUrl || undefined}
+        src={local.item?.iconUrl || undefined}
       />
       <div class='flex grow flex-col'>
         <div class='flex grow justify-between'>
           <div class='flex max-w-[512px] flex-col text-muted-foreground'>
-            <span class='text-lg font-bold text-foreground'>
-              <h1 class='text-2xl'>{local.item.name}</h1>
-              &#32;
+            <h1 class='text-2xl font-bold text-foreground'>
+              <DelayedShow
+                when={!itemIsLoading()}
+                fallback={<Skeleton width={256} height={32} />}
+              >
+                {local.item?.name}
+              </DelayedShow>
+            </h1>
+            <span>
+              <DelayedShow
+                when={!itemIsLoading()}
+                fallback={<Skeleton width={256} height={32} />}
+              >
+                {local.item?.description}
+              </DelayedShow>
             </span>
-            <span>{local.item.description}</span>
           </div>
           <div class='flex gap-2'>
-            <Button>
+            <CombinedTooltip
+              label={t('content.alreadyInstalled')}
+              disableTooltip={!isInstalled()}
+              as={Button}
+              loading={itemIsLoading() || isInstalling()}
+              disabled={isInstalled()}
+            >
               <MdiDownloadIcon />
               {t('common.install')}
-            </Button>
+            </CombinedTooltip>
 
             <CombinedTooltip
               label={t('content.openInBrowser')}
@@ -55,10 +101,11 @@ export const ContentItemPageInfo: Component<
               <IconButton
                 variant='secondary'
                 as='a'
-                href={props.item.url}
+                href={props.item?.url}
                 target='_blank'
                 rel='noreferrer'
                 icon={MdiOpenInNewIcon}
+                loading={itemIsLoading()}
               />
             </CombinedTooltip>
           </div>

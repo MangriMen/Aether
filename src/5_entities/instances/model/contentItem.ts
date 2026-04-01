@@ -13,6 +13,7 @@ export interface ContentItem {
   slug: string;
   name: string;
   description?: string;
+  longDescription?: string;
   author: string;
   url: string;
   iconUrl: string;
