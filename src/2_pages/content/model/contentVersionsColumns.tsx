@@ -1,20 +1,30 @@
-import type { ColumnDef } from '@tanstack/solid-table';
-
-import { createMemo, For } from 'solid-js';
+import { createColumnHelper } from '@tanstack/solid-table';
+import { createMemo } from 'solid-js';
 
 import type { ContentVersion } from '@/entities/instances';
 
 import { dayjs, formatRelativeTime, formatTime } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Badge, CombinedTooltip } from '@/shared/ui';
+import { CombinedTooltip } from '@/shared/ui';
 
 import { formatDownloads } from '../lib';
+import { ContentVersionBadgeList } from '../ui/ContentVersionBadgeList';
+import { ContentVersionTypeBadge } from '../ui/ContentVersionTypeBadge';
 
-export const CONTENT_VERSIONS_TABLE_COLUMNS: ColumnDef<ContentVersion>[] = [
-  {
-    id: 'name',
-    accessorKey: 'name',
-    enableSorting: true,
+export const contentVersionsColumnHelper = createColumnHelper<ContentVersion>();
+
+export const CONTENT_VERSIONS_TABLE_COLUMNS = [
+  contentVersionsColumnHelper.display({
+    id: 'versionType',
+    size: 52,
+    minSize: 52,
+    maxSize: 52,
+    cell: (props) => (
+      <ContentVersionTypeBadge type={props.row.original.versionType} />
+    ),
+  }),
+
+  contentVersionsColumnHelper.accessor('name', {
     header: () => {
       const [{ t }] = useTranslation();
 
@@ -25,69 +35,37 @@ export const CONTENT_VERSIONS_TABLE_COLUMNS: ColumnDef<ContentVersion>[] = [
 
       return (
         <div class='flex flex-col'>
-          <span>{versionNumber()}</span>
-          <span class='text-muted-foreground'>
-            {props.cell.getValue() as string}
-          </span>
+          <span class='text-base font-medium'>{versionNumber()}</span>
+          <span class='text-muted-foreground'>{props.cell.getValue()}</span>
         </div>
       );
     },
-  },
-  {
-    id: 'gameVersions',
-    accessorKey: 'gameVersions',
+  }),
+
+  contentVersionsColumnHelper.accessor('gameVersions', {
     header: () => {
       const [{ t }] = useTranslation();
-
       return t(`contentVersion.gameVersion`);
     },
-    cell: (props) => {
-      const value = createMemo(() => {
-        return props.getValue() as string[];
-      });
+    cell: (info) => <ContentVersionBadgeList items={info.getValue()} />,
+  }),
 
-      return (
-        <div class='flex flex-wrap gap-1 '>
-          <For each={value()}>
-            {(version) => <Badge variant='secondary'>{version}</Badge>}
-          </For>
-        </div>
-      );
-    },
-  },
-  {
-    id: 'loaders',
-    accessorKey: 'loaders',
+  contentVersionsColumnHelper.accessor('loaders', {
     header: () => {
       const [{ t }] = useTranslation();
-
       return t(`contentVersion.platforms`);
     },
-    cell: (props) => {
-      const value = createMemo(() => {
-        return props.getValue() as string[];
-      });
+    cell: (info) => <ContentVersionBadgeList items={info.getValue()} />,
+  }),
 
-      return (
-        <div class='flex flex-wrap gap-1'>
-          <For each={value()}>
-            {(version) => <Badge variant='secondary'>{version}</Badge>}
-          </For>
-        </div>
-      );
-    },
-  },
-  {
-    id: 'datePublished',
-    accessorKey: 'datePublished',
+  contentVersionsColumnHelper.accessor('datePublished', {
     header: () => {
       const [{ t }] = useTranslation();
-
       return t(`contentVersion.published`);
     },
-    cell: (props) => {
+    cell: (info) => {
       const time = createMemo(() => {
-        const date = dayjs(props.getValue() as string);
+        const date = dayjs(info.getValue());
 
         return {
           time: formatTime(date),
@@ -101,30 +79,20 @@ export const CONTENT_VERSIONS_TABLE_COLUMNS: ColumnDef<ContentVersion>[] = [
         </CombinedTooltip>
       );
     },
-  },
-  {
-    id: 'downloads',
-    accessorKey: 'downloads',
+  }),
+
+  contentVersionsColumnHelper.accessor('downloads', {
     header: () => {
       const [{ t }] = useTranslation();
-
       return t(`contentVersion.downloads`);
     },
-    cell: (props) => {
+    cell: (info) => {
       const [{ locale }] = useTranslation();
+      const formatted = createMemo(() =>
+        formatDownloads(info.getValue(), locale()),
+      );
 
-      const formatted = createMemo(() => {
-        const raw = props.getValue() as string;
-
-        const value = Number(raw);
-        if (Number.isNaN(value)) {
-          return '?';
-        }
-
-        return formatDownloads(value, locale());
-      });
-
-      return <>{formatted()}</>;
+      return <span>{formatted()}</span>;
     },
-  },
+  }),
 ];

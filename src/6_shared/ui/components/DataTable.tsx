@@ -16,8 +16,9 @@ import {
   TableRow,
 } from '@/shared/ui';
 
-type DataTableProps<TData, TValue> = {
-  columns: ColumnDef<TData, TValue>[];
+type DataTableProps<TData> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  columns: ColumnDef<TData, any>[];
   isLoading?: boolean;
   noContentPlaceholder?: string;
 } & (
@@ -25,9 +26,7 @@ type DataTableProps<TData, TValue> = {
   | { data?: never; columnsCount?: number; table?: SolidTable<TData> }
 );
 
-export const DataTable = <TData, TValue>(
-  props: DataTableProps<TData, TValue>,
-) => {
+export const DataTable = <TData,>(props: DataTableProps<TData>) => {
   const table = createMemo(
     () =>
       props.table ??
@@ -45,13 +44,24 @@ export const DataTable = <TData, TValue>(
   return (
     <div class='relative w-full overflow-auto rounded-md border'>
       <Table disableWrapper>
-        <TableHeader class='sticky top-0 z-10 bg-background'>
+        <TableHeader class='sticky top-0 z-10 bg-secondary'>
           <For each={table().getHeaderGroups()}>
             {(headerGroup) => (
-              <TableRow>
+              <TableRow class='group'>
                 <For each={headerGroup.headers}>
                   {(header) => (
-                    <TableHead colSpan={header.colSpan}>
+                    <TableHead
+                      colSpan={header.colSpan}
+                      style={{
+                        width: `${header.getSize()}px`,
+                        'max-width': header.column.columnDef.maxSize
+                          ? `${header.column.columnDef.maxSize}px`
+                          : undefined,
+                        'min-width': header.column.columnDef.minSize
+                          ? `${header.column.columnDef.minSize}px`
+                          : undefined,
+                      }}
+                    >
                       <Show when={!header.isPlaceholder}>
                         {flexRender(
                           header.column.columnDef.header,
@@ -81,10 +91,23 @@ export const DataTable = <TData, TValue>(
           >
             <For each={table().getRowModel().rows}>
               {(row) => (
-                <TableRow data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  class='group bg-secondary-dark/80'
+                  data-state={row.getIsSelected() && 'selected'}
+                >
                   <For each={row.getVisibleCells()}>
                     {(cell) => (
-                      <TableCell>
+                      <TableCell
+                        style={{
+                          width: `${cell.column.getSize()}px`,
+                          'max-width': cell.column.columnDef.maxSize
+                            ? `${cell.column.columnDef.maxSize}px`
+                            : undefined,
+                          'min-width': cell.column.columnDef.minSize
+                            ? `${cell.column.columnDef.minSize}px`
+                            : undefined,
+                        }}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

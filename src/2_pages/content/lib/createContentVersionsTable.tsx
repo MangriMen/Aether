@@ -1,5 +1,4 @@
 import type {
-  ColumnDef,
   ColumnFiltersState,
   PaginationState,
   RowSelectionState,
@@ -18,7 +17,10 @@ import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentType, ContentVersion } from '@/entities/instances';
 
-import { CONTENT_VERSIONS_TABLE_COLUMNS } from '../model/contentVersionsColumns';
+import {
+  CONTENT_VERSIONS_TABLE_COLUMNS,
+  contentVersionsColumnHelper,
+} from '../model/contentVersionsColumns';
 import { ContentVersionActions } from '../ui/ContentVersionActions';
 
 export interface ContentVersionsTableProps {
@@ -42,19 +44,20 @@ export const createContentVersionsTable = (
     pageSize: 20,
   });
 
-  const columns = createMemo((): ColumnDef<ContentVersion>[] => {
+  const columns = createMemo(() => {
     return [
       ...CONTENT_VERSIONS_TABLE_COLUMNS,
-      {
+      contentVersionsColumnHelper.display({
         id: 'actions',
         cell: (cellProps) => (
           <ContentVersionActions
+            class='justify-end'
             version={cellProps.row.original}
             slug={props.slug()}
             contentType={props.contentType()}
           />
         ),
-      },
+      }),
     ];
   });
 

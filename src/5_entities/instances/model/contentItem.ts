@@ -107,7 +107,8 @@ export interface ContentVersion {
   contentId: string;
   authorId: string;
   datePublished: string;
-  downloads: string;
+  downloads: number;
+  webUrl: string;
 }
 
 export interface ContentGetParams {

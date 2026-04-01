@@ -48,6 +48,15 @@
     --ring: 240 5.9% 10%;
 
     --radius: 0.5rem;
+
+    --release: 142 70% 95%;
+    --release-foreground: 142 76% 25%;
+
+    --beta: 38 92% 95%;
+    --beta-foreground: 38 92% 35%;
+
+    --alpha: 0 84% 97%;
+    --alpha-foreground: 0 84% 45%;
   }
 
   .dark,
@@ -95,6 +104,15 @@
     --ring: 240 4.9% 83.9%;
 
     --radius: 0.5rem;
+
+    --release: 142 70% 10%;
+    --release-foreground: 142 70% 50%;
+
+    --beta: 38 92% 10%;
+    --beta-foreground: 38 92% 50%;
+
+    --alpha: 0 84% 10%;
+    --alpha-foreground: 0 84% 60%;
   }
 
   [data-theme='aether-light'] {

@@ -1,7 +1,6 @@
 import MdiDownloadIcon from '~icons/mdi/download';
 import IconMdiOpenInNew from '~icons/mdi/open-in-new';
 import {
-  createMemo,
   Show,
   splitProps,
   type Component,
@@ -33,14 +32,6 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
 
   const [, { installContent }] = useContentContext();
 
-  const href = createMemo(() => {
-    if (!local.contentType || !local.version.contentId || !local.version.id) {
-      return;
-    }
-
-    return `https://modrinth.com/${local.contentType}/${local.slug}/version/${local.version.id}`;
-  });
-
   const handleInstall = () => {
     if (!local.contentType) {
       return;
@@ -58,8 +49,12 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
 
   return (
     <div class={cn('flex gap-1', local.class)} {...others}>
-      <IconButton icon={MdiDownloadIcon} onClick={handleInstall} />
-      <Show when={href()}>
+      <IconButton
+        class='bg-transparent group-hover:bg-primary'
+        icon={MdiDownloadIcon}
+        onClick={handleInstall}
+      />
+      <Show when={local.version.webUrl}>
         {(href) => (
           <IconButton
             as='a'

@@ -1,5 +1,7 @@
-import type { ColumnDef } from '@tanstack/solid-table';
+import type { Column } from '@tanstack/solid-table';
+import type { JSX } from 'solid-js';
 
+import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { Show } from 'solid-js';
 
@@ -9,9 +11,41 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Checkbox } from '@/shared/ui';
 
-export const CONTENT_TABLE_COLUMNS: ColumnDef<ContentFile>[] = [
-  {
+export const contentTableColumnHelper = createColumnHelper<ContentFile>();
+
+interface SortableHeaderProps<TData> {
+  column: Column<TData>;
+  label: JSX.Element;
+}
+
+const SortableHeader = <TData,>(props: SortableHeaderProps<TData>) => {
+  return (
+    <Button
+      class='p-0'
+      variant='ghost'
+      size='sm'
+      onClick={() =>
+        props.column.toggleSorting(props.column.getIsSorted() === 'asc')
+      }
+      trailingIcon={() => (
+        <IconMdiChevronDown
+          class={cn('transition-transform text-base', {
+            'rotate-180': props.column.getIsSorted() === 'asc',
+          })}
+        />
+      )}
+    >
+      {props.label}
+    </Button>
+  );
+};
+
+export const CONTENT_TABLE_COLUMNS = [
+  contentTableColumnHelper.display({
     id: 'select',
+    minSize: 40,
+    maxSize: 40,
+    size: 40,
     header: (props) => (
       <div class='flex items-center justify-center p-0'>
         <Checkbox
@@ -31,74 +65,43 @@ export const CONTENT_TABLE_COLUMNS: ColumnDef<ContentFile>[] = [
         />
       </div>
     ),
-  },
-  {
+  }),
+
+  contentTableColumnHelper.accessor((row) => row.name ?? row.fileName, {
     id: 'name',
-    accessorKey: 'name',
-    accessorFn: (row) => row.name ?? row.fileName,
     header: (props) => {
       const [{ t }] = useTranslation();
+      return <SortableHeader column={props.column} label={t('common.name')} />;
+    },
+    cell: (props) => {
+      const original = () => props.row.original;
 
       return (
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={() =>
-            props.column.toggleSorting(props.column.getIsSorted() === 'asc')
-          }
-          trailingIcon={() => (
-            <IconMdiChevronDown
-              class={cn('text-lg transition-transform', {
-                'rotate-180': props.column.getIsSorted() === 'asc',
-              })}
-            />
-          )}
-          children={<>{t('common.name')}</>}
-        />
-      );
-    },
-    cell: (props) => (
-      <span
-        class={cn('inline-flex flex-col', {
-          'text-muted-foreground': props.cell.row.original.disabled,
-        })}
-      >
-        <Show when={props.cell.row.original.name}>
-          {(name) => <span> {name()}</span>}
-        </Show>
         <span
-          class={cn({
-            'text-muted-foreground': !!props.cell.row.original.name,
+          class={cn('inline-flex flex-col', {
+            'text-muted-foreground': original().disabled,
           })}
         >
-          {props.cell.row.original.fileName}
+          <Show when={original().name}>{(name) => <span>{name()}</span>}</Show>
+          <span
+            class={cn({
+              'text-muted-foreground': !!original().name,
+            })}
+          >
+            {original().fileName}
+          </span>
         </span>
-      </span>
-    ),
-  },
-  {
-    id: 'type',
-    accessorKey: 'contentType',
-    header: (props) => {
-      const [{ t }] = useTranslation();
-
-      return (
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={() =>
-            props.column.toggleSorting(props.column.getIsSorted() === 'asc')
-          }
-          trailingIcon={() => (
-            <IconMdiChevronDown
-              class={cn('text-lg transition-transform', {
-                'rotate-180': props.column.getIsSorted() === 'asc',
-              })}
-            />
-          )}
-          children={<>{t('common.type')}</>}
-        />
       );
     },
-  },
+  }),
+
+  contentTableColumnHelper.accessor('contentType', {
+    id: 'type',
+    size: 100,
+    maxSize: 100,
+    header: (props) => {
+      const [{ t }] = useTranslation();
+      return <SortableHeader column={props.column} label={t('common.type')} />;
+    },
+  }),
 ];
