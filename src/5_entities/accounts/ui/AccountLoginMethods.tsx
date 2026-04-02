@@ -35,7 +35,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
         label={t('account.signInMinecraft')}
         as={Button}
         variant='outline'
-        class='px-2'
+        class='w-full px-2'
         onClick={onOnline}
         // TODO: implement minecraft login
         disabled
@@ -49,7 +49,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
         label={t('account.signInOffline')}
         as={Button}
         variant='outline'
-        class='px-2'
+        class='w-full px-2'
         onClick={onOffline}
       >
         <span class='flex items-center gap-2'>

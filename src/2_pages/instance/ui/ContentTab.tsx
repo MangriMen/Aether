@@ -76,6 +76,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
           !!instanceContentArray()?.length &&
           instanceContentArray()
         }
+        delay={20}
         fallback={
           <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
             <span class='text-lg text-muted-foreground'>
