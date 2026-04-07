@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+  "apps/desktop/src-tauri",
+  "packages/core/aether-core",
+  "packages/core/aether-core-gen",
+  "packages/core/aether-core-plugin-api",
+  "packages/core/register-schema",
+  "packages/core/register-schema-derive",
+]
+
+[workspace.dependencies]
+aether-core = { path = "packages/core/aether-core" }
+aether-core-plugin-api = { path = "packages/core/aether-core-plugin-api" }
+register-schema = { path = "packages/core/register-schema" }
+register-schema-derive = { path = "packages/core/register-schema-derive" }
+
+schemars = "1.2.1"
+
+serde = { version = "1.0", features = ["derive"] }

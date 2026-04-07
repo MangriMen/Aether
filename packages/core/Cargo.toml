@@ -1,9 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["aether-core", "aether-core-gen", "aether-core-plugin-api"]
-
-[workspace.dependencies]
-schemars = "1.2.1"
-
-register-schema = { path = "register-schema" }
-register-schema-derive = { path = "register-schema-derive" }

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "tauri": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": [
+        "*"
+      ],
+      "env": [
+        "PATH",
+        "CARGO_*",
+        "RUST_*"
+      ]
+    },
+    "build": {
+      "outputs": [
+        "dist/**",
+        "src-tauri/target/release/bundle/**"
+      ]
+    }
+  }
+}
