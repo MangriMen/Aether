@@ -1,4 +1,3 @@
-mod capabilities;
 mod constants;
 mod extracted_plugin;
 mod manifest_error;
@@ -11,7 +10,6 @@ mod plugin_manifest;
 mod plugin_settings;
 mod serializable_output;
 
-pub use capabilities::*;
 pub use constants::*;
 pub use extracted_plugin::*;
 pub use manifest_error::*;

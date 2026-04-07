@@ -88,7 +88,7 @@ impl ExtismPluginLoader {
 
         Ok(Manifest::new([wasm_file])
             .with_allowed_hosts(allowed_hosts.into_iter())
-            .with_allowed_paths(allowed_paths.into_iter()))
+            .with_allowed_paths(allowed_paths.into_iter().map(Into::into)))
     }
 
     fn build_plugin(
@@ -183,7 +183,7 @@ fn resolve_allowed_paths(
         allowed_paths.extend(
             default_allowed_paths
                 .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
+                .map(|(k, v)| PathMapping(k.clone(), v.clone())),
         );
     }
 

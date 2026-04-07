@@ -204,7 +204,6 @@ pub async fn update(instance_id: String) -> crate::Result<()> {
 
     Ok(UpdateInstanceUseCase::new(
         lazy_locator.get_instance_storage().await,
-        lazy_locator.get_plugin_registry().await,
         lazy_locator.get_updaters_registry().await,
     )
     .execute(instance_id)

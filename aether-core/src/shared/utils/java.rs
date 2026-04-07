@@ -1,5 +1,3 @@
-use crate::shared::OsExt;
-
 pub fn get_classpath_separator(java_arch: &str) -> &'static str {
     use daedalus::minecraft::Os;
 

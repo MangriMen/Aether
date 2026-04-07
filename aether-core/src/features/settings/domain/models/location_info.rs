@@ -200,4 +200,9 @@ impl LocationInfo {
     pub fn wasm_cache_dir(&self) -> PathBuf {
         self.cache_dir().join("wasm")
     }
+
+    #[inline]
+    pub fn temp_dir(&self) -> PathBuf {
+        self.config_dir.join("temp")
+    }
 }

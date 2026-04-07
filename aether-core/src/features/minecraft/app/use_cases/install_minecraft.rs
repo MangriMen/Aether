@@ -1,5 +1,7 @@
 use std::{path::Path, sync::Arc};
 
+use tracing::debug;
+
 use crate::features::{
     events::{ProgressBarId, ProgressService},
     java::{
@@ -127,6 +129,8 @@ impl<
             version.id.clone(), // For Vanilla take pure version
             |it| format!("{}-{}", version.id.clone(), it.id.clone()),
         );
+
+        debug!("Java path: {java_path:#?}");
 
         let mut version_info = self
             .minecraft_download_service

@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -8,6 +8,7 @@ use crate::features::minecraft::ModLoader;
 #[derive(Serialize, Deserialize, Clone, Debug, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ContentType {
+    Modpack,
     Mod,
     DataPack,
     ResourcePack,
@@ -64,6 +65,7 @@ impl ContentType {
 
     pub fn get_name(&self) -> &'static str {
         match self {
+            ContentType::Modpack => "modpack",
             ContentType::Mod => "mod",
             ContentType::DataPack => "datapack",
             ContentType::ResourcePack => "resourcepack",
@@ -73,6 +75,7 @@ impl ContentType {
 
     pub fn get_folder(&self) -> &'static str {
         match self {
+            ContentType::Modpack => "",
             ContentType::Mod => "mods",
             ContentType::DataPack => "datapacks",
             ContentType::ResourcePack => "resourcepacks",
@@ -82,6 +85,7 @@ impl ContentType {
 
     pub fn get_loaders(&self) -> &'static [&'static str] {
         match self {
+            ContentType::Modpack => &[],
             ContentType::Mod => &*MOD_LOADER_NAMES,
             ContentType::DataPack => &["datapack"],
             ContentType::ResourcePack => &["vanilla", "canvas", "minecraft"],
@@ -102,11 +106,26 @@ impl ContentType {
 
     pub fn from_string(s: &str) -> Option<ContentType> {
         match s {
+            "modpack" => Some(ContentType::Modpack),
             "mod" => Some(ContentType::Mod),
             "datapack" => Some(ContentType::DataPack),
             "resourcepack" => Some(ContentType::ResourcePack),
             "shader" => Some(ContentType::ShaderPack),
             _ => None,
         }
+    }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            ContentType::Modpack => "modpack",
+            ContentType::Mod => "mod",
+            ContentType::DataPack => "datapack",
+            ContentType::ResourcePack => "resourcepack",
+            ContentType::ShaderPack => "shader",
+        }
+    }
+
+    pub fn get_relative_path(&self, filename: &str) -> PathBuf {
+        Path::new(self.get_folder()).join(filename)
     }
 }

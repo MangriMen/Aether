@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        auth::AuthApplicationError, minecraft::app::MinecraftApplicationError,
-        process::ProcessError, settings::SettingsError,
+        auth::AuthApplicationError, instance::ContentType,
+        minecraft::app::MinecraftApplicationError, process::ProcessError, settings::SettingsError,
     },
     shared::IoError,
 };
@@ -16,8 +16,16 @@ pub enum InstanceError {
     #[error("Storage failure: {0}")]
     StorageFailure(#[from] IoError),
 
-    #[error("Content provider \"\" not found")]
-    ContentProviderNotFound { provider_id: String },
+    #[error(
+        "Content provider not found for plugin \"{plugin_id}\" and capability \"{capability_id}\""
+    )]
+    ContentProviderNotFound {
+        plugin_id: String,
+        capability_id: String,
+    },
+
+    #[error("Capability operation error")]
+    CapabilityOperationError,
 
     #[error("Instance \"{instance_id}\" still in installing state")]
     InstanceStillInstalling { instance_id: String },
@@ -40,8 +48,11 @@ pub enum InstanceError {
     #[error("Not found importer {importer_id}")]
     ImporterNotFound { importer_id: String },
 
-    #[error("Failed to import instance with importer {importer_id}")]
-    ImportFailed { importer_id: String },
+    #[error("Failed to import instance with {plugin_id} {capability_id}")]
+    ImportFailed {
+        plugin_id: String,
+        capability_id: String,
+    },
 
     // Update errors
     #[error("Not found pack info in instance")]
@@ -60,14 +71,20 @@ pub enum InstanceError {
     #[error("Found duplicate content at {content_path}")]
     ContentDuplication { content_path: String },
 
-    #[error("Can't get content filename at path: {path}")]
+    #[error("Can't get content file_name at path: {path}")]
     ContentFilename { path: PathBuf },
 
-    #[error("Error when downloading content")]
+    #[error("Error when downloading content {0}")]
     ContentDownloadError(String),
+
+    #[error("Content provider error {reason}")]
+    ContentProviderError { reason: String },
 
     #[error("Not found content for minecraft version \"{game_version}\"")]
     ContentForGameVersionNotFound { game_version: String },
+
+    #[error("Unsupported content type: {content_type:?}")]
+    UnsupportedContentType { content_type: ContentType },
 
     // Features errors
     #[error("Settings load error")]

@@ -1,5 +1,6 @@
 use crate::libs::request_client::Method;
 
+#[derive(Debug)]
 pub struct Request {
     pub method: Method,
     pub url: String,

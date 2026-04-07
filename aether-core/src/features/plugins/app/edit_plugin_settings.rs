@@ -52,12 +52,12 @@ fn apply_edit_changes(
     if let Some(allowed_paths) = &edit_settings.allowed_paths {
         let filtered = allowed_paths
             .iter()
-            .filter_map(|(host, plugin)| {
+            .filter_map(|PathMapping(host, plugin)| {
                 if !PathBuf::from(host).exists() {
                     return None;
                 }
 
-                Some((
+                Some(PathMapping(
                     host.to_owned(),
                     PathBuf::from(plugin.to_slash_lossy().to_string()),
                 ))

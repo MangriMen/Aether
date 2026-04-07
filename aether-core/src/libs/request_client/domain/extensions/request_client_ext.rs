@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
+use tracing::trace;
 
 use crate::{
     features::events::ProgressBarId,
@@ -15,6 +16,7 @@ pub trait RequestClientExt: RequestClient {
         self.fetch_json_with_progress(request, None).await
     }
 
+    #[tracing::instrument(skip(self, loading_bar))]
     async fn fetch_json_with_progress<T>(
         &self,
         request: Request,
@@ -24,7 +26,15 @@ pub trait RequestClientExt: RequestClient {
         T: DeserializeOwned,
     {
         let bytes = self.fetch_bytes_with_progress(request, loading_bar).await?;
-        serde_json::from_slice(&bytes).map_err(Into::into)
+
+        serde_json::from_slice(&bytes).map_err(|err| {
+            trace!("{err:?}");
+            if let Ok(text) = std::str::from_utf8(&bytes) {
+                trace!("Response body: {text}");
+            }
+
+            Into::into(err)
+        })
     }
 
     async fn fetch_toml<T>(&self, request: Request) -> Result<T, RequestError>

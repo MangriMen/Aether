@@ -1,0 +1,13 @@
+[package]
+name = "aether-core-gen"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+aether-core = { path = "../aether-core" }
+aether-core-plugin-api = { path = "../aether-core-plugin-api" }
+
+serde_json = "1.0"
+
+register-schema.workspace = true

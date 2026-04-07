@@ -1,23 +1,40 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 
 use crate::features::instance::{
-    ContentFile, ContentInstallParams, ContentSearchParams, ContentSearchResult, InstanceError,
+    app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
+    AtomicInstallParams, ContentFile, ContentItem, ContentProviderCapabilityMetadata,
+    ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
+    InstanceError, ModpackInstallParams,
 };
 
 #[async_trait]
 pub trait ContentProvider: Send + Sync {
-    fn get_name(&self) -> String;
+    fn metadata(&self) -> &ContentProviderCapabilityMetadata;
 
     async fn search(
         &self,
-        search_content: &ContentSearchParams,
+        search_content: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError>;
 
-    async fn install(
-        &self,
-        instance_id: &str,
-        install_params: &ContentInstallParams,
-    ) -> Result<ContentFile, InstanceError>;
+    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError>;
 
-    fn get_update_data_id_field(&self) -> String;
+    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError>;
+
+    async fn install_atomic(
+        &self,
+        install_params: &AtomicInstallParams,
+    ) -> Result<DownloadedContent, InstanceError>;
+
+    async fn install_modpack(
+        &self,
+        install_params: &ModpackInstallParams,
+    ) -> Result<(String, Vec<ContentFile>), InstanceError>;
+
+    async fn check_compatibility(
+        &self,
+        instance_ids: &[Instance],
+        content_item: &ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError>;
 }
