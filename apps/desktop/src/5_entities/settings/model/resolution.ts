@@ -1,0 +1,26 @@
+export const DEFAULT_RESOLUTION = [1280, 720] as const;
+
+export const RESOLUTION_OPTIONS: { name: string; value: [number, number] }[] = [
+  { name: '7680x4320', value: [7680, 4320] },
+  { name: '5120x2880', value: [5120, 2880] },
+  { name: '5120x1440', value: [5120, 1440] },
+  { name: '3840x2160', value: [3840, 2160] },
+  { name: '3840x1600', value: [3840, 1600] },
+  { name: '3440x1440', value: [3440, 1440] },
+  { name: '2560x1600', value: [2560, 1600] },
+  { name: '2560x1440', value: [2560, 1440] },
+  { name: '2560x1080', value: [2560, 1080] },
+  { name: '1920x1200', value: [1920, 1200] },
+  { name: '1920x1080', value: [1920, 1080] },
+  { name: '1680x1050', value: [1680, 1050] },
+  { name: '1600x900', value: [1600, 900] },
+  { name: '1440x900', value: [1440, 900] },
+  { name: '1366x768', value: [1366, 768] },
+  { name: '1280x720', value: [1280, 720] },
+  { name: '1024x768', value: [1024, 768] },
+  { name: '1024x600', value: [1024, 600] },
+  { name: '960x540', value: [960, 540] },
+  { name: '852x480', value: [852, 480] },
+  { name: '800x600', value: [800, 600] },
+  { name: '640x480', value: [640, 480] },
+];

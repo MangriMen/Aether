@@ -1,0 +1,320 @@
+{
+  "account": {
+    "activate": "Активировать",
+    "changeError": "Не удалось сменить аккаунт",
+    "createOfflineError": "Не удалось создать оффлайн аккаунт",
+    "logoutError": "Не удалось выйти из аккаунта",
+    "notFound": "Аккаунты не найдены",
+    "offline": "Оффлайн",
+    "online": "Онлайн",
+    "removeAccount": "Удалить аккаунт",
+    "signIn": "Войти",
+    "signInMinecraft": "Войти в аккаунт Minecraft",
+    "signInOffline": "Войти оффлайн",
+    "title": "Аккаунт"
+  },
+  "backendError": {
+    "authError": {
+      "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+      "noActiveCredentials": "Не найдено активного аккаунта",
+      "storageFailure": "Ошибка хранилища"
+    },
+    "instanceError": {
+      "importerNotFound": "Не найден импортер {{importer_id}}",
+      "importFailed": "Не удалось импортировать инстанс с помощью импортера {{importer_id}}.",
+      "packInfoNotFound": "Не найдена информация о модпаке в инстансе",
+      "updaterNotFound": "Не найден апдейтер для модпака {{modpack_id}}",
+      "updateFailed": "Не удалось обновить инстанс с модпаком {{modpack_id}}.",
+      "credentialsError": {
+        "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
+        "noActiveCredentials": "Не найдено активного аккаунта",
+        "storageFailure": "Ошибка хранилища"
+      },
+      "storageFailure": "Ошибка хранилища"
+    },
+    "settingsError": {
+      "storageFailure": "Ошибка хранилища"
+    }
+  },
+  "common": {
+    "account": "Аккаунт",
+    "add": "Добавить",
+    "appError": "Упс. Что-то пошло не так.\nПопробуйте перезапустить приложение или сбросить ошибку",
+    "authors": "Авторы",
+    "browse": "Обзор",
+    "cancel": "Отмена",
+    "create": "Создать",
+    "createInstance": "Создать инстанс",
+    "delete": "Удалить",
+    "disable": "Отключить",
+    "enable": "Включить",
+    "gameVersion": "Версия игры",
+    "install": "Установить",
+    "installed": "Установлено",
+    "installing": "Установка",
+    "loader": "Загрузчик",
+    "name": "Имя",
+    "ok": "Ок",
+    "perPage": "Отображать",
+    "refresh": "Обновить",
+    "remove": "Удалить",
+    "reset": "Сбросить",
+    "revealInExplorerError": "Не удалось показать в проводнике",
+    "search": "Искать",
+    "type": "Тип",
+    "username": "Имя пользователя",
+    "version": "Версия",
+    "repair": "Исправить",
+    "update": "Обновить",
+    "failedToOpenBrowser": "Не удалось открыть браузер",
+    "copyToClipboard": "Скопировать в буфер обмена",
+    "close": "Закрыть",
+    "incompatible": "Несовместимый"
+  },
+  "content": {
+    "backToInstance": "Вернуться к инстансу",
+    "datapack": "Дата пак",
+    "dataPacks": "Дата паки",
+    "imported": "{{contentType}} успешно импортирован",
+    "installed": "{{contentType}} успешно установлен",
+    "modpack": "Модпак",
+    "modpacks": "Модпаки",
+    "mod": "Мод",
+    "mods": "Моды",
+    "provider": "Провайдер",
+    "providerErrorOrNotFound": "Провайдер не найден или возникла ошибка получения контента",
+    "resourcepack": "Ресурс пак",
+    "resourcePacks": "Ресурс паки",
+    "searchCount": "Искать контент ({{count}})",
+    "shaderpack": "Шейдер",
+    "shaders": "Шейдеры",
+    "title": "Контент",
+    "failedToInstall": "Не удалось установить контент",
+    "failedToImport": "Не удалось импортировать контент",
+    "failedToRemove": "Не удалось удалить контент",
+    "failedToDisable": "Не удалось отключить контент",
+    "failedToEnable": "Не удалось включить контент",
+    "noResultsFound": "Результаты не найдены",
+    "noMatchingInstances": "Подходящих инстансов не найдено",
+    "openInBrowser": "Открыть в браузере",
+    "item": {
+      "description": "Описание",
+      "versions": "Версии"
+    },
+    "alreadyInstalled": "Этот контент уже установлен"
+  },
+  "createInstance": {
+    "custom": "Пользовательский",
+    "gameVersionPlaceholder": "Выберите версию игры",
+    "hideAdvanced": "Скрыть расширенные",
+    "import": "Импорт",
+    "includeSnapshots": "Включить снапшоты",
+    "loaderVersion": "Версия загрузчика",
+    "loaderVersionLatest": "Последняя",
+    "loaderVersionNoGameVersion": "Выберите версию игры перед выбором версии загрузчика",
+    "loaderVersionOther": "Другое",
+    "loaderVersionPlaceholder": "Выберите версию загрузчика",
+    "loaderVersionStable": "Стабильная",
+    "noImportConfigs": "Нет конфигураций для импорта.\nВы можете добавить их с помощью плагинов в настройках лаунчера.",
+    "showAdvanced": "Показать расширенные",
+    "title": "Создать инстанс"
+  },
+  "createOfflineAccount": {
+    "title": "Создать оффлайн аккаунт",
+    "usernameError": "Имя пользователя должно содержать только английские буквы, цифры и подчёркивания"
+  },
+  "events": {
+    "javaDownloading": "Загрузка Java {{version}}",
+    "launcherUpdating": "Обновление лаунчера до {{version}}"
+  },
+  "home": {
+    "instances": "Инстансы",
+    "noInstances": "Нет доступных инстансов\nПохоже, на данный момент у вас нет ни одного инстанса",
+    "title": "Главная"
+  },
+  "instance": {
+    "content": "Контент",
+    "createError": "Не удалось создать инстанс",
+    "editError": "Не удалось изменить инстанс {{id}}",
+    "importError": "Не удалось импортировать инстанс",
+    "installContent": "Установить контент",
+    "lastPlayed": "Последний запуск: {{date}}",
+    "launch": "Запустить",
+    "launchError": "Не удалось запустить инстанс {{id}}",
+    "neverPlayed": "Никогда не запускался",
+    "noContent": "У вас ещё нет установленного контента",
+    "notFound": "Инстанс \"{{id}}\" не найден",
+    "openFolder": "Открыть папку",
+    "removeDescription": "Если вы продолжите, все данные вашего инстанса будут безвозвратно стёрты, включая ваши миры. Вы не сможете их восстановить.",
+    "removeError": "Ошибка удаления инстанса {{id}}",
+    "removeTitle": "Вы уверены, что хотите удалить инстанс {{name}}?",
+    "settings": "Настройки",
+    "showFile": "Показать файл",
+    "stop": "Остановить",
+    "stopError": "Не удалось остановить инстанс",
+    "updateError": "Ошибка обновления инстанса {{id}}",
+    "instanceSettings": {
+      "currentlyInstalled": "Текущая установка",
+      "modpack": "Модпак"
+    },
+    "failedToRemove": "Не удалось удалить {{name}}",
+    "removeForce": "Удалить принудительно",
+    "failedToRemoveDescription": "Инстанс все еще устанавливается или запущен",
+    "instanceNotFound": "Инстанс не найден",
+    "notCompatibleWithContent": "Этот инстанс несовместим с этим контентом",
+    "searchInstance": "Поиск инстанса",
+    "unableToGetCompatibilityStatistics": "Не удалось получить статистику совместимости"
+  },
+  "instanceSettings": {
+    "tab": {
+      "general": "Общие",
+      "installation": "Установка",
+      "javaAndMemory": "Java и память",
+      "window": "Окно",
+      "hooks": "Хуки"
+    },
+    "customArguments": "Пользовательские аргументы",
+    "customEnvironmentVariables": "Пользовательские переменные окружения",
+    "customMemorySettings": "Пользовательские настройки памяти",
+    "customWindowSettings": "Пользовательские настройки окна",
+    "customHooksSettings": "Пользовательские хуки запуска",
+    "enterArguments": "Введите аргументы здесь (например -Xmx1024m)",
+    "enterVariables": "Введите переменные здесь (например JAVA_HOME=C:\\Program Files\\Java\\jdk-17)",
+    "environmentVariables": "Переменные окружения",
+    "javaArguments": "Аргументы Java",
+    "memoryAllocation": "Выделение памяти",
+    "resolution": "Разрешение",
+    "windowError": {
+      "resolution": {
+        "emptyValue": "Элемент разрешения должен быть не пустым",
+        "invalidValue": "Элемент разрешения должен быть числом",
+        "invalidRange": "Элемент разрешения должен быть в диапазоне [1, 65535]"
+      }
+    },
+    "hookSettings": {
+      "postExit": "После выхода",
+      "postExitLabel": "Запускается после закрытия игры",
+      "preLaunch": "До запуска",
+      "preLaunchLabel": "Вызывается перед запуском игры",
+      "wrapper": "Обёртка",
+      "wrapperLabel": "Команда-обёртка для запуска Minecraft",
+      "enterCommandPlaceholder": "Введите команду",
+      "title": "Хуки"
+    }
+  },
+  "plugins": {
+    "addItem": "Добавить элемент",
+    "allowedHosts": "Разрешенные хосты",
+    "allowedPaths": "Разрешенные пути",
+    "custom": "Пользовательские",
+    "disableToChangeSettings": "Отключите плагин, чтобы изменить настройки",
+    "fromPlugin": "Из плагина",
+    "noPlugins": "Плагины не найдены",
+    "openPluginsFolder": "Открыть папку плагинов",
+    "saveSettings": "Сохранить настройки",
+    "title": "Плагины",
+    "syncError": "Ошибка синхронизации",
+    "openPluginsFolderError": "Не удалось открыть папку плагинов",
+    "importFromPackage": "Импортировать",
+    "failedToRemove": "Не удалось удалить плагин {{name}}",
+    "failedToImport": "Не удалось импортировать плагин"
+  },
+  "progress": {
+    "seeDetails": "Показать детали",
+    "ongoingTasks": "Текущие задачи",
+    "dialogTitle": "Подробности прогресса"
+  },
+  "settings": {
+    "tab": {
+      "appearance": "Внешний вид",
+      "defaultInstanceSettings": "Настройки игры",
+      "update": "Обновление",
+      "plugins": "Плагины",
+      "experimental": "Экспериментальное"
+    },
+    "actionOnInstanceLaunch": "Поведение лаунчера при запуске игры",
+    "actionOnInstanceLaunchDescription": "Выберите действие, которое будет выполняться при запуске игры:\n\"Ничего не делать\" не скрывает лаунчер при запуске.\n\"Скрыть\" скрывает окно лаунчера.\n\"Закрыть\" закроет окно лаунчера, но не закроет приложение (экономит память).",
+    "animations": "Анимации",
+    "animationsDescription": "Плавные переходы и эффекты в интерфейсе\nМожно отключить для повышения производительности",
+    "checkForUpdates": "Проверить наличие обновлений",
+    "checkForUpdatesDescription": "Доступна новая версия приложения!\nПриложение будет перезапущенно автоматически после установки.",
+    "checkForUpdatesDescriptionNoUpdates": "Нет доступных обновлений",
+    "close": "Закрыть",
+    "colorScheme": "Цветовая схема",
+    "colorSchemeDescription": "Выберите предпочитаемую цветовую схему",
+    "dark": "Тёмная",
+    "doNothing": "Ничего не делать",
+    "hide": "Скрыть",
+    "installAndRestart": "Обновить и перезапустить",
+    "language": "Язык",
+    "languageDescription": "Выберите ваш язык",
+    "light": "Светлая",
+    "prefersReducedMotionInfo": "В системе отключены анимации – вы можете включить их в приложении, но это может повлиять на плавность интерфейса и заряд батареи",
+    "releaseDate": "Дата выпуска",
+    "systemColorMode": "Системная цветовая схема",
+    "systemColorModeDescription": "Автоматически адаптируется к цветовому режиму вашей системы.\nЭта опция применяется только в том случае, если цветовая тема установлена ​​на \"System\"",
+    "themeBackgroundOpacity": "Непрозрачность фона",
+    "title": "Настройки",
+    "toggleWindowTransparency": "Включить прозрачность окна",
+    "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
+    "windowEffect": "Эффект окна",
+    "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
+    "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
+    "windowEffectVariant": {
+      "acrylic": "Acrylic",
+      "mica": "Mica",
+      "off": "Выключено"
+    },
+    "changeError": "Не удалось изменить настройки",
+    "animationsDisabled": "В системе отключены анимации",
+    "animationsDisabledDescription": "Вы можете включить их в приложении, но это может повлиять на плавность интерфейса и время автономной работы",
+    "updateAvailable": "Доступна новая версия!",
+    "goToUpdatePage": "Перейти на страницу",
+    "updateIsReadyToInstall": "доступна для установки!",
+    "updateNotificationStyle": "Стиль уведомлений обновлений",
+    "whatsNew": "Что нового",
+    "update": "Обновить"
+  },
+  "update": {
+    "updateError": "Не удалось установить обновление",
+    "banner": "Баннер",
+    "toast": "Всплывающее",
+    "restartWarningDescription": "Новая версия будет загружена и установлена. \nПриложение перезапустится сразу после завершения загрузки.",
+    "restartWarningTitle": "Обновить и перезапустить",
+    "fetchError": "Не удалось проверить обновления",
+    "changelogCopiedToClipboard": "Список изменений скопирован в буфер обмена!",
+    "changelogIsTooLong": "Список изменений слишком длинный",
+    "changelogIsTooLongDescription": "Отправлена ​​только первая часть. Вы можете скопировать полный текст и перевести его вручную",
+    "failedToOpenBrowserWithChangelogDescription": "Пожалуйста, скопируйте текст, чтобы перевести его вручную",
+    "translateChangelogInBrowser": "Перевести журнал изменений в браузере",
+    "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена"
+  },
+  "plugin": {
+    "description": "Описание",
+    "settings": "Настройки",
+    "capabilities": "Возможности",
+    "importers": "Импортеры",
+    "incompatibleApiVersion": "Версия API несовместима. Использование плагина может привести к сбою или повреждению данных",
+    "updaters": "Апдейтеры"
+  },
+  "pluginSettings": {
+    "hostPathPlaceholder": "Введите путь на хосте",
+    "pluginPathPlaceholder": "Введите путь в плагине",
+    "hostUrlPlaceholder": "Введите домен хоста без протокола, например\n\"example.com\"",
+    "host": "Хост",
+    "plugin": "Плагин",
+    "failedToUpdateSettings": "Не удалось обновить настройки плагина {{name}}"
+  },
+  "pagination": {
+    "morePages": "Больше страниц",
+    "next": "Следующая",
+    "previous": "Предыдущая"
+  },
+  "contentVersion": {
+    "downloads": "Загрузки",
+    "gameVersion": "Версия игры",
+    "platforms": "Платформы",
+    "published": "Опубликовано",
+    "name": "Имя"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "identifier": "desktop-capability",
+  "webviews": [
+    "main"
+  ],
+  "windows": [
+    "main"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "permissions": [
+    "updater:default",
+    "process:default"
+  ]
+}

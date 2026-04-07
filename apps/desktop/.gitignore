@@ -1,0 +1,11 @@
+node_modules
+dist
+
+tsconfig.tsbuildinfo
+
+# IDE
+.vscode
+!.vscode/extensions.json
+
+# LLM
+.roo/rules
