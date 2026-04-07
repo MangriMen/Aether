@@ -3,7 +3,7 @@ name: Build executable
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   publish-tauri:
@@ -19,10 +19,10 @@ jobs:
           # args: '--target aarch64-apple-darwin'
           # - platform: 'macos-latest' # for Intel based macs.
           # args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "ubuntu-22.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
 
@@ -33,8 +33,15 @@ jobs:
         id: get_version
         shell: bash
         run: |
-          VERSION=$(jq -r .version apps/desktop/src-tauri/tauri.conf.json)
-          echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+          JSON_VERSION=$(jq -r .version apps/desktop/src-tauri/tauri.conf.json)
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+
+          if [ "$JSON_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch! Tag is $TAG_VERSION but tauri.conf.json is $JSON_VERSION"
+            exit 1
+          fi
+
+          echo "APP_VERSION=$JSON_VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract changelog
         id: changelog_reader
@@ -64,7 +71,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './ -> target'
+          workspaces: "./ -> target"
 
       - name: install frontend dependencies
         run: bun install
@@ -76,8 +83,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: apps/desktop
-          tagName: v${{ steps.get_version.outputs.APP_VERSION }}
-          releaseName: 'v${{ steps.get_version.outputs.APP_VERSION }}'
+          tagName: ${{ github.ref_name }}
+          releaseName: "v${{ steps.get_version.outputs.APP_VERSION }}"
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: true
           prerelease: false
