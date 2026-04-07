@@ -1,0 +1,14 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: check-added-large-files
+
+-   repo: local
+    hooks:
+    -   id: cargo-clippy
+        name: Check by cargo clippy
+        entry: cargo clippy -- -D warnings
+        language: rust
+        always_run: true
+        exclude: ^.*$

@@ -1,0 +1,15 @@
+[package]
+name = "register-schema-derive"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+inventory = "0.3"
+schemars = "1.1.0"
+register-schema = { path = "../register-schema" }
+
+[lib]
+proc-macro = true
