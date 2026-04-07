@@ -8,7 +8,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentFilters, ContentSearchParams } from '@/entities/instances';
+import type { ContentSearchParams } from '@/entities/instances';
 import type { ContentType } from '@/entities/instances';
 import type { Option } from '@/shared/model';
 
@@ -29,7 +29,6 @@ export type ContentBrowserProps = ComponentProps<'div'> & {
   isProvidersLoading?: boolean;
   isProvidersError?: boolean;
   types?: readonly ContentType[];
-  onFiltersChange?: (filters: ContentFilters) => void;
 };
 
 export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
@@ -39,14 +38,12 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     'providers',
     'isProvidersLoading',
     'types',
-    'onFiltersChange',
     'class',
   ]);
 
   const { state, actions } = useContentBrowserFilters(
     () => local.providers,
     () => local.types,
-    (filters) => local.onFiltersChange?.(filters),
   );
 
   const [localQuery, setLocalQuery] = createSignal('');

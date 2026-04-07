@@ -2,7 +2,6 @@ import { useNavigate } from '@solidjs/router';
 import {
   createMemo,
   createSignal,
-  Show,
   splitProps,
   type Component,
   type ComponentProps,
@@ -18,6 +17,7 @@ import { ModLoader } from '@/entities/minecraft';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { DelayedShow } from '@/shared/ui';
 
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
@@ -70,12 +70,13 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
 
   return (
     <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
-      <Show
+      <DelayedShow
         when={
           instanceContentArray() !== undefined &&
           !!instanceContentArray()?.length &&
           instanceContentArray()
         }
+        delay={20}
         fallback={
           <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
             <span class='text-lg text-muted-foreground'>
@@ -110,7 +111,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
             />
           </>
         )}
-      </Show>
+      </DelayedShow>
     </div>
   );
 };

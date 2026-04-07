@@ -65,7 +65,7 @@ const TableHead: Component<ComponentProps<'th'>> = (props) => {
   return (
     <th
       class={cn(
-        'h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+        'h-10 px-4 text-left align-middle font-medium text-muted-foreground',
         local.class,
       )}
       {...others}
@@ -75,12 +75,7 @@ const TableHead: Component<ComponentProps<'th'>> = (props) => {
 
 const TableCell: Component<ComponentProps<'td'>> = (props) => {
   const [local, others] = splitProps(props, ['class']);
-  return (
-    <td
-      class={cn('p-2 align-middle [&:has([role=checkbox])]:pr-0', local.class)}
-      {...others}
-    />
-  );
+  return <td class={cn('py-2 px-4 align-middle', local.class)} {...others} />;
 };
 
 const TableCaption: Component<ComponentProps<'caption'>> = (props) => {

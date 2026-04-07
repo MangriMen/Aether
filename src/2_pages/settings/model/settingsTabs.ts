@@ -1,10 +1,12 @@
-import type { Component, ComponentProps } from 'solid-js';
+import type { ComponentProps } from 'solid-js';
 
 import IconMdiBrush from '~icons/mdi/brush-variant';
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
 import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
+
+import type { TabConfig } from '@/shared/model';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
@@ -22,70 +24,40 @@ export const SettingsTab = {
 
 export type SettingsTab = (typeof SettingsTab)[keyof typeof SettingsTab];
 
-export const SettingsTabs = new Set(Object.values(SettingsTab));
-
-export const SETTINGS_TABS_TRIGGER: {
-  icon?: Component<ComponentProps<'svg'>>;
-  title:
-    | 'appearance'
-    | 'update'
-    | 'defaultInstanceSettings'
-    | 'plugins'
-    | 'experimental';
-  value: SettingsTab;
-}[] = [
+export const SETTINGS_TABS_DEFINITION = [
   {
+    value: SettingsTab.Appearance,
+    label: 'appearance',
     icon: IconMdiBrush,
-    title: 'appearance',
-    value: SettingsTab.Appearance,
-  },
-  {
-    icon: IconMdiGamepadSquare,
-    title: 'defaultInstanceSettings',
-    value: SettingsTab.DefaultInstanceSettings,
-  },
-  {
-    icon: IconMdiPuzzle,
-    title: 'plugins',
-    value: SettingsTab.Plugins,
-  },
-  {
-    icon: IconMdiUpdate,
-    title: 'update',
-    value: SettingsTab.Update,
-  },
-  {
-    icon: IconMdiTestTube,
-    title: 'experimental',
-    value: SettingsTab.Experimental,
-  },
-] as const;
-
-export const SETTINGS_TABS_CONTENT: {
-  component: Component<ComponentProps<'div'>>;
-  value: SettingsTab;
-}[] = [
-  {
     component: AppearancePane,
-    value: SettingsTab.Appearance,
   },
   {
-    component: DefaultInstanceSettingsPane,
     value: SettingsTab.DefaultInstanceSettings,
+    label: 'defaultInstanceSettings',
+    icon: IconMdiGamepadSquare,
+    component: DefaultInstanceSettingsPane,
   },
   {
-    component: PluginsPane,
     value: SettingsTab.Plugins,
+    label: 'plugins',
+    icon: IconMdiPuzzle,
+    component: PluginsPane,
   },
   {
-    component: UpdatePane,
     value: SettingsTab.Update,
+    label: 'update',
+    icon: IconMdiUpdate,
+    component: UpdatePane,
   },
   {
-    component: ExperimentalPane,
     value: SettingsTab.Experimental,
+    label: 'experimental',
+    icon: IconMdiTestTube,
+    component: ExperimentalPane,
   },
-] as const;
+] as const satisfies TabConfig<SettingsTab, ComponentProps<'div'>>[];
+
+export const SettingsTabs = new Set(Object.values(SettingsTab));
 
 export const isSettingsTab = (value: string): value is SettingsTab =>
   SettingsTabs.has(value as SettingsTab);

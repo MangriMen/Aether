@@ -6,3 +6,7 @@ export const formatTime = (time: Dayjs) => {
   const tz = dayjs.tz.guess();
   return time.tz(tz).format('LLL');
 };
+
+export const formatRelativeTime = (time: Dayjs) => {
+  return time.fromNow();
+};

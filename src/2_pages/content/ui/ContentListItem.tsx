@@ -13,8 +13,13 @@ export type ContentListItemProps = ComponentProps<'div'> & {
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const [local, others] = splitProps(props, ['item', 'class']);
 
-  const { requestInstall, isInstalling, isInstalled, isLoading } =
-    useContentListItem(() => local.item);
+  const {
+    requestInstall,
+    isInstalling,
+    isInstalled,
+    isLoading,
+    contentPageHref,
+  } = useContentListItem(() => local.item);
 
   return (
     <div
@@ -24,7 +29,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       )}
       {...others}
     >
-      <ContentItemInfo item={local.item} />
+      <ContentItemInfo item={local.item} contentPageHref={contentPageHref()} />
       <div class='ml-auto flex flex-col justify-end'>
         <ContentInstallButton
           isInstalling={isInstalling()}

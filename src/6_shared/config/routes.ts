@@ -5,6 +5,8 @@ export const ROUTES = {
 
   CONTENT: '/content',
 
+  CONTENT_ITEM: (id: string) => `/content/${id}`,
+
   INSTANCE: (id: string | number) => `/instances/${encodeURIComponent(id)}`,
 
   INSTANCE_SETTINGS: (id: string | number) =>
@@ -21,8 +23,9 @@ export const ROUTES = {
 export const ROUTE_PATTERNS = {
   HOME: '/',
   CONTENT: '/content',
+  CONTENT_ITEM_REL: '/:contentId',
   INSTANCE: '/instances/:id',
-  INSTANCE_SETTINGS: 'settings', // Relative path
+  INSTANCE_SETTINGS_REL: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',
   SETTINGS: '/settings/:tab?',
 } as const;

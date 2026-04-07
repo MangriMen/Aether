@@ -3,7 +3,6 @@ import type {
   SortingState,
   RowSelectionState,
   PaginationState,
-  ColumnDef,
   RowModel,
 } from '@tanstack/solid-table';
 import type { Accessor, Component } from 'solid-js';
@@ -19,7 +18,10 @@ import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentFile } from '@/entities/instances';
 
-import { CONTENT_TABLE_COLUMNS } from './contentTableColumns';
+import {
+  CONTENT_TABLE_COLUMNS,
+  contentTableColumnHelper,
+} from './contentTableColumns';
 
 export interface CreateContentTableProps {
   headerActions: Component<{
@@ -36,24 +38,27 @@ export interface CreateContentTableProps {
 
 export const createContentTable = (props: CreateContentTableProps) => {
   const columns = createMemo(() => {
-    const actionsColumn: ColumnDef<ContentFile> = {
+    const actionsColumn = contentTableColumnHelper.display({
       id: 'actions',
-      header: (rowProps) => (
+      size: 116,
+      maxSize: 116,
+      header: (headerProps) => (
         <div class='flex justify-end'>
           <props.headerActions
-            allRowsSelected={rowProps.table.getIsAllPageRowsSelected()}
-            someRowsSelected={rowProps.table.getIsSomePageRowsSelected()}
-            selectedRows={rowProps.table.getSelectedRowModel()}
+            allRowsSelected={headerProps.table.getIsAllPageRowsSelected()}
+            someRowsSelected={headerProps.table.getIsSomePageRowsSelected()}
+            selectedRows={headerProps.table.getSelectedRowModel()}
             refetch={props.refetch}
           />
         </div>
       ),
-      cell: (rowProps) => (
+      cell: (cellProps) => (
         <div class='flex justify-end'>
-          <props.contentActions file={rowProps.cell.row.original} />
+          {/* Используем сокращенный путь props.row.original */}
+          <props.contentActions file={cellProps.row.original} />
         </div>
       ),
-    };
+    });
 
     return [...CONTENT_TABLE_COLUMNS, actionsColumn];
   });

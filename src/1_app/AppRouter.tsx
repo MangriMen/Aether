@@ -2,7 +2,11 @@ import type { Component } from 'solid-js';
 
 import { Route, Router } from '@solidjs/router';
 
-import { ContentPage } from '@/pages/content';
+import {
+  ContentBrowserWrapper,
+  ContentItemPage,
+  ContentPageLayout,
+} from '@/pages/content';
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
@@ -23,11 +27,17 @@ export const AppRouter: Component = () => {
           )}
         />
       </Route>
-      <Route path={ROUTE_PATTERNS.CONTENT} component={ContentPage} />
+      <Route path={ROUTE_PATTERNS.CONTENT} component={ContentPageLayout}>
+        <Route path='/' component={ContentBrowserWrapper} />
+        <Route
+          path={ROUTE_PATTERNS.CONTENT_ITEM_REL}
+          component={ContentItemPage}
+        />
+      </Route>
       <Route path={ROUTE_PATTERNS.INSTANCE} component={InstancePage}>
         <Route />
         <Route
-          path={ROUTE_PATTERNS.INSTANCE_SETTINGS}
+          path={ROUTE_PATTERNS.INSTANCE_SETTINGS_REL}
           component={(props) => (
             <InstanceSettingsDialog instanceId={props.params.id} />
           )}

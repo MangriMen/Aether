@@ -36,6 +36,7 @@ export type ContentContextProviderProps = {
   providerId: ProviderId | undefined;
   filters: ContentFilters | undefined;
   filtersLock: ContentFiltersLock | undefined;
+  onFiltersChange?: (filters: ContentFilters) => void;
 };
 
 export const ContentContextProvider: Component<ContentContextProviderProps> = (
@@ -46,6 +47,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     'providerId',
     'filters',
     'filtersLock',
+    'onFiltersChange',
   ]);
 
   const [installedContentIndex, setInstalledContentIndex] =
@@ -87,7 +89,10 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       return;
     }
 
-    const newContentMap: Record<string, string[]> = {};
+    const newContentMap: Record<
+      string,
+      Record<string, string | undefined>
+    > = {};
 
     instancesContents.forEach((contents, index) => {
       if (!contents.data) {
@@ -106,11 +111,11 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
         const contentId = getContentIdFromUpdateInfo(content, providerId);
 
         if (!newContentMap[contentId]) {
-          newContentMap[contentId] = [];
+          newContentMap[contentId] = {};
         }
 
-        if (!newContentMap[contentId].includes(instanceId)) {
-          newContentMap[contentId].push(instanceId);
+        if (!newContentMap[contentId][instanceId]) {
+          newContentMap[contentId][instanceId] = content.version;
         }
       }
     });
@@ -121,8 +126,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
   const { mutateAsync: installContent } = useInstallContent();
 
   const handleInstallAtomicContent = async (
-    item: ContentItem,
+    item: Pick<ContentItem, 'id' | 'contentType'>,
     instanceId?: Instance['id'],
+    contentVersion?: string,
   ) => {
     const contentId = item.id;
 
@@ -154,12 +160,12 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       type: 'atomic',
       data: {
         instanceId: finalInstanceId,
-        gameVersion: gameVersion,
-        loader: loader,
+        gameVersion,
+        loader,
         contentId: item.id,
         contentType: item.contentType,
-        contentVersion: undefined,
-        providerId: providerId,
+        contentVersion,
+        providerId,
       },
     };
 
@@ -178,7 +184,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     }
   };
 
-  const handleInstallModpack = async (item: ContentItem) => {
+  const handleInstallModpack = async (
+    item: Pick<ContentItem, 'id' | 'contentType'>,
+  ) => {
     const contentId = item.id;
 
     if (!contentId) {
@@ -211,8 +219,9 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
   };
 
   const handleInstallContent = async (
-    item: ContentItem,
+    item: Pick<ContentItem, 'id' | 'contentType'>,
     instanceId?: Instance['id'],
+    contentVersion?: string,
   ) => {
     const contentId = item.id;
 
@@ -223,7 +232,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     if (item.contentType === 'modpack') {
       handleInstallModpack(item);
     } else {
-      handleInstallAtomicContent(item, instanceId);
+      handleInstallAtomicContent(item, instanceId, contentVersion);
     }
   };
 
@@ -265,11 +274,32 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
           return false;
         }
 
-        return instances.includes(instanceId_);
+        return instances[instanceId_] !== undefined;
       };
     },
-    getInstancesForContent: (contentId) =>
-      installedContentIndex.content[contentId] ?? [],
+    createInstalledVersion: (contentId, instanceId) => {
+      return () => {
+        const contentId_ = contentId();
+
+        if (!contentId_) {
+          return;
+        }
+
+        const instanceId_ = instanceId();
+
+        if (!instanceId_) {
+          return;
+        }
+
+        const version =
+          installedContentIndex.content[contentId_]?.[instanceId_];
+
+        return version;
+      };
+    },
+    setFilters: (filters) => {
+      local.onFiltersChange?.(filters);
+    },
   };
 
   const context: ContentContextType = [store, actions];
