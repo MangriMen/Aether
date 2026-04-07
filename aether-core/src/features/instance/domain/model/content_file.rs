@@ -19,6 +19,7 @@ pub struct ContentFile {
     pub hash: String,
     pub name: Option<String>,
     pub size: u64,
+    pub version: Option<String>,
     pub update_provider_id: Option<ProviderId>,
     #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
@@ -47,7 +48,7 @@ impl ContentFile {
     pub fn from_params(params: CreateContentFileParams) -> Self {
         let update_info = ContentFileUpdateInfo {
             content_id: params.content_id,
-            version: params.content_version,
+            version: params.content_version.clone(),
         };
 
         let update = Some(HashMap::from([(params.provider_id.clone(), update_info)]));
@@ -62,6 +63,7 @@ impl ContentFile {
             size: params.size,
             content_type: params.content_type,
             disabled: false,
+            version: Some(params.content_version),
             update_provider_id: Some(params.provider_id),
             update,
         }
@@ -74,6 +76,12 @@ impl ContentFile {
         size: u64,
         disabled: bool,
     ) -> Self {
+        let version = pack_file
+            .update_provider_id
+            .as_ref()
+            .and_then(|id| pack_file.update.as_ref()?.get(id))
+            .map(|info| info.version.clone());
+
         Self {
             content_path,
             name: pack_file.name,
@@ -82,6 +90,7 @@ impl ContentFile {
             content_type,
             size,
             disabled,
+            version,
             update_provider_id: pack_file.update_provider_id,
             update: pack_file.update,
         }

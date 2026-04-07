@@ -8,8 +8,9 @@ use tokio::sync::Mutex;
 use crate::features::{
     instance::{
         app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
-        AtomicInstallParams, ContentFile, ContentProvider, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, Instance, InstanceError, ModpackInstallParams,
+        AtomicInstallParams, ContentFile, ContentItem, ContentProvider,
+        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+        ContentVersion, DownloadedContent, Instance, InstanceError, ModpackInstallParams,
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance,
@@ -69,6 +70,35 @@ impl PluginContentProviderProxy {
                 }
             })
     }
+
+    async fn call_optional<I, O>(
+        &self,
+        handler: &Option<String>,
+        input: I,
+    ) -> Result<O, InstanceError>
+    where
+        I: Serialize,
+        O: DeserializeOwned,
+    {
+        match handler {
+            Some(handler_name) => self.call_plugin(handler_name, input).await,
+            None => {
+                let plugin = self.instance.lock().await;
+                let plugin_id = plugin.get_id();
+
+                tracing::warn!(
+                    "Capability '{}' in plugin '{}' does not support this operation (handler is None)",
+                    self.capability.metadata.id,
+                    plugin_id
+                );
+
+                Err(InstanceError::ContentProviderNotFound {
+                    plugin_id,
+                    capability_id: self.capability.metadata.id.clone(),
+                })
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -81,15 +111,25 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         search_content: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError> {
-        self.call_plugin(&self.capability.search_handler, search_content)
+        self.call_plugin(&self.capability.handlers.search, search_content)
+            .await
+    }
+
+    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
+        self.call_plugin(&self.capability.handlers.get_content, content_id)
+            .await
+    }
+
+    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+        self.call_optional(&self.capability.handlers.list_version, content_id)
             .await
     }
 
     async fn install_atomic(
         &self,
         install_params: &AtomicInstallParams,
-    ) -> Result<ContentFile, InstanceError> {
-        self.call_plugin(&self.capability.install_atomic_handler, install_params)
+    ) -> Result<DownloadedContent, InstanceError> {
+        self.call_plugin(&self.capability.handlers.install_atomic, install_params)
             .await
     }
 
@@ -97,7 +137,7 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         install_params: &ModpackInstallParams,
     ) -> Result<(String, Vec<ContentFile>), InstanceError> {
-        self.call_plugin(&self.capability.install_modpack_handler, install_params)
+        self.call_optional(&self.capability.handlers.install_modpack, install_params)
             .await
     }
 
@@ -106,8 +146,8 @@ impl ContentProvider for PluginContentProviderProxy {
         instances: &[Instance],
         check_params: &ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
-        self.call_plugin(
-            &self.capability.check_compatibility_handler,
+        self.call_optional(
+            &self.capability.handlers.check_compatibility,
             PluginCheckCompatibilityParams {
                 instances: instances.to_vec(),
                 check_params: check_params.clone(),

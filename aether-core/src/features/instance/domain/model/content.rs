@@ -134,6 +134,7 @@ pub struct ContentItem {
     pub slug: String,
     pub name: String,
     pub description: Option<String>,
+    pub long_description: Option<String>,
     pub author: String,
     pub url: String,
     pub icon_url: String,

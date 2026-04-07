@@ -1,78 +1,215 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "PluginCapabilities",
   "description": "Describes the declarative capabilities of a plugin, such as supported importers.",
   "type": "object",
   "properties": {
-    "importers": {
+    "contentProviders": {
+      "description": "List of content providers provided by the plugin.",
       "type": "array",
-      "description": "List of supported modpack importers provided by the plugin.",
       "items": {
-        "type": "object",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9_\\-]+$",
-            "description": "Identifier for the importer (lowercase, kebab/underscore allowed)."
-          },
-          "name": {
-            "type": "string",
-            "description": "Display name"
-          },
-          "description": {
-            "type": "string",
-            "description": "Optional description"
-          },
-          "icon": {
-            "type": "string",
-            "description": "Optional icon file name"
-          },
-          "fieldLabel": {
-            "type": "string",
-            "description": "Optional field label for import field"
-          },
-          "handler": {
-            "type": "string",
-            "description": "Plugin function name to handle this capability call"
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/PluginContentProviderCapability"
+      }
+    },
+    "importers": {
+      "description": "List of supported modpack importers provided by the plugin.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PluginImporterCapability"
       }
     },
     "updaters": {
-      "type": "array",
       "description": "List of supported modpack updaters provided by the plugin.",
+      "type": "array",
       "items": {
-        "type": "object",
-        "required": ["id", "name"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9_\\-]+$",
-            "description": "Identifier for the importer (lowercase, kebab/underscore allowed)."
-          },
-          "name": {
-            "type": "string",
-            "description": "Display name"
-          },
-          "description": {
-            "type": "string",
-            "description": "Optional description"
-          },
-          "icon": {
-            "type": "string",
-            "description": "Optional icon file name"
-          },
-          "handler": {
-            "type": "string",
-            "description": "Plugin function name to handle this capability call"
-          }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/PluginUpdaterCapability"
       }
     }
   },
-  "required": ["importers"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "PluginContentProviderCapability": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Optional detailed description of what this capability does.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handlers": {
+          "description": "Set of functions provided by the plugin to handle content operations.",
+          "$ref": "#/$defs/ProviderHandlers"
+        },
+        "icon": {
+          "description": "Optional icon file name or URL for the UI.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
+          "type": "string",
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "name": {
+          "description": "Display name of the capability.",
+          "type": "string"
+        },
+        "supportsInstallAtomic": {
+          "description": "Whether the provider supports installing individual items (e.g., a single mod or resource pack).",
+          "type": "boolean"
+        },
+        "supportsInstallModpacks": {
+          "description": "Whether the provider supports installing complex modpacks or curated collections.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "supportsInstallAtomic",
+        "supportsInstallModpacks",
+        "handlers"
+      ]
+    },
+    "PluginImporterCapability": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Optional detailed description of what this capability does.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fieldLabel": {
+          "description": "Optional field label shown in the importer UI.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handler": {
+          "description": "Plugin function name to handle this capability call.",
+          "type": "string"
+        },
+        "icon": {
+          "description": "Optional icon file name or URL for the UI.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
+          "type": "string",
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "name": {
+          "description": "Display name of the capability.",
+          "type": "string"
+        },
+        "supportedExtensions": {
+          "description": "List of supported file extensions, e.g., [\"zip\", \"mrpack\"].",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "supportedExtensions",
+        "handler"
+      ]
+    },
+    "PluginUpdaterCapability": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Optional detailed description of what this capability does.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "handler": {
+          "description": "Plugin function name to handle this capability call.",
+          "type": "string"
+        },
+        "icon": {
+          "description": "Optional icon file name or URL for the UI.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
+          "type": "string",
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "name": {
+          "description": "Display name of the capability.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "handler"
+      ]
+    },
+    "ProviderHandlers": {
+      "description": "Names of plugin functions that implement specific content provider logic.",
+      "type": "object",
+      "properties": {
+        "checkCompatibility": {
+          "description": "Optional function to check if a specific content item is compatible with current environment.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "getContent": {
+          "description": "Function to get detailed information about a specific piece of content.",
+          "type": "string"
+        },
+        "installAtomic": {
+          "description": "Function to handle the download and installation of a single item.",
+          "type": "string"
+        },
+        "installModpack": {
+          "description": "Optional function to handle the installation of full modpacks.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "listVersion": {
+          "description": "Optional function to list available versions of a specific content item.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "search": {
+          "description": "Function to search for content within the provider.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "search",
+        "getContent",
+        "installAtomic"
+      ]
+    }
+  }
 }

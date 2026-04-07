@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 
 pub const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
+pub const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
 lazy_static::lazy_static! {
     pub static ref DEFAULT_HEADERS: reqwest::header::HeaderMap = {
@@ -199,17 +200,61 @@ pub struct ProjectVersionResponse {
     pub name: String,
     pub version_number: String,
     pub changelog: Option<String>,
-    pub dependencies: Vec<Option<serde_json::Value>>,
+    pub dependencies: Vec<ModrinthDependencyResponse>,
     pub game_versions: Vec<String>,
-    pub version_type: String,
+    pub version_type: ModrinthVersionType,
     pub loaders: Vec<String>,
     pub featured: bool,
-    pub status: String,
-    pub requested_status: Option<serde_json::Value>,
+    pub status: ModrinthVersionStatus,
+    pub requested_status: Option<ModrinthRequestedStatus>,
     pub date_published: String,
     pub downloads: i64,
     pub changelog_url: Option<String>,
     pub files: Vec<File>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ModrinthDependencyResponse {
+    pub version_id: Option<String>,
+    pub project_id: Option<String>,
+    pub file_name: Option<String>,
+    pub dependency_type: ModrinthDependencyType,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum ModrinthVersionType {
+    Release,
+    Beta,
+    Alpha,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum ModrinthVersionStatus {
+    Listed,
+    Archived,
+    Draft,
+    Unlisted,
+    Scheduled,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum ModrinthRequestedStatus {
+    Listed,
+    Archived,
+    Draft,
+    Unlisted,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum ModrinthDependencyType {
+    Required,
+    Optional,
+    Incompatible,
+    Embedded,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

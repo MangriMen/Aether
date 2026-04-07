@@ -1,120 +1,188 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "PluginManifest",
+  "description": "Root configuration for an Aether plugin.",
   "type": "object",
-  "required": ["metadata", "runtime", "load", "api"],
   "properties": {
+    "api": {
+      "description": "Integration with the host application API.",
+      "$ref": "#/$defs/ApiConfig"
+    },
+    "load": {
+      "description": "Defines how the plugin code should be loaded and executed.",
+      "$ref": "#/$defs/LoadConfig"
+    },
     "metadata": {
+      "description": "Information about the plugin identity.",
+      "$ref": "#/$defs/PluginMetadata"
+    },
+    "runtime": {
+      "description": "Sandbox and security restrictions for the plugin.",
+      "$ref": "#/$defs/RuntimeConfig"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "runtime",
+    "load",
+    "api"
+  ],
+  "$defs": {
+    "ApiConfig": {
       "type": "object",
-      "required": ["id", "name", "version", "authors"],
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-z0-9]+([_-]?[a-z0-9]+)*$",
-          "minLength": 3,
-          "maxLength": 50,
-          "description": "Plugin ID: lowercase letters, digits, optional single hyphen or underscore between words"
-        },
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string",
-          "pattern": "^(\\d+\\.\\d+\\.\\d+.*)$"
-        },
-        "description": {
-          "type": "string"
-        },
-        "authors": {
+        "features": {
+          "description": "List of optional host features requested by the plugin.",
           "type": "array",
+          "default": [],
           "items": {
             "type": "string"
           }
         },
-        "license": {
+        "version": {
+          "description": "Required API version range (SemVer requirement).",
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "version"
+      ]
     },
-    "runtime": {
+    "LoadConfig": {
+      "oneOf": [
+        {
+          "description": "Use WebAssembly (Extism) for a secure, cross-platform sandbox.",
+          "type": "object",
+          "properties": {
+            "file": {
+              "description": "Path to the .wasm file relative to the plugin root.",
+              "type": "string"
+            },
+            "memoryLimit": {
+              "description": "Maximum memory (in bytes) the plugin is allowed to allocate.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint",
+              "default": null,
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "extism"
+            }
+          },
+          "required": [
+            "type",
+            "file"
+          ]
+        },
+        {
+          "description": "Load a native shared library (.dll, .so, .dylib). Less secure, but faster.",
+          "type": "object",
+          "properties": {
+            "libPath": {
+              "description": "Path to the dynamic library file relative to the plugin root.",
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "native"
+            }
+          },
+          "required": [
+            "type",
+            "libPath"
+          ]
+        }
+      ]
+    },
+    "PathMapping": {
+      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: [host_path, virtual_path]",
+      "type": "array",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "description": "Path on the host disk.",
+          "type": "string"
+        },
+        {
+          "description": "Virtual path inside the plugin sandbox.",
+          "type": "string"
+        }
+      ]
+    },
+    "PluginMetadata": {
+      "type": "object",
+      "properties": {
+        "authors": {
+          "description": "List of plugin authors.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "description": "Short summary of the plugin's purpose.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Unique identifier for the plugin (lowercase, kebab-case).",
+          "type": "string",
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "license": {
+          "description": "License under which the plugin is distributed.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "description": "Readable name of the plugin.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Semantic version of the plugin.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "version"
+      ]
+    },
+    "RuntimeConfig": {
       "type": "object",
       "properties": {
         "allowedHosts": {
+          "description": "List of domains or IP addresses the plugin is allowed to connect to.",
           "type": "array",
+          "default": [],
           "items": {
             "type": "string"
           }
         },
         "allowedPaths": {
+          "description": "Filesystem access restrictions. Maps host paths to plugin-internal paths.",
           "type": "array",
+          "default": [],
           "items": {
-            "type": "array",
-            "minItems": 2,
-            "maxItems": 2,
-            "items": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "load": {
-      "type": "object",
-      "required": ["type"],
-      "properties": {
-        "type": {
-          "type": "string"
-        }
-      },
-      "oneOf": [
-        {
-          "properties": {
-            "type": {
-              "const": "extism"
-            },
-            "file": {
-              "type": "string"
-            },
-            "memoryLimit": {
-              "type": ["integer", "null"]
-            }
-          },
-          "required": ["file"]
-        },
-        {
-          "properties": {
-            "lib_path": {
-              "type": "string"
-            }
-          },
-          "required": ["libPath"]
-        }
-      ],
-      "additionalProperties": true
-    },
-    "api": {
-      "type": "object",
-      "required": ["version"],
-      "properties": {
-        "version": {
-          "type": "string"
-        },
-        "features": {
-          "type": "array",
-          "items": {
-            "type": "string"
+            "$ref": "#/$defs/PathMapping"
           }
         }
       },
       "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

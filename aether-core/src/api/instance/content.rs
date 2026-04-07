@@ -10,12 +10,14 @@ use crate::{
     features::instance::{
         app::{
             ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentStateAction,
-            ImportContent, ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
-            ListProvidersUseCase, RemoveContent, RemoveContentUseCase, SearchContentUseCase,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentGetParams,
+            ContentListVersionParams, ContentStateAction, GetContentUseCase, ImportContent,
+            ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
+            ListContentVersionUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
+            SearchContentUseCase,
         },
-        ContentFile, ContentInstallParams, ContentProviderCapabilityMetadata, ContentSearchParams,
-        ContentSearchResult, ContentType,
+        ContentFile, ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata,
+        ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
     },
     shared::CapabilityEntry,
 };
@@ -33,13 +35,11 @@ pub async fn list_content(instance_id: String) -> crate::Result<DashMap<String, 
 }
 
 pub async fn remove_contents(instance_id: String, content_paths: Vec<String>) -> crate::Result<()> {
-    let state = LauncherState::get().await?;
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(RemoveContentUseCase::new(
         lazy_locator.get_event_emitter().await,
         lazy_locator.get_pack_storage().await,
-        state.location_info.clone(),
     )
     .execute(RemoveContent::multiple(instance_id, content_paths))
     .await?)
@@ -122,10 +122,12 @@ pub async fn search_content(
 
 pub async fn install_content(install_params: ContentInstallParams) -> crate::Result<()> {
     let lazy_locator = LazyLocator::get().await?;
+    let state = LauncherState::get().await?;
 
     Ok(InstallContentUseCase::new(
         lazy_locator.get_pack_storage().await,
         lazy_locator.get_content_provider_registry().await,
+        state.location_info.clone(),
     )
     .execute(install_params)
     .await?)
@@ -143,4 +145,26 @@ pub async fn check_compatibility(
     )
     .execute(instance_ids, check_params)
     .await?)
+}
+
+pub async fn get_content(params: ContentGetParams) -> crate::Result<ContentItem> {
+    let lazy_locator = LazyLocator::get().await?;
+
+    Ok(
+        GetContentUseCase::new(lazy_locator.get_content_provider_registry().await)
+            .execute(params)
+            .await?,
+    )
+}
+
+pub async fn list_content_version(
+    params: ContentListVersionParams,
+) -> crate::Result<Vec<ContentVersion>> {
+    let lazy_locator = LazyLocator::get().await?;
+
+    Ok(
+        ListContentVersionUseCase::new(lazy_locator.get_content_provider_registry().await)
+            .execute(params)
+            .await?,
+    )
 }

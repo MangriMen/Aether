@@ -2,7 +2,9 @@ use std::cmp::Ordering;
 
 use crate::features::{
     instance::{
-        infra::content_providers::modrinth::api_client::{ModrinthIndex, ProjectResponse},
+        infra::content_providers::modrinth::api_client::{
+            ModrinthIndex, ModrinthVersionType, ProjectResponse,
+        },
         ContentType, Instance,
     },
     minecraft::ModLoader,
@@ -45,17 +47,16 @@ pub fn find_best_version<'a>(
 }
 
 pub fn compare_versions(a: &ProjectVersionResponse, b: &ProjectVersionResponse) -> Ordering {
-    let stability_priority = |version_type: &str| match version_type {
-        "release" => 3,
-        "beta" => 2,
-        "alpha" => 1,
-        _ => 0,
+    let stability_priority = |version_type: &ModrinthVersionType| match version_type {
+        ModrinthVersionType::Release => 3,
+        ModrinthVersionType::Beta => 2,
+        ModrinthVersionType::Alpha => 1,
     };
 
     let a_stability = stability_priority(&a.version_type);
     let b_stability = stability_priority(&b.version_type);
 
-    // Compare by stability, then by date
+    // Compare by stability first, then by publication date if stability is the same
     a_stability
         .cmp(&b_stability)
         .then_with(|| a.date_published.cmp(&b.date_published))

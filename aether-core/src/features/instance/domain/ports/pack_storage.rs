@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::features::instance::{InstanceError, Pack, PackFile};
+use crate::features::instance::{InstanceError, Pack, PackFile, ProviderId};
 
 #[async_trait]
 pub trait PackStorage: Send + Sync {
@@ -13,6 +13,13 @@ pub trait PackStorage: Send + Sync {
         instance_id: &str,
         content_path: &str,
     ) -> Result<PackFile, InstanceError>;
+
+    async fn find_by_provider_id(
+        &self,
+        instance_id: &str,
+        provider_id: &ProviderId,
+        content_id: &str,
+    ) -> Result<Option<PackFile>, InstanceError>;
 
     async fn update_pack_file(
         &self,

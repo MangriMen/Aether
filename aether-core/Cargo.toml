@@ -78,3 +78,7 @@ serde_with = "3.13.0"
 tempfile = "3.23.0"
 
 aether-core-plugin-api = { path = "../aether-core-plugin-api" }
+
+schemars.workspace = true
+register-schema.workspace = true
+register-schema-derive.workspace = true

@@ -13,14 +13,17 @@ use crate::{
     features::{
         instance::{
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult, NewInstance},
-            infra::content_providers::modrinth::api_client::{
-                File, ModrinthApiClient, ModrinthIndex, ModrinthIndexFile, ProjectSearchParams,
-                ProjectVersionResponse, ProjectVersionsRequest, MODRINTH_API_URL,
+            infra::content_providers::modrinth::{
+                api_client::{
+                    File, ModrinthApiClient, ModrinthIndex, ModrinthIndexFile, ProjectSearchParams,
+                    ProjectVersionResponse, ProjectVersionsRequest, MODRINTH_API_URL,
+                },
+                ModrinthMapperError,
             },
-            AtomicInstallParams, CapabilityMetadata, ContentFile, ContentProvider,
+            AtomicInstallParams, CapabilityMetadata, ContentFile, ContentItem, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentType, CreateContentFileParams, Instance, InstanceError, ModpackInstallParams,
-            PackInfo, ProviderId,
+            ContentType, ContentVersion, CreateContentFileParams, DownloadedContent, Instance,
+            InstanceError, ModpackInstallParams, PackInfo, ProviderId,
         },
         minecraft::LoaderVersionPreference,
         settings::LocationInfo,
@@ -140,12 +143,6 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
 
         Ok(write_async(path, &file_bytes).await?)
-    }
-
-    fn get_absolute_content_path(&self, instance_id: &str, relative_path: &Path) -> PathBuf {
-        self.location_info
-            .instance_dir(instance_id)
-            .join(relative_path)
     }
 
     async fn resolve_modpack_version(
@@ -463,7 +460,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
     async fn install_atomic(
         &self,
         install_params: &AtomicInstallParams,
-    ) -> Result<ContentFile, InstanceError> {
+    ) -> Result<DownloadedContent, InstanceError> {
         let project_version = self.resolve_project_version(install_params).await?;
 
         let file = Self::get_project_file(&project_version, install_params)?;
@@ -472,12 +469,15 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .content_type
             .get_relative_path(&file.filename);
 
-        let absolute_path =
-            self.get_absolute_content_path(&install_params.instance_id, &content_path);
+        let temp_path = self.location_info.temp_dir().join(format!(
+            "{}-{}",
+            file.filename,
+            uuid::Uuid::new_v4()
+        ));
 
-        self.fetch_to_disk(&file.url, &absolute_path).await?;
+        self.fetch_to_disk(&file.url, &temp_path).await?;
 
-        Ok(ContentFile::from_params(CreateContentFileParams {
+        let metadata = ContentFile::from_params(CreateContentFileParams {
             name: Some(project_version.name.clone()),
             file_name: file.filename.clone(),
             size: file.size as u64,
@@ -487,7 +487,12 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             content_version: project_version.id,
             content_type: install_params.content_type,
             provider_id: self.get_provider_id(),
-        }))
+        });
+
+        Ok(DownloadedContent {
+            metadata,
+            temp_path,
+        })
     }
 
     async fn install_modpack(
@@ -544,5 +549,29 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         }
 
         Ok(compatibility_map)
+    }
+
+    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
+        self.api
+            .get_project(&content_id)
+            .await
+            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?
+            .try_into()
+            .map_err(|err: ModrinthMapperError| {
+                InstanceError::ContentDownloadError(err.to_string())
+            })
+    }
+
+    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+        let versions = self
+            .api
+            .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())
+            .await
+            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+
+        Ok(versions
+            .into_iter()
+            .filter_map(|v| v.try_into().ok()) // Skip versions that failed to map
+            .collect())
     }
 }

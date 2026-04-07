@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
-        instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage},
+        instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage, ProviderId},
         settings::LocationInfo,
     },
     shared::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
@@ -50,6 +50,29 @@ impl PackStorage for FsPackStorage {
         Ok(read_toml_async(&self.get_pack_file_path(instance_id, content_path)).await?)
     }
 
+    async fn find_by_provider_id(
+        &self,
+        instance_id: &str,
+        provider_id: &ProviderId,
+        content_id: &str,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        let pack = self.get_pack(instance_id).await?;
+
+        for entry in pack.files {
+            if let Ok(pack_file) = self.get_pack_file(instance_id, &entry.file).await {
+                if let Some(update_map) = &pack_file.update {
+                    if let Some(info) = update_map.get(provider_id) {
+                        if info.content_id == content_id {
+                            return Ok(Some(pack_file));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
     async fn update_pack_file(
         &self,
         instance_id: &str,
@@ -68,31 +91,26 @@ impl PackStorage for FsPackStorage {
         &self,
         instance_id: &str,
         content_paths: &[String],
-        pack_file: &[PackFile],
+        pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
-        let mut new_pack_file_paths = Vec::new();
-
-        for (content_path, pack_file) in content_paths.iter().zip(pack_file) {
+        for (content_path, pack_file) in content_paths.iter().zip(pack_files) {
             let pack_file_path = self.get_pack_file_path(instance_id, content_path);
-
-            if !pack_file_path.exists() {
-                new_pack_file_paths.push(content_path);
-            }
-
             write_toml_async(&pack_file_path, &pack_file).await?;
         }
 
-        if !new_pack_file_paths.is_empty() {
-            let mut pack = self.get_pack(instance_id).await?;
+        let mut pack = self.get_pack(instance_id).await?;
+        let mut changed = false;
 
-            let pack_entries: Vec<PackEntry> = new_pack_file_paths
-                .iter()
-                .map(|path| PackEntry {
-                    file: path.to_string(),
-                })
-                .collect();
+        for path in content_paths {
+            if !pack.files.iter().any(|entry| &entry.file == path) {
+                pack.files.push(PackEntry { file: path.clone() });
+                changed = true;
+            }
+        }
 
-            pack.files.extend_from_slice(&pack_entries);
+        if changed {
+            pack.files.sort_by(|a, b| a.file.cmp(&b.file));
+            pack.files.dedup_by_key(|item| item.file.clone());
 
             self.update_pack(instance_id, &pack).await?;
         }
@@ -114,19 +132,27 @@ impl PackStorage for FsPackStorage {
         instance_id: &str,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
-        let mut success_deleted_content_paths = Vec::new();
+        let instance_dir = self.location_info.instance_dir(instance_id);
+        let mut success_deleted = Vec::new();
 
         for content_path in content_paths {
+            let mut file_path = instance_dir.join(content_path);
+
+            if !file_path.exists() {
+                file_path.set_extension("disabled");
+            }
+
+            let _ = remove_file(file_path).await;
+
             let pack_file_path = self.get_pack_file_path(instance_id, content_path);
 
             if remove_file(&pack_file_path).await.is_ok() {
-                success_deleted_content_paths.push(content_path);
+                success_deleted.push(content_path);
             }
         }
 
         let mut pack = self.get_pack(instance_id).await?;
-        pack.files
-            .retain(|entry| !success_deleted_content_paths.contains(&&entry.file));
+        pack.files.retain(|e| !success_deleted.contains(&&e.file));
         pack.files.dedup_by_key(|item| item.file.to_string());
         self.update_pack(instance_id, &pack).await
     }
