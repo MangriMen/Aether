@@ -5,7 +5,7 @@ pre-commit:
     - name: desktop:eslint
       root: 'apps/desktop'
       glob: '**/*.{js,ts,jsx,tsx,css}'
-      run: bun lint .
+      run: bun run lint:code .
       stage_fixed: true
 
     - name: desktop:arch

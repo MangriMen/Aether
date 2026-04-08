@@ -5,10 +5,12 @@ import { defineConfig } from 'vite';
 import vitePluginChecker from 'vite-plugin-checker';
 import solid from 'vite-plugin-solid';
 import solidSvg from 'vite-plugin-solid-svg';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [
     vitePluginCheckerConfig,
     solid({
@@ -16,7 +18,6 @@ export default defineConfig(async () => ({
     }),
     iconsConfig,
     solidSvg(),
-    tsconfigPaths(),
   ],
   test: {
     environment: 'jsdom',
