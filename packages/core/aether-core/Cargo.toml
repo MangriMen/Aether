@@ -64,9 +64,9 @@ notify-debouncer-mini = "0.6.0"
 
 indicatif = { version = "0.17.3", optional = true }
 sha1_smol = { version = "1.0.1", features = ["alloc", "serde", "std"] }
-extism = "1.10.0"
+extism = "1.21.0"
 mime = "0.3.17"
-extism-convert = "1.10.0"
+extism-convert = "1.21.0"
 path-slash = "0.2.1"
 serde_qs = "0.15.0"
 semver = "1.0.26"
