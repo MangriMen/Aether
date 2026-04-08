@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+
+  jobs:
+    - name: desktop:eslint
+      root: 'apps/desktop'
+      glob: '**/*.{js,ts,jsx,tsx,css}'
+      run: bun lint .
+      stage_fixed: true
+
+    - name: desktop:arch
+      root: 'apps/desktop'
+      glob: '**/*.{js,ts,jsx,tsx}'
+      run: bun run lint:arch
+      stage_fixed: true

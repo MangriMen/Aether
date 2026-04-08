@@ -10,18 +10,14 @@
     "build": "vite build",
     "serve": "vite preview",
     "tauri": "tauri",
-    "prepare": "husky || true",
     "bump": "bumpp",
-    "lint": "eslint ",
+    "lint": "eslint",
     "lint:fix": "eslint --fix",
     "lint:arch": "(npx steiger ./src || true)",
     "lint:fix:arch": "(npx steiger ./src --fix || true)",
     "lint:full": "lint && lint:architecture",
     "test": "vitest",
     "test:ui": "vitest --ui"
-  },
-  "lint-staged": {
-    "*.{js,ts,jsx,tsx,css}": "bun lint"
   },
   "dependencies": {
     "@kobalte/core": "^0.13.11",
@@ -61,11 +57,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.3",
+    "@feature-sliced/steiger-plugin": "^0.5.7",
     "@iconify-json/mdi": "^1.2.3",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/cli": "^2.10.0",
     "@types/node": "^22.19.13",
     "@types/semver": "^7.7.1",
+    "@typescript-eslint/parser": "^8.58.1",
     "@vitest/ui": "^4.1.1",
     "autoprefixer": "^10.4.27",
     "baseline-browser-mapping": "^2.10.0",
@@ -82,9 +80,7 @@
     "eslint-plugin-tailwindcss": "^3.18.2",
     "execa": "^9.6.1",
     "globals": "^17.4.0",
-    "husky": "^9.1.7",
     "jsdom": "^29.0.1",
-    "lint-staged": "^16.3.2",
     "postcss": "^8.5.8",
     "prettier": "^3.8.1",
     "steiger": "^0.5.11",

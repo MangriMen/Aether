@@ -1,0 +1,9 @@
+pre-commit:
+  parallel: true
+
+  jobs:
+    - name: core:clippy
+      root: "packages/core"
+      glob: "**/*.rs"
+      run: cargo clippy -- -D warnings
+      stage_fixed: true
