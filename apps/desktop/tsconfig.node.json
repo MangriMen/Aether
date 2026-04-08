@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
     "composite": true,
-    "skipLibCheck": true,
-    "lib": ["ES2020"],
+    "incremental": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    // TS 6 required
+    "types": ["node"],
+    // Vite + Tauri
     "allowSyntheticDefaultImports": true,
-    "incremental": true
+    "esModuleInterop": true,
+    "isolatedModules": true
   },
   "include": ["vite.config.ts"]
 }

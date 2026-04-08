@@ -9,6 +9,13 @@ members = [
   "packages/core/register-schema-derive",
 ]
 
+[profile.release]
+opt-level = 3 # Maximize runtime performance (critical for Wasm/Extism performance)
+codegen-units = 16 # Split crates into 16 chunks to compile in parallel across all cores
+lto = "thin" # Enable fast parallel Link-Time Optimization
+strip = true # Automatically strip symbols from the binary (greatly reduces .exe size)
+panic = "abort" # Remove stack unwinding code to reduce size and slightly speed up builds
+
 [workspace.dependencies]
 aether-core = { path = "packages/core/aether-core" }
 aether-core-plugin-api = { path = "packages/core/aether-core-plugin-api" }
