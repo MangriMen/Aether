@@ -1,5 +1,5 @@
+import type { QueryClient } from '@tanstack/solid-query';
 
-import { QueryClient } from '@tanstack/solid-query';
 import type { PluginMetadata } from '../model';
 
 import { PLUGIN_QUERY_KEYS } from './queryKeys';
