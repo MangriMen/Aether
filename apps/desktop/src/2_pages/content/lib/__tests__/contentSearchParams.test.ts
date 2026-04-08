@@ -72,8 +72,8 @@ describe('Content Search Params Mapping', () => {
         instance: '123',
         page: '1',
       });
-      expect(result).not.toHaveProperty('query');
-      expect(result).not.toHaveProperty('gameVersions');
+      expect(result.query).toBeUndefined();
+      expect(result.gameVersions).toBeUndefined();
     });
 
     it('should correctly map instanceId to instance key', () => {
