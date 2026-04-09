@@ -1,8 +1,6 @@
+use aether_core::features::events::{EventEmitter, EventError};
 use async_trait::async_trait;
-use serde::Serialize;
 use tauri::{Emitter, Listener};
-
-use crate::features::events::{EventEmitter, EventError};
 
 pub struct TauriEventEmitter {
     app_handle: tauri::AppHandle,
@@ -16,20 +14,13 @@ impl TauriEventEmitter {
 
 #[async_trait]
 impl EventEmitter for TauriEventEmitter {
-    async fn emit<P: Serialize + Clone + Send>(
-        &self,
-        event: &str,
-        payload: P,
-    ) -> Result<(), EventError> {
+    async fn emit_raw(&self, event: &str, payload: serde_json::Value) -> Result<(), EventError> {
         self.app_handle
             .emit(event, payload)
             .map_err(|e| EventError::SerializeError(anyhow::Error::from(e)))
     }
 
-    fn listen<F, T>(&self, event: impl Into<String>, handler: F)
-    where
-        F: Fn(String) + Send + 'static,
-    {
+    fn listen_raw(&self, event: String, handler: Box<dyn Fn(String) + Send + 'static>) {
         self.app_handle.listen(event, move |e| {
             let handler = &handler;
             handler(e.payload().to_owned())

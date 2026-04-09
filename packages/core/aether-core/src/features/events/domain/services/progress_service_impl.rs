@@ -4,17 +4,18 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::features::events::{
-    progress_service::ProgressService, EventEmitter, EventError, LauncherEvent, ProgressBar,
+    progress_service::ProgressService, EventEmitterExt, EventError, LauncherEvent, ProgressBar,
     ProgressBarId, ProgressBarStorage, ProgressBarStorageExt, ProgressEvent, ProgressEventType,
+    SharedEventEmitter,
 };
 
-pub struct ProgressServiceImpl<E: EventEmitter, PS: ProgressBarStorage> {
-    pub event_emitter: Arc<E>,
+pub struct ProgressServiceImpl<PS: ProgressBarStorage> {
+    pub event_emitter: SharedEventEmitter,
     progress_storage: Arc<PS>,
 }
 
-impl<E: EventEmitter, PS: ProgressBarStorage> ProgressServiceImpl<E, PS> {
-    pub fn new(event_emitter: Arc<E>, progress_storage: Arc<PS>) -> Self {
+impl<PS: ProgressBarStorage> ProgressServiceImpl<PS> {
+    pub fn new(event_emitter: SharedEventEmitter, progress_storage: Arc<PS>) -> Self {
         Self {
             event_emitter,
             progress_storage,
@@ -43,7 +44,7 @@ impl<E: EventEmitter, PS: ProgressBarStorage> ProgressServiceImpl<E, PS> {
 }
 
 #[async_trait]
-impl<E: EventEmitter, PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<E, PS> {
+impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
     async fn init_progress(
         &self,
         event_type: ProgressEventType,

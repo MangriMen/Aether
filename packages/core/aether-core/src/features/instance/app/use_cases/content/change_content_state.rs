@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::{
-        events::{EventEmitter, EventEmitterExt, InstanceEventType},
+        events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
         instance::InstanceError,
         settings::LocationInfo,
     },
@@ -42,13 +42,13 @@ impl ChangeContentState {
     }
 }
 
-pub struct ChangeContentStateUseCase<E: EventEmitter> {
-    event_emitter: Arc<E>,
+pub struct ChangeContentStateUseCase {
+    event_emitter: SharedEventEmitter,
     location_info: Arc<LocationInfo>,
 }
 
-impl<E: EventEmitter> ChangeContentStateUseCase<E> {
-    pub fn new(event_emitter: Arc<E>, location_info: Arc<LocationInfo>) -> Self {
+impl ChangeContentStateUseCase {
+    pub fn new(event_emitter: SharedEventEmitter, location_info: Arc<LocationInfo>) -> Self {
         Self {
             event_emitter,
             location_info,

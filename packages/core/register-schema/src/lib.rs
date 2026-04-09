@@ -1,4 +1,6 @@
 pub use inventory;
+pub use register_schema_derive::RegisterSchema;
+pub use schemars;
 
 #[derive(Debug)]
 pub struct SchemaEntry {

@@ -4,7 +4,6 @@ use tokio::sync::Mutex;
 
 use crate::{
     features::{
-        events::EventEmitter,
         plugins::{
             LoadConfigType, PluginError, PluginInstance, PluginLoader, PluginLoaderRegistry,
             PluginManifest, PluginRegistry, PluginState,
@@ -14,15 +13,15 @@ use crate::{
     shared::UpdateAction,
 };
 
-pub struct DisablePluginUseCase<SS: SettingsStorage, PL: PluginLoader, E: EventEmitter> {
-    plugin_registry: Arc<PluginRegistry<E>>,
+pub struct DisablePluginUseCase<SS: SettingsStorage, PL: PluginLoader> {
+    plugin_registry: Arc<PluginRegistry>,
     plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
     settings_storage: Arc<SS>,
 }
 
-impl<SS: SettingsStorage, PL: PluginLoader, E: EventEmitter> DisablePluginUseCase<SS, PL, E> {
+impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
     pub fn new(
-        plugin_registry: Arc<PluginRegistry<E>>,
+        plugin_registry: Arc<PluginRegistry>,
         plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
         settings_storage: Arc<SS>,
     ) -> Self {

@@ -9,6 +9,26 @@ use crate::features::events::{
 
 #[async_trait]
 pub trait EventEmitterExt: EventEmitter {
+    async fn emit<P: serde::Serialize + Send>(
+        &self,
+        event: &str,
+        payload: P,
+    ) -> Result<(), EventError> {
+        self.emit_raw(
+            event,
+            serde_json::to_value(payload)
+                .map_err(|err| EventError::SerializeError(anyhow::Error::from(err)))?,
+        )
+        .await
+    }
+
+    fn listen<F, T>(&self, event: impl Into<String>, handler: F)
+    where
+        F: Fn(String) + Send + 'static,
+    {
+        self.listen_raw(event.into(), Box::new(handler))
+    }
+
     async fn emit_instance(
         &self,
         instance_id: String,
@@ -85,4 +105,4 @@ pub trait EventEmitterExt: EventEmitter {
 }
 
 #[async_trait]
-impl<E: EventEmitter> EventEmitterExt for E {}
+impl<E: ?Sized + EventEmitter> EventEmitterExt for E {}

@@ -1,20 +1,20 @@
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 use async_trait::async_trait;
 
 use crate::features::{
-    events::{EventEmitter, EventEmitterExt, InstanceEventType},
+    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
     file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
     instance::InstanceInstallStage,
     settings::INSTANCES_FOLDER_NAME,
 };
 
-pub struct InstanceEventHandler<E: EventEmitter> {
-    event_emitter: Arc<E>,
+pub struct InstanceEventHandler {
+    event_emitter: SharedEventEmitter,
 }
 
-impl<E: EventEmitter + 'static> InstanceEventHandler<E> {
-    pub fn new(event_emitter: Arc<E>) -> Self {
+impl InstanceEventHandler {
+    pub fn new(event_emitter: SharedEventEmitter) -> Self {
         Self { event_emitter }
     }
 
@@ -71,7 +71,7 @@ impl<E: EventEmitter + 'static> InstanceEventHandler<E> {
 }
 
 #[async_trait]
-impl<E: EventEmitter + 'static> FileEventHandler for InstanceEventHandler<E> {
+impl FileEventHandler for InstanceEventHandler {
     async fn handle_events(
         &self,
         events: Result<Vec<FileEvent>, FileWatcherError>,

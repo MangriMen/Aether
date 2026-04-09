@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     core::domain::LazyLocator,
-    features::events::{EventEmitter, ProgressBarStorage},
+    features::events::{EventEmitterExt, ProgressBarStorage},
 };
 
 use super::{LauncherEvent, ProgressEvent, ProgressEventType};

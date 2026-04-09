@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
 use crate::features::{
-    events::EventEmitter,
     plugins::{PluginError, PluginExtractor, PluginLoader, PluginStorage},
     settings::SettingsStorage,
 };
@@ -12,26 +11,20 @@ pub struct ImportPluginsUseCase<
     PS: PluginStorage,
     SS: SettingsStorage,
     PL: PluginLoader,
-    E: EventEmitter,
     PE: PluginExtractor,
 > {
     plugin_extractor: Arc<PE>,
     plugin_storage: Arc<PS>,
-    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL, E>>,
+    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
 }
 
-impl<
-        PS: PluginStorage,
-        SS: SettingsStorage,
-        PL: PluginLoader,
-        E: EventEmitter,
-        PE: PluginExtractor,
-    > ImportPluginsUseCase<PS, SS, PL, E, PE>
+impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader, PE: PluginExtractor>
+    ImportPluginsUseCase<PS, SS, PL, PE>
 {
     pub fn new(
         plugin_extractor: Arc<PE>,
         plugin_storage: Arc<PS>,
-        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL, E>>,
+        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
     ) -> Self {
         Self {
             plugin_extractor,

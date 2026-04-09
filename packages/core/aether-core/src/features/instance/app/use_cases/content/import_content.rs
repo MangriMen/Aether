@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     features::{
-        events::{EventEmitter, EventEmitterExt, InstanceEventType},
+        events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
         instance::{ContentType, InstanceError, PackFile, PackStorage},
         settings::LocationInfo,
     },
@@ -28,15 +28,15 @@ impl ImportContent {
     }
 }
 
-pub struct ImportContentUseCase<E: EventEmitter, PS: PackStorage> {
-    event_emitter: Arc<E>,
+pub struct ImportContentUseCase<PS: PackStorage> {
+    event_emitter: SharedEventEmitter,
     pack_storage: Arc<PS>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<E: EventEmitter, PS: PackStorage> ImportContentUseCase<E, PS> {
+impl<PS: PackStorage> ImportContentUseCase<PS> {
     pub fn new(
-        event_emitter: Arc<E>,
+        event_emitter: SharedEventEmitter,
         pack_storage: Arc<PS>,
         location_info: Arc<LocationInfo>,
     ) -> Self {

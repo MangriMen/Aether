@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use register_schema_derive::RegisterSchema;
+use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

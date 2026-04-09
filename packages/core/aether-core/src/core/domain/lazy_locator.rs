@@ -7,10 +7,7 @@ use tokio::sync::OnceCell;
 use crate::{
     features::{
         auth::infra::FsCredentialsStorage,
-        events::{
-            infra::{InMemoryProgressBarStorage, TauriEventEmitter},
-            ProgressServiceImpl,
-        },
+        events::{infra::InMemoryProgressBarStorage, ProgressServiceImpl, SharedEventEmitter},
         file_watcher::infra::NotifyFileWatcher,
         instance::{
             infra::{
@@ -41,7 +38,7 @@ use super::{ErrorKind, LauncherState};
 
 static LAZY_LOCATOR: OnceCell<Arc<LazyLocator>> = OnceCell::const_new();
 
-pub type ProgressServiceType = ProgressServiceImpl<TauriEventEmitter, InMemoryProgressBarStorage>;
+pub type ProgressServiceType = ProgressServiceImpl<InMemoryProgressBarStorage>;
 
 pub type ImporterRegistry = MemoryCapabilityRegistry<Arc<dyn Importer>>;
 pub type UpdaterRegistry = MemoryCapabilityRegistry<Arc<dyn Updater>>;
@@ -51,15 +48,13 @@ pub type MinecraftMetadataCache = FileCache<MinecraftMetadataResolver>;
 
 pub struct LazyLocator {
     state: Arc<LauncherState>,
-    app_handle: tauri::AppHandle,
     reqwest_client: Arc<ClientWithMiddleware>,
     request_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
     api_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
     credentials_storage: OnceCell<Arc<FsCredentialsStorage>>,
     settings_storage: OnceCell<Arc<FsSettingsStorage>>,
     process_storage: OnceCell<Arc<InMemoryProcessStorage>>,
-    instance_storage:
-        OnceCell<Arc<EventEmittingInstanceStorage<TauriEventEmitter, FsInstanceStorage>>>,
+    instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<FsInstanceStorage>>>,
     java_storage: OnceCell<Arc<FsJavaStorage>>,
     metadata_storage: OnceCell<
         Arc<
@@ -71,15 +66,14 @@ pub struct LazyLocator {
     >,
     pack_storage: OnceCell<Arc<FsPackStorage>>,
     plugin_settings_storage: OnceCell<Arc<FsPluginSettingsStorage>>,
-    plugin_registry: OnceCell<Arc<PluginRegistry<TauriEventEmitter>>>,
+    plugin_registry: OnceCell<Arc<PluginRegistry>>,
     plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry<ExtismPluginLoader>>>,
     plugin_storage: OnceCell<Arc<FsPluginStorage>>,
-    event_emitter: OnceCell<Arc<TauriEventEmitter>>,
+    event_emitter: OnceCell<SharedEventEmitter>,
     progress_bar_storage: OnceCell<Arc<InMemoryProgressBarStorage>>,
     progress_service: OnceCell<Arc<ProgressServiceType>>,
-    instance_watcher_service: OnceCell<
-        Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler<TauriEventEmitter>>>>,
-    >,
+    instance_watcher_service:
+        OnceCell<Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler>>>>,
     default_instance_settings_storage: OnceCell<Arc<FsDefaultInstanceSettingsStorage>>,
     plugin_extractor: OnceCell<Arc<ZipPluginExtractor>>,
     importers_registry: OnceCell<Arc<ImporterRegistry>>,
@@ -88,7 +82,6 @@ pub struct LazyLocator {
     plugin_infrastructure_listener: OnceCell<
         Arc<
             PluginInfrastructureListener<
-                TauriEventEmitter,
                 ImporterRegistry,
                 UpdaterRegistry,
                 ContentProviderRegistry,
@@ -119,13 +112,12 @@ fn get_reqwest_client() -> Arc<ClientWithMiddleware> {
 impl LazyLocator {
     pub async fn init(
         state: Arc<LauncherState>,
-        app_handle: tauri::AppHandle,
+        event_emitter: SharedEventEmitter,
     ) -> crate::Result<()> {
         LAZY_LOCATOR
             .get_or_init(|| async {
                 Arc::new(Self {
                     state,
-                    app_handle,
                     reqwest_client: get_reqwest_client(),
                     request_client: OnceCell::new(),
                     api_client: OnceCell::new(),
@@ -140,7 +132,7 @@ impl LazyLocator {
                     plugin_registry: OnceCell::new(),
                     plugin_loader_registry: OnceCell::new(),
                     plugin_storage: OnceCell::new(),
-                    event_emitter: OnceCell::new(),
+                    event_emitter: OnceCell::from(event_emitter),
                     progress_bar_storage: OnceCell::new(),
                     progress_service: OnceCell::new(),
                     instance_watcher_service: OnceCell::new(),
@@ -248,7 +240,7 @@ impl LazyLocator {
 
     pub async fn get_instance_storage(
         &self,
-    ) -> Arc<EventEmittingInstanceStorage<TauriEventEmitter, FsInstanceStorage>> {
+    ) -> Arc<EventEmittingInstanceStorage<FsInstanceStorage>> {
         self.instance_storage
             .get_or_init(|| async {
                 Arc::new(EventEmittingInstanceStorage::new(
@@ -310,7 +302,7 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_plugin_registry(&self) -> Arc<PluginRegistry<TauriEventEmitter>> {
+    pub async fn get_plugin_registry(&self) -> Arc<PluginRegistry> {
         self.plugin_registry
             .get_or_init(|| async { Arc::new(PluginRegistry::new(self.get_event_emitter().await)) })
             .await
@@ -342,10 +334,10 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_event_emitter(&self) -> Arc<TauriEventEmitter> {
+    pub async fn get_event_emitter(&self) -> SharedEventEmitter {
         self.event_emitter
-            .get_or_init(|| async { Arc::new(TauriEventEmitter::new(self.app_handle.clone())) })
-            .await
+            .get()
+            .expect("EventEmitter must be initialized via LazyLocator::init")
             .clone()
     }
 
@@ -370,9 +362,8 @@ impl LazyLocator {
 
     pub async fn get_instance_watcher_service(
         &self,
-    ) -> crate::Result<
-        Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler<TauriEventEmitter>>>>,
-    > {
+    ) -> crate::Result<Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler>>>>
+    {
         self.instance_watcher_service
             .get_or_try_init(|| async {
                 let watcher = NotifyFileWatcher::new(Arc::new(InstanceEventHandler::new(
@@ -463,14 +454,8 @@ impl LazyLocator {
 
     pub async fn get_plugin_infrastructure_listener(
         &self,
-    ) -> Arc<
-        PluginInfrastructureListener<
-            TauriEventEmitter,
-            ImporterRegistry,
-            UpdaterRegistry,
-            ContentProviderRegistry,
-        >,
-    > {
+    ) -> Arc<PluginInfrastructureListener<ImporterRegistry, UpdaterRegistry, ContentProviderRegistry>>
+    {
         self.plugin_infrastructure_listener
             .get_or_init(|| async {
                 Arc::new(PluginInfrastructureListener::new(

@@ -1,18 +1,15 @@
 use std::sync::Arc;
 
-use crate::features::{
-    events::EventEmitter,
-    plugins::{PluginError, PluginRegistry},
-};
+use crate::features::plugins::{PluginError, PluginRegistry};
 
 use super::PluginDto;
 
-pub struct ListPluginsDtoUseCase<E: EventEmitter> {
-    plugin_registry: Arc<PluginRegistry<E>>,
+pub struct ListPluginsDtoUseCase {
+    plugin_registry: Arc<PluginRegistry>,
 }
 
-impl<E: EventEmitter> ListPluginsDtoUseCase<E> {
-    pub fn new(plugin_registry: Arc<PluginRegistry<E>>) -> Self {
+impl ListPluginsDtoUseCase {
+    pub fn new(plugin_registry: Arc<PluginRegistry>) -> Self {
         Self { plugin_registry }
     }
 

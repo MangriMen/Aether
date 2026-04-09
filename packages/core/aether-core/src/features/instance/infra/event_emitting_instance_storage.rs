@@ -1,20 +1,18 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use log::error;
 
 use crate::features::{
-    events::{EventEmitter, EventEmitterExt, InstanceEventType},
+    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
     instance::{Instance, InstanceError, InstanceStorage},
 };
 
-pub struct EventEmittingInstanceStorage<E, IS> {
-    event_emitter: Arc<E>,
+pub struct EventEmittingInstanceStorage<IS> {
+    event_emitter: SharedEventEmitter,
     instance_storage: IS,
 }
 
-impl<E: EventEmitter, IS: InstanceStorage> EventEmittingInstanceStorage<E, IS> {
-    pub fn new(event_emitter: Arc<E>, instance_storage: IS) -> Self {
+impl<IS: InstanceStorage> EventEmittingInstanceStorage<IS> {
+    pub fn new(event_emitter: SharedEventEmitter, instance_storage: IS) -> Self {
         Self {
             event_emitter,
             instance_storage,
@@ -23,7 +21,7 @@ impl<E: EventEmitter, IS: InstanceStorage> EventEmittingInstanceStorage<E, IS> {
 }
 
 #[async_trait]
-impl<E: EventEmitter, IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<E, IS> {
+impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
     async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
         Ok(self.instance_storage.list().await?)
     }

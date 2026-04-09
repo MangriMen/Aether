@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     features::{
         auth::Credentials,
-        events::{EventEmitter, ProgressService},
+        events::ProgressService,
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
         },
@@ -28,7 +28,6 @@ pub struct LaunchInstanceUseCase<
     MS: MetadataStorage,
     PS: ProcessStorage,
     GISS: DefaultInstanceSettingsStorage,
-    E: EventEmitter,
     MD: MinecraftDownloader,
     PGS: ProgressService,
     JIS: JavaInstallationService,
@@ -41,7 +40,7 @@ pub struct LaunchInstanceUseCase<
     get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
     install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP>>,
     get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
-    start_process_use_case: Arc<StartProcessUseCase<E, PS, IS>>,
+    start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
 }
 
 impl<
@@ -49,13 +48,12 @@ impl<
         MS: MetadataStorage,
         PS: ProcessStorage + 'static,
         GISS: DefaultInstanceSettingsStorage,
-        E: EventEmitter + 'static,
         MD: MinecraftDownloader,
         PGS: ProgressService,
         JIS: JavaInstallationService,
         JS: JavaStorage,
         JP: JreProvider,
-    > LaunchInstanceUseCase<IS, MS, PS, GISS, E, MD, PGS, JIS, JS, JP>
+    > LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>
 {
     pub fn new(
         instance_storage: Arc<IS>,
@@ -64,7 +62,7 @@ impl<
         get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
         install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP>>,
         get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
-        start_process_use_case: Arc<StartProcessUseCase<E, PS, IS>>,
+        start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
     ) -> Self {
         Self {
             instance_storage,

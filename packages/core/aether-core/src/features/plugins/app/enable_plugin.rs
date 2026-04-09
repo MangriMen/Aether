@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::{
     features::{
-        events::EventEmitter,
         plugins::{
             LoadConfigType, PluginError, PluginLoader, PluginLoaderRegistry, PluginManifest,
             PluginRegistry, PluginSettingsStorage, PluginState,
@@ -12,23 +11,18 @@ use crate::{
     shared::UpdateAction,
 };
 
-pub struct EnablePluginUseCase<
-    PSS: PluginSettingsStorage,
-    SS: SettingsStorage,
-    PL: PluginLoader,
-    E: EventEmitter,
-> {
-    plugin_registry: Arc<PluginRegistry<E>>,
+pub struct EnablePluginUseCase<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader> {
+    plugin_registry: Arc<PluginRegistry>,
     plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
     plugin_settings_storage: Arc<PSS>,
     settings_storage: Arc<SS>,
 }
 
-impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader, E: EventEmitter>
-    EnablePluginUseCase<PSS, SS, PL, E>
+impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
+    EnablePluginUseCase<PSS, SS, PL>
 {
     pub fn new(
-        plugin_registry: Arc<PluginRegistry<E>>,
+        plugin_registry: Arc<PluginRegistry>,
         plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
         plugin_settings_storage: Arc<PSS>,
         settings_storage: Arc<SS>,

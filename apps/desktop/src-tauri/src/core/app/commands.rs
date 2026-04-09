@@ -1,9 +1,9 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use aether_core::core::LauncherState;
 use tauri::AppHandle;
 
-use crate::{shared, FrontendResult};
+use crate::{features::events::TauriEventEmitter, shared, FrontendResult};
 
 #[tauri::command]
 pub async fn initialize_state(app: AppHandle) -> FrontendResult<()> {
@@ -12,7 +12,8 @@ pub async fn initialize_state(app: AppHandle) -> FrontendResult<()> {
     }
 
     let launcher_dir = shared::get_app_dir(&app);
-    LauncherState::init(launcher_dir.clone(), launcher_dir, app).await?;
+    let event_emitter = Arc::new(TauriEventEmitter::new(app));
+    LauncherState::init(launcher_dir.clone(), launcher_dir, event_emitter).await?;
 
     Ok(())
 }

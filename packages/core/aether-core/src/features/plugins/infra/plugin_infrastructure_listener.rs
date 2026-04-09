@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     features::{
-        events::{EventEmitter, PluginEvent, PluginEventType},
+        events::{PluginEvent, PluginEventType},
         instance::{ContentProvider, Importer, Updater},
         plugins::{
             infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
@@ -15,26 +15,24 @@ use crate::{
 };
 
 pub struct PluginInfrastructureListener<
-    E: EventEmitter,
     IR: CapabilityRegistry<Arc<dyn Importer>>,
     UR: CapabilityRegistry<Arc<dyn Updater>>,
     CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
 > {
-    plugin_registry: Arc<PluginRegistry<E>>,
+    plugin_registry: Arc<PluginRegistry>,
     importers_registry: Arc<IR>,
     updaters_registry: Arc<UR>,
     content_providers_registry: Arc<CR>,
 }
 
-impl<E, IR, UR, CR> PluginInfrastructureListener<E, IR, UR, CR>
+impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
 where
-    E: EventEmitter,
     IR: CapabilityRegistry<Arc<dyn Importer>>,
     UR: CapabilityRegistry<Arc<dyn Updater>>,
     CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
 {
     pub fn new(
-        plugin_registry: Arc<PluginRegistry<E>>,
+        plugin_registry: Arc<PluginRegistry>,
         importers_registry: Arc<IR>,
         updaters_registry: Arc<UR>,
         content_providers_registry: Arc<CR>,
