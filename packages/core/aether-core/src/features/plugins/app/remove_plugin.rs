@@ -1,30 +1,22 @@
 use std::sync::Arc;
 
 use crate::features::{
-    events::EventEmitter,
     plugins::{PluginError, PluginLoader, PluginStorage},
     settings::SettingsStorage,
 };
 
 use super::SyncPluginsUseCase;
 
-pub struct RemovePluginUseCase<
-    PS: PluginStorage,
-    SS: SettingsStorage,
-    PL: PluginLoader,
-    E: EventEmitter,
-> {
+pub struct RemovePluginUseCase<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> {
     plugin_storage: Arc<PS>,
-    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL, E>>,
+    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader, E: EventEmitter>
-    RemovePluginUseCase<PS, SS, PL, E>
-{
+impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> RemovePluginUseCase<PS, SS, PL> {
     pub fn new(
         plugin_storage: Arc<PS>,
 
-        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL, E>>,
+        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
     ) -> Self {
         Self {
             plugin_storage,

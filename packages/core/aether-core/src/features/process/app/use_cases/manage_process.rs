@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        events::{EventEmitter, EventEmitterExt, ProcessEventType},
+        events::{EventEmitterExt, ProcessEventType, SharedEventEmitter},
         instance::InstanceStorage,
         process::{ProcessError, ProcessStorage},
         settings::LocationInfo,
@@ -20,16 +20,16 @@ pub struct ManageProcessParams {
     pub post_exit_command: Option<String>,
 }
 
-pub struct ManageProcessUseCase<E: EventEmitter, PS: ProcessStorage, IS: InstanceStorage> {
-    event_emitter: Arc<E>,
+pub struct ManageProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
+    event_emitter: SharedEventEmitter,
     process_storage: Arc<PS>,
     track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<E: EventEmitter, PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<E, PS, IS> {
+impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
     pub fn new(
-        event_emitter: Arc<E>,
+        event_emitter: SharedEventEmitter,
         process_storage: Arc<PS>,
         track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
         location_info: Arc<LocationInfo>,

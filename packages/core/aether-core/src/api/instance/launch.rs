@@ -7,7 +7,6 @@ use crate::{
     },
     features::{
         auth::Credentials,
-        events::infra::TauriEventEmitter,
         instance::{
             app::{
                 InstallInstanceUseCase, LaunchInstanceUseCase,
@@ -49,14 +48,13 @@ async fn get_launch_instance_use_case(
     state: &LauncherState,
     lazy_locator: &LazyLocator,
 ) -> LaunchInstanceUseCase<
-    EventEmittingInstanceStorage<TauriEventEmitter, FsInstanceStorage>,
+    EventEmittingInstanceStorage<FsInstanceStorage>,
     CachedMetadataStorage<
         FileCache<MinecraftMetadataResolver>,
         ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>,
     >,
     InMemoryProcessStorage,
     FsDefaultInstanceSettingsStorage,
-    TauriEventEmitter,
     MinecraftDownloadService<
         ReqwestClient<ProgressServiceType>,
         ProgressServiceType,

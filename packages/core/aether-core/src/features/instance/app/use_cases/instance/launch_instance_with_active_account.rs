@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::features::{
     auth::{ActiveAccountHelper, CredentialsStorage},
-    events::{EventEmitter, ProgressService},
+    events::ProgressService,
     instance::{InstanceError, InstanceStorage},
     java::{JavaInstallationService, JavaStorage, JreProvider},
     minecraft::{MetadataStorage, MinecraftDownloader},
@@ -18,7 +18,6 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
     PS: ProcessStorage,
     CS: CredentialsStorage,
     GISS: DefaultInstanceSettingsStorage,
-    E: EventEmitter,
     MD: MinecraftDownloader,
     PGS: ProgressService,
     JIS: JavaInstallationService,
@@ -26,7 +25,7 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
     JP: JreProvider,
 > {
     credentials_storage: Arc<CS>,
-    launch_instance_use_case: LaunchInstanceUseCase<IS, MS, PS, GISS, E, MD, PGS, JIS, JS, JP>,
+    launch_instance_use_case: LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>,
 }
 
 impl<
@@ -35,13 +34,12 @@ impl<
         PS: ProcessStorage + 'static,
         CS: CredentialsStorage,
         GISS: DefaultInstanceSettingsStorage,
-        E: EventEmitter + 'static,
         MD: MinecraftDownloader,
         PGS: ProgressService,
         JIS: JavaInstallationService,
         JS: JavaStorage,
         JP: JreProvider,
-    > LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, E, MD, PGS, JIS, JS, JP>
+    > LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP>
 {
     pub fn new(
         credentials_storage: Arc<CS>,
@@ -50,7 +48,6 @@ impl<
             MS,
             PS,
             GISS,
-            E,
             MD,
             PGS,
             JIS,

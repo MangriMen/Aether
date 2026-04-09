@@ -1,9 +1,9 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
 use dashmap::DashMap;
 
 use crate::features::{
-    events::{EventEmitter, EventEmitterExt, PluginEventType},
+    events::{EventEmitterExt, PluginEventType, SharedEventEmitter},
     plugins::{Plugin, PluginCapabilities, PluginError, PluginManifest, PluginState},
 };
 
@@ -12,14 +12,13 @@ use dashmap::mapref::{
     one::{Ref as DashMapRef, RefMut as DashMapRefMut},
 };
 
-#[derive(Default)]
-pub struct PluginRegistry<E: EventEmitter> {
+pub struct PluginRegistry {
     plugins: DashMap<String, Plugin>,
-    event_emitter: Arc<E>,
+    event_emitter: SharedEventEmitter,
 }
 
-impl<E: EventEmitter> PluginRegistry<E> {
-    pub fn new(event_emitter: Arc<E>) -> Self {
+impl PluginRegistry {
+    pub fn new(event_emitter: SharedEventEmitter) -> Self {
         Self {
             plugins: DashMap::default(),
             event_emitter,

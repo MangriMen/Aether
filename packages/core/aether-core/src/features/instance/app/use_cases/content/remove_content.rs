@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::{
-    events::{EventEmitter, EventEmitterExt, InstanceEventType},
+    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
     instance::{InstanceError, PackStorage},
 };
 
@@ -19,13 +19,13 @@ impl RemoveContent {
     }
 }
 
-pub struct RemoveContentUseCase<E, PS: PackStorage> {
-    event_emitter: Arc<E>,
+pub struct RemoveContentUseCase<PS: PackStorage> {
+    event_emitter: SharedEventEmitter,
     pack_storage: Arc<PS>,
 }
 
-impl<E: EventEmitter, PS: PackStorage> RemoveContentUseCase<E, PS> {
-    pub fn new(event_emitter: Arc<E>, pack_storage: Arc<PS>) -> Self {
+impl<PS: PackStorage> RemoveContentUseCase<PS> {
+    pub fn new(event_emitter: SharedEventEmitter, pack_storage: Arc<PS>) -> Self {
         Self {
             event_emitter,
             pack_storage,

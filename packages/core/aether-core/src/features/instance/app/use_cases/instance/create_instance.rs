@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::{
-        events::{EventEmitter, EventEmitterExt, ProgressService},
+        events::{EventEmitterExt, ProgressService, SharedEventEmitter},
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
             PackInfo,
@@ -41,7 +41,6 @@ pub struct NewInstance {
 pub struct CreateInstanceUseCase<
     IS: InstanceStorage,
     MS: MetadataStorage,
-    E: EventEmitter,
     MD: MinecraftDownloader,
     PS: ProgressService,
     IWS: InstanceWatcherService,
@@ -53,28 +52,27 @@ pub struct CreateInstanceUseCase<
     loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
     install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP>>,
     location_info: Arc<LocationInfo>,
-    event_emitter: Arc<E>,
+    event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<IWS>,
 }
 
 impl<
         IS: InstanceStorage,
         MS: MetadataStorage,
-        E: EventEmitter,
         MD: MinecraftDownloader,
         PS: ProgressService,
         IWS: InstanceWatcherService,
         JIS: JavaInstallationService,
         JS: JavaStorage,
         JP: JreProvider,
-    > CreateInstanceUseCase<IS, MS, E, MD, PS, IWS, JIS, JS, JP>
+    > CreateInstanceUseCase<IS, MS, MD, PS, IWS, JIS, JS, JP>
 {
     pub fn new(
         instance_storage: Arc<IS>,
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
         install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP>>,
         location_info: Arc<LocationInfo>,
-        event_emitter: Arc<E>,
+        event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<IWS>,
     ) -> Self {
         Self {

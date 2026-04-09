@@ -1,17 +1,14 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
-use serde::Serialize;
 
 use crate::features::events::EventError;
 
 #[async_trait]
 pub trait EventEmitter: Send + Sync {
-    async fn emit<P: Serialize + Clone + Send>(
-        &self,
-        event: &str,
-        payload: P,
-    ) -> Result<(), EventError>;
+    async fn emit_raw(&self, event: &str, payload: serde_json::Value) -> Result<(), EventError>;
 
-    fn listen<F, T>(&self, event: impl Into<String>, handler: F)
-    where
-        F: Fn(String) + Send + 'static;
+    fn listen_raw(&self, event: String, handler: Box<dyn Fn(String) + Send + 'static>);
 }
+
+pub type SharedEventEmitter = Arc<dyn EventEmitter>;

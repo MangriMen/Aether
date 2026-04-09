@@ -5,7 +5,7 @@ use tokio::sync::{OnceCell, Semaphore};
 use crate::{
     core::domain::LazyLocator,
     features::{
-        events::{EventEmitter, LauncherEvent},
+        events::{EventEmitterExt, LauncherEvent, SharedEventEmitter},
         instance::InstanceWatcherService,
         settings::{infra::FsSettingsStorage, LocationInfo, Settings, SettingsStorage},
     },
@@ -37,10 +37,10 @@ impl LauncherState {
     pub async fn init(
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
-        app_handle: tauri::AppHandle,
+        event_emitter: SharedEventEmitter,
     ) -> crate::Result<()> {
         LAUNCHER_STATE
-            .get_or_try_init(|| Self::initialize(launcher_dir, metadata_dir, app_handle))
+            .get_or_try_init(|| Self::initialize(launcher_dir, metadata_dir, event_emitter))
             .await?;
 
         Ok(())
@@ -67,11 +67,11 @@ impl LauncherState {
         LAUNCHER_STATE.initialized()
     }
 
-    #[tracing::instrument(skip(app_handle))]
+    #[tracing::instrument(skip(event_emitter))]
     async fn initialize(
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
-        app_handle: tauri::AppHandle,
+        event_emitter: SharedEventEmitter,
     ) -> crate::Result<Arc<Self>> {
         let launcher_dir_path = launcher_dir.as_path();
 
@@ -105,7 +105,7 @@ impl LauncherState {
             api_semaphore,
         });
 
-        LazyLocator::init(state.clone(), app_handle).await?;
+        LazyLocator::init(state.clone(), event_emitter).await?;
 
         let lazy_locator = LazyLocator::get().await?;
         lazy_locator
