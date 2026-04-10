@@ -1,5 +1,4 @@
-import type { PolymorphicProps } from '@kobalte/core';
-import type { ValidComponent } from 'solid-js';
+import type { ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
@@ -10,15 +9,14 @@ import { Button, CombinedTooltip } from '@/shared/ui';
 
 import type { AccountType } from '../model';
 
-export type AccountButtonProps<T extends ValidComponent = 'button'> =
-  ButtonProps<T> & {
-    username: string;
-    active: boolean;
-    accountType: AccountType;
-  };
+export type AccountButtonProps = ButtonProps & {
+  username: string;
+  active: boolean;
+  accountType: AccountType;
+};
 
-export const AccountButton = <T extends ValidComponent = 'button'>(
-  props: Exclude<PolymorphicProps<T, AccountButtonProps<T>>, 'label'>,
+export const AccountButton = (
+  props: ComponentProps<'button'> & AccountButtonProps,
 ) => {
   const [local, others] = splitProps(props, [
     'username',
@@ -43,7 +41,7 @@ export const AccountButton = <T extends ValidComponent = 'button'>(
       <div class='flex flex-col items-start'>
         <span class='font-bold'>{local.username}</span>
         <span class='capitalize text-muted-foreground'>
-          {t(`account.${local.accountType as AccountType}`)}
+          {t(`account.${local.accountType}`)}
         </span>
       </div>
     </CombinedTooltip>

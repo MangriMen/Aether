@@ -6,8 +6,8 @@ use tauri::{AppHandle, State};
 
 use crate::{
     features::settings::{
-        edit_app_settings_use_case, get_app_settings_use_case, AppSettings, AppSettingsState,
-        EditAppSettings,
+        AppSettings, AppSettingsStorageState, EditAppSettings, EditAppSettingsUseCase,
+        GetAppSettingsUseCase, WindowManagerState,
     },
     FrontendResult,
 };
@@ -54,15 +54,29 @@ async fn edit_default_instance_settings(
 }
 
 #[tauri::command]
-async fn get_app_settings(state: State<'_, AppSettingsState>) -> FrontendResult<AppSettings> {
-    get_app_settings_use_case(state).await
+async fn get_app_settings(
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+) -> FrontendResult<AppSettings> {
+    Ok(
+        GetAppSettingsUseCase::new(app_settings_storage.inner().clone())
+            .execute()
+            .await
+            .map_err(crate::Error::from)?,
+    )
 }
 
 #[tauri::command]
 async fn edit_app_settings<R: tauri::Runtime>(
-    app_handle: AppHandle<R>,
-    state: State<'_, AppSettingsState>,
+    _app_handle: AppHandle<R>,
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+    window_manager: State<'_, WindowManagerState<R>>,
     edit_app_settings: EditAppSettings,
-) -> FrontendResult<()> {
-    edit_app_settings_use_case(app_handle, state, edit_app_settings).await
+) -> FrontendResult<AppSettings> {
+    Ok(EditAppSettingsUseCase::new(
+        app_settings_storage.inner().clone(),
+        window_manager.inner().clone(),
+    )
+    .execute(edit_app_settings)
+    .await
+    .map_err(crate::Error::from)?)
 }

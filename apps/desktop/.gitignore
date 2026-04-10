@@ -9,3 +9,6 @@ tsconfig.tsbuildinfo
 
 # LLM
 .roo/rules
+
+# Codegen
+src/6_shared/api/bindings

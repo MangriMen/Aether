@@ -21,8 +21,8 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
 
   const [{ t }] = useTranslation();
 
-  const onOnline = () => {
-    local.onLogin('online');
+  const onMicrosoft = () => {
+    local.onLogin('microsoft');
   };
 
   const onOffline = () => {
@@ -36,7 +36,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
         as={Button}
         variant='outline'
         class='w-full px-2'
-        onClick={onOnline}
+        onClick={onMicrosoft}
         // TODO: implement minecraft login
         disabled
       >

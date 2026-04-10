@@ -1,7 +1,7 @@
 pub mod app;
 pub mod domain;
-pub mod utils;
+pub mod infra;
 
 pub use app::*;
 pub use domain::*;
-pub use utils::*;
+pub use infra::*;

@@ -7,4 +7,7 @@ pub enum AppSettingsError {
 
     #[error("Can't set error: {0}")]
     CanNotSetEffect(String),
+
+    #[error("Failed to save settings")]
+    SaveError,
 }

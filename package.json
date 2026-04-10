@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "prepare": "lefthook install",
-    "app:dev": "turbo run tauri --filter=@aether/app -- dev"
+    "app:dev": "turbo run tauri --filter=@aether/app -- dev",
+    "update-bindings": "cd apps/desktop/src-tauri && cargo update-bindings",
+    "postinstall": "bun run update-bindings"
   },
   "workspaces": [
     "apps/*",

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
 import { APP_SETTINGS_QUERY_KEYS } from './appSettingsQueryKeys';
-import { getAppSettingsRaw, editAppSettingsRaw } from './tauriApi';
+import { getAppSettingsRaw, editAppSettingsRaw } from './tauriApiRaw';
 
 export const useAppSettings = () =>
   useQuery(() => ({

@@ -1,8 +1,4 @@
-export interface Account {
-  id: string;
-  username: string;
-  active: boolean;
-  accountType: AccountType;
-}
+import type { AccountDto, AccountTypeDto } from '@/shared/api';
 
-export type AccountType = 'offline' | 'online';
+export type Account = AccountDto;
+export type AccountType = AccountTypeDto;
