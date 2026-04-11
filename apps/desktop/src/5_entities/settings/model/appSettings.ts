@@ -7,7 +7,7 @@ import type {
 
 export type AppSettings = AppSettingsDto;
 
-export type EditAppSettings = Partial<EditAppSettingsDto>;
+export type EditAppSettings = EditAppSettingsDto;
 
 export type ActionOnInstanceLaunchType = ActionOnInstanceLaunchDto;
 
