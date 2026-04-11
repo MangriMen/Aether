@@ -6,11 +6,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { ProgressCard, type LoadingPayload } from '@/entities/events';
+import { ProgressCard, type ProgressEvent } from '@/entities/events';
 import { cn } from '@/shared/lib';
 
 export type ProgressDetailsProps = ComponentProps<'div'> & {
-  payloads: Accessor<LoadingPayload[]>;
+  payloads: Accessor<ProgressEvent[]>;
 };
 
 export const ProgressDetails: Component<ProgressDetailsProps> = (props) => {

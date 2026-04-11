@@ -1,17 +1,17 @@
-use aether_core::{
-    core::domain::LazyLocator,
-    features::events::{ProgressBar, ProgressBarStorage},
-};
-use dashmap::DashMap;
-use uuid::Uuid;
+use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsUseCase};
 
-use crate::FrontendResult;
+use crate::{features::events::ProgressBarDto, FrontendResult};
 
 #[tauri::command]
-pub async fn get_progress_bars() -> FrontendResult<DashMap<Uuid, ProgressBar>> {
+pub async fn list_progress_bars() -> FrontendResult<Vec<ProgressBarDto>> {
     let lazy_locator = LazyLocator::get().await?;
 
-    let progress_bar_storage = lazy_locator.get_progress_bar_storage().await;
-
-    Ok(progress_bar_storage.list().await)
+    Ok(
+        ListProgressBarsUseCase::new(lazy_locator.get_progress_bar_storage().await)
+            .execute()
+            .await
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    )
 }

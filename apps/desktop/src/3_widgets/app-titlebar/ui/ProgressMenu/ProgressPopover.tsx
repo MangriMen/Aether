@@ -3,7 +3,7 @@ import type { Accessor, Component, ComponentProps } from 'solid-js';
 import IconOpenInNew from '~icons/mdi/open-in-new';
 import { For, splitProps } from 'solid-js';
 
-import type { LoadingPayload } from '@/entities/events';
+import type { ProgressEvent } from '@/entities/events';
 
 import { ProgressCard } from '@/entities/events';
 import { cn } from '@/shared/lib';
@@ -13,7 +13,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
 
 export type ProgressPopoverProps = ComponentProps<'div'> & {
-  payloads: Accessor<LoadingPayload[]>;
+  payloads: Accessor<ProgressEvent[]>;
 };
 
 export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {

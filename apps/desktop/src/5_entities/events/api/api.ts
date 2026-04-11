@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import type { LoadingBar } from '../model';
+import type { ProgressBarDto } from '@/shared/api';
 
-export const getLoadingBars = () =>
-  invoke<Record<string, LoadingBar>>('get_progress_bars');
+export const listProgressBarsRaw = () =>
+  invoke<Array<ProgressBarDto>>('list_progress_bars');

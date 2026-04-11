@@ -28,8 +28,11 @@ impl ProgressBarStorage for InMemoryProgressBarStorage {
         Ok(())
     }
 
-    async fn list(&self) -> DashMap<Uuid, ProgressBar> {
-        self.progress_bars.clone()
+    async fn list(&self) -> Vec<ProgressBar> {
+        self.progress_bars
+            .iter()
+            .map(|record| record.value().clone())
+            .collect()
     }
 
     async fn get(

@@ -68,7 +68,7 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
             initialize_plugins,
             get_minecraft_version_manifest,
             get_loader_version_manifest,
-            get_progress_bars,
+            list_progress_bars,
             reveal_in_explorer,
         ])
 }

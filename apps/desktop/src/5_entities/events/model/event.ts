@@ -1,7 +1,7 @@
 import type { InstanceEvent } from './instance';
-import type { LoadingPayload } from './loading';
 import type { PluginPayload } from './plugin';
 import type { ProcessPayload } from './process';
+import type { ProgressEvent } from './progress';
 import type { WarningPayload } from './warning';
 
 export type LauncherEvent =
@@ -12,7 +12,7 @@ export type LauncherEvent =
   | 'plugin';
 
 export interface LauncherEventPayloadMap {
-  loading: LoadingPayload;
+  loading: ProgressEvent;
   process: ProcessPayload;
   instance: InstanceEvent;
   warning: WarningPayload;

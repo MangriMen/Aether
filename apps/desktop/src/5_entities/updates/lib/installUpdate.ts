@@ -3,8 +3,6 @@ import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
 import { emit } from '@tauri-apps/api/event';
 
-import { LoadingBarTypeEnum } from '@/entities/events';
-
 export const installUpdate = async (update: Update) => {
   let contentLength: number | undefined = 0;
   let downloadedLength: number = 0;
@@ -43,7 +41,7 @@ const handleUpdateDownload = async (
   ) => void,
 ) => {
   const updateEvent = {
-    type: LoadingBarTypeEnum.LauncherUpdate,
+    type: 'launcher_update',
     version: update?.version ?? '',
     current_version: await getVersion(),
   } as const;
