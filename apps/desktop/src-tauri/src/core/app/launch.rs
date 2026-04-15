@@ -2,9 +2,7 @@ use tauri::{Builder, Wry};
 
 use crate::{
     core::commands::*,
-    features::{
-        auth, events::commands::*, instance, minecraft::commands::*, plugins, process, settings,
-    },
+    features::{auth, events::commands::*, instance, minecraft, plugins, process, settings},
 };
 
 use super::{events::handle_app_events, initialize::init_app};
@@ -60,14 +58,13 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .plugin(auth::init())
         .plugin(instance::init())
+        .plugin(minecraft::init())
         .plugin(process::init())
         .plugin(plugins::init())
         .plugin(settings::init())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
             initialize_plugins,
-            get_minecraft_version_manifest,
-            get_loader_version_manifest,
             list_progress_bars,
             reveal_in_explorer,
         ])

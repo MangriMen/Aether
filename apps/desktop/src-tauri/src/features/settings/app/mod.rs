@@ -1,4 +1,4 @@
-pub mod commands;
+mod commands;
 mod dtos;
 mod use_cases;
 
