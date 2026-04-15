@@ -46,6 +46,7 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
                 .level_for("cranelift_codegen", log::LevelFilter::Info)
                 .level_for("tauri_plugin_updater", log::LevelFilter::Info)
                 .level_for("extism::plugin", log::LevelFilter::Debug)
+                .level_for("h2", log::LevelFilter::Info)
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())
