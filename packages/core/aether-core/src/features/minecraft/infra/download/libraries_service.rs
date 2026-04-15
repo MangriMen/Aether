@@ -10,7 +10,7 @@ use crate::{
             utils::{try_for_each_concurrent_with_progress, ProgressConfigWithMessage},
             ProgressConfig, ProgressService,
         },
-        minecraft::{utils::parse_rules, MinecraftDomainError},
+        minecraft::{vanilla, utils::parse_rules, MinecraftDomainError},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient},
@@ -68,8 +68,8 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     pub async fn download_libraries(
         &self,
-        libraries: &[daedalus::minecraft::Library],
-        version_info: &daedalus::minecraft::VersionInfo,
+        libraries: &[vanilla::Library],
+        version_info: &vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
@@ -88,7 +88,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
             });
 
         let libraries_stream = futures::stream::iter(libraries.iter())
-            .map(Ok::<&daedalus::minecraft::Library, MinecraftDomainError>);
+            .map(Ok::<&vanilla::Library, MinecraftDomainError>);
 
         try_for_each_concurrent_with_progress(
             self.progress_service.clone(),
@@ -112,7 +112,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
     }
 
     fn should_download_library(
-        library: &daedalus::minecraft::Library,
+        library: &vanilla::Library,
         java_arch: &str,
         minecraft_updated: bool,
     ) -> bool {
@@ -133,8 +133,8 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     pub async fn download_library(
         &self,
-        library: &daedalus::minecraft::Library,
-        version_info: &daedalus::minecraft::VersionInfo,
+        library: &vanilla::Library,
+        version_info: &vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
@@ -166,7 +166,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     async fn try_download_from_artifact(
         &self,
-        library: &daedalus::minecraft::Library,
+        library: &vanilla::Library,
         library_path: &PathBuf,
     ) -> Result<(), MinecraftDomainError> {
         if let Some(downloads) = &library.downloads {
@@ -186,7 +186,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     async fn download_from_fallback_url(
         &self,
-        library: &daedalus::minecraft::Library,
+        library: &vanilla::Library,
         library_path: &PathBuf,
         path_part: &str,
     ) -> Result<(), MinecraftDomainError> {
@@ -205,7 +205,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     pub async fn download_java_library(
         &self,
-        library: &daedalus::minecraft::Library,
+        library: &vanilla::Library,
         force: bool,
     ) -> Result<(), MinecraftDomainError> {
         let library_path_part = daedalus::get_path_from_artifact(&library.name)?;
@@ -249,13 +249,10 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     fn get_native_classifiers<'a>(
         &self,
-        library: &'a daedalus::minecraft::Library,
+        library: &'a vanilla::Library,
         java_arch: &str,
-    ) -> Option<(
-        &'a str,
-        &'a HashMap<String, daedalus::minecraft::LibraryDownload>,
-    )> {
-        use daedalus::minecraft::Os;
+    ) -> Option<(&'a str, &'a HashMap<String, vanilla::LibraryDownload>)> {
+        use vanilla::Os;
 
         let native_os = Os::native_arch(java_arch);
         let natives = library.natives.as_ref()?;
@@ -268,7 +265,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
     async fn extract_native_library(
         &self,
         bytes: Bytes,
-        version_info: &daedalus::minecraft::VersionInfo,
+        version_info: &vanilla::VersionInfo,
     ) -> Result<(), MinecraftDomainError> {
         let reader = std::io::Cursor::new(&bytes);
 
@@ -292,8 +289,8 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
     pub async fn download_native_library_files(
         &self,
-        library: &daedalus::minecraft::Library,
-        version_info: &daedalus::minecraft::VersionInfo,
+        library: &vanilla::Library,
+        version_info: &vanilla::VersionInfo,
         java_arch: &str,
         _force: bool,
     ) -> Result<(), MinecraftDomainError> {

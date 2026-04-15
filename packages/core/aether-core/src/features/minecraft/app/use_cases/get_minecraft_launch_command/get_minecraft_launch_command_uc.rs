@@ -15,7 +15,7 @@ use crate::{
         },
         minecraft::{
             app::{GetVersionManifestUseCase, MinecraftApplicationError},
-            resolve_minecraft_version,
+            vanilla, resolve_minecraft_version,
             utils::get_compatible_java_version,
             LaunchSettings, LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
             MinecraftDownloader, ModLoader,
@@ -143,7 +143,7 @@ impl<
         }
 
         let jvm_arguments = get_minecraft_jvm_arguments(
-            args.get(&daedalus::minecraft::ArgumentType::Jvm)
+            args.get(&vanilla::ArgumentType::Jvm)
                 .map(|x| x.as_slice()),
             &self.location_info.libraries_dir(),
             &version_info,
@@ -157,7 +157,7 @@ impl<
         )?;
 
         let minecraft_arguments = get_minecraft_arguments(
-            args.get(&daedalus::minecraft::ArgumentType::Game)
+            args.get(&vanilla::ArgumentType::Game)
                 .map(|x| x.as_slice()),
             version_info.minecraft_arguments.as_deref(),
             &credentials,

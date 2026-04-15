@@ -1,37 +1,33 @@
 import { z } from 'zod';
 
-import type { LoaderVersion, Version } from '@/entities/minecraft';
+import type {
+  ModdedLoaderVersion,
+  Version,
+  VersionType,
+  ModLoader,
+} from '@/entities/minecraft';
 
-import { ModLoader, VersionType } from '@/entities/minecraft';
+import { MOD_LOADERS, VERSION_TYPES } from '@/entities/minecraft';
 
 export const ModLoaderSchema: z.ZodType<ModLoader> = z.enum(
-  [
-    ModLoader.Vanilla,
-    ModLoader.Fabric,
-    ModLoader.Forge,
-    ModLoader.Quilt,
-    ModLoader.NeoForge,
-  ],
-  { required_error: 'Mod loader is required' },
+  MOD_LOADERS as [ModLoader, ...ModLoader[]],
+  {
+    required_error: 'Mod loader is required',
+  },
 );
 
 export const VersionSchema: z.ZodType<Version> = z.object({
   id: z.string().min(1),
-  type: z.enum([
-    VersionType.Release,
-    VersionType.Snapshot,
-    VersionType.OldAlpha,
-    VersionType.OldBeta,
-  ]),
+  type: z.enum(VERSION_TYPES as [VersionType, ...VersionType[]]),
   url: z.string().min(1),
   time: z.string().min(1),
-  release_time: z.string().min(1),
+  releaseTime: z.string().min(1),
   sha1: z.string().min(1),
-  compliance_level: z.number(),
-  original_sha1: z.string().min(1).optional(),
+  complianceLevel: z.number(),
+  originalSha1: z.string().min(1).optional(),
 });
 
-export const LoaderVersionSchema: z.ZodType<LoaderVersion> = z.object({
+export const LoaderVersionSchema: z.ZodType<ModdedLoaderVersion> = z.object({
   id: z.string().min(0),
   url: z.string().min(0),
   stable: z.boolean(),

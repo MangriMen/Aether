@@ -28,7 +28,6 @@ daedalus = { git = "https://github.com/modrinth/code", version = "0.2.3" }
 uuid = { version = "1.10", features = ["serde", "v4"] }
 
 bytes = "1.6"
-chrono = { version = "0.4", features = ["serde"] }
 sysinfo = "0.38.4"
 sys-info = "0.9"
 url = "2.5"
@@ -70,3 +69,4 @@ tokio.workspace = true
 
 schemars.workspace = true
 register-schema.workspace = true
+chrono.workspace = true

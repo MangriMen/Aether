@@ -40,6 +40,8 @@ semver = "1.0.27"
 tauri-plugin-opener = "2"
 tauri-plugin-clipboard-manager = "2"
 
+ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }
+
 anyhow.workspace = true
 thiserror.workspace = true
 serde.workspace = true
@@ -48,4 +50,4 @@ log.workspace = true
 tokio.workspace = true
 
 aether-core.workspace = true
-ts-rs = { version = "12.0.1", features = ["uuid-impl"] }
+chrono.workspace = true

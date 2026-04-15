@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     features::{
         auth::Credentials,
-        minecraft::{utils::parse_arguments, MinecraftDomainError},
+        minecraft::{vanilla, utils::parse_arguments, MinecraftDomainError},
         settings::WindowSize,
     },
     shared::canonicalize,
@@ -16,14 +16,14 @@ const TEMPORARY_REPLACE_CHAR: &str = "\n";
 
 #[allow(clippy::too_many_arguments)]
 pub fn get_minecraft_arguments(
-    arguments: Option<&[daedalus::minecraft::Argument]>,
+    arguments: Option<&[vanilla::Argument]>,
     legacy_arguments: Option<&str>,
     credentials: &Credentials,
     version: &str,
     asset_index_name: &str,
     game_directory: &Path,
     assets_directory: &Path,
-    version_type: &daedalus::minecraft::VersionType,
+    version_type: &vanilla::VersionType,
     resolution: WindowSize,
     java_arch: &str,
 ) -> Result<Vec<String>, MinecraftDomainError> {
@@ -83,7 +83,7 @@ fn replace_placeholders_in_argument_string(
     asset_index_name: &str,
     game_directory: &Path,
     assets_directory: &Path,
-    version_type: &daedalus::minecraft::VersionType,
+    version_type: &vanilla::VersionType,
     resolution: WindowSize,
 ) -> Result<String, MinecraftDomainError> {
     fn resolve_path(path: &Path, name: &str) -> Result<String, MinecraftDomainError> {

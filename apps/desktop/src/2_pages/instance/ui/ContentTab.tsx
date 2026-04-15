@@ -13,7 +13,6 @@ import {
   useInstanceContents,
   type Instance,
 } from '@/entities/instances';
-import { ModLoader } from '@/entities/minecraft';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -61,7 +60,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   const availableContent = createMemo(() => {
     if (!local.instance) {
       return [];
-    } else if (local.instance.loader == ModLoader.Vanilla) {
+    } else if (local.instance.loader == 'vanilla') {
       return [ContentType.ResourcePack, ContentType.DataPack];
     } else {
       return undefined;

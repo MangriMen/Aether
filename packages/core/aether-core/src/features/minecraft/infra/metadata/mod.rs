@@ -1,4 +1,5 @@
 mod cached_metadata_storage;
+mod mapper;
 mod metadata_cache_keys;
 mod minecraft_metadata_resolver;
 mod modrinth_metadata_storage;

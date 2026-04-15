@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::features::settings::{
-    AppSettings, AppSettingsError, AppSettingsStorage, EditAppSettings, WindowEffect, WindowManager,
+    AppSettings, AppSettingsError, AppSettingsStorage, EditAppSettingsDto, WindowEffect,
+    WindowManager,
 };
 
 pub struct EditAppSettingsUseCase<ASS: AppSettingsStorage, WM: WindowManager> {
@@ -19,7 +20,7 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
 
     pub async fn execute(
         &self,
-        edit_app_settings: EditAppSettings,
+        edit_app_settings: EditAppSettingsDto,
     ) -> Result<AppSettings, AppSettingsError> {
         let mut settings_state = self.app_settings_storage.get().await?;
 

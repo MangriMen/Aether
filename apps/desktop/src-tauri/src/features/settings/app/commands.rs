@@ -6,7 +6,7 @@ use tauri::{AppHandle, State};
 
 use crate::{
     features::settings::{
-        AppSettings, AppSettingsStorageState, EditAppSettings, EditAppSettingsUseCase,
+        AppSettings, AppSettingsStorageState, EditAppSettingsDto, EditAppSettingsUseCase,
         GetAppSettingsUseCase, WindowManagerState,
     },
     FrontendResult,
@@ -70,7 +70,7 @@ async fn edit_app_settings<R: tauri::Runtime>(
     _app_handle: AppHandle<R>,
     app_settings_storage: State<'_, AppSettingsStorageState>,
     window_manager: State<'_, WindowManagerState<R>>,
-    edit_app_settings: EditAppSettings,
+    edit_app_settings: EditAppSettingsDto,
 ) -> FrontendResult<AppSettings> {
     Ok(EditAppSettingsUseCase::new(
         app_settings_storage.inner().clone(),

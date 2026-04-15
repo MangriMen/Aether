@@ -1,6 +1,6 @@
 import { splitProps } from 'solid-js';
 
-import type { LoaderVersion } from '@/entities/minecraft';
+import type { ModdedLoaderVersion } from '@/entities/minecraft';
 import type { SelectRootProps } from '@/shared/ui';
 
 import { cn } from '@/shared/lib';
@@ -16,14 +16,14 @@ import {
 } from '@/shared/ui';
 
 export type SelectSpecificLoaderVersionProps<
-  Option extends LoaderVersion = LoaderVersion,
+  Option extends ModdedLoaderVersion = ModdedLoaderVersion,
 > = SelectRootProps<Option, never, 'div'> & {
   multiple?: false;
   errorMessage?: string;
 };
 
 export const SelectSpecificLoaderVersion = <
-  T extends LoaderVersion = LoaderVersion,
+  T extends ModdedLoaderVersion = ModdedLoaderVersion,
 >(
   props: SelectSpecificLoaderVersionProps<T>,
 ) => {

@@ -14,14 +14,17 @@ import {
 } from 'solid-js';
 
 import type { NewInstance } from '@/entities/instances';
-import type { LoaderVersion, Version } from '@/entities/minecraft';
+import type {
+  ModdedLoaderVersion,
+  Version,
+  ModLoader,
+} from '@/entities/minecraft';
 
 import {
   IncludeSnapshotsCheckbox,
   useCreateInstance,
 } from '@/entities/instances';
 import {
-  ModLoader,
   useLoaderVersionManifest,
   useMinecraftVersionManifest,
 } from '@/entities/minecraft';
@@ -68,7 +71,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
     validate: zodForm(CreateCustomInstanceSchema),
     initialValues: {
-      loader: ModLoader.Vanilla,
+      loader: 'vanilla',
       loaderVersionType: LOADER_VERSION_TYPES[0].value,
     },
   });
@@ -82,10 +85,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const versionManifest = useMinecraftVersionManifest();
 
-  const forgeVersions = useLoaderVersionManifest(() => ModLoader.Forge);
-  const fabricVersions = useLoaderVersionManifest(() => ModLoader.Fabric);
-  const quiltVersions = useLoaderVersionManifest(() => ModLoader.Quilt);
-  const neoforgeVersions = useLoaderVersionManifest(() => ModLoader.NeoForge);
+  const forgeVersions = useLoaderVersionManifest(() => 'forge');
+  const fabricVersions = useLoaderVersionManifest(() => 'fabric');
+  const quiltVersions = useLoaderVersionManifest(() => 'quilt');
+  const neoforgeVersions = useLoaderVersionManifest(() => 'neoforge');
 
   const forgeVersionsMapped = createMemo(() =>
     forgeVersions.data ? loaderManifestToMapped(forgeVersions.data) : undefined,
@@ -225,7 +228,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       </LabeledField>
 
       <Collapsible
-        open={isAdvanced() && getValue(form, 'loader') !== ModLoader.Vanilla}
+        open={isAdvanced() && getValue(form, 'loader') !== 'vanilla'}
       >
         <CollapsibleContent class='p-2'>
           <LabeledField label={t('createInstance.loaderVersion')}>
@@ -261,7 +264,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
                       options={loaderVersions()}
                       errorMessage={field.error}
                       {...props}
-                      onChange={(value: LoaderVersion | null) => {
+                      onChange={(value: ModdedLoaderVersion | null) => {
                         if (value) {
                           setValue(form, 'loaderVersion', value.id);
                         }

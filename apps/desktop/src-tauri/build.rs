@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tauri_build::{DefaultPermissionRule, InlinedPlugin};
 
 fn main() {
-    let account_plugin = (
+    let auth_plugin = (
         "auth",
         InlinedPlugin::new().commands(&[
             "get_accounts",
@@ -40,6 +40,14 @@ fn main() {
             "check_compatibility",
             "get_content",
             "list_content_version",
+        ]),
+    );
+
+    let minecraft_plugin = (
+        "minecraft",
+        InlinedPlugin::new().commands(&[
+            "get_minecraft_version_manifest",
+            "get_loader_version_manifest",
         ]),
     );
 
@@ -80,8 +88,9 @@ fn main() {
     );
 
     let mut plugins = HashMap::from([
-        account_plugin,
+        auth_plugin,
         instance_plugin,
+        minecraft_plugin,
         process_plugin,
         plugin_plugin,
         settings_plugin,

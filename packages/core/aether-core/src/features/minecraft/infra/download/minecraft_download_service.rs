@@ -7,7 +7,7 @@ use tracing::info;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt},
-        minecraft::{MinecraftDomainError, MinecraftDownloader},
+        minecraft::{vanilla, modded, MinecraftDomainError, MinecraftDownloader},
     },
     libs::request_client::{Request, RequestClient, RequestClientExt},
     shared::{Cache, FileStore, InfinityCachedResource, IoError},
@@ -61,14 +61,14 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
     async fn fetch_version_info(
         &self,
         version_id: &String,
-        version: &daedalus::minecraft::Version,
-        loader: Option<&daedalus::modded::LoaderVersion>,
-    ) -> Result<daedalus::minecraft::VersionInfo, MinecraftDomainError> {
+        version: &vanilla::Version,
+        loader: Option<&modded::LoaderVersion>,
+    ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
         let mut version_info = self.fetch_json(&version.url).await?;
 
         if let Some(loader) = loader {
             let modded_info = self.fetch_json(&loader.url).await?;
-            version_info = daedalus::modded::merge_partial_version(modded_info, version_info);
+            version_info = modded::merge_partial_version(modded_info, version_info);
         }
 
         version_info.id.clone_from(version_id);
@@ -83,7 +83,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
 {
     async fn download_minecraft(
         &self,
-        version_info: &daedalus::minecraft::VersionInfo,
+        version_info: &vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
@@ -123,11 +123,11 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
 
     async fn get_version_info(
         &self,
-        version: &daedalus::minecraft::Version,
-        loader: Option<&daedalus::modded::LoaderVersion>,
+        version: &vanilla::Version,
+        loader: Option<&modded::LoaderVersion>,
         force: Option<bool>,
         progress_bar_id: Option<&ProgressBarId>,
-    ) -> Result<daedalus::minecraft::VersionInfo, MinecraftDomainError> {
+    ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
         let force = force.unwrap_or(false);
 
         let version_id = get_version_id(version, loader);
@@ -152,10 +152,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
     }
 }
 
-fn get_version_id(
-    version: &daedalus::minecraft::Version,
-    loader: Option<&daedalus::modded::LoaderVersion>,
-) -> String {
+fn get_version_id(version: &vanilla::Version, loader: Option<&modded::LoaderVersion>) -> String {
     loader.map_or_else(
         || version.id.clone(),
         |l| format!("{}-{}", version.id, l.id),

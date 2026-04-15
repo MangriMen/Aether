@@ -4,20 +4,28 @@
     "tauri": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": [
-        "*"
-      ],
-      "env": [
-        "PATH",
-        "CARGO_*",
-        "RUST_*"
-      ]
+      "passThroughEnv": ["*"],
+      "env": ["PATH", "CARGO_*", "RUST_*"],
     },
     "build": {
-      "outputs": [
-        "dist/**",
-        "src-tauri/target/release/bundle/**"
-      ]
-    }
-  }
+      "outputs": ["dist/**", "src-tauri/target/release/bundle/**"],
+    },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "src/**/*.{ts,tsx,js,jsx,rs}", // Все исходники: и Rust, и JS/TS
+        "Cargo.toml",
+        "Cargo.lock",
+        "package.json",
+        "tsconfig.json",
+        ".eslintrc*", // Конфиги ESLint
+        ".prettierrc*", // Если используешь Prettier
+        "**/*.json",
+        "!**/node_modules/**",
+        "!.eslintcache", // Исключаем кэш самого eslint
+        "!**/target/**", // Исключаем артефакты Rust
+      ],
+      "passThroughEnv": ["*"],
+    },
+  },
 }

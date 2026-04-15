@@ -1,9 +1,7 @@
 use std::{collections::HashSet, path::Path};
 
-use daedalus::minecraft;
-
 use crate::{
-    features::minecraft::MinecraftDomainError,
+    features::minecraft::{vanilla, MinecraftDomainError},
     shared::{canonicalize, utils::get_classpath_separator},
 };
 
@@ -12,7 +10,7 @@ use super::{parse_arguments, parse_rules};
 // TODO: Wrap arguments in struct
 #[allow(clippy::too_many_arguments)]
 pub fn get_jvm_arguments(
-    arguments: Option<&[minecraft::Argument]>,
+    arguments: Option<&[vanilla::Argument]>,
     natives_path: &Path,
     libraries_path: &Path,
     class_paths: &str,
@@ -99,7 +97,7 @@ fn parse_jvm_argument(
 
 pub fn get_class_paths(
     libraries_path: &Path,
-    libraries: &[minecraft::Library],
+    libraries: &[vanilla::Library],
     client_path: &Path,
     java_arch: &str,
     minecraft_updated: bool,

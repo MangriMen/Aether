@@ -1,21 +1,19 @@
 use std::path::Path;
 
-use daedalus::minecraft::{self};
-
 use crate::features::{
     java::Java,
     minecraft::{
         utils::{get_class_paths, get_jvm_arguments},
-        MinecraftDomainError,
+        vanilla, MinecraftDomainError,
     },
 };
 
 // TODO: Wrap arguments in struct
 #[allow(clippy::too_many_arguments)]
 pub fn get_minecraft_jvm_arguments(
-    arguments: Option<&[minecraft::Argument]>,
+    arguments: Option<&[vanilla::Argument]>,
     libraries_dir: &Path,
-    version_info: &minecraft::VersionInfo,
+    version_info: &vanilla::VersionInfo,
     natives_dir: &Path,
     client_path: &Path,
     version_jar: String,

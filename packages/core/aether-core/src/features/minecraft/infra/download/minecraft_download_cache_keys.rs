@@ -1,4 +1,7 @@
-use crate::shared::{CacheId, CacheKey};
+use crate::{
+    features::minecraft::vanilla,
+    shared::{CacheId, CacheKey},
+};
 
 pub enum MinecraftDownloadCacheNamespaces {
     AssetsIndex,
@@ -16,14 +19,14 @@ impl MinecraftDownloadCacheNamespaces {
     }
 }
 
-pub fn assets_index_key(id: String) -> CacheKey<daedalus::minecraft::AssetsIndex> {
+pub fn assets_index_key(id: String) -> CacheKey<vanilla::AssetsIndex> {
     CacheKey::new(
         MinecraftDownloadCacheNamespaces::AssetsIndex.as_str(),
         CacheId::Named(id),
     )
 }
 
-pub fn version_info_key(version_id: String) -> CacheKey<daedalus::minecraft::VersionInfo> {
+pub fn version_info_key(version_id: String) -> CacheKey<vanilla::VersionInfo> {
     CacheKey::new(
         MinecraftDownloadCacheNamespaces::VersionInfo.as_str(),
         CacheId::Named(version_id),

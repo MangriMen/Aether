@@ -11,7 +11,7 @@ use crate::features::{
     minecraft::{
         app::{GetVersionManifestUseCase, InstallMinecraftParams, MinecraftApplicationError},
         infra::ForgeProcessor,
-        resolve_minecraft_version,
+        vanilla, resolve_minecraft_version,
         utils::get_compatible_java_version,
         LoaderVersionResolver, MetadataStorage, MinecraftDomainError, MinecraftDownloader,
         ModLoader, ModLoaderProcessor,
@@ -78,7 +78,7 @@ impl<
         loader: ModLoader,
         version_jar: String,
         minecraft_dir: &Path,
-        version_info: &mut daedalus::minecraft::VersionInfo,
+        version_info: &mut vanilla::VersionInfo,
         java_version: &Java,
         loading_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {

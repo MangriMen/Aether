@@ -1,9 +1,9 @@
-use crate::features::minecraft::MinecraftDomainError;
+use crate::features::minecraft::{vanilla, MinecraftDomainError};
 
 pub fn resolve_minecraft_version(
     game_version: &str,
-    version_manifest: daedalus::minecraft::VersionManifest,
-) -> Result<(daedalus::minecraft::Version, bool), MinecraftDomainError> {
+    version_manifest: vanilla::VersionManifest,
+) -> Result<(vanilla::Version, bool), MinecraftDomainError> {
     let (index, version) = version_manifest
         .versions
         .iter()
@@ -18,10 +18,7 @@ pub fn resolve_minecraft_version(
     Ok((version.clone(), is_updated))
 }
 
-fn is_minecraft_updated(
-    version_index: usize,
-    version_manifest: &daedalus::minecraft::VersionManifest,
-) -> bool {
+fn is_minecraft_updated(version_index: usize, version_manifest: &vanilla::VersionManifest) -> bool {
     version_index
         <= version_manifest
             .versions

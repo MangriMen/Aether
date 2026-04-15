@@ -1,5 +1,6 @@
+import type { ModLoader } from '@/entities/minecraft';
+
 import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
-import { ModLoader } from '@/entities/minecraft';
 
 export const getAvailableContentTypes = (
   instanceLoader: ModLoader | undefined,
@@ -14,7 +15,7 @@ export const getAvailableContentTypes = (
     return [];
   }
 
-  if (instanceLoader === ModLoader.Vanilla) {
+  if (instanceLoader === 'vanilla') {
     return [ContentType.ResourcePack, ContentType.DataPack];
   }
 
