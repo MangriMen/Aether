@@ -1,4 +1,3 @@
-use dashmap::DashMap;
 use log::debug;
 use std::{
     collections::{HashMap, HashSet},
@@ -119,8 +118,11 @@ async fn import_contents(
 }
 
 #[tauri::command]
-async fn list_content(id: String) -> FrontendResult<DashMap<String, ContentFile>> {
-    Ok(aether_core::api::instance::list_content(id).await?)
+async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFile>> {
+    Ok(aether_core::api::instance::list_content(id)
+        .await?
+        .into_iter()
+        .collect())
 }
 
 #[tauri::command]

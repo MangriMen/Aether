@@ -46,8 +46,6 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "daedalus",
- "dashmap",
  "log",
  "open",
  "paste",

@@ -8,47 +8,38 @@ edition = "2021"
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 
+[dependencies]
+# Tauri & Plugins
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-os = "2"
+tauri-plugin-process = "2"
+tauri-plugin-shell = "2"
+
+# External Libraries
+open = { version = "5", features = ["shellexecute-on-windows"] }
+ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }
+
+# Workspace Dependencies
+aether-core.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+log.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serr.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
 
 [build-dependencies]
 paste = "1"
 tauri-build = { version = "2", features = ["codegen"] }
-
-[dependencies]
-tauri = { version = "2", features = ['tray-icon'] }
-tauri-plugin-dialog = "2"
-tauri-plugin-log = "2"
-tauri-plugin-os = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-process = "2"
-
-
-uuid = { version = "1.10", features = ["serde", "v4"] }
-
-async-trait = "0.1.83"
-
-
-dashmap = { version = "6", features = ["serde"] }
-open = { version = "5", features = ["shellexecute-on-windows"] }
-
-daedalus = { git = "https://github.com/modrinth/code", version = "0.2.3" }
-
-serr = { git = 'https://github.com/MangriMen/serr.git', version = "0.2.0", features = [
-  "derive",
-] }
-semver = "1.0.27"
-tauri-plugin-opener = "2"
-tauri-plugin-clipboard-manager = "2"
-
-ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }
-
-anyhow.workspace = true
-thiserror.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-log.workspace = true
-tokio.workspace = true
-
-aether-core.workspace = true
-chrono.workspace = true
