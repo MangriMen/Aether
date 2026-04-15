@@ -14,7 +14,7 @@ import {
   removeInstanceRaw,
   editInstanceRaw,
   getInstanceDirRaw,
-} from '../tauriApi';
+} from '../tauriApiRaw';
 import { invalidateInstanceData } from './cache';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 

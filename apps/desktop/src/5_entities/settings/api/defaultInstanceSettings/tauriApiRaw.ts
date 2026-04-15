@@ -3,7 +3,7 @@ import type {
   DefaultInstanceSettings,
 } from '../../model/defaultInstanceSettings';
 
-import { invokeSettings } from '../tauriApi';
+import { invokeSettings } from '../tauriApiRaw';
 
 export const getDefaultInstanceSettingsRaw = () =>
   invokeSettings<DefaultInstanceSettings>(`get_default_instance_settings`);

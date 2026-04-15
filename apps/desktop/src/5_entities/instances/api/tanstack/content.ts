@@ -33,7 +33,7 @@ import {
   checkCompatibility,
   listContentVersionRaw,
   getContentRaw,
-} from '../tauriApi';
+} from '../tauriApiRaw';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 

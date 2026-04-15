@@ -8,7 +8,7 @@ import { QUERY_KEYS } from './queryKeys';
 import {
   getLoaderVersionManifestRaw,
   getMinecraftVersionManifestRaw,
-} from './rawApi';
+} from './tauriApiRaw';
 
 export const useMinecraftVersionManifest = () =>
   useQuery(() => ({

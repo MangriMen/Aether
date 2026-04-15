@@ -1,6 +1,6 @@
 import type { EditSettings, Settings } from '../../model';
 
-import { invokeSettings } from '../tauriApi';
+import { invokeSettings } from '../tauriApiRaw';
 
 export const getSettingsRaw = () => invokeSettings<Settings>(`get`);
 

@@ -7,7 +7,7 @@ import { DEFAULT_INSTANCE_SETTINGS_QUERY_KEYS } from './defaultInstanceSettingsQ
 import {
   editDefaultInstanceSettingsRaw,
   getDefaultInstanceSettingsRaw,
-} from './tauriApi';
+} from './tauriApiRaw';
 
 export const useDefaultInstanceSettings = () =>
   useQuery(() => ({

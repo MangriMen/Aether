@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 
-import { revealInExplorerRaw } from '../tauriApi';
+import { revealInExplorerRaw } from '../tauriApiRaw';
 
 export const useRevealInExplorer = () => {
   const [{ t }] = useTranslation();

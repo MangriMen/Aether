@@ -2,7 +2,7 @@ import type { Accessor } from 'solid-js';
 
 import { useQuery } from '@tanstack/solid-query';
 
-import { listProcessRaw, getInstanceProcessRaw } from '../tauriApi';
+import { listProcessRaw, getInstanceProcessRaw } from '../tauriApiRaw';
 import { PROCESS_QUERY_KEYS } from './processQueryKeys';
 
 export const useProcessList = () => {

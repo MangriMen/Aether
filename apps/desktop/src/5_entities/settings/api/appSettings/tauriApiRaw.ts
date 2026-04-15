@@ -1,6 +1,6 @@
 import type { AppSettingsDto, EditAppSettingsDto } from '@/shared/api';
 
-import { invokeSettings } from '../tauriApi';
+import { invokeSettings } from '../tauriApiRaw';
 
 export const getAppSettingsRaw = () =>
   invokeSettings<AppSettingsDto>('get_app_settings');

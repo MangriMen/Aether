@@ -27,7 +27,7 @@ import {
   openPluginsFolderRaw,
   removePluginRaw,
   syncPluginsRaw,
-} from './tauriApi';
+} from './tauriApiRaw';
 
 export const useSyncPlugins = () => {
   const queryClient = useQueryClient();
