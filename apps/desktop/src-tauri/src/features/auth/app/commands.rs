@@ -1,15 +1,14 @@
 use uuid::Uuid;
 
-use crate::{features::auth::AccountDto, FrontendResult};
+use crate::{
+    commands::{auth_commands, AUTH_PLUGIN_NAME},
+    features::auth::AccountDto,
+    FrontendResult,
+};
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("auth")
-        .invoke_handler(tauri::generate_handler![
-            get_accounts,
-            create_offline_account,
-            change_account,
-            logout,
-        ])
+    tauri::plugin::Builder::new(AUTH_PLUGIN_NAME)
+        .invoke_handler(auth_commands!(tauri::generate_handler!))
         .build()
 }
 

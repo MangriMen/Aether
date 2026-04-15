@@ -5,6 +5,7 @@ use aether_core::features::settings::{
 use tauri::{AppHandle, State};
 
 use crate::{
+    commands::{settings_commands, SETTINGS_PLUGIN_NAME},
     features::settings::{
         AppSettings, AppSettingsStorageState, EditAppSettingsDto, EditAppSettingsUseCase,
         GetAppSettingsUseCase, WindowManagerState,
@@ -13,16 +14,8 @@ use crate::{
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("settings")
-        .invoke_handler(tauri::generate_handler![
-            get,
-            edit,
-            get_max_ram,
-            get_default_instance_settings,
-            edit_default_instance_settings,
-            get_app_settings,
-            edit_app_settings,
-        ])
+    tauri::plugin::Builder::new(SETTINGS_PLUGIN_NAME)
+        .invoke_handler(settings_commands!(tauri::generate_handler!))
         .build()
 }
 

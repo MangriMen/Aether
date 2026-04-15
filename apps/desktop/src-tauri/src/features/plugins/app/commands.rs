@@ -6,25 +6,13 @@ use aether_core::features::plugins::{
     PluginSettings,
 };
 
+use crate::commands::{plugin_commands, PLUGIN_PLUGIN_NAME};
 use crate::shared::file::reveal_in_explorer;
 use crate::FrontendResult;
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("plugin")
-        .invoke_handler(tauri::generate_handler![
-            import,
-            sync,
-            list,
-            get,
-            remove,
-            enable,
-            disable,
-            call,
-            get_settings,
-            edit_settings,
-            open_plugins_folder,
-            get_api_version
-        ])
+    tauri::plugin::Builder::new(PLUGIN_PLUGIN_NAME)
+        .invoke_handler(plugin_commands!(tauri::generate_handler!))
         .build()
 }
 

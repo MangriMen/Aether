@@ -22,35 +22,14 @@ use aether_core::{
     shared::CapabilityEntry,
 };
 
-use crate::FrontendResult;
+use crate::{
+    commands::{instance_commands, INSTANCE_PLUGIN_NAME},
+    FrontendResult,
+};
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("instance")
-        .invoke_handler(tauri::generate_handler![
-            create,
-            import,
-            list_importers,
-            list,
-            get,
-            get_dir,
-            install,
-            update,
-            edit,
-            remove,
-            launch,
-            stop,
-            import_contents,
-            list_content,
-            install_content,
-            enable_contents,
-            disable_contents,
-            remove_contents,
-            list_content_providers,
-            search_content,
-            check_compatibility,
-            get_content,
-            list_content_version
-        ])
+    tauri::plugin::Builder::new(INSTANCE_PLUGIN_NAME)
+        .invoke_handler(instance_commands!(tauri::generate_handler!))
         .build()
 }
 

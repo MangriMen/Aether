@@ -12,6 +12,7 @@ custom-protocol = ["tauri/custom-protocol"]
 tauri-plugin-updater = "2"
 
 [build-dependencies]
+paste = "1"
 tauri-build = { version = "2", features = ["codegen"] }
 
 [dependencies]
