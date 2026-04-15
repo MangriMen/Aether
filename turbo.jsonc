@@ -10,21 +10,11 @@
     "build": {
       "outputs": ["dist/**", "src-tauri/target/release/bundle/**"],
     },
-    "lint": {
+    "update-bindings": {
       "cache": true,
-      "inputs": [
-        "src/**/*.{ts,tsx,js,jsx,rs}", // Все исходники: и Rust, и JS/TS
-        "Cargo.toml",
-        "Cargo.lock",
-        "package.json",
-        "tsconfig.json",
-        ".eslintrc*", // Конфиги ESLint
-        ".prettierrc*", // Если используешь Prettier
-        "**/*.json",
-        "!**/node_modules/**",
-        "!.eslintcache", // Исключаем кэш самого eslint
-        "!**/target/**", // Исключаем артефакты Rust
-      ],
+    },
+    "lintt": {
+      "cache": true,
       "passThroughEnv": ["*"],
     },
   },

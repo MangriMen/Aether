@@ -18,7 +18,8 @@
     "lint:fix:arch": "(npx steiger ./src --fix || true)",
     "lint:types": "tsc --noEmit",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "update-bindings": "cd src-tauri && cargo update-bindings"
   },
   "dependencies": {
     "@kobalte/core": "^0.13.11",
