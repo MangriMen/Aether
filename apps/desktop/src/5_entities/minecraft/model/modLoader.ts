@@ -1,4 +1,4 @@
-import type { ModLoaderDto } from '@/shared/api';
+import type { ModLoaderDto } from '@/shared/api/bindings/minecraft';
 
 export type ModLoader = ModLoaderDto;
 

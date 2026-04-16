@@ -1,13 +1,12 @@
 use aether_core::features::events::ProgressBar;
 use serde::Serialize;
-use ts_rs::TS;
+use specta::Type;
 use uuid::Uuid;
 
 use crate::features::events::ProgressEventTypeDto;
 
-#[derive(Debug, Clone, Serialize, TS)]
+#[derive(Debug, Clone, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "index.ts")]
 pub struct ProgressBarDto {
     pub id: Uuid,
     pub message: String,

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { commands } from '@/shared/api/bindings/auth';
 import { showError } from '@/shared/lib/showError';
 import { useTranslation } from '@/shared/model';
 
@@ -7,14 +8,13 @@ import { ACCOUNT_KEY } from './key';
 import {
   changeAccountRaw,
   createOfflineAccountRaw,
-  listAccountsRaw,
   logoutRaw,
 } from './tauriApiRaw';
 
 export const useAccounts = () =>
   useQuery(() => ({
     queryKey: ACCOUNT_KEY.LIST(),
-    queryFn: listAccountsRaw,
+    queryFn: commands.listAccounts,
     reconcile: 'id',
   }));
 

@@ -8,7 +8,7 @@ pub const SETTINGS_PLUGIN_NAME: &str = "settings";
 macro_rules! auth_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
-            get_accounts,
+            list_accounts,
             create_offline_account,
             change_account,
             logout,

@@ -4,10 +4,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiAccount from '~icons/mdi/account';
 import { createSignal, splitProps } from 'solid-js';
 
-import type { Account, AccountType } from '@/entities/accounts';
+import type { Account, AccountType } from '@/entities/auth';
 import type { CombinedTooltipProps, IconButtonProps } from '@/shared/ui';
 
-import { useChangeAccount, useLogout } from '@/entities/accounts';
+import { useChangeAccount, useLogout } from '@/entities/auth';
 import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,

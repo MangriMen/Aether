@@ -1,31 +1,28 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use specta::Type;
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "index.ts", rename = "ModdedManifestDto")]
 /// A manifest containing information about a mod loader's versions
-pub struct ManifestDto {
+pub struct ModdedManifestDto {
     /// The game versions the mod loader supports
-    pub game_versions: Vec<VersionDto>,
+    pub game_versions: Vec<ModdedVersionDto>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export, export_to = "index.ts", rename = "ModdedVersionDto")]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 ///  A game version of Minecraft
-pub struct VersionDto {
+pub struct ModdedVersionDto {
     /// The minecraft version ID
     pub id: String,
     /// Whether the release is stable or not
     pub stable: bool,
     /// A map that contains loader versions for the game version
-    pub loaders: Vec<LoaderVersionDto>,
+    pub loaders: Vec<ModdedLoaderVersionDto>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export, export_to = "index.ts", rename = "ModdedLoaderVersionDto")]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 /// A version of a Minecraft mod loader
-pub struct LoaderVersionDto {
+pub struct ModdedLoaderVersionDto {
     /// The version ID of the loader
     pub id: String,
     /// The URL of the version's manifest
@@ -34,7 +31,7 @@ pub struct LoaderVersionDto {
     pub stable: bool,
 }
 
-impl From<aether_core::features::minecraft::modded::Manifest> for ManifestDto {
+impl From<aether_core::features::minecraft::modded::Manifest> for ModdedManifestDto {
     fn from(value: aether_core::features::minecraft::modded::Manifest) -> Self {
         Self {
             game_versions: value.game_versions.into_iter().map(Into::into).collect(),
@@ -42,7 +39,7 @@ impl From<aether_core::features::minecraft::modded::Manifest> for ManifestDto {
     }
 }
 
-impl From<aether_core::features::minecraft::modded::Version> for VersionDto {
+impl From<aether_core::features::minecraft::modded::Version> for ModdedVersionDto {
     fn from(value: aether_core::features::minecraft::modded::Version) -> Self {
         Self {
             id: value.id,
@@ -52,7 +49,7 @@ impl From<aether_core::features::minecraft::modded::Version> for VersionDto {
     }
 }
 
-impl From<aether_core::features::minecraft::modded::LoaderVersion> for LoaderVersionDto {
+impl From<aether_core::features::minecraft::modded::LoaderVersion> for ModdedLoaderVersionDto {
     fn from(value: aether_core::features::minecraft::modded::LoaderVersion) -> Self {
         Self {
             id: value.id,

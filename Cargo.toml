@@ -44,3 +44,6 @@ codegen-units = 16 # Split crates into 16 chunks for parallel compilation
 lto = "thin"       # Enable fast parallel Link-Time Optimization
 strip = true       # Automatically strip symbols (reduces binary size)
 panic = "abort"    # Remove stack unwinding code
+
+[patch.crates-io]
+tauri-specta = { git = "https://github.com/MangriMen/tauri-specta", branch = "feat/fix-plugin-invoke" }

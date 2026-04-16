@@ -3,7 +3,7 @@ import type {
   VersionDto,
   VersionManifestDto,
   VersionTypeDto,
-} from '@/shared/api';
+} from '@/shared/api/bindings/minecraft';
 
 export type VersionType = VersionTypeDto;
 

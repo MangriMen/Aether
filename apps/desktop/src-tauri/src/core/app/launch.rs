@@ -2,6 +2,8 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
+#[cfg(debug_assertions)]
+use crate::bindings::generate_bindings;
 use crate::{
     core::{commands::*, log::default_log_builder},
     features::{auth, events::commands::*, instance, minecraft, plugins, process, settings},
@@ -16,6 +18,9 @@ pub fn launch_app() -> crate::Result<()> {
 }
 
 fn build_app() -> crate::Result<tauri::App> {
+    #[cfg(debug_assertions)]
+    generate_bindings();
+
     create_tauri_app()
         .build(tauri::generate_context!())
         .map_err(|e| crate::Error::LaunchError(e.to_string()))

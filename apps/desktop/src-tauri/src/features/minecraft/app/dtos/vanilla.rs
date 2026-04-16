@@ -1,10 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use specta::Type;
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "snake_case")]
-#[ts(export, export_to = "index.ts")]
 /// The version type
 pub enum VersionTypeDto {
     /// A major version, which is stable for all players to use
@@ -17,9 +16,8 @@ pub enum VersionTypeDto {
     OldBeta,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "index.ts")]
 /// A game version of Minecraft
 pub struct VersionDto {
     /// A unique identifier of the version
@@ -37,14 +35,14 @@ pub struct VersionDto {
     pub sha1: String,
     /// Whether the version supports the latest player safety features
     pub compliance_level: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
+    // TODO: bring back skip when implemented in specta
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    #[specta(optional)]
     /// (Modrinth Provided) The SHA1 hash of the original unmodified Minecraft versions JSON
     pub original_sha1: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export, export_to = "index.ts")]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 /// The latest snapshot and release of the game
 pub struct LatestVersionDto {
     /// The version id of the latest release
@@ -53,8 +51,7 @@ pub struct LatestVersionDto {
     pub snapshot: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export, export_to = "index.ts")]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 /// Data of all game versions of Minecraft
 pub struct VersionManifestDto {
     /// A struct containing the latest snapshot and release of the game

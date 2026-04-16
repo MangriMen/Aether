@@ -1,11 +1,10 @@
 use aether_core::features::auth::{AccountData, AccountType};
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use specta::Type;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "index.ts")]
 pub struct AccountDto {
     pub id: Uuid,
     pub username: String,
@@ -13,9 +12,8 @@ pub struct AccountDto {
     pub active: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-#[ts(export, export_to = "index.ts")]
 pub enum AccountTypeDto {
     Offline,
     Microsoft,

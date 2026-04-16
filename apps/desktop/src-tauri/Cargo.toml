@@ -21,6 +21,14 @@ tauri-plugin-shell = "2"
 
 # External Libraries
 open = { version = "5", features = ["shellexecute-on-windows"] }
+paste = "1"
+specta = { version = "=2.0.0-rc.24", features = [
+  "serde_json",
+  "uuid",
+  "chrono",
+] }
+specta-typescript = "0.0.11"
+tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
 ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }
 
 # Workspace Dependencies

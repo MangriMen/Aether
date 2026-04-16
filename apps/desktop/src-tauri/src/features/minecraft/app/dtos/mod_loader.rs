@@ -1,10 +1,9 @@
 use aether_core::features::minecraft::ModLoader;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use specta::Type;
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, TS)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, Type)]
 #[serde(rename_all = "lowercase")]
-#[ts(export, export_to = "index.ts")]
 pub enum ModLoaderDto {
     Vanilla,
     Forge,

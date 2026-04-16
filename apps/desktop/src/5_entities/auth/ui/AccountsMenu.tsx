@@ -2,9 +2,9 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { Account, AccountType } from '@/entities/accounts';
+import type { Account, AccountType } from '@/entities/auth';
 
-import { AccountLoginMethods, AccountsList } from '@/entities/accounts';
+import { AccountLoginMethods, AccountsList } from '@/entities/auth';
 import { Separator } from '@/shared/ui';
 
 import { useSortedAccounts } from '../lib';

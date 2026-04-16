@@ -12,7 +12,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
+pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+    auth_commands!(tauri_specta::collect_commands!)
+}
+
 #[tauri::command]
+#[specta::specta]
 async fn create_offline_account(username: String) -> FrontendResult<AccountDto> {
     Ok(aether_core::api::auth::create_offline_account(username)
         .await?
@@ -20,8 +25,9 @@ async fn create_offline_account(username: String) -> FrontendResult<AccountDto> 
 }
 
 #[tauri::command]
-async fn get_accounts() -> FrontendResult<Vec<AccountDto>> {
-    Ok(aether_core::api::auth::get_accounts()
+#[specta::specta]
+async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
+    Ok(aether_core::api::auth::list_accounts()
         .await?
         .into_iter()
         .map(Into::into)
@@ -29,11 +35,13 @@ async fn get_accounts() -> FrontendResult<Vec<AccountDto>> {
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn change_account(id: Uuid) -> FrontendResult<AccountDto> {
     Ok(aether_core::api::auth::change_account(id).await?.into())
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn logout(id: Uuid) -> FrontendResult<()> {
     Ok(aether_core::api::auth::logout(id).await?)
 }
