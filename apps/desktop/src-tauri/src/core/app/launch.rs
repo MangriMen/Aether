@@ -1,7 +1,9 @@
+use std::env;
+
 use tauri::{Builder, Wry};
 
 use crate::{
-    core::commands::*,
+    core::{commands::*, log::default_log_builder},
     features::{auth, events::commands::*, instance, minecraft, plugins, process, settings},
 };
 
@@ -32,23 +34,7 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .level(log::LevelFilter::Debug)
-                .level_for(
-                    "tao::platform_impl::platform::event_loop::runner",
-                    log::LevelFilter::Off,
-                )
-                .level_for("hyper_util", log::LevelFilter::Info)
-                .level_for("wasmtime", log::LevelFilter::Info)
-                .level_for("wasmtime_cache", log::LevelFilter::Info)
-                .level_for("wasmtime_cranelift", log::LevelFilter::Info)
-                .level_for("cranelift_codegen", log::LevelFilter::Info)
-                .level_for("tauri_plugin_updater", log::LevelFilter::Info)
-                .level_for("extism::plugin", log::LevelFilter::Debug)
-                .level_for("h2", log::LevelFilter::Info)
-                .build(),
-        )
+        .plugin(default_log_builder().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
