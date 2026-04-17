@@ -10,7 +10,6 @@ import type {
   NewInstance,
   ContentFile,
   ImportInstance,
-  MinecraftProcessMetadata,
   ContentSearchResponse,
   InstallContentParams,
   ContentType,
@@ -27,7 +26,6 @@ import type {
 } from '../model/compatibility';
 
 export const invokeInstance = createPluginInvoke('instance');
-export const invokeProcess = createPluginInvoke('process');
 
 export const createInstanceRaw = (newInstance: NewInstance) =>
   invokeInstance<string>(`create`, { newInstance });
@@ -71,15 +69,6 @@ export const editInstanceRaw = async (
 // Utils
 export const revealInExplorerRaw = (path: string, exact = true) =>
   invoke('reveal_in_explorer', { path, exact });
-
-// Process
-export const listProcessRaw = () =>
-  invokeProcess<MinecraftProcessMetadata[]>(`list`);
-
-export const getInstanceProcessRaw = (id: string) =>
-  invokeProcess<MinecraftProcessMetadata[]>(`get_by_instance_id`, {
-    id,
-  });
 
 // Content
 export const listContentRaw = (id: string) =>

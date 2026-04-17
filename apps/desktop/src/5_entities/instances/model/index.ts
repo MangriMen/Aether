@@ -7,5 +7,4 @@ export * from './installStage';
 export * from './instance';
 export * from './loaderVersionPreference';
 export * from './packInfo';
-export * from './process';
 export * from './runningInstancesContext';
