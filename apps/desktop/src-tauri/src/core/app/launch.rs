@@ -6,7 +6,7 @@ use tauri::{Builder, Wry};
 use crate::bindings::generate_bindings;
 use crate::{
     core::{commands::*, log::default_log_builder},
-    features::{auth, events::commands::*, instance, minecraft, plugins, process, settings},
+    features::{auth, events, instance, minecraft, plugins, process, settings, update},
 };
 
 use super::{events::handle_app_events, initialize::init_app};
@@ -50,15 +50,14 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .plugin(crate::core::app::init())
         .plugin(auth::init())
+        .plugin(events::init())
         .plugin(instance::init())
         .plugin(minecraft::init())
         .plugin(process::init())
         .plugin(plugins::init())
         .plugin(settings::init())
-        .invoke_handler(tauri::generate_handler![
-            list_progress_bars,
-            reveal_in_explorer,
-        ])
+        .plugin(update::init())
+        .invoke_handler(tauri::generate_handler![reveal_in_explorer,])
 }
 
 /// Helper trait for method chaining

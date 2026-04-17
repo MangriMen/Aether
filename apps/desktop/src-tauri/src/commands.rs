@@ -7,6 +7,7 @@ pub const MINECRAFT_PLUGIN_NAME: &str = "minecraft";
 pub const PLUGIN_PLUGIN_NAME: &str = "plugin";
 pub const PROCESS_PLUGIN_NAME: &str = "process";
 pub const SETTINGS_PLUGIN_NAME: &str = "settings";
+pub const UPDATE_PLUGIN_NAME: &str = "update";
 
 macro_rules! application_commands {
     ($($tokens:tt)*) => {
@@ -117,6 +118,15 @@ macro_rules! settings_commands {
     };
 }
 
+macro_rules! update_commands {
+    ($($tokens:tt)*) => {
+        $($tokens)* [
+            check_for_updates,
+            install_update,
+        ]
+    };
+}
+
 pub(crate) use application_commands;
 
 pub(crate) use auth_commands;
@@ -126,3 +136,4 @@ pub(crate) use minecraft_commands;
 pub(crate) use plugin_commands;
 pub(crate) use process_commands;
 pub(crate) use settings_commands;
+pub(crate) use update_commands;

@@ -1,7 +1,6 @@
 import { createEffect, createMemo, on } from 'solid-js';
 
-import { useCheckUpdate } from '@/entities/updates';
-import { checkIsUpdateAvailable } from '@/entities/updates/model';
+import { checkIsUpdateAvailable, useCheckUpdate } from '@/entities/updates';
 import {
   UpdateNotificationStyle,
   updateNotificationStyle,

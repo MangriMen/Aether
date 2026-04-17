@@ -1,14 +1,15 @@
-import type { Update } from '@tauri-apps/plugin-updater';
 import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps, Show } from 'solid-js';
+
+import type { UpdateStatus } from '@/entities/updates';
 
 import { cn, dayjs, formatTime } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 export interface UpdateDescriptionProps extends ComponentProps<'div'> {
   isUpdateAvailable: boolean;
-  update: Update | null | undefined;
+  update: UpdateStatus | null | undefined;
 }
 
 export const UpdateDescription: Component<UpdateDescriptionProps> = (props) => {

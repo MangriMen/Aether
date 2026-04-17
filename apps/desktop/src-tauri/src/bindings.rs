@@ -37,6 +37,7 @@ pub fn generate_bindings() {
     use crate::commands::{
         APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
         MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
+        UPDATE_PLUGIN_NAME,
     };
 
     let out_dir = "../src/6_shared/api/bindings";
@@ -74,5 +75,9 @@ pub fn generate_bindings() {
 
     exporter.export(SETTINGS_PLUGIN_NAME, |b| {
         b.commands(crate::features::settings::get_specta_data())
+    });
+
+    exporter.export(UPDATE_PLUGIN_NAME, |b| {
+        b.commands(crate::features::update::get_specta_data())
     });
 }

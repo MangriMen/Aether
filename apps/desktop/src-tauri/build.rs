@@ -37,6 +37,7 @@ fn main() {
         process,
         plugin,
         settings,
+        update
     ];
 
     let mut attributes = tauri_build::Attributes::new().codegen(tauri_build::CodegenContext::new());

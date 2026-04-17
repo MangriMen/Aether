@@ -6,9 +6,12 @@ use tauri::{App, AppHandle, Listener, Manager};
 
 use crate::{
     core::{build_main_window, instance_launch_listener, PreventExitStateInner},
-    features::settings::{
-        AppSettings, AppSettingsStorage, AppSettingsStorageState, FsAppSettingsStorage,
-        TauriWindowManager, WindowManager, WindowManagerState,
+    features::{
+        settings::{
+            AppSettings, AppSettingsStorage, AppSettingsStorageState, FsAppSettingsStorage,
+            TauriWindowManager, WindowManager, WindowManagerState,
+        },
+        update::TauriUpdateService,
     },
 };
 
@@ -41,6 +44,7 @@ fn init_app_state<R: tauri::Runtime>(
 ) {
     app_handle.manage(app_settings_storage);
     app_handle.manage(window_manager);
+    app_handle.manage(Arc::new(TauriUpdateService::new(app_handle.clone())));
     app_handle.manage(std::sync::Mutex::new(PreventExitStateInner::new(false)));
 }
 
