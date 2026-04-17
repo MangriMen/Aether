@@ -1,9 +1,6 @@
-export type PluginState =
-  | 'NotLoaded'
-  | 'Loading'
-  | 'Loaded'
-  | 'Unloading'
-  | 'Failed';
+import type { PluginDtoState } from '../api';
+
+export type PluginState = PluginDtoState;
 
 export const isPluginDisabled = (state: PluginState) =>
   state === 'NotLoaded' || state === 'Failed';

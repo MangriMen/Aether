@@ -1,12 +1,9 @@
 use std::path::PathBuf;
 
 use aether_core::core::LauncherState;
-use aether_core::features::plugins::{
-    app::{EditPluginSettings, PluginDto},
-    PluginSettings,
-};
 
 use crate::commands::{plugin_commands, PLUGIN_PLUGIN_NAME};
+use crate::features::plugins::{EditPluginSettingsDto, PluginDto, PluginSettingsDto};
 use crate::shared::file::reveal_in_explorer;
 use crate::FrontendResult;
 
@@ -16,57 +13,78 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
+pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+    plugin_commands!(tauri_specta::collect_commands!)
+}
+
 #[tauri::command]
+#[specta::specta]
 async fn import(paths: Vec<PathBuf>) -> FrontendResult<()> {
     Ok(aether_core::api::plugin::import(paths).await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn sync() -> FrontendResult<()> {
     Ok(aether_core::api::plugin::sync().await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn list() -> FrontendResult<Vec<PluginDto>> {
-    Ok(aether_core::api::plugin::list().await?)
+    Ok(aether_core::api::plugin::list()
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn get(id: String) -> FrontendResult<PluginDto> {
-    Ok(aether_core::api::plugin::get(id).await?)
+    Ok(aether_core::api::plugin::get(id).await?.into())
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn remove(id: String) -> FrontendResult<()> {
     Ok(aether_core::api::plugin::remove(id).await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn enable(id: String) -> FrontendResult<()> {
     Ok(aether_core::api::plugin::enable(id).await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn disable(id: String) -> FrontendResult<()> {
     Ok(aether_core::api::plugin::disable(id).await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn call(id: String, data: String) -> FrontendResult<()> {
     Ok(aether_core::api::plugin::call(id, data).await?)
 }
 
 #[tauri::command]
-async fn get_settings(id: String) -> FrontendResult<Option<PluginSettings>> {
-    Ok(aether_core::api::plugin::get_settings(id).await?)
+#[specta::specta]
+async fn get_settings(id: String) -> FrontendResult<Option<PluginSettingsDto>> {
+    Ok(aether_core::api::plugin::get_settings(id)
+        .await?
+        .map(Into::into))
 }
 
 #[tauri::command]
-async fn edit_settings(id: String, edit_settings: EditPluginSettings) -> FrontendResult<()> {
-    Ok(aether_core::api::plugin::edit_settings(id, edit_settings).await?)
+#[specta::specta]
+async fn edit_settings(id: String, edit_settings: EditPluginSettingsDto) -> FrontendResult<()> {
+    Ok(aether_core::api::plugin::edit_settings(id, edit_settings.into()).await?)
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn open_plugins_folder() -> FrontendResult<()> {
     let state = LauncherState::get().await?;
     Ok(reveal_in_explorer(
@@ -76,6 +94,7 @@ async fn open_plugins_folder() -> FrontendResult<()> {
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn get_api_version() -> FrontendResult<semver::Version> {
     Ok(aether_core::api::plugin::get_api_version().await?)
 }

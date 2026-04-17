@@ -1,8 +1,5 @@
-import type { PathMapping } from './pluginManifest';
+import type { EditPluginSettingsDto, PluginSettingsDto } from '../api';
 
-export interface PluginSettings {
-  allowedHosts: string[];
-  allowedPaths: Array<PathMapping>; // (path on disk, plugin path)
-}
+export type PluginSettings = PluginSettingsDto;
 
-export type EditPluginSettings = Partial<PluginSettings>;
+export type EditPluginSettings = EditPluginSettingsDto;

@@ -1,3 +1,2 @@
-export * from './cache';
-export * from './tanstackApi';
-export * from './tauriApiRaw';
+export { commands } from '@/shared/api/bindings/plugin';
+export type * from '@/shared/api/bindings/plugin';

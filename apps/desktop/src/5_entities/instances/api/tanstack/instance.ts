@@ -146,3 +146,12 @@ export const useInstanceDir = (id: Accessor<string | undefined>) => {
     enabled: !!id(),
   }));
 };
+
+export const useImporters = () => {
+  return useQuery(() => ({
+    queryKey: ['PLUGIN_QUERY_KEYS.IMPORTERS()'],
+    queryFn: (): never[] => {
+      throw new Error('NOT IMPLEMENTED');
+    },
+  }));
+};

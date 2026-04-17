@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import type { PluginMetadata } from '../model';
+import type { PluginMetadata } from '.';
 
-import { PLUGIN_QUERY_KEYS } from './queryKeys';
+import { pluginKeys } from './queryKeys';
 
 export const invalidatePluginsData = (queryClient: QueryClient) => {
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.LIST(),
+    queryKey: pluginKeys.list(),
   });
 };
 
@@ -15,21 +15,21 @@ export const invalidatePluginData = (
   pluginId: PluginMetadata['id'],
 ) => {
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.LIST(),
+    queryKey: pluginKeys.list(),
   });
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.GET(pluginId),
+    queryKey: pluginKeys.get(pluginId),
   });
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.ENABLED(pluginId),
+    queryKey: pluginKeys.enabled(pluginId),
   });
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.SETTINGS(pluginId),
+    queryKey: pluginKeys.settings(pluginId),
   });
 };
 
 export const invalidateImporters = (queryClient: QueryClient) => {
   queryClient.invalidateQueries({
-    queryKey: PLUGIN_QUERY_KEYS.IMPORTERS(),
+    queryKey: pluginKeys.importers(),
   });
 };

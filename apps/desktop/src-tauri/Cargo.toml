@@ -26,6 +26,7 @@ specta = { version = "=2.0.0-rc.24", features = [
   "serde_json",
   "uuid",
   "chrono",
+  "semver",
 ] }
 specta-typescript = "0.0.11"
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }

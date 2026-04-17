@@ -5841,6 +5841,7 @@ dependencies = [
  "chrono",
  "paste",
  "rustc_version",
+ "semver",
  "serde_json",
  "specta-macros",
  "uuid",

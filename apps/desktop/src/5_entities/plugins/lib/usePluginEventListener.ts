@@ -10,7 +10,7 @@ import {
   invalidateImporters,
   invalidatePluginData,
   invalidatePluginsData,
-} from '../api';
+} from '../model';
 
 export const usePluginEventListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;

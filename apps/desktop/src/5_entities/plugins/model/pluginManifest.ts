@@ -1,38 +1,19 @@
-export interface PluginManifest {
-  metadata: PluginMetadata;
-  runtime: RuntimeConfig;
-  load: LoadConfig;
-  api: ApiConfig;
-}
+import type {
+  ApiConfigDto,
+  LoadConfigDto,
+  PathMappingDto,
+  PluginManifestDto,
+  PluginMetadataDto,
+  RuntimeConfigDto,
+} from '../api';
 
-export interface PluginMetadata {
-  id: string;
-  name: string;
-  version: string; // semver string, e.g. "1.2.3"
-  description?: string;
-  authors: string[];
-  license?: string;
-}
+export type PluginManifest = PluginManifestDto;
+export type PluginMetadata = PluginMetadataDto;
 
-export interface RuntimeConfig {
-  allowedHosts?: string[];
-  allowedPaths?: PathMapping[];
-}
+export type RuntimeConfig = RuntimeConfigDto;
 
-export type PathMapping = [string, string]; // (path on disk, plugin path)
+export type PathMapping = PathMappingDto;
 
-export type LoadConfig =
-  | {
-      type: 'extism';
-      file: string;
-      memoryLimit?: number;
-    }
-  | {
-      type: 'native';
-      libPath: string;
-    };
+export type LoadConfig = LoadConfigDto;
 
-export interface ApiConfig {
-  version: string; // semver version requirement, e.g. "^1.0.0"
-  features?: string[];
-}
+export type ApiConfig = ApiConfigDto;
