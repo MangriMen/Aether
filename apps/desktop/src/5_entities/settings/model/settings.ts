@@ -1,12 +1,4 @@
-export interface Settings {
-  launcherDir?: string;
-  metadataDir?: string;
+import type { EditSettingsDto, SettingsDto } from '../api';
 
-  maxConcurrentDownloads: number;
-
-  enabledPlugins: Set<string>;
-}
-
-export interface EditSettings {
-  maxConcurrentDownloads: number;
-}
+export type Settings = SettingsDto;
+export type EditSettings = EditSettingsDto;

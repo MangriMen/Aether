@@ -1,9 +1,9 @@
 import type {
   EditDefaultInstanceSettings,
   DefaultInstanceSettings,
-} from '../../model/defaultInstanceSettings';
+} from '../model/defaultInstanceSettings';
 
-import { invokeSettings } from '../tauriApiRaw';
+import { invokeSettings } from './tauriApiRaw';
 
 export const getDefaultInstanceSettingsRaw = () =>
   invokeSettings<DefaultInstanceSettings>(`get_default_instance_settings`);

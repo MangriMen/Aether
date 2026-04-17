@@ -1,22 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
-import { APP_SETTINGS_QUERY_KEYS } from './appSettingsQueryKeys';
-import { getAppSettingsRaw, editAppSettingsRaw } from './tauriApiRaw';
+import { commands } from '../../api';
+import { appSettingsQueryKeys } from './queryKeys';
 
 export const useAppSettings = () =>
   useQuery(() => ({
-    queryKey: APP_SETTINGS_QUERY_KEYS.GET(),
-    queryFn: getAppSettingsRaw,
+    queryKey: appSettingsQueryKeys.get(),
+    queryFn: commands.getAppSettings,
   }));
 
 export const useEditAppSettings = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: editAppSettingsRaw,
+    mutationFn: commands.editAppSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: APP_SETTINGS_QUERY_KEYS.GET(),
+        queryKey: appSettingsQueryKeys.get(),
       });
     },
   }));

@@ -1,6 +1,6 @@
 import { ErrorBoundary, type Component, type JSX } from 'solid-js';
 
-import { logError } from '@/shared/lib/log';
+import { logError } from '@/shared/lib';
 import { AppTitleBar } from '@/widgets/app-titlebar';
 
 import { AppErrorBoundary } from './AppErrorBoundary';

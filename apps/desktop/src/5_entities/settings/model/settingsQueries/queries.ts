@@ -2,16 +2,16 @@ import type { QueryClient } from '@tanstack/solid-query';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
-import { showError } from '@/shared/lib/showError';
+import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import { SETTINGS_QUERY_KEYS } from './settingsQueryKeys';
-import { editSettingsRaw, getMaxRamRaw, getSettingsRaw } from './tauriApi';
+import { commands } from '../../api';
+import { settingsKeys } from './queryKeys';
 
 export const useSettings = () =>
   useQuery(() => ({
-    queryKey: SETTINGS_QUERY_KEYS.GET(),
-    queryFn: getSettingsRaw,
+    queryKey: settingsKeys.get(),
+    queryFn: commands.get,
   }));
 
 export const useEditSettings = () => {
@@ -20,9 +20,9 @@ export const useEditSettings = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: editSettingsRaw,
+    mutationFn: commands.edit,
     onSuccess: (data) => {
-      queryClient.setQueryData(SETTINGS_QUERY_KEYS.GET(), () => data);
+      queryClient.setQueryData(settingsKeys.get(), () => data);
     },
     onError: (err) => {
       showError({
@@ -35,8 +35,8 @@ export const useEditSettings = () => {
 };
 
 export const MAX_RAM_QUERY = () => ({
-  queryKey: SETTINGS_QUERY_KEYS.RAM(),
-  queryFn: getMaxRamRaw,
+  queryKey: settingsKeys.ram(),
+  queryFn: commands.getMaxRam,
   staleTime: Infinity,
 });
 

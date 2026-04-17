@@ -48,6 +48,7 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
 /// Configures application-specific commands and plugins
 fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
+        .plugin(crate::core::app::init())
         .plugin(auth::init())
         .plugin(instance::init())
         .plugin(minecraft::init())
@@ -55,8 +56,6 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(plugins::init())
         .plugin(settings::init())
         .invoke_handler(tauri::generate_handler![
-            initialize_state,
-            initialize_plugins,
             list_progress_bars,
             reveal_in_explorer,
         ])

@@ -1,2 +1,4 @@
 export * from './listeners';
-export * from './tauriApiRaw';
+
+export { commands } from '@/shared/api/bindings/events';
+export type * from '@/shared/api/bindings/events';

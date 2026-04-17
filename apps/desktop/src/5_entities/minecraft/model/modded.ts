@@ -2,7 +2,7 @@ import type {
   ModdedLoaderVersionDto,
   ModdedManifestDto,
   ModdedVersionDto,
-} from '@/shared/api/bindings/minecraft';
+} from '../api';
 
 export type ModdedManifest = ModdedManifestDto;
 

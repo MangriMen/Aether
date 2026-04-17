@@ -1,9 +1,21 @@
+pub const APPLICATION_PLUGIN_NAME: &str = "application";
+
 pub const AUTH_PLUGIN_NAME: &str = "auth";
+pub const EVENTS_PLUGIN_NAME: &str = "events";
 pub const INSTANCE_PLUGIN_NAME: &str = "instance";
 pub const MINECRAFT_PLUGIN_NAME: &str = "minecraft";
-pub const PROCESS_PLUGIN_NAME: &str = "process";
 pub const PLUGIN_PLUGIN_NAME: &str = "plugin";
+pub const PROCESS_PLUGIN_NAME: &str = "process";
 pub const SETTINGS_PLUGIN_NAME: &str = "settings";
+
+macro_rules! application_commands {
+    ($($tokens:tt)*) => {
+        $($tokens)* [
+            initialize_state,
+            initialize_plugins,
+        ]
+    };
+}
 
 macro_rules! auth_commands {
     ($($tokens:tt)*) => {
@@ -12,6 +24,14 @@ macro_rules! auth_commands {
             create_offline_account,
             change_account,
             logout,
+        ]
+    };
+}
+
+macro_rules! events_commands {
+    ($($tokens:tt)*) => {
+        $($tokens)* [
+            list_progress_bars,
         ]
     };
 }
@@ -97,7 +117,10 @@ macro_rules! settings_commands {
     };
 }
 
+pub(crate) use application_commands;
+
 pub(crate) use auth_commands;
+pub(crate) use events_commands;
 pub(crate) use instance_commands;
 pub(crate) use minecraft_commands;
 pub(crate) use plugin_commands;

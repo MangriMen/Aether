@@ -1,2 +1,2 @@
-export * from './bindings';
+export * from './application';
 export * from './tanstack';

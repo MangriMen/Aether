@@ -8,7 +8,7 @@ import { type Accessor } from 'solid-js';
 
 import type { PartialBy } from '@/shared/model';
 
-import { showError } from '@/shared/lib/showError';
+import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 

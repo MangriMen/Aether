@@ -1,6 +1,6 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { initializeState } from '@/entities/minecraft';
+import { applicationCommands } from '@/shared/api';
 
 import { AetherNamespace, AetherNamespaceMethods } from '../model';
 
@@ -9,7 +9,7 @@ export const initializeWindowMethods = () => {
 };
 
 export const initializeApp = async () => {
-  await initializeState();
+  await applicationCommands.initializeState();
   initializeWindowMethods();
 };
 

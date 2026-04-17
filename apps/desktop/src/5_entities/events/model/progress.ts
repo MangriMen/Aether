@@ -2,8 +2,7 @@ import type {
   ProgressBarDto,
   ProgressEventDto,
   ProgressEventTypeDto,
-} from '@/shared/api';
-
+} from '../api';
 import type { LauncherEventPayload } from './event';
 
 export type ProgressEventType = ProgressEventTypeDto;

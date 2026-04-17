@@ -4,7 +4,9 @@
   "local": true,
   "windows": ["main"],
   "permissions": [
+    "application:default",
     "auth:default",
+    "events:default",
     "instance:default",
     "minecraft:default",
     "process:default",

@@ -3,7 +3,7 @@ import type {
   AppSettingsDto,
   EditAppSettingsDto,
   WindowEffectDto,
-} from '@/shared/api';
+} from '../api';
 
 export type AppSettings = AppSettingsDto;
 

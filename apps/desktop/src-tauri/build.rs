@@ -28,7 +28,16 @@ struct PluginMeta {
 }
 
 fn main() {
-    let plugins = make_plugin_meta![auth, instance, minecraft, process, plugin, settings,];
+    let plugins = make_plugin_meta![
+        application,
+        auth,
+        events,
+        instance,
+        minecraft,
+        process,
+        plugin,
+        settings,
+    ];
 
     let mut attributes = tauri_build::Attributes::new().codegen(tauri_build::CodegenContext::new());
 

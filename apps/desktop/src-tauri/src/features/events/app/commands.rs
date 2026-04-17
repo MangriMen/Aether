@@ -1,8 +1,23 @@
 use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsUseCase};
 
-use crate::{features::events::ProgressBarDto, FrontendResult};
+use crate::{
+    commands::{events_commands, EVENTS_PLUGIN_NAME},
+    features::events::ProgressBarDto,
+    FrontendResult,
+};
+
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new(EVENTS_PLUGIN_NAME)
+        .invoke_handler(events_commands!(tauri::generate_handler!))
+        .build()
+}
+
+pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+    events_commands!(tauri_specta::collect_commands!)
+}
 
 #[tauri::command]
+#[specta::specta]
 pub async fn list_progress_bars() -> FrontendResult<Vec<ProgressBarDto>> {
     let lazy_locator = LazyLocator::get().await?;
 

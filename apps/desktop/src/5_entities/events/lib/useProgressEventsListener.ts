@@ -8,7 +8,7 @@ import { useProgressStore } from '@/widgets/app-titlebar';
 
 import type { ProgressEvent } from '../model';
 
-import { listProgressBarsRaw, listenEvent } from '../api';
+import { commands, listenEvent } from '../api';
 
 export const useProgressEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -19,7 +19,7 @@ export const useProgressEventsListener = () => {
 
   const fetchEvents = async () => {
     try {
-      const bars = await listProgressBarsRaw();
+      const bars = await commands.listProgressBars();
 
       for (const bar of bars) {
         addEvent({

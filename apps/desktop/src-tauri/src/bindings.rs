@@ -1,38 +1,66 @@
 #[cfg(debug_assertions)]
-macro_rules! generate_plugin_bindings {
-    ($out_dir:expr, $($name:ident),* $(,)?) => {
-        $(
-            tauri_specta::Builder::<tauri::Wry>::new()
-                .error_handling(tauri_specta::ErrorHandlingMode::Throw)
-                .plugin_name(paste::paste! { crate::commands::[< $name:upper _PLUGIN_NAME >] })
-                .commands(crate::features::$name::get_specta_data())
-                .export(
-                    specta_typescript::Typescript::default(),
-                    format!("{}/{}.ts", $out_dir, stringify!($name)),
-                )
-                .expect(&format!("Failed to export {} bindings", stringify!($name)));
-        )*
-    };
+struct Exporter {
+    out_dir: String,
+}
+
+#[cfg(debug_assertions)]
+impl Exporter {
+    fn new(out_dir: &str) -> Self {
+        let _ = std::fs::create_dir_all(out_dir);
+        Self {
+            out_dir: out_dir.to_string(),
+        }
+    }
+
+    fn export<F>(&self, plugin_name: &'static str, configure: F)
+    where
+        F: FnOnce(tauri_specta::Builder<tauri::Wry>) -> tauri_specta::Builder<tauri::Wry>,
+    {
+        let builder = tauri_specta::Builder::<tauri::Wry>::new()
+            .error_handling(tauri_specta::ErrorHandlingMode::Throw)
+            .plugin_name(plugin_name)
+            .disable_serde_phases();
+
+        let builder = configure(builder);
+
+        builder
+            .export(
+                specta_typescript::Typescript::default(),
+                format!("{}/{}.ts", self.out_dir, plugin_name),
+            )
+            .unwrap_or_else(|err| panic!("Failed to export {} bindings.{}", plugin_name, err));
+    }
 }
 
 #[cfg(debug_assertions)]
 pub fn generate_bindings() {
+    use crate::commands::{
+        APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME,
+        SETTINGS_PLUGIN_NAME,
+    };
+
     let out_dir = "../src/6_shared/api/bindings";
+    let exporter = Exporter::new(out_dir);
 
-    let _ = std::fs::create_dir_all(out_dir);
+    exporter.export(APPLICATION_PLUGIN_NAME, |b| {
+        b.commands(crate::core::app::get_specta_data())
+    });
 
-    generate_plugin_bindings![
-        out_dir, auth, //  instance,  process, plugin,
-        minecraft, settings
-    ];
+    exporter.export(AUTH_PLUGIN_NAME, |b| {
+        b.commands(crate::features::auth::get_specta_data())
+    });
+
+    exporter.export(EVENTS_PLUGIN_NAME, |b| {
+        use crate::features::events;
+        b.commands(events::get_specta_data())
+            .typ::<events::ProgressEventDto>()
+    });
+
+    exporter.export(MINECRAFT_PLUGIN_NAME, |b| {
+        b.commands(crate::features::minecraft::get_specta_data())
+    });
+
+    exporter.export(SETTINGS_PLUGIN_NAME, |b| {
+        b.commands(crate::features::settings::get_specta_data())
+    });
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::bindings::generate_bindings;
-
-//     #[test]
-//     fn generate_bindings_specta() {
-//         generate_bindings();
-//     }
-// }
