@@ -1,5 +1,5 @@
 use aether_core::features::settings::app::{EditDefaultInstanceSettings, EditHooks};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::features::settings::{MemorySettingsDto, WindowSizeDto};
@@ -7,14 +7,23 @@ use crate::features::settings::{MemorySettingsDto, WindowSizeDto};
 #[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EditDefaultInstanceSettingsDto {
+    #[specta(optional)]
     pub launch_args: Option<Vec<String>>,
+
+    #[specta(optional)]
     pub env_vars: Option<Vec<(String, String)>>,
+
+    #[specta(optional)]
     pub memory: Option<MemorySettingsDto>,
+
+    #[specta(optional)]
     pub game_resolution: Option<WindowSizeDto>,
+
+    #[specta(optional)]
     pub hooks: Option<EditHooksDto>,
 }
 
-#[derive(Debug, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EditHooksDto {
     #[serde(default, with = "::serde_with::rust::double_option")]

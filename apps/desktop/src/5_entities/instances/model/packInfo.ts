@@ -1,4 +1,3 @@
-export interface PackInfo {
-  modpackId: string;
-  version: string;
-}
+import type { PackInfoDto } from '../api';
+
+export type PackInfo = PackInfoDto;

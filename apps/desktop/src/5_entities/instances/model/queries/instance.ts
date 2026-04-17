@@ -4,17 +4,9 @@ import { createMemo, type Accessor } from 'solid-js';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import type { ImportInstance, EditInstance } from '../../model';
+import type { EditInstanceDto } from '../../api';
 
-import {
-  createInstanceRaw,
-  importInstanceRaw,
-  listInstancesRaw,
-  getInstanceRaw,
-  removeInstanceRaw,
-  editInstanceRaw,
-  getInstanceDirRaw,
-} from '../tauriApiRaw';
+import { commands } from '../../api';
 import { invalidateInstanceData } from './cache';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 
@@ -24,7 +16,7 @@ export const useCreateInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: createInstanceRaw,
+    mutationFn: commands.create,
     onError: (err) => {
       showError({
         title: t('instance.createError'),
@@ -39,7 +31,7 @@ export const useImportInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: (dto: ImportInstance) => importInstanceRaw(dto),
+    mutationFn: commands.import,
     onError: (err) => {
       showError({
         title: t('instance.importError'),
@@ -53,7 +45,7 @@ export const useImportInstance = () => {
 export const useInstances = () => {
   return useQuery(() => ({
     queryKey: INSTANCE_QUERY_KEYS.LIST(),
-    queryFn: listInstancesRaw,
+    queryFn: commands.list,
     reconcile: INSTANCE_RECONCILE,
   }));
 };
@@ -72,7 +64,7 @@ export const useInstance = (id: Accessor<string | undefined>) => {
   // Try to fetch instance if not found in cache
   const instanceQuery = useQuery(() => ({
     queryKey: INSTANCE_QUERY_KEYS.GET(id() ?? ''),
-    queryFn: () => getInstanceRaw(id() ?? ''),
+    queryFn: () => commands.get(id() ?? ''),
     enabled: shouldFetch(),
     reconcile: INSTANCE_RECONCILE,
   }));
@@ -105,8 +97,8 @@ export const useEditInstance = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: ({ id, edit }: { id: string; edit: EditInstance }) =>
-      editInstanceRaw(id, edit),
+    mutationFn: ({ id, edit }: { id: string; edit: EditInstanceDto }) =>
+      commands.edit(id, edit),
     onSuccess: (_, { id }) => {
       invalidateInstanceData(queryClient, id);
     },
@@ -125,7 +117,7 @@ export const useRemoveInstance = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: (id: string) => removeInstanceRaw(id),
+    mutationFn: (id: string) => commands.remove(id),
     onSuccess: (_, id) => {
       invalidateInstanceData(queryClient, id);
     },
@@ -142,7 +134,7 @@ export const useRemoveInstance = () => {
 export const useInstanceDir = (id: Accessor<string | undefined>) => {
   return useQuery(() => ({
     queryKey: [...INSTANCE_QUERY_KEYS.DIR(id() ?? '')],
-    queryFn: () => getInstanceDirRaw(id() ?? ''),
+    queryFn: () => commands.getDir(id() ?? ''),
     enabled: !!id(),
   }));
 };

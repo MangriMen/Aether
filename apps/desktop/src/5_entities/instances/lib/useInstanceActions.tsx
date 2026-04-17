@@ -4,7 +4,6 @@ import type { Instance } from '@/entities/instances';
 
 import {
   RunningInstancesContext,
-  InstanceInstallStage,
   useLaunchInstance,
   useStopInstance,
   useRemoveInstance,
@@ -26,7 +25,7 @@ export const useInstanceActions = () => {
   const launch = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
-      instance.installStage !== InstanceInstallStage.Installed ||
+      instance.installStage !== 'installed' ||
       runningInstance?.isLoading ||
       runningInstance?.isRunning
     ) {
@@ -45,7 +44,7 @@ export const useInstanceActions = () => {
   const stop = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
     if (
-      instance.installStage !== InstanceInstallStage.Installed ||
+      instance.installStage !== 'installed' ||
       !runningInstance ||
       runningInstance.isLoading
     ) {
@@ -71,7 +70,7 @@ export const useInstanceActions = () => {
 
     if (
       !force &&
-      (instance.installStage !== InstanceInstallStage.Installed ||
+      (instance.installStage !== 'installed' ||
         runningInstance?.isLoading ||
         runningInstance?.isRunning)
     ) {

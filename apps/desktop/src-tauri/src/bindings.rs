@@ -35,8 +35,8 @@ impl Exporter {
 #[cfg(debug_assertions)]
 pub fn generate_bindings() {
     use crate::commands::{
-        APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, MINECRAFT_PLUGIN_NAME,
-        PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
+        APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
+        MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
     };
 
     let out_dir = "../src/6_shared/api/bindings";
@@ -54,6 +54,10 @@ pub fn generate_bindings() {
         use crate::features::events;
         b.commands(events::get_specta_data())
             .typ::<events::ProgressEventDto>()
+    });
+
+    exporter.export(INSTANCE_PLUGIN_NAME, |b| {
+        b.commands(crate::features::instance::get_specta_data())
     });
 
     exporter.export(MINECRAFT_PLUGIN_NAME, |b| {

@@ -1,1 +1,3 @@
-export type LoaderVersionPreference = 'stable' | 'latest' | string;
+import type { LoaderVersionPreferenceDto } from '../api';
+
+export type LoaderVersionPreference = LoaderVersionPreferenceDto;

@@ -1,3 +1,5 @@
+use crate::features::instance::app::dtos::capability_entry::CapabilityEntryDto;
+use aether_core::shared::CapabilityEntry;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -76,6 +78,17 @@ impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
     }
 }
 
+impl From<CapabilityEntry<ImporterCapabilityMetadata>>
+    for CapabilityEntryDto<ImporterCapabilityMetadataDto>
+{
+    fn from(value: CapabilityEntry<ImporterCapabilityMetadata>) -> Self {
+        CapabilityEntryDto {
+            plugin_id: value.plugin_id,
+            capability: value.capability.into(),
+        }
+    }
+}
+
 impl From<UpdaterCapabilityMetadata> for UpdaterCapabilityMetadataDto {
     fn from(m: UpdaterCapabilityMetadata) -> Self {
         Self {
@@ -90,6 +103,17 @@ impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetada
             base: m.base.into(),
             supports_install_atomic: m.supports_install_atomic,
             supports_install_modpacks: m.supports_install_modpacks,
+        }
+    }
+}
+
+impl From<CapabilityEntry<ContentProviderCapabilityMetadata>>
+    for CapabilityEntryDto<ContentProviderCapabilityMetadataDto>
+{
+    fn from(value: CapabilityEntry<ContentProviderCapabilityMetadata>) -> Self {
+        CapabilityEntryDto {
+            plugin_id: value.plugin_id,
+            capability: value.capability.into(),
         }
     }
 }

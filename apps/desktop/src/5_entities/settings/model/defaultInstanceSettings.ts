@@ -1,30 +1,20 @@
-export interface DefaultInstanceSettings {
-  launchArgs: string[];
-  envVars: Array<[string, string]>;
+import type {
+  DefaultInstanceSettingsDto,
+  EditDefaultInstanceSettingsDto,
+  HooksDto,
+  MemorySettingsDto,
+  WindowSizeDto,
+} from '../api';
 
-  memory: MemorySettings;
-  gameResolution: WindowSize;
+export type DefaultInstanceSettings = DefaultInstanceSettingsDto;
 
-  hooks: Hooks;
-}
+export type WindowSize = WindowSizeDto;
 
-export type WindowSize = [number, number];
+export type MemorySettings = MemorySettingsDto;
 
-export interface MemorySettings {
-  maximum: number;
-}
+export type Hooks = HooksDto;
 
-export interface Hooks {
-  preLaunch: string | null;
-  wrapper: string | null;
-  postExit: string | null;
-}
-
-export type EditDefaultInstanceSettings = Partial<
-  Omit<DefaultInstanceSettings, 'hooks'>
-> & {
-  hooks?: Partial<Hooks>;
-};
+export type EditDefaultInstanceSettings = EditDefaultInstanceSettingsDto;
 
 export const isEditDefaultInstanceSettingsEmpty = (
   dto: EditDefaultInstanceSettings,

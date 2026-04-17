@@ -83,7 +83,7 @@ export const InstallContentDialogListItem: Component<
         onClick={local.onCloseDialog}
       >
         <div class='flex items-center gap-1 hover:underline'>
-          <Image class='h-8 w-max' src={local.instance.iconPath} />
+          <Image class='h-8 w-max' src={local.instance.iconPath ?? undefined} />
           {local.instance.name}
         </div>
       </A>

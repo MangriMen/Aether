@@ -17,30 +17,18 @@ import type {
   ContentListVersionParams,
   ContentSearchParams,
   Instance,
-} from '../../model';
-import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
+} from '..';
+import type { ContentCompatibilityCheckParams } from '../compatibility';
 
-import { ContentType } from '../../model';
-import {
-  listContentRaw,
-  disableContentRaw,
-  enableContentRaw,
-  removeContentsRaw,
-  listContentProvidersRaw,
-  searchContentRaw,
-  installContentRaw,
-  importContentsRaw,
-  checkCompatibility,
-  listContentVersionRaw,
-  getContentRaw,
-} from '../tauriApiRaw';
+import { ContentType } from '..';
+import { commands } from '../../api';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
-    queryFn: listContentProvidersRaw,
+    queryFn: commands.listContentProviders,
   }));
 };
 
@@ -54,7 +42,7 @@ export const useSearchContent = (
       queryKey: data
         ? CONTENT_QUERY_KEYS.SEARCH(data)
         : CONTENT_QUERY_KEYS.SEARCH_EMPTY(),
-      queryFn: () => searchContentRaw(data!),
+      queryFn: () => commands.searchContent(data!),
       enabled: Boolean(data),
       placeholderData: keepPreviousData,
     };
@@ -63,7 +51,7 @@ export const useSearchContent = (
 
 export const instanceContentsQuery = (id: string | undefined) => ({
   queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
-  queryFn: () => listContentRaw(id ?? ''),
+  queryFn: () => commands.listContent(id ?? ''),
   enabled: !!id,
 });
 
@@ -77,7 +65,7 @@ export const useDisableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      disableContentRaw(id, paths),
+      commands.disableContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -97,7 +85,7 @@ export const useEnableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      enableContentRaw(id, paths),
+      commands.enableContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -117,7 +105,7 @@ export const useRemoveContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      removeContentsRaw(id, paths),
+      commands.removeContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -136,7 +124,7 @@ export const useInstallContent = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: installContentRaw,
+    mutationFn: commands.installContent,
     onSuccess: (_, payload) => {
       if (payload.type === 'atomic') {
         invalidateInstanceContent(queryClient, payload.data.instanceId);
@@ -177,7 +165,7 @@ export const useImportContents = () => {
       id: string;
       paths: string[];
       type: ContentType;
-    }) => importContentsRaw(id, paths, type),
+    }) => commands.importContents(id, type, paths),
     onSuccess: (_, { id, type }) => {
       invalidateInstanceContent(queryClient, id);
 
@@ -210,7 +198,10 @@ export const CHECK_COMPATIBILITY_QUERY = (
       params as ContentCompatibilityCheckParams,
     ),
     queryFn: () =>
-      checkCompatibility(ids, params as ContentCompatibilityCheckParams),
+      commands.checkCompatibility(
+        ids,
+        params as ContentCompatibilityCheckParams,
+      ),
     enabled: isEnabled,
     placeholderData: keepPreviousData,
   };
@@ -231,7 +222,7 @@ export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
       queryKey: params_
         ? CONTENT_QUERY_KEYS.GET(params_)
         : CONTENT_QUERY_KEYS.GET_EMPTY(),
-      queryFn: () => getContentRaw(params_!),
+      queryFn: () => commands.getContent(params_!),
       enabled: Boolean(params_),
     };
   });
@@ -247,7 +238,7 @@ export const useContentVersion = (
       queryKey: params_
         ? CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION(params_)
         : CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION_EMPTY(),
-      queryFn: () => listContentVersionRaw(params_!),
+      queryFn: () => commands.listContentVersion(params_!),
       enabled: Boolean(params_),
     };
   });

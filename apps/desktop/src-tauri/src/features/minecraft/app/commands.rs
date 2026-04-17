@@ -1,6 +1,6 @@
 use crate::{
     commands::{minecraft_commands, MINECRAFT_PLUGIN_NAME},
-    features::minecraft::{mod_loader::ModLoaderDto, modded, vanilla},
+    features::minecraft::{modded, vanilla, ModLoaderDto},
     FrontendResult,
 };
 

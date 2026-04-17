@@ -12,7 +12,11 @@ import type { ContentSearchParams } from '@/entities/instances';
 import type { ContentType } from '@/entities/instances';
 import type { Option } from '@/shared/model';
 
-import { CONTENT_TYPES, useSearchContent } from '@/entities/instances';
+import {
+  CONTENT_TYPES,
+  isModLoader,
+  useSearchContent,
+} from '@/entities/instances';
 import { cn, debounce } from '@/shared/lib';
 
 import type { ContentProviderEntry } from '../model';
@@ -67,6 +71,8 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         return;
       }
 
+      const loader = state.loader();
+
       return {
         contentType: state.contentType(),
         providerId: {
@@ -77,7 +83,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
         pageSize: state.pageSize(),
         query: state.query(),
         gameVersions: state.gameVersions(),
-        loader: state.loader(),
+        loader: isModLoader(loader) ? loader : undefined,
       };
     },
   );

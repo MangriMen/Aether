@@ -6,7 +6,7 @@ import { onCleanup, onMount } from 'solid-js';
 import { listenEvent } from '@/entities/events/@x/instances';
 import { logDebug } from '@/shared/lib';
 
-import { invalidateInstanceData } from '../api';
+import { invalidateInstanceData } from '../model';
 
 export const useInstanceEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;

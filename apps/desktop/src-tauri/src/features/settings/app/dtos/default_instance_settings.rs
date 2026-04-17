@@ -80,3 +80,9 @@ impl From<Hooks> for HooksDto {
         }
     }
 }
+
+impl From<HooksDto> for Hooks {
+    fn from(value: HooksDto) -> Self {
+        Self::new(value.pre_launch, value.wrapper, value.post_exit)
+    }
+}

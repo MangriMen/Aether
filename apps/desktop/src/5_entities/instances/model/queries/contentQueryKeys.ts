@@ -4,8 +4,8 @@ import type {
   ContentSearchParams,
   Instance,
   ProviderId,
-} from '../../model';
-import type { ContentCompatibilityCheckParams } from '../../model/compatibility';
+} from '..';
+import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 export const CONTENT_QUERY_KEYS = {
   SELF: ['content'],

@@ -9,7 +9,6 @@ import {
 
 import {
   ContentType,
-  InstanceInstallStage,
   useInstanceContents,
   type Instance,
 } from '@/entities/instances';
@@ -39,7 +38,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const isInstalling = createMemo(
-    () => local.instance.installStage !== InstanceInstallStage.Installed,
+    () => local.instance.installStage !== 'installed',
   );
 
   const instanceContent = useInstanceContents(() => local.instance.id);

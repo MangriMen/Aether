@@ -34,8 +34,8 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
         gameVersion={local.instance.gameVersion}
       />
       <TimePlayed
-        lastPlayed={local.instance.lastPlayed}
-        timePlayed={local.instance.timePlayed}
+        lastPlayed={local.instance.lastPlayed ?? undefined}
+        timePlayed={local.instance.timePlayed ?? undefined}
       />
     </div>
   );

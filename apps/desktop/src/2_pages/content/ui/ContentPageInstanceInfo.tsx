@@ -37,7 +37,7 @@ export const ContentPageInstanceInfo: Component<
         when={local.instance}
         fallback={<Skeleton class='p-1' width={56} height={56} radius={4} />}
       >
-        <Image class='h-14 w-max' src={local.instance?.iconPath} />
+        <Image class='h-14 w-max' src={local.instance?.iconPath ?? undefined} />
       </DelayedShow>
       <div class='flex flex-col justify-between text-muted-foreground'>
         <DelayedShow

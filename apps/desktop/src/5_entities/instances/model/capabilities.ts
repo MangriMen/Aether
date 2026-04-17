@@ -1,21 +1,12 @@
-export interface CapabilityMetadata {
-  /** Identifier (lowercase, kebab/underscore allowed). */
-  id: string;
-  /** Display name. */
-  name: string;
-  /** Optional description. */
-  description?: string;
-  /** Optional icon file name or URL. */
-  icon?: string;
-}
+import type {
+  CapabilityMetadataDto,
+  ContentProviderCapabilityMetadataDto,
+  ImporterCapabilityMetadataDto,
+} from '../api';
 
-export interface ImporterCapabilityMetadata extends CapabilityMetadata {
-  /** Optional field label for the importer. */
-  fieldLabel?: string;
-}
+export type CapabilityMetadata = CapabilityMetadataDto;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface UpdaterCapabilityMetadata extends CapabilityMetadata {}
+export type ImporterCapabilityMetadata = ImporterCapabilityMetadataDto;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ContentProviderCapabilityMetadata extends CapabilityMetadata {}
+export type ContentProviderCapabilityMetadata =
+  ContentProviderCapabilityMetadataDto;

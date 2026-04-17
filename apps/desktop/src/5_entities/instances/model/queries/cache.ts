@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import type { Instance } from '../../model';
+import type { Instance } from '..';
 
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
