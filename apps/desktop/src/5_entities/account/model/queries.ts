@@ -1,35 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
-import { commands } from '@/shared/api/bindings/auth';
-import { showError } from '@/shared/lib/showError';
+import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import { ACCOUNT_KEY } from './key';
-import {
-  changeAccountRaw,
-  createOfflineAccountRaw,
-  logoutRaw,
-} from './tauriApiRaw';
+import { commands } from '../api';
+import { accountInvalidation } from './cache';
+import { accountKeys } from './queryKeys';
 
 export const useAccounts = () =>
   useQuery(() => ({
-    queryKey: ACCOUNT_KEY.LIST(),
+    queryKey: accountKeys.list(),
     queryFn: commands.listAccounts,
     reconcile: 'id',
+    staleTime: Infinity,
   }));
 
 export const useCreateOfflineAccount = () => {
   const queryClient = useQueryClient();
-
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: createOfflineAccountRaw,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ACCOUNT_KEY.LIST(),
-      });
-    },
+    mutationFn: commands.createOfflineAccount,
+    onSuccess: () => accountInvalidation.list(queryClient),
     onError: (err) => {
       showError({
         title: t('account.createOfflineError'),
@@ -42,16 +34,11 @@ export const useCreateOfflineAccount = () => {
 
 export const useChangeAccount = () => {
   const queryClient = useQueryClient();
-
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: changeAccountRaw,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ACCOUNT_KEY.LIST(),
-      });
-    },
+    mutationFn: commands.changeAccount,
+    onSuccess: () => accountInvalidation.list(queryClient),
     onError: (err) => {
       showError({
         title: t('account.changeError'),
@@ -64,16 +51,11 @@ export const useChangeAccount = () => {
 
 export const useLogout = () => {
   const queryClient = useQueryClient();
-
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: logoutRaw,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ACCOUNT_KEY.LIST(),
-      });
-    },
+    mutationFn: commands.logout,
+    onSuccess: () => accountInvalidation.list(queryClient),
     onError: (err) => {
       showError({
         title: t('account.logoutError'),

@@ -4,7 +4,7 @@ import { splitProps } from 'solid-js';
 
 import type { SidebarProps } from '@/shared/ui';
 
-import { AccountsMenu, useAccounts } from '@/entities/auth';
+import { AccountsMenu, useAccounts } from '@/entities/account';
 import { cn } from '@/shared/lib';
 import { Separator, Sidebar } from '@/shared/ui';
 
