@@ -12,3 +12,15 @@ impl From<UpdateProgress> for AppEvent {
         Self::Update(value)
     }
 }
+
+impl TryFrom<AppEvent> for UpdateProgress {
+    type Error = ();
+
+    fn try_from(value: AppEvent) -> Result<Self, Self::Error> {
+        match value {
+            AppEvent::Update(progress) => Ok(progress),
+            #[allow(unreachable_patterns)]
+            _ => Err(()),
+        }
+    }
+}
