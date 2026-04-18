@@ -2,17 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
-    "update-bindings": {
-      "inputs": ["src-tauri/src/**/*.rs", "src-tauri/Cargo.toml"],
-      "outputs": ["src/6_shared/api/bindings/**"],
-      "passThroughEnv": ["*"],
-    },
     "lint:types": {
-      "dependsOn": ["update-bindings"],
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"],
     },
     "lint:code": {
-      "dependsOn": ["update-bindings"],
       "inputs": ["src/**/*.{ts,tsx,js,jsx}", "eslint.config*", ".prettierrc*"],
       "outputs": [".eslintcache"],
     },

@@ -1,5 +1,2 @@
 [env]
-TS_RS_EXPORT_DIR = { value = "../src/6_shared/api/bindings", relative = true }
-
-[alias]
-update-bindings = "test export_bindings"
+TYPE_GEN_EXPORT_DIR = { value = "../src/6_shared/api/bindings", relative = true }

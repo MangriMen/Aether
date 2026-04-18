@@ -30,7 +30,6 @@ specta = { version = "=2.0.0-rc.24", features = [
 ] }
 specta-typescript = "0.0.11"
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
-ts-rs = { version = "12.0.1", features = ["uuid-impl", "chrono-impl"] }
 
 # Workspace Dependencies
 aether-core.workspace = true
