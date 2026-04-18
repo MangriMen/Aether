@@ -1,0 +1,7 @@
+{
+  "name": "@aether/core",
+  "scripts": {
+    "lint": "cargo clippy -- -D warnings",
+    "lintt": "bun run lint"
+  }
+}

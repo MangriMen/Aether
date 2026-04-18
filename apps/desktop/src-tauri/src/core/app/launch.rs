@@ -1,10 +1,12 @@
+use std::env;
+
 use tauri::{Builder, Wry};
 
+#[cfg(debug_assertions)]
+use crate::bindings::create_specta_exporters;
 use crate::{
-    core::commands::*,
-    features::{
-        auth, events::commands::*, instance, minecraft::commands::*, plugins, process, settings,
-    },
+    core::{commands::*, log::default_log_builder},
+    features::{auth, events, instance, minecraft, plugins, process, settings, update},
 };
 
 use super::{events::handle_app_events, initialize::init_app};
@@ -22,8 +24,17 @@ fn build_app() -> crate::Result<tauri::App> {
 }
 
 fn create_tauri_app() -> Builder<Wry> {
+    let exporters = create_specta_exporters();
+
+    #[cfg(debug_assertions)]
+    exporters.iter().for_each(|e| e.export());
+
     Builder::default()
-        .setup(move |app| Ok(init_app(app)?))
+        .setup(move |app| {
+            exporters.iter().for_each(|e| e.builder.mount_events(app));
+
+            Ok(init_app(app)?)
+        })
         .pipe(with_tauri_plugins)
         .pipe(with_feature_plugins)
 }
@@ -34,22 +45,7 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .level(log::LevelFilter::Debug)
-                .level_for(
-                    "tao::platform_impl::platform::event_loop::runner",
-                    log::LevelFilter::Off,
-                )
-                .level_for("hyper_util", log::LevelFilter::Info)
-                .level_for("wasmtime", log::LevelFilter::Info)
-                .level_for("wasmtime_cache", log::LevelFilter::Info)
-                .level_for("wasmtime_cranelift", log::LevelFilter::Info)
-                .level_for("cranelift_codegen", log::LevelFilter::Info)
-                .level_for("tauri_plugin_updater", log::LevelFilter::Info)
-                .level_for("extism::plugin", log::LevelFilter::Debug)
-                .build(),
-        )
+        .plugin(default_log_builder().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -58,19 +54,16 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
 /// Configures application-specific commands and plugins
 fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
+        .plugin(crate::core::app::init())
         .plugin(auth::init())
+        .plugin(events::init())
         .plugin(instance::init())
+        .plugin(minecraft::init())
         .plugin(process::init())
         .plugin(plugins::init())
         .plugin(settings::init())
-        .invoke_handler(tauri::generate_handler![
-            initialize_state,
-            initialize_plugins,
-            get_minecraft_version_manifest,
-            get_loader_version_manifest,
-            get_progress_bars,
-            reveal_in_explorer,
-        ])
+        .plugin(update::init())
+        .invoke_handler(tauri::generate_handler![reveal_in_explorer,])
 }
 
 /// Helper trait for method chaining

@@ -1,7 +1,5 @@
-use daedalus::{minecraft::VersionManifest, modded};
-
 use crate::{
-    features::minecraft::ModLoader,
+    features::minecraft::{vanilla, modded, ModLoader},
     shared::{CacheId, CacheKey, CachedValue},
 };
 
@@ -19,7 +17,7 @@ impl MinecraftMetadataCacheNamespaces {
     }
 }
 
-pub fn version_manifest_key() -> CacheKey<CachedValue<VersionManifest>> {
+pub fn version_manifest_key() -> CacheKey<CachedValue<vanilla::VersionManifest>> {
     CacheKey::new(
         MinecraftMetadataCacheNamespaces::VersionManifest.as_str(),
         CacheId::Static("version-manifest"),

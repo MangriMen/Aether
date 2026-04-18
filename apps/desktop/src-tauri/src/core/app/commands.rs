@@ -1,31 +1,53 @@
-use std::{path::Path, sync::Arc};
+use std::path::Path;
 
 use aether_core::core::LauncherState;
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
 
-use crate::{features::events::TauriEventEmitter, shared, FrontendResult};
+use crate::{
+    commands::{application_commands, APPLICATION_PLUGIN_NAME},
+    features::events::EventEmitterState,
+    shared, FrontendResult,
+};
+
+pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::new(APPLICATION_PLUGIN_NAME)
+        .invoke_handler(application_commands!(tauri::generate_handler!))
+        .build()
+}
+
+pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
+    application_commands!(tauri_specta::collect_commands!)
+}
 
 #[tauri::command]
-pub async fn initialize_state(app: AppHandle) -> FrontendResult<()> {
+#[specta::specta]
+pub async fn initialize_state(
+    app: AppHandle,
+    event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
+) -> FrontendResult<()> {
     if LauncherState::initialized().await {
         return Ok(());
     }
 
     let launcher_dir = shared::get_app_dir(&app);
-    let event_emitter = Arc::new(TauriEventEmitter::new(app));
-    LauncherState::init(launcher_dir.clone(), launcher_dir, event_emitter).await?;
+    LauncherState::init(
+        launcher_dir.clone(),
+        launcher_dir,
+        event_emitter.inner().clone(),
+    )
+    .await?;
 
     Ok(())
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn initialize_plugins() -> FrontendResult<()> {
     aether_core::api::plugin::sync().await?;
     load_enabled_plugins().await?;
     Ok(())
 }
 
-#[tauri::command]
 pub async fn load_enabled_plugins() -> FrontendResult<()> {
     let settings = aether_core::api::settings::get().await?;
 

@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::features::{
-    events::{EventEmitterExt, PluginEventType, SharedEventEmitter},
+    events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
     plugins::{Plugin, PluginError, PluginLoader, PluginRegistry, PluginStorage},
     settings::SettingsStorage,
 };
@@ -150,9 +150,7 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
     pub async fn execute(&self) -> Result<(), PluginError> {
         let found_plugins = self.plugin_storage.list().await?;
         self.sync_plugins(found_plugins).await?;
-        self.event_emitter
-            .emit_plugin_safe(PluginEventType::Sync)
-            .await;
+        self.event_emitter.emit_safe(PluginEvent::Sync).await;
         Ok(())
     }
 }

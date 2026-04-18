@@ -1,13 +1,12 @@
 import type { MappedLoaderManifest, Version } from '@/entities/minecraft';
-
-import { ModLoader, VersionType } from '@/entities/minecraft';
+import type { ModLoader } from '@/entities/minecraft';
 
 export const filterGameVersions = (
   versions: Version[],
   shouldIncludeSnapshots?: boolean,
 ) =>
   versions.filter(
-    (version) => version.type === VersionType.Release || shouldIncludeSnapshots,
+    (version) => version.type === 'release' || shouldIncludeSnapshots,
   );
 
 export const filterGameVersionsForLoader = (
@@ -20,19 +19,19 @@ export const filterGameVersionsForLoader = (
     neoforge?: MappedLoaderManifest;
   },
 ) => {
-  if (!loader || loader === ModLoader.Vanilla) {
+  if (!loader || loader === 'vanilla') {
     return versions;
   }
 
   return versions.filter((version) => {
     switch (loader) {
-      case ModLoader.Fabric:
+      case 'fabric':
         return !!loaderVersions.fabric?.gameVersions[version.id];
-      case ModLoader.Forge:
+      case 'forge':
         return !!loaderVersions.forge?.gameVersions[version.id];
-      case ModLoader.Quilt:
+      case 'quilt':
         return !!loaderVersions.quilt?.gameVersions[version.id];
-      case ModLoader.NeoForge:
+      case 'neoforge':
         return !!loaderVersions.neoforge?.gameVersions[version.id];
     }
   });
@@ -54,17 +53,17 @@ export const getLoaderVersionsForGameVersion = (
 
   const dummyReplaceString = '${modrinth.gameVersion}';
   switch (loader) {
-    case ModLoader.Forge:
+    case 'forge':
       return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
-    case ModLoader.Fabric:
+    case 'fabric':
       return (
         loaderVersions.fabric?.gameVersions[dummyReplaceString]?.loaders ?? []
       );
-    case ModLoader.Quilt:
+    case 'quilt':
       return (
         loaderVersions.quilt?.gameVersions[dummyReplaceString]?.loaders ?? []
       );
-    case ModLoader.NeoForge:
+    case 'neoforge':
       return loaderVersions.neoforge?.gameVersions[gameVersion]?.loaders ?? [];
     default:
       return [];

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::{
-    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     instance::{InstanceError, PackStorage},
 };
 
@@ -43,7 +43,10 @@ impl<PS: PackStorage> RemoveContentUseCase<PS> {
             .await?;
 
         self.event_emitter
-            .emit_instance_safe(instance_id.to_string(), InstanceEventType::Edited)
+            .emit_safe(InstanceEvent {
+                event: InstanceEventType::Edited,
+                instance_id: instance_id.to_string(),
+            })
             .await;
 
         Ok(())

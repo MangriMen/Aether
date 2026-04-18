@@ -8,7 +8,7 @@ import { createMemo, onMount, Show, splitProps } from 'solid-js';
 import type { Instance } from '@/entities/instances';
 
 import { useInstance } from '@/entities/instances';
-import { prefetchMaxRam } from '@/entities/settings';
+import { settingsCache } from '@/entities/settings/model/settingsQueries/cache';
 import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent } from '@/shared/ui';
 
@@ -45,7 +45,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   };
 
   onMount(() => {
-    prefetchMaxRam(queryClient);
+    settingsCache.prefetch.maxRam(queryClient);
   });
 
   return (

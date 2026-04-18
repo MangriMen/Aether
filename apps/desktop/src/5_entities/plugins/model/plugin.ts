@@ -1,9 +1,3 @@
-import type { PluginCapabilities } from './pluginCapabilities';
-import type { PluginManifest } from './pluginManifest';
-import type { PluginState } from './pluginState';
+import type { PluginDto } from '../api';
 
-export interface Plugin {
-  manifest: PluginManifest;
-  capabilities?: PluginCapabilities;
-  state: PluginState;
-}
+export type Plugin = PluginDto;

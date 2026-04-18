@@ -11,7 +11,7 @@ use crate::{
             utils::{try_for_each_concurrent_with_progress, ProgressConfigWithMessage},
             ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt,
         },
-        minecraft::MinecraftDomainError,
+        minecraft::{vanilla, MinecraftDomainError},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient, RequestClientExt},
@@ -78,17 +78,17 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
 
     async fn fetch_assets_index(
         &self,
-        version_info: &daedalus::minecraft::VersionInfo,
-    ) -> Result<daedalus::minecraft::AssetsIndex, MinecraftDomainError> {
+        version_info: &vanilla::VersionInfo,
+    ) -> Result<vanilla::AssetsIndex, MinecraftDomainError> {
         Ok(self.fetch_json(&version_info.asset_index.url).await?)
     }
 
     pub async fn get_assets_index(
         &self,
-        version_info: &daedalus::minecraft::VersionInfo,
+        version_info: &vanilla::VersionInfo,
         force: bool,
         loading_bar: Option<&ProgressBarId>,
-    ) -> Result<daedalus::minecraft::AssetsIndex, MinecraftDomainError> {
+    ) -> Result<vanilla::AssetsIndex, MinecraftDomainError> {
         let assets_index = self
             .cached_resource
             .get_cached(
@@ -110,7 +110,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
 
     pub async fn download_assets(
         &self,
-        index: &daedalus::minecraft::AssetsIndex,
+        index: &vanilla::AssetsIndex,
         with_legacy: bool,
         force: bool,
         progress_config: Option<&ProgressConfig<'_>>,
@@ -122,7 +122,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
         });
 
         let assets_stream = futures::stream::iter(index.objects.iter())
-            .map(Ok::<(&String, &daedalus::minecraft::Asset), MinecraftDomainError>);
+            .map(Ok::<(&String, &vanilla::Asset), MinecraftDomainError>);
 
         let futures_count = index.objects.len();
 
@@ -144,7 +144,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
     pub async fn download_asset(
         &self,
         name: &str,
-        asset: &daedalus::minecraft::Asset,
+        asset: &vanilla::Asset,
         with_legacy: bool,
         force: bool,
     ) -> Result<(), MinecraftDomainError> {

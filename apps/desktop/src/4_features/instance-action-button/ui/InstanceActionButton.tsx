@@ -6,7 +6,6 @@ import type { Instance } from '@/entities/instances';
 import type { IconButtonProps } from '@/shared/ui';
 
 import {
-  InstanceInstallStage,
   InstancePlayButton,
   InstanceStopButton,
   useInstanceActions,
@@ -28,11 +27,11 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
   const { launch: launchInstance, stop: stopInstance } = useInstanceActions();
 
   const isInstanceInstalled = createMemo(
-    () => local.instance.installStage === InstanceInstallStage.Installed,
+    () => local.instance.installStage === 'installed',
   );
 
   const isInstanceInstalling = createMemo(
-    () => local.instance.installStage === InstanceInstallStage.Installing,
+    () => local.instance.installStage === 'installing',
   );
 
   const isPlayButtonLoading = createMemo(

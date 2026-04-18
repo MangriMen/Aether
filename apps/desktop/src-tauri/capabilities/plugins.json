@@ -2,12 +2,13 @@
   "identifier": "plugins",
   "description": "",
   "local": true,
-  "windows": [
-    "main"
-  ],
+  "windows": ["main"],
   "permissions": [
+    "application:default",
     "auth:default",
+    "events:default",
     "instance:default",
+    "minecraft:default",
     "process:default",
     "plugin:default",
     "settings:default"

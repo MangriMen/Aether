@@ -5,3 +5,4 @@ pub mod minecraft;
 pub mod plugins;
 pub mod process;
 pub mod settings;
+pub mod update;

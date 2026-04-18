@@ -1,10 +1,9 @@
-import type { ContentItem, ProviderId } from './contentItem';
+import type {
+  ContentCompatibilityCheckParamsDto,
+  ContentCompatibilityResultDto,
+} from '../api';
 
-export interface ContentCompatibilityCheckParams {
-  providerId: ProviderId;
-  contentItem: ContentItem;
-}
+export type ContentCompatibilityCheckParams =
+  ContentCompatibilityCheckParamsDto;
 
-export interface ContentCompatibilityResult {
-  isCompatible: boolean;
-}
+export type ContentCompatibilityResult = ContentCompatibilityResultDto;

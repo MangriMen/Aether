@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use dashmap::DashMap;
 use uuid::Uuid;
 
 use dashmap::mapref::one::Ref as DashMapRef;
@@ -13,7 +12,7 @@ pub trait ProgressBarStorage: Send + Sync {
         progress_bar_id: Uuid,
         progress_bar: ProgressBar,
     ) -> Result<(), ProgressBarStorageError>;
-    async fn list(&self) -> DashMap<Uuid, ProgressBar>;
+    async fn list(&self) -> Vec<ProgressBar>;
     async fn get(
         &self,
         progress_bar_id: Uuid,

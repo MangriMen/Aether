@@ -1,14 +1,13 @@
-import type { UnlistenFn } from '@tauri-apps/api/event';
-
+import { type UnlistenFn } from '@tauri-apps/api/event';
 import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
 import { logDebug } from '@/shared/lib';
 import { useProgressStore } from '@/widgets/app-titlebar';
 
-import type { LoadingPayload } from '../model';
+import type { ProgressEvent } from '../model';
 
-import { getLoadingBars, listenEvent } from '../api';
+import { commands, events } from '../api';
 
 export const useProgressEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -19,12 +18,12 @@ export const useProgressEventsListener = () => {
 
   const fetchEvents = async () => {
     try {
-      const bars = await getLoadingBars();
+      const bars = await commands.listProgressBars();
 
-      for (const bar of Object.values(bars)) {
+      for (const bar of bars) {
         addEvent({
-          event: bar.barType,
-          loaderUuid: bar.loadingBarUuid,
+          event: bar.progressType,
+          progressBarId: bar.id,
           message: bar.message,
           fraction: bar.current / bar.total,
         });
@@ -34,21 +33,21 @@ export const useProgressEventsListener = () => {
     }
   };
 
-  const addEvent = (payload: LoadingPayload) => {
+  const addEvent = (payload: ProgressEvent) => {
     setProgressStore('payloads', (payloads) => ({
       ...payloads,
-      [payload.loaderUuid]: payload,
+      [payload.progressBarId]: payload,
     }));
   };
 
-  const removeEvent = (payload: LoadingPayload) => {
+  const removeEvent = (payload: ProgressEvent) => {
     setProgressStore(
       'payloads',
-      produce((payloads) => delete payloads[payload.loaderUuid]),
+      produce((payloads) => delete payloads[payload.progressBarId]),
     );
   };
 
-  const delayedRemoveEvent = (payload: LoadingPayload) => {
+  const delayedRemoveEvent = (payload: ProgressEvent) => {
     timers.add(
       setTimeout(() => {
         removeEvent(payload);
@@ -59,7 +58,7 @@ export const useProgressEventsListener = () => {
   const startListen = async () => {
     fetchEvents();
 
-    unlistenFn = await listenEvent('loading', (e) => {
+    unlistenFn = await events.progressEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       if (e.payload.fraction === null) {

@@ -16,7 +16,7 @@ import {
 
 export interface UsePluginSettingsHandler {
   pluginId: Accessor<PluginMetadata['id']>;
-  pluginSettings: Accessor<PluginSettings | undefined>;
+  pluginSettings: Accessor<PluginSettings | null | undefined>;
   editPluginSettings: Accessor<
     (args: {
       id: PluginMetadata['id'];

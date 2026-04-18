@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     features::{
-        events::{PluginEvent, PluginEventType},
+        events::PluginEvent,
         instance::{ContentProvider, Importer, Updater},
         plugins::{
             infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
@@ -11,7 +11,7 @@ use crate::{
             PluginState,
         },
     },
-    shared::{CapabilityRegistry, IoError},
+    shared::CapabilityRegistry,
 };
 
 pub struct PluginInfrastructureListener<
@@ -45,13 +45,10 @@ where
         }
     }
 
-    pub async fn on_plugin_event(&self, data: String) {
+    pub async fn on_plugin_event(&self, event: PluginEvent) {
         let result: Result<(), PluginError> = async {
-            let plugin_event = serde_json::from_str::<PluginEvent>(&data)
-                .map_err(|e| IoError::DeserializationError(e.to_string()))?;
-
-            let plugin_id = match plugin_event.event {
-                PluginEventType::Edit { plugin_id } => plugin_id,
+            let plugin_id = match event {
+                PluginEvent::Edit { plugin_id } => plugin_id,
                 _ => return Ok(()),
             };
 

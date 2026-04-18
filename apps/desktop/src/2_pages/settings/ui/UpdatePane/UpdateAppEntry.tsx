@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { useCheckUpdate, useInstallUpdate } from '@/entities/updates';
+import { useCheckUpdate, useUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates/model';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -35,7 +35,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
     }
   };
 
-  const { isUpdating, updateAndRestart } = useInstallUpdate();
+  const { isUpdating, updateAndRestart } = useUpdate();
 
   const handleInstallUpdate = async () => {
     if (!update.data) {

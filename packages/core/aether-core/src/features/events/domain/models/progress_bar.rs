@@ -2,12 +2,9 @@ use log::error;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::{
-    core::domain::LazyLocator,
-    features::events::{EventEmitterExt, ProgressBarStorage},
-};
+use crate::{core::domain::LazyLocator, features::events::ProgressBarStorage};
 
-use super::{LauncherEvent, ProgressEvent, ProgressEventType};
+use super::{ProgressEvent, ProgressEventType};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,10 +52,7 @@ impl Drop for ProgressBarId {
                             progress_bar_id: progress_bar.id,
                         };
 
-                        if let Err(e) = event_emitter
-                            .emit(LauncherEvent::Loading.as_str(), completion_event)
-                            .await
-                        {
+                        if let Err(e) = event_emitter.emit(completion_event.into()).await {
                             error!(
                                 "Exited at {:.2}% for progress bar: {}: {:?}",
                                 (progress_bar.current / progress_bar.total) * 100.0,

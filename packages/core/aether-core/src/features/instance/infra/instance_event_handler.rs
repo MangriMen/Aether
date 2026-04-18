@@ -3,7 +3,7 @@ use std::path::Path;
 use async_trait::async_trait;
 
 use crate::features::{
-    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent},
     file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
     instance::InstanceInstallStage,
     settings::INSTANCES_FOLDER_NAME,
@@ -46,12 +46,12 @@ impl InstanceEventHandler {
                     if let Ok(instance) = instance {
                         // Don't show warning if profile is not yet installed
                         if instance.install_stage == InstanceInstallStage::Installed {
-                            event_emitter
-                                .emit_warning(format!(
+                            let message = format!(
                             "Profile {} has crashed! Visit the logs page to see a crash report.",
-                            instance.name
-                        ))
-                                .await?;
+                                instance.name
+                            );
+
+                            event_emitter.emit_safe(WarningEvent { message }).await;
                         }
                     }
 
@@ -91,7 +91,10 @@ impl FileEventHandler for InstanceEventHandler {
                                 let event_emitter = self.event_emitter.clone();
                                 async move {
                                     let _ = event_emitter
-                                        .emit_instance(path, InstanceEventType::Synced)
+                                        .emit_safe(InstanceEvent {
+                                            event: InstanceEventType::Synced,
+                                            instance_id: path,
+                                        })
                                         .await;
                                 }
                             });

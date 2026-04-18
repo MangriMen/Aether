@@ -1,16 +1,14 @@
-export interface AppSettings {
-  actionOnInstanceLaunch: ActionOnInstanceLaunchType;
-  transparent: boolean;
-  windowEffect: WindowEffect;
-}
+import type {
+  ActionOnInstanceLaunchDto,
+  AppSettingsDto,
+  EditAppSettingsDto,
+  WindowEffectDto,
+} from '../api';
 
-export type EditAppSettings = Partial<AppSettings>;
+export type AppSettings = AppSettingsDto;
 
-export type ActionOnInstanceLaunchType = 'hide' | 'close' | 'nothing';
+export type EditAppSettings = EditAppSettingsDto;
 
-export type WindowEffect =
-  | 'off'
-  | 'mica_light'
-  | 'mica_dark'
-  | 'mica'
-  | 'acrylic';
+export type ActionOnInstanceLaunchType = ActionOnInstanceLaunchDto;
+
+export type WindowEffect = WindowEffectDto;

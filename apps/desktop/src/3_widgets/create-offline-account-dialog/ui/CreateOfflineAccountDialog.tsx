@@ -1,7 +1,7 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
 
-import { useCreateOfflineAccount } from '@/entities/accounts';
+import { useCreateOfflineAccount } from '@/entities/account';
 import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 

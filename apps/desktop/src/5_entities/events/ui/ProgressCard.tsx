@@ -2,14 +2,13 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps } from 'solid-js';
 
-import type { LoadingPayload } from '@/entities/events';
+import type { ProgressEvent } from '@/entities/events';
 
-import { LoadingBarTypeEnum } from '@/entities/events';
 import { useTranslation } from '@/shared/model';
 import { Progress } from '@/shared/ui';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
-  payload: LoadingPayload;
+  payload: ProgressEvent;
 };
 
 export const ProgressCard: Component<ProgressCardProps> = (props) => {
@@ -21,15 +20,15 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   const title = createMemo(() => {
     switch (local.payload.event.type) {
-      case LoadingBarTypeEnum.JavaDownload:
+      case 'java_download':
         return t('events.javaDownloading', {
           version: local.payload.event.version,
         });
-      case LoadingBarTypeEnum.MinecraftDownload:
+      case 'minecraft_download':
         return local.payload.event.instance_name;
-      case LoadingBarTypeEnum.PluginDownload:
+      case 'plugin_download':
         return `[Plugin] ${local.payload.event.plugin_name}`;
-      case LoadingBarTypeEnum.LauncherUpdate:
+      case 'launcher_update':
         return t('events.launcherUpdating', {
           version: local.payload.event.version,
         });

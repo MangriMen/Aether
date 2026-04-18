@@ -5,7 +5,7 @@ import {
   parseSearchParamToNumber,
   parseSearchParamToString,
   parseSearchParamToStringArray,
-} from '@/shared/lib/parseSearchParamsField';
+} from '@/shared/lib';
 
 import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
 

@@ -1,6 +1,6 @@
 import { createEffect, onCleanup } from 'solid-js';
 
-import { createPreventRightClick } from '@/shared/lib/createPreventRightClick';
+import { createPreventRightClick } from '@/shared/lib';
 
 import { ALLOWED_CONTEXT_MENU_TAGS } from '../config';
 

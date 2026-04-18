@@ -108,7 +108,15 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       const instanceId = instance.id;
 
       for (const content of Object.values(contents.data)) {
+        if (!content.version) {
+          continue;
+        }
+
         const contentId = getContentIdFromUpdateInfo(content, providerId);
+
+        if (!contentId) {
+          continue;
+        }
 
         if (!newContentMap[contentId]) {
           newContentMap[contentId] = {};

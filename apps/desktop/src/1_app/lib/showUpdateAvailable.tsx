@@ -1,12 +1,9 @@
-import type { Update } from '@tauri-apps/plugin-updater';
-
 import { useNavigate } from '@solidjs/router';
 import { createRoot, createSignal } from 'solid-js';
 
-import {
-  UpdateAndRestartWarningDialog,
-  useInstallUpdate,
-} from '@/entities/updates';
+import type { UpdateStatus } from '@/entities/updates';
+
+import { UpdateAndRestartWarningDialog, useUpdate } from '@/entities/updates';
 import { SettingsTab } from '@/pages/settings/model/settingsTabs';
 import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
@@ -14,7 +11,7 @@ import { Button, closeToast, showToast } from '@/shared/ui';
 
 let isAlreadyOpened = false;
 
-export const showUpdateAvailable = (update: Update) => {
+export const showUpdateAvailable = (update: UpdateStatus) => {
   if (isAlreadyOpened) {
     return;
   }
@@ -32,7 +29,7 @@ export const showUpdateAvailable = (update: Update) => {
 
     const [{ t }] = useTranslation();
 
-    const { isUpdating, updateAndRestart } = useInstallUpdate();
+    const { isUpdating, updateAndRestart } = useUpdate();
 
     const [isDialogOpen, setIsDialogOpen] = createSignal(false);
 

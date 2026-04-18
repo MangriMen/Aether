@@ -1,27 +1,11 @@
-import type { ContentType } from './contentType';
+import type { ContentFileDto } from '../api';
 
-import {
-  providerIdToString,
-  type ProviderId,
-  type ProviderIdString,
-} from './contentItem';
+import { providerIdToString, type ProviderId } from './contentItem';
 
-export interface ContentFile {
-  contentPath: string;
-  contentType: ContentType;
-  disabled: boolean;
-  fileName: string;
-  hash: string;
-  name?: string;
-  size: number;
-  version?: string;
-  updateProviderId?: ProviderId;
-  update: Record<ProviderIdString, { contentId: string }>;
-}
+export type ContentFile = ContentFileDto;
 
 export const getContentIdFromUpdateInfo = (
   contentFile: ContentFile,
   providerId: ProviderId,
-) => {
-  return contentFile.update?.[providerIdToString(providerId)].contentId;
-};
+): string | undefined =>
+  contentFile.update?.[providerIdToString(providerId)].contentId;

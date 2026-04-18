@@ -5,13 +5,13 @@ import { onCleanup, onMount } from 'solid-js';
 import { logDebug } from '@/shared/lib';
 import { showToast } from '@/shared/ui';
 
-import { listenEvent } from '../api';
+import { events } from '../api';
 
 export const useWarningEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
 
   const startListen = async () => {
-    unlistenFn = await listenEvent('warning', (e) => {
+    unlistenFn = await events.warningEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       showToast({

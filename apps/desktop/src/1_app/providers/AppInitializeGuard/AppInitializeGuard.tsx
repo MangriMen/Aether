@@ -2,7 +2,7 @@ import type { Component, JSX } from 'solid-js';
 
 import { createSignal, onMount, Show } from 'solid-js';
 
-import { initializePlugins } from '@/entities/minecraft';
+import { commands } from '@/shared/api/bindings/application';
 import { logError } from '@/shared/lib';
 
 import { initializeApp, showWindow } from '../../lib';
@@ -36,7 +36,7 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
 
     try {
       if (!initializeError()) {
-        await initializePlugins();
+        await commands.initializePlugins();
       }
     } catch (e) {
       logError(e);

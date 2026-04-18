@@ -4,10 +4,7 @@ import type { Component, JSX } from 'solid-js';
 import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import {
-  ProcessPayloadType,
-  listenEvent,
-} from '@/entities/events/@x/instances';
+import { progressEvents } from '@/entities/process/@x/instances';
 import { logDebug } from '@/shared/lib';
 
 import type { Instance, RunningInstancesContextValue } from '../model';
@@ -50,7 +47,7 @@ export const RunningInstancesProvider: Component<
   const stopProcessListener = () => processListenerUnlistenFn?.();
 
   const startProcessListener = () =>
-    listenEvent('process', (e) => {
+    progressEvents.processEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       setContextValue('instances', (instances) => ({
@@ -58,7 +55,7 @@ export const RunningInstancesProvider: Component<
         [e.payload.instanceId]: {
           payload: e.payload,
           isLoading: false,
-          isRunning: e.payload.event === ProcessPayloadType.Launched,
+          isRunning: e.payload.event === 'launched',
         },
       }));
     });

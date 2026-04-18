@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use dashmap::DashMap;
 
 use crate::features::{
-    events::{EventEmitterExt, PluginEventType, SharedEventEmitter},
+    events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
     plugins::{Plugin, PluginCapabilities, PluginError, PluginManifest, PluginState},
 };
 
@@ -83,8 +83,9 @@ impl PluginRegistry {
     {
         let mut plugin = self.get_mut(plugin_id)?;
         update_fn(&mut plugin)?;
+
         self.event_emitter
-            .emit_plugin_safe(PluginEventType::Edit {
+            .emit_safe(PluginEvent::Edit {
                 plugin_id: plugin_id.to_owned(),
             })
             .await;

@@ -30,7 +30,7 @@ export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {
       {...others}
     >
       <CollapsibleTrigger class='flex items-center gap-2'>
-        <Image class='size-8 border' src={local.capability.icon} />
+        <Image class='size-8 border' src={local.capability.icon ?? undefined} />
         <span class='inline-flex items-center gap-1'>
           <span>{local.capability.name}</span>
           <span class='text-muted-foreground'>({local.capability.id})</span>

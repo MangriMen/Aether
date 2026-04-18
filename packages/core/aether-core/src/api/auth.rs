@@ -19,7 +19,7 @@ pub async fn create_offline_account(username: String) -> crate::Result<AccountDa
     )
 }
 
-pub async fn get_accounts() -> crate::Result<Vec<AccountData>> {
+pub async fn list_accounts() -> crate::Result<Vec<AccountData>> {
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(

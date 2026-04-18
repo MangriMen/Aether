@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::minecraft::{app::MinecraftApplicationError, MetadataStorage};
+use crate::features::minecraft::{app::MinecraftApplicationError, vanilla, MetadataStorage};
 
 pub struct GetVersionManifestUseCase<MS: MetadataStorage> {
     metadata_storage: Arc<MS>,
@@ -11,9 +11,7 @@ impl<MS: MetadataStorage> GetVersionManifestUseCase<MS> {
         Self { metadata_storage }
     }
 
-    pub async fn execute(
-        &self,
-    ) -> Result<daedalus::minecraft::VersionManifest, MinecraftApplicationError> {
+    pub async fn execute(&self) -> Result<vanilla::VersionManifest, MinecraftApplicationError> {
         Ok(self.metadata_storage.get_version_manifest().await?)
     }
 }

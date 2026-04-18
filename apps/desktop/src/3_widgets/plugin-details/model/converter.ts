@@ -2,7 +2,7 @@ import type { EditPluginSettings, PluginSettings } from '@/entities/plugins';
 import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 export const pluginSettingsToPluginSettingsValues = (
-  settings: PluginSettings | undefined,
+  settings: PluginSettings | null | undefined,
 ): PluginSettingsSchemaInput | undefined => {
   return {
     allowedHosts: [...(settings?.allowedHosts ?? [])],

@@ -13,7 +13,7 @@ import perfectionist from 'eslint-plugin-perfectionist';
 export default [
   { files: ['**/*.{js,jsx,ts,tsx}'] },
   {
-    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri'],
+    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri', "src/6_shared/api/bindings/**/*"],
   },
   {
     languageOptions: {

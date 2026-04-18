@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::minecraft::{
-    LoaderVersionPreference, MetadataStorage, MinecraftDomainError, ModLoader,
+    modded, LoaderVersionPreference, MetadataStorage, MinecraftDomainError, ModLoader,
 };
 
 pub struct LoaderVersionResolver<MS> {
@@ -18,7 +18,7 @@ impl<MS: MetadataStorage> LoaderVersionResolver<MS> {
         game_version: &str,
         loader: &ModLoader,
         loader_version: Option<&LoaderVersionPreference>,
-    ) -> Result<Option<daedalus::modded::LoaderVersion>, MinecraftDomainError> {
+    ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
         if matches!(loader, ModLoader::Vanilla) {
             return Ok(None);
         }
@@ -77,8 +77,8 @@ pub async fn resolve_loader_version(
     game_version: &str,
     loader: &ModLoader,
     loader_version_preference: &LoaderVersionPreference,
-    loader_version_manifest: &daedalus::modded::Manifest,
-) -> Result<Option<daedalus::modded::LoaderVersion>, MinecraftDomainError> {
+    loader_version_manifest: &modded::Manifest,
+) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
     if matches!(loader, ModLoader::Vanilla) {
         return Ok(None);
     }
@@ -86,9 +86,7 @@ pub async fn resolve_loader_version(
     let found_game_version = loader_version_manifest
         .game_versions
         .iter()
-        .find(|x| {
-            x.id.replace(daedalus::modded::DUMMY_REPLACE_STRING, game_version) == game_version
-        })
+        .find(|x| x.id.replace(modded::DUMMY_REPLACE_STRING, game_version) == game_version)
         .ok_or(MinecraftDomainError::VersionForLoaderNotFound {
             loader_version_preference: loader_version_preference.clone(),
         })?;
@@ -99,9 +97,9 @@ pub async fn resolve_loader_version(
 }
 
 fn find_loader_version<'a>(
-    loaders: &'a [daedalus::modded::LoaderVersion],
+    loaders: &'a [modded::LoaderVersion],
     preference: &LoaderVersionPreference,
-) -> Result<&'a daedalus::modded::LoaderVersion, MinecraftDomainError> {
+) -> Result<&'a modded::LoaderVersion, MinecraftDomainError> {
     match preference {
         LoaderVersionPreference::Latest => loaders.first(),
         LoaderVersionPreference::Stable => loaders.iter().find(|x| x.stable),

@@ -6,7 +6,6 @@ use std::{
 };
 
 use async_trait::async_trait;
-use daedalus::minecraft::VersionInfo;
 use tokio::process::Command;
 
 use crate::{
@@ -14,6 +13,8 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
+            vanilla::VersionInfo,
+            modded,
             utils::{get_class_paths_jar, get_lib_path},
             MinecraftDomainError, ModLoaderProcessor,
         },
@@ -38,8 +39,8 @@ impl<PS: ProgressService> ForgeProcessor<PS> {
     }
 
     async fn run_single_processor(
-        processor: &daedalus::modded::Processor,
-        data: &HashMap<String, daedalus::modded::SidedDataEntry>,
+        processor: &modded::Processor,
+        data: &HashMap<String, modded::SidedDataEntry>,
         libraries_dir: &Path,
         java_version: &Java,
     ) -> Result<(), MinecraftDomainError> {
@@ -163,7 +164,7 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 fn process_argument(
     libraries_path: &Path,
     argument: &str,
-    data: &HashMap<String, daedalus::modded::SidedDataEntry>,
+    data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<String, MinecraftDomainError> {
     // Arguments in [] are resolved to the path of a previously downloaded library
     // Check if the argument is a direct library reference [group:artifact:version]
@@ -207,7 +208,7 @@ fn process_argument(
 pub fn get_processor_arguments<T: AsRef<str>>(
     libraries_path: &Path,
     arguments: &[T],
-    data: &HashMap<String, daedalus::modded::SidedDataEntry>,
+    data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<Vec<String>, MinecraftDomainError> {
     arguments
         .iter()

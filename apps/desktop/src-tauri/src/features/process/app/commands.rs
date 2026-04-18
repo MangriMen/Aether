@@ -1,19 +1,39 @@
-use aether_core::features::process::MinecraftProcessMetadata;
-
-use crate::FrontendResult;
+use crate::{
+    commands::{process_commands, PROCESS_PLUGIN_NAME},
+    features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
+    FrontendResult,
+};
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("process")
-        .invoke_handler(tauri::generate_handler![list, get_by_instance_id])
+    tauri::plugin::Builder::new(PROCESS_PLUGIN_NAME)
+        .invoke_handler(process_commands!(tauri::generate_handler!))
         .build()
 }
 
-#[tauri::command]
-async fn list() -> FrontendResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::list().await?)
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+    process_commands!(tauri_specta::collect_commands!)
+}
+
+pub fn get_specta_events() -> tauri_specta::Events {
+    tauri_specta::collect_events![ProcessEventDto]
 }
 
 #[tauri::command]
-async fn get_by_instance_id(id: String) -> FrontendResult<Vec<MinecraftProcessMetadata>> {
-    Ok(aether_core::api::process::get_by_instance_id(id).await?)
+#[specta::specta]
+async fn list() -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
+    Ok(aether_core::api::process::list()
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_by_instance_id(id: String) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
+    Ok(aether_core::api::process::get_by_instance_id(id)
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }

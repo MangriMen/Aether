@@ -1,11 +1,11 @@
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 /// Builds and configures the main application window
-pub fn build_main_window(
-    app_handle: AppHandle,
+pub fn build_main_window<R: tauri::Runtime>(
+    app_handle: AppHandle<R>,
     transparent: bool,
     visible: bool,
-) -> tauri::Result<WebviewWindow> {
+) -> tauri::Result<WebviewWindow<R>> {
     const WINDOW_TITLE: &str = "Aether";
     const DEFAULT_SIZE: (f64, f64) = (1024.0, 640.0);
     const MIN_SIZE: (f64, f64) = (768.0, 480.0);

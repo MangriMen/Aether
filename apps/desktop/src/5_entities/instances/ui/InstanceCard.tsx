@@ -34,7 +34,10 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       )}
       {...others}
     >
-      <Image class='mx-auto min-w-max' src={local.instance.iconPath} />
+      <Image
+        class='mx-auto min-w-max'
+        src={local.instance.iconPath ?? undefined}
+      />
       <InstanceTitle
         name={local.instance.name}
         loader={local.instance.loader}

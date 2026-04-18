@@ -1,10 +1,10 @@
 import type {
-  LoaderManifest,
+  ModdedManifest,
   MappedLoaderManifest,
 } from '@/entities/minecraft';
 
 export const loaderManifestToMapped = (
-  manifest: LoaderManifest,
+  manifest: ModdedManifest,
 ): MappedLoaderManifest => {
   return {
     gameVersions: manifest.gameVersions.reduce<

@@ -5,7 +5,7 @@ use bytes::Bytes;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
-        minecraft::MinecraftDomainError,
+        minecraft::{vanilla, MinecraftDomainError},
     },
     libs::request_client::{Request, RequestClient},
     shared::{FileStore, InfinityCachedResource, IoError},
@@ -32,11 +32,11 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
 
     fn get_client_download<'a>(
         version_id: &str,
-        version_info: &'a daedalus::minecraft::VersionInfo,
-    ) -> Result<&'a daedalus::minecraft::Download, MinecraftDomainError> {
+        version_info: &'a vanilla::VersionInfo,
+    ) -> Result<&'a vanilla::Download, MinecraftDomainError> {
         version_info
             .downloads
-            .get(&daedalus::minecraft::DownloadType::Client)
+            .get(&vanilla::DownloadType::Client)
             .ok_or(MinecraftDomainError::VersionNotFound {
                 version: version_id.to_owned(),
             })
@@ -52,7 +52,7 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
     async fn fetch_client(
         &self,
         version_id: &str,
-        version_info: &daedalus::minecraft::VersionInfo,
+        version_info: &vanilla::VersionInfo,
     ) -> Result<Bytes, MinecraftDomainError> {
         let client_download_url = Self::get_client_download(version_id, version_info)?;
 
@@ -61,7 +61,7 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
 
     pub async fn download_client(
         &self,
-        version_info: &daedalus::minecraft::VersionInfo,
+        version_info: &vanilla::VersionInfo,
         force: bool,
         loading_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {

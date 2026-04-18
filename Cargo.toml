@@ -1,30 +1,49 @@
 [workspace]
 resolver = "2"
 members = [
-  "apps/desktop/src-tauri",
-  "packages/core/aether-core",
-  "packages/core/aether-core-gen",
-  "packages/core/aether-core-plugin-api",
-  "packages/core/register-schema",
-  "packages/core/register-schema-derive",
+    "apps/desktop/src-tauri",
+    "packages/core/aether-core",
+    "packages/core/aether-core-gen",
+    "packages/core/aether-core-plugin-api",
+    "packages/core/register-schema",
+    "packages/core/register-schema-derive",
 ]
 
-[profile.release]
-opt-level = 3 # Maximize runtime performance (critical for Wasm/Extism performance)
-codegen-units = 16 # Split crates into 16 chunks to compile in parallel across all cores
-lto = "thin" # Enable fast parallel Link-Time Optimization
-strip = true # Automatically strip symbols from the binary (greatly reduces .exe size)
-panic = "abort" # Remove stack unwinding code to reduce size and slightly speed up builds
-
 [workspace.dependencies]
+# Internal Packages
 aether-core = { path = "packages/core/aether-core" }
 register-schema = { path = "packages/core/register-schema" }
 register-schema-derive = { path = "packages/core/register-schema-derive" }
 
+# Error Handling & Logging
 anyhow = "1"
-schemars = "1.2.1"
+log = "0.4"
+serr = { git = "https://github.com/MangriMen/serr.git", version = "0.2.0", features = [
+    "derive",
+] }
 thiserror = "2"
+
+# Serialization & Data
+chrono = { version = "0.4", features = ["serde"] }
+schemars = "1.2.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-log = "0.4"
+serde_with = "3.18.0"
+uuid = { version = "1.10", features = ["serde", "v4"] }
+
+# Async & Runtime
+async-trait = "0.1.89"
 tokio = { version = "1", features = ["full"] }
+
+# Utilities
+semver = "1.0"
+
+[profile.release]
+opt-level = 3      # Maximize runtime performance
+codegen-units = 16 # Split crates into 16 chunks for parallel compilation
+lto = "thin"       # Enable fast parallel Link-Time Optimization
+strip = true       # Automatically strip symbols (reduces binary size)
+panic = "abort"    # Remove stack unwinding code
+
+[patch.crates-io]
+tauri-specta = { git = "https://github.com/MangriMen/tauri-specta", branch = "feat/fix-plugin-invoke" }

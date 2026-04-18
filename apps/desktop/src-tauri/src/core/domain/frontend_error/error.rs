@@ -2,12 +2,14 @@ use std::borrow::Cow;
 
 use serde::Serialize;
 use serr::ToSerializedError;
+use specta::Type;
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Type)]
 pub struct FrontendError {
     pub code: Cow<'static, str>,
+    #[specta(type = specta_typescript::Unknown)]
     pub fields: Option<serde_json::Value>,
     pub message: String,
 }

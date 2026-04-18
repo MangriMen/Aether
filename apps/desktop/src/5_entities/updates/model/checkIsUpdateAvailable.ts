@@ -1,5 +1,5 @@
-import type { Update } from '@tauri-apps/plugin-updater';
+import type { UpdateStatus } from './update';
 
 export const checkIsUpdateAvailable = (
-  update: Update | null,
-): update is Update => update !== null && update.version !== '';
+  update: UpdateStatus | null,
+): update is UpdateStatus => update !== null && update.version !== '';

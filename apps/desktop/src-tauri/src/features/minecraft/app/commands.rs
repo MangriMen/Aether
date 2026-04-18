@@ -1,14 +1,35 @@
-use aether_core::features::minecraft::ModLoader;
-use daedalus::{minecraft, modded};
+use crate::{
+    commands::{minecraft_commands, MINECRAFT_PLUGIN_NAME},
+    features::minecraft::{modded, vanilla, ModLoaderDto},
+    FrontendResult,
+};
 
-use crate::FrontendResult;
+pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new(MINECRAFT_PLUGIN_NAME)
+        .invoke_handler(minecraft_commands!(tauri::generate_handler!))
+        .build()
+}
 
-#[tauri::command]
-pub async fn get_minecraft_version_manifest() -> FrontendResult<minecraft::VersionManifest> {
-    Ok(aether_core::api::metadata::get_version_manifest().await?)
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+    minecraft_commands!(tauri_specta::collect_commands!)
 }
 
 #[tauri::command]
-pub async fn get_loader_version_manifest(loader: ModLoader) -> FrontendResult<modded::Manifest> {
-    Ok(aether_core::api::metadata::get_loader_version_manifest(loader).await?)
+#[specta::specta]
+pub async fn get_minecraft_version_manifest() -> FrontendResult<vanilla::VersionManifestDto> {
+    Ok(aether_core::api::metadata::get_version_manifest()
+        .await?
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_loader_version_manifest(
+    loader: ModLoaderDto,
+) -> FrontendResult<modded::ModdedManifestDto> {
+    Ok(
+        aether_core::api::metadata::get_loader_version_manifest(loader.into())
+            .await?
+            .into(),
+    )
 }

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
-use log::error;
 
 use crate::features::{
-    events::{EventEmitterExt, InstanceEventType, SharedEventEmitter},
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     instance::{Instance, InstanceError, InstanceStorage},
 };
 
@@ -32,26 +31,26 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
         self.instance_storage.upsert(instance).await?;
-        if let Err(e) = self
-            .event_emitter
-            .emit_instance(instance.id.to_string(), InstanceEventType::Edited)
-            .await
-        {
-            error!("Failed to emit event: {}", e);
-        }
+
+        self.event_emitter
+            .emit_safe(InstanceEvent {
+                event: InstanceEventType::Edited,
+                instance_id: instance.id.to_string(),
+            })
+            .await;
 
         Ok(())
     }
 
     async fn remove(&self, id: &str) -> Result<(), InstanceError> {
         self.instance_storage.remove(id).await?;
-        if let Err(e) = self
-            .event_emitter
-            .emit_instance(id.to_string(), InstanceEventType::Removed)
-            .await
-        {
-            error!("Failed to emit event: {}", e);
-        }
+
+        self.event_emitter
+            .emit_safe(InstanceEvent {
+                event: InstanceEventType::Removed,
+                instance_id: id.to_string(),
+            })
+            .await;
 
         Ok(())
     }

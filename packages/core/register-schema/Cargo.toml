@@ -6,5 +6,5 @@ edition = "2024"
 [dependencies]
 inventory = "0.3"
 
-schemars.workspace = true
 register-schema-derive.workspace = true
+schemars.workspace = true

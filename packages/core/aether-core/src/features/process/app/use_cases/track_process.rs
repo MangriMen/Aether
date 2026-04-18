@@ -12,7 +12,7 @@ const PROCESS_CHECK_INTERVAL: time::Duration = time::Duration::from_millis(50);
 const UPDATE_PLAYTIME_INTERVAL: Duration = Duration::seconds(60);
 
 pub struct TrackProcessParams {
-    pub process_uuid: Uuid,
+    pub process_id: Uuid,
     pub instance_id: String,
 }
 
@@ -53,14 +53,14 @@ impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
 
     pub async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
         let TrackProcessParams {
-            process_uuid,
+            process_id,
             instance_id,
         } = params;
 
         let mut last_updated_playtime = Utc::now();
 
         loop {
-            match self.process_storage.try_wait(process_uuid).await {
+            match self.process_storage.try_wait(process_id).await {
                 Ok(Some(Some(exit_status))) => {
                     // Process exited successfully
                     self.update_playtime(&mut last_updated_playtime, &instance_id, true)

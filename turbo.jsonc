@@ -4,20 +4,18 @@
     "tauri": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": [
-        "*"
-      ],
-      "env": [
-        "PATH",
-        "CARGO_*",
-        "RUST_*"
-      ]
+      "passThroughEnv": ["*"],
+      "env": ["PATH", "CARGO_*", "RUST_*"],
     },
     "build": {
-      "outputs": [
-        "dist/**",
-        "src-tauri/target/release/bundle/**"
-      ]
-    }
-  }
+      "outputs": ["dist/**", "src-tauri/target/release/bundle/**"],
+    },
+    "update-bindings": {
+      "cache": true,
+    },
+    "lintt": {
+      "cache": true,
+      "passThroughEnv": ["*"],
+    },
+  },
 }

@@ -5,7 +5,7 @@ use tokio::sync::{OnceCell, Semaphore};
 use crate::{
     core::domain::LazyLocator,
     features::{
-        events::{EventEmitterExt, LauncherEvent, SharedEventEmitter},
+        events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
         instance::InstanceWatcherService,
         settings::{infra::FsSettingsStorage, LocationInfo, Settings, SettingsStorage},
     },
@@ -115,13 +115,17 @@ impl LauncherState {
             .await?;
 
         let plugin_infra_listener = lazy_locator.get_plugin_infrastructure_listener().await;
-        lazy_locator.get_event_emitter().await.listen::<_, ()>(
-            LauncherEvent::Plugin.as_str(),
-            move |data| {
-                let value = plugin_infra_listener.clone();
-                tokio::spawn(async move { value.on_plugin_event(data).await });
-            },
-        );
+        lazy_locator
+            .get_event_emitter()
+            .await
+            .on::<PluginEvent, _>({
+                let listener = plugin_infra_listener.clone();
+
+                move |event| {
+                    let listener_task = listener.clone();
+                    tokio::spawn(async move { listener_task.on_plugin_event(event).await });
+                }
+            });
 
         log::info!("Service locator initialized");
 

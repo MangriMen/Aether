@@ -1,2 +1,2 @@
-export * from './api';
-export * from './listeners';
+export { commands, events } from '@/shared/api/bindings/events';
+export type * from '@/shared/api/bindings/events';

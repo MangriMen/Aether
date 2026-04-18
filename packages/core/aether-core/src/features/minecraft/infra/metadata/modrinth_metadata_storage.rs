@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use daedalus::{
-    minecraft::VersionManifest,
-    modded::{self},
-};
 
 use crate::{
-    features::minecraft::{MinecraftDomainError, ModLoader, MetadataStorage},
+    features::minecraft::{vanilla, modded, MetadataStorage, MinecraftDomainError, ModLoader},
     libs::request_client::{Request, RequestClient, RequestClientExt},
     shared::IoError,
 };
@@ -30,17 +26,22 @@ impl<RC: RequestClient> ModrinthMetadataStorage<RC> {
 
 #[async_trait]
 impl<RC: RequestClient> MetadataStorage for ModrinthMetadataStorage<RC> {
-    async fn get_version_manifest(&self) -> Result<VersionManifest, MinecraftDomainError> {
+    async fn get_version_manifest(
+        &self,
+    ) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
         Ok(self
             .request_client
-            .fetch_json(Request::get(daedalus::minecraft::VERSION_MANIFEST_URL))
+            .fetch_json::<daedalus::minecraft::VersionManifest>(Request::get(
+                daedalus::minecraft::VERSION_MANIFEST_URL,
+            ))
             .await
             .map_err(|err| {
                 IoError::IoError(std::io::Error::new(
                     std::io::ErrorKind::NetworkUnreachable,
                     err,
                 ))
-            })?)
+            })?
+            .into())
     }
 
     async fn get_loader_version_manifest(
@@ -49,13 +50,16 @@ impl<RC: RequestClient> MetadataStorage for ModrinthMetadataStorage<RC> {
     ) -> Result<modded::Manifest, MinecraftDomainError> {
         Ok(self
             .request_client
-            .fetch_json(Request::get(Self::get_loader_manifest_url(loader)))
+            .fetch_json::<daedalus::modded::Manifest>(Request::get(Self::get_loader_manifest_url(
+                loader,
+            )))
             .await
             .map_err(|err| {
                 IoError::IoError(std::io::Error::new(
                     std::io::ErrorKind::NetworkUnreachable,
                     err,
                 ))
-            })?)
+            })?
+            .into())
     }
 }

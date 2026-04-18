@@ -1,68 +1,93 @@
-use aether_core::features::settings::{
-    app::{EditDefaultInstanceSettings, EditSettings},
-    DefaultInstanceSettings, Settings,
-};
 use tauri::{AppHandle, State};
 
 use crate::{
+    commands::{settings_commands, SETTINGS_PLUGIN_NAME},
     features::settings::{
-        edit_app_settings_use_case, get_app_settings_use_case, AppSettings, AppSettingsState,
-        EditAppSettings,
+        AppSettingsDto, AppSettingsStorageState, DefaultInstanceSettingsDto, EditAppSettingsDto,
+        EditAppSettingsUseCase, EditDefaultInstanceSettingsDto, EditSettingsDto,
+        GetAppSettingsUseCase, SettingsDto, WindowManagerState,
     },
     FrontendResult,
 };
 
-pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
-    tauri::plugin::Builder::new("settings")
-        .invoke_handler(tauri::generate_handler![
-            get,
-            edit,
-            get_max_ram,
-            get_default_instance_settings,
-            edit_default_instance_settings,
-            get_app_settings,
-            edit_app_settings,
-        ])
+pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+    tauri::plugin::Builder::new(SETTINGS_PLUGIN_NAME)
+        .invoke_handler(settings_commands!(tauri::generate_handler!))
         .build()
 }
 
-#[tauri::command]
-async fn get() -> FrontendResult<Settings> {
-    Ok(aether_core::api::settings::get().await?)
+pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
+    settings_commands!(tauri_specta::collect_commands!)
 }
 
 #[tauri::command]
-async fn edit(edit_settings: EditSettings) -> FrontendResult<Settings> {
-    Ok(aether_core::api::settings::edit(edit_settings).await?)
+#[specta::specta]
+async fn get() -> FrontendResult<SettingsDto> {
+    Ok(aether_core::api::settings::get().await?.into())
 }
 
 #[tauri::command]
+#[specta::specta]
+async fn edit(edit_settings: EditSettingsDto) -> FrontendResult<SettingsDto> {
+    Ok(aether_core::api::settings::edit(edit_settings.into())
+        .await?
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn get_max_ram() -> FrontendResult<u64> {
     Ok(aether_core::shared::infra::get_total_memory())
 }
 
 #[tauri::command]
-async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettings> {
-    Ok(aether_core::api::settings::get_default_instance_settings().await?)
+#[specta::specta]
+async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettingsDto> {
+    Ok(aether_core::api::settings::get_default_instance_settings()
+        .await?
+        .into())
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn edit_default_instance_settings(
-    edit_settings: EditDefaultInstanceSettings,
-) -> FrontendResult<DefaultInstanceSettings> {
-    Ok(aether_core::api::settings::upsert_default_instance_settings(edit_settings).await?)
+    edit_settings: EditDefaultInstanceSettingsDto,
+) -> FrontendResult<DefaultInstanceSettingsDto> {
+    Ok(
+        aether_core::api::settings::upsert_default_instance_settings(edit_settings.into())
+            .await?
+            .into(),
+    )
 }
 
 #[tauri::command]
-async fn get_app_settings(state: State<'_, AppSettingsState>) -> FrontendResult<AppSettings> {
-    get_app_settings_use_case(state).await
+#[specta::specta]
+async fn get_app_settings(
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+) -> FrontendResult<AppSettingsDto> {
+    Ok(
+        GetAppSettingsUseCase::new(app_settings_storage.inner().clone())
+            .execute()
+            .await
+            .map_err(crate::Error::from)?
+            .into(),
+    )
 }
 
 #[tauri::command]
-async fn edit_app_settings<R: tauri::Runtime>(
-    app_handle: AppHandle<R>,
-    state: State<'_, AppSettingsState>,
-    edit_app_settings: EditAppSettings,
-) -> FrontendResult<()> {
-    edit_app_settings_use_case(app_handle, state, edit_app_settings).await
+#[specta::specta]
+async fn edit_app_settings(
+    _app_handle: AppHandle,
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+    window_manager: State<'_, WindowManagerState<tauri::Wry>>,
+    edit_app_settings: EditAppSettingsDto,
+) -> FrontendResult<AppSettingsDto> {
+    Ok(EditAppSettingsUseCase::new(
+        app_settings_storage.inner().clone(),
+        window_manager.inner().clone(),
+    )
+    .execute(edit_app_settings)
+    .await
+    .map_err(crate::Error::from)?
+    .into())
 }

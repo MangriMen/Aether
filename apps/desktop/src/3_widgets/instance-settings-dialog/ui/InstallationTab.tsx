@@ -7,11 +7,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import {
-  InstanceInstallStage,
-  useInstallInstance,
-  useUpdateInstance,
-} from '@/entities/instances';
+import { useInstallInstance, useUpdateInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Image, LabeledField } from '@/shared/ui';
@@ -38,7 +34,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   };
 
   const isInstalling = createMemo(
-    () => local.instance.installStage !== InstanceInstallStage.Installed,
+    () => local.instance.installStage !== 'installed',
   );
 
   return (

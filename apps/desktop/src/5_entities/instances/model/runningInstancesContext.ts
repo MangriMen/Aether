@@ -1,11 +1,11 @@
 import { createContext, useContext } from 'solid-js';
 
-import type { ProcessPayload } from '@/entities/events/@x/instances';
+import type { ProcessEvent } from '@/entities/process/@x/instances';
 
 import type { Instance } from './instance';
 
 export type RunningInstancesInstanceData = {
-  payload?: ProcessPayload;
+  payload?: ProcessEvent;
   isLoading: boolean;
   isRunning: boolean;
 };

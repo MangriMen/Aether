@@ -1,7 +1,8 @@
-use daedalus::minecraft;
 use regex::Regex;
 
-pub fn parse_rules(rules: &[minecraft::Rule], java_version: &str, minecraft_updated: bool) -> bool {
+use crate::features::minecraft::vanilla;
+
+pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_updated: bool) -> bool {
     let mut parse_results = rules
         .iter()
         .map(|rule| parse_rule(rule, java_version, minecraft_updated))
@@ -9,7 +10,7 @@ pub fn parse_rules(rules: &[minecraft::Rule], java_version: &str, minecraft_upda
 
     if rules
         .iter()
-        .all(|rule| matches!(rule.action, minecraft::RuleAction::Disallow))
+        .all(|rule| matches!(rule.action, vanilla::RuleAction::Disallow))
     {
         parse_results.push(Some(true))
     }
@@ -17,8 +18,8 @@ pub fn parse_rules(rules: &[minecraft::Rule], java_version: &str, minecraft_upda
     !(parse_results.iter().any(|x| x == &Some(false)) || parse_results.iter().all(|x| x.is_none()))
 }
 
-fn parse_rule(rule: &minecraft::Rule, java_version: &str, minecraft_updated: bool) -> Option<bool> {
-    use minecraft::{Rule, RuleAction};
+fn parse_rule(rule: &vanilla::Rule, java_version: &str, minecraft_updated: bool) -> Option<bool> {
+    use vanilla::{Rule, RuleAction};
 
     let res = match rule {
         Rule {
@@ -47,12 +48,12 @@ fn parse_rule(rule: &minecraft::Rule, java_version: &str, minecraft_updated: boo
 
 // Platform rule resolving
 pub fn parse_os_rule(
-    rule: &minecraft::OsRule,
+    rule: &vanilla::OsRule,
     java_arch: &str,
     // Minecraft updated over 1.18.2 (supports MacOS Natively)
     minecraft_updated: bool,
 ) -> bool {
-    use minecraft::Os;
+    use vanilla::Os;
 
     let mut rule_match = true;
 
@@ -89,7 +90,7 @@ macro_rules! processor_rules {
       $(std::collections::HashMap::insert(
           $dest,
           String::from($name),
-          daedalus::modded::SidedDataEntry {
+          $crate::features::minecraft::modded::SidedDataEntry {
               client: String::from($client),
               server: String::from($server),
           },
