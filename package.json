@@ -5,9 +5,7 @@
   "scripts": {
     "prepare": "lefthook install",
     "app:dev": "turbo run tauri --filter=@aether/app -- dev",
-    "lint": "turbo run lintt",
-    "update-bindings": "turbo run update-bindings",
-    "postinstall": "bun run update-bindings"
+    "lint": "turbo run lintt"
   },
   "workspaces": [
     "apps/*",

@@ -10,9 +10,6 @@
     "build": {
       "outputs": ["dist/**", "src-tauri/target/release/bundle/**"],
     },
-    "update-bindings": {
-      "cache": true,
-    },
     "lintt": {
       "cache": true,
       "passThroughEnv": ["*"],
