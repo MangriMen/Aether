@@ -7,7 +7,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { prefetchPluginSettings, type Plugin } from '@/entities/plugins';
+import { pluginsCache, type Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { Image, Separator } from '@/shared/ui';
 
@@ -31,7 +31,7 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
 
   const pluginId = () => local.plugin.manifest.metadata.id;
 
-  onMount(() => prefetchPluginSettings(queryClient, pluginId));
+  onMount(() => pluginsCache.prefetch.settings(queryClient, pluginId()));
 
   return (
     <div class={cn('flex flex-col gap-4', local.class)} {...others}>

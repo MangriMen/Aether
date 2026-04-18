@@ -1,4 +1,3 @@
-import type { QueryClient } from '@tanstack/solid-query';
 import type { Accessor } from 'solid-js';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
@@ -6,16 +5,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import type { Plugin } from '.';
 import type { EditPluginSettingsDto } from '../api';
+import type { PluginId } from './pluginManifest';
 
 import { commands } from '../api';
-import {
-  invalidateImporters,
-  invalidatePluginData,
-  invalidatePluginsData,
-} from './cache';
+import { pluginsCache, pluginsQueries } from './cache';
 import { pluginKeys } from './queryKeys';
+
+export const usePlugins = () => useQuery(pluginsQueries.list);
+
+export const usePlugin = (id: Accessor<PluginId>) => {
+  const queryClient = useQueryClient();
+
+  return useQuery(() => pluginsQueries.get(queryClient, id()));
+};
+
+export const usePluginSettings = (id: Accessor<PluginId>) =>
+  useQuery(() => pluginsQueries.settings(id()));
+
+export const useApiVersion = () => useQuery(pluginsQueries.apiVersion);
 
 export const useSyncPlugins = () => {
   const queryClient = useQueryClient();
@@ -23,9 +31,7 @@ export const useSyncPlugins = () => {
 
   return useMutation(() => ({
     mutationFn: commands.sync,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: pluginKeys.list() });
-    },
+    onSuccess: () => pluginsCache.invalidate.all(queryClient),
     onError: (err) => {
       showError({
         title: t('plugins.syncError'),
@@ -36,42 +42,12 @@ export const useSyncPlugins = () => {
   }));
 };
 
-export const usePlugins = () =>
-  useQuery(() => ({
-    queryKey: pluginKeys.list(),
-    queryFn: commands.list,
-  }));
-
-export const usePlugin = (id: Accessor<string>) =>
-  useQuery(() => ({
-    queryKey: pluginKeys.get(id()),
-    queryFn: () => commands.get(id()),
-    enabled: !!id(),
-  }));
-
-const pluginSettingsQuery = (id: Accessor<string>) => ({
-  queryKey: pluginKeys.settings(id()),
-  queryFn: () => commands.getSettings(id()),
-  enabled: !!id(),
-});
-
-export const usePluginSettings = (id: Accessor<string>) =>
-  useQuery(() => pluginSettingsQuery(id));
-
-export const prefetchPluginSettings = (
-  queryClient: QueryClient,
-  id: Accessor<string>,
-) => queryClient.prefetchQuery(pluginSettingsQuery(id));
-
 export const useEnablePlugin = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
     mutationFn: commands.enable,
-    onSuccess: () => {
-      invalidatePluginsData(queryClient);
-      invalidateImporters(queryClient);
-    },
+    onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
   }));
 };
 
@@ -80,10 +56,7 @@ export const useDisablePlugin = () => {
 
   return useMutation(() => ({
     mutationFn: commands.disable,
-    onSuccess: () => {
-      invalidatePluginsData(queryClient);
-      invalidateImporters(queryClient);
-    },
+    onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
   }));
 };
 
@@ -105,18 +78,16 @@ export const useEditPluginSettings = () => {
       });
     },
     onError: (err, variables) => {
-      // TODO: rewrite caching logic to get query data for plugin
-      // instead of finding in list
-      const plugin = queryClient
-        .getQueryData<Plugin[]>(pluginKeys.list())
-        ?.find((plugin) => plugin.manifest.metadata.id === variables.id);
+      const plugin = pluginsCache.getData.fromList(queryClient, variables.id);
+
+      const name =
+        plugin?.manifest.metadata.name ??
+        plugin?.manifest.metadata.id ??
+        '"unknown"';
 
       showError({
         title: t('pluginSettings.failedToUpdateSettings', {
-          name:
-            plugin?.manifest.metadata.name ??
-            plugin?.manifest.metadata.id ??
-            '"unknown"',
+          name,
         }),
         err,
         t,
@@ -161,35 +132,22 @@ export const useRemovePlugin = () => {
 
   return useMutation(() => ({
     mutationFn: commands.remove,
-    onSuccess: (_, id) => {
-      invalidatePluginsData(queryClient);
-      invalidatePluginData(queryClient, id);
-      invalidateImporters(queryClient);
-    },
+    onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
     onError: (err, id) => {
-      // TODO: rewrite caching logic to get query data for plugin
-      // instead of finding in list
-      const plugin = queryClient
-        .getQueryData<Plugin[]>(pluginKeys.list())
-        ?.find((plugin) => plugin.manifest.metadata.id === id);
+      const plugin = pluginsCache.getData.fromList(queryClient, id);
+
+      const name =
+        plugin?.manifest.metadata.name ??
+        plugin?.manifest.metadata.id ??
+        '"unknown"';
 
       showError({
         title: t('plugins.failedToRemove', {
-          name:
-            plugin?.manifest.metadata.name ??
-            plugin?.manifest.metadata.id ??
-            '"unknown"',
+          name,
         }),
         err,
         t,
       });
     },
-  }));
-};
-
-export const useApiVersion = () => {
-  return useQuery(() => ({
-    queryKey: pluginKeys.apiVersion(),
-    queryFn: commands.getApiVersion,
   }));
 };

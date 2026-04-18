@@ -1,4 +1,4 @@
-export const appSettingsQueryKeys = {
+export const appSettingsKeys = {
   all: ['app_settings'] as const,
-  get: () => [...appSettingsQueryKeys.all, 'get'] as const,
+  get: () => [...appSettingsKeys.all, 'get'] as const,
 } as const;

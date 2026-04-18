@@ -6,11 +6,7 @@ import { onCleanup, onMount } from 'solid-js';
 import { logDebug } from '@/shared/lib';
 
 import { events } from '../api';
-import {
-  invalidateImporters,
-  invalidatePluginData,
-  invalidatePluginsData,
-} from '../model';
+import { pluginsCache } from '../model';
 
 export const usePluginEventListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -23,14 +19,12 @@ export const usePluginEventListener = () => {
 
       switch (e.payload.type) {
         case 'sync':
-          invalidatePluginsData(queryClient);
-          invalidateImporters(queryClient);
+          pluginsCache.invalidate.all(queryClient);
           break;
         case 'add':
         case 'edit':
         case 'remove':
-          invalidatePluginData(queryClient, e.payload.plugin_id);
-          invalidateImporters(queryClient);
+          pluginsCache.invalidate.full(queryClient, e.payload.plugin_id);
           break;
       }
     });
