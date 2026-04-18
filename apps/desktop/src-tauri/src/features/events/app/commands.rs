@@ -2,7 +2,7 @@ use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsU
 
 use crate::{
     commands::{events_commands, EVENTS_PLUGIN_NAME},
-    features::events::ProgressBarDto,
+    features::events::{ProgressBarDto, ProgressEventDto, WarningEventDto},
     FrontendResult,
 };
 
@@ -12,8 +12,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     events_commands!(tauri_specta::collect_commands!)
+}
+
+pub fn get_specta_events() -> tauri_specta::Events {
+    tauri_specta::collect_events![ProgressEventDto, WarningEventDto]
 }
 
 #[tauri::command]

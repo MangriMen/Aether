@@ -1,108 +1,30 @@
 use async_trait::async_trait;
-use log::debug;
-use uuid::Uuid;
+use tracing::warn;
 
-use crate::features::events::{
-    EventEmitter, EventError, InstanceEvent, InstanceEventType, LauncherEvent, PluginEvent,
-    PluginEventType, ProcessEvent, ProcessEventType, WarningEvent,
-};
+use crate::features::events::EventEmitter;
 
 #[async_trait]
-pub trait EventEmitterExt: EventEmitter {
-    async fn emit<P: serde::Serialize + Send>(
-        &self,
-        event: &str,
-        payload: P,
-    ) -> Result<(), EventError> {
-        self.emit_raw(
-            event,
-            serde_json::to_value(payload)
-                .map_err(|err| EventError::SerializeError(anyhow::Error::from(err)))?,
-        )
-        .await
+pub trait EventEmitterExt<E>: EventEmitter<E> {
+    async fn emit_safe(&self, event: impl Into<E> + Send) {
+        if let Err(err) = self.emit(event.into()).await {
+            warn!("Failed to emit event: {err}")
+        }
     }
 
-    fn listen<F, T>(&self, event: impl Into<String>, handler: F)
+    fn on<T, F>(&self, handler: F)
     where
-        F: Fn(String) + Send + 'static,
+        E: Send + 'static,
+        T: Send + 'static,
+        E: TryInto<T>,
+        F: Fn(T) + Send + Sync + 'static,
     {
-        self.listen_raw(event.into(), Box::new(handler))
-    }
-
-    async fn emit_instance(
-        &self,
-        instance_id: String,
-        event: InstanceEventType,
-    ) -> Result<(), EventError> {
-        self.emit(
-            LauncherEvent::Instance.as_str(),
-            InstanceEvent { instance_id, event },
-        )
-        .await
-    }
-
-    async fn emit_process(
-        &self,
-        instance_id: String,
-        process_id: Uuid,
-        message: String,
-        event: ProcessEventType,
-    ) -> Result<(), EventError> {
-        self.emit(
-            LauncherEvent::Process.as_str(),
-            ProcessEvent {
-                instance_id,
-                process_id,
-                event,
-                message,
-            },
-        )
-        .await
-    }
-
-    async fn emit_plugin(&self, event: PluginEventType) -> Result<(), EventError> {
-        self.emit(LauncherEvent::Plugin.as_str(), PluginEvent { event })
-            .await
-    }
-
-    async fn emit_warning(&self, message: String) -> Result<(), EventError> {
-        self.emit(LauncherEvent::Warning.as_str(), WarningEvent { message })
-            .await
-    }
-
-    async fn emit_instance_safe(&self, instance_id: String, event: InstanceEventType) {
-        if let Err(e) = self
-            .emit(
-                LauncherEvent::Instance.as_str(),
-                InstanceEvent { instance_id, event },
-            )
-            .await
-        {
-            debug!("Failed to emit instance: {e}")
-        }
-    }
-
-    async fn emit_process_safe(
-        &self,
-        instance_id: String,
-        process_id: Uuid,
-        message: String,
-        event: ProcessEventType,
-    ) {
-        if let Err(e) = self
-            .emit_process(instance_id, process_id, message, event)
-            .await
-        {
-            debug!("Failed to emit process: {e}")
-        }
-    }
-
-    async fn emit_plugin_safe(&self, event: PluginEventType) {
-        if let Err(e) = self.emit_plugin(event).await {
-            debug!("Failed to emit plugin: {e}")
-        }
+        self.listen(Box::new(move |full_event| {
+            if let Ok(specific) = full_event.try_into() {
+                handler(specific);
+            }
+        }));
     }
 }
 
 #[async_trait]
-impl<E: ?Sized + EventEmitter> EventEmitterExt for E {}
+impl<T: ?Sized + EventEmitter<E>, E> EventEmitterExt<E> for T {}

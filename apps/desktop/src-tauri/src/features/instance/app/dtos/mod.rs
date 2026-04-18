@@ -11,6 +11,7 @@ mod edit_instance;
 mod import_instance;
 mod install_stage;
 mod instance;
+mod instance_event;
 mod new_instance;
 mod pack_info;
 
@@ -27,5 +28,6 @@ pub use edit_instance::*;
 pub use import_instance::*;
 pub use install_stage::*;
 pub use instance::*;
+pub use instance_event::*;
 pub use new_instance::*;
 pub use pack_info::*;

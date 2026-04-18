@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use aether_core::core::LauncherState;
 
 use crate::commands::{plugin_commands, PLUGIN_PLUGIN_NAME};
-use crate::features::plugins::{EditPluginSettingsDto, PluginDto, PluginSettingsDto};
+use crate::features::plugins::{
+    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto,
+};
 use crate::shared::file::reveal_in_explorer;
 use crate::FrontendResult;
 
@@ -13,8 +15,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     plugin_commands!(tauri_specta::collect_commands!)
+}
+
+pub fn get_specta_events() -> tauri_specta::Events {
+    tauri_specta::collect_events![PluginEventDto]
 }
 
 #[tauri::command]

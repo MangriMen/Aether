@@ -3,7 +3,7 @@ use std::env;
 use tauri::{Builder, Wry};
 
 #[cfg(debug_assertions)]
-use crate::bindings::generate_bindings;
+use crate::bindings::create_specta_exporters;
 use crate::{
     core::{commands::*, log::default_log_builder},
     features::{auth, events, instance, minecraft, plugins, process, settings, update},
@@ -18,17 +18,23 @@ pub fn launch_app() -> crate::Result<()> {
 }
 
 fn build_app() -> crate::Result<tauri::App> {
-    #[cfg(debug_assertions)]
-    generate_bindings();
-
     create_tauri_app()
         .build(tauri::generate_context!())
         .map_err(|e| crate::Error::LaunchError(e.to_string()))
 }
 
 fn create_tauri_app() -> Builder<Wry> {
+    let exporters = create_specta_exporters();
+
+    #[cfg(debug_assertions)]
+    exporters.iter().for_each(|e| e.export());
+
     Builder::default()
-        .setup(move |app| Ok(init_app(app)?))
+        .setup(move |app| {
+            exporters.iter().for_each(|e| e.builder.mount_events(app));
+
+            Ok(init_app(app)?)
+        })
         .pipe(with_tauri_plugins)
         .pipe(with_feature_plugins)
 }

@@ -16,7 +16,7 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .build()
 }
 
-pub fn get_specta_data() -> tauri_specta::Commands<tauri::Wry> {
+pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     settings_commands!(tauri_specta::collect_commands!)
 }
 

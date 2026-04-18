@@ -14,7 +14,7 @@ use crate::{
             ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
             ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
             EditInstanceDto, ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto,
-            NewInstanceDto,
+            InstanceEventDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -27,8 +27,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     instance_commands!(tauri_specta::collect_commands!)
+}
+
+pub fn get_specta_events() -> tauri_specta::Events {
+    tauri_specta::collect_events![InstanceEventDto]
 }
 
 #[tauri::command]

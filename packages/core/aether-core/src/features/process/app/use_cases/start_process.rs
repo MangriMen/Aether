@@ -4,7 +4,7 @@ use tokio::process::Command;
 
 use crate::{
     features::{
-        events::{EventEmitterExt, ProcessEventType, SharedEventEmitter},
+        events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
         instance::InstanceStorage,
         process::{MinecraftProcessMetadata, ProcessError, ProcessStorage},
     },
@@ -52,7 +52,7 @@ impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUs
         tokio::spawn(async move {
             let _ = manage_process_use_case
                 .execute(ManageProcessParams {
-                    process_uuid: process_uuid_clone,
+                    process_id: process_uuid_clone,
                     instance_id: instance_id_clone,
                     post_exit_command,
                 })
@@ -60,12 +60,12 @@ impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUs
         });
 
         self.event_emitter
-            .emit_process_safe(
-                instance_id.clone(),
-                metadata.uuid(),
-                "Launched Minecraft".to_string(),
-                ProcessEventType::Launched,
-            )
+            .emit_safe(ProcessEvent {
+                instance_id,
+                process_id: metadata.uuid(),
+                event: ProcessEventType::Launched,
+                message: "Launched Minecraft".to_string(),
+            })
             .await;
 
         Ok(metadata)

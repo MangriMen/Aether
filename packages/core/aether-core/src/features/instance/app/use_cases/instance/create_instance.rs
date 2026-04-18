@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::{
-        events::{EventEmitterExt, ProgressService, SharedEventEmitter},
+        events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
             PackInfo,
@@ -165,12 +165,13 @@ impl<
                     "Failed to create instance \"{}\". Rolling back",
                     &instance.name
                 );
+
                 self.event_emitter
-                    .emit_warning(format!("Error creating instance {}", err))
-                    .await
-                    .unwrap_or_else(|e| {
-                        log::error!("Error emitting warning: {}", e);
-                    });
+                    .emit_safe(WarningEvent {
+                        message: format!("Error creating instance {}", err),
+                    })
+                    .await;
+
                 if let Err(cleanup_err) = self.instance_storage.remove(&instance.id).await {
                     error!("Failed to cleanup instance: {}", cleanup_err);
                 }

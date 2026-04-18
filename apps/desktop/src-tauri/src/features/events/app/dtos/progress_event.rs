@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use aether_core::features::events::{ProgressEvent, ProgressEventType};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use tauri_specta::Event;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressEventDto {
     pub event: ProgressEventTypeDto,
@@ -14,7 +15,7 @@ pub struct ProgressEventDto {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type, Event)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ProgressEventTypeDto {
     JavaDownload {

@@ -1,6 +1,6 @@
 use crate::{
     commands::{process_commands, PROCESS_PLUGIN_NAME},
-    features::process::MinecraftProcessMetadataDto,
+    features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
     FrontendResult,
 };
 
@@ -10,8 +10,12 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     process_commands!(tauri_specta::collect_commands!)
+}
+
+pub fn get_specta_events() -> tauri_specta::Events {
+    tauri_specta::collect_events![ProcessEventDto]
 }
 
 #[tauri::command]

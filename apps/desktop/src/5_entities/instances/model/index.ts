@@ -5,6 +5,7 @@ export * from './contentType';
 export * from './dto';
 export * from './installStage';
 export * from './instance';
+export * from './instanceEvent';
 export * from './loaderVersionPreference';
 export * from './packInfo';
 export * from './queries';

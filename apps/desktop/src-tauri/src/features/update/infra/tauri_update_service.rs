@@ -1,25 +1,27 @@
 use std::sync::Arc;
 
+use aether_core::features::events::EventEmitterExt;
+use aether_core::features::events::SharedEventEmitter;
 use async_trait::async_trait;
-use serde_json::json;
 use tauri::AppHandle;
-use tauri::Emitter;
 use tauri_plugin_updater::Update;
 use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Mutex;
 
-use crate::features::update::UpdateService;
-use crate::features::update::UpdateStatus;
+use crate::features::events::AppEvent;
+use crate::features::update::{UpdatePhase, UpdateProgress, UpdateService, UpdateStatus};
 
 pub struct TauriUpdateService<R: tauri::Runtime> {
     app: AppHandle<R>,
+    event_emitter: SharedEventEmitter<AppEvent>,
     pending_update: Arc<Mutex<Option<Update>>>,
 }
 
 impl<R: tauri::Runtime> TauriUpdateService<R> {
-    pub fn new(app: AppHandle<R>) -> Self {
+    pub fn new(app: AppHandle<R>, event_emitter: SharedEventEmitter<AppEvent>) -> Self {
         Self {
             app,
+            event_emitter,
             pending_update: Arc::new(Mutex::new(None)),
         }
     }
@@ -44,6 +46,13 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
             let mut downloaded = 0;
             let mut content_length: Option<u64> = None;
 
+            self.event_emitter
+                .emit_safe(UpdateProgress {
+                    fraction: Some(0.0),
+                    phase: UpdatePhase::Started,
+                })
+                .await;
+
             update
                 .download_and_install(
                     |chunk_length, total_length| {
@@ -52,22 +61,26 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
 
                         let fraction = content_length.map(|total| downloaded as f64 / total as f64);
 
-                        let _ = self.app.emit(
-                            "loading",
-                            json!({
-                                "fraction": fraction,
-                                "message": "update.progress",
-                            }),
-                        );
+                        let emitter = self.event_emitter.clone();
+                        tokio::spawn(async move {
+                            emitter
+                                .emit_safe(UpdateProgress {
+                                    fraction,
+                                    phase: UpdatePhase::Progress,
+                                })
+                                .await;
+                        });
                     },
                     move || {
-                        let _ = self.app.emit(
-                            "loading",
-                            json!({
-                                "fraction": "null",
-                                "message": "update.finished",
-                            }),
-                        );
+                        let emitter = self.event_emitter.clone();
+                        tokio::spawn(async move {
+                            emitter
+                                .emit_safe(UpdateProgress {
+                                    fraction: None,
+                                    phase: UpdatePhase::Finished,
+                                })
+                                .await;
+                        });
                     },
                 )
                 .await

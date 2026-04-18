@@ -1,5 +1,4 @@
-import type { UnlistenFn } from '@tauri-apps/api/event';
-
+import { type UnlistenFn } from '@tauri-apps/api/event';
 import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
@@ -8,7 +7,7 @@ import { useProgressStore } from '@/widgets/app-titlebar';
 
 import type { ProgressEvent } from '../model';
 
-import { commands, listenEvent } from '../api';
+import { commands, events } from '../api';
 
 export const useProgressEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
@@ -59,7 +58,7 @@ export const useProgressEventsListener = () => {
   const startListen = async () => {
     fetchEvents();
 
-    unlistenFn = await listenEvent('loading', (e) => {
+    unlistenFn = await events.progressEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       if (e.payload.fraction === null) {

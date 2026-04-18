@@ -12,7 +12,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
         .build()
 }
 
-pub fn get_specta_data<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     auth_commands!(tauri_specta::collect_commands!)
 }
 

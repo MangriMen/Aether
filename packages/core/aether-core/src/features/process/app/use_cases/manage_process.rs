@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        events::{EventEmitterExt, ProcessEventType, SharedEventEmitter},
+        events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
         instance::InstanceStorage,
         process::{ProcessError, ProcessStorage},
         settings::LocationInfo,
@@ -15,7 +15,7 @@ use crate::{
 use super::{TrackProcessParams, TrackProcessUseCase};
 
 pub struct ManageProcessParams {
-    pub process_uuid: Uuid,
+    pub process_id: Uuid,
     pub instance_id: String,
     pub post_exit_command: Option<String>,
 }
@@ -43,7 +43,7 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
     }
     pub async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
         let ManageProcessParams {
-            process_uuid,
+            process_id,
             instance_id,
             post_exit_command,
         } = params;
@@ -51,20 +51,20 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
         let mc_exit_status = self
             .track_process_use_case
             .execute(TrackProcessParams {
-                process_uuid,
+                process_id,
                 instance_id: instance_id.clone(),
             })
             .await;
 
-        self.process_storage.remove(process_uuid).await?;
+        self.process_storage.remove(process_id).await?;
 
         self.event_emitter
-            .emit_process_safe(
-                instance_id.clone(),
-                process_uuid,
-                "Exited process".to_string(),
-                ProcessEventType::Finished,
-            )
+            .emit_safe(ProcessEvent {
+                instance_id: instance_id.clone(),
+                process_id,
+                event: ProcessEventType::Finished,
+                message: "Exited process".to_string(),
+            })
             .await;
 
         if mc_exit_status.success() {
