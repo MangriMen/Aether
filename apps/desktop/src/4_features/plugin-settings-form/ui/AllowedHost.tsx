@@ -22,7 +22,7 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
 
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
-      <div class='group flex select-none items-center justify-between gap-2 rounded-sm px-2 py-1 hover:bg-secondary/50'>
+      <div class='group flex select-none items-center justify-between gap-2 rounded-sm px-2 py-1 hover:bg-secondary/hover'>
         <span>{local.value}</span>
         <Show when={local.leadingItems}>
           {(leadingItems) => (

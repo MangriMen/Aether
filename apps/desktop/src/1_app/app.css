@@ -5,7 +5,7 @@
 @layer base {
   :root,
   [data-kb-theme='light'] {
-    --background: 99% 0 0;
+    --background: 96% 0 0;
     --foreground: 15% 0 0;
 
     --muted: 0% 0 0;
@@ -75,7 +75,7 @@
   [data-kb-theme='dark'] {
     /* Tokens */
 
-    --background: 20% 0 240;
+    --background: 24% 0 240;
     --foreground: 98% 0 240;
 
     --muted: 100% 0 0;
@@ -167,7 +167,7 @@
   }
 
   body {
-    @apply text-foreground bg-secondary;
+    @apply text-foreground bg-background;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;

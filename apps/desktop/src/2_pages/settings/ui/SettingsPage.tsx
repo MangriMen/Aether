@@ -32,12 +32,12 @@ import { VersionInfo } from './VersionInfo';
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &
   RouteSectionProps;
 
-const defaultTab = SettingsTab.Appearance;
-
 export const SettingsPage = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, SettingsPageProps<T>>,
 ) => {
   const [local, others] = splitProps(props, ['params', 'location', 'data']);
+
+  const defaultTab = SettingsTab.Appearance;
 
   const navigate = useNavigate();
 
