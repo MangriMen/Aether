@@ -72,7 +72,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
   };
 
   return (
-    <Dialog defaultOpen={true} onOpenChange={handleOnOpenChange}>
+    <Dialog defaultOpen onOpenChange={handleOnOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('instance.installContent')}</DialogTitle>

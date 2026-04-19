@@ -18,7 +18,7 @@ export const ContentListSkeleton: Component<ContentListSkeletonProps> = (
 
   return (
     <div
-      class={cn('flex flex-col gap-2 overflow-y-auto', local.class)}
+      class={cn('flex flex-col gap-3 overflow-y-auto', local.class)}
       {...others}
     >
       <For each={items()}>{() => <ContentListItemSkeleton />}</For>
@@ -31,18 +31,15 @@ const ContentListItemSkeleton: Component<ComponentProps<'div'>> = (props) => {
 
   return (
     <div
-      class={cn(
-        'flex gap-2 border border-secondary rounded-lg p-3',
-        local.class,
-      )}
+      class={cn('flex gap-2 border bg-card/card rounded-lg p-3', local.class)}
       {...others}
     >
-      <Skeleton radius={8} width={96} height={96} class='bg-secondary' />
+      <Skeleton class='border' radius={8} width={96} height={96} />
       <div class='flex flex-col gap-2 text-muted-foreground'>
         <span class='inline-flex gap-2 text-lg font-bold text-foreground'>
-          <Skeleton class='bg-secondary' radius={4} height={24} width={240} />
+          <Skeleton radius={4} height={24} width={240} />
         </span>
-        <Skeleton class='bg-secondary' radius={4} height={24} width={400} />
+        <Skeleton radius={4} height={24} width={400} />
       </div>
     </div>
   );

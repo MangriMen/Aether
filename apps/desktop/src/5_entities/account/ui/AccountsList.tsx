@@ -44,7 +44,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
         >
           {(account) => (
             <AccountCard
-              class='animate-list-item w-[210.625px]'
+              class='animate-list-item'
               as='li'
               username={account.username}
               active={account.active}

@@ -273,7 +273,9 @@
     "updateIsReadyToInstall": "доступна для установки!",
     "updateNotificationStyle": "Стиль уведомлений обновлений",
     "whatsNew": "Что нового",
-    "update": "Обновить"
+    "update": "Обновить",
+    "playground": "Playground",
+    "playgroundDescription": "UI Kit playground"
   },
   "update": {
     "updateError": "Не удалось установить обновление",

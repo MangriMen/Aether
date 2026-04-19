@@ -23,7 +23,7 @@ export const openTranslationInBrowser = async (text: string, t: TFunction) => {
       showToast({
         title: t('update.changelogIsTooLong'),
         description: t('update.changelogIsTooLongDescription'),
-        variant: 'warningFilled',
+        variant: 'warning',
       });
     }
   } catch (err) {

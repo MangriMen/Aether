@@ -65,7 +65,7 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
           onClick={handleTranslateInBrowser}
         />
       </div>
-      <div class='max-w-full overflow-auto rounded-md border border-secondary-dark dark:border-secondary'>
+      <div class='max-w-full overflow-auto rounded-md border border-secondary dark:border-secondary'>
         <MarkdownRenderer class='p-4' children={local.changelogBody} />
       </div>
     </div>

@@ -6,10 +6,11 @@ import * as ButtonPrimitive from '@kobalte/core/button';
 import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
 import { Match, splitProps, Switch } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 
 import { cn } from '@/shared/lib';
 
-import { buttonVariants } from './Button';
+import { buttonVariants } from '../uikit/Button';
 
 const SVG_CHILD_FILL_VARIANTS = {
   background: '[&_svg]:fill-background',
@@ -77,7 +78,9 @@ const IconButton = <T extends ValidComponent = 'button'>(
         <Match when={local.loading}>
           <IconMdiLoading class='animate-spin text-xl' />
         </Match>
-        <Match when={local.icon}>{local.icon?.({})}</Match>
+        <Match when={local.icon}>
+          {(icon) => <Dynamic component={icon()} />}
+        </Match>
       </Switch>
     </ButtonPrimitive.Root>
   );

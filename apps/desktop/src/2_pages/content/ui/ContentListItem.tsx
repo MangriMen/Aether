@@ -1,3 +1,4 @@
+import { A } from '@solidjs/router';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { ContentInstallButton, type ContentItem } from '@/entities/instances';
@@ -21,21 +22,31 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     contentPageHref,
   } = useContentListItem(() => local.item);
 
+  const handleInstall = (e: MouseEvent) => {
+    e.stopPropagation();
+    requestInstall();
+  };
+
   return (
     <div
       class={cn(
-        'flex gap-2 border border-secondary rounded-lg p-3',
+        'relative flex gap-2 border bg-card/card rounded-lg p-3 group',
         local.class,
       )}
       {...others}
     >
-      <ContentItemInfo item={local.item} contentPageHref={contentPageHref()} />
-      <div class='ml-auto flex flex-col justify-end'>
+      <A
+        href={contentPageHref()}
+        class='after:absolute after:inset-0 after:z-10'
+      >
+        <ContentItemInfo item={local.item} />
+      </A>
+      <div class='relative z-20 ml-auto mt-auto flex size-max flex-col justify-end'>
         <ContentInstallButton
           isInstalling={isInstalling()}
           isInstalled={isInstalled()}
           isLoading={isLoading()}
-          onClick={requestInstall}
+          onClick={handleInstall}
         />
       </div>
     </div>

@@ -9,14 +9,14 @@ import type {
   TextFieldInputProps,
   TextFieldLabelProps,
   TextFieldRootProps,
-} from './TextField';
+} from '../uikit/TextField';
 
 import {
   TextField,
   TextFieldErrorMessage,
   TextFieldInput,
   TextFieldLabel,
-} from './TextField';
+} from '../uikit/TextField';
 
 export type CombinedTextFieldProps = TextFieldRootProps & {
   label?: JSX.Element;

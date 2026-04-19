@@ -30,12 +30,12 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     <div
       class={cn(
         local.class,
-        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-secondary/40 hover:bg-secondary/80 active:bg-secondary/20 drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
+        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-card/card hover:bg-card/hover active:bg-card/active drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
       )}
       {...others}
     >
       <Image
-        class='mx-auto min-w-max'
+        class='mx-auto size-24 min-w-max border-none bg-transparent'
         src={local.instance.iconPath ?? undefined}
       />
       <InstanceTitle

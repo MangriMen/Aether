@@ -36,7 +36,7 @@ export const CollapsibleSettingsPane: Component<
       open={isOpened()}
       onOpenChange={setIsOpened}
       class={cn(
-        'flex flex-col rounded-lg bg-secondary-dark px-6 py-4 gap-2',
+        'flex flex-col rounded-lg bg-card/card px-6 py-4 gap-2',
         local.class,
       )}
       {...others}

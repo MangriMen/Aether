@@ -5,17 +5,17 @@ import { mergeProps, Show, splitProps } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
 
-import type { ButtonProps } from './Button';
-import type { DialogContentProps } from './Dialog';
+import type { ButtonProps } from '../uikit/Button';
+import type { DialogContentProps } from '../uikit/Dialog';
 
-import { Button } from './Button';
+import { Button } from '../uikit/Button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-} from './Dialog';
+} from '../uikit/Dialog';
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {
@@ -52,7 +52,7 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
 
   return (
     <Dialog {...others}>
-      <DialogContent class='bg-secondary-dark' variant={local.variant}>
+      <DialogContent variant={local.variant}>
         <Show when={local.header}>
           <DialogHeader class='text-lg'>{local.header}</DialogHeader>
         </Show>

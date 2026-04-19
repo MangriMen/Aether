@@ -8,6 +8,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import tailwind from 'eslint-plugin-tailwindcss';
 import solid from 'eslint-plugin-solid/configs/recommended';
 import perfectionist from 'eslint-plugin-perfectionist';
+import react from 'eslint-plugin-react';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -82,6 +83,13 @@ export default [
   },
   ...tailwind.configs['flat/recommended'],
   {
+    settings: {
+      tailwindcss: {
+        callees: ['cva', 'clsx', 'twMerge'],
+      },
+    },
+  },
+  {
     rules: {
       'tailwindcss/no-custom-classname': [
         'warn',
@@ -92,4 +100,18 @@ export default [
     },
   },
   solid,
+  {
+    plugins: { react },
+    rules: {
+      'react/jsx-curly-brace-presence': [
+        'error',
+        { 
+          props: 'never', 
+          children: 'never',
+          propElementValues: 'always' 
+        }
+      ],
+      'react/jsx-boolean-value': ['error', 'never'],
+    },
+  }
 ];

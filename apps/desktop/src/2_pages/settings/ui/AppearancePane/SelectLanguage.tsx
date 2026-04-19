@@ -28,8 +28,8 @@ const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
     <Select
       class={cn('flex flex-col gap-2', local.class)}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
-      optionTextValue={'name'}
-      optionValue={'value'}
+      optionTextValue='name'
+      optionValue='value'
       itemComponent={(props) => (
         <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
       )}

@@ -31,7 +31,7 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
   return (
     <div
       class={cn(
-        'group flex min-h-[30px] select-none items-start justify-between gap-2 rounded-sm py-1 px-2 hover:bg-secondary/50',
+        'group flex min-h-[30px] select-none items-start justify-between gap-2 rounded-sm py-1 px-2 hover:bg-secondary/hover',
         local.class,
       )}
       {...others}

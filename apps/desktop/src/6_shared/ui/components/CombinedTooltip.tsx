@@ -3,9 +3,9 @@ import type { ValidComponent, JSX } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { TooltipTriggerProps, TooltipRootProps } from './Tooltip';
+import type { TooltipTriggerProps, TooltipRootProps } from '../uikit/Tooltip';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from './Tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../uikit/Tooltip';
 
 export type CombinedTooltipProps<T extends ValidComponent = 'button'> =
   TooltipRootProps &

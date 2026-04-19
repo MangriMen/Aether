@@ -50,7 +50,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
 
   return (
     <Dialog defaultOpen onOpenChange={onOpenChange} {...others}>
-      <DialogContent class='flex w-[900px] max-w-[calc(100%-80px)] flex-col bg-secondary-dark'>
+      <DialogContent class='flex w-[900px] max-w-[calc(100%-80px)] flex-col'>
         <Show
           when={instance.data}
           fallback={<span>{t('instance.instanceNotFound')}</span>}

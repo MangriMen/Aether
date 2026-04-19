@@ -1,6 +1,5 @@
-import type { Component } from 'solid-js';
-
 import { Route, Router } from '@solidjs/router';
+import { lazy, type Component } from 'solid-js';
 
 import {
   ContentBrowserWrapper,
@@ -12,6 +11,10 @@ import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
 import { ROUTE_PATTERNS } from '@/shared/config';
 import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
+
+const PlaygroundPage = lazy(() =>
+  import('@/pages/playground').then((m) => ({ default: m.PlaygroundPage })),
+);
 
 import { AppRoot } from './AppRoot';
 
@@ -46,6 +49,7 @@ export const AppRouter: Component = () => {
       <Route path={ROUTE_PATTERNS.SETTINGS} component={SettingsPage}>
         <Route />
       </Route>
+      <Route path={ROUTE_PATTERNS.PLAYGROUND} component={PlaygroundPage} />
     </Router>
   );
 };

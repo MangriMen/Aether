@@ -273,7 +273,9 @@
     "updateIsReadyToInstall": "is available to install!",
     "updateNotificationStyle": "Update notification style",
     "whatsNew": "What's new",
-    "update": "Update"
+    "update": "Update",
+    "playground": "Playground",
+    "playgroundDescription": "UI Kit playground"
   },
   "update": {
     "updateError": "Failed to install update",

@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
+import { GoToPlayground } from './GoToPlayground';
 import { SelectWindowEffect } from './SelectWindowEffect';
 import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
 import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
@@ -24,6 +25,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       <ToggleWindowTransparencyEntry />
       <ThemeBackgroundOpacityEntry />
       <SelectWindowEffect />
+      <GoToPlayground />
     </SettingsPane>
   );
 };

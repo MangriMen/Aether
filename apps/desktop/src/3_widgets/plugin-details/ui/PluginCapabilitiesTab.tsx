@@ -25,7 +25,7 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
   return (
     <Show when={local.plugin.capabilities}>
       {(capabilities) => (
-        <div class={cn('flex flex-col', local.class)} {...others}>
+        <div class={cn('flex flex-col gap-4', local.class)} {...others}>
           <div class='flex flex-col gap-2'>
             <span class='text-lg font-medium'>{t('plugin.importers')}</span>
             <For each={capabilities().importers}>

@@ -56,14 +56,14 @@ export const ContentItemPageInfo: Component<
   const itemIsLoading = createMemo(() => !local.item && local.isLoading);
 
   return (
-    <div class={cn('flex gap-2', local.class)} {...others}>
+    <div class={cn('flex gap-3', local.class)} {...others}>
       <Image
         class='aspect-square size-24'
         src={local.item?.iconUrl || undefined}
       />
       <div class='flex grow flex-col'>
         <div class='flex grow justify-between'>
-          <div class='flex max-w-[512px] flex-col text-muted-foreground'>
+          <div class='flex max-w-[512px] flex-col'>
             <h1 class='text-2xl font-bold text-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}
@@ -72,7 +72,7 @@ export const ContentItemPageInfo: Component<
                 {local.item?.name}
               </DelayedShow>
             </h1>
-            <span>
+            <span class='text-muted-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}
                 fallback={<Skeleton width={256} height={32} />}

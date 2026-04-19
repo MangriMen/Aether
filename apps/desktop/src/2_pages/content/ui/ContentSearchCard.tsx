@@ -71,7 +71,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
           fallback={
             <div class='flex h-full gap-1'>
               <For each={DEFAULT_PAGINATION_COUNT_ARRAY}>
-                {() => <Skeleton width={40} radius={6} class='bg-secondary' />}
+                {() => <Skeleton width={40} radius={6} />}
               </For>
             </div>
           }

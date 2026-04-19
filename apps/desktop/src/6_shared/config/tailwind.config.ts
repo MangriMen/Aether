@@ -13,9 +13,31 @@ export const tailwindConfig: Config = {
   theme: {
     extend: {
       colors: {
-        secondary: {
-          dark: 'hsl(var(--secondary-dark))',
+        release: {
+          DEFAULT: 'oklch(var(--release) / <alpha-value>)',
+          foreground: 'oklch(var(--release-foreground) / <alpha-value>)',
         },
+        beta: {
+          DEFAULT: 'oklch(var(--beta) / <alpha-value>)',
+          foreground: 'oklch(var(--beta-foreground) / <alpha-value>)',
+        },
+        alpha: {
+          DEFAULT: 'oklch(var(--alpha) / <alpha-value>)',
+          foreground: 'oklch(var(--alpha-foreground) / <alpha-value>)',
+        },
+      },
+      opacity: {
+        card: 'var(--opacity-card)',
+        secondary: 'var(--opacity-secondary)',
+        hard: 'var(--opacity-hard)',
+
+        control: 'var(--opacity-control)',
+        hover: 'var(--opacity-hover)',
+        active: 'var(--opacity-active)',
+
+        'solid-hover': 'var(--opacity-solid-hover)',
+        'solid-active': 'var(--opacity-solid-active)',
+        'solid-text-active': 'var(--opacity-solid-text-active)',
       },
       keyframes: {
         'content-show': {

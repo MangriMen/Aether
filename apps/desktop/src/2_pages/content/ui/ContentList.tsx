@@ -33,7 +33,7 @@ export const ContentList: Component<ContentListProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col gap-2 overflow-y-auto', local.class)}
+      class={cn('flex flex-col gap-3 overflow-y-auto', local.class)}
       {...others}
     >
       <Switch>

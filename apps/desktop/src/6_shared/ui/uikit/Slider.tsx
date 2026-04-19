@@ -1,0 +1,118 @@
+import type { PolymorphicProps } from '@kobalte/core/polymorphic';
+import type { JSX, ValidComponent } from 'solid-js';
+
+import * as SliderPrimitive from '@kobalte/core/slider';
+import { splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+
+import { Label } from './Label';
+
+type SliderRootProps<T extends ValidComponent = 'div'> =
+  SliderPrimitive.SliderRootProps<T> & {
+    class?: string | undefined;
+  };
+
+const Slider = <T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, SliderRootProps<T>>,
+) => {
+  const [local, others] = splitProps(props as SliderRootProps, ['class']);
+  return (
+    <SliderPrimitive.Root
+      class={cn(
+        'relative flex w-full touch-none select-none flex-col items-center',
+        local.class,
+      )}
+      {...others}
+    />
+  );
+};
+
+type SliderTrackProps<T extends ValidComponent = 'div'> =
+  SliderPrimitive.SliderTrackProps<T> & {
+    class?: string | undefined;
+  };
+
+const SliderTrack = <T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, SliderTrackProps<T>>,
+) => {
+  const [local, others] = splitProps(props as SliderTrackProps, ['class']);
+  return (
+    <SliderPrimitive.Track
+      class={cn(
+        'relative h-1.5 w-full grow rounded-full bg-secondary/secondary data-[disabled]:opacity-50 data-[disabled]:pointer-events-none my-4',
+        local.class,
+      )}
+      {...others}
+    >
+      <div class='absolute inset-y-0 my-auto h-9 w-full grow rounded-md' />
+      {props.children}
+    </SliderPrimitive.Track>
+  );
+};
+
+type SliderFillProps<T extends ValidComponent = 'div'> =
+  SliderPrimitive.SliderFillProps<T> & {
+    class?: string | undefined;
+  };
+
+const SliderFill = <T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<T, SliderFillProps<T>>,
+) => {
+  const [local, others] = splitProps(props as SliderFillProps, ['class']);
+  return (
+    <SliderPrimitive.Fill
+      class={cn('absolute h-full rounded-full bg-primary', local.class)}
+      {...others}
+    />
+  );
+};
+
+type SliderThumbProps<T extends ValidComponent = 'span'> =
+  SliderPrimitive.SliderThumbProps<T> & {
+    class?: string | undefined;
+    children?: JSX.Element;
+  };
+
+const SliderThumb = <T extends ValidComponent = 'span'>(
+  props: PolymorphicProps<T, SliderThumbProps<T>>,
+) => {
+  const [local, others] = splitProps(props as SliderThumbProps, [
+    'class',
+    'children',
+  ]);
+  return (
+    <SliderPrimitive.Thumb
+      class={cn(
+        'data-[disabled]:border-primary top-[-6px] block w-3 h-5 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50',
+        local.class,
+      )}
+      {...others}
+    >
+      <SliderPrimitive.Input />
+    </SliderPrimitive.Thumb>
+  );
+};
+
+const SliderLabel = <T extends ValidComponent = 'label'>(
+  props: PolymorphicProps<T, SliderPrimitive.SliderLabelProps<T>>,
+) => {
+  return <SliderPrimitive.Label as={Label} {...props} />;
+};
+
+const SliderValueLabel = <T extends ValidComponent = 'label'>(
+  props: PolymorphicProps<T, SliderPrimitive.SliderValueLabelProps<T>>,
+) => {
+  return <SliderPrimitive.ValueLabel as={Label} {...props} />;
+};
+
+export type { SliderRootProps };
+
+export {
+  Slider,
+  SliderTrack,
+  SliderFill,
+  SliderThumb,
+  SliderLabel,
+  SliderValueLabel,
+};

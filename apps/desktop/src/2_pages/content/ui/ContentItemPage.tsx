@@ -39,7 +39,7 @@ export const ContentItemPage: Component<ContentItemPageProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col grow gap-2 overflow-hidden', local.class)}
+      class={cn('flex flex-col grow gap-4 overflow-hidden', local.class)}
       {...others}
     >
       <ContentItemPageInfo item={item.data} isLoading={item.isFetching} />
