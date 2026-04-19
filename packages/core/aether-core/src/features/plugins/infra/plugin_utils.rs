@@ -7,7 +7,7 @@ use aether_core_plugin_api::v0::CommandDto;
 
 use crate::{
     features::{plugins::PluginError, settings::LocationInfo},
-    shared::{domain::SerializableCommand, IoError},
+    shared::{IoError, domain::SerializableCommand},
 };
 
 pub fn get_default_allowed_paths(

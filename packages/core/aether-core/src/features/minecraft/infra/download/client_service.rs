@@ -5,7 +5,7 @@ use bytes::Bytes;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
-        minecraft::{vanilla, MinecraftDomainError},
+        minecraft::{MinecraftDomainError, vanilla},
     },
     libs::request_client::{Request, RequestClient},
     shared::{FileStore, InfinityCachedResource, IoError},

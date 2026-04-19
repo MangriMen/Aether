@@ -1,7 +1,7 @@
 use crate::{
-    commands::{process_commands, PROCESS_PLUGIN_NAME},
-    features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
     FrontendResult,
+    commands::{PROCESS_PLUGIN_NAME, process_commands},
+    features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {

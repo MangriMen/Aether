@@ -5,8 +5,8 @@ use std::{
 
 use crate::{
     features::instance::{
-        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
         ContentProvider, Instance, InstanceError, InstanceStorage,
+        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
     shared::CapabilityRegistry,
 };

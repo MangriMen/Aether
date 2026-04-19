@@ -1,4 +1,4 @@
-use crate::features::minecraft::{vanilla, MinecraftDomainError, TEMPORARY_REPLACE_CHAR};
+use crate::features::minecraft::{MinecraftDomainError, TEMPORARY_REPLACE_CHAR, vanilla};
 
 use super::parse_rules;
 

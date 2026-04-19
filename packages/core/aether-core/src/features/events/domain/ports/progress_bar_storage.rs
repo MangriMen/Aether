@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use dashmap::mapref::one::Ref as DashMapRef;
 
-use crate::features::events::{progress_bar_error::ProgressBarStorageError, ProgressBar};
+use crate::features::events::{ProgressBar, progress_bar_error::ProgressBarStorageError};
 
 #[async_trait]
 pub trait ProgressBarStorage: Send + Sync {

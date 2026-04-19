@@ -7,13 +7,13 @@ use tracing::info;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt},
-        minecraft::{vanilla, modded, MinecraftDomainError, MinecraftDownloader},
+        minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla},
     },
     libs::request_client::{Request, RequestClient, RequestClientExt},
     shared::{Cache, FileStore, InfinityCachedResource, IoError},
 };
 
-use super::{version_info_key, AssetsService, ClientService, LibrariesService};
+use super::{AssetsService, ClientService, LibrariesService, version_info_key};
 
 pub struct MinecraftDownloadService<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
 {

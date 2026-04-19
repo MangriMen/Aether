@@ -1,13 +1,13 @@
 use tauri::{AppHandle, State};
 
 use crate::{
-    commands::{settings_commands, SETTINGS_PLUGIN_NAME},
+    FrontendResult,
+    commands::{SETTINGS_PLUGIN_NAME, settings_commands},
     features::settings::{
         AppSettingsDto, AppSettingsStorageState, DefaultInstanceSettingsDto, EditAppSettingsDto,
         EditAppSettingsUseCase, EditDefaultInstanceSettingsDto, EditSettingsDto,
         GetAppSettingsUseCase, SettingsDto, WindowManagerState,
     },
-    FrontendResult,
 };
 
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {

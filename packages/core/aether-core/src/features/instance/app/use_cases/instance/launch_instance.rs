@@ -9,12 +9,12 @@ use crate::{
         },
         java::{JavaInstallationService, JavaStorage, JreProvider},
         minecraft::{
-            app::{GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase},
             LaunchSettings, MetadataStorage, MinecraftDownloader,
+            app::{GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase},
         },
         process::{
-            app::{GetProcessMetadataByInstanceIdUseCase, StartProcessUseCase},
             MinecraftProcessMetadata, ProcessStorage,
+            app::{GetProcessMetadataByInstanceIdUseCase, StartProcessUseCase},
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
     },
@@ -44,16 +44,16 @@ pub struct LaunchInstanceUseCase<
 }
 
 impl<
-        IS: InstanceStorage + 'static,
-        MS: MetadataStorage,
-        PS: ProcessStorage + 'static,
-        GISS: DefaultInstanceSettingsStorage,
-        MD: MinecraftDownloader,
-        PGS: ProgressService,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-        JP: JreProvider,
-    > LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>
+    IS: InstanceStorage + 'static,
+    MS: MetadataStorage,
+    PS: ProcessStorage + 'static,
+    GISS: DefaultInstanceSettingsStorage,
+    MD: MinecraftDownloader,
+    PGS: ProgressService,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>
 {
     pub fn new(
         instance_storage: Arc<IS>,
@@ -161,21 +161,21 @@ impl<
 
         let instance_path = self.location_info.instance_dir(&instance.id);
 
-        if let Some(command) = pre_launch_command {
-            if let Ok(cmd) = SerializableCommand::from_string(command, Some(&instance_path)) {
-                let result = cmd
-                    .to_tokio_command()
-                    .spawn()
-                    .map_err(|e| IoError::with_path(e, &instance_path))?
-                    .wait()
-                    .await
-                    .map_err(IoError::from)?;
+        if let Some(command) = pre_launch_command
+            && let Ok(cmd) = SerializableCommand::from_string(command, Some(&instance_path))
+        {
+            let result = cmd
+                .to_tokio_command()
+                .spawn()
+                .map_err(|e| IoError::with_path(e, &instance_path))?
+                .wait()
+                .await
+                .map_err(IoError::from)?;
 
-                if !result.success() {
-                    return Err(InstanceError::PrelaunchCommandError {
-                        code: result.code().unwrap_or(-1),
-                    });
-                }
+            if !result.success() {
+                return Err(InstanceError::PrelaunchCommandError {
+                    code: result.code().unwrap_or(-1),
+                });
             }
         }
 

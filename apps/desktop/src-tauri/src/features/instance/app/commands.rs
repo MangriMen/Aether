@@ -6,7 +6,8 @@ use std::{
 use uuid::Uuid;
 
 use crate::{
-    commands::{instance_commands, INSTANCE_PLUGIN_NAME},
+    FrontendResult,
+    commands::{INSTANCE_PLUGIN_NAME, instance_commands},
     features::{
         instance::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
@@ -18,7 +19,6 @@ use crate::{
         },
         process::MinecraftProcessMetadataDto,
     },
-    FrontendResult,
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
@@ -181,8 +181,8 @@ async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResu
 
 #[tauri::command]
 #[specta::specta]
-async fn list_content_providers(
-) -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
+async fn list_content_providers()
+-> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
     Ok(aether_core::api::instance::list_content_providers()
         .await?
         .into_iter()

@@ -1,7 +1,7 @@
 use crate::{
-    commands::{minecraft_commands, MINECRAFT_PLUGIN_NAME},
-    features::minecraft::{modded, vanilla, ModLoaderDto},
     FrontendResult,
+    commands::{MINECRAFT_PLUGIN_NAME, minecraft_commands},
+    features::minecraft::{ModLoaderDto, modded, vanilla},
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {

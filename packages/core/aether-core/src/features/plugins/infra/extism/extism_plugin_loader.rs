@@ -76,7 +76,7 @@ impl ExtismPluginLoader {
             config => {
                 return Err(PluginError::InvalidConfig {
                     config: config.clone(),
-                })
+                });
             }
         };
 

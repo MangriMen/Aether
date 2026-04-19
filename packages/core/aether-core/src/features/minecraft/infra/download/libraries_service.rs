@@ -7,14 +7,14 @@ use tracing::{debug, error, info, trace, warn};
 use crate::{
     features::{
         events::{
-            utils::{try_for_each_concurrent_with_progress, ProgressConfigWithMessage},
             ProgressConfig, ProgressService,
+            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
         },
-        minecraft::{vanilla, utils::parse_rules, MinecraftDomainError},
+        minecraft::{MinecraftDomainError, utils::parse_rules, vanilla},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient},
-    shared::{create_dir_all, write_async, IoError},
+    shared::{IoError, create_dir_all, write_async},
 };
 
 const MINECRAFT_LIBRARIES_BASE_URL: &str = "https://libraries.minecraft.net/";
@@ -116,11 +116,11 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         java_arch: &str,
         minecraft_updated: bool,
     ) -> bool {
-        if let Some(rules) = &library.rules {
-            if !parse_rules(rules, java_arch, minecraft_updated) {
-                trace!("Library {} skipped due to rules", library.name);
-                return false;
-            }
+        if let Some(rules) = &library.rules
+            && !parse_rules(rules, java_arch, minecraft_updated)
+        {
+            trace!("Library {} skipped due to rules", library.name);
+            return false;
         }
 
         if !library.downloadable {
@@ -169,14 +169,13 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         library: &vanilla::Library,
         library_path: &PathBuf,
     ) -> Result<(), MinecraftDomainError> {
-        if let Some(downloads) = &library.downloads {
-            if let Some(artifact) = &downloads.artifact {
-                if !artifact.url.is_empty() {
-                    let bytes = self.fetch_bytes(&artifact.url).await?;
-                    write_async(library_path, &bytes).await?;
-                    return Ok(());
-                }
-            }
+        if let Some(downloads) = &library.downloads
+            && let Some(artifact) = &downloads.artifact
+            && !artifact.url.is_empty()
+        {
+            let bytes = self.fetch_bytes(&artifact.url).await?;
+            write_async(library_path, &bytes).await?;
+            return Ok(());
         }
 
         Err(MinecraftDomainError::StorageFailure {

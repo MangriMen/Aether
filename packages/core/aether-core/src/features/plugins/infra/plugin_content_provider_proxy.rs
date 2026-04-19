@@ -2,15 +2,15 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use extism_convert::Msgpack;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{
-        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
         AtomicInstallParams, ContentFile, ContentItem, ContentProvider,
         ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
         ContentVersion, DownloadedContent, Instance, InstanceError, ModpackInstallParams,
+        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance,

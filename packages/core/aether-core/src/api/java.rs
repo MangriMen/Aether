@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use crate::{
-    core::{domain::LazyLocator, LauncherState},
+    core::{LauncherState, domain::LazyLocator},
     features::java::{
+        Java,
         app::{GetJavaUseCase, InstallJavaUseCase},
         infra::{AzulJreProvider, FsJavaInstallationService},
-        Java,
     },
 };
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::instance::{
-        app::ContentListVersionParams, ContentProvider, ContentVersion, InstanceError,
+        ContentProvider, ContentVersion, InstanceError, app::ContentListVersionParams,
     },
     shared::CapabilityRegistry,
 };

@@ -1,4 +1,4 @@
-use crate::features::minecraft::{vanilla, modded};
+use crate::features::minecraft::{modded, vanilla};
 
 impl From<daedalus::minecraft::VersionManifest> for vanilla::VersionManifest {
     fn from(value: daedalus::minecraft::VersionManifest) -> Self {

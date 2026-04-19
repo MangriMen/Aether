@@ -3,7 +3,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 use crate::{
-    features::minecraft::{vanilla, modded, MetadataStorage, MinecraftDomainError, ModLoader},
+    features::minecraft::{MetadataStorage, MinecraftDomainError, ModLoader, modded, vanilla},
     shared::{Cache, CachedResource},
 };
 
@@ -27,9 +27,7 @@ impl<C: Cache, S: MetadataStorage> CachedMetadataStorage<C, S> {
 
 #[async_trait]
 impl<C: Cache, S: MetadataStorage> MetadataStorage for CachedMetadataStorage<C, S> {
-    async fn get_version_manifest(
-        &self,
-    ) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
+    async fn get_version_manifest(&self) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
         self.cached_resource
             .get_cached(
                 version_manifest_key,

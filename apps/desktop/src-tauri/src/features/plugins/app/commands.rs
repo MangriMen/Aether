@@ -2,12 +2,12 @@ use std::path::PathBuf;
 
 use aether_core::core::LauncherState;
 
-use crate::commands::{plugin_commands, PLUGIN_PLUGIN_NAME};
+use crate::FrontendResult;
+use crate::commands::{PLUGIN_PLUGIN_NAME, plugin_commands};
 use crate::features::plugins::{
     EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto,
 };
 use crate::shared::file::reveal_in_explorer;
-use crate::FrontendResult;
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new(PLUGIN_PLUGIN_NAME)

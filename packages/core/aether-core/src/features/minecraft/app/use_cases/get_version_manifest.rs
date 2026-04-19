@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::minecraft::{app::MinecraftApplicationError, vanilla, MetadataStorage};
+use crate::features::minecraft::{MetadataStorage, app::MinecraftApplicationError, vanilla};
 
 pub struct GetVersionManifestUseCase<MS: MetadataStorage> {
     metadata_storage: Arc<MS>,

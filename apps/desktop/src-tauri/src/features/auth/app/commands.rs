@@ -1,9 +1,9 @@
 use uuid::Uuid;
 
 use crate::{
-    commands::{auth_commands, AUTH_PLUGIN_NAME},
-    features::auth::AccountDto,
     FrontendResult,
+    commands::{AUTH_PLUGIN_NAME, auth_commands},
+    features::auth::AccountDto,
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {

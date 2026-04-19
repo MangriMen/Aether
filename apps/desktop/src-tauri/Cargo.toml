@@ -2,7 +2,8 @@
 name = "aether"
 version = "0.8.7"
 description = "Desktop application for managing Minecraft instances and mods"
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

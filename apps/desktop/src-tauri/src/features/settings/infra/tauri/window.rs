@@ -1,7 +1,7 @@
 use tauri::{
+    AppHandle, Manager,
     utils::config::WindowEffectsConfig,
     window::{Effect, EffectState},
-    AppHandle, Manager,
 };
 
 use crate::features::settings::WindowEffect;

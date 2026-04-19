@@ -2,17 +2,19 @@ use std::str::FromStr;
 
 use crate::features::{
     instance::{
-        infra::content_providers::modrinth::{
-            api_client::{
-                Hit, ModrinthDependencyResponse, ModrinthDependencyType, ModrinthRequestedStatus,
-                ModrinthVersionStatus, ModrinthVersionType, ProjectResponse, ProjectSearchParams,
-                ProjectSearchResponse, ProjectVersionResponse, SearchIndex, MODRINTH_WEB_URL,
-            },
-            get_facet_vector, ModrinthMapperError,
-        },
         ContentItem, ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
         ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
         ContentVersionType, ProviderId, RequestedContentVersionStatus,
+        infra::content_providers::modrinth::{
+            ModrinthMapperError,
+            api_client::{
+                Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
+                ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
+                ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
+                ProjectVersionResponse, SearchIndex,
+            },
+            get_facet_vector,
+        },
     },
     minecraft::ModLoader,
 };
@@ -28,18 +30,17 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
             &[value.content_type.get_name()],
         ));
 
-        if value.content_type == ContentType::Mod {
-            if let Some(loader) = value.loader {
-                if loader != ModLoader::Vanilla {
-                    facets.push(get_facet_vector("categories", &[loader.as_str()]));
-                }
-            }
+        if value.content_type == ContentType::Mod
+            && let Some(loader) = value.loader
+            && loader != ModLoader::Vanilla
+        {
+            facets.push(get_facet_vector("categories", &[loader.as_str()]));
         }
 
-        if let Some(game_versions) = value.game_versions {
-            if !game_versions.is_empty() {
-                facets.push(get_facet_vector("versions", &game_versions));
-            }
+        if let Some(game_versions) = value.game_versions
+            && !game_versions.is_empty()
+        {
+            facets.push(get_facet_vector("versions", &game_versions));
         }
 
         Ok(Self {

@@ -13,10 +13,9 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
-            vanilla::VersionInfo,
-            modded,
+            MinecraftDomainError, ModLoaderProcessor, modded,
             utils::{get_class_paths_jar, get_lib_path},
-            MinecraftDomainError, ModLoaderProcessor,
+            vanilla::VersionInfo,
         },
         settings::LocationInfo,
     },
@@ -140,10 +139,10 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
         let total_processors = processors.len();
         for (index, processor) in processors.iter().enumerate() {
-            if let Some(sides) = &processor.sides {
-                if !sides.contains(&String::from("client")) {
-                    continue;
-                }
+            if let Some(sides) = &processor.sides
+                && !sides.contains(&String::from("client"))
+            {
+                continue;
             }
 
             Self::run_single_processor(processor, data, &libraries_dir, java_version).await?;
@@ -168,10 +167,10 @@ fn process_argument(
 ) -> Result<String, MinecraftDomainError> {
     // Arguments in [] are resolved to the path of a previously downloaded library
     // Check if the argument is a direct library reference [group:artifact:version]
-    if let Some(stripped) = argument.strip_prefix('[') {
-        if let Some(lib_key) = stripped.strip_suffix(']') {
-            return get_lib_path(libraries_path, lib_key, true);
-        }
+    if let Some(stripped) = argument.strip_prefix('[')
+        && let Some(lib_key) = stripped.strip_suffix(']')
+    {
+        return get_lib_path(libraries_path, lib_key, true);
     }
 
     let mut result = argument.to_string();

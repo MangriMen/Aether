@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::Path};
 
 use crate::{
-    features::minecraft::{vanilla, MinecraftDomainError},
+    features::minecraft::{MinecraftDomainError, vanilla},
     shared::{canonicalize, utils::get_classpath_separator},
 };
 
@@ -105,10 +105,10 @@ pub fn get_class_paths(
     let mut cps = libraries
         .iter()
         .filter_map(|library| {
-            if let Some(rules) = &library.rules {
-                if !parse_rules(rules, java_arch, minecraft_updated) {
-                    return None;
-                }
+            if let Some(rules) = &library.rules
+                && !parse_rules(rules, java_arch, minecraft_updated)
+            {
+                return None;
             }
 
             if !library.include_in_classpath {

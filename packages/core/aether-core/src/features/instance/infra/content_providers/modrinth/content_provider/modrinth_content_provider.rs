@@ -12,18 +12,18 @@ use url::Url;
 use crate::{
     features::{
         instance::{
-            app::{ContentCompatibilityCheckParams, ContentCompatibilityResult, NewInstance},
-            infra::content_providers::modrinth::{
-                api_client::{
-                    File, ModrinthApiClient, ModrinthIndex, ModrinthIndexFile, ProjectSearchParams,
-                    ProjectVersionResponse, ProjectVersionsRequest, MODRINTH_API_URL,
-                },
-                ModrinthMapperError,
-            },
             AtomicInstallParams, CapabilityMetadata, ContentFile, ContentItem, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentType, ContentVersion, CreateContentFileParams, DownloadedContent, Instance,
             InstanceError, ModpackInstallParams, PackInfo, ProviderId,
+            app::{ContentCompatibilityCheckParams, ContentCompatibilityResult, NewInstance},
+            infra::content_providers::modrinth::{
+                ModrinthMapperError,
+                api_client::{
+                    File, MODRINTH_API_URL, ModrinthApiClient, ModrinthIndex, ModrinthIndexFile,
+                    ProjectSearchParams, ProjectVersionResponse, ProjectVersionsRequest,
+                },
+            },
         },
         minecraft::LoaderVersionPreference,
         settings::LocationInfo,
@@ -383,7 +383,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             _ => {
                 return Err(InstanceError::ContentDownloadError(
                     "No import source provided".into(),
-                ))
+                ));
             }
         };
 

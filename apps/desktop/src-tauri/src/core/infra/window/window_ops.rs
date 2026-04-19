@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 use crate::{
-    core::{build_main_window, PreventExitState},
+    core::{PreventExitState, build_main_window},
     features::settings::AppSettings,
 };
 

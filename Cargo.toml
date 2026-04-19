@@ -9,6 +9,10 @@ members = [
     "packages/core/register-schema-derive",
 ]
 
+[workspace.package]
+edition = "2024"
+rust-version = "1.95.0"
+
 [workspace.dependencies]
 # Internal Packages
 aether-core = { path = "packages/core/aether-core" }

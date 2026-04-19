@@ -8,14 +8,14 @@ use tracing::trace;
 use crate::{
     features::{
         events::{
-            utils::{try_for_each_concurrent_with_progress, ProgressConfigWithMessage},
             ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt,
+            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
         },
-        minecraft::{vanilla, MinecraftDomainError},
+        minecraft::{MinecraftDomainError, vanilla},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient, RequestClientExt},
-    shared::{write_async, Cache, InfinityCachedResource, IoError},
+    shared::{Cache, InfinityCachedResource, IoError, write_async},
 };
 
 use super::assets_index_key;

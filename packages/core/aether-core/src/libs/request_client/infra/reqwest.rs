@@ -7,7 +7,7 @@ use reqwest::Response;
 use crate::{
     features::events::{ProgressBarId, ProgressService, ProgressServiceExt},
     libs::request_client::{Method, Request, RequestClient, RequestError},
-    shared::{sha1_async, FetchSemaphore},
+    shared::{FetchSemaphore, sha1_async},
 };
 
 pub struct ReqwestClient<PS: ProgressService> {

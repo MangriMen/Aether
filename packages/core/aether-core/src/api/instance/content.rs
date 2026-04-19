@@ -6,8 +6,10 @@ use std::{
 use dashmap::DashMap;
 
 use crate::{
-    core::{domain::LazyLocator, LauncherState},
+    core::{LauncherState, domain::LazyLocator},
     features::instance::{
+        ContentFile, ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata,
+        ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
         app::{
             ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentGetParams,
@@ -16,8 +18,6 @@ use crate::{
             ListContentVersionUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
             SearchContentUseCase,
         },
-        ContentFile, ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
     },
     shared::CapabilityEntry,
 };
@@ -97,8 +97,8 @@ pub async fn import_contents(
     .await?)
 }
 
-pub async fn list_content_providers(
-) -> crate::Result<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>> {
+pub async fn list_content_providers()
+-> crate::Result<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>> {
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(

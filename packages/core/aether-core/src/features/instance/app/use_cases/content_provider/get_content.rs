@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    features::instance::{app::ContentGetParams, ContentItem, ContentProvider, InstanceError},
+    features::instance::{ContentItem, ContentProvider, InstanceError, app::ContentGetParams},
     shared::CapabilityRegistry,
 };
 

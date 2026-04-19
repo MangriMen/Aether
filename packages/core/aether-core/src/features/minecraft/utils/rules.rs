@@ -22,11 +22,9 @@ fn parse_rule(rule: &vanilla::Rule, java_version: &str, minecraft_updated: bool)
     use vanilla::{Rule, RuleAction};
 
     let res = match rule {
+        Rule { os: Some(os), .. } => parse_os_rule(os, java_version, minecraft_updated),
         Rule {
-            os: Some(ref os), ..
-        } => parse_os_rule(os, java_version, minecraft_updated),
-        Rule {
-            features: Some(ref features),
+            features: Some(features),
             ..
         } => {
             !features.is_demo_user.unwrap_or(true)
@@ -75,10 +73,10 @@ pub fn parse_os_rule(
     }
 
     // Check OS version
-    if let Some(version) = &rule.version {
-        if let Ok(regex) = Regex::new(version.as_str()) {
-            rule_match &= regex.is_match(&sys_info::os_release().unwrap_or_default());
-        }
+    if let Some(version) = &rule.version
+        && let Ok(regex) = Regex::new(version.as_str())
+    {
+        rule_match &= regex.is_match(&sys_info::os_release().unwrap_or_default());
     }
 
     rule_match
@@ -86,7 +84,7 @@ pub fn parse_os_rule(
 
 #[macro_export]
 macro_rules! processor_rules {
-  ($dest:expr; $($name:literal : client => $client:expr, server => $server:expr;)+) => {
+  ($dest:expr_2021; $($name:literal : client => $client:expr_2021, server => $server:expr_2021;)+) => {
       $(std::collections::HashMap::insert(
           $dest,
           String::from($name),

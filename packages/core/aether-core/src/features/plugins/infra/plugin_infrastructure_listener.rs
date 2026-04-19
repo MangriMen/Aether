@@ -6,9 +6,9 @@ use crate::{
         events::PluginEvent,
         instance::{ContentProvider, Importer, Updater},
         plugins::{
-            infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
             PluginState,
+            infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
         },
     },
     shared::CapabilityRegistry,

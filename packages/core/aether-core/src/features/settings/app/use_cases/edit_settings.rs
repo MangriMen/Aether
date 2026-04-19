@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    features::settings::{app::EditSettings, Settings, SettingsError, SettingsStorage},
+    features::settings::{Settings, SettingsError, SettingsStorage, app::EditSettings},
     shared::UpdateAction,
 };
 

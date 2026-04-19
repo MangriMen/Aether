@@ -3,8 +3,9 @@ use std::path::Path;
 use crate::features::{
     java::Java,
     minecraft::{
+        MinecraftDomainError,
         utils::{get_class_paths, get_jvm_arguments},
-        vanilla, MinecraftDomainError,
+        vanilla,
     },
 };
 

@@ -4,9 +4,10 @@ use aether_core::core::LauncherState;
 use tauri::{AppHandle, State};
 
 use crate::{
-    commands::{application_commands, APPLICATION_PLUGIN_NAME},
+    FrontendResult,
+    commands::{APPLICATION_PLUGIN_NAME, application_commands},
     features::events::EventEmitterState,
-    shared, FrontendResult,
+    shared,
 };
 
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {

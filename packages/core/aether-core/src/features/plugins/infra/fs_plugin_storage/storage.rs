@@ -15,8 +15,8 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        copy_dir_all, create_dir_all, read_async, read_dir, read_json_async, remove_dir_all,
-        sha1_async, IoError,
+        IoError, copy_dir_all, create_dir_all, read_async, read_dir, read_json_async,
+        remove_dir_all, sha1_async,
     },
 };
 
@@ -61,10 +61,9 @@ impl FsPluginStorage {
                 if let Some(io_error) = match &e {
                     IoError::IoPathError { source, .. } | IoError::IoError(source) => Some(source),
                     _ => None,
-                } {
-                    if io_error.kind() == std::io::ErrorKind::NotFound {
-                        return Ok(None);
-                    }
+                } && io_error.kind() == std::io::ErrorKind::NotFound
+                {
+                    return Ok(None);
                 }
                 Err(e)
             })?)

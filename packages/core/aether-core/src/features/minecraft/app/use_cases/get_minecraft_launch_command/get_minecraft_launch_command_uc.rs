@@ -10,15 +10,16 @@ use crate::{
     features::{
         auth::Credentials,
         java::{
-            app::{GetJavaUseCase, JavaApplicationError},
             JavaInstallationService, JavaStorage,
+            app::{GetJavaUseCase, JavaApplicationError},
         },
         minecraft::{
-            app::{GetVersionManifestUseCase, MinecraftApplicationError},
-            vanilla, resolve_minecraft_version,
-            utils::get_compatible_java_version,
             LaunchSettings, LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
             MinecraftDownloader, ModLoader,
+            app::{GetVersionManifestUseCase, MinecraftApplicationError},
+            resolve_minecraft_version,
+            utils::get_compatible_java_version,
+            vanilla,
         },
         settings::LocationInfo,
     },
@@ -54,12 +55,8 @@ pub struct GetMinecraftLaunchCommandUseCase<
     location_info: Arc<LocationInfo>,
 }
 
-impl<
-        MS: MetadataStorage,
-        MD: MinecraftDownloader,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-    > GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>
+impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService, JS: JavaStorage>
+    GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>
 {
     pub fn new(
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
@@ -143,8 +140,7 @@ impl<
         }
 
         let jvm_arguments = get_minecraft_jvm_arguments(
-            args.get(&vanilla::ArgumentType::Jvm)
-                .map(|x| x.as_slice()),
+            args.get(&vanilla::ArgumentType::Jvm).map(|x| x.as_slice()),
             &self.location_info.libraries_dir(),
             &version_info,
             &natives_dir,
@@ -157,8 +153,7 @@ impl<
         )?;
 
         let minecraft_arguments = get_minecraft_arguments(
-            args.get(&vanilla::ArgumentType::Game)
-                .map(|x| x.as_slice()),
+            args.get(&vanilla::ArgumentType::Game).map(|x| x.as_slice()),
             version_info.minecraft_arguments.as_deref(),
             &credentials,
             &version.id,

@@ -5,8 +5,8 @@ use crate::features::{
     instance::{Instance, InstanceError, InstanceInstallStage, InstanceStorage},
     java::{JavaInstallationService, JavaStorage, JreProvider},
     minecraft::{
-        app::{InstallMinecraftParams, InstallMinecraftUseCase},
         MetadataStorage, MinecraftDownloader,
+        app::{InstallMinecraftParams, InstallMinecraftUseCase},
     },
     settings::LocationInfo,
 };
@@ -27,14 +27,14 @@ pub struct InstallInstanceUseCase<
 }
 
 impl<
-        IS: InstanceStorage,
-        MS: MetadataStorage,
-        MD: MinecraftDownloader,
-        PS: ProgressService,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-        JP: JreProvider,
-    > InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP>
+    IS: InstanceStorage,
+    MS: MetadataStorage,
+    MD: MinecraftDownloader,
+    PS: ProgressService,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+> InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP>
 {
     pub fn new(
         instance_storage: Arc<IS>,

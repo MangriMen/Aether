@@ -42,53 +42,55 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
     async fn install(&self) -> Result<(), String> {
         let mut cache = self.pending_update.lock().await;
 
-        if let Some(update) = cache.take() {
-            let mut downloaded = 0;
-            let mut content_length: Option<u64> = None;
+        match cache.take() {
+            Some(update) => {
+                let mut downloaded = 0;
+                let mut content_length: Option<u64> = None;
 
-            self.event_emitter
-                .emit_safe(UpdateProgress {
-                    fraction: Some(0.0),
-                    phase: UpdatePhase::Started,
-                })
-                .await;
+                self.event_emitter
+                    .emit_safe(UpdateProgress {
+                        fraction: Some(0.0),
+                        phase: UpdatePhase::Started,
+                    })
+                    .await;
 
-            update
-                .download_and_install(
-                    |chunk_length, total_length| {
-                        content_length = total_length;
-                        downloaded += chunk_length;
+                update
+                    .download_and_install(
+                        |chunk_length, total_length| {
+                            content_length = total_length;
+                            downloaded += chunk_length;
 
-                        let fraction = content_length.map(|total| downloaded as f64 / total as f64);
+                            let fraction =
+                                content_length.map(|total| downloaded as f64 / total as f64);
 
-                        let emitter = self.event_emitter.clone();
-                        tokio::spawn(async move {
-                            emitter
-                                .emit_safe(UpdateProgress {
-                                    fraction,
-                                    phase: UpdatePhase::Progress,
-                                })
-                                .await;
-                        });
-                    },
-                    move || {
-                        let emitter = self.event_emitter.clone();
-                        tokio::spawn(async move {
-                            emitter
-                                .emit_safe(UpdateProgress {
-                                    fraction: None,
-                                    phase: UpdatePhase::Finished,
-                                })
-                                .await;
-                        });
-                    },
-                )
-                .await
-                .map_err(|e| e.to_string())?;
+                            let emitter = self.event_emitter.clone();
+                            tokio::spawn(async move {
+                                emitter
+                                    .emit_safe(UpdateProgress {
+                                        fraction,
+                                        phase: UpdatePhase::Progress,
+                                    })
+                                    .await;
+                            });
+                        },
+                        move || {
+                            let emitter = self.event_emitter.clone();
+                            tokio::spawn(async move {
+                                emitter
+                                    .emit_safe(UpdateProgress {
+                                        fraction: None,
+                                        phase: UpdatePhase::Finished,
+                                    })
+                                    .await;
+                            });
+                        },
+                    )
+                    .await
+                    .map_err(|e| e.to_string())?;
 
-            self.app.restart();
-        } else {
-            Err("No pending update found. Please check for updates first.".to_string())
+                self.app.restart();
+            }
+            _ => Err("No pending update found. Please check for updates first.".to_string()),
         }
     }
 }

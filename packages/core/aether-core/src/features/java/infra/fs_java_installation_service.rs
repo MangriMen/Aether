@@ -4,9 +4,9 @@ use async_trait::async_trait;
 
 use crate::{
     features::java::{
-        infra::{get_java_properties, JavaProperties},
-        utils::extract_java_major_minor_version,
         Java, JavaDomainError, JavaInstallationService,
+        infra::{JavaProperties, get_java_properties},
+        utils::extract_java_major_minor_version,
     },
     shared,
 };

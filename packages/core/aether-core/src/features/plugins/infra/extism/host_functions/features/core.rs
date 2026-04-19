@@ -7,7 +7,7 @@ use crate::{core::LauncherState, shared::execute_async};
 use super::super::{
     super::{
         super::plugin_utils,
-        mappers::{to_extism_res, OutputDtoExt},
+        mappers::{OutputDtoExt, to_extism_res},
     },
     PluginContext,
 };

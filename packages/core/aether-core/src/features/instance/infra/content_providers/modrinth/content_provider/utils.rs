@@ -2,10 +2,10 @@ use std::cmp::Ordering;
 
 use crate::features::{
     instance::{
+        ContentType, Instance,
         infra::content_providers::modrinth::api_client::{
             ModrinthIndex, ModrinthVersionType, ProjectResponse,
         },
-        ContentType, Instance,
     },
     minecraft::ModLoader,
 };

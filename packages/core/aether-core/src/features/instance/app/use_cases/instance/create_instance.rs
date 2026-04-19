@@ -16,8 +16,8 @@ use crate::{
         },
         java::{JavaInstallationService, JavaStorage, JreProvider},
         minecraft::{
-            app::MinecraftApplicationError, LoaderVersionPreference, LoaderVersionResolver,
-            MetadataStorage, MinecraftDownloader, ModLoader,
+            LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftDownloader,
+            ModLoader, app::MinecraftApplicationError,
         },
         settings::{Hooks, LocationInfo},
     },
@@ -57,15 +57,15 @@ pub struct CreateInstanceUseCase<
 }
 
 impl<
-        IS: InstanceStorage,
-        MS: MetadataStorage,
-        MD: MinecraftDownloader,
-        PS: ProgressService,
-        IWS: InstanceWatcherService,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-        JP: JreProvider,
-    > CreateInstanceUseCase<IS, MS, MD, PS, IWS, JIS, JS, JP>
+    IS: InstanceStorage,
+    MS: MetadataStorage,
+    MD: MinecraftDownloader,
+    PS: ProgressService,
+    IWS: InstanceWatcherService,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+> CreateInstanceUseCase<IS, MS, MD, PS, IWS, JIS, JS, JP>
 {
     pub fn new(
         instance_storage: Arc<IS>,

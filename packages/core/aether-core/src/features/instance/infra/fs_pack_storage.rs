@@ -59,14 +59,12 @@ impl PackStorage for FsPackStorage {
         let pack = self.get_pack(instance_id).await?;
 
         for entry in pack.files {
-            if let Ok(pack_file) = self.get_pack_file(instance_id, &entry.file).await {
-                if let Some(update_map) = &pack_file.update {
-                    if let Some(info) = update_map.get(provider_id) {
-                        if info.content_id == content_id {
-                            return Ok(Some(pack_file));
-                        }
-                    }
-                }
+            if let Ok(pack_file) = self.get_pack_file(instance_id, &entry.file).await
+                && let Some(update_map) = &pack_file.update
+                && let Some(info) = update_map.get(provider_id)
+                && info.content_id == content_id
+            {
+                return Ok(Some(pack_file));
             }
         }
 

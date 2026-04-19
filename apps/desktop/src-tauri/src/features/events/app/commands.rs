@@ -1,9 +1,9 @@
 use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsUseCase};
 
 use crate::{
-    commands::{events_commands, EVENTS_PLUGIN_NAME},
-    features::events::{ProgressBarDto, ProgressEventDto, WarningEventDto},
     FrontendResult,
+    commands::{EVENTS_PLUGIN_NAME, events_commands},
+    features::events::{ProgressBarDto, ProgressEventDto, WarningEventDto},
 };
 
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {

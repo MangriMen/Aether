@@ -1,4 +1,4 @@
-use crate::features::minecraft::{vanilla, MinecraftDomainError};
+use crate::features::minecraft::{MinecraftDomainError, vanilla};
 
 pub fn resolve_minecraft_version(
     game_version: &str,

@@ -29,17 +29,17 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
 }
 
 impl<
-        IS: InstanceStorage + 'static,
-        MS: MetadataStorage,
-        PS: ProcessStorage + 'static,
-        CS: CredentialsStorage,
-        GISS: DefaultInstanceSettingsStorage,
-        MD: MinecraftDownloader,
-        PGS: ProgressService,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-        JP: JreProvider,
-    > LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP>
+    IS: InstanceStorage + 'static,
+    MS: MetadataStorage,
+    PS: ProcessStorage + 'static,
+    CS: CredentialsStorage,
+    GISS: DefaultInstanceSettingsStorage,
+    MD: MinecraftDownloader,
+    PGS: ProgressService,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP>
 {
     pub fn new(
         credentials_storage: Arc<CS>,

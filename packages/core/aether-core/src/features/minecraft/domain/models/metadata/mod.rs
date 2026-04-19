@@ -1,2 +1,2 @@
-pub mod vanilla;
 pub mod modded;
+pub mod vanilla;

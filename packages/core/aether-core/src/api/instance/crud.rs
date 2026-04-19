@@ -1,27 +1,27 @@
 use std::sync::Arc;
 
 use crate::{
-    core::{domain::LazyLocator, LauncherState},
+    core::{LauncherState, domain::LazyLocator},
     features::{
         instance::{
+            Instance,
             app::{
                 CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
                 InstallInstanceUseCase, ListInstancesUseCase, NewInstance, RemoveInstanceUseCase,
                 UpdateInstanceUseCase,
             },
-            Instance,
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},
             infra::{AzulJreProvider, FsJavaInstallationService},
         },
         minecraft::{
+            LoaderVersionResolver,
             app::{GetVersionManifestUseCase, InstallMinecraftUseCase},
             infra::{
                 AssetsService, ClientService, LibrariesService, MinecraftDownloadResolver,
                 MinecraftDownloadService,
             },
-            LoaderVersionResolver,
         },
     },
     shared::FileCache,

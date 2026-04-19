@@ -2,12 +2,12 @@ use std::{path::PathBuf, time::Duration};
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tracing::debug;
 
 use crate::shared::{
-    create_dir_all, read_async, read_json_async, remove_file, write_json_async, Cache, CacheKey,
-    CachePathResolver, FileStore,
+    Cache, CacheKey, CachePathResolver, FileStore, create_dir_all, read_async, read_json_async,
+    remove_file, write_json_async,
 };
 
 pub struct FileCache<R> {
@@ -37,14 +37,14 @@ impl<R: CachePathResolver> Cache for FileCache<R> {
             return;
         };
 
-        if let Some(parent) = path.parent() {
-            if let Err(err) = create_dir_all(&parent).await {
-                debug!(
-                    "Failed to create cache dir {:?}. {:?}",
-                    path.to_path_buf(),
-                    err
-                );
-            }
+        if let Some(parent) = path.parent()
+            && let Err(err) = create_dir_all(&parent).await
+        {
+            debug!(
+                "Failed to create cache dir {:?}. {:?}",
+                path.to_path_buf(),
+                err
+            );
         }
 
         if let Err(err) = write_json_async(&path, value).await {

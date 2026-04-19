@@ -5,7 +5,7 @@ use log::warn;
 use tauri::{App, AppHandle, Manager};
 
 use crate::{
-    core::{build_main_window, instance_launch_listener, PreventExitStateInner},
+    core::{PreventExitStateInner, build_main_window, instance_launch_listener},
     features::{
         events::{DualEventEmitterExt, EventEmitterState, TauriEventEmitter},
         settings::{

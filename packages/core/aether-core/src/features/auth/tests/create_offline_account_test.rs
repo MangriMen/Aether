@@ -25,9 +25,11 @@ async fn test_create_offline_account_with_invalid_username() {
     let use_case = CreateOfflineAccountUseCase::new(storage.clone());
 
     assert!(use_case.execute("ab".to_string()).await.is_err());
-    assert!(use_case
-        .execute("verylongusernamethatexceedslimit".to_string())
-        .await
-        .is_err());
+    assert!(
+        use_case
+            .execute("verylongusernamethatexceedslimit".to_string())
+            .await
+            .is_err()
+    );
     assert!(use_case.execute("user@name".to_string()).await.is_err());
 }
