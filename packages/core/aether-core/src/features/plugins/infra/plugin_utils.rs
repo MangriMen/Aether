@@ -7,7 +7,7 @@ use aether_core_plugin_api::v0::CommandDto;
 
 use crate::{
     features::{plugins::PluginError, settings::LocationInfo},
-    shared::{domain::SerializableCommand, IoError},
+    shared::{IoError, domain::SerializableCommand},
 };
 
 pub fn get_default_allowed_paths(
@@ -125,9 +125,10 @@ pub fn plugin_command_to_host(
     command: &CommandDto,
     location_info: &LocationInfo,
 ) -> Result<SerializableCommand, PluginError> {
-    let resolved_program = plugin_path_to_host(id, &command.program, location_info)
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|_| command.program.clone());
+    let resolved_program = plugin_path_to_host(id, &command.program, location_info).map_or_else(
+        |_| command.program.clone(),
+        |p| p.to_string_lossy().to_string(),
+    );
 
     let resolved_args: Vec<String> = command
         .args

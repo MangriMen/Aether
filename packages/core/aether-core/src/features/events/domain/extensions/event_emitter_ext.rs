@@ -7,7 +7,7 @@ use crate::features::events::EventEmitter;
 pub trait EventEmitterExt<E>: EventEmitter<E> {
     async fn emit_safe(&self, event: impl Into<E> + Send) {
         if let Err(err) = self.emit(event.into()).await {
-            warn!("Failed to emit event: {err}")
+            warn!("Failed to emit event: {err}");
         }
     }
 

@@ -44,7 +44,7 @@ impl InstanceStorage for FsInstanceStorage {
             match instance {
                 Ok(instance) => instances.push(instance),
                 Err(err) => {
-                    tracing::debug!("Failed to read instance {:?}", err)
+                    tracing::debug!("Failed to read instance {:?}", err);
                 }
             }
         }

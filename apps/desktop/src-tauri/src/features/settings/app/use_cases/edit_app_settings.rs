@@ -46,7 +46,7 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
             self.window_manager
                 .apply_visual_effects(window_effect.into())
                 .await
-                .map_err(|err| AppSettingsError::CanNotSetEffect(err.to_string()))?;
+                .map_err(|err| AppSettingsError::CanNotSetEffect(err.clone()))?;
 
             new_settings.window_effect = window_effect.into();
         }

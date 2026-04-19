@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::{
-    features::minecraft::{vanilla, modded, MetadataStorage, MinecraftDomainError, ModLoader},
+    features::minecraft::{MetadataStorage, MinecraftDomainError, ModLoader, modded, vanilla},
     libs::request_client::{Request, RequestClient, RequestClientExt},
     shared::IoError,
 };
@@ -26,9 +26,7 @@ impl<RC: RequestClient> ModrinthMetadataStorage<RC> {
 
 #[async_trait]
 impl<RC: RequestClient> MetadataStorage for ModrinthMetadataStorage<RC> {
-    async fn get_version_manifest(
-        &self,
-    ) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
+    async fn get_version_manifest(&self) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
         Ok(self
             .request_client
             .fetch_json::<daedalus::minecraft::VersionManifest>(Request::get(

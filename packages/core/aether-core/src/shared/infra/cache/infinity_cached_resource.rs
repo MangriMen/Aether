@@ -29,11 +29,9 @@ impl<C: Cache> InfinityCachedResource<C> {
     {
         let key = key_fn();
 
-        if !force {
-            if let Some(value) = self.cache.get::<T>(&key).await {
-                debug!("Get {} from cache", context_fn());
-                return Ok(value);
-            }
+        if !force && let Some(value) = self.cache.get::<T>(&key).await {
+            debug!("Get {} from cache", context_fn());
+            return Ok(value);
         }
 
         let value = fetch_fn.await?;

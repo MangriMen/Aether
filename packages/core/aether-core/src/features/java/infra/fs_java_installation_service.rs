@@ -4,9 +4,9 @@ use async_trait::async_trait;
 
 use crate::{
     features::java::{
-        infra::{get_java_properties, JavaProperties},
-        utils::extract_java_major_minor_version,
         Java, JavaDomainError, JavaInstallationService,
+        infra::{JavaProperties, get_java_properties},
+        utils::extract_java_major_minor_version,
     },
     shared,
 };
@@ -23,10 +23,10 @@ impl FsJavaInstallationService {
     fn get_java_window_bin_path(path: PathBuf) -> Result<PathBuf, JavaDomainError> {
         match path.file_name() {
             Some(file_name) => {
-                if file_name.to_string_lossy() != JAVA_WINDOW_BIN {
-                    Ok(path.join(JAVA_WINDOW_BIN))
-                } else {
+                if file_name.to_string_lossy() == JAVA_WINDOW_BIN {
                     Ok(path)
+                } else {
+                    Ok(path.join(JAVA_WINDOW_BIN))
                 }
             }
             None => Err(JavaDomainError::InvalidPath { path }),
@@ -68,8 +68,8 @@ impl JavaInstallationService for FsJavaInstallationService {
             extract_java_major_minor_version(&version).map(|(_, major_version)| {
                 Java::new(
                     major_version,
-                    version.to_string(),
-                    architecture.to_string(),
+                    version.clone(),
+                    architecture.clone(),
                     java_window_bin_path.to_string_lossy().to_string(),
                 )
             })

@@ -29,10 +29,10 @@ impl<C: Cache> CachedResource<C> {
         let key = key_fn();
         let cached_opt = self.cache.get::<CachedValue<T>>(&key).await;
 
-        if let Some(cached) = &cached_opt {
-            if !cached.is_expired(ttl) {
-                return Ok(cached.value.clone());
-            }
+        if let Some(cached) = &cached_opt
+            && !cached.is_expired(ttl)
+        {
+            return Ok(cached.value.clone());
         }
 
         match fetch_fn.await {

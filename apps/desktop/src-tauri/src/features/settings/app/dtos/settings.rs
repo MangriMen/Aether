@@ -1,4 +1,4 @@
-use aether_core::features::settings::{app::EditSettings, Settings};
+use aether_core::features::settings::{Settings, app::EditSettings};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

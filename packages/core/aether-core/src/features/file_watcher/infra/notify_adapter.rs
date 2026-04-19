@@ -2,11 +2,11 @@ use std::{path::Path, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use futures::{
-    channel::mpsc::{channel, Receiver},
     SinkExt, StreamExt,
+    channel::mpsc::{Receiver, channel},
 };
 use notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
+use notify_debouncer_mini::{DebounceEventResult, Debouncer, new_debouncer};
 use tokio::sync::RwLock;
 
 use crate::features::file_watcher::{
@@ -28,8 +28,8 @@ impl<FEH: FileEventHandler + 'static> NotifyFileWatcher<FEH> {
                 futures::executor::block_on(async {
                     if let Err(e) = tx.send(res).await {
                         tracing::error!("Failed to send file event: {}", e);
-                    };
-                })
+                    }
+                });
             },
         )?;
 

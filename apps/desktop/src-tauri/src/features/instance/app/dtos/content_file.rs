@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use aether_core::features::instance::{ContentFile, ContentFileUpdateInfo};
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
 use crate::features::instance::{ContentTypeDto, ProviderIdDto};

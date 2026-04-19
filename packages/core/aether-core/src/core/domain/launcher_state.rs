@@ -7,7 +7,7 @@ use crate::{
     features::{
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
         instance::InstanceWatcherService,
-        settings::{infra::FsSettingsStorage, LocationInfo, Settings, SettingsStorage},
+        settings::{LocationInfo, Settings, SettingsStorage, infra::FsSettingsStorage},
     },
     shared::domain::FetchSemaphore,
 };

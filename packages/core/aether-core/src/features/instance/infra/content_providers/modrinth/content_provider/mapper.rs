@@ -2,17 +2,19 @@ use std::str::FromStr;
 
 use crate::features::{
     instance::{
-        infra::content_providers::modrinth::{
-            api_client::{
-                Hit, ModrinthDependencyResponse, ModrinthDependencyType, ModrinthRequestedStatus,
-                ModrinthVersionStatus, ModrinthVersionType, ProjectResponse, ProjectSearchParams,
-                ProjectSearchResponse, ProjectVersionResponse, SearchIndex, MODRINTH_WEB_URL,
-            },
-            get_facet_vector, ModrinthMapperError,
-        },
         ContentItem, ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
         ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
         ContentVersionType, ProviderId, RequestedContentVersionStatus,
+        infra::content_providers::modrinth::{
+            ModrinthMapperError,
+            api_client::{
+                Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
+                ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
+                ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
+                ProjectVersionResponse, SearchIndex,
+            },
+            get_facet_vector,
+        },
     },
     minecraft::ModLoader,
 };
@@ -28,18 +30,17 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
             &[value.content_type.get_name()],
         ));
 
-        if value.content_type == ContentType::Mod {
-            if let Some(loader) = value.loader {
-                if loader != ModLoader::Vanilla {
-                    facets.push(get_facet_vector("categories", &[loader.as_str()]));
-                }
-            }
+        if value.content_type == ContentType::Mod
+            && let Some(loader) = value.loader
+            && loader != ModLoader::Vanilla
+        {
+            facets.push(get_facet_vector("categories", &[loader.as_str()]));
         }
 
-        if let Some(game_versions) = value.game_versions {
-            if !game_versions.is_empty() {
-                facets.push(get_facet_vector("versions", &game_versions));
-            }
+        if let Some(game_versions) = value.game_versions
+            && !game_versions.is_empty()
+        {
+            facets.push(get_facet_vector("versions", &game_versions));
         }
 
         Ok(Self {
@@ -78,6 +79,7 @@ fn calculate_pagination(offset: i64, limit: i64, total_hits: i64) -> (i64, i64) 
     }
 
     let page = (offset / limit) + 1;
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
     let page_count = (total_hits as f64 / limit as f64).ceil() as i64;
 
     (page, page_count)
@@ -103,7 +105,7 @@ impl TryFrom<Hit> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{}/{project_type}/{slug}", MODRINTH_WEB_URL);
+        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
 
         Ok(Self {
             id: project_id,
@@ -141,7 +143,7 @@ impl TryFrom<ProjectResponse> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{}/{project_type}/{slug}", MODRINTH_WEB_URL);
+        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
 
         Ok(Self {
             id,
@@ -235,7 +237,7 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             .filter_map(|l| ModLoader::from_str(&l).ok())
             .collect();
 
-        let web_url = format!("{}/project/{}/version/{}", MODRINTH_WEB_URL, project_id, id);
+        let web_url = format!("{MODRINTH_WEB_URL}/project/{project_id}/version/{id}");
 
         Ok(Self {
             id,

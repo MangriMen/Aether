@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::{
     events::ProgressBarId,
     java::Java,
-    minecraft::{vanilla, MinecraftDomainError},
+    minecraft::{MinecraftDomainError, vanilla},
 };
 
 #[async_trait]

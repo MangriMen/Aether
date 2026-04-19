@@ -2,11 +2,15 @@
 name = "aether"
 version = "0.8.7"
 description = "Desktop application for managing Minecraft instances and mods"
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+
+[lints]
+workspace = true
 
 [dependencies]
 # Tauri & Plugins
@@ -21,7 +25,6 @@ tauri-plugin-shell = "2"
 
 # External Libraries
 open = { version = "5", features = ["shellexecute-on-windows"] }
-paste = "1"
 specta = { version = "=2.0.0-rc.24", features = [
   "serde_json",
   "uuid",

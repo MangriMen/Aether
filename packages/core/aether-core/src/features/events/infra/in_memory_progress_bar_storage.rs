@@ -5,7 +5,7 @@ use uuid::Uuid;
 use dashmap::mapref::one::Ref as DashMapRef;
 
 use crate::features::events::{
-    progress_bar_error::ProgressBarStorageError, ProgressBar, ProgressBarStorage,
+    ProgressBar, ProgressBarStorage, progress_bar_error::ProgressBarStorageError,
 };
 
 #[derive(Debug, Default)]

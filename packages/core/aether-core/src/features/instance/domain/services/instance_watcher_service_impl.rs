@@ -27,14 +27,14 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
     async fn watch_instances(&self) -> Result<(), InstanceError> {
         if let Ok(instances_dir) = std::fs::read_dir(self.location_info.instances_dir()) {
             for instance_dir in instances_dir {
-                if let Ok(file_name) = instance_dir.map(|x| x.file_name()) {
-                    if let Some(file_name) = file_name.to_str() {
-                        if file_name.starts_with(".DS_Store") {
-                            continue;
-                        };
-
-                        let _ = self.watch_instance(file_name).await;
+                if let Ok(file_name) = instance_dir.map(|x| x.file_name())
+                    && let Some(file_name) = file_name.to_str()
+                {
+                    if file_name.starts_with(".DS_Store") {
+                        continue;
                     }
+
+                    let _ = self.watch_instance(file_name).await;
                 }
             }
         }
@@ -53,11 +53,12 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
             for folder in folders {
                 let path = instance_dir.join(folder);
 
-                if !path.exists() && !path.is_symlink() {
-                    if let Err(e) = tokio::fs::create_dir_all(&path).await {
-                        tracing::error!("Failed to create directory for watcher {path:?}: {e}");
-                        return Ok(());
-                    }
+                if !path.exists()
+                    && !path.is_symlink()
+                    && let Err(e) = tokio::fs::create_dir_all(&path).await
+                {
+                    tracing::error!("Failed to create directory for watcher {path:?}: {e}");
+                    return Ok(());
                 }
 
                 if let Err(e) = self.file_watcher.watch(&path).await {

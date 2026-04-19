@@ -44,7 +44,7 @@ impl PluginInstance for ExtismPluginInstance {
             .call(name, args)
             .map_err(|e| PluginError::FunctionCallFailed {
                 function_name: name.to_owned(),
-                plugin_id: self.id.to_owned(),
+                plugin_id: self.id.clone(),
                 error: e.to_string(),
             })
     }

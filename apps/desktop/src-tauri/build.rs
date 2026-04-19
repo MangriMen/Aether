@@ -1,7 +1,12 @@
 #[path = "src/commands.rs"]
 mod commands;
 
-use commands::*;
+use commands::{
+    APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
+    MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
+    UPDATE_PLUGIN_NAME, application_commands, auth_commands, events_commands, instance_commands,
+    minecraft_commands, plugin_commands, process_commands, settings_commands, update_commands,
+};
 
 macro_rules! to_tokens {
     ($($cmd:ident),* $(,)?) => {

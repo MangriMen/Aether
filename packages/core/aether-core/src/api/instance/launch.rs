@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     core::{
-        domain::{LazyLocator, ProgressServiceType},
         LauncherState,
+        domain::{LazyLocator, ProgressServiceType},
     },
     features::{
         auth::Credentials,
@@ -19,6 +19,7 @@ use crate::{
             infra::{AzulJreProvider, FsJavaInstallationService, FsJavaStorage},
         },
         minecraft::{
+            LoaderVersionResolver,
             app::{
                 GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase,
                 InstallMinecraftUseCase,
@@ -28,15 +29,14 @@ use crate::{
                 MinecraftDownloadResolver, MinecraftDownloadService, MinecraftMetadataResolver,
                 ModrinthMetadataStorage,
             },
-            LoaderVersionResolver,
         },
         process::{
+            MinecraftProcessMetadata,
             app::{
                 GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, StartProcessUseCase,
                 TrackProcessUseCase,
             },
             infra::InMemoryProcessStorage,
-            MinecraftProcessMetadata,
         },
         settings::infra::FsDefaultInstanceSettingsStorage,
     },
@@ -44,6 +44,7 @@ use crate::{
     shared::FileCache,
 };
 
+#[allow(clippy::too_many_lines)]
 async fn get_launch_instance_use_case(
     state: &LauncherState,
     lazy_locator: &LazyLocator,

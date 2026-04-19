@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::minecraft::{
-    modded, LoaderVersionPreference, MetadataStorage, MinecraftDomainError, ModLoader,
+    LoaderVersionPreference, MetadataStorage, MinecraftDomainError, ModLoader, modded,
 };
 
 pub struct LoaderVersionResolver<MS> {

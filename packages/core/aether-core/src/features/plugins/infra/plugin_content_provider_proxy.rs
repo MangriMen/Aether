@@ -2,15 +2,15 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use extism_convert::Msgpack;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{
-        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
         AtomicInstallParams, ContentFile, ContentItem, ContentProvider,
         ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
         ContentVersion, DownloadedContent, Instance, InstanceError, ModpackInstallParams,
+        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance,
@@ -73,30 +73,29 @@ impl PluginContentProviderProxy {
 
     async fn call_optional<I, O>(
         &self,
-        handler: &Option<String>,
+        handler: Option<&String>,
         input: I,
     ) -> Result<O, InstanceError>
     where
         I: Serialize,
         O: DeserializeOwned,
     {
-        match handler {
-            Some(handler_name) => self.call_plugin(handler_name, input).await,
-            None => {
-                let plugin = self.instance.lock().await;
-                let plugin_id = plugin.get_id();
+        if let Some(handler_name) = handler {
+            self.call_plugin(handler_name, input).await
+        } else {
+            let plugin = self.instance.lock().await;
+            let plugin_id = plugin.get_id();
 
-                tracing::warn!(
-                    "Capability '{}' in plugin '{}' does not support this operation (handler is None)",
-                    self.capability.metadata.id,
-                    plugin_id
-                );
+            tracing::warn!(
+                "Capability '{}' in plugin '{}' does not support this operation (handler is None)",
+                self.capability.metadata.id,
+                plugin_id
+            );
 
-                Err(InstanceError::ContentProviderNotFound {
-                    plugin_id,
-                    capability_id: self.capability.metadata.id.clone(),
-                })
-            }
+            Err(InstanceError::ContentProviderNotFound {
+                plugin_id,
+                capability_id: self.capability.metadata.id.clone(),
+            })
         }
     }
 }
@@ -121,7 +120,7 @@ impl ContentProvider for PluginContentProviderProxy {
     }
 
     async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
-        self.call_optional(&self.capability.handlers.list_version, content_id)
+        self.call_optional(self.capability.handlers.list_version.as_ref(), content_id)
             .await
     }
 
@@ -137,8 +136,11 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         install_params: &ModpackInstallParams,
     ) -> Result<(String, Vec<ContentFile>), InstanceError> {
-        self.call_optional(&self.capability.handlers.install_modpack, install_params)
-            .await
+        self.call_optional(
+            self.capability.handlers.install_modpack.as_ref(),
+            install_params,
+        )
+        .await
     }
 
     async fn check_compatibility(
@@ -147,7 +149,7 @@ impl ContentProvider for PluginContentProviderProxy {
         check_params: &ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
         self.call_optional(
-            &self.capability.handlers.check_compatibility,
+            self.capability.handlers.check_compatibility.as_ref(),
             PluginCheckCompatibilityParams {
                 instances: instances.to_vec(),
                 check_params: check_params.clone(),

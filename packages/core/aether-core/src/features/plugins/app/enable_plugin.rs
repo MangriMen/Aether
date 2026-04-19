@@ -42,7 +42,7 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
         // Drop immediate to prevent dead lock in dash map
         drop(plugin);
 
-        self.check_is_able_to_load(&plugin_id, &state)?;
+        Self::check_is_able_to_load(&plugin_id, &state)?;
 
         self.plugin_registry
             .upsert_with(&plugin_id, |plugin| {
@@ -52,13 +52,13 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
             .await?;
 
         match self.load_plugin(&plugin_id, &manifest).await {
-            Ok(_) => self.add_to_enabled_plugins(&plugin_id).await,
+            Ok(()) => self.add_to_enabled_plugins(&plugin_id).await,
             Err(err) => {
                 self.plugin_registry
                     .upsert_with(&plugin_id, |plugin| {
                         match &err {
                             PluginError::LoadFailed { .. } => {
-                                plugin.state = PluginState::Failed(err.to_string())
+                                plugin.state = PluginState::Failed(err.to_string());
                             }
                             _ => plugin.state = PluginState::NotLoaded,
                         }
@@ -73,7 +73,6 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
     }
 
     fn check_is_able_to_load(
-        &self,
         plugin_id: &str,
         plugin_state: &PluginState,
     ) -> Result<(), PluginError> {

@@ -13,10 +13,9 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
-            vanilla::VersionInfo,
-            modded,
+            MinecraftDomainError, ModLoaderProcessor, modded,
             utils::{get_class_paths_jar, get_lib_path},
-            MinecraftDomainError, ModLoaderProcessor,
+            vanilla::VersionInfo,
         },
         settings::LocationInfo,
     },
@@ -47,7 +46,7 @@ impl<PS: ProgressService> ForgeProcessor<PS> {
         log::debug!("Running forge processor {}", processor.jar);
 
         let class_path: Vec<String> = with_mut_ref!(cp = processor.classpath.clone() => {
-            cp.push(processor.jar.clone())
+            cp.push(processor.jar.clone());
         });
 
         let class_path_arg =
@@ -140,15 +139,16 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
         let total_processors = processors.len();
         for (index, processor) in processors.iter().enumerate() {
-            if let Some(sides) = &processor.sides {
-                if !sides.contains(&String::from("client")) {
-                    continue;
-                }
+            if let Some(sides) = &processor.sides
+                && !sides.contains(&String::from("client"))
+            {
+                continue;
             }
 
             Self::run_single_processor(processor, data, &libraries_dir, java_version).await?;
 
             if let Some(loading_bar) = loading_bar {
+                #[allow(clippy::cast_precision_loss)]
                 let progress = 30.0 / total_processors as f64;
                 let message = format!("Running forge processor {}/{}", index + 1, total_processors);
                 self.progress_service
@@ -168,10 +168,10 @@ fn process_argument(
 ) -> Result<String, MinecraftDomainError> {
     // Arguments in [] are resolved to the path of a previously downloaded library
     // Check if the argument is a direct library reference [group:artifact:version]
-    if let Some(stripped) = argument.strip_prefix('[') {
-        if let Some(lib_key) = stripped.strip_suffix(']') {
-            return get_lib_path(libraries_path, lib_key, true);
-        }
+    if let Some(stripped) = argument.strip_prefix('[')
+        && let Some(lib_key) = stripped.strip_suffix(']')
+    {
+        return get_lib_path(libraries_path, lib_key, true);
     }
 
     let mut result = argument.to_string();
@@ -179,7 +179,7 @@ fn process_argument(
     // Arguments may contain {KEY} placeholders. We use a naive find-and-replace
     // to support composite values like "{ROOT}/libraries/".
     for (key, entry) in data {
-        let placeholder = format!("{{{}}}", key);
+        let placeholder = format!("{{{key}}}");
 
         if result.contains(&placeholder) {
             let replacement = if let Some(inner) = entry.client.strip_prefix('[') {
@@ -199,7 +199,7 @@ fn process_argument(
 
     if result.contains('{') && result.contains('}') {
         return Err(MinecraftDomainError::ProcessorFailed {
-            reason: format!("Argument contains unresolved placeholders: {}", result),
+            reason: format!("Argument contains unresolved placeholders: {result}"),
         });
     }
 
@@ -223,12 +223,12 @@ pub async fn get_processor_main_class(
         let file = std::fs::File::open(&path).map_err(|e| IoError::with_path(e, &path))?;
         let mut archive =
             zip::ZipArchive::new(file).map_err(|_| MinecraftDomainError::ProcessorFailed {
-                reason: format!("Cannot read processor at {}", path),
+                reason: format!("Cannot read processor at {path}"),
             })?;
 
         let manifest = archive.by_name("META-INF/MANIFEST.MF").map_err(|_| {
             MinecraftDomainError::ProcessorFailed {
-                reason: format!("Cannot read processor manifest at {}", path),
+                reason: format!("Cannot read processor manifest at {path}"),
             }
         })?;
 

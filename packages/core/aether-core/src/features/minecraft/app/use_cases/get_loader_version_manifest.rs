@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::minecraft::{
-    app::MinecraftApplicationError, modded, MetadataStorage, ModLoader,
+    MetadataStorage, ModLoader, app::MinecraftApplicationError, modded,
 };
 
 pub struct GetLoaderVersionManifestUseCase<MS: MetadataStorage> {

@@ -1,13 +1,14 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 use tracing::{debug, trace};
 
 use crate::shared::{
+    IoError, UpdateAction,
     io::{ensure_read_json_async, write_json_async},
-    read_json_async, IoError, UpdateAction,
+    read_json_async,
 };
 pub struct JsonValueStore<T> {
     path: PathBuf,

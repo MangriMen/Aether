@@ -8,14 +8,14 @@ use tracing::trace;
 use crate::{
     features::{
         events::{
-            utils::{try_for_each_concurrent_with_progress, ProgressConfigWithMessage},
             ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt,
+            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
         },
-        minecraft::{vanilla, MinecraftDomainError},
+        minecraft::{MinecraftDomainError, vanilla},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient, RequestClientExt},
-    shared::{write_async, Cache, InfinityCachedResource, IoError},
+    shared::{Cache, InfinityCachedResource, IoError, write_async},
 };
 
 use super::assets_index_key;
@@ -92,7 +92,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
         let assets_index = self
             .cached_resource
             .get_cached(
-                || assets_index_key(version_info.asset_index.id.to_string()),
+                || assets_index_key(version_info.asset_index.id.clone()),
                 self.fetch_assets_index(version_info),
                 || format!("assets index {}", version_info.asset_index.id),
                 force,

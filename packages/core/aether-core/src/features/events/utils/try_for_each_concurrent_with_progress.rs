@@ -32,10 +32,10 @@ where
     Fut: Future<Output = Result<(), ST::Error>> + Send,
     T: Send,
 {
-    let progress_increment = progress_config
-        .as_ref()
-        .map(|config| config.total_progress / futures_count.max(1) as f64)
-        .unwrap_or(1.0);
+    #[allow(clippy::cast_precision_loss)]
+    let progress_increment = progress_config.as_ref().map_or(1.0, |config| {
+        config.total_progress / futures_count.max(1) as f64
+    });
 
     let progress_service = progress_service.as_ref();
 

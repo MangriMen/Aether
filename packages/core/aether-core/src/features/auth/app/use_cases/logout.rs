@@ -21,8 +21,9 @@ impl<CS: CredentialsStorage> LogoutUseCase<CS> {
         self.credentials_storage.remove(account_id).await?;
 
         match ActiveAccountHelper::ensure_active(self.credentials_storage.as_ref()).await {
-            Ok(_) => Ok(()),
-            Err(AuthApplicationError::Domain(AuthDomainError::NoActiveCredentials)) => Ok(()),
+            Ok(_) | Err(AuthApplicationError::Domain(AuthDomainError::NoActiveCredentials)) => {
+                Ok(())
+            }
             Err(e) => Err(e),
         }
     }

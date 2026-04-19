@@ -33,7 +33,7 @@ impl InstanceEventHandler {
 
     fn is_crash_report(path: &Path) -> bool {
         path.components().any(|x| x.as_os_str() == "crash-reports")
-            && path.extension().map(|x| x == "txt").unwrap_or(false)
+            && path.extension().is_some_and(|x| x == "txt")
     }
 
     fn crash_task(&self, id: String) {
@@ -62,9 +62,9 @@ impl InstanceEventHandler {
                 match res {
                     Ok(()) => {}
                     Err(err) => {
-                        tracing::warn!("Unable to send crash report to frontend: {err}")
+                        tracing::warn!("Unable to send crash report to frontend: {err}");
                     }
-                };
+                }
             }
         });
     }
@@ -80,17 +80,17 @@ impl FileEventHandler for InstanceEventHandler {
             Ok(events) => {
                 let mut visited_profiles = Vec::new();
 
-                for event in events.iter() {
+                for event in &events {
                     if let Some(instance_path) = Self::extract_instance_path(&event.path) {
                         if Self::is_crash_report(&event.path) {
-                            self.crash_task(instance_path.to_string());
+                            self.crash_task(instance_path.clone());
                         } else if !visited_profiles.contains(&instance_path) {
-                            let path = instance_path.to_string();
+                            let path = instance_path.clone();
 
                             tokio::spawn({
                                 let event_emitter = self.event_emitter.clone();
                                 async move {
-                                    let _ = event_emitter
+                                    let () = event_emitter
                                         .emit_safe(InstanceEvent {
                                             event: InstanceEventType::Synced,
                                             instance_id: path,

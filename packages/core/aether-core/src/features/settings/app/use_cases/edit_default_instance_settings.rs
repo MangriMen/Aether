@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     features::settings::{
-        app::EditDefaultInstanceSettings, DefaultInstanceSettings, DefaultInstanceSettingsStorage,
-        SettingsError,
+        DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
+        app::EditDefaultInstanceSettings,
     },
     shared::UpdateAction,
 };

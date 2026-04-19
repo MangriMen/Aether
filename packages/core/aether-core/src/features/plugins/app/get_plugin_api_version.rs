@@ -1,4 +1,4 @@
-use crate::features::plugins::{PluginError, PLUGIN_API_VERSION};
+use crate::features::plugins::{PLUGIN_API_VERSION, PluginError};
 
 #[derive(Default)]
 pub struct GetPluginApiVersionUseCase {}

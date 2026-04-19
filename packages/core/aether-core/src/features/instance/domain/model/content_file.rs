@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use path_slash::PathBufExt;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::features::instance::{PackFile, ProviderId};
 

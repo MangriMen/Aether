@@ -57,7 +57,7 @@ impl Settings {
     }
 
     pub fn set_max_concurrent_downloads(&mut self, max_concurrent_downloads: usize) {
-        self.max_concurrent_downloads = max_concurrent_downloads
+        self.max_concurrent_downloads = max_concurrent_downloads;
     }
 
     pub fn is_plugin_enabled(&self, plugin_id: &str) -> bool {

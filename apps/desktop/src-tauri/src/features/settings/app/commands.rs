@@ -1,21 +1,23 @@
 use tauri::{AppHandle, State};
 
 use crate::{
-    commands::{settings_commands, SETTINGS_PLUGIN_NAME},
+    FrontendResult,
+    commands::{SETTINGS_PLUGIN_NAME, settings_commands},
     features::settings::{
         AppSettingsDto, AppSettingsStorageState, DefaultInstanceSettingsDto, EditAppSettingsDto,
         EditAppSettingsUseCase, EditDefaultInstanceSettingsDto, EditSettingsDto,
         GetAppSettingsUseCase, SettingsDto, WindowManagerState,
     },
-    FrontendResult,
 };
 
+#[must_use]
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::new(SETTINGS_PLUGIN_NAME)
         .invoke_handler(settings_commands!(tauri::generate_handler!))
         .build()
 }
 
+#[must_use]
 pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     settings_commands!(tauri_specta::collect_commands!)
 }

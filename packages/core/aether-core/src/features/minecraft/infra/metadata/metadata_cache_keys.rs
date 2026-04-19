@@ -1,5 +1,5 @@
 use crate::{
-    features::minecraft::{vanilla, modded, ModLoader},
+    features::minecraft::{ModLoader, modded, vanilla},
     shared::{CacheId, CacheKey, CachedValue},
 };
 

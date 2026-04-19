@@ -5,16 +5,17 @@ use tracing::debug;
 use crate::features::{
     events::{ProgressBarId, ProgressService},
     java::{
-        app::{GetJavaUseCase, InstallJavaUseCase, JavaApplicationError},
         Java, JavaInstallationService, JavaStorage, JreProvider,
+        app::{GetJavaUseCase, InstallJavaUseCase, JavaApplicationError},
     },
     minecraft::{
-        app::{GetVersionManifestUseCase, InstallMinecraftParams, MinecraftApplicationError},
-        infra::ForgeProcessor,
-        vanilla, resolve_minecraft_version,
-        utils::get_compatible_java_version,
         LoaderVersionResolver, MetadataStorage, MinecraftDomainError, MinecraftDownloader,
         ModLoader, ModLoaderProcessor,
+        app::{GetVersionManifestUseCase, InstallMinecraftParams, MinecraftApplicationError},
+        infra::ForgeProcessor,
+        resolve_minecraft_version,
+        utils::get_compatible_java_version,
+        vanilla,
     },
     settings::LocationInfo,
 };
@@ -38,13 +39,13 @@ pub struct InstallMinecraftUseCase<
 }
 
 impl<
-        MS: MetadataStorage,
-        MD: MinecraftDownloader,
-        PS: ProgressService,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-        JP: JreProvider,
-    > InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP>
+    MS: MetadataStorage,
+    MD: MinecraftDownloader,
+    PS: ProgressService,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+> InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP>
 {
     // TODO: try to decrease arguments count
     #[allow(clippy::too_many_arguments)]
@@ -83,7 +84,6 @@ impl<
         loading_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         match loader {
-            ModLoader::Vanilla => Ok(()),
             ModLoader::NeoForge | ModLoader::Forge => {
                 ForgeProcessor::new(self.progress_service.clone(), self.location_info.clone())
                     .run(
@@ -96,8 +96,7 @@ impl<
                     )
                     .await
             }
-            ModLoader::Fabric => Ok(()),
-            ModLoader::Quilt => Ok(()),
+            ModLoader::Vanilla | ModLoader::Fabric | ModLoader::Quilt => Ok(()),
         }
     }
 
@@ -118,7 +117,7 @@ impl<
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
 
         let (version, minecraft_updated) =
-            resolve_minecraft_version(&game_version, version_manifest)?;
+            resolve_minecraft_version(&game_version, &version_manifest)?;
 
         let loader_version = self
             .loader_version_resolver

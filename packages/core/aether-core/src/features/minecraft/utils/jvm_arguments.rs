@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::Path};
 
 use crate::{
-    features::minecraft::{vanilla, MinecraftDomainError},
+    features::minecraft::{MinecraftDomainError, vanilla},
     shared::{canonicalize, utils::get_classpath_separator},
 };
 
@@ -50,7 +50,7 @@ pub fn get_jvm_arguments(
         parsed_arguments.push("-cp".to_string());
         parsed_arguments.push(class_paths.to_string());
     }
-    parsed_arguments.push(format!("-Xmx{}M", max_memory));
+    parsed_arguments.push(format!("-Xmx{max_memory}M"));
     for arg in custom_args {
         if !arg.is_empty() {
             parsed_arguments.push(arg.clone());
@@ -105,10 +105,10 @@ pub fn get_class_paths(
     let mut cps = libraries
         .iter()
         .filter_map(|library| {
-            if let Some(rules) = &library.rules {
-                if !parse_rules(rules, java_arch, minecraft_updated) {
-                    return None;
-                }
+            if let Some(rules) = &library.rules
+                && !parse_rules(rules, java_arch, minecraft_updated)
+            {
+                return None;
             }
 
             if !library.include_in_classpath {

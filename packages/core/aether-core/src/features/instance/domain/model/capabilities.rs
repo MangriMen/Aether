@@ -31,7 +31,7 @@ pub struct ImporterCapabilityMetadata {
     ///Optional field label shown in the importer UI.
     pub field_label: Option<String>,
 
-    /// List of supported file extensions, e.g., ["zip", "mrpack"].
+    /// List of supported file extensions, e.g., [`zip`, `mrpack`].
     pub supported_extensions: Vec<String>,
 }
 

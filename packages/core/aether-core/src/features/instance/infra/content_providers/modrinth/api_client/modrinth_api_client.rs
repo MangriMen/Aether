@@ -1,7 +1,10 @@
 use crate::libs::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
-use super::models::*;
+use super::models::{
+    ProjectResponse, ProjectSearchParams, ProjectSearchResponse, ProjectVersionResponse,
+    ProjectVersionsRequest,
+};
 
 pub struct ModrinthApiClient<RC> {
     base_url: String,
@@ -27,8 +30,8 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         let path = path.trim_start_matches('/');
 
         let url = match query {
-            Some(q) => format!("{}/{}?{}", base, path, q),
-            None => format!("{}/{}", base, path),
+            Some(q) => format!("{base}/{path}?{q}"),
+            None => format!("{base}/{path}"),
         };
 
         let mut request = Request::get(&url);
@@ -55,13 +58,13 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     }
 
     pub async fn get_project(&self, id: &str) -> Result<ProjectResponse, String> {
-        let path = format!("project/{}", id);
+        let path = format!("project/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
     }
 
     pub async fn get_project_version(&self, id: &str) -> Result<ProjectVersionResponse, String> {
-        let path = format!("version/{}", id);
+        let path = format!("version/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
     }
@@ -72,7 +75,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         params: &ProjectVersionsRequest,
     ) -> Result<Vec<ProjectVersionResponse>, String> {
         let query = serde_qs::to_string(params).map_err(|e| e.to_string())?;
-        let path = format!("project/{}/version", id);
+        let path = format!("project/{id}/version");
         let request = self.prepare_request(&path, Some(query));
         self.fetch(request).await
     }

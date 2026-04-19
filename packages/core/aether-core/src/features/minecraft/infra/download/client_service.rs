@@ -5,7 +5,7 @@ use bytes::Bytes;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
-        minecraft::{vanilla, MinecraftDomainError},
+        minecraft::{MinecraftDomainError, vanilla},
     },
     libs::request_client::{Request, RequestClient},
     shared::{FileStore, InfinityCachedResource, IoError},
@@ -24,9 +24,7 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
         Self {
             progress_service,
             request_client,
-            cached_resource: InfinityCachedResource {
-                cache: file_store.clone(),
-            },
+            cached_resource: InfinityCachedResource { cache: file_store },
         }
     }
 
@@ -69,7 +67,7 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
 
         self.cached_resource
             .ensure(
-                || version_jar_key(version_id.to_string()),
+                || version_jar_key(version_id.clone()),
                 self.fetch_client(version_id, version_info),
                 || format!("Client {version_id}"),
                 force,

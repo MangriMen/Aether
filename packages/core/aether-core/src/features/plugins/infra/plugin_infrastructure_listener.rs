@@ -6,9 +6,9 @@ use crate::{
         events::PluginEvent,
         instance::{ContentProvider, Importer, Updater},
         plugins::{
-            infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
             PluginState,
+            infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
         },
     },
     shared::CapabilityRegistry,
@@ -19,10 +19,10 @@ pub struct PluginInfrastructureListener<
     UR: CapabilityRegistry<Arc<dyn Updater>>,
     CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
 > {
-    plugin_registry: Arc<PluginRegistry>,
-    importers_registry: Arc<IR>,
-    updaters_registry: Arc<UR>,
-    content_providers_registry: Arc<CR>,
+    plugin: Arc<PluginRegistry>,
+    importers: Arc<IR>,
+    updaters: Arc<UR>,
+    content_providers: Arc<CR>,
 }
 
 impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
@@ -32,28 +32,27 @@ where
     CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
 {
     pub fn new(
-        plugin_registry: Arc<PluginRegistry>,
-        importers_registry: Arc<IR>,
-        updaters_registry: Arc<UR>,
-        content_providers_registry: Arc<CR>,
+        plugin: Arc<PluginRegistry>,
+        importers: Arc<IR>,
+        updaters: Arc<UR>,
+        content_providers: Arc<CR>,
     ) -> Self {
         Self {
-            plugin_registry,
-            importers_registry,
-            updaters_registry,
-            content_providers_registry,
+            plugin,
+            importers,
+            updaters,
+            content_providers,
         }
     }
 
     pub async fn on_plugin_event(&self, event: PluginEvent) {
         let result: Result<(), PluginError> = async {
-            let plugin_id = match event {
-                PluginEvent::Edit { plugin_id } => plugin_id,
-                _ => return Ok(()),
+            let PluginEvent::Edit { plugin_id } = event else {
+                return Ok(());
             };
 
             let state = {
-                let plugin = self.plugin_registry.get(&plugin_id)?;
+                let plugin = self.plugin.get(&plugin_id)?;
                 plugin.state.clone()
             };
 
@@ -61,7 +60,7 @@ where
                 return Ok(());
             }
 
-            let capabilities = self.plugin_registry.get_capabilities(&plugin_id)?;
+            let capabilities = self.plugin.get_capabilities(&plugin_id)?;
 
             if let Some(caps) = capabilities {
                 match state {
@@ -72,7 +71,7 @@ where
                     PluginState::NotLoaded | PluginState::Unloading | PluginState::Failed(_) => {
                         self.sync_all_capabilities(&plugin_id, None, &caps).await?;
                     }
-                    _ => {}
+                    PluginState::Loading => (),
                 }
             }
 
@@ -81,7 +80,7 @@ where
         .await;
 
         if let Err(err) = result {
-            tracing::error!("Error handling plugin event: {}", err)
+            tracing::error!("Error handling plugin event: {}", err);
         }
     }
 
@@ -95,7 +94,7 @@ where
         // 1. Importers
         self.sync_registry(
             plugin_id,
-            &self.importers_registry,
+            &self.importers,
             &caps.importers,
             instance.as_ref(),
             |inst, cap| Arc::new(PluginImporterProxy::new(inst, cap)),
@@ -105,7 +104,7 @@ where
         // 2. Updaters
         self.sync_registry(
             plugin_id,
-            &self.updaters_registry,
+            &self.updaters,
             &caps.updaters,
             instance.as_ref(),
             |inst, cap| Arc::new(PluginUpdaterProxy::new(inst, cap)),
@@ -115,7 +114,7 @@ where
         // 3. Content Providers
         self.sync_registry(
             plugin_id,
-            &self.content_providers_registry,
+            &self.content_providers,
             &caps.content_providers,
             instance.as_ref(),
             |inst, cap| Arc::new(PluginContentProviderProxy::new(inst, cap)),

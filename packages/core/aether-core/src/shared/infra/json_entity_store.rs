@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 use tracing::{debug, trace};
 
 use crate::shared::{
-    io::{ensure_read_json_async, write_json_async},
     IoError,
+    io::{ensure_read_json_async, write_json_async},
 };
 
 pub enum UpdateAction<R> {

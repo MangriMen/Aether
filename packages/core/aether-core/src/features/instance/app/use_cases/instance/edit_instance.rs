@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::{
     instance::{Instance, InstanceError, InstanceStorage},
-    settings::{app::EditHooks, MemorySettings, WindowSize},
+    settings::{MemorySettings, WindowSize, app::EditHooks},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -80,19 +80,19 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     } = edit_instance;
 
     if let Some(name) = name {
-        instance.name = name.clone();
+        instance.name.clone_from(name);
     }
 
     if let Some(java_path) = java_path {
-        instance.java_path = java_path.clone();
+        instance.java_path.clone_from(java_path);
     }
 
     if let Some(args) = launch_args {
-        instance.launch_args = args.clone();
+        instance.launch_args.clone_from(args);
     }
 
     if let Some(vars) = env_vars {
-        instance.env_vars = vars.clone();
+        instance.env_vars.clone_from(vars);
     }
 
     if let Some(mem) = memory {

@@ -1,6 +1,6 @@
-use extism::{Function, UserData, ValType, PTR};
+use extism::{Function, PTR, UserData, ValType};
 
-use super::{features, PluginContext};
+use super::{PluginContext, features};
 
 pub fn get_host_functions(plugin_id: &str) -> Vec<Function> {
     let context = PluginContext {

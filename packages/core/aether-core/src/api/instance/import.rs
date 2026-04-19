@@ -1,8 +1,8 @@
 use crate::{
     core::domain::LazyLocator,
     features::instance::{
-        app::{ImportInstance, ImportInstanceUseCase, ListImportersUseCase},
         ImporterCapabilityMetadata,
+        app::{ImportInstance, ImportInstanceUseCase, ListImportersUseCase},
     },
     shared::CapabilityEntry,
 };

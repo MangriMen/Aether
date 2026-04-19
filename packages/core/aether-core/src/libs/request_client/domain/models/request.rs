@@ -28,16 +28,19 @@ impl Request {
         Self::new(Method::Post, url.into())
     }
 
+    #[must_use]
     pub fn with_headers(mut self, headers: reqwest::header::HeaderMap) -> Self {
         self.headers = Some(headers);
         self
     }
 
+    #[must_use]
     pub fn with_sha1(mut self, sha1: impl Into<String>) -> Self {
         self.sha1 = Some(sha1.into());
         self
     }
 
+    #[must_use]
     pub fn with_body(mut self, body: Vec<u8>) -> Self {
         self.body = Some(body);
         self

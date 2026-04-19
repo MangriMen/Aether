@@ -3,13 +3,13 @@ use std::time::Duration;
 use async_trait::async_trait;
 
 use crate::{
-    features::minecraft::{vanilla, modded, MetadataStorage, MinecraftDomainError, ModLoader},
+    features::minecraft::{MetadataStorage, MinecraftDomainError, ModLoader, modded, vanilla},
     shared::{Cache, CachedResource},
 };
 
 use super::{loader_manifest_key, version_manifest_key};
 
-const CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 7);
+const CACHE_TTL: Duration = Duration::from_hours(168);
 
 pub struct CachedMetadataStorage<C: Cache, S: MetadataStorage> {
     cached_resource: CachedResource<C>,
@@ -27,9 +27,7 @@ impl<C: Cache, S: MetadataStorage> CachedMetadataStorage<C, S> {
 
 #[async_trait]
 impl<C: Cache, S: MetadataStorage> MetadataStorage for CachedMetadataStorage<C, S> {
-    async fn get_version_manifest(
-        &self,
-    ) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
+    async fn get_version_manifest(&self) -> Result<vanilla::VersionManifest, MinecraftDomainError> {
         self.cached_resource
             .get_cached(
                 version_manifest_key,

@@ -1,7 +1,10 @@
 [package]
 name = "aether-core"
 version = "0.8.0"
-edition = "2021"
+edition.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 # Async & Streams

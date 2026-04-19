@@ -7,25 +7,25 @@ use tokio::sync::OnceCell;
 use crate::{
     features::{
         auth::infra::FsCredentialsStorage,
-        events::{infra::InMemoryProgressBarStorage, ProgressServiceImpl, SharedEventEmitter},
+        events::{ProgressServiceImpl, SharedEventEmitter, infra::InMemoryProgressBarStorage},
         file_watcher::infra::NotifyFileWatcher,
         instance::{
+            ContentProvider, Importer, InstanceWatcherServiceImpl, Updater,
             infra::{
                 EventEmittingInstanceStorage, FsInstanceStorage, FsPackStorage,
                 InstanceEventHandler, ModrinthContentProvider,
             },
-            ContentProvider, Importer, InstanceWatcherServiceImpl, Updater,
         },
         java::infra::FsJavaStorage,
         minecraft::infra::{
             CachedMetadataStorage, MinecraftMetadataResolver, ModrinthMetadataStorage,
         },
         plugins::{
+            LoadConfigType, PluginLoaderRegistry, PluginRegistry,
             infra::{
                 ExtismPluginLoader, FsPluginSettingsStorage, FsPluginStorage,
                 PluginInfrastructureListener, ZipPluginExtractor,
             },
-            LoadConfigType, PluginLoaderRegistry, PluginRegistry,
         },
         process::infra::InMemoryProcessStorage,
         settings::infra::{FsDefaultInstanceSettingsStorage, FsSettingsStorage},
@@ -433,14 +433,14 @@ impl LazyLocator {
                     if let Err(err) = registry
                         .add(
                             ModrinthContentProvider::ID.to_owned(),
-                            meta.id.to_string(),
+                            meta.id.clone(),
                             provider.clone(),
                         )
                         .await
                     {
                         tracing::error!(
                             "Failed to register content provider {}: {}",
-                            meta.id.to_string(),
+                            meta.id.clone(),
                             err
                         );
                     }

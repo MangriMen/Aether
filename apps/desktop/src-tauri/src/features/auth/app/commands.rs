@@ -1,17 +1,19 @@
 use uuid::Uuid;
 
 use crate::{
-    commands::{auth_commands, AUTH_PLUGIN_NAME},
-    features::auth::AccountDto,
     FrontendResult,
+    commands::{AUTH_PLUGIN_NAME, auth_commands},
+    features::auth::AccountDto,
 };
 
+#[must_use]
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new(AUTH_PLUGIN_NAME)
         .invoke_handler(auth_commands!(tauri::generate_handler!))
         .build()
 }
 
+#[must_use]
 pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     auth_commands!(tauri_specta::collect_commands!)
 }

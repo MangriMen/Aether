@@ -3,8 +3,9 @@ use std::path::Path;
 use crate::features::{
     java::Java,
     minecraft::{
+        MinecraftDomainError,
         utils::{get_class_paths, get_jvm_arguments},
-        vanilla, MinecraftDomainError,
+        vanilla,
     },
 };
 
@@ -16,7 +17,7 @@ pub fn get_minecraft_jvm_arguments(
     version_info: &vanilla::VersionInfo,
     natives_dir: &Path,
     client_path: &Path,
-    version_jar: String,
+    version_jar: &str,
     java_version: &Java,
     max_memory: u32,
     java_args: &[String],
@@ -33,7 +34,7 @@ pub fn get_minecraft_jvm_arguments(
             java_version.architecture(),
             minecraft_updated,
         )?,
-        &version_jar,
+        version_jar,
         max_memory,
         java_args,
         java_version.architecture(),

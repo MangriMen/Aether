@@ -44,13 +44,12 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
         let changed_plugins =
             self.find_changed_plugins(&existing_plugins, &new_plugins, &found_plugins);
         let plugins_to_add =
-            self.determine_plugins_to_add(&existing_plugins, &new_plugins, &changed_plugins);
+            Self::determine_plugins_to_add(&existing_plugins, &new_plugins, &changed_plugins);
 
         self.remove_non_existing_plugins(&existing_plugins, &new_plugins)
             .await?;
         self.remove_changed_plugins(&changed_plugins).await?;
-        self.add_new_plugins(&plugins_to_add, &found_plugins)
-            .await?;
+        self.add_new_plugins(&plugins_to_add, &found_plugins);
 
         Ok(())
     }
@@ -77,7 +76,6 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
     }
 
     fn determine_plugins_to_add(
-        &self,
         existing_plugins: &HashSet<String>,
         new_plugins: &HashSet<String>,
         changed_plugins: &HashSet<String>,
@@ -95,7 +93,7 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
         new_plugins: &HashSet<String>,
     ) -> Result<(), PluginError> {
         for plugin_id in existing_plugins.difference(new_plugins) {
-            log::debug!("Removing plugin {}", plugin_id);
+            log::debug!("Removing plugin {plugin_id}");
             self.remove_plugin(plugin_id).await?;
         }
         Ok(())
@@ -106,25 +104,24 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
         changed_plugins: &HashSet<String>,
     ) -> Result<(), PluginError> {
         for plugin_id in changed_plugins {
-            log::debug!("Removing changed plugin {}", plugin_id);
+            log::debug!("Removing changed plugin {plugin_id}");
             self.remove_plugin(plugin_id).await?;
         }
         Ok(())
     }
 
-    async fn add_new_plugins(
+    fn add_new_plugins(
         &self,
         plugins_to_add: &HashSet<String>,
         found_plugins: &HashMap<String, Plugin>,
-    ) -> Result<(), PluginError> {
+    ) {
         for plugin_id in plugins_to_add {
             if let Some(plugin_state) = found_plugins.get(plugin_id) {
-                log::debug!("Adding plugin {}", plugin_id);
+                log::debug!("Adding plugin {plugin_id}");
                 self.plugin_registry
                     .insert(plugin_id.clone(), plugin_state.clone());
             }
         }
-        Ok(())
     }
 
     async fn remove_plugin(&self, plugin_id: &str) -> Result<(), PluginError> {
@@ -137,7 +134,7 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
             match err {
                 PluginError::NotFound { plugin_id }
                 | PluginError::AlreadyUnloaded { plugin_id } => {
-                    log::debug!("Plugin {} was already disabled", plugin_id);
+                    log::debug!("Plugin {plugin_id} was already disabled");
                 }
                 _ => return Err(err),
             }

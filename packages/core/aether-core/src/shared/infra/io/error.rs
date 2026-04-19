@@ -60,11 +60,11 @@ impl From<IoErrorRepr> for IoError {
                 path,
                 message,
             } => Self::IoPathError {
-                source: std::io::Error::new(kind.into(), message.to_owned()),
+                source: std::io::Error::new(kind.into(), message.clone()),
                 path,
             },
             IoErrorRepr::IoError { kind, message } => {
-                Self::IoError(std::io::Error::new(kind.into(), message.to_owned()))
+                Self::IoError(std::io::Error::new(kind.into(), message.clone()))
             }
 
             IoErrorRepr::SerializationError(msg) => Self::SerializationError(msg),

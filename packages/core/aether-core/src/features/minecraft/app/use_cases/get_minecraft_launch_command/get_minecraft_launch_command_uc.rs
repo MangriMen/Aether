@@ -10,15 +10,16 @@ use crate::{
     features::{
         auth::Credentials,
         java::{
-            app::{GetJavaUseCase, JavaApplicationError},
             JavaInstallationService, JavaStorage,
+            app::{GetJavaUseCase, JavaApplicationError},
         },
         minecraft::{
-            app::{GetVersionManifestUseCase, MinecraftApplicationError},
-            vanilla, resolve_minecraft_version,
-            utils::get_compatible_java_version,
             LaunchSettings, LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
             MinecraftDownloader, ModLoader,
+            app::{GetVersionManifestUseCase, MinecraftApplicationError},
+            resolve_minecraft_version,
+            utils::get_compatible_java_version,
+            vanilla,
         },
         settings::LocationInfo,
     },
@@ -54,12 +55,8 @@ pub struct GetMinecraftLaunchCommandUseCase<
     location_info: Arc<LocationInfo>,
 }
 
-impl<
-        MS: MetadataStorage,
-        MD: MinecraftDownloader,
-        JIS: JavaInstallationService,
-        JS: JavaStorage,
-    > GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>
+impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService, JS: JavaStorage>
+    GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>
 {
     pub fn new(
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
@@ -96,7 +93,7 @@ impl<
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
 
         let (version, minecraft_updated) =
-            resolve_minecraft_version(&game_version, version_manifest)?;
+            resolve_minecraft_version(&game_version, &version_manifest)?;
 
         let loader_version = self
             .loader_version_resolver
@@ -144,12 +141,12 @@ impl<
 
         let jvm_arguments = get_minecraft_jvm_arguments(
             args.get(&vanilla::ArgumentType::Jvm)
-                .map(|x| x.as_slice()),
+                .map(std::vec::Vec::as_slice),
             &self.location_info.libraries_dir(),
             &version_info,
             &natives_dir,
             &client_path,
-            version_jar,
+            &version_jar,
             &java,
             launch_settings.memory.maximum,
             &launch_settings.launch_args,
@@ -158,7 +155,7 @@ impl<
 
         let minecraft_arguments = get_minecraft_arguments(
             args.get(&vanilla::ArgumentType::Game)
-                .map(|x| x.as_slice()),
+                .map(std::vec::Vec::as_slice),
             version_info.minecraft_arguments.as_deref(),
             &credentials,
             &version.id,

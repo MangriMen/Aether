@@ -5,7 +5,7 @@ use crate::features::java::JavaDomainError;
 /// If the string doesn't contain a minor version, it assumes 1 for the major version.
 ///
 /// Examples:
-/// - "1.8.0_361" -> (1, 8)
+/// - "`1.8.0_361`" -> (1, 8)
 /// - "20" -> (1, 20)
 pub fn extract_java_major_minor_version(version: &str) -> Result<(u32, u32), JavaDomainError> {
     let get_error = || JavaDomainError::InvalidVersion {

@@ -67,10 +67,10 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
             })
             .await;
 
-        if mc_exit_status.success() {
-            if let Some(command_str) = post_exit_command {
-                self.run_post_exit(&command_str, &instance_id)?;
-            }
+        if mc_exit_status.success()
+            && let Some(command_str) = post_exit_command
+        {
+            self.run_post_exit(&command_str, &instance_id)?;
         }
 
         Ok(())

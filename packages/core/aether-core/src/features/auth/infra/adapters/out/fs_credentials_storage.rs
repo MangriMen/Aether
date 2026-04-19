@@ -113,6 +113,6 @@ impl CredentialsStorage for FsCredentialsStorage {
 
     async fn find_active(&self) -> Result<Option<Credentials>, AuthApplicationError> {
         let list = self.store.read_all().await?;
-        Ok(list.into_iter().find(|x| x.is_active()))
+        Ok(list.into_iter().find(Credentials::is_active))
     }
 }

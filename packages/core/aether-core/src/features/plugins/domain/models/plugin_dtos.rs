@@ -2,7 +2,7 @@ use extism::ToBytes;
 use extism_convert::Msgpack;
 use serde::{Deserialize, Serialize};
 
-use crate::features::instance::{app::ContentCompatibilityCheckParams, Instance};
+use crate::features::instance::{Instance, app::ContentCompatibilityCheckParams};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToBytes)]
 #[encoding(Msgpack)]

@@ -62,7 +62,7 @@ impl Drop for ProgressBarId {
                         }
                     }
                 }
-                Err(e) => error!("Failed to get EventState: {:?}", e),
+                Err(e) => error!("Failed to get EventState: {e:?}"),
             }
         });
     }

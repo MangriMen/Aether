@@ -17,8 +17,7 @@ pub fn derive_register_schema(input: TokenStream) -> TokenStream {
             // Support #[schema_category("name")]
             attr.parse_args::<LitStr>().ok()
         })
-        .map(|lit| lit.value())
-        .unwrap_or_else(|| "core".to_string());
+        .map_or_else(|| "core".to_string(), |lit| lit.value());
 
     let expanded = quote! {
         // Use full path to ensure it works regardless of imports
