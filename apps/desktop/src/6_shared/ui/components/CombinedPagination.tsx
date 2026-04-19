@@ -4,7 +4,7 @@ import { createMemo, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/model';
 
-import type { PaginationRootProps } from './Pagination';
+import type { PaginationRootProps } from '../uikit/Pagination';
 
 import {
   Pagination,
@@ -13,7 +13,7 @@ import {
   PaginationItems,
   PaginationNext,
   PaginationPrevious,
-} from './Pagination';
+} from '../uikit/Pagination';
 
 export type CombinedPaginationProps = PartialBy<
   PaginationRootProps<'div'>,

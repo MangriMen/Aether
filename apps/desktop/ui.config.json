@@ -8,7 +8,7 @@
   },
   "aliases": {
     "path": "@/*",
-    "components": "src/shared/ui/components",
+    "components": "src/shared/ui/uikit",
     "utils": "src/shared/lib"
   }
 }

@@ -42,13 +42,13 @@ export const ContentList: Component<ContentListProps> = (props) => {
         </Match>
 
         <Match when={local.isError}>
-          <span class='flex grow items-center justify-center text-xl font-medium text-muted-foreground'>
+          <span class='flex grow items-center justify-center text-xl font-medium text-new-muted-foreground'>
             {t('content.providerErrorOrNotFound')}
           </span>
         </Match>
 
         <Match when={local.items?.length === 0}>
-          <span class='flex grow items-center justify-center text-lg italic text-muted-foreground'>
+          <span class='flex grow items-center justify-center text-lg italic text-new-muted-foreground'>
             {t('content.noResultsFound')}
           </span>
         </Match>

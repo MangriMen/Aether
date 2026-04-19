@@ -26,7 +26,7 @@ const Checkbox = <T extends ValidComponent = 'div'>(
       {...others}
     >
       <CheckboxPrimitive.Input role='checkbox' class='peer' />
-      <CheckboxPrimitive.Control class='size-4 shrink-0 rounded-sm border border-primary ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-0 data-[checked]:border-none data-[checked]:bg-primary data-[checked]:text-primary-foreground'>
+      <CheckboxPrimitive.Control class='size-4 shrink-0 rounded-sm border border-new-border-dynamic/15 bg-new-secondary/control ring-offset-background transition-colors hover:border-new-border-dynamic/25 hover:bg-new-secondary/hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-0 data-[checked]:border-none data-[checked]:bg-new-primary data-[checked]:text-new-primary-foreground data-[checked]:brightness-110 data-[checked]:hover:bg-new-primary/solid-hover'>
         <CheckboxPrimitive.Indicator class='data-[checked]:hidden'>
           <svg
             xmlns='http://www.w3.org/2000/svg'

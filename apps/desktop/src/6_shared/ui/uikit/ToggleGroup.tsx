@@ -72,7 +72,7 @@ const ToggleGroupItem = <T extends ValidComponent = 'button'>(
           size: context.size || local.size,
           variant: context.variant || local.variant,
         }),
-        'hover:bg-muted hover:text-muted-foreground data-[pressed]:bg-accent data-[pressed]:text-accent-foreground',
+        'hover:bg-new-secondary/hover hover:text-new-secondary-foreground data-[pressed]:bg-new-secondary/secondary data-[pressed]:text-new-accent-foreground',
         local.class,
       )}
       {...others}

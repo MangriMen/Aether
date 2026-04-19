@@ -15,15 +15,15 @@ import {
 } from '@tanstack/solid-table';
 import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
 
+import { Skeleton } from './Skeleton';
 import {
-  Skeleton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/ui';
+} from './Table';
 
 type DataTableProps<TData> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,7 +135,7 @@ interface DataTableRowProps<TData> {
 const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
   return (
     <TableRow
-      class='group bg-secondary-dark/80'
+      class='group bg-new-secondary/card'
       data-state={props.row.getIsSelected() && 'selected'}
     >
       <For each={props.row.getVisibleCells()}>
@@ -179,7 +179,7 @@ const TableSkeleton = (props: TableSkeletonProps) => {
   return (
     <For each={rows()}>
       {() => (
-        <TableRow class='bg-secondary-dark/80'>
+        <TableRow class='bg-new-secondary/card'>
           <For each={stylesList()}>
             {(style) => (
               <TableCell style={style}>

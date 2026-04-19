@@ -3,9 +3,13 @@ import type { ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { TabsContentProps, TabsListProps, TabsTriggerProps } from './Tabs';
+import type {
+  TabsContentProps,
+  TabsListProps,
+  TabsTriggerProps,
+} from '../uikit/Tabs';
 
-import { TabsContent, TabsList, TabsTrigger } from './Tabs';
+import { TabsContent, TabsList, TabsTrigger } from '../uikit/Tabs';
 
 export const SettingsTabsList = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, TabsListProps<T>>,

@@ -63,8 +63,8 @@ export const ContentItemPageInfo: Component<
       />
       <div class='flex grow flex-col'>
         <div class='flex grow justify-between'>
-          <div class='flex max-w-[512px] flex-col text-muted-foreground'>
-            <h1 class='text-2xl font-bold text-foreground'>
+          <div class='flex max-w-[512px] flex-col'>
+            <h1 class='text-2xl font-bold text-new-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}
                 fallback={<Skeleton width={256} height={32} />}
@@ -72,7 +72,7 @@ export const ContentItemPageInfo: Component<
                 {local.item?.name}
               </DelayedShow>
             </h1>
-            <span>
+            <span class='text-new-muted-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}
                 fallback={<Skeleton width={256} height={32} />}

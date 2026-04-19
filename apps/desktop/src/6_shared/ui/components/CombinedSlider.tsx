@@ -4,7 +4,7 @@ import { Show, splitProps, type ValidComponent } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import type { SliderRootProps } from './Slider';
+import type { SliderRootProps } from '../uikit/Slider';
 
 import {
   Slider,
@@ -12,7 +12,7 @@ import {
   SliderThumb,
   SliderTrack,
   SliderValueLabel,
-} from './Slider';
+} from '../uikit/Slider';
 
 export type CombinedSliderProps<T extends ValidComponent = 'div'> =
   SliderRootProps<T> & {

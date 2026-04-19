@@ -82,6 +82,13 @@ export default [
   },
   ...tailwind.configs['flat/recommended'],
   {
+    settings: {
+      tailwindcss: {
+        callees: ['cva', 'clsx', 'twMerge'],
+      },
+    },
+  },
+  {
     rules: {
       'tailwindcss/no-custom-classname': [
         'warn',

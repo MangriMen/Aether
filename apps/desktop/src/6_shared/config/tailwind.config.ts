@@ -16,6 +16,81 @@ export const tailwindConfig: Config = {
         secondary: {
           dark: 'hsl(var(--secondary-dark))',
         },
+        new: {
+          background: 'oklch(var(--new-background) / <alpha-value>)',
+          foreground: 'oklch(var(--new-forgeround) / <alpha-value>)',
+          muted: {
+            DEFAULT: 'oklch(var(--new-muted) / <alpha-value>)',
+            foreground: 'oklch(var(--new-muted-foreground) / <alpha-value>)',
+          },
+          popover: {
+            DEFAULT: 'oklch(var(--new-popover) / <alpha-value>)',
+            foreground: 'oklch(var(--new-popover-foreground) / <alpha-value>)',
+          },
+          border: {
+            DEFAULT: 'oklch(var(--new-border) / 0.07)',
+            dynamic: 'oklch(var(--new-border) / <alpha-value>)',
+            foreground: 'oklch(var(--new-border-foreground) / <alpha-value>)',
+          },
+          input: {
+            DEFAULT: 'oklch(var(--new-input) / <alpha-value>)',
+            foreground: 'oklch(var(--new-input-foreground) / <alpha-value>)',
+          },
+          card: 'oklch(var(--new-card) / <alpha-value>)',
+          primary: {
+            DEFAULT: 'oklch(var(--new-primary) / <alpha-value>)',
+            foreground: 'oklch(var(--new-primary-foreground) / <alpha-value>)',
+          },
+          secondary: {
+            DEFAULT: 'oklch(var(--new-secondary) / <alpha-value>)',
+            foreground:
+              'oklch(var(--new-secondary-foreground) / <alpha-value>)',
+          },
+          accent: {
+            DEFAULT: 'oklch(var(--new-accent) / <alpha-value>)',
+            foreground: 'oklch(var(--new-accent-foreground) / <alpha-value>)',
+          },
+          destructive: {
+            DEFAULT: 'oklch(var(--new-destructive) / <alpha-value>)',
+            foreground:
+              'oklch(var(--new-destructive-foreground) / <alpha-value>)',
+          },
+          info: {
+            DEFAULT: 'oklch(var(--new-info) / <alpha-value>)',
+            foreground: 'oklch(var(--new-info-foreground) / <alpha-value>)',
+          },
+          success: {
+            DEFAULT: 'oklch(var(--new-success) / <alpha-value>)',
+            foreground: 'oklch(var(--new-success-foreground) / <alpha-value>)',
+          },
+          warning: {
+            DEFAULT: 'oklch(var(--new-warning) / <alpha-value>)',
+            foreground: 'oklch(var(--new-warning-foreground) / <alpha-value>)',
+          },
+          error: {
+            DEFAULT: 'oklch(var(--new-error) / <alpha-value>)',
+            foreground: 'oklch(var(--new-error-foreground) / <alpha-value>)',
+          },
+          ring: {
+            DEFAULT: 'oklch(var(--new-ring) / <alpha-value>)',
+            foreground: 'oklch(var(--new-ring-foreground) / <alpha-value>)',
+          },
+        },
+      },
+      opacity: {
+        card: '0.03',
+
+        control: '0.0605',
+        hover: '0.0903',
+        active: '0.0302',
+
+        'solid-hover': '0.9',
+        'solid-active': '0.8',
+        'solid-text-active': '0.7',
+
+        secondary: '0.08',
+
+        hard: '0.99',
       },
       keyframes: {
         'content-show': {

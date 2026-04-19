@@ -9,7 +9,7 @@ import { Match, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { buttonVariants } from './Button';
+import { buttonVariants } from '../uikit/Button';
 
 const SVG_CHILD_FILL_VARIANTS = {
   background: '[&_svg]:fill-background',

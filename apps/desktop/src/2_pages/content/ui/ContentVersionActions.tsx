@@ -73,7 +73,7 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
   return (
     <div class={cn('flex gap-1', local.class)} {...others}>
       <IconButton
-        class='bg-transparent enabled:group-hover:bg-primary'
+        class='bg-transparent enabled:group-hover:bg-new-primary/solid-hover'
         icon={installIcon()}
         onClick={handleInstall}
         disabled={isCurrentVersionInstalled()}

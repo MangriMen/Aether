@@ -9,33 +9,41 @@ import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
-import { DelayedShow } from './DelayedShow';
+import { DelayedShow } from '../components/DelayedShow';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-new-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-new-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground enabled:hover:bg-primary/90 enabled:active:bg-primary/70',
-        destructive:
-          'bg-destructive text-destructive-foreground enabled:hover:bg-destructive/90 enabled:active:bg-destructive/70',
-        success:
-          'bg-success text-success-foreground enabled:hover:bg-success/90 enabled:active:bg-success/70',
-        outline:
-          'border-2 border-input hover:bg-accent enabled:hover:text-accent-foreground enabled:active:bg-accent/80',
+          'bg-new-primary text-new-primary-foreground enabled:hover:bg-new-primary/solid-hover enabled:active:bg-new-primary/solid-active enabled:active:text-new-primary-foreground/solid-text-active',
+
         secondary:
-          'bg-secondary text-secondary-foreground enabled:hover:bg-secondary/80 enabled:active:bg-secondary/60',
+          'border border-new-border bg-new-secondary/secondary text-new-secondary-foreground enabled:hover:bg-new-secondary/hover enabled:active:bg-new-secondary/active enabled:active:text-new-secondary-foreground/solid-text-active',
+
+        outline:
+          'border border-new-border bg-transparent enabled:hover:bg-new-accent/control enabled:active:bg-new-accent/secondary',
+
         ghost:
-          'enabled:hover:bg-accent enabled:hover:text-accent-foreground enabled:active:bg-accent/80',
-        link: 'text-primary underline-offset-4 enabled:hover:underline',
+          'bg-transparent text-new-foreground enabled:hover:bg-new-accent/control enabled:active:bg-new-accent/secondary',
+
+        success:
+          'bg-new-success text-new-success-foreground transition-all enabled:hover:bg-new-success/solid-hover enabled:active:bg-new-success/solid-active enabled:active:text-new-success-foreground/solid-text-active',
+
+        destructive:
+          'bg-new-destructive text-new-destructive-foreground transition-all enabled:hover:bg-new-destructive/solid-hover enabled:active:bg-new-destructive/solid-active enabled:active:text-new-destructive-foreground/solid-text-active',
+
+        link: 'text-new-primary underline-offset-4 enabled:hover:underline',
+
         ghostWarning:
-          'text-warning-foreground enabled:hover:bg-warning-foreground enabled:hover:text-secondary enabled:active:bg-warning-foreground/80',
+          'text-new-warning enabled:hover:bg-new-warning/control enabled:active:bg-new-warning/secondary',
       },
       size: {
         default: 'h-9 px-4 py-2 text-sm leading-4',
         sm: 'h-8 rounded-md px-3 py-1.5 text-sm leading-4',
         lg: 'h-10 rounded-md px-6 py-2 text-base leading-5',
+        icon: 'size-9',
       },
     },
     defaultVariants: {

@@ -6,7 +6,7 @@ import { createMemo, Show, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/model';
 
-import type { SelectRootProps } from './Select';
+import type { SelectRootProps } from '../uikit/Select';
 
 import {
   Select,
@@ -14,7 +14,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './Select';
+} from '../uikit/Select';
 
 export type CombinedSelectProps<
   Option,

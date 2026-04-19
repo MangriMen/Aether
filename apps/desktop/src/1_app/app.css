@@ -113,6 +113,50 @@
 
     --alpha: 0 84% 10%;
     --alpha-foreground: 0 84% 60%;
+
+    --new-background: 18% 0 240;
+    --new-foreground: 98% 0 240;
+
+    --new-muted: 100% 0 0;
+    --new-muted-foreground: 75% 0 240;
+
+    --new-popover: 28% 0.01 240;
+    --new-popover-foreground: 98% 0 240;
+
+    --new-popover: 22.5% 0.002 286.03;
+    --new-popover-foreground: 98% 0 286.03;
+
+    --new-border: 100% 0 0;
+
+    --new-input: 100% 0 0;
+
+    --new-card: 100% 0 0;
+
+    --new-primary: 53.2% 0.043 231;
+    --new-primary-foreground: 98% 0 231;
+
+    --new-secondary: 100% 0 0;
+    --new-secondary-foreground: 98% 0 240;
+
+    --new-accent: 100% 0 0;
+    --new-accent-foreground: 98% 0.01 240;
+
+    --new-destructive: 45.8% 0.142 25;
+    --new-destructive-foreground: 98% 0 25;
+
+    --new-info: 65% 0.12 230;
+    --new-info-foreground: 98% 0.01 230;
+
+    --new-success: 45% 0.14 160;
+    --new-success-foreground: 98% 0.01 160;
+
+    --new-warning: 72% 0.15 75;
+    --new-warning-foreground: 15% 0.02 75;
+
+    --new-error: 55% 0.2 25;
+    --new-error-foreground: 98% 0.01 25;
+
+    --new-ring: 85% 0.01 231;
   }
 
   [data-theme='aether-light'] {
@@ -182,7 +226,7 @@
   }
 
   body {
-    @apply text-foreground bg-secondary-dark;
+    @apply text-foreground bg-new-secondary;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;

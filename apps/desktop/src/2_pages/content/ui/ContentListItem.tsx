@@ -1,3 +1,4 @@
+import { useNavigate } from '@solidjs/router';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { ContentInstallButton, type ContentItem } from '@/entities/instances';
@@ -21,12 +22,29 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     contentPageHref,
   } = useContentListItem(() => local.item);
 
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    const href = contentPageHref();
+
+    if (!href) {
+      return;
+    }
+
+    navigate(href);
+  };
+
   return (
+    // TODO: add accessibility
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
     <div
       class={cn(
-        'flex gap-2 border border-secondary rounded-lg p-3',
+        'flex gap-2 border border-new-border bg-new-card/card rounded-lg p-3 group',
         local.class,
       )}
+      role='button'
+      tabIndex={0}
+      onClick={contentPageHref() ? handleClick : undefined}
       {...others}
     >
       <ContentItemInfo item={local.item} contentPageHref={contentPageHref()} />
