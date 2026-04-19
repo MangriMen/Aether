@@ -21,7 +21,6 @@ tauri-plugin-shell = "2"
 
 # External Libraries
 open = { version = "5", features = ["shellexecute-on-windows"] }
-paste = "1"
 specta = { version = "=2.0.0-rc.24", features = [
   "serde_json",
   "uuid",
