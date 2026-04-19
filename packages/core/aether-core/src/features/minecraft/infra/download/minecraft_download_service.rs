@@ -135,9 +135,9 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
         let version_info = self
             .cached_resource
             .get_cached(
-                || version_info_key(version_id.to_string()),
+                || version_info_key(version_id.clone()),
                 self.fetch_version_info(&version_id, version, loader),
-                || format!("version info {}", version_id),
+                || format!("version info {version_id}"),
                 force,
             )
             .await?;

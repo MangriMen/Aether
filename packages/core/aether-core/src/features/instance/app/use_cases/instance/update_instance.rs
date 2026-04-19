@@ -39,7 +39,7 @@ impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstan
         let result = self.update_by_plugin(&instance_id, pack_info).await;
 
         let final_stage = match result {
-            Ok(_) => InstanceInstallStage::Installed,
+            Ok(()) => InstanceInstallStage::Installed,
             Err(_) => original_stage,
         };
 
@@ -66,7 +66,7 @@ impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstan
             .find_by_plugin_and_capability_id(plugin_id, modpack_id)
             .await
             .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: modpack_id.to_string(),
+                modpack_id: modpack_id.clone(),
             })?;
 
         updater.capability.update(instance_id).await

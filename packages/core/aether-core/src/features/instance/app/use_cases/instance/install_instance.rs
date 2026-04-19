@@ -122,7 +122,7 @@ impl<
             .await;
 
         match result {
-            Ok(_) => self.handle_success_installation(&mut instance).await,
+            Ok(()) => self.handle_success_installation(&mut instance).await,
             Err(_) => self.handle_failed_installation(&mut instance).await,
         }?;
 

@@ -9,7 +9,7 @@ use crate::{
 
 use super::{loader_manifest_key, version_manifest_key};
 
-const CACHE_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 7);
+const CACHE_TTL: Duration = Duration::from_hours(168);
 
 pub struct CachedMetadataStorage<C: Cache, S: MetadataStorage> {
     cached_resource: CachedResource<C>,

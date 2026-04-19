@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use crate::features::minecraft::ModLoader;
@@ -15,18 +14,19 @@ pub enum ContentType {
     ShaderPack,
 }
 
-lazy_static! {
-    static ref MOD_LOADER_NAMES: [&'static str; 4] = [
-        ModLoader::Fabric,
-        ModLoader::Forge,
-        ModLoader::Quilt,
-        ModLoader::NeoForge,
+use std::sync::LazyLock;
+
+static MOD_LOADER_NAMES: LazyLock<[&'static str; 4]> = LazyLock::new(|| {
+    [
+        ModLoader::Fabric.as_str(),
+        ModLoader::Forge.as_str(),
+        ModLoader::Quilt.as_str(),
+        ModLoader::NeoForge.as_str(),
     ]
-    .map(|x| x.as_str());
-}
+});
 
 impl ContentType {
-    pub fn get_from_loaders(loaders: Vec<String>) -> Option<Self> {
+    pub fn get_from_loaders(loaders: &[String]) -> Option<Self> {
         if loaders
             .iter()
             .any(|x| ContentType::Mod.get_loaders().contains(&&**x))

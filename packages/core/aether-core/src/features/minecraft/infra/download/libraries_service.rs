@@ -194,7 +194,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
             .as_deref()
             .unwrap_or(MINECRAFT_LIBRARIES_BASE_URL);
 
-        let url = format!("{}{}", base_url, path_part);
+        let url = format!("{base_url}{path_part}");
 
         let bytes = self.fetch_bytes(&url).await?;
         write_async(library_path, &bytes).await?;
@@ -226,12 +226,12 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
             .try_download_from_artifact(library, &library_path)
             .await
         {
-            Ok(_) => return Ok(()),
+            Ok(()) => return Ok(()),
             Err(err) => warn!(
                 "Failed to download {} from artifact, trying fallback: {:?}",
                 library.name, err
             ),
-        };
+        }
 
         self.download_from_fallback_url(library, &library_path, &library_path_part)
             .await
@@ -247,7 +247,6 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
     }
 
     fn get_native_classifiers<'a>(
-        &self,
         library: &'a vanilla::Library,
         java_arch: &str,
     ) -> Option<(&'a str, &'a HashMap<String, vanilla::LibraryDownload>)> {
@@ -293,7 +292,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         java_arch: &str,
         _force: bool,
     ) -> Result<(), MinecraftDomainError> {
-        let Some((os_key, classifiers)) = self.get_native_classifiers(library, java_arch) else {
+        let Some((os_key, classifiers)) = Self::get_native_classifiers(library, java_arch) else {
             trace!("No native classifiers found for library: {}", library.name);
             return Ok(());
         };

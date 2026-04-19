@@ -3,6 +3,9 @@ name = "aether-core"
 version = "0.8.0"
 edition.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 # Async & Streams
 futures = "0.3"

@@ -18,8 +18,8 @@ impl SerializableCommand {
 
         Ok(Self {
             program: parts.next().ok_or("Error to parse command")?.to_string(),
-            args: parts.map(|s| s.to_string()).collect(),
-            current_dir: current_dir.map(|current_dir| current_dir.to_path_buf()),
+            args: parts.map(ToString::to_string).collect(),
+            current_dir: current_dir.map(Path::to_path_buf),
         })
     }
 
@@ -30,7 +30,7 @@ impl SerializableCommand {
                 .get_args()
                 .map(|s| s.to_string_lossy().to_string())
                 .collect(),
-            current_dir: command.get_current_dir().map(|dir| dir.to_path_buf()),
+            current_dir: command.get_current_dir().map(Path::to_path_buf),
         }
     }
 

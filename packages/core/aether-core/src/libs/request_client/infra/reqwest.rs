@@ -34,11 +34,11 @@ impl<PS: ProgressService> ReqwestClient<PS> {
         response: Response,
         progress_bar: (&ProgressBarId, f64),
     ) -> Result<Bytes, RequestError> {
+        use futures::StreamExt;
+
         let Some(total_size) = response.content_length() else {
             return Ok(response.bytes().await?);
         };
-
-        use futures::StreamExt;
 
         let mut stream = response.bytes_stream();
         let mut bytes = Vec::new();
@@ -48,11 +48,12 @@ impl<PS: ProgressService> ReqwestClient<PS> {
             let chunk = chunk.map_err(RequestError::RequestSendError)?;
             bytes.extend_from_slice(&chunk);
 
+            #[allow(clippy::cast_precision_loss)]
             let progress = (chunk.len() as f64 / total_size as f64) * total;
 
             self.progress_service
                 .emit_progress_safe(progress_bar_id, progress, None)
-                .await
+                .await;
         }
 
         Ok(bytes.into())
@@ -123,18 +124,16 @@ impl<PS: ProgressService> RequestClient for ReqwestClient<PS> {
 
 impl From<Method> for reqwest::Method {
     fn from(method: Method) -> Self {
-        use Method::*;
-
         match method {
-            Options => reqwest::Method::OPTIONS,
-            Get => reqwest::Method::GET,
-            Post => reqwest::Method::POST,
-            Put => reqwest::Method::PUT,
-            Delete => reqwest::Method::DELETE,
-            Head => reqwest::Method::HEAD,
-            Trace => reqwest::Method::TRACE,
-            Connect => reqwest::Method::CONNECT,
-            Patch => reqwest::Method::PATCH,
+            Method::Options => reqwest::Method::OPTIONS,
+            Method::Get => reqwest::Method::GET,
+            Method::Post => reqwest::Method::POST,
+            Method::Put => reqwest::Method::PUT,
+            Method::Delete => reqwest::Method::DELETE,
+            Method::Head => reqwest::Method::HEAD,
+            Method::Trace => reqwest::Method::TRACE,
+            Method::Connect => reqwest::Method::CONNECT,
+            Method::Patch => reqwest::Method::PATCH,
         }
     }
 }

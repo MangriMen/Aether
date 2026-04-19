@@ -18,7 +18,7 @@ pub async fn handle_instance_launch(app_handle: AppHandle) {
             ActionOnInstanceLaunch::Nothing => {}
         },
         Err(err) => {
-            error!("Failed to get app settings: {}", err);
+            error!("Failed to get app settings: {err}");
         }
     }
 }
@@ -35,7 +35,7 @@ pub async fn handle_instance_finish(app_handle: AppHandle) {
             ActionOnInstanceLaunch::Nothing => {}
         },
         Err(err) => {
-            error!("Failed to get app settings: {}", err);
+            error!("Failed to get app settings: {err}");
         }
     }
 }

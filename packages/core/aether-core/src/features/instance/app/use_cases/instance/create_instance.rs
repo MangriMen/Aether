@@ -119,8 +119,9 @@ impl<
             create_unique_instance_dir(&name, &self.location_info.instances_dir()).await?;
 
         info!(
-            "Creating instance \"{}\" at path \"{:?}\"",
-            &name, &instance_dir
+            "Creating instance \"{}\" at path \"{}\"",
+            &name,
+            &instance_dir.display()
         );
 
         // Check that loader version is valid
@@ -146,8 +147,8 @@ impl<
             &game_version,
             mod_loader,
             loader_version.as_ref(),
-            &icon_path,
-            &pack_info,
+            icon_path.as_ref(),
+            pack_info.as_ref(),
         );
 
         let instance_id = self.setup_instance(&instance, skip_install_instance).await;
@@ -155,8 +156,9 @@ impl<
         match instance_id {
             Ok(instance_id) => {
                 info!(
-                    "Instance \"{}\" created successfully at path \"{:?}\"",
-                    &instance.name, &instance_dir
+                    "Instance \"{}\" created successfully at path \"{}\"",
+                    &instance.name,
+                    &instance_dir.display()
                 );
                 Ok(instance_id)
             }
@@ -168,12 +170,12 @@ impl<
 
                 self.event_emitter
                     .emit_safe(WarningEvent {
-                        message: format!("Error creating instance {}", err),
+                        message: format!("Error creating instance {err}"),
                     })
                     .await;
 
                 if let Err(cleanup_err) = self.instance_storage.remove(&instance.id).await {
-                    error!("Failed to cleanup instance: {}", cleanup_err);
+                    error!("Failed to cleanup instance: {cleanup_err}");
                 }
                 Err(err)
             }
@@ -187,13 +189,13 @@ fn build_instance(
     game_version: &str,
     mod_loader: ModLoader,
     loader_version: Option<&LoaderVersionPreference>,
-    icon_path: &Option<String>,
-    pack_info: &Option<PackInfo>,
+    icon_path: Option<&String>,
+    pack_info: Option<&PackInfo>,
 ) -> Instance {
     Instance {
         id: sanitized_name.to_owned(),
         name: name.to_owned(),
-        icon_path: icon_path.as_ref().map(ToOwned::to_owned),
+        icon_path: icon_path.map(ToOwned::to_owned),
         install_stage: InstanceInstallStage::NotInstalled,
         game_version: game_version.to_owned(),
         loader: mod_loader,
@@ -210,7 +212,7 @@ fn build_instance(
         time_played: 0,
         recent_time_played: 0,
         hooks: Hooks::default(),
-        pack_info: pack_info.clone(),
+        pack_info: pack_info.cloned(),
     }
 }
 
@@ -231,7 +233,7 @@ fn create_unique_instance_path(name: &str, base_dir: &Path) -> (PathBuf, String)
 
     let mut counter = 1;
     while full_path.exists() {
-        sanitized_name = format!("{}-{}", base_sanitized_name, counter);
+        sanitized_name = format!("{base_sanitized_name}-{counter}");
         full_path = base_dir.join(&sanitized_name);
         counter += 1;
     }

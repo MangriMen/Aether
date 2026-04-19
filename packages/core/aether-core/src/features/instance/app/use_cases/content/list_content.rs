@@ -45,7 +45,7 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
                 entries_by_path.clone(),
                 files.clone(),
             )
-            .await?
+            .await?;
         }
 
         match Arc::try_unwrap(files) {
@@ -120,9 +120,8 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
         content_type: ContentType,
         entries_by_path: &DashMap<String, PackEntry>,
     ) -> Result<Option<ContentFile>, InstanceError> {
-        let file_name = match file_path.file_name().and_then(|n| n.to_str()) {
-            Some(name) => name,
-            None => return Ok(None),
+        let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) else {
+            return Ok(None);
         };
 
         let file_size = tokio::fs::metadata(file_path)

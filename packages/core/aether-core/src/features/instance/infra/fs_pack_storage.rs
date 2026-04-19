@@ -151,7 +151,7 @@ impl PackStorage for FsPackStorage {
 
         let mut pack = self.get_pack(instance_id).await?;
         pack.files.retain(|e| !success_deleted.contains(&&e.file));
-        pack.files.dedup_by_key(|item| item.file.to_string());
+        pack.files.dedup_by_key(|item| item.file.clone());
         self.update_pack(instance_id, &pack).await
     }
 }

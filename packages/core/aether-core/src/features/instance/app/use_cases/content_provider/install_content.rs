@@ -44,8 +44,8 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
             .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
             .await
             .map_err(|_| InstanceError::ContentProviderNotFound {
-                plugin_id: provider_id.plugin_id.to_string(),
-                capability_id: provider_id.capability_id.to_string(),
+                plugin_id: provider_id.plugin_id.clone(),
+                capability_id: provider_id.capability_id.clone(),
             })?;
 
         match install_params {
@@ -119,7 +119,7 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
 
                 let paths: Vec<String> = processed_files
                     .iter()
-                    .map(|f| f.content_path.to_owned())
+                    .map(|f| f.content_path.clone())
                     .collect();
 
                 self.pack_storage

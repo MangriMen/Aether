@@ -36,7 +36,7 @@ impl<IR: CapabilityRegistry<Arc<dyn Importer>>> ImportInstanceUseCase<IR> {
             .find_by_plugin_and_capability_id(&plugin_id, &importer_id)
             .await
             .map_err(|_| InstanceError::ImporterNotFound {
-                importer_id: importer_id.to_owned(),
+                importer_id: importer_id.clone(),
             })?;
 
         importer.capability.import(&path).await

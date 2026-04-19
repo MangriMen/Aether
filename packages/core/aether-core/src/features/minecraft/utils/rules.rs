@@ -12,10 +12,11 @@ pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_update
         .iter()
         .all(|rule| matches!(rule.action, vanilla::RuleAction::Disallow))
     {
-        parse_results.push(Some(true))
+        parse_results.push(Some(true));
     }
 
-    !(parse_results.iter().any(|x| x == &Some(false)) || parse_results.iter().all(|x| x.is_none()))
+    !(parse_results.iter().any(|x| x == &Some(false))
+        || parse_results.iter().all(std::option::Option::is_none))
 }
 
 fn parse_rule(rule: &vanilla::Rule, java_version: &str, minecraft_updated: bool) -> Option<bool> {

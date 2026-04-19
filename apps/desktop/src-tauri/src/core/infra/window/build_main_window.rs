@@ -1,3 +1,4 @@
+#![allow(clippy::needless_pass_by_value)]
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 /// Builds and configures the main application window

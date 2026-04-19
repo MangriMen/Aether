@@ -40,17 +40,13 @@ impl<R: CachePathResolver> Cache for FileCache<R> {
         if let Some(parent) = path.parent()
             && let Err(err) = create_dir_all(&parent).await
         {
-            debug!(
-                "Failed to create cache dir {:?}. {:?}",
-                path.to_path_buf(),
-                err
-            );
+            debug!("Failed to create cache dir {:?}. {:?}", path.clone(), err);
         }
 
         if let Err(err) = write_json_async(&path, value).await {
             debug!(
                 "Failed to write cached value to {:?}. {:?}",
-                path.to_path_buf(),
+                path.clone(),
                 err
             );
         }
@@ -70,7 +66,7 @@ impl<R: CachePathResolver> Cache for FileCache<R> {
         };
 
         if let Err(err) = remove_file(&path).await {
-            debug!("Failed to remove cache file {:?}. {:?}", path, err)
+            debug!("Failed to remove cache file {:?}. {:?}", path, err);
         }
     }
 }
@@ -106,7 +102,7 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
         };
 
         if let Err(err) = remove_file(&path).await {
-            debug!("Failed to remove cache file {:?}. {:?}", path, err)
+            debug!("Failed to remove cache file {:?}. {:?}", path, err);
         }
     }
 }

@@ -11,6 +11,7 @@ pub struct FsAppSettingsStorage {
 }
 
 impl FsAppSettingsStorage {
+    #[must_use]
     pub fn new(path: PathBuf) -> Self {
         Self {
             store: JsonValueStore::new(path),

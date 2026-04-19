@@ -15,7 +15,7 @@ impl EditSettings {
         if settings.max_concurrent_downloads() != self.max_concurrent_downloads {
             settings.set_max_concurrent_downloads(self.max_concurrent_downloads);
             is_changed = true;
-        };
+        }
 
         is_changed
     }

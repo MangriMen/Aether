@@ -9,7 +9,7 @@ host_fn!(
 pub get_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> {
     to_extism_res::<JavaDto>(
         execute_async(async move {
-            crate::api::java::get(version).await.map(|x| x.into())
+            crate::api::java::get(version).await.map(std::convert::Into::into)
         })
     )
 });
@@ -18,7 +18,7 @@ host_fn!(
 pub install_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> {
     to_extism_res::<JavaDto>(
         execute_async(async move {
-            crate::api::java::install(version).await.map(|x| x.into())
+            crate::api::java::install(version).await.map(std::convert::Into::into)
         })
     )
 });

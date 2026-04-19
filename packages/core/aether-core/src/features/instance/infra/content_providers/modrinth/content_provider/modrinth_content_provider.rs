@@ -86,7 +86,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let request_params = ProjectVersionsRequest {
             loaders: loader.as_ref().map(|l| vec![l.clone()]),
             game_versions: Some(vec![game_version.to_string()]),
-            include_changelog: Some(false),
+            include_changelog: false,
             ..Default::default()
         };
 
@@ -96,7 +96,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .await
             .map_err(InstanceError::ContentDownloadError)?;
 
-        find_best_version(&versions, game_version, loader)
+        find_best_version(&versions, game_version, loader.as_ref())
             .cloned()
             .ok_or_else(|| InstanceError::ContentForGameVersionNotFound {
                 game_version: game_version.to_owned(),
@@ -112,7 +112,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 .api
                 .get_project_version(version)
                 .await
-                .map_err(|err| InstanceError::ContentDownloadError(err.to_string())),
+                .map_err(|err| InstanceError::ContentDownloadError(err.clone())),
             None => {
                 self.get_project_version_for_game_version(
                     &install_params.content_id,
@@ -130,7 +130,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     ) -> Result<&'a File, InstanceError> {
         get_first_file_from_project_version(project_version).ok_or(
             InstanceError::ContentForGameVersionNotFound {
-                game_version: install_params.game_version.to_owned(),
+                game_version: install_params.game_version.clone(),
             },
         )
     }
@@ -149,33 +149,33 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         &self,
         install_params: &ModpackInstallParams,
     ) -> Result<ProjectVersionResponse, InstanceError> {
-        match &install_params.content_version {
-            Some(version_id) => self
-                .api
+        if let Some(version_id) = &install_params.content_version {
+            self.api
                 .get_project_version(version_id)
                 .await
-                .map_err(|err| InstanceError::ContentDownloadError(err.to_string())),
-            None => {
-                let versions = self
-                    .api
-                    .get_project_versions(
-                        &install_params.content_id,
-                        &ProjectVersionsRequest::without_changelog(),
-                    )
-                    .await
-                    .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+                .map_err(|err| InstanceError::ContentDownloadError(err.clone()))
+        } else {
+            let versions = self
+                .api
+                .get_project_versions(
+                    &install_params.content_id,
+                    &ProjectVersionsRequest::without_changelog(),
+                )
+                .await
+                .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
-                versions
-                    .first()
-                    .cloned()
-                    .ok_or(InstanceError::ContentDownloadError(
-                        "No versions found for modpack".to_string(),
-                    ))
-            }
+            versions
+                .first()
+                .cloned()
+                .ok_or(InstanceError::ContentDownloadError(
+                    "No versions found for modpack".to_string(),
+                ))
         }
     }
 
     fn read_modpack_manifest(mrpack_path: &Path) -> Result<ModrinthIndex, InstanceError> {
+        const INDEX_PATH: &str = "modrinth.index.json";
+
         let file =
             std::fs::File::open(mrpack_path).map_err(|e| InstanceError::ContentProviderError {
                 reason: format!("Failed to open .mrpack file: {e}"),
@@ -185,8 +185,6 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             zip::ZipArchive::new(file).map_err(|e| InstanceError::ContentProviderError {
                 reason: format!("Invalid .mrpack archive: {e}"),
             })?;
-
-        const INDEX_PATH: &str = "modrinth.index.json";
 
         let mut index_file =
             archive
@@ -218,6 +216,8 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     }
 
     fn extract_overrides(mrpack_path: &Path, instance_dir: &Path) -> Result<(), InstanceError> {
+        const MODPACK_OVERRIDES_DIR: &str = "overrides/";
+
         let file =
             std::fs::File::open(mrpack_path).map_err(|e| InstanceError::ContentProviderError {
                 reason: format!("Failed to open pack: {e}"),
@@ -226,8 +226,6 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             zip::ZipArchive::new(file).map_err(|e| InstanceError::ContentProviderError {
                 reason: format!("Invalid zip: {e}"),
             })?;
-
-        const MODPACK_OVERRIDES_DIR: &str = "overrides/";
 
         for i in 0..archive.len() {
             let mut zip_file =
@@ -249,7 +247,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             if zip_file.is_dir() {
                 std::fs::create_dir_all(&full_path).map_err(|e| {
                     InstanceError::ContentProviderError {
-                        reason: format!("Failed to create directory {:?}: {e}", full_path),
+                        reason: format!("Failed to create directory {}: {e}", full_path.display()),
                     }
                 })?;
                 continue;
@@ -259,8 +257,8 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 std::fs::create_dir_all(parent).map_err(|e| {
                     InstanceError::ContentProviderError {
                         reason: format!(
-                            "Failed to create parent directory for {:?}: {e}",
-                            full_path
+                            "Failed to create parent directory for {}: {e}",
+                            full_path.display()
                         ),
                     }
                 })?;
@@ -268,13 +266,13 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
             let mut outfile = std::fs::File::create(&full_path).map_err(|e| {
                 InstanceError::ContentProviderError {
-                    reason: format!("Failed to create file {:?}: {e}", full_path),
+                    reason: format!("Failed to create file {}: {e}", full_path.display()),
                 }
             })?;
 
             std::io::copy(&mut zip_file, &mut outfile).map_err(|e| {
                 InstanceError::ContentProviderError {
-                    reason: format!("Failed to copy data to {:?}: {e}", full_path),
+                    reason: format!("Failed to copy data to {}: {e}", full_path.display()),
                 }
             })?;
         }
@@ -287,20 +285,17 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         instance_dir: PathBuf,
         mod_file: ModrinthIndexFile,
     ) -> Result<Option<ContentFile>, InstanceError> {
-        let url = match mod_file.downloads.first() {
-            Some(u) => u,
-            None => return Ok(None),
+        let Some(url) = mod_file.downloads.first() else {
+            return Ok(None);
         };
 
-        let (project_id, version_id) = match Self::parse_file_url(url) {
-            Some(ids) => ids,
-            None => return Ok(None),
+        let Some((project_id, version_id)) = Self::parse_file_url(url) else {
+            return Ok(None);
         };
 
         let content_path = PathBuf::from(&mod_file.path);
-        let content_type = match ContentType::get_from_parent_folder(&content_path) {
-            Some(t) => t,
-            None => return Ok(None),
+        let Some(content_type) = ContentType::get_from_parent_folder(&content_path) else {
+            return Ok(None);
         };
 
         let target_path = instance_dir.join(&content_path);
@@ -452,7 +447,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .search(&modrinth_search_params)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
         Ok(response.into_content_search(provider_id))
     }
@@ -480,7 +475,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         let metadata = ContentFile::from_params(CreateContentFileParams {
             name: Some(project_version.name.clone()),
             file_name: file.filename.clone(),
-            size: file.size as u64,
+            size: file.size.max(0).cast_unsigned(),
             sha1: file.hashes.sha1.clone(),
             content_path,
             content_id: install_params.content_id.clone(),
@@ -527,13 +522,13 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .get_project(&check_params.content_item.slug)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
         let project_versions = self
             .api
             .get_project_versions(&project.id, &ProjectVersionsRequest::without_changelog())
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
         let mut compatibility_map = HashMap::new();
 
@@ -555,7 +550,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         self.api
             .get_project(&content_id)
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?
             .try_into()
             .map_err(|err: ModrinthMapperError| {
                 InstanceError::ContentDownloadError(err.to_string())
@@ -567,7 +562,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .api
             .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())
             .await
-            .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
 
         Ok(versions
             .into_iter()

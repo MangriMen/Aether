@@ -161,7 +161,7 @@ impl<PS: PackStorage> ImportContentUseCase<PS> {
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::Edited,
-                instance_id: instance_id.to_string(),
+                instance_id: instance_id.clone(),
             })
             .await;
 

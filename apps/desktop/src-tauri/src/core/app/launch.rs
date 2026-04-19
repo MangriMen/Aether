@@ -5,7 +5,10 @@ use tauri::{Builder, Wry};
 #[cfg(debug_assertions)]
 use crate::bindings::create_specta_exporters;
 use crate::{
-    core::{commands::*, log::default_log_builder},
+    core::{
+        commands::{__cmd__reveal_in_explorer, reveal_in_explorer},
+        log::default_log_builder,
+    },
     features::{auth, events, instance, minecraft, plugins, process, settings, update},
 };
 
@@ -27,11 +30,13 @@ fn create_tauri_app() -> Builder<Wry> {
     let exporters = create_specta_exporters();
 
     #[cfg(debug_assertions)]
-    exporters.iter().for_each(|e| e.export());
+    exporters.iter().for_each(crate::bindings::Exporter::export);
 
     Builder::default()
         .setup(move |app| {
-            exporters.iter().for_each(|e| e.builder.mount_events(app));
+            for exporter in &exporters {
+                exporter.builder.mount_events(app);
+            }
 
             Ok(init_app(app)?)
         })
@@ -68,6 +73,7 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
 
 /// Helper trait for method chaining
 pub trait Pipe {
+    #[must_use]
     fn pipe<F>(self, f: F) -> Self
     where
         F: FnOnce(Self) -> Self,

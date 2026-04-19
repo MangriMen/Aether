@@ -433,14 +433,14 @@ impl LazyLocator {
                     if let Err(err) = registry
                         .add(
                             ModrinthContentProvider::ID.to_owned(),
-                            meta.id.to_string(),
+                            meta.id.clone(),
                             provider.clone(),
                         )
                         .await
                     {
                         tracing::error!(
                             "Failed to register content provider {}: {}",
-                            meta.id.to_string(),
+                            meta.id.clone(),
                             err
                         );
                     }

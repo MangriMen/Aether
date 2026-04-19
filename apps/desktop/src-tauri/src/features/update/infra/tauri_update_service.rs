@@ -34,7 +34,7 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
         let update = updater.check().await.map_err(|e| e.to_string())?;
 
         let mut cached_update = self.pending_update.lock().await;
-        *cached_update = update.clone();
+        (*cached_update).clone_from(&update);
 
         Ok(update.map(Into::into))
     }
@@ -60,6 +60,7 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                             content_length = total_length;
                             downloaded += chunk_length;
 
+                            #[allow(clippy::cast_precision_loss)]
                             let fraction =
                                 content_length.map(|total| downloaded as f64 / total as f64);
 

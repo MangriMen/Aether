@@ -8,13 +8,13 @@ use crate::{
 /// Hides all windows
 pub fn hide_all_windows(app_handle: &AppHandle) {
     log::info!("Hiding launcher windows");
-    for_each_window(app_handle, |w| w.hide(), "hide");
+    for_each_window(app_handle, tauri::WebviewWindow::hide, "hide");
 }
 
 /// Shows all windows
 pub fn show_all_windows(app_handle: &AppHandle) {
     log::info!("Showing launcher windows");
-    for_each_window(app_handle, |w| w.show(), "show");
+    for_each_window(app_handle, tauri::WebviewWindow::show, "show");
 }
 
 /// Closes all windows and prevents exit handling
@@ -25,7 +25,7 @@ pub fn close_all_windows(app_handle: &AppHandle) {
     let mut prevent_exit = prevent_exit.lock().unwrap();
     prevent_exit.set(true);
 
-    for_each_window(app_handle, |w| w.close(), "close");
+    for_each_window(app_handle, tauri::WebviewWindow::close, "close");
 }
 
 /// Recreates the main window
@@ -33,7 +33,7 @@ pub fn recreate_windows(app_handle: &AppHandle, app_settings: &AppSettings) {
     log::info!("Recreating launcher windows");
 
     if let Err(e) = build_main_window(app_handle.clone(), app_settings.transparent, false) {
-        log::error!("Failed to recreate window: {}", e);
+        log::error!("Failed to recreate window: {e}");
     }
 
     let prevent_exit = app_handle.state::<PreventExitState>();
@@ -48,7 +48,7 @@ where
 {
     for window in app.webview_windows().values() {
         if let Err(e) = action(window) {
-            log::error!("Failed to {} window: {}", action_name, e);
+            log::error!("Failed to {action_name} window: {e}");
         }
     }
 }

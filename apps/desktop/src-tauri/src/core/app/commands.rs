@@ -1,3 +1,4 @@
+#![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
 use aether_core::core::LauncherState;
@@ -10,12 +11,14 @@ use crate::{
     shared,
 };
 
+#[must_use]
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::new(APPLICATION_PLUGIN_NAME)
         .invoke_handler(application_commands!(tauri::generate_handler!))
         .build()
 }
 
+#[must_use]
 pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     application_commands!(tauri_specta::collect_commands!)
 }
@@ -52,9 +55,9 @@ pub async fn initialize_plugins() -> FrontendResult<()> {
 pub async fn load_enabled_plugins() -> FrontendResult<()> {
     let settings = aether_core::api::settings::get().await?;
 
-    for plugin_id in settings.enabled_plugins().iter() {
-        if let Err(e) = aether_core::api::plugin::enable(plugin_id.to_string()).await {
-            log::error!("Failed to load plugin {}: {}", plugin_id, e);
+    for plugin_id in settings.enabled_plugins() {
+        if let Err(e) = aether_core::api::plugin::enable(plugin_id.clone()).await {
+            log::error!("Failed to load plugin {plugin_id}: {e}");
         }
     }
 

@@ -30,16 +30,13 @@ pub fn get_first_file_from_project_version(version: &ProjectVersionResponse) -> 
 pub fn find_best_version<'a>(
     response: &'a [ProjectVersionResponse],
     game_version: &str,
-    loader: &Option<String>,
+    loader: Option<&String>,
 ) -> Option<&'a ProjectVersionResponse> {
     response
         .iter()
         .filter(|v| {
             let is_right_game_version = v.game_versions.iter().any(|gv| gv == game_version);
-            let is_right_loader = loader
-                .as_deref()
-                .map(|l| v.loaders.iter().any(|vl| vl == l))
-                .unwrap_or(true);
+            let is_right_loader = loader.is_none_or(|l| v.loaders.iter().any(|vl| vl == l));
 
             is_right_game_version && is_right_loader
         })

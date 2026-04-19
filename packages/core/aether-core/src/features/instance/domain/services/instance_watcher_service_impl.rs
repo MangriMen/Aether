@@ -32,7 +32,7 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
                 {
                     if file_name.starts_with(".DS_Store") {
                         continue;
-                    };
+                    }
 
                     let _ = self.watch_instance(file_name).await;
                 }

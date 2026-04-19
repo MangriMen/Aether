@@ -1,3 +1,4 @@
+#![allow(clippy::needless_pass_by_value)]
 use aether_core::features::events::{ProcessEvent, ProcessEventType};
 use tauri::AppHandle;
 

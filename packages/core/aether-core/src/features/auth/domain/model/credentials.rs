@@ -62,7 +62,7 @@ impl Credentials {
                 }
             }
             AccountType::Offline => (),
-        };
+        }
 
         self.active = true;
 

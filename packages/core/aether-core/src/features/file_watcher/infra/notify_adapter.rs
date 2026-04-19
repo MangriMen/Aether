@@ -28,8 +28,8 @@ impl<FEH: FileEventHandler + 'static> NotifyFileWatcher<FEH> {
                 futures::executor::block_on(async {
                     if let Err(e) = tx.send(res).await {
                         tracing::error!("Failed to send file event: {}", e);
-                    };
-                })
+                    }
+                });
             },
         )?;
 

@@ -1,3 +1,4 @@
+#![allow(clippy::needless_pass_by_value)]
 use tauri::{
     AppHandle, Manager,
     utils::config::WindowEffectsConfig,
@@ -19,14 +20,14 @@ pub fn set_window_effect<R: tauri::Runtime>(
     main_window.set_effects(None)?;
 
     if let Some(effect) = map_to_tauri_effect(window_effect) {
-        log::debug!("Set window effect {:?}", effect);
+        log::debug!("Set window effect {effect:?}");
         apply_window_effect(&main_window, effect)?;
     }
 
     Ok(())
 }
 
-/// Maps our application's WindowEffect enum to Tauri's Effect
+/// Maps our application's `WindowEffect` enum to Tauri's Effect
 fn map_to_tauri_effect(window_effect: WindowEffect) -> Option<Effect> {
     match window_effect {
         WindowEffect::Off => None,

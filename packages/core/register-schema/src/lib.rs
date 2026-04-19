@@ -11,6 +11,7 @@ pub struct SchemaEntry {
 
 inventory::collect!(SchemaEntry);
 
+#[must_use = "The schemas must be registered or displayed; ignoring them is likely a bug."]
 pub fn get_all_schemas() -> Vec<&'static SchemaEntry> {
     inventory::iter::<SchemaEntry>.into_iter().collect()
 }

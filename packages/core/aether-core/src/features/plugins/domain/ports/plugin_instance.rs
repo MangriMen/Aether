@@ -16,16 +16,16 @@ pub trait PluginInstanceExt: PluginInstance {
         name: &str,
         args: T,
     ) -> Result<U, PluginError> {
+        use extism::{FromBytes as F, ToBytes as T};
+
         let id = self.get_id();
         let map_err = |e: extism::Error| -> PluginError {
             PluginError::FunctionCallFailed {
                 function_name: name.to_owned(),
-                plugin_id: id.to_owned(),
+                plugin_id: id.clone(),
                 error: e.to_string(),
             }
         };
-
-        use extism::{FromBytes as F, ToBytes as T};
 
         let args_b = T::to_bytes(&args).map_err(map_err)?;
         let result_b = self.call_bytes(name, args_b.as_ref())?;

@@ -36,7 +36,8 @@ impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
             let result = async {
                 self.instance_storage
                     .upsert_with(id, |instance| {
-                        instance.time_played += elapsed_seconds.num_seconds() as u64;
+                        instance.time_played +=
+                            elapsed_seconds.num_seconds().max(0).cast_unsigned();
                         Ok(())
                     })
                     .await

@@ -39,7 +39,7 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
         // Drop immediate to prevent dead lock in dash map
         drop(plugin);
 
-        let plugin_instance = self.check_is_able_to_unload(&plugin_id, &state)?;
+        let plugin_instance = Self::check_is_able_to_unload(&plugin_id, &state)?;
 
         self.plugin_registry
             .upsert_with(&plugin_id, |plugin| {
@@ -52,14 +52,14 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
             .unload_plugin(&plugin_id, &manifest, plugin_instance.clone())
             .await
         {
-            Ok(_) => self.remove_from_enabled_plugins(&plugin_id).await,
+            Ok(()) => self.remove_from_enabled_plugins(&plugin_id).await,
             Err(err) => {
                 self.plugin_registry
                     .upsert_with(&plugin_id, |plugin| {
                         match &err {
                             // If there is error on plugin on_unload call we are anyway drop instance
                             PluginError::FunctionCallFailed { .. } => {
-                                plugin.state = PluginState::NotLoaded
+                                plugin.state = PluginState::NotLoaded;
                             }
                             // If there is others error - plugin still loaded
                             _ => plugin.state = PluginState::Loaded(plugin_instance),
@@ -74,7 +74,6 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
     }
 
     fn check_is_able_to_unload(
-        &self,
         plugin_id: &str,
         plugin_state: &PluginState,
     ) -> Result<Arc<Mutex<dyn PluginInstance>>, PluginError> {

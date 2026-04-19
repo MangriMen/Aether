@@ -50,7 +50,7 @@ pub fn get_jvm_arguments(
         parsed_arguments.push("-cp".to_string());
         parsed_arguments.push(class_paths.to_string());
     }
-    parsed_arguments.push(format!("-Xmx{}M", max_memory));
+    parsed_arguments.push(format!("-Xmx{max_memory}M"));
     for arg in custom_args {
         if !arg.is_empty() {
             parsed_arguments.push(arg.clone());

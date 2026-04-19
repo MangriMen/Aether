@@ -144,7 +144,7 @@ pub struct LibraryDownloads {
     pub artifact: Option<LibraryDownload>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Conditional files that may be needed to be downloaded alongside the library
-    /// The HashMap key specifies a classifier as additional information for downloading files
+    /// The `HashMap` key specifies a classifier as additional information for downloading files
     pub classifiers: Option<HashMap<String, LibraryDownload>>,
 }
 
@@ -162,7 +162,7 @@ pub enum RuleAction {
 #[serde(rename_all = "kebab-case")]
 /// An enum representing the different types of operating systems
 pub enum Os {
-    /// MacOS (x86)
+    /// `MacOS` (x86)
     Osx,
     /// M1-Based Macs
     OsxArm64,
@@ -218,12 +218,12 @@ impl Os {
         }
     }
 
-    /// Returns the base OS of a variant (e.g. OsxArm64 -> Osx)
+    /// Returns the base OS of a variant (e.g. `OsxArm64` -> Osx)
+    #[must_use]
     pub fn get_os(&self) -> Self {
         match self {
             Os::OsxArm64 => Os::Osx,
-            Os::LinuxArm32 => Os::Linux,
-            Os::LinuxArm64 => Os::Linux,
+            Os::LinuxArm32 | Os::LinuxArm64 => Os::Linux,
             Os::WindowsArm64 => Os::Windows,
             _ => self.clone(),
         }
@@ -237,7 +237,7 @@ pub struct OsRule {
     /// The name of the OS
     pub name: Option<Os>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// The version of the OS. This is normally a RegEx
+    /// The version of the OS. This is normally a `RegEx`
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The architecture of the OS
@@ -384,17 +384,17 @@ pub fn merge_partial_library(partial: PartialLibrary, mut merge: Library) -> Lib
                 }
             }
         } else {
-            merge.downloads = Some(downloads)
+            merge.downloads = Some(downloads);
         }
     }
     if let Some(extract) = partial.extract {
-        merge.extract = Some(extract)
+        merge.extract = Some(extract);
     }
     if let Some(name) = partial.name {
-        merge.name = name
+        merge.name = name;
     }
     if let Some(url) = partial.url {
-        merge.url = Some(url)
+        merge.url = Some(url);
     }
     if let Some(natives) = partial.natives {
         if let Some(merge_natives) = &mut merge.natives {
@@ -411,14 +411,14 @@ pub fn merge_partial_library(partial: PartialLibrary, mut merge: Library) -> Lib
                 merge_rules.push(rule);
             }
         } else {
-            merge.rules = Some(rules)
+            merge.rules = Some(rules);
         }
     }
     if let Some(checksums) = partial.checksums {
-        merge.checksums = Some(checksums)
+        merge.checksums = Some(checksums);
     }
     if let Some(include_in_classpath) = partial.include_in_classpath {
-        merge.include_in_classpath = include_in_classpath
+        merge.include_in_classpath = include_in_classpath;
     }
 
     merge

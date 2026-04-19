@@ -84,7 +84,6 @@ impl<
         loading_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         match loader {
-            ModLoader::Vanilla => Ok(()),
             ModLoader::NeoForge | ModLoader::Forge => {
                 ForgeProcessor::new(self.progress_service.clone(), self.location_info.clone())
                     .run(
@@ -97,8 +96,7 @@ impl<
                     )
                     .await
             }
-            ModLoader::Fabric => Ok(()),
-            ModLoader::Quilt => Ok(()),
+            ModLoader::Vanilla | ModLoader::Fabric | ModLoader::Quilt => Ok(()),
         }
     }
 
@@ -119,7 +117,7 @@ impl<
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
 
         let (version, minecraft_updated) =
-            resolve_minecraft_version(&game_version, version_manifest)?;
+            resolve_minecraft_version(&game_version, &version_manifest)?;
 
         let loader_version = self
             .loader_version_resolver

@@ -1,3 +1,4 @@
+#![allow(clippy::needless_pass_by_value)]
 use std::sync::Arc;
 
 use aether_core::features::events::ProcessEvent;
@@ -35,7 +36,7 @@ pub(super) fn init_app(app: &mut App) -> tauri::Result<()> {
         window_manager.clone(),
         event_emitter.clone(),
     );
-    init_app_window(app_handle.clone(), &app_settings, window_manager.clone())?;
+    init_app_window(app_handle.clone(), app_settings, window_manager.clone())?;
     init_instance_launch_listener(app_handle.clone(), event_emitter.clone());
 
     Ok(())
@@ -59,7 +60,7 @@ fn init_app_state<R: tauri::Runtime>(
 
 fn init_app_window<R: tauri::Runtime>(
     app_handle: AppHandle<R>,
-    settings: &AppSettings,
+    settings: AppSettings,
     window_manager: WindowManagerState<R>,
 ) -> tauri::Result<()> {
     build_main_window(app_handle.clone(), settings.transparent, false)?;

@@ -27,8 +27,8 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionUseCase
             .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
             .await
             .map_err(|_| InstanceError::ContentProviderNotFound {
-                plugin_id: provider_id.plugin_id.to_string(),
-                capability_id: provider_id.capability_id.to_string(),
+                plugin_id: provider_id.plugin_id.clone(),
+                capability_id: provider_id.capability_id.clone(),
             })?;
 
         provider

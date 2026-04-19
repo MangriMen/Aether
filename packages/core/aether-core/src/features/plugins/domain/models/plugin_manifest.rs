@@ -63,7 +63,7 @@ pub struct RuntimeConfig {
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
-/// Format: [host_path, virtual_path]
+/// Format: [`host_path`, `virtual_path`]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 pub struct PathMapping(
     /// Path on the host disk.
@@ -109,7 +109,7 @@ pub enum LoadConfig {
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
 pub struct ApiConfig {
-    /// Required API version range (SemVer requirement).
+    /// Required API version range (`SemVer` requirement).
     #[serde(with = "crate::shared::serde_semver")]
     #[schemars(with = "String")]
     pub version: semver::VersionReq,
@@ -122,7 +122,7 @@ pub struct ApiConfig {
 impl PluginManifest {
     pub fn validate(
         &self,
-        api_version: semver::Version,
+        api_version: &semver::Version,
         base_dir: &Path,
     ) -> Result<(), ManifestError> {
         self.runtime.validate()?;
@@ -151,16 +151,14 @@ impl LoadConfig {
             Self::Extism { file, .. } => {
                 let full_path = base_dir.join(file);
                 if !full_path.exists() {
-                    return Err(ManifestError::InvalidFilePath {
-                        path: file.to_path_buf(),
-                    });
+                    return Err(ManifestError::InvalidFilePath { path: file.clone() });
                 }
             }
             Self::Native { lib_path } => {
                 let full_path = base_dir.join(lib_path);
                 if !full_path.exists() {
                     return Err(ManifestError::InvalidFilePath {
-                        path: lib_path.to_path_buf(),
+                        path: lib_path.clone(),
                     });
                 }
             }
@@ -171,8 +169,8 @@ impl LoadConfig {
 }
 
 impl ApiConfig {
-    pub fn validate(&self, api_version: semver::Version) -> Result<(), ManifestError> {
-        if !self.version.matches(&api_version) {
+    pub fn validate(&self, api_version: &semver::Version) -> Result<(), ManifestError> {
+        if !self.version.matches(api_version) {
             return Err(ManifestError::UnsupportedApi);
         }
 

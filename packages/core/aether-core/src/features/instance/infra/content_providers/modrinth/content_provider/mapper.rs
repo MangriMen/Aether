@@ -79,6 +79,7 @@ fn calculate_pagination(offset: i64, limit: i64, total_hits: i64) -> (i64, i64) 
     }
 
     let page = (offset / limit) + 1;
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
     let page_count = (total_hits as f64 / limit as f64).ceil() as i64;
 
     (page, page_count)
@@ -104,7 +105,7 @@ impl TryFrom<Hit> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{}/{project_type}/{slug}", MODRINTH_WEB_URL);
+        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
 
         Ok(Self {
             id: project_id,
@@ -142,7 +143,7 @@ impl TryFrom<ProjectResponse> for ContentItem {
             ModrinthMapperError::UnknownProjectType(project_type.clone()),
         )?;
 
-        let url = format!("{}/{project_type}/{slug}", MODRINTH_WEB_URL);
+        let url = format!("{MODRINTH_WEB_URL}/{project_type}/{slug}");
 
         Ok(Self {
             id,
@@ -236,7 +237,7 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
             .filter_map(|l| ModLoader::from_str(&l).ok())
             .collect();
 
-        let web_url = format!("{}/project/{}/version/{}", MODRINTH_WEB_URL, project_id, id);
+        let web_url = format!("{MODRINTH_WEB_URL}/project/{project_id}/version/{id}");
 
         Ok(Self {
             id,

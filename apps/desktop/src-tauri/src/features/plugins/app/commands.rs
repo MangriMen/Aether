@@ -9,16 +9,19 @@ use crate::features::plugins::{
 };
 use crate::shared::file::reveal_in_explorer;
 
+#[must_use]
 pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new(PLUGIN_PLUGIN_NAME)
         .invoke_handler(plugin_commands!(tauri::generate_handler!))
         .build()
 }
 
+#[must_use]
 pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     plugin_commands!(tauri_specta::collect_commands!)
 }
 
+#[must_use]
 pub fn get_specta_events() -> tauri_specta::Events {
     tauri_specta::collect_events![PluginEventDto]
 }

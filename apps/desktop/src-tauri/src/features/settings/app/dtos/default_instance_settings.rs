@@ -74,9 +74,9 @@ impl From<WindowSizeDto> for WindowSize {
 impl From<Hooks> for HooksDto {
     fn from(value: Hooks) -> Self {
         Self {
-            pre_launch: value.pre_launch().to_owned().cloned(),
-            wrapper: value.wrapper().to_owned().cloned(),
-            post_exit: value.post_exit().to_owned().cloned(),
+            pre_launch: value.pre_launch().cloned(),
+            wrapper: value.wrapper().cloned(),
+            post_exit: value.post_exit().cloned(),
         }
     }
 }

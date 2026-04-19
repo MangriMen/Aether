@@ -46,7 +46,7 @@ fn apply_edit_changes(
     edit_settings: &EditPluginSettings,
 ) -> PluginSettings {
     if let Some(allowed_hosts) = &edit_settings.allowed_hosts {
-        settings.allowed_hosts = allowed_hosts.clone();
+        settings.allowed_hosts.clone_from(allowed_hosts);
     }
 
     if let Some(allowed_paths) = &edit_settings.allowed_paths {

@@ -53,7 +53,7 @@ pub struct RuntimeConfigDto {
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
-/// Format: [host_path, virtual_path]
+/// Format: [`host_path`, `virtual_path`]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 pub struct PathMappingDto(
     /// Path on the host disk.
@@ -98,7 +98,7 @@ pub enum LoadConfigDto {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiConfigDto {
-    /// Required API version range (SemVer requirement).
+    /// Required API version range (`SemVer` requirement).
     #[specta(type = String)]
     pub version: semver::VersionReq,
 

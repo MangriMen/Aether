@@ -1,19 +1,16 @@
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize, Serializer};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
 pub const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
 pub const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
-lazy_static::lazy_static! {
-    pub static ref DEFAULT_HEADERS: reqwest::header::HeaderMap = {
-        let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-            "User-Agent",
-            "MangriMen/aether".to_string().parse().unwrap(),
-        );
-        headers
-    };
-}
+#[allow(unused)]
+pub static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
+    let mut headers = HeaderMap::new();
+    headers.insert("User-Agent", HeaderValue::from_static("MangriMen/aether"));
+    headers
+});
 
 // --- Request Params ---
 
@@ -77,15 +74,12 @@ pub struct ProjectVersionsRequest {
     pub game_versions: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub featured: Option<bool>,
-    #[serde(
-        default = "default_include_changelog",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub include_changelog: Option<bool>,
+    #[serde(default = "default_true")]
+    pub include_changelog: bool,
 }
 
-fn default_include_changelog() -> Option<bool> {
-    Some(true)
+fn default_true() -> bool {
+    true
 }
 
 impl Default for ProjectVersionsRequest {
@@ -94,7 +88,7 @@ impl Default for ProjectVersionsRequest {
             loaders: None,
             game_versions: None,
             featured: None,
-            include_changelog: Some(true),
+            include_changelog: true,
         }
     }
 }
@@ -105,7 +99,7 @@ impl ProjectVersionsRequest {
             loaders: None,
             game_versions: None,
             featured: None,
-            include_changelog: Some(false),
+            include_changelog: false,
         }
     }
 }
@@ -264,6 +258,7 @@ pub struct File {
     pub filename: String,
     pub primary: bool,
     pub size: i64,
+    #[allow(clippy::struct_field_names)]
     pub file_type: Option<serde_json::Value>,
 }
 

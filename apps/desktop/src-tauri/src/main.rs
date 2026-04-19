@@ -3,6 +3,6 @@
 
 fn main() {
     if let Err(e) = aether::core::launch_app() {
-        eprintln!("Failed to launch app: {e}")
+        eprintln!("Failed to launch app: {e}");
     }
 }

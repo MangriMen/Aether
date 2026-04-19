@@ -92,7 +92,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache> AssetsService<RC, PS, C> 
         let assets_index = self
             .cached_resource
             .get_cached(
-                || assets_index_key(version_info.asset_index.id.to_string()),
+                || assets_index_key(version_info.asset_index.id.clone()),
                 self.fetch_assets_index(version_info),
                 || format!("assets index {}", version_info.asset_index.id),
                 force,

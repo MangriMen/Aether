@@ -27,7 +27,7 @@ where
         CoreEvent: TryInto<T>,
         F: Fn(T) + Send + Sync + 'static,
     {
-        EventEmitterExt::<CoreEvent>::on::<T, F>(self.deref(), handler);
+        EventEmitterExt::<CoreEvent>::on::<T, F>(&**self, handler);
     }
 
     fn on_app<T, F>(&self, handler: F)
@@ -36,6 +36,6 @@ where
         AppEvent: TryInto<T>,
         F: Fn(T) + Send + Sync + 'static,
     {
-        EventEmitterExt::<AppEvent>::on::<T, F>(self.deref(), handler);
+        EventEmitterExt::<AppEvent>::on::<T, F>(&**self, handler);
     }
 }

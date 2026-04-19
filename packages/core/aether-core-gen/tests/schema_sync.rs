@@ -34,7 +34,7 @@ fn sync_all_schemas() {
         let actual_json =
             serde_json::to_string_pretty(&schema_obj).expect("Failed to serialize schema");
 
-        process_schema(&file_path, actual_json, update_mode);
+        process_schema(&file_path, &actual_json, update_mode);
     }
 }
 
@@ -52,23 +52,27 @@ fn get_target_dir(category: &str) -> PathBuf {
     path
 }
 
-fn process_schema(path: &Path, actual_json: String, update_mode: bool) {
+fn process_schema(path: &Path, actual_json: &str, update_mode: bool) {
     if update_mode {
-        fs::write(path, &actual_json).expect("Failed to write schema");
-        println!("  [UPDATED] {:?}", path.file_name().unwrap());
+        fs::write(path, actual_json).expect("Failed to write schema");
+        println!("  [UPDATED] {}", path.file_name().unwrap().display());
     } else {
         let expected_json = fs::read_to_string(path).unwrap_or_else(|_| {
-            panic!("\n\n[ERROR] Missing schema: {:?}\nRun 'UPDATE_SCHEMAS=1 cargo test' to generate.\n", path);
+            panic!(
+                "\n\n[ERROR] Missing schema: {}\nRun 'UPDATE_SCHEMAS=1 cargo test' to generate.\n",
+                path.display()
+            );
         });
 
         // Compare as Value, so that we don't fail on whitespace differences
-        let actual_val: serde_json::Value = serde_json::from_str(&actual_json).unwrap();
+        let actual_val: serde_json::Value = serde_json::from_str(actual_json).unwrap();
         let expected_val: serde_json::Value = serde_json::from_str(&expected_json).unwrap();
 
         assert_eq!(
-            actual_val, expected_val,
-            "\n\n[ERROR] Schema mismatch in {:?}\nRun 'UPDATE_SCHEMAS=1 cargo test' to update.\n",
-            path
+            actual_val,
+            expected_val,
+            "\n\n[ERROR] Schema mismatch in {}\nRun 'UPDATE_SCHEMAS=1 cargo test' to update.\n",
+            path.display()
         );
     }
 }

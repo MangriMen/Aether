@@ -6,7 +6,7 @@ pub fn reveal_in_explorer(path: &Path, exact: bool) -> crate::Result<()> {
     } else {
         #[cfg(target_os = "windows")]
         {
-            let reveal_path = format!("/select,{}", path.display().to_string().replace("/", "\\"));
+            let reveal_path = format!("/select,{}", path.display().to_string().replace('/', "\\"));
             Ok(open::with_detached(reveal_path, "explorer")?)
         }
 

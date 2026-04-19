@@ -17,7 +17,7 @@ pub log(user_data: PluginContext; level: u32, msg: String) -> () {
     let context = user_data.get()?;
     let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
 
-    log::log!(target: "plugin", plugin_utils::log_level_from_u32(level), "[{}]: {}", id, msg);
+    log::log!(target: "plugin", plugin_utils::log_level_from_u32(level), "[{id}]: {msg}");
     Ok(())
 });
 
@@ -37,7 +37,7 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
     let command = command.0;
 
     let command_for_log = command.clone();
-    log::debug!("Processing command from plugin: {:?}", command_for_log);
+    log::debug!("Processing command from plugin: {command_for_log:?}");
 
     to_extism_res::<OutputDto>(
         execute_async(async move {
@@ -49,7 +49,7 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
             let host_command = plugin_utils::plugin_command_to_host(&id, &command, &state.location_info)?;
             let mut cmd = host_command.to_tokio_command();
 
-            log::debug!("Running command: {:?}", host_command);
+            log::debug!("Running command: {host_command:?}");
             let output = cmd.output().await;
 
             match output {
@@ -62,8 +62,8 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
                     Ok(OutputDto::from_output(&output))
                 },
                 Err(err) => {
-                    log::debug!("Update command run error {:?}", err);
-                    Err(crate::ErrorKind::CoreError(format!("Failed to run command: {:?}", cmd)).as_error())
+                    log::debug!("Update command run error {err:?}");
+                    Err(crate::ErrorKind::CoreError(format!("Failed to run command: {cmd:?}")).as_error())
                 }
             }
         })

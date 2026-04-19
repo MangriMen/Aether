@@ -9,6 +9,9 @@ rust-version.workspace = true
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 
+[lints]
+workspace = true
+
 [dependencies]
 # Tauri & Plugins
 tauri = { version = "2", features = ["tray-icon"] }

@@ -44,6 +44,7 @@ use crate::{
     shared::FileCache,
 };
 
+#[allow(clippy::too_many_lines)]
 async fn get_launch_instance_use_case(
     state: &LauncherState,
     lazy_locator: &LazyLocator,

@@ -23,7 +23,7 @@ impl FromStr for CommandDto {
         let mut parts = s.split_whitespace();
         Ok(Self {
             program: parts.next().ok_or("Failed to parse command")?.to_string(),
-            args: parts.map(|s| s.to_string()).collect(),
+            args: parts.map(ToString::to_string).collect(),
             current_dir: None,
         })
     }

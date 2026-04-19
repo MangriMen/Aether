@@ -22,7 +22,7 @@ impl ZipPluginExtractor {
         Self { constants }
     }
 
-    async fn read_manifest(
+    fn read_manifest(
         &self,
         archive: &mut zip::ZipArchive<Cursor<Vec<u8>>>,
     ) -> Result<PluginManifest, PluginError> {
@@ -52,7 +52,7 @@ impl PluginExtractor for ZipPluginExtractor {
         let mut archive = zip::ZipArchive::new(Cursor::new(file))
             .map_err(|_| PluginError::InvalidExtractionFormat)?;
 
-        let manifest = self.read_manifest(&mut archive).await?;
+        let manifest = self.read_manifest(&mut archive)?;
         let plugin_id = manifest.metadata.id.clone();
 
         let temp_dir = TempDir::new().map_err(IoError::from)?;

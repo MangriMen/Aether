@@ -93,7 +93,7 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
         let version_manifest = self.get_version_manifest_use_case.execute().await?;
 
         let (version, minecraft_updated) =
-            resolve_minecraft_version(&game_version, version_manifest)?;
+            resolve_minecraft_version(&game_version, &version_manifest)?;
 
         let loader_version = self
             .loader_version_resolver
@@ -140,12 +140,13 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
         }
 
         let jvm_arguments = get_minecraft_jvm_arguments(
-            args.get(&vanilla::ArgumentType::Jvm).map(|x| x.as_slice()),
+            args.get(&vanilla::ArgumentType::Jvm)
+                .map(std::vec::Vec::as_slice),
             &self.location_info.libraries_dir(),
             &version_info,
             &natives_dir,
             &client_path,
-            version_jar,
+            &version_jar,
             &java,
             launch_settings.memory.maximum,
             &launch_settings.launch_args,
@@ -153,7 +154,8 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
         )?;
 
         let minecraft_arguments = get_minecraft_arguments(
-            args.get(&vanilla::ArgumentType::Game).map(|x| x.as_slice()),
+            args.get(&vanilla::ArgumentType::Game)
+                .map(std::vec::Vec::as_slice),
             version_info.minecraft_arguments.as_deref(),
             &credentials,
             &version.id,

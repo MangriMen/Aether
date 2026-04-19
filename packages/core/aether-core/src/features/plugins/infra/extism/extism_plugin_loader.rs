@@ -73,7 +73,7 @@ impl ExtismPluginLoader {
     ) -> Result<Manifest, PluginError> {
         let wasm_file_path = match &manifest.load {
             LoadConfig::Extism { file, .. } => file,
-            config => {
+            config @ LoadConfig::Native { .. } => {
                 return Err(PluginError::InvalidConfig {
                     config: config.clone(),
                 });
@@ -92,7 +92,6 @@ impl ExtismPluginLoader {
     }
 
     fn build_plugin(
-        &self,
         plugin_id: &str,
         wasm_manifest: &Manifest,
         cache_dir: Option<&PathBuf>,
@@ -131,7 +130,7 @@ impl PluginLoader for ExtismPluginLoader {
         let wasm_manifest =
             self.build_wasm_manifest(manifest, Some(&default_allowed_paths), settings)?;
 
-        let extism_plugin = self.build_plugin(plugin_id, &wasm_manifest, Some(&cache_config))?;
+        let extism_plugin = Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config))?;
 
         let mut plugin = ExtismPluginInstance::new(extism_plugin, plugin_id.clone());
         if let Err(err) = plugin.on_load() {
