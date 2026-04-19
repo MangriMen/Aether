@@ -92,36 +92,38 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col grow gap-2 overflow-hidden p-0.5', local.class)}
+      class={cn('flex flex-col grow gap-3 overflow-hidden p-0.5', local.class)}
       {...others}
     >
-      <div class='flex justify-between gap-2'>
-        <ContentTypeTabs
-          items={local.types}
-          value={state.contentType()}
-          onChange={actions.setContentType}
-          disabled={local.isProvidersLoading}
-          isLoading={local.types.length === 0 || local.isProvidersLoading}
-        />
-        <ContentProviderSelect
-          options={local.providers}
-          value={state.provider()}
-          onChange={actions.setProvider}
-          isLoading={local.isProvidersLoading}
+      <div class='flex flex-col gap-2'>
+        <div class='flex justify-between gap-2'>
+          <ContentTypeTabs
+            items={local.types}
+            value={state.contentType()}
+            onChange={actions.setContentType}
+            disabled={local.isProvidersLoading}
+            isLoading={local.types.length === 0 || local.isProvidersLoading}
+          />
+          <ContentProviderSelect
+            options={local.providers}
+            value={state.provider()}
+            onChange={actions.setProvider}
+            isLoading={local.isProvidersLoading}
+          />
+        </div>
+
+        <ContentSearchCard
+          page={state.page()}
+          pageSize={state.pageSize()}
+          pageCount={content.data?.pageCount}
+          contentType={state.contentType()}
+          searchQuery={localQuery()}
+          isLoading={content.isFetching || local.isProvidersLoading}
+          onSearch={handleSearch}
+          onPageChange={actions.setPage}
+          onPageSizeChange={actions.setPageSize}
         />
       </div>
-
-      <ContentSearchCard
-        page={state.page()}
-        pageSize={state.pageSize()}
-        pageCount={content.data?.pageCount}
-        contentType={state.contentType()}
-        searchQuery={localQuery()}
-        isLoading={content.isFetching || local.isProvidersLoading}
-        onSearch={handleSearch}
-        onPageChange={actions.setPage}
-        onPageSizeChange={actions.setPageSize}
-      />
 
       <ContentList
         isLoading={content.isFetching || local.isProvidersLoading}

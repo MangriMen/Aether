@@ -56,7 +56,7 @@ export const ContentItemPageInfo: Component<
   const itemIsLoading = createMemo(() => !local.item && local.isLoading);
 
   return (
-    <div class={cn('flex gap-2', local.class)} {...others}>
+    <div class={cn('flex gap-3', local.class)} {...others}>
       <Image
         class='aspect-square size-24'
         src={local.item?.iconUrl || undefined}

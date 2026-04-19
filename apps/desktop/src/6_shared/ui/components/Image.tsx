@@ -21,17 +21,22 @@ export const Image: Component<InstanceImageProps> = (props) => {
   return (
     <div
       class={cn(
-        'size-16 rounded-lg flex items-center justify-center',
+        'size-16 rounded-lg flex items-center justify-center bg-secondary/secondary border',
         local.class,
       )}
       {...others}
     >
       <Show
         when={local.src && isValidSrc()}
-        fallback={<ResponsiveIcon icon={IconMdiCubeOutline} />}
+        fallback={
+          <ResponsiveIcon
+            class='text-foreground/85'
+            icon={IconMdiCubeOutline}
+          />
+        }
       >
         <img
-          class='size-full p-1'
+          class='size-full'
           src={local.src}
           alt={local.alt}
           onError={handleError}
