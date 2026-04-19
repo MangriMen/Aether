@@ -79,14 +79,14 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
     <div class={cn('flex items-center gap-2', local.class)} {...others}>
       <Switch checked={!local.content.disabled} onChange={handleToggleDisable}>
         <SwitchControl>
-          <SwitchThumb class='bg-secondary-foreground' />
+          <SwitchThumb />
         </SwitchControl>
       </Switch>
       <CombinedTooltip
         label={t('common.remove')}
         as={IconButton}
         variant='ghost'
-        class='p-0'
+        class='p-0 enabled:hover:bg-destructive/solid-hover enabled:active:bg-destructive/solid-active'
         icon={IconMdiDelete}
         onClick={handleRemove}
       />

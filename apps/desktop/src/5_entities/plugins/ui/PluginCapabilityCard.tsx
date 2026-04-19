@@ -24,7 +24,7 @@ export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {
 
   return (
     <Collapsible
-      class={cn('flex flex-col rounded-lg bg-new-card/card p-2', local.class)}
+      class={cn('flex flex-col rounded-lg bg-card/card p-2', local.class)}
       open={isOpened()}
       onOpenChange={setIsOpened}
       {...others}

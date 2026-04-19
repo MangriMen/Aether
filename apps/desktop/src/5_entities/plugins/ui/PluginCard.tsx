@@ -29,7 +29,7 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex w-full items-center gap-2 text-sm px-2 py-1 rounded-md hover:bg-secondary/50 data-[active]:bg-secondary data-[active]:hover:bg-secondary data-[disabled]:text-muted-foreground',
+        'flex w-full items-center gap-2 text-sm px-2 py-1 rounded-md hover:bg-card/hover data-[active]:bg-secondary/secondary data-[active]:hover:bg-secondary/hover data-[disabled]:text-muted-foreground',
         local.class,
       )}
       data-disabled={isDisabled() ? '' : undefined}

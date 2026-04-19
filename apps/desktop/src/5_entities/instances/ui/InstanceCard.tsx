@@ -30,7 +30,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     <div
       class={cn(
         local.class,
-        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-new-card/card hover:bg-new-card/hover active:bg-new-card/active drop-shadow-md border border-new-border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
+        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-card/card hover:bg-card/hover active:bg-card/active drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
       )}
       {...others}
     >
@@ -55,7 +55,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
         <Match when={local.isRunning}>
           <div
             class={cn(
-              'size-2.5 rounded-full bg-new-success absolute right-2 top-2',
+              'size-2.5 rounded-full bg-success absolute right-2 top-2',
               local.class,
             )}
           />

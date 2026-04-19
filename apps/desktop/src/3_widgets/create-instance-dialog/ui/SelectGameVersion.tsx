@@ -30,8 +30,8 @@ export function SelectGameVersion<T extends Version = Version>(
       virtualized
       value={local.value}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
-      optionValue={'id'}
-      optionTextValue={'id'}
+      optionValue='id'
+      optionTextValue='id'
       {...others}
     >
       <SelectTrigger>
@@ -43,7 +43,7 @@ export function SelectGameVersion<T extends Version = Version>(
         class='h-[170px]'
         virtualized
         options={others.options}
-        optionValue={'id'}
+        optionValue='id'
         itemComponent={(props) => (
           <SelectItem item={props.item} style={props.style}>
             {props.item.textValue}

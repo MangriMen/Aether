@@ -17,7 +17,7 @@ export const useWarningEventsListener = () => {
       showToast({
         title: 'Warning',
         description: e.payload.message,
-        variant: 'warningFilled',
+        variant: 'warning',
       });
     });
   };

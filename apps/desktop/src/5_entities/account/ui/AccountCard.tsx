@@ -57,7 +57,7 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
         <CombinedTooltip
           label={t('account.removeAccount')}
           as={IconButton}
-          class='aspect-square size-full rounded-l-none p-0 hover:bg-destructive focus:z-10'
+          class='aspect-square size-full rounded-l-none p-0 hover:!bg-destructive focus:z-10'
           variant='ghost'
           icon={IconMdiDelete}
           onClick={local.onRemove}

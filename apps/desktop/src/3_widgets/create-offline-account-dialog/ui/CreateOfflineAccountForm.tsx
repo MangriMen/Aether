@@ -78,7 +78,7 @@ export const CreateOfflineAccountForm: Component<
 
         <DialogFooter>
           <Button type='submit'>{t('common.create')}</Button>
-          <Button variant={'secondary'} onClick={handleCancel}>
+          <Button variant='secondary' onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
         </DialogFooter>

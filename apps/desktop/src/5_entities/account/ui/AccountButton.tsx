@@ -34,7 +34,7 @@ export const AccountButton = (
       disableTooltip={local.active}
       as={Button}
       class={cn('size-full rounded-r-none justify-start px-2', local.class, {
-        'bg-muted pointer-events-none': local.active,
+        'bg-secondary/secondary pointer-events-none': local.active,
       })}
       variant='ghost'
       {...others}

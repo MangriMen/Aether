@@ -65,9 +65,9 @@ export const DataTable = <TData,>(props: DataTableProps<TData>) => {
   });
 
   return (
-    <div class='relative w-full overflow-auto rounded-md border'>
+    <div class='relative w-full overflow-auto rounded-md border '>
       <Table disableWrapper>
-        <TableHeader class='sticky top-0 z-10 bg-secondary'>
+        <TableHeader class='sticky top-0 z-10 bg-popover'>
           <For each={table().getHeaderGroups()}>
             {(headerGroup) => <DataTableHeaderRow headerGroup={headerGroup} />}
           </For>
@@ -87,7 +87,7 @@ export const DataTable = <TData,>(props: DataTableProps<TData>) => {
               </TableStatusMessage>
             </Match>
 
-            <Match when={true}>
+            <Match when>
               <For each={table().getRowModel().rows}>
                 {(row) => (
                   <DataTableRow
@@ -135,7 +135,7 @@ interface DataTableRowProps<TData> {
 const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
   return (
     <TableRow
-      class='group bg-new-secondary/card'
+      class='group bg-secondary/card'
       data-state={props.row.getIsSelected() && 'selected'}
     >
       <For each={props.row.getVisibleCells()}>
@@ -179,7 +179,7 @@ const TableSkeleton = (props: TableSkeletonProps) => {
   return (
     <For each={rows()}>
       {() => (
-        <TableRow class='bg-new-secondary/card'>
+        <TableRow class='bg-secondary/card'>
           <For each={stylesList()}>
             {(style) => (
               <TableCell style={style}>

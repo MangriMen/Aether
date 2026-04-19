@@ -12,32 +12,32 @@ import { cn } from '@/shared/lib';
 import { DelayedShow } from '../components/DelayedShow';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-new-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-new-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-new-primary text-new-primary-foreground enabled:hover:bg-new-primary/solid-hover enabled:active:bg-new-primary/solid-active enabled:active:text-new-primary-foreground/solid-text-active',
+          'bg-primary text-primary-foreground enabled:hover:bg-primary/solid-hover enabled:active:bg-primary/solid-active enabled:active:text-primary-foreground/solid-text-active',
 
         secondary:
-          'border border-new-border bg-new-secondary/secondary text-new-secondary-foreground enabled:hover:bg-new-secondary/hover enabled:active:bg-new-secondary/active enabled:active:text-new-secondary-foreground/solid-text-active',
+          'border  bg-secondary/secondary text-secondary-foreground enabled:hover:bg-secondary/hover enabled:active:bg-secondary/active enabled:active:text-secondary-foreground/solid-text-active',
 
         outline:
-          'border border-new-border bg-transparent enabled:hover:bg-new-accent/control enabled:active:bg-new-accent/secondary',
+          'border  bg-transparent enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
 
         ghost:
-          'bg-transparent text-new-foreground enabled:hover:bg-new-accent/control enabled:active:bg-new-accent/secondary',
+          'bg-transparent text-foreground enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
 
         success:
-          'bg-new-success text-new-success-foreground transition-all enabled:hover:bg-new-success/solid-hover enabled:active:bg-new-success/solid-active enabled:active:text-new-success-foreground/solid-text-active',
+          'bg-success text-success-foreground transition-all enabled:hover:bg-success/solid-hover enabled:active:bg-success/solid-active enabled:active:text-success-foreground/solid-text-active',
 
         destructive:
-          'bg-new-destructive text-new-destructive-foreground transition-all enabled:hover:bg-new-destructive/solid-hover enabled:active:bg-new-destructive/solid-active enabled:active:text-new-destructive-foreground/solid-text-active',
+          'bg-destructive text-destructive-foreground transition-all enabled:hover:bg-destructive/solid-hover enabled:active:bg-destructive/solid-active enabled:active:text-destructive-foreground/solid-text-active',
 
-        link: 'text-new-primary underline-offset-4 enabled:hover:underline',
+        link: 'text-primary underline-offset-4 enabled:hover:underline',
 
         ghostWarning:
-          'text-new-warning enabled:hover:bg-new-warning/control enabled:active:bg-new-warning/secondary',
+          'text-warning enabled:hover:bg-warning/control enabled:active:bg-warning/secondary',
       },
       size: {
         default: 'h-9 px-4 py-2 text-sm leading-4',

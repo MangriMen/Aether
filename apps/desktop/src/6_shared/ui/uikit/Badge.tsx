@@ -11,17 +11,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'border-transparent bg-new-primary text-new-primary-foreground',
+        default: 'border-transparent bg-primary text-primary-foreground',
         secondary:
-          'border-transparent bg-new-secondary/secondary text-new-secondary-foreground',
-        outline: 'text-new-foreground',
-        success:
-          'border-new-success-foreground bg-new-success text-new-success-foreground',
-        warning:
-          'border-new-warning-foreground bg-new-warning text-new-warning-foreground',
-        error:
-          'border-new-error-foreground bg-new-error text-new-error-foreground',
+          'border-transparent bg-secondary/secondary text-secondary-foreground',
+        outline: 'text-foreground',
+        success: 'border-transparent bg-success text-success-foreground',
+        warning: 'border-transparent bg-warning text-warning-foreground',
+        error: 'border-transparent bg-error text-error-foreground',
       },
     },
     defaultVariants: {

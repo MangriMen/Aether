@@ -12,8 +12,6 @@ export * from './IconButton';
 export * from './Image';
 export * from './LabeledField';
 export * from './MarkdownRenderer';
-export * from './Progress';
-export * from './ProgressCircle';
 export * from './ResponsiveIcon';
 export * from './SettingsEntry';
 export * from './SettingsPane';

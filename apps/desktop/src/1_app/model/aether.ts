@@ -6,5 +6,4 @@ export const AetherNamespaceMethods = {
   toggleDebug: () =>
     // eslint-disable-next-line no-console
     console.debug(setIsDebug(!isDebug()) ? 'Debug enabled' : 'Debug disabled'),
-  playground: () => (window.location.href += '/playground'),
 };

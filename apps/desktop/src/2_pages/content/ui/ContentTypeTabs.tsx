@@ -50,7 +50,7 @@ export const ContentTypeTabs: Component<ContentTypeTabsProps> = (props) => {
         when={!local.isLoading}
         fallback={
           <div class='flex'>
-            <Skeleton class='bg-secondary' width={360} radius={6} />
+            <Skeleton width={360} radius={6} />
           </div>
         }
       >

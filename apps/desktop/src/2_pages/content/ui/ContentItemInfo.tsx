@@ -29,7 +29,7 @@ export const ContentItemInfo: Component<
         src={local.item.iconUrl || undefined}
       />
       <div class='flex flex-col'>
-        <span class='text-lg font-bold text-new-foreground'>
+        <span class='text-lg font-bold text-foreground'>
           <Show
             when={local.contentPageHref}
             fallback={<span>{local.item.name}</span>}
@@ -43,13 +43,13 @@ export const ContentItemInfo: Component<
           &#32;
           <Show when={local.item.author}>
             {(author) => (
-              <span class='text-base font-semibold text-new-muted-foreground'>
+              <span class='text-base font-semibold text-muted-foreground'>
                 by {author()}
               </span>
             )}
           </Show>
         </span>
-        <span class='text-new-muted-foreground'>{local.item.description}</span>
+        <span class='text-muted-foreground'>{local.item.description}</span>
       </div>
     </div>
   );

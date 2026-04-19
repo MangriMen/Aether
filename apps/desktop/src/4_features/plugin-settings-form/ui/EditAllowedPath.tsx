@@ -78,7 +78,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
               label={t('common.browse')}
               as={IconButton}
               variant='ghost'
-              class='size-7 bg-secondary-dark/50 enabled:hover:bg-secondary-dark'
+              class='size-7 bg-secondary/secondary enabled:hover:bg-secondary/hover'
               type='button'
               size='sm'
               onClick={handleBrowse}

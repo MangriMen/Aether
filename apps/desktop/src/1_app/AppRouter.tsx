@@ -49,7 +49,7 @@ export const AppRouter: Component = () => {
       <Route path={ROUTE_PATTERNS.SETTINGS} component={SettingsPage}>
         <Route />
       </Route>
-      <Route path={'/playground'} component={PlaygroundPage} />
+      <Route path={ROUTE_PATTERNS.PLAYGROUND} component={PlaygroundPage} />
     </Router>
   );
 };

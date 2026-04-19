@@ -9,6 +9,8 @@ export * from './DropdownMenu';
 export * from './Label';
 export * from './Pagination';
 export * from './Popover';
+export * from './Progress';
+export * from './ProgressCircle';
 export * from './Select';
 export * from './Separator';
 export * from './Skeleton';

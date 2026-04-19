@@ -40,7 +40,7 @@ const SliderTrack = <T extends ValidComponent = 'div'>(
   return (
     <SliderPrimitive.Track
       class={cn(
-        'relative h-1 w-full grow rounded-full bg-new-secondary/secondary data-[disabled]:opacity-50 data-[disabled]:pointer-events-none',
+        'relative h-1 w-full grow rounded-full bg-secondary/secondary data-[disabled]:opacity-50 data-[disabled]:pointer-events-none',
         local.class,
       )}
       {...others}
@@ -59,7 +59,7 @@ const SliderFill = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props as SliderFillProps, ['class']);
   return (
     <SliderPrimitive.Fill
-      class={cn('absolute h-full rounded-full bg-new-primary', local.class)}
+      class={cn('absolute h-full rounded-full bg-primary', local.class)}
       {...others}
     />
   );
@@ -81,7 +81,7 @@ const SliderThumb = <T extends ValidComponent = 'span'>(
   return (
     <SliderPrimitive.Thumb
       class={cn(
-        'data-[disabled]:border-new-muted-foreground top-[-6px] block w-2 h-4 rounded-full border-2 border-new-primary bg-new-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50',
+        'data-[disabled]:border-muted-foreground top-[-6px] block w-2 h-4 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50',
         local.class,
       )}
       {...others}

@@ -20,11 +20,11 @@ export const ButtonsLab = () => {
 
   return (
     <ComponentShelf title='Button'>
-      <div class='grid grid-cols-3 gap-8 md:grid-cols-7'>
+      <div class='grid grid-cols-3 gap-8 md:grid-cols-8'>
         <For each={variants}>
           {(v) => (
             <div class='space-y-4'>
-              <p class='font-mono text-xs text-new-muted-foreground'>{v}</p>
+              <p class='font-mono text-xs text-muted-foreground'>{v}</p>
               <div class='flex flex-col gap-2'>
                 <For each={sizes}>
                   {(s) => (

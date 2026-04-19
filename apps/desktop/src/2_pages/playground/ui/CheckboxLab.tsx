@@ -4,7 +4,7 @@ import { ComponentShelf } from './ComponentShelf';
 
 export const CheckboxLab = () => {
   return (
-    <ComponentShelf title='Select'>
+    <ComponentShelf title='Checkbox'>
       <div class='flex items-start space-x-2'>
         <Checkbox id='terms1' />
         <div class='grid gap-1.5 leading-none'>

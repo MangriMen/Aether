@@ -39,7 +39,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events
     <div
       class={cn(
-        'flex gap-2 border border-new-border bg-new-card/card rounded-lg p-3 group',
+        'flex gap-2 border bg-card/card rounded-lg p-3 group',
         local.class,
       )}
       role='button'

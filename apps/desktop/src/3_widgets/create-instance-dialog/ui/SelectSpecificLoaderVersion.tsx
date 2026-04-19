@@ -36,8 +36,8 @@ export const SelectSpecificLoaderVersion = <
       class={cn('flex flex-col gap-2 w-full', local.class)}
       virtualized
       validationState={local.errorMessage ? 'invalid' : 'valid'}
-      optionValue={'id'}
-      optionTextValue={'id'}
+      optionValue='id'
+      optionTextValue='id'
       {...others}
     >
       <SelectTrigger>
@@ -47,7 +47,7 @@ export const SelectSpecificLoaderVersion = <
         class='h-[170px]'
         virtualized
         options={others.options}
-        optionValue={'id'}
+        optionValue='id'
         itemComponent={(props) => (
           <SelectItem item={props.item} style={props.style}>
             <div class='inline-flex gap-2'>

@@ -1,4 +1,4 @@
-import { A, useLocation } from '@solidjs/router';
+import { useLocation } from '@solidjs/router';
 import { createMemo, Show, type Component } from 'solid-js';
 
 import type { TitleBarProps } from '@/shared/ui';
@@ -10,6 +10,7 @@ import {
 } from '@/shared/model';
 import { TitleBar } from '@/shared/ui';
 
+import { GoHomeFromPlaygroundButton } from './GoHomeFromPlaygroundButton';
 import { ProgressMenuButton, ProgressPopover } from './ProgressMenu';
 import { UpdateBanner } from './UpdateBanner';
 import { WindowControls } from './WindowControls';
@@ -34,13 +35,8 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
         {...props}
       >
         <div class='min-w-[156px]'>
-          <Show when={location.pathname === '/playground'}>
-            <A
-              class='ml-1 size-min rounded-md bg-black px-2 py-1 text-foreground'
-              href={ROUTES.HOME}
-            >
-              {'< Home'}
-            </A>
+          <Show when={location.pathname === ROUTES.PLAYGROUND}>
+            <GoHomeFromPlaygroundButton />
           </Show>
         </div>
         <div class='pointer-events-none flex grow justify-center'>

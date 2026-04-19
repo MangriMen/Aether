@@ -30,7 +30,7 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
   };
 
   return (
-    <div class={cn('flex gap-2', local.class)} {...others}>
+    <div class={cn('flex gap-2 whitespace-nowrap', local.class)} {...others}>
       <CombinedTooltip
         label={t('account.signInMinecraft')}
         as={Button}

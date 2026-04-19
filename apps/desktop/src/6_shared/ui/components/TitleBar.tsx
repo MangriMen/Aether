@@ -10,10 +10,7 @@ export const TitleBar: Component<TitleBarProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
   return (
     <div
-      class={cn(
-        'flex h-titlebar select-none bg-new-secondary/secondary',
-        local.class,
-      )}
+      class={cn('flex h-titlebar select-none bg-card/card', local.class)}
       {...others}
     />
   );

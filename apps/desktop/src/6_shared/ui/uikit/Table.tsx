@@ -52,7 +52,7 @@ const TableRow: Component<ComponentProps<'tr'>> = (props) => {
   return (
     <tr
       class={cn(
-        'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+        'border-b transition-colors hover:bg-card/hover data-[state=selected]:bg-secondary/secondary',
         local.class,
       )}
       {...others}
