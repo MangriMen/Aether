@@ -4,11 +4,11 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
 
-import { InstanceGameVersion } from '@/entities/instances';
+import { InstanceHeaderInfo } from '@/pages/instance/ui/InstanceHeaderInfo';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button, DelayedShow, Image, Skeleton } from '@/shared/ui';
+import { Button, Image } from '@/shared/ui';
 
 export type ContentPageInstanceInfoProps = ComponentProps<'div'> & {
   instance?: Instance;
@@ -32,46 +32,20 @@ export const ContentPageInstanceInfo: Component<
   };
 
   return (
-    <div class={cn('flex gap-2 items-center h-14', local.class)} {...others}>
-      <DelayedShow
-        when={local.instance}
-        fallback={<Skeleton class='p-1' width={56} height={56} radius={4} />}
-      >
-        <Image class='h-14 w-max' src={local.instance?.iconPath ?? undefined} />
-      </DelayedShow>
-      <div class='flex flex-col justify-between text-muted-foreground'>
-        <DelayedShow
-          when={local.instance?.name}
-          fallback={<Skeleton class='mb-1' width={96} height={20} radius={4} />}
+    <div class={cn('flex gap-3', local.class)} {...others}>
+      <Image src={local.instance?.iconPath ?? undefined} />
+      <InstanceHeaderInfo instance={local.instance} showTimePlayed={false} />
+      <div class='ml-auto flex items-center'>
+        <Button
+          class='ml-auto min-w-max'
+          leadingIcon={IconMdiArrowLeft}
+          variant='secondary'
+          onClick={handleBackToInstance}
+          loading={!local.instance}
         >
-          {(name) => (
-            <h2 class='line-clamp-2 text-lg font-bold text-foreground'>
-              {name()}
-            </h2>
-          )}
-        </DelayedShow>
-        <DelayedShow
-          when={local.instance}
-          fallback={<Skeleton width={128} height={16} radius={4} />}
-        >
-          {(instance) => (
-            <InstanceGameVersion
-              class='font-medium'
-              loader={instance().loader}
-              gameVersion={instance().gameVersion}
-            />
-          )}
-        </DelayedShow>
+          {t('content.backToInstance')}
+        </Button>
       </div>
-      <Button
-        class='ml-auto min-w-max'
-        leadingIcon={IconMdiArrowLeft}
-        variant='secondary'
-        onClick={handleBackToInstance}
-        loading={!local.instance}
-      >
-        {t('content.backToInstance')}
-      </Button>
     </div>
   );
 };
