@@ -19,7 +19,10 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
 
   return (
     <div
-      class={cn('flex flex-col text-muted-foreground', local.class)}
+      class={cn(
+        'flex flex-col text-muted-foreground justify-evenly',
+        local.class,
+      )}
       {...others}
     >
       <CombinedTooltip
@@ -29,14 +32,16 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
       >
         {local.instance.name}
       </CombinedTooltip>
-      <InstanceGameVersion
-        loader={local.instance.loader}
-        gameVersion={local.instance.gameVersion}
-      />
-      <TimePlayed
-        lastPlayed={local.instance.lastPlayed ?? undefined}
-        timePlayed={local.instance.timePlayed ?? undefined}
-      />
+      <div class='flex gap-4'>
+        <InstanceGameVersion
+          loader={local.instance.loader}
+          gameVersion={local.instance.gameVersion}
+        />
+        <TimePlayed
+          lastPlayed={local.instance.lastPlayed ?? undefined}
+          timePlayed={local.instance.timePlayed ?? undefined}
+        />
+      </div>
     </div>
   );
 };

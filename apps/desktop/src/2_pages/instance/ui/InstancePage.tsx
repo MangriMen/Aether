@@ -30,7 +30,7 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
   const instancePath = useInstanceDir(() => id());
 
   return (
-    <div class='p-page flex size-full flex-col gap-2' {...others}>
+    <div class='p-page flex size-full flex-col gap-4' {...others}>
       <DelayedShow
         when={instance.data}
         fallback={

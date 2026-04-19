@@ -35,7 +35,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
       {...others}
     >
       <Image
-        class='mx-auto min-w-max'
+        class='mx-auto size-24 min-w-max'
         src={local.instance.iconPath ?? undefined}
       />
       <InstanceTitle
