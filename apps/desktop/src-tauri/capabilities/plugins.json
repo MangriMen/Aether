@@ -11,6 +11,7 @@
     "minecraft:default",
     "process:default",
     "plugin:default",
-    "settings:default"
+    "settings:default",
+    "update:default"
   ]
 }
