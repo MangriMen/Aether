@@ -39,16 +39,16 @@ export const MemorySlider: Component<MemorySliderProps> = (props) => {
   });
 
   return (
-    <Slider class={cn('flex flex-col gap-3', local.class)} {...others}>
+    <Slider class={cn('flex flex-col', local.class)} {...others}>
       <SliderTrack>
         <SliderFill
           class={cn({
-            'bg-warning-foreground': isWarningLimitPassed(),
+            'bg-warning': isWarningLimitPassed(),
           })}
         />
         <SliderThumb
           class={cn({
-            'border-warning-foreground': isWarningLimitPassed(),
+            'border-warning': isWarningLimitPassed(),
           })}
         />
       </SliderTrack>

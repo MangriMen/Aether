@@ -90,7 +90,6 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
   return (
     <div class={cn('flex items-start gap-4', merged.class)} {...others}>
       <MemorySlider
-        class='mt-4'
         disabled={merged.disabled}
         minValue={minValue()}
         maxValue={maxValue()}
