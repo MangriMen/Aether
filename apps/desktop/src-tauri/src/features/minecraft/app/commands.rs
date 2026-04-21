@@ -20,7 +20,8 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[specta::specta]
 pub async fn get_minecraft_version_manifest() -> FrontendResult<vanilla::VersionManifestDto> {
     Ok(aether_core::api::metadata::get_version_manifest()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -31,7 +32,8 @@ pub async fn get_loader_version_manifest(
 ) -> FrontendResult<modded::ModdedManifestDto> {
     Ok(
         aether_core::api::metadata::get_loader_version_manifest(loader.into())
-            .await?
+            .await
+            .map_err(crate::Error::from)?
             .into(),
     )
 }

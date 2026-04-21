@@ -52,7 +52,9 @@ async fn create(new_instance: NewInstanceDto) -> FrontendResult<()> {
 #[tauri::command]
 #[specta::specta]
 async fn import(import_instance: ImportInstanceDto) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::import(import_instance.into()).await?)
+    Ok(aether_core::api::instance::import(import_instance.into())
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
@@ -60,7 +62,8 @@ async fn import(import_instance: ImportInstanceDto) -> FrontendResult<()> {
 async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>>
 {
     Ok(aether_core::api::instance::list_importers()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -70,7 +73,8 @@ async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapab
 #[specta::specta]
 async fn list() -> FrontendResult<Vec<InstanceDto>> {
     Ok(aether_core::api::instance::list()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(std::convert::Into::into)
         .collect())
@@ -79,31 +83,40 @@ async fn list() -> FrontendResult<Vec<InstanceDto>> {
 #[tauri::command]
 #[specta::specta]
 async fn get(id: String) -> FrontendResult<InstanceDto> {
-    Ok(aether_core::api::instance::get(id).await?.into())
+    Ok(aether_core::api::instance::get(id)
+        .await
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn get_dir(id: String) -> FrontendResult<PathBuf> {
-    Ok(aether_core::api::instance::get_dir(&id).await?)
+    Ok(aether_core::api::instance::get_dir(&id)
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn install(id: String, force: bool) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install(id, force).await?)
+    Ok(aether_core::api::instance::install(id, force)
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn update(id: String) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::update(id).await?)
+    Ok(aether_core::api::instance::update(id)
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 // #[tauri::command]
 // #[specta::specta]
 // async fn list_updaters() -> FrontendResult<Vec<CapabilityEntry<UpdaterCapabilityMetadata>>> {
-//     // Ok(aether_core::api::instance::list().await?)
+//     // Ok(aether_core::api::instance::list().await.map_err(crate::Error::from)?)
 //     todo!()
 // }
 
@@ -111,26 +124,34 @@ async fn update(id: String) -> FrontendResult<()> {
 #[specta::specta]
 async fn edit(id: String, edit_instance: EditInstanceDto) -> FrontendResult<InstanceDto> {
     Ok(aether_core::api::instance::edit(id, edit_instance.into())
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn remove(id: String) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::remove(id).await?)
+    Ok(aether_core::api::instance::remove(id)
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn launch(id: String) -> FrontendResult<MinecraftProcessMetadataDto> {
-    Ok(aether_core::api::instance::run(id).await?.into())
+    Ok(aether_core::api::instance::run(id)
+        .await
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn stop(uuid: Uuid) -> FrontendResult<()> {
-    Ok(aether_core::api::process::kill(uuid).await?)
+    Ok(aether_core::api::process::kill(uuid)
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
@@ -145,14 +166,16 @@ async fn import_contents(
         content_type.into(),
         source_paths.iter().map(PathBuf::from).collect(),
     )
-    .await?)
+    .await
+    .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFileDto>> {
     Ok(aether_core::api::instance::list_content(id)
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(|(k, v)| (k, v.into()))
         .collect())
@@ -161,25 +184,39 @@ async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFileD
 #[tauri::command]
 #[specta::specta]
 async fn install_content(payload: ContentInstallParamsDto) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::install_content(payload.into()).await?)
+    Ok(aether_core::api::instance::install_content(payload.into())
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn enable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::enable_contents(id, content_paths).await?)
+    Ok(
+        aether_core::api::instance::enable_contents(id, content_paths)
+            .await
+            .map_err(crate::Error::from)?,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn disable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::disable_contents(id, content_paths).await?)
+    Ok(
+        aether_core::api::instance::disable_contents(id, content_paths)
+            .await
+            .map_err(crate::Error::from)?,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
-    Ok(aether_core::api::instance::remove_contents(id, content_paths).await?)
+    Ok(
+        aether_core::api::instance::remove_contents(id, content_paths)
+            .await
+            .map_err(crate::Error::from)?,
+    )
 }
 
 #[tauri::command]
@@ -187,7 +224,8 @@ async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResu
 async fn list_content_providers()
 -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
     Ok(aether_core::api::instance::list_content_providers()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -197,7 +235,8 @@ async fn list_content_providers()
 #[specta::specta]
 async fn search_content(payload: ContentSearchParamsDto) -> FrontendResult<ContentSearchResultDto> {
     Ok(aether_core::api::instance::search_content(payload.into())
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -209,7 +248,8 @@ async fn check_compatibility(
 ) -> FrontendResult<HashMap<String, ContentCompatibilityResultDto>> {
     Ok(
         aether_core::api::instance::check_compatibility(instance_ids, check_params.into())
-            .await?
+            .await
+            .map_err(crate::Error::from)?
             .into_iter()
             .map(|(k, v)| (k, v.into()))
             .collect(),
@@ -220,7 +260,8 @@ async fn check_compatibility(
 #[specta::specta]
 async fn get_content(params: ContentGetParamsDto) -> FrontendResult<ContentItemDto> {
     Ok(aether_core::api::instance::get_content(params.into())
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -231,7 +272,8 @@ async fn list_content_version(
 ) -> FrontendResult<Vec<ContentVersionDto>> {
     Ok(
         aether_core::api::instance::list_content_version(params.into())
-            .await?
+            .await
+            .map_err(crate::Error::from)?
             .into_iter()
             .map(Into::into)
             .collect(),

@@ -40,7 +40,7 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
 
         if let Some(window_effect) = update_app_settings.window_effect {
             if !new_settings.transparent && window_effect != WindowEffectDto::Off {
-                return Err(AppSettingsError::TransparentEffectIsRequired);
+                return Err(AppSettingsError::TransparentEffectRequired);
             }
 
             self.window_manager

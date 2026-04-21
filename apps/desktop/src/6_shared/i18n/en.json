@@ -14,26 +14,26 @@
     "title": "Account"
   },
   "backendError": {
-    "authError": {
-      "credentialsNotFound": "Not found credentials with id: {{id}}",
-      "noActiveCredentials": "No active credentials found",
-      "storageFailure": "Storage failure"
+    "auth": {
+      "CREDENTIALS_NOT_FOUND": "Not found credentials with id: {{id}}",
+      "NO_ACTIVE_CREDENTIALS": "No active credentials found",
+      "STORAGE_FAILURE": "Storage failure"
     },
-    "instanceError": {
-      "importerNotFound": "Not found importer {{importer_id}}",
-      "importFailed": "Failed to import instance with importer {{importer_id}}",
-      "packInfoNotFound": "Not found modpack info in instance",
-      "updaterNotFound": "Not found updater for modpack {{modpack_id}}",
-      "updateFailed": "Failed to update instance with modpack {{modpack_id}}",
-      "credentialsError": {
-        "credentialsNotFound": "Not found credentials with id: {{id}}",
-        "noActiveCredentials": "No active credentials found",
-        "storageFailure": "Storage failure"
+    "instance": {
+      "IMPORTER_NOT_FOUND": "Not found importer {{importer_id}}",
+      "IMPORT_FAILED": "Failed to import instance with importer {{importer_id}}",
+      "PACK_INFO_NOT_FOUND": "Not found modpack info in instance",
+      "UPDATER_NOT_FOUND": "Not found updater for modpack {{modpack_id}}",
+      "UPDATE_FAILED": "Failed to update instance with modpack {{modpack_id}}",
+      "CREDENTIALS_ERROR": {
+        "CREDENTIALS_NOT_FOUND": "Not found credentials with id: {{id}}",
+        "NO_ACTIVE_CREDENTIALS": "No active credentials found",
+        "STORAGE_FAILURE": "Storage failure"
       },
-      "storageFailure": "Storage failure"
+      "STORAGE_FAILURE": "Storage failure"
     },
-    "settingsError": {
-      "storageFailure": "Storage failure"
+    "settings": {
+      "STORAGE_FAILURE": "Storage failure"
     }
   },
   "common": {

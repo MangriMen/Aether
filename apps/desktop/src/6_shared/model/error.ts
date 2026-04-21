@@ -1,35 +1,7 @@
+import type { FrontendError } from '../api';
 import type { TFunction } from './i18nContext';
 
-type RootKind = 'authError' | 'instanceError' | 'settingsError';
-type ErrorCode =
-  | `${RootKind}.${string}`
-  | `${RootKind}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}.${string}`;
-
-interface BaseError<Code extends ErrorCode, Fields> {
-  code: Code;
-  fields: Fields;
-  message: string;
-}
-
-export type LauncherError =
-  | BaseError<'authError.credentialsNotFound', { id: string }>
-  | BaseError<'authError.noActiveCredentials', null>
-  | BaseError<'authError.storageFailure', null>
-  | BaseError<'instanceError.importerNotFound', { importer_id: string }>
-  | BaseError<'instanceError.importFailed', { importer_id: string }>
-  | BaseError<'instanceError.packInfoNotFound', null>
-  | BaseError<'instanceError.updaterNotFound', { modpack_id: string }>
-  | BaseError<'instanceError.updateFailed', { modpack_id: string }>
-  | BaseError<
-      'instanceError.credentialsError.credentialsNotFound',
-      { id: string }
-    >
-  | BaseError<'instanceError.credentialsError.noActiveCredentials', null>
-  | BaseError<'instanceError.credentialsError.storageFailure', null>
-  | BaseError<'instanceError.storageFailure', null>
-  | BaseError<'settingsError.storageFailure', null>;
+export type LauncherError = FrontendError;
 
 export const isLauncherError = (error: unknown): error is LauncherError => {
   return (
@@ -44,5 +16,17 @@ export const isLauncherError = (error: unknown): error is LauncherError => {
 export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
-): string =>
-  t(`backendError.${error.code}`, error.fields ?? undefined) || error.code;
+): string => {
+  if (error.type === 'internal' || error.type === 'generic') {
+    return error.payload;
+  }
+
+  if (error.type === 'auth') {
+    return t(`backendError.auth.${error.payload.code}`);
+  }
+
+  return t(
+    `backendError.${error.type}.${error.payload.code}`,
+    error.payload ?? undefined,
+  );
+};

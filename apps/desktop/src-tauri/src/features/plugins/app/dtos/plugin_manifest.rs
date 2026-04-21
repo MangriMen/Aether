@@ -173,3 +173,12 @@ impl From<aether_core::features::plugins::ApiConfig> for ApiConfigDto {
         }
     }
 }
+
+impl From<aether_core::features::plugins::LoadConfigType> for LoadConfigTypeDto {
+    fn from(value: aether_core::features::plugins::LoadConfigType) -> Self {
+        match value {
+            aether_core::features::plugins::LoadConfigType::Extism => Self::Extism,
+            aether_core::features::plugins::LoadConfigType::Native => Self::Native,
+        }
+    }
+}

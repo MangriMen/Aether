@@ -25,7 +25,8 @@ pub fn get_specta_events() -> tauri_specta::Events {
 #[specta::specta]
 async fn list() -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
     Ok(aether_core::api::process::list()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -35,7 +36,8 @@ async fn list() -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
 #[specta::specta]
 async fn get_by_instance_id(id: String) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
     Ok(aether_core::api::process::get_by_instance_id(id)
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
