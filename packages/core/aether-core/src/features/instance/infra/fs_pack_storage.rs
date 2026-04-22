@@ -137,7 +137,8 @@ impl PackStorage for FsPackStorage {
             let mut file_path = instance_dir.join(content_path);
 
             if !file_path.exists() {
-                file_path.set_extension("disabled");
+                // TODO rework disable logic to make it more transparent
+                file_path = PathBuf::from(format!("{}.disabled", file_path.to_string_lossy()));
             }
 
             let _ = remove_file(file_path).await;
