@@ -56,5 +56,5 @@ export const getTranslatedError = (
 
   const { key, args } = getLauncherErrorTranslationData(error);
 
-  return t(`errors.${key}`, args) ?? '';
+  return t(`errors.${key}`, args) ?? key;
 };
