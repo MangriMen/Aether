@@ -6,13 +6,14 @@ import * as ButtonPrimitive from '@kobalte/core/button';
 import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 
 import { cn } from '@/shared/lib';
 
 import { DelayedShow } from '../components/DelayedShow';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -87,19 +88,22 @@ const Button = <T extends ValidComponent = 'button'>(
       disabled={local.disabled || local.loading}
       {...others}
     >
-      {local.leadingIcon?.({})}
+      <Dynamic component={local.leadingIcon} />
       {local.children}
-      <DelayedShow when={local.loading}>
-        <div
-          class={cn(
-            'absolute m-auto size-full',
-            buttonVariants({ variant: local.variant }),
-          )}
-        >
-          <IconMdiLoading class='animate-spin text-xl' />
-        </div>
-      </DelayedShow>
-      {local.trailingIcon?.({})}
+      <DelayedShow
+        when={!local.loading}
+        fallback={
+          <div
+            class={cn(
+              'absolute inset-0 flex items-center justify-center m-auto size-full border-none rounded-[inherit] animate-in fade-in-0 ease-in',
+              buttonVariants({ variant: local.variant }),
+            )}
+          >
+            <IconMdiLoading class='animate-spin text-xl' />
+          </div>
+        }
+      />
+      <Dynamic component={local.trailingIcon} />
     </ButtonPrimitive.Root>
   );
 };

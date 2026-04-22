@@ -13,26 +13,122 @@
     "signInOffline": "Sign in offline",
     "title": "Account"
   },
-  "backendError": {
+  "errors": {
+    "appSettings": {
+      "TRANSPARENT_EFFECT_REQUIRED": "Transparency effect is required for this action",
+      "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect",
+      "SAVE_FAILED": "Failed to save application settings"
+    },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Not found credentials with id: {{id}}",
       "NO_ACTIVE_CREDENTIALS": "No active credentials found",
-      "STORAGE_FAILURE": "Storage failure"
+      "INVALID_USERNAME_LENGTH": "Username must be between {{min}} and {{max}} characters",
+      "INVALID_USERNAME_CHARS": "Use only Latin letters, numbers, and underscores",
+      "TOKEN_EXPIRED": "Session expired, please login again",
+      "STORAGE_ERROR": "Storage failure"
+    },
+    "event": {
+      "NOT_INITIALIZED": "Event system not initialized",
+      "NO_LOADING_BAR": "Loading bar reference not found",
+      "SERIALIZE_ERROR": "Failed to serialize event data",
+      "STORAGE_ERROR": "Event storage failure"
+    },
+    "fileWatcher": {
+      "PATH_NOT_FOUND": "Watched path does not exist",
+      "WATCH_NOT_FOUND": "Active watch handle not found",
+      "NOTIFY_ERROR": "Failed to send file system notification"
     },
     "instance": {
+      "CONTENT_PROVIDER_NOT_FOUND": "Content provider not found",
+      "CAPABILITY_OPERATION_ERROR": "Failed to execute capability operation",
+      "INSTANCE_STILL_INSTALLING": "Instance is currently installing",
+      "INSTANCE_ALREADY_RUNNING": "Instance is already running",
+      "PRELAUNCH_COMMAND_ERROR": "Error executing pre-launch command",
+      "VALIDATION_ERROR": "Instance validation failed",
+      "HASH_CONSTRUCT_ERROR": "Failed to construct file hash",
+      "UNMANAGED_INSTANCE": "Cannot perform action on an unmanaged instance",
+      "CONTENT_DUPLICATION": "Duplicate content detected",
+      "CONTENT_FILENAME": "Invalid content filename",
+      "CONTENT_DOWNLOAD_ERROR": "Failed to download instance content",
+      "CONTENT_PROVIDER_ERROR": "Content provider error occurred",
+      "CONTENT_FOR_GAME_VERSION_NOT_FOUND": "No compatible content found for this game version",
+      "UNSUPPORTED_CONTENT_TYPE": "Unsupported content type",
+      "SETTINGS_LOAD_ERROR": "Failed to load instance settings",
+      "MINECRAFT_ERROR": "Minecraft execution error",
+      "PROCESS_ERROR": "Instance process error",
+      "CREDENTIALS_ERROR": "Invalid or missing credentials for instance",
       "IMPORTER_NOT_FOUND": "Not found importer {{importer_id}}",
       "IMPORT_FAILED": "Failed to import instance with importer {{importer_id}}",
       "PACK_INFO_NOT_FOUND": "Not found modpack info in instance",
       "UPDATER_NOT_FOUND": "Not found updater for modpack {{modpack_id}}",
       "UPDATE_FAILED": "Failed to update instance with modpack {{modpack_id}}",
-      "CREDENTIALS_ERROR": {
-        "CREDENTIALS_NOT_FOUND": "Not found credentials with id: {{id}}",
-        "NO_ACTIVE_CREDENTIALS": "No active credentials found",
-        "STORAGE_FAILURE": "Storage failure"
-      },
       "STORAGE_FAILURE": "Storage failure"
     },
+    "java": {
+      "NOT_FOUND": "Java executable not found",
+      "INVALID_PATH": "The specified Java path is invalid",
+      "INVALID_VERSION": "Unsupported or invalid Java version",
+      "FAILED_TO_GET_PROPERTIES": "Failed to retrieve Java properties",
+      "VERSION_NOT_AVAILABLE": "Requested Java version is not available",
+      "VERSION_GET_FAILED": "Failed to check Java version",
+      "FAILED_TO_INSTALL": "Java installation failed",
+      "REMOVE_OLD_INSTALLATION_ERROR": "Failed to remove previous Java installation",
+      "DOWNLOAD_FAILED": "Failed to download Java",
+      "STORAGE_ERROR": "Java storage failure"
+    },
+    "minecraft": {
+      "VERSION_NOT_FOUND": "Minecraft version not found",
+      "VERSION_FOR_LOADER_NOT_FOUND": "Minecraft version not found for the selected loader",
+      "LOADER_NOT_FOUND": "Game loader not found",
+      "LOADER_VERSION_REQUIRED": "Loader version must be specified",
+      "DEFAULT_LOADER_NOT_FOUND": "Default loader not found",
+      "PROCESSOR_FAILED": "Version processing failed",
+      "PRE_LAUNCH_FAILED": "Pre-launch checks failed",
+      "POST_LAUNCH_FAILED": "Post-launch cleanup failed",
+      "PATH_NOT_FOUND": "Minecraft game path not found",
+      "PARSE_FAILED": "Failed to parse Minecraft configuration",
+      "STORAGE_FAILURE": "Minecraft storage failure",
+      "JAVA_ERROR": "Java environment error for Minecraft",
+      "STORAGE": "General storage error"
+    },
+    "plugin": {
+      "NOT_FOUND": "Plugin not found",
+      "ALREADY_LOADED": "Plugin is already loaded",
+      "LOADING_IN_PROGRESS": "Plugin is currently loading",
+      "UNLOADING_IN_PROGRESS": "Plugin is currently unloading",
+      "ALREADY_UNLOADED": "Plugin is already unloaded",
+      "LOAD_FAILED": "Failed to load plugin",
+      "FUNCTION_CALL_FAILED": "Failed to call plugin function",
+      "MANIFEST_NOT_FOUND": "Plugin manifest not found",
+      "INVALID_MANIFEST_FORMAT": "Invalid plugin manifest format",
+      "LOADER_NOT_FOUND": "Plugin loader not found",
+      "INVALID_CONFIG": "Invalid plugin configuration",
+      "EXTRACTION_FAILED": "Plugin extraction failed",
+      "INVALID_EXTRACTION_FORMAT": "Unsupported archive format for extraction",
+      "FILE_EXTRACTION_FAILED": "Failed to extract plugin files",
+      "CAPABILITY_REGISTRATION_FAILED": "Failed to register plugin capability",
+      "CAPABILITY_CANCEL_REGISTRATION_FAILED": "Failed to unregister plugin capability",
+      "ACCESS_VIOLATION": "Plugin access violation",
+      "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
+      "SETTINGS": "Plugin settings error",
+      "STORAGE": "Plugin storage error"
+    },
+    "process": {
+      "KILL_ERROR": "Failed to terminate process",
+      "WAIT_ERROR": "Error waiting for process completion",
+      "IO": "Process I/O error"
+    },
+    "request": {
+      "ACQUIRE_ERROR": "Failed to acquire network request",
+      "REQUEST_SEND_ERROR": "Failed to send request",
+      "MIDDLEWARE_ERROR": "Request middleware error",
+      "HASH_ERROR": "Request payload hash mismatch",
+      "JSON_ERROR": "Failed to parse JSON response",
+      "TOML_ERROR": "Failed to parse TOML response",
+      "PARSE_ERROR": "Failed to parse response data"
+    },
     "settings": {
+      "NOT_FOUND": "Settings file not found",
       "STORAGE_FAILURE": "Storage failure"
     }
   },
@@ -69,7 +165,8 @@
     "failedToOpenBrowser": "Failed to open browser",
     "copyToClipboard": "Copy to clipboard",
     "close": "Close",
-    "incompatible": "Incompatible"
+    "incompatible": "Incompatible",
+    "error": "Error"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -120,8 +217,7 @@
     "title": "Create instance"
   },
   "createOfflineAccount": {
-    "title": "Create offline account",
-    "usernameError": "The username must contain only English letters, numbers and underscores"
+    "title": "Create offline account"
   },
   "events": {
     "javaDownloading": "Downloading Java {{version}}",

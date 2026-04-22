@@ -1,12 +1,13 @@
 import type { Accessor, JSX } from 'solid-js';
 
 import {
+  createEffect,
   createSignal,
   mergeProps,
   onCleanup,
-  onMount,
   Show,
   splitProps,
+  untrack,
 } from 'solid-js';
 
 type RequiredParameter<T> = T extends () => unknown ? never : T;
@@ -17,7 +18,7 @@ type ShowProps<
   when: T | undefined | null | false;
   keyed?: false;
   fallback?: JSX.Element;
-  children: JSX.Element | RequiredParameter<TRenderFunction>;
+  children?: JSX.Element | RequiredParameter<TRenderFunction>;
 };
 
 type DelayedShowProps<
@@ -34,20 +35,34 @@ export const DelayedShow = <
 >(
   props: DelayedShowProps<T, TRenderFunction>,
 ) => {
-  const [local, others] = splitProps(props, ['fallback', 'delay']);
-  const mergedLocal = mergeProps({ delay: 200 }, local);
+  const merged = mergeProps({ delay: 200 }, props);
+  const [local, others] = splitProps(merged, [
+    'when',
+    'fallback',
+    'delay',
+    'children',
+  ]);
 
-  const [delayPassed, setDelayPassed] = createSignal(false);
+  const [delayedWhen, setDelayedWhen] = createSignal<
+    T | undefined | null | false
+  >(untrack(() => local.when));
 
-  let timeout: ReturnType<typeof setTimeout>;
-  onMount(() => {
-    timeout = setTimeout(() => setDelayPassed(true), mergedLocal.delay);
-  });
-  onCleanup(() => {
-    clearTimeout(timeout);
+  createEffect(() => {
+    const currentWhen = local.when;
+
+    if (currentWhen) {
+      setDelayedWhen(() => currentWhen);
+    } else {
+      const timeout = setTimeout(() => {
+        setDelayedWhen(() => currentWhen);
+      }, merged.delay);
+      onCleanup(() => clearTimeout(timeout));
+    }
   });
 
   return (
-    <Show fallback={delayPassed() ? mergedLocal.fallback : null} {...others} />
+    <Show when={delayedWhen()} fallback={local.fallback} {...others}>
+      {local.children}
+    </Show>
   );
 };
