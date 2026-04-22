@@ -30,7 +30,6 @@ pub enum InstanceErrorDto {
         field: String,
         reason: String,
     },
-    HashConstructError,
     ImporterNotFound {
         importer_id: String,
     },
@@ -111,7 +110,6 @@ impl From<&InstanceError> for InstanceErrorDto {
                 field: field.clone(),
                 reason: reason.clone(),
             },
-            InstanceError::HashConstructError => Self::HashConstructError,
             InstanceError::ImporterNotFound { importer_id } => Self::ImporterNotFound {
                 importer_id: importer_id.clone(),
             },
