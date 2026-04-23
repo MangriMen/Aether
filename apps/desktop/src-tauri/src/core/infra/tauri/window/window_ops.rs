@@ -1,7 +1,8 @@
+use log::warn;
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 use crate::{
-    core::{PreventExitState, build_main_window},
+    core::{MAIN_WINDOW_LABEL, PreventExitState, build_main_window},
     features::settings::AppSettings,
 };
 
@@ -15,15 +16,20 @@ pub fn hide_all_windows(app_handle: &AppHandle) {
 pub fn show_all_windows(app_handle: &AppHandle) {
     log::info!("Showing launcher windows");
     for_each_window(app_handle, tauri::WebviewWindow::show, "show");
+
+    if let Some(main_window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL)
+        && let Err(err) = main_window.set_focus()
+    {
+        warn!("Failed to focus main window: {err}");
+    }
 }
 
 /// Closes all windows and prevents exit handling
 pub fn close_all_windows(app_handle: &AppHandle) {
     log::info!("Closing launcher windows");
 
-    let prevent_exit = app_handle.state::<PreventExitState>();
-    let mut prevent_exit = prevent_exit.lock().unwrap();
-    prevent_exit.set(true);
+    let prevent_exit_state = app_handle.state::<PreventExitState>();
+    prevent_exit_state.set_prevented(true);
 
     for_each_window(app_handle, tauri::WebviewWindow::close, "close");
 }
@@ -36,9 +42,8 @@ pub fn recreate_windows(app_handle: &AppHandle, app_settings: &AppSettings) {
         log::error!("Failed to recreate window: {e}");
     }
 
-    let prevent_exit = app_handle.state::<PreventExitState>();
-    let mut prevent_exit = prevent_exit.lock().unwrap();
-    prevent_exit.set(false);
+    let prevent_exit_state = app_handle.state::<PreventExitState>();
+    prevent_exit_state.set_prevented(false);
 }
 
 /// Helper to apply an action to all windows with logging
@@ -46,9 +51,9 @@ fn for_each_window<F>(app: &AppHandle, action: F, action_name: &str)
 where
     F: Fn(&WebviewWindow) -> tauri::Result<()>,
 {
-    for window in app.webview_windows().values() {
+    for (label, window) in &app.webview_windows() {
         if let Err(e) = action(window) {
-            log::error!("Failed to {action_name} window: {e}");
+            log::error!("Failed to {action_name} window '{label}': {e}");
         }
     }
 }

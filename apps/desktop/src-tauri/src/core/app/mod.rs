@@ -1,10 +1,5 @@
-pub mod commands;
-mod dtos;
-pub mod events;
-pub mod initialize;
-pub mod launch;
-pub mod log;
+mod initialize_launcher;
+mod initialize_plugins;
 
-pub use commands::*;
-pub use dtos::*;
-pub use launch::*;
+pub use initialize_launcher::*;
+pub use initialize_plugins::*;

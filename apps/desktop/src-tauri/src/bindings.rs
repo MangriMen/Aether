@@ -53,7 +53,7 @@ fn get_all_features_builders(out_dir: &PathBuf) -> Vec<Exporter> {
     )> = vec![
         (
             APPLICATION_PLUGIN_NAME,
-            crate::core::app::get_specta_commands(),
+            crate::core::get_specta_commands(),
             None,
         ),
         (AUTH_PLUGIN_NAME, auth::get_specta_commands(), None),

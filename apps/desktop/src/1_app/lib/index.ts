@@ -1,4 +1,4 @@
 export * from './createThemeContext';
-export * from './initializeApp';
+export * from './exposeWindowMethods';
 export * from './usePreventRightClick';
 export * from './useSetupListeners';

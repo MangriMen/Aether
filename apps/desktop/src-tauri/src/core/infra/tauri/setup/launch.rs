@@ -2,35 +2,37 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
-#[cfg(debug_assertions)]
 use crate::bindings::create_specta_exporters;
-use crate::{
-    core::{
-        commands::{__cmd__reveal_in_explorer, reveal_in_explorer},
-        log::default_log_builder,
-    },
-    features::{auth, events, instance, minecraft, plugins, process, settings, update},
+use crate::features::{auth, events, instance, minecraft, plugins, process, settings, update};
+
+use super::{
+    super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
+    events::handle_app_events,
+    initialize::init_app,
+    log::default_log_builder,
+    pipe::Pipe,
 };
 
-use super::{events::handle_app_events, initialize::init_app};
-
-// Entry point for Tauri runtime and plugin setup
+/// Entry point for the Tauri runtime
+/// Orchestrates the build process and starts the event loop
 pub fn launch_app() -> crate::Result<()> {
     build_app()?.run(handle_app_events);
     Ok(())
 }
 
 fn build_app() -> crate::Result<tauri::App> {
-    create_tauri_app()
+    create_app()
         .build(tauri::generate_context!())
         .map_err(|e| crate::Error::LaunchError(e.to_string()))
 }
 
-fn create_tauri_app() -> Builder<Wry> {
+fn create_app() -> Builder<Wry> {
     let exporters = create_specta_exporters();
 
     #[cfg(debug_assertions)]
-    exporters.iter().for_each(crate::bindings::Exporter::export);
+    for exporter in &exporters {
+        exporter.export();
+    }
 
     Builder::default()
         .setup(move |app| {
@@ -38,13 +40,16 @@ fn create_tauri_app() -> Builder<Wry> {
                 exporter.builder.mount_events(app);
             }
 
-            Ok(init_app(app)?)
+            init_app(app)?;
+
+            Ok(())
         })
-        .pipe(with_tauri_plugins)
-        .pipe(with_feature_plugins)
+        .pipe(configure_system_plugins)
+        .pipe(configure_feature_plugins)
+        .pipe(configure_commands)
 }
 
-fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
+fn configure_system_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -56,10 +61,9 @@ fn with_tauri_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(tauri_plugin_clipboard_manager::init())
 }
 
-/// Configures application-specific commands and plugins
-fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
+fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
-        .plugin(crate::core::app::init())
+        .plugin(api::init())
         .plugin(auth::init())
         .plugin(events::init())
         .plugin(instance::init())
@@ -68,23 +72,8 @@ fn with_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(plugins::init())
         .plugin(settings::init())
         .plugin(update::init())
-        .invoke_handler(tauri::generate_handler![reveal_in_explorer,])
 }
 
-/// Helper trait for method chaining
-pub trait Pipe {
-    #[must_use]
-    fn pipe<F>(self, f: F) -> Self
-    where
-        F: FnOnce(Self) -> Self,
-        Self: Sized;
-}
-
-impl<T> Pipe for T {
-    fn pipe<F>(self, f: F) -> Self
-    where
-        F: FnOnce(Self) -> Self,
-    {
-        f(self)
-    }
+fn configure_commands(builder: Builder<Wry>) -> Builder<Wry> {
+    builder.invoke_handler(tauri::generate_handler![reveal_in_explorer,])
 }

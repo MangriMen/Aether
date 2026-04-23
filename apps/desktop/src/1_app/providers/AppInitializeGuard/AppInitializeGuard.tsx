@@ -2,10 +2,10 @@ import type { Component, JSX } from 'solid-js';
 
 import { createSignal, onMount, Show } from 'solid-js';
 
-import { commands } from '@/shared/api/bindings/application';
-import { logError } from '@/shared/lib';
+import { AppLayout } from '@/app/layouts/AppLayout';
+import { setupApp } from '@/app/model';
+import { BaseTitleBar } from '@/widgets/app-titlebar/ui/BaseTitleBar';
 
-import { initializeApp, showWindow } from '../../lib';
 import { AppInitializeError } from './AppInitializeError';
 
 export type AppInitializeGuardProps = { children?: JSX.Element };
@@ -13,43 +13,33 @@ export type AppInitializeGuardProps = { children?: JSX.Element };
 export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
   props,
 ) => {
-  const [isInitialized, setIsInitialized] = createSignal(false);
-  const [initializeError, setInitializeError] = createSignal<
-    string | undefined
-  >();
+  const [isReady, setIsReady] = createSignal(false);
+  const [error, setError] = createSignal<string | undefined>();
 
-  const init = async () => {
-    setIsInitialized(false);
-    setInitializeError(undefined);
+  const handleSetup = async () => {
+    setIsReady(false);
+    setError(undefined);
 
     try {
-      await initializeApp();
+      await setupApp();
     } catch (e) {
-      logError(e);
-      if (e instanceof Error) {
-        setInitializeError(e.message);
-      }
-    }
-
-    setIsInitialized(true);
-    await showWindow();
-
-    try {
-      if (!initializeError()) {
-        await commands.initializePlugins();
-      }
-    } catch (e) {
-      logError(e);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsReady(true);
     }
   };
 
-  onMount(() => init());
+  onMount(() => handleSetup());
 
   return (
-    <Show when={isInitialized()}>
+    <Show when={isReady()}>
       <Show
-        when={!initializeError()}
-        fallback={<AppInitializeError message={initializeError()} />}
+        when={!error()}
+        fallback={
+          <AppLayout titleBar={BaseTitleBar}>
+            <AppInitializeError error={error()} />
+          </AppLayout>
+        }
       >
         {props.children}
       </Show>

@@ -10,8 +10,8 @@ pub fn instance_launch_listener(app_handle: AppHandle, event: ProcessEvent) {
 
     tauri::async_runtime::spawn(async move {
         match event.event {
-            ProcessEventType::Launched => handle_instance_launch(app_handle.clone()).await,
-            ProcessEventType::Finished => handle_instance_finish(app_handle.clone()).await,
+            ProcessEventType::Launched => handle_instance_launch(app_handle).await,
+            ProcessEventType::Finished => handle_instance_finish(app_handle).await,
         }
     });
 }

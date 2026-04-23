@@ -1,12 +1,12 @@
 #![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
-use aether_core::core::LauncherState;
 use tauri::{AppHandle, State};
 
 use crate::{
     FrontendResult,
     commands::{APPLICATION_PLUGIN_NAME, application_commands},
+    core::{InitializeLauncherUseCase, InitializePluginsUseCase},
     features::events::EventEmitterState,
     shared,
 };
@@ -29,44 +29,19 @@ pub async fn initialize_state(
     app: AppHandle,
     event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
 ) -> FrontendResult<()> {
-    if LauncherState::initialized().await {
-        return Ok(());
-    }
-
     let launcher_dir = shared::get_app_dir(&app);
-    LauncherState::init(
-        launcher_dir.clone(),
-        launcher_dir,
-        event_emitter.inner().clone(),
-    )
-    .await
-    .map_err(crate::Error::from)?;
 
-    Ok(())
+    Ok(
+        InitializeLauncherUseCase::new(event_emitter.inner().clone())
+            .execute(launcher_dir)
+            .await?,
+    )
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn initialize_plugins() -> FrontendResult<()> {
-    aether_core::api::plugin::sync()
-        .await
-        .map_err(crate::Error::from)?;
-    load_enabled_plugins().await?;
-    Ok(())
-}
-
-pub async fn load_enabled_plugins() -> FrontendResult<()> {
-    let settings = aether_core::api::settings::get()
-        .await
-        .map_err(crate::Error::from)?;
-
-    for plugin_id in settings.enabled_plugins() {
-        if let Err(e) = aether_core::api::plugin::enable(plugin_id.clone()).await {
-            log::error!("Failed to load plugin {plugin_id}: {e}");
-        }
-    }
-
-    Ok(())
+    Ok(InitializePluginsUseCase::execute().await?)
 }
 
 #[tauri::command]

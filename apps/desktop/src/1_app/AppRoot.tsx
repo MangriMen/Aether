@@ -7,6 +7,7 @@ import { RunningInstancesProvider } from '@/entities/instances';
 import { createQueryClient } from '@/shared/api';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
+import { AppTitleBar } from '@/widgets/app-titlebar';
 
 import {
   THEME_STATE_LS_KEY,
@@ -16,6 +17,7 @@ import {
 } from './config';
 import { AppLayout } from './layouts/AppLayout';
 import { MainLayout } from './layouts/MainLayout';
+import { RootErrorBoundary } from './layouts/RootErrorBoundary';
 import { useSetup } from './lib/useSetup';
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import { AppGlobalsProvider } from './providers/AppGlobalsProvider';
@@ -27,29 +29,31 @@ export const AppRoot: Component<RouteSectionProps> = (props) => {
   useSetup();
 
   return (
-    <ColorModeProvider {...props}>
-      <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
-        <ThemeProvider
-          themeStateKey={THEME_STATE_LS_KEY}
-          themeAttribute={THEME_ATTRIBUTE}
-          disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
-          transparencyProperty={TRANSPARENCY_PROPERTY}
-        >
-          <AppInitializeGuard>
-            <QueryClientProvider client={queryClient}>
-              <AppGlobalsProvider>
-                <AppLayout>
-                  <RunningInstancesProvider>
-                    <MainLayout>{props.children}</MainLayout>
-                    <GlobalDialogRenderer />
-                  </RunningInstancesProvider>
-                </AppLayout>
-                <Toaster />
-              </AppGlobalsProvider>
-            </QueryClientProvider>
-          </AppInitializeGuard>
-        </ThemeProvider>
-      </I18nProvider>
-    </ColorModeProvider>
+    <RootErrorBoundary>
+      <ColorModeProvider>
+        <I18nProvider resources={LOCALE_RESOURCES} fallbackLocale={LOCALES.En}>
+          <ThemeProvider
+            themeStateKey={THEME_STATE_LS_KEY}
+            themeAttribute={THEME_ATTRIBUTE}
+            disableAnimationsAttribute={DISABLE_ANIMATIONS_ATTRIBUTE}
+            transparencyProperty={TRANSPARENCY_PROPERTY}
+          >
+            <AppInitializeGuard>
+              <QueryClientProvider client={queryClient}>
+                <AppGlobalsProvider>
+                  <AppLayout titleBar={AppTitleBar}>
+                    <RunningInstancesProvider>
+                      <MainLayout>{props.children}</MainLayout>
+                      <GlobalDialogRenderer />
+                    </RunningInstancesProvider>
+                  </AppLayout>
+                  <Toaster />
+                </AppGlobalsProvider>
+              </QueryClientProvider>
+            </AppInitializeGuard>
+          </ThemeProvider>
+        </I18nProvider>
+      </ColorModeProvider>
+    </RootErrorBoundary>
   );
 };

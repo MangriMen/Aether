@@ -1,5 +1,3 @@
-pub mod instance_launch;
-pub mod window;
+mod tauri;
 
-pub use instance_launch::*;
-pub use window::*;
+pub use tauri::*;
