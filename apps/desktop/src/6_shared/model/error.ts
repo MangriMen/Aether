@@ -1,48 +1,60 @@
+import type { FrontendError } from '../api';
 import type { TFunction } from './i18nContext';
 
-type RootKind = 'authError' | 'instanceError' | 'settingsError';
-type ErrorCode =
-  | `${RootKind}.${string}`
-  | `${RootKind}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}`
-  | `${RootKind}.${string}.${string}.${string}.${string}`;
+export type LauncherError = FrontendError;
 
-interface BaseError<Code extends ErrorCode, Fields> {
-  code: Code;
-  fields: Fields;
-  message: string;
-}
-
-export type LauncherError =
-  | BaseError<'authError.credentialsNotFound', { id: string }>
-  | BaseError<'authError.noActiveCredentials', null>
-  | BaseError<'authError.storageFailure', null>
-  | BaseError<'instanceError.importerNotFound', { importer_id: string }>
-  | BaseError<'instanceError.importFailed', { importer_id: string }>
-  | BaseError<'instanceError.packInfoNotFound', null>
-  | BaseError<'instanceError.updaterNotFound', { modpack_id: string }>
-  | BaseError<'instanceError.updateFailed', { modpack_id: string }>
-  | BaseError<
-      'instanceError.credentialsError.credentialsNotFound',
-      { id: string }
-    >
-  | BaseError<'instanceError.credentialsError.noActiveCredentials', null>
-  | BaseError<'instanceError.credentialsError.storageFailure', null>
-  | BaseError<'instanceError.storageFailure', null>
-  | BaseError<'settingsError.storageFailure', null>;
-
-export const isLauncherError = (error: unknown): error is LauncherError => {
+export function isLauncherError(error: unknown): error is FrontendError {
   return (
-    !!error &&
+    error !== null &&
     typeof error === 'object' &&
-    'code' in error &&
-    'fields' in error &&
-    'message' in error
+    'type' in error &&
+    'payload' in error &&
+    typeof error.type === 'string'
   );
+}
+type LauncherErrorWithoutGenericErrors = Exclude<
+  LauncherError,
+  { type: 'generic' | 'internal' }
+>;
+
+type LauncherErrorTranslateKey<E extends LauncherError> =
+  E extends LauncherErrorWithoutGenericErrors
+    ? `${E['type']}.${E['payload']['code']}`
+    : never;
+
+type LauncherErrorArgs<E extends LauncherError> =
+  E extends LauncherErrorWithoutGenericErrors
+    ? E['payload'] extends { payload: infer P }
+      ? P
+      : Record<string, never>
+    : never;
+
+const getLauncherErrorTranslationData = <
+  E extends LauncherErrorWithoutGenericErrors,
+>(
+  error: E,
+): {
+  key: LauncherErrorTranslateKey<E>;
+  args: LauncherErrorArgs<E> | undefined;
+} => {
+  const key = `${error.type}.${error.payload.code}`;
+  const args = 'payload' in error.payload ? error.payload.payload : undefined;
+
+  return {
+    key: key as LauncherErrorTranslateKey<E>,
+    args: args as LauncherErrorArgs<E>,
+  };
 };
 
 export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
-): string =>
-  t(`backendError.${error.code}`, error.fields ?? undefined) || error.code;
+): string => {
+  if (error.type === 'internal' || error.type === 'generic') {
+    return error.payload;
+  }
+
+  const { key, args } = getLauncherErrorTranslationData(error);
+
+  return t(`errors.${key}`, args) ?? key;
+};

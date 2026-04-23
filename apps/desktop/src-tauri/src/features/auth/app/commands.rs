@@ -22,7 +22,8 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[specta::specta]
 async fn create_offline_account(username: String) -> FrontendResult<AccountDto> {
     Ok(aether_core::api::auth::create_offline_account(username)
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -30,7 +31,8 @@ async fn create_offline_account(username: String) -> FrontendResult<AccountDto> 
 #[specta::specta]
 async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
     Ok(aether_core::api::auth::list_accounts()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -39,11 +41,16 @@ async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
 #[tauri::command]
 #[specta::specta]
 async fn change_account(id: Uuid) -> FrontendResult<AccountDto> {
-    Ok(aether_core::api::auth::change_account(id).await?.into())
+    Ok(aether_core::api::auth::change_account(id)
+        .await
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn logout(id: Uuid) -> FrontendResult<()> {
-    Ok(aether_core::api::auth::logout(id).await?)
+    Ok(aether_core::api::auth::logout(id)
+        .await
+        .map_err(crate::Error::from)?)
 }

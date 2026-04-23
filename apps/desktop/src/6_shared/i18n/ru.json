@@ -13,27 +13,122 @@
     "signInOffline": "Войти оффлайн",
     "title": "Аккаунт"
   },
-  "backendError": {
-    "authError": {
-      "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
-      "noActiveCredentials": "Не найдено активного аккаунта",
-      "storageFailure": "Ошибка хранилища"
+  "errors": {
+    "appSettings": {
+      "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
+      "CAN_NOT_SET_EFFECT": "Невозможно применить запрошенный эффект",
+      "SAVE_FAILED": "Не удалось сохранить настройки приложения"
     },
-    "instanceError": {
-      "importerNotFound": "Не найден импортер {{importer_id}}",
-      "importFailed": "Не удалось импортировать инстанс с помощью импортера {{importer_id}}.",
-      "packInfoNotFound": "Не найдена информация о модпаке в инстансе",
-      "updaterNotFound": "Не найден апдейтер для модпака {{modpack_id}}",
-      "updateFailed": "Не удалось обновить инстанс с модпаком {{modpack_id}}.",
-      "credentialsError": {
-        "credentialsNotFound": "Не найдено аккаунта с id: {{id}}",
-        "noActiveCredentials": "Не найдено активного аккаунта",
-        "storageFailure": "Ошибка хранилища"
-      },
-      "storageFailure": "Ошибка хранилища"
+    "auth": {
+      "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
+      "NO_ACTIVE_CREDENTIALS": "Активный аккаунт не найден",
+      "INVALID_USERNAME_CHARS": "Используйте только латинские буквы, цифры и нижнее подчёркивание",
+      "INVALID_USERNAME_LENGTH": "Длина имени должна быть от {{min}} до {{max}} символов",
+      "TOKEN_EXPIRED": "Сессия истекла, пожалуйста, войдите снова",
+      "STORAGE_ERROR": "Ошибка хранилища данных авторизации"
     },
-    "settingsError": {
-      "storageFailure": "Ошибка хранилища"
+    "event": {
+      "NOT_INITIALIZED": "Система событий не инициализирована",
+      "NO_LOADING_BAR": "Индикатор загрузки не найден",
+      "SERIALIZE_ERROR": "Ошибка сериализации данных события",
+      "STORAGE_ERROR": "Ошибка хранилища событий"
+    },
+    "fileWatcher": {
+      "PATH_NOT_FOUND": "Указанный путь не найден",
+      "WATCH_NOT_FOUND": "Дескриптор службы отслеживания не найден",
+      "NOTIFY_ERROR": "Ошибка уведомления файловой системы"
+    },
+    "instance": {
+      "CONTENT_PROVIDER_NOT_FOUND": "Поставщик контента не найден",
+      "CAPABILITY_OPERATION_ERROR": "Ошибка выполнения функции компонента",
+      "INSTANCE_STILL_INSTALLING": "Инстанс еще устанавливается",
+      "INSTANCE_ALREADY_RUNNING": "Инстанс уже запущен",
+      "PRELAUNCH_COMMAND_ERROR": "Ошибка команды перед запуском",
+      "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",
+      "UNMANAGED_INSTANCE": "Действие недоступно для неуправляемого инстанса",
+      "CONTENT_DUPLICATION": "Обнаружен дублирующийся контент",
+      "CONTENT_FILENAME": "Недопустимое имя файла контента",
+      "CONTENT_DOWNLOAD_ERROR": "Не удалось загрузить содержимое инстанса",
+      "CONTENT_PROVIDER_ERROR": "Ошибка поставщика контента",
+      "CONTENT_FOR_GAME_VERSION_NOT_FOUND": "Совместимый контент для этой версии игры не найден",
+      "UNSUPPORTED_CONTENT_TYPE": "Неподдерживаемый тип контента",
+      "SETTINGS_LOAD_ERROR": "Не удалось загрузить настройки инстанса",
+      "MINECRAFT_ERROR": "Ошибка при работе Minecraft",
+      "PROCESS_ERROR": "Ошибка процесса инстанса",
+      "CREDENTIALS_ERROR": "Активный аккаунт не найден",
+      "IMPORTER_NOT_FOUND": "Импортер {{importer_id}} не найден",
+      "IMPORT_FAILED": "Не удалось импортировать инстанс через {{importer_id}}",
+      "PACK_INFO_NOT_FOUND": "Информация о модпаке не найдена",
+      "UPDATER_NOT_FOUND": "Обновление для модпака {{modpack_id}} не найдено",
+      "UPDATE_FAILED": "Не удалось обновить инстанс с модпаком {{modpack_id}}",
+      "STORAGE_FAILURE": "Ошибка хранилища инстанса"
+    },
+    "java": {
+      "NOT_FOUND": "Исполняемый файл Java не найден",
+      "INVALID_PATH": "Указанный путь к Java недействителен",
+      "INVALID_VERSION": "Неподдерживаемая версия Java",
+      "FAILED_TO_GET_PROPERTIES": "Не удалось получить свойства Java",
+      "VERSION_NOT_AVAILABLE": "Запрошенная версия Java недоступна",
+      "VERSION_GET_FAILED": "Не удалось проверить версию Java",
+      "FAILED_TO_INSTALL": "Ошибка установки Java",
+      "REMOVE_OLD_INSTALLATION_ERROR": "Не удалось удалить старую версию Java",
+      "DOWNLOAD_FAILED": "Не удалось загрузить Java",
+      "STORAGE_ERROR": "Ошибка хранилища Java"
+    },
+    "minecraft": {
+      "VERSION_NOT_FOUND": "Версия Minecraft не найдена",
+      "VERSION_FOR_LOADER_NOT_FOUND": "Версия игры не найдена для выбранного загрузчика",
+      "LOADER_NOT_FOUND": "Загрузчик игры не найден",
+      "LOADER_VERSION_REQUIRED": "Необходимо выбрать версию загрузчика",
+      "DEFAULT_LOADER_NOT_FOUND": "Загрузчик по умолчанию не найден",
+      "PROCESSOR_FAILED": "Ошибка обработки версии",
+      "PRE_LAUNCH_FAILED": "Ошибка проверки перед запуском",
+      "POST_LAUNCH_FAILED": "Ошибка очистки после завершения",
+      "PATH_NOT_FOUND": "Путь к игре не найден",
+      "PARSE_FAILED": "Не удалось прочитать конфигурацию Minecraft",
+      "STORAGE_FAILURE": "Ошибка хранилища Minecraft",
+      "JAVA_ERROR": "Ошибка среды Java",
+      "STORAGE": "Общая ошибка хранилища"
+    },
+    "plugin": {
+      "NOT_FOUND": "Плагин не найден",
+      "ALREADY_LOADED": "Плагин уже загружен",
+      "LOADING_IN_PROGRESS": "Плагин загружается",
+      "UNLOADING_IN_PROGRESS": "Плагин выгружается",
+      "ALREADY_UNLOADED": "Плагин уже выгружен",
+      "LOAD_FAILED": "Не удалось загрузить плагин",
+      "FUNCTION_CALL_FAILED": "Ошибка вызова функции плагина",
+      "MANIFEST_NOT_FOUND": "Манифест плагина не найден",
+      "INVALID_MANIFEST_FORMAT": "Неверный формат манифеста",
+      "LOADER_NOT_FOUND": "Загрузчик плагина не найден",
+      "INVALID_CONFIG": "Неверная конфигурация плагина",
+      "EXTRACTION_FAILED": "Ошибка извлечения плагина",
+      "INVALID_EXTRACTION_FORMAT": "Неподдерживаемый формат архива",
+      "FILE_EXTRACTION_FAILED": "Не удалось извлечь файлы плагина",
+      "CAPABILITY_REGISTRATION_FAILED": "Ошибка регистрации функций плагина",
+      "CAPABILITY_CANCEL_REGISTRATION_FAILED": "Не удалось отменить регистрацию функций плагина",
+      "ACCESS_VIOLATION": "Нарушение прав доступа плагина",
+      "HASH_COMPUTATION_FAILED": "Ошибка вычисления хэша плагина",
+      "SETTINGS": "Ошибка настроек плагина",
+      "STORAGE": "Ошибка хранилища плагина"
+    },
+    "process": {
+      "KILL_ERROR": "Не удалось завершить процесс",
+      "WAIT_ERROR": "Ошибка ожидания завершения процесса",
+      "IO": "Ошибка ввода-вывода процесса"
+    },
+    "request": {
+      "ACQUIRE_ERROR": "Не удалось инициировать сетевой запрос",
+      "REQUEST_SEND_ERROR": "Ошибка отправки запроса",
+      "MIDDLEWARE_ERROR": "Ошибка промежуточного ПО (middleware)",
+      "HASH_ERROR": "Несоответствие хэша полученных данных",
+      "JSON_ERROR": "Ошибка парсинга JSON",
+      "TOML_ERROR": "Ошибка парсинга TOML",
+      "PARSE_ERROR": "Не удалось обработать данные ответа"
+    },
+    "settings": {
+      "NOT_FOUND": "Файл настроек не найден",
+      "STORAGE_FAILURE": "Ошибка хранилища настроек"
     }
   },
   "common": {
@@ -69,7 +164,8 @@
     "failedToOpenBrowser": "Не удалось открыть браузер",
     "copyToClipboard": "Скопировать в буфер обмена",
     "close": "Закрыть",
-    "incompatible": "Несовместимый"
+    "incompatible": "Несовместимый",
+    "error": "Ошибка"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -120,8 +216,7 @@
     "title": "Создать инстанс"
   },
   "createOfflineAccount": {
-    "title": "Создать оффлайн аккаунт",
-    "usernameError": "Имя пользователя должно содержать только английские буквы, цифры и подчёркивания"
+    "title": "Создать оффлайн аккаунт"
   },
   "events": {
     "javaDownloading": "Загрузка Java {{version}}",

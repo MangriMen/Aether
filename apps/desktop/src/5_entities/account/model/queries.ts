@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
 import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { isLauncherError, useTranslation } from '@/shared/model';
 
 import { commands } from '../api';
 import { accountCache, accountQueries } from './cache';
+import { isAuthValidationError } from './error';
 
 export const useAccounts = () => useQuery(accountQueries.list);
 
@@ -16,6 +17,14 @@ export const useCreateOfflineAccount = () => {
     mutationFn: commands.createOfflineAccount,
     onSuccess: () => accountCache.invalidate.list(queryClient),
     onError: (err) => {
+      if (
+        isLauncherError(err) &&
+        err.type === 'auth' &&
+        isAuthValidationError(err.payload)
+      ) {
+        return;
+      }
+
       showError({
         title: t('account.createOfflineError'),
         err,

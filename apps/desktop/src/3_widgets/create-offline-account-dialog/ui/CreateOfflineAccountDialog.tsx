@@ -1,9 +1,20 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { Component } from 'solid-js';
+import type { FormErrors } from '@modular-forms/solid';
 
-import { useCreateOfflineAccount } from '@/entities/account';
-import { useTranslation } from '@/shared/model';
+import { createEffect, createSignal, type Component } from 'solid-js';
+
+import {
+  isAuthValidationError,
+  useCreateOfflineAccount,
+} from '@/entities/account';
+import {
+  getTranslatedError,
+  isLauncherError,
+  useTranslation,
+} from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
+
+import type { CreateOfflineAccountFormValues } from '../model';
 
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
 
@@ -14,16 +25,40 @@ export const CreateOfflineAccountDialog: Component<
 > = (props) => {
   const [{ t }] = useTranslation();
 
-  const { mutateAsync: createOfflineAccount } = useCreateOfflineAccount();
+  const createOfflineAccount = useCreateOfflineAccount();
+
+  const [externalErrors, setExternalErrors] = createSignal<
+    FormErrors<CreateOfflineAccountFormValues> | undefined
+  >(undefined);
 
   const handleCreate = async (username: string) => {
-    await createOfflineAccount(username);
-    closeDialog();
+    try {
+      await createOfflineAccount.mutateAsync(username);
+      closeDialog();
+    } catch (err) {
+      if (
+        isLauncherError(err) &&
+        err.type === 'auth' &&
+        isAuthValidationError(err.payload)
+      ) {
+        setExternalErrors({ username: getTranslatedError(err, t) });
+      }
+    }
   };
 
   const closeDialog = () => {
     props.onOpenChange?.(false);
   };
+
+  const resetExternalErrors = () => {
+    setExternalErrors(undefined);
+  };
+
+  createEffect(() => {
+    if (!props.open) {
+      resetExternalErrors();
+    }
+  });
 
   return (
     <Dialog {...props}>
@@ -32,6 +67,9 @@ export const CreateOfflineAccountDialog: Component<
         <CreateOfflineAccountForm
           onCreate={handleCreate}
           onCancel={closeDialog}
+          externalErrors={externalErrors()}
+          onClearErrors={resetExternalErrors}
+          isLoading={createOfflineAccount.isPending}
         />
       </DialogContent>
     </Dialog>

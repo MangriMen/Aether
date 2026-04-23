@@ -1,0 +1,25 @@
+mod app_settings_error;
+mod auth_error;
+mod event_error;
+mod file_watcher_error;
+mod frontend_error;
+mod instance_error;
+mod java_error;
+mod minecraft_error;
+mod plugin_error;
+mod process_error;
+mod request_error;
+mod settings_error;
+
+pub use app_settings_error::*;
+pub use auth_error::*;
+pub use event_error::*;
+pub use file_watcher_error::*;
+pub use frontend_error::*;
+pub use instance_error::*;
+pub use java_error::*;
+pub use minecraft_error::*;
+pub use plugin_error::*;
+pub use process_error::*;
+pub use request_error::*;
+pub use settings_error::*;

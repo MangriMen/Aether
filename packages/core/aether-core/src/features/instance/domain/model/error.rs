@@ -42,9 +42,6 @@ pub enum InstanceError {
     #[error("Instance validation error: \"{field}\" is invalid because \"{reason}\"")]
     ValidationError { field: String, reason: String },
 
-    #[error("Failed to construct hash")]
-    HashConstructError,
-
     #[error("Not found importer {importer_id}")]
     ImporterNotFound { importer_id: String },
 

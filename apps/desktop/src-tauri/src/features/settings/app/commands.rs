@@ -25,14 +25,18 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 #[tauri::command]
 #[specta::specta]
 async fn get() -> FrontendResult<SettingsDto> {
-    Ok(aether_core::api::settings::get().await?.into())
+    Ok(aether_core::api::settings::get()
+        .await
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn edit(edit_settings: EditSettingsDto) -> FrontendResult<SettingsDto> {
     Ok(aether_core::api::settings::edit(edit_settings.into())
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -46,7 +50,8 @@ async fn get_max_ram() -> FrontendResult<u64> {
 #[specta::specta]
 async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettingsDto> {
     Ok(aether_core::api::settings::get_default_instance_settings()
-        .await?
+        .await
+        .map_err(crate::Error::from)?
         .into())
 }
 
@@ -57,7 +62,8 @@ async fn edit_default_instance_settings(
 ) -> FrontendResult<DefaultInstanceSettingsDto> {
     Ok(
         aether_core::api::settings::upsert_default_instance_settings(edit_settings.into())
-            .await?
+            .await
+            .map_err(crate::Error::from)?
             .into(),
     )
 }

@@ -39,7 +39,8 @@ pub async fn initialize_state(
         launcher_dir,
         event_emitter.inner().clone(),
     )
-    .await?;
+    .await
+    .map_err(crate::Error::from)?;
 
     Ok(())
 }
@@ -47,13 +48,17 @@ pub async fn initialize_state(
 #[tauri::command]
 #[specta::specta]
 pub async fn initialize_plugins() -> FrontendResult<()> {
-    aether_core::api::plugin::sync().await?;
+    aether_core::api::plugin::sync()
+        .await
+        .map_err(crate::Error::from)?;
     load_enabled_plugins().await?;
     Ok(())
 }
 
 pub async fn load_enabled_plugins() -> FrontendResult<()> {
-    let settings = aether_core::api::settings::get().await?;
+    let settings = aether_core::api::settings::get()
+        .await
+        .map_err(crate::Error::from)?;
 
     for plugin_id in settings.enabled_plugins() {
         if let Err(e) = aether_core::api::plugin::enable(plugin_id.clone()).await {
