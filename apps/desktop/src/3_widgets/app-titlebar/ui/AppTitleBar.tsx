@@ -1,16 +1,14 @@
-import { useLocation } from '@solidjs/router';
 import { createMemo, Show, type Component } from 'solid-js';
 
 import type { TitleBarProps } from '@/shared/ui';
 
-import { ROUTES } from '@/shared/config';
 import {
   UpdateNotificationStyle,
   updateNotificationStyle,
 } from '@/shared/model';
 
+import { BackForwardButtons } from './BackForwardButtons';
 import { BaseTitleBar } from './BaseTitleBar';
-import { GoHomeFromPlaygroundButton } from './GoHomeFromPlaygroundButton';
 import { ProgressMenuButton, ProgressPopover } from './ProgressMenu';
 import { UpdateBanner } from './UpdateBanner';
 
@@ -21,14 +19,12 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
     () => updateNotificationStyle() === UpdateNotificationStyle.Banner,
   );
 
-  const location = useLocation();
-
   return (
     <BaseTitleBar {...props}>
-      <div class='min-w-[156px]'>
-        <Show when={location.pathname === ROUTES.PLAYGROUND}>
-          <GoHomeFromPlaygroundButton />
-        </Show>
+      <div class='min-w-[156px] pl-2'>
+        <div class='flex min-w-[60px] max-w-[60px] justify-center'>
+          <BackForwardButtons />
+        </div>
       </div>
       <div class='pointer-events-none flex grow justify-center'>
         <Show when={isUpdateBannerEnabled()}>

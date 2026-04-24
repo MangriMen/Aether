@@ -420,5 +420,9 @@
     "platforms": "Платформы",
     "published": "Опубликовано",
     "name": "Имя"
+  },
+  "navigation": {
+    "goBack": "Назад",
+    "goForward": "Вперёд"
   }
 }
