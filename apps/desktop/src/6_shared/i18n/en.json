@@ -420,5 +420,9 @@
     "published": "Published",
     "downloads": "Downloads",
     "name": "Name"
+  },
+  "navigation": {
+    "goBack": "Go back",
+    "goForward": "Go forward"
   }
 }
