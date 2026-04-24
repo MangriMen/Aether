@@ -43,11 +43,6 @@ pub enum ProgressEventType {
         instance_path: String,
         instance_name: String,
     },
-    CheckingForUpdates,
-    LauncherUpdate {
-        version: String,
-        current_version: String,
-    },
     PluginDownload {
         plugin_name: String,
     },

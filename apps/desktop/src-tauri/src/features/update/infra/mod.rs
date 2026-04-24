@@ -1,3 +1,3 @@
-mod tauri_update_service;
+mod tauri;
 
-pub use tauri_update_service::*;
+pub use tauri::*;

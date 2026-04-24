@@ -14,7 +14,32 @@ export const useProgressEventsListener = () => {
 
   const [, setProgressStore] = useProgressStore();
 
-  const timers = new Set<number>();
+  const activeTimers = new Map<string, number>();
+
+  const addEvent = (payload: ProgressEvent) => {
+    if (activeTimers.has(payload.progressBarId)) {
+      clearTimeout(activeTimers.get(payload.progressBarId));
+      activeTimers.delete(payload.progressBarId);
+    }
+
+    setProgressStore('payloads', payload.progressBarId, payload);
+  };
+
+  const removeEvent = (id: ProgressEvent['progressBarId']) => {
+    setProgressStore(
+      'payloads',
+      produce((p) => delete p[id]),
+    );
+    activeTimers.delete(id);
+  };
+
+  const removeEventDelayed = (payload: ProgressEvent) => {
+    const timer = setTimeout(() => {
+      removeEvent(payload.progressBarId);
+    }, 1000);
+
+    activeTimers.set(payload.progressBarId, timer);
+  };
 
   const fetchEvents = async () => {
     try {
@@ -33,46 +58,22 @@ export const useProgressEventsListener = () => {
     }
   };
 
-  const addEvent = (payload: ProgressEvent) => {
-    setProgressStore('payloads', (payloads) => ({
-      ...payloads,
-      [payload.progressBarId]: payload,
-    }));
-  };
-
-  const removeEvent = (payload: ProgressEvent) => {
-    setProgressStore(
-      'payloads',
-      produce((payloads) => delete payloads[payload.progressBarId]),
-    );
-  };
-
-  const delayedRemoveEvent = (payload: ProgressEvent) => {
-    timers.add(
-      setTimeout(() => {
-        removeEvent(payload);
-      }, 1000),
-    );
-  };
-
   const startListen = async () => {
     fetchEvents();
 
     unlistenFn = await events.progressEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
+      addEvent(e.payload);
 
       if (e.payload.fraction === null) {
-        delayedRemoveEvent(e.payload);
-        return;
+        removeEventDelayed(e.payload);
       }
-
-      addEvent(e.payload);
     });
   };
 
   const cleanUp = () => {
-    for (const timer of timers) {
-      clearTimeout(timer);
+    if (activeTimers.size !== 0) {
+      activeTimers.forEach(clearTimeout);
     }
     unlistenFn?.();
   };

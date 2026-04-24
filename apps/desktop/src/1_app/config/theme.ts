@@ -3,6 +3,7 @@ import { type ThemeConfig, type ThemeContextValue } from '@/shared/model';
 export const THEME_ATTRIBUTE = 'data-theme';
 export const TRANSPARENCY_PROPERTY = '--transparency';
 export const DISABLE_ANIMATIONS_ATTRIBUTE = 'data-disable-animations';
+export const KB_THEME_ATTRIBUTE = 'data-kb-theme';
 
 export const THEME_STATE_LS_KEY = 'theme-state';
 

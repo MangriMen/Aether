@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --transparency: 1;
+  }
+
   :root,
   [data-kb-theme='light'] {
     --background: 96% 0 0;

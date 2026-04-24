@@ -29,7 +29,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
 
   return (
     <div class={cn('flex flex-col gap-1', local.class)} {...others}>
-      <div class='flex items-center justify-between gap-2'>
+      <div class='flex items-center justify-between gap-2 px-2'>
         <span class='text-lg font-medium'>{t('progress.ongoingTasks')}</span>
         <CombinedTooltip
           label={t('progress.seeDetails')}
@@ -41,7 +41,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
           onClick={handleOpenDetails}
         />
       </div>
-      <div class='flex max-h-[244px] flex-col gap-3 overflow-hidden'>
+      <div class='flex max-h-[244px] flex-col gap-3 overflow-y-auto px-2'>
         <For each={local.payloads()}>
           {(payload) => <ProgressCard payload={payload} />}
         </For>

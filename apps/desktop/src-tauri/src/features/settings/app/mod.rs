@@ -1,7 +1,5 @@
-mod commands;
-mod dtos;
+mod models;
 mod use_cases;
 
-pub use commands::*;
-pub use dtos::*;
+pub use models::*;
 pub use use_cases::*;

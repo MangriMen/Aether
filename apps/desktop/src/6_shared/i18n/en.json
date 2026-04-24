@@ -384,7 +384,14 @@
     "changelogIsTooLongDescription": "Only the first part was sent. You can copy the full text and translate it manually",
     "failedToOpenBrowserWithChangelogDescription": "Please copy the text to translate it manually",
     "translateChangelogInBrowser": "Translate changelog in browser",
-    "failedToCopyChangelogToClipboard": "Failed to copy changelog to clipboard"
+    "failedToCopyChangelogToClipboard": "Failed to copy changelog to clipboard",
+    "events": {
+      "phase": {
+        "started": "Started",
+        "progress": "Progress",
+        "finished": "Finished"
+      }
+    }
   },
   "plugin": {
     "description": "Description",

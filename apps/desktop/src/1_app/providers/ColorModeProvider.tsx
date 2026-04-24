@@ -1,5 +1,4 @@
-import type { RouteSectionProps } from '@solidjs/router';
-import type { Component } from 'solid-js';
+import type { Component, ParentProps } from 'solid-js';
 
 import {
   COLOR_MODE_STORAGE_KEY,
@@ -8,7 +7,7 @@ import {
   createLocalStorageManager,
 } from '@kobalte/core';
 
-export type ColorModeObserverProps = RouteSectionProps;
+export type ColorModeObserverProps = ParentProps;
 
 export const ColorModeProvider: Component<ColorModeObserverProps> = (props) => {
   const storageManager = createLocalStorageManager(COLOR_MODE_STORAGE_KEY);
