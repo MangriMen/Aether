@@ -384,7 +384,14 @@
     "changelogIsTooLongDescription": "Отправлена ​​только первая часть. Вы можете скопировать полный текст и перевести его вручную",
     "failedToOpenBrowserWithChangelogDescription": "Пожалуйста, скопируйте текст, чтобы перевести его вручную",
     "translateChangelogInBrowser": "Перевести журнал изменений в браузере",
-    "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена"
+    "failedToCopyChangelogToClipboard": "Не удалось скопировать журнал изменений в буфер обмена",
+    "events": {
+      "phase": {
+        "started": "Запуск",
+        "progress": "В процессе",
+        "finished": "Завершено"
+      }
+    }
   },
   "plugin": {
     "description": "Описание",

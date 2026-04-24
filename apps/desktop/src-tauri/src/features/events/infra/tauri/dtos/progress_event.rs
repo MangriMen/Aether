@@ -6,6 +6,8 @@ use specta::Type;
 use tauri_specta::Event;
 use uuid::Uuid;
 
+use crate::features::update::{UpdatePhase, UpdateProgress};
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressEventDto {
@@ -46,14 +48,22 @@ pub enum ProgressEventTypeDto {
         instance_path: String,
         instance_name: String,
     },
-    CheckingForUpdates,
     LauncherUpdate {
         version: String,
         current_version: String,
+        phase: LauncherUpdatePhaseDto,
     },
     PluginDownload {
         plugin_name: String,
     },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum LauncherUpdatePhaseDto {
+    Started,
+    Progress,
+    Finished,
 }
 
 impl From<ProgressEvent> for ProgressEventDto {
@@ -116,17 +126,34 @@ impl From<ProgressEventType> for ProgressEventTypeDto {
                 instance_path,
                 instance_name,
             },
-            ProgressEventType::CheckingForUpdates => Self::CheckingForUpdates,
-            ProgressEventType::LauncherUpdate {
-                version,
-                current_version,
-            } => Self::LauncherUpdate {
-                version,
-                current_version,
-            },
             ProgressEventType::PluginDownload { plugin_name } => {
                 Self::PluginDownload { plugin_name }
             }
+        }
+    }
+}
+
+impl From<UpdateProgress> for ProgressEventDto {
+    fn from(value: UpdateProgress) -> Self {
+        Self {
+            event: ProgressEventTypeDto::LauncherUpdate {
+                version: value.version,
+                current_version: value.current_version,
+                phase: value.phase.into(),
+            },
+            progress_bar_id: Uuid::new_v4(),
+            fraction: value.fraction,
+            message: "Launcher is updating".to_owned(),
+        }
+    }
+}
+
+impl From<UpdatePhase> for LauncherUpdatePhaseDto {
+    fn from(value: UpdatePhase) -> Self {
+        match value {
+            UpdatePhase::Started => Self::Started,
+            UpdatePhase::Progress => Self::Progress,
+            UpdatePhase::Finished => Self::Finished,
         }
     }
 }

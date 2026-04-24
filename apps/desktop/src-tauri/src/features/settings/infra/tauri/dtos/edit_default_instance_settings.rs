@@ -2,7 +2,7 @@ use aether_core::features::settings::app::{EditDefaultInstanceSettings, EditHook
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::settings::{MemorySettingsDto, WindowSizeDto};
+use super::{MemorySettingsDto, WindowSizeDto};
 
 #[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]

@@ -9,7 +9,9 @@ use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Mutex;
 
 use crate::features::events::AppEvent;
-use crate::features::update::{UpdatePhase, UpdateProgress, UpdateService, UpdateStatus};
+use crate::features::update::UpdatePhase;
+use crate::features::update::UpdateProgress;
+use crate::features::update::{UpdateService, UpdateStatus};
 
 pub struct TauriUpdateService<R: tauri::Runtime> {
     app: AppHandle<R>,
@@ -47,16 +49,24 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                 let mut downloaded = 0;
                 let mut content_length: Option<u64> = None;
 
+                let version = update.version.clone();
+                let current_version = update.current_version.clone();
+
                 self.event_emitter
                     .emit_safe(UpdateProgress {
                         fraction: Some(0.0),
                         phase: UpdatePhase::Started,
+                        version: version.clone(),
+                        current_version: current_version.clone(),
                     })
                     .await;
 
                 update
                     .download_and_install(
                         |chunk_length, total_length| {
+                            let version = update.version.clone();
+                            let current_version = update.current_version.clone();
+
                             content_length = total_length;
                             downloaded += chunk_length;
 
@@ -70,6 +80,8 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                                     .emit_safe(UpdateProgress {
                                         fraction,
                                         phase: UpdatePhase::Progress,
+                                        version,
+                                        current_version,
                                     })
                                     .await;
                             });
@@ -81,6 +93,8 @@ impl<R: tauri::Runtime> UpdateService for TauriUpdateService<R> {
                                     .emit_safe(UpdateProgress {
                                         fraction: None,
                                         phase: UpdatePhase::Finished,
+                                        version,
+                                        current_version,
                                     })
                                     .await;
                             });

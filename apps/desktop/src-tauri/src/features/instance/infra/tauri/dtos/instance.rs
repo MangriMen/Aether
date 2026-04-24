@@ -6,7 +6,7 @@ use specta::Type;
 use crate::features::{
     instance::{InstanceInstallStageDto, PackInfoDto},
     minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
-    settings::{HooksDto, MemorySettingsDto, WindowSizeDto},
+    settings::infra::tauri::dtos::{HooksDto, MemorySettingsDto, WindowSizeDto},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]

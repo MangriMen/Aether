@@ -53,7 +53,8 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
         <ProgressBadge />
       </PopoverTrigger>
       <PopoverContent
-        class='p-3'
+        class='w-80 px-1 py-3'
+        onOpenAutoFocus={(e) => e.preventDefault()}
         as={local.popoverComponent}
         payloads={payloadValues}
       />

@@ -4,10 +4,13 @@ use crate::{
     FrontendResult,
     commands::{SETTINGS_PLUGIN_NAME, settings_commands},
     features::settings::{
-        AppSettingsDto, AppSettingsStorageState, DefaultInstanceSettingsDto, EditAppSettingsDto,
-        EditAppSettingsUseCase, EditDefaultInstanceSettingsDto, EditSettingsDto,
-        GetAppSettingsUseCase, SettingsDto, WindowManagerState,
+        AppSettingsStorageState, EditAppSettingsUseCase, GetAppSettingsUseCase, WindowManagerState,
     },
+};
+
+use super::dtos::{
+    AppSettingsDto, DefaultInstanceSettingsDto, EditAppSettingsDto, EditDefaultInstanceSettingsDto,
+    EditSettingsDto, SettingsDto,
 };
 
 #[must_use]
@@ -94,7 +97,7 @@ async fn edit_app_settings(
         app_settings_storage.inner().clone(),
         window_manager.inner().clone(),
     )
-    .execute(edit_app_settings)
+    .execute(edit_app_settings.into())
     .await
     .map_err(crate::Error::from)?
     .into())

@@ -83,11 +83,7 @@ fn get_all_features_builders(out_dir: &PathBuf) -> Vec<Exporter> {
             Some(process::get_specta_events()),
         ),
         (SETTINGS_PLUGIN_NAME, settings::get_specta_commands(), None),
-        (
-            UPDATE_PLUGIN_NAME,
-            update::get_specta_commands(),
-            Some(update::get_specta_events()),
-        ),
+        (UPDATE_PLUGIN_NAME, update::get_specta_commands(), None),
     ];
 
     features_data

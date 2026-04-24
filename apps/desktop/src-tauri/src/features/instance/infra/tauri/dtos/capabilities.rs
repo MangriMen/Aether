@@ -1,4 +1,3 @@
-use crate::features::instance::app::dtos::capability_entry::CapabilityEntryDto;
 use aether_core::shared::CapabilityEntry;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -7,6 +6,8 @@ use aether_core::features::instance::{
     CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
     UpdaterCapabilityMetadata,
 };
+
+use super::CapabilityEntryDto;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]

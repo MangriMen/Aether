@@ -5,7 +5,7 @@ import { createMemo, splitProps } from 'solid-js';
 import type { ProgressEvent } from '@/entities/events';
 
 import { useTranslation } from '@/shared/model';
-import { Progress } from '@/shared/ui';
+import { CombinedTooltip, Progress } from '@/shared/ui';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
   payload: ProgressEvent;
@@ -32,18 +32,39 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         return t('events.launcherUpdating', {
           version: local.payload.event.version,
         });
+      // default: {
+      //   const _exhaustiveCheck: never = local.payload.event.type;
+      //   return _exhaustiveCheck;
+      // }
     }
   });
 
+  const message = createMemo(() => {
+    // eslint-disable-next-line sonarjs/no-small-switch
+    switch (local.payload.event.type) {
+      case 'launcher_update':
+        return t(`update.events.phase.${local.payload.event.phase}`);
+      default:
+        return local.payload.message;
+    }
+  });
+
+  const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
+
   return (
     <div class='flex flex-col gap-2' {...others}>
-      <span class='font-bold'>{title()}</span>
+      <div class='flex items-end justify-between gap-4'>
+        <CombinedTooltip label={title()} as='span' class='truncate font-bold'>
+          {title()}
+        </CombinedTooltip>
+        <span class='shrink-0 tabular-nums text-muted-foreground'>
+          {percentStr()}
+        </span>
+      </div>
+
       <Progress value={clampedValue()} minValue={0} maxValue={1} />
-      <span class='text-muted-foreground'>
-        {`${Math.round(clampedValue() * 100)}%`}
-        &nbsp;
-        {local.payload.message}
-      </span>
+
+      <span class='truncate text-sm text-muted-foreground'>{message()}</span>
     </div>
   );
 };

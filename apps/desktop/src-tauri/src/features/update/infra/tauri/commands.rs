@@ -1,13 +1,12 @@
 use crate::{
     FrontendResult,
     commands::{UPDATE_PLUGIN_NAME, update_commands},
-    features::update::{
-        CheckForUpdatesUseCase, InstallUpdateUseCase, UpdateProgress, UpdateServiceState,
-        UpdateStatusDto,
-    },
+    features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase, UpdateServiceState},
 };
 
 use tauri::State;
+
+use super::UpdateStatusDto;
 
 #[must_use]
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
@@ -19,11 +18,6 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 #[must_use]
 pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     update_commands!(tauri_specta::collect_commands!)
-}
-
-#[must_use]
-pub fn get_specta_events() -> tauri_specta::Events {
-    tauri_specta::collect_events![UpdateProgress]
 }
 
 #[tauri::command]

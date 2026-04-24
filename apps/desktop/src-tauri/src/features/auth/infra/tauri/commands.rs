@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::{
     FrontendResult,
     commands::{AUTH_PLUGIN_NAME, auth_commands},
-    features::auth::AccountDto,
+    features::auth::infra::tauri::dtos::AccountDto,
 };
 
 #[must_use]
