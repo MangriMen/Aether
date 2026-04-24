@@ -6,8 +6,7 @@ use tauri::{AppHandle, State};
 use crate::{
     FrontendResult,
     commands::{APPLICATION_PLUGIN_NAME, application_commands},
-    core::{InitializeLauncherUseCase, InitializePluginsUseCase},
-    features::events::EventEmitterState,
+    core::{EventEmitterState, InitializeLauncherUseCase, InitializePluginsUseCase},
     shared,
 };
 

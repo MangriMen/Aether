@@ -3,9 +3,8 @@ use tauri::{AppHandle, State};
 use crate::{
     FrontendResult,
     commands::{SETTINGS_PLUGIN_NAME, settings_commands},
-    features::settings::{
-        AppSettingsStorageState, EditAppSettingsUseCase, GetAppSettingsUseCase, WindowManagerState,
-    },
+    core::{AppSettingsStorageState, WindowManagerState},
+    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase},
 };
 
 use super::dtos::{

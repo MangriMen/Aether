@@ -1,7 +1,8 @@
 use crate::{
     FrontendResult,
     commands::{UPDATE_PLUGIN_NAME, update_commands},
-    features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase, UpdateServiceState},
+    core::UpdateServiceState,
+    features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase},
 };
 
 use tauri::State;

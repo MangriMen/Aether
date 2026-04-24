@@ -2,10 +2,11 @@ use log::error;
 use tauri::{AppHandle, Manager};
 
 use crate::{
-    core::window_ops::{close_all_windows, hide_all_windows, recreate_windows, show_all_windows},
-    features::settings::{
-        ActionOnInstanceLaunch, AppSettings, AppSettingsStorage, AppSettingsStorageState,
+    core::{
+        AppSettingsStorageState,
+        window_ops::{close_all_windows, hide_all_windows, recreate_windows, show_all_windows},
     },
+    features::settings::{ActionOnInstanceLaunch, AppSettings, AppSettingsStorage},
 };
 
 /// Handles app behavior when Minecraft instance launches

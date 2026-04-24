@@ -6,12 +6,15 @@ use log::{error, warn};
 use tauri::{App, AppHandle, Manager, WebviewWindow};
 
 use crate::{
-    core::{PreventExitStorage, build_main_window, instance_launch_listener},
+    core::{
+        AppSettingsStorageState, EventEmitterState, PreventExitStorage, WindowManagerState,
+        build_main_window, instance_launch_listener,
+    },
     features::{
-        events::{DualEventEmitterExt, EventEmitterState, TauriEventEmitter},
+        events::{DualEventEmitterExt, TauriEventEmitter},
         settings::{
-            AppSettings, AppSettingsStorage, AppSettingsStorageState, FsAppSettingsStorage,
-            TauriWindowManager, WindowManager, WindowManagerState,
+            AppSettings, AppSettingsStorage, FsAppSettingsStorage, TauriWindowManager,
+            WindowManager,
         },
         update::TauriUpdateService,
     },
