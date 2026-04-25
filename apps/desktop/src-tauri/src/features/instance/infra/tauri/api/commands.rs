@@ -271,7 +271,7 @@ async fn list_content_version(
     params: ContentListVersionParamsDto,
 ) -> FrontendResult<Vec<ContentVersionDto>> {
     Ok(
-        aether_core::api::instance::list_content_version(params.into())
+        aether_core::api::instance::list_content_versions(params.into())
             .await
             .map_err(crate::Error::from)?
             .into_iter()

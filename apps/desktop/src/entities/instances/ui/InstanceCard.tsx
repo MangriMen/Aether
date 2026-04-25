@@ -15,6 +15,7 @@ export type InstanceCardProps = ComponentProps<'div'> & {
   >;
   isLoading?: boolean;
   isRunning?: boolean;
+  overrideIcon?: string;
 };
 
 export const InstanceCard: Component<InstanceCardProps> = (props) => {
@@ -23,6 +24,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     'instanceActionButton',
     'isLoading',
     'isRunning',
+    'overrideIcon',
     'class',
   ]);
 
@@ -36,7 +38,7 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     >
       <Image
         class='mx-auto size-24 min-w-max border-none bg-transparent'
-        src={local.instance.iconPath ?? undefined}
+        src={local.overrideIcon ?? local.instance.iconPath ?? undefined}
       />
       <InstanceTitle
         name={local.instance.name}

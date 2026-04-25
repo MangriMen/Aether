@@ -16,10 +16,10 @@ pub enum RequestError {
     #[error("Failed to verify hash: {actual} != {expected}")]
     HashError { actual: String, expected: String },
 
-    #[error("Failed to parse JSON")]
+    #[error("Failed to parse JSON: {0}")]
     JsonError(#[from] serde_json::Error),
 
-    #[error("Failed to parse Toml")]
+    #[error("Failed to parse Toml: {0}")]
     TomlError(#[from] toml::de::Error),
 
     #[error("Content is not UTF-8")]

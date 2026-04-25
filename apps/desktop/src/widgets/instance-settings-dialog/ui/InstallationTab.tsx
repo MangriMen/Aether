@@ -7,10 +7,16 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useInstallInstance, useUpdateInstance } from '@/entities/instances';
+import {
+  instanceToContentGetParams,
+  useContent,
+  useContentVersions,
+  useInstallInstance,
+  useUpdateInstance,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button, Image, LabeledField } from '@/shared/ui';
+import { Button, Image, LabeledField, Skeleton } from '@/shared/ui';
 
 import type { InstanceSettingsTabProps } from '../model';
 
@@ -37,6 +43,25 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     () => local.instance.installStage !== 'installed',
   );
 
+  const content = useContent(() => instanceToContentGetParams(local.instance));
+
+  const versions = useContentVersions(() => {
+    const packInfo = local.instance.packInfo;
+
+    if (!packInfo) {
+      return;
+    }
+
+    return {
+      contentId: packInfo.modpackId,
+      providerId: packInfo.providerId,
+    };
+  });
+
+  const currentVersion = createMemo(() =>
+    versions.data?.find((v) => local.instance.packInfo?.version === v.id),
+  );
+
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <LabeledField
@@ -52,7 +77,9 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
             <div class='text-base font-medium'>
               Minecraft {local.instance.gameVersion}
             </div>
-            <div class='capitalize'>{local.instance.loader}</div>
+            <div class='capitalize'>
+              {local.instance.loader}&nbsp;{local.instance.loaderVersion}
+            </div>
           </div>
           <div class='ml-auto flex items-center gap-1'>
             <Button
@@ -69,35 +96,49 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
       </LabeledField>
 
       <Show when={local.instance.packInfo}>
-        <LabeledField
-          label={
-            <span class='text-lg font-medium'>
-              {t('instance.instanceSettings.modpack')}
-            </span>
-          }
-        >
-          <div class='flex items-center gap-3 rounded-lg bg-card/card p-3 text-muted-foreground'>
-            <Image class='size-12 p-1' />
-
-            <div class='flex flex-col'>
-              {/* TODO: add modpack name to packInfo */}
-              <span class='text-base font-medium capitalize'>
-                {local.instance.packInfo?.modpackId}
+        {(packInfo) => (
+          <LabeledField
+            label={
+              <span class='text-lg font-medium'>
+                {t('instance.instanceSettings.modpack')}
               </span>
-              <span>{local.instance.packInfo?.version}</span>
+            }
+          >
+            <div class='flex items-center gap-3 rounded-lg bg-card/card p-3 text-muted-foreground'>
+              <Image class='size-12 p-1' src={content.data?.iconUrl} />
+
+              <div class='flex flex-col'>
+                <span class='text-base font-medium capitalize'>
+                  <Show
+                    when={!content.isLoading}
+                    fallback={
+                      <Skeleton
+                        class='w-full rounded-sm'
+                        height={18}
+                        width={128}
+                      />
+                    }
+                  >
+                    {content.data?.name ?? packInfo().modpackId}
+                  </Show>
+                </span>
+                <span>
+                  {currentVersion()?.versionNumber ?? packInfo().version}
+                </span>
+              </div>
+              <div class='ml-auto flex items-center gap-1'>
+                <Button
+                  size='sm'
+                  variant='ghost'
+                  onClick={handleUpdate}
+                  disabled={isInstalling()}
+                >
+                  {t('common.update')}
+                </Button>
+              </div>
             </div>
-            <div class='ml-auto flex items-center gap-1'>
-              <Button
-                size='sm'
-                variant='ghost'
-                onClick={handleUpdate}
-                disabled={isInstalling()}
-              >
-                {t('common.update')}
-              </Button>
-            </div>
-          </div>
-        </LabeledField>
+          </LabeledField>
+        )}
       </Show>
     </div>
   );

@@ -1,6 +1,6 @@
 use aether_core::features::instance::{
     ContentVersion, ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
-    ContentVersionType, RequestedContentVersionStatus, app::ContentListVersionParams,
+    ContentVersionType, RequestedContentVersionStatus, app::ContentListVersionsParams,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -80,7 +80,7 @@ pub struct ContentVersionDto {
     pub web_url: String,
 }
 
-impl From<ContentListVersionParamsDto> for ContentListVersionParams {
+impl From<ContentListVersionParamsDto> for ContentListVersionsParams {
     fn from(value: ContentListVersionParamsDto) -> Self {
         Self {
             content_id: value.content_id,

@@ -5,7 +5,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useContentVersion } from '@/entities/instances';
+import { useContentVersions } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 
 import type { ContentItemPageTabProps } from '../../model';
@@ -23,7 +23,7 @@ export const ContentVersionsTab: Component<ContentVersionsTabProps> = (
 
   const [context] = useContentContext();
 
-  const versions = useContentVersion(() =>
+  const versions = useContentVersions(() =>
     local.item?.id && context.providerId
       ? {
           contentId: local.item?.id,

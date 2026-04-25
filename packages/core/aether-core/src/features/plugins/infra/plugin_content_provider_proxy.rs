@@ -119,7 +119,10 @@ impl ContentProvider for PluginContentProviderProxy {
             .await
     }
 
-    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(
+        &self,
+        content_id: String,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
         self.call_optional(self.capability.handlers.list_version.as_ref(), content_id)
             .await
     }

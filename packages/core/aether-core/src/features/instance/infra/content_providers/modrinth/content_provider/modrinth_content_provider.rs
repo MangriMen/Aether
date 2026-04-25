@@ -390,9 +390,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             source_url
                 .and_then(|url| Self::parse_file_url(url))
                 .map(|(project_id, version_id)| PackInfo {
-                    plugin_id: "modrinth".to_string(),
+                    provider_id: self.get_provider_id(),
                     modpack_id: project_id,
-                    version: version_id,
+                    version_id,
                 });
 
         let new_instance = NewInstance {
@@ -557,7 +557,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             })
     }
 
-    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
         let versions = self
             .api
             .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())

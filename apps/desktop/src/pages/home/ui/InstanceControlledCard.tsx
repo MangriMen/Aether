@@ -10,6 +10,7 @@ import {
   InstanceContextMenu,
   useInstanceActions,
   useInstanceDir,
+  useInstanceIconSrc,
   useRevealInExplorer,
   useRunningInstancesContext,
 } from '@/entities/instances';
@@ -76,6 +77,8 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const context = useRunningInstancesContext();
   const runningInstanceData = createMemo(() => context[0].instances[id()]);
 
+  const iconSrc = useInstanceIconSrc(() => props.instance);
+
   return (
     <>
       <InstanceContextMenu
@@ -91,6 +94,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
           onClick={goToInstancePage}
           isLoading={runningInstanceData()?.isLoading}
           isRunning={runningInstanceData()?.isRunning}
+          overrideIcon={iconSrc()}
           {...props}
         />
       </InstanceContextMenu>

@@ -37,3 +37,12 @@ impl From<ProviderId> for ProviderIdDto {
         }
     }
 }
+
+impl From<ProviderIdDto> for ProviderId {
+    fn from(value: ProviderIdDto) -> Self {
+        Self {
+            plugin_id: value.plugin_id,
+            capability_id: value.capability_id,
+        }
+    }
+}
