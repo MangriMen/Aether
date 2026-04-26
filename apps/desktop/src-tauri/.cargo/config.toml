@@ -1,2 +1,2 @@
 [env]
-TYPE_GEN_EXPORT_DIR = { value = "../src/6_shared/api/bindings", relative = true }
+TYPE_GEN_EXPORT_DIR = { value = "../src/shared/api/bindings", relative = true }

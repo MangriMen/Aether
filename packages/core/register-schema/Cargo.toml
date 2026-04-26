@@ -3,11 +3,11 @@ name = "register-schema"
 version = "0.1.0"
 edition.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
 inventory = "0.3"
 
 register-schema-derive.workspace = true
 schemars.workspace = true
+
+[lints]
+workspace = true

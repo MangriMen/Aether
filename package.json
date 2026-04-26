@@ -1,19 +1,19 @@
 {
   "name": "@aether/monorepo",
-  "packageManager": "bun@1.3.11",
   "private": true,
-  "scripts": {
-    "prepare": "lefthook install",
-    "app:dev": "turbo run tauri --filter=@aether/app -- dev",
-    "lint": "turbo run lintt"
-  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
+  "scripts": {
+    "app:dev": "turbo run tauri --filter=@aether/app -- dev",
+    "lint": "turbo run lintt",
+    "prepare": "lefthook install"
+  },
   "devDependencies": {
     "lefthook": "^2.1.6",
     "turbo": "latest",
     "typescript": "^6.0.3"
-  }
+  },
+  "packageManager": "bun@1.3.11"
 }

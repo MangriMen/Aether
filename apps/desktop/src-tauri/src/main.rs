@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    if let Err(e) = aether::core::launch_app() {
+    if let Err(e) = aether_lib::core::launch_app() {
         eprintln!("Failed to launch app: {e}");
     }
 }

@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "app-plugins",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "application:default",
+    "auth:default",
+    "events:default",
+    "instance:default",
+    "minecraft:default",
+    "process:default",
+    "plugin:default",
+    "settings:default",
+    "update:default"
+  ]
+}

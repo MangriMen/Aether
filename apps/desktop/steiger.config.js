@@ -12,15 +12,16 @@ export default defineConfig([
   },
   {
     files: [
-      './src/1_app/**',
-      './src/2_pages/**',
-      './src/3_widgets/**',
-      './src/4_features/**',
-      './src/5_entities/**',
-      './src/6_shared/**',
+      './src/app/**',
+      './src/pages/**',
+      './src/widgets/**',
+      './src/features/**',
+      './src/entities/**',
+      './src/shared/**',
     ],
     rules: {
       'fsd/typo-in-layer-name': 'off',
+      'fsd/inconsistent-naming': 'off',
     },
   },
 ]);

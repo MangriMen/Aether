@@ -33,12 +33,12 @@ const plugins = [
 ];
 
 const srcAliases = {
-  '@/app': path.resolve(__dirname, './src/1_app'),
-  '@/pages': path.resolve(__dirname, './src/2_pages'),
-  '@/widgets': path.resolve(__dirname, './src/3_widgets'),
-  '@/features': path.resolve(__dirname, './src/4_features'),
-  '@/entities': path.resolve(__dirname, './src/5_entities'),
-  '@/shared': path.resolve(__dirname, './src/6_shared'),
+  '@/app': path.resolve(__dirname, './src/app'),
+  '@/pages': path.resolve(__dirname, './src/pages'),
+  '@/widgets': path.resolve(__dirname, './src/widgets'),
+  '@/features': path.resolve(__dirname, './src/features'),
+  '@/entities': path.resolve(__dirname, './src/entities'),
+  '@/shared': path.resolve(__dirname, './src/shared'),
 };
 
 const testConfig = {

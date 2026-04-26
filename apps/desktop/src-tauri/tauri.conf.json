@@ -1,4 +1,5 @@
 {
+  "$schema": "https://schema.tauri.app/config/2",
   "productName": "Aether",
   "mainBinaryName": "Aether",
   "version": "0.8.7",

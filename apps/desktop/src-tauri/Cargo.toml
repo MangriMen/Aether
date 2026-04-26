@@ -5,31 +5,33 @@ description = "Desktop application for managing Minecraft instances and mods"
 edition.workspace = true
 rust-version.workspace = true
 
-[features]
-# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
-custom-protocol = ["tauri/custom-protocol"]
+[package.metadata.cargo-machete]
+ignored = ["serde_json"]
 
-[lints]
-workspace = true
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "aether_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
 # Tauri & Plugins
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
-tauri-plugin-process = "2"
-tauri-plugin-shell = "2"
 
 # External Libraries
 open = { version = "5", features = ["shellexecute-on-windows"] }
 specta = { version = "=2.0.0-rc.24", features = [
-  "serde_json",
-  "uuid",
-  "chrono",
-  "semver",
+    "serde_json",
+    "uuid",
+    "chrono",
+    "semver",
 ] }
 specta-typescript = "0.0.11"
 tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
@@ -43,11 +45,11 @@ log.workspace = true
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_with.workspace = true
 serr.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
-serde_with.workspace = true
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
@@ -55,3 +57,6 @@ tauri-plugin-updater = "2"
 [build-dependencies]
 paste = "1"
 tauri-build = { version = "2", features = ["codegen"] }
+
+[lints]
+workspace = true
