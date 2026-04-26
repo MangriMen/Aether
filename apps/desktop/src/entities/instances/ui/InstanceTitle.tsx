@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
 
 export type InstanceTitleProps = ComponentProps<'div'> & {
   name?: string;

@@ -8,16 +8,16 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { EditAllowedItemProps } from '../model';
-
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   CombinedTextField,
   CombinedTooltip,
   IconButton,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
+import type { EditAllowedItemProps } from '../model';
 
 export type EditAllowedPathProps = ComponentProps<'div'> &
   EditAllowedItemProps<[string, string], [string, string]>;

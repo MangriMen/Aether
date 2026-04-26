@@ -3,15 +3,15 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { createSignal, splitProps } from 'solid-js';
 
-import type { ImporterCapability, UpdaterCapability } from '../model';
-
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
   Image,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
+import type { ImporterCapability, UpdaterCapability } from '../model';
 
 export type PluginImporterProps = ComponentProps<'div'> & {
   capability: ImporterCapability | UpdaterCapability;

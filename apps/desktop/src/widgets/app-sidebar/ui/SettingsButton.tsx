@@ -5,13 +5,13 @@ import { useNavigate } from '@solidjs/router';
 import IconMdiCog from '~icons/mdi/cog';
 import { createMemo, Show } from 'solid-js';
 
-import type { IconButtonProps } from '../../../shared/ui';
+import type { IconButtonProps } from '@/shared/ui';
 
-import { useCheckUpdate } from '../../../entities/updates';
-import { checkIsUpdateAvailable } from '../../../entities/updates/model';
-import { ROUTES } from '../../../shared/config';
-import { useTranslation } from '../../../shared/model';
-import { Badge, CombinedTooltip, IconButton } from '../../../shared/ui';
+import { useCheckUpdate } from '@/entities/updates';
+import { checkIsUpdateAvailable } from '@/entities/updates';
+import { ROUTES } from '@/shared/config';
+import { useTranslation } from '@/shared/model';
+import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

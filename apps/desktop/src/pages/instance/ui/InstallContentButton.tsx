@@ -5,15 +5,12 @@ import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import IconMdiPlus from '~icons/mdi/plus';
 import { splitProps, For, createMemo } from 'solid-js';
 
-import type { Instance, AtomicContentType } from '../../../entities/instances';
+import type { Instance, AtomicContentType } from '@/entities/instances';
 
-import { ATOMIC_CONTENT_TYPES } from '../../../entities/instances';
-import {
-  CONTENT_TYPE_TO_TITLE,
-  useImportContents,
-} from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { ATOMIC_CONTENT_TYPES } from '@/entities/instances';
+import { CONTENT_TYPE_TO_TITLE, useImportContents } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   DropdownMenu,
@@ -22,7 +19,8 @@ import {
   DropdownMenuTrigger,
   IconButton,
   Separator,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { OPEN_FILTERS_BY_CONTENT_TYPE } from '../model';
 
 export type InstallContentButtonProps = ComponentProps<'div'> & {

@@ -1,7 +1,8 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import { InstallFromPluginPackageButton } from './InstallFromPluginPackageButton';
 import { OpenPluginsFolderButton } from './OpenPluginsFolderButton';
 import { SyncPluginsButton } from './SyncPluginsButton';

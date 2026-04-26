@@ -5,7 +5,8 @@ import {
   PaginationItems,
   PaginationNext,
   PaginationPrevious,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const PaginationLab = () => {

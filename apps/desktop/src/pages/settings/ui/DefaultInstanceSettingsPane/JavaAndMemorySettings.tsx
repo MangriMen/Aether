@@ -1,6 +1,7 @@
-import type { JavaAndMemorySettingsFormProps } from '../../../../features/instance-settings/java-and-memory-settings-form';
+import type { JavaAndMemorySettingsFormProps } from '@/features/instance-settings/java-and-memory';
 
-import { JavaAndMemorySettingsForm } from '../../../../features/instance-settings/java-and-memory-settings-form';
+import { JavaAndMemorySettingsForm } from '@/features/instance-settings/java-and-memory';
+
 import { useDefaultJavaAndMemorySettingsHandler } from '../../lib';
 
 export type JavaAndMemorySettingsProps = Omit<

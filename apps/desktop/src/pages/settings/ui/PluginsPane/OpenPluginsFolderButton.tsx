@@ -2,9 +2,9 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import IconMdiFolder from '~icons/mdi/folder';
 
-import { useOpenPluginFolder } from '../../../../entities/plugins';
-import { useTranslation } from '../../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../../shared/ui';
+import { useOpenPluginFolder } from '@/entities/plugins';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type OpenPluginsFolderButtonProps = ComponentProps<'button'>;
 

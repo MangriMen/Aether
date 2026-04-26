@@ -2,9 +2,10 @@ import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
+import { WindowSettingsForm } from '@/features/instance-settings/window';
+
 import type { InstanceSettingsTabProps } from '../model';
 
-import { WindowSettingsForm } from '../../../features/instance-settings/window-settings-form';
 import { useWindowSettingsHandler } from '../lib';
 
 export type WindowTabProps = InstanceSettingsTabProps & { class?: string };

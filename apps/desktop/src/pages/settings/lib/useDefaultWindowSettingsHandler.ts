@@ -1,12 +1,13 @@
 import { createMemo } from 'solid-js';
 
-import type { WindowSettingsSchemaOutput } from '../../../features/instance-settings/window-settings-form';
+import type { WindowSettingsSchemaOutput } from '@/features/instance-settings/window';
 
 import {
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
-} from '../../../entities/settings';
+} from '@/entities/settings';
+
 import {
   defaultInstanceSettingsToWindowSettingsValues,
   windowSettingsValuesToEditDefaultInstanceSettings,

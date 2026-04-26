@@ -2,14 +2,13 @@ import { useNavigate } from '@solidjs/router';
 import IconMdiArrowLeft from '~icons/mdi/arrow-left';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { InstanceHeaderInfo } from '@/pages/instance/ui/InstanceHeaderInfo';
+import type { Instance } from '@/entities/instances';
 
-import type { Instance } from '../../../entities/instances';
-
-import { ROUTES } from '../../../shared/config';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, Image } from '../../../shared/ui';
+import { InstanceHeaderInfo } from '@/pages/instance';
+import { ROUTES } from '@/shared/config';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, Image } from '@/shared/ui';
 
 export type ContentPageInstanceInfoProps = ComponentProps<'div'> & {
   instance?: Instance;

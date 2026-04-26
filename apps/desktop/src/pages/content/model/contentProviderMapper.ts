@@ -1,5 +1,5 @@
-import type { ContentProviderCapabilityMetadata } from '../../../entities/instances';
-import type { CapabilityEntry, Option } from '../../../shared/model';
+import type { ContentProviderCapabilityMetadata } from '@/entities/instances';
+import type { CapabilityEntry, Option } from '@/shared/model';
 
 export type ContentProviderEntry =
   CapabilityEntry<ContentProviderCapabilityMetadata>;

@@ -5,12 +5,13 @@ import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, onMount, Show, splitProps } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
 
-import { useInstance } from '../../../entities/instances';
-import { settingsCache } from '../../../entities/settings/model/settingsQueries/cache';
-import { useTranslation } from '../../../shared/model';
-import { Dialog, DialogContent } from '../../../shared/ui';
+import { useInstance } from '@/entities/instances';
+import { settingsCache } from '@/entities/settings';
+import { useTranslation } from '@/shared/model';
+import { Dialog, DialogContent } from '@/shared/ui';
+
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
 

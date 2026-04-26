@@ -2,17 +2,18 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { HooksSettingsSchemaOutput } from '../../../features/instance-settings/hooks-settings-form';
+import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks';
 
 import {
   type EditInstance,
   isEditInstanceSettingsEmpty,
   type Instance,
-} from '../../../entities/instances';
+} from '@/entities/instances';
+
 import {
   hooksSettingsValuesToEditInstanceSettings,
   instanceSettingsToHooksSettingsValues,
-} from '../model/instanceSettingsConverter';
+} from '../model';
 
 export interface UseHooksSettingsHandler {
   instance: Accessor<Instance>;

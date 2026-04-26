@@ -5,12 +5,14 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField } from '@/shared/ui';
+
 import type { InstallContentButtonProps } from './InstallContentButton';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTextField } from '../../../shared/ui';
 import { InstallContentButton } from './InstallContentButton';
 
 export type ContentControlsProps = ComponentProps<'div'> &

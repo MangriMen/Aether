@@ -4,10 +4,10 @@ import IconMdiCheck from '~icons/mdi/check';
 import IconMdiDownload from '~icons/mdi/download';
 import { createMemo, Show, splitProps, type Component } from 'solid-js';
 
-import type { ButtonProps } from '../../../shared/ui';
+import type { ButtonProps } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
-import { Button } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
 
 export type ContentInstallButtonProps = {
   isInstalling: boolean;

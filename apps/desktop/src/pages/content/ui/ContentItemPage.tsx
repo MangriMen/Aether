@@ -2,18 +2,19 @@ import { useParams } from '@solidjs/router';
 import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import { useContent } from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { useContent } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Separator,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { useContentContext } from '../model';
-import { CONTENT_ITEM_PAGE_TABS_DEFINITION } from '../model/contentItemPageTabs';
+import { CONTENT_ITEM_PAGE_TABS_DEFINITION } from '../model';
 import { ContentItemPageInfo } from './ContentItemPageInfo';
 
 export type ContentItemPageProps = ComponentProps<'div'>;

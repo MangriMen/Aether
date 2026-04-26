@@ -2,15 +2,15 @@ import type { Component } from 'solid-js';
 
 import { splitProps, createMemo, Show } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
-import type { IconButtonProps } from '../../../shared/ui';
+import type { Instance } from '@/entities/instances';
+import type { IconButtonProps } from '@/shared/ui';
 
 import {
   InstancePlayButton,
   InstanceStopButton,
   useInstanceActions,
   useRunningInstancesContext,
-} from '../../../entities/instances';
+} from '@/entities/instances';
 
 export type InstanceActionButtonProps = IconButtonProps & {
   instance: Instance;

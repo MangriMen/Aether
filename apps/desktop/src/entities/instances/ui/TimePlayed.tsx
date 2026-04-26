@@ -3,9 +3,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiClock from '~icons/mdi/clock';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { cn, dayjs, formatTime } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip } from '../../../shared/ui';
+import { cn, dayjs, formatTime } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip } from '@/shared/ui';
+
 import { formatTimePlayedHumanized } from '../lib';
 
 export type LastPlayedDateProps = ComponentProps<'span'> & {

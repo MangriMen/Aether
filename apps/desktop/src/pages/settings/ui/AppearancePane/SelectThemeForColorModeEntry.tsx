@@ -2,9 +2,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps } from 'solid-js';
 
-import { cn } from '../../../../shared/lib';
-import { useTranslation, useThemeContext } from '../../../../shared/model';
-import { SettingsEntry } from '../../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation, useThemeContext } from '@/shared/model';
+import { SettingsEntry } from '@/shared/ui';
+
 import SelectThemeForColorMode from './SelectThemeForColorMode';
 
 export type SelectThemeForColorModeEntryProps = ComponentProps<'div'>;

@@ -4,10 +4,11 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createForm, reset, setError, zodForm } from '@modular-forms/solid';
 import { createEffect, splitProps, untrack } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
+import { Button, CombinedTextField, DialogFooter } from '@/shared/ui';
+
 import type { CreateOfflineAccountFormValues } from '../model';
 
-import { useTranslation } from '../../../shared/model';
-import { Button, CombinedTextField, DialogFooter } from '../../../shared/ui';
 import {
   createOfflineAccountErrorParams,
   CreateOfflineAccountFormSchema,

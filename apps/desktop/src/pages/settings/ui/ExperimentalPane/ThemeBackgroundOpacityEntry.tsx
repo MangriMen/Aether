@@ -1,12 +1,8 @@
 import { createMemo, type Component } from 'solid-js';
 
-import { useAppSettings } from '../../../../entities/settings';
-import { useThemeContext, useTranslation } from '../../../../shared/model';
-import {
-  CombinedSlider,
-  CombinedTextField,
-  SettingsEntry,
-} from '../../../../shared/ui';
+import { useAppSettings } from '@/entities/settings';
+import { useThemeContext, useTranslation } from '@/shared/model';
+import { CombinedSlider, CombinedTextField, SettingsEntry } from '@/shared/ui';
 
 export type ToggleThemeTransparencyEntryProps = {
   class?: string;

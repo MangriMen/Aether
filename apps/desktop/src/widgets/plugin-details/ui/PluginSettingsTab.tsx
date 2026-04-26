@@ -6,15 +6,13 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import { useEditPluginSettings, usePluginSettings } from '@/entities/plugins';
+import { PluginSettingsForm } from '@/features/plugin-settings-form';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { PluginDetailsTabProps } from '../model';
 
-import {
-  useEditPluginSettings,
-  usePluginSettings,
-} from '../../../entities/plugins';
-import { PluginSettingsForm } from '../../../features/plugin-settings-form';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
 import { usePluginSettingsHandler } from '../lib';
 
 export type PluginSettingsTabProps = ComponentProps<'div'> &

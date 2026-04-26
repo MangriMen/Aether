@@ -7,10 +7,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentFilters } from '../../../entities/instances';
+import type { ContentFilters } from '@/entities/instances';
 
-import { useInstance } from '../../../entities/instances';
-import { Separator } from '../../../shared/ui';
+import { useInstance } from '@/entities/instances';
+import { Separator } from '@/shared/ui';
+
 import {
   getFiltersFromInstance,
   getFiltersFromSearchParams,

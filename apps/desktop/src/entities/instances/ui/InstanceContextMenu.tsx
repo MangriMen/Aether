@@ -3,13 +3,13 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { useTranslation } from '../../../shared/model';
+import { useTranslation } from '@/shared/model';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-} from '../../../shared/ui';
+} from '@/shared/ui';
 
 export type InstanceContextMenuProps = ContextMenuRootProps & {
   onPlay?: ComponentProps<'button'>['onClick'];

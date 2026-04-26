@@ -1,4 +1,5 @@
-import { Checkbox, Label } from '../../../shared/ui';
+import { Checkbox, Label } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const CheckboxLab = () => {

@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import { ContentType } from '../../../entities/instances';
+import { ContentType } from '@/entities/instances';
 
 const ContentTypeSchema = z.nativeEnum(ContentType);
 

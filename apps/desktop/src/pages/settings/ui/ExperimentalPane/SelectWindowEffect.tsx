@@ -5,18 +5,14 @@ import {
   useAppSettings,
   useEditAppSettings,
   type WindowEffect,
-} from '../../../../entities/settings';
+} from '@/entities/settings';
 import {
   isSystemTheme,
   useThemeContext,
   useTranslation,
   type Option,
-} from '../../../../shared/model';
-import {
-  CombinedSelect,
-  CombinedTooltip,
-  SettingsEntry,
-} from '../../../../shared/ui';
+} from '@/shared/model';
+import { CombinedSelect, CombinedTooltip, SettingsEntry } from '@/shared/ui';
 
 export type SelectWindowEffectProps = {
   class?: string;

@@ -1,4 +1,4 @@
-import type { Theme } from '../../shared/model';
+import type { Theme } from '@/shared/model';
 
 export const setThemeToDocument = (attribute: string, theme: Theme): void => {
   document.documentElement.setAttribute(attribute, theme);

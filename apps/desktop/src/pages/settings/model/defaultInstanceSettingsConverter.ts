@@ -1,28 +1,28 @@
 import type { PartialValues } from '@modular-forms/solid';
 
+import type {
+  DefaultInstanceSettings,
+  EditDefaultInstanceSettings,
+} from '@/entities/settings';
+import type {
+  HooksSettingsSchemaInput,
+  HooksSettingsSchemaOutput,
+} from '@/features/instance-settings/hooks';
+import type {
+  JavaAndMemorySettingsSchemaInput,
+  JavaAndMemorySettingsSchemaOutput,
+} from '@/features/instance-settings/java-and-memory';
+import type {
+  WindowSettingsSchemaInput,
+  WindowSettingsSchemaOutput,
+} from '@/features/instance-settings/window';
+
 import {
   envVarsToString,
   launchArgsToString,
   stringToEnvVars,
   stringToLaunchArgs,
-} from '@/widgets/instance-settings-dialog/lib';
-
-import type {
-  DefaultInstanceSettings,
-  EditDefaultInstanceSettings,
-} from '../../../entities/settings/model/defaultInstanceSettings';
-import type {
-  HooksSettingsSchemaInput,
-  HooksSettingsSchemaOutput,
-} from '../../../features/instance-settings/hooks-settings-form';
-import type {
-  JavaAndMemorySettingsSchemaInput,
-  JavaAndMemorySettingsSchemaOutput,
-} from '../../../features/instance-settings/java-and-memory-settings-form';
-import type {
-  WindowSettingsSchemaInput,
-  WindowSettingsSchemaOutput,
-} from '../../../features/instance-settings/window-settings-form';
+} from '@/widgets/instance-settings-dialog';
 
 export const defaultInstanceSettingsToWindowSettingsValues = (
   settings: DefaultInstanceSettings | undefined,

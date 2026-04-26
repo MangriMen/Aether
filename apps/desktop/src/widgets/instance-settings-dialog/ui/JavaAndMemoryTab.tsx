@@ -1,8 +1,9 @@
 import { splitProps, type Component } from 'solid-js';
 
+import { JavaAndMemorySettingsForm } from '@/features/instance-settings/java-and-memory';
+
 import type { InstanceSettingsTabProps } from '../model';
 
-import { JavaAndMemorySettingsForm } from '../../../features/instance-settings/java-and-memory-settings-form';
 import { useJavaAndMemorySettingsHandler } from '../lib/useJavaAndMemorySettingsHandler';
 
 export type JavaAndMemoryTabProps = InstanceSettingsTabProps & {

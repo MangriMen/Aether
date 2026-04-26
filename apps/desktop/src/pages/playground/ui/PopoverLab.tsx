@@ -1,5 +1,6 @@
-import { Button } from '../../../shared/ui';
-import { Popover, PopoverContent, PopoverTrigger } from '../../../shared/ui';
+import { Button } from '@/shared/ui';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const PopoverLab = () => {

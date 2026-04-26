@@ -6,8 +6,8 @@ import {
   useAppSettings,
   useEditAppSettings,
   type ActionOnInstanceLaunchType,
-} from '../../../../entities/settings';
-import { useTranslation, type Option } from '../../../../shared/model';
+} from '@/entities/settings';
+import { useTranslation, type Option } from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
   SettingsEntry,
-} from '../../../../shared/ui';
+} from '@/shared/ui';
 
 export type SelectActionOnInstanceLaunchProps = {
   class?: string;

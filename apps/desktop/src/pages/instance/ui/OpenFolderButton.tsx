@@ -3,11 +3,11 @@ import type { PolymorphicProps } from '@kobalte/core';
 import IconMdiFolder from '~icons/mdi/folder';
 import { splitProps, type Component, type ValidComponent } from 'solid-js';
 
-import type { IconButtonProps } from '../../../shared/ui';
+import type { IconButtonProps } from '@/shared/ui';
 
-import { useRevealInExplorer } from '../../../entities/instances';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+import { useRevealInExplorer } from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {

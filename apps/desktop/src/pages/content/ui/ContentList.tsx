@@ -7,10 +7,11 @@ import {
   Match,
 } from 'solid-js';
 
-import type { ContentItem } from '../../../entities/instances';
+import type { ContentItem } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import { ContentListItem } from './ContentListItem';
 import { ContentListSkeleton } from './ContentListSkeleton';
 

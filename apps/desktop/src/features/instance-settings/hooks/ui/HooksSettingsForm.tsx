@@ -8,10 +8,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { OverrideCheckbox } from '../../../../entities/settings';
-import { cn, isNil, useFieldOnChangeSync } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
-import { CombinedTextField, LabeledField } from '../../../../shared/ui';
+import { OverrideCheckbox } from '@/entities/settings';
+import { cn, isNil, useFieldOnChangeSync } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField, LabeledField } from '@/shared/ui';
+
 import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
 import {
   HooksSettingsSchema,

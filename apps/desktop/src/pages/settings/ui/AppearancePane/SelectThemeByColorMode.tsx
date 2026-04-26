@@ -7,16 +7,16 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
-import type { Option, ThemeConfig } from '../../../../shared/model';
+import type { Option, ThemeConfig } from '@/shared/model';
 
-import { THEME_BY_MODE, useThemeContext } from '../../../../shared/model';
+import { THEME_BY_MODE, useThemeContext } from '@/shared/model';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../../shared/ui';
+} from '@/shared/ui';
 
 export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =
   PolymorphicProps<T, { disabled?: boolean; onChange?: never }> & {

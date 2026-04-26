@@ -1,4 +1,5 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const TabsLab = () => {

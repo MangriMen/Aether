@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/no-commented-code */
-import type { Plugin } from '../../../entities/plugins';
-import type { TabConfig } from '../../../shared/model';
+import type { Plugin } from '@/entities/plugins';
+import type { TabConfig } from '@/shared/model';
 
 import { PluginCapabilitiesTab } from '../ui/PluginCapabilitiesTab';
 // import { PluginDescriptionTab } from '../ui/PluginDescriptionTab';

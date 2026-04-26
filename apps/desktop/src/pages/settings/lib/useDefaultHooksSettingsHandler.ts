@@ -1,12 +1,13 @@
 import { createMemo } from 'solid-js';
 
-import type { HooksSettingsSchemaOutput } from '../../../features/instance-settings/hooks-settings-form';
+import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks';
 
 import {
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
-} from '../../../entities/settings';
+} from '@/entities/settings';
+
 import {
   defaultInstanceSettingsToHooksSettingsValues,
   hooksSettingsValuesToEditDefaultInstanceSettings,

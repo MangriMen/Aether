@@ -10,13 +10,7 @@ import type {
   InstallContentParams,
   Instance,
   ProviderId,
-} from '../../../entities/instances';
-import type {
-  ContentContextActions,
-  ContentContextType,
-  ContentContextValue,
-} from '../model/contentContext';
-import type { ContentFiltersLock } from '../model/contentFiltersLock';
+} from '@/entities/instances';
 
 import {
   getContentIdFromUpdateInfo,
@@ -24,9 +18,17 @@ import {
   isAtomicContentType,
   useInstallContent,
   useInstances,
-} from '../../../entities/instances';
-import { ContentContext } from '../model/contentContext';
-import { createInstalledContentIndexStore } from '../model/installedContentIndexStore';
+} from '@/entities/instances';
+
+import type {
+  ContentContextActions,
+  ContentContextType,
+  ContentContextValue,
+} from '../model';
+import type { ContentFiltersLock } from '../model';
+
+import { ContentContext } from '../model';
+import { createInstalledContentIndexStore } from '../model';
 
 export type ContentContextProviderProps = {
   children: JSX.Element;

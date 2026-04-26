@@ -2,7 +2,8 @@ import IconMdiBold from '~icons/mdi/format-bold';
 import IconMdiItalic from '~icons/mdi/format-italic';
 import IconMdiUnderline from '~icons/mdi/format-underline';
 
-import { ToggleGroup, ToggleGroupItem } from '../../../shared/ui';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const ToggleGroupLab = () => {

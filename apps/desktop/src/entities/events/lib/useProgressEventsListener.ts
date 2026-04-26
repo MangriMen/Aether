@@ -2,11 +2,11 @@ import { type UnlistenFn } from '@tauri-apps/api/event';
 import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
+import { logDebug } from '@/shared/lib';
 import { useProgressStore } from '@/widgets/app-titlebar';
 
 import type { ProgressEvent } from '../model';
 
-import { logDebug } from '../../../shared/lib';
 import { commands, events } from '../api';
 
 export const useProgressEventsListener = () => {

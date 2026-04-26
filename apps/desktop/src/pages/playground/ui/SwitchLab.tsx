@@ -1,9 +1,5 @@
-import {
-  Switch,
-  SwitchControl,
-  SwitchLabel,
-  SwitchThumb,
-} from '../../../shared/ui';
+import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const SwitchLab = () => {

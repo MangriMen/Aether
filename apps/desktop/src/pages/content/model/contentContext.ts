@@ -8,7 +8,8 @@ import type {
   ContentItem,
   Instance,
   ProviderId,
-} from '../../../entities/instances';
+} from '@/entities/instances';
+
 import type { ContentFiltersLock } from './contentFiltersLock';
 import type { InstalledContentIndexStore } from './installedContentIndexStore';
 

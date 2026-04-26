@@ -1,8 +1,9 @@
 import { batch, createEffect, on } from 'solid-js';
 
-import type { ThemeContextValue } from '../../shared/model';
+import type { ThemeContextValue } from '@/shared/model';
 
-import { createPrefersReducedMotion } from '../../shared/lib';
+import { createPrefersReducedMotion } from '@/shared/lib';
+
 import { showPrefersReducedMotionInfo } from './showPrefersReducedMotionInfo';
 
 export const useReducedMotionSync = (

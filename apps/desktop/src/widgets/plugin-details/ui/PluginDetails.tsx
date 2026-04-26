@@ -7,9 +7,10 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { pluginsCache, type Plugin } from '../../../entities/plugins';
-import { cn } from '../../../shared/lib';
-import { Image, Separator } from '../../../shared/ui';
+import { pluginsCache, type Plugin } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
+import { Image, Separator } from '@/shared/ui';
+
 import { PluginDetailsActions } from './PluginDetailsActions';
 import { PluginDetailsBody } from './PluginDetailsBody';
 import { PluginDetailsInfo } from './PluginDetailsInfo';

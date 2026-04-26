@@ -10,10 +10,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentType, ContentVersion } from '../../../entities/instances';
+import type { ContentType, ContentVersion } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { IconButton } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { IconButton } from '@/shared/ui';
+
 import { useContentContext } from '../model';
 
 export type ContentVersionActionsProps = ComponentProps<'div'> & {

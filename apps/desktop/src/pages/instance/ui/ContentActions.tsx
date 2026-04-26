@@ -10,9 +10,9 @@ import {
   useRemoveContents,
   useRevealInExplorer,
   type ContentFile,
-} from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTooltip,
   DropdownMenu,
@@ -23,7 +23,7 @@ import {
   Switch,
   SwitchControl,
   SwitchThumb,
-} from '../../../shared/ui';
+} from '@/shared/ui';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;

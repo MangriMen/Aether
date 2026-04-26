@@ -1,4 +1,4 @@
-import type { ContentFilters } from '../../../entities/instances';
+import type { ContentFilters } from '@/entities/instances';
 
 export const isFiltersEqual = (
   a: Partial<ContentFilters> | undefined,

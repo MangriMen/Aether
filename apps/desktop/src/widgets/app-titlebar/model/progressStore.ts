@@ -1,6 +1,6 @@
 import { createStore } from 'solid-js/store';
 
-import { type ProgressEvent } from '../../../entities/events';
+import { type ProgressEvent } from '@/entities/events';
 
 export interface ProgressStore {
   payloads: Record<string, ProgressEvent>;

@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/solid-query';
 
-import { useTranslation } from '../../../shared/model';
-import { showToast } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
+
 import { commands } from '../api';
 import { updateKeys } from './queryKeys';
 

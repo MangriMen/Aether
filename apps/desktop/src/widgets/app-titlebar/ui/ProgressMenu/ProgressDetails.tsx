@@ -6,8 +6,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { ProgressCard, type ProgressEvent } from '../../../../entities/events';
-import { cn } from '../../../../shared/lib';
+import { ProgressCard, type ProgressEvent } from '@/entities/events';
+import { cn } from '@/shared/lib';
 
 export type ProgressDetailsProps = ComponentProps<'div'> & {
   payloads: Accessor<ProgressEvent[]>;

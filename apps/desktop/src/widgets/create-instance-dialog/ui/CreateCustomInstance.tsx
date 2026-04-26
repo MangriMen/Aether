@@ -13,23 +13,23 @@ import {
   Switch,
 } from 'solid-js';
 
-import type { NewInstance } from '../../../entities/instances';
+import type { NewInstance } from '@/entities/instances';
 import type {
   ModdedLoaderVersion,
   Version,
   ModLoader,
-} from '../../../entities/minecraft';
+} from '@/entities/minecraft';
 
 import {
   IncludeSnapshotsCheckbox,
   useCreateInstance,
-} from '../../../entities/instances';
+} from '@/entities/instances';
 import {
   useLoaderVersionManifest,
   useMinecraftVersionManifest,
-} from '../../../entities/minecraft';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+} from '@/entities/minecraft';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   Collapsible,
@@ -37,7 +37,8 @@ import {
   CombinedTextField,
   DialogFooter,
   LabeledField,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { loaderManifestToMapped } from '../lib';
 import {
   CreateCustomInstanceSchema,

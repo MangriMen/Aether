@@ -1,7 +1,7 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
-import { CombinedTooltip } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { CombinedTooltip } from '@/shared/ui';
 
 export type AllowedPathComponentProps = ComponentProps<'div'> & {
   value?: string;

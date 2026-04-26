@@ -10,12 +10,12 @@ import {
   createMemo,
 } from 'solid-js';
 
-import type { TabsProps } from '../../../shared/ui';
+import type { TabsProps } from '@/shared/ui';
 
-import { useCheckUpdate } from '../../../entities/updates';
-import { checkIsUpdateAvailable } from '../../../entities/updates/model';
-import { ROUTES } from '../../../shared/config';
-import { useTranslation } from '../../../shared/model';
+import { useCheckUpdate } from '@/entities/updates';
+import { checkIsUpdateAvailable } from '@/entities/updates';
+import { ROUTES } from '@/shared/config';
+import { useTranslation } from '@/shared/model';
 import {
   Badge,
   Button,
@@ -23,9 +23,10 @@ import {
   SettingsTabsList,
   SettingsTabsTrigger,
   Tabs,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { useOnMountSettingsPage, useSettingsPageTabs } from '../lib';
-import { isSettingsTab, SettingsTab } from '../model/settingsTabs';
+import { isSettingsTab, SettingsTab } from '../model';
 import { VersionInfo } from './VersionInfo';
 
 export type SettingsPageProps<T extends ValidComponent> = ComponentProps<T> &

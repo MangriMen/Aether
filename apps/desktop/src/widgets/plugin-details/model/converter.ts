@@ -1,8 +1,5 @@
-import type {
-  EditPluginSettings,
-  PluginSettings,
-} from '../../../entities/plugins';
-import type { PluginSettingsSchemaInput } from '../../../features/plugin-settings-form';
+import type { EditPluginSettings, PluginSettings } from '@/entities/plugins';
+import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 export const pluginSettingsToPluginSettingsValues = (
   settings: PluginSettings | null | undefined,

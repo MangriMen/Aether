@@ -1,4 +1,4 @@
-import type { SettingsTab } from '@/pages/settings/model/settingsTabs';
+import type { SettingsTab } from '@/pages/settings';
 
 export const ROUTES = {
   HOME: '/',

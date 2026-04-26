@@ -2,9 +2,9 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import type { AllowedItemProps } from '../model';
+import { cn } from '@/shared/lib';
 
-import { cn } from '../../../shared/lib';
+import type { AllowedItemProps } from '../model';
 
 export type FixedItemsListProps<TValue, TError> = ComponentProps<'ul'> & {
   item: Component<AllowedItemProps<TValue, TError>>;

@@ -2,9 +2,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { Match, splitProps, Switch } from 'solid-js';
 
+import { cn } from '@/shared/lib';
+import { Image } from '@/shared/ui';
+
 import { type Instance } from '..';
-import { cn } from '../../../shared/lib';
-import { Image } from '../../../shared/ui';
 import { InstanceTitle } from './InstanceTitle';
 
 export type InstanceCardProps = ComponentProps<'div'> & {

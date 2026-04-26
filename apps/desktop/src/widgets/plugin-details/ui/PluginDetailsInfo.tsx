@@ -11,10 +11,10 @@ import {
   checkIsApiCompatible,
   useApiVersion,
   type Plugin,
-} from '../../../entities/plugins';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip } from '../../../shared/ui';
+} from '@/entities/plugins';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip } from '@/shared/ui';
 
 export type PluginDetailsInfoProps = ComponentProps<'div'> & {
   plugin: Plugin;

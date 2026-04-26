@@ -5,9 +5,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentVersion } from '../../../entities/instances';
+import type { ContentVersion } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
 
 export interface ContentVersionTypeBadgeProps {
   type: ContentVersion['versionType'];

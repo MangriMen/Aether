@@ -20,11 +20,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { WindowSettingsSchemaInput } from '../../../features/instance-settings/window-settings-form';
-import type { TFunction } from '../../../shared/model';
+import type { WindowSettingsSchemaInput } from '@/features/instance-settings/window';
+import type { TFunction } from '@/shared/model';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTextField,
   DropdownMenu,
@@ -33,7 +33,8 @@ import {
   DropdownMenuTrigger,
   IconButton,
   LabeledField,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { RESOLUTION_OPTIONS } from '../model';
 
 export type ResolutionFieldProps = Omit<

@@ -1,11 +1,12 @@
 import { splitProps, type Component, For, createMemo } from 'solid-js';
 
-import type { Plugin } from '../../../entities/plugins';
-import type { TabsProps } from '../../../shared/ui';
+import type { Plugin } from '@/entities/plugins';
+import type { TabsProps } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+
 import { PLUGIN_DETAILS_TABS, PluginDetailsTabs } from '../model';
 
 export type PluginDetailsBodyProps = TabsProps & {

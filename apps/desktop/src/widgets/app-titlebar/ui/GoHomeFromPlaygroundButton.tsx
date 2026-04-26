@@ -2,10 +2,10 @@ import { useNavigate } from '@solidjs/router';
 import IconMdiChevronLeft from '~icons/mdi/chevron-left';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { ROUTES } from '../../../shared/config';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button } from '../../../shared/ui';
+import { ROUTES } from '@/shared/config';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
 
 export type GoHomeFromPlaygroundButtonProps = ComponentProps<'div'>;
 

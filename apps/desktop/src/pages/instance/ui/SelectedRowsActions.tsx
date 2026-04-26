@@ -17,10 +17,10 @@ import {
   useRemoveContents,
   type Instance,
   type ContentFile,
-} from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+} from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];

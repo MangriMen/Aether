@@ -3,10 +3,11 @@ import type { Accessor } from 'solid-js';
 import { type SubmitHandler } from '@modular-forms/solid';
 import { splitProps, type Component } from 'solid-js';
 
-import type { RuntimeConfig } from '../../../entities/plugins';
+import type { RuntimeConfig } from '@/entities/plugins';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import {
   usePluginSettingsForm,
   useResetPluginSettingsFormValues,

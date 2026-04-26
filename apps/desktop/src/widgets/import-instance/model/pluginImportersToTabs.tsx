@@ -1,7 +1,9 @@
-import type { ImporterCapabilityEntry } from '../../../entities/plugins';
+import type { ImporterCapabilityEntry } from '@/entities/plugins';
+
+import { Image } from '@/shared/ui';
+
 import type { ImporterTabConfig } from './importerTabConfig';
 
-import { Image } from '../../../shared/ui';
 import { ImportInstanceForm } from '../ui/ImportInstanceForm';
 
 export const importerToTab = ({

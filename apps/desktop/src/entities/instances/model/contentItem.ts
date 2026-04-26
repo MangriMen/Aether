@@ -1,4 +1,4 @@
-import type { ContentSearchOutputValues } from '@/pages/content/model/validation';
+import type { ContentSearchOutputValues } from '@/pages/content';
 
 import type {
   AtomicInstallParamsDto,

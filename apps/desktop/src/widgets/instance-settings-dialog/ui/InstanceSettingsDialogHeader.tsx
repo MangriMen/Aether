@@ -1,10 +1,10 @@
 import IconMdiChevronRight from '~icons/mdi/chevron-right';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
 
-import { useTranslation } from '../../../shared/model';
-import { DialogHeader, DialogTitle, Image } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
 export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {
   instance: Instance;

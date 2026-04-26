@@ -3,9 +3,9 @@ import type { Component, ComponentProps } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileImport from '~icons/mdi/file-import';
 
-import { useImportPlugins } from '../../../../entities/plugins';
-import { useTranslation } from '../../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../../shared/ui';
+import { useImportPlugins } from '@/entities/plugins';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type InstallFromPluginPackageButtonProps = ComponentProps<'div'>;
 

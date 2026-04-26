@@ -2,10 +2,11 @@ import { getValues, type PartialValues } from '@modular-forms/solid';
 import { createMemo, Show, splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
-import { ResolutionField } from '../../../../entities/settings';
-import { OverrideCheckbox } from '../../../../entities/settings';
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
+import { ResolutionField } from '@/entities/settings';
+import { OverrideCheckbox } from '@/entities/settings';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import {
   useResetWindowSettingsFormValues,
   useWindowSettingsForm,

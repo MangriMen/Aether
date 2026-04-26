@@ -1,4 +1,5 @@
-import { Skeleton } from '../../../shared/ui';
+import { Skeleton } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const SkeletonLab = () => {

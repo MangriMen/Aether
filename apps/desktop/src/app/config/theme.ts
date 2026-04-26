@@ -1,4 +1,4 @@
-import { type ThemeConfig, type ThemeContextValue } from '../../shared/model';
+import { type ThemeConfig, type ThemeContextValue } from '@/shared/model';
 
 export const THEME_ATTRIBUTE = 'data-theme';
 export const TRANSPARENCY_PROPERTY = '--transparency';

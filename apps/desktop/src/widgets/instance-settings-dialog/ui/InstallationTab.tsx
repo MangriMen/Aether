@@ -7,15 +7,12 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { InstanceSettingsTabProps } from '../model';
+import { useInstallInstance, useUpdateInstance } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, Image, LabeledField } from '@/shared/ui';
 
-import {
-  useInstallInstance,
-  useUpdateInstance,
-} from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, Image, LabeledField } from '../../../shared/ui';
+import type { InstanceSettingsTabProps } from '../model';
 
 export type InstallationTabProps = ComponentProps<'div'> &
   InstanceSettingsTabProps;

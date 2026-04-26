@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { createMemo, type Accessor } from 'solid-js';
 
+import { showError } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { EditInstanceDto } from '../../api';
 
-import { showError } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
 import { commands } from '../../api';
 import { invalidateInstanceData } from './cache';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';

@@ -1,8 +1,8 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { Plugin } from '../../../entities/plugins';
+import type { Plugin } from '@/entities/plugins';
 
-import { TogglePluginButton } from '../../../features/toggle-plugin-button';
+import { TogglePluginButton } from '@/features/toggle-plugin-button';
 
 export type PluginDetailsActionsProps = ComponentProps<'div'> & {
   plugin: Plugin;

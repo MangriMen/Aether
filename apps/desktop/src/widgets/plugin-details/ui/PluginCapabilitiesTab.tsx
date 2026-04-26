@@ -6,11 +6,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { PluginDetailsTabProps } from '../model';
+import { PluginCapabilityCard } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
-import { PluginCapabilityCard } from '../../../entities/plugins';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import type { PluginDetailsTabProps } from '../model';
 
 export type PluginCapabilitiesTabProps = ComponentProps<'div'> &
   PluginDetailsTabProps;

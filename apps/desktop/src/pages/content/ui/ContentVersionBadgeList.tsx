@@ -2,10 +2,10 @@ import type { ComponentProps } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import type { BadgeProps } from '../../../shared/ui';
+import type { BadgeProps } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { Badge } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { Badge } from '@/shared/ui';
 
 export interface ContentVersionBadgeListProps {
   items: string[];

@@ -1,9 +1,10 @@
 import { For } from 'solid-js';
 
-import type { ButtonProps, ShowToastParams } from '../../../shared/ui';
+import type { ButtonProps, ShowToastParams } from '@/shared/ui';
 
-import { Button } from '../../../shared/ui';
-import { showToast, Toaster } from '../../../shared/ui';
+import { Button } from '@/shared/ui';
+import { showToast, Toaster } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 const TOAST_VARIANTS: {

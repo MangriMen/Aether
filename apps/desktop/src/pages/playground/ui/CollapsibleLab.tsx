@@ -4,7 +4,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const CollapsibleLab = () => {

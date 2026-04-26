@@ -5,10 +5,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentItemPageTabProps } from '../../model/contentItemPageTabs';
+import { useContentVersion } from '@/entities/instances';
+import { cn } from '@/shared/lib';
 
-import { useContentVersion } from '../../../../entities/instances';
-import { cn } from '../../../../shared/lib';
+import type { ContentItemPageTabProps } from '../../model';
+
 import { useContentContext } from '../../model';
 import { ContentVersionsTable } from '../ContentVersionsTable';
 

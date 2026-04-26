@@ -2,12 +2,13 @@ import type { ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { ButtonProps } from '../../../shared/ui';
-import type { AccountType } from '../model';
+import type { ButtonProps } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, CombinedTooltip } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, CombinedTooltip } from '@/shared/ui';
+
+import type { AccountType } from '../model';
 
 export type AccountButtonProps = ButtonProps & {
   username: string;

@@ -11,9 +11,9 @@ import {
   useEnablePlugin,
   usePluginStates,
   type Plugin,
-} from '../../../entities/plugins';
-import { useTranslation } from '../../../shared/model';
-import { Button } from '../../../shared/ui';
+} from '@/entities/plugins';
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
 
 export type TogglePluginButtonProps = ComponentProps<'div'> & {
   plugin: Plugin;

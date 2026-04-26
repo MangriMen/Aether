@@ -8,19 +8,21 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentSearchParams } from '../../../entities/instances';
-import type { ContentType } from '../../../entities/instances';
-import type { Option } from '../../../shared/model';
-import type { ContentProviderEntry } from '../model';
+import type { ContentSearchParams } from '@/entities/instances';
+import type { ContentType } from '@/entities/instances';
+import type { Option } from '@/shared/model';
 
 import {
   CONTENT_TYPES,
   isModLoader,
   useSearchContent,
-} from '../../../entities/instances';
-import { cn, debounce } from '../../../shared/lib';
+} from '@/entities/instances';
+import { cn, debounce } from '@/shared/lib';
+
+import type { ContentProviderEntry } from '../model';
+
 import { useContentBrowserFilters } from '../lib/useContentBrowserFilters';
-import { SEARCH_QUERY_DEBOUNCE_DELAY } from '../model/constants';
+import { SEARCH_QUERY_DEBOUNCE_DELAY } from '../model';
 import { ContentList } from './ContentList';
 import { ContentProviderSelect } from './ContentProviderSelect';
 import { ContentSearchCard } from './ContentSearchCard';

@@ -1,6 +1,6 @@
 import { splitProps, type Component } from 'solid-js';
 
-import type { PluginCardBaseProps } from '../../../entities/plugins';
+import type { PluginCardBaseProps } from '@/entities/plugins';
 
 import {
   PluginCard,
@@ -9,8 +9,8 @@ import {
   useEnablePlugin,
   usePluginStates,
   useRemovePlugin,
-} from '../../../entities/plugins';
-import { ContextMenuTrigger } from '../../../shared/ui';
+} from '@/entities/plugins';
+import { ContextMenuTrigger } from '@/shared/ui';
 
 export type PluginControlledCardProps = {
   class?: string;

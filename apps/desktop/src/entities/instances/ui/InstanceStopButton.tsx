@@ -3,10 +3,10 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import IconMdiStop from '~icons/mdi/stop';
 
-import type { IconButtonProps } from '../../../shared/ui';
+import type { IconButtonProps } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type InstanceStopButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

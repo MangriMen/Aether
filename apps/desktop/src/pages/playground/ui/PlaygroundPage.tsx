@@ -2,7 +2,8 @@ import type { RouteSectionProps } from '@solidjs/router';
 
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
+
 import { BadgeLab } from './BadgeLab';
 import { ButtonsLab } from './ButtonsLab';
 import { CheckboxLab } from './CheckboxLab';

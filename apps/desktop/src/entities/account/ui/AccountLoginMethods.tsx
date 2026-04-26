@@ -4,11 +4,11 @@ import IconMdiCloudOffOutline from '~icons/mdi/cloud-off-outline';
 import IconMdiLoginVariant from '~icons/mdi/login-variant';
 import { splitProps } from 'solid-js';
 
-import type { AccountType } from '../model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, CombinedTooltip } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, CombinedTooltip } from '../../../shared/ui';
+import type { AccountType } from '../model';
 
 export type AccountLoginMethodsProps = ComponentProps<'div'> & {
   onLogin: (type: AccountType) => void;

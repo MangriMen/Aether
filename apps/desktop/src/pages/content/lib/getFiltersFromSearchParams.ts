@@ -1,6 +1,7 @@
-import type { ContentFilters } from '../../../entities/instances';
-import type { ContentFiltersLock } from '../model/contentFiltersLock';
-import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
+import type { ContentFilters } from '@/entities/instances';
+
+import type { ContentFiltersLock } from '../model';
+import type { ContentPageSearchParams } from '../model';
 
 export const getFiltersFromSearchParams = (
   searchParams: ContentPageSearchParams,

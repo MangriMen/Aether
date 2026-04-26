@@ -1,4 +1,5 @@
-import { Separator } from '../../../shared/ui';
+import { Separator } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const SeparatorLab = () => {

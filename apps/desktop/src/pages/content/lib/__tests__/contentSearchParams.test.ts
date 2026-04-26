@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
-import * as instances from '../../../../entities/instances';
+import * as instances from '@/entities/instances';
+
 import {
   decodeContentSearchParams,
   encodeContentSearchParams,

@@ -3,21 +3,16 @@ import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import { splitProps, type Component, type JSX } from 'solid-js';
 
-import type { ImportInstance } from '../../../entities/instances';
-import type {
-  ImporterCapability,
-  PluginMetadata,
-} from '../../../entities/plugins';
+import type { ImportInstance } from '@/entities/instances';
+import type { ImporterCapability, PluginMetadata } from '@/entities/plugins';
+
+import { useImportInstance } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField, CombinedTooltip, IconButton } from '@/shared/ui';
+
 import type { ImportInstanceSchemaInput } from '../model';
 
-import { useImportInstance } from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import {
-  CombinedTextField,
-  CombinedTooltip,
-  IconButton,
-} from '../../../shared/ui';
 import { ImportInstanceSchema } from '../model';
 
 export type ImportInstanceFormProps = {

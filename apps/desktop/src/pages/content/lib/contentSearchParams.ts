@@ -1,13 +1,13 @@
 import type { SearchParams } from '@solidjs/router';
 
-import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
-
-import { isContentType } from '../../../entities/instances';
+import { isContentType } from '@/entities/instances';
 import {
   parseSearchParamToNumber,
   parseSearchParamToString,
   parseSearchParamToStringArray,
-} from '../../../shared/lib';
+} from '@/shared/lib';
+
+import type { ContentPageSearchParams } from '../model';
 
 export const decodeContentSearchParams = (
   searchParams: Partial<SearchParams>,

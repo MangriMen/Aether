@@ -1,20 +1,20 @@
 import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, createSignal, type Accessor } from 'solid-js';
 
-import { InstallContentDialog } from '@/widgets/install-content-dialog';
-
-import type { ContentPageSearchParams } from '../model';
-
 import {
   CHECK_COMPATIBILITY_QUERY,
   ContentType,
   useInstances,
   type ContentItem,
-} from '../../../entities/instances';
-import { ROUTES } from '../../../shared/config';
-import { searchParamsToQueryString } from '../../../shared/lib';
-import { showDialog, closeDialog } from '../../../shared/model';
-import { useContentContext } from '../model/contentContext';
+} from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
+import { searchParamsToQueryString } from '@/shared/lib';
+import { showDialog, closeDialog } from '@/shared/model';
+import { InstallContentDialog } from '@/widgets/install-content-dialog';
+
+import type { ContentPageSearchParams } from '../model';
+
+import { useContentContext } from '../model';
 import { encodeContentSearchParams } from './contentSearchParams';
 
 export const useContentListItem = (item: Accessor<ContentItem>) => {

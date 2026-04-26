@@ -1,8 +1,9 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
-import { Separator, SettingsPane } from '../../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Separator, SettingsPane } from '@/shared/ui';
+
 import { HooksSettings } from './HooksSettings';
 import { JavaAndMemorySettings } from './JavaAndMemorySettings';
 import { WindowSettings } from './WindowSettings';

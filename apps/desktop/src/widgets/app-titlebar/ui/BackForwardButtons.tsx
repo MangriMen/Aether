@@ -3,8 +3,8 @@ import IconMdiArrowLeft from '~icons/mdi/arrow-left';
 import IconMdiArrowRight from '~icons/mdi/arrow-right';
 import { type Component, type ComponentProps } from 'solid-js';
 
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type BackForwardButtonsProps = ComponentProps<'div'>;
 

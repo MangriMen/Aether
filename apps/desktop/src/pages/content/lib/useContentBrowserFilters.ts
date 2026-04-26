@@ -2,8 +2,8 @@ import type { Accessor } from 'solid-js';
 
 import { createEffect, createMemo } from 'solid-js';
 
-import type { ContentFilters, ContentType } from '../../../entities/instances';
-import type { Option } from '../../../shared/model';
+import type { ContentFilters, ContentType } from '@/entities/instances';
+import type { Option } from '@/shared/model';
 
 import {
   DEFAULT_FORM_VALUES,

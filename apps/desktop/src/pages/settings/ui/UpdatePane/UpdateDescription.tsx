@@ -2,10 +2,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps, Show } from 'solid-js';
 
-import type { UpdateStatus } from '../../../../entities/updates';
+import type { UpdateStatus } from '@/entities/updates';
 
-import { cn, dayjs, formatTime } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
+import { cn, dayjs, formatTime } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 export interface UpdateDescriptionProps extends ComponentProps<'div'> {
   isUpdateAvailable: boolean;

@@ -3,11 +3,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import { useLocation } from '@solidjs/router';
 import { Show, splitProps } from 'solid-js';
 
+import { ROUTES } from '@/shared/config';
 import { AppSidebar } from '@/widgets/app-sidebar';
 import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
-
-import { ROUTES } from '../../shared/config';
 
 export type MainLayoutProps = ComponentProps<'div'>;
 

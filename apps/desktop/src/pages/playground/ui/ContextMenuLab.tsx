@@ -16,7 +16,8 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const ContextMenuLab = () => {

@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'solid-js';
 
-import type { ContentItem } from '../../../entities/instances';
-import type { TabConfig } from '../../../shared/model';
+import type { ContentItem } from '@/entities/instances';
+import type { TabConfig } from '@/shared/model';
 
 import { ContentDescriptionTab } from '../ui/ContentItemPageTabs/ContentDescriptionTab';
 import { ContentVersionsTab } from '../ui/ContentItemPageTabs/ContentVersionsTab';

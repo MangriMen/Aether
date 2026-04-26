@@ -3,10 +3,11 @@ import type { RowModel } from '@tanstack/solid-table';
 import IconMdiReload from '~icons/mdi/reload';
 import { Show, type Component } from 'solid-js';
 
-import type { Instance, ContentFile } from '../../../entities/instances';
+import type { Instance, ContentFile } from '@/entities/instances';
 
-import { useTranslation } from '../../../shared/model';
-import { Button } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { Button } from '@/shared/ui';
+
 import { SelectedRowsActions } from './SelectedRowsActions';
 
 export type HeaderActionsProps = {

@@ -2,11 +2,12 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { useCheckUpdate, useUpdate } from '../../../../entities/updates';
-import { checkIsUpdateAvailable } from '../../../../entities/updates/model';
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
-import { Button, SettingsEntry, showToast } from '../../../../shared/ui';
+import { useCheckUpdate, useUpdate } from '@/entities/updates';
+import { checkIsUpdateAvailable } from '@/entities/updates';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, SettingsEntry, showToast } from '@/shared/ui';
+
 import { UpdateDescription } from './UpdateDescription';
 import { WhatsNew } from './WhatsNew';
 

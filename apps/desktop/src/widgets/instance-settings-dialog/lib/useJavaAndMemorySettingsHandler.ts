@@ -2,16 +2,16 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import { defaultInstanceSettingsToJavaAndMemorySettingsValues } from '@/pages/settings';
-
-import type { DefaultInstanceSettings } from '../../../entities/settings';
-import type { JavaAndMemorySettingsSchemaOutput } from '../../../features/instance-settings/java-and-memory-settings-form';
+import type { DefaultInstanceSettings } from '@/entities/settings';
+import type { JavaAndMemorySettingsSchemaOutput } from '@/features/instance-settings/java-and-memory';
 
 import {
   type EditInstance,
   isEditInstanceSettingsEmpty,
   type Instance,
-} from '../../../entities/instances';
+} from '@/entities/instances';
+import { defaultInstanceSettingsToJavaAndMemorySettingsValues } from '@/pages/settings';
+
 import {
   instanceSettingsToJavaAndMemorySettingsValues,
   javaAndMemorySettingsValuesToEditInstanceSettings,

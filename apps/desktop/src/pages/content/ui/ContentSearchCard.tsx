@@ -7,9 +7,10 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { type ContentType } from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { CombinedPagination, Skeleton } from '../../../shared/ui';
+import { type ContentType } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { CombinedPagination, Skeleton } from '@/shared/ui';
+
 import { ContentSearch } from './ContentSearch';
 import { ItemsPerPageSelect } from './ItemsPerPageSelect';
 

@@ -1,8 +1,5 @@
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValueLabel,
-} from '../../../shared/ui';
+import { Progress, ProgressLabel, ProgressValueLabel } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const ProgressLab = () => {

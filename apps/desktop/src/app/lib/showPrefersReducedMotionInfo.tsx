@@ -1,7 +1,7 @@
 import { createRoot } from 'solid-js';
 
-import { useTranslation } from '../../shared/model';
-import { Button, closeToast, showToast } from '../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 export const showPrefersReducedMotionInfo = (
   onEnableAnimations: () => void,

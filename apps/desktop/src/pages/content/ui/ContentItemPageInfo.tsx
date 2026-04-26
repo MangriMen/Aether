@@ -4,10 +4,10 @@ import MdiDownloadIcon from '~icons/mdi/download';
 import MdiOpenInNewIcon from '~icons/mdi/open-in-new';
 import { createMemo, splitProps } from 'solid-js';
 
-import type { ContentItem } from '../../../entities/instances';
+import type { ContentItem } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   Button,
   CombinedTooltip,
@@ -15,7 +15,8 @@ import {
   IconButton,
   Image,
   Skeleton,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { useContentContext } from '../model';
 
 export type ContentItemPageInfoProps = {

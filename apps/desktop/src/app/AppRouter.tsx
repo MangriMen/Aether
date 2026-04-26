@@ -9,9 +9,8 @@ import {
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
 import { SettingsPage } from '@/pages/settings';
+import { ROUTE_PATTERNS } from '@/shared/config';
 import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
-
-import { ROUTE_PATTERNS } from '../shared/config';
 
 const PlaygroundPage = lazy(() =>
   import('@/pages/playground').then((m) => ({ default: m.PlaygroundPage })),

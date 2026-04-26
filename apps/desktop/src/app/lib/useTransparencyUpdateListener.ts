@@ -1,7 +1,7 @@
 import { createEffect, on } from 'solid-js';
 
-import { useAppSettings } from '../../entities/settings';
-import { useThemeContext } from '../../shared/model';
+import { useAppSettings } from '@/entities/settings';
+import { useThemeContext } from '@/shared/model';
 
 export const useTransparencyUpdateListener = () => {
   const [_, { setTransparencyEnabled }] = useThemeContext();

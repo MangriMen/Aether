@@ -2,10 +2,10 @@ import type { ComponentProps } from 'solid-js';
 
 import { Show, splitProps, type Component } from 'solid-js';
 
-import type { ContentItem } from '../../../entities/instances';
+import type { ContentItem } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { Image } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { Image } from '@/shared/ui';
 
 export type ContentItemInfoProps = {
   item: ContentItem;

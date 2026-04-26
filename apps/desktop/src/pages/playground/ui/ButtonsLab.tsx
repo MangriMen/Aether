@@ -1,7 +1,8 @@
 import IconMdiCheck from '~icons/mdi/check';
 import { For, Show } from 'solid-js';
 
-import { Button } from '../../../shared/ui';
+import { Button } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const ButtonsLab = () => {

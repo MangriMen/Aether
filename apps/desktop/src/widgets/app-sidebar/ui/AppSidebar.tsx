@@ -2,13 +2,15 @@ import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { SidebarProps } from '../../../shared/ui';
+import type { SidebarProps } from '@/shared/ui';
+
+import { AccountsMenu, useAccounts } from '@/entities/account';
+import { cn } from '@/shared/lib';
+import { Separator, Sidebar } from '@/shared/ui';
+
 import type { AccountSelectButtonProps } from './AccountSelectButton';
 import type { CreateInstanceButtonProps } from './CreateInstanceButton';
 
-import { AccountsMenu, useAccounts } from '../../../entities/account';
-import { cn } from '../../../shared/lib';
-import { Separator, Sidebar } from '../../../shared/ui';
 import { AccountSelectButton } from './AccountSelectButton';
 import { ContentButton } from './ContentButton';
 import CreateInstanceButton from './CreateInstanceButton';

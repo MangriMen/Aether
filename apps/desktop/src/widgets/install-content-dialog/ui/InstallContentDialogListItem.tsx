@@ -3,18 +3,19 @@ import type { Component, ComponentProps } from 'solid-js';
 import { A } from '@solidjs/router';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import type { ContentCompatibilityResult } from '../../../entities/instances/model/compatibility';
-import type { ContentManager } from '../model';
+import type { ContentCompatibilityResult } from '@/entities/instances';
 
 import {
   ContentInstallButton,
   type ContentItem,
   type Instance,
-} from '../../../entities/instances';
-import { ROUTES } from '../../../shared/config';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, Image } from '../../../shared/ui';
+} from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, Image } from '@/shared/ui';
+
+import type { ContentManager } from '../model';
 
 export interface InstallContentDialogListItemProps {
   item: ContentItem;

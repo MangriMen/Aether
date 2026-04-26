@@ -5,9 +5,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { AllowedItemProps } from '../model/allowedItem';
+import { cn } from '@/shared/lib';
 
-import { cn } from '../../../shared/lib';
+import type { AllowedItemProps } from '../model';
 
 export type AllowedHostProps = ComponentProps<'div'> &
   AllowedItemProps<string, string>;

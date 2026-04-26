@@ -4,7 +4,7 @@ import { createSignal, onMount, Show } from 'solid-js';
 
 import { AppLayout } from '@/app/layouts/AppLayout';
 import { setupApp } from '@/app/model';
-import { BaseTitleBar } from '@/widgets/app-titlebar/ui/BaseTitleBar';
+import { BaseTitleBar } from '@/widgets/app-titlebar';
 
 import { AppInitializeError } from './AppInitializeError';
 

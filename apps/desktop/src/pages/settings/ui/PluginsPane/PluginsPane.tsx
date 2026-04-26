@@ -1,14 +1,14 @@
 import { createMemo, Show, splitProps, type Component } from 'solid-js';
 
+import type { SettingsPaneProps } from '@/shared/ui';
+
+import { usePlugins } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { SettingsPane } from '@/shared/ui';
 import { PluginDetails } from '@/widgets/plugin-details';
 import { PluginsView } from '@/widgets/plugins-view';
 
-import type { SettingsPaneProps } from '../../../../shared/ui';
-
-import { usePlugins } from '../../../../entities/plugins';
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
-import { SettingsPane } from '../../../../shared/ui';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
 
 export type PluginsPaneProps = SettingsPaneProps;

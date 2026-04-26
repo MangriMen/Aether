@@ -1,6 +1,6 @@
-import type { ModLoader } from '../../../entities/minecraft';
+import type { ModLoader } from '@/entities/minecraft';
 
-import { ATOMIC_CONTENT_TYPES, ContentType } from '../../../entities/instances';
+import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
 
 export const getAvailableContentTypes = (
   instanceLoader: ModLoader | undefined,

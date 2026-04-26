@@ -1,13 +1,13 @@
 import { createMemo, type Component, type ComponentProps } from 'solid-js';
 
-import type { Option } from '../../../../shared/model';
+import type { Option } from '@/shared/model';
 
-import { UpdateNotificationStyle } from '../../../../shared/model';
+import { UpdateNotificationStyle } from '@/shared/model';
 import {
   setUpdateNotificationStyle,
   updateNotificationStyle,
   useTranslation,
-} from '../../../../shared/model';
+} from '@/shared/model';
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
   SettingsEntry,
-} from '../../../../shared/ui';
+} from '@/shared/ui';
 
 export type UpdateNotificationStyleEntryProps = ComponentProps<'div'>;
 

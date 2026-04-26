@@ -15,12 +15,12 @@ import {
 } from '@tanstack/solid-table';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { ContentType, ContentVersion } from '../../../entities/instances';
+import type { ContentType, ContentVersion } from '@/entities/instances';
 
 import {
   CONTENT_VERSIONS_TABLE_COLUMNS,
   contentVersionsColumnHelper,
-} from '../model/contentVersionsColumns';
+} from '../model';
 import { ContentVersionActions } from '../ui/ContentVersionActions';
 
 export interface ContentVersionsTableProps {

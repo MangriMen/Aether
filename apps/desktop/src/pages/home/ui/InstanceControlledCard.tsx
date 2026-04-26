@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { InstanceCardProps } from '../../../entities/instances';
+import type { InstanceCardProps } from '@/entities/instances';
 
 import {
   InstanceCard,
@@ -12,15 +12,15 @@ import {
   useInstanceDir,
   useRevealInExplorer,
   useRunningInstancesContext,
-} from '../../../entities/instances';
-import { ROUTES } from '../../../shared/config';
-import { preventAll } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
+} from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
+import { preventAll } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedDialog,
   CombinedTooltip,
   ContextMenuTrigger,
-} from '../../../shared/ui';
+} from '@/shared/ui';
 
 export type InstanceControlledCardProps = Pick<
   InstanceCardProps,

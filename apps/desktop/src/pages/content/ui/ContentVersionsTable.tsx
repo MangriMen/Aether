@@ -1,9 +1,10 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { ContentType, ContentVersion } from '../../../entities/instances';
+import type { ContentType, ContentVersion } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { CombinedPagination, DataTable } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { CombinedPagination, DataTable } from '@/shared/ui';
+
 import { createContentVersionsTable } from '../lib/createContentVersionsTable';
 
 export type ContentVersionsTableProps = ComponentProps<'div'> & {

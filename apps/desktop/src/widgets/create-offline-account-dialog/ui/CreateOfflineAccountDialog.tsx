@@ -3,18 +3,19 @@ import type { FormErrors } from '@modular-forms/solid';
 
 import { createEffect, createSignal, type Component } from 'solid-js';
 
-import type { CreateOfflineAccountFormValues } from '../model';
-
 import {
   isAuthValidationError,
   useCreateOfflineAccount,
-} from '../../../entities/account';
+} from '@/entities/account';
 import {
   getTranslatedError,
   isLauncherError,
   useTranslation,
-} from '../../../shared/model';
-import { Dialog, DialogContent, DialogHeader } from '../../../shared/ui';
+} from '@/shared/model';
+import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
+
+import type { CreateOfflineAccountFormValues } from '../model';
+
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;

@@ -5,9 +5,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { PluginDetailsTabProps } from '../model';
+import { cn } from '@/shared/lib';
 
-import { cn } from '../../../shared/lib';
+import type { PluginDetailsTabProps } from '../model';
 
 export type PluginDescriptionTabProps = ComponentProps<'div'> &
   PluginDetailsTabProps;

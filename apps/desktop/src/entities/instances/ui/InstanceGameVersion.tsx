@@ -1,11 +1,11 @@
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { ModLoader } from '../../minecraft/@x/instances';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip } from '../../../shared/ui';
+import type { ModLoader } from '../model';
 
 export type InstanceGameVersionProps = ComponentProps<'div'> & {
   loader: ModLoader;

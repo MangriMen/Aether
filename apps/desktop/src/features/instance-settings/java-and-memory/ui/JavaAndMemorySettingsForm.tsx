@@ -3,15 +3,16 @@ import type { Accessor, Component, ComponentProps } from 'solid-js';
 import { setValue } from '@modular-forms/solid';
 import { onCleanup, splitProps, createMemo } from 'solid-js';
 
+import { OverridableEnvVarsField } from '@/entities/settings';
+import { OverridableLaunchArgsField } from '@/entities/settings';
+import { OverridableMemoryField } from '@/entities/settings';
+import { cn, debounce, useFieldOnChangeSync } from '@/shared/lib';
+
 import type {
   JavaAndMemorySettingsSchemaInput,
   JavaAndMemorySettingsSchemaOutput,
 } from '../model';
 
-import { OverridableEnvVarsField } from '../../../../entities/settings';
-import { OverridableLaunchArgsField } from '../../../../entities/settings';
-import { OverridableMemoryField } from '../../../../entities/settings/ui/OverridableMemoryField';
-import { cn, debounce, useFieldOnChangeSync } from '../../../../shared/lib';
 import {
   useJavaAndMemorySettingsForm,
   useResetJavaAndMemorySettingsForm,

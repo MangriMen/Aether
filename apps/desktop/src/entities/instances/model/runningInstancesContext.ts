@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'solid-js';
 
-import type { ProcessEvent } from '../../process/@x/instances';
+import type { ProcessEvent } from '@/entities/process/@x/instances';
+
 import type { Instance } from './instance';
 
 export type RunningInstancesInstanceData = {

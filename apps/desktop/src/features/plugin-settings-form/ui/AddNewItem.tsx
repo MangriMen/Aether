@@ -3,10 +3,10 @@ import type { Component } from 'solid-js';
 import IconMdiPlus from '~icons/mdi/plus';
 import { Show } from 'solid-js';
 
-import type { NewAllowedItemProps } from '../model';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+import type { NewAllowedItemProps } from '../model';
 
 export type AddNewItemProps<T> = {
   isAdding?: boolean;

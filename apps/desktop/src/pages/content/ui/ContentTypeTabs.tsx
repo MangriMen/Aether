@@ -6,9 +6,9 @@ import {
   CONTENT_TYPE_TO_TITLE,
   isContentType,
   type ContentType,
-} from '../../../entities/instances';
-import { useTranslation } from '../../../shared/model';
-import { Skeleton, Tabs, TabsList, TabsTrigger } from '../../../shared/ui';
+} from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
+import { Skeleton, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
 
 export type ContentTypeTabsProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   items: readonly ContentType[];

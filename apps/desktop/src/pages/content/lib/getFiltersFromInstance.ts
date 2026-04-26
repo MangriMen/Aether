@@ -1,5 +1,6 @@
-import type { ContentFilters, Instance } from '../../../entities/instances';
-import type { ContentFiltersLock } from '../model/contentFiltersLock';
+import type { ContentFilters, Instance } from '@/entities/instances';
+
+import type { ContentFiltersLock } from '../model';
 
 export const getFiltersFromInstance = (
   instance?: Instance,

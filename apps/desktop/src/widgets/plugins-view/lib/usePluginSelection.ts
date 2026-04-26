@@ -2,7 +2,7 @@ import type { Accessor } from 'solid-js';
 
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
-import type { Plugin, PluginMetadata } from '../../../entities/plugins';
+import type { Plugin, PluginMetadata } from '@/entities/plugins';
 
 export const usePluginSelection = (
   plugins: Accessor<Plugin[] | undefined>,

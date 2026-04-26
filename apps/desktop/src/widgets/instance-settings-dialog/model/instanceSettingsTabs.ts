@@ -6,8 +6,8 @@ import IconMdiInformationOutline from '~icons/mdi/information-outline';
 import IconMdiMonitor from '~icons/mdi/monitor';
 import IconMdiTools from '~icons/mdi/tools';
 
-import type { EditInstance, Instance } from '../../../entities/instances';
-import type { DefaultInstanceSettings } from '../../../entities/settings/model/defaultInstanceSettings';
+import type { EditInstance, Instance } from '@/entities/instances';
+import type { DefaultInstanceSettings } from '@/entities/settings';
 
 import { GeneralTab } from '../ui/GeneralTab';
 import { HooksTab } from '../ui/HooksTab';

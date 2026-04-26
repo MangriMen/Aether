@@ -2,10 +2,10 @@ import type { Component } from 'solid-js';
 
 import { createMemo, splitProps, type ComponentProps } from 'solid-js';
 
-import type { Plugin } from '..';
+import { cn } from '@/shared/lib';
+import { Image } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { Image } from '../../../shared/ui';
+import type { Plugin } from '..';
 
 export type PluginCardBaseProps = {
   plugin: Plugin;

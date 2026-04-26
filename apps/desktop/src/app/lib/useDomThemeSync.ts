@@ -1,6 +1,6 @@
 import { createEffect, type Accessor } from 'solid-js';
 
-import type { ThemeContextValue } from '../../shared/model';
+import type { ThemeContextValue } from '@/shared/model';
 
 import {
   setAnimationDisabledToDocument,

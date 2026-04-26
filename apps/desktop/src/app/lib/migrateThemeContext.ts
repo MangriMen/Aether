@@ -1,4 +1,4 @@
-import type { ThemeContextValue } from '../../shared/model';
+import type { ThemeContextValue } from '@/shared/model';
 
 import { DEFAULT_THEME_CONTEXT_VALUE } from '../config';
 

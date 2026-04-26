@@ -6,7 +6,7 @@ import IconMdiPuzzle from '~icons/mdi/puzzle';
 import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
 
-import type { TabConfig } from '../../../shared/model';
+import type { TabConfig } from '@/shared/model';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';

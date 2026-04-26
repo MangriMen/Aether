@@ -1,7 +1,7 @@
 import type {
   ModdedManifest,
   MappedLoaderManifest,
-} from '../../../entities/minecraft';
+} from '@/entities/minecraft';
 
 export const loaderManifestToMapped = (
   manifest: ModdedManifest,

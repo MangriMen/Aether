@@ -1,8 +1,9 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '../../../../shared/lib';
-import { useTranslation } from '../../../../shared/model';
-import { SettingsPane } from '../../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { SettingsPane } from '@/shared/ui';
+
 import ChangeLanguageEntry from './ChangeLanguageEntry';
 import { DisableAnimationsEntry } from './DisableAnimationsEntry';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';

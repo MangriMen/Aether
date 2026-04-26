@@ -6,8 +6,8 @@ import type {
   EditPluginSettings,
   PluginMetadata,
   PluginSettings,
-} from '../../../entities/plugins';
-import type { PluginSettingsSchemaInput } from '../../../features/plugin-settings-form';
+} from '@/entities/plugins';
+import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
 
 import {
   pluginSettingsToPluginSettingsValues,

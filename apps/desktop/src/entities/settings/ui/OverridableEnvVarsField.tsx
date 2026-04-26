@@ -6,11 +6,12 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { CombinedTextFieldProps } from '../../../shared/ui';
+import type { CombinedTextFieldProps } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTextField } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField } from '@/shared/ui';
+
 import { OverrideCheckbox } from './OverrideCheckbox';
 
 export type OverridableEnvVarsFieldProps = Omit<

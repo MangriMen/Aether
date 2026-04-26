@@ -2,10 +2,11 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
+import { cn } from '@/shared/lib';
+import { Separator } from '@/shared/ui';
+
 import type { Account, AccountType } from '../model';
 
-import { cn } from '../../../shared/lib';
-import { Separator } from '../../../shared/ui';
 import { useSortedAccounts } from '../lib';
 import { AccountLoginMethods } from './AccountLoginMethods';
 import { AccountsList } from './AccountsList';

@@ -2,10 +2,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps } from 'solid-js';
 
-import type { ProgressEvent } from '..';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, Progress } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, Progress } from '../../../shared/ui';
+import type { ProgressEvent } from '..';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
   payload: ProgressEvent;

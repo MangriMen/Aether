@@ -2,9 +2,10 @@ import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { cn, useFieldOnChangeSync } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { CombinedTextField } from '../../../shared/ui';
+import { cn, useFieldOnChangeSync } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTextField } from '@/shared/ui';
+
 import {
   useGeneralSettingsForm,
   useGeneralSettingsHandler,

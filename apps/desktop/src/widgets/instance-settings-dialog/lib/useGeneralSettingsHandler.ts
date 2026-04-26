@@ -2,10 +2,12 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { Instance, EditInstance } from '../../../entities/instances';
+import type { Instance, EditInstance } from '@/entities/instances';
+
+import { isEditInstanceEmpty } from '@/entities/instances';
+
 import type { GeneralSettingsSchemaOutput } from '../model';
 
-import { isEditInstanceEmpty } from '../../../entities/instances';
 import {
   generalSettingsValuesToEditInstance,
   instanceToGeneralSettingsValues,

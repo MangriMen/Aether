@@ -3,13 +3,9 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 
 import { createMemo, type ValidComponent } from 'solid-js';
 
-import { useTranslation } from '../../../../shared/model';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui';
+
 import { useProgressStore } from '../../model';
 import { ProgressDetails } from './ProgressDetails';
 

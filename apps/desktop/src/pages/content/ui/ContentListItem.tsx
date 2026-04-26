@@ -1,11 +1,9 @@
 import { A } from '@solidjs/router';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import {
-  ContentInstallButton,
-  type ContentItem,
-} from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
+import { ContentInstallButton, type ContentItem } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+
 import { useContentListItem } from '../lib';
 import { ContentItemInfo } from './ContentItemInfo';
 

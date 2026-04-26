@@ -1,4 +1,5 @@
-import { TextField, TextFieldInput, TextFieldLabel } from '../../../shared/ui';
+import { TextField, TextFieldInput, TextFieldLabel } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const TextFieldLab = () => {

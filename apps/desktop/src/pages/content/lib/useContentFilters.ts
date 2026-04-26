@@ -3,7 +3,7 @@ import type { Accessor } from 'solid-js';
 import { useSearchParams } from '@solidjs/router';
 import { createMemo } from 'solid-js';
 
-import type { ContentPageSearchParams } from '../model/contentPageSearchParams';
+import type { ContentPageSearchParams } from '../model';
 
 import {
   decodeContentSearchParams,

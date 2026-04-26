@@ -7,7 +7,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
 
 export type AppInitializeErrorProps = ComponentProps<'div'> & {
   error?: string;

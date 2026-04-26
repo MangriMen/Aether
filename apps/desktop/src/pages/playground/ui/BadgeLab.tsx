@@ -1,6 +1,7 @@
 import { For } from 'solid-js';
 
-import { Badge } from '../../../shared/ui';
+import { Badge } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const BadgeLab = () => {

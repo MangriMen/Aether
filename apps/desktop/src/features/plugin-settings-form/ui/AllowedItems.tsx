@@ -2,9 +2,9 @@ import type { ComponentProps, JSX } from 'solid-js';
 
 import { Show, splitProps } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { LabeledField } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { LabeledField } from '@/shared/ui';
 
 const labeledFieldClass = 'px-1 text-sm';
 const labelClass = 'font-normal';

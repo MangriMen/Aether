@@ -2,11 +2,11 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { mergeProps, Show, splitProps } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
 
-import { InstanceGameVersion, TimePlayed } from '../../../entities/instances';
-import { cn } from '../../../shared/lib';
-import { CombinedTooltip, DelayedShow, Skeleton } from '../../../shared/ui';
+import { InstanceGameVersion, TimePlayed } from '@/entities/instances';
+import { cn } from '@/shared/lib';
+import { CombinedTooltip, DelayedShow, Skeleton } from '@/shared/ui';
 
 export type InstanceHeaderInfoProps = ComponentProps<'div'> & {
   instance: Instance | undefined;

@@ -1,16 +1,8 @@
 import { type Component } from 'solid-js';
 
-import {
-  useAppSettings,
-  useEditAppSettings,
-} from '../../../../entities/settings';
-import { useTranslation } from '../../../../shared/model';
-import {
-  SettingsEntry,
-  Switch,
-  SwitchControl,
-  SwitchThumb,
-} from '../../../../shared/ui';
+import { useAppSettings, useEditAppSettings } from '@/entities/settings';
+import { useTranslation } from '@/shared/model';
+import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
 
 export type ToggleWindowTransparencyEntryProps = {
   class?: string;

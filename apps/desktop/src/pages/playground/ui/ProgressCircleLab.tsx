@@ -1,4 +1,5 @@
-import { ProgressCircle } from '../../../shared/ui';
+import { ProgressCircle } from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const ProgressCircleLab = () => {

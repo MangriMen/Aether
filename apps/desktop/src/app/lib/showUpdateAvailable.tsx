@@ -1,17 +1,13 @@
 import { useNavigate } from '@solidjs/router';
 import { createRoot, createSignal } from 'solid-js';
 
-import { SettingsTab } from '@/pages/settings/model/settingsTabs';
+import type { UpdateStatus } from '@/entities/updates';
 
-import type { UpdateStatus } from '../../entities/updates';
-
-import {
-  UpdateAndRestartWarningDialog,
-  useUpdate,
-} from '../../entities/updates';
-import { ROUTES } from '../../shared/config';
-import { useTranslation } from '../../shared/model';
-import { Button, closeToast, showToast } from '../../shared/ui';
+import { UpdateAndRestartWarningDialog, useUpdate } from '@/entities/updates';
+import { SettingsTab } from '@/pages/settings';
+import { ROUTES } from '@/shared/config';
+import { useTranslation } from '@/shared/model';
+import { Button, closeToast, showToast } from '@/shared/ui';
 
 let isAlreadyOpened = false;
 

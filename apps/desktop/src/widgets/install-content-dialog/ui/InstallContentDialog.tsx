@@ -8,23 +8,22 @@ import {
   type Component,
 } from 'solid-js';
 
-import type { ContentItem } from '../../../entities/instances';
-import type { ContentCompatibilityCheckParams } from '../../../entities/instances/model/compatibility';
-import type { PartialBy } from '../../../shared/model';
-import type { ContentManager } from '../model';
+import type { ContentItem } from '@/entities/instances';
+import type { ContentCompatibilityCheckParams } from '@/entities/instances';
+import type { PartialBy } from '@/shared/model';
 
-import {
-  useCheckCompatibility,
-  useInstances,
-} from '../../../entities/instances';
-import { useTranslation } from '../../../shared/model';
+import { useCheckCompatibility, useInstances } from '@/entities/instances';
+import { useTranslation } from '@/shared/model';
 import {
   CombinedTextField,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
+import type { ContentManager } from '../model';
+
 import { InstallContentDialogListItem } from './InstallContentDialogListItem';
 
 export type InstallContentDialogProps = {

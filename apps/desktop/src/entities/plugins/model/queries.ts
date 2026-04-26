@@ -2,11 +2,12 @@ import type { Accessor } from 'solid-js';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { showError } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { EditPluginSettingsDto } from '../api';
 import type { PluginId } from './pluginManifest';
 
-import { showError } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
 import { commands } from '../api';
 import { pluginsCache, pluginsQueries } from './cache';
 import { pluginKeys } from './queryKeys';

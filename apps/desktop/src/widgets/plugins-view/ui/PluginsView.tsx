@@ -4,10 +4,11 @@ import { Show, splitProps } from 'solid-js';
 
 import type { PluginDetails } from '@/widgets/plugin-details';
 
-import { PluginsList, type Plugin } from '../../../entities/plugins';
-import { cn } from '../../../shared/lib';
-import { useThemeContext } from '../../../shared/model';
-import { Separator } from '../../../shared/ui';
+import { PluginsList, type Plugin } from '@/entities/plugins';
+import { cn } from '@/shared/lib';
+import { useThemeContext } from '@/shared/model';
+import { Separator } from '@/shared/ui';
+
 import { usePluginSelection } from '../lib';
 
 export type PluginsViewProps = ComponentProps<'div'> & {

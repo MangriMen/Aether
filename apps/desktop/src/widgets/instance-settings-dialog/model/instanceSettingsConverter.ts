@@ -1,30 +1,31 @@
 import type { PartialValues } from '@modular-forms/solid';
 
-import {
-  envVarsToString,
-  launchArgsToString,
-  stringToEnvVars,
-  stringToLaunchArgs,
-} from '@/widgets/instance-settings-dialog/lib';
-
 import type {
   EditInstance,
   EditInstanceSettings,
   Instance,
   InstanceSettings,
-} from '../../../entities/instances';
+} from '@/entities/instances';
 import type {
   HooksSettingsSchemaInput,
   HooksSettingsSchemaOutput,
-} from '../../../features/instance-settings/hooks-settings-form';
+} from '@/features/instance-settings/hooks';
 import type {
   JavaAndMemorySettingsSchemaInput,
   JavaAndMemorySettingsSchemaOutput,
-} from '../../../features/instance-settings/java-and-memory-settings-form';
+} from '@/features/instance-settings/java-and-memory';
 import type {
   WindowSettingsSchemaInput,
   WindowSettingsSchemaOutput,
-} from '../../../features/instance-settings/window-settings-form';
+} from '@/features/instance-settings/window';
+
+import {
+  envVarsToString,
+  launchArgsToString,
+  stringToEnvVars,
+  stringToLaunchArgs,
+} from '@/widgets/instance-settings-dialog';
+
 import type {
   GeneralSettingsSchemaInput,
   GeneralSettingsSchemaOutput,

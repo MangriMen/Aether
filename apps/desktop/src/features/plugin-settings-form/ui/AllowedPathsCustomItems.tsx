@@ -8,7 +8,8 @@ import {
 } from '@modular-forms/solid';
 import { splitProps } from 'solid-js';
 
-import { cn } from '../../../shared/lib';
+import { cn } from '@/shared/lib';
+
 import {
   getEditableAllowedItemArrayProps,
   useCustomItemsEditing,

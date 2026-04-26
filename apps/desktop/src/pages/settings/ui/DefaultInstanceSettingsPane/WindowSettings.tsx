@@ -1,6 +1,7 @@
-import type { WindowSettingsFormProps } from '../../../../features/instance-settings/window-settings-form';
+import type { WindowSettingsFormProps } from '@/features/instance-settings/window';
 
-import { WindowSettingsForm } from '../../../../features/instance-settings/window-settings-form';
+import { WindowSettingsForm } from '@/features/instance-settings/window';
+
 import { useDefaultWindowSettingsHandler } from '../../lib';
 
 export type WindowSettingsProps = Omit<

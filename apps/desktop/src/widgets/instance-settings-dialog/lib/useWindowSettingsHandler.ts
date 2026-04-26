@@ -2,13 +2,13 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
+import type { EditInstance, Instance } from '@/entities/instances';
+import type { DefaultInstanceSettings } from '@/entities/settings';
+import type { WindowSettingsSchemaOutput } from '@/features/instance-settings/window';
+
+import { isEditInstanceSettingsEmpty } from '@/entities/instances';
 import { defaultInstanceSettingsToWindowSettingsValues } from '@/pages/settings';
 
-import type { EditInstance, Instance } from '../../../entities/instances';
-import type { DefaultInstanceSettings } from '../../../entities/settings';
-import type { WindowSettingsSchemaOutput } from '../../../features/instance-settings/window-settings-form';
-
-import { isEditInstanceSettingsEmpty } from '../../../entities/instances';
 import {
   instanceSettingsToWindowSettingsValues,
   windowSettingsValuesToEditInstanceSettings,

@@ -3,7 +3,7 @@ import { createMemo } from 'solid-js';
 import type { UpdateStatus } from '../model';
 
 import { checkIsUpdateAvailable, useInstallUpdate } from '../model';
-import { useUpdateStore } from '../model/updateStore';
+import { useUpdateStore } from '../model';
 
 export const useUpdate = () => {
   const [store, setStore] = useUpdateStore();

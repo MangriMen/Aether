@@ -3,17 +3,18 @@ import type { ValidComponent } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { SelectRootProps } from '../../../shared/ui';
+import type { SelectRootProps } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
+import { useTranslation } from '@/shared/model';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../shared/ui';
-import { DEFAULT_PER_PAGE_OPTIONS } from '../model/constants';
+} from '@/shared/ui';
+
+import { DEFAULT_PER_PAGE_OPTIONS } from '../model';
 
 export type ItemsPerPageSelectProps<
   Option extends number,

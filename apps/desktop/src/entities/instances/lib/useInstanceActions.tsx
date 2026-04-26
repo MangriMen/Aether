@@ -1,5 +1,8 @@
 import { useContext } from 'solid-js';
 
+import { useTranslation } from '@/shared/model';
+import { Button, closeToast, showToast } from '@/shared/ui';
+
 import type { Instance } from '..';
 
 import {
@@ -8,8 +11,6 @@ import {
   useStopInstance,
   useRemoveInstance,
 } from '..';
-import { useTranslation } from '../../../shared/model';
-import { Button, closeToast, showToast } from '../../../shared/ui';
 
 export const useInstanceActions = () => {
   const [context, { get: getRunningInstance, setIsLoading }] = useContext(

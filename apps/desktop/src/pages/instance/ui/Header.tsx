@@ -2,10 +2,11 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
 
-import { InstanceActionButton } from '../../../features/instance-action-button';
-import { Image } from '../../../shared/ui';
+import { InstanceActionButton } from '@/features/instance-action-button';
+import { Image } from '@/shared/ui';
+
 import { InstanceHeaderInfo } from './InstanceHeaderInfo';
 import { OpenFolderButton } from './OpenFolderButton';
 import { SettingsButton } from './SettingsButton';

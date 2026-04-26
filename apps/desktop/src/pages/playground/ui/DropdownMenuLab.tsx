@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-import { Button } from '../../../shared/ui';
+import { Button } from '@/shared/ui';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,7 +17,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '../../../shared/ui';
+} from '@/shared/ui';
+
 import { ComponentShelf } from './ComponentShelf';
 
 export const DropdownMenuLab = () => {

@@ -1,7 +1,8 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { applicationCommands } from '../../shared/api';
-import { logError } from '../../shared/lib';
+import { applicationCommands } from '@/shared/api';
+import { logError } from '@/shared/lib';
+
 import { exposeWindowMethods } from '../lib';
 import { showWindow } from './windowUtils';
 

@@ -11,13 +11,14 @@ import type {
   ThemeContextActions,
   ThemeContextType,
   ThemeContextValue,
-} from '../../shared/model';
+} from '@/shared/model';
 
 import {
   COLOR_MODE_TO_THEME_KEY,
   isSystemTheme,
   THEME_TO_COLOR_MODE,
-} from '../../shared/model';
+} from '@/shared/model';
+
 import {
   COLOR_MODE_CHANGE_DEBOUNCE_DELAY,
   DEFAULT_THEME_CONTEXT_VALUE,

@@ -8,10 +8,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
 import type { AllowedItemProps } from '../model';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
 import { AllowedPathComponent } from './AllowedPathComponent';
 
 export type AllowedPathProps = ComponentProps<'div'> &

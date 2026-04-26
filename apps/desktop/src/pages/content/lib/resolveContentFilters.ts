@@ -1,4 +1,5 @@
-import type { ContentFilters, ContentType } from '../../../entities/instances';
+import type { ContentFilters, ContentType } from '@/entities/instances';
+
 import type { DEFAULT_FORM_VALUES } from '../model';
 
 export const resolveContentFilters = (

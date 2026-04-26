@@ -16,7 +16,7 @@ import {
 } from '@tanstack/solid-table';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { ContentFile } from '../../../entities/instances';
+import type { ContentFile } from '@/entities/instances';
 
 import {
   CONTENT_TABLE_COLUMNS,

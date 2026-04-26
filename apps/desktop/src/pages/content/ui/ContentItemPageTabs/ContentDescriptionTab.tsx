@@ -5,10 +5,10 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { ContentItemPageTabProps } from '../../model/contentItemPageTabs';
+import { cn } from '@/shared/lib';
+import { MarkdownRenderer } from '@/shared/ui';
 
-import { cn } from '../../../../shared/lib';
-import { MarkdownRenderer } from '../../../../shared/ui';
+import type { ContentItemPageTabProps } from '../../model';
 
 export type ContentDescriptionTabProps = ComponentProps<'div'> &
   ContentItemPageTabProps;

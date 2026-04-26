@@ -5,11 +5,11 @@ import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { Show } from 'solid-js';
 
-import type { ContentFile } from '../../../entities/instances';
+import type { ContentFile } from '@/entities/instances';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, Checkbox } from '../../../shared/ui';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, Checkbox } from '@/shared/ui';
 
 export const contentTableColumnHelper = createColumnHelper<ContentFile>();
 

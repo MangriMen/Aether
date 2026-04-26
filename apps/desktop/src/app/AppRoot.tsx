@@ -3,12 +3,12 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { QueryClientProvider } from '@tanstack/solid-query';
 import { type Component } from 'solid-js';
 
+import { RunningInstancesProvider } from '@/entities/instances';
+import { createQueryClient } from '@/shared/api';
+import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
+import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
 import { AppTitleBar } from '@/widgets/app-titlebar';
 
-import { RunningInstancesProvider } from '../entities/instances';
-import { createQueryClient } from '../shared/api';
-import { LOCALE_RESOURCES, LOCALES } from '../shared/model';
-import { GlobalDialogRenderer, Toaster } from '../shared/ui';
 import {
   THEME_STATE_LS_KEY,
   THEME_ATTRIBUTE,

@@ -6,11 +6,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { EditAllowedItemProps } from '../model';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, CombinedTextField } from '@/shared/ui';
 
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { Button, CombinedTextField } from '../../../shared/ui';
+import type { EditAllowedItemProps } from '../model';
 
 export type EditAllowedHostProps = ComponentProps<'div'> &
   EditAllowedItemProps<string, string>;

@@ -4,15 +4,11 @@ import { useNavigate } from '@solidjs/router';
 import IconMdiSettings from '~icons/mdi/cog';
 import { splitProps, type Component, type ValidComponent } from 'solid-js';
 
-import type { Instance } from '../../../entities/instances';
+import type { Instance } from '@/entities/instances';
 
-import { ROUTES } from '../../../shared/config';
-import { useTranslation } from '../../../shared/model';
-import {
-  CombinedTooltip,
-  IconButton,
-  type IconButtonProps,
-} from '../../../shared/ui';
+import { ROUTES } from '@/shared/config';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {

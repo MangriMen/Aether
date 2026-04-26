@@ -11,11 +11,12 @@ import {
   ContentType,
   useInstanceContents,
   type Instance,
-} from '../../../entities/instances';
-import { ROUTES } from '../../../shared/config';
-import { cn } from '../../../shared/lib';
-import { useTranslation } from '../../../shared/model';
-import { DelayedShow } from '../../../shared/ui';
+} from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { DelayedShow } from '@/shared/ui';
+
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
 import { InstallContentButton } from './InstallContentButton';

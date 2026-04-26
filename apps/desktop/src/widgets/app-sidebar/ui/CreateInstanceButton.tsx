@@ -4,10 +4,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiPlus from '~icons/mdi/plus';
 import { createSignal, splitProps } from 'solid-js';
 
-import type { IconButtonProps } from '../../../shared/ui';
+import type { IconButtonProps } from '@/shared/ui';
 
-import { useTranslation } from '../../../shared/model';
-import { CombinedTooltip, IconButton } from '../../../shared/ui';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type CreateInstanceButtonProps = IconButtonProps & {
   createInstanceDialog: Component<ComponentProps<'div'> & DialogRootProps>;

@@ -4,10 +4,11 @@ import type { Component, JSX } from 'solid-js';
 import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
+import { progressEvents } from '@/entities/process/@x/instances';
+import { logDebug } from '@/shared/lib';
+
 import type { Instance, RunningInstancesContextValue } from '../model';
 
-import { logDebug } from '../../../shared/lib';
-import { progressEvents } from '../../process/@x/instances';
 import { RunningInstancesContext } from '../model';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };

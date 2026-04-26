@@ -1,6 +1,6 @@
-import type { ContentSearchInputValues } from './validation';
+import { ContentType } from '@/entities/instances';
 
-import { ContentType } from '../../../entities/instances';
+import type { ContentSearchInputValues } from './validation';
 
 export const DEFAULT_PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50];
 
