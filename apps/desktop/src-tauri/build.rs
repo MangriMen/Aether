@@ -33,6 +33,10 @@ struct PluginMeta {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/commands.rs");
+    println!("cargo:rerun-if-changed=tauri.conf.json");
+
     let plugins = make_plugin_meta![
         application,
         auth,

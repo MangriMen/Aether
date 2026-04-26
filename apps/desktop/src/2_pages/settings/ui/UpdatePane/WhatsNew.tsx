@@ -1,4 +1,3 @@
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import IconMdiContentCopy from '~icons/mdi/content-copy';
 import IconMdiTranslate from '~icons/mdi/translate';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
@@ -23,9 +22,9 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const handleCopyText = () => {
+  const handleCopyText = async () => {
     try {
-      writeText(local.changelogBody);
+      await navigator.clipboard.writeText(local.changelogBody);
       showToast({
         title: t('update.changelogCopiedToClipboard'),
         variant: 'success',

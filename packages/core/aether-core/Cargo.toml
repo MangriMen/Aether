@@ -3,9 +3,6 @@ name = "aether-core"
 version = "0.8.0"
 edition.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
 # Async & Streams
 futures = "0.3"
@@ -47,7 +44,6 @@ tracing-error = "0.2.0"
 
 # Utilities
 dashmap = { version = "6", features = ["serde"] }
-lazy_static = "1.5.0"
 regex = "1.10"
 sha1_smol = { version = "1.0.1", features = ["alloc", "serde", "std"] }
 toml = "0.8.19"
@@ -67,3 +63,6 @@ serr.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+
+[lints]
+workspace = true

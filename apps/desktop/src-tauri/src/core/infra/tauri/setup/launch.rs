@@ -51,14 +51,11 @@ fn create_app() -> Builder<Wry> {
 
 fn configure_system_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
-        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(default_log_builder().build())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_os::init())
 }
 
 fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {

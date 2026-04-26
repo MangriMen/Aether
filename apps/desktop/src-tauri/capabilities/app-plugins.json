@@ -1,6 +1,6 @@
 {
-  "identifier": "plugins",
-  "description": "",
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "app-plugins",
   "local": true,
   "windows": ["main"],
   "permissions": [
