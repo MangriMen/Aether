@@ -178,7 +178,7 @@
   }
 
   body {
-    background-color: oklch(var(--background) / var(--transparency));
+    background-color: oklch(var(--background) / var(--transparency, 1));
   }
 
   #root {

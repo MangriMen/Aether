@@ -5,9 +5,6 @@ import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
 import { GoToPlayground } from './GoToPlayground';
-import { SelectWindowEffect } from './SelectWindowEffect';
-import { ThemeBackgroundOpacityEntry } from './ThemeBackgroundOpacityEntry';
-import { ToggleWindowTransparencyEntry } from './ToggleWindowTransparencyEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
 
@@ -22,9 +19,6 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       label={t('settings.tab.experimental')}
       {...others}
     >
-      <ToggleWindowTransparencyEntry />
-      <ThemeBackgroundOpacityEntry />
-      <SelectWindowEffect />
       <GoToPlayground />
     </SettingsPane>
   );

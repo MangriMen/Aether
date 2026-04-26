@@ -353,7 +353,6 @@
     "toggleWindowTransparency": "Включить прозрачность окна",
     "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
     "windowEffect": "Эффект окна",
-    "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
     "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
     "windowEffectVariant": {
       "acrylic": "Acrylic",

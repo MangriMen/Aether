@@ -4,11 +4,12 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
-import ChangeLanguageEntry from './ChangeLanguageEntry';
+import { ChangeLanguageEntry } from './ChangeLanguageEntry';
 import { DisableAnimationsEntry } from './DisableAnimationsEntry';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
 import { SelectThemeEntry } from './SelectThemeEntry';
-import SelectThemeForColorModeEntry from './SelectThemeForColorModeEntry';
+import { SelectThemeForColorModeEntry } from './SelectThemeForColorModeEntry';
+import { WindowTransparencyEntry } from './WindowTransparencyEntry';
 
 export type AppearancePaneProps = ComponentProps<'div'>;
 
@@ -25,6 +26,7 @@ export const AppearancePane: Component<AppearancePaneProps> = (props) => {
     >
       <SelectThemeEntry />
       <SelectThemeForColorModeEntry />
+      <WindowTransparencyEntry />
       <DisableAnimationsEntry />
       <ChangeLanguageEntry />
       <SelectActionOnInstanceLaunchEntry />

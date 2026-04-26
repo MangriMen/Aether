@@ -8,12 +8,14 @@ import { cn } from '../../lib';
 export type SettingsEntryProps = ComponentProps<'div'> & {
   title?: string | JSX.Element;
   description?: string | JSX.Element;
+  isTopLevel?: boolean;
 };
 
 export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
   const [local, others] = splitProps(props, [
     'title',
     'description',
+    'isTopLevel',
     'class',
     'children',
   ]);
@@ -23,9 +25,15 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
       class={cn('flex justify-between items-center w-full gap-8', local.class)}
       {...others}
     >
-      <div class=' text-pretty'>
+      <div class='text-pretty'>
         <Show when={local.title}>
-          <FieldLabel class='text-lg font-bold'>{local.title}</FieldLabel>
+          <FieldLabel
+            class={cn('text-lg font-semibold', {
+              'font-bold': local.isTopLevel,
+            })}
+          >
+            {local.title}
+          </FieldLabel>
         </Show>
         <Show when={local.description}>
           <p class='whitespace-pre-line text-muted-foreground'>

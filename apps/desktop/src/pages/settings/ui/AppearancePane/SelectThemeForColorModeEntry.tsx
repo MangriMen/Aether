@@ -10,7 +10,7 @@ import SelectThemeForColorMode from './SelectThemeForColorMode';
 
 export type SelectThemeForColorModeEntryProps = ComponentProps<'div'>;
 
-const SelectThemeForColorModeEntry: Component<
+export const SelectThemeForColorModeEntry: Component<
   SelectThemeForColorModeEntryProps
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
@@ -32,5 +32,3 @@ const SelectThemeForColorModeEntry: Component<
     </SettingsEntry>
   );
 };
-
-export default SelectThemeForColorModeEntry;

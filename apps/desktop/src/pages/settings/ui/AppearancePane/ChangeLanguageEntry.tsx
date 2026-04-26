@@ -10,7 +10,9 @@ import SelectLanguage from './SelectLanguage';
 
 export type ChangeLanguageEntryProps = ComponentProps<'div'>;
 
-const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
+export const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (
+  props,
+) => {
   const [{ locale, t }, { setLocale }] = useTranslation();
 
   const currentOption = createMemo(() =>
@@ -40,5 +42,3 @@ const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
     </SettingsEntry>
   );
 };
-
-export default ChangeLanguageEntry;

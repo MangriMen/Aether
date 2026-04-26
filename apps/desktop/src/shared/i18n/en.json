@@ -353,7 +353,6 @@
     "toggleWindowTransparency": "Toggle window transparency",
     "toggleWindowTransparencyDescription": "Restart the app to apply transparency",
     "windowEffect": "Window effect",
-    "windowEffectDescription": "Window effect applied when transparency is enabled",
     "windowEffectDisabled": "It is not possible to enable window effects without window transparency",
     "windowEffectVariant": {
       "acrylic": "Acrylic",
