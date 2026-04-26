@@ -10,17 +10,4 @@ export default defineConfig([
       'fsd/public-api': 'off',
     },
   },
-  {
-    files: [
-      './src/1_app/**',
-      './src/2_pages/**',
-      './src/3_widgets/**',
-      './src/4_features/**',
-      './src/5_entities/**',
-      './src/6_shared/**',
-    ],
-    rules: {
-      'fsd/typo-in-layer-name': 'off',
-    },
-  },
 ]);

@@ -14,7 +14,7 @@ import react from 'eslint-plugin-react';
 export default [
   { files: ['**/*.{js,jsx,ts,tsx}'] },
   {
-    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri', "src/6_shared/api/bindings/**/*"],
+    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri', "src/shared/api/bindings/**/*"],
   },
   {
     languageOptions: {
@@ -94,7 +94,13 @@ export default [
       'tailwindcss/no-custom-classname': [
         'warn',
         {
-          cssFiles: ['src/1_app/app.css'],
+          cssFiles: ['src/app/app.css'],
+          "whitelist": [
+            "animate-list-item",
+            "animate-list-item-enter",
+            "animate-list-item-exit-to",
+            "animate-list-item-exit-active"
+          ]
         },
       ],
     },
