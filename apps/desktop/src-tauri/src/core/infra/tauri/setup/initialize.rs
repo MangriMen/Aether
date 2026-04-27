@@ -1,5 +1,11 @@
 #![allow(clippy::needless_pass_by_value)]
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use aether_core::features::events::ProcessEvent;
 use log::{error, warn};
@@ -7,7 +13,7 @@ use tauri::{App, AppHandle, Manager, WebviewWindow};
 
 use crate::{
     core::{
-        AppSettingsStorageState, EventEmitterState, PreventExitStorage, WindowManagerState,
+        AppSettingsStorageState, EventEmitterState, PreventExitState, WindowManagerState,
         build_main_window, instance_launch_listener,
     },
     features::{
@@ -21,6 +27,7 @@ use crate::{
 };
 
 const MAIN_WINDOW_VISIBLE_WATCH_DOG_TIMEOUT: Duration = Duration::from_secs(30);
+const MAIN_WINDOW_VISIBLE_WATCH_DOG_RETRY_DELAY: Duration = Duration::from_millis(500);
 
 pub fn init_app(app: &mut App) -> tauri::Result<()> {
     let app_handle = app.handle();
@@ -34,14 +41,14 @@ pub fn init_app(app: &mut App) -> tauri::Result<()> {
     let app_settings = tauri::async_runtime::block_on(async { app_settings_storage.get().await })
         .unwrap_or_default();
 
-    let main_window = create_window(app_handle.clone(), app_settings)?;
-
     register_state(
         app_handle.clone(),
         app_settings_storage.clone(),
         window_manager.clone(),
         event_emitter.clone(),
     );
+
+    let main_window = create_window(app_handle.clone(), app_settings)?;
 
     let app_handle_task = app_handle.clone();
     tauri::async_runtime::spawn(async move {
@@ -68,7 +75,7 @@ fn register_state<R: tauri::Runtime>(
         event_emitter.clone(),
     ));
 
-    let prevent_exit_state = std::sync::Mutex::new(PreventExitStorage::new(false));
+    let prevent_exit_state = PreventExitState::new(false);
 
     app_handle.manage(app_settings_storage);
     app_handle.manage(window_manager);
@@ -112,10 +119,40 @@ fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path:
 }
 
 async fn main_window_visible_watch_dog<R: tauri::Runtime>(main_window: WebviewWindow<R>) {
-    tokio::time::sleep(MAIN_WINDOW_VISIBLE_WATCH_DOG_TIMEOUT).await;
+    let has_been_shown = Arc::new(AtomicBool::new(false));
 
-    if let Ok(false) = main_window.is_visible() {
-        error!("Frontend initialization timeout. Emergency shutdown.");
+    if main_window.is_visible().unwrap_or(false) {
+        return;
+    }
+
+    let has_been_shown_cloned = has_been_shown.clone();
+    main_window.on_window_event(move |event| {
+        if let tauri::WindowEvent::Focused(is_focused) = event
+            && *is_focused
+        {
+            has_been_shown_cloned.store(true, Ordering::Relaxed);
+        }
+    });
+
+    let start_time = std::time::Instant::now();
+
+    while start_time.elapsed() < MAIN_WINDOW_VISIBLE_WATCH_DOG_TIMEOUT {
+        if has_been_shown.load(Ordering::Relaxed) {
+            return;
+        }
+
+        if let Ok(true) = main_window.is_visible() {
+            has_been_shown.store(true, Ordering::Relaxed);
+            return;
+        }
+
+        tokio::time::sleep(MAIN_WINDOW_VISIBLE_WATCH_DOG_RETRY_DELAY).await;
+    }
+
+    if !has_been_shown.load(Ordering::Relaxed)
+        && let Ok(false) = main_window.is_visible()
+    {
+        error!("Frontend initialization timeout. Window was never shown or focused.");
         std::process::exit(1);
     }
 }

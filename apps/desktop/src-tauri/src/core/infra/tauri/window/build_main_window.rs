@@ -31,7 +31,6 @@ pub fn build_main_window<R: tauri::Runtime>(
     // Apply platform-specific transparency settings
     #[cfg(target_os = "windows")]
     {
-        // Позволяет кликать "сквозь" прозрачные области, если нужно
         builder = builder.transparent(transparent).shadow(true);
     }
 
