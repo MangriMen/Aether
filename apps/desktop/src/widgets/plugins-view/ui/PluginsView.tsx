@@ -40,7 +40,7 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
 
   return (
     <div
-      class={cn('flex size-full relative overflow-hidden', local.class)}
+      class={cn('flex relative overflow-hidden', local.class)}
       style={{ '--min-list-width': '18rem' }}
       {...others}
     >

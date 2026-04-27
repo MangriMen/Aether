@@ -2,7 +2,7 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Separator, SettingsPane } from '@/shared/ui';
+import { SettingsPane } from '@/shared/ui';
 
 import { HooksSettings } from './HooksSettings';
 import { JavaAndMemorySettings } from './JavaAndMemorySettings';
@@ -23,11 +23,9 @@ export const DefaultInstanceSettingsPane: Component<
       label={t('settings.tab.defaultInstanceSettings')}
       {...others}
     >
-      <WindowSettings />
-      <Separator />
-      <JavaAndMemorySettings />
-      <Separator />
-      <HooksSettings />
+      <WindowSettings class='rounded-md border bg-card/card p-4' />
+      <JavaAndMemorySettings class='rounded-md border bg-card/card p-4' />
+      <HooksSettings class='rounded-md border bg-card/card p-4' />
     </SettingsPane>
   );
 };

@@ -1,4 +1,5 @@
 import { splitProps, type Component, For, createMemo } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 
 import type { Plugin } from '@/entities/plugins';
 import type { TabsProps } from '@/shared/ui';
@@ -34,7 +35,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn('flex flex-col', local.class)}
+      class={cn('flex flex-col flex-1 overflow-hidden', local.class)}
       defaultValue={PluginDetailsTabs.Capabilities}
       orientation='horizontal'
       {...others}
@@ -51,12 +52,15 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
       <For each={tabs()}>
         {(tab) => (
           <TabsContent
-            class='flex-1 overflow-hidden pl-1'
+            class='flex flex-col overflow-hidden pl-1'
             value={tab.value}
-            as={tab.component}
-            plugin={local.plugin}
-            isSettingsDisabled={local.isSettingsDisabled}
-          />
+          >
+            <Dynamic
+              component={tab.component}
+              plugin={local.plugin}
+              isSettingsDisabled={local.isSettingsDisabled}
+            />
+          </TabsContent>
         )}
       </For>
     </Tabs>

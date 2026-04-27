@@ -365,7 +365,7 @@
     "updateAvailable": "Доступна новая версия!",
     "goToUpdatePage": "Перейти на страницу",
     "updateIsReadyToInstall": "доступна для установки!",
-    "updateNotificationStyle": "Стиль уведомлений обновлений",
+    "updateNotificationStyle": "Стиль уведомлений об обновлении",
     "whatsNew": "Что нового",
     "update": "Обновить",
     "playground": "Playground",
@@ -374,7 +374,7 @@
   "update": {
     "updateError": "Не удалось установить обновление",
     "banner": "Баннер",
-    "toast": "Всплывающее",
+    "toast": "Уведомление",
     "restartWarningDescription": "Новая версия будет загружена и установлена. \nПриложение перезапустится сразу после завершения загрузки.",
     "restartWarningTitle": "Обновить и перезапустить",
     "fetchError": "Не удалось проверить обновления",

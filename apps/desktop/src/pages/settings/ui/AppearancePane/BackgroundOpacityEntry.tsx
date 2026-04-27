@@ -13,11 +13,7 @@ export const BackgroundOpacityEntry: Component<BackgroundOpacityEntryProps> = (
   const [{ t }] = useTranslation();
 
   return (
-    <SettingsEntry
-      title={t('settings.themeBackgroundOpacity')}
-      isTopLevel={false}
-      {...props}
-    >
+    <SettingsEntry title={t('settings.themeBackgroundOpacity')} {...props}>
       <BackgroundOpacitySlider />
     </SettingsEntry>
   );

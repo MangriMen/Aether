@@ -50,19 +50,16 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
 
   return (
     <Form
-      class={cn('flex flex-auto flex-col overflow-hidden', local.class)}
+      class={cn('flex flex-1 flex-col grow', local.class)}
       onSubmit={local.onSubmit}
       {...others}
     >
       <fieldset
-        class={cn('flex grow basis-0 flex-col gap-2 overflow-y-auto', {
+        class={cn('flex-1 grow flex-col gap-2', {
           'text-muted-foreground': local.disabled,
         })}
         disabled={local.disabled}
       >
-        {/* <Button class='w-max' type='submit' size='sm' loading={local.isLoading}>
-          {t('plugins.saveSettings')}
-        </Button> */}
         <AllowedItems
           label={t('plugins.allowedHosts')}
           fixedItems={

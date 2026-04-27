@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
-import { GoToPlayground } from './GoToPlayground';
+import { GoToPlaygroundEntry } from './GoToPlaygroundEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
 
@@ -19,7 +19,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       label={t('settings.tab.experimental')}
       {...others}
     >
-      <GoToPlayground />
+      <GoToPlaygroundEntry variant='card' />
     </SettingsPane>
   );
 };

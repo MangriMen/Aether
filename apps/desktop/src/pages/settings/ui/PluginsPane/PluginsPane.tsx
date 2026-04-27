@@ -35,6 +35,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
         fallback={<span>{t('plugins.noPlugins')}</span>}
       >
         <PluginsView
+          class='size-full'
           plugins={plugins.data}
           isLoading={plugins.isLoading}
           pluginDetails={PluginDetails}

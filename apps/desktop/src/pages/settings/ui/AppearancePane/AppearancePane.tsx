@@ -7,8 +7,7 @@ import { SettingsPane } from '@/shared/ui';
 import { ChangeLanguageEntry } from './ChangeLanguageEntry';
 import { DisableAnimationsEntry } from './DisableAnimationsEntry';
 import { SelectActionOnInstanceLaunchEntry } from './SelectActionOnInstanceLaunchEntry';
-import { SelectThemeEntry } from './SelectThemeEntry';
-import { SelectThemeForColorModeEntry } from './SelectThemeForColorModeEntry';
+import { ThemeEntry } from './ThemeEntry';
 import { WindowTransparencyEntry } from './WindowTransparencyEntry';
 
 export type AppearancePaneProps = ComponentProps<'div'>;
@@ -24,12 +23,11 @@ export const AppearancePane: Component<AppearancePaneProps> = (props) => {
       label={t('settings.tab.appearance')}
       {...others}
     >
-      <SelectThemeEntry />
-      <SelectThemeForColorModeEntry />
-      <WindowTransparencyEntry />
-      <DisableAnimationsEntry />
-      <ChangeLanguageEntry />
-      <SelectActionOnInstanceLaunchEntry />
+      <ThemeEntry variant='card' />
+      <WindowTransparencyEntry variant='card' />
+      <DisableAnimationsEntry variant='card' />
+      <SelectActionOnInstanceLaunchEntry variant='card' />
+      <ChangeLanguageEntry variant='card' />
     </SettingsPane>
   );
 };

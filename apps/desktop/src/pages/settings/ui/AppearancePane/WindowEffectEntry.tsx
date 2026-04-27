@@ -13,11 +13,7 @@ export const WindowEffectEntry: Component<WindowEffectEntryProps> = (props) => {
   const [{ t }] = useTranslation();
 
   return (
-    <SettingsEntry
-      title={t('settings.windowEffect')}
-      isTopLevel={false}
-      {...props}
-    >
+    <SettingsEntry title={t('settings.windowEffect')} {...props}>
       <SelectWindowEffect />
     </SettingsEntry>
   );
