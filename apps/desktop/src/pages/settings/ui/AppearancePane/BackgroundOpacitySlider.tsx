@@ -5,7 +5,6 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useAppSettings } from '@/entities/settings';
 import { cn } from '@/shared/lib';
 import { useThemeContext } from '@/shared/model';
 import { CombinedSlider, CombinedTextField } from '@/shared/ui';
@@ -21,10 +20,7 @@ export const BackgroundOpacitySlider: Component<
 > = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const appSettings = useAppSettings();
   const [theme, { setTransparency }] = useThemeContext();
-
-  const isDisabled = createMemo(() => !appSettings.data?.transparent);
 
   const currentTransparency = createMemo(() =>
     Math.round(theme.transparency * SCALE_FACTOR),
@@ -48,20 +44,24 @@ export const BackgroundOpacitySlider: Component<
   };
 
   return (
-    <div class={cn('flex items-center gap-4', local.class)} {...others}>
+    <div
+      class={cn(
+        'flex items-center bg-background px-1.5 rounded-md py-1.5 gap-4',
+        local.class,
+      )}
+      {...others}
+    >
       <CombinedSlider
-        class='w-36'
+        class='w-60 rounded-md pl-1'
         minValue={MIN_PERCENT}
         maxValue={SCALE_FACTOR}
         value={[currentTransparency()]}
         onChange={handleSliderChange}
-        disabled={isDisabled()}
       />
       <CombinedTextField
         class='w-[8ch]'
         value={currentTransparency().toString()}
         onChange={handleTextChange}
-        disabled={isDisabled()}
         inputProps={{ type: 'number', min: MIN_PERCENT, max: MAX_PERCENT }}
       />
     </div>

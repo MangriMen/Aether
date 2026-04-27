@@ -11,6 +11,7 @@ export const commands = {
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings }),
 	getAppSettings: () => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|get_app_settings"),
 	editAppSettings: (editAppSettings: EditAppSettingsDto) => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|edit_app_settings", { editAppSettings }),
+	recreateWindow: () => __TAURI_INVOKE<null>("plugin:settings|recreate_window"),
 };
 
 /* Types */
@@ -18,11 +19,14 @@ export type ActionOnInstanceLaunchDto = "nothing" | "hide" | "close";
 
 export type AppSettingsDto = {
 	actionOnInstanceLaunch: ActionOnInstanceLaunchDto,
+	isActualTransparent: boolean,
 	transparent: boolean,
 	windowEffect: WindowEffectDto,
 };
 
 export type AppSettingsErrorDto = { code: "TRANSPARENT_EFFECT_REQUIRED" } | { code: "CAN_NOT_SET_EFFECT"; payload: {
+	details: string,
+} } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
 	details: string,
 } } | { code: "SAVE_FAILED" };
 

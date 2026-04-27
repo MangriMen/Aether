@@ -13,6 +13,11 @@ pub enum AppSettingsErrorDto {
         details: String,
     },
 
+    #[serde(rename_all = "camelCase")]
+    CanNotRecreateWindow {
+        details: String,
+    },
+
     SaveFailed,
 }
 
@@ -21,6 +26,9 @@ impl From<AppSettingsError> for AppSettingsErrorDto {
         match value {
             AppSettingsError::TransparentEffectRequired => Self::TransparentEffectRequired,
             AppSettingsError::CanNotSetEffect(msg) => Self::CanNotSetEffect { details: msg },
+            AppSettingsError::CanNotRecreateWindow(msg) => {
+                Self::CanNotRecreateWindow { details: msg }
+            }
             AppSettingsError::SaveError => Self::SaveFailed,
         }
     }

@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use tauri::Runtime;
 
-use crate::features::settings::{WindowEffect, WindowManager};
+use crate::{
+    core::{close_all_windows, recreate_windows},
+    features::settings::{AppSettings, WindowEffect, WindowManager},
+};
 
 use super::window::set_window_effect;
 
@@ -19,5 +22,20 @@ impl<R: Runtime> TauriWindowManager<R> {
 impl<R: Runtime> WindowManager for TauriWindowManager<R> {
     async fn apply_visual_effects(&self, effect: WindowEffect) -> Result<(), String> {
         set_window_effect(self.app_handle.clone(), effect).map_err(|e| e.to_string())
+    }
+
+    async fn close_windows(&self) -> Result<(), String> {
+        close_all_windows(&self.app_handle);
+
+        Ok(())
+    }
+
+    async fn create_windows(&self, app_settings: &AppSettings) -> Result<(), String> {
+        recreate_windows(&self.app_handle, app_settings);
+
+        self.apply_visual_effects(app_settings.window_effect)
+            .await?;
+
+        Ok(())
     }
 }

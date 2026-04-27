@@ -12,7 +12,7 @@ import {
   useTranslation,
   type Option,
 } from '@/shared/model';
-import { CombinedSelect, CombinedTooltip } from '@/shared/ui';
+import { CombinedSelect } from '@/shared/ui';
 
 export type WindowEffectEntryProps = {
   class?: string;
@@ -54,12 +54,10 @@ export const SelectWindowEffect = () => {
   const appSettings = useAppSettings();
   const updateSettings = useEditAppSettings();
 
-  const isDisabled = createMemo(() => !appSettings.data?.transparent);
-
   const translatedOptions = createMemo(() =>
     SELECT_WINDOW_EFFECT_OPTIONS.map((option) => ({
       ...option,
-      name: t(`settings.windowEffectVariant.${option.name}`),
+      name: t(`settings.windowEffectVariant.${option.name}`) ?? option.name,
     })),
   );
 
@@ -92,16 +90,12 @@ export const SelectWindowEffect = () => {
   };
 
   return (
-    <CombinedTooltip
-      label={isDisabled() ? t('settings.windowEffectDisabled') : undefined}
-      disableTooltip={!isDisabled()}
-      as={CombinedSelect}
+    <CombinedSelect
       optionValue='value'
       optionTextValue='name'
       value={currentOption()}
       options={translatedOptions()}
       onChange={handleSetWindowEffect}
-      disabled={isDisabled()}
     />
   );
 };

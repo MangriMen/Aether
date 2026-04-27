@@ -25,7 +25,7 @@ pub fn show_all_windows(app_handle: &AppHandle) {
 }
 
 /// Closes all windows and prevents exit handling
-pub fn close_all_windows(app_handle: &AppHandle) {
+pub fn close_all_windows<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
     log::info!("Closing launcher windows");
 
     let prevent_exit_state = app_handle.state::<PreventExitState>();
@@ -35,7 +35,7 @@ pub fn close_all_windows(app_handle: &AppHandle) {
 }
 
 /// Recreates the main window
-pub fn recreate_windows(app_handle: &AppHandle, app_settings: &AppSettings) {
+pub fn recreate_windows<R: tauri::Runtime>(app_handle: &AppHandle<R>, app_settings: &AppSettings) {
     log::info!("Recreating launcher windows");
 
     if let Err(e) = build_main_window(app_handle.clone(), app_settings.transparent, false) {
@@ -47,9 +47,9 @@ pub fn recreate_windows(app_handle: &AppHandle, app_settings: &AppSettings) {
 }
 
 /// Helper to apply an action to all windows with logging
-fn for_each_window<F>(app: &AppHandle, action: F, action_name: &str)
+fn for_each_window<R: tauri::Runtime, F>(app: &AppHandle<R>, action: F, action_name: &str)
 where
-    F: Fn(&WebviewWindow) -> tauri::Result<()>,
+    F: Fn(&WebviewWindow<R>) -> tauri::Result<()>,
 {
     for (label, window) in &app.webview_windows() {
         if let Err(e) = action(window) {

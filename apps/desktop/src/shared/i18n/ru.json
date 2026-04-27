@@ -17,7 +17,8 @@
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
       "CAN_NOT_SET_EFFECT": "Невозможно применить запрошенный эффект",
-      "SAVE_FAILED": "Не удалось сохранить настройки приложения"
+      "SAVE_FAILED": "Не удалось сохранить настройки приложения",
+      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
@@ -369,7 +370,13 @@
     "whatsNew": "Что нового",
     "update": "Обновить",
     "playground": "Playground",
-    "playgroundDescription": "UI Kit playground"
+    "playgroundDescription": "UI Kit playground",
+    "windowTransparencyDialog": {
+      "description": "Изменения режима прозрачности требуют пересоздания окна. \nПрименить изменения сейчас или отложить их до следующего запуска?",
+      "header": "Пересоздание окна",
+      "ok": "Применить",
+      "later": "Отложить"
+    }
   },
   "update": {
     "updateError": "Не удалось установить обновление",

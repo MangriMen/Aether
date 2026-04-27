@@ -52,11 +52,24 @@ pub fn init_app(app: &mut App) -> tauri::Result<()> {
 
     let app_handle_task = app_handle.clone();
     tauri::async_runtime::spawn(async move {
+        let new_settings = AppSettings {
+            is_actual_transparent: app_settings.transparent,
+            ..app_settings
+        };
+        app_settings_storage
+            .upsert(new_settings)
+            .await
+            .unwrap_or_else(|err| error!("Failed to set actual transparent: {err}"));
+
         setup_ui(app_settings, window_manager.clone())
             .await
             .unwrap_or_else(|err| error!("Failed to setup UI: {err}"));
 
-        setup_listeners(app_handle_task.clone(), event_emitter.clone());
+        setup_listeners(
+            app_handle_task.clone(),
+            window_manager.clone(),
+            event_emitter.clone(),
+        );
 
         main_window_visible_watch_dog(main_window).await;
     });
@@ -104,9 +117,13 @@ async fn setup_ui<R: tauri::Runtime>(
 }
 
 // Prevent app exit when window closes after instance launched depends on app settings
-fn setup_listeners(app_handle: AppHandle, event_emitter: EventEmitterState<tauri::Wry>) {
+fn setup_listeners(
+    app_handle: AppHandle,
+    window_manager: WindowManagerState<tauri::Wry>,
+    event_emitter: EventEmitterState<tauri::Wry>,
+) {
     event_emitter.on_core::<ProcessEvent, _>(move |e| {
-        instance_launch_listener(app_handle.clone(), e);
+        instance_launch_listener(app_handle.clone(), window_manager.clone(), e);
     });
 }
 

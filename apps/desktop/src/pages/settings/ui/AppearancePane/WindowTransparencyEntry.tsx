@@ -7,7 +7,7 @@ import { CollapsibleSettingsEntry, Separator } from '@/shared/ui';
 
 import { BackgroundOpacityEntry } from './BackgroundOpacityEntry';
 import { WindowEffectEntry } from './WindowEffectEntry';
-import { WindowTransparencySwitch } from './WindowTransparencyToggle';
+import { WindowTransparencySwitch } from './WindowTransparencySwitch';
 
 export type WindowTransparencyEntryProps = CollapsibleSettingsEntryProps;
 

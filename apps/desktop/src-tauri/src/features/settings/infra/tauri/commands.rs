@@ -4,7 +4,7 @@ use crate::{
     FrontendResult,
     commands::{SETTINGS_PLUGIN_NAME, settings_commands},
     core::{AppSettingsStorageState, WindowManagerState},
-    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase},
+    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase, RecreateWindowUseCase},
 };
 
 use super::dtos::{
@@ -100,4 +100,19 @@ async fn edit_app_settings(
     .await
     .map_err(crate::Error::from)?
     .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn recreate_window(
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+    window_manager: State<'_, WindowManagerState<tauri::Wry>>,
+) -> FrontendResult<()> {
+    Ok(RecreateWindowUseCase::new(
+        app_settings_storage.inner().clone(),
+        window_manager.inner().clone(),
+    )
+    .execute()
+    .await
+    .map_err(crate::Error::from)?)
 }

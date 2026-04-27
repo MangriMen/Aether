@@ -17,6 +17,7 @@
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Transparency effect is required for this action",
       "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect",
+      "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window",
       "SAVE_FAILED": "Failed to save application settings"
     },
     "auth": {
@@ -369,7 +370,13 @@
     "whatsNew": "What's new",
     "update": "Update",
     "playground": "Playground",
-    "playgroundDescription": "UI Kit playground"
+    "playgroundDescription": "UI Kit playground",
+    "windowTransparencyDialog": {
+      "header": "Recreate Window",
+      "description": "Changes to the transparency mode require the window to be recreated. Apply changes now or keep them pending until the next launch?",
+      "ok": "Apply",
+      "later": "Later"
+    }
   },
   "update": {
     "updateError": "Failed to install update",

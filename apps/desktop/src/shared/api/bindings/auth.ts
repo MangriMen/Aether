@@ -22,6 +22,8 @@ export type AccountTypeDto = "offline" | "microsoft";
 
 export type AppSettingsErrorDto = { code: "TRANSPARENT_EFFECT_REQUIRED" } | { code: "CAN_NOT_SET_EFFECT"; payload: {
 	details: string,
+} } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
+	details: string,
 } } | { code: "SAVE_FAILED" };
 
 export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
