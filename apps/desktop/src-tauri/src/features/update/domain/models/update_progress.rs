@@ -14,4 +14,5 @@ pub enum UpdatePhase {
     Started,
     Progress,
     Finished,
+    Error,
 }

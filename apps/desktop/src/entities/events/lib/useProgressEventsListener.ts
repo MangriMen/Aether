@@ -36,7 +36,7 @@ export const useProgressEventsListener = () => {
   const removeEventDelayed = (payload: ProgressEvent) => {
     const timer = setTimeout(() => {
       removeEvent(payload.progressBarId);
-    }, 1000);
+    }, 5000);
 
     activeTimers.set(payload.progressBarId, timer);
   };

@@ -401,7 +401,8 @@
       "phase": {
         "started": "Started",
         "progress": "Progress",
-        "finished": "Finished"
+        "finished": "Finished",
+        "error": "Error"
       }
     }
   },

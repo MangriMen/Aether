@@ -64,6 +64,7 @@ pub enum LauncherUpdatePhaseDto {
     Started,
     Progress,
     Finished,
+    Error,
 }
 
 impl From<ProgressEvent> for ProgressEventDto {
@@ -133,6 +134,8 @@ impl From<ProgressEventType> for ProgressEventTypeDto {
     }
 }
 
+const UPDATE_PROGRESS_BAR_UUID: Uuid = Uuid::from_u128(0x1d1d98b5_eb55_4815_9349_8250b034aba3);
+
 impl From<UpdateProgress> for ProgressEventDto {
     fn from(value: UpdateProgress) -> Self {
         Self {
@@ -141,7 +144,7 @@ impl From<UpdateProgress> for ProgressEventDto {
                 current_version: value.current_version,
                 phase: value.phase.into(),
             },
-            progress_bar_id: Uuid::new_v4(),
+            progress_bar_id: UPDATE_PROGRESS_BAR_UUID,
             fraction: value.fraction,
             message: "Launcher is updating".to_owned(),
         }
@@ -154,6 +157,7 @@ impl From<UpdatePhase> for LauncherUpdatePhaseDto {
             UpdatePhase::Started => Self::Started,
             UpdatePhase::Progress => Self::Progress,
             UpdatePhase::Finished => Self::Finished,
+            UpdatePhase::Error => Self::Error,
         }
     }
 }

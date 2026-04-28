@@ -128,7 +128,7 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } };
 
-export type LauncherUpdatePhaseDto = "started" | "progress" | "finished";
+export type LauncherUpdatePhaseDto = "started" | "progress" | "finished" | "error";
 
 export type LoadConfigDto = 
 // Use WebAssembly (Extism) for a secure, cross-platform sandbox.
