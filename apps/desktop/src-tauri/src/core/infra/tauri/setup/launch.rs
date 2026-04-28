@@ -2,8 +2,8 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
-use crate::bindings::get_all_features_builders;
 use crate::features::{auth, events, instance, minecraft, plugins, process, settings, update};
+use crate::shared::specta::get_all_features_builders;
 
 use super::{
     super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
@@ -31,7 +31,7 @@ fn create_app() -> Builder<Wry> {
     let builders_with_name = get_all_features_builders();
 
     #[cfg(debug_assertions)]
-    crate::bindings::export_specta_builders(&builders_with_name);
+    crate::shared::specta::export_specta_builders(&builders_with_name);
 
     Builder::default()
         .setup(move |app| {

@@ -1,8 +1,8 @@
 use crate::{
     FrontendResult,
-    commands::{UPDATE_PLUGIN_NAME, update_commands},
     core::UpdateServiceState,
     features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase},
+    shared::commands::{UPDATE_PLUGIN_NAME, update_commands},
 };
 
 use tauri::State;
@@ -17,7 +17,7 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 }
 
 #[must_use]
-pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
+pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
     update_commands!(tauri_specta::collect_commands!)
 }
 

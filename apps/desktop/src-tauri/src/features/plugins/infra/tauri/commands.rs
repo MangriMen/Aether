@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use aether_core::core::LauncherState;
 
 use crate::FrontendResult;
-use crate::commands::{PLUGIN_PLUGIN_NAME, plugin_commands};
 use crate::features::plugins::{
     EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto,
 };
+use crate::shared::commands::{PLUGIN_PLUGIN_NAME, plugin_commands};
 use crate::shared::file::reveal_in_explorer;
 
 #[must_use]

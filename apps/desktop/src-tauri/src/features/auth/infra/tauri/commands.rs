@@ -2,8 +2,8 @@ use uuid::Uuid;
 
 use crate::{
     FrontendResult,
-    commands::{AUTH_PLUGIN_NAME, auth_commands},
     features::auth::infra::tauri::dtos::AccountDto,
+    shared::commands::{AUTH_PLUGIN_NAME, auth_commands},
 };
 
 #[must_use]
