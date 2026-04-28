@@ -3,6 +3,3 @@ pub mod features;
 pub mod shared;
 
 pub use core::{Error, FrontendResult, Result};
-
-mod bindings;
-mod commands;

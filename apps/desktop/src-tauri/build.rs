@@ -1,4 +1,4 @@
-#[path = "src/commands.rs"]
+#[path = "src/shared/commands.rs"]
 mod commands;
 
 use commands::{

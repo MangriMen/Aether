@@ -1,7 +1,7 @@
 use crate::{
     FrontendResult,
-    commands::{MINECRAFT_PLUGIN_NAME, minecraft_commands},
     features::minecraft::{ModLoaderDto, modded, vanilla},
+    shared::commands::{MINECRAFT_PLUGIN_NAME, minecraft_commands},
 };
 
 #[must_use]

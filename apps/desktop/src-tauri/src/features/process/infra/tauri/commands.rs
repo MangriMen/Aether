@@ -1,7 +1,7 @@
 use crate::{
     FrontendResult,
-    commands::{PROCESS_PLUGIN_NAME, process_commands},
     features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
+    shared::commands::{PROCESS_PLUGIN_NAME, process_commands},
 };
 
 #[must_use]

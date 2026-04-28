@@ -7,7 +7,6 @@ use uuid::Uuid;
 
 use crate::{
     FrontendResult,
-    commands::{INSTANCE_PLUGIN_NAME, instance_commands},
     features::{
         instance::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
@@ -19,6 +18,7 @@ use crate::{
         },
         process::MinecraftProcessMetadataDto,
     },
+    shared::commands::{INSTANCE_PLUGIN_NAME, instance_commands},
 };
 
 #[must_use]

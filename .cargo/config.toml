@@ -1,3 +1,7 @@
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld"
 rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
+
+[alias]
+gen = "run --package aether --bin typegen"
+check-gen = "check --package aether --bin typegen"

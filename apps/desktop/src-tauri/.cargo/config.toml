@@ -1,2 +1,0 @@
-[env]
-TYPE_GEN_EXPORT_DIR = { value = "../src/shared/api/bindings", relative = true }

@@ -5,12 +5,14 @@ use tauri::{AppHandle, State};
 
 use crate::{
     FrontendResult,
-    commands::{APPLICATION_PLUGIN_NAME, application_commands},
     core::{
         AppSettingsStorageState, EventEmitterState, InitializeLauncherUseCase,
         InitializePluginsUseCase, RecreateWindowUseCase, WindowManagerState,
     },
-    shared,
+    shared::{
+        self,
+        commands::{APPLICATION_PLUGIN_NAME, application_commands},
+    },
 };
 
 #[must_use]

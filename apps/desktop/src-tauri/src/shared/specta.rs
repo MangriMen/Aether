@@ -6,7 +6,7 @@ fn get_default_builder(plugin_name: &'static str) -> tauri_specta::Builder<tauri
 }
 
 pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<tauri::Wry>)> {
-    use crate::commands::{
+    use crate::shared::commands::{
         APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
         MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
         UPDATE_PLUGIN_NAME,
@@ -98,14 +98,15 @@ impl Exporter {
 }
 
 #[cfg(debug_assertions)]
+pub fn get_export_path() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/shared/api/bindings")
+}
+
+#[cfg(debug_assertions)]
 pub fn export_specta_builders(
     builders_with_names: &[(&'static str, tauri_specta::Builder<tauri::Wry>)],
 ) {
-    let out_dir = std::env::var("TYPE_GEN_EXPORT_DIR")
-        .map(PathBuf::from)
-        .expect("TYPE_GEN_EXPORT_DIR not specified");
-
-    let exporter = Exporter::new(out_dir);
+    let exporter = Exporter::new(get_export_path());
 
     for (name, builder) in builders_with_names {
         exporter.export(name, builder);

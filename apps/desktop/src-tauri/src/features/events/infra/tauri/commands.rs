@@ -2,8 +2,8 @@ use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsU
 
 use crate::{
     FrontendResult,
-    commands::{EVENTS_PLUGIN_NAME, events_commands},
     features::events::{ProgressBarDto, ProgressEventDto, WarningEventDto},
+    shared::commands::{EVENTS_PLUGIN_NAME, events_commands},
 };
 
 #[must_use]
