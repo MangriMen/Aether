@@ -2,7 +2,7 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
-use crate::bindings::create_specta_exporters;
+use crate::bindings::get_all_features_builders;
 use crate::features::{auth, events, instance, minecraft, plugins, process, settings, update};
 
 use super::{
@@ -28,17 +28,15 @@ fn build_app() -> crate::Result<tauri::App> {
 }
 
 fn create_app() -> Builder<Wry> {
-    let exporters = create_specta_exporters();
+    let builders_with_name = get_all_features_builders();
 
     #[cfg(debug_assertions)]
-    for exporter in &exporters {
-        exporter.export();
-    }
+    crate::bindings::export_specta_builders(&builders_with_name);
 
     Builder::default()
         .setup(move |app| {
-            for exporter in &exporters {
-                exporter.builder.mount_events(app);
+            for (_, builder) in &builders_with_name {
+                builder.mount_events(app);
             }
 
             init_app(app);

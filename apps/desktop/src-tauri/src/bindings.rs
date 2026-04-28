@@ -1,35 +1,3 @@
-use std::path::{Path, PathBuf};
-
-pub struct Exporter {
-    plugin_name: &'static str,
-    pub builder: tauri_specta::Builder<tauri::Wry>,
-    out_dir: PathBuf,
-}
-
-impl Exporter {
-    fn new<T: AsRef<Path>>(
-        plugin_name: &'static str,
-        builder: tauri_specta::Builder<tauri::Wry>,
-        out_dir: T,
-    ) -> Self {
-        let _ = std::fs::create_dir_all(&out_dir);
-        Self {
-            plugin_name,
-            builder,
-            out_dir: out_dir.as_ref().to_path_buf(),
-        }
-    }
-
-    pub fn export(&self) {
-        self.builder
-            .export(
-                specta_typescript::Typescript::default(),
-                self.out_dir.join(format!("{}.ts", self.plugin_name)),
-            )
-            .unwrap_or_else(|err| panic!("Failed to export {} bindings.{}", self.plugin_name, err));
-    }
-}
-
 fn get_default_builder(plugin_name: &'static str) -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .error_handling(tauri_specta::ErrorHandlingMode::Throw)
@@ -37,7 +5,7 @@ fn get_default_builder(plugin_name: &'static str) -> tauri_specta::Builder<tauri
         .disable_serde_phases()
 }
 
-fn get_all_features_builders(out_dir: &PathBuf) -> Vec<Exporter> {
+pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<tauri::Wry>)> {
     use crate::commands::{
         APPLICATION_PLUGIN_NAME, AUTH_PLUGIN_NAME, EVENTS_PLUGIN_NAME, INSTANCE_PLUGIN_NAME,
         MINECRAFT_PLUGIN_NAME, PLUGIN_PLUGIN_NAME, PROCESS_PLUGIN_NAME, SETTINGS_PLUGIN_NAME,
@@ -97,15 +65,49 @@ fn get_all_features_builders(out_dir: &PathBuf) -> Vec<Exporter> {
                 builder
             };
 
-            Exporter::new(name, builder, out_dir)
+            (name, builder)
         })
         .collect()
 }
 
-pub fn create_specta_exporters() -> Vec<Exporter> {
+#[cfg(debug_assertions)]
+use std::path::{Path, PathBuf};
+
+#[cfg(debug_assertions)]
+pub struct Exporter {
+    out_dir: PathBuf,
+}
+
+#[cfg(debug_assertions)]
+impl Exporter {
+    fn new<T: AsRef<Path>>(out_dir: T) -> Self {
+        let _ = std::fs::create_dir_all(&out_dir);
+        Self {
+            out_dir: out_dir.as_ref().to_path_buf(),
+        }
+    }
+
+    pub fn export(&self, plugin_name: &'static str, builder: &tauri_specta::Builder<tauri::Wry>) {
+        builder
+            .export(
+                specta_typescript::Typescript::default(),
+                self.out_dir.join(format!("{plugin_name}.ts")),
+            )
+            .unwrap_or_else(|err| panic!("Failed to export {plugin_name} bindings.{err}"));
+    }
+}
+
+#[cfg(debug_assertions)]
+pub fn export_specta_builders(
+    builders_with_names: &[(&'static str, tauri_specta::Builder<tauri::Wry>)],
+) {
     let out_dir = std::env::var("TYPE_GEN_EXPORT_DIR")
         .map(PathBuf::from)
         .expect("TYPE_GEN_EXPORT_DIR not specified");
 
-    get_all_features_builders(&out_dir)
+    let exporter = Exporter::new(out_dir);
+
+    for (name, builder) in builders_with_names {
+        exporter.export(name, builder);
+    }
 }

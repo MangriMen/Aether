@@ -49,6 +49,12 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
     }
   });
 
+  const isError = createMemo(
+    () =>
+      local.payload.event.type === 'launcher_update' &&
+      local.payload.event.phase === 'error',
+  );
+
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
 
   return (
@@ -62,7 +68,12 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         </span>
       </div>
 
-      <Progress value={clampedValue()} minValue={0} maxValue={1} />
+      <Progress
+        variant={isError() ? 'error' : undefined}
+        value={clampedValue()}
+        minValue={0}
+        maxValue={1}
+      />
 
       <span class='truncate text-sm text-muted-foreground'>{message()}</span>
     </div>

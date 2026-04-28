@@ -401,7 +401,8 @@
       "phase": {
         "started": "Запуск",
         "progress": "В процессе",
-        "finished": "Завершено"
+        "finished": "Завершено",
+        "error": "Ошибка"
       }
     }
   },
