@@ -36,8 +36,8 @@ export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {
           <span class='text-muted-foreground'>({local.capability.id})</span>
         </span>
         <IconMdiChevronDown
-          class={cn('ml-auto -rotate-180 transition-transform', {
-            'rotate-0': isOpened(),
+          class={cn('ml-auto rotate-0 transition-transform', {
+            '-rotate-180': isOpened(),
           })}
         />
       </CollapsibleTrigger>

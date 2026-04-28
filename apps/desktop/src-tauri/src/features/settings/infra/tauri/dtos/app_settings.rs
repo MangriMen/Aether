@@ -7,6 +7,7 @@ use crate::features::settings::{ActionOnInstanceLaunch, AppSettings, WindowEffec
 #[serde(rename_all = "camelCase")]
 pub struct AppSettingsDto {
     pub action_on_instance_launch: ActionOnInstanceLaunchDto,
+    pub is_actual_transparent: bool,
     pub transparent: bool,
     pub window_effect: WindowEffectDto,
 }
@@ -35,6 +36,7 @@ impl From<AppSettings> for AppSettingsDto {
     fn from(value: AppSettings) -> Self {
         Self {
             action_on_instance_launch: value.action_on_instance_launch.into(),
+            is_actual_transparent: value.is_actual_transparent,
             transparent: value.transparent,
             window_effect: value.window_effect.into(),
         }

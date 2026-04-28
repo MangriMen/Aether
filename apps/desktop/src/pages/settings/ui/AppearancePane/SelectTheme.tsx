@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import type { Component, ComponentProps } from 'solid-js';
 
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
@@ -28,7 +28,9 @@ export type SelectThemeProps = Pick<
   'name' | 'id'
 >;
 
-export const SelectTheme: Component<SelectThemeProps> = (props) => {
+export const SelectTheme: Component<
+  Omit<ComponentProps<'div'>, 'onChange'> & SelectThemeProps
+> = (props) => {
   const [themeContext, { setTheme }] = useThemeContext();
 
   const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>(

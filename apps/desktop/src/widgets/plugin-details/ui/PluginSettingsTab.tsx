@@ -45,7 +45,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col',
+        'flex flex-col grow overflow-y-auto',
         {
           'text-muted-foreground': local.isSettingsDisabled,
         },
@@ -59,7 +59,6 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         </span>
       </Show>
       <PluginSettingsForm
-        class='grow'
         runtimeConfig={local.plugin.manifest.runtime}
         initialValues={initialValues}
         onChangePartial={onChangePartial}

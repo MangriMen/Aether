@@ -1,9 +1,11 @@
-import { Show, type Component, type ComponentProps } from 'solid-js';
+import { Show, type Component } from 'solid-js';
+
+import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useThemeContext, useTranslation } from '@/shared/model';
 import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
 
-export type DisableAnimationsEntryProps = ComponentProps<'div'>;
+export type DisableAnimationsEntryProps = SettingsEntryProps;
 
 export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
   props,

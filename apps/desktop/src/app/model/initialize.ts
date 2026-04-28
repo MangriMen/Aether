@@ -1,6 +1,4 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
-
-import { applicationCommands } from '@/shared/api';
+import { commands as applicationCommands } from '@/entities/application';
 import { logError } from '@/shared/lib';
 
 import { exposeWindowMethods } from '../lib';
@@ -17,7 +15,7 @@ export const setupApp = async () => {
     await applicationCommands.initializePlugins();
   } catch (e) {
     logError(e);
-    await getCurrentWindow().show().catch(logError);
+    await showWindow().catch(logError);
     throw e;
   }
 };

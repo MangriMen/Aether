@@ -1,6 +1,7 @@
-import { createMemo, type Component, type ComponentProps } from 'solid-js';
+import { createMemo, type Component } from 'solid-js';
 
 import type { Locale, Option } from '@/shared/model';
+import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useTranslation } from '@/shared/model';
 import { SettingsEntry } from '@/shared/ui';
@@ -8,9 +9,11 @@ import { SettingsEntry } from '@/shared/ui';
 import { LOCALE_OPTIONS } from '../../model';
 import SelectLanguage from './SelectLanguage';
 
-export type ChangeLanguageEntryProps = ComponentProps<'div'>;
+export type ChangeLanguageEntryProps = SettingsEntryProps;
 
-const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
+export const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (
+  props,
+) => {
   const [{ locale, t }, { setLocale }] = useTranslation();
 
   const currentOption = createMemo(() =>
@@ -40,5 +43,3 @@ const ChangeLanguageEntry: Component<ChangeLanguageEntryProps> = (props) => {
     </SettingsEntry>
   );
 };
-
-export default ChangeLanguageEntry;

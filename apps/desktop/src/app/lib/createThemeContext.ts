@@ -39,6 +39,7 @@ export const createThemeContext = (
     setRawTheme,
     setTheme,
     setThemeByColorMode,
+    setIsActualTransparent,
     setTransparencyEnabled,
     setTransparency,
     setDisableAnimations,
@@ -115,6 +116,7 @@ export const createThemeContext = (
   const actions: ThemeContextActions = {
     setTheme: setRawTheme,
     setThemeByColorMode: setThemeByColorMode,
+    setIsActualTransparent: setIsActualTransparent,
     setTransparencyEnabled: setTransparencyEnabled,
     setTransparency: setTransparency,
     setDisableAnimations: setDisableAnimations,
@@ -146,12 +148,17 @@ const createContext = (themeStateKey: Accessor<string>) => {
     setState(COLOR_MODE_TO_THEME_KEY[colorMode], theme);
   };
 
+  const setIsActualTransparent = (isActualTransparent: boolean) => {
+    setState('isActualTransparent', isActualTransparent);
+  };
+
   const setTransparencyEnabled = (isEnabled: boolean) => {
     setState('transparencyEnabled', isEnabled);
   };
 
   const setTransparency = (transparency: number) => {
-    setState('transparency', transparency);
+    const clampedTransparency = Math.max(Math.min(transparency, 1), 0);
+    setState('transparency', clampedTransparency);
   };
 
   const setDisableAnimations = (disableAnimations: boolean) => {
@@ -167,6 +174,7 @@ const createContext = (themeStateKey: Accessor<string>) => {
     setRawTheme,
     setTheme,
     setThemeByColorMode,
+    setIsActualTransparent,
     setTransparencyEnabled,
     setTransparency,
     setDisableAnimations,

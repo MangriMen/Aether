@@ -46,7 +46,7 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
       <Separator />
 
       <PluginDetailsBody
-        class='ml-4 grow'
+        class='ml-4'
         plugin={local.plugin}
         isSettingsDisabled={isSettingsDisabled()}
       />

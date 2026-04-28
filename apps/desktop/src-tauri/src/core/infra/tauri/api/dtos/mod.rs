@@ -10,6 +10,7 @@ mod plugin_error;
 mod process_error;
 mod request_error;
 mod settings_error;
+mod window_error;
 
 pub use app_settings_error::*;
 pub use auth_error::*;
@@ -23,3 +24,4 @@ pub use plugin_error::*;
 pub use process_error::*;
 pub use request_error::*;
 pub use settings_error::*;
+pub use window_error::*;

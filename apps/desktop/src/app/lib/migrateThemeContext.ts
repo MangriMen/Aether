@@ -16,6 +16,8 @@ export const migrateThemeContext = (value: unknown): ThemeContextValue => {
     rawTheme: uValue['rawTheme'] ?? defaults['rawTheme'],
     lightTheme: uValue['lightTheme'] ?? defaults['lightTheme'],
     darkTheme: uValue['darkTheme'] ?? defaults['darkTheme'],
+    isActualTransparent:
+      uValue['isActualTransparent'] ?? defaults['isActualTransparent'],
     transparencyEnabled:
       uValue['transparencyEnabled'] ?? defaults['transparencyEnabled'],
     transparency: uValue['transparency'] ?? defaults['transparency'],

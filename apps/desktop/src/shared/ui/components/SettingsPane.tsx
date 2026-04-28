@@ -9,12 +9,14 @@ export type SettingsPaneProps = ComponentProps<'div'> & {
   label?: JSX.Element;
   collapsible?: boolean;
   defaultOpened?: boolean;
+  childrenWrapperClass?: string;
 };
 
 export const SettingsPane: Component<SettingsPaneProps> = (props) => {
   const [local, others] = splitProps(props, [
     'label',
     'collapsible',
+    'childrenWrapperClass',
     'class',
     'children',
   ]);
@@ -24,13 +26,20 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       when={local.collapsible}
       fallback={
         <div
-          class={cn('flex flex-col gap-4 rounded-lg px-6 py-4', local.class)}
+          class={cn('flex flex-col gap-4 rounded-lg', local.class)}
           {...others}
         >
           <Show when={local.label}>
-            <h2 class='text-2xl font-bold'>{local.label}</h2>
+            <h2 class='text-2xl font-semibold'>{local.label}</h2>
           </Show>
-          {local.children}
+          <div
+            class={cn(
+              'flex flex-col gap-2 overflow-y-auto grow',
+              local.childrenWrapperClass,
+            )}
+          >
+            {local.children}
+          </div>
         </div>
       }
     >

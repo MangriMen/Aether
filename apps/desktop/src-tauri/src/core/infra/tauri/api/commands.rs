@@ -6,7 +6,10 @@ use tauri::{AppHandle, State};
 use crate::{
     FrontendResult,
     commands::{APPLICATION_PLUGIN_NAME, application_commands},
-    core::{EventEmitterState, InitializeLauncherUseCase, InitializePluginsUseCase},
+    core::{
+        AppSettingsStorageState, EventEmitterState, InitializeLauncherUseCase,
+        InitializePluginsUseCase, RecreateWindowUseCase, WindowManagerState,
+    },
     shared,
 };
 
@@ -46,4 +49,18 @@ pub async fn initialize_plugins() -> FrontendResult<()> {
 #[tauri::command]
 pub fn reveal_in_explorer(path: String, exact: bool) -> FrontendResult<()> {
     Ok(shared::reveal_in_explorer(Path::new(&path), exact)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn recreate_window(
+    app_settings_storage: State<'_, AppSettingsStorageState>,
+    window_manager: State<'_, WindowManagerState<tauri::Wry>>,
+) -> FrontendResult<()> {
+    Ok(RecreateWindowUseCase::new(
+        app_settings_storage.inner().clone(),
+        window_manager.inner().clone(),
+    )
+    .execute()
+    .await?)
 }

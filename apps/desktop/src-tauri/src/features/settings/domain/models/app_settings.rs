@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub action_on_instance_launch: ActionOnInstanceLaunch,
+    pub is_actual_transparent: bool,
     pub transparent: bool,
     pub window_effect: WindowEffect,
 }

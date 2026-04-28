@@ -93,7 +93,7 @@ export const tailwindConfig: Config = {
     plugin(function ({ addComponents, theme }) {
       addComponents({
         '.p-page': {
-          padding: theme('spacing.4'),
+          padding: theme('spacing.6'),
           paddingTop: theme('spacing.px'),
         },
       });

@@ -1,6 +1,8 @@
-import type { Component, ComponentProps } from 'solid-js';
+import type { Component } from 'solid-js';
 
 import { createMemo, Show, splitProps } from 'solid-js';
+
+import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useCheckUpdate, useUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates';
@@ -11,7 +13,7 @@ import { Button, SettingsEntry, showToast } from '@/shared/ui';
 import { UpdateDescription } from './UpdateDescription';
 import { WhatsNew } from './WhatsNew';
 
-export type UpdateAppEntryProps = ComponentProps<'div'>;
+export type UpdateAppEntryProps = SettingsEntryProps;
 
 export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
@@ -48,8 +50,8 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <div>
       <SettingsEntry
-        class={cn('items-start', local.class)}
-        title={t('settings.checkForUpdates')}
+        class={cn(local.class)}
+        title={t('settings.tab.update')}
         description={
           <UpdateDescription
             isUpdateAvailable={isUpdateAvailable()}
@@ -58,15 +60,13 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
         }
         {...others}
       >
-        <div class='mt-6 flex h-full min-w-max flex-col justify-start gap-2'>
-          <UpdateButton
-            isUpdateAvailable={isUpdateAvailable()}
-            isFetching={update.isFetching}
-            isUpdating={isUpdating()}
-            onCheckUpdates={handleCheckUpdates}
-            onSubmitUpdate={handleInstallUpdate}
-          />
-        </div>
+        <UpdateButton
+          isUpdateAvailable={isUpdateAvailable()}
+          isFetching={update.isFetching}
+          isUpdating={isUpdating()}
+          onCheckUpdates={handleCheckUpdates}
+          onSubmitUpdate={handleInstallUpdate}
+        />
       </SettingsEntry>
       <Show when={update.data?.body}>
         {(body) => <WhatsNew changelogBody={body()} />}

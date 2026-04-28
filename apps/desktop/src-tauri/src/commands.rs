@@ -14,6 +14,7 @@ macro_rules! application_commands {
         $($tokens)* [
             initialize_state,
             initialize_plugins,
+            recreate_window
         ]
     };
 }

@@ -1,3 +1,4 @@
+export * from './CollapsibleSettingsEntry';
 export * from './CollapsibleSettingsPane';
 export * from './CombinedDialog';
 export * from './CombinedPagination';

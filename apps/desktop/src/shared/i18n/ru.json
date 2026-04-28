@@ -17,7 +17,8 @@
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
       "CAN_NOT_SET_EFFECT": "Невозможно применить запрошенный эффект",
-      "SAVE_FAILED": "Не удалось сохранить настройки приложения"
+      "SAVE_FAILED": "Не удалось сохранить настройки приложения",
+      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
@@ -129,6 +130,12 @@
     "settings": {
       "NOT_FOUND": "Файл настроек не найден",
       "STORAGE_FAILURE": "Ошибка хранилища настроек"
+    },
+    "window": {
+      "ALREADY_EXISTS": "Окно с меткой {{label}} уже существует",
+      "NOT_FOUND": "Окно не найдено {{label}}",
+      "PLATFORM_NOT_SUPPORTED": "Платформа не поддерживается",
+      "OTHER": "Неизвестная ошибка"
     }
   },
   "common": {
@@ -353,7 +360,6 @@
     "toggleWindowTransparency": "Включить прозрачность окна",
     "toggleWindowTransparencyDescription": "Перезапустите приложение для применения прозрачности",
     "windowEffect": "Эффект окна",
-    "windowEffectDescription": "Эффект окна применяемый при включенной прозрачности",
     "windowEffectDisabled": "Невозможно включить эффекты окна без прозрачности окна",
     "windowEffectVariant": {
       "acrylic": "Acrylic",
@@ -366,16 +372,22 @@
     "updateAvailable": "Доступна новая версия!",
     "goToUpdatePage": "Перейти на страницу",
     "updateIsReadyToInstall": "доступна для установки!",
-    "updateNotificationStyle": "Стиль уведомлений обновлений",
+    "updateNotificationStyle": "Стиль уведомлений об обновлении",
     "whatsNew": "Что нового",
     "update": "Обновить",
     "playground": "Playground",
-    "playgroundDescription": "UI Kit playground"
+    "playgroundDescription": "UI Kit playground",
+    "windowTransparencyDialog": {
+      "description": "Изменения режима прозрачности требуют пересоздания окна. \nПрименить изменения сейчас или отложить их до следующего запуска?",
+      "header": "Пересоздание окна",
+      "ok": "Применить",
+      "later": "Отложить"
+    }
   },
   "update": {
     "updateError": "Не удалось установить обновление",
     "banner": "Баннер",
-    "toast": "Всплывающее",
+    "toast": "Уведомление",
     "restartWarningDescription": "Новая версия будет загружена и установлена. \nПриложение перезапустится сразу после завершения загрузки.",
     "restartWarningTitle": "Обновить и перезапустить",
     "fetchError": "Не удалось проверить обновления",

@@ -20,8 +20,8 @@ export const UpdatePane: Component<UpdatePaneProps> = (props) => {
       label={t('settings.tab.update')}
       {...others}
     >
-      <UpdateNotificationStyleEntry />
-      <UpdateAppEntry />
+      <UpdateNotificationStyleEntry variant='card' />
+      <UpdateAppEntry variant='card' />
     </SettingsPane>
   );
 };

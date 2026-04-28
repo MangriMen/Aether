@@ -2,6 +2,8 @@ import type { Component } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
+import type { SettingsEntryProps } from '@/shared/ui';
+
 import {
   useAppSettings,
   useEditAppSettings,
@@ -17,9 +19,7 @@ import {
   SettingsEntry,
 } from '@/shared/ui';
 
-export type SelectActionOnInstanceLaunchProps = {
-  class?: string;
-};
+export type SelectActionOnInstanceLaunchEntryProps = SettingsEntryProps;
 
 type ActionOnInstanceLaunchName = 'doNothing' | 'hide' | 'close';
 type ActionOnInstanceLaunchOption = Option<
@@ -34,7 +34,7 @@ const ACTION_ON_INSTANCE_LAUNCH_OPTIONS: ActionOnInstanceLaunchOption[] = [
 ];
 
 export const SelectActionOnInstanceLaunchEntry: Component<
-  SelectActionOnInstanceLaunchProps
+  SelectActionOnInstanceLaunchEntryProps
 > = (props) => {
   const [{ t }] = useTranslation();
 
