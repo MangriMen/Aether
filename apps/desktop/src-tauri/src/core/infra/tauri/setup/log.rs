@@ -15,7 +15,7 @@ pub fn default_log_builder() -> tauri_plugin_log::Builder {
         log_builder
     } else {
         let (default_level, external_level) = if cfg!(debug_assertions) {
-            (LevelFilter::Trace, LevelFilter::Info)
+            (LevelFilter::Debug, LevelFilter::Info)
         } else {
             (LevelFilter::Info, LevelFilter::Warn)
         };
