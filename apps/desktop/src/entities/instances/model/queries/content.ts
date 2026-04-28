@@ -10,6 +10,7 @@ import type { PartialBy } from '@/shared/model';
 
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { useFeatureFlagsStore } from '@/shared/model/featureFlags';
 import { showToast } from '@/shared/ui';
 
 import type {
@@ -18,6 +19,7 @@ import type {
   ContentSearchParams,
   Instance,
 } from '..';
+import type { ContentInstallParamsDto } from '../../api';
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 import { ContentType } from '..';
@@ -122,9 +124,16 @@ export const useRemoveContents = () => {
 export const useInstallContent = () => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
+  const [ff] = useFeatureFlagsStore();
 
   return useMutation(() => ({
-    mutationFn: commands.installContent,
+    mutationFn: (payload: ContentInstallParamsDto) => {
+      if (!ff.isAllowInstallModpacks && payload.type === 'modpack') {
+        throw new Error('Installing modpacks is prohibited');
+      }
+
+      return commands.installContent(payload);
+    },
     onSuccess: (_, payload) => {
       if (payload.type === 'atomic') {
         invalidateInstanceContent(queryClient, payload.data.instanceId);

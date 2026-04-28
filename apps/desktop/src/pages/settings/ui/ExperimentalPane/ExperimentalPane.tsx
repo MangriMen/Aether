@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
+import { FeatureFlagsEntry } from './FeatureFlagsEntry';
 import { GoToPlaygroundEntry } from './GoToPlaygroundEntry';
 
 export type ExperimentalPaneProps = ComponentProps<'div'>;
@@ -20,6 +21,7 @@ export const ExperimentalPane: Component<ExperimentalPaneProps> = (props) => {
       {...others}
     >
       <GoToPlaygroundEntry variant='card' />
+      <FeatureFlagsEntry variant='card' />
     </SettingsPane>
   );
 };
