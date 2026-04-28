@@ -1,5 +1,6 @@
 export * from './capability_entry';
 export * from './error';
+export * from './featureFlags';
 export * from './globalDialog';
 export * from './i18n';
 export * from './i18nContext';

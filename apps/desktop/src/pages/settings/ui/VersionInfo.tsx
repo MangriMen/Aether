@@ -10,7 +10,7 @@ export type VersionInfoProps = ComponentProps<'div'>;
 export const VersionInfo: Component<VersionInfoProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
-  const [counter, handleClickLogo] = useDeveloperModeCounter();
+  const [, handleClickLogo] = useDeveloperModeCounter();
 
   return (
     <div
@@ -21,9 +21,7 @@ export const VersionInfo: Component<VersionInfoProps> = (props) => {
       {...others}
     >
       <span>
-        <AppVersion class='w-max cursor-pointer' onClick={handleClickLogo} />
-        &nbsp;
-        {Array(counter() + 1).join('.')}
+        <AppVersion class='w-max' onClick={handleClickLogo} />
       </span>
       <OsVersion />
     </div>
