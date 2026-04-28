@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Navigation: Back and Forward buttons for a more intuitive UI experience.
+- Transparency: Stabilized transparency settings, now conveniently located in the Appearance tab.
+
+### Changed
+
+- Performance: Overhauled the internal event system for better responsiveness.
+- UI/UX: Fully reworked the design to be more consistent and user-friendly.
+
 ## [0.8.7] - 2026-01-29
 
 ### Fixed
