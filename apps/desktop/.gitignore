@@ -11,4 +11,4 @@ tsconfig.tsbuildinfo
 .roo/rules
 
 # Codegen
-src/6_shared/api/bindings
+src/shared/api/bindings
