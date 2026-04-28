@@ -228,7 +228,7 @@ export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
   });
 };
 
-export const useContentVersion = (
+export const useContentVersions = (
   params: Accessor<ContentListVersionParams | undefined>,
 ) => {
   return useQuery(() => {

@@ -42,5 +42,7 @@ pub fn default_log_builder() -> tauri_plugin_log::Builder {
             .level_for("cranelift_codegen", external_level)
             // Tauri plugins
             .level_for("tauri_plugin_updater", LevelFilter::Info)
+            // Logging
+            .level_for("tracing::span", external_level)
     }
 }

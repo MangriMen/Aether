@@ -2,23 +2,23 @@ use std::sync::Arc;
 
 use crate::{
     features::instance::{
-        ContentProvider, ContentVersion, InstanceError, app::ContentListVersionParams,
+        ContentProvider, ContentVersion, InstanceError, app::ContentListVersionsParams,
     },
     shared::CapabilityRegistry,
 };
 
-pub struct ListContentVersionUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
+pub struct ListContentVersionsUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
     provider_registry: Arc<CP>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionUseCase<CP> {
+impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionsUseCase<CP> {
     pub fn new(provider_registry: Arc<CP>) -> Self {
         Self { provider_registry }
     }
 
     pub async fn execute(
         &self,
-        get_params: ContentListVersionParams,
+        get_params: ContentListVersionsParams,
     ) -> Result<Vec<ContentVersion>, InstanceError> {
         let provider_id = &get_params.provider_id;
 
@@ -33,7 +33,7 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionUseCase
 
         provider
             .capability
-            .list_version(get_params.content_id)
+            .list_versions(get_params.content_id)
             .await
     }
 }

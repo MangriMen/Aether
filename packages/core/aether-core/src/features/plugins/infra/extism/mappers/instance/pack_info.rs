@@ -5,9 +5,9 @@ use crate::features::instance::PackInfo;
 impl From<PackInfoDto> for PackInfo {
     fn from(value: PackInfoDto) -> Self {
         Self {
-            plugin_id: value.plugin_id,
+            provider_id: value.provider_id.into(),
             modpack_id: value.modpack_id,
-            version: value.version,
+            version_id: value.version,
         }
     }
 }

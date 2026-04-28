@@ -13,9 +13,9 @@ use crate::{
         app::{
             ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentGetParams,
-            ContentListVersionParams, ContentStateAction, GetContentUseCase, ImportContent,
+            ContentListVersionsParams, ContentStateAction, GetContentUseCase, ImportContent,
             ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
-            ListContentVersionUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
+            ListContentVersionsUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
             SearchContentUseCase,
         },
     },
@@ -157,13 +157,13 @@ pub async fn get_content(params: ContentGetParams) -> crate::Result<ContentItem>
     )
 }
 
-pub async fn list_content_version(
-    params: ContentListVersionParams,
+pub async fn list_content_versions(
+    params: ContentListVersionsParams,
 ) -> crate::Result<Vec<ContentVersion>> {
     let lazy_locator = LazyLocator::get().await?;
 
     Ok(
-        ListContentVersionUseCase::new(lazy_locator.get_content_provider_registry().await)
+        ListContentVersionsUseCase::new(lazy_locator.get_content_provider_registry().await)
             .execute(params)
             .await?,
     )

@@ -58,15 +58,15 @@ impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstan
         instance_id: &str,
         pack_info: &PackInfo,
     ) -> Result<(), InstanceError> {
-        let modpack_id = &pack_info.modpack_id;
-        let plugin_id = &pack_info.plugin_id;
-
         let updater = self
             .updaters_registry
-            .find_by_plugin_and_capability_id(plugin_id, modpack_id)
+            .find_by_plugin_and_capability_id(
+                &pack_info.provider_id.plugin_id,
+                &pack_info.provider_id.capability_id,
+            )
             .await
             .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: modpack_id.clone(),
+                modpack_id: pack_info.modpack_id.clone(),
             })?;
 
         updater.capability.update(instance_id).await

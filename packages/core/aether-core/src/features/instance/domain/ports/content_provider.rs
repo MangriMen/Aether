@@ -20,7 +20,8 @@ pub trait ContentProvider: Send + Sync {
 
     async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError>;
 
-    async fn list_version(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError>;
+    async fn list_versions(&self, content_id: String)
+    -> Result<Vec<ContentVersion>, InstanceError>;
 
     async fn install_atomic(
         &self,
