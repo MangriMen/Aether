@@ -1,6 +1,6 @@
 use serr::SerializeError;
 
-use crate::features::settings::AppSettingsError;
+use crate::{core::WindowError, features::settings::AppSettingsError};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -8,6 +8,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error(transparent)]
     AppSettingsError(#[from] AppSettingsError),
+
+    #[error(transparent)]
+    WindowError(#[from] WindowError),
 
     #[error("Launch critical error: {0}")]
     LaunchError(String),

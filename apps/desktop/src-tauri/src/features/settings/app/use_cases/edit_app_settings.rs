@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
-use crate::features::settings::{
-    AppSettings, AppSettingsError, AppSettingsStorage, EditAppSettingsRequest, WindowManager,
+use crate::{
+    core::{WindowLabel, WindowManager},
+    features::settings::{
+        AppSettings, AppSettingsError, AppSettingsStorage, EditAppSettingsRequest,
+    },
 };
 
 pub struct EditAppSettingsUseCase<ASS: AppSettingsStorage, WM: WindowManager> {
@@ -53,9 +56,9 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> EditAppSettingsUseCase<ASS, WM>
 
         if is_transparent_or_was_it && !is_effect_equals {
             self.window_manager
-                .apply_visual_effects(new_settings.window_effect)
+                .apply_visual_effect(WindowLabel::Main, new_settings.window_effect)
                 .await
-                .map_err(|err| AppSettingsError::CanNotSetEffect(err.clone()))?;
+                .map_err(|err| AppSettingsError::CanNotSetEffect(err.to_string()))?;
         }
 
         Ok(())

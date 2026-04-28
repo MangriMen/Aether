@@ -1,4 +1,5 @@
 mod commands;
-pub mod dtos;
+mod dtos;
 
 pub use commands::*;
+pub use dtos::*;

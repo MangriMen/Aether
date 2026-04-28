@@ -4,7 +4,7 @@ use specta::Type;
 use crate::core::{
     AppSettingsErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto, InstanceErrorDto,
     JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto, RequestErrorDto,
-    SettingsErrorDto,
+    SettingsErrorDto, WindowErrorDto,
 };
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
@@ -13,6 +13,8 @@ pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
 #[serde(tag = "type", content = "payload", rename_all = "camelCase")]
 pub enum FrontendError {
     AppSettings(AppSettingsErrorDto),
+
+    Window(WindowErrorDto),
 
     Auth(AuthErrorDto),
 
@@ -47,6 +49,7 @@ impl From<crate::Error> for FrontendError {
     fn from(value: crate::Error) -> Self {
         match value {
             crate::Error::AppSettingsError(err) => Self::AppSettings(err.into()),
+            crate::Error::WindowError(err) => Self::Window(err.into()),
             crate::Error::LaunchError(err) => Self::Internal(err),
             crate::Error::IoError(err) => Self::Generic(err.to_string()),
             crate::Error::Core(core_err) => Self::from(core_err.raw.as_ref()),

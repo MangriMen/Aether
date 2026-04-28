@@ -40,7 +40,7 @@ fn create_app() -> Builder<Wry> {
                 exporter.builder.mount_events(app);
             }
 
-            init_app(app)?;
+            init_app(app);
 
             Ok(())
         })

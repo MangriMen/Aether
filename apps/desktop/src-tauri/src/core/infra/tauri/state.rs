@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use crate::features::{
-    events::TauriEventEmitter,
-    settings::{FsAppSettingsStorage, TauriWindowManager},
-    update::TauriUpdateService,
+use crate::{
+    core::TauriWindowManager,
+    features::{
+        events::TauriEventEmitter, settings::FsAppSettingsStorage, update::TauriUpdateService,
+    },
 };
 
 pub type AppSettingsStorageState = Arc<FsAppSettingsStorage>;
