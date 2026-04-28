@@ -20,9 +20,6 @@ pub fn init_app(app: &mut App) {
     let app_settings_storage_state = app_handle.state::<AppSettingsStorageState>();
     let app_settings_storage = app_settings_storage_state.inner().clone();
 
-    let app_settings = tauri::async_runtime::block_on(async { app_settings_storage.get().await })
-        .unwrap_or_default();
-
     let window_manager_state = app_handle.state::<WindowManagerState<tauri::Wry>>();
     let event_emitter_state = app_handle.state::<EventEmitterState<tauri::Wry>>();
 
@@ -31,6 +28,10 @@ pub fn init_app(app: &mut App) {
 
     tauri::async_runtime::spawn(async move {
         let main_window_label = WindowLabel::Main;
+
+        let app_settings = app_settings_storage.get().await.unwrap_or_else(|err| {
+            panic!("CRITICAL: Failed to get app settings: {err}");
+        });
 
         window_manager
             .create_window(

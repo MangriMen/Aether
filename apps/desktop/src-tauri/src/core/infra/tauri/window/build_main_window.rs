@@ -1,10 +1,15 @@
 #![allow(clippy::needless_pass_by_value)]
 use tauri::{AppHandle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri_plugin_window_state::StateFlags;
 
 const WINDOW_TITLE: &str = "Aether";
 
 const DEFAULT_SIZE: (f64, f64) = (1024.0, 640.0);
 const MIN_SIZE: (f64, f64) = (768.0, 480.0);
+
+pub fn get_main_window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
+}
 
 /// Builds and configures the main application window
 pub fn build_main_window<R: tauri::Runtime>(
@@ -32,7 +37,10 @@ pub fn build_main_window<R: tauri::Runtime>(
 
     #[cfg(target_os = "macos")]
     {
-        builder = builder.transparent(transparent).shadow(true);
+        #[cfg(feature = "macos-private-api")]
+        {
+            builder = builder.transparent(transparent).shadow(true);
+        }
     }
 
     #[cfg(target_os = "linux")]

@@ -1,10 +1,7 @@
 import { createSignal, type ComponentProps } from 'solid-js';
 
-import {
-  useAppSettings,
-  useEditAppSettings,
-  useRecreateWindow,
-} from '@/entities/settings';
+import { useRecreateWindow } from '@/entities/application';
+import { useAppSettings, useEditAppSettings } from '@/entities/settings';
 import { useTranslation } from '@/shared/model';
 import {
   CombinedDialog,

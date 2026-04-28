@@ -1,4 +1,4 @@
-import { applicationCommands } from '@/shared/api';
+import { commands as applicationCommands } from '@/entities/application';
 import { logError } from '@/shared/lib';
 
 import { exposeWindowMethods } from '../lib';

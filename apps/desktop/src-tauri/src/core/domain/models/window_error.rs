@@ -2,6 +2,9 @@ use crate::core::WindowLabel;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WindowError {
+    #[error("Window with label '{}' already exists", label.as_ref())]
+    AlreadyExists { label: WindowLabel },
+
     #[error("Window with label '{}' was not found", label.as_ref())]
     NotFound { label: WindowLabel },
 

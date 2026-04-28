@@ -1,6 +1,4 @@
-use std::{sync::Arc, time::Duration};
-
-use tokio::time::sleep;
+use std::sync::Arc;
 
 use crate::{
     core::{WindowLabel, WindowManager},
@@ -21,9 +19,9 @@ impl<ASS: AppSettingsStorage, WM: WindowManager> RecreateWindowUseCase<ASS, WM> 
     }
 
     pub async fn execute(&self) -> crate::Result<()> {
-        self.window_manager.close_window(WindowLabel::Main).await?;
-
-        sleep(Duration::from_secs(1)).await;
+        self.window_manager
+            .close_window_and_wait(WindowLabel::Main)
+            .await?;
 
         let mut app_settings = self.app_settings_storage.get().await?;
 

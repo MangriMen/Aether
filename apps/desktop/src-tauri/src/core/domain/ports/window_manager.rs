@@ -19,6 +19,8 @@ pub trait WindowManager: Send + Sync {
 
     async fn close_window(&self, label: WindowLabel) -> Result<(), WindowError>;
 
+    async fn close_window_and_wait(&self, label: WindowLabel) -> Result<(), WindowError>;
+
     async fn create_window(
         &self,
         label: WindowLabel,

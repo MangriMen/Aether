@@ -15,7 +15,7 @@ export const events = {
 };
 
 /* Types */
-export type AppSettingsErrorDto = { code: "TRANSPARENT_EFFECT_REQUIRED" } | { code: "CAN_NOT_SET_EFFECT"; payload: {
+export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
 	details: string,
 } } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
 	details: string,
@@ -44,7 +44,7 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	details: string,
 } };
 
-export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
+export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
 // General errors that are expected and can be shown to the user.
 { type: "generic"; payload: string } | 
 /**
@@ -258,6 +258,18 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 export type WarningEventDto = {
 	message: string,
 };
+
+export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
+	label: WindowLabelDto,
+} } | { code: "NOT_FOUND"; payload: {
+	label: WindowLabelDto,
+} } | { code: "PLATFORM_NOT_SUPPORTED"; payload: {
+	details: string,
+} } | { code: "OTHER"; payload: {
+	details: string,
+} };
+
+export type WindowLabelDto = "main";
 
 /* Tauri Specta runtime */
 type EventEmit<T> = [T] extends [null] ? () => Promise<void> : (payload: T) => Promise<void>;

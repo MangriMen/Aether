@@ -130,6 +130,12 @@
     "settings": {
       "NOT_FOUND": "Settings file not found",
       "STORAGE_FAILURE": "Settings storage failure"
+    },
+    "window": {
+      "ALREADY_EXISTS": "Window with label {{label}} already exists",
+      "NOT_FOUND": "Window not found {{label}}",
+      "PLATFORM_NOT_SUPPORTED": "Platform not supported",
+      "OTHER": "Unknown error"
     }
   },
   "common": {

@@ -6,27 +6,39 @@ use crate::core::{WindowError, WindowLabel};
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum WindowErrorDto {
+    AlreadyExists { label: WindowLabelDto },
+
     NotFound { label: WindowLabelDto },
 
-    PlatformNotSupported(String),
+    PlatformNotSupported { details: String },
 
-    Other(String),
+    Other { details: String },
 }
 
 impl From<WindowError> for WindowErrorDto {
     fn from(value: WindowError) -> Self {
         match value {
+            WindowError::AlreadyExists { label } => WindowErrorDto::AlreadyExists {
+                label: label.into(),
+            },
             WindowError::NotFound { label } => WindowErrorDto::NotFound {
                 label: label.into(),
             },
-            WindowError::PlatformNotSupported(err) => WindowErrorDto::PlatformNotSupported(err),
-            WindowError::Tauri(err) => WindowErrorDto::Other(err.to_string()),
-            WindowError::Other(err) => WindowErrorDto::Other(err.clone()),
+            WindowError::PlatformNotSupported(err) => {
+                WindowErrorDto::PlatformNotSupported { details: err }
+            }
+            WindowError::Tauri(err) => WindowErrorDto::Other {
+                details: err.to_string(),
+            },
+            WindowError::Other(err) => WindowErrorDto::Other {
+                details: err.clone(),
+            },
         }
     }
 }
 
 #[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum WindowLabelDto {
     Main,
 }

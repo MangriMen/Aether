@@ -130,6 +130,12 @@
     "settings": {
       "NOT_FOUND": "Файл настроек не найден",
       "STORAGE_FAILURE": "Ошибка хранилища настроек"
+    },
+    "window": {
+      "ALREADY_EXISTS": "Окно с меткой {{label}} уже существует",
+      "NOT_FOUND": "Окно не найдено {{label}}",
+      "PLATFORM_NOT_SUPPORTED": "Платформа не поддерживается",
+      "OTHER": "Неизвестная ошибка"
     }
   },
   "common": {

@@ -7,6 +7,7 @@ use crate::features::{auth, events, instance, minecraft, plugins, process, setti
 
 use super::{
     super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
+    super::window::get_main_window_state_flags,
     events::handle_app_events,
     initialize::init_app,
     log::default_log_builder,
@@ -51,11 +52,16 @@ fn create_app() -> Builder<Wry> {
 
 fn configure_system_plugins(builder: Builder<Wry>) -> Builder<Wry> {
     builder
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(default_log_builder().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(get_main_window_state_flags())
+                .build(),
+        )
 }
 
 fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {

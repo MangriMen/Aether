@@ -13,12 +13,3 @@ export const useEditAppSettings = () => {
     onSuccess: () => appSettingsCache.invalidate.get(queryClient),
   }));
 };
-
-export const useRecreateWindow = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation(() => ({
-    mutationFn: commands.recreateWindow,
-    onSuccess: () => appSettingsCache.invalidate.get(queryClient),
-  }));
-};
