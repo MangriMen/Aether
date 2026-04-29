@@ -5,6 +5,10 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS: usize = 10;
+#[allow(clippy::cast_possible_wrap)]
+pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64: i64 = DEFAULT_MAX_CONCURRENT_DOWNLOADS as i64;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -35,7 +39,7 @@ impl Settings {
         Self {
             launcher_dir,
             metadata_dir,
-            max_concurrent_downloads: 10,
+            max_concurrent_downloads: DEFAULT_MAX_CONCURRENT_DOWNLOADS,
             enabled_plugins: HashSet::default(),
         }
     }

@@ -28,7 +28,7 @@ use crate::{
             },
         },
         process::infra::InMemoryProcessStorage,
-        settings::infra::{FsDefaultInstanceSettingsStorage, FsSettingsStorage},
+        settings::infra::{FsDefaultInstanceSettingsStorage, SqliteSettingsStorage},
     },
     libs::request_client::ReqwestClient,
     shared::{CapabilityRegistry, FileCache, MemoryCapabilityRegistry},
@@ -52,7 +52,7 @@ pub struct LazyLocator {
     request_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
     api_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
     credentials_storage: OnceCell<Arc<FsCredentialsStorage>>,
-    settings_storage: OnceCell<Arc<FsSettingsStorage>>,
+    settings_storage: OnceCell<Arc<SqliteSettingsStorage>>,
     process_storage: OnceCell<Arc<InMemoryProcessStorage>>,
     instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<FsInstanceStorage>>>,
     java_storage: OnceCell<Arc<FsJavaStorage>>,
@@ -88,6 +88,7 @@ pub struct LazyLocator {
             >,
         >,
     >,
+    sqlite_pool: OnceCell<sqlx::SqlitePool>,
 }
 
 fn get_reqwest_client() -> Arc<ClientWithMiddleware> {
@@ -113,6 +114,7 @@ impl LazyLocator {
     pub async fn init(
         state: Arc<LauncherState>,
         event_emitter: SharedEventEmitter,
+        sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<()> {
         LAZY_LOCATOR
             .get_or_init(|| async {
@@ -142,6 +144,7 @@ impl LazyLocator {
                     updaters_registry: OnceCell::new(),
                     content_provider_registry: OnceCell::new(),
                     plugin_infrastructure_listener: OnceCell::new(),
+                    sqlite_pool: OnceCell::from(sqlite_pool),
                 })
             })
             .await;
@@ -220,12 +223,10 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_settings_storage(&self) -> Arc<FsSettingsStorage> {
+    pub async fn get_settings_storage(&self) -> Arc<SqliteSettingsStorage> {
         self.settings_storage
             .get_or_init(|| async {
-                Arc::new(FsSettingsStorage::new(
-                    self.state.location_info.settings_dir(),
-                ))
+                Arc::new(SqliteSettingsStorage::new(self.get_sqlite_pool().await))
             })
             .await
             .clone()
@@ -466,6 +467,13 @@ impl LazyLocator {
                 ))
             })
             .await
+            .clone()
+    }
+
+    pub async fn get_sqlite_pool(&self) -> sqlx::SqlitePool {
+        self.sqlite_pool
+            .get()
+            .expect("Sqlite pool must be initialized via LazyLocator::init")
             .clone()
     }
 }

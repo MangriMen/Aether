@@ -7,7 +7,10 @@ use crate::{
     features::{
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
         instance::InstanceWatcherService,
-        settings::{LocationInfo, Settings, SettingsStorage, infra::FsSettingsStorage},
+        settings::{
+            self, LocationInfo, Settings, SettingsStorage,
+            infra::{FsSettingsStorage, SqliteSettingsStorage},
+        },
     },
     shared::domain::FetchSemaphore,
 };
@@ -38,9 +41,12 @@ impl LauncherState {
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
         event_emitter: SharedEventEmitter,
+        sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<()> {
         LAUNCHER_STATE
-            .get_or_try_init(|| Self::initialize(launcher_dir, metadata_dir, event_emitter))
+            .get_or_try_init(|| {
+                Self::initialize(launcher_dir, metadata_dir, event_emitter, sqlite_pool)
+            })
             .await?;
 
         Ok(())
@@ -67,15 +73,25 @@ impl LauncherState {
         LAUNCHER_STATE.initialized()
     }
 
-    #[tracing::instrument(skip(event_emitter))]
+    #[tracing::instrument(skip(event_emitter, sqlite_pool))]
     async fn initialize(
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
         event_emitter: SharedEventEmitter,
+        sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<Arc<Self>> {
-        let launcher_dir_path = launcher_dir.as_path();
+        sqlx::migrate!()
+            .run(&sqlite_pool)
+            .await
+            .map_err(|err| crate::ErrorKind::CoreError(format!("Migration failed: {err}")))?;
 
-        let settings_storage = FsSettingsStorage::new(launcher_dir_path);
+        let settings_storage = SqliteSettingsStorage::new(sqlite_pool.clone());
+
+        settings::infra::migrate_to_sqlite(
+            &FsSettingsStorage::new(&launcher_dir),
+            &settings_storage,
+        )
+        .await?;
 
         let settings = if let Ok(settings) = settings_storage.get().await {
             settings
@@ -105,7 +121,7 @@ impl LauncherState {
             api_semaphore,
         });
 
-        LazyLocator::init(state.clone(), event_emitter).await?;
+        LazyLocator::init(state.clone(), event_emitter, sqlite_pool).await?;
 
         let lazy_locator = LazyLocator::get().await?;
         lazy_locator

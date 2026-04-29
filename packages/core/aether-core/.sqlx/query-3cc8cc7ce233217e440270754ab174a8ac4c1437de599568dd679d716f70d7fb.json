@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM enabled_plugins",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "3cc8cc7ce233217e440270754ab174a8ac4c1437de599568dd679d716f70d7fb"
+}

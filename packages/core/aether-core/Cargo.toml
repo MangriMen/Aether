@@ -63,6 +63,14 @@ serr.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+sqlx = { workspace = true, features = [
+    "json",
+    "macros",
+    "migrate",
+    "runtime-tokio",
+    "sqlite",
+    "uuid",
+] }
 
 [lints]
 workspace = true

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT launcher_dir, metadata_dir, max_concurrent_downloads FROM launcher_settings WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "launcher_dir",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "metadata_dir",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "max_concurrent_downloads",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8f35468a7820aae79f5b4aac94497d4f7726032307c9a09967479d44676f0c79"
+}
