@@ -557,7 +557,10 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             })
     }
 
-    async fn list_versions(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(
+        &self,
+        content_id: String,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
         let versions = self
             .api
             .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())

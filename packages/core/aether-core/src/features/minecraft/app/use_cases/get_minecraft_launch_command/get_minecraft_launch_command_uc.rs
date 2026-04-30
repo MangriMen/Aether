@@ -8,7 +8,7 @@ use tokio::process::Command;
 
 use crate::{
     features::{
-        auth::Credentials,
+        auth::Credential,
         java::{
             JavaInstallationService, JavaStorage,
             app::{GetJavaUseCase, JavaApplicationError},
@@ -80,7 +80,7 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
         &self,
         get_minecraft_launch_command_params: GetMinecraftLaunchCommandParams,
         launch_settings: LaunchSettings,
-        credentials: Credentials,
+        credentials: Credential,
     ) -> Result<Command, MinecraftApplicationError> {
         let GetMinecraftLaunchCommandParams {
             game_version,

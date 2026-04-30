@@ -6,7 +6,7 @@ use crate::{
         domain::{LazyLocator, ProgressServiceType},
     },
     features::{
-        auth::Credentials,
+        auth::Credential,
         instance::{
             app::{
                 InstallInstanceUseCase, LaunchInstanceUseCase,
@@ -38,7 +38,7 @@ use crate::{
             },
             infra::InMemoryProcessStorage,
         },
-        settings::infra::FsDefaultInstanceSettingsStorage,
+        settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
     libs::request_client::ReqwestClient,
     shared::FileCache,
@@ -55,7 +55,7 @@ async fn get_launch_instance_use_case(
         ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>,
     >,
     InMemoryProcessStorage,
-    FsDefaultInstanceSettingsStorage,
+    SqliteDefaultInstanceSettingsStorage,
     MinecraftDownloadService<
         ReqwestClient<ProgressServiceType>,
         ProgressServiceType,
@@ -229,7 +229,7 @@ pub async fn run(instance_id: String) -> crate::Result<MinecraftProcessMetadata>
 #[tracing::instrument]
 pub async fn run_credentials(
     instance_id: String,
-    credentials: Credentials,
+    credentials: Credential,
 ) -> crate::Result<MinecraftProcessMetadata> {
     let state = LauncherState::get().await?;
     let lazy_locator = LazyLocator::get().await?;

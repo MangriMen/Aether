@@ -5,11 +5,18 @@ use tokio::sync::{OnceCell, Semaphore};
 use crate::{
     core::domain::LazyLocator,
     features::{
+        auth::{
+            self,
+            infra::{FsCredentialsStorage, SqliteCredentialsStorage},
+        },
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
         instance::InstanceWatcherService,
         settings::{
             self, LocationInfo, Settings, SettingsStorage,
-            infra::{FsSettingsStorage, SqliteSettingsStorage},
+            infra::{
+                FsDefaultInstanceSettingsStorage, FsSettingsStorage,
+                SqliteDefaultInstanceSettingsStorage, SqliteSettingsStorage,
+            },
         },
     },
     shared::domain::FetchSemaphore,
@@ -87,9 +94,26 @@ impl LauncherState {
 
         let settings_storage = SqliteSettingsStorage::new(sqlite_pool.clone());
 
-        settings::infra::migrate_to_sqlite(
+        let migrated_dir_name = "migrated";
+
+        settings::infra::migrate_settings_to_sqlite(
             &FsSettingsStorage::new(&launcher_dir),
             &settings_storage,
+            migrated_dir_name,
+        )
+        .await?;
+
+        settings::infra::migrate_default_instance_settings_to_sqlite(
+            &FsDefaultInstanceSettingsStorage::new(&launcher_dir),
+            &SqliteDefaultInstanceSettingsStorage::new(sqlite_pool.clone()),
+            migrated_dir_name,
+        )
+        .await?;
+
+        auth::infra::migrate_credentials_to_sqlite(
+            &FsCredentialsStorage::new(&launcher_dir),
+            &SqliteCredentialsStorage::new(sqlite_pool.clone()),
+            migrated_dir_name,
         )
         .await?;
 

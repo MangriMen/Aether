@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::features::auth::{AccountType, Credentials};
+use crate::features::auth::{AccountType, Credential};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -12,19 +12,19 @@ pub struct AccountData {
     pub active: bool,
 }
 
-impl From<&Credentials> for AccountData {
-    fn from(credentials: &Credentials) -> Self {
+impl From<&Credential> for AccountData {
+    fn from(credentials: &Credential) -> Self {
         Self {
             id: credentials.id(),
-            username: credentials.username.to_string(),
+            username: credentials.username().to_string(),
             account_type: credentials.account_type(),
             active: credentials.is_active(),
         }
     }
 }
 
-impl From<Credentials> for AccountData {
-    fn from(credentials: Credentials) -> Self {
+impl From<Credential> for AccountData {
+    fn from(credentials: Credential) -> Self {
         AccountData::from(&credentials)
     }
 }

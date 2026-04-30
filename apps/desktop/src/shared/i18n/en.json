@@ -25,6 +25,7 @@
       "NO_ACTIVE_CREDENTIALS": "No active credentials found",
       "INVALID_USERNAME_LENGTH": "Username must be between {{min}} and {{max}} characters",
       "INVALID_USERNAME_CHARS": "Use only Latin letters, numbers, and underscores",
+      "INVALID_ACCOUNT_TYPE": "Invalid account type",
       "TOKEN_EXPIRED": "Session expired, please log in again",
       "STORAGE_ERROR": "Auth storage failure"
     },

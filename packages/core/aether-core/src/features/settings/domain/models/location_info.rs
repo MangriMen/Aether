@@ -193,7 +193,7 @@ impl LocationInfo {
 
     #[inline]
     pub fn wasm_cache_config(&self) -> PathBuf {
-        self.config_dir.join("wasm.toml")
+        self.cache_dir().join("wasm.toml")
     }
 
     #[inline]

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM env_vars",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "08d1accae6b4e8400873ced6dba86cd3afa20d795325d6e23437ab927f1833b9"
+}

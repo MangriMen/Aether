@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::{
-        auth::Credentials,
+        auth::Credential,
         events::ProgressService,
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
@@ -119,7 +119,7 @@ impl<
     pub async fn execute(
         &self,
         instance_id: String,
-        credentials: Credentials,
+        credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         let settings = self.default_instance_settings_storage.get().await?;
         let instance = self.instance_storage.get(&instance_id).await?;

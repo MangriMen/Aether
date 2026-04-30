@@ -1,5 +1,5 @@
 use crate::features::auth::{
-    AuthApplicationError, AuthDomainError, Credentials, CredentialsStorage,
+    AuthApplicationError, AuthDomainError, Credential, CredentialsStorage,
 };
 use uuid::Uuid;
 
@@ -8,7 +8,7 @@ pub struct ActiveAccountHelper;
 impl ActiveAccountHelper {
     pub async fn ensure_active(
         storage: &dyn CredentialsStorage,
-    ) -> Result<Credentials, AuthApplicationError> {
+    ) -> Result<Credential, AuthApplicationError> {
         let all = storage.list().await?;
 
         if let Some(active) = all.iter().find(|c| c.is_active()) {
@@ -25,7 +25,7 @@ impl ActiveAccountHelper {
     pub async fn set_active(
         storage: &dyn CredentialsStorage,
         id: Uuid,
-    ) -> Result<Credentials, AuthApplicationError> {
+    ) -> Result<Credential, AuthApplicationError> {
         let mut all = storage.list().await?;
 
         let mut target_idx = None;

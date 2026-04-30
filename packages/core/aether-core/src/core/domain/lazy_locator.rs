@@ -6,7 +6,7 @@ use tokio::sync::OnceCell;
 
 use crate::{
     features::{
-        auth::infra::FsCredentialsStorage,
+        auth::infra::SqliteCredentialsStorage,
         events::{ProgressServiceImpl, SharedEventEmitter, infra::InMemoryProgressBarStorage},
         file_watcher::infra::NotifyFileWatcher,
         instance::{
@@ -28,7 +28,7 @@ use crate::{
             },
         },
         process::infra::InMemoryProcessStorage,
-        settings::infra::{FsDefaultInstanceSettingsStorage, SqliteSettingsStorage},
+        settings::infra::{SqliteDefaultInstanceSettingsStorage, SqliteSettingsStorage},
     },
     libs::request_client::ReqwestClient,
     shared::{CapabilityRegistry, FileCache, MemoryCapabilityRegistry},
@@ -51,7 +51,7 @@ pub struct LazyLocator {
     reqwest_client: Arc<ClientWithMiddleware>,
     request_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
     api_client: OnceCell<Arc<ReqwestClient<ProgressServiceType>>>,
-    credentials_storage: OnceCell<Arc<FsCredentialsStorage>>,
+    credentials_storage: OnceCell<Arc<SqliteCredentialsStorage>>,
     settings_storage: OnceCell<Arc<SqliteSettingsStorage>>,
     process_storage: OnceCell<Arc<InMemoryProcessStorage>>,
     instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<FsInstanceStorage>>>,
@@ -74,7 +74,7 @@ pub struct LazyLocator {
     progress_service: OnceCell<Arc<ProgressServiceType>>,
     instance_watcher_service:
         OnceCell<Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler>>>>,
-    default_instance_settings_storage: OnceCell<Arc<FsDefaultInstanceSettingsStorage>>,
+    default_instance_settings_storage: OnceCell<Arc<SqliteDefaultInstanceSettingsStorage>>,
     plugin_extractor: OnceCell<Arc<ZipPluginExtractor>>,
     importers_registry: OnceCell<Arc<ImporterRegistry>>,
     updaters_registry: OnceCell<Arc<UpdaterRegistry>>,
@@ -212,12 +212,10 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_credentials_storage(&self) -> Arc<FsCredentialsStorage> {
+    pub async fn get_credentials_storage(&self) -> Arc<SqliteCredentialsStorage> {
         self.credentials_storage
             .get_or_init(|| async {
-                Arc::new(FsCredentialsStorage::new(
-                    self.state.location_info.settings_dir(),
-                ))
+                Arc::new(SqliteCredentialsStorage::new(self.get_sqlite_pool().await))
             })
             .await
             .clone()
@@ -384,11 +382,11 @@ impl LazyLocator {
 
     pub async fn get_default_instance_settings_storage(
         &self,
-    ) -> Arc<FsDefaultInstanceSettingsStorage> {
+    ) -> Arc<SqliteDefaultInstanceSettingsStorage> {
         self.default_instance_settings_storage
             .get_or_init(|| async {
-                Arc::new(FsDefaultInstanceSettingsStorage::new(
-                    self.state.location_info.settings_dir(),
+                Arc::new(SqliteDefaultInstanceSettingsStorage::new(
+                    self.get_sqlite_pool().await,
                 ))
             })
             .await

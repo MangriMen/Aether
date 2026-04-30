@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 #[derive(Default)]
 pub struct MockCredentialsStorage {
-    store: Arc<Mutex<HashMap<Uuid, Credentials>>>,
+    store: Arc<Mutex<HashMap<Uuid, Credential>>>,
 }
 
 impl MockCredentialsStorage {
@@ -17,11 +17,11 @@ impl MockCredentialsStorage {
 
 #[async_trait]
 impl CredentialsStorage for MockCredentialsStorage {
-    async fn list(&self) -> Result<Vec<Credentials>, AuthApplicationError> {
+    async fn list(&self) -> Result<Vec<Credential>, AuthApplicationError> {
         Ok(self.store.lock().unwrap().values().cloned().collect())
     }
 
-    async fn get(&self, id: Uuid) -> Result<Credentials, AuthApplicationError> {
+    async fn get(&self, id: Uuid) -> Result<Credential, AuthApplicationError> {
         self.store
             .lock()
             .unwrap()
@@ -32,7 +32,7 @@ impl CredentialsStorage for MockCredentialsStorage {
             ))
     }
 
-    async fn upsert(&self, credentials: Credentials) -> Result<Credentials, AuthApplicationError> {
+    async fn upsert(&self, credentials: Credential) -> Result<Credential, AuthApplicationError> {
         self.store
             .lock()
             .unwrap()
@@ -42,7 +42,7 @@ impl CredentialsStorage for MockCredentialsStorage {
 
     async fn upsert_all(
         &self,
-        credentials_list: Vec<Credentials>,
+        credentials_list: Vec<Credential>,
     ) -> Result<(), AuthApplicationError> {
         let mut store = self.store.lock().unwrap();
         for c in credentials_list {
@@ -66,7 +66,7 @@ impl CredentialsStorage for MockCredentialsStorage {
         Ok(())
     }
 
-    async fn find_active(&self) -> Result<Option<Credentials>, AuthApplicationError> {
+    async fn find_active(&self) -> Result<Option<Credential>, AuthApplicationError> {
         Ok(self
             .store
             .lock()

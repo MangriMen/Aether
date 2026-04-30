@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO credentials (id, username, account_type, is_active, access_token, refresh_token, expires)\n             VALUES (?, ?, ?, ?, ?, ?, ?)\n             ON CONFLICT(id) DO UPDATE SET\n                username = excluded.username,\n                account_type = excluded.account_type,\n                is_active = excluded.is_active,\n                access_token = excluded.access_token,\n                refresh_token = excluded.refresh_token,\n                expires = excluded.expires",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "6d65094234decc2941cd6ffaed8834bb4449bd590994ad8e88aa17219a6bf043"
+}

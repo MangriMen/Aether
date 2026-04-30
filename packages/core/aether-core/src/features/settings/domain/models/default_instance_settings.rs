@@ -8,11 +8,31 @@ pub struct DefaultInstanceSettings {
 
     memory: MemorySettings,
     game_resolution: WindowSize,
+    #[serde(default)]
+    force_fullscreen: bool,
 
     hooks: Hooks,
 }
 
 impl DefaultInstanceSettings {
+    pub fn new(
+        launch_args: Vec<String>,
+        env_vars: Vec<(String, String)>,
+        memory: MemorySettings,
+        game_resolution: WindowSize,
+        force_fullscreen: bool,
+        hooks: Hooks,
+    ) -> Self {
+        Self {
+            launch_args,
+            env_vars,
+            memory,
+            game_resolution,
+            force_fullscreen,
+            hooks,
+        }
+    }
+
     pub fn launch_args(&self) -> &[String] {
         &self.launch_args
     }
@@ -27,6 +47,10 @@ impl DefaultInstanceSettings {
 
     pub fn game_resolution(&self) -> WindowSize {
         self.game_resolution
+    }
+
+    pub fn force_fullscreen(&self) -> bool {
+        self.force_fullscreen
     }
 
     pub fn hooks(&self) -> &Hooks {
@@ -73,6 +97,12 @@ impl Default for MemorySettings {
     }
 }
 
+impl MemorySettings {
+    pub fn new(maximum: u32) -> Self {
+        Self { maximum }
+    }
+}
+
 /// A 2D size, represented by a tuple of two integers
 ///
 /// First is the width, second is the height of the window (width, height)
@@ -82,6 +112,20 @@ pub struct WindowSize(pub u16, pub u16);
 impl Default for WindowSize {
     fn default() -> Self {
         Self(960, 540)
+    }
+}
+
+impl WindowSize {
+    pub fn new(width: u16, height: u16) -> Self {
+        Self(width, height)
+    }
+
+    pub fn width(&self) -> u16 {
+        self.0
+    }
+
+    pub fn height(&self) -> u16 {
+        self.1
     }
 }
 

@@ -103,9 +103,3 @@ impl SettingsStorage for SqliteSettingsStorage {
         }
     }
 }
-
-impl From<sqlx::Error> for SettingsError {
-    fn from(value: sqlx::Error) -> Self {
-        SettingsError::Storage(value.to_string())
-    }
-}
