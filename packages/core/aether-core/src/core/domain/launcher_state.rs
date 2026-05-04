@@ -87,11 +87,6 @@ impl LauncherState {
         event_emitter: SharedEventEmitter,
         sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<Arc<Self>> {
-        sqlx::migrate!()
-            .run(&sqlite_pool)
-            .await
-            .map_err(|err| crate::ErrorKind::CoreError(format!("Migration failed: {err}")))?;
-
         let settings_storage = SqliteSettingsStorage::new(sqlite_pool.clone());
 
         let migrated_dir_name = "migrated";

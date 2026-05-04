@@ -18,7 +18,7 @@
       "TRANSPARENT_EFFECT_REQUIRED": "Transparency effect is required for this action",
       "CAN_NOT_SET_EFFECT": "Unable to apply the requested effect",
       "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window",
-      "SAVE_FAILED": "Failed to save application settings"
+      "STORAGE": "App settings storage failure"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Credentials with ID {{id}} not found",

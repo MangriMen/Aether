@@ -17,8 +17,8 @@
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
       "CAN_NOT_SET_EFFECT": "Невозможно применить запрошенный эффект",
-      "SAVE_FAILED": "Не удалось сохранить настройки приложения",
-      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно"
+      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно",
+      "STORAGE": "Ошибка хранилища настроек приложения"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
