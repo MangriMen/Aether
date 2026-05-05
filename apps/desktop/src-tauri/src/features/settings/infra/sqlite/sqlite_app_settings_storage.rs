@@ -73,20 +73,10 @@ impl From<AppSettings> for SqlAppSettings {
     fn from(s: AppSettings) -> Self {
         Self {
             id: 1,
-            action_on_instance_launch: match s.action_on_instance_launch {
-                ActionOnInstanceLaunch::Nothing => "nothing".to_string(),
-                ActionOnInstanceLaunch::Hide => "hide".to_string(),
-                ActionOnInstanceLaunch::Close => "close".to_string(),
-            },
+            action_on_instance_launch: s.action_on_instance_launch.to_string(),
             is_actual_transparent: s.is_actual_transparent,
             transparent: s.transparent,
-            window_effect: match s.window_effect {
-                WindowEffect::Off => "off".to_string(),
-                WindowEffect::MicaLight => "mica_light".to_string(),
-                WindowEffect::MicaDark => "mica_dark".to_string(),
-                WindowEffect::Mica => "mica".to_string(),
-                WindowEffect::Acrylic => "acrylic".to_string(),
-            },
+            window_effect: s.window_effect.to_string(),
         }
     }
 }
@@ -96,34 +86,25 @@ impl TryFrom<SqlAppSettings> for AppSettings {
 
     fn try_from(value: SqlAppSettings) -> Result<Self, Self::Error> {
         Ok(Self {
-            action_on_instance_launch: match value.action_on_instance_launch.as_str() {
-                "nothing" => ActionOnInstanceLaunch::Nothing,
-                "hide" => ActionOnInstanceLaunch::Hide,
-                "close" => ActionOnInstanceLaunch::Close,
-                _ => {
+            action_on_instance_launch: value.action_on_instance_launch.parse().unwrap_or_else(
+                |_| {
                     log::error!(
                         "Unknown action on instance launch in DB: {}, falling back to default",
-                        value.window_effect
+                        value.action_on_instance_launch
                     );
+
                     ActionOnInstanceLaunch::default()
-                }
-            },
+                },
+            ),
             is_actual_transparent: value.is_actual_transparent,
             transparent: value.transparent,
-            window_effect: match value.window_effect.as_str() {
-                "off" => WindowEffect::Off,
-                "mica_light" => WindowEffect::MicaLight,
-                "mica_dark" => WindowEffect::MicaDark,
-                "mica" => WindowEffect::Mica,
-                "acrylic" => WindowEffect::Acrylic,
-                _ => {
-                    log::error!(
-                        "Unknown window effect in DB: {}, falling back to default",
-                        value.window_effect
-                    );
-                    WindowEffect::default()
-                }
-            },
+            window_effect: value.window_effect.parse().unwrap_or_else(|_| {
+                log::error!(
+                    "Unknown window effect in DB: {}, falling back to default",
+                    value.window_effect
+                );
+                WindowEffect::default()
+            }),
         })
     }
 }
