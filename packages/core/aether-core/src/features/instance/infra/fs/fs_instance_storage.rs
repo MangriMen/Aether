@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
+use tracing::warn;
 
 use crate::{
     features::{
@@ -17,6 +18,25 @@ pub struct FsInstanceStorage {
 impl FsInstanceStorage {
     pub fn new(location_info: Arc<LocationInfo>) -> Self {
         Self { location_info }
+    }
+
+    async fn load_instance_internal(&self, path: &Path) -> Result<Instance, InstanceError> {
+        match read_json_async::<Instance>(path).await {
+            Ok(instance) => Ok(instance),
+            Err(original_err) => match read_json_async::<super::instance::InstanceV1>(path).await {
+                Ok(v1) => {
+                    warn!("Migrating instance from V1 at {:?}", path);
+                    let migrated: Instance = v1.into();
+
+                    if let Err(e) = write_json_async(path, &migrated).await {
+                        warn!("Failed to save migrated instance: {:?}", e);
+                    }
+
+                    Ok(migrated)
+                }
+                Err(_) => Err(InstanceError::Storage(original_err.to_string())),
+            },
+        }
     }
 }
 
@@ -39,12 +59,14 @@ impl InstanceStorage for FsInstanceStorage {
             let instance_json_path = self
                 .location_info
                 .instance_metadata_file_with_instance_dir(&entry.path());
-            let instance = read_json_async::<Instance>(&instance_json_path).await;
 
-            match instance {
+            match self.load_instance_internal(&instance_json_path).await {
                 Ok(instance) => instances.push(instance),
                 Err(err) => {
-                    tracing::debug!("Failed to read instance {:?}", err);
+                    warn!(
+                        "Failed to read instance at {:?}: {:?}",
+                        instance_json_path, err
+                    );
                 }
             }
         }
@@ -53,18 +75,23 @@ impl InstanceStorage for FsInstanceStorage {
     }
 
     async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
-        Ok(read_json_async(&self.location_info.instance_metadata_file(id)).await?)
+        let path = self.location_info.instance_metadata_file(id);
+        self.load_instance_internal(&path).await
     }
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
         let path = self.location_info.instance_metadata_file(&instance.id);
-        write_json_async(&path, instance).await?;
+        write_json_async(&path, instance)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())
     }
 
     async fn remove(&self, id: &str) -> Result<(), InstanceError> {
         let path = self.location_info.instance_dir(id);
-        remove_dir_all(&path).await?;
+        remove_dir_all(&path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())
     }
 }

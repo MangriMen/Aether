@@ -3,18 +3,18 @@ use std::path::PathBuf;
 use serr::SerializeError;
 use uuid::Uuid;
 
-use crate::{
-    features::{
-        auth::AuthApplicationError, instance::ContentType,
-        minecraft::app::MinecraftApplicationError, process::ProcessError, settings::SettingsError,
-    },
-    shared::IoError,
+use crate::features::{
+    auth::AuthApplicationError, instance::ContentType, minecraft::app::MinecraftApplicationError,
+    process::ProcessError, settings::SettingsError,
 };
 
 #[derive(Debug, thiserror::Error, SerializeError)]
 pub enum InstanceError {
-    #[error("Storage failure: {0}")]
-    StorageFailure(#[from] IoError),
+    #[error("Storage error: {0}")]
+    Storage(String),
+
+    #[error("Instance with id \"{instance_id}\" not found")]
+    NotFound { instance_id: String },
 
     #[error(
         "Content provider not found for plugin \"{plugin_id}\" and capability \"{capability_id}\""

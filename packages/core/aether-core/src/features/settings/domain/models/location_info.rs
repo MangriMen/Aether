@@ -213,6 +213,6 @@ impl LocationInfo {
 
     #[inline]
     pub fn temp_dir(&self) -> PathBuf {
-        self.config_dir.join("temp")
+        self.cache_dir().join("temp")
     }
 }

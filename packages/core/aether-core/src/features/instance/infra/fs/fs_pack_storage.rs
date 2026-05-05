@@ -10,6 +10,8 @@ use crate::{
     shared::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
 };
 
+use super::pack_file::PackFileV1;
+
 pub struct FsPackStorage {
     location_info: Arc<LocationInfo>,
 }
@@ -34,11 +36,15 @@ impl FsPackStorage {
 #[async_trait]
 impl PackStorage for FsPackStorage {
     async fn get_pack(&self, instance_id: &str) -> Result<Pack, InstanceError> {
-        Ok(ensure_read_toml_async(&self.get_pack_path(instance_id)).await?)
+        Ok(ensure_read_toml_async(&self.get_pack_path(instance_id))
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?)
     }
 
     async fn update_pack(&self, instance_id: &str, pack: &Pack) -> Result<(), InstanceError> {
-        write_toml_async(&self.get_pack_path(instance_id), &pack).await?;
+        write_toml_async(&self.get_pack_path(instance_id), &pack)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())
     }
 
@@ -47,7 +53,28 @@ impl PackStorage for FsPackStorage {
         instance_id: &str,
         content_path: &str,
     ) -> Result<PackFile, InstanceError> {
-        Ok(read_toml_async(&self.get_pack_file_path(instance_id, content_path)).await?)
+        let path = self.get_pack_file_path(instance_id, content_path);
+
+        let pack_file_result: Result<PackFile, _> = read_toml_async(&path).await;
+
+        if let Ok(pack_file) = pack_file_result {
+            Ok(pack_file)
+        } else {
+            let v1_result: Result<PackFileV1, _> = read_toml_async(&path).await;
+
+            match v1_result {
+                Ok(v1) => {
+                    let migrated: PackFile = v1.into();
+
+                    let _ = self
+                        .update_pack_file(instance_id, content_path, &migrated)
+                        .await;
+
+                    Ok(migrated)
+                }
+                Err(e) => Err(InstanceError::Storage(e.to_string())),
+            }
+        }
     }
 
     async fn find_by_provider_id(
@@ -93,7 +120,9 @@ impl PackStorage for FsPackStorage {
     ) -> Result<(), InstanceError> {
         for (content_path, pack_file) in content_paths.iter().zip(pack_files) {
             let pack_file_path = self.get_pack_file_path(instance_id, content_path);
-            write_toml_async(&pack_file_path, &pack_file).await?;
+            write_toml_async(&pack_file_path, &pack_file)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }
 
         let mut pack = self.get_pack(instance_id).await?;

@@ -5,6 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use tracing::warn;
 
 use crate::{
     features::{
@@ -128,7 +129,7 @@ impl PluginStorage for FsPluginStorage {
                     plugins.insert(plugin.manifest.metadata.id.clone(), plugin);
                 }
                 Err(e) => {
-                    log::debug!("Failed to load plugin from '{}': {}", path.display(), e);
+                    warn!("Failed to load plugin from '{}': {}", path.display(), e);
                 }
             }
         }

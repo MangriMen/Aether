@@ -12,7 +12,7 @@ use crate::{
                 InstallInstanceUseCase, LaunchInstanceUseCase,
                 LaunchInstanceWithActiveAccountUseCase,
             },
-            infra::{EventEmittingInstanceStorage, FsInstanceStorage},
+            infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},
@@ -49,7 +49,7 @@ async fn get_launch_instance_use_case(
     state: &LauncherState,
     lazy_locator: &LazyLocator,
 ) -> LaunchInstanceUseCase<
-    EventEmittingInstanceStorage<FsInstanceStorage>,
+    EventEmittingInstanceStorage<SqliteInstanceStorage>,
     CachedMetadataStorage<
         FileCache<MinecraftMetadataResolver>,
         ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>,

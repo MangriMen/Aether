@@ -221,7 +221,9 @@ async fn create_unique_instance_dir(
     base_dir: &Path,
 ) -> Result<(PathBuf, String), InstanceError> {
     let (instance_path, sanitized_name) = create_unique_instance_path(name, base_dir);
-    create_dir_all(&instance_path).await?;
+    create_dir_all(&instance_path)
+        .await
+        .map_err(|err| InstanceError::Storage(err.to_string()))?;
     Ok((instance_path, sanitized_name))
 }
 

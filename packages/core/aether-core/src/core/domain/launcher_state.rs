@@ -10,7 +10,10 @@ use crate::{
             infra::{FsCredentialsStorage, SqliteCredentialsStorage},
         },
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-        instance::InstanceWatcherService,
+        instance::{
+            self, InstanceWatcherService,
+            infra::{FsInstanceStorage, SqliteInstanceStorage},
+        },
         settings::{
             self, LocationInfo, Settings, SettingsStorage,
             infra::{
@@ -123,6 +126,12 @@ impl LauncherState {
             settings.launcher_dir().to_path_buf(),
             settings.metadata_dir().to_path_buf(),
         ));
+
+        instance::infra::migrate_instances_to_sqlite(
+            &FsInstanceStorage::new(location_info.clone()),
+            &SqliteInstanceStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
 
         let fetch_semaphore = Arc::new(FetchSemaphore(Semaphore::new(
             settings.max_concurrent_downloads(),

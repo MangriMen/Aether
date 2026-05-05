@@ -167,10 +167,12 @@ impl<
             let result = cmd
                 .to_tokio_command()
                 .spawn()
-                .map_err(|e| IoError::with_path(e, &instance_path))?
+                .map_err(|e| {
+                    InstanceError::Storage(IoError::with_path(e, &instance_path).to_string())
+                })?
                 .wait()
                 .await
-                .map_err(IoError::from)?;
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
             if !result.success() {
                 return Err(InstanceError::PrelaunchCommandError {

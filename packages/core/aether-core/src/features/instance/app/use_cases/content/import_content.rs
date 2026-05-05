@@ -9,7 +9,7 @@ use crate::{
         instance::{ContentType, InstanceError, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::{IoError, read_async},
+    shared::read_async,
 };
 
 pub struct ImportContent {
@@ -110,7 +110,9 @@ impl<PS: PackStorage> ImportContentUseCase<PS> {
             });
         }
 
-        let file_content = read_async(path).await?;
+        let file_content = read_async(path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
         Ok((
             content_path,
@@ -131,7 +133,7 @@ impl<PS: PackStorage> ImportContentUseCase<PS> {
             tokio::fs::copy(src, dest_path)
         }))
         .await
-        .map_err(IoError::from)?;
+        .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
         Ok(())
     }

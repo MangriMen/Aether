@@ -12,8 +12,8 @@ use crate::{
         instance::{
             ContentProvider, Importer, InstanceWatcherServiceImpl, Updater,
             infra::{
-                EventEmittingInstanceStorage, FsInstanceStorage, FsPackStorage,
-                InstanceEventHandler, ModrinthContentProvider,
+                EventEmittingInstanceStorage, FsPackStorage, InstanceEventHandler,
+                ModrinthContentProvider, SqliteInstanceStorage,
             },
         },
         java::infra::FsJavaStorage,
@@ -54,7 +54,7 @@ pub struct LazyLocator {
     credentials_storage: OnceCell<Arc<SqliteCredentialsStorage>>,
     settings_storage: OnceCell<Arc<SqliteSettingsStorage>>,
     process_storage: OnceCell<Arc<InMemoryProcessStorage>>,
-    instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<FsInstanceStorage>>>,
+    instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<SqliteInstanceStorage>>>,
     java_storage: OnceCell<Arc<FsJavaStorage>>,
     metadata_storage: OnceCell<
         Arc<
@@ -239,12 +239,12 @@ impl LazyLocator {
 
     pub async fn get_instance_storage(
         &self,
-    ) -> Arc<EventEmittingInstanceStorage<FsInstanceStorage>> {
+    ) -> Arc<EventEmittingInstanceStorage<SqliteInstanceStorage>> {
         self.instance_storage
             .get_or_init(|| async {
                 Arc::new(EventEmittingInstanceStorage::new(
                     self.get_event_emitter().await,
-                    FsInstanceStorage::new(self.state.location_info.clone()),
+                    SqliteInstanceStorage::new(self.get_sqlite_pool().await),
                 ))
             })
             .await
