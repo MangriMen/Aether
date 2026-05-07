@@ -43,7 +43,10 @@ specta = { version = "=2.0.0-rc.24", features = [
     "semver",
 ] }
 specta-typescript = "0.0.11"
-tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
+tauri-specta = { git = "https://github.com/specta-rs/tauri-specta/", rev = "4cff42ee0aa309fb2c707da534821e7645e75867", features = [
+    "derive",
+    "typescript",
+] }
 
 # Workspace Dependencies
 aether-core.workspace = true

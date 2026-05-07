@@ -12,7 +12,7 @@ use crate::{
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
         instance::{
             self, InstanceWatcherService,
-            infra::{FsInstanceStorage, SqliteInstanceStorage},
+            infra::{FsInstanceStorage, FsPackStorage, SqliteInstanceStorage, SqlitePackStorage},
         },
         settings::{
             self, LocationInfo, Settings, SettingsStorage,
@@ -130,6 +130,13 @@ impl LauncherState {
         instance::infra::migrate_instances_to_sqlite(
             &FsInstanceStorage::new(location_info.clone()),
             &SqliteInstanceStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
+
+        instance::infra::migrate_packs_to_sqlite(
+            &FsInstanceStorage::new(location_info.clone()),
+            &FsPackStorage::new(location_info.clone()),
+            &SqlitePackStorage::new(sqlite_pool.clone()),
         )
         .await?;
 

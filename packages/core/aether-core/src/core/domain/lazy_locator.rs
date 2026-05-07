@@ -12,8 +12,8 @@ use crate::{
         instance::{
             ContentProvider, Importer, InstanceWatcherServiceImpl, Updater,
             infra::{
-                EventEmittingInstanceStorage, FsPackStorage, InstanceEventHandler,
-                ModrinthContentProvider, SqliteInstanceStorage,
+                EventEmittingInstanceStorage, InstanceEventHandler, ModrinthContentProvider,
+                SqliteInstanceStorage, SqlitePackStorage,
             },
         },
         java::infra::FsJavaStorage,
@@ -64,7 +64,7 @@ pub struct LazyLocator {
             >,
         >,
     >,
-    pack_storage: OnceCell<Arc<FsPackStorage>>,
+    pack_storage: OnceCell<Arc<SqlitePackStorage>>,
     plugin_settings_storage: OnceCell<Arc<FsPluginSettingsStorage>>,
     plugin_registry: OnceCell<Arc<PluginRegistry>>,
     plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry<ExtismPluginLoader>>>,
@@ -281,10 +281,10 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_pack_storage(&self) -> Arc<FsPackStorage> {
+    pub async fn get_pack_storage(&self) -> Arc<SqlitePackStorage> {
         self.pack_storage
             .get_or_init(|| async {
-                Arc::new(FsPackStorage::new(self.state.location_info.clone()))
+                Arc::new(SqlitePackStorage::new(self.get_sqlite_pool().await))
             })
             .await
             .clone()

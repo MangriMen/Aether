@@ -53,7 +53,6 @@ impl From<Instance> for SqlInstance {
 
             // Minecraft Metadata
             game_version: i.game_version,
-            // Сериализуем enum ModLoader в строку (или JSON, если там есть данные)
             loader: serde_json::to_string(&i.loader).unwrap_or_default(),
             loader_version_json: i
                 .loader_version
@@ -123,11 +122,19 @@ impl TryFrom<SqlInstance> for Instance {
 
             env_vars: row.env_vars_json.map(|s| serde_json::from_str(&s).unwrap()),
 
-            memory: Some(MemorySettings::new(row.memory_maximum as u32)),
+            memory: Some(MemorySettings::new(
+                row.memory_maximum
+                    .try_into()
+                    .map_err(|_| InstanceError::Storage("Invalid memory".into()))?,
+            )),
             force_fullscreen: Some(row.force_fullscreen),
             game_resolution: Some(WindowSize::new(
-                row.window_width as u16,
-                row.window_height as u16,
+                row.window_width
+                    .try_into()
+                    .map_err(|_| InstanceError::Storage("Invalid width".into()))?,
+                row.window_height
+                    .try_into()
+                    .map_err(|_| InstanceError::Storage("Invalid height".into()))?,
             )),
 
             created: row.created_at,
