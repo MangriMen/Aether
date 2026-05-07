@@ -166,3 +166,6 @@ target/
 # Monorepo
 .turbo
 lefthook-local.yml
+
+# Database
+aether.db

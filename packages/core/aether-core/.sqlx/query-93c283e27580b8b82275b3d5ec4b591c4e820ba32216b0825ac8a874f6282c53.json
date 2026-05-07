@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id = ? AND content_id = ? LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_path",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "93c283e27580b8b82275b3d5ec4b591c4e820ba32216b0825ac8a874f6282c53"
+}

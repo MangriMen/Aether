@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM app_settings WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "action_on_instance_launch",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_actual_transparent",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "transparent",
+        "ordinal": 3,
+        "type_info": "Bool"
+      },
+      {
+        "name": "window_effect",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "686417cdc3908c80a48ba873840d76e1412b920fd7f0b6bc0b8129a804e9c06d"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO launch_args (arg) VALUES (?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c9969b5500ffa9afec226ee2cc1a665d328b4bec64e651a7713f5ed027bec1a8"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_path FROM pack_files WHERE instance_id = ? ORDER BY content_path ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_path",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "46329e1f1fce716fe760bf4cc3639a3e6a098a74c2aba5202d9958d5762b8c25"
+}

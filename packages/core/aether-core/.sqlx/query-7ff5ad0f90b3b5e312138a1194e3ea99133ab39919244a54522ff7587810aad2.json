@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO instances (\n                id, name, icon_path, install_stage, game_version, loader, \n                loader_version_json, java_path, launch_args_json, env_vars_json, \n                memory_maximum, force_fullscreen, window_width, window_height, \n                created_at, modified_at, last_played_at, time_played, \n                recent_time_played, hook_pre_launch, hook_wrapper, hook_post_exit\n            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n            ON CONFLICT(id) DO UPDATE SET\n                name = excluded.name, icon_path = excluded.icon_path, install_stage = excluded.install_stage,\n                game_version = excluded.game_version, loader = excluded.loader,\n                loader_version_json = excluded.loader_version_json, java_path = excluded.java_path,\n                launch_args_json = excluded.launch_args_json, env_vars_json = excluded.env_vars_json,\n                memory_maximum = excluded.memory_maximum, force_fullscreen = excluded.force_fullscreen,\n                window_width = excluded.window_width, window_height = excluded.window_height,\n                modified_at = excluded.modified_at, last_played_at = excluded.last_played_at,\n                time_played = excluded.time_played, recent_time_played = excluded.recent_time_played,\n                hook_pre_launch = excluded.hook_pre_launch, hook_wrapper = excluded.hook_wrapper,\n                hook_post_exit = excluded.hook_post_exit\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 22
+    },
+    "nullable": []
+  },
+  "hash": "7ff5ad0f90b3b5e312138a1194e3ea99133ab39919244a54522ff7587810aad2"
+}
