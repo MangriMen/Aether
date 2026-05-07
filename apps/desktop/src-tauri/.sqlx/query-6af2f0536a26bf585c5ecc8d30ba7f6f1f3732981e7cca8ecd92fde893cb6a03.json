@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM java_versions",
+  "describe": {
+    "columns": [
+      {
+        "name": "major_version",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "version",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "architecture",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "path",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6af2f0536a26bf585c5ecc8d30ba7f6f1f3732981e7cca8ecd92fde893cb6a03"
+}

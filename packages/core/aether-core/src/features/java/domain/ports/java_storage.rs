@@ -16,4 +16,7 @@ pub enum JavaStorageError {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
+
+    #[error("Storage error: {0}")]
+    Storage(String),
 }
