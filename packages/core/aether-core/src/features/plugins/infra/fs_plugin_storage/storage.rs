@@ -115,7 +115,7 @@ impl PluginStorage for FsPluginStorage {
         let plugins_dir = self.location_info.plugins_dir();
 
         if !plugins_dir.exists() {
-            create_dir_all(&plugins_dir).await?;
+            return Ok(HashMap::new());
         }
 
         let mut dir_entries = read_dir(&plugins_dir).await?;
