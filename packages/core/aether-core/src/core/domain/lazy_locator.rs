@@ -16,7 +16,7 @@ use crate::{
                 SqliteInstanceStorage, SqlitePackStorage,
             },
         },
-        java::infra::FsJavaStorage,
+        java::infra::SqliteJavaStorage,
         minecraft::infra::{
             CachedMetadataStorage, MinecraftMetadataResolver, ModrinthMetadataStorage,
         },
@@ -55,7 +55,7 @@ pub struct LazyLocator {
     settings_storage: OnceCell<Arc<SqliteSettingsStorage>>,
     process_storage: OnceCell<Arc<InMemoryProcessStorage>>,
     instance_storage: OnceCell<Arc<EventEmittingInstanceStorage<SqliteInstanceStorage>>>,
-    java_storage: OnceCell<Arc<FsJavaStorage>>,
+    java_storage: OnceCell<Arc<SqliteJavaStorage>>,
     metadata_storage: OnceCell<
         Arc<
             CachedMetadataStorage<
@@ -251,10 +251,10 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_java_storage(&self) -> Arc<FsJavaStorage> {
+    pub async fn get_java_storage(&self) -> Arc<SqliteJavaStorage> {
         self.java_storage
             .get_or_init(|| async {
-                Arc::new(FsJavaStorage::new(&self.state.location_info.java_dir()))
+                Arc::new(SqliteJavaStorage::new(self.get_sqlite_pool().await))
             })
             .await
             .clone()

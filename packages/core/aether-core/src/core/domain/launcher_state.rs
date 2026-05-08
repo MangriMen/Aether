@@ -14,6 +14,10 @@ use crate::{
             self, InstanceWatcherService,
             infra::{FsInstanceStorage, FsPackStorage, SqliteInstanceStorage, SqlitePackStorage},
         },
+        java::{
+            self,
+            infra::{FsJavaInstallationService, SqliteJavaStorage},
+        },
         settings::{
             self, LocationInfo, Settings, SettingsStorage,
             infra::{
@@ -137,6 +141,13 @@ impl LauncherState {
             &FsInstanceStorage::new(location_info.clone()),
             &FsPackStorage::new(location_info.clone()),
             &SqlitePackStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
+
+        java::infra::migrate_java_to_sqlite(
+            &location_info.java_dir(),
+            &FsJavaInstallationService,
+            &SqliteJavaStorage::new(sqlite_pool.clone()),
         )
         .await?;
 

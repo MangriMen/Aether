@@ -16,7 +16,7 @@ use crate::{
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},
-            infra::{AzulJreProvider, FsJavaInstallationService, FsJavaStorage},
+            infra::{AzulJreProvider, FsJavaInstallationService, SqliteJavaStorage},
         },
         minecraft::{
             LoaderVersionResolver,
@@ -64,7 +64,7 @@ async fn get_launch_instance_use_case(
     >,
     ProgressServiceType,
     FsJavaInstallationService,
-    FsJavaStorage,
+    SqliteJavaStorage,
     AzulJreProvider<ProgressServiceType, ReqwestClient<ProgressServiceType>>,
 > {
     let loader_version_resolver = Arc::new(LoaderVersionResolver::new(
