@@ -163,6 +163,7 @@ export {
   TextFieldLabel,
   TextFieldDescription,
   TextFieldErrorMessage,
+  labelVariants as textFieldLabelVariants,
 };
 
 export type {
