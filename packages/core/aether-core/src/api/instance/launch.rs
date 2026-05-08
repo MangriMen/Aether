@@ -26,8 +26,7 @@ use crate::{
             },
             infra::{
                 AssetsService, CachedMetadataStorage, ClientService, LibrariesService,
-                MinecraftDownloadResolver, MinecraftDownloadService, MinecraftMetadataResolver,
-                ModrinthMetadataStorage,
+                MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
             },
         },
         process::{
@@ -41,7 +40,7 @@ use crate::{
         settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
     libs::request_client::ReqwestClient,
-    shared::FileCache,
+    shared::{FileCache, SqliteCache},
 };
 
 #[allow(clippy::too_many_lines)]
@@ -50,10 +49,7 @@ async fn get_launch_instance_use_case(
     lazy_locator: &LazyLocator,
 ) -> LaunchInstanceUseCase<
     EventEmittingInstanceStorage<SqliteInstanceStorage>,
-    CachedMetadataStorage<
-        FileCache<MinecraftMetadataResolver>,
-        ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>,
-    >,
+    CachedMetadataStorage<SqliteCache, ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>>,
     InMemoryProcessStorage,
     SqliteDefaultInstanceSettingsStorage,
     MinecraftDownloadService<

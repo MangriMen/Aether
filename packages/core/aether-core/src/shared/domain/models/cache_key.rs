@@ -14,6 +14,15 @@ pub enum CacheId {
     Named(String),
 }
 
+impl AsRef<str> for CacheId {
+    fn as_ref(&self) -> &str {
+        match self {
+            CacheId::Static(s) => s,
+            CacheId::Named(s) => s.as_str(),
+        }
+    }
+}
+
 impl<T> CacheKey<T> {
     pub fn new(namespace: &'static str, id: CacheId) -> Self {
         Self {
@@ -23,6 +32,9 @@ impl<T> CacheKey<T> {
         }
     }
 
+    pub fn namespace(&self) -> &str {
+        self.namespace
+    }
     pub fn id(&self) -> &CacheId {
         &self.id
     }

@@ -18,6 +18,7 @@ use crate::{
             self,
             infra::{FsJavaInstallationService, SqliteJavaStorage},
         },
+        minecraft,
         settings::{
             self, LocationInfo, Settings, SettingsStorage,
             infra::{
@@ -150,6 +151,8 @@ impl LauncherState {
             &SqliteJavaStorage::new(sqlite_pool.clone()),
         )
         .await?;
+
+        minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 
         let fetch_semaphore = Arc::new(FetchSemaphore(Semaphore::new(
             settings.max_concurrent_downloads(),

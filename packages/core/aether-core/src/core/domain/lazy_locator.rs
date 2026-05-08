@@ -17,9 +17,7 @@ use crate::{
             },
         },
         java::infra::SqliteJavaStorage,
-        minecraft::infra::{
-            CachedMetadataStorage, MinecraftMetadataResolver, ModrinthMetadataStorage,
-        },
+        minecraft::infra::{CachedMetadataStorage, ModrinthMetadataStorage},
         plugins::{
             LoadConfigType, PluginLoaderRegistry, PluginRegistry,
             infra::{
@@ -31,7 +29,7 @@ use crate::{
         settings::infra::{SqliteDefaultInstanceSettingsStorage, SqliteSettingsStorage},
     },
     libs::request_client::ReqwestClient,
-    shared::{CapabilityRegistry, FileCache, MemoryCapabilityRegistry},
+    shared::{CapabilityRegistry, MemoryCapabilityRegistry, SqliteCache},
 };
 
 use super::{ErrorKind, LauncherState};
@@ -44,7 +42,7 @@ pub type ImporterRegistry = MemoryCapabilityRegistry<Arc<dyn Importer>>;
 pub type UpdaterRegistry = MemoryCapabilityRegistry<Arc<dyn Updater>>;
 pub type ContentProviderRegistry = MemoryCapabilityRegistry<Arc<dyn ContentProvider>>;
 
-pub type MinecraftMetadataCache = FileCache<MinecraftMetadataResolver>;
+pub type MinecraftMetadataCache = SqliteCache;
 
 pub struct LazyLocator {
     state: Arc<LauncherState>,
@@ -271,9 +269,7 @@ impl LazyLocator {
         self.metadata_storage
             .get_or_init(|| async {
                 Arc::new(CachedMetadataStorage::new(
-                    FileCache::new(MinecraftMetadataResolver::new(
-                        self.state.location_info.clone(),
-                    )),
+                    SqliteCache::new(self.get_sqlite_pool().await),
                     ModrinthMetadataStorage::new(self.get_request_client().await),
                 ))
             })

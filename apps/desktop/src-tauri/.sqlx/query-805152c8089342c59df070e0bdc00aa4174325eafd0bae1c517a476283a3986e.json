@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO universal_cache (namespace, key, value, expires_at)\n             VALUES (?, ?, ?, ?)\n             ON CONFLICT(namespace, key) DO UPDATE SET\n                value = excluded.value,\n                expires_at = excluded.expires_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "805152c8089342c59df070e0bdc00aa4174325eafd0bae1c517a476283a3986e"
+}

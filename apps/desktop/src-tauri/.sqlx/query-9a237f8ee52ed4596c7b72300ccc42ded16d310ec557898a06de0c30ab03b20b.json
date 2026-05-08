@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM universal_cache WHERE namespace = ? AND key = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "9a237f8ee52ed4596c7b72300ccc42ded16d310ec557898a06de0c30ab03b20b"
+}
