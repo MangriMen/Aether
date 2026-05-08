@@ -14,11 +14,11 @@ CREATE TABLE IF NOT EXISTS instances (
   launch_args_json TEXT,
   env_vars_json TEXT,
   -- MemorySettings (Flattened)
-  memory_maximum INTEGER NOT NULL DEFAULT 2048,
+  memory_maximum INTEGER,
   -- WindowSize & Display (Flattened)
-  force_fullscreen BOOLEAN NOT NULL DEFAULT 0,
-  window_width INTEGER NOT NULL DEFAULT 960,
-  window_height INTEGER NOT NULL DEFAULT 540,
+  force_fullscreen BOOLEAN,
+  window_width INTEGER,
+  window_height INTEGER,
   -- Timestamps
   created_at DATETIME NOT NULL,
   modified_at DATETIME NOT NULL,

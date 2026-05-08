@@ -20,13 +20,13 @@ pub struct SqlInstance {
     pub launch_args_json: Option<String>,
     pub env_vars_json: Option<String>,
 
-    // MemorySettings (i64, так как в SQLite INTEGER)
-    pub memory_maximum: i64,
+    // MemorySettings
+    pub memory_maximum: Option<i64>,
 
     // WindowSize & Display
-    pub force_fullscreen: bool,
-    pub window_width: i64,
-    pub window_height: i64,
+    pub force_fullscreen: Option<bool>,
+    pub window_width: Option<i64>,
+    pub window_height: Option<i64>,
 
     // Timestamps
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -71,10 +71,11 @@ impl From<Instance> for SqlInstance {
                 .map(|v| serde_json::to_string(v).unwrap()),
 
             // Runtime Settings (Flattened)
-            memory_maximum: i.memory.map_or(2048, |m| i64::from(m.maximum)),
-            force_fullscreen: i.force_fullscreen.unwrap_or(false),
-            window_width: i.game_resolution.map_or(960, |r| i64::from(r.0)),
-            window_height: i.game_resolution.map_or(540, |r| i64::from(r.1)),
+            memory_maximum: i.memory.map(|m| i64::from(m.maximum)),
+
+            force_fullscreen: i.force_fullscreen,
+            window_width: i.game_resolution.map(|r| i64::from(r.0)),
+            window_height: i.game_resolution.map(|r| i64::from(r.1)),
 
             // Timestamps
             created_at: i.created,
@@ -107,7 +108,6 @@ impl TryFrom<SqlInstance> for Instance {
                 .map_err(|_| InstanceError::Storage("Invalid stage".into()))?,
 
             game_version: row.game_version,
-            // Предполагаем, что ModLoader реализует Serialize/Deserialize
             loader: serde_json::from_str(&row.loader)
                 .map_err(|e| InstanceError::Storage(e.to_string()))?,
 
@@ -122,20 +122,18 @@ impl TryFrom<SqlInstance> for Instance {
 
             env_vars: row.env_vars_json.map(|s| serde_json::from_str(&s).unwrap()),
 
-            memory: Some(MemorySettings::new(
-                row.memory_maximum
-                    .try_into()
-                    .map_err(|_| InstanceError::Storage("Invalid memory".into()))?,
-            )),
-            force_fullscreen: Some(row.force_fullscreen),
-            game_resolution: Some(WindowSize::new(
-                row.window_width
-                    .try_into()
-                    .map_err(|_| InstanceError::Storage("Invalid width".into()))?,
-                row.window_height
-                    .try_into()
-                    .map_err(|_| InstanceError::Storage("Invalid height".into()))?,
-            )),
+            memory: row
+                .memory_maximum
+                .map(|max| MemorySettings::new(max.try_into().unwrap_or(2048))),
+
+            force_fullscreen: row.force_fullscreen,
+            game_resolution: match (row.window_width, row.window_height) {
+                (Some(w), Some(h)) => Some(WindowSize::new(
+                    w.try_into().unwrap_or(960),
+                    h.try_into().unwrap_or(540),
+                )),
+                _ => None,
+            },
 
             created: row.created_at,
             modified: row.modified_at,
@@ -146,7 +144,6 @@ impl TryFrom<SqlInstance> for Instance {
 
             hooks: Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
 
-            // Это поле заполняется отдельно после запроса к instance_pack_info
             pack_info: None,
         })
     }
