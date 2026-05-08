@@ -3,6 +3,7 @@ pub const APPLICATION_PLUGIN_NAME: &str = "application";
 pub const AUTH_PLUGIN_NAME: &str = "auth";
 pub const EVENTS_PLUGIN_NAME: &str = "events";
 pub const INSTANCE_PLUGIN_NAME: &str = "instance";
+pub const JAVA_PLUGIN_NAME: &str = "java";
 pub const MINECRAFT_PLUGIN_NAME: &str = "minecraft";
 pub const PLUGIN_PLUGIN_NAME: &str = "plugin";
 pub const PROCESS_PLUGIN_NAME: &str = "process";
@@ -64,6 +65,16 @@ macro_rules! instance_commands {
             check_compatibility,
             get_content,
             list_content_version,
+        ]
+    };
+}
+
+macro_rules! java_commands {
+    ($($tokens:tt)*) => {
+        $($tokens)* [
+            list,
+            install,
+            test
         ]
     };
 }
@@ -133,6 +144,7 @@ pub(crate) use application_commands;
 pub(crate) use auth_commands;
 pub(crate) use events_commands;
 pub(crate) use instance_commands;
+pub(crate) use java_commands;
 pub(crate) use minecraft_commands;
 pub(crate) use plugin_commands;
 pub(crate) use process_commands;

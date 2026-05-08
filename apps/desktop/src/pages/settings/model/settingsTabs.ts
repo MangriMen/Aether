@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'solid-js';
 
 import IconMdiBrush from '~icons/mdi/brush-variant';
+import IconMdiCoffeeOutline from '~icons/mdi/coffee-outline';
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
 import IconMdiTestTube from '~icons/mdi/test-tube';
@@ -11,11 +12,13 @@ import type { TabConfig } from '@/shared/model';
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
+import { JavaPane } from '../ui/JavaPane/JavaPane';
 import { PluginsPane } from '../ui/PluginsPane/PluginsPane';
 import { UpdatePane } from '../ui/UpdatePane/UpdatePane';
 
 export const SettingsTab = {
   Appearance: 'appearance',
+  Java: 'java',
   DefaultInstanceSettings: 'defaultInstanceSettings',
   Update: 'update',
   Plugins: 'plugins',
@@ -30,6 +33,12 @@ export const SETTINGS_TABS_DEFINITION = [
     label: 'appearance',
     icon: IconMdiBrush,
     component: AppearancePane,
+  },
+  {
+    value: SettingsTab.Java,
+    label: 'java',
+    icon: IconMdiCoffeeOutline,
+    component: JavaPane,
   },
   {
     value: SettingsTab.DefaultInstanceSettings,

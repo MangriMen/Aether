@@ -8,6 +8,7 @@
     "auth:default",
     "events:default",
     "instance:default",
+    "java:default",
     "minecraft:default",
     "process:default",
     "plugin:default",

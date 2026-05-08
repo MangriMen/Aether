@@ -331,6 +331,7 @@
   "settings": {
     "tab": {
       "appearance": "Внешний вид",
+      "java": "Java",
       "defaultInstanceSettings": "Настройки игры",
       "update": "Обновление",
       "plugins": "Плагины",
@@ -384,6 +385,14 @@
       "header": "Пересоздание окна",
       "ok": "Применить",
       "later": "Отложить"
+    },
+    "java": {
+      "location": "Расположение Java {{version}}",
+      "detect": "Обнаружить",
+      "installRecommended": "Установить рекомендованную",
+      "test": "Тест",
+      "testFailed": "Ошибка",
+      "testSuccess": "Успех"
     }
   },
   "update": {
@@ -439,5 +448,9 @@
   "navigation": {
     "goBack": "Назад",
     "goForward": "Вперёд"
+  },
+  "java": {
+    "installError": "Не удалось установить Java",
+    "testError": "Не удалось протестировать Java"
   }
 }

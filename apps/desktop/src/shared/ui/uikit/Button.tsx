@@ -40,7 +40,7 @@ const buttonVariants = cva(
           'text-warning enabled:hover:bg-warning/control enabled:active:bg-warning/secondary',
       },
       size: {
-        default: 'h-9 px-4 py-2 text-sm leading-4',
+        default: 'h-9 gap-2 px-4 py-2 text-sm leading-4',
         sm: 'h-8 rounded-md px-3 py-1.5 text-sm leading-4',
         lg: 'h-10 rounded-md px-6 py-2 text-base leading-5',
         icon: 'size-9',

@@ -331,6 +331,7 @@
   "settings": {
     "tab": {
       "appearance": "Appearance",
+      "java": "Java",
       "defaultInstanceSettings": "Game settings",
       "update": "Update",
       "plugins": "Plugins",
@@ -384,6 +385,14 @@
       "description": "Changes to the transparency mode require the window to be recreated. Apply changes now or keep them pending until the next launch?",
       "ok": "Apply",
       "later": "Later"
+    },
+    "java": {
+      "location": "Java {{version}} location",
+      "installRecommended": "Install recommended",
+      "detect": "Detect",
+      "test": "Test",
+      "testSuccess": "Success",
+      "testFailed": "Failed"
     }
   },
   "update": {
@@ -439,5 +448,9 @@
   "navigation": {
     "goBack": "Go back",
     "goForward": "Go forward"
+  },
+  "java": {
+    "installError": "Failed to install java",
+    "testError": "Failed to test java"
   }
 }
