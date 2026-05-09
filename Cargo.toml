@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "apps/desktop/src-tauri",
+    "apps/client/",
     "packages/core/aether-core",
     "packages/core/aether-core-gen",
     "packages/core/aether-core-plugin-api",

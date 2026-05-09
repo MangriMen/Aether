@@ -1,7 +1,9 @@
+#[cfg(debug_assertions)]
 use aether_lib::shared::specta::{
     export_specta_builders, get_all_features_builders, get_export_path,
 };
 
+#[cfg(debug_assertions)]
 fn main() {
     let out_dir = get_export_path();
 

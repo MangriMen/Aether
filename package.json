@@ -1,13 +1,21 @@
 {
   "name": "@aether/monorepo",
+  "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "app:dev": "turbo run tauri --filter=@aether/app -- dev",
-    "lint": "turbo run lintt",
+    "ui:dev": "turbo run dev --filter=@aether/ui",
+    "ui:build": "turbo run build --filter=@aether/ui",
+    "client:dev": "turbo run dev --filter=@aether/client",
+    "client:build": "turbo run build --filter=@aether/client",
+    "lint": "turbo run lintt --continue",
+    "build": "turbo run build --continue",
     "prepare": "lefthook install"
   },
   "devDependencies": {
