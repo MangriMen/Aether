@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO app_settings (id, action_on_instance_launch, is_actual_transparent, transparent, window_effect)\n             VALUES (1, ?, ?, ?, ?)\n             ON CONFLICT(id) DO UPDATE SET\n                action_on_instance_launch = excluded.action_on_instance_launch,\n                is_actual_transparent = excluded.is_actual_transparent,\n                transparent = excluded.transparent,\n                window_effect = excluded.window_effect",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "f6ebe77ff41684a59bb0030e13bd21c646ab53755d7d998fb47fa84150f22f74"
+}

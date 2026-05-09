@@ -15,6 +15,9 @@ pub enum AuthDomainError {
     #[error("Invalid username chars")]
     InvalidUsernameChars,
 
+    #[error("Invalid account type")]
+    InvalidAccountType,
+
     #[error("Session expired, please login again")]
     TokenExpired,
 }

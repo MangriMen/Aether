@@ -1,21 +1,48 @@
+use aether_core::features::settings::LocationInfo;
 use log::error;
 use tauri::{App, Manager};
 
 use crate::{
     core::{
         AppSettingsStorageState, EventEmitterState, WindowLabel, WindowManager, WindowManagerState,
+        infra::tauri::setup::state,
     },
     features::settings::{AppSettings, AppSettingsStorage},
 };
 
 use super::{
-    listeners::setup_listeners, state::register_state, watchdog::run_window_is_visible_watch_dog,
+    listeners::setup_listeners, sqlite::create_pool, state::register_state,
+    watchdog::run_window_is_visible_watch_dog,
 };
 
 pub fn init_app(app: &mut App) {
     let app_handle = app.handle();
 
-    register_state(app_handle);
+    let launcher_dir = app_handle
+        .path()
+        .app_config_dir()
+        .expect("Failed to resolve app config directory");
+
+    let location_info = LocationInfo::new(launcher_dir.clone(), launcher_dir.clone());
+
+    let pool = tauri::async_runtime::block_on(async {
+        let pool = create_pool(location_info.db_path())
+            .await
+            .expect("Failed to connect to DB");
+
+        sqlx::migrate!("./migrations_links")
+            .run(&pool)
+            .await
+            .expect("Migration failed");
+
+        state::migrate(app_handle.clone(), pool.clone())
+            .await
+            .expect("Migration failed");
+
+        pool
+    });
+
+    register_state(app_handle, pool);
 
     let app_settings_storage_state = app_handle.state::<AppSettingsStorageState>();
     let app_settings_storage = app_settings_storage_state.inner().clone();

@@ -5,6 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use tracing::warn;
 
 use crate::{
     features::{
@@ -114,7 +115,7 @@ impl PluginStorage for FsPluginStorage {
         let plugins_dir = self.location_info.plugins_dir();
 
         if !plugins_dir.exists() {
-            create_dir_all(&plugins_dir).await?;
+            return Ok(HashMap::new());
         }
 
         let mut dir_entries = read_dir(&plugins_dir).await?;
@@ -128,7 +129,7 @@ impl PluginStorage for FsPluginStorage {
                     plugins.insert(plugin.manifest.metadata.id.clone(), plugin);
                 }
                 Err(e) => {
-                    log::debug!("Failed to load plugin from '{}': {}", path.display(), e);
+                    warn!("Failed to load plugin from '{}': {}", path.display(), e);
                 }
             }
         }

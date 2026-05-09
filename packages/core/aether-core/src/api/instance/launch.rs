@@ -6,17 +6,17 @@ use crate::{
         domain::{LazyLocator, ProgressServiceType},
     },
     features::{
-        auth::Credentials,
+        auth::Credential,
         instance::{
             app::{
                 InstallInstanceUseCase, LaunchInstanceUseCase,
                 LaunchInstanceWithActiveAccountUseCase,
             },
-            infra::{EventEmittingInstanceStorage, FsInstanceStorage},
+            infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},
-            infra::{AzulJreProvider, FsJavaInstallationService, FsJavaStorage},
+            infra::{AzulJreProvider, FsJavaInstallationService, SqliteJavaStorage},
         },
         minecraft::{
             LoaderVersionResolver,
@@ -26,8 +26,7 @@ use crate::{
             },
             infra::{
                 AssetsService, CachedMetadataStorage, ClientService, LibrariesService,
-                MinecraftDownloadResolver, MinecraftDownloadService, MinecraftMetadataResolver,
-                ModrinthMetadataStorage,
+                MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
             },
         },
         process::{
@@ -38,10 +37,10 @@ use crate::{
             },
             infra::InMemoryProcessStorage,
         },
-        settings::infra::FsDefaultInstanceSettingsStorage,
+        settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
     libs::request_client::ReqwestClient,
-    shared::FileCache,
+    shared::{FileCache, SqliteCache},
 };
 
 #[allow(clippy::too_many_lines)]
@@ -49,13 +48,10 @@ async fn get_launch_instance_use_case(
     state: &LauncherState,
     lazy_locator: &LazyLocator,
 ) -> LaunchInstanceUseCase<
-    EventEmittingInstanceStorage<FsInstanceStorage>,
-    CachedMetadataStorage<
-        FileCache<MinecraftMetadataResolver>,
-        ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>,
-    >,
+    EventEmittingInstanceStorage<SqliteInstanceStorage>,
+    CachedMetadataStorage<SqliteCache, ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>>,
     InMemoryProcessStorage,
-    FsDefaultInstanceSettingsStorage,
+    SqliteDefaultInstanceSettingsStorage,
     MinecraftDownloadService<
         ReqwestClient<ProgressServiceType>,
         ProgressServiceType,
@@ -64,7 +60,7 @@ async fn get_launch_instance_use_case(
     >,
     ProgressServiceType,
     FsJavaInstallationService,
-    FsJavaStorage,
+    SqliteJavaStorage,
     AzulJreProvider<ProgressServiceType, ReqwestClient<ProgressServiceType>>,
 > {
     let loader_version_resolver = Arc::new(LoaderVersionResolver::new(
@@ -229,7 +225,7 @@ pub async fn run(instance_id: String) -> crate::Result<MinecraftProcessMetadata>
 #[tracing::instrument]
 pub async fn run_credentials(
     instance_id: String,
-    credentials: Credentials,
+    credentials: Credential,
 ) -> crate::Result<MinecraftProcessMetadata> {
     let state = LauncherState::get().await?;
     let lazy_locator = LazyLocator::get().await?;

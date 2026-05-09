@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO java_versions (major_version, version, architecture, path)\n             VALUES (?, ?, ?, ?)\n             ON CONFLICT(major_version) DO UPDATE SET\n                version = excluded.version,\n                architecture = excluded.architecture,\n                path = excluded.path",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "5b8c2744fccdef4e9318677025e4181a01eea54a7d77104b41d07e5a05ffc928"
+}

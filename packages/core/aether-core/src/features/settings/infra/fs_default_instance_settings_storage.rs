@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 
@@ -9,13 +9,20 @@ use crate::{
 
 pub struct FsDefaultInstanceSettingsStorage {
     store: JsonValueStore<DefaultInstanceSettings>,
+    path: PathBuf,
 }
 
 impl FsDefaultInstanceSettingsStorage {
     pub fn new(settings_dir: &Path) -> Self {
+        let path = settings_dir.join("instance_settings.json");
         Self {
-            store: JsonValueStore::new(settings_dir.join("instance_settings.json")),
+            store: JsonValueStore::new(path.clone()),
+            path,
         }
+    }
+
+    pub fn get_file_path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 

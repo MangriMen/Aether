@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM pack_files WHERE instance_id = ? AND content_path = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "d605093e335d197f9dea2eab9701166e4c425854b18d3e45511f9242ce830ff9"
+}

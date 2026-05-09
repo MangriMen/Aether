@@ -1,6 +1,7 @@
 #![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
+use sqlx::SqlitePool;
 use tauri::{AppHandle, State};
 
 use crate::{
@@ -32,12 +33,13 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 pub async fn initialize_state(
     app: AppHandle,
     event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
+    pool: State<'_, SqlitePool>,
 ) -> FrontendResult<()> {
     let launcher_dir = shared::get_app_dir(&app);
 
     Ok(
         InitializeLauncherUseCase::new(event_emitter.inner().clone())
-            .execute(launcher_dir)
+            .execute(launcher_dir, pool.inner().clone())
             .await?,
     )
 }

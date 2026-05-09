@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 
@@ -9,30 +9,27 @@ use crate::{
 
 pub struct FsSettingsStorage {
     store: JsonValueStore<Settings>,
+    path: PathBuf,
 }
 
 impl FsSettingsStorage {
     pub fn new(settings_dir: &Path) -> Self {
+        let path = settings_dir.join("settings.json");
         Self {
-            store: JsonValueStore::new(settings_dir.join("settings.json")),
+            store: JsonValueStore::new(path.clone()),
+            path,
         }
+    }
+
+    pub fn get_file_path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 
 #[async_trait]
 impl SettingsStorage for FsSettingsStorage {
     async fn get(&self) -> Result<Settings, SettingsError> {
-        self.store.read().await.map_err(|e| match e {
-            IoError::IoPathError { ref source, .. } | IoError::IoError(ref source) => {
-                match source.kind() {
-                    std::io::ErrorKind::NotFound => SettingsError::NotFound,
-                    _ => SettingsError::StorageFailure(e),
-                }
-            }
-            IoError::SerializationError(_) | IoError::DeserializationError(_) => {
-                SettingsError::StorageFailure(e)
-            }
-        })
+        Ok(self.store.read().await?)
     }
 
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {
@@ -44,16 +41,20 @@ impl SettingsStorage for FsSettingsStorage {
     where
         F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
     {
-        self.store.update(f).await.map_err(|e| match e {
+        Ok(self.store.update(f).await?)
+    }
+}
+
+impl From<IoError> for SettingsError {
+    fn from(value: IoError) -> Self {
+        match value {
             IoError::IoPathError { ref source, .. } | IoError::IoError(ref source) => {
                 match source.kind() {
                     std::io::ErrorKind::NotFound => SettingsError::NotFound,
-                    _ => SettingsError::StorageFailure(e),
+                    _ => SettingsError::Storage(value.to_string()),
                 }
             }
-            IoError::SerializationError(_) | IoError::DeserializationError(_) => {
-                SettingsError::StorageFailure(e)
-            }
-        })
+            _ => SettingsError::Storage(value.to_string()),
+        }
     }
 }

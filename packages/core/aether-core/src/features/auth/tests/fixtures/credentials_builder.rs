@@ -1,4 +1,4 @@
-use crate::features::auth::{AccountType, Credentials, Username};
+use crate::features::auth::{AccountType, Credential, Username};
 use uuid::Uuid;
 
 /// Builder for constructing test Credentials with customizable fields.
@@ -30,9 +30,9 @@ impl CredentialsBuilder {
         self
     }
 
-    pub fn build(self) -> Credentials {
+    pub fn build(self) -> Credential {
         let mut credentials = match self.account_type {
-            AccountType::Offline => Credentials::new_offline(
+            AccountType::Offline => Credential::new_offline(
                 self.id,
                 Username::parse(&self.username).expect("Invalid username in test builder"),
             ),

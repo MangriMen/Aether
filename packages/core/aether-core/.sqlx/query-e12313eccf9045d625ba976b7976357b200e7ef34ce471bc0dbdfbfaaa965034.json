@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT plugin_id FROM enabled_plugins",
+  "describe": {
+    "columns": [
+      {
+        "name": "plugin_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e12313eccf9045d625ba976b7976357b200e7ef34ce471bc0dbdfbfaaa965034"
+}

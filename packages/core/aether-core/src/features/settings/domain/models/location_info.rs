@@ -36,6 +36,16 @@ impl LocationInfo {
         self.config_dir.join(METADATA_FOLDER_NAME)
     }
 
+    #[inline]
+    pub fn data_dir(&self) -> PathBuf {
+        self.config_dir.join("data")
+    }
+
+    #[inline]
+    pub fn db_path(&self) -> PathBuf {
+        self.data_dir().join("app.db")
+    }
+
     /// Get the Minecraft versions metadata directory
     #[inline]
     pub fn versions_dir(&self) -> PathBuf {
@@ -193,7 +203,7 @@ impl LocationInfo {
 
     #[inline]
     pub fn wasm_cache_config(&self) -> PathBuf {
-        self.config_dir.join("wasm.toml")
+        self.cache_dir().join("wasm.toml")
     }
 
     #[inline]
@@ -203,6 +213,6 @@ impl LocationInfo {
 
     #[inline]
     pub fn temp_dir(&self) -> PathBuf {
-        self.config_dir.join("temp")
+        self.cache_dir().join("temp")
     }
 }

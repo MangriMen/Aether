@@ -1,12 +1,12 @@
 use serr::SerializeError;
 
-use crate::{features::auth::AuthDomainError, shared::IoError};
+use crate::features::auth::AuthDomainError;
 
 #[derive(Debug, thiserror::Error, SerializeError)]
 pub enum AuthApplicationError {
     #[error(transparent)]
     Domain(#[from] AuthDomainError),
 
-    #[error("Storage failure: {0}")]
-    StorageFailure(#[from] IoError),
+    #[error("Storage error: {0}")]
+    Storage(String),
 }

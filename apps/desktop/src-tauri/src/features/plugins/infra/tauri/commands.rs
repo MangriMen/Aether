@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use aether_core::core::LauncherState;
 
@@ -117,10 +117,19 @@ async fn edit_settings(id: String, edit_settings: EditPluginSettingsDto) -> Fron
 #[specta::specta]
 async fn open_plugins_folder() -> FrontendResult<()> {
     let state = LauncherState::get().await.map_err(crate::Error::from)?;
-    Ok(reveal_in_explorer(
-        &state.location_info.plugins_dir(),
-        true,
-    )?)
+    let plugins_path = state.location_info.plugins_dir();
+
+    let path_to_open = if plugins_path.exists() {
+        // If the folder exists, open it directly
+        plugins_path
+    } else {
+        // If not, try to open the parent directory
+        plugins_path
+            .parent()
+            .map_or_else(|| plugins_path.clone(), Path::to_path_buf)
+    };
+
+    Ok(reveal_in_explorer(&path_to_open, true)?)
 }
 
 #[tauri::command]

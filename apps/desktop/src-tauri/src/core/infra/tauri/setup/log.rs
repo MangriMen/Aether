@@ -1,13 +1,14 @@
 use std::env;
 
 use log::LevelFilter;
+use tauri_plugin_log::fern::colors::ColoredLevelConfig;
 
 const DEFAULT_LOG_MAX_FILE_SIZE: u64 = 10 * 1024 * 1024;
 const DEFAULT_LOG_COUNT: usize = 5;
 
 #[must_use]
 pub fn default_log_builder() -> tauri_plugin_log::Builder {
-    let log_builder = tauri_plugin_log::Builder::new();
+    let log_builder = tauri_plugin_log::Builder::new().with_colors(ColoredLevelConfig::default());
 
     let rust_log_env = env::var("RUST_LOG");
 

@@ -2,7 +2,9 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
-use crate::features::{auth, events, instance, minecraft, plugins, process, settings, update};
+use crate::features::{
+    auth, events, instance, java, minecraft, plugins, process, settings, update,
+};
 use crate::shared::specta::get_all_features_builders;
 
 use super::{
@@ -68,6 +70,7 @@ fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
         .plugin(auth::init())
         .plugin(events::init())
         .plugin(instance::init())
+        .plugin(java::init())
         .plugin(minecraft::init())
         .plugin(process::init())
         .plugin(plugins::init())

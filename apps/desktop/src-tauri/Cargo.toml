@@ -4,15 +4,6 @@ version = "0.8.7"
 description = "Desktop application for managing Minecraft instances and mods"
 edition.workspace = true
 rust-version.workspace = true
-default-run = "aether"
-
-[[bin]]
-name = "aether"
-path = "src/main.rs"
-
-[[bin]]
-name = "typegen"
-path = "src/bin/typegen.rs"
 
 [package.metadata.cargo-machete]
 ignored = ["serde_json"]
@@ -30,7 +21,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # Tauri & Plugins
 tauri = { version = "2", features = ["tray-icon", "test"] }
 tauri-plugin-dialog = "2"
-tauri-plugin-log = "2"
+tauri-plugin-log = { version = "2", features = ["colored"] }
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 
@@ -43,7 +34,10 @@ specta = { version = "=2.0.0-rc.24", features = [
     "semver",
 ] }
 specta-typescript = "0.0.11"
-tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
+tauri-specta = { git = "https://github.com/specta-rs/tauri-specta/", rev = "4cff42ee0aa309fb2c707da534821e7645e75867", features = [
+    "derive",
+    "typescript",
+] }
 
 # Workspace Dependencies
 aether-core.workspace = true
@@ -56,6 +50,7 @@ serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
 serr.workspace = true
+sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono"] }
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true

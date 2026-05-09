@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT 1 as exists_flag FROM default_instance_settings WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "exists_flag",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "71dd43473be6fc2365c6379002e10eb8441af4875ca220c6576b6a4ee8267c0a"
+}

@@ -8,14 +8,20 @@ use crate::features::settings::{AppSettings, AppSettingsError, AppSettingsStorag
 
 pub struct FsAppSettingsStorage {
     store: JsonValueStore<AppSettings>,
+    path: PathBuf,
 }
 
 impl FsAppSettingsStorage {
     #[must_use]
     pub fn new(path: PathBuf) -> Self {
         Self {
-            store: JsonValueStore::new(path),
+            store: JsonValueStore::new(path.clone()),
+            path,
         }
+    }
+
+    pub fn get_file_path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 
@@ -34,6 +40,6 @@ impl AppSettingsStorage for FsAppSettingsStorage {
             .store
             .write(&settings)
             .await
-            .map_err(|_| AppSettingsError::SaveError)?)
+            .map_err(|err| AppSettingsError::Storage(err.to_string()))?)
     }
 }

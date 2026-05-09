@@ -17,8 +17,8 @@
     "appSettings": {
       "TRANSPARENT_EFFECT_REQUIRED": "Для этого действия необходим эффект прозрачности",
       "CAN_NOT_SET_EFFECT": "Невозможно применить запрошенный эффект",
-      "SAVE_FAILED": "Не удалось сохранить настройки приложения",
-      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно"
+      "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно",
+      "STORAGE": "Ошибка хранилища настроек приложения"
     },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
@@ -26,7 +26,8 @@
       "INVALID_USERNAME_CHARS": "Используйте только латинские буквы, цифры и нижнее подчёркивание",
       "INVALID_USERNAME_LENGTH": "Длина имени должна быть от {{min}} до {{max}} символов",
       "TOKEN_EXPIRED": "Сессия истекла, пожалуйста, войдите снова",
-      "STORAGE_ERROR": "Ошибка хранилища данных авторизации"
+      "STORAGE_ERROR": "Ошибка хранилища данных авторизации",
+      "INVALID_ACCOUNT_TYPE": "Неверный тип учетной записи"
     },
     "event": {
       "NOT_INITIALIZED": "Система событий не инициализирована",
@@ -62,7 +63,8 @@
       "PACK_INFO_NOT_FOUND": "Информация о модпаке не найдена",
       "UPDATER_NOT_FOUND": "Обновление для модпака {{modpack_id}} не найдено",
       "UPDATE_FAILED": "Не удалось обновить инстанс с модпаком {{modpack_id}}",
-      "STORAGE_FAILURE": "Ошибка хранилища инстанса"
+      "NOT_FOUND": "Инстанс с ID {{instance_id}} не найден",
+      "STORAGE": "Ошибка хранилища инстансов"
     },
     "java": {
       "NOT_FOUND": "Исполняемый файл Java не найден",
@@ -329,6 +331,7 @@
   "settings": {
     "tab": {
       "appearance": "Внешний вид",
+      "java": "Java",
       "defaultInstanceSettings": "Настройки игры",
       "update": "Обновление",
       "plugins": "Плагины",
@@ -382,6 +385,14 @@
       "header": "Пересоздание окна",
       "ok": "Применить",
       "later": "Отложить"
+    },
+    "java": {
+      "location": "Расположение Java {{version}}",
+      "detect": "Обнаружить",
+      "installRecommended": "Установить рекомендованную",
+      "test": "Тест",
+      "testFailed": "Ошибка",
+      "testSuccess": "Успех"
     }
   },
   "update": {
@@ -437,5 +448,9 @@
   "navigation": {
     "goBack": "Назад",
     "goForward": "Вперёд"
+  },
+  "java": {
+    "installError": "Не удалось установить Java",
+    "testError": "Не удалось протестировать Java"
   }
 }

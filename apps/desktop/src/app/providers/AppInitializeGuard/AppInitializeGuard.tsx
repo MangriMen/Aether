@@ -4,6 +4,11 @@ import { createSignal, onMount, Show } from 'solid-js';
 
 import { AppLayout } from '@/app/layouts/AppLayout';
 import { setupApp } from '@/app/model';
+import {
+  getTranslatedError,
+  isLauncherError,
+  useTranslation,
+} from '@/shared/model';
 import { BaseTitleBar } from '@/widgets/app-titlebar';
 
 import { AppInitializeError } from './AppInitializeError';
@@ -16,14 +21,26 @@ export const AppInitializeGuard: Component<AppInitializeGuardProps> = (
   const [isReady, setIsReady] = createSignal(false);
   const [error, setError] = createSignal<string | undefined>();
 
+  const [{ t }] = useTranslation();
+
   const handleSetup = async () => {
     setIsReady(false);
     setError(undefined);
 
     try {
       await setupApp();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    } catch (err) {
+      setError(() => {
+        if (err instanceof Error) {
+          return err.message;
+        } else if (isLauncherError(err)) {
+          return getTranslatedError(err, t);
+        } else if (typeof err === 'string') {
+          return err;
+        }
+
+        return JSON.stringify(err, null, 2);
+      });
     } finally {
       setIsReady(true);
     }

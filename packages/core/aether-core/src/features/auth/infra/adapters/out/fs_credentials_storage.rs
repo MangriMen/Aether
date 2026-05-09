@@ -1,32 +1,39 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::{
-    features::auth::{AuthApplicationError, AuthDomainError, Credentials, CredentialsStorage},
-    shared::{JsonEntityStore, UpdateAction},
+    features::auth::{AuthApplicationError, AuthDomainError, Credential, CredentialsStorage},
+    shared::{IoError, JsonEntityStore, UpdateAction},
 };
 
 pub struct FsCredentialsStorage {
-    store: JsonEntityStore<Credentials>,
+    store: JsonEntityStore<Credential>,
+    path: PathBuf,
 }
 
 impl FsCredentialsStorage {
     pub fn new(settings_dir: &Path) -> Self {
+        let path = settings_dir.join("credentials.json");
         Self {
-            store: JsonEntityStore::new(settings_dir.join("credentials.json")),
+            store: JsonEntityStore::new(path.clone()),
+            path,
         }
+    }
+
+    pub fn get_file_path(&self) -> PathBuf {
+        self.path.clone()
     }
 }
 
 #[async_trait]
 impl CredentialsStorage for FsCredentialsStorage {
-    async fn list(&self) -> Result<Vec<Credentials>, AuthApplicationError> {
+    async fn list(&self) -> Result<Vec<Credential>, AuthApplicationError> {
         Ok(self.store.read_all().await?)
     }
 
-    async fn get(&self, id: Uuid) -> Result<Credentials, AuthApplicationError> {
+    async fn get(&self, id: Uuid) -> Result<Credential, AuthApplicationError> {
         let list = self.store.read_all().await?;
 
         list.into_iter()
@@ -36,7 +43,7 @@ impl CredentialsStorage for FsCredentialsStorage {
             ))
     }
 
-    async fn upsert(&self, credentials: Credentials) -> Result<Credentials, AuthApplicationError> {
+    async fn upsert(&self, credentials: Credential) -> Result<Credential, AuthApplicationError> {
         Ok(self
             .store
             .update(|list| {
@@ -55,7 +62,7 @@ impl CredentialsStorage for FsCredentialsStorage {
 
     async fn upsert_all(
         &self,
-        credentials_list: Vec<Credentials>,
+        credentials_list: Vec<Credential>,
     ) -> Result<(), AuthApplicationError> {
         self.store
             .update(|current| {
@@ -111,8 +118,14 @@ impl CredentialsStorage for FsCredentialsStorage {
         Ok(self.store.write_all(&[]).await?)
     }
 
-    async fn find_active(&self) -> Result<Option<Credentials>, AuthApplicationError> {
+    async fn find_active(&self) -> Result<Option<Credential>, AuthApplicationError> {
         let list = self.store.read_all().await?;
-        Ok(list.into_iter().find(Credentials::is_active))
+        Ok(list.into_iter().find(Credential::is_active))
+    }
+}
+
+impl From<IoError> for AuthApplicationError {
+    fn from(err: IoError) -> Self {
+        AuthApplicationError::Storage(err.to_string())
     }
 }

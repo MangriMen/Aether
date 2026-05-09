@@ -79,4 +79,43 @@ impl JavaInstallationService for FsJavaInstallationService {
             })
         }
     }
+
+    async fn discover_installations(&self, base_path: &Path) -> Result<Vec<Java>, JavaDomainError> {
+        if !base_path.exists() || !base_path.is_dir() {
+            return Ok(vec![]);
+        }
+
+        let mut found_java = Vec::new();
+        let mut entries =
+            tokio::fs::read_dir(base_path)
+                .await
+                .map_err(|_| JavaDomainError::InvalidPath {
+                    path: base_path.to_path_buf(),
+                })?;
+
+        while let Some(entry) =
+            entries
+                .next_entry()
+                .await
+                .map_err(|_| JavaDomainError::InvalidPath {
+                    path: base_path.to_path_buf(),
+                })?
+        {
+            let path = entry.path();
+            if path.is_dir() {
+                let potential_bin_dir = path.join("bin");
+                let search_path = if potential_bin_dir.exists() {
+                    potential_bin_dir
+                } else {
+                    path
+                };
+
+                if let Ok(java) = self.locate_java(&search_path).await {
+                    found_java.push(java);
+                }
+            }
+        }
+
+        Ok(found_java)
+    }
 }

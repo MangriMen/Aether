@@ -142,7 +142,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .await
             .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
 
-        Ok(write_async(path, &file_bytes).await?)
+        write_async(path, &file_bytes)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
     async fn resolve_modpack_version(
@@ -301,7 +303,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let target_path = instance_dir.join(&content_path);
 
         if let Some(parent) = target_path.parent() {
-            create_dir_all(parent).await?;
+            create_dir_all(parent)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }
 
         self.fetch_to_disk(url, &target_path).await?;
@@ -557,7 +561,10 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             })
     }
 
-    async fn list_versions(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(
+        &self,
+        content_id: String,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
         let versions = self
             .api
             .get_project_versions(&content_id, &ProjectVersionsRequest::without_changelog())

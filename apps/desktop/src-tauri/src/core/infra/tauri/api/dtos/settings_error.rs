@@ -14,7 +14,7 @@ impl From<&SettingsError> for SettingsErrorDto {
     fn from(value: &SettingsError) -> Self {
         match value {
             SettingsError::NotFound => SettingsErrorDto::NotFound,
-            SettingsError::StorageFailure(_) => SettingsErrorDto::StorageFailure,
+            SettingsError::Storage(_) => SettingsErrorDto::StorageFailure,
         }
     }
 }

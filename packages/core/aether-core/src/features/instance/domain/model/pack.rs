@@ -23,6 +23,7 @@ pub struct PackEntry {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PackFile {
+    #[serde(alias = "filename")]
     pub file_name: String,
     pub name: Option<String>,
     pub hash: String,

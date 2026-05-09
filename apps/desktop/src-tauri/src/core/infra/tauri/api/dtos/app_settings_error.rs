@@ -7,16 +7,13 @@ use crate::features::settings::AppSettingsError;
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AppSettingsErrorDto {
     #[serde(rename_all = "camelCase")]
-    CanNotSetEffect {
-        details: String,
-    },
+    CanNotSetEffect { details: String },
 
     #[serde(rename_all = "camelCase")]
-    CanNotRecreateWindow {
-        details: String,
-    },
+    CanNotRecreateWindow { details: String },
 
-    SaveFailed,
+    #[serde(rename_all = "camelCase")]
+    Storage { details: String },
 }
 
 impl From<AppSettingsError> for AppSettingsErrorDto {
@@ -26,7 +23,7 @@ impl From<AppSettingsError> for AppSettingsErrorDto {
             AppSettingsError::CanNotRecreateWindow(msg) => {
                 Self::CanNotRecreateWindow { details: msg }
             }
-            AppSettingsError::SaveError => Self::SaveFailed,
+            AppSettingsError::Storage(msg) => Self::Storage { details: msg },
         }
     }
 }

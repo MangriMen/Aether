@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        auth::Credentials,
+        auth::Credential,
         minecraft::{MinecraftDomainError, utils::parse_arguments, vanilla},
         settings::WindowSize,
     },
@@ -18,7 +18,7 @@ const TEMPORARY_REPLACE_CHAR: &str = "\n";
 pub fn get_minecraft_arguments(
     arguments: Option<&[vanilla::Argument]>,
     legacy_arguments: Option<&str>,
-    credentials: &Credentials,
+    credentials: &Credential,
     version: &str,
     asset_index_name: &str,
     game_directory: &Path,
@@ -37,7 +37,7 @@ pub fn get_minecraft_arguments(
                 replace_placeholders_in_argument_string(
                     arg,
                     credentials.access_token(),
-                    credentials.username.as_ref(),
+                    credentials.username().as_ref(),
                     credentials.id(),
                     version,
                     asset_index_name,
@@ -57,7 +57,7 @@ pub fn get_minecraft_arguments(
             parsed_arguments.push(replace_placeholders_in_argument_string(
                 &x.replace(' ', TEMPORARY_REPLACE_CHAR),
                 credentials.access_token(),
-                credentials.username.as_ref(),
+                credentials.username().as_ref(),
                 credentials.id(),
                 version,
                 asset_index_name,

@@ -14,6 +14,8 @@ pub enum AuthErrorDto {
 
     InvalidUsernameChars,
 
+    InvalidAccountType,
+
     TokenExpired,
 
     StorageError,
@@ -23,7 +25,7 @@ impl From<&AuthApplicationError> for AuthErrorDto {
     fn from(value: &AuthApplicationError) -> Self {
         match value {
             AuthApplicationError::Domain(domain) => Self::from(domain),
-            AuthApplicationError::StorageFailure { .. } => Self::StorageError,
+            AuthApplicationError::Storage { .. } => Self::StorageError,
         }
     }
 }
@@ -39,6 +41,7 @@ impl From<&AuthDomainError> for AuthErrorDto {
             },
             AuthDomainError::InvalidUsernameChars => Self::InvalidUsernameChars,
             AuthDomainError::TokenExpired => Self::TokenExpired,
+            AuthDomainError::InvalidAccountType => Self::InvalidAccountType,
         }
     }
 }

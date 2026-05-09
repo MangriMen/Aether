@@ -11,7 +11,11 @@ impl InitializeLauncherUseCase {
         Self { event_emitter }
     }
 
-    pub async fn execute(&self, launcher_dir: impl AsRef<Path>) -> crate::Result<()> {
+    pub async fn execute(
+        &self,
+        launcher_dir: impl AsRef<Path>,
+        pool: sqlx::SqlitePool,
+    ) -> crate::Result<()> {
         if LauncherState::initialized().await {
             return Ok(());
         }
@@ -22,6 +26,7 @@ impl InitializeLauncherUseCase {
             launcher_dir.clone(),
             launcher_dir,
             self.event_emitter.clone(),
+            pool,
         )
         .await?;
 

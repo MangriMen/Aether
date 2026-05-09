@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO pack_files (instance_id, content_path, file_name, name, hash, side, update_provider_id)\n            VALUES (?, ?, ?, ?, ?, ?, ?)\n            ON CONFLICT(instance_id, content_path) DO UPDATE SET \n                file_name = excluded.file_name, \n                name = excluded.name, \n                hash = excluded.hash, \n                side = excluded.side, \n                update_provider_id = excluded.update_provider_id\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "4b4490d1c279777bd22bfbdb5c0421b55ff4da3a2f8ba9064299a0972cf76ec3"
+}

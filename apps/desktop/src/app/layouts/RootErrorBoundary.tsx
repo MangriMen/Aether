@@ -3,6 +3,7 @@ import type { ParentProps } from 'solid-js';
 import { ErrorBoundary, type Component } from 'solid-js';
 
 import { logError } from '@/shared/lib';
+import { isLauncherError } from '@/shared/model';
 import { BaseTitleBar } from '@/widgets/app-titlebar';
 
 import { setFallbackAttributes } from '../lib';
@@ -30,11 +31,21 @@ export const RootErrorBoundary: Component<RootErrorBoundaryProps> = (props) => {
 
         logError(err);
 
-        const error = err instanceof Error ? err.message : String(err);
+        const error = () => {
+          if (err instanceof Error) {
+            return err.message;
+          } else if (isLauncherError(err)) {
+            return JSON.stringify(err, null, 2);
+          } else if (typeof err === 'string') {
+            return err;
+          }
+
+          return JSON.stringify(err, null, 2);
+        };
 
         return (
           <AppLayout titleBar={BaseTitleBar}>
-            <AppInitializeError error={error} />
+            <AppInitializeError error={error()} />
           </AppLayout>
         );
       }}

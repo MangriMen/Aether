@@ -1,4 +1,5 @@
-use log::trace;
+use log::{debug, trace};
+use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager, RunEvent};
 
 use crate::core::PreventExitState;
@@ -13,6 +14,15 @@ pub fn handle_app_events(app: &AppHandle, event: RunEvent) {
 
         if prevent_exit_state.is_prevented() {
             api.prevent_exit();
+            return;
         }
+
+        let pool = app.state::<SqlitePool>();
+        let pool_inner = pool.inner().clone();
+
+        tauri::async_runtime::block_on(async move {
+            pool_inner.close().await;
+            debug!("Database connection closed safely");
+        });
     }
 }

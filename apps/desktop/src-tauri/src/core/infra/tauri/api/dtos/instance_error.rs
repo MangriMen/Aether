@@ -8,8 +8,11 @@ use crate::features::instance::ContentTypeDto;
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum InstanceErrorDto {
-    StorageFailure {
+    Storage {
         details: String,
+    },
+    NotFound {
+        instance_id: String,
     },
     ContentProviderNotFound {
         plugin_id: String,
@@ -80,8 +83,11 @@ pub enum InstanceErrorDto {
 impl From<&InstanceError> for InstanceErrorDto {
     fn from(value: &InstanceError) -> Self {
         match value {
-            InstanceError::StorageFailure(err) => Self::StorageFailure {
-                details: err.to_string(),
+            InstanceError::Storage(err) => Self::Storage {
+                details: err.clone(),
+            },
+            InstanceError::NotFound { instance_id } => Self::NotFound {
+                instance_id: instance_id.clone(),
             },
             InstanceError::ContentProviderNotFound {
                 plugin_id,

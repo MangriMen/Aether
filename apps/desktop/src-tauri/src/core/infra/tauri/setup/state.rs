@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager};
 
 use crate::{
@@ -8,14 +9,17 @@ use crate::{
         WindowManagerState,
     },
     features::{
-        events::TauriEventEmitter, settings::FsAppSettingsStorage, update::TauriUpdateService,
+        events::TauriEventEmitter,
+        settings::{
+            FsAppSettingsStorage, SqliteAppSettingsStorage, migrate_app_settings_to_sqlite,
+        },
+        update::TauriUpdateService,
     },
 };
 
-pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
-    let app_settings_path = get_settings_path(app_handle);
+pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>, pool: SqlitePool) {
     let app_settings_storage: AppSettingsStorageState =
-        Arc::new(FsAppSettingsStorage::new(app_settings_path));
+        Arc::new(SqliteAppSettingsStorage::new(pool.clone()));
 
     let window_manager: WindowManagerState<R> =
         Arc::new(TauriWindowManager::new(app_handle.clone()));
@@ -29,11 +33,28 @@ pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
 
     let prevent_exit_state = PreventExitState::new(false);
 
+    app_handle.manage(pool);
     app_handle.manage(app_settings_storage);
     app_handle.manage(window_manager);
     app_handle.manage(event_emitter);
     app_handle.manage(tauri_update_service);
     app_handle.manage(prevent_exit_state);
+}
+
+pub async fn migrate<R: tauri::Runtime>(
+    app_handle: AppHandle<R>,
+    pool: SqlitePool,
+) -> crate::Result<()> {
+    let app_settings_path = get_settings_path(&app_handle);
+
+    migrate_app_settings_to_sqlite(
+        &FsAppSettingsStorage::new(app_settings_path),
+        &SqliteAppSettingsStorage::new(pool.clone()),
+        "migrated",
+    )
+    .await?;
+
+    Ok(())
 }
 
 fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path::PathBuf {

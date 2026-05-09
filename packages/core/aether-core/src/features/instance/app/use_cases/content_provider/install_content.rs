@@ -87,10 +87,14 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
                         .join(&content_path);
 
                     if let Some(parent) = absolute_content_path.parent() {
-                        create_dir_all(parent).await?;
+                        create_dir_all(parent)
+                            .await
+                            .map_err(|err| InstanceError::Storage(err.to_string()))?;
                     }
 
-                    rename(instance_file.temp_path.clone(), absolute_content_path).await?;
+                    rename(instance_file.temp_path.clone(), absolute_content_path)
+                        .await
+                        .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
                     self.pack_storage
                         .update_pack_file(

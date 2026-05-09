@@ -8,6 +8,6 @@ pub enum AppSettingsError {
     #[error("Can't recreate window: {0}")]
     CanNotRecreateWindow(String),
 
-    #[error("Failed to save settings")]
-    SaveError,
+    #[error("Storage error: {0}")]
+    Storage(String),
 }

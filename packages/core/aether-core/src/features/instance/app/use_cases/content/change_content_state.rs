@@ -138,7 +138,8 @@ impl ChangeContentStateUseCase {
             absolute_disabled_content_path,
             absolute_enabled_content_path,
         )
-        .await?;
+        .await
+        .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
         Ok(Some(content_path.to_string()))
     }
@@ -167,7 +168,8 @@ impl ChangeContentStateUseCase {
             absolute_enabled_content_path,
             absolute_disabled_content_path,
         )
-        .await?;
+        .await
+        .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
         Ok(Some(disabled_content_path))
     }

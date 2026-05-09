@@ -5,9 +5,27 @@ use tokio::sync::{OnceCell, Semaphore};
 use crate::{
     core::domain::LazyLocator,
     features::{
+        auth::{
+            self,
+            infra::{FsCredentialsStorage, SqliteCredentialsStorage},
+        },
         events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-        instance::InstanceWatcherService,
-        settings::{LocationInfo, Settings, SettingsStorage, infra::FsSettingsStorage},
+        instance::{
+            self, InstanceWatcherService,
+            infra::{FsInstanceStorage, FsPackStorage, SqliteInstanceStorage, SqlitePackStorage},
+        },
+        java::{
+            self,
+            infra::{FsJavaInstallationService, SqliteJavaStorage},
+        },
+        minecraft,
+        settings::{
+            self, LocationInfo, Settings, SettingsStorage,
+            infra::{
+                FsDefaultInstanceSettingsStorage, FsSettingsStorage,
+                SqliteDefaultInstanceSettingsStorage, SqliteSettingsStorage,
+            },
+        },
     },
     shared::domain::FetchSemaphore,
 };
@@ -38,9 +56,12 @@ impl LauncherState {
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
         event_emitter: SharedEventEmitter,
+        sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<()> {
         LAUNCHER_STATE
-            .get_or_try_init(|| Self::initialize(launcher_dir, metadata_dir, event_emitter))
+            .get_or_try_init(|| {
+                Self::initialize(launcher_dir, metadata_dir, event_emitter, sqlite_pool)
+            })
             .await?;
 
         Ok(())
@@ -67,15 +88,37 @@ impl LauncherState {
         LAUNCHER_STATE.initialized()
     }
 
-    #[tracing::instrument(skip(event_emitter))]
+    #[tracing::instrument(skip(event_emitter, sqlite_pool))]
     async fn initialize(
         launcher_dir: PathBuf,
         metadata_dir: PathBuf,
         event_emitter: SharedEventEmitter,
+        sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<Arc<Self>> {
-        let launcher_dir_path = launcher_dir.as_path();
+        let settings_storage = SqliteSettingsStorage::new(sqlite_pool.clone());
 
-        let settings_storage = FsSettingsStorage::new(launcher_dir_path);
+        let migrated_dir_name = "migrated";
+
+        settings::infra::migrate_settings_to_sqlite(
+            &FsSettingsStorage::new(&launcher_dir),
+            &settings_storage,
+            migrated_dir_name,
+        )
+        .await?;
+
+        settings::infra::migrate_default_instance_settings_to_sqlite(
+            &FsDefaultInstanceSettingsStorage::new(&launcher_dir),
+            &SqliteDefaultInstanceSettingsStorage::new(sqlite_pool.clone()),
+            migrated_dir_name,
+        )
+        .await?;
+
+        auth::infra::migrate_credentials_to_sqlite(
+            &FsCredentialsStorage::new(&launcher_dir),
+            &SqliteCredentialsStorage::new(sqlite_pool.clone()),
+            migrated_dir_name,
+        )
+        .await?;
 
         let settings = if let Ok(settings) = settings_storage.get().await {
             settings
@@ -88,6 +131,28 @@ impl LauncherState {
             settings.launcher_dir().to_path_buf(),
             settings.metadata_dir().to_path_buf(),
         ));
+
+        instance::infra::migrate_instances_to_sqlite(
+            &FsInstanceStorage::new(location_info.clone()),
+            &SqliteInstanceStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
+
+        instance::infra::migrate_packs_to_sqlite(
+            &FsInstanceStorage::new(location_info.clone()),
+            &FsPackStorage::new(location_info.clone()),
+            &SqlitePackStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
+
+        java::infra::migrate_java_to_sqlite(
+            &location_info.java_dir(),
+            &FsJavaInstallationService,
+            &SqliteJavaStorage::new(sqlite_pool.clone()),
+        )
+        .await?;
+
+        minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 
         let fetch_semaphore = Arc::new(FetchSemaphore(Semaphore::new(
             settings.max_concurrent_downloads(),
@@ -105,7 +170,7 @@ impl LauncherState {
             api_semaphore,
         });
 
-        LazyLocator::init(state.clone(), event_emitter).await?;
+        LazyLocator::init(state.clone(), event_emitter, sqlite_pool).await?;
 
         let lazy_locator = LazyLocator::get().await?;
         lazy_locator

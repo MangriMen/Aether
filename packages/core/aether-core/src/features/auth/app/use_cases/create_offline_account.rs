@@ -7,7 +7,7 @@ pub struct CreateOfflineAccountUseCase<CS: CredentialsStorage> {
 }
 
 use crate::features::auth::{
-    ActiveAccountHelper, AuthApplicationError, Credentials, CredentialsStorage, Username,
+    ActiveAccountHelper, AuthApplicationError, Credential, CredentialsStorage, Username,
 };
 
 use super::super::AccountData;
@@ -21,7 +21,7 @@ impl<CS: CredentialsStorage> CreateOfflineAccountUseCase<CS> {
 
     pub async fn execute(&self, username: String) -> Result<AccountData, AuthApplicationError> {
         let username = Username::parse(&username)?;
-        let credentials = Credentials::new_offline(Uuid::new_v4(), username);
+        let credentials = Credential::new_offline(Uuid::new_v4(), username);
 
         self.credentials_storage.upsert(credentials).await?;
 

@@ -12,7 +12,7 @@ use crate::{
         instance::{ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::{IoError, read_async},
+    shared::read_async,
 };
 
 pub struct ListContentUseCase<PS: PackStorage> {
@@ -83,10 +83,10 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
 
         let read_dir = tokio::fs::read_dir(&content_dir)
             .await
-            .map_err(IoError::from)?;
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
         tokio_stream::wrappers::ReadDirStream::new(read_dir)
-            .map_err(|e| InstanceError::from(IoError::from(e)))
+            .map_err(|e| InstanceError::Storage(e.to_string()))
             .try_for_each_concurrent(8, |entry| {
                 let entries_ref = Arc::clone(&entries_by_path);
                 let files_ref = Arc::clone(&files);
@@ -126,7 +126,7 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
 
         let file_size = tokio::fs::metadata(file_path)
             .await
-            .map_err(IoError::from)?
+            .map_err(|err| InstanceError::Storage(err.to_string()))?
             .len();
 
         let is_disabled = file_name.ends_with(".disabled");
@@ -176,7 +176,9 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
                 .await;
         }
 
-        let file_content = read_async(file_path).await?;
+        let file_content = read_async(file_path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
         let pack_file = PackFile::from_contents(file_name.to_owned(), file_content).await;
 
         self.pack_storage
