@@ -14,6 +14,10 @@ pub struct EditInstanceDto {
 
     #[specta(optional, type = Option<String>)]
     #[serde(default, with = "::serde_with::rust::double_option")]
+    pub icon_path: Option<Option<String>>,
+
+    #[specta(optional, type = Option<String>)]
+    #[serde(default, with = "::serde_with::rust::double_option")]
     pub java_path: Option<Option<String>>,
 
     #[specta(optional, type = Option<Vec<String>>)]
@@ -40,6 +44,7 @@ impl From<EditInstanceDto> for EditInstance {
     fn from(value: EditInstanceDto) -> Self {
         Self {
             name: value.name,
+            icon_path: value.icon_path,
             java_path: value.java_path,
             launch_args: value.launch_args,
             env_vars: value.env_vars,

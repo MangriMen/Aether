@@ -1,7 +1,13 @@
+use aether_core::{
+    core::{LauncherState, domain::LazyLocator},
+    features::instance::app::EditInstanceIconUseCase,
+    shared::{AssetsResolver, FileCache},
+};
 use log::debug;
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
+    sync::Arc,
 };
 use uuid::Uuid;
 
@@ -13,8 +19,8 @@ use crate::{
             ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
             ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
             ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
-            EditInstanceDto, ImportInstanceDto, ImporterCapabilityMetadataDto, InstanceDto,
-            InstanceEventDto, NewInstanceDto,
+            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
+            InstanceDto, InstanceEventDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -278,4 +284,23 @@ async fn list_content_version(
             .map(Into::into)
             .collect(),
     )
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn edit_icon(edit_instance_icon: EditInstanceIconDto) -> FrontendResult<()> {
+    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let state = LauncherState::get().await.map_err(crate::Error::from)?;
+
+    let assets_cache = Arc::new(FileCache::new(AssetsResolver::new(
+        state.location_info.clone(),
+    )));
+
+    EditInstanceIconUseCase::new(lazy_locator.get_instance_storage().await, assets_cache)
+        .execute(edit_instance_icon.into())
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?;
+
+    Ok(())
 }

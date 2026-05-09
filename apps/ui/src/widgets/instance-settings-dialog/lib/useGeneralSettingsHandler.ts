@@ -2,7 +2,11 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { Instance, EditInstance } from '@/entities/instances';
+import type {
+  Instance,
+  EditInstance,
+  EditInstanceIconDto,
+} from '@/entities/instances';
 
 import { isEditInstanceEmpty } from '@/entities/instances';
 
@@ -18,11 +22,15 @@ export interface UseGeneralSettingsHandler {
   editInstance: Accessor<
     (args: { id: string; edit: EditInstance }) => Promise<unknown>
   >;
+  editInstanceIcon: Accessor<
+    (editInstanceIcon: EditInstanceIconDto) => Promise<unknown>
+  >;
 }
 
 export const useGeneralSettingsHandler = ({
   instance,
   editInstance,
+  editInstanceIcon,
 }: UseGeneralSettingsHandler) => {
   const initialValues = createMemo(() =>
     instanceToGeneralSettingsValues(instance()),
@@ -33,6 +41,15 @@ export const useGeneralSettingsHandler = ({
 
     if (isEditInstanceEmpty(edit)) {
       return;
+    }
+
+    if (edit.iconPath !== undefined) {
+      editInstanceIcon()({
+        instanceId: instance().id,
+        iconPath: edit.iconPath,
+      });
+
+      delete edit.iconPath;
     }
 
     editInstance()({ id: instance().id, edit });

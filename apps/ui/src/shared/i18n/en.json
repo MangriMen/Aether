@@ -267,7 +267,8 @@
     "instanceNotFound": "Instance not found",
     "notCompatibleWithContent": "This instance is not compatible with this content",
     "searchInstance": "Search instance",
-    "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics"
+    "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics",
+    "changeIcon": "Change icon"
   },
   "instanceSettings": {
     "tab": {

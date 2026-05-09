@@ -1,5 +1,6 @@
 mod create_instance;
 mod edit_instance;
+mod edit_instance_icon;
 mod get_instance;
 mod import_instance;
 mod install_instance;
@@ -12,6 +13,7 @@ mod update_instance;
 
 pub use create_instance::*;
 pub use edit_instance::*;
+pub use edit_instance_icon::*;
 pub use get_instance::*;
 pub use import_instance::*;
 pub use install_instance::*;

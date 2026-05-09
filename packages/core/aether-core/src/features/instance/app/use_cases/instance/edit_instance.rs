@@ -12,36 +12,49 @@ use crate::features::{
 #[serde(rename_all = "camelCase")]
 pub struct EditInstance {
     pub name: Option<String>,
+
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
+    pub icon_path: Option<Option<String>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub java_path: Option<Option<String>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub launch_args: Option<Option<Vec<String>>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub env_vars: Option<Option<Vec<(String, String)>>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub memory: Option<Option<MemorySettings>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub game_resolution: Option<Option<WindowSize>>,
+
     pub hooks: Option<EditHooks>,
 }
 
@@ -71,6 +84,7 @@ impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
 fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     let EditInstance {
         name,
+        icon_path,
         java_path,
         launch_args,
         env_vars,
@@ -81,6 +95,10 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
 
     if let Some(name) = name {
         instance.name.clone_from(name);
+    }
+
+    if let Some(icon_path) = icon_path {
+        instance.icon_path.clone_from(icon_path);
     }
 
     if let Some(java_path) = java_path {

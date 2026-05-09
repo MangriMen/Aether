@@ -7,6 +7,7 @@ import { useTranslation } from '@/shared/model';
 import type { EditInstanceDto } from '../../api';
 
 import { commands } from '../../api';
+import { instanceDtoToInstance } from '../mappers';
 import { invalidateInstanceData } from './cache';
 import { INSTANCE_QUERY_KEYS } from './instanceQueryKeys';
 
@@ -47,6 +48,7 @@ export const useInstances = () => {
     queryKey: INSTANCE_QUERY_KEYS.LIST(),
     queryFn: commands.list,
     reconcile: INSTANCE_RECONCILE,
+    select: (data) => data.map(instanceDtoToInstance),
   }));
 };
 
@@ -67,6 +69,7 @@ export const useInstance = (id: Accessor<string | undefined>) => {
     queryFn: () => commands.get(id() ?? ''),
     enabled: shouldFetch(),
     reconcile: INSTANCE_RECONCILE,
+    select: (data) => instanceDtoToInstance(data),
   }));
 
   // Combine query data and save reactivity
@@ -144,6 +147,25 @@ export const useImporters = () => {
     queryKey: ['PLUGIN_QUERY_KEYS.IMPORTERS()'],
     queryFn: (): never[] => {
       throw new Error('NOT IMPLEMENTED');
+    },
+  }));
+};
+
+export const useEditInstanceIcon = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: commands.editIcon,
+    onSuccess: (_, { instanceId }) => {
+      invalidateInstanceData(queryClient, instanceId);
+    },
+    onError: (err, values) => {
+      showError({
+        title: t('instance.editError', { id: values.instanceId }),
+        err,
+        t,
+      });
     },
   }));
 };

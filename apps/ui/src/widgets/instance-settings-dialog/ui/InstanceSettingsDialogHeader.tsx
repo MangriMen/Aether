@@ -1,7 +1,7 @@
 import IconMdiChevronRight from '~icons/mdi/chevron-right';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { useInstanceIconSrc, type Instance } from '@/entities/instances';
+import { type Instance } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
 
@@ -16,13 +16,14 @@ const InstanceSettingsDialogHeader: Component<
 
   const [{ t }] = useTranslation();
 
-  const iconSrc = useInstanceIconSrc(() => local.instance);
-
   return (
     <DialogHeader {...others}>
       <DialogTitle class='flex items-center gap-1 text-muted-foreground'>
         <div class='flex items-center gap-2'>
-          <Image class='size-8 min-w-max' src={iconSrc()} />
+          <Image
+            class='size-8 min-w-max'
+            src={local.instance.iconPath ?? undefined}
+          />
           <span class='line-clamp-1 leading-8 [word-break:break-word]'>
             {local.instance.name}
           </span>
