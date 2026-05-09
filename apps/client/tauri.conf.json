@@ -10,9 +10,9 @@
     }
   },
   "build": {
-    "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build",
-    "frontendDist": "../dist",
+    "beforeDevCommand": "bun x turbo run dev --filter @aether/ui",
+    "beforeBuildCommand": "bun x turbo run build --filter @aether/ui",
+    "frontendDist": "../ui/dist",
     "devUrl": "http://localhost:1420"
   },
   "bundle": {

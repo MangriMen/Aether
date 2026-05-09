@@ -102,7 +102,7 @@ impl Exporter {
 
 #[cfg(debug_assertions)]
 pub fn get_export_path() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/shared/api/bindings")
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../ui/shared/api/bindings")
 }
 
 #[cfg(debug_assertions)]

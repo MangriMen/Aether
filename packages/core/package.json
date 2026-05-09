@@ -1,6 +1,7 @@
 {
   "name": "@aether/core",
   "scripts": {
+    "clean": "bun x rimraf .turbo",
     "lint": "cargo clippy -- -D warnings",
     "lintt": "bun run lint"
   }

@@ -1,14 +1,23 @@
 {
   "name": "@aether/monorepo",
+  "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "app:dev": "turbo run tauri --filter=@aether/app -- dev",
-    "lint": "turbo run lintt",
-    "prepare": "lefthook install"
+    "ui:dev": "turbo run dev --filter=@aether/ui",
+    "ui:build": "turbo run build --filter=@aether/ui",
+    "client:dev": "turbo run dev --filter=@aether/client",
+    "client:build": "turbo run build --filter=@aether/client",
+    "lint": "turbo run lintt --continue",
+    "build": "turbo run build --continue",
+    "prepare": "lefthook install",
+    "clean": "turbo run clean && bun x rimraf .turbo && cargo clean"
   },
   "devDependencies": {
     "lefthook": "^2.1.6",
