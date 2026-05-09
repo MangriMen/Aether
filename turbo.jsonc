@@ -47,5 +47,8 @@
       "env": ["CARGO_*", "RUST_*"],
       "passThroughEnv": ["PATH"],
     },
+    "clean": {
+      "cache": false,
+    },
   },
 }

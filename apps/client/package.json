@@ -3,7 +3,8 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "tauri build"
+    "build": "tauri build",
+    "clean": "bun x rimraf .turbo"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.1"

@@ -12,6 +12,10 @@
     },
     "apps/client": {
       "name": "@aether/client",
+      "dependencies": {
+        "@aether/core": "workspace:*",
+        "@aether/ui": "workspace:*",
+      },
       "devDependencies": {
         "@tauri-apps/cli": "^2.10.1",
       },

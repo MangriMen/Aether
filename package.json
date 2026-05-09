@@ -16,7 +16,8 @@
     "client:build": "turbo run build --filter=@aether/client",
     "lint": "turbo run lintt --continue",
     "build": "turbo run build --continue",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "clean": "turbo run clean && bun x rimraf .turbo && cargo clean"
   },
   "devDependencies": {
     "lefthook": "^2.1.6",
