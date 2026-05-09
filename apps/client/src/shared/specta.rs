@@ -74,7 +74,10 @@ pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<t
 }
 
 #[cfg(debug_assertions)]
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 #[cfg(debug_assertions)]
 pub struct Exporter {
@@ -102,7 +105,17 @@ impl Exporter {
 
 #[cfg(debug_assertions)]
 pub fn get_export_path() -> std::path::PathBuf {
-    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../ui/shared/api/bindings")
+    if let Ok(env_path) = env::var("BINDINGS_EXPORT_PATH") {
+        return PathBuf::from(env_path);
+    }
+
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    path.pop();
+
+    path.push("ui/src/shared/api/bindings");
+
+    path
 }
 
 #[cfg(debug_assertions)]
