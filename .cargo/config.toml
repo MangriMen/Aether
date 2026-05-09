@@ -4,3 +4,6 @@ rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
 
 [alias]
 gen = "run --package aether --bin typegen --features typegen"
+
+[env]
+BINDINGS_EXPORT_PATH = { value = "apps/ui/src/shared/api/bindings", relative = true }
