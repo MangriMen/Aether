@@ -48,7 +48,7 @@ impl InstanceEventHandler {
                         if instance.install_stage == InstanceInstallStage::Installed {
                             let message = format!(
                             "Profile {} has crashed! Visit the logs page to see a crash report.",
-                                instance.name
+                                instance.name().to_owned()
                             );
 
                             event_emitter.emit_safe(WarningEvent { message }).await;

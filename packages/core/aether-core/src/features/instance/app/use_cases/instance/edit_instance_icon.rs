@@ -1,11 +1,10 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     features::instance::{Instance, InstanceError, InstanceStorage},
-    shared::{CacheId, CacheKey, FileStore, read_async, sha1_async},
+    shared::AssetProcessor,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,18 +20,16 @@ pub struct EditInstanceIcon {
     pub icon_path: Option<Option<String>>,
 }
 
-pub const ASSETS_CACHE_NAMESPACE: &str = "assets";
-
-pub struct EditInstanceIconUseCase<IS, FS> {
+pub struct EditInstanceIconUseCase<IS, AP> {
     instance_storage: Arc<IS>,
-    assets_cache: Arc<FS>,
+    asset_processor: Arc<AP>,
 }
 
-impl<IS: InstanceStorage, FS: FileStore> EditInstanceIconUseCase<IS, FS> {
-    pub fn new(instance_storage: Arc<IS>, assets_cache: Arc<FS>) -> Self {
+impl<IS: InstanceStorage, AP: AssetProcessor> EditInstanceIconUseCase<IS, AP> {
+    pub fn new(instance_storage: Arc<IS>, asset_processor: Arc<AP>) -> Self {
         Self {
             instance_storage,
-            assets_cache,
+            asset_processor,
         }
     }
 
@@ -48,33 +45,15 @@ impl<IS: InstanceStorage, FS: FileStore> EditInstanceIconUseCase<IS, FS> {
         if let Some(icon_path) = edit_instance_icon.icon_path {
             match icon_path {
                 Some(icon_path) => {
-                    let file_extension = Path::new(&icon_path)
-                        .extension()
-                        .and_then(|ext| ext.to_str())
-                        .unwrap_or("png");
-
-                    let raw_bytes = read_async(&icon_path)
+                    let asset_id = self
+                        .asset_processor
+                        .import_file(icon_path)
                         .await
                         .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
-                    let bytes = Bytes::from_owner(raw_bytes);
-
-                    let hash = sha1_async(bytes.clone()).await;
-
-                    let internal_name = format!("{hash}.{file_extension}");
-
-                    let cache_key = CacheKey::new(
-                        ASSETS_CACHE_NAMESPACE,
-                        CacheId::Named(internal_name.clone()),
-                    );
-
-                    if !self.assets_cache.exists(&cache_key).await {
-                        self.assets_cache.write(&cache_key, bytes).await;
-                    }
-
-                    instance.icon_path = Some(internal_name);
+                    instance.set_icon(Some(asset_id));
                 }
-                None => instance.icon_path = None,
+                None => instance.set_icon(None),
             }
         }
 

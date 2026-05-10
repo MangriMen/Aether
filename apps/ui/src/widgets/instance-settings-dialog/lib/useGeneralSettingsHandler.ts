@@ -37,19 +37,17 @@ export const useGeneralSettingsHandler = ({
   );
 
   const onChange = (values: Partial<GeneralSettingsSchemaOutput>) => {
+    if (values.icon !== undefined) {
+      editInstanceIcon()({
+        instanceId: instance().id,
+        iconPath: values.icon,
+      });
+    }
+
     const edit = generalSettingsValuesToEditInstance(values);
 
     if (isEditInstanceEmpty(edit)) {
       return;
-    }
-
-    if (edit.iconPath !== undefined) {
-      editInstanceIcon()({
-        instanceId: instance().id,
-        iconPath: edit.iconPath,
-      });
-
-      delete edit.iconPath;
     }
 
     editInstance()({ id: instance().id, edit });

@@ -50,9 +50,9 @@ pub struct InstanceDto {
 impl From<Instance> for InstanceDto {
     fn from(value: Instance) -> Self {
         Self {
-            id: value.id,
-            name: value.name,
-            icon_path: value.icon_path,
+            id: value.id().to_owned(),
+            name: value.name().to_owned(),
+            icon_path: value.icon_path().map(ToString::to_string),
             install_stage: value.install_stage.into(),
             game_version: value.game_version,
             loader: value.loader.into(),

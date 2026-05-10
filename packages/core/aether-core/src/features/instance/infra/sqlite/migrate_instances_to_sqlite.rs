@@ -25,7 +25,7 @@ pub async fn migrate_instances_to_sqlite(
 
     // 3. Переносим данные
     for instance in old_instances {
-        let id = instance.id.clone();
+        let id = instance.id();
         if let Err(e) = sqlite_storage.upsert(&instance).await {
             warn!("Failed to migrate instance {}: {}", id, e);
         }

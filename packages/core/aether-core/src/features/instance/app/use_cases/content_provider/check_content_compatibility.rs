@@ -50,7 +50,7 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>, IS: InstanceStorage>
             .list()
             .await?
             .into_iter()
-            .filter(|instance| instance_ids.contains(&instance.id))
+            .filter(|instance| instance_ids.contains(instance.id()))
             .collect();
 
         provider

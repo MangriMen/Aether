@@ -12,7 +12,7 @@ pub async fn migrate_packs_to_sqlite(
     let instances = instance_storage.list().await?;
 
     for instance in instances {
-        let instance_id = &instance.id;
+        let instance_id = &instance.id();
 
         let Ok(pack) = fs_storage.get_pack(instance_id).await else {
             continue;

@@ -138,19 +138,19 @@ impl<
         // Done late so a quick double call doesn't launch two instances
         if let Some(process) = self
             .get_process_by_instance_id_use_case
-            .execute(instance.id.clone())
+            .execute(instance_id.clone())
             .await?
             .first()
         {
             return Err(InstanceError::InstanceAlreadyRunning {
-                instance_id,
+                instance_id: instance_id.clone(),
                 process_id: process.uuid(),
             });
         }
 
         if instance.install_stage != InstanceInstallStage::Installed {
             self.install_instance_use_case
-                .execute(instance_id, false)
+                .execute(instance_id.clone(), false)
                 .await?;
         }
 
@@ -159,7 +159,7 @@ impl<
             .pre_launch()
             .or(launch_settings.hooks.pre_launch());
 
-        let instance_path = self.location_info.instance_dir(&instance.id);
+        let instance_path = self.location_info.instance_dir(instance.id());
 
         if let Some(command) = pre_launch_command
             && let Ok(cmd) = SerializableCommand::from_string(command, Some(&instance_path))
@@ -192,7 +192,7 @@ impl<
         //             let mut plugin = plugin.lock().await;
         //             if plugin.supports_handle_events() {
         //                 plugin.handle_event(&PluginEvent::BeforeInstanceLaunch {
-        //                     instance_id: instance.id.clone(),
+        //                     instance_id: instance.id().clone(),
         //                 })?;
         //             }
         //         }
@@ -215,7 +215,7 @@ impl<
             .await?;
 
         self.instance_storage
-            .upsert_with(&instance.id, |instance| {
+            .upsert_with(instance.id(), |instance| {
                 instance.last_played = Some(chrono::Utc::now());
                 Ok(())
             })
@@ -224,7 +224,7 @@ impl<
         let metadata = self
             .start_process_use_case
             .execute(
-                instance.id.clone(),
+                instance_id,
                 command,
                 launch_settings.hooks.post_exit().cloned(),
             )
@@ -236,7 +236,7 @@ impl<
         //             let mut plugin = plugin.lock().await;
         //             if plugin.supports_handle_events() {
         //                 plugin.handle_event(&PluginEvent::AfterInstanceLaunch {
-        //                     instance_id: instance.id.clone(),
+        //                     instance_id: instance.id().clone(),
         //                 })?;
         //             }
         //         }

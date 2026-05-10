@@ -56,7 +56,7 @@ impl<
     ) -> Result<(), InstanceError> {
         log::info!(
             "Installed instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
-            instance.name,
+            instance.name().to_owned(),
             instance.game_version,
             instance.loader,
             instance.loader_version
@@ -90,8 +90,8 @@ impl<
             .progress_service
             .init_progress_safe(
                 ProgressEventType::MinecraftDownload {
-                    instance_id: instance.id.clone(),
-                    instance_name: instance.name.clone(),
+                    instance_id,
+                    instance_name: instance.name().to_owned(),
                 },
                 100.0,
                 "Downloading Minecraft".to_string(),
@@ -100,7 +100,7 @@ impl<
 
         log::info!(
             "Installing instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
-            instance.name,
+            instance.name().to_owned(),
             instance.game_version,
             instance.loader,
             instance.loader_version

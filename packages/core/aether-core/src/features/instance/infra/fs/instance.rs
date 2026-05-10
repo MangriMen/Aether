@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
 use crate::features::{
-    instance::{Instance, InstanceInstallStage},
+    instance::{Instance, InstanceInstallStage, InstanceSnapshot},
     minecraft::{LoaderVersionPreference, ModLoader},
     settings::{Hooks, MemorySettings, WindowSize},
 };
@@ -47,7 +47,7 @@ pub struct InstanceV1 {
 
 impl From<InstanceV1> for Instance {
     fn from(v1: InstanceV1) -> Self {
-        Self {
+        let snapshot = InstanceSnapshot {
             id: v1.id,
             name: v1.name,
             icon_path: v1.icon_path,
@@ -68,6 +68,8 @@ impl From<InstanceV1> for Instance {
             recent_time_played: v1.recent_time_played,
             hooks: v1.hooks,
             pack_info: v1.pack_info.map(Into::into),
-        }
+        };
+
+        Instance::from_snapshot(snapshot)
     }
 }

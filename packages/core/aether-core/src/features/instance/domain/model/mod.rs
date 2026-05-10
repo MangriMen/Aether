@@ -7,6 +7,7 @@ mod downloaded_content;
 mod error;
 mod install_stage;
 mod instance;
+mod instance_snapshot;
 mod pack;
 mod pack_info;
 
@@ -19,5 +20,6 @@ pub use downloaded_content::*;
 pub use error::*;
 pub use install_stage::*;
 pub use instance::*;
+pub use instance_snapshot::*;
 pub use pack::*;
 pub use pack_info::*;

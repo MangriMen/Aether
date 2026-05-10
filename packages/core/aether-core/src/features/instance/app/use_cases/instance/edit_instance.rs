@@ -18,13 +18,6 @@ pub struct EditInstance {
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
-    pub icon_path: Option<Option<String>>,
-
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
     pub java_path: Option<Option<String>>,
 
     #[serde(
@@ -75,16 +68,18 @@ impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
         validate_edit(&edit_instance)?;
 
         let mut instance = self.instance_storage.get(&instance_id).await?;
-        apply_edit_changes(&mut instance, &edit_instance);
+        apply_edit_changes(&mut instance, &edit_instance)?;
         self.instance_storage.upsert(&instance).await?;
         Ok(instance)
     }
 }
 
-fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
+fn apply_edit_changes(
+    instance: &mut Instance,
+    edit_instance: &EditInstance,
+) -> Result<(), InstanceError> {
     let EditInstance {
         name,
-        icon_path,
         java_path,
         launch_args,
         env_vars,
@@ -94,11 +89,7 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     } = edit_instance;
 
     if let Some(name) = name {
-        instance.name.clone_from(name);
-    }
-
-    if let Some(icon_path) = icon_path {
-        instance.icon_path.clone_from(icon_path);
+        instance.rename(name.clone())?;
     }
 
     if let Some(java_path) = java_path {
@@ -126,6 +117,8 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     }
 
     instance.modified = Utc::now();
+
+    Ok(())
 }
 
 fn validate_edit(edit: &EditInstance) -> Result<(), InstanceError> {

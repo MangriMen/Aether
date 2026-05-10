@@ -105,10 +105,6 @@ export const generalSettingsValuesToEditInstance = (
     dto.name = values.name;
   }
 
-  if (values.icon !== undefined) {
-    dto.iconPath = values.icon;
-  }
-
   return dto;
 };
 

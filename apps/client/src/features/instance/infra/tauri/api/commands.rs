@@ -1,7 +1,7 @@
 use aether_core::{
     core::{LauncherState, domain::LazyLocator},
     features::instance::app::EditInstanceIconUseCase,
-    shared::{AssetsResolver, FileCache},
+    shared::{AssetsManager, AssetsResolver, FileCache},
 };
 use log::debug;
 use std::{
@@ -296,7 +296,9 @@ async fn edit_icon(edit_instance_icon: EditInstanceIconDto) -> FrontendResult<()
         state.location_info.clone(),
     )));
 
-    EditInstanceIconUseCase::new(lazy_locator.get_instance_storage().await, assets_cache)
+    let assets_manager = Arc::new(AssetsManager::new(assets_cache));
+
+    EditInstanceIconUseCase::new(lazy_locator.get_instance_storage().await, assets_manager)
         .execute(edit_instance_icon.into())
         .await
         .map_err(aether_core::Error::from)

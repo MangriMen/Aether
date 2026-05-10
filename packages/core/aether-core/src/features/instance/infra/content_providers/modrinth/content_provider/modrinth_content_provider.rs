@@ -542,7 +542,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 .any(|version| is_version_compatible(version, &project, instance));
 
             compatibility_map.insert(
-                instance.id.clone(),
+                instance.id().to_owned(),
                 ContentCompatibilityResult { is_compatible },
             );
         }
