@@ -44,8 +44,25 @@
     },
     "lintt": {
       "cache": true,
-      "env": ["CARGO_*", "RUST_*"],
-      "passThroughEnv": ["PATH"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "SQLX_OFFLINE",
+        "CARGO_*",
+        "RUST_*",
+        "RUSTFLAGS",
+        "FORCE_COLOR",
+      ],
+      "passThroughEnv": [
+        "PATH",
+        "HOME",
+        "USERPROFILE",
+        "RUSTUP_HOME",
+        "CARGO_HOME",
+        "CommonProgramFiles",
+        "ProgramFiles",
+        "SystemRoot",
+      ],
     },
     "clean": {
       "cache": false,
