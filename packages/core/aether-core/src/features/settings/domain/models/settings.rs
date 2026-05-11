@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
+use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
@@ -12,44 +9,26 @@ pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64: i64 = DEFAULT_MAX_CONCURRENT_DOW
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
-    launcher_dir: PathBuf,
-    metadata_dir: PathBuf,
-
     max_concurrent_downloads: usize,
 
     enabled_plugins: HashSet<String>,
 }
 
-impl Settings {
-    pub fn new(
-        launcher_dir: PathBuf,
-        metadata_dir: PathBuf,
-        max_concurrent_downloads: usize,
-        enabled_plugins: HashSet<String>,
-    ) -> Self {
+impl Default for Settings {
+    fn default() -> Self {
         Self {
-            launcher_dir,
-            metadata_dir,
-            max_concurrent_downloads,
-            enabled_plugins,
-        }
-    }
-
-    pub fn from_dirs(launcher_dir: PathBuf, metadata_dir: PathBuf) -> Self {
-        Self {
-            launcher_dir,
-            metadata_dir,
             max_concurrent_downloads: DEFAULT_MAX_CONCURRENT_DOWNLOADS,
             enabled_plugins: HashSet::default(),
         }
     }
+}
 
-    pub fn launcher_dir(&self) -> &Path {
-        &self.launcher_dir
-    }
-
-    pub fn metadata_dir(&self) -> &Path {
-        &self.metadata_dir
+impl Settings {
+    pub fn new(max_concurrent_downloads: usize, enabled_plugins: HashSet<String>) -> Self {
+        Self {
+            max_concurrent_downloads,
+            enabled_plugins,
+        }
     }
 
     pub fn max_concurrent_downloads(&self) -> usize {

@@ -1,48 +1,46 @@
+use std::sync::Arc;
+
 use log::error;
-use tauri::{App, Manager};
+use tauri::{App, AppHandle, Manager};
 
 use crate::{
     core::{
         AppSettingsStorageState, EventEmitterState, WindowLabel, WindowManager, WindowManagerState,
-        infra::tauri::setup::state,
     },
     features::settings::{AppSettings, AppSettingsStorage},
 };
 
 use super::{
-    listeners::setup_listeners, sqlite::create_pool, state::create_location_info,
-    state::register_state, watchdog::run_window_is_visible_watch_dog,
+    listeners::setup_listeners, migrations::run_migrations, sqlite::create_pool,
+    state::create_location_info, state::register_state, watchdog::run_window_is_visible_watch_dog,
 };
 
-pub fn init_app(app: &mut App) {
+pub fn initialize_app<R: tauri::Runtime>(app: &mut App<R>) {
     let app_handle = app.handle();
 
-    let location_info = create_location_info(app_handle);
+    let location_info = Arc::new(create_location_info(app_handle));
 
     let pool = tauri::async_runtime::block_on(async {
         let pool = create_pool(location_info.db_path())
             .await
             .expect("Failed to connect to DB");
 
-        sqlx::migrate!("./migrations_links")
-            .run(&pool)
-            .await
-            .expect("Migration failed");
-
-        state::migrate(app_handle.clone(), pool.clone())
-            .await
-            .expect("Migration failed");
+        run_migrations(app_handle.clone(), pool.clone()).await;
 
         pool
     });
 
-    register_state(app_handle, pool);
+    register_state(app_handle, location_info, pool);
 
+    post_initialize(app_handle);
+}
+
+fn post_initialize<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
     let app_settings_storage_state = app_handle.state::<AppSettingsStorageState>();
     let app_settings_storage = app_settings_storage_state.inner().clone();
 
-    let window_manager_state = app_handle.state::<WindowManagerState<tauri::Wry>>();
-    let event_emitter_state = app_handle.state::<EventEmitterState<tauri::Wry>>();
+    let window_manager_state = app_handle.state::<WindowManagerState<R>>();
+    let event_emitter_state = app_handle.state::<EventEmitterState<R>>();
 
     let window_manager = window_manager_state.inner().clone();
     let event_emitter = event_emitter_state.inner().clone();

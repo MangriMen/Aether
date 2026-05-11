@@ -2,13 +2,13 @@
 use std::path::Path;
 
 use sqlx::SqlitePool;
-use tauri::{AppHandle, State};
+use tauri::State;
 
 use crate::{
     FrontendResult,
     core::{
         AppSettingsStorageState, EventEmitterState, InitializeLauncherUseCase,
-        InitializePluginsUseCase, RecreateWindowUseCase, WindowManagerState,
+        InitializePluginsUseCase, LocationInfoState, RecreateWindowUseCase, WindowManagerState,
     },
     shared::{
         self,
@@ -31,15 +31,13 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 #[tauri::command]
 #[specta::specta]
 pub async fn initialize_state(
-    app: AppHandle,
     event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
+    location_info: State<'_, LocationInfoState>,
     pool: State<'_, SqlitePool>,
 ) -> FrontendResult<()> {
-    let launcher_dir = shared::get_app_dir(&app);
-
     Ok(
         InitializeLauncherUseCase::new(event_emitter.inner().clone())
-            .execute(launcher_dir, pool.inner().clone())
+            .execute(location_info.inner().clone(), pool.inner().clone())
             .await?,
     )
 }

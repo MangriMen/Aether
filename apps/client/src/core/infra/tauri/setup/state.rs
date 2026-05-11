@@ -18,7 +18,11 @@ use crate::{
     },
 };
 
-pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>, pool: SqlitePool) {
+pub fn register_state<R: tauri::Runtime>(
+    app_handle: &AppHandle<R>,
+    location_info: Arc<LocationInfo>,
+    pool: SqlitePool,
+) {
     let app_settings_storage: AppSettingsStorageState =
         Arc::new(SqliteAppSettingsStorage::new(pool.clone()));
 
@@ -34,6 +38,7 @@ pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>, pool: Sqlite
 
     let prevent_exit_state = PreventExitState::new(false);
 
+    app_handle.manage(location_info);
     app_handle.manage(pool);
     app_handle.manage(app_settings_storage);
     app_handle.manage(window_manager);

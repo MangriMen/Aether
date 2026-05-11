@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use aether_core::features::settings::LocationInfo;
+
 use crate::{
     core::TauriWindowManager,
     features::{
@@ -16,3 +18,5 @@ pub type UpdateServiceState<R> = Arc<TauriUpdateService<R>>;
 pub type EventEmitterState<R> = Arc<TauriEventEmitter<R>>;
 
 pub type SqlitePoolState = sqlx::SqlitePool;
+
+pub type LocationInfoState = Arc<LocationInfo>;

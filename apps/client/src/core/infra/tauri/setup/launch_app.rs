@@ -12,7 +12,7 @@ use super::{
     super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
     super::window::get_main_window_state_flags,
     events::handle_app_events,
-    initialize::init_app,
+    initialize::initialize_app,
     log::default_log_builder,
     pipe::Pipe,
 };
@@ -42,7 +42,7 @@ fn create_app() -> Builder<Wry> {
                 builder.mount_events(app);
             }
 
-            init_app(app);
+            initialize_app(app);
 
             Ok(())
         })

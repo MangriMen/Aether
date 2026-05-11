@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT max_concurrent_downloads FROM launcher_settings WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "max_concurrent_downloads",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5d48ee2d9829ee75a9e339c77dbe9b62fcca8b3947196c0807feee4580f92695"
+}

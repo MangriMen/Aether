@@ -8,10 +8,10 @@ use crate::{
     features::{events::DualEventEmitterExt, instance::InstanceLaunchListener},
 };
 
-pub fn setup_listeners(
+pub fn setup_listeners<R: tauri::Runtime>(
     app_settings_storage: AppSettingsStorageState,
-    window_manager: WindowManagerState<tauri::Wry>,
-    event_emitter: EventEmitterState<tauri::Wry>,
+    window_manager: WindowManagerState<R>,
+    event_emitter: EventEmitterState<R>,
 ) {
     let instance_launch_listener = Arc::new(InstanceLaunchListener::new(
         app_settings_storage.clone(),

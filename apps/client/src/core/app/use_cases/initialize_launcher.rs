@@ -1,6 +1,9 @@
-use std::path::Path;
+use std::sync::Arc;
 
-use aether_core::{core::LauncherState, features::events::SharedEventEmitter};
+use aether_core::{
+    core::LauncherState,
+    features::{events::SharedEventEmitter, settings::LocationInfo},
+};
 
 pub struct InitializeLauncherUseCase {
     event_emitter: SharedEventEmitter,
@@ -13,22 +16,14 @@ impl InitializeLauncherUseCase {
 
     pub async fn execute(
         &self,
-        launcher_dir: impl AsRef<Path>,
+        location_info: Arc<LocationInfo>,
         pool: sqlx::SqlitePool,
     ) -> crate::Result<()> {
         if LauncherState::initialized().await {
             return Ok(());
         }
 
-        let launcher_dir = launcher_dir.as_ref().to_path_buf();
-
-        LauncherState::init(
-            launcher_dir.clone(),
-            launcher_dir,
-            self.event_emitter.clone(),
-            pool,
-        )
-        .await?;
+        LauncherState::init(location_info, self.event_emitter.clone(), pool).await?;
 
         Ok(())
     }

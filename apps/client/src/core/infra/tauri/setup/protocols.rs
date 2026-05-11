@@ -1,10 +1,10 @@
 use aether_core::shared::read_async;
 use tauri::{
-    AppHandle, Runtime,
+    AppHandle, Manager, Runtime,
     http::{Response, StatusCode, header::ACCESS_CONTROL_ALLOW_ORIGIN},
 };
 
-use super::state::create_location_info;
+use crate::core::LocationInfoState;
 
 pub const ASSET_PROTOCOL: &str = "aether-asset";
 
@@ -24,7 +24,7 @@ pub async fn handle_asset_request<R: Runtime>(
     request: tauri::http::Request<Vec<u8>>,
     responder: tauri::UriSchemeResponder,
 ) {
-    let location_info = create_location_info(&app_handle);
+    let location_info = app_handle.state::<LocationInfoState>().inner().clone();
     let assets_dir = location_info.assets_cache_dir();
 
     let uri = request.uri().path();
