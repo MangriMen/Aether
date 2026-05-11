@@ -1,16 +1,16 @@
 {
   "name": "@aether/client",
   "scripts": {
-    "tauri": "tauri",
-    "dev": "tauri dev",
     "build": "tauri build",
-    "clean": "bun x rimraf .turbo"
+    "clean": "bun x rimraf .turbo",
+    "dev": "tauri dev",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@aether/core": "workspace:*",
+    "@aether/ui": "workspace:*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.10.1"
-  },
-  "dependencies": {
-    "@aether/ui": "workspace:*",
-    "@aether/core": "workspace:*"
   }
 }
