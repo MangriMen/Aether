@@ -15,9 +15,9 @@ export const useJavaAndMemorySettingsForm = (): ReturnType<
   const [form, components] = createForm<JavaAndMemorySettingsSchemaInput>({
     validate: zodForm(JavaAndMemorySettingsSchema),
     initialValues: {
-      memory: { maximum: 512 },
-      launchArgs: '',
-      envVars: '',
+      memory: { maximum: null },
+      launchArgs: null,
+      envVars: null,
     },
   });
 
