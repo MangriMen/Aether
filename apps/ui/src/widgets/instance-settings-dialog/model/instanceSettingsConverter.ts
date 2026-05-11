@@ -38,7 +38,7 @@ export const instanceToGeneralSettingsValues = (
     return;
   }
 
-  return { name: instance.name };
+  return { name: instance.name, icon: instance.iconPath ?? undefined };
 };
 
 export const instanceSettingsToWindowSettingsValues = (

@@ -1,5 +1,5 @@
 use crate::features::{
-    instance::{Instance, InstanceError},
+    instance::{Instance, InstanceError, InstanceSnapshot},
     settings::{Hooks, MemorySettings, WindowSize},
 };
 
@@ -46,9 +46,9 @@ pub struct SqlInstance {
 impl From<Instance> for SqlInstance {
     fn from(i: Instance) -> Self {
         Self {
-            id: i.id,
-            name: i.name,
-            icon_path: i.icon_path,
+            id: i.id().to_owned(),
+            name: i.name().to_owned(),
+            icon_path: i.icon_path().map(ToString::to_string),
             install_stage: i.install_stage.as_str().to_string(),
 
             // Minecraft Metadata
@@ -98,7 +98,7 @@ impl TryFrom<SqlInstance> for Instance {
     type Error = InstanceError;
 
     fn try_from(row: SqlInstance) -> Result<Self, Self::Error> {
-        Ok(Self {
+        let snapshot = InstanceSnapshot {
             id: row.id,
             name: row.name,
             icon_path: row.icon_path,
@@ -145,6 +145,8 @@ impl TryFrom<SqlInstance> for Instance {
             hooks: Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
 
             pack_info: None,
-        })
+        };
+
+        Ok(Instance::from_snapshot(snapshot))
     }
 }

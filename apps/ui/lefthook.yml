@@ -2,6 +2,12 @@ pre-commit:
   parallel: true
 
   jobs:
+    - name: desktop:types
+      root: 'apps/desktop'
+      glob: '**/*.{js,ts,jsx,tsx}'
+      run: bun run lint:types
+      stage_fixed: true
+
     - name: desktop:eslint
       root: 'apps/desktop'
       glob: '**/*.{js,ts,jsx,tsx,css}'

@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-use chrono::Utc;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +10,7 @@ use crate::{
     features::{
         events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
         instance::{
-            Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
+            Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
             PackInfo,
         },
         java::{JavaInstallationService, JavaStorage, JreProvider},
@@ -19,7 +18,7 @@ use crate::{
             LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftDownloader,
             ModLoader, app::MinecraftApplicationError,
         },
-        settings::{Hooks, LocationInfo},
+        settings::LocationInfo,
     },
     shared::create_dir_all,
 };
@@ -92,16 +91,16 @@ impl<
         self.instance_storage.upsert(instance).await?;
 
         self.instance_watcher_service
-            .watch_instance(&instance.id)
+            .watch_instance(instance.id())
             .await?;
 
         if !skip_install_instance.unwrap_or(false) {
             self.install_instance_use_case
-                .execute(instance.id.clone(), false)
+                .execute(instance.id().to_owned(), false)
                 .await?;
         }
 
-        Ok(instance.id.clone())
+        Ok(instance.id().to_owned())
     }
 
     pub async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
@@ -157,7 +156,7 @@ impl<
             Ok(instance_id) => {
                 info!(
                     "Instance \"{}\" created successfully at path \"{}\"",
-                    &instance.name,
+                    instance.name(),
                     &instance_dir.display()
                 );
                 Ok(instance_id)
@@ -165,7 +164,7 @@ impl<
             Err(err) => {
                 info!(
                     "Failed to create instance \"{}\". Rolling back",
-                    &instance.name
+                    instance.name()
                 );
 
                 self.event_emitter
@@ -174,7 +173,7 @@ impl<
                     })
                     .await;
 
-                if let Err(cleanup_err) = self.instance_storage.remove(&instance.id).await {
+                if let Err(cleanup_err) = self.instance_storage.remove(instance.id()).await {
                     error!("Failed to cleanup instance: {cleanup_err}");
                 }
                 Err(err)
@@ -192,28 +191,16 @@ fn build_instance(
     icon_path: Option<&String>,
     pack_info: Option<&PackInfo>,
 ) -> Instance {
-    Instance {
-        id: sanitized_name.to_owned(),
-        name: name.to_owned(),
-        icon_path: icon_path.map(ToOwned::to_owned),
-        install_stage: InstanceInstallStage::NotInstalled,
-        game_version: game_version.to_owned(),
-        loader: mod_loader,
-        loader_version: loader_version.cloned(),
-        java_path: None,
-        launch_args: None,
-        env_vars: None,
-        memory: None,
-        force_fullscreen: None,
-        game_resolution: None,
-        created: Utc::now(),
-        modified: Utc::now(),
-        last_played: None,
-        time_played: 0,
-        recent_time_played: 0,
-        hooks: Hooks::default(),
-        pack_info: pack_info.cloned(),
-    }
+    InstanceBuilder::new(
+        sanitized_name.to_owned(),
+        name.to_owned(),
+        game_version.to_owned(),
+        mod_loader,
+    )
+    .with_loader_version(loader_version.cloned())
+    .with_icon(icon_path.cloned())
+    .with_pack_info(pack_info.cloned())
+    .build()
 }
 
 async fn create_unique_instance_dir(

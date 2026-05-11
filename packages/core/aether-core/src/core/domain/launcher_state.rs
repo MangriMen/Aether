@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use tokio::sync::{OnceCell, Semaphore};
 
@@ -53,15 +53,12 @@ pub struct LauncherState {
 
 impl LauncherState {
     pub async fn init(
-        launcher_dir: PathBuf,
-        metadata_dir: PathBuf,
+        location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<()> {
         LAUNCHER_STATE
-            .get_or_try_init(|| {
-                Self::initialize(launcher_dir, metadata_dir, event_emitter, sqlite_pool)
-            })
+            .get_or_try_init(|| Self::initialize(location_info, event_emitter, sqlite_pool))
             .await?;
 
         Ok(())
@@ -90,8 +87,7 @@ impl LauncherState {
 
     #[tracing::instrument(skip(event_emitter, sqlite_pool))]
     async fn initialize(
-        launcher_dir: PathBuf,
-        metadata_dir: PathBuf,
+        location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         sqlite_pool: sqlx::SqlitePool,
     ) -> crate::Result<Arc<Self>> {
@@ -99,22 +95,24 @@ impl LauncherState {
 
         let migrated_dir_name = "migrated";
 
+        let config_dir = location_info.config_dir();
+
         settings::infra::migrate_settings_to_sqlite(
-            &FsSettingsStorage::new(&launcher_dir),
+            &FsSettingsStorage::new(config_dir),
             &settings_storage,
             migrated_dir_name,
         )
         .await?;
 
         settings::infra::migrate_default_instance_settings_to_sqlite(
-            &FsDefaultInstanceSettingsStorage::new(&launcher_dir),
+            &FsDefaultInstanceSettingsStorage::new(config_dir),
             &SqliteDefaultInstanceSettingsStorage::new(sqlite_pool.clone()),
             migrated_dir_name,
         )
         .await?;
 
         auth::infra::migrate_credentials_to_sqlite(
-            &FsCredentialsStorage::new(&launcher_dir),
+            &FsCredentialsStorage::new(config_dir),
             &SqliteCredentialsStorage::new(sqlite_pool.clone()),
             migrated_dir_name,
         )
@@ -123,14 +121,8 @@ impl LauncherState {
         let settings = if let Ok(settings) = settings_storage.get().await {
             settings
         } else {
-            let settings = Settings::from_dirs(launcher_dir.clone(), metadata_dir);
-            settings_storage.upsert(settings).await?
+            settings_storage.upsert(Settings::default()).await?
         };
-
-        let location_info = Arc::new(LocationInfo::new(
-            settings.launcher_dir().to_path_buf(),
-            settings.metadata_dir().to_path_buf(),
-        ));
 
         instance::infra::migrate_instances_to_sqlite(
             &FsInstanceStorage::new(location_info.clone()),

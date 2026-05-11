@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use aether_core::features::settings::LocationInfo;
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager};
 
@@ -17,7 +18,11 @@ use crate::{
     },
 };
 
-pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>, pool: SqlitePool) {
+pub fn register_state<R: tauri::Runtime>(
+    app_handle: &AppHandle<R>,
+    location_info: Arc<LocationInfo>,
+    pool: SqlitePool,
+) {
     let app_settings_storage: AppSettingsStorageState =
         Arc::new(SqliteAppSettingsStorage::new(pool.clone()));
 
@@ -33,6 +38,7 @@ pub fn register_state<R: tauri::Runtime>(app_handle: &AppHandle<R>, pool: Sqlite
 
     let prevent_exit_state = PreventExitState::new(false);
 
+    app_handle.manage(location_info);
     app_handle.manage(pool);
     app_handle.manage(app_settings_storage);
     app_handle.manage(window_manager);
@@ -63,4 +69,13 @@ fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path:
         .app_config_dir()
         .expect("Failed to resolve app config directory")
         .join("aether_settings.json")
+}
+
+pub fn create_location_info<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> LocationInfo {
+    let launcher_dir = app_handle
+        .path()
+        .app_config_dir()
+        .expect("Failed to resolve app config directory");
+
+    LocationInfo::new(launcher_dir.clone(), launcher_dir.clone())
 }

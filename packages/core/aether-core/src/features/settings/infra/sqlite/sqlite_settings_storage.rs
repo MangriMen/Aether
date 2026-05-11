@@ -22,13 +22,14 @@ impl SqliteSettingsStorage {
 #[async_trait]
 impl SettingsStorage for SqliteSettingsStorage {
     async fn get(&self) -> Result<Settings, SettingsError> {
-        let base = sqlx::query!(
-            "SELECT launcher_dir, metadata_dir, max_concurrent_downloads FROM launcher_settings WHERE id = 1"
-        )
-        .fetch_optional(&self.pool)
-        .await?;
+        let base =
+            sqlx::query!("SELECT max_concurrent_downloads FROM launcher_settings WHERE id = 1")
+                .fetch_optional(&self.pool)
+                .await?;
 
-        let base = base.ok_or(SettingsError::NotFound)?;
+        let Some(base) = base else {
+            return Ok(Settings::default());
+        };
 
         let plugins = sqlx::query!("SELECT plugin_id FROM enabled_plugins")
             .fetch_all(&self.pool)
@@ -37,8 +38,6 @@ impl SettingsStorage for SqliteSettingsStorage {
         let enabled_plugins = plugins.into_iter().map(|p| p.plugin_id).collect();
 
         Ok(Settings::new(
-            base.launcher_dir.into(),
-            base.metadata_dir.into(),
             base.max_concurrent_downloads
                 .try_into()
                 .unwrap_or(DEFAULT_MAX_CONCURRENT_DOWNLOADS),
@@ -49,21 +48,15 @@ impl SettingsStorage for SqliteSettingsStorage {
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {
         let mut tx = self.pool.begin().await?;
 
-        let launcher_dir = settings.launcher_dir().to_string_lossy().to_string();
-        let metadata_dir = settings.metadata_dir().to_string_lossy().to_string();
         let max_downloads = i64::try_from(settings.max_concurrent_downloads())
             .unwrap_or(DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64);
 
         // Update main table
         sqlx::query!(
-            "INSERT INTO launcher_settings (id, launcher_dir, metadata_dir, max_concurrent_downloads)
-             VALUES (1, ?, ?, ?)
+            "INSERT INTO launcher_settings (id, max_concurrent_downloads)
+             VALUES (1, ?)
              ON CONFLICT(id) DO UPDATE SET
-                launcher_dir = excluded.launcher_dir,
-                metadata_dir = excluded.metadata_dir,
-                max_concurrent_downloads = excluded.max_concurrent_downloads",
-            launcher_dir,
-            metadata_dir,
+            max_concurrent_downloads = excluded.max_concurrent_downloads",
             max_downloads
         )
         .execute(&mut *tx)

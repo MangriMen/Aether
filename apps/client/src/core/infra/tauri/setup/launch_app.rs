@@ -2,6 +2,7 @@ use std::env;
 
 use tauri::{Builder, Wry};
 
+use crate::core::infra::tauri::setup::protocols::{ASSET_PROTOCOL, handle_asset_request};
 use crate::features::{
     auth, events, instance, java, minecraft, plugins, process, settings, update,
 };
@@ -11,7 +12,7 @@ use super::{
     super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
     super::window::get_main_window_state_flags,
     events::handle_app_events,
-    initialize::init_app,
+    initialize::initialize_app,
     log::default_log_builder,
     pipe::Pipe,
 };
@@ -41,9 +42,16 @@ fn create_app() -> Builder<Wry> {
                 builder.mount_events(app);
             }
 
-            init_app(app);
+            initialize_app(app);
 
             Ok(())
+        })
+        .register_asynchronous_uri_scheme_protocol(ASSET_PROTOCOL, |context, request, responder| {
+            let app_handle = context.app_handle().clone();
+
+            tauri::async_runtime::spawn(async move {
+                handle_asset_request(app_handle, request, responder).await;
+            });
         })
         .pipe(configure_system_plugins)
         .pipe(configure_feature_plugins)

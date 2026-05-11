@@ -12,8 +12,8 @@ if (Test-Path $envScript) {
 }
 
 $corePath = Join-Path $root "packages/core/aether-core"
-$desktopPath = Join-Path $root "apps/desktop/src-tauri"
-$migrationsLinksDir = Join-Path $desktopPath "migrations_links"
+$clientPath = Join-Path $root "apps/client"
+$migrationsLinksDir = Join-Path $clientPath "migrations_links"
 
 # Helper to check exit codes of external commands (cargo, sqlx, etc.)
 function Check-LastExit($CommandName) {
@@ -42,7 +42,7 @@ function New-MigrationLink($sourcePath, $targetDir) {
 }
 
 New-MigrationLink (Join-Path $corePath "migrations") $migrationsLinksDir
-New-MigrationLink (Join-Path $desktopPath "migrations") $migrationsLinksDir
+New-MigrationLink (Join-Path $clientPath "migrations") $migrationsLinksDir
 
 # 3. Update Database
 sqlx db create
@@ -62,7 +62,7 @@ Pop-Location
 if ($exitCode -ne 0) { $LASTEXITCODE = $exitCode; Check-LastExit "cargo sqlx prepare (core)" }
 
 # Run preparation for desktop app
-Push-Location $desktopPath
+Push-Location $clientPath
     cargo sqlx prepare -- --all-targets
     $exitCode = $LASTEXITCODE
 Pop-Location

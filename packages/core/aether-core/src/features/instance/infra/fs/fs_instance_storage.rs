@@ -80,7 +80,7 @@ impl InstanceStorage for FsInstanceStorage {
     }
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
-        let path = self.location_info.instance_metadata_file(&instance.id);
+        let path = self.location_info.instance_metadata_file(instance.id());
         write_json_async(&path, instance)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;

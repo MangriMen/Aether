@@ -30,7 +30,7 @@ export const JavaVersionsList: Component<JavaVersionsListProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
       <DelayedShow
-        when={!javaVersions.isLoading && Boolean(javaVersions?.data?.length)}
+        when={!javaVersions.isLoading}
         fallback={
           <SkeletonList class='w-full rounded-md' height={128} itemsCount={3} />
         }

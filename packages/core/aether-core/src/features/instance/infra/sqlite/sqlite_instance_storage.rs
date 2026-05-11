@@ -203,6 +203,8 @@ impl InstanceStorage for SqliteInstanceStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
+        let instance_id = instance.id().to_owned();
+
         match &instance.pack_info {
             Some(pack) => {
                 let sql_pack = SqlPackInfo::from(pack.clone());
@@ -215,13 +217,13 @@ impl InstanceStorage for SqliteInstanceStorage {
                         modpack_id = excluded.modpack_id,
                         version_id = excluded.version_id
                     "#,
-                    instance.id, sql_pack.provider_id, sql_pack.modpack_id, sql_pack.version_id
+                    instance_id, sql_pack.provider_id, sql_pack.modpack_id, sql_pack.version_id
                 )
                 .execute(&mut *tx)
                 .await
             }
             None => {
-                sqlx::query!("DELETE FROM instance_pack_info WHERE instance_id = ?", instance.id)
+                sqlx::query!("DELETE FROM instance_pack_info WHERE instance_id = ?", instance_id)
                 .execute(&mut *tx)
                 .await
             }

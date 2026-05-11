@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO launcher_settings (id, max_concurrent_downloads)\n             VALUES (1, ?)\n             ON CONFLICT(id) DO UPDATE SET\n            max_concurrent_downloads = excluded.max_concurrent_downloads",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "4d635603e2386c2d2b7bc6f0681a28d7f23e0d945c15b06ad8c1e8c966d5376a"
+}

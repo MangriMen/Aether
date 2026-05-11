@@ -12,36 +12,42 @@ use crate::features::{
 #[serde(rename_all = "camelCase")]
 pub struct EditInstance {
     pub name: Option<String>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub java_path: Option<Option<String>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub launch_args: Option<Option<Vec<String>>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub env_vars: Option<Option<Vec<(String, String)>>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub memory: Option<Option<MemorySettings>>,
+
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
     pub game_resolution: Option<Option<WindowSize>>,
+
     pub hooks: Option<EditHooks>,
 }
 
@@ -62,13 +68,16 @@ impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
         validate_edit(&edit_instance)?;
 
         let mut instance = self.instance_storage.get(&instance_id).await?;
-        apply_edit_changes(&mut instance, &edit_instance);
+        apply_edit_changes(&mut instance, &edit_instance)?;
         self.instance_storage.upsert(&instance).await?;
         Ok(instance)
     }
 }
 
-fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
+fn apply_edit_changes(
+    instance: &mut Instance,
+    edit_instance: &EditInstance,
+) -> Result<(), InstanceError> {
     let EditInstance {
         name,
         java_path,
@@ -80,7 +89,7 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     } = edit_instance;
 
     if let Some(name) = name {
-        instance.name.clone_from(name);
+        instance.rename(name.clone())?;
     }
 
     if let Some(java_path) = java_path {
@@ -108,6 +117,8 @@ fn apply_edit_changes(instance: &mut Instance, edit_instance: &EditInstance) {
     }
 
     instance.modified = Utc::now();
+
+    Ok(())
 }
 
 fn validate_edit(edit: &EditInstance) -> Result<(), InstanceError> {

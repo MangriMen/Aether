@@ -160,6 +160,12 @@ impl LocationInfo {
         self.config_dir.join(CACHE_FOLDER_NAME)
     }
 
+    /// Get the cache directory
+    #[inline]
+    pub fn assets_cache_dir(&self) -> PathBuf {
+        self.cache_dir().join("assets")
+    }
+
     /// Get the Minecraft java versions metadata directory
     #[inline]
     pub fn java_dir(&self) -> PathBuf {
