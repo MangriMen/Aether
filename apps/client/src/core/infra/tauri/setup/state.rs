@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use aether_core::features::settings::LocationInfo;
 use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager};
 
@@ -63,4 +64,13 @@ fn get_settings_path<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> std::path:
         .app_config_dir()
         .expect("Failed to resolve app config directory")
         .join("aether_settings.json")
+}
+
+pub fn create_location_info<R: tauri::Runtime>(app_handle: &AppHandle<R>) -> LocationInfo {
+    let launcher_dir = app_handle
+        .path()
+        .app_config_dir()
+        .expect("Failed to resolve app config directory");
+
+    LocationInfo::new(launcher_dir.clone(), launcher_dir.clone())
 }

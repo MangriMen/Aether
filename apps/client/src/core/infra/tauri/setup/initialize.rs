@@ -1,4 +1,3 @@
-use aether_core::features::settings::LocationInfo;
 use log::error;
 use tauri::{App, Manager};
 
@@ -11,19 +10,14 @@ use crate::{
 };
 
 use super::{
-    listeners::setup_listeners, sqlite::create_pool, state::register_state,
-    watchdog::run_window_is_visible_watch_dog,
+    listeners::setup_listeners, sqlite::create_pool, state::create_location_info,
+    state::register_state, watchdog::run_window_is_visible_watch_dog,
 };
 
 pub fn init_app(app: &mut App) {
     let app_handle = app.handle();
 
-    let launcher_dir = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Failed to resolve app config directory");
-
-    let location_info = LocationInfo::new(launcher_dir.clone(), launcher_dir.clone());
+    let location_info = create_location_info(app_handle);
 
     let pool = tauri::async_runtime::block_on(async {
         let pool = create_pool(location_info.db_path())

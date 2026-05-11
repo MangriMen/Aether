@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::instance::{Instance, InstanceError, InstanceStorage},
-    shared::AssetProcessor,
+    shared::AssetsStorage,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,14 +22,14 @@ pub struct EditInstanceIcon {
 
 pub struct EditInstanceIconUseCase<IS, AP> {
     instance_storage: Arc<IS>,
-    asset_processor: Arc<AP>,
+    assets_storage: Arc<AP>,
 }
 
-impl<IS: InstanceStorage, AP: AssetProcessor> EditInstanceIconUseCase<IS, AP> {
-    pub fn new(instance_storage: Arc<IS>, asset_processor: Arc<AP>) -> Self {
+impl<IS: InstanceStorage, AP: AssetsStorage> EditInstanceIconUseCase<IS, AP> {
+    pub fn new(instance_storage: Arc<IS>, assets_storage: Arc<AP>) -> Self {
         Self {
             instance_storage,
-            asset_processor,
+            assets_storage,
         }
     }
 
@@ -46,7 +46,7 @@ impl<IS: InstanceStorage, AP: AssetProcessor> EditInstanceIconUseCase<IS, AP> {
             match icon_path {
                 Some(icon_path) => {
                     let asset_id = self
-                        .asset_processor
+                        .assets_storage
                         .import_file(icon_path)
                         .await
                         .map_err(|err| InstanceError::Storage(err.to_string()))?;

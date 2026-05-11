@@ -3,10 +3,13 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::{
-    instance::{InstanceInstallStageDto, PackInfoDto},
-    minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
-    settings::infra::tauri::dtos::{HooksDto, MemorySettingsDto, WindowSizeDto},
+use crate::{
+    core::format_asset_url,
+    features::{
+        instance::{InstanceInstallStageDto, PackInfoDto},
+        minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
+        settings::infra::tauri::dtos::{HooksDto, MemorySettingsDto, WindowSizeDto},
+    },
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
@@ -52,7 +55,7 @@ impl From<Instance> for InstanceDto {
         Self {
             id: value.id().to_owned(),
             name: value.name().to_owned(),
-            icon_path: value.icon_path().map(ToString::to_string),
+            icon_path: value.icon_path().map(format_asset_url),
             install_stage: value.install_stage.into(),
             game_version: value.game_version,
             loader: value.loader.into(),

@@ -4,23 +4,23 @@ use async_trait::async_trait;
 use bytes::Bytes;
 
 use crate::shared::{
-    AssetError, AssetProcessor, CacheId, CacheKey, FileStore, read_async, sha1_async,
+    AssetError, AssetsStorage, CacheId, CacheKey, FileStore, read_async, sha1_async,
 };
 
 pub const ASSETS_CACHE_NAMESPACE: &str = "assets";
 
-pub struct AssetsManager<C> {
+pub struct FsAssetsStorage<C> {
     cache: Arc<C>,
 }
 
-impl<C: FileStore> AssetsManager<C> {
+impl<C: FileStore> FsAssetsStorage<C> {
     pub fn new(cache: Arc<C>) -> Self {
         Self { cache }
     }
 }
 
 #[async_trait]
-impl<C: FileStore> AssetProcessor for AssetsManager<C> {
+impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
     async fn import_file(&self, source: impl AsRef<Path> + Send) -> Result<String, AssetError> {
         let source = source.as_ref();
 

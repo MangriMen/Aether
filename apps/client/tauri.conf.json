@@ -6,7 +6,7 @@
   "identifier": "aether.launcher",
   "app": {
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost",
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost aether-asset: https://asset.localhost",
       "assetProtocol": {
         "enable": true,
         "scope": [
