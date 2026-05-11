@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                launch_args_json, env_vars_json, max_memory, force_fullscreen, \n                window_width, window_height, hook_pre_launch, hook_wrapper, hook_post_exit\n               FROM default_instance_settings WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "launch_args_json",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "env_vars_json",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "max_memory",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "force_fullscreen",
+        "ordinal": 3,
+        "type_info": "Bool"
+      },
+      {
+        "name": "window_width",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "window_height",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "hook_pre_launch",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "hook_wrapper",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "hook_post_exit",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6e0ff9a1aa55b99a38ea7cf6fabd0c56121981bb596f3dcbf1795ce376b0897a"
+}

@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
-use tracing::warn;
 
 use crate::{
     features::settings::{
         DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemorySettings,
-        SettingsError, WindowSize,
+        SettingsError, WindowSettings, WindowSize,
     },
     shared::UpdateAction,
 };
@@ -30,11 +29,11 @@ impl SqliteDefaultInstanceSettingsStorage {
 #[async_trait]
 impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
     async fn get(&self) -> Result<DefaultInstanceSettings, SettingsError> {
-        // Fetch main settings
         let row = sqlx::query!(
-            "SELECT max_memory, force_fullscreen, window_width, window_height, 
-                    pre_launch_hook, wrapper_hook, post_exit_hook 
-             FROM default_instance_settings WHERE id = 1"
+            r#"SELECT 
+                launch_args_json, env_vars_json, max_memory, force_fullscreen, 
+                window_width, window_height, hook_pre_launch, hook_wrapper, hook_post_exit
+               FROM default_instance_settings WHERE id = 1"#
         )
         .fetch_optional(&self.pool)
         .await?;
@@ -43,29 +42,33 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
             return Ok(DefaultInstanceSettings::default());
         };
 
-        // Fetch collections
-        let launch_args = sqlx::query!("SELECT arg FROM launch_args")
-            .fetch_all(&self.pool)
-            .await?
-            .into_iter()
-            .map(|r| r.arg)
-            .collect();
+        let launch_args = serde_json::from_str(&row.launch_args_json).unwrap_or_default();
+        let env_vars = serde_json::from_str(&row.env_vars_json).unwrap_or_default();
 
-        let env_vars = sqlx::query!("SELECT key, value FROM env_vars")
-            .fetch_all(&self.pool)
-            .await?
-            .into_iter()
-            .map(|r| (r.key, r.value))
-            .collect();
+        let max_memory = u32::try_from(row.max_memory);
+        let memory = if let Ok(max_memory) = max_memory {
+            MemorySettings::new(max_memory)
+        } else {
+            MemorySettings::default()
+        };
 
-        // Mapping to struct
+        let width = u16::try_from(row.window_width);
+        let height = u16::try_from(row.window_height);
+
+        let window_size = if let Ok(width) = width
+            && let Ok(height) = height
+        {
+            WindowSize::new(width, height)
+        } else {
+            WindowSize::default()
+        };
+
         Ok(DefaultInstanceSettings::new(
             launch_args,
             env_vars,
-            map_memory(row.max_memory),
-            map_window_size(row.window_width, row.window_height),
-            row.force_fullscreen,
-            Hooks::new(row.pre_launch_hook, row.wrapper_hook, row.post_exit_hook),
+            memory,
+            WindowSettings::new(row.force_fullscreen, window_size),
+            Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
         ))
     }
 
@@ -73,66 +76,48 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
         &self,
         settings: DefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
-        let mut tx = self.pool.begin().await?;
+        let launch_args_json =
+            serde_json::to_string(settings.launch_args()).unwrap_or_else(|_| "[]".into());
+        let env_vars_json =
+            serde_json::to_string(settings.env_vars()).unwrap_or_else(|_| "[]".into());
 
-        let max_memory = settings.memory().maximum;
-        let force_fullscreen = settings.force_fullscreen();
-        let width = settings.game_resolution().width();
-        let height = settings.game_resolution().height();
-        let pre_launch = settings.hooks().pre_launch();
-        let wrapper = settings.hooks().wrapper();
-        let post_exit = settings.hooks().post_exit();
+        let memory_max = i64::from(settings.memory().maximum);
+        let fullscreen = settings.window().force_fullscreen();
+        let width = i64::from(settings.window().game_resolution().width());
+        let height = i64::from(settings.window().game_resolution().height());
 
-        // Update main table
+        let pre_launch = settings.hooks().pre_launch().to_string();
+        let wrapper = settings.hooks().wrapper().to_string();
+        let post_exit = settings.hooks().post_exit().to_string();
+
         sqlx::query!(
-            "INSERT INTO default_instance_settings (
-                id, max_memory, force_fullscreen, window_width, window_height, 
-                pre_launch_hook, wrapper_hook, post_exit_hook
-             ) VALUES (1, ?, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(id) DO UPDATE SET
+            r#"INSERT INTO default_instance_settings (
+                id, launch_args_json, env_vars_json, max_memory, force_fullscreen, 
+                window_width, window_height, hook_pre_launch, hook_wrapper, hook_post_exit
+            ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                launch_args_json = excluded.launch_args_json,
+                env_vars_json = excluded.env_vars_json,
                 max_memory = excluded.max_memory,
                 force_fullscreen = excluded.force_fullscreen,
                 window_width = excluded.window_width,
                 window_height = excluded.window_height,
-                pre_launch_hook = excluded.pre_launch_hook,
-                wrapper_hook = excluded.wrapper_hook,
-                post_exit_hook = excluded.post_exit_hook",
-            max_memory,
-            force_fullscreen,
+                hook_pre_launch = excluded.hook_pre_launch,
+                hook_wrapper = excluded.hook_wrapper,
+                hook_post_exit = excluded.hook_post_exit"#,
+            launch_args_json,
+            env_vars_json,
+            memory_max,
+            fullscreen,
             width,
             height,
             pre_launch,
             wrapper,
-            post_exit,
+            post_exit
         )
-        .execute(&mut *tx)
+        .execute(&self.pool)
         .await?;
 
-        // Sync launch args
-        sqlx::query!("DELETE FROM launch_args")
-            .execute(&mut *tx)
-            .await?;
-        for arg in settings.launch_args() {
-            sqlx::query!("INSERT INTO launch_args (arg) VALUES (?)", arg)
-                .execute(&mut *tx)
-                .await?;
-        }
-
-        // Sync env vars
-        sqlx::query!("DELETE FROM env_vars")
-            .execute(&mut *tx)
-            .await?;
-        for (key, value) in settings.env_vars() {
-            sqlx::query!(
-                "INSERT INTO env_vars (key, value) VALUES (?, ?)",
-                key,
-                value
-            )
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        tx.commit().await?;
         Ok(settings)
     }
 
@@ -150,28 +135,4 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
             UpdateAction::NoChanges(result) => Ok(result),
         }
     }
-}
-
-fn map_window_size(width: i64, height: i64) -> WindowSize {
-    let Ok(width) = u16::try_from(width) else {
-        warn!("Invalid window width: {}. Using default.", width);
-        return WindowSize::default();
-    };
-
-    let Ok(height) = u16::try_from(height) else {
-        warn!("Invalid window height: {}. Using default.", height);
-        return WindowSize::default();
-    };
-
-    WindowSize::new(width, height)
-}
-
-fn map_memory(val: i64) -> MemorySettings {
-    u32::try_from(val).map_or_else(
-        |err| {
-            warn!("Failed to map memory settings: {}. Using default", err);
-            MemorySettings::default()
-        },
-        MemorySettings::new,
-    )
 }

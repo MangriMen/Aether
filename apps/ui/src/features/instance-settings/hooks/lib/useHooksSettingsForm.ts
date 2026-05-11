@@ -23,7 +23,7 @@ export const useResetHooksSettingsFormValues = (
   createEffect(() => {
     const preLaunch = initialValues()?.preLaunch;
 
-    if (preLaunch) {
+    if (preLaunch !== undefined) {
       setValues(form, {
         preLaunch: preLaunch,
       });
@@ -33,7 +33,7 @@ export const useResetHooksSettingsFormValues = (
   createEffect(() => {
     const wrapper = initialValues()?.wrapper;
 
-    if (wrapper) {
+    if (wrapper !== undefined) {
       setValues(form, {
         wrapper,
       });
@@ -43,7 +43,7 @@ export const useResetHooksSettingsFormValues = (
   createEffect(() => {
     const post_exit = initialValues()?.postExit;
 
-    if (post_exit) {
+    if (post_exit !== undefined) {
       setValues(form, {
         postExit: post_exit,
       });

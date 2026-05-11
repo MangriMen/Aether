@@ -17,8 +17,10 @@ export type OverridableMemoryFieldProps = Omit<
 > & {
   value?: number | null;
   defaultValue?: number;
-  onChange?: (value: number | null) => void;
   overridable?: boolean;
+  isOverridden?: boolean;
+  onChange?: (value: number | null) => void;
+  onOverrideChange?: (value: boolean) => void;
 };
 
 export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
@@ -27,8 +29,10 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
   const [local, others] = splitProps(props, [
     'value',
     'defaultValue',
-    'onChange',
     'overridable',
+    'isOverridden',
+    'onChange',
+    'onOverrideChange',
     'class',
   ]);
 
@@ -63,8 +67,6 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
     local.onChange?.(value ? getClampedMemory(value[0]) : value);
   };
 
-  const isOverride = createMemo(() => local.value !== null);
-
   return (
     <div class={cn('flex flex-col gap-1', local.class)} {...others}>
       <span class='text-lg font-medium'>
@@ -73,14 +75,14 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
       <Show when={local.overridable}>
         <OverrideCheckbox
           label={t('instanceSettings.customMemorySettings')}
-          checked={isOverride()}
-          enabledValue={defaultMemory}
-          disabledValue={() => null}
-          onOverrideChange={handleChangeMemory}
+          checked={local.isOverridden}
+          enabledValue={() => true}
+          disabledValue={() => false}
+          onOverrideChange={local.onOverrideChange}
         />
       </Show>
       <MemoryInput
-        disabled={!isOverride()}
+        disabled={!local.isOverridden}
         value={value()}
         defaultValue={defaultMemory()}
         minValue={minMemory()}

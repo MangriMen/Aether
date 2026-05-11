@@ -3,22 +3,27 @@ CREATE TABLE IF NOT EXISTS instances (
   name TEXT NOT NULL,
   icon_path TEXT,
   install_stage TEXT NOT NULL,
-  -- Minecraft Metadata
+  -- Metadata
   game_version TEXT NOT NULL,
   loader TEXT NOT NULL,
   -- LoaderVersionPreference: Stable, Latest, Exact
   loader_version_json TEXT,
   -- Launch Settings
-  java_path TEXT,
+  override_java_path BOOLEAN NOT NULL DEFAULT 0,
+  java_path TEXT NOT NULL DEFAULT '',
   -- Json strings
-  launch_args_json TEXT,
-  env_vars_json TEXT,
+  override_launch_args BOOLEAN NOT NULL DEFAULT 0,
+  launch_args_json TEXT NOT NULL DEFAULT '[]',
+  override_env_vars BOOLEAN NOT NULL DEFAULT 0,
+  env_vars_json TEXT NOT NULL DEFAULT '[]',
   -- MemorySettings (Flattened)
-  memory_maximum INTEGER,
+  override_memory BOOLEAN NOT NULL DEFAULT 0,
+  memory_maximum INTEGER NOT NULL DEFAULT 2048,
   -- WindowSize & Display (Flattened)
-  force_fullscreen BOOLEAN,
-  window_width INTEGER,
-  window_height INTEGER,
+  override_window_settings BOOLEAN NOT NULL DEFAULT 0,
+  force_fullscreen BOOLEAN NOT NULL DEFAULT 0,
+  window_width INTEGER NOT NULL DEFAULT 960,
+  window_height INTEGER NOT NULL DEFAULT 540,
   -- Timestamps
   created_at DATETIME NOT NULL,
   modified_at DATETIME NOT NULL,
@@ -27,9 +32,10 @@ CREATE TABLE IF NOT EXISTS instances (
   time_played INTEGER NOT NULL DEFAULT 0,
   recent_time_played INTEGER NOT NULL DEFAULT 0,
   -- Hooks (Flattened)
-  hook_pre_launch TEXT,
-  hook_wrapper TEXT,
-  hook_post_exit TEXT
+  override_hooks BOOLEAN NOT NULL DEFAULT 0,
+  hook_pre_launch TEXT NOT NULL DEFAULT '',
+  hook_wrapper TEXT NOT NULL DEFAULT '',
+  hook_post_exit TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS instance_pack_info (

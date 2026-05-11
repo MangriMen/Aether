@@ -48,7 +48,7 @@ export const instanceSettingsToWindowSettingsValues = (
     return;
   }
 
-  const resolution = settings.gameResolution;
+  const resolution = settings.window.data.gameResolution;
 
   return {
     resolution: resolution
@@ -69,9 +69,9 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
 
   const { memory } = settings;
 
-  const maximum = memory === null ? null : memory?.maximum;
-  const launchArgs = settings.launchArgs;
-  const envVars = settings.envVars;
+  const maximum = memory === null ? null : memory?.data.maximum;
+  const launchArgs = settings.launchArgs.data;
+  const envVars = settings.envVars.data;
 
   return {
     memory: {
@@ -90,9 +90,9 @@ export const instanceSettingsToHooksSettingsValues = (
   }
 
   return {
-    preLaunch: settings.hooks?.preLaunch,
-    wrapper: settings.hooks?.wrapper,
-    postExit: settings.hooks?.postExit,
+    preLaunch: settings.hooks?.data.preLaunch,
+    wrapper: settings.hooks?.data.wrapper,
+    postExit: settings.hooks?.data.postExit,
   };
 };
 
@@ -114,10 +114,12 @@ export const windowSettingsValuesToEditInstanceSettings = (
   const dto: EditInstanceSettings = {};
 
   if (values.resolution !== undefined) {
-    dto.gameResolution =
-      values.resolution === null
-        ? null
-        : [values.resolution.width, values.resolution.height];
+    dto.window = {
+      forceFullscreen: false,
+      gameResolution: values.resolution === null
+      ? null
+      : [values.resolution.width, values.resolution.height];
+    }
   }
 
   return dto;
@@ -142,6 +144,18 @@ export const javaAndMemorySettingsValuesToEditInstanceSettings = (
   if (values.envVars !== undefined) {
     dto.envVars =
       values.envVars === null ? null : stringToEnvVars(values.envVars);
+  }
+
+  if (values.overrideMemory !== undefined) {
+    dto.overrideMemory = values.overrideMemory;
+  }
+
+  if (values.overrideLaunchArgs !== undefined) {
+    dto.overrideLaunchArgs = values.overrideLaunchArgs;
+  }
+
+  if (values.overrideEnvVars !== undefined) {
+    dto.overrideEnvVars = values.overrideEnvVars;
   }
 
   return dto;

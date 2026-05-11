@@ -1,9 +1,15 @@
-use crate::features::{
-    instance::{Instance, InstanceError, InstanceSnapshot},
-    settings::{Hooks, MemorySettings, WindowSize},
+use chrono::{DateTime, Utc};
+
+use crate::{
+    features::{
+        instance::{Instance, InstanceError, InstanceSnapshot},
+        settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
+    },
+    shared::Overridable,
 };
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct SqlInstance {
     pub id: String,
     pub name: String,
@@ -15,81 +21,89 @@ pub struct SqlInstance {
     pub loader: String,
     pub loader_version_json: Option<String>,
 
-    // Launch Settings
-    pub java_path: Option<String>,
-    pub launch_args_json: Option<String>,
-    pub env_vars_json: Option<String>,
+    // Launch arguments
+    pub override_java_path: bool,
+    pub java_path: String,
 
-    // MemorySettings
-    pub memory_maximum: Option<i64>,
+    pub override_launch_args: bool,
+    pub launch_args_json: String,
+
+    pub override_env_vars: bool,
+    pub env_vars_json: String,
+
+    // Runtime settings
+    pub override_memory: bool,
+    pub memory_maximum: i64,
 
     // WindowSize & Display
-    pub force_fullscreen: Option<bool>,
-    pub window_width: Option<i64>,
-    pub window_height: Option<i64>,
+    pub override_window_settings: bool,
+    pub force_fullscreen: bool,
+    pub window_width: i64,
+    pub window_height: i64,
 
     // Timestamps
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub modified_at: chrono::DateTime<chrono::Utc>,
-    pub last_played_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
+    pub last_played_at: Option<DateTime<Utc>>,
 
     // Stats
     pub time_played: i64,
     pub recent_time_played: i64,
 
-    // Hooks
-    pub hook_pre_launch: Option<String>,
-    pub hook_wrapper: Option<String>,
-    pub hook_post_exit: Option<String>,
+    // Hooks (Flattened)
+    pub override_hooks: bool,
+    pub hook_pre_launch: String,
+    pub hook_wrapper: String,
+    pub hook_post_exit: String,
 }
 
 impl From<Instance> for SqlInstance {
     fn from(i: Instance) -> Self {
+        let s = i.snapshot();
+
         Self {
-            id: i.id().to_owned(),
-            name: i.name().to_owned(),
-            icon_path: i.icon_path().map(ToString::to_string),
-            install_stage: i.install_stage.as_str().to_string(),
+            id: s.id,
+            name: s.name,
+            icon_path: s.icon_path,
+            install_stage: s.install_stage.as_str().to_string(),
 
-            // Minecraft Metadata
-            game_version: i.game_version,
-            loader: serde_json::to_string(&i.loader).unwrap_or_default(),
-            loader_version_json: i
-                .loader_version
-                .as_ref()
-                .map(|v| serde_json::to_string(v).unwrap()),
+            game_version: s.game_version,
+            loader: serde_json::to_string(&s.loader).unwrap_or_default(),
+            loader_version_json: s.loader_version.map(|v| serde_json::to_string(&v).unwrap()),
 
-            // Launch Settings
-            java_path: i.java_path,
-            launch_args_json: i
-                .launch_args
-                .as_ref()
-                .map(|v| serde_json::to_string(v).unwrap()),
-            env_vars_json: i
-                .env_vars
-                .as_ref()
-                .map(|v| serde_json::to_string(v).unwrap()),
+            // Java
+            override_java_path: s.java_path.is_active,
+            java_path: s.java_path.data,
 
-            // Runtime Settings (Flattened)
-            memory_maximum: i.memory.map(|m| i64::from(m.maximum)),
+            // Args & Env
+            override_launch_args: s.launch_args.is_active,
+            launch_args_json: serde_json::to_string(&s.launch_args.data)
+                .unwrap_or_else(|_| "[]".into()),
+            override_env_vars: s.env_vars.is_active,
+            env_vars_json: serde_json::to_string(&s.env_vars.data).unwrap_or_else(|_| "[]".into()),
 
-            force_fullscreen: i.force_fullscreen,
-            window_width: i.game_resolution.map(|r| i64::from(r.0)),
-            window_height: i.game_resolution.map(|r| i64::from(r.1)),
+            // Memory
+            override_memory: s.memory.is_active,
+            memory_maximum: i64::from(s.memory.data.maximum),
 
-            // Timestamps
-            created_at: i.created,
-            modified_at: i.modified,
-            last_played_at: i.last_played,
+            // Window
+            override_window_settings: s.window.is_active,
+            force_fullscreen: s.window.data.force_fullscreen(),
+            window_width: i64::from(s.window.data.game_resolution().width()),
+            window_height: i64::from(s.window.data.game_resolution().height()),
 
-            // Stats
-            time_played: i.time_played.cast_signed(),
-            recent_time_played: i.recent_time_played.cast_signed(),
+            created_at: s.created,
+            modified_at: s.modified,
+            last_played_at: s.last_played,
 
-            // Hooks (Flattened)
-            hook_pre_launch: i.hooks.pre_launch().cloned(),
-            hook_wrapper: i.hooks.wrapper().cloned(),
-            hook_post_exit: i.hooks.post_exit().cloned(),
+            time_played: s.time_played.cast_signed(),
+            recent_time_played: s.recent_time_played.cast_signed(),
+
+            // Hooks
+            override_hooks: s.hooks.is_active,
+            hook_pre_launch: s.hooks.data.pre_launch().to_string(),
+            hook_wrapper: s.hooks.data.wrapper().to_string(),
+            hook_post_exit: s.hooks.data.post_exit().to_string(),
         }
     }
 }
@@ -98,6 +112,24 @@ impl TryFrom<SqlInstance> for Instance {
     type Error = InstanceError;
 
     fn try_from(row: SqlInstance) -> Result<Self, Self::Error> {
+        let max_memory = u32::try_from(row.memory_maximum);
+        let memory = if let Ok(max_memory) = max_memory {
+            MemorySettings::new(max_memory)
+        } else {
+            MemorySettings::default()
+        };
+
+        let width = u16::try_from(row.window_width);
+        let height = u16::try_from(row.window_height);
+
+        let window_size = if let Ok(width) = width
+            && let Ok(height) = height
+        {
+            WindowSize::new(width, height)
+        } else {
+            WindowSize::default()
+        };
+
         let snapshot = InstanceSnapshot {
             id: row.id,
             name: row.name,
@@ -110,40 +142,47 @@ impl TryFrom<SqlInstance> for Instance {
             game_version: row.game_version,
             loader: serde_json::from_str(&row.loader)
                 .map_err(|e| InstanceError::Storage(e.to_string()))?,
-
             loader_version: row
                 .loader_version_json
                 .map(|s| serde_json::from_str(&s).unwrap()),
 
-            java_path: row.java_path,
-            launch_args: row
-                .launch_args_json
-                .map(|s| serde_json::from_str(&s).unwrap()),
+            // Java
+            java_path: Overridable::new(row.java_path, row.override_java_path),
 
-            env_vars: row.env_vars_json.map(|s| serde_json::from_str(&s).unwrap()),
+            // Launch Args
+            launch_args: Overridable::new(
+                serde_json::from_str(&row.launch_args_json).unwrap_or_default(),
+                row.override_launch_args,
+            ),
 
-            memory: row
-                .memory_maximum
-                .map(|max| MemorySettings::new(max.try_into().unwrap_or(2048))),
+            // Env Vars
+            env_vars: Overridable::new(
+                serde_json::from_str(&row.env_vars_json).unwrap_or_default(),
+                row.override_env_vars,
+            ),
 
-            force_fullscreen: row.force_fullscreen,
-            game_resolution: match (row.window_width, row.window_height) {
-                (Some(w), Some(h)) => Some(WindowSize::new(
-                    w.try_into().unwrap_or(960),
-                    h.try_into().unwrap_or(540),
-                )),
-                _ => None,
-            },
+            // Memory
+            memory: Overridable::new(memory, row.override_memory),
+
+            // Window
+            window: Overridable::new(
+                WindowSettings::new(row.force_fullscreen, window_size),
+                row.override_window_settings,
+            ),
+
+            // Hooks
+            hooks: Overridable::new(
+                Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
+                row.override_hooks,
+            ),
 
             created: row.created_at,
             modified: row.modified_at,
             last_played: row.last_played_at,
-
             time_played: row.time_played.cast_unsigned(),
             recent_time_played: row.recent_time_played.cast_unsigned(),
 
-            hooks: Hooks::new(row.hook_pre_launch, row.hook_wrapper, row.hook_post_exit),
-
+            // Load separately
             pack_info: None,
         };
 

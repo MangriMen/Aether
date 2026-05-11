@@ -163,17 +163,16 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
             &launch_dir,
             &self.location_info.assets_dir(),
             &version.type_,
-            launch_settings.game_resolution,
+            launch_settings.window.game_resolution(),
             java.architecture(),
         )?
         .into_iter()
         .collect::<Vec<_>>();
 
-        let mut command = match &launch_settings.hooks.wrapper() {
-            Some(hook) => {
-                with_mut_ref!(it = tokio::process::Command::new(hook) => {it.arg(java.path())})
-            }
-            None => tokio::process::Command::new(java.path()),
+        let mut command = if launch_settings.hooks.wrapper().is_empty() {
+            tokio::process::Command::new(java.path())
+        } else {
+            with_mut_ref!(it = tokio::process::Command::new(launch_settings.hooks.wrapper()) => {it.arg(java.path())})
         };
 
         command

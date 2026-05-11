@@ -31,7 +31,7 @@ export const defaultInstanceSettingsToWindowSettingsValues = (
     return;
   }
 
-  const resolution = settings.gameResolution;
+  const resolution = settings.window.game_resolution;
 
   return {
     resolution: resolution
@@ -85,7 +85,10 @@ export const windowSettingsValuesToEditDefaultInstanceSettings = (
   const dto: EditDefaultInstanceSettings = {};
 
   if (values.resolution) {
-    dto.gameResolution = [values.resolution.width, values.resolution.height];
+    dto.window = {
+      forceFullscreen: false,
+      gameResolution: [values.resolution.width, values.resolution.height],
+    };
   }
 
   return dto;

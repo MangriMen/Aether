@@ -1,4 +1,6 @@
-use aether_core::features::settings::{DefaultInstanceSettings, Hooks, MemorySettings, WindowSize};
+use aether_core::features::settings::{
+    DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -9,7 +11,7 @@ pub struct DefaultInstanceSettingsDto {
     env_vars: Vec<(String, String)>,
 
     memory: MemorySettingsDto,
-    game_resolution: WindowSizeDto,
+    window: WindowSettingsDto,
 
     hooks: HooksDto,
 }
@@ -23,12 +25,19 @@ pub struct MemorySettingsDto {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
 pub struct WindowSizeDto(pub u16, pub u16);
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowSettingsDto {
+    pub force_fullscreen: bool,
+    pub game_resolution: WindowSizeDto,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct HooksDto {
-    pre_launch: Option<String>,
-    wrapper: Option<String>,
-    post_exit: Option<String>,
+    pre_launch: String,
+    wrapper: String,
+    post_exit: String,
 }
 
 impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
@@ -36,8 +45,8 @@ impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
         Self {
             launch_args: value.launch_args().to_vec(),
             env_vars: value.env_vars().to_vec(),
-            memory: value.memory().into(),
-            game_resolution: value.game_resolution().into(),
+            memory: (*value.memory()).into(),
+            window: value.window().clone().into(),
             hooks: value.hooks().clone().into(),
         }
     }
@@ -71,12 +80,27 @@ impl From<WindowSizeDto> for WindowSize {
     }
 }
 
+impl From<WindowSettingsDto> for WindowSettings {
+    fn from(value: WindowSettingsDto) -> Self {
+        WindowSettings::new(value.force_fullscreen, value.game_resolution.into())
+    }
+}
+
+impl From<WindowSettings> for WindowSettingsDto {
+    fn from(value: WindowSettings) -> Self {
+        Self {
+            force_fullscreen: value.force_fullscreen(),
+            game_resolution: value.game_resolution().into(),
+        }
+    }
+}
+
 impl From<Hooks> for HooksDto {
     fn from(value: Hooks) -> Self {
         Self {
-            pre_launch: value.pre_launch().cloned(),
-            wrapper: value.wrapper().cloned(),
-            post_exit: value.post_exit().cloned(),
+            pre_launch: value.pre_launch().to_owned(),
+            wrapper: value.wrapper().to_owned(),
+            post_exit: value.post_exit().to_owned(),
         }
     }
 }

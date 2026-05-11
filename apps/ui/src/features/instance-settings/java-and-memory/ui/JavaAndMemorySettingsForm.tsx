@@ -104,6 +104,9 @@ export const JavaAndMemorySettingsForm: Component<
               setValue(form, 'memory.maximum', value);
               updateMemory();
             }}
+            onOverrideChange={(value) => {
+              local.onChangePartial({ overrideMemory: value });
+            }}
           />
         )}
       </Field>

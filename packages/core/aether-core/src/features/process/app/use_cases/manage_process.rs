@@ -17,7 +17,7 @@ use super::{TrackProcessParams, TrackProcessUseCase};
 pub struct ManageProcessParams {
     pub process_id: Uuid,
     pub instance_id: String,
-    pub post_exit_command: Option<String>,
+    pub post_exit_command: String,
 }
 
 pub struct ManageProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
@@ -67,10 +67,8 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
             })
             .await;
 
-        if mc_exit_status.success()
-            && let Some(command_str) = post_exit_command
-        {
-            self.run_post_exit(&command_str, &instance_id)?;
+        if mc_exit_status.success() && !post_exit_command.is_empty() {
+            self.run_post_exit(&post_exit_command, &instance_id)?;
         }
 
         Ok(())

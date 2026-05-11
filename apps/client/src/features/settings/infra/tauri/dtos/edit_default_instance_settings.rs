@@ -2,7 +2,7 @@ use aether_core::features::settings::app::{EditDefaultInstanceSettings, EditHook
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use super::{MemorySettingsDto, WindowSizeDto};
+use super::{MemorySettingsDto, WindowSettingsDto};
 
 #[derive(Debug, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -17,7 +17,7 @@ pub struct EditDefaultInstanceSettingsDto {
     pub memory: Option<MemorySettingsDto>,
 
     #[specta(optional)]
-    pub game_resolution: Option<WindowSizeDto>,
+    pub window: Option<WindowSettingsDto>,
 
     #[specta(optional)]
     pub hooks: Option<EditHooksDto>,
@@ -26,17 +26,14 @@ pub struct EditDefaultInstanceSettingsDto {
 #[derive(Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct EditHooksDto {
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    #[specta(optional, type = Option<String>)]
-    pub pre_launch: Option<Option<String>>,
+    #[specta(optional)]
+    pub pre_launch: Option<String>,
 
-    #[specta(optional, type = Option<String>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub wrapper: Option<Option<String>>,
+    #[specta(optional)]
+    pub wrapper: Option<String>,
 
-    #[specta(optional, type = Option<String>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub post_exit: Option<Option<String>>,
+    #[specta(optional)]
+    pub post_exit: Option<String>,
 }
 
 impl From<EditDefaultInstanceSettingsDto> for EditDefaultInstanceSettings {
@@ -45,7 +42,7 @@ impl From<EditDefaultInstanceSettingsDto> for EditDefaultInstanceSettings {
             launch_args: value.launch_args,
             env_vars: value.env_vars,
             memory: value.memory.map(Into::into),
-            game_resolution: value.game_resolution.map(Into::into),
+            window: value.window.map(Into::into),
             hooks: value.hooks.map(Into::into),
         }
     }

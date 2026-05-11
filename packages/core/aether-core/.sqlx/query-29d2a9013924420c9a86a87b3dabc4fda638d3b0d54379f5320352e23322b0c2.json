@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO default_instance_settings (\n                id, launch_args_json, env_vars_json, max_memory, force_fullscreen, \n                window_width, window_height, hook_pre_launch, hook_wrapper, hook_post_exit\n            ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n            ON CONFLICT(id) DO UPDATE SET\n                launch_args_json = excluded.launch_args_json,\n                env_vars_json = excluded.env_vars_json,\n                max_memory = excluded.max_memory,\n                force_fullscreen = excluded.force_fullscreen,\n                window_width = excluded.window_width,\n                window_height = excluded.window_height,\n                hook_pre_launch = excluded.hook_pre_launch,\n                hook_wrapper = excluded.hook_wrapper,\n                hook_post_exit = excluded.hook_post_exit",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "29d2a9013924420c9a86a87b3dabc4fda638d3b0d54379f5320352e23322b0c2"
+}

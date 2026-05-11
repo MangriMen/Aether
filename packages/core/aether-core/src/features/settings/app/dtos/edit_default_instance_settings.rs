@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::features::settings::{DefaultInstanceSettings, Hooks, MemorySettings, WindowSize};
+use crate::features::settings::{DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -8,31 +8,18 @@ pub struct EditDefaultInstanceSettings {
     pub launch_args: Option<Vec<String>>,
     pub env_vars: Option<Vec<(String, String)>>,
     pub memory: Option<MemorySettings>,
-    pub game_resolution: Option<WindowSize>,
+    pub window: Option<WindowSettings>,
     pub hooks: Option<EditHooks>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EditHooks {
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub pre_launch: Option<Option<String>>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub wrapper: Option<Option<String>>,
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub post_exit: Option<Option<String>>,
+    pub pre_launch: Option<String>,
+
+    pub wrapper: Option<String>,
+
+    pub post_exit: Option<String>,
 }
 
 impl EditDefaultInstanceSettings {
@@ -54,8 +41,8 @@ impl EditDefaultInstanceSettings {
             is_changed = true;
         }
 
-        if let Some(game_resolution) = self.game_resolution {
-            settings.set_resolution(game_resolution);
+        if let Some(window) = self.window {
+            settings.set_window(window);
             is_changed = true;
         }
 
@@ -71,13 +58,13 @@ impl EditDefaultInstanceSettings {
 impl EditHooks {
     pub fn apply_to(&self, hooks: &mut Hooks) {
         if let Some(val) = &self.pre_launch {
-            hooks.update_pre_launch(val.clone());
+            hooks.set_pre_launch(val.clone());
         }
         if let Some(val) = &self.wrapper {
-            hooks.update_wrapper(val.clone());
+            hooks.set_wrapper(val.clone());
         }
         if let Some(val) = &self.post_exit {
-            hooks.update_post_exit(val.clone());
+            hooks.set_post_exit(val.clone());
         }
     }
 }

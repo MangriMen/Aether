@@ -39,15 +39,20 @@ export const useResetJavaAndMemorySettingsForm = (
 
   createEffect(() => {
     const launchArgs = settings()?.launchArgs;
-    setValues(form, {
-      launchArgs,
-    });
+
+    if (launchArgs !== undefined) {
+      setValues(form, {
+        launchArgs,
+      });
+    }
   });
 
   createEffect(() => {
     const envVars = settings()?.envVars;
-    setValues(form, {
-      envVars,
-    });
+    if (envVars !== undefined) {
+      setValues(form, {
+        envVars,
+      });
+    }
   });
 };

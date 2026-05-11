@@ -10,6 +10,10 @@ export const JavaAndMemorySettingsSchema = z.object({
   memory: MemorySchema,
   launchArgs: z.string().nullable(),
   envVars: z.string().nullable(),
+
+  overrideMemory: z.boolean().optional(),
+  overrideLaunchArgs: z.boolean().optional(),
+  overrideEnvVars: z.boolean().optional(),
 });
 
 export type JavaAndMemorySettingsSchemaInput = z.input<
