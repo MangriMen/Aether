@@ -13,6 +13,7 @@ import type {
   ThemeContextValue,
 } from '@/shared/model';
 
+import { logError } from '@/shared/lib';
 import {
   COLOR_MODE_TO_THEME_KEY,
   isSystemTheme,
@@ -57,8 +58,9 @@ export const createThemeContext = (
 
   const { colorMode, setColorMode } = useGlobalColorMode();
 
-  const resolveColorMode = (rawTheme: ThemeConfig): ConfigColorMode =>
-    THEME_TO_COLOR_MODE[rawTheme];
+  const resolveColorMode = (
+    rawTheme: ThemeConfig,
+  ): ConfigColorMode | undefined => THEME_TO_COLOR_MODE[rawTheme];
 
   const resolveTheme = (rawTheme: ThemeConfig): Theme => {
     if (isSystemTheme(rawTheme)) {
@@ -75,6 +77,11 @@ export const createThemeContext = (
         batch(() => {
           const newColorMode = resolveColorMode(rawTheme);
           const newTheme = resolveTheme(rawTheme);
+
+          if (newColorMode === undefined) {
+            logError(`Can't resolve color mode ${rawTheme}`);
+            return;
+          }
 
           setColorMode(newColorMode);
           setTheme(newTheme);
@@ -115,11 +122,11 @@ export const createThemeContext = (
 
   const actions: ThemeContextActions = {
     setTheme: setRawTheme,
-    setThemeByColorMode: setThemeByColorMode,
-    setIsActualTransparent: setIsActualTransparent,
-    setTransparencyEnabled: setTransparencyEnabled,
-    setTransparency: setTransparency,
-    setDisableAnimations: setDisableAnimations,
+    setThemeByColorMode,
+    setIsActualTransparent,
+    setTransparencyEnabled,
+    setTransparency,
+    setDisableAnimations,
   };
 
   return [state, actions];

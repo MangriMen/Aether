@@ -1,4 +1,4 @@
-import type { PartialValues } from '@modular-forms/solid';
+import { type PartialValues } from '@modular-forms/solid';
 
 import type {
   EditInstance,
@@ -22,9 +22,8 @@ import type {
 import {
   envVarsToString,
   launchArgsToString,
-  stringToEnvVars,
   stringToLaunchArgs,
-} from '@/widgets/instance-settings-dialog';
+} from '@/entities/settings';
 
 import type {
   GeneralSettingsSchemaInput,
@@ -57,6 +56,8 @@ export const instanceSettingsToWindowSettingsValues = (
           height: resolution[1].toString(),
         }
       : undefined,
+    forceFullscreen: settings.window.data.forceFullscreen,
+    overrideWindowSettings: settings.window.isActive,
   };
 };
 
@@ -69,7 +70,7 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
 
   const { memory } = settings;
 
-  const maximum = memory === null ? null : memory?.data.maximum;
+  const maximum = memory.data.maximum;
   const launchArgs = settings.launchArgs.data;
   const envVars = settings.envVars.data;
 
@@ -77,8 +78,11 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
     memory: {
       maximum,
     },
-    launchArgs: launchArgs ? launchArgsToString(launchArgs) : null,
-    envVars: envVars ? envVarsToString(envVars) : null,
+    launchArgs: launchArgsToString(launchArgs),
+    envVars: envVarsToString(envVars),
+    overrideMemory: settings.memory.isActive,
+    overrideEnvVars: settings.envVars.isActive,
+    overrideLaunchArgs: settings.launchArgs.isActive,
   };
 };
 
@@ -93,6 +97,7 @@ export const instanceSettingsToHooksSettingsValues = (
     preLaunch: settings.hooks?.data.preLaunch,
     wrapper: settings.hooks?.data.wrapper,
     postExit: settings.hooks?.data.postExit,
+    overrideHooks: settings.hooks?.isActive,
   };
 };
 
@@ -109,17 +114,28 @@ export const generalSettingsValuesToEditInstance = (
 };
 
 export const windowSettingsValuesToEditInstanceSettings = (
+  instance: Instance,
   values: Partial<WindowSettingsSchemaOutput>,
 ): EditInstanceSettings => {
   const dto: EditInstanceSettings = {};
 
-  if (values.resolution !== undefined) {
+  if (values.forceFullscreen !== undefined || values.resolution !== undefined) {
+    const forceFullscreen =
+      values.forceFullscreen ?? instance.window.data.forceFullscreen;
+
+    const gameResolution: [number, number] =
+      values.resolution !== undefined
+        ? [values.resolution.width, values.resolution.height]
+        : instance.window.data.gameResolution;
+
     dto.window = {
-      forceFullscreen: false,
-      gameResolution: values.resolution === null
-      ? null
-      : [values.resolution.width, values.resolution.height];
-    }
+      forceFullscreen,
+      gameResolution,
+    };
+  }
+
+  if (values.overrideWindowSettings !== undefined) {
+    dto.overrideWindowSettings = values.overrideWindowSettings;
   }
 
   return dto;
@@ -130,20 +146,16 @@ export const javaAndMemorySettingsValuesToEditInstanceSettings = (
 ): EditInstanceSettings => {
   const dto: EditInstanceSettings = {};
 
-  const { memory } = values;
-
-  if (memory !== undefined && memory.maximum !== undefined) {
-    dto.memory = memory.maximum !== null ? { maximum: memory.maximum } : null;
+  if (values.memory !== undefined) {
+    dto.memory = { maximum: values.memory.maximum };
   }
 
   if (values.launchArgs !== undefined) {
-    dto.launchArgs =
-      values.launchArgs === null ? null : stringToLaunchArgs(values.launchArgs);
+    dto.launchArgs = stringToLaunchArgs(values.launchArgs);
   }
 
   if (values.envVars !== undefined) {
-    dto.envVars =
-      values.envVars === null ? null : stringToEnvVars(values.envVars);
+    dto.envVars = values.envVars;
   }
 
   if (values.overrideMemory !== undefined) {
@@ -166,16 +178,23 @@ export const hooksSettingsValuesToEditInstanceSettings = (
 ): EditInstanceSettings => {
   const dto: EditInstanceSettings = {};
 
-  if (
-    values.preLaunch !== undefined ||
-    values.wrapper !== undefined ||
-    values.postExit !== undefined
-  ) {
+  if (values.preLaunch !== undefined) {
     dto.hooks = {
+      ...dto.hooks,
       preLaunch: values.preLaunch,
-      wrapper: values.wrapper,
-      postExit: values.postExit,
     };
+  }
+
+  if (values.wrapper !== undefined) {
+    dto.hooks = { ...dto.hooks, wrapper: values.wrapper };
+  }
+
+  if (values.postExit !== undefined) {
+    dto.hooks = { ...dto.hooks, postExit: values.postExit };
+  }
+
+  if (values.overrideHooks !== undefined) {
+    dto.overrideHooks = values.overrideHooks;
   }
 
   return dto;

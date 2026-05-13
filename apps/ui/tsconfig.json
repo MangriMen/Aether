@@ -20,6 +20,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "incremental": true,
+    "noUncheckedIndexedAccess": true,
     //Paths
     "paths": {
       "@/app/*": ["./src/app/*"],

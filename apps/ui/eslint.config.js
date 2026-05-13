@@ -33,6 +33,7 @@ export default [
     rules: {
       'no-unused-vars': 'off',
       'prefer-object-spread': 'warn',
+      'object-shorthand': ['error', 'always'],
       curly: 'error',
       'no-debugger': 'warn',
       'no-console': 'warn',

@@ -2,6 +2,7 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
+import type { DefaultInstanceSettings } from '@/entities/settings';
 import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks';
 
 import {
@@ -9,6 +10,7 @@ import {
   isEditInstanceSettingsEmpty,
   type Instance,
 } from '@/entities/instances';
+import { defaultInstanceSettingsToHooksSettingsValues } from '@/pages/settings';
 
 import {
   hooksSettingsValuesToEditInstanceSettings,
@@ -20,14 +22,20 @@ export interface UseHooksSettingsHandler {
   editInstance: Accessor<
     (args: { id: string; edit: EditInstance }) => Promise<unknown>
   >;
+  defaultSettings?: Accessor<DefaultInstanceSettings | undefined>;
 }
 
 export const useHooksSettingsHandler = ({
   instance,
+  defaultSettings,
   editInstance,
 }: UseHooksSettingsHandler) => {
   const initialValues = createMemo(() =>
     instanceSettingsToHooksSettingsValues(instance()),
+  );
+
+  const defaultValues = createMemo(() =>
+    defaultInstanceSettingsToHooksSettingsValues(defaultSettings?.()),
   );
 
   const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
@@ -40,5 +48,5 @@ export const useHooksSettingsHandler = ({
     editInstance()({ id: instance().id, edit });
   };
 
-  return { initialValues, onChange };
+  return { initialValues, defaultValues, onChange };
 };

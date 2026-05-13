@@ -394,6 +394,11 @@
       "test": "Тест",
       "testFailed": "Ошибка",
       "testSuccess": "Успех"
+    },
+    "usedFromDefaultSettings": "Используется из настроек по умолчанию",
+    "environmentVariablesError": {
+      "emptyKey": "Пустой ключ {{part}}. \nДолжно быть в формате «ключ=значение».",
+      "invalidFormat": "Неверный формат {{part}}. \nДолжно быть в формате «ключ=значение»."
     }
   },
   "update": {

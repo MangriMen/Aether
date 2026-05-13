@@ -30,19 +30,16 @@ export const MemorySlider: Component<MemorySliderProps> = (props) => {
       return false;
     }
 
-    const val = value();
-    if (val?.length !== 1) {
-      return false;
-    }
+    const firstValue = value()[0];
 
-    return val[0] >= local.warningValue;
+    return firstValue !== undefined ? firstValue >= local.warningValue : false;
   });
 
   return (
     <Slider class={cn('flex flex-col', local.class)} {...others}>
       <SliderTrack>
         <SliderFill
-          class={cn({
+          class={cn('transition-[background-color]', {
             'bg-warning': isWarningLimitPassed(),
           })}
         />

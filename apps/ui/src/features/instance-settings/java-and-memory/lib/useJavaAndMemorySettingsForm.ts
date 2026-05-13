@@ -14,11 +14,6 @@ export const useJavaAndMemorySettingsForm = (): ReturnType<
 > => {
   const [form, components] = createForm<JavaAndMemorySettingsSchemaInput>({
     validate: zodForm(JavaAndMemorySettingsSchema),
-    initialValues: {
-      memory: { maximum: null },
-      launchArgs: null,
-      envVars: null,
-    },
   });
 
   return [form, components];
@@ -30,6 +25,27 @@ export const useResetJavaAndMemorySettingsForm = (
     PartialValues<JavaAndMemorySettingsSchemaInput> | undefined
   >,
 ) => {
+  createEffect(() => {
+    const overrideMemory = settings()?.overrideMemory;
+    if (overrideMemory !== undefined) {
+      setValues(form, { overrideMemory });
+    }
+  });
+
+  createEffect(() => {
+    const overrideLaunchArgs = settings()?.overrideLaunchArgs;
+    if (overrideLaunchArgs !== undefined) {
+      setValues(form, { overrideLaunchArgs });
+    }
+  });
+
+  createEffect(() => {
+    const overrideEnvVars = settings()?.overrideEnvVars;
+    if (overrideEnvVars !== undefined) {
+      setValues(form, { overrideEnvVars });
+    }
+  });
+
   createEffect(() => {
     const maximum = settings()?.memory?.maximum;
     if (maximum !== undefined) {

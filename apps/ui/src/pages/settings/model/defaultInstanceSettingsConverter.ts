@@ -1,10 +1,6 @@
 import type { PartialValues } from '@modular-forms/solid';
 
 import type {
-  DefaultInstanceSettings,
-  EditDefaultInstanceSettings,
-} from '@/entities/settings';
-import type {
   HooksSettingsSchemaInput,
   HooksSettingsSchemaOutput,
 } from '@/features/instance-settings/hooks';
@@ -20,9 +16,10 @@ import type {
 import {
   envVarsToString,
   launchArgsToString,
-  stringToEnvVars,
   stringToLaunchArgs,
-} from '@/widgets/instance-settings-dialog';
+  type DefaultInstanceSettings,
+  type EditDefaultInstanceSettings,
+} from '@/entities/settings';
 
 export const defaultInstanceSettingsToWindowSettingsValues = (
   settings: DefaultInstanceSettings | undefined,
@@ -31,7 +28,7 @@ export const defaultInstanceSettingsToWindowSettingsValues = (
     return;
   }
 
-  const resolution = settings.window.game_resolution;
+  const resolution = settings.window.gameResolution;
 
   return {
     resolution: resolution
@@ -40,6 +37,7 @@ export const defaultInstanceSettingsToWindowSettingsValues = (
           height: resolution[1].toString(),
         }
       : undefined,
+    forceFullscreen: settings.window.forceFullscreen,
   };
 };
 
@@ -99,16 +97,16 @@ export const javaAndMemorySettingsValuesToEditDefaultInstanceSettings = (
 ): EditDefaultInstanceSettings => {
   const dto: EditDefaultInstanceSettings = {};
 
-  if (values.memory?.maximum) {
+  if (values.memory?.maximum !== undefined) {
     dto.memory = { maximum: values.memory.maximum };
   }
 
-  if (values.launchArgs) {
+  if (values.launchArgs !== undefined) {
     dto.launchArgs = stringToLaunchArgs(values.launchArgs);
   }
 
-  if (values.envVars) {
-    dto.envVars = stringToEnvVars(values.envVars);
+  if (values.envVars !== undefined) {
+    dto.envVars = values.envVars;
   }
 
   return dto;

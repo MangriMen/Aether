@@ -1,8 +1,8 @@
-import type { PolymorphicProps } from '@kobalte/core';
 import type {
   FieldElementProps,
   FieldPath,
   FieldValues,
+  Maybe,
 } from '@modular-forms/solid';
 
 import {
@@ -12,21 +12,16 @@ import {
   validate,
   type FormStore,
 } from '@modular-forms/solid';
-import {
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { WindowSettingsSchemaInput } from '@/features/instance-settings/window';
 import type { TFunction } from '@/shared/model';
-import type { TextFieldInputProps } from '@/shared/ui';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { LabeledField, textFieldLabelVariants } from '@/shared/ui';
+import { LabeledField, StandaloneTextFieldErrorMessage } from '@/shared/ui';
 
+import { InheritanceLabel } from './InheritanceLabel';
 import { ResolutionInput } from './ResolutionInput';
 import { ResolutionSelectButton } from './ResolutionSelectButton';
 
@@ -37,6 +32,7 @@ export type ResolutionFieldProps = Omit<
   form: FormStore<WindowSettingsSchemaInput>;
   defaultWidth?: number | string;
   defaultHeight?: number | string;
+  forceDefaultValuesOnDisabled?: boolean;
   disabled?: boolean;
   errorMessage?: string;
   onSubmit?: (width: number, height: number) => void;
@@ -69,6 +65,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     'defaultWidth',
     'defaultHeight',
     'onSubmit',
+    'forceDefaultValuesOnDisabled',
     'disabled',
     'errorMessage',
     'class',
@@ -109,26 +106,52 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     local.onSubmit?.(Number(width), Number(height));
   };
 
-  const mergeInputProps = <
+  const handleBlur = <
     TFieldValues extends FieldValues,
     TFieldName extends FieldPath<TFieldValues>,
   >(
-    inputProps: FieldElementProps<TFieldValues, TFieldName>,
-  ): PolymorphicProps<'input', TextFieldInputProps<'input'>> => ({
-    type: 'text',
-    ...inputProps,
-    onBlur: (e) => {
-      if (typeof inputProps.onBlur === 'function') {
-        inputProps.onBlur(e);
-      }
-      handleResolutionSubmit();
+    e: FocusEvent & {
+      currentTarget: HTMLInputElement;
+      target: HTMLInputElement;
     },
-  });
+    inputProps: FieldElementProps<TFieldValues, TFieldName>,
+  ) => {
+    if (typeof inputProps.onBlur === 'function') {
+      inputProps.onBlur(e);
+    }
+    handleResolutionSubmit();
+  };
+
+  const getWidthDisplayValue = (value: Maybe<string>) => {
+    const defaultWidth = local.defaultWidth?.toString() ?? '';
+
+    if (local.disabled && local.forceDefaultValuesOnDisabled) {
+      return defaultWidth;
+    }
+
+    return value ?? defaultWidth;
+  };
+
+  const getHeightDisplayValue = (value: Maybe<string>) => {
+    const defaultHeight = local.defaultHeight?.toString() ?? '';
+
+    if (local.disabled && local.forceDefaultValuesOnDisabled) {
+      return defaultHeight;
+    }
+
+    return value ?? defaultHeight;
+  };
 
   return (
     <LabeledField
       class={cn('text-lg', local.class)}
-      label={t('instanceSettings.resolution')}
+      label={
+        <InheritanceLabel
+          label={t('instanceSettings.resolution')}
+          inheritanceLabel={t('settings.usedFromDefaultSettings')}
+          isInheritance={local.disabled && local.forceDefaultValuesOnDisabled}
+        />
+      }
       {...others}
     >
       <div class='flex flex-col gap-2'>
@@ -137,9 +160,12 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
             <Field of={local.form} name='resolution.width'>
               {(field, inputProps) => (
                 <ResolutionInput
-                  value={field.value ?? local.defaultWidth?.toString() ?? ''}
+                  value={getWidthDisplayValue(field.value)}
                   disabled={local.disabled}
-                  inputProps={mergeInputProps(inputProps)}
+                  inputProps={{
+                    ...inputProps,
+                    onBlur: (e) => handleBlur(e, inputProps),
+                  }}
                 />
               )}
             </Field>
@@ -151,9 +177,12 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
             <Field of={local.form} name='resolution.height'>
               {(field, inputProps) => (
                 <ResolutionInput
-                  value={field.value ?? local.defaultHeight?.toString() ?? ''}
+                  value={getHeightDisplayValue(field.value)}
                   disabled={local.disabled}
-                  inputProps={mergeInputProps(inputProps)}
+                  inputProps={{
+                    ...inputProps,
+                    onBlur: (e) => handleBlur(e, inputProps),
+                  }}
                 />
               )}
             </Field>
@@ -169,11 +198,11 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
           {(width) => (
             <Field of={local.form} name='resolution.height'>
               {(height) => (
-                <Show when={width.error || height.error}>
-                  <div class={textFieldLabelVariants({ variant: 'error' })}>
-                    {translateError(t, width.error || height.error)}
-                  </div>
-                </Show>
+                <StandaloneTextFieldErrorMessage
+                  showError={Boolean(width.error) || Boolean(height.error)}
+                >
+                  {translateError(t, width.error || height.error)}
+                </StandaloneTextFieldErrorMessage>
               )}
             </Field>
           )}

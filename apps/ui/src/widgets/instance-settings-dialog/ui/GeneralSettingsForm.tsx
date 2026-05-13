@@ -49,7 +49,6 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
     GeneralSettingsSchema,
     form,
     'name',
-    (value) => value,
     (value) => {
       local.onChangePartial?.({
         name: value,

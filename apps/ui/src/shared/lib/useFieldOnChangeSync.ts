@@ -4,7 +4,7 @@ import type {
   FieldPath,
   FieldPathValue,
 } from '@modular-forms/solid';
-import type { ZodObject, ZodTypeAny } from 'zod';
+import type { AnyZodObject, z, ZodTypeAny } from 'zod';
 
 import { getValue, setValue, validate } from '@modular-forms/solid';
 
@@ -12,14 +12,18 @@ export const useFieldOnChangeSync = <
   TFieldValues extends FieldValues,
   TFieldPath extends FieldPath<TFieldValues>,
   TFieldValue extends FieldPathValue<TFieldValues, TFieldPath>,
-  TSyncValue = unknown,
+  // Извлекаем тип Output из переданной схемы
+  TSchema extends ZodTypeAny,
+  TTransformedValue = TSchema extends AnyZodObject
+    ? z.output<TSchema>[TFieldPath]
+    : z.output<TSchema>,
+  TSyncValue = TTransformedValue,
 >(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: ZodTypeAny | ZodObject<any>,
+  schema: TSchema,
   form: FormStore<TFieldValues>,
   path: TFieldPath,
-  syncMapper: (value: TFieldValue) => TSyncValue,
-  onSync: (value: TSyncValue) => unknown,
+  onSync: (value: TSyncValue) => void,
+  syncMapper?: (value: TTransformedValue) => TSyncValue,
 ) => {
   return async (value?: TFieldValue) => {
     if (value !== undefined) {
@@ -31,24 +35,33 @@ export const useFieldOnChangeSync = <
       shouldFocus: false,
     });
 
-    if (!valid) {
-      return;
-    }
+    if (!valid) return;
 
     const raw = getValue(form, path, { shouldValid: true });
 
-    let finalValue: TFieldValue;
+    let fieldSchema: ZodTypeAny = schema;
 
-    if ('pick' in schema && typeof schema.pick === 'function') {
-      const parsed = schema.pick({ [path]: true }).safeParse({ [path]: raw });
-      if (!parsed.success) return;
-      finalValue = parsed.data[path];
-    } else {
-      const parsed = (schema as ZodTypeAny).safeParse(raw);
-      if (!parsed.success) return;
-      finalValue = parsed.data;
+    if ('shape' in schema) {
+      const objectSchema = schema as unknown as AnyZodObject;
+      const shapeField = objectSchema.shape[path as string] as
+        | ZodTypeAny
+        | undefined;
+      if (shapeField) {
+        fieldSchema = shapeField;
+      }
     }
 
-    onSync(syncMapper(finalValue));
+    const result = fieldSchema.safeParse(raw);
+
+    if (!result.success) return;
+
+    // Теперь parsedValue имеет корректный тип из схемы, а не unknown
+    const parsedValue = result.data as TTransformedValue;
+
+    const finalValue = syncMapper
+      ? syncMapper(parsedValue)
+      : (parsedValue as unknown as TSyncValue);
+
+    onSync(finalValue);
   };
 };

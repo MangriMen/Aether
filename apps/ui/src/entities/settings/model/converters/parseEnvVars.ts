@@ -6,4 +6,4 @@ export const stringToEnvVars = (value: string): [string, string][] =>
 
 export const envVarsToString = (
   value: [string, string][] | undefined,
-): string | undefined => value?.map(([key, val]) => `${key}=${val}`).join(';');
+): string | undefined => value?.map(([key, val]) => `${key}=${val}`).join('; ');

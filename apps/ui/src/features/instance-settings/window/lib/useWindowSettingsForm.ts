@@ -13,9 +13,6 @@ export const useWindowSettingsForm = (): ReturnType<
 > => {
   const [form, components] = createForm({
     validate: zodForm(WindowSettingsSchema),
-    initialValues: {
-      resolution: undefined,
-    },
   });
 
   return [form, components];
@@ -26,13 +23,21 @@ export const useResetWindowSettingsFormValues = (
   initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
-    const { width, height } = initialValues()?.resolution ?? {};
+    const overrideWindowSettings = initialValues()?.overrideWindowSettings;
 
-    if (width && height) {
+    if (overrideWindowSettings !== undefined) {
+      setValues(form, { overrideWindowSettings });
+    }
+  });
+
+  createEffect(() => {
+    const resolution = initialValues()?.resolution;
+
+    if (resolution?.width && resolution?.height) {
       setValues(form, {
         resolution: {
-          width,
-          height,
+          width: resolution.width,
+          height: resolution.height,
         },
       });
     }

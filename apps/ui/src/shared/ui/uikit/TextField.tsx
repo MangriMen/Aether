@@ -1,10 +1,10 @@
-import type { PolymorphicProps } from '@kobalte/core';
 import type { VariantProps } from 'class-variance-authority';
-import type { ValidComponent } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 
+import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 import * as TextFieldPrimitive from '@kobalte/core/text-field';
 import { cva } from 'class-variance-authority';
-import { splitProps } from 'solid-js';
+import { splitProps, Show } from 'solid-js';
 
 import { cn } from '../../lib';
 
@@ -153,6 +153,34 @@ const TextFieldErrorMessage = <T extends ValidComponent = 'div'>(
       class={cn(labelVariants({ variant: 'error' }), local.class)}
       {...others}
     />
+  );
+};
+
+type StandaloneTextFieldErrorMessageProps<T extends ValidComponent = 'div'> =
+  TextFieldErrorMessageProps<T> & {
+    showError?: boolean;
+    children?: JSX.Element;
+  };
+
+export const StandaloneTextFieldErrorMessage = <
+  T extends ValidComponent = 'div',
+>(
+  props: PolymorphicProps<T, StandaloneTextFieldErrorMessageProps<T>>,
+) => {
+  const [local, others] = splitProps(props, [
+    'showError',
+    'forceMount',
+    'class',
+    'as',
+  ]);
+  return (
+    <Show when={(local.showError && props.children) || local.forceMount}>
+      <Polymorphic
+        as={local.as ?? 'div'}
+        class={cn(labelVariants({ variant: 'error' }), local.class)}
+        {...others}
+      />
+    </Show>
   );
 };
 

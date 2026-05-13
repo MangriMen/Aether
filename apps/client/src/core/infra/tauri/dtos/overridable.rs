@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct OverridableDto<T> {
     pub is_active: bool,
     pub data: T,

@@ -9,17 +9,23 @@ import { useHooksSettingsHandler } from '../lib';
 export type HooksTabProps = InstanceSettingsTabProps & { class?: string };
 
 export const HooksTab: Component<HooksTabProps> = (props) => {
-  const [local, others] = splitProps(props, ['instance', 'editInstance']);
+  const [local, others] = splitProps(props, [
+    'instance',
+    'editInstance',
+    'defaultSettings',
+  ]);
 
-  const { initialValues, onChange } = useHooksSettingsHandler({
+  const { initialValues, defaultValues, onChange } = useHooksSettingsHandler({
     instance: () => local.instance,
     editInstance: () => local.editInstance,
+    defaultSettings: () => local.defaultSettings,
   });
 
   return (
     <HooksSettingsForm
       overridable
       initialValues={initialValues}
+      defaultValues={defaultValues}
       onChangePartial={onChange}
       {...others}
     />

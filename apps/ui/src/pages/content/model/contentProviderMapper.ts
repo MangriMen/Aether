@@ -8,7 +8,7 @@ export const contentProviderToOption = <T extends ContentProviderEntry>(
   value: T,
 ): Option<T> => ({
   name: value.capability.name,
-  value: value,
+  value,
 });
 
 export function contentProvidersToOptions<T extends ContentProviderEntry>(
