@@ -39,7 +39,9 @@ const SelectThemeByColorMode: Component<SelectThemeByColorModeProps> = (
   const [themeContext, { setThemeByColorMode: setThemeForColorMode }] =
     useThemeContext();
 
-  const options = createMemo(() => THEME_BY_MODE_OPTIONS[props.colorMode]);
+  const options = createMemo(
+    () => THEME_BY_MODE_OPTIONS[props.colorMode] ?? [],
+  );
 
   const [currentTheme, setCurrentTheme] = createSignal<ThemeConfig>('light');
 

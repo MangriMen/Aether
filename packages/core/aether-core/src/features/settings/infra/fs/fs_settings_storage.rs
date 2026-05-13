@@ -1,10 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
+use tracing::warn;
 
 use crate::{
     features::settings::{Settings, SettingsError, SettingsStorage},
-    shared::{IoError, JsonValueStore, UpdateAction},
+    shared::{IoError, JsonValueStore, UpdateAction, read_json_async},
 };
 
 pub struct FsSettingsStorage {
@@ -24,12 +25,33 @@ impl FsSettingsStorage {
     pub fn get_file_path(&self) -> PathBuf {
         self.path.clone()
     }
+
+    async fn load_settings_internal(&self) -> Result<Settings, SettingsError> {
+        match self.store.read().await {
+            Ok(instance) => Ok(instance),
+            Err(original_err) => {
+                match read_json_async::<super::settings::SettingsV1>(self.path.clone()).await {
+                    Ok(v1) => {
+                        warn!("Migrating instance from V1 at {:?}", self.path.clone());
+                        let migrated: Settings = v1.into();
+
+                        if let Err(e) = self.store.write(&migrated).await {
+                            warn!("Failed to save migrated instance: {:?}", e);
+                        }
+
+                        Ok(migrated)
+                    }
+                    Err(_) => Err(SettingsError::Storage(original_err.to_string())),
+                }
+            }
+        }
+    }
 }
 
 #[async_trait]
 impl SettingsStorage for FsSettingsStorage {
     async fn get(&self) -> Result<Settings, SettingsError> {
-        Ok(self.store.read().await?)
+        self.load_settings_internal().await
     }
 
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {

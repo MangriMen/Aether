@@ -114,7 +114,11 @@ impl<
                     loader: instance.loader,
                     loader_version: instance.loader_version.clone(),
                     install_dir,
-                    java_path: instance.java_path.clone(),
+                    java_path: if instance.java_path.data.is_empty() {
+                        None
+                    } else {
+                        Some(instance.java_path.data.clone())
+                    },
                 },
                 loading_bar.as_ref(),
                 force,

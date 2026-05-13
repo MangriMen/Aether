@@ -21,11 +21,21 @@ export const useResetHooksSettingsFormValues = (
   initialValues: Accessor<PartialValues<HooksSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
+    const overrideHooks = initialValues()?.overrideHooks;
+
+    if (overrideHooks !== undefined) {
+      setValues(form, {
+        overrideHooks,
+      });
+    }
+  });
+
+  createEffect(() => {
     const preLaunch = initialValues()?.preLaunch;
 
-    if (preLaunch) {
+    if (preLaunch !== undefined) {
       setValues(form, {
-        preLaunch: preLaunch,
+        preLaunch,
       });
     }
   });
@@ -33,7 +43,7 @@ export const useResetHooksSettingsFormValues = (
   createEffect(() => {
     const wrapper = initialValues()?.wrapper;
 
-    if (wrapper) {
+    if (wrapper !== undefined) {
       setValues(form, {
         wrapper,
       });
@@ -41,11 +51,11 @@ export const useResetHooksSettingsFormValues = (
   });
 
   createEffect(() => {
-    const post_exit = initialValues()?.postExit;
+    const postExit = initialValues()?.postExit;
 
-    if (post_exit) {
+    if (postExit !== undefined) {
       setValues(form, {
-        postExit: post_exit,
+        postExit,
       });
     }
   });

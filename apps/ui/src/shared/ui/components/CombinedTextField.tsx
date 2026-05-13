@@ -3,6 +3,8 @@ import type { Component, JSX } from 'solid-js';
 
 import { Show, splitProps } from 'solid-js';
 
+import type { PartialBy } from '@/shared/model';
+
 import type {
   TextFieldInputProps,
   TextFieldLabelProps,
@@ -21,7 +23,10 @@ export type CombinedTextFieldProps = TextFieldRootProps & {
   label?: JSX.Element;
   errorMessage?: string;
   labelProps?: TextFieldLabelProps<'label'>;
-  inputProps?: PolymorphicProps<'input', TextFieldInputProps<'input'>>;
+  inputProps?: PartialBy<
+    PolymorphicProps<'input', TextFieldInputProps<'input'>>,
+    'type'
+  >;
   leadingIcons?: JSX.Element;
   trailingIcons?: JSX.Element;
 };

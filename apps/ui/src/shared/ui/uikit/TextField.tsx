@@ -1,10 +1,10 @@
-import type { PolymorphicProps } from '@kobalte/core';
 import type { VariantProps } from 'class-variance-authority';
-import type { ValidComponent } from 'solid-js';
+import type { JSX, ValidComponent } from 'solid-js';
 
+import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 import * as TextFieldPrimitive from '@kobalte/core/text-field';
 import { cva } from 'class-variance-authority';
-import { splitProps } from 'solid-js';
+import { splitProps, Show } from 'solid-js';
 
 import { cn } from '../../lib';
 
@@ -54,7 +54,7 @@ const TextFieldInput = <T extends ValidComponent = 'input'>(
     <TextFieldPrimitive.Input
       type={local.type}
       class={cn(
-        'flex h-10 w-full rounded-md border data-[invalid]:border-destructive bg-card/card focus:bg-background/solid-active px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full rounded-md border data-[invalid]:border-destructive bg-card/card enabled:read-only:text-muted-foreground enabled:read-only:focus:bg-card/card focus:bg-background/solid-active px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
         local.class,
       )}
       autocomplete='off'
@@ -153,6 +153,34 @@ const TextFieldErrorMessage = <T extends ValidComponent = 'div'>(
       class={cn(labelVariants({ variant: 'error' }), local.class)}
       {...others}
     />
+  );
+};
+
+type StandaloneTextFieldErrorMessageProps<T extends ValidComponent = 'div'> =
+  TextFieldErrorMessageProps<T> & {
+    showError?: boolean;
+    children?: JSX.Element;
+  };
+
+export const StandaloneTextFieldErrorMessage = <
+  T extends ValidComponent = 'div',
+>(
+  props: PolymorphicProps<T, StandaloneTextFieldErrorMessageProps<T>>,
+) => {
+  const [local, others] = splitProps(props, [
+    'showError',
+    'forceMount',
+    'class',
+    'as',
+  ]);
+  return (
+    <Show when={(local.showError && props.children) || local.forceMount}>
+      <Polymorphic
+        as={local.as ?? 'div'}
+        class={cn(labelVariants({ variant: 'error' }), local.class)}
+        {...others}
+      />
+    </Show>
   );
 };
 

@@ -7,9 +7,8 @@ pub struct DefaultInstanceSettings {
     env_vars: Vec<(String, String)>,
 
     memory: MemorySettings,
-    game_resolution: WindowSize,
-    #[serde(default)]
-    force_fullscreen: bool,
+
+    window: WindowSettings,
 
     hooks: Hooks,
 }
@@ -19,16 +18,14 @@ impl DefaultInstanceSettings {
         launch_args: Vec<String>,
         env_vars: Vec<(String, String)>,
         memory: MemorySettings,
-        game_resolution: WindowSize,
-        force_fullscreen: bool,
+        window: WindowSettings,
         hooks: Hooks,
     ) -> Self {
         Self {
             launch_args,
             env_vars,
             memory,
-            game_resolution,
-            force_fullscreen,
+            window,
             hooks,
         }
     }
@@ -41,16 +38,12 @@ impl DefaultInstanceSettings {
         &self.env_vars
     }
 
-    pub fn memory(&self) -> MemorySettings {
-        self.memory
+    pub fn memory(&self) -> &MemorySettings {
+        &self.memory
     }
 
-    pub fn game_resolution(&self) -> WindowSize {
-        self.game_resolution
-    }
-
-    pub fn force_fullscreen(&self) -> bool {
-        self.force_fullscreen
+    pub fn window(&self) -> &WindowSettings {
+        &self.window
     }
 
     pub fn hooks(&self) -> &Hooks {
@@ -73,8 +66,8 @@ impl DefaultInstanceSettings {
         self.memory = memory;
     }
 
-    pub fn set_resolution(&mut self, resolution: WindowSize) {
-        self.game_resolution = resolution;
+    pub fn set_window(&mut self, window: WindowSettings) {
+        self.window = window;
     }
 }
 
@@ -129,30 +122,60 @@ impl WindowSize {
     }
 }
 
-/// A struct representing various hooks that can be configured for specific actions
+/// Represents the visual configuration of the game window.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct WindowSettings {
+    /// Whether the game should start in full-screen mode.
+    force_fullscreen: bool,
+    /// The specific width and height settings for the game window.
+    game_resolution: WindowSize,
+}
+
+impl WindowSettings {
+    pub fn new(force_fullscreen: bool, game_resolution: WindowSize) -> Self {
+        Self {
+            force_fullscreen,
+            game_resolution,
+        }
+    }
+
+    pub fn force_fullscreen(&self) -> bool {
+        self.force_fullscreen
+    }
+
+    pub fn game_resolution(&self) -> WindowSize {
+        self.game_resolution
+    }
+
+    pub fn set_fullscreen(&mut self, enabled: bool) {
+        self.force_fullscreen = enabled;
+    }
+
+    pub fn set_resolution(&mut self, resolution: WindowSize) {
+        self.game_resolution = resolution;
+    }
+}
+
+/// A struct representing various hooks configured for specific actions
 /// in the application lifecycle.
 ///
+/// Each field contains a command or script path. An empty string indicates
+/// that no hook is defined for that specific lifecycle stage.
+///
 /// # Fields
-/// - `pre_launch`: An optional string representing a command or script to be executed
-///   before the game launches.
-/// - `wrapper`: An optional string representing a wrapper command or script to be used
-///   during the game's execution.
-/// - `post_exit`: An optional string representing a command or script to be executed
-///   after the game exits.
+/// - `pre_launch`: A command or script to be executed before the game starts.
+/// - `wrapper`: A command or script used to wrap the game's execution process.
+/// - `post_exit`: A command or script to be executed after the game process terminates.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Hooks {
-    pre_launch: Option<String>,
-    wrapper: Option<String>,
-    post_exit: Option<String>,
+    pre_launch: String,
+    wrapper: String,
+    post_exit: String,
 }
 
 impl Hooks {
-    pub fn new(
-        pre_launch: Option<String>,
-        wrapper: Option<String>,
-        post_exit: Option<String>,
-    ) -> Self {
+    pub fn new(pre_launch: String, wrapper: String, post_exit: String) -> Self {
         Self {
             pre_launch,
             wrapper,
@@ -160,23 +183,23 @@ impl Hooks {
         }
     }
 
-    pub fn pre_launch(&self) -> Option<&String> {
-        self.pre_launch.as_ref()
+    pub fn pre_launch(&self) -> &str {
+        &self.pre_launch
     }
-    pub fn wrapper(&self) -> Option<&String> {
-        self.wrapper.as_ref()
+    pub fn wrapper(&self) -> &str {
+        &self.wrapper
     }
-    pub fn post_exit(&self) -> Option<&String> {
-        self.post_exit.as_ref()
+    pub fn post_exit(&self) -> &str {
+        &self.post_exit
     }
 
-    pub fn update_pre_launch(&mut self, val: Option<String>) {
+    pub fn set_pre_launch(&mut self, val: String) {
         self.pre_launch = val;
     }
-    pub fn update_wrapper(&mut self, val: Option<String>) {
+    pub fn set_wrapper(&mut self, val: String) {
         self.wrapper = val;
     }
-    pub fn update_post_exit(&mut self, val: Option<String>) {
+    pub fn set_post_exit(&mut self, val: String) {
         self.post_exit = val;
     }
 }

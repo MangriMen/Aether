@@ -8,4 +8,4 @@ export const getContentIdFromUpdateInfo = (
   contentFile: ContentFile,
   providerId: ProviderId,
 ): string | undefined =>
-  contentFile.update?.[providerIdToString(providerId)].contentId;
+  contentFile.update?.[providerIdToString(providerId)]?.contentId;

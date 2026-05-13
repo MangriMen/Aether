@@ -1,4 +1,4 @@
-import { getValues, type PartialValues } from '@modular-forms/solid';
+import { setValue, type PartialValues } from '@modular-forms/solid';
 import { createMemo, Show, splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
@@ -12,7 +12,6 @@ import {
   useWindowSettingsForm,
 } from '../lib';
 import {
-  WindowSettingsSchema,
   type WindowSettingsSchemaInput,
   type WindowSettingsSchemaOutput,
 } from '../model';
@@ -42,7 +41,7 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form }] = useWindowSettingsForm();
+  const [form, { Form, Field }] = useWindowSettingsForm();
   useResetWindowSettingsFormValues(form, local.initialValues);
 
   const handleResolutionSubmit = (width: number, height: number) => {
@@ -54,44 +53,51 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
     });
   };
 
-  const isOverride = createMemo(
-    () => local.initialValues()?.resolution !== undefined,
-  );
-
-  const handleOverrideChange = async (value: boolean) => {
-    if (value) {
-      const raw = getValues(form, { shouldValid: true });
-      const parsed = WindowSettingsSchema.safeParse(raw);
-
-      if (!parsed.success) {
-        return;
-      }
-
-      local.onChangePartial?.(parsed.data);
-    } else {
-      local.onChangePartial?.({ resolution: null });
-    }
+  const handleOverrideChange = (value: boolean) => {
+    local.onChangePartial?.({
+      overrideWindowSettings: value,
+    });
   };
 
   return (
     <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <Show when={local.overridable}>
-        <OverrideCheckbox
-          class='mb-1'
-          label={t('instanceSettings.customWindowSettings')}
-          enabledValue={() => true}
-          disabledValue={() => false}
-          checked={isOverride()}
-          onOverrideChange={handleOverrideChange}
-        />
-      </Show>
-      <ResolutionPicker
-        form={form}
-        disabled={!isOverride()}
-        defaultWidth={local.defaultValues?.()?.resolution?.width}
-        defaultHeight={local.defaultValues?.()?.resolution?.height}
-        onSubmit={handleResolutionSubmit}
-      />
+      <Field name='overrideWindowSettings' type='boolean'>
+        {(overrideWindowSettings) => {
+          const isDisabled = createMemo(
+            () => local.overridable && !overrideWindowSettings.value,
+          );
+
+          return (
+            <>
+              <Show
+                when={
+                  local.overridable &&
+                  overrideWindowSettings.value !== undefined
+                }
+              >
+                <OverrideCheckbox
+                  class='mb-1'
+                  label={t('instanceSettings.customWindowSettings')}
+                  checked={overrideWindowSettings.value}
+                  onOverrideChange={(value) => {
+                    setValue(form, 'overrideWindowSettings', value);
+                    handleOverrideChange(value);
+                  }}
+                />
+              </Show>
+
+              <ResolutionPicker
+                form={form}
+                disabled={isDisabled()}
+                defaultWidth={local.defaultValues?.()?.resolution?.width}
+                defaultHeight={local.defaultValues?.()?.resolution?.height}
+                forceDefaultValuesOnDisabled
+                onSubmit={handleResolutionSubmit}
+              />
+            </>
+          );
+        }}
+      </Field>
     </Form>
   );
 };

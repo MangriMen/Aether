@@ -12,6 +12,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
 
+import { InheritanceLabel } from './InheritanceLabel';
 import { OverrideCheckbox } from './OverrideCheckbox';
 
 export type OverridableLaunchArgsFieldProps = Omit<
@@ -23,7 +24,8 @@ export type OverridableLaunchArgsFieldProps = Omit<
   onChange?: (value: string | null) => void;
   inputProps?: CombinedTextFieldProps['inputProps'];
   overridable?: boolean;
-  onOverrideChange?: (value: string | null) => void;
+  onOverrideChange?: (value: boolean) => void;
+  isOverridden?: boolean;
 };
 
 export const OverridableLaunchArgsField: Component<
@@ -36,6 +38,7 @@ export const OverridableLaunchArgsField: Component<
     'inputProps',
     'overridable',
     'onOverrideChange',
+    'isOverridden',
     'class',
   ]);
 
@@ -43,25 +46,27 @@ export const OverridableLaunchArgsField: Component<
 
   const value = createMemo(() => local.value ?? local.defaultValue ?? '');
 
-  const isOverride = createMemo(() => local.value !== null);
+  const isInheritance = createMemo(
+    () => local.overridable && !local.isOverridden,
+  );
 
   return (
     <div class={cn('flex flex-col gap-1', local.class)} {...others}>
-      <span class='text-lg font-medium'>
-        {t('instanceSettings.javaArguments')}
-      </span>
-      <Show when={local.overridable}>
+      <InheritanceLabel
+        label={t('instanceSettings.javaArguments')}
+        inheritanceLabel={t('settings.usedFromDefaultSettings')}
+        isInheritance={isInheritance()}
+      />
+      <Show when={local.overridable && local.isOverridden !== undefined}>
         <OverrideCheckbox
           class='mb-1'
           label={t('instanceSettings.customArguments')}
-          enabledValue={value}
-          disabledValue={() => null}
-          checked={isOverride()}
+          checked={local.isOverridden}
           onOverrideChange={local.onOverrideChange}
         />
       </Show>
       <CombinedTextField
-        disabled={!isOverride()}
+        disabled={isInheritance()}
         value={value()}
         onChange={local.onChange}
         inputProps={{

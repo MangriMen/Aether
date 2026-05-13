@@ -36,7 +36,13 @@ export const BackgroundOpacitySlider: Component<
   };
 
   const handleSliderChange = (values: number[]) => {
-    updateTransparency(values[0]);
+    const firstValue = values[0];
+
+    if (firstValue === undefined) {
+      return;
+    }
+
+    updateTransparency(firstValue);
   };
 
   const handleTextChange = (value: string) => {

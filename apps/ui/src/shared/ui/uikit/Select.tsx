@@ -166,11 +166,16 @@ const SelectListboxVirtualized = <
 
   let firstOpen = true;
 
-  const getOptionValue = (option: Option) => {
+  const getOptionValue = (option: Option | undefined) => {
+    if (!option) {
+      return String(option);
+    }
+
     const optionValue = local.optionValue ?? null;
     if (optionValue == null) {
       return String(option);
     }
+
     return String(
       typeof optionValue === 'function'
         ? optionValue(option)

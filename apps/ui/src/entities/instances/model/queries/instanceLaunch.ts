@@ -12,7 +12,7 @@ export const useLaunchInstance = () => {
     mutationFn: (id: string) => commands.launch(id),
     onError: (err, id) => {
       showError({
-        title: t('instance.launchError', { id: id }),
+        title: t('instance.launchError', { id }),
         err,
         t,
       });

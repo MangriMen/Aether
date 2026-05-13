@@ -20,7 +20,9 @@ export const ResolutionSchema = z.object({
 });
 
 export const WindowSettingsSchema = z.object({
-  resolution: ResolutionSchema.nullable(),
+  resolution: ResolutionSchema,
+  forceFullscreen: z.boolean().optional(),
+  overrideWindowSettings: z.boolean().optional(),
 });
 
 export type WindowSettingsSchemaInput = z.input<typeof WindowSettingsSchema>;

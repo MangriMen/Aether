@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::{
     instance::{Instance, InstanceError, InstanceStorage},
-    settings::{MemorySettings, WindowSize, app::EditHooks},
+    settings::{MemorySettings, WindowSettings, app::EditHooks},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,41 +13,22 @@ use crate::features::{
 pub struct EditInstance {
     pub name: Option<String>,
 
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub java_path: Option<Option<String>>,
+    pub override_java_path: Option<bool>,
+    pub java_path: Option<String>,
 
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub launch_args: Option<Option<Vec<String>>>,
+    pub override_launch_args: Option<bool>,
+    pub launch_args: Option<Vec<String>>,
 
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub env_vars: Option<Option<Vec<(String, String)>>>,
+    pub override_env_vars: Option<bool>,
+    pub env_vars: Option<Vec<(String, String)>>,
 
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub memory: Option<Option<MemorySettings>>,
+    pub override_memory: Option<bool>,
+    pub memory: Option<MemorySettings>,
 
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "::serde_with::rust::double_option"
-    )]
-    pub game_resolution: Option<Option<WindowSize>>,
+    pub override_window_settings: Option<bool>,
+    pub window: Option<WindowSettings>,
 
+    pub override_hooks: Option<bool>,
     pub hooks: Option<EditHooks>,
 }
 
@@ -68,8 +49,11 @@ impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
         validate_edit(&edit_instance)?;
 
         let mut instance = self.instance_storage.get(&instance_id).await?;
+
         apply_edit_changes(&mut instance, &edit_instance)?;
+
         self.instance_storage.upsert(&instance).await?;
+
         Ok(instance)
     }
 }
@@ -78,42 +62,56 @@ fn apply_edit_changes(
     instance: &mut Instance,
     edit_instance: &EditInstance,
 ) -> Result<(), InstanceError> {
-    let EditInstance {
-        name,
-        java_path,
-        launch_args,
-        env_vars,
-        memory,
-        game_resolution,
-        hooks,
-    } = edit_instance;
-
-    if let Some(name) = name {
+    if let Some(name) = &edit_instance.name {
         instance.rename(name.clone())?;
     }
 
-    if let Some(java_path) = java_path {
-        instance.java_path.clone_from(java_path);
+    // Java Path
+    if let Some(active) = edit_instance.override_java_path {
+        instance.java_path.is_active = active;
+    }
+    if let Some(data) = &edit_instance.java_path {
+        instance.java_path.data.clone_from(data);
     }
 
-    if let Some(args) = launch_args {
-        instance.launch_args.clone_from(args);
+    // Launch Args
+    if let Some(active) = edit_instance.override_launch_args {
+        instance.launch_args.is_active = active;
+    }
+    if let Some(data) = &edit_instance.launch_args {
+        instance.launch_args.data.clone_from(data);
     }
 
-    if let Some(vars) = env_vars {
-        instance.env_vars.clone_from(vars);
+    // Env Vars
+    if let Some(active) = edit_instance.override_env_vars {
+        instance.env_vars.is_active = active;
+    }
+    if let Some(data) = &edit_instance.env_vars {
+        instance.env_vars.data.clone_from(data);
     }
 
-    if let Some(mem) = memory {
-        instance.memory = *mem;
+    // Memory
+    if let Some(active) = edit_instance.override_memory {
+        instance.memory.is_active = active;
+    }
+    if let Some(data) = edit_instance.memory {
+        instance.memory.data = data;
     }
 
-    if let Some(res) = game_resolution {
-        instance.game_resolution = *res;
+    // Window Settings
+    if let Some(active) = edit_instance.override_window_settings {
+        instance.window.is_active = active;
+    }
+    if let Some(data) = &edit_instance.window {
+        instance.window.data.clone_from(data);
     }
 
-    if let Some(hooks) = hooks {
-        hooks.apply_to(&mut instance.hooks);
+    // Hooks
+    if let Some(active) = edit_instance.override_hooks {
+        instance.hooks.is_active = active;
+    }
+    if let Some(edit_hooks) = &edit_instance.hooks {
+        edit_hooks.apply_to(&mut instance.hooks.data);
     }
 
     instance.modified = Utc::now();

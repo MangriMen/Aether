@@ -43,6 +43,9 @@ export const tailwindConfig: Config = {
         'solid-active': 'var(--opacity-solid-active)',
         'solid-text-active': 'var(--opacity-solid-text-active)',
       },
+      transitionTimingFunction: {
+        customExpo: 'cubic-bezier(0.0,0.9,0.1,1.0)',
+      },
       keyframes: {
         'content-show': {
           from: { opacity: '0', transform: 'scaleY(0) translateY(-40px)' },

@@ -1,3 +1,4 @@
+export * from './InheritanceLabel';
 export * from './MemoryInput';
 export * from './OverridableEnvVarsField';
 export * from './OverridableLaunchArgsField';

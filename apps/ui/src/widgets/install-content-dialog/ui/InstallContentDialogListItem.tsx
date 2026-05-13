@@ -60,7 +60,7 @@ export const InstallContentDialogListItem: Component<
   const isInstalling = () => isInstallingMemo()();
 
   const isCompatible = () =>
-    local.checkCompatibilityData?.[local.instance.id].isCompatible;
+    local.checkCompatibilityData?.[local.instance.id]?.isCompatible;
 
   const isFulfilledCompatible = () =>
     local.isLoadingCheckCompatibilityData || isCompatible();

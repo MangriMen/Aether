@@ -36,7 +36,7 @@ export const useWindowSettingsHandler = ({
   );
 
   const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
-    const edit = windowSettingsValuesToEditInstanceSettings(values);
+    const edit = windowSettingsValuesToEditInstanceSettings(instance(), values);
 
     if (isEditInstanceSettingsEmpty(edit)) {
       return;

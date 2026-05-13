@@ -394,6 +394,11 @@
       "test": "Test",
       "testSuccess": "Success",
       "testFailed": "Failed"
+    },
+    "usedFromDefaultSettings": "Used from default settings",
+    "environmentVariablesError": {
+      "invalidFormat": "Invalid format {{part}}. Must be in \"key=value\" format",
+      "emptyKey": "Empty key {{part}}. Must be in \"key=value\" format"
     }
   },
   "update": {

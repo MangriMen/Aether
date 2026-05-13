@@ -7,18 +7,18 @@ import { Checkbox, type CheckboxRootProps } from '@/shared/ui';
 
 export type OverrideCheckboxProps<
   T extends ValidComponent = 'div',
-  TEnabledValue = unknown,
-  TDisabledValue = unknown,
+  TEnabledValue = boolean,
+  TDisabledValue = boolean,
 > = CheckboxRootProps<T> & {
-  enabledValue: Accessor<TEnabledValue>;
-  disabledValue: Accessor<TDisabledValue>;
+  enabledValue?: Accessor<TEnabledValue>;
+  disabledValue?: Accessor<TDisabledValue>;
   onOverrideChange?: (value: TEnabledValue | TDisabledValue) => void;
 };
 
 export const OverrideCheckbox = <
   T extends ValidComponent = 'div',
-  TEnabledValue = unknown,
-  TDisabledValue = unknown,
+  TEnabledValue = boolean,
+  TDisabledValue = boolean,
 >(
   props: PolymorphicProps<
     T,
@@ -34,8 +34,8 @@ export const OverrideCheckbox = <
   ]);
 
   const handleOverrideChange = createOverrideHandler(
-    () => local.enabledValue(),
-    () => local.disabledValue(),
+    () => local.enabledValue?.() ?? true,
+    () => local.disabledValue?.() ?? false,
     (value) => local.onOverrideChange?.(value),
   );
 
@@ -52,9 +52,7 @@ export const OverrideCheckbox = <
         </Show>
       }
       onChange={handleChange}
-      // TODO
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      {...(others as any)}
+      {...(others as PolymorphicProps<T, CheckboxRootProps<T>>)}
     />
   );
 };

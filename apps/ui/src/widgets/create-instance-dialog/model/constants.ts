@@ -1,15 +1,15 @@
 import type { ModLoader } from '@/entities/minecraft';
 import type { Option } from '@/shared/model';
 
-export const LOADERS: Option<ModLoader>[] = [
+export const LOADERS = [
   { name: 'Vanilla', value: 'vanilla' },
   { name: 'Forge', value: 'forge' },
   { name: 'Fabric', value: 'fabric' },
   { name: 'Quilt', value: 'quilt' },
   { name: 'NeoForge', value: 'neoforge' },
-];
+] as const satisfies Option<ModLoader>[];
 
-export const LOADER_VERSION_TYPES: Option<string>[] = [
+export const LOADER_VERSION_TYPES = [
   {
     name: 'Stable',
     value: 'stable',
@@ -22,4 +22,4 @@ export const LOADER_VERSION_TYPES: Option<string>[] = [
     name: 'Other',
     value: 'other',
   },
-] as const;
+] as const satisfies Option<string>[];

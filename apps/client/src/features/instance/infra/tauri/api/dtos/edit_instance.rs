@@ -2,8 +2,9 @@ use aether_core::features::instance::app::EditInstance;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::settings::infra::tauri::dtos::{
-    EditHooksDto, MemorySettingsDto, WindowSizeDto,
+use crate::features::settings::{
+    dtos::WindowSettingsDto,
+    infra::tauri::dtos::{EditHooksDto, MemorySettingsDto},
 };
 
 #[derive(Debug, Serialize, Deserialize, Type)]
@@ -12,26 +13,39 @@ pub struct EditInstanceDto {
     #[specta(optional)]
     pub name: Option<String>,
 
-    #[specta(optional, type = Option<String>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub java_path: Option<Option<String>>,
+    // Java Path
+    #[specta(optional)]
+    pub override_java_path: Option<bool>,
+    #[specta(optional)]
+    pub java_path: Option<String>,
 
-    #[specta(optional, type = Option<Vec<String>>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub launch_args: Option<Option<Vec<String>>>,
+    // Launch Args
+    #[specta(optional)]
+    pub override_launch_args: Option<bool>,
+    #[specta(optional)]
+    pub launch_args: Option<Vec<String>>,
 
-    #[specta(optional, type = Option<Vec<(String, String)>>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub env_vars: Option<Option<Vec<(String, String)>>>,
+    // Env Vars
+    #[specta(optional)]
+    pub override_env_vars: Option<bool>,
+    #[specta(optional)]
+    pub env_vars: Option<Vec<(String, String)>>,
 
-    #[specta(optional, type = Option<MemorySettingsDto>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub memory: Option<Option<MemorySettingsDto>>,
+    // Memory
+    #[specta(optional)]
+    pub override_memory: Option<bool>,
+    #[specta(optional)]
+    pub memory: Option<MemorySettingsDto>,
 
-    #[specta(optional, type = Option<WindowSizeDto>)]
-    #[serde(default, with = "::serde_with::rust::double_option")]
-    pub game_resolution: Option<Option<WindowSizeDto>>,
+    // Window
+    #[specta(optional)]
+    pub override_window_settings: Option<bool>,
+    #[specta(optional)]
+    pub window: Option<WindowSettingsDto>,
 
+    // Hooks
+    #[specta(optional)]
+    pub override_hooks: Option<bool>,
     #[specta(optional)]
     pub hooks: Option<EditHooksDto>,
 }
@@ -40,11 +54,23 @@ impl From<EditInstanceDto> for EditInstance {
     fn from(value: EditInstanceDto) -> Self {
         Self {
             name: value.name,
+
+            override_java_path: value.override_java_path,
             java_path: value.java_path,
+
+            override_launch_args: value.override_launch_args,
             launch_args: value.launch_args,
+
+            override_env_vars: value.override_env_vars,
             env_vars: value.env_vars,
-            memory: value.memory.map(|o| o.map(Into::into)),
-            game_resolution: value.game_resolution.map(|o| o.map(Into::into)),
+
+            override_memory: value.override_memory,
+            memory: value.memory.map(Into::into),
+
+            override_window_settings: value.override_window_settings,
+            window: value.window.map(Into::into),
+
+            override_hooks: value.override_hooks,
             hooks: value.hooks.map(Into::into),
         }
     }

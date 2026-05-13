@@ -86,7 +86,7 @@ const buildConfig: UserConfig['build'] = {
 export default defineConfig(async () => ({
   resolve: { tsconfigPaths: true },
 
-  plugins: plugins,
+  plugins,
 
   test: testConfig,
   build: buildConfig,

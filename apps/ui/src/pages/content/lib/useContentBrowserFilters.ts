@@ -77,10 +77,10 @@ export const useContentBrowserFilters = (
   createEffect(() => {
     const currentProviders = providers();
     const currentProviderId = context.filters?.providerId;
+    const firstProvider = currentProviders[0];
 
-    if (currentProviders.length > 0 && !currentProviderId) {
-      const defaultProvider = currentProviders[0];
-      setProvider(defaultProvider);
+    if (firstProvider !== undefined && !currentProviderId) {
+      setProvider(firstProvider);
     }
   });
 

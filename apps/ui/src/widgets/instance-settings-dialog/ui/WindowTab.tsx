@@ -15,7 +15,6 @@ export const WindowTab: Component<WindowTabProps> = (props) => {
     'instance',
     'editInstance',
     'defaultSettings',
-    'class',
   ]);
 
   const { initialValues, defaultValues, onChange } = useWindowSettingsHandler({

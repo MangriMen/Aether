@@ -1,0 +1,200 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT \n                i.id, i.name, i.icon_path, i.install_stage, i.game_version, i.loader, \n                i.loader_version_json, \n                i.override_java_path, i.java_path,\n                i.override_launch_args, i.launch_args_json,\n                i.override_env_vars, i.env_vars_json,\n                i.override_memory, i.memory_maximum, \n                i.override_window_settings, i.force_fullscreen, i.window_width, i.window_height, \n                i.created_at as \"created_at: chrono::DateTime<chrono::Utc>\", \n                i.modified_at as \"modified_at: chrono::DateTime<chrono::Utc>\", \n                i.last_played_at as \"last_played_at?: chrono::DateTime<chrono::Utc>\", \n                i.time_played, i.recent_time_played, \n                i.override_hooks, i.hook_pre_launch, i.hook_wrapper, i.hook_post_exit,\n                p.provider_id as \"pack_provider_id?\", \n                p.modpack_id as \"pack_modpack_id?\", \n                p.version_id as \"pack_version_id?\"\n            FROM instances i\n            LEFT JOIN instance_pack_info p ON i.id = p.instance_id\n            ORDER BY i.modified_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "icon_path",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "install_stage",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "game_version",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "loader",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "loader_version_json",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "override_java_path",
+        "ordinal": 7,
+        "type_info": "Bool"
+      },
+      {
+        "name": "java_path",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "override_launch_args",
+        "ordinal": 9,
+        "type_info": "Bool"
+      },
+      {
+        "name": "launch_args_json",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "override_env_vars",
+        "ordinal": 11,
+        "type_info": "Bool"
+      },
+      {
+        "name": "env_vars_json",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "override_memory",
+        "ordinal": 13,
+        "type_info": "Bool"
+      },
+      {
+        "name": "memory_maximum",
+        "ordinal": 14,
+        "type_info": "Integer"
+      },
+      {
+        "name": "override_window_settings",
+        "ordinal": 15,
+        "type_info": "Bool"
+      },
+      {
+        "name": "force_fullscreen",
+        "ordinal": 16,
+        "type_info": "Bool"
+      },
+      {
+        "name": "window_width",
+        "ordinal": 17,
+        "type_info": "Integer"
+      },
+      {
+        "name": "window_height",
+        "ordinal": 18,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at: chrono::DateTime<chrono::Utc>",
+        "ordinal": 19,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "modified_at: chrono::DateTime<chrono::Utc>",
+        "ordinal": 20,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "last_played_at?: chrono::DateTime<chrono::Utc>",
+        "ordinal": 21,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "time_played",
+        "ordinal": 22,
+        "type_info": "Integer"
+      },
+      {
+        "name": "recent_time_played",
+        "ordinal": 23,
+        "type_info": "Integer"
+      },
+      {
+        "name": "override_hooks",
+        "ordinal": 24,
+        "type_info": "Bool"
+      },
+      {
+        "name": "hook_pre_launch",
+        "ordinal": 25,
+        "type_info": "Text"
+      },
+      {
+        "name": "hook_wrapper",
+        "ordinal": 26,
+        "type_info": "Text"
+      },
+      {
+        "name": "hook_post_exit",
+        "ordinal": 27,
+        "type_info": "Text"
+      },
+      {
+        "name": "pack_provider_id?",
+        "ordinal": 28,
+        "type_info": "Text"
+      },
+      {
+        "name": "pack_modpack_id?",
+        "ordinal": 29,
+        "type_info": "Text"
+      },
+      {
+        "name": "pack_version_id?",
+        "ordinal": 30,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c22ac6c6bf92d777852ad60785ca322aaf516e9ccc56b067dc9b8e032789a5ef"
+}

@@ -17,7 +17,7 @@ import {
   isModLoader,
   useSearchContent,
 } from '@/entities/instances';
-import { cn, debounce } from '@/shared/lib';
+import { cn, debounce, logError } from '@/shared/lib';
 
 import type { ContentProviderEntry } from '../model';
 
@@ -68,13 +68,21 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
       const currentProvider = state.provider()?.value;
 
       if (!currentProvider) {
+        logError('No content provider selected');
+        return;
+      }
+
+      const contentType = state.contentType();
+
+      if (!contentType) {
+        logError('No content type selected');
         return;
       }
 
       const loader = state.loader();
 
       return {
-        contentType: state.contentType(),
+        contentType,
         providerId: {
           pluginId: currentProvider.pluginId,
           capabilityId: currentProvider.capability.id,

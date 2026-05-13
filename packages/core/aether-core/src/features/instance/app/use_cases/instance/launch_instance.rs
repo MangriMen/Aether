@@ -16,7 +16,7 @@ use crate::{
             MinecraftProcessMetadata, ProcessStorage,
             app::{GetProcessMetadataByInstanceIdUseCase, StartProcessUseCase},
         },
-        settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, LocationInfo},
+        settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
     shared::{IoError, SerializableCommand},
 };
@@ -80,39 +80,11 @@ impl<
         settings: &DefaultInstanceSettings,
     ) -> LaunchSettings {
         LaunchSettings {
-            launch_args: instance
-                .launch_args
-                .clone()
-                .unwrap_or_else(|| settings.launch_args().to_vec()),
-
-            env_vars: instance
-                .env_vars
-                .clone()
-                .unwrap_or_else(|| settings.env_vars().to_vec()),
-
-            memory: instance.memory.unwrap_or(settings.memory()),
-
-            game_resolution: instance
-                .game_resolution
-                .unwrap_or(settings.game_resolution()),
-
-            hooks: Hooks::new(
-                instance
-                    .hooks
-                    .pre_launch()
-                    .cloned()
-                    .or_else(|| settings.hooks().pre_launch().cloned()),
-                instance
-                    .hooks
-                    .wrapper()
-                    .cloned()
-                    .or_else(|| settings.hooks().wrapper().cloned()),
-                instance
-                    .hooks
-                    .post_exit()
-                    .cloned()
-                    .or_else(|| settings.hooks().post_exit().cloned()),
-            ),
+            launch_args: instance.launch_args.resolve(settings.launch_args()),
+            env_vars: instance.env_vars.resolve(settings.env_vars()),
+            memory: instance.memory.resolve(settings.memory()),
+            window: instance.window.resolve(settings.window()),
+            hooks: instance.hooks.resolve(settings.hooks()),
         }
     }
 
@@ -154,15 +126,11 @@ impl<
                 .await?;
         }
 
-        let pre_launch_command = instance
-            .hooks
-            .pre_launch()
-            .or(launch_settings.hooks.pre_launch());
+        let pre_launch_command = launch_settings.hooks.pre_launch();
 
         let instance_path = self.location_info.instance_dir(instance.id());
 
-        if let Some(command) = pre_launch_command
-            && let Ok(cmd) = SerializableCommand::from_string(command, Some(&instance_path))
+        if let Ok(cmd) = SerializableCommand::from_string(pre_launch_command, Some(&instance_path))
         {
             let result = cmd
                 .to_tokio_command()
@@ -207,7 +175,11 @@ impl<
                     loader: instance.loader,
                     loader_version: instance.loader_version.clone(),
                     launch_dir: instance_path,
-                    java_path: instance.java_path.clone(),
+                    java_path: if instance.java_path.data.is_empty() {
+                        None
+                    } else {
+                        Some(instance.java_path.data.clone())
+                    },
                 },
                 launch_settings.clone(),
                 credentials,
@@ -226,7 +198,7 @@ impl<
             .execute(
                 instance_id,
                 command,
-                launch_settings.hooks.post_exit().cloned(),
+                launch_settings.hooks.post_exit().to_owned(),
             )
             .await;
 

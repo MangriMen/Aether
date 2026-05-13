@@ -36,7 +36,7 @@ impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUs
         &self,
         instance_id: String,
         mut command: Command,
-        post_exit_command: Option<String>,
+        post_exit_command: String,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
         let process = command.spawn().map_err(IoError::from)?;
         let metadata = MinecraftProcessMetadata::new(instance_id.clone());

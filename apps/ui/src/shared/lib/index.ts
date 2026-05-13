@@ -8,6 +8,7 @@ export { default as dayjs } from './dayjs';
 export * from './debounce';
 export * from './event';
 export * from './formatTime';
+export * from './i18nError';
 export * from './isComponent';
 export * from './isNil';
 export * from './jsonify';

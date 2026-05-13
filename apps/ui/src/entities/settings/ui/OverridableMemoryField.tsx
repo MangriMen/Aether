@@ -8,6 +8,7 @@ import { useTranslation } from '@/shared/model';
 
 import { useMaxRam } from '../model';
 import { bytesToMegabytes } from '../model';
+import { InheritanceLabel } from './InheritanceLabel';
 import { MemoryInput } from './MemoryInput';
 import { OverrideCheckbox } from './OverrideCheckbox';
 
@@ -15,10 +16,12 @@ export type OverridableMemoryFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange'
 > & {
-  value?: number | null;
+  value?: number;
   defaultValue?: number;
-  onChange?: (value: number | null) => void;
   overridable?: boolean;
+  isOverridden?: boolean;
+  onChange?: (value: number) => void;
+  onOverrideChange?: (value: boolean) => void;
 };
 
 export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
@@ -27,8 +30,10 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
   const [local, others] = splitProps(props, [
     'value',
     'defaultValue',
-    'onChange',
     'overridable',
+    'isOverridden',
+    'onChange',
+    'onOverrideChange',
     'class',
   ]);
 
@@ -54,33 +59,42 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
     return [local.defaultValue];
   });
 
-  const getClampedMemory = (value: number | null) => {
-    if (value === null) return null;
+  const getClampedMemory = (value: number) => {
     return Math.max(minMemory(), Math.min(value, maxMemory()));
   };
 
-  const handleChangeMemory = (value: number[] | null) => {
-    local.onChange?.(value ? getClampedMemory(value[0]) : value);
+  const handleChangeMemory = (value: number[]) => {
+    const firstValue = value[0];
+
+    if (!firstValue) {
+      return;
+    }
+
+    local.onChange?.(getClampedMemory(firstValue));
   };
 
-  const isOverride = createMemo(() => local.value !== null);
+  const isInheritance = createMemo(
+    () => local.overridable && !local.isOverridden,
+  );
 
   return (
     <div class={cn('flex flex-col gap-1', local.class)} {...others}>
-      <span class='text-lg font-medium'>
-        {t('instanceSettings.memoryAllocation')}
-      </span>
-      <Show when={local.overridable}>
+      <InheritanceLabel
+        label={t('instanceSettings.memoryAllocation')}
+        inheritanceLabel={t('settings.usedFromDefaultSettings')}
+        isInheritance={isInheritance()}
+      />
+
+      <Show when={local.overridable && local.isOverridden !== undefined}>
         <OverrideCheckbox
           label={t('instanceSettings.customMemorySettings')}
-          checked={isOverride()}
-          enabledValue={defaultMemory}
-          disabledValue={() => null}
-          onOverrideChange={handleChangeMemory}
+          checked={local.isOverridden}
+          onOverrideChange={local.onOverrideChange}
         />
       </Show>
+
       <MemoryInput
-        disabled={!isOverride()}
+        disabled={isInheritance()}
         value={value()}
         defaultValue={defaultMemory()}
         minValue={minMemory()}

@@ -54,7 +54,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     createInstalledContentIndexStore();
 
   const [store, setStore] = createStore<ContentContextValue>({
-    installedContentIndex: installedContentIndex,
+    installedContentIndex,
     installingContentIds: {},
     get instanceId() {
       return local.instanceId;
@@ -259,7 +259,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
         // Accessing the store key here IS reactive when this returned function
         // is eventually called inside a component's JSX or createMemo.
-        return store.installingContentIds[contentId_];
+        return store.installingContentIds[contentId_] ?? false;
       };
     },
     createIsInstalled: (contentId, instanceId) => {
