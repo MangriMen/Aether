@@ -1,0 +1,31 @@
+[package]
+name = "client-bindings"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+# This is a dev-only utility, never meant to be published or bundled.
+# By residing in its own crate (packages/client-bindings/), cargo tauri build
+# (which operates from apps/client/) will never pick it up.
+
+[[bin]]
+name = "client-bindings"
+path = "src/main.rs"
+test = false
+bench = false
+doc = false
+
+[dependencies]
+# Depends on the Tauri app library for specta command/event builders
+aether = { path = "../../apps/client", features = ["bindings"] }
+
+# Specta type-generation stack
+specta.workspace = true
+specta-typescript.workspace = true
+tauri.workspace = true
+tauri-specta.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2" }
+
+[lints]
+workspace = true

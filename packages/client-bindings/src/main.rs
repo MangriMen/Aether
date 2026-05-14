@@ -1,9 +1,14 @@
-#[cfg(debug_assertions)]
+// Type generation binary for Aether's Tauri Specta bindings.
+// Run via: cargo run -p client-bindings
+//
+// This is a dev-only tool isolated in its own crate so that
+// `cargo tauri build` (which operates on apps/client/) never
+// picks it up for bundling.
+
 use aether_lib::shared::specta::{
     export_specta_builders, get_all_features_builders, get_export_path,
 };
 
-#[cfg(debug_assertions)]
 fn main() {
     let out_dir = get_export_path();
 
