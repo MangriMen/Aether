@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "apps/client/",
+    "packages/client-bindings",
     "packages/core/aether-core",
     "packages/core/aether-core-gen",
     "packages/core/aether-core-plugin-api",
@@ -47,6 +48,20 @@ uuid = { version = "1.10", features = ["serde", "v4"] }
 # Async & Runtime
 async-trait = "0.1.89"
 tokio = { version = "1", features = ["full"] }
+
+# Tauri & Frontend Bridge
+specta = { version = "=2.0.0-rc.24", features = [
+    "serde_json",
+    "uuid",
+    "chrono",
+    "semver",
+] }
+specta-typescript = "0.0.11"
+tauri = { version = "2", features = ["protocol-asset", "tray-icon", "test"] }
+tauri-specta = { git = "https://github.com/specta-rs/tauri-specta/", rev = "4cff42ee0aa309fb2c707da534821e7645e75867", features = [
+    "derive",
+    "typescript",
+] }
 
 # Utilities
 semver = "1.0"

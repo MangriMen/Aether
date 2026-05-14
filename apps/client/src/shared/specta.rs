@@ -73,18 +73,18 @@ pub fn get_all_features_builders() -> Vec<(&'static str, tauri_specta::Builder<t
         .collect()
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "bindings"))]
 use std::{
     env,
     path::{Path, PathBuf},
 };
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "bindings"))]
 pub struct Exporter {
     out_dir: PathBuf,
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "bindings"))]
 impl Exporter {
     fn new<T: AsRef<Path>>(out_dir: T) -> Self {
         let _ = std::fs::create_dir_all(&out_dir);
@@ -103,7 +103,7 @@ impl Exporter {
     }
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "bindings"))]
 pub fn get_export_path() -> std::path::PathBuf {
     if let Ok(env_path) = env::var("BINDINGS_EXPORT_PATH") {
         return PathBuf::from(env_path);
@@ -118,7 +118,7 @@ pub fn get_export_path() -> std::path::PathBuf {
     path
 }
 
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "bindings"))]
 pub fn export_specta_builders(
     builders_with_names: &[(&'static str, tauri_specta::Builder<tauri::Wry>)],
 ) {
