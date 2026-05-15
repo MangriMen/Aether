@@ -5,10 +5,11 @@ import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
 
 import * as DialogPrimitive from '@kobalte/core/dialog';
 import { cva } from 'class-variance-authority';
-import { splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 
 import { cn } from '../../lib';
 import { useTranslation } from '../../model';
+import { IconButton } from '../components';
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -16,8 +17,12 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
   const [, rest] = splitProps(props, ['children']);
   return (
-    <DialogPrimitive.Portal {...rest}>
+    <DialogPrimitive.Portal
+      //// mount={document.getElementById('dialog-content')}
+      {...rest}
+    >
       <div class='fixed inset-0 z-50 flex items-start justify-center sm:items-center'>
+        {/* <div class='fixed inset-0 z-50 flex items-start  sm:items-center'> */}
         {props.children}
       </div>
     </DialogPrimitive.Portal>
@@ -31,6 +36,7 @@ const dialogOverlayVariants = cva(
       variant: {
         default: 'bg-background/80',
         destructive: 'bg-destructive/35',
+        unstyled: 'backdrop-blur-none',
       },
     },
     defaultVariants: {
@@ -61,6 +67,8 @@ const DialogOverlay = <T extends ValidComponent = 'div'>(
 type DialogContentProps<T extends ValidComponent = 'div'> =
   DialogPrimitive.DialogContentProps<T> &
     Pick<DialogOverlayProps, 'variant'> & {
+      actions?: JSX.Element;
+      showActions?: boolean;
       class?: string | undefined;
       children?: JSX.Element;
     };
@@ -70,6 +78,8 @@ const DialogContent = <T extends ValidComponent = 'div'>(
 ) => {
   const [local, rest] = splitProps(props as DialogContentProps, [
     'variant',
+    'actions',
+    'showActions',
     'class',
     'children',
   ]);
@@ -89,28 +99,39 @@ const DialogContent = <T extends ValidComponent = 'div'>(
       <DialogPrimitive.Content
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
-          'fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto border  bg-popover/hard p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] sm:rounded-lg',
+          local.variant !== 'unstyled' &&
+            'fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] sm:rounded-lg',
           local.class,
         )}
         {...rest}
       >
         {local.children}
-        <DialogPrimitive.CloseButton class='absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0 disabled:pointer-events-none data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'>
-          <svg
-            xmlns='http://www.w3.org/2000/svg'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            stroke-width='2'
-            stroke-linecap='round'
-            stroke-linejoin='round'
-            class='size-4'
-          >
-            <path d='M18 6l-12 12' />
-            <path d='M6 6l12 12' />
-          </svg>
-          <span class='sr-only'>{t('common.close')}</span>
-        </DialogPrimitive.CloseButton>
+        <Show when={local.showActions ?? true}>
+          <div class='absolute right-6 top-[22px] flex'>
+            {local.actions}
+            <DialogPrimitive.CloseButton
+              as={IconButton}
+              size='sm'
+              variant='ghost'
+              class='opacity-70 transition-opacity hover:opacity-100 data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'
+            >
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                stroke-width='2'
+                stroke-linecap='round'
+                stroke-linejoin='round'
+                class='size-4'
+              >
+                <path d='M18 6l-12 12' />
+                <path d='M6 6l12 12' />
+              </svg>
+              <span class='sr-only'>{t('common.close')}</span>
+            </DialogPrimitive.CloseButton>
+          </div>
+        </Show>
       </DialogPrimitive.Content>
     </DialogPortal>
   );

@@ -4,10 +4,10 @@ import { createRoot, createSignal } from 'solid-js';
 import type { UpdateStatus } from '@/entities/updates';
 
 import { UpdateAndRestartWarningDialog, useUpdate } from '@/entities/updates';
-import { SettingsTab } from '@/pages/settings';
 import { ROUTES } from '@/shared/config';
 import { useTranslation } from '@/shared/model';
 import { Button, closeToast, showToast } from '@/shared/ui';
+import { SettingsTab } from '@/widgets/settings-view';
 
 let isAlreadyOpened = false;
 

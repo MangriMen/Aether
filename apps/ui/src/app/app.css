@@ -228,6 +228,24 @@
   .animate-tab-content:not([data-selected]) {
     @apply -translate-x-full;
   }
+
+  .modal-adaptive-bounds {
+    width: 80%;
+    min-width: min(1248px, 80%);
+    max-width: 80%;
+    height: 80%;
+    min-height: min(860px, 80%);
+    max-height: 80%;
+
+    @media (min-width: 1280px) {
+      width: 70%;
+      min-width: min(1248px, 70%);
+      max-width: min(70%, 1680px);
+      height: 70%;
+      min-height: min(860px, calc(100% - 96px));
+      max-height: min(70%, 1600px);
+    }
+  }
 }
 
 @media (max-width: 640px) {

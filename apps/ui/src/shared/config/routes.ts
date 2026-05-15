@@ -1,4 +1,4 @@
-import type { SettingsTab } from '@/pages/settings';
+import type { SettingsTab } from '@/widgets/settings-view';
 
 export const ROUTES = {
   HOME: '/',
@@ -16,7 +16,7 @@ export const ROUTES = {
     `/instance-settings/${encodeURIComponent(id)}`,
 
   SETTINGS: (tab?: SettingsTab) =>
-    tab ? `/settings/${encodeURIComponent(tab)}` : '/settings',
+    tab ? `?modal=settings&tab=${encodeURIComponent(tab)}` : '?modal=settings',
 
   PLAYGROUND: '/playground',
 } as const;
@@ -29,6 +29,5 @@ export const ROUTE_PATTERNS = {
   INSTANCE: '/instances/:id',
   INSTANCE_SETTINGS_REL: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',
-  SETTINGS: '/settings/:tab?',
   PLAYGROUND: '/playground',
 } as const;

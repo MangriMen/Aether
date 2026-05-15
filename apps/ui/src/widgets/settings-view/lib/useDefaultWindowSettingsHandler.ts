@@ -1,28 +1,25 @@
 import { createMemo } from 'solid-js';
 
-import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks';
+import type { WindowSettingsSchemaOutput } from '@/features/instance-settings/window';
 
 import {
+  defaultInstanceSettingsToWindowSettingsValues,
   isEditDefaultInstanceSettingsEmpty,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
+  windowSettingsValuesToEditDefaultInstanceSettings,
 } from '@/entities/settings';
 
-import {
-  defaultInstanceSettingsToHooksSettingsValues,
-  hooksSettingsValuesToEditDefaultInstanceSettings,
-} from '../model';
-
-export const useDefaultHooksSettingsHandler = () => {
+export const useDefaultWindowSettingsHandler = () => {
   const settings = useDefaultInstanceSettings();
   const editSettings = useEditDefaultInstanceSettings();
 
   const initialValues = createMemo(() =>
-    defaultInstanceSettingsToHooksSettingsValues(settings.data),
+    defaultInstanceSettingsToWindowSettingsValues(settings.data),
   );
 
-  const onChange = (values: Partial<HooksSettingsSchemaOutput>) => {
-    const dto = hooksSettingsValuesToEditDefaultInstanceSettings(values);
+  const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
+    const dto = windowSettingsValuesToEditDefaultInstanceSettings(values);
 
     if (isEditDefaultInstanceSettingsEmpty(dto)) {
       return;

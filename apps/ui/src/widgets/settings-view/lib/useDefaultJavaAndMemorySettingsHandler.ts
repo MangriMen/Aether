@@ -3,15 +3,12 @@ import { createMemo } from 'solid-js';
 import type { JavaAndMemorySettingsSchemaOutput } from '@/features/instance-settings/java-and-memory';
 
 import {
+  defaultInstanceSettingsToJavaAndMemorySettingsValues,
   isEditDefaultInstanceSettingsEmpty,
+  javaAndMemorySettingsValuesToEditDefaultInstanceSettings,
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
 } from '@/entities/settings';
-
-import {
-  defaultInstanceSettingsToJavaAndMemorySettingsValues,
-  javaAndMemorySettingsValuesToEditDefaultInstanceSettings,
-} from '../model';
 
 export const useDefaultJavaAndMemorySettingsHandler = () => {
   const settings = useDefaultInstanceSettings();

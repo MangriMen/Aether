@@ -2,7 +2,6 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { DefaultInstanceSettings } from '@/entities/settings';
 import type { HooksSettingsSchemaOutput } from '@/features/instance-settings/hooks';
 
 import {
@@ -10,7 +9,10 @@ import {
   isEditInstanceSettingsEmpty,
   type Instance,
 } from '@/entities/instances';
-import { defaultInstanceSettingsToHooksSettingsValues } from '@/pages/settings';
+import {
+  defaultInstanceSettingsToHooksSettingsValues,
+  type DefaultInstanceSettings,
+} from '@/entities/settings';
 
 import {
   hooksSettingsValuesToEditInstanceSettings,

@@ -1,25 +1,20 @@
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import { type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import type { SettingsPaneProps } from '@/shared/ui';
+
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
 import { UpdateAppEntry } from './UpdateAppEntry';
 import { UpdateNotificationStyleEntry } from './UpdateNotificationStyleEntry';
 
-export type UpdatePaneProps = ComponentProps<'div'>;
+export type UpdatePaneProps = SettingsPaneProps;
 
 export const UpdatePane: Component<UpdatePaneProps> = (props) => {
-  const [local, others] = splitProps(props, ['class']);
-
   const [{ t }] = useTranslation();
 
   return (
-    <SettingsPane
-      class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.tab.update')}
-      {...others}
-    >
+    <SettingsPane label={t('settings.tab.update')} {...props}>
       <UpdateNotificationStyleEntry variant='card' />
       <UpdateAppEntry variant='card' />
     </SettingsPane>

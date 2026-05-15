@@ -1,5 +1,3 @@
-import type { ComponentProps } from 'solid-js';
-
 import IconMdiBrush from '~icons/mdi/brush-variant';
 import IconMdiCoffeeOutline from '~icons/mdi/coffee-outline';
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
@@ -8,6 +6,7 @@ import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
 
 import type { TabConfig } from '@/shared/model';
+import type { SettingsPaneProps } from '@/shared/ui';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
@@ -64,7 +63,7 @@ export const SETTINGS_TABS_DEFINITION = [
     icon: IconMdiTestTube,
     component: ExperimentalPane,
   },
-] as const satisfies TabConfig<SettingsTab, ComponentProps<'div'>>[];
+] as const satisfies TabConfig<SettingsTab, SettingsPaneProps>[];
 
 export const SettingsTabs = new Set(Object.values(SettingsTab));
 

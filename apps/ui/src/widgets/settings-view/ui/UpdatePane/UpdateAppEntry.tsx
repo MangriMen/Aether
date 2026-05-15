@@ -1,12 +1,11 @@
 import type { Component } from 'solid-js';
 
-import { createMemo, Show, splitProps } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useCheckUpdate, useUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates';
-import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, SettingsEntry, showToast } from '@/shared/ui';
 
@@ -16,8 +15,6 @@ import { WhatsNew } from './WhatsNew';
 export type UpdateAppEntryProps = SettingsEntryProps;
 
 export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
-  const [local, others] = splitProps(props, ['class']);
-
   const [{ t }] = useTranslation();
 
   const update = useCheckUpdate();
@@ -50,7 +47,6 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
   return (
     <div>
       <SettingsEntry
-        class={cn(local.class)}
         title={t('settings.tab.update')}
         description={
           <UpdateDescription
@@ -58,7 +54,7 @@ export const UpdateAppEntry: Component<UpdateAppEntryProps> = (props) => {
             update={update.data}
           />
         }
-        {...others}
+        {...props}
       >
         <UpdateButton
           isUpdateAvailable={isUpdateAvailable()}

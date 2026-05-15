@@ -1,10 +1,9 @@
 import { makePersisted } from '@solid-primitives/storage';
 import { createSignal } from 'solid-js';
 
-export const IS_DEBUG_KEY = '_AETHER_DEBUG';
-export const IS_DEVELOPER_MODE_KEY = '_AETHER_DEVELOPER_MODE';
-export const UPDATE_NOTIFICATION_STYLE_KEY =
-  '_AETHER_UPDATE_NOTIFICATION_STYLE';
+export const IS_DEBUG_KEY = 'aether:debug';
+export const IS_DEVELOPER_MODE_KEY = 'aether:developer-mode';
+export const UPDATE_NOTIFICATION_STYLE_KEY = 'aether:update-notification-style';
 
 export const [isDebug, setIsDebug] = makePersisted(
   // eslint-disable-next-line solid/reactivity

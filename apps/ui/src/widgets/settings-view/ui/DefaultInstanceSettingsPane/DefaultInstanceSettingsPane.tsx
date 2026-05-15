@@ -1,6 +1,7 @@
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import { type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import type { SettingsPaneProps } from '@/shared/ui';
+
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
@@ -8,21 +9,15 @@ import { HooksSettings } from './HooksSettings';
 import { JavaAndMemorySettings } from './JavaAndMemorySettings';
 import { WindowSettings } from './WindowSettings';
 
-export type DefaultInstanceSettingsPaneProps = ComponentProps<'div'>;
+export type DefaultInstanceSettingsPaneProps = SettingsPaneProps;
 
 export const DefaultInstanceSettingsPane: Component<
   DefaultInstanceSettingsPaneProps
 > = (props) => {
-  const [local, others] = splitProps(props, ['class']);
-
   const [{ t }] = useTranslation();
 
   return (
-    <SettingsPane
-      class={cn('container max-w-screen-lg', local.class)}
-      label={t('settings.tab.defaultInstanceSettings')}
-      {...others}
-    >
+    <SettingsPane label={t('settings.tab.defaultInstanceSettings')} {...props}>
       <WindowSettings class='rounded-md border bg-card/card p-4' />
       <JavaAndMemorySettings class='rounded-md border bg-card/card p-4' />
       <HooksSettings class='rounded-md border bg-card/card p-4' />

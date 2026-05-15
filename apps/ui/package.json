@@ -55,6 +55,7 @@
     "@eslint/js": "^10.0.1",
     "@feature-sliced/steiger-plugin": "^0.5.7",
     "@iconify-json/mdi": "^1.2.3",
+    "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tauri-apps/cli": "^2.10.1",
     "@types/node": "^24.12.2",

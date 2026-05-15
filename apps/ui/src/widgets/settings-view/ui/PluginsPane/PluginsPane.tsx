@@ -1,9 +1,8 @@
-import { createMemo, Show, splitProps, type Component } from 'solid-js';
+import { createMemo, Show, type Component } from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/ui';
 
 import { usePlugins } from '@/entities/plugins';
-import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 import { PluginDetails } from '@/widgets/plugin-details';
@@ -14,8 +13,6 @@ import { PluginsPaneTitle } from './PluginsPaneTitle';
 export type PluginsPaneProps = SettingsPaneProps;
 
 export const PluginsPane: Component<PluginsPaneProps> = (props) => {
-  const [local, others] = splitProps(props, ['class']);
-
   const [{ t }] = useTranslation();
 
   const plugins = usePlugins();
@@ -25,11 +22,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
   );
 
   return (
-    <SettingsPane
-      class={cn('container max-w-screen-lg', local.class)}
-      label={<PluginsPaneTitle />}
-      {...others}
-    >
+    <SettingsPane label={<PluginsPaneTitle />} {...props}>
       <Show
         when={isPluginsLoadedWithoutErrors()}
         fallback={<span>{t('plugins.noPlugins')}</span>}

@@ -9,11 +9,11 @@ import {
 
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates';
-import { SettingsTab } from '@/pages/settings';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTooltip } from '@/shared/ui';
+import { SettingsTab } from '@/widgets/settings-view';
 
 export type UpdateBannerProps = ComponentProps<'button'>;
 
