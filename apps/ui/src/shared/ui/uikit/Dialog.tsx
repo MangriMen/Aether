@@ -17,12 +17,8 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
   const [, rest] = splitProps(props, ['children']);
   return (
-    <DialogPrimitive.Portal
-      //// mount={document.getElementById('dialog-content')}
-      {...rest}
-    >
+    <DialogPrimitive.Portal {...rest}>
       <div class='fixed inset-0 z-50 flex items-start justify-center sm:items-center'>
-        {/* <div class='fixed inset-0 z-50 flex items-start  sm:items-center'> */}
         {props.children}
       </div>
     </DialogPrimitive.Portal>

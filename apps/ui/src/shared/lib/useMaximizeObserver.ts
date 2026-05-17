@@ -21,12 +21,14 @@ export const useMaximizeObserver = (
   const initializeResizeObserver = async () => {
     unlistenResize?.();
 
-    const handleResizeThrottle = throttle(
-      async () => updateMaximize(await appWindow.isMaximized()),
-      throttleTimeout,
-    );
+    const handleResize = async () =>
+      updateMaximize(await appWindow.isMaximized());
+
+    const handleResizeThrottle = throttle(handleResize, throttleTimeout);
 
     const unlistenResizeEvent = await appWindow.onResized(handleResizeThrottle);
+
+    handleResize();
 
     unlistenResize = () => {
       unlistenResizeEvent();
