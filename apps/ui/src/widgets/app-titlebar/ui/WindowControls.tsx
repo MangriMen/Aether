@@ -13,7 +13,7 @@ import { TitleBarButton } from '@/shared/ui';
 
 export type WindowControlsProps = ComponentProps<'div'>;
 
-const iconClass = 'fill-current text-sm';
+const iconClass = 'pointer-events-none fill-current text-sm';
 
 export const WindowControls: Component<WindowControlsProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
@@ -31,12 +31,21 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
   return (
     <div
       class={cn('flex h-full text-muted-foreground', local.class)}
+      data-ignore-outside-click
       {...others}
     >
-      <TitleBarButton title='Minimize' onClick={handleMinimize}>
+      <TitleBarButton
+        title='Minimize'
+        onClick={handleMinimize}
+        data-ignore-outside-click
+      >
         <IconMdiMinimize class={iconClass} />
       </TitleBarButton>
-      <TitleBarButton title='Maximize' onClick={toggleMaximize}>
+      <TitleBarButton
+        title='Maximize'
+        onClick={toggleMaximize}
+        data-ignore-outside-click
+      >
         <Show
           when={isMaximized()}
           fallback={<IconMdiSquareRoundedOutline class={iconClass} />}
@@ -48,6 +57,7 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
         class='enabled:hover:bg-destructive/75'
         title='Close'
         onClick={handleClose}
+        data-ignore-outside-click
       >
         <IconMdiClose class={iconClass} />
       </TitleBarButton>

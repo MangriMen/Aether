@@ -24,7 +24,10 @@ export const BaseTitleBar: Component<BaseTitleBarProps> = (props) => {
         {...others}
       >
         {local.children}
-        <WindowControls class='ml-auto w-[121px] min-w-[121px] self-end pr-px pt-px' />
+        <WindowControls
+          class='ml-auto w-[121px] min-w-[121px] self-end pr-px pt-px'
+          data-ignore-outside-click
+        />
       </TitleBar>
     </>
   );
