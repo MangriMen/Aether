@@ -67,8 +67,11 @@ async fn install(version: u32) -> FrontendResult<JavaDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn test(test_version: TestJreVersionDto) -> FrontendResult<bool> {
+async fn test(test_version: TestJreVersionDto) -> FrontendResult<JavaDto> {
     Ok(TestJreUseCase::new(Arc::new(FsJavaInstallationService {}))
         .execute(test_version.into())
-        .await)
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?
+        .into())
 }

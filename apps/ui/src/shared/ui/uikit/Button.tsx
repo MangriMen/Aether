@@ -36,6 +36,9 @@ const buttonVariants = cva(
 
         link: 'text-primary underline-offset-4 enabled:hover:underline',
 
+        warning:
+          'bg-warning text-warning-foreground enabled:hover:bg-warning/solid-hover enabled:active:bg-warning/solid-active enabled:active:text-warning-foreground/solid-text-active',
+
         ghostWarning:
           'text-warning enabled:hover:bg-warning/control enabled:active:bg-warning/secondary',
       },

@@ -66,7 +66,7 @@ export const DataTable = <TData,>(props: DataTableProps<TData>) => {
 
   return (
     <div class='relative w-full overflow-auto rounded-md border '>
-      <Table disableWrapper>
+      <Table disableWrapper class='table-fixed'>
         <TableHeader class='sticky top-0 z-10 bg-popover'>
           <For each={table().getHeaderGroups()}>
             {(headerGroup) => <DataTableHeaderRow headerGroup={headerGroup} />}
@@ -196,22 +196,23 @@ const TableSkeleton = (props: TableSkeletonProps) => {
 const getHeaderStyles = <TData, TValue>(
   header: Header<TData, TValue>,
 ): JSX.CSSProperties => {
-  const def = header.column.columnDef;
-
-  return {
-    width: `${header.getSize()}px`,
-    ...(def.maxSize && { 'max-width': `${def.maxSize}px` }),
-    ...(def.minSize && { 'min-width': `${def.minSize}px` }),
-  };
+  return getSharedColumnsStyles(header.getSize, header.column.columnDef);
 };
 
 const getColumnStyles = <TData, TValue>(
   column: Column<TData, TValue>,
 ): JSX.CSSProperties => {
-  const def = column.columnDef;
+  return getSharedColumnsStyles(column.getSize, column.columnDef);
+};
+
+const getSharedColumnsStyles = <TData, TValue>(
+  getSize: () => number,
+  def: ColumnDef<TData, TValue>,
+) => {
+  const isStretched = def.meta?.stretch;
 
   return {
-    width: `${column.getSize()}px`,
+    width: isStretched ? '100%' : `${getSize()}px`,
     ...(def.maxSize && { 'max-width': `${def.maxSize}px` }),
     ...(def.minSize && { 'min-width': `${def.minSize}px` }),
   };

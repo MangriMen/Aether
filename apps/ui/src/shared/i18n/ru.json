@@ -458,5 +458,13 @@
   "java": {
     "installError": "Не удалось установить Java",
     "testError": "Не удалось протестировать Java"
+  },
+  "javaVersion": {
+    "version": "Версия",
+    "path": "Путь установки",
+    "testing": "Тестирование",
+    "error": "Ошибка",
+    "valid": "Действительная",
+    "versionMismatch": "Несоответствие версии"
   }
 }

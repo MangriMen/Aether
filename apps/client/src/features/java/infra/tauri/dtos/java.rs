@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct JavaDto {
     major_version: u32,
     version: String,

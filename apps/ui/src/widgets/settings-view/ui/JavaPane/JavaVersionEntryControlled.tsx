@@ -22,10 +22,10 @@ export const JavaVersionEntryControlled: Component<
       version={local.version}
       path={local.java?.path ?? ''}
       onInstallRecommended={() => actions.installRecommended?.(local.version)}
-      onTest={() => actions.test?.(local.version, local.java?.path ?? '')}
+      // onTest={() => actions.test?.(local.version, local.java?.path ?? '')}
       isInstalling={actions.isInstalling()}
-      isTesting={actions.isTesting()}
-      isTestingFailed={actions.isTestingFailed()}
+      // isTesting={actions.isTesting()}
+      // isTestingFailed={actions.isTestingFailed()}
       {...others}
     />
   );
