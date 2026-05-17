@@ -1,23 +1,22 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, ValidComponent } from 'solid-js';
 
-import { useNavigate } from '@solidjs/router';
 import IconMdiCog from '~icons/mdi/cog';
-import { createMemo, Show } from 'solid-js';
+import { createMemo } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
 
+import { useSettingsSearchParams } from '@/entities/settings';
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates';
-import { ROUTES } from '@/shared/config';
+import { UpdateBadge } from '@/features/update-badge';
 import { useTranslation } from '@/shared/model';
-import { Badge, CombinedTooltip, IconButton } from '@/shared/ui';
+import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
 const SettingsButton: Component<SettingsButtonProps> = (props) => {
-  const navigate = useNavigate();
   const [{ t }] = useTranslation();
 
   const update = useCheckUpdate();
@@ -26,7 +25,10 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
     update.data ? checkIsUpdateAvailable(update.data) : false,
   );
 
-  const handleClick = () => navigate(ROUTES.SETTINGS());
+  const { open: openSettings } = useSettingsSearchParams();
+  const handleClick = () => {
+    openSettings();
+  };
 
   return (
     <CombinedTooltip
@@ -43,9 +45,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
       onClick={handleClick}
       {...props}
     >
-      <Show when={isUpdateAvailable()}>
-        <Badge class='absolute right-2 top-1 aspect-square size-2 p-0' />
-      </Show>
+      <UpdateBadge class='absolute right-2 top-1' />
       <IconMdiCog />
     </CombinedTooltip>
   );

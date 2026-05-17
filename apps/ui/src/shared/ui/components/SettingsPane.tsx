@@ -26,15 +26,18 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       when={local.collapsible}
       fallback={
         <div
-          class={cn('flex flex-col gap-4 rounded-lg', local.class)}
+          class={cn(
+            '@container/settings-pane flex flex-col gap-4 rounded-lg container pl-0 md:pl-6 pr-0',
+            local.class,
+          )}
           {...others}
         >
           <Show when={local.label}>
-            <h2 class='text-2xl font-semibold'>{local.label}</h2>
+            <h2 class='pr-6 text-2xl font-semibold'>{local.label}</h2>
           </Show>
           <div
             class={cn(
-              'flex flex-col gap-2 overflow-y-auto grow',
+              'flex flex-col gap-2 overflow-y-auto grow pr-6 pb-6',
               local.childrenWrapperClass,
             )}
           >
@@ -44,7 +47,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       }
     >
       <CollapsibleSettingsPane
-        class={local.class}
+        class={cn('@container/settings-pane', local.class)}
         label={local.label}
         children={local.children}
         {...others}

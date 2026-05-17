@@ -1,5 +1,3 @@
-import type { SettingsTab } from '@/pages/settings';
-
 export const ROUTES = {
   HOME: '/',
 
@@ -15,9 +13,6 @@ export const ROUTES = {
   INSTANCE_DIALOG: (id: string | number) =>
     `/instance-settings/${encodeURIComponent(id)}`,
 
-  SETTINGS: (tab?: SettingsTab) =>
-    tab ? `/settings/${encodeURIComponent(tab)}` : '/settings',
-
   PLAYGROUND: '/playground',
 } as const;
 
@@ -29,6 +24,9 @@ export const ROUTE_PATTERNS = {
   INSTANCE: '/instances/:id',
   INSTANCE_SETTINGS_REL: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',
-  SETTINGS: '/settings/:tab?',
   PLAYGROUND: '/playground',
 } as const;
+
+export interface GlobalSearchParams {
+  modal?: 'settings';
+}

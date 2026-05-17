@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss/types/config';
 
+import containerQueriesPlugin from '@tailwindcss/container-queries';
 import typographyPlugin from '@tailwindcss/typography';
 import plugin from 'tailwindcss/plugin';
 import resolveConfig from 'tailwindcss/resolveConfig';
@@ -93,6 +94,7 @@ export const tailwindConfig: Config = {
 
   plugins: [
     typographyPlugin,
+    containerQueriesPlugin,
     plugin(function ({ addComponents, theme }) {
       addComponents({
         '.p-page': {

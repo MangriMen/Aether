@@ -17,7 +17,7 @@ import {
   getFiltersFromSearchParams,
   mergeContentFilters,
 } from '../lib';
-import { useContentPageSearchParams } from '../lib/useContentFilters';
+import { useContentPageSearchParams } from '../lib/useContentPageSearchParams';
 import { ContentContextProvider } from './ContentContextProvider';
 import { ContentPageInstanceInfo } from './ContentPageInstanceInfo';
 

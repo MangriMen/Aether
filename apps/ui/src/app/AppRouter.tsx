@@ -8,7 +8,6 @@ import {
 } from '@/pages/content';
 import { HomePage } from '@/pages/home';
 import { InstancePage } from '@/pages/instance';
-import { SettingsPage } from '@/pages/settings';
 import { ROUTE_PATTERNS } from '@/shared/config';
 import { InstanceSettingsDialog } from '@/widgets/instance-settings-dialog';
 
@@ -30,6 +29,7 @@ export const AppRouter: Component = () => {
           )}
         />
       </Route>
+
       <Route path={ROUTE_PATTERNS.CONTENT} component={ContentPageLayout}>
         <Route path='/' component={ContentBrowserWrapper} />
         <Route
@@ -37,6 +37,7 @@ export const AppRouter: Component = () => {
           component={ContentItemPage}
         />
       </Route>
+
       <Route path={ROUTE_PATTERNS.INSTANCE} component={InstancePage}>
         <Route />
         <Route
@@ -46,9 +47,7 @@ export const AppRouter: Component = () => {
           )}
         />
       </Route>
-      <Route path={ROUTE_PATTERNS.SETTINGS} component={SettingsPage}>
-        <Route />
-      </Route>
+
       <Route path={ROUTE_PATTERNS.PLAYGROUND} component={PlaygroundPage} />
     </Router>
   );

@@ -1,4 +1,3 @@
-import { useNavigate } from '@solidjs/router';
 import {
   createMemo,
   Show,
@@ -7,10 +6,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import { SettingsTab, useSettingsSearchParams } from '@/entities/settings';
 import { useCheckUpdate } from '@/entities/updates';
 import { checkIsUpdateAvailable } from '@/entities/updates';
-import { SettingsTab } from '@/pages/settings';
-import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTooltip } from '@/shared/ui';
@@ -28,10 +26,9 @@ export const UpdateBanner: Component<UpdateBannerProps> = (props) => {
     update.data ? checkIsUpdateAvailable(update.data) : false,
   );
 
-  const navigate = useNavigate();
-
+  const { open } = useSettingsSearchParams();
   const handleGoToUpdate = () => {
-    navigate(ROUTES.SETTINGS(SettingsTab.Update));
+    open(SettingsTab.Update);
   };
 
   return (

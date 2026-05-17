@@ -31,7 +31,7 @@ export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
 const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, InstanceSettingsDialogBodyProps<T>>,
 ) => {
-  const [local, others] = splitProps(props, ['instance', 'class']);
+  const [local, others] = splitProps(props, ['instance', 'onChange', 'class']);
 
   const [{ t }] = useTranslation();
 
@@ -39,11 +39,16 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 
   const editInstance = useEditInstance();
 
+  const handleOnTabChange = (value: string) => {
+    local.onChange?.(value);
+  };
+
   return (
     <Tabs
       class={cn('h-96 flex overflow-hidden', local.class)}
       defaultValue={InstanceSettingsDialogTabs.General}
       orientation='vertical'
+      onChange={handleOnTabChange}
       {...(others as TabsProps<T>)}
     >
       <SettingsTabsList>
@@ -66,6 +71,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
           <SettingsTabsContent
             value={tabContent.value}
             as={tabContent.component}
+            class='pb-6'
             instance={local.instance}
             editInstance={editInstance.mutateAsync}
             defaultSettings={globalSettings.data}
