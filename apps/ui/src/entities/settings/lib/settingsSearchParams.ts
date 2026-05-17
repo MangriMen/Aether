@@ -2,9 +2,9 @@ import type { SearchParams } from '@solidjs/router';
 
 import { parseSearchParamToString } from '@/shared/lib';
 
-import type { SettingsSearchParams } from '../model/settingsSearchParams';
+import type { SettingsSearchParams } from '../model';
 
-import { DEFAULT_TAB, isSettingsTab, type SettingsTab } from '../model';
+import { resolveSettingsTab } from '../model';
 
 export const decodeSettingsSearchParams = ({
   tab,
@@ -17,19 +17,18 @@ export const decodeSettingsSearchParams = ({
 };
 
 export const encodeSettingsSearchParams = ({
+  modal,
   tab,
 }: SettingsSearchParams): SearchParams => {
-  return {
-    tab,
-  };
-};
+  const params: SearchParams = {};
 
-const resolveSettingsTab = (
-  tab: string | undefined,
-): SettingsTab | undefined => {
-  if (tab === undefined) {
-    return;
+  if (modal !== undefined) {
+    params.modal = modal;
   }
 
-  return isSettingsTab(tab) ? tab : DEFAULT_TAB;
+  if (tab !== undefined) {
+    params.tab = tab;
+  }
+
+  return params;
 };

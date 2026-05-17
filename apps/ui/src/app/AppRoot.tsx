@@ -21,7 +21,7 @@ import { RootErrorBoundary } from './layouts/RootErrorBoundary';
 import { useSetup } from './lib/useSetup';
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
 import { AppGlobalsProvider } from './providers/AppGlobalsProvider';
-import { AppInitializeGuard } from './providers/AppInitializeGuard/AppInitializeGuard';
+import { AppInitializeGuard } from './providers/AppInitializeGuard';
 import { DialogUrlBridge } from './providers/DialogUrlBridge';
 
 const queryClient = createQueryClient();

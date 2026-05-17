@@ -1,8 +1,9 @@
 import { createMemo } from 'solid-js';
 
+import { SettingsTab } from '@/entities/settings';
 import { isDeveloperMode } from '@/shared/model';
 
-import { SETTINGS_TABS_DEFINITION, SettingsTab } from '../model';
+import { SETTINGS_TABS_DEFINITION } from '../model';
 
 export const useSettingsPageTabs = () => {
   const availableTabs = createMemo(() => {

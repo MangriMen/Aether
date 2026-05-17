@@ -7,3 +7,5 @@ export * from './memory';
 export * from './resolution';
 export * from './settings';
 export * from './settingsQueries';
+export * from './settingsSearchParams';
+export * from './settingsTabs';

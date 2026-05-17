@@ -1,5 +1,3 @@
-import type { SettingsTab } from '@/widgets/settings-view';
-
 export const ROUTES = {
   HOME: '/',
 
@@ -15,9 +13,6 @@ export const ROUTES = {
   INSTANCE_DIALOG: (id: string | number) =>
     `/instance-settings/${encodeURIComponent(id)}`,
 
-  SETTINGS: (tab?: SettingsTab) =>
-    tab ? `?modal=settings&tab=${encodeURIComponent(tab)}` : '?modal=settings',
-
   PLAYGROUND: '/playground',
 } as const;
 
@@ -31,3 +26,7 @@ export const ROUTE_PATTERNS = {
   INSTANCE_DIALOG: '/instance-settings/:id',
   PLAYGROUND: '/playground',
 } as const;
+
+export interface GlobalSearchParams {
+  modal?: 'settings';
+}

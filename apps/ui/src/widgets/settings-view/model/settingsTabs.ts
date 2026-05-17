@@ -8,23 +8,14 @@ import IconMdiUpdate from '~icons/mdi/update';
 import type { TabConfig } from '@/shared/model';
 import type { SettingsPaneProps } from '@/shared/ui';
 
+import { SettingsTab } from '@/entities/settings';
+
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import { JavaPane } from '../ui/JavaPane/JavaPane';
 import { PluginsPane } from '../ui/PluginsPane/PluginsPane';
 import { UpdatePane } from '../ui/UpdatePane/UpdatePane';
-
-export const SettingsTab = {
-  Appearance: 'appearance',
-  Java: 'java',
-  DefaultInstanceSettings: 'defaultInstanceSettings',
-  Update: 'update',
-  Plugins: 'plugins',
-  Experimental: 'experimental',
-} as const;
-
-export type SettingsTab = (typeof SettingsTab)[keyof typeof SettingsTab];
 
 export const SETTINGS_TABS_DEFINITION = [
   {
@@ -64,8 +55,3 @@ export const SETTINGS_TABS_DEFINITION = [
     component: ExperimentalPane,
   },
 ] as const satisfies TabConfig<SettingsTab, SettingsPaneProps>[];
-
-export const SettingsTabs = new Set(Object.values(SettingsTab));
-
-export const isSettingsTab = (value: string): value is SettingsTab =>
-  SettingsTabs.has(value as SettingsTab);

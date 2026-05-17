@@ -16,14 +16,10 @@ export const useContentPageSearchParams = (): [
 ] => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentParams = createMemo(() =>
-    decodeContentSearchParams(searchParams),
-  );
+  const params = createMemo(() => decodeContentSearchParams(searchParams));
 
   const isInitialSetup = createMemo(
-    () =>
-      !currentParams().providerId?.pluginId ||
-      !currentParams().providerId?.capabilityId,
+    () => !params().providerId?.pluginId || !params().providerId?.capabilityId,
   );
 
   const setParams = (params: ContentPageSearchParams) => {
@@ -32,5 +28,5 @@ export const useContentPageSearchParams = (): [
     });
   };
 
-  return [currentParams, setParams];
+  return [params, setParams];
 };

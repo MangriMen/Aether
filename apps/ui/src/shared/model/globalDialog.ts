@@ -42,7 +42,7 @@ const getOrCreateDialogStore = () => {
 export const showDialog = <T extends DialogComponentProps>(
   id: string,
   dialog: Component<T>,
-  props: T,
+  props: T | null = null,
 ) => {
   const [, setStore] = getOrCreateDialogStore();
   setStore(
@@ -54,6 +54,11 @@ export const showDialog = <T extends DialogComponentProps>(
       };
     }),
   );
+};
+
+export const dialogIsOpen = (id: string) => {
+  const [store] = getOrCreateDialogStore();
+  return id in store.dialogs;
 };
 
 export const closeDialog = (id: string) => {
