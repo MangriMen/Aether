@@ -33,16 +33,14 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
       }
       {...props}
     >
-      <div class='flex min-w-44 flex-col items-end'>
-        <Switch
-          checked={!themeContext.disableAnimations}
-          onChange={handleSetDisableAnimations}
-        >
-          <SwitchControl>
-            <SwitchThumb />
-          </SwitchControl>
-        </Switch>
-      </div>
+      <Switch
+        checked={!themeContext.disableAnimations}
+        onChange={handleSetDisableAnimations}
+      >
+        <SwitchControl>
+          <SwitchThumb />
+        </SwitchControl>
+      </Switch>
     </SettingsEntry>
   );
 };

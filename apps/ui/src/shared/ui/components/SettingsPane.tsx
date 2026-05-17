@@ -27,7 +27,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       fallback={
         <div
           class={cn(
-            'flex flex-col gap-4 rounded-lg container pl-0 md:pl-6 pr-0',
+            '@container/settings-pane flex flex-col gap-4 rounded-lg container pl-0 md:pl-6 pr-0',
             local.class,
           )}
           {...others}
@@ -37,7 +37,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
           </Show>
           <div
             class={cn(
-              'flex flex-col gap-2 overflow-y-auto grow pr-6',
+              'flex flex-col gap-2 overflow-y-auto grow pr-6 pb-6',
               local.childrenWrapperClass,
             )}
           >
@@ -47,7 +47,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       }
     >
       <CollapsibleSettingsPane
-        class={local.class}
+        class={cn('@container/settings-pane', local.class)}
         label={local.label}
         children={local.children}
         {...others}

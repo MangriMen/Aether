@@ -22,9 +22,13 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
 
   return (
     <div
-      class={cn('flex justify-between items-center w-full gap-8', local.class, {
-        'bg-card/card border p-4 rounded-md': local.variant === 'card',
-      })}
+      class={cn(
+        'flex flex-col @sm/settings-pane:flex-row justify-between @sm/settings-pane:items-center w-full gap-8',
+        local.class,
+        {
+          'bg-card/card border p-4 rounded-md': local.variant === 'card',
+        },
+      )}
       {...others}
     >
       <div class='text-pretty'>

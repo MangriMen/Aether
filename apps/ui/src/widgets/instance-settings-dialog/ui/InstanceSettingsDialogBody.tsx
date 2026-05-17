@@ -71,7 +71,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
           <SettingsTabsContent
             value={tabContent.value}
             as={tabContent.component}
-            class='pl-6'
+            class='pb-6'
             instance={local.instance}
             editInstance={editInstance.mutateAsync}
             defaultSettings={globalSettings.data}

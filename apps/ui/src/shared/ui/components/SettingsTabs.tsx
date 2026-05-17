@@ -37,7 +37,7 @@ export const SettingsTabsContent = <T extends ValidComponent = 'div'>(
   <TabsContent
     {...props}
     class={cn(
-      'flex-1 overflow-y-auto duration-200 animate-in fade-in slide-in-from-bottom-12 data-[orientation=vertical]:mx-auto ease-customExpo',
+      'flex-1 overflow-y-auto pl-6 duration-200 animate-in fade-in slide-in-from-bottom-12 data-[orientation=vertical]:mx-auto ease-customExpo',
       props.class,
     )}
   />
