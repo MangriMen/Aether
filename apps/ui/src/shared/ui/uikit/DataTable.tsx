@@ -208,10 +208,12 @@ const getColumnStyles = <TData, TValue>(
 const getSharedColumnsStyles = <TData, TValue>(
   getSize: () => number,
   def: ColumnDef<TData, TValue>,
-) => {
+): JSX.CSSProperties => {
   const isStretched = def.meta?.stretch;
+  const isCenter = def.meta?.center;
 
   return {
+    'text-align': isCenter ? 'center' : undefined,
     width: isStretched ? '100%' : `${getSize()}px`,
     ...(def.maxSize && { 'max-width': `${def.maxSize}px` }),
     ...(def.minSize && { 'min-width': `${def.minSize}px` }),

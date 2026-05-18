@@ -86,20 +86,12 @@ const UpdateButton: Component<UpdateButtonProps> = (props) => {
     <Show
       when={props.isUpdateAvailable}
       fallback={
-        <Button
-          variant='default'
-          loading={props.isFetching}
-          onClick={props.onCheckUpdates}
-        >
+        <Button loading={props.isFetching} onClick={props.onCheckUpdates}>
           {t('settings.checkForUpdates')}
         </Button>
       }
     >
-      <Button
-        variant='default'
-        loading={props.isUpdating}
-        onClick={props.onSubmitUpdate}
-      >
+      <Button loading={props.isUpdating} onClick={props.onSubmitUpdate}>
         {t('settings.installAndRestart')}
       </Button>
     </Show>

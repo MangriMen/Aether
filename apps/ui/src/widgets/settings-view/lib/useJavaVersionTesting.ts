@@ -7,15 +7,16 @@ import type { JavaTestStatus } from '../model';
 
 import { parseJavaVersion } from './parseJavaVersion';
 
+const DEFAULT_STATUS: JavaTestStatus = 'idle';
+
 export const useJavaVersionTesting = () => {
-  const [testingStatus, setTestingStatus] = createSignal<
-    JavaTestStatus | undefined
-  >(undefined);
+  const [testingStatus, setTestingStatus] =
+    createSignal<JavaTestStatus>(DEFAULT_STATUS);
 
   const testJava = useTestJava();
 
   const resetStatus = () => {
-    setTestingStatus(undefined);
+    setTestingStatus(DEFAULT_STATUS);
   };
 
   const test = async (version: string, path: string) => {
@@ -42,10 +43,6 @@ export const useJavaVersionTesting = () => {
         setTestingStatus('version-mismatch');
       } else {
         setTestingStatus('error');
-      }
-    } finally {
-      if (testingStatus() === 'testing') {
-        setTestingStatus(undefined);
       }
     }
   };

@@ -31,7 +31,11 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
           <UpdateBanner class='pointer-events-auto' />
         </Show>
       </div>
-      <ProgressMenuButton class='self-end' popoverComponent={ProgressPopover} />
+      <ProgressMenuButton
+        class='self-end'
+        popoverComponent={ProgressPopover}
+        data-ignore-outside-click
+      />
     </BaseTitleBar>
   );
 };

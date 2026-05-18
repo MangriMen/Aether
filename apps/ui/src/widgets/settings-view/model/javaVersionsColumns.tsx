@@ -1,11 +1,11 @@
-import type { Accessor } from 'solid-js';
-
 import { createColumnHelper } from '@tanstack/solid-table';
+import { createMemo, type Accessor } from 'solid-js';
 
 import type { TFunction } from '@/shared/model';
 
 import { CombinedTextField } from '@/shared/ui';
 
+import { JavaVersionActions } from '../ui/JavaPane/JavaVersionActions';
 import { JavaVersionStatusBadge } from '../ui/JavaPane/JavaVersionStatusBadge';
 
 export interface JavaVersion {
@@ -13,7 +13,12 @@ export interface JavaVersion {
   path: string | undefined;
 }
 
-export type JavaTestStatus = 'testing' | 'valid' | 'error' | 'version-mismatch';
+export type JavaTestStatus =
+  | 'idle'
+  | 'testing'
+  | 'valid'
+  | 'error'
+  | 'version-mismatch';
 
 export const javaVersionsColumnHelper = createColumnHelper<JavaVersion>();
 
@@ -23,64 +28,73 @@ interface CreateJavaVersionColumnsProps {
   onInstallRecommended?: (version: string) => void;
 }
 
-export const createJavaVersionColumns = (
-  props: CreateJavaVersionColumnsProps,
-) => [
-  javaVersionsColumnHelper.accessor('majorVersion', {
-    maxSize: 80,
-    header: () => {
-      return props.t('javaVersion.version');
-    },
-    cell: (props) => {
-      return (
-        <span>
-          <span>Java</span>
-          &nbsp;
-          {props.cell.renderValue()}
-        </span>
-      );
-    },
-  }),
+export const createJavaVersionColumns = ({
+  t,
+  isInstalling,
+  onInstallRecommended,
+}: CreateJavaVersionColumnsProps) => {
+  const columns = createMemo(() => [
+    javaVersionsColumnHelper.accessor('majorVersion', {
+      maxSize: 80,
+      header: () => t('javaVersion.version'),
+      cell: (props) => {
+        return (
+          <span>
+            <span>Java</span>
+            &nbsp;
+            {props.cell.renderValue()}
+          </span>
+        );
+      },
+    }),
 
-  javaVersionsColumnHelper.accessor('path', {
-    header: () => {
-      return props.t('javaVersion.path');
-    },
-    cell: (props) => (
-      <CombinedTextField
-        value={props.cell.getValue()}
-        // onChange={handlePathChange}
-        inputProps={{ type: 'text', placeholder: '/path/to/java' }}
-        readOnly
-        //// readOnly={local.onDetect === undefined || local.onBrowse === undefined}
-      />
-    ),
-    meta: {
-      stretch: true,
-    },
-  }),
-
-  javaVersionsColumnHelper.display({
-    id: 'status',
-    header: () => {
-      return 'Status';
-    },
-    cell: (cellProps) => {
-      return (
-        <JavaVersionStatusBadge
-          majorVersion={cellProps.row.original.majorVersion}
-          path={cellProps.row.original.path}
-          disabled={props.isInstalling?.()}
+    javaVersionsColumnHelper.accessor('path', {
+      header: () => t('javaVersion.path'),
+      cell: (props) => (
+        <CombinedTextField
+          class='h-8'
+          value={props.cell.getValue()}
+          // onChange={handlePathChange}
+          inputProps={{ type: 'text', placeholder: '/path/to/java' }}
+          readOnly
+          //// readOnly={local.onDetect === undefined || local.onBrowse === undefined}
         />
-      );
-    },
-  }),
+      ),
+      meta: {
+        stretch: true,
+      },
+    }),
 
-  javaVersionsColumnHelper.display({
-    id: 'actions',
-    maxSize: 80,
-    cell: () => {
-      return 1;
-    },
-  }),
-];
+    javaVersionsColumnHelper.display({
+      id: 'status',
+      header: () => t('javaVersion.status'),
+      cell: (cellProps) => {
+        return (
+          <JavaVersionStatusBadge
+            majorVersion={cellProps.row.original.majorVersion}
+            path={cellProps.row.original.path}
+            disabled={isInstalling?.()}
+          />
+        );
+      },
+      meta: {
+        center: true,
+      },
+    }),
+
+    javaVersionsColumnHelper.display({
+      id: 'actions',
+      maxSize: 80,
+      cell: (cellProps) => (
+        <JavaVersionActions
+          isInstalling={isInstalling?.()}
+          onInstallRecommended={() =>
+            onInstallRecommended?.(cellProps.row.original.majorVersion)
+          }
+        />
+      ),
+    }),
+  ]);
+
+  return columns;
+};

@@ -1,9 +1,11 @@
 import IconMdiPlay from '~icons/mdi/play';
+import IconMdiReload from '~icons/mdi/reload';
 import {
+  createEffect,
   createMemo,
-  Match,
+  createSignal,
+  onCleanup,
   splitProps,
-  Switch,
   type Component,
 } from 'solid-js';
 
@@ -13,6 +15,8 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
 
+import type { JavaTestStatus } from '../../model';
+
 import { useJavaVersionTesting } from '../../lib';
 
 export type JavaVersionStatusBadgeProps = ButtonProps & {
@@ -20,6 +24,25 @@ export type JavaVersionStatusBadgeProps = ButtonProps & {
   path?: string;
   disabled?: boolean;
 };
+
+const VARIANT_MAP = {
+  idle: undefined,
+  testing: 'secondary',
+  error: 'destructive',
+  valid: 'success',
+  'version-mismatch': 'warning',
+} as const satisfies Record<JavaTestStatus, ButtonProps['variant']>;
+
+const TEXT_MAP = {
+  idle: 'javaVersion.test',
+  testing: 'javaVersion.testing',
+  valid: 'javaVersion.valid',
+  error: 'javaVersion.error',
+  'version-mismatch': 'javaVersion.versionMismatch',
+} as const satisfies Record<JavaTestStatus, string>;
+
+const LOADER_DELAY = 250;
+const SPIN_DURATION = 300;
 
 export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
   props,
@@ -35,30 +58,62 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
 
   const { test, testingStatus } = useJavaVersionTesting();
 
+  const [uiStatus, setUiStatus] = createSignal(testingStatus());
+
+  const [isSuccessSpinning, setIsSuccessSpinning] = createSignal(false);
+
+  createEffect(() => {
+    const currentStatus = testingStatus();
+
+    if (currentStatus === 'testing') {
+      const timer = setTimeout(() => {
+        setUiStatus('testing');
+      }, LOADER_DELAY);
+
+      onCleanup(() => clearTimeout(timer));
+    } else {
+      setUiStatus(currentStatus);
+    }
+  });
+
+  const displayStatus = createMemo(() => uiStatus() || 'idle');
+
   const isDataValid = createMemo(
     () => local.majorVersion !== undefined && local.path !== undefined,
   );
 
-  const handleClick = () => {
-    if (local.majorVersion === undefined || local.path === undefined) {
-      return;
-    }
+  const handleClick = async () => {
+    if (!local.majorVersion || !local.path) return;
 
-    test(local.majorVersion, local.path);
+    const previousStatus = testingStatus();
+
+    await test(local.majorVersion, local.path);
+
+    if (testingStatus() === previousStatus && previousStatus !== 'idle') {
+      setIsSuccessSpinning(true);
+
+      const timer = setTimeout(() => {
+        setIsSuccessSpinning(false);
+      }, SPIN_DURATION);
+
+      onCleanup(() => clearTimeout(timer));
+    }
   };
 
-  const variant = createMemo<ButtonProps['variant']>(() => {
-    switch (testingStatus()) {
-      case undefined:
-      case 'testing':
-        return 'secondary';
-      case 'error':
-        return 'destructive';
-      case 'valid':
-        return 'success';
-      case 'version-mismatch':
-        return 'warning';
+  const variant = createMemo(() => VARIANT_MAP[displayStatus()] || 'secondary');
+
+  const leadingIcon = createMemo(() => {
+    if (displayStatus() === 'idle') {
+      return IconMdiPlay;
     }
+
+    return () => (
+      <IconMdiReload
+        class={cn({
+          [`animate-spin duration-${SPIN_DURATION}`]: isSuccessSpinning(),
+        })}
+      />
+    );
   });
 
   return (
@@ -66,33 +121,15 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
       class={cn('w-full', local.class)}
       variant={variant()}
       onClick={handleClick}
-      loading={testingStatus() === 'testing'}
-      disabled={local.disabled || !isDataValid()}
-      leadingIcon={testingStatus() === undefined ? IconMdiPlay : undefined}
+      loading={uiStatus() === 'testing'}
+      disabled={
+        local.disabled || !isDataValid() || testingStatus() === 'testing'
+      }
+      leadingIcon={leadingIcon()}
       size='sm'
       {...others}
     >
-      <Switch>
-        <Match when={testingStatus() === undefined}>
-          {t('settings.java.test')}
-        </Match>
-
-        <Match when={testingStatus() === 'testing'}>
-          {t('javaVersion.testing')}
-        </Match>
-
-        <Match when={testingStatus() === 'valid'}>
-          {t('javaVersion.valid')}
-        </Match>
-
-        <Match when={testingStatus() === 'error'}>
-          {t('javaVersion.error')}
-        </Match>
-
-        <Match when={testingStatus() === 'version-mismatch'}>
-          {t('javaVersion.versionMismatch')}
-        </Match>
-      </Switch>
+      {t(TEXT_MAP[displayStatus()])}
     </Button>
   );
 };

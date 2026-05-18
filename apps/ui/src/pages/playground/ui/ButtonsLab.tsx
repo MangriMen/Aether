@@ -15,6 +15,7 @@ export const ButtonsLab = () => {
     'destructive',
     'link',
     'ghostWarning',
+    'warning',
   ] as const;
   const sizes = ['sm', 'default', 'lg', 'icon'] as const;
 
@@ -36,6 +37,9 @@ export const ButtonsLab = () => {
                   )}
                 </For>
                 <Button variant={v} disabled>
+                  Disabled
+                </Button>
+                <Button variant={v} loading>
                   Disabled
                 </Button>
               </div>

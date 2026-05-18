@@ -387,14 +387,6 @@
       "ok": "Apply",
       "later": "Later"
     },
-    "java": {
-      "location": "Java {{version}} location",
-      "installRecommended": "Install recommended",
-      "detect": "Detect",
-      "test": "Test",
-      "testSuccess": "Success",
-      "testFailed": "Failed"
-    },
     "usedFromDefaultSettings": "Used from default settings",
     "environmentVariablesError": {
       "invalidFormat": "Invalid format {{part}}. Must be in \"key=value\" format",
@@ -465,6 +457,11 @@
     "testing": "Testing",
     "valid": "Valid",
     "error": "Error",
-    "versionMismatch": "Version mismatch"
+    "versionMismatch": "Version mismatch",
+    "status": "Status",
+    "installRecommended": "Install recommended",
+    "test": "Test",
+    "browse": "Browse",
+    "detect": "Detect"
   }
 }

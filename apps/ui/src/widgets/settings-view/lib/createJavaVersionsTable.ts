@@ -1,5 +1,5 @@
 import { createSolidTable, getCoreRowModel } from '@tanstack/solid-table';
-import { createMemo, type Accessor } from 'solid-js';
+import { type Accessor } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
 
@@ -17,13 +17,11 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
 
   const actions = useJavaVersionActions();
 
-  const columns = createMemo(() =>
-    createJavaVersionColumns({
-      t,
-      onInstallRecommended: actions.installRecommended,
-      isInstalling: actions.isInstalling,
-    }),
-  );
+  const columns = createJavaVersionColumns({
+    t,
+    onInstallRecommended: actions.installRecommended,
+    isInstalling: actions.isInstalling,
+  });
 
   const table = createSolidTable({
     get data() {
