@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM java_versions WHERE major_version = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "dc58d002dab6be64dea86c6ce68471b814fdedc2a22f7deade1e4025a8476b75"
+}

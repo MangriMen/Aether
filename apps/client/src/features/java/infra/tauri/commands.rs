@@ -1,16 +1,18 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use aether_core::{
     core::{LauncherState, domain::LazyLocator},
     features::java::{
-        app::{InstallJavaUseCase, ListJavaUseCase, TestJreUseCase},
+        app::{
+            EditJavaUseCase, InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
+        },
         infra::{AzulJreProvider, FsJavaInstallationService},
     },
 };
 
 use crate::{
     FrontendResult,
-    features::java::{JavaDto, TestJreVersionDto},
+    features::java::{EditJavaDto, JavaDto},
     shared::commands::{JAVA_PLUGIN_NAME, java_commands},
 };
 
@@ -43,6 +45,36 @@ async fn list() -> FrontendResult<Vec<JavaDto>> {
 
 #[tauri::command]
 #[specta::specta]
+async fn edit(edit_java: EditJavaDto) -> FrontendResult<JavaDto> {
+    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+
+    Ok(EditJavaUseCase::new(
+        lazy_locator.get_java_storage().await,
+        Arc::new(FsJavaInstallationService {}),
+    )
+    .execute(edit_java.into())
+    .await
+    .map_err(aether_core::Error::from)
+    .map_err(crate::Error::from)?
+    .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn remove(version: u32) -> FrontendResult<()> {
+    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+
+    Ok(
+        RemoveJavaUseCase::new(lazy_locator.get_java_storage().await)
+            .execute(version)
+            .await
+            .map_err(aether_core::Error::from)
+            .map_err(crate::Error::from)?,
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn install(version: u32) -> FrontendResult<JavaDto> {
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
     let state = LauncherState::get().await.map_err(crate::Error::from)?;
@@ -67,9 +99,9 @@ async fn install(version: u32) -> FrontendResult<JavaDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn test(test_version: TestJreVersionDto) -> FrontendResult<JavaDto> {
+async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
     Ok(TestJreUseCase::new(Arc::new(FsJavaInstallationService {}))
-        .execute(test_version.into())
+        .execute(path)
         .await
         .map_err(aether_core::Error::from)
         .map_err(crate::Error::from)?

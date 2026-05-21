@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+pub const CUSTOM_JAVA_VERSION: &str = "Custom";
+pub const UNKNOWN_JAVA_ARCHITECTURE: &str = "Unknown";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Java {
     major_version: u32,

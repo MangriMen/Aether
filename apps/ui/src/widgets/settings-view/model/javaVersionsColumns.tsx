@@ -3,9 +3,8 @@ import { createMemo, type Accessor } from 'solid-js';
 
 import type { TFunction } from '@/shared/model';
 
-import { CombinedTextField } from '@/shared/ui';
-
 import { JavaVersionActions } from '../ui/JavaPane/JavaVersionActions';
+import { JavaVersionPath } from '../ui/JavaPane/JavaVersionPath';
 import { JavaVersionStatusBadge } from '../ui/JavaPane/JavaVersionStatusBadge';
 
 export interface JavaVersion {
@@ -38,26 +37,16 @@ export const createJavaVersionColumns = ({
       maxSize: 80,
       header: () => t('javaVersion.version'),
       cell: (props) => {
-        return (
-          <span>
-            <span>Java</span>
-            &nbsp;
-            {props.cell.renderValue()}
-          </span>
-        );
+        return <span>{`Java ${props.cell.renderValue() ?? '—'}`}</span>;
       },
     }),
 
     javaVersionsColumnHelper.accessor('path', {
       header: () => t('javaVersion.path'),
-      cell: (props) => (
-        <CombinedTextField
-          class='h-8'
-          value={props.cell.getValue()}
-          // onChange={handlePathChange}
-          inputProps={{ type: 'text', placeholder: '/path/to/java' }}
-          readOnly
-          //// readOnly={local.onDetect === undefined || local.onBrowse === undefined}
+      cell: (cellProps) => (
+        <JavaVersionPath
+          majorVersion={cellProps.row.original.majorVersion}
+          value={cellProps.getValue()}
         />
       ),
       meta: {
@@ -67,16 +56,16 @@ export const createJavaVersionColumns = ({
 
     javaVersionsColumnHelper.display({
       id: 'status',
+      minSize: 150,
       header: () => t('javaVersion.status'),
-      cell: (cellProps) => {
-        return (
-          <JavaVersionStatusBadge
-            majorVersion={cellProps.row.original.majorVersion}
-            path={cellProps.row.original.path}
-            disabled={isInstalling?.()}
-          />
-        );
-      },
+      cell: (cellProps) => (
+        <JavaVersionStatusBadge
+          class='whitespace-nowrap'
+          majorVersion={cellProps.row.original.majorVersion}
+          path={cellProps.row.original.path}
+          disabled={isInstalling?.()}
+        />
+      ),
       meta: {
         center: true,
       },

@@ -47,7 +47,7 @@ export const CONTENT_TABLE_COLUMNS = [
     maxSize: 40,
     size: 40,
     header: (props) => (
-      <div class='flex items-center justify-center p-0'>
+      <div class='flex items-center justify-center'>
         <Checkbox
           checked={props.table.getIsAllPageRowsSelected()}
           indeterminate={props.table.getIsSomePageRowsSelected()}
@@ -57,7 +57,7 @@ export const CONTENT_TABLE_COLUMNS = [
       </div>
     ),
     cell: (props) => (
-      <div class='flex items-center justify-center p-0'>
+      <div class='flex items-center justify-center'>
         <Checkbox
           checked={props.row.getIsSelected()}
           onChange={(value) => props.row.toggleSelected(value)}

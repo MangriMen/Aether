@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
+use tracing::trace;
 
-use crate::features::java::{Java, JavaStorage, JavaStorageError};
+use crate::features::java::{Java, JavaDomainError, JavaStorage};
 
 pub struct SqliteJavaStorage {
     pool: SqlitePool,
@@ -15,7 +16,7 @@ impl SqliteJavaStorage {
 
 #[async_trait]
 impl JavaStorage for SqliteJavaStorage {
-    async fn list(&self) -> Result<Vec<Java>, JavaStorageError> {
+    async fn list(&self) -> Result<Vec<Java>, JavaDomainError> {
         let rows = sqlx::query_as!(SqlJava, "SELECT * FROM java_versions")
             .fetch_all(&self.pool)
             .await?;
@@ -23,7 +24,7 @@ impl JavaStorage for SqliteJavaStorage {
         Ok(rows.into_iter().map(Java::from).collect())
     }
 
-    async fn get(&self, major_version: u32) -> Result<Option<Java>, JavaStorageError> {
+    async fn get(&self, major_version: u32) -> Result<Option<Java>, JavaDomainError> {
         let v = i64::from(major_version);
         let row = sqlx::query_as!(
             SqlJava,
@@ -36,7 +37,9 @@ impl JavaStorage for SqliteJavaStorage {
         Ok(row.map(Java::from))
     }
 
-    async fn upsert(&self, java: Java) -> Result<Java, JavaStorageError> {
+    async fn upsert(&self, java: Java) -> Result<Java, JavaDomainError> {
+        trace!(java=?java, "Upsert java");
+
         let sql = SqlJava::from(java.clone());
 
         sqlx::query!(
@@ -55,6 +58,26 @@ impl JavaStorage for SqliteJavaStorage {
         .await?;
 
         Ok(java)
+    }
+
+    async fn remove(&self, major_version: u32) -> Result<(), JavaDomainError> {
+        trace!(major_version=%major_version, "Remove java");
+
+        let rows_affected = sqlx::query!(
+            "DELETE FROM java_versions WHERE major_version = ?",
+            major_version,
+        )
+        .execute(&self.pool)
+        .await?
+        .rows_affected();
+
+        if rows_affected == 0 {
+            return Err(JavaDomainError::NotFound {
+                version: major_version,
+            });
+        }
+
+        Ok(())
     }
 }
 
@@ -89,8 +112,8 @@ impl From<SqlJava> for Java {
     }
 }
 
-impl From<sqlx::Error> for JavaStorageError {
+impl From<sqlx::Error> for JavaDomainError {
     fn from(err: sqlx::Error) -> Self {
-        JavaStorageError::Storage(err.to_string())
+        JavaDomainError::Storage(err.to_string())
     }
 }

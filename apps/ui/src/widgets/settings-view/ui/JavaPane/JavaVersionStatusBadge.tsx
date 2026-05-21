@@ -79,9 +79,10 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
   const displayStatus = createMemo(() => uiStatus() || 'idle');
 
   const isDataValid = createMemo(
-    () => local.majorVersion !== undefined && local.path !== undefined,
+    () => local.majorVersion !== undefined && Boolean(local.path),
   );
 
+  let timer: number = 0;
   const handleClick = async () => {
     if (!local.majorVersion || !local.path) return;
 
@@ -92,13 +93,13 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
     if (testingStatus() === previousStatus && previousStatus !== 'idle') {
       setIsSuccessSpinning(true);
 
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         setIsSuccessSpinning(false);
       }, SPIN_DURATION);
-
-      onCleanup(() => clearTimeout(timer));
     }
   };
+
+  onCleanup(() => clearTimeout(timer));
 
   const variant = createMemo(() => VARIANT_MAP[displayStatus()] || 'secondary');
 
@@ -126,7 +127,6 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
         local.disabled || !isDataValid() || testingStatus() === 'testing'
       }
       leadingIcon={leadingIcon()}
-      size='sm'
       {...others}
     >
       {t(TEXT_MAP[displayStatus()])}

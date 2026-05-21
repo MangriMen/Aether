@@ -74,8 +74,10 @@ macro_rules! java_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             list,
+            edit,
+            remove,
             install,
-            test
+            test_jre
         ]
     };
 }

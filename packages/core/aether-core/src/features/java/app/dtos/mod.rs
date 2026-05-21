@@ -1,5 +1,3 @@
 mod edit_java;
-mod java;
 
 pub use edit_java::*;
-pub use java::*;

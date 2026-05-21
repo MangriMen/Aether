@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-import { useTestJava } from '@/entities/java';
+import { useTestJre } from '@/entities/java';
 import { isLauncherError } from '@/shared/model';
 
 import type { JavaTestStatus } from '../model';
@@ -13,14 +13,14 @@ export const useJavaVersionTesting = () => {
   const [testingStatus, setTestingStatus] =
     createSignal<JavaTestStatus>(DEFAULT_STATUS);
 
-  const testJava = useTestJava();
+  const testJava = useTestJre();
 
   const resetStatus = () => {
     setTestingStatus(DEFAULT_STATUS);
   };
 
-  const test = async (version: string, path: string) => {
-    const versionNum = parseJavaVersion(version);
+  const test = async (majorVersion: string, path: string) => {
+    const versionNum = parseJavaVersion(majorVersion);
 
     if (!versionNum) {
       return;
@@ -28,12 +28,13 @@ export const useJavaVersionTesting = () => {
 
     setTestingStatus('testing');
     try {
-      await testJava.mutateAsync({
-        major_version: versionNum,
-        path,
-      });
+      const java = await testJava.mutateAsync(path);
 
-      setTestingStatus('valid');
+      if (versionNum !== java.majorVersion) {
+        setTestingStatus('version-mismatch');
+      } else {
+        setTestingStatus('valid');
+      }
     } catch (e) {
       if (
         isLauncherError(e) &&

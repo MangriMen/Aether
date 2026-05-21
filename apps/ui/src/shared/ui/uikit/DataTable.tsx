@@ -66,7 +66,7 @@ export const DataTable = <TData,>(props: DataTableProps<TData>) => {
 
   return (
     <div class='relative w-full overflow-auto rounded-md border '>
-      <Table disableWrapper class='table-fixed'>
+      <Table disableWrapper>
         <TableHeader class='sticky top-0 z-10 bg-popover'>
           <For each={table().getHeaderGroups()}>
             {(headerGroup) => <DataTableHeaderRow headerGroup={headerGroup} />}
@@ -215,7 +215,9 @@ const getSharedColumnsStyles = <TData, TValue>(
   return {
     'text-align': isCenter ? 'center' : undefined,
     width: isStretched ? '100%' : `${getSize()}px`,
+    ...((def.minSize || isStretched) && {
+      'min-width': `${def.minSize ?? 150}px`,
+    }),
     ...(def.maxSize && { 'max-width': `${def.maxSize}px` }),
-    ...(def.minSize && { 'min-width': `${def.minSize}px` }),
   };
 };

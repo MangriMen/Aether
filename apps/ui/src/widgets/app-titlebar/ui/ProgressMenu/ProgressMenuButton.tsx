@@ -50,7 +50,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
         variant='ghost'
         {...others}
       >
-        <ProgressBadge />
+        <ProgressBadge class='pointer-events-none' />
       </PopoverTrigger>
       <PopoverContent
         class='w-80 px-1 py-3'

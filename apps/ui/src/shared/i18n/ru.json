@@ -69,6 +69,7 @@
     "java": {
       "NOT_FOUND": "Исполняемый файл Java не найден",
       "INVALID_PATH": "Указанный путь к Java недействителен",
+      "EMPTY_PATH": "Путь к Java не указан",
       "INVALID_VERSION": "Неподдерживаемая версия Java",
       "FAILED_TO_GET_PROPERTIES": "Не удалось получить свойства Java",
       "VERSION_NOT_AVAILABLE": "Запрошенная версия Java недоступна",
@@ -457,7 +458,9 @@
   },
   "java": {
     "installError": "Не удалось установить Java",
-    "testError": "Не удалось протестировать Java"
+    "testError": "Не удалось протестировать Java",
+    "editError": "Не удалось изменить Java",
+    "removeError": "Не удалось удалить Java"
   },
   "javaVersion": {
     "version": "Версия",
@@ -470,6 +473,7 @@
     "installRecommended": "Установить рекомендуемую",
     "test": "Тест",
     "browse": "Обзор",
-    "detect": "Обнаружить"
+    "detect": "Обнаружить",
+    "pathPlaceholder": "Введите путь к Java Home (например, /path/to/java/)"
   }
 }
