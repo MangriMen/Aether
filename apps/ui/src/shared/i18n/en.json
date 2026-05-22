@@ -175,7 +175,8 @@
     "copyToClipboard": "Copy to clipboard",
     "close": "Close",
     "incompatible": "Incompatible",
-    "error": "Error"
+    "error": "Error",
+    "noData": "No data to display"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -466,6 +467,13 @@
     "test": "Test",
     "browse": "Browse",
     "detect": "Detect",
-    "pathPlaceholder": "Enter path to Java Home (e.g., /path/to/java/)"
+    "pathPlaceholder": "Enter path to Java (e.g., /path/to/java/)",
+    "versionWithNumber": "Java {{majorVersion}}"
+  },
+  "detectJava": {
+    "dialogTitle": "Select java version",
+    "select": "Select",
+    "selected": "Selected",
+    "installationsNotFound": "Could not detect any Java installations"
   }
 }

@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 
 import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
-import { createMemo, onMount, Show, splitProps } from 'solid-js';
+import { createMemo, createSignal, onMount, Show, splitProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
 
@@ -26,6 +26,8 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
 
   const [{ t }] = useTranslation();
 
+  const [isOpen, setIsOpen] = createSignal(true);
+
   const navigate = useNavigate();
 
   const instanceId = createMemo(() =>
@@ -40,7 +42,10 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
     if (local.onOpenChange) {
       local.onOpenChange(open);
     } else {
-      navigate(-1);
+      setIsOpen(false);
+      setTimeout(() => {
+        navigate(-1);
+      }, 200);
     }
   };
 
@@ -49,7 +54,7 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
   });
 
   return (
-    <Dialog defaultOpen onOpenChange={onOpenChange} {...others}>
+    <Dialog open={isOpen()} onOpenChange={onOpenChange} {...others}>
       <DialogContent class='flex w-[900px] max-w-[calc(100%-80px)] flex-col pb-0 pl-0'>
         <Show
           when={instance.data}

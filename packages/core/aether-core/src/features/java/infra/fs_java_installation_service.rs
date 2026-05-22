@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
+use futures::StreamExt;
 
 use crate::{
     features::java::{
@@ -17,20 +18,53 @@ pub struct FsJavaInstallationService;
 
 impl FsJavaInstallationService {
     /// Ensures that the given path ends with `JAVA_WINDOW_BIN`.
-    ///
-    /// If the provided path does not already end with `JAVA_WINDOW_BIN`,
-    /// this function appends it to the path. Otherwise, it returns the path unchanged.
     fn get_java_window_bin_path(path: PathBuf) -> Result<PathBuf, JavaDomainError> {
         match path.file_name() {
-            Some(file_name) => {
-                if file_name.to_string_lossy() == JAVA_WINDOW_BIN {
-                    Ok(path)
-                } else {
-                    Ok(path.join(JAVA_WINDOW_BIN))
-                }
-            }
+            Some(file_name) if file_name == JAVA_WINDOW_BIN => Ok(path),
+            Some(_) => Ok(path.join(JAVA_WINDOW_BIN)),
             None => Err(JavaDomainError::InvalidPath { path }),
         }
+    }
+
+    async fn scan_single_dir(&self, base_path: &Path) -> Result<Vec<Java>, JavaDomainError> {
+        let mut found_java = Vec::new();
+
+        let mut entries =
+            tokio::fs::read_dir(base_path)
+                .await
+                .map_err(|_| JavaDomainError::InvalidPath {
+                    path: base_path.to_path_buf(),
+                })?;
+
+        while let Some(entry) =
+            entries
+                .next_entry()
+                .await
+                .map_err(|_| JavaDomainError::InvalidPath {
+                    path: base_path.to_path_buf(),
+                })?
+        {
+            let path = entry.path();
+            if let Ok(metadata) = tokio::fs::metadata(&path).await
+                && metadata.is_dir()
+            {
+                let potential_bin_dir = path.join("bin");
+
+                let search_path = if tokio::fs::try_exists(&potential_bin_dir)
+                    .await
+                    .unwrap_or(false)
+                {
+                    potential_bin_dir
+                } else {
+                    path
+                };
+
+                if let Ok(java) = self.locate_java(&search_path).await {
+                    found_java.push(java);
+                }
+            }
+        }
+        Ok(found_java)
     }
 }
 
@@ -48,7 +82,11 @@ impl JavaInstallationService for FsJavaInstallationService {
             })?;
 
         let java_window_bin_path = Self::get_java_window_bin_path(canonical_path)?;
-        if !java_window_bin_path.exists() {
+
+        if !tokio::fs::try_exists(&java_window_bin_path)
+            .await
+            .unwrap_or(false)
+        {
             return Err(JavaDomainError::InvalidPath {
                 path: path.to_path_buf(),
             });
@@ -80,42 +118,38 @@ impl JavaInstallationService for FsJavaInstallationService {
         }
     }
 
-    async fn discover_installations(&self, base_path: &Path) -> Result<Vec<Java>, JavaDomainError> {
-        if !base_path.exists() || !base_path.is_dir() {
-            return Ok(vec![]);
-        }
-
-        let mut found_java = Vec::new();
-        let mut entries =
-            tokio::fs::read_dir(base_path)
-                .await
-                .map_err(|_| JavaDomainError::InvalidPath {
-                    path: base_path.to_path_buf(),
-                })?;
-
-        while let Some(entry) =
-            entries
-                .next_entry()
-                .await
-                .map_err(|_| JavaDomainError::InvalidPath {
-                    path: base_path.to_path_buf(),
-                })?
-        {
-            let path = entry.path();
-            if path.is_dir() {
-                let potential_bin_dir = path.join("bin");
-                let search_path = if potential_bin_dir.exists() {
-                    potential_bin_dir
-                } else {
-                    path
-                };
-
-                if let Ok(java) = self.locate_java(&search_path).await {
-                    found_java.push(java);
+    async fn discover_installations(
+        &self,
+        base_paths: &[PathBuf],
+    ) -> Result<Vec<Java>, JavaDomainError> {
+        // We convert the slice into owned PathBufs immediately to cut off lifetime constraints.
+        let scan_stream = futures::stream::iter(base_paths.to_vec())
+            .map(|path| async move {
+                // Check metadata concurrently inside the pipeline
+                if let Ok(meta) = tokio::fs::metadata(&path).await
+                    && meta.is_dir()
+                {
+                    return self.scan_single_dir(&path).await;
                 }
-            }
-        }
+                Ok(Vec::new()) // Safely return an empty vec if path is invalid/inaccessible
+            })
+            .buffer_unordered(4);
 
-        Ok(found_java)
+        let mut all_found = scan_stream
+            .fold(
+                Vec::with_capacity(base_paths.len() * 2),
+                |mut acc, scan_result| async move {
+                    if let Ok(mut java_list) = scan_result {
+                        acc.append(&mut java_list);
+                    }
+                    acc
+                },
+            )
+            .await;
+
+        all_found.sort_by(|a, b| a.path().cmp(b.path()));
+        all_found.dedup_by(|a, b| a.path() == b.path());
+
+        Ok(all_found)
     }
 }

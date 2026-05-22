@@ -1,11 +1,14 @@
 import { createColumnHelper } from '@tanstack/solid-table';
-import { createMemo, type Accessor } from 'solid-js';
+import IconMdiCheck from '~icons/mdi/check';
+import { createMemo, Show, type Accessor } from 'solid-js';
 
 import type { TFunction } from '@/shared/model';
 
+import { Button, CombinedTooltip } from '@/shared/ui';
+
 import { JavaVersionActions } from '../ui/JavaPane/JavaVersionActions';
 import { JavaVersionPath } from '../ui/JavaPane/JavaVersionPath';
-import { JavaVersionStatusBadge } from '../ui/JavaPane/JavaVersionStatusBadge';
+import { JavaVersionStatusButton } from '../ui/JavaPane/JavaVersionStatusButton';
 
 export interface JavaVersion {
   majorVersion: string;
@@ -25,19 +28,27 @@ interface CreateJavaVersionColumnsProps {
   t: TFunction;
   isInstalling?: Accessor<boolean>;
   onInstallRecommended?: (version: string) => void;
+  onDetect?: (version: string) => void;
 }
 
 export const createJavaVersionColumns = ({
   t,
   isInstalling,
   onInstallRecommended,
+  onDetect,
 }: CreateJavaVersionColumnsProps) => {
   const columns = createMemo(() => [
     javaVersionsColumnHelper.accessor('majorVersion', {
       maxSize: 80,
       header: () => t('javaVersion.version'),
       cell: (props) => {
-        return <span>{`Java ${props.cell.renderValue() ?? '—'}`}</span>;
+        return (
+          <span>
+            {t('javaVersion.versionWithNumber', {
+              majorVersion: props.getValue(),
+            })}
+          </span>
+        );
       },
     }),
 
@@ -56,11 +67,11 @@ export const createJavaVersionColumns = ({
 
     javaVersionsColumnHelper.display({
       id: 'status',
-      minSize: 150,
+      minSize: 160,
       header: () => t('javaVersion.status'),
       cell: (cellProps) => (
-        <JavaVersionStatusBadge
-          class='whitespace-nowrap'
+        <JavaVersionStatusButton
+          class='w-full whitespace-nowrap'
           majorVersion={cellProps.row.original.majorVersion}
           path={cellProps.row.original.path}
           disabled={isInstalling?.()}
@@ -68,20 +79,78 @@ export const createJavaVersionColumns = ({
       ),
       meta: {
         center: true,
+        // stretch: true,
       },
     }),
 
     javaVersionsColumnHelper.display({
       id: 'actions',
       maxSize: 80,
+      cell: (cellProps) => {
+        const majorVersion = () => cellProps.row.original.majorVersion;
+
+        return (
+          <JavaVersionActions
+            isInstalling={isInstalling?.()}
+            onInstallRecommended={() => onInstallRecommended?.(majorVersion())}
+            onDetect={() => onDetect?.(majorVersion())}
+          />
+        );
+      },
+    }),
+  ]);
+
+  return columns;
+};
+
+interface CreateDetectedJavaVersionColumnsProps {
+  t: TFunction;
+  currentVersion?: Accessor<JavaVersion | undefined>;
+  onSelect?: (javaVersion: JavaVersion) => void;
+}
+
+export const createDetectedJavaVersionColumns = ({
+  t,
+  currentVersion,
+  onSelect,
+}: CreateDetectedJavaVersionColumnsProps) => {
+  const columns = createMemo(() => [
+    javaVersionsColumnHelper.accessor('majorVersion', {
+      header: () => t('javaVersion.version'),
+    }),
+
+    javaVersionsColumnHelper.accessor('path', {
+      header: () => t('javaVersion.path'),
       cell: (cellProps) => (
-        <JavaVersionActions
-          isInstalling={isInstalling?.()}
-          onInstallRecommended={() =>
-            onInstallRecommended?.(cellProps.row.original.majorVersion)
-          }
-        />
+        <CombinedTooltip label={cellProps.getValue()} as='div' class='truncate'>
+          {cellProps.renderValue()}
+        </CombinedTooltip>
       ),
+      meta: {
+        stretch: true,
+      },
+    }),
+
+    javaVersionsColumnHelper.display({
+      id: 'actions',
+      minSize: 120,
+      cell: (cellProps) => {
+        const isSelected = () =>
+          currentVersion?.()?.path === cellProps.row.original.path;
+
+        return (
+          <Button
+            class='w-full'
+            onClick={() => onSelect?.(cellProps.row.original)}
+            disabled={isSelected()}
+            leadingIcon={isSelected() ? IconMdiCheck : undefined}
+          >
+            <Show when={isSelected()} fallback={t('detectJava.select')}>
+              {t('detectJava.selected')}
+            </Show>
+          </Button>
+        );
+      },
     }),
   ]);
 

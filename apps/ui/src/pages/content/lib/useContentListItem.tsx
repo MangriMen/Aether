@@ -9,7 +9,7 @@ import {
 } from '@/entities/instances';
 import { ROUTES } from '@/shared/config';
 import { searchParamsToQueryString } from '@/shared/lib';
-import { showDialog, closeDialog } from '@/shared/model';
+import { showDialog } from '@/shared/model';
 import { InstallContentDialog } from '@/widgets/install-content-dialog';
 
 import type { ContentPageSearchParams } from '../model';
@@ -60,22 +60,15 @@ export const useContentListItem = (item: Accessor<ContentItem>) => {
     } catch {
       /* empty */
     } finally {
-      showDialog(
-        'installContent',
-        () => (
-          <InstallContentDialog
-            item={item()}
-            manager={{
-              providerId: () => context.providerId,
-              installContent,
-              createIsInstalled,
-              createIsInstalling,
-            }}
-            onClose={() => closeDialog('installContent')}
-          />
-        ),
-        {},
-      );
+      showDialog('installContent', InstallContentDialog, {
+        item: item(),
+        manager: {
+          providerId: () => context.providerId,
+          installContent,
+          createIsInstalled,
+          createIsInstalling,
+        },
+      });
     }
   };
 

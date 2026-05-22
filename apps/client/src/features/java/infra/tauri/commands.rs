@@ -4,9 +4,10 @@ use aether_core::{
     core::{LauncherState, domain::LazyLocator},
     features::java::{
         app::{
-            EditJavaUseCase, InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
+            DiscoverJavaUseCase, EditJavaUseCase, InstallJavaUseCase, ListJavaUseCase,
+            RemoveJavaUseCase, TestJreUseCase,
         },
-        infra::{AzulJreProvider, FsJavaInstallationService},
+        infra::{AzulJreProvider, FsJavaInstallationService, get_default_discovery_paths},
     },
 };
 
@@ -106,4 +107,24 @@ async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
         .map_err(aether_core::Error::from)
         .map_err(crate::Error::from)?
         .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn discover() -> FrontendResult<Vec<JavaDto>> {
+    let state = LauncherState::get().await.map_err(crate::Error::from)?;
+
+    let mut discovery_paths = get_default_discovery_paths();
+    discovery_paths.push(state.location_info.java_dir());
+
+    Ok(
+        DiscoverJavaUseCase::new(Arc::new(FsJavaInstallationService {}), discovery_paths)
+            .execute()
+            .await
+            .map_err(aether_core::Error::from)
+            .map_err(crate::Error::from)?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    )
 }

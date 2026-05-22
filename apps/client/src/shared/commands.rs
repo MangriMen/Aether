@@ -77,7 +77,8 @@ macro_rules! java_commands {
             edit,
             remove,
             install,
-            test_jre
+            test_jre,
+            discover
         ]
     };
 }

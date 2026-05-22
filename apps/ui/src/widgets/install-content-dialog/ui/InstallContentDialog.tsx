@@ -1,3 +1,5 @@
+import type { DialogRootProps } from '@kobalte/core/dialog';
+
 import IconMdiMagnify from '~icons/mdi/magnify';
 import {
   createMemo,
@@ -26,16 +28,15 @@ import type { ContentManager } from '../model';
 
 import { InstallContentDialogListItem } from './InstallContentDialogListItem';
 
-export type InstallContentDialogProps = {
+export type InstallContentDialogProps = DialogRootProps & {
   item: ContentItem;
   manager: ContentManager;
-  onClose: () => void;
 };
 
 export const InstallContentDialog: Component<InstallContentDialogProps> = (
   props,
 ) => {
-  const [local, _] = splitProps(props, ['item', 'manager', 'onClose']);
+  const [local, others] = splitProps(props, ['item', 'manager']);
 
   const [{ t }] = useTranslation();
   const instances = useInstances();
@@ -65,14 +66,8 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
     ),
   );
 
-  const handleOnOpenChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      local.onClose();
-    }
-  };
-
   return (
-    <Dialog defaultOpen onOpenChange={handleOnOpenChange}>
+    <Dialog {...others}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('instance.installContent')}</DialogTitle>
@@ -116,7 +111,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
                     isLoadingCheckCompatibilityData={
                       checkCompatibility.isLoading
                     }
-                    onCloseDialog={local.onClose}
+                    onCloseDialog={() => others.onOpenChange?.(false)}
                   />
                 )}
               </For>

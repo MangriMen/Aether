@@ -92,3 +92,18 @@ export const useRemoveJava = () => {
     },
   }));
 };
+
+export const useDiscoverJava = () => {
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: commands.discover,
+    onError: (err) => {
+      showError({
+        title: t('java.removeError'),
+        err,
+        t,
+      });
+    },
+  }));
+};

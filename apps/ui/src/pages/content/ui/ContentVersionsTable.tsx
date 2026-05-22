@@ -23,7 +23,7 @@ export const ContentVersionsTable: Component<ContentVersionsTableProps> = (
     'class',
   ]);
 
-  const { table, columns } = createContentVersionsTable({
+  const table = createContentVersionsTable({
     data: () => local.data,
     contentType: () => local.contentType,
   });
@@ -33,11 +33,7 @@ export const ContentVersionsTable: Component<ContentVersionsTableProps> = (
       class={cn('flex flex-col gap-4 p-1 overflow-hidden', local.class)}
       {...others}
     >
-      <DataTable
-        columns={columns()}
-        table={table}
-        isLoading={local.isLoading}
-      />
+      <DataTable table={table} isLoading={local.isLoading} />
       <CombinedPagination
         class={cn('self-end', { hidden: table.getPageCount() < 2 })}
         siblingCount={1}

@@ -19,7 +19,7 @@ import type { JavaTestStatus } from '../../model';
 
 import { useJavaVersionTesting } from '../../lib';
 
-export type JavaVersionStatusBadgeProps = ButtonProps & {
+export type JavaVersionStatusButtonProps = ButtonProps & {
   majorVersion?: string;
   path?: string;
   disabled?: boolean;
@@ -42,11 +42,12 @@ const TEXT_MAP = {
 } as const satisfies Record<JavaTestStatus, string>;
 
 const LOADER_DELAY = 250;
-const SPIN_DURATION = 300;
+const SPIN_DURATION = 500;
+const COOLING_OFF_DURATION = 3000;
 
-export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
-  props,
-) => {
+export const JavaVersionStatusButton: Component<
+  JavaVersionStatusButtonProps
+> = (props) => {
   const [local, others] = splitProps(props, [
     'majorVersion',
     'path',
@@ -60,6 +61,7 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
 
   const [uiStatus, setUiStatus] = createSignal(testingStatus());
 
+  const [isCoolingOff, setIsCoolingOff] = createSignal(false);
   const [isSuccessSpinning, setIsSuccessSpinning] = createSignal(false);
 
   createEffect(() => {
@@ -82,7 +84,9 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
     () => local.majorVersion !== undefined && Boolean(local.path),
   );
 
-  let timer: number = 0;
+  let sameStatusTimer: number = 0;
+  let coolingOffPeriodTimer: number = 0;
+
   const handleClick = async () => {
     if (!local.majorVersion || !local.path) return;
 
@@ -90,16 +94,24 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
 
     await test(local.majorVersion, local.path);
 
+    setIsCoolingOff(true);
+    coolingOffPeriodTimer = setTimeout(() => {
+      setIsCoolingOff(false);
+    }, COOLING_OFF_DURATION);
+
     if (testingStatus() === previousStatus && previousStatus !== 'idle') {
       setIsSuccessSpinning(true);
 
-      timer = setTimeout(() => {
+      sameStatusTimer = setTimeout(() => {
         setIsSuccessSpinning(false);
       }, SPIN_DURATION);
     }
   };
 
-  onCleanup(() => clearTimeout(timer));
+  onCleanup(() => {
+    clearTimeout(coolingOffPeriodTimer);
+    clearTimeout(sameStatusTimer);
+  });
 
   const variant = createMemo(() => VARIANT_MAP[displayStatus()] || 'secondary');
 
@@ -111,8 +123,9 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
     return () => (
       <IconMdiReload
         class={cn({
-          [`animate-spin duration-${SPIN_DURATION}`]: isSuccessSpinning(),
+          [`animate-spin`]: isSuccessSpinning(),
         })}
+        style={{ 'animation-duration': `${SPIN_DURATION}ms` }}
       />
     );
   });
@@ -124,7 +137,10 @@ export const JavaVersionStatusBadge: Component<JavaVersionStatusBadgeProps> = (
       onClick={handleClick}
       loading={uiStatus() === 'testing'}
       disabled={
-        local.disabled || !isDataValid() || testingStatus() === 'testing'
+        local.disabled ||
+        !isDataValid() ||
+        testingStatus() === 'testing' ||
+        isCoolingOff()
       }
       leadingIcon={leadingIcon()}
       {...others}

@@ -46,6 +46,32 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
         icon={IconMdiMore}
       />
       <DropdownMenuContent>
+        <Show when={local.onDetect}>
+          <DropdownMenuItem
+            as={Button}
+            class='w-full justify-start'
+            variant='ghost'
+            leadingIcon={IconMdiMagnify}
+            onClick={local.onDetect}
+            disabled={local.isInstalling}
+          >
+            {t('javaVersion.detect')}
+          </DropdownMenuItem>
+        </Show>
+
+        <Show when={local.onBrowse}>
+          <DropdownMenuItem
+            as={Button}
+            class='w-full justify-start'
+            variant='ghost'
+            leadingIcon={IconMdiFileFindOutline}
+            onClick={local.onBrowse}
+            disabled={local.isInstalling}
+          >
+            {t('javaVersion.browse')}
+          </DropdownMenuItem>
+        </Show>
+
         <DropdownMenuItem
           as={Button}
           class='w-full justify-start'
@@ -56,30 +82,6 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
         >
           {t('javaVersion.installRecommended')}
         </DropdownMenuItem>
-        <Show when={local.onDetect}>
-          <DropdownMenuItem
-            as={Button}
-            class='w-full justify-start'
-            variant='ghost'
-            leadingIcon={IconMdiMagnify}
-            onClick={local.onInstallRecommended}
-            disabled={local.isInstalling}
-          >
-            {t('javaVersion.detect')}
-          </DropdownMenuItem>
-        </Show>
-        <Show when={local.onBrowse}>
-          <DropdownMenuItem
-            as={Button}
-            class='w-full justify-start'
-            variant='ghost'
-            leadingIcon={IconMdiFileFindOutline}
-            onClick={local.onInstallRecommended}
-            disabled={local.isInstalling}
-          >
-            {t('javaVersion.browse')}
-          </DropdownMenuItem>
-        </Show>
       </DropdownMenuContent>
     </DropdownMenu>
   );

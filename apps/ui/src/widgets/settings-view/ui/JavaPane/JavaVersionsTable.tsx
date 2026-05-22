@@ -36,17 +36,13 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
     }));
   });
 
-  const { table, columns } = createJavaVersionsTable({
+  const table = createJavaVersionsTable({
     data: mappedJavaVersions,
   });
 
   return (
     <div class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <DataTable
-        columns={columns()}
-        table={table}
-        isLoading={javaVersions.isLoading}
-      />
+      <DataTable table={table} isLoading={javaVersions.isLoading} />
     </div>
   );
 };

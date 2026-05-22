@@ -1,12 +1,11 @@
 import type {
   Column,
   ColumnDef,
-  Header,
   HeaderGroup,
   Row,
   Table as SolidTable,
 } from '@tanstack/solid-table';
-import type { ComponentProps, JSX } from 'solid-js';
+import type { Accessor, ComponentProps, JSX } from 'solid-js';
 
 import {
   createSolidTable,
@@ -14,6 +13,9 @@ import {
   getCoreRowModel,
 } from '@tanstack/solid-table';
 import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
 
 import { Skeleton } from './Skeleton';
 import {
@@ -25,65 +27,143 @@ import {
   TableRow,
 } from './Table';
 
-type DataTableProps<TData> = {
+const getSharedColumnsStyles = <TData,>(
+  column: Column<TData, unknown>,
+): JSX.CSSProperties => {
+  const { stretch, center } = column.columnDef.meta ?? {};
+  const { maxSize, minSize } = column.columnDef;
+
+  if (stretch) {
+    return {
+      'text-align': center ? 'center' : undefined,
+      width: '100%',
+      'min-width': `${minSize ?? 150}px`,
+      'max-width': '0px',
+    };
+  }
+
+  return {
+    'text-align': center ? 'center' : undefined,
+    'max-width': maxSize ? `${maxSize}px` : undefined,
+    'min-width': minSize ? `${minSize}px` : undefined,
+  };
+};
+
+const createDefaultTable = <TData,>(
+  data: Accessor<TData[] | undefined>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: ColumnDef<TData, any>[];
+  columns: Accessor<ColumnDef<TData, any>[]>,
+) => {
+  return createSolidTable({
+    get data() {
+      return data() ?? [];
+    },
+    get columns() {
+      return columns();
+    },
+    getCoreRowModel: getCoreRowModel(),
+  });
+};
+
+type BaseDataTableProps = {
+  class?: string;
+  tableClass?: string;
   isLoading?: boolean;
   noContentPlaceholder?: string;
-} & (
-  | { data: TData[]; columnsCount?: never; table?: never }
-  | { data?: never; columnsCount?: number; table?: SolidTable<TData> }
-);
+};
 
-export const DataTable = <TData,>(props: DataTableProps<TData>) => {
-  const table = createMemo(
-    () =>
-      props.table ??
-      createSolidTable({
-        get data() {
-          return props.data ?? [];
-        },
-        get columns() {
-          return props.columns;
-        },
-        getCoreRowModel: getCoreRowModel(),
-      }),
+type DataTableProps<TData> = BaseDataTableProps &
+  (
+    | {
+        data: TData[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        columns: ColumnDef<TData, any>[];
+        table?: never;
+      }
+    | {
+        table: SolidTable<TData>;
+        data?: never;
+        columns?: never;
+      }
   );
+
+export const DataTable = <TData,>(
+  props: ComponentProps<'div'> & DataTableProps<TData>,
+) => {
+  const [local, others] = splitProps(props, [
+    'class',
+    'tableClass',
+    'columns',
+    'isLoading',
+    'noContentPlaceholder',
+    'data',
+    'table',
+  ]);
+
+  const [{ t }] = useTranslation();
+
+  const table = createMemo(() => {
+    if (local.table) {
+      return local.table;
+    }
+
+    const data = local.data;
+    const columns = local.columns;
+
+    if (!data || !columns) {
+      throw new Error("If table not provided, 'data' and 'columns' must be");
+    }
+
+    return createDefaultTable(
+      () => data,
+      () => columns,
+    );
+  });
 
   const columnsData = createMemo(() => {
     const visibleLeafColumns = table().getVisibleLeafColumns();
-
     const columnStyles: Record<string, JSX.CSSProperties> = {};
+
     visibleLeafColumns.forEach((column) => {
-      columnStyles[column.id] = getColumnStyles(column);
+      columnStyles[column.id] = getSharedColumnsStyles(column);
     });
 
     return {
       columnStyles,
+      visibleColumns: visibleLeafColumns,
       columnsCount: visibleLeafColumns.length,
     };
   });
 
   return (
-    <div class='relative w-full overflow-auto rounded-md border '>
-      <Table disableWrapper>
+    <div
+      class={cn('relative w-full overflow-auto rounded-md border', local.class)}
+      {...others}
+    >
+      <Table class={local.tableClass} disableWrapper>
         <TableHeader class='sticky top-0 z-10 bg-popover'>
           <For each={table().getHeaderGroups()}>
-            {(headerGroup) => <DataTableHeaderRow headerGroup={headerGroup} />}
+            {(headerGroup) => (
+              <DataTableHeaderRow
+                headerGroup={headerGroup}
+                cellStyles={columnsData().columnStyles}
+              />
+            )}
           </For>
         </TableHeader>
         <TableBody>
           <Switch>
-            <Match when={Boolean(props.isLoading)}>
+            <Match when={Boolean(local.isLoading)}>
               <TableSkeleton
                 rowsCount={6}
+                visibleColumns={columnsData().visibleColumns}
                 columnStyles={columnsData().columnStyles}
               />
             </Match>
 
-            <Match when={table().getRowCount() === 0}>
+            <Match when={!local.isLoading && table().getRowCount() === 0}>
               <TableStatusMessage colSpan={columnsData().columnsCount}>
-                {props.noContentPlaceholder}
+                {local.noContentPlaceholder ?? t('common.noData')}
               </TableStatusMessage>
             </Match>
 
@@ -106,7 +186,7 @@ export const DataTable = <TData,>(props: DataTableProps<TData>) => {
 
 interface DataTableHeaderRowProps<TData> {
   headerGroup: HeaderGroup<TData>;
-  cellStyles?: JSX.CSSProperties;
+  cellStyles: Record<string, JSX.CSSProperties>;
 }
 
 export const DataTableHeaderRow = <TData,>(
@@ -116,7 +196,10 @@ export const DataTableHeaderRow = <TData,>(
     <TableRow class='group'>
       <For each={props.headerGroup.headers}>
         {(header) => (
-          <TableHead colSpan={header.colSpan} style={getHeaderStyles(header)}>
+          <TableHead
+            colSpan={header.colSpan}
+            style={props.cellStyles[header.column.id]}
+          >
             <Show when={!header.isPlaceholder}>
               {flexRender(header.column.columnDef.header, header.getContext())}
             </Show>
@@ -129,7 +212,7 @@ export const DataTableHeaderRow = <TData,>(
 
 interface DataTableRowProps<TData> {
   row: Row<TData>;
-  cellStyles?: Record<string, JSX.CSSProperties>;
+  cellStyles: Record<string, JSX.CSSProperties>;
 }
 
 const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
@@ -140,7 +223,7 @@ const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
     >
       <For each={props.row.getVisibleCells()}>
         {(cell) => (
-          <TableCell style={props.cellStyles?.[cell.column.id]}>
+          <TableCell style={props.cellStyles[cell.column.id]}>
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </TableCell>
         )}
@@ -167,22 +250,22 @@ const TableStatusMessage = (
   );
 };
 
-interface TableSkeletonProps {
+interface TableSkeletonProps<TData> {
   rowsCount: number;
+  visibleColumns: Column<TData, unknown>[];
   columnStyles: Record<string, JSX.CSSProperties>;
 }
 
-const TableSkeleton = (props: TableSkeletonProps) => {
-  const rows = createMemo(() => Array.from({ length: props.rowsCount }));
-  const stylesList = createMemo(() => Object.values(props.columnStyles));
+const TableSkeleton = <TData,>(props: TableSkeletonProps<TData>) => {
+  const rowIndices = createMemo(() => new Array(props.rowsCount).fill(0));
 
   return (
-    <For each={rows()}>
+    <For each={rowIndices()}>
       {() => (
         <TableRow class='bg-secondary/card'>
-          <For each={stylesList()}>
-            {(style) => (
-              <TableCell style={style}>
+          <For each={props.visibleColumns}>
+            {(column) => (
+              <TableCell style={props.columnStyles[column.id]}>
                 <Skeleton height={32} radius={6} />
               </TableCell>
             )}
@@ -191,33 +274,4 @@ const TableSkeleton = (props: TableSkeletonProps) => {
       )}
     </For>
   );
-};
-
-const getHeaderStyles = <TData, TValue>(
-  header: Header<TData, TValue>,
-): JSX.CSSProperties => {
-  return getSharedColumnsStyles(header.getSize, header.column.columnDef);
-};
-
-const getColumnStyles = <TData, TValue>(
-  column: Column<TData, TValue>,
-): JSX.CSSProperties => {
-  return getSharedColumnsStyles(column.getSize, column.columnDef);
-};
-
-const getSharedColumnsStyles = <TData, TValue>(
-  getSize: () => number,
-  def: ColumnDef<TData, TValue>,
-): JSX.CSSProperties => {
-  const isStretched = def.meta?.stretch;
-  const isCenter = def.meta?.center;
-
-  return {
-    'text-align': isCenter ? 'center' : undefined,
-    width: isStretched ? '100%' : `${getSize()}px`,
-    ...((def.minSize || isStretched) && {
-      'min-width': `${def.minSize ?? 150}px`,
-    }),
-    ...(def.maxSize && { 'max-width': `${def.maxSize}px` }),
-  };
 };

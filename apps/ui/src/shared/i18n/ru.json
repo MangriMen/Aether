@@ -175,7 +175,8 @@
     "copyToClipboard": "Скопировать в буфер обмена",
     "close": "Закрыть",
     "incompatible": "Несовместимый",
-    "error": "Ошибка"
+    "error": "Ошибка",
+    "noData": "Нет данных для отображения"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -388,14 +389,6 @@
       "ok": "Применить",
       "later": "Отложить"
     },
-    "java": {
-      "location": "Расположение Java {{version}}",
-      "detect": "Обнаружить",
-      "installRecommended": "Установить рекомендованную",
-      "test": "Тест",
-      "testFailed": "Ошибка",
-      "testSuccess": "Успех"
-    },
     "usedFromDefaultSettings": "Используется из настроек по умолчанию",
     "environmentVariablesError": {
       "emptyKey": "Пустой ключ {{part}}. \nДолжно быть в формате «ключ=значение».",
@@ -465,15 +458,22 @@
   "javaVersion": {
     "version": "Версия",
     "path": "Путь установки",
-    "testing": "Тестирование",
+    "testing": "Проверка",
     "error": "Ошибка",
-    "valid": "Действительная",
+    "valid": "Валидна",
     "versionMismatch": "Несоответствие версии",
     "status": "Статус",
     "installRecommended": "Установить рекомендуемую",
     "test": "Тест",
     "browse": "Обзор",
     "detect": "Обнаружить",
-    "pathPlaceholder": "Введите путь к Java Home (например, /path/to/java/)"
+    "pathPlaceholder": "Введите путь к Java (например, /path/to/java/)",
+    "versionWithNumber": "Java {{majorVersion}}"
+  },
+  "detectJava": {
+    "dialogTitle": "Выберите версию Java",
+    "select": "Выбрать",
+    "selected": "Выбрана",
+    "installationsNotFound": "Не удалось обнаружить установленные версии Java"
   }
 }

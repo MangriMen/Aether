@@ -26,16 +26,12 @@ import { SettingsView } from './SettingsView';
 export type SettingsDialogProps = DialogRootProps;
 
 export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
-  const { params, setParams, close } = useSettingsSearchParams();
+  const { params, setParams } = useSettingsSearchParams();
 
   const [{ t }] = useTranslation();
 
   const handleChangeTab = (tab: SettingsTab) => {
     setParams({ tab });
-  };
-
-  const handleClose = () => {
-    close();
   };
 
   const [isFullScreen, setIsFullScreen] = makePersisted(
@@ -51,7 +47,7 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
   };
 
   return (
-    <Dialog open onOpenChange={handleClose} {...props}>
+    <Dialog {...props}>
       <DialogContent
         class={cn('@container/tabs-root flex flex-col p-0 pt-6', {
           'modal-adaptive-bounds': !isFullScreen(),

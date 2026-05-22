@@ -27,7 +27,10 @@ pub async fn migrate_java_to_sqlite(
     );
 
     // Instead of json migration run scanning
-    let discovered_java = match installation_service.discover_installations(java_dir).await {
+    let discovered_java = match installation_service
+        .discover_installations(&[java_dir.to_path_buf()])
+        .await
+    {
         Ok(list) if !list.is_empty() => list,
         Ok(_) => {
             info!("No Java installations found in {:?}", java_dir);
