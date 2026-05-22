@@ -21,7 +21,7 @@ export const GlobalDialogRenderer = () => {
             item?.props?.onOpenChange?.(isOpen);
 
             if (!isOpen) {
-              closeDialog(id);
+              closeDialog(id, item?.preventRemove);
             }
           },
         });

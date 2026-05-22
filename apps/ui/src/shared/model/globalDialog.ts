@@ -11,6 +11,7 @@ export type NonNullableDialogItem<
   dialog: Component<T>;
   props: DialogComponentProps | null;
   open: boolean;
+  preventRemove: boolean;
 };
 
 export type GlobalDialogType<
@@ -67,6 +68,7 @@ export const showDialog = <T extends DialogComponentProps>(
   id: string,
   dialog: Component<T>,
   props: T | null = null,
+  preventRemove: boolean = false,
 ) => {
   const [store, setStore] = getOrCreateDialogStore();
 
@@ -79,6 +81,7 @@ export const showDialog = <T extends DialogComponentProps>(
     dialog: dialog as Component<DialogComponentProps>,
     props,
     open: true,
+    preventRemove,
   });
 };
 
@@ -87,7 +90,11 @@ export const isDialogOpen = (id: string) => {
   return id in store.dialogs && store.dialogs[id]?.open;
 };
 
-export const closeDialog = (id: string, timeout: number = 200) => {
+export const closeDialog = (
+  id: string,
+  preventRemove: boolean = false,
+  timeout: number = 200,
+) => {
   const [store] = getOrCreateDialogStore();
 
   if (!(id in store.dialogs)) {
@@ -100,6 +107,10 @@ export const closeDialog = (id: string, timeout: number = 200) => {
   }
 
   setDialogVisibility(id, false);
+
+  if (preventRemove) {
+    return;
+  }
 
   const timeoutId = window.setTimeout(() => {
     removeTimeoutRef(id);

@@ -13,13 +13,12 @@ export const useSettingsDialogUrlBridge = () => {
 
   createEffect(() => {
     if (searchParams.modal === 'settings') {
-      showDialog(modalId, SettingsDialog, {
-        onOpenChange: (isOpen) => {
-          if (!isOpen) {
-            close();
-          }
-        },
-      });
+      showDialog(
+        modalId,
+        SettingsDialog,
+        { onOpenChange: () => close() },
+        true,
+      );
     } else {
       closeDialog(modalId);
     }
