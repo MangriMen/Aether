@@ -463,15 +463,14 @@
     "valid": "Валидна",
     "versionMismatch": "Несоответствие версии",
     "status": "Статус",
-    "installRecommended": "Установить рекомендуемую",
     "test": "Тест",
-    "browse": "Обзор",
-    "detect": "Обнаружить",
-    "pathPlaceholder": "Введите путь к Java (например, /path/to/java/)",
+    "installRecommended": "Установить рекомендуемую",
+    "browse": "Выбрать файл",
+    "detect": "Найти автоматически",
     "versionWithNumber": "Java {{majorVersion}}"
   },
   "detectJava": {
-    "dialogTitle": "Выберите версию Java",
+    "dialogTitle": "Выберите установку Java {{majorVersion}}",
     "select": "Выбрать",
     "selected": "Выбрана",
     "installationsNotFound": "Не удалось обнаружить установленные версии Java"

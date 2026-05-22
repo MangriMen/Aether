@@ -5,7 +5,13 @@ import { createMemo, splitProps, type Component } from 'solid-js';
 import type { Java } from '@/entities/java';
 
 import { useTranslation } from '@/shared/model';
-import { DataTable, Dialog, DialogContent, DialogHeader } from '@/shared/ui';
+import {
+  DataTable,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui';
 
 import type { JavaVersion } from '../../model';
 
@@ -13,6 +19,7 @@ import { createDetectedJavaVersionsTable } from '../../lib/createDetectedJavaVer
 
 export type DetectJavaDialogProps = DialogRootProps & {
   versions?: Java[];
+  majorVersion?: string;
   selectedVersion?: JavaVersion;
   onSelect?: (version: JavaVersion) => void;
 };
@@ -20,6 +27,7 @@ export type DetectJavaDialogProps = DialogRootProps & {
 export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
   const [local, others] = splitProps(props, [
     'versions',
+    'majorVersion',
     'selectedVersion',
     'onSelect',
   ]);
@@ -30,8 +38,13 @@ export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
     () =>
       local.versions?.map<JavaVersion>((v) => ({
         majorVersion: v.majorVersion.toString(),
+        version: v.version,
         path: v.path,
       })) ?? [],
+  );
+
+  const majorVersion = createMemo(
+    () => local.majorVersion ?? local.versions?.[0]?.majorVersion ?? '?',
   );
 
   const table = createDetectedJavaVersionsTable({
@@ -42,8 +55,14 @@ export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
 
   return (
     <Dialog {...others}>
-      <DialogContent class='max-w-3xl'>
-        <DialogHeader>{t('detectJava.dialogTitle')}</DialogHeader>
+      <DialogContent class='max-w-3xl gap-4'>
+        <DialogHeader>
+          <DialogTitle>
+            {t('detectJava.dialogTitle', {
+              majorVersion: majorVersion(),
+            })}
+          </DialogTitle>
+        </DialogHeader>
 
         <DataTable
           noContentPlaceholder={t('detectJava.installationsNotFound')}

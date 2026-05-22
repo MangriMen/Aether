@@ -1,5 +1,7 @@
+import { platform as getOsPlatform } from '@tauri-apps/plugin-os';
 import {
   createEffect,
+  createMemo,
   createSignal,
   splitProps,
   untrack,
@@ -10,7 +12,6 @@ import {
 import type { CombinedTextFieldProps } from '@/shared/ui';
 
 import { useEditJava, useRemoveJava } from '@/entities/java';
-import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
 
 import { parseJavaVersion } from '../../lib/parseJavaVersion';
@@ -19,10 +20,13 @@ export type JavaVersionPathProps = CombinedTextFieldProps & {
   majorVersion: string;
 };
 
+const JAVA_PATH_EXAMPLES = {
+  windows: 'C:\\Program Files\\Java\\jdk-21\\bin\\javaw.exe',
+  unix: '/usr/lib/jvm/java-21-openjdk/bin/javaw',
+} as const;
+
 export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
   const [local, others] = splitProps(props, ['value', 'majorVersion']);
-
-  const [{ t }] = useTranslation();
 
   const editJava = useEditJava();
   const removeJava = useRemoveJava();
@@ -84,13 +88,21 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
     });
   });
 
+  const pathPlaceholder = createMemo(() => {
+    const platform = getOsPlatform();
+
+    return platform === 'windows'
+      ? JAVA_PATH_EXAMPLES.windows
+      : JAVA_PATH_EXAMPLES.unix;
+  });
+
   return (
     <CombinedTextField
       value={value()}
       onChange={setValue}
       inputProps={{
         type: 'text',
-        placeholder: t('javaVersion.pathPlaceholder'),
+        placeholder: pathPlaceholder(),
         onKeyDown: handleKeyDown,
         onBlur: handleBlur,
       }}

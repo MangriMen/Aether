@@ -1,4 +1,5 @@
 import { createSolidTable, getCoreRowModel } from '@tanstack/solid-table';
+import { open } from '@tauri-apps/plugin-dialog';
 import { type Accessor } from 'solid-js';
 
 import { useDiscoverJava, useEditJava } from '@/entities/java';
@@ -57,6 +58,33 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
       versions: filtered,
       selectedVersion,
       onSelect: handleSelect,
+      majorVersion: version,
+    });
+  };
+
+  const handleBrowse = async (version: string) => {
+    const versionNum = parseJavaVersion(version);
+
+    if (!versionNum) {
+      return;
+    }
+
+    const path = await open({
+      title: 'Select javaw executable',
+      filters: [
+        { name: 'Java Window Executable', extensions: ['exe'] },
+        { name: 'All', extensions: ['*'] },
+      ],
+      multiple: false,
+    });
+
+    if (!path) {
+      return;
+    }
+
+    editJava.mutateAsync({
+      majorVersion: versionNum,
+      path,
     });
   };
 
@@ -65,6 +93,7 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
     onInstallRecommended: actions.installRecommended,
     isInstalling: actions.isInstalling,
     onDetect: handleDetect,
+    onBrowse: handleBrowse,
   });
 
   const table = createSolidTable({

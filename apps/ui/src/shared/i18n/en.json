@@ -463,15 +463,14 @@
     "error": "Error",
     "versionMismatch": "Version mismatch",
     "status": "Status",
-    "installRecommended": "Install recommended",
     "test": "Test",
+    "installRecommended": "Install recommended",
     "browse": "Browse",
     "detect": "Detect",
-    "pathPlaceholder": "Enter path to Java (e.g., /path/to/java/)",
     "versionWithNumber": "Java {{majorVersion}}"
   },
   "detectJava": {
-    "dialogTitle": "Select java version",
+    "dialogTitle": "Select java {{majorVersion}} installation",
     "select": "Select",
     "selected": "Selected",
     "installationsNotFound": "Could not detect any Java installations"

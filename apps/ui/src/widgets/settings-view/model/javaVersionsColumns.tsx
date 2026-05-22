@@ -12,6 +12,7 @@ import { JavaVersionStatusButton } from '../ui/JavaPane/JavaVersionStatusButton'
 
 export interface JavaVersion {
   majorVersion: string;
+  version?: string;
   path: string | undefined;
 }
 
@@ -29,6 +30,7 @@ interface CreateJavaVersionColumnsProps {
   isInstalling?: Accessor<boolean>;
   onInstallRecommended?: (version: string) => void;
   onDetect?: (version: string) => void;
+  onBrowse?: (version: string) => void;
 }
 
 export const createJavaVersionColumns = ({
@@ -36,6 +38,7 @@ export const createJavaVersionColumns = ({
   isInstalling,
   onInstallRecommended,
   onDetect,
+  onBrowse,
 }: CreateJavaVersionColumnsProps) => {
   const columns = createMemo(() => [
     javaVersionsColumnHelper.accessor('majorVersion', {
@@ -79,7 +82,6 @@ export const createJavaVersionColumns = ({
       ),
       meta: {
         center: true,
-        // stretch: true,
       },
     }),
 
@@ -94,6 +96,7 @@ export const createJavaVersionColumns = ({
             isInstalling={isInstalling?.()}
             onInstallRecommended={() => onInstallRecommended?.(majorVersion())}
             onDetect={() => onDetect?.(majorVersion())}
+            onBrowse={() => onBrowse?.(majorVersion())}
           />
         );
       },
@@ -115,7 +118,7 @@ export const createDetectedJavaVersionColumns = ({
   onSelect,
 }: CreateDetectedJavaVersionColumnsProps) => {
   const columns = createMemo(() => [
-    javaVersionsColumnHelper.accessor('majorVersion', {
+    javaVersionsColumnHelper.accessor('version', {
       header: () => t('javaVersion.version'),
     }),
 
