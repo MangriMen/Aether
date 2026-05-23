@@ -11,6 +11,6 @@
     "@aether/ui": "workspace:*"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.10.1"
+    "@tauri-apps/cli": "^2.11.2"
   }
 }

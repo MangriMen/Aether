@@ -17,8 +17,8 @@
     "ui:dev": "turbo run dev --filter=@aether/ui"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260517.1",
-    "lefthook": "^2.1.6",
+    "@typescript/native-preview": "^7.0.0-dev.20260523.1",
+    "lefthook": "^2.1.8",
     "turbo": "latest",
     "typescript": "^6.0.3"
   },
