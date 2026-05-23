@@ -52,7 +52,10 @@ export const useProgressEventsListener = () => {
           event: bar.progressType,
           progressBarId: bar.id,
           message: bar.message,
-          fraction: bar.current / bar.total,
+          fraction:
+            bar.current === null || bar.total === null
+              ? 0
+              : bar.current / bar.total,
         });
       }
     } catch {

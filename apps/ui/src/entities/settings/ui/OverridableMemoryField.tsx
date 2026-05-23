@@ -43,7 +43,9 @@ export const OverridableMemoryField: Component<OverridableMemoryFieldProps> = (
 
   const minMemory = createMemo(() => Math.max(Math.floor(MIN_JRE_MEMORY), 0));
   const maxMemory = createMemo(() =>
-    maxRam.data ? Math.floor(bytesToMegabytes(maxRam.data)) : MIN_JRE_MEMORY,
+    maxRam.data
+      ? Math.floor(bytesToMegabytes(Number.parseInt(maxRam.data.totalMemory)))
+      : MIN_JRE_MEMORY,
   );
   const warningMemory = createMemo(() => Math.floor(maxMemory() / 2));
 

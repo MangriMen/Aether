@@ -14,6 +14,7 @@ import type { Option } from '@/shared/model';
 
 import {
   CONTENT_TYPES,
+  contentSearchParamsToContentSearchParamsDto,
   isModLoader,
   useSearchContent,
 } from '@/entities/instances';
@@ -96,7 +97,13 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
     },
   );
 
-  const content = useSearchContent(() => contentSearchParams());
+  const content = useSearchContent(() => {
+    const params = contentSearchParams();
+    if (!params) {
+      return params;
+    }
+    return contentSearchParamsToContentSearchParamsDto(params);
+  });
 
   return (
     <div

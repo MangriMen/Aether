@@ -8,6 +8,7 @@ export * from './installStage';
 export * from './instance';
 export * from './instanceEvent';
 export * from './loaderVersionPreference';
+export * from './mappers';
 export * from './packInfo';
 export * from './queries';
 export * from './runningInstancesContext';

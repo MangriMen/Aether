@@ -21,9 +21,22 @@ export type ProviderId = ProviderIdDto;
 
 export type ContentItem = ContentItemDto;
 
-export type ContentSearchParams = ContentSearchParamsDto;
+export interface ContentSearchParams extends Omit<
+  ContentSearchParamsDto,
+  'page' | 'pageSize'
+> {
+  page: number;
+  pageSize: number;
+}
 
-export type ContentSearchResponse = ContentSearchResultDto;
+export interface ContentSearchResponse extends Omit<
+  ContentSearchResultDto,
+  'page' | 'pageSize' | 'pageCount'
+> {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
 
 export type AtomicInstallParams = AtomicInstallParamsDto;
 
@@ -50,7 +63,9 @@ export type ContentVersionDependency = ContentVersionDependencyDto;
 
 export type ContentVersionType = ContentVersionTypeDto;
 
-export type ContentVersion = ContentVersionDto;
+export interface ContentVersion extends Omit<ContentVersionDto, 'downloads'> {
+  downloads: number;
+}
 
 export type ContentGetParams = ContentGetParamsDto;
 

@@ -3,7 +3,7 @@ use tauri::{AppHandle, State};
 use crate::{
     FrontendResult,
     core::{AppSettingsStorageState, WindowManagerState},
-    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase},
+    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase, dtos::RamSettingsDto},
     shared::commands::{SETTINGS_PLUGIN_NAME, settings_commands},
 };
 
@@ -44,8 +44,10 @@ async fn edit(edit_settings: EditSettingsDto) -> FrontendResult<SettingsDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_max_ram() -> FrontendResult<u64> {
-    Ok(aether_core::shared::infra::get_total_memory())
+async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
+    Ok(RamSettingsDto {
+        total_memory: aether_core::shared::infra::get_total_memory(),
+    })
 }
 
 #[tauri::command]

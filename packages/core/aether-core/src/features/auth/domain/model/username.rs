@@ -13,7 +13,7 @@ const MAX_USERNAME_LENGTH: usize = 16;
 
 impl Username {
     pub fn parse(s: &str) -> Result<Self, AuthDomainError> {
-        if !(MIN_USERNAME_LENGTH..=MAX_USERNAME_LENGTH).contains(&s.chars().count()) {
+        if !(MIN_USERNAME_LENGTH..=MAX_USERNAME_LENGTH).contains(&s.len()) {
             return Err(AuthDomainError::InvalidUsernameLength {
                 min: MIN_USERNAME_LENGTH,
                 max: MAX_USERNAME_LENGTH,

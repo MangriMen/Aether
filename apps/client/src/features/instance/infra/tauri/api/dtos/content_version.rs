@@ -3,6 +3,7 @@ use aether_core::features::instance::{
     ContentVersionType, RequestedContentVersionStatus, app::ContentListVersionsParams,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
 use crate::features::{instance::ProviderIdDto, minecraft::ModLoaderDto};
@@ -59,6 +60,7 @@ pub enum RequestedContentVersionStatusDto {
     Unlisted,
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentVersionDto {
@@ -76,6 +78,8 @@ pub struct ContentVersionDto {
     pub status: ContentVersionStatusDto,
     pub requested_status: Option<RequestedContentVersionStatusDto>,
     pub date_published: String,
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub downloads: i64,
     pub web_url: String,
 }

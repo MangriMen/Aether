@@ -9,12 +9,8 @@ use crate::features::{
 use crate::shared::specta::get_all_features_builders;
 
 use super::{
-    super::api::{self, __cmd__reveal_in_explorer, reveal_in_explorer},
-    super::window::get_main_window_state_flags,
-    events::handle_app_events,
-    initialize::initialize_app,
-    log::default_log_builder,
-    pipe::Pipe,
+    super::api, super::window::get_main_window_state_flags, events::handle_app_events,
+    initialize::initialize_app, log::default_log_builder, pipe::Pipe,
 };
 
 /// Entry point for the Tauri runtime
@@ -87,5 +83,5 @@ fn configure_feature_plugins(builder: Builder<Wry>) -> Builder<Wry> {
 }
 
 fn configure_commands(builder: Builder<Wry>) -> Builder<Wry> {
-    builder.invoke_handler(tauri::generate_handler![reveal_in_explorer,])
+    builder.invoke_handler(tauri::generate_handler![api::reveal_in_explorer,])
 }
