@@ -1,6 +1,7 @@
 use aether_core::features::instance::Instance;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
     },
 };
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
 #[allow(clippy::struct_excessive_bools)]
@@ -48,7 +50,11 @@ pub struct InstanceDto {
     pub last_played: Option<DateTime<Utc>>,
 
     // Stats
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub time_played: u64,
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub recent_time_played: u64,
 
     // Hooks

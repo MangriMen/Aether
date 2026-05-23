@@ -50,18 +50,15 @@ async-trait = "0.1.89"
 tokio = { version = "1", features = ["full"] }
 
 # Tauri & Frontend Bridge
-specta = { version = "=2.0.0-rc.24", features = [
+specta = { version = "=2.0.0-rc.25", features = [
     "serde_json",
     "uuid",
     "chrono",
     "semver",
 ] }
-specta-typescript = "0.0.11"
+specta-typescript = "0.0.12"
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "test"] }
-tauri-specta = { git = "https://github.com/specta-rs/tauri-specta/", rev = "4cff42ee0aa309fb2c707da534821e7645e75867", features = [
-    "derive",
-    "typescript",
-] }
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # Utilities
 semver = "1.0"

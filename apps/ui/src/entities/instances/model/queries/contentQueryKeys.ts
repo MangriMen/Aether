@@ -1,10 +1,10 @@
 import type {
   ContentGetParams,
   ContentListVersionParams,
-  ContentSearchParams,
   Instance,
   ProviderId,
 } from '..';
+import type { ContentSearchParamsDto } from '../../api';
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 export const CONTENT_QUERY_KEYS = {
@@ -16,7 +16,7 @@ export const CONTENT_QUERY_KEYS = {
     provider.pluginId,
     provider.capabilityId,
   ],
-  SEARCH: (params: ContentSearchParams) => [
+  SEARCH: (params: ContentSearchParamsDto) => [
     ...CONTENT_QUERY_KEYS.BY_PROVIDER(params.providerId),
     'search',
     params?.page,

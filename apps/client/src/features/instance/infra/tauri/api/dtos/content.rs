@@ -5,32 +5,55 @@ use aether_core::features::instance::{
     ContentSearchResult, ModpackInstallParams, ProviderId,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
 use crate::features::{instance::ContentTypeDto, minecraft::ModLoaderDto};
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentSearchParamsDto {
     pub content_type: ContentTypeDto,
+
     pub provider_id: ProviderIdDto,
+
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub page: i64,
+
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub page_size: i64,
+
     #[specta(optional)]
     pub query: Option<String>,
+
     #[specta(optional)]
     pub game_versions: Option<Vec<String>>,
+
     #[specta(optional)]
     pub loader: Option<ModLoaderDto>,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentSearchResultDto {
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub page: i64,
+
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub page_size: i64,
+
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub page_count: i64,
+
     pub provider_id: ProviderIdDto,
+
     pub items: Vec<ContentItemDto>,
 }
 

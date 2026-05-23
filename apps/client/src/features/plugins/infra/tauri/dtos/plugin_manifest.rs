@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
 /// Root configuration for an Aether plugin.
@@ -75,6 +76,7 @@ pub enum LoadConfigTypeDto {
     Native,
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, Type)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum LoadConfigDto {
@@ -84,6 +86,8 @@ pub enum LoadConfigDto {
         /// Path to the .wasm file relative to the plugin root.
         file: PathBuf,
         /// Maximum memory (in bytes) the plugin is allowed to allocate.
+        #[specta(type = String)]
+        #[serde_as(as = "Option<DisplayFromStr>")]
         #[serde(default)]
         memory_limit: Option<usize>,
     },

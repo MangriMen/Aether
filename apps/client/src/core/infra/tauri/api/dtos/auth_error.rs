@@ -10,7 +10,7 @@ pub enum AuthErrorDto {
 
     NoActiveCredentials,
 
-    InvalidUsernameLength { min: usize, max: usize },
+    InvalidUsernameLength { min: u32, max: u32 },
 
     InvalidUsernameChars,
 
@@ -36,8 +36,8 @@ impl From<&AuthDomainError> for AuthErrorDto {
             AuthDomainError::CredentialsNotFound { id } => Self::CredentialsNotFound { id: *id },
             AuthDomainError::NoActiveCredentials => Self::NoActiveCredentials,
             AuthDomainError::InvalidUsernameLength { min, max } => Self::InvalidUsernameLength {
-                min: *min,
-                max: *max,
+                min: (*min).try_into().unwrap_or(u32::MIN),
+                max: (*max).try_into().unwrap_or(u32::MAX),
             },
             AuthDomainError::InvalidUsernameChars => Self::InvalidUsernameChars,
             AuthDomainError::TokenExpired => Self::TokenExpired,

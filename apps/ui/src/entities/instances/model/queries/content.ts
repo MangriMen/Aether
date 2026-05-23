@@ -13,17 +13,16 @@ import { useTranslation } from '@/shared/model';
 import { useFeatureFlagsStore } from '@/shared/model/featureFlags';
 import { showToast } from '@/shared/ui';
 
+import type { ContentGetParams, ContentListVersionParams, Instance } from '..';
 import type {
-  ContentGetParams,
-  ContentListVersionParams,
-  ContentSearchParams,
-  Instance,
-} from '..';
-import type { ContentInstallParamsDto } from '../../api';
+  ContentInstallParamsDto,
+  ContentSearchParamsDto,
+} from '../../api';
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
-import { ContentType } from '..';
+import { ContentType, contentVersionDtoToContentVersion } from '..';
 import { commands } from '../../api';
+import { contentSearchResultDtoToContentSearchResult } from '../mappers';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
@@ -35,7 +34,7 @@ export const useContentProviders = () => {
 };
 
 export const useSearchContent = (
-  payload: Accessor<ContentSearchParams | undefined>,
+  payload: Accessor<ContentSearchParamsDto | undefined>,
 ) => {
   return useQuery(() => {
     const data = payload();
@@ -47,6 +46,7 @@ export const useSearchContent = (
       queryFn: () => commands.searchContent(data!),
       enabled: Boolean(data),
       placeholderData: keepPreviousData,
+      select: contentSearchResultDtoToContentSearchResult,
     };
   });
 };
@@ -249,6 +249,7 @@ export const useContentVersions = (
         : CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION_EMPTY(),
       queryFn: () => commands.listContentVersion(params_!),
       enabled: Boolean(params_),
+      select: (data) => data.map(contentVersionDtoToContentVersion),
     };
   });
 };

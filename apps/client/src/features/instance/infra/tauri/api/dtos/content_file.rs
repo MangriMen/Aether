@@ -17,6 +17,8 @@ pub struct ContentFileDto {
     pub file_name: String,
     pub hash: String,
     pub name: Option<String>,
+    #[specta(type = String)]
+    #[serde_as(as = "DisplayFromStr")]
     pub size: u64,
     pub version: Option<String>,
     pub update_provider_id: Option<ProviderIdDto>,

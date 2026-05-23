@@ -5,4 +5,6 @@ export type InstanceSettings = Pick<
   'launchArgs' | 'envVars' | 'memory' | 'window' | 'hooks'
 >;
 
-export type Instance = InstanceDto;
+export interface Instance extends Omit<InstanceDto, 'timePlayed'> {
+  timePlayed: number;
+}
