@@ -16,7 +16,10 @@ use crate::{
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},
-            infra::{AzulJreProvider, FsJavaInstallationService, SqliteJavaStorage},
+            infra::{
+                AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker,
+                SqliteJavaStorage,
+            },
         },
         minecraft::{
             LoaderVersionResolver,
@@ -62,6 +65,7 @@ async fn get_launch_instance_use_case(
     FsJavaInstallationService,
     SqliteJavaStorage,
     AzulJreProvider<ProgressServiceType, ReqwestClient<ProgressServiceType>>,
+    MemoryJavaInstallationTracker,
 > {
     let loader_version_resolver = Arc::new(LoaderVersionResolver::new(
         lazy_locator.get_metadata_storage().await,
@@ -116,6 +120,7 @@ async fn get_launch_instance_use_case(
         FsJavaInstallationService,
         jre_provider,
         state.location_info.clone(),
+        lazy_locator.get_java_installation_tracker().await,
     ));
 
     let get_loader_manifest_use_case = Arc::new(GetVersionManifestUseCase::new(

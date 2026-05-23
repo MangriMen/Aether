@@ -69,6 +69,7 @@
     "java": {
       "NOT_FOUND": "Исполняемый файл Java не найден",
       "INVALID_PATH": "Указанный путь к Java недействителен",
+      "EMPTY_PATH": "Путь к Java не указан",
       "INVALID_VERSION": "Неподдерживаемая версия Java",
       "FAILED_TO_GET_PROPERTIES": "Не удалось получить свойства Java",
       "VERSION_NOT_AVAILABLE": "Запрошенная версия Java недоступна",
@@ -174,7 +175,8 @@
     "copyToClipboard": "Скопировать в буфер обмена",
     "close": "Закрыть",
     "incompatible": "Несовместимый",
-    "error": "Ошибка"
+    "error": "Ошибка",
+    "noData": "Нет данных для отображения"
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -387,14 +389,6 @@
       "ok": "Применить",
       "later": "Отложить"
     },
-    "java": {
-      "location": "Расположение Java {{version}}",
-      "detect": "Обнаружить",
-      "installRecommended": "Установить рекомендованную",
-      "test": "Тест",
-      "testFailed": "Ошибка",
-      "testSuccess": "Успех"
-    },
     "usedFromDefaultSettings": "Используется из настроек по умолчанию",
     "environmentVariablesError": {
       "emptyKey": "Пустой ключ {{part}}. \nДолжно быть в формате «ключ=значение».",
@@ -457,6 +451,30 @@
   },
   "java": {
     "installError": "Не удалось установить Java",
-    "testError": "Не удалось протестировать Java"
+    "testError": "Не удалось протестировать Java",
+    "editError": "Не удалось изменить Java",
+    "removeError": "Не удалось удалить Java"
+  },
+  "javaVersion": {
+    "version": "Версия",
+    "path": "Путь установки",
+    "testing": "Проверка",
+    "error": "Ошибка",
+    "valid": "Валидна",
+    "versionMismatch": "Несоответствие версии",
+    "status": "Статус",
+    "test": "Тест",
+    "installRecommended": "Установить рекомендуемую",
+    "browse": "Выбрать файл",
+    "detect": "Найти автоматически",
+    "versionWithNumber": "Java {{majorVersion}}",
+    "installing": "Устанавливается",
+    "emptyPath": "Путь не указан"
+  },
+  "detectJava": {
+    "dialogTitle": "Выберите установку Java {{majorVersion}}",
+    "select": "Выбрать",
+    "selected": "Выбрана",
+    "installationsNotFound": "Не удалось обнаружить установленные версии Java"
   }
 }

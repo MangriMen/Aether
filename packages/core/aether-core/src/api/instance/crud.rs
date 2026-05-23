@@ -85,6 +85,7 @@ pub async fn create(new_instance: NewInstance) -> crate::Result<String> {
         FsJavaInstallationService,
         jre_provider,
         state.location_info.clone(),
+        lazy_locator.get_java_installation_tracker().await,
     ));
 
     let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
@@ -175,6 +176,7 @@ pub async fn install(instance_id: String, force: bool) -> crate::Result<()> {
         FsJavaInstallationService,
         jre_provider,
         state.location_info.clone(),
+        lazy_locator.get_java_installation_tracker().await,
     ));
 
     let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(

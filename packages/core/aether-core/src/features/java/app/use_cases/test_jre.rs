@@ -1,11 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::features::java::JavaInstallationService;
-
-pub struct TestJreVersion {
-    pub major_version: u32,
-    pub path: PathBuf,
-}
+use crate::features::java::{Java, JavaInstallationService, app::JavaApplicationError};
 
 pub struct TestJreUseCase<JIS: JavaInstallationService> {
     java_installation_service: Arc<JIS>,
@@ -18,15 +13,7 @@ impl<JIS: JavaInstallationService> TestJreUseCase<JIS> {
         }
     }
 
-    pub async fn execute(&self, test_version: TestJreVersion) -> bool {
-        let Ok(java) = self
-            .java_installation_service
-            .locate_java(&test_version.path)
-            .await
-        else {
-            return false;
-        };
-
-        java.major_version() == test_version.major_version
+    pub async fn execute(&self, path: PathBuf) -> Result<Java, JavaApplicationError> {
+        Ok(self.java_installation_service.locate_java(&path).await?)
     }
 }

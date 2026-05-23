@@ -20,7 +20,7 @@ export type ContentTableProps = {
 };
 
 export const ContentTable: Component<ContentTableProps> = (props) => {
-  const { table, columns } = createContentTable({
+  const table = createContentTable({
     headerActions: (localProps) => (
       <HeaderActions instanceId={props.instanceId} {...localProps} />
     ),
@@ -48,11 +48,7 @@ export const ContentTable: Component<ContentTableProps> = (props) => {
 
   return (
     <>
-      <DataTable
-        columns={columns()}
-        table={table}
-        isLoading={props.isLoading}
-      />
+      <DataTable table={table} isLoading={props.isLoading} />
       <CombinedPagination
         class={cn('self-end', { hidden: table.getPageCount() < 2 })}
         siblingCount={1}

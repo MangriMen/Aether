@@ -90,5 +90,5 @@ export const createContentVersionsTable = (
     },
   });
 
-  return { table, columns };
+  return table;
 };

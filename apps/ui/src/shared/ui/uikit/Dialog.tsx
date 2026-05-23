@@ -110,6 +110,7 @@ const DialogContent = <T extends ValidComponent = 'div'>(
               size='sm'
               variant='ghost'
               class='opacity-70 transition-opacity hover:opacity-100 data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'
+              title={t('common.close')}
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'

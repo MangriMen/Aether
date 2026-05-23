@@ -80,6 +80,20 @@ export const tailwindConfig: Config = {
             transform: 'scale(1.05)',
           },
         },
+        'pulse-border': {
+          '0%': {
+            'box-shadow':
+              '0 0 0 0.5px oklch(var(--pulse-color) / 0.4), 0 0 4px 1px oklch(var(--pulse-color) / 0.2)',
+          },
+          '40%': {
+            'box-shadow':
+              '0 0 0 1.2px oklch(var(--pulse-color) / 0.8), 0 0 12px 3.5px oklch(var(--pulse-color) / 0.45)',
+          },
+          '100%': {
+            'box-shadow':
+              '0 0 0 0.5px oklch(var(--pulse-color) / 0.4), 0 0 4px 1px oklch(var(--pulse-color) / 0.2)',
+          },
+        },
       },
       animation: {
         'bump-in': 'bump-in 0.05s ease-in-out forwards',
@@ -88,6 +102,8 @@ export const tailwindConfig: Config = {
         'content-hide': 'content-hide 0.2s ease-out',
         'slide-down': 'slide-down 0.2s ease-out',
         'slide-up': 'slide-up 0.2s ease-out',
+        'pulse-border':
+          'pulse-border 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite',
       },
     },
   },

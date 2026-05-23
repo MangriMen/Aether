@@ -7,7 +7,7 @@ import type { ProgressEvent } from '@/entities/events';
 
 import { ProgressCard } from '@/entities/events';
 import { cn } from '@/shared/lib';
-import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+import { showDialog, useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
@@ -21,11 +21,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const handleOpenDetails = () =>
-    showDialog('progress', ProgressDetailsDialog, {
-      defaultOpen: true,
-      onOpenChange: () => closeDialog('progress'),
-    });
+  const handleOpenDetails = () => showDialog('progress', ProgressDetailsDialog);
 
   return (
     <div class={cn('flex flex-col gap-1', local.class)} {...others}>

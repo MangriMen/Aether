@@ -10,34 +10,34 @@
   :root,
   [data-kb-theme='light'] {
     --background: 96% 0 0;
-    --foreground: 15% 0 0;
+    --foreground: 21.78% 0 0;
 
     --muted: 0% 0 0;
     --muted-foreground: 45% 0 0;
 
     --popover: 100% 0 0;
-    --popover-foreground: 15% 0 0;
+    --popover-foreground: 21.78% 0 0;
 
     --border: 0% 0 0;
     --input: 0% 0 0;
 
     --card: 0% 0 0;
-    --card-foreground: 15% 0 0;
+    --card-foreground: 21.78% 0 0;
 
-    --primary: 15% 0 0;
+    --primary: 21.78% 0 0;
     --primary-foreground: 100% 0 0;
 
     --secondary: 0% 0 0;
-    --secondary-foreground: 15% 0 0;
+    --secondary-foreground: 21.78% 0 0;
 
     --accent: 0% 0 0;
-    --accent-foreground: 15% 0 0;
+    --accent-foreground: 21.78% 0 0;
 
     --destructive: 55% 0.2 25;
     --destructive-foreground: 100% 0 0;
 
     --info: 65% 0.12 230;
-    --info-foreground: 15% 0.05 230;
+    --info-foreground: 21.78% 0.05 230;
 
     --success: 48.66% 0.1253 144.76;
     --success-foreground: 100% 0 0;
@@ -48,7 +48,7 @@
     --error: 55% 0.2 25;
     --error-foreground: 100% 0 0;
 
-    --ring: 15% 0 0;
+    --ring: 21.78% 0 0;
 
     --opacity-card: 0.03;
     --opacity-secondary: 0.08;
@@ -167,7 +167,7 @@
   }
 
   html {
-    @apply max-h-screen overflow-hidden;
+    @apply max-h-screen overflow-hidden selection:bg-primary selection:text-primary-foreground;
   }
 
   body {

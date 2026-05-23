@@ -3,6 +3,7 @@ import {
   useProgressEventsListener,
 } from '@/entities/events';
 import { useInstanceEventsListener } from '@/entities/instances';
+import { useJavaInstallationListener } from '@/entities/java';
 import { usePluginEventListener } from '@/entities/plugins';
 
 import { useMicaUpdateListener } from './useMicaUpdateListener';
@@ -14,6 +15,7 @@ export const useSetupListeners = () => {
   useWarningEventsListener();
   useProgressEventsListener();
   usePluginEventListener();
+  useJavaInstallationListener();
 
   useMicaUpdateListener();
   useTransparencyUpdateListener();

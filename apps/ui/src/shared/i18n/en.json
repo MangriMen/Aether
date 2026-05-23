@@ -69,6 +69,7 @@
     "java": {
       "NOT_FOUND": "Java executable not found",
       "INVALID_PATH": "Invalid Java path",
+      "EMPTY_PATH": "Java path is empty",
       "INVALID_VERSION": "Unsupported Java version",
       "FAILED_TO_GET_PROPERTIES": "Failed to retrieve Java properties",
       "VERSION_NOT_AVAILABLE": "Requested Java version is not available",
@@ -174,7 +175,8 @@
     "copyToClipboard": "Copy to clipboard",
     "close": "Close",
     "incompatible": "Incompatible",
-    "error": "Error"
+    "error": "Error",
+    "noData": "No data to display"
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -387,14 +389,6 @@
       "ok": "Apply",
       "later": "Later"
     },
-    "java": {
-      "location": "Java {{version}} location",
-      "installRecommended": "Install recommended",
-      "detect": "Detect",
-      "test": "Test",
-      "testSuccess": "Success",
-      "testFailed": "Failed"
-    },
     "usedFromDefaultSettings": "Used from default settings",
     "environmentVariablesError": {
       "invalidFormat": "Invalid format {{part}}. Must be in \"key=value\" format",
@@ -457,6 +451,30 @@
   },
   "java": {
     "installError": "Failed to install java",
-    "testError": "Failed to test java"
+    "testError": "Failed to test java",
+    "editError": "Failed to edit java",
+    "removeError": "Failed to remove java"
+  },
+  "javaVersion": {
+    "version": "Version",
+    "path": "Installation Path",
+    "testing": "Testing",
+    "valid": "Valid",
+    "error": "Error",
+    "versionMismatch": "Version mismatch",
+    "status": "Status",
+    "test": "Test",
+    "installRecommended": "Install recommended",
+    "browse": "Browse",
+    "detect": "Detect",
+    "versionWithNumber": "Java {{majorVersion}}",
+    "installing": "Installing",
+    "emptyPath": "Path is empty"
+  },
+  "detectJava": {
+    "dialogTitle": "Select java {{majorVersion}} installation",
+    "select": "Select",
+    "selected": "Selected",
+    "installationsNotFound": "Could not detect any Java installations"
   }
 }

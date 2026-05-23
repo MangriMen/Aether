@@ -4,7 +4,7 @@ use crate::features::{
     auth::{ActiveAccountHelper, CredentialsStorage},
     events::ProgressService,
     instance::{InstanceError, InstanceStorage},
-    java::{JavaInstallationService, JavaStorage, JreProvider},
+    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
     minecraft::{MetadataStorage, MinecraftDownloader},
     process::{MinecraftProcessMetadata, ProcessStorage},
     settings::DefaultInstanceSettingsStorage,
@@ -23,9 +23,10 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
+    JIT: JavaInstallationTracker,
 > {
     credentials_storage: Arc<CS>,
-    launch_instance_use_case: LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>,
+    launch_instance_use_case: LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP, JIT>,
 }
 
 impl<
@@ -39,7 +40,8 @@ impl<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
-> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP>
+    JIT: JavaInstallationTracker,
+> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP, JIT>
 {
     pub fn new(
         credentials_storage: Arc<CS>,
@@ -53,6 +55,7 @@ impl<
             JIS,
             JS,
             JP,
+            JIT,
         >,
     ) -> Self {
         Self {

@@ -12,5 +12,9 @@ export const javaCache = {
       queryClient.invalidateQueries({
         queryKey: javaKeys.list(),
       }),
+    getActiveInstallations: (queryClient: QueryClient) =>
+      queryClient.invalidateQueries({
+        queryKey: javaKeys.getActiveInstallations(),
+      }),
   },
 };

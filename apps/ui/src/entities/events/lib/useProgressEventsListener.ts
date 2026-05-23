@@ -9,6 +9,8 @@ import type { ProgressEvent } from '../model';
 
 import { commands, events } from '../api';
 
+export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
+
 export const useProgressEventsListener = () => {
   let unlistenFn: UnlistenFn | undefined = undefined;
 
@@ -36,7 +38,7 @@ export const useProgressEventsListener = () => {
   const removeEventDelayed = (payload: ProgressEvent) => {
     const timer = setTimeout(() => {
       removeEvent(payload.progressBarId);
-    }, 5000);
+    }, PROGRESS_EVENT_REMOVE_DELAY);
 
     activeTimers.set(payload.progressBarId, timer);
   };

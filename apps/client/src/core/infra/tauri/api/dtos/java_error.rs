@@ -11,6 +11,7 @@ pub enum JavaErrorDto {
     InvalidPath {
         path: String,
     },
+    EmptyPath,
     InvalidVersion {
         version: String,
     },
@@ -50,9 +51,6 @@ impl From<&JavaApplicationError> for JavaErrorDto {
             JavaApplicationError::DownloadFailed(err) => Self::DownloadFailed {
                 details: err.to_string(),
             },
-            JavaApplicationError::Storage(err) => Self::StorageError {
-                details: err.to_string(),
-            },
         }
     }
 }
@@ -61,6 +59,7 @@ impl From<&JavaDomainError> for JavaErrorDto {
     fn from(value: &JavaDomainError) -> Self {
         match value {
             JavaDomainError::NotFound { version } => Self::NotFound { version: *version },
+            JavaDomainError::EmptyPath => Self::EmptyPath,
             JavaDomainError::InvalidPath { path } => Self::InvalidPath {
                 path: path.to_string_lossy().to_string(),
             },
@@ -92,6 +91,9 @@ impl From<&JavaDomainError> for JavaErrorDto {
                     path: path.to_string_lossy().to_string(),
                 }
             }
+            JavaDomainError::Storage(err) => Self::StorageError {
+                details: err.clone(),
+            },
         }
     }
 }

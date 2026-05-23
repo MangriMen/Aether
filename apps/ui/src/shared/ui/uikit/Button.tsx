@@ -3,16 +3,14 @@ import type { VariantProps } from 'class-variance-authority';
 import type { Component, JSX, ValidComponent } from 'solid-js';
 
 import * as ButtonPrimitive from '@kobalte/core/button';
-import IconMdiLoading from '~icons/mdi/loading';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 import { cn } from '../../lib';
-import { DelayedShow } from '../components/DelayedShow';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity,padding] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -20,10 +18,10 @@ const buttonVariants = cva(
           'bg-primary text-primary-foreground enabled:hover:bg-primary/solid-hover enabled:active:bg-primary/solid-active enabled:active:text-primary-foreground/solid-text-active',
 
         secondary:
-          'border  bg-secondary/secondary text-secondary-foreground enabled:hover:bg-secondary/hover enabled:active:bg-secondary/active enabled:active:text-secondary-foreground/solid-text-active',
+          'border bg-secondary/secondary text-secondary-foreground enabled:hover:bg-secondary/hover enabled:active:bg-secondary/active enabled:active:text-secondary-foreground/solid-text-active',
 
         outline:
-          'border  bg-transparent enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
+          'border bg-transparent enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
 
         ghost:
           'bg-transparent text-foreground enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
@@ -36,13 +34,16 @@ const buttonVariants = cva(
 
         link: 'text-primary underline-offset-4 enabled:hover:underline',
 
+        warning:
+          'bg-warning text-warning-foreground enabled:hover:bg-warning/solid-hover enabled:active:bg-warning/solid-active enabled:active:text-warning-foreground/solid-text-active',
+
         ghostWarning:
           'text-warning enabled:hover:bg-warning/control enabled:active:bg-warning/secondary',
       },
       size: {
-        default: 'h-9 gap-2 px-4 py-2 text-sm leading-4',
-        sm: 'h-8 rounded-md px-3 py-1.5 text-sm leading-4',
-        lg: 'h-10 rounded-md px-6 py-2 text-base leading-5',
+        default: 'h-9 gap-2 px-4 py-2 leading-4',
+        sm: 'h-8 px-3 py-1.5 leading-4',
+        lg: 'h-10 px-6 py-2 text-base leading-5',
         icon: 'size-9',
       },
     },
@@ -82,26 +83,21 @@ const Button = <T extends ValidComponent = 'button'>(
       class={cn(
         'relative',
         buttonVariants({ variant: local.variant, size: local.size }),
+        {
+          'animate-pulse-border delay-200': local.loading,
+        },
         local.class,
       )}
+      style={{
+        '--pulse-color': 'var(--foreground)',
+      }}
       disabled={local.disabled || local.loading}
       {...others}
     >
       <Dynamic component={local.leadingIcon} />
+
       {local.children}
-      <DelayedShow
-        when={!local.loading}
-        fallback={
-          <div
-            class={cn(
-              'absolute inset-0 flex items-center justify-center m-auto size-full border-none rounded-[inherit] animate-in fade-in-0 ease-in',
-              buttonVariants({ variant: local.variant }),
-            )}
-          >
-            <IconMdiLoading class='animate-spin text-xl' />
-          </div>
-        }
-      />
+
       <Dynamic component={local.trailingIcon} />
     </ButtonPrimitive.Root>
   );

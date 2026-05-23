@@ -1,25 +1,33 @@
-import { createMemo, For } from 'solid-js';
+import { createMemo, For, mergeProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import type { NonNullableDialogItem } from '../../model';
-
-import { useGlobalDialog } from '../../model';
+import { closeDialog, useGlobalDialog } from '../../model';
 
 export const GlobalDialogRenderer = () => {
   const [store] = useGlobalDialog();
 
-  const dialogItems = createMemo(
-    () =>
-      Object.values(store.dialogs).filter(
-        (dialogItem) => dialogItem.dialog !== null,
-      ) as NonNullableDialogItem[],
-  );
+  const dialogIds = createMemo(() => Object.keys(store.dialogs));
 
   return (
-    <For each={dialogItems()}>
-      {(dialogItem) => (
-        <Dynamic component={dialogItem.dialog} {...(dialogItem.props || {})} />
-      )}
+    <For each={dialogIds()}>
+      {(id) => {
+        const item = store.dialogs[id];
+
+        const finalProps = mergeProps(() => item?.props || {}, {
+          get open() {
+            return item?.open ?? false;
+          },
+          onOpenChange: (isOpen: boolean) => {
+            item?.props?.onOpenChange?.(isOpen);
+
+            if (!isOpen) {
+              closeDialog(id, item?.preventRemove);
+            }
+          },
+        });
+
+        return <Dynamic component={item?.dialog} {...finalProps} />;
+      }}
     </For>
   );
 };

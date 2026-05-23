@@ -106,5 +106,5 @@ export const createContentTable = (props: CreateContentTableProps) => {
     },
   });
 
-  return { table, columns };
+  return table;
 };

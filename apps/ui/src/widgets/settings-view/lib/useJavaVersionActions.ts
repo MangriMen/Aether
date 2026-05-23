@@ -1,78 +1,91 @@
-import { createSignal, onCleanup } from 'solid-js';
+import { type Accessor } from 'solid-js';
 
-import { useInstallJava, useTestJava } from '@/entities/java';
+import {
+  useActiveJavaInstallations,
+  useDiscoverJava,
+  useEditJava,
+  useInstallJava,
+} from '@/entities/java';
 import { logError } from '@/shared/lib';
+import { closeDialog, showDialog } from '@/shared/model';
 
-export const useJavaVersionActions = () => {
+import type { JavaVersion, StrictJavaVersion } from '../model';
+
+import { DetectJavaDialog } from '../ui/JavaPane/DetectJavaDialog';
+import { browseJavaInstallation } from './browseJavaInstallation';
+
+const DETECT_JAVA_DIALOG_ID = 'detect-java';
+
+export const useJavaVersionActions = (
+  javaVersions: Accessor<JavaVersion[]>,
+) => {
   const installJava = useInstallJava();
+  const editJava = useEditJava();
+  const discoverJava = useDiscoverJava();
 
-  const convertJavaVersionToNum = (version: string): number | undefined => {
-    try {
-      const versionNum = parseInt(version);
+  const activeInstallations = useActiveJavaInstallations();
 
-      if (Number.isNaN(versionNum)) {
-        logError(`Java version is not number ${versionNum}`);
-        return;
-      }
-
-      return versionNum;
-    } catch {
-      return;
-    }
+  const checkIsInstalling = (majorVersion: number) => {
+    return activeInstallations.data?.includes(majorVersion) ?? false;
   };
 
-  const installRecommended = async (version: string) => {
-    const versionNum = convertJavaVersionToNum(version);
-
-    if (!versionNum) {
-      return;
-    }
-
-    await installJava.mutateAsync(versionNum);
-  };
-
-  const [isTestingFailed, setIsTestingFailed] = createSignal<
-    boolean | undefined
-  >(undefined);
-  let timerId = 0;
-
-  const updateIsTestingFailed = (value: boolean) => {
-    setIsTestingFailed(value);
-
-    timerId = setTimeout(() => {
-      setIsTestingFailed(undefined);
-    }, 2000);
-  };
-
-  onCleanup(() => {
-    clearTimeout(timerId);
-  });
-
-  const testJava = useTestJava();
-
-  const test = async (version: string, path: string) => {
-    const versionNum = convertJavaVersionToNum(version);
-
-    if (!versionNum) {
+  const updateJavaPath = async (majorVersion: number, path: string) => {
+    if (!path) {
       return;
     }
 
     try {
-      const result = await testJava.mutateAsync({
-        major_version: versionNum,
-        path,
-      });
-      updateIsTestingFailed(!result);
-    } catch {
-      updateIsTestingFailed(true);
+      await editJava.mutateAsync({ majorVersion, path });
+    } catch (error) {
+      logError('Failed to update Java path:', error);
+      throw error;
     }
+  };
+
+  const handleDetect = async (majorVersion: number) => {
+    if (Number.isNaN(majorVersion)) {
+      return;
+    }
+
+    const selectedVersionPath = () =>
+      javaVersions().find((java) => java.majorVersion === majorVersion)?.path;
+
+    const discovered = await discoverJava.mutateAsync();
+    const versions = discovered.filter((v) => v.majorVersion === majorVersion);
+
+    const onSelect = async (newVersion: StrictJavaVersion) => {
+      await updateJavaPath(newVersion.majorVersion, newVersion.path);
+      closeDialog(DETECT_JAVA_DIALOG_ID);
+    };
+
+    showDialog(DETECT_JAVA_DIALOG_ID, DetectJavaDialog, {
+      versions,
+      selectedVersionPath,
+      onSelect,
+      majorVersion,
+    });
+  };
+
+  const handleBrowse = async (majorVersion: number) => {
+    if (Number.isNaN(majorVersion)) {
+      return;
+    }
+
+    const path = await browseJavaInstallation();
+
+    if (typeof path === 'string') {
+      await updateJavaPath(majorVersion, path);
+    }
+  };
+
+  const installRecommended = async (majorVersion: number) => {
+    await installJava.mutateAsync({ version: majorVersion, force: true });
   };
 
   return {
     installRecommended,
-    test,
-    isInstalling: () => installJava.isPending,
-    isTesting: () => testJava.isPending,
-    isTestingFailed: () => isTestingFailed(),
+    isInstalling: checkIsInstalling,
+    onDetect: handleDetect,
+    onBrowse: handleBrowse,
   };
 };

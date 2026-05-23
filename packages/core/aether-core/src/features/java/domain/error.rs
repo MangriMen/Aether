@@ -10,6 +10,9 @@ pub enum JavaDomainError {
     #[error("No JRE found at path: {path:?}")]
     InvalidPath { path: PathBuf },
 
+    #[error("Path can't be empty for edit operations")]
+    EmptyPath,
+
     #[error("Invalid JRE version: {version}")]
     InvalidVersion { version: String },
 
@@ -39,4 +42,7 @@ pub enum JavaDomainError {
 
     #[error("Failed to remove old installation at {path:?}")]
     RemoveOldInstallationError { path: PathBuf },
+
+    #[error("Storage error: {0}")]
+    Storage(String),
 }
