@@ -102,7 +102,7 @@ export const DataTable = <TData,>(
 
   const [{ t }] = useTranslation();
 
-  const table = createMemo(() => {
+  const getTable = () => {
     if (local.table) {
       return local.table;
     }
@@ -118,10 +118,10 @@ export const DataTable = <TData,>(
       () => data,
       () => columns,
     );
-  });
+  };
 
   const columnsData = createMemo(() => {
-    const visibleLeafColumns = table().getVisibleLeafColumns();
+    const visibleLeafColumns = getTable().getVisibleLeafColumns();
     const columnStyles: Record<string, JSX.CSSProperties> = {};
 
     visibleLeafColumns.forEach((column) => {
@@ -142,7 +142,7 @@ export const DataTable = <TData,>(
     >
       <Table class={local.tableClass} disableWrapper>
         <TableHeader class='sticky top-0 z-10 bg-popover'>
-          <For each={table().getHeaderGroups()}>
+          <For each={getTable().getHeaderGroups()}>
             {(headerGroup) => (
               <DataTableHeaderRow
                 headerGroup={headerGroup}
@@ -161,14 +161,14 @@ export const DataTable = <TData,>(
               />
             </Match>
 
-            <Match when={!local.isLoading && table().getRowCount() === 0}>
+            <Match when={!local.isLoading && getTable().getRowCount() === 0}>
               <TableStatusMessage colSpan={columnsData().columnsCount}>
                 {local.noContentPlaceholder ?? t('common.noData')}
               </TableStatusMessage>
             </Match>
 
             <Match when>
-              <For each={table().getRowModel().rows}>
+              <For each={getTable().getRowModel().rows}>
                 {(row) => (
                   <DataTableRow
                     row={row}

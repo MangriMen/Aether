@@ -1,10 +1,11 @@
+import type { Accessor } from 'solid-js';
+
 import IconMdiPlay from '~icons/mdi/play';
 import IconMdiReload from '~icons/mdi/reload';
 import {
   createEffect,
   createMemo,
-  createSignal,
-  onCleanup,
+  Show,
   splitProps,
   type Component,
 } from 'solid-js';
@@ -18,6 +19,10 @@ import { Button, CombinedTooltip } from '@/shared/ui';
 import type { JavaTestStatus } from '../../model';
 
 import { useJavaVersionTesting } from '../../lib';
+import {
+  SPIN_DURATION,
+  useJavaVersionStatusUi,
+} from '../../lib/useJavaVersionStatusUi';
 
 export type JavaVersionStatusButtonProps = ButtonProps & {
   majorVersion: number;
@@ -41,10 +46,6 @@ const TEXT_MAP = {
   'version-mismatch': 'javaVersion.versionMismatch',
 } as const satisfies Record<JavaTestStatus, string>;
 
-const LOADER_DELAY = 250;
-const SPIN_DURATION = 500;
-const COOLING_OFF_DURATION = 3000;
-
 export const JavaVersionStatusButton: Component<
   JavaVersionStatusButtonProps
 > = (props) => {
@@ -58,90 +59,39 @@ export const JavaVersionStatusButton: Component<
 
   const [{ t }] = useTranslation();
 
-  const { test, testingStatus } = useJavaVersionTesting();
+  const { test, testingStatus, resetStatus } = useJavaVersionTesting();
 
-  const [uiStatus, setUiStatus] = createSignal(testingStatus());
+  const ui = useJavaVersionStatusUi({
+    testingStatus,
+    onTest: () => {
+      if (!local.majorVersion || !local.path) return Promise.resolve();
+      return test(local.majorVersion, local.path);
+    },
+  });
 
-  const [isCoolingOff, setIsCoolingOff] = createSignal(false);
-  const [isSuccessSpinning, setIsSuccessSpinning] = createSignal(false);
+  const isPathEmpty = createMemo(() => !local.path);
 
   createEffect(() => {
-    const currentStatus = testingStatus();
-
-    if (currentStatus === 'testing') {
-      const timer = setTimeout(() => {
-        setUiStatus('testing');
-      }, LOADER_DELAY);
-
-      onCleanup(() => clearTimeout(timer));
-    } else {
-      setUiStatus(currentStatus);
+    if (isPathEmpty()) {
+      resetStatus();
     }
   });
 
-  const displayStatus = createMemo(() => uiStatus() || 'idle');
-
-  const isDataValid = createMemo(() => Boolean(local.path));
-
-  let sameStatusTimer: number = 0;
-  let coolingOffPeriodTimer: number = 0;
-
-  const handleClick = async () => {
-    if (!local.majorVersion || !local.path) return;
-
-    const previousStatus = testingStatus();
-
-    await test(local.majorVersion, local.path);
-
-    setIsCoolingOff(true);
-    coolingOffPeriodTimer = setTimeout(() => {
-      setIsCoolingOff(false);
-    }, COOLING_OFF_DURATION);
-
-    if (testingStatus() === previousStatus && previousStatus !== 'idle') {
-      setIsSuccessSpinning(true);
-
-      sameStatusTimer = setTimeout(() => {
-        setIsSuccessSpinning(false);
-      }, SPIN_DURATION);
-    }
-  };
-
-  onCleanup(() => {
-    clearTimeout(coolingOffPeriodTimer);
-    clearTimeout(sameStatusTimer);
-  });
-
-  const variant = createMemo(() => VARIANT_MAP[displayStatus()] || 'secondary');
-
-  const leadingIcon = createMemo(() => {
-    if (displayStatus() === 'idle') {
-      return IconMdiPlay;
-    }
-
-    return () => (
-      <IconMdiReload
-        class={cn({
-          [`animate-spin`]: isSuccessSpinning(),
-        })}
-        style={{ 'animation-duration': `${SPIN_DURATION}ms` }}
-      />
-    );
-  });
+  const variant = createMemo(() => VARIANT_MAP[ui.uiStatus()] || 'secondary');
 
   const isDisabled = createMemo(
     () =>
       local.disabled ||
       local.isInstalling ||
       testingStatus() === 'testing' ||
-      isCoolingOff() ||
-      !isDataValid(),
+      ui.isCoolingDown() ||
+      isPathEmpty(),
   );
 
   const tooltipLabel = createMemo(() => {
     if (local.isInstalling) {
       return t('javaVersion.installing');
-    } else if (!isDataValid()) {
+    } else if (isPathEmpty()) {
       return t('javaVersion.emptyPath');
     } else {
       return undefined;
@@ -155,13 +105,41 @@ export const JavaVersionStatusButton: Component<
       as={Button}
       class={cn('w-full', local.class)}
       variant={variant()}
-      onClick={handleClick}
-      loading={uiStatus() === 'testing'}
+      onClick={ui.handleTriggerTest}
+      loading={ui.uiStatus() === 'testing'}
       disabled={isDisabled()}
-      leadingIcon={leadingIcon()}
+      leadingIcon={() => (
+        <StatusIcon
+          status={ui.uiStatus()}
+          isSuccessSpinning={ui.isSuccessSpinning}
+        />
+      )}
       {...others}
     >
-      {t(TEXT_MAP[displayStatus()])}
+      {t(TEXT_MAP[ui.uiStatus()])}
     </CombinedTooltip>
+  );
+};
+
+export type StatusIconProps = {
+  status: JavaTestStatus;
+  isSuccessSpinning: Accessor<boolean>;
+};
+
+export const StatusIcon: Component<StatusIconProps> = (props) => {
+  return (
+    <Show
+      when={props.status === 'idle'}
+      fallback={
+        <IconMdiReload
+          class={cn({
+            [`animate-spin`]: props.isSuccessSpinning(),
+          })}
+          style={{ 'animation-duration': `${SPIN_DURATION}ms` }}
+        />
+      }
+    >
+      <IconMdiPlay />
+    </Show>
   );
 };

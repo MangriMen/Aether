@@ -30,7 +30,7 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
       return props.data();
     },
     get columns() {
-      return columns();
+      return columns;
     },
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => `${row.majorVersion}`,

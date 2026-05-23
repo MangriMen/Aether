@@ -24,19 +24,19 @@ export const useJavaVersionsTableData = (
     return map;
   });
 
-  const tableData = createMemo(() => {
-    const currentMap = versionMap();
-
-    return MAJOR_JAVA_VERSIONS_TO_DISPLAY.map<JavaVersion>((version) => {
-      const installedJava = currentMap.get(version);
-
+  const staticTableData = MAJOR_JAVA_VERSIONS_TO_DISPLAY.map<JavaVersion>(
+    (version) => {
       return {
         majorVersion: version,
-        version: installedJava?.version,
-        path: installedJava?.path,
+        get version() {
+          return versionMap().get(version)?.version;
+        },
+        get path() {
+          return versionMap().get(version)?.path;
+        },
       };
-    });
-  });
+    },
+  );
 
-  return tableData;
+  return () => staticTableData;
 };

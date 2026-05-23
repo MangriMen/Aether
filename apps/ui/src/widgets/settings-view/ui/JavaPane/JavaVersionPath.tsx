@@ -43,21 +43,17 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
       return;
     }
 
-    if (!trimmedPath) {
-      try {
+    try {
+      if (!trimmedPath) {
         await removeJava.mutateAsync(local.majorVersion);
-      } catch {
-        setValue(local.value ?? '');
-      }
-    } else {
-      try {
+      } else {
         await editJava.mutateAsync({
           majorVersion: local.majorVersion,
           path: trimmedPath,
         });
-      } catch {
-        setValue(local.value ?? '');
       }
+    } catch {
+      setValue(local.value ?? '');
     }
   };
 
@@ -71,7 +67,7 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
     e,
   ) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      applyPathChange(e.currentTarget.value);
     }
   };
 

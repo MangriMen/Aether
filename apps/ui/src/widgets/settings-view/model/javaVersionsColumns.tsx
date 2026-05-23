@@ -1,5 +1,4 @@
 import { createColumnHelper } from '@tanstack/solid-table';
-import { createMemo } from 'solid-js';
 
 import type { TFunction } from '@/shared/model';
 
@@ -26,15 +25,15 @@ export const createJavaVersionsColumns = ({
   onDetect,
   onBrowse,
 }: CreateJavaVersionsColumnsProps) => {
-  const columns = createMemo(() => [
+  return [
     javaVersionsColumnHelper.accessor('majorVersion', {
       maxSize: 80,
       header: () => t('javaVersion.version'),
-      cell: (props) => {
+      cell: (cellProps) => {
         return (
           <span>
             {t('javaVersion.versionWithNumber', {
-              majorVersion: props.getValue(),
+              majorVersion: cellProps.row.original.majorVersion,
             })}
           </span>
         );
@@ -46,7 +45,7 @@ export const createJavaVersionsColumns = ({
       cell: (cellProps) => (
         <JavaVersionPath
           majorVersion={cellProps.row.original.majorVersion}
-          value={cellProps.getValue()}
+          value={cellProps.row.original.path}
           disabled={isInstalling?.(cellProps.row.original.majorVersion)}
         />
       ),
@@ -88,7 +87,5 @@ export const createJavaVersionsColumns = ({
         );
       },
     }),
-  ]);
-
-  return columns;
+  ];
 };
