@@ -1,11 +1,11 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use aether_core::{
     core::{LauncherState, domain::LazyLocator},
     features::java::{
         app::{
-            DiscoverJavaUseCase, EditJavaUseCase, InstallJavaUseCase, ListJavaUseCase,
-            RemoveJavaUseCase, TestJreUseCase,
+            DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
+            InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
         },
         infra::{AzulJreProvider, FsJavaInstallationService, get_default_discovery_paths},
     },
@@ -90,6 +90,7 @@ async fn install(version: u32) -> FrontendResult<JavaDto> {
         FsJavaInstallationService,
         jre_provider,
         state.location_info.clone(),
+        lazy_locator.get_java_installation_tracker().await,
     )
     .execute(version)
     .await
@@ -126,5 +127,17 @@ async fn discover() -> FrontendResult<Vec<JavaDto>> {
             .into_iter()
             .map(Into::into)
             .collect(),
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_active_installations() -> FrontendResult<HashSet<u32>> {
+    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+
+    Ok(
+        GetActiveJavaInstallationsUseCase::new(lazy_locator.get_java_installation_tracker().await)
+            .execute()
+            .await,
     )
 }

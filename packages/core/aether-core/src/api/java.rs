@@ -24,6 +24,7 @@ pub async fn install(version: u32) -> crate::Result<Java> {
         FsJavaInstallationService,
         jre_provider,
         state.location_info.clone(),
+        lazy_locator.get_java_installation_tracker().await,
     );
 
     Ok(install_java_use_case.execute(version).await?)

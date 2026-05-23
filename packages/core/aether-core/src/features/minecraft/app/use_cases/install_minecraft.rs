@@ -5,7 +5,7 @@ use tracing::debug;
 use crate::features::{
     events::{ProgressBarId, ProgressService},
     java::{
-        Java, JavaInstallationService, JavaStorage, JreProvider,
+        Java, JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
         app::{GetJavaUseCase, InstallJavaUseCase, JavaApplicationError},
     },
     minecraft::{
@@ -27,6 +27,7 @@ pub struct InstallMinecraftUseCase<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
+    JIT: JavaInstallationTracker,
 > {
     progress_service: Arc<PS>,
     loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
@@ -35,7 +36,7 @@ pub struct InstallMinecraftUseCase<
     minecraft_download_service: MD,
     java_installation_service: JIS,
     get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-    install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP>>,
+    install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
 }
 
 impl<
@@ -45,7 +46,8 @@ impl<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
-> InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP>
+    JIT: JavaInstallationTracker,
+> InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP, JIT>
 {
     // TODO: try to decrease arguments count
     #[allow(clippy::too_many_arguments)]
@@ -57,7 +59,7 @@ impl<
         minecraft_download_service: MD,
         java_installation_service: JIS,
         get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-        install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP>>,
+        install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
     ) -> Self {
         Self {
             progress_service,

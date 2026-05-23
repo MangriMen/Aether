@@ -79,6 +79,7 @@ export const JavaVersionActions: Component<JavaVersionActionsProps> = (
           leadingIcon={IconMdiDownload}
           onClick={local.onInstallRecommended}
           disabled={local.isInstalling}
+          loading={local.isInstalling}
         >
           {t('javaVersion.installRecommended')}
         </DropdownMenuItem>

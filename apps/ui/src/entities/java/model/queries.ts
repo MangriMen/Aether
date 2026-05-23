@@ -107,3 +107,9 @@ export const useDiscoverJava = () => {
     },
   }));
 };
+
+export const useActiveJavaInstallations = () =>
+  useQuery(() => ({
+    queryKey: javaKeys.getActiveInstallations(),
+    queryFn: commands.getActiveInstallations,
+  }));

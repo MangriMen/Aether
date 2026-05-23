@@ -7,7 +7,7 @@ use crate::{
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
         },
-        java::{JavaInstallationService, JavaStorage, JreProvider},
+        java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
             LaunchSettings, MetadataStorage, MinecraftDownloader,
             app::{GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase},
@@ -33,12 +33,14 @@ pub struct LaunchInstanceUseCase<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
+    JIT: JavaInstallationTracker,
 > {
     instance_storage: Arc<IS>,
     default_instance_settings_storage: Arc<GISS>,
     location_info: Arc<LocationInfo>,
     get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP>>,
+    #[allow(clippy::type_complexity)]
+    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP, JIT>>,
     get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
     start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
 }
@@ -53,14 +55,16 @@ impl<
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
-> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP>
+    JIT: JavaInstallationTracker,
+> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP, JIT>
 {
+    #[allow(clippy::type_complexity)]
     pub fn new(
         instance_storage: Arc<IS>,
         default_instance_settings_storage: Arc<GISS>,
         location_info: Arc<LocationInfo>,
         get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-        install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP>>,
+        install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP, JIT>>,
         get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
         start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
     ) -> Self {

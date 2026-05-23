@@ -16,7 +16,7 @@ use crate::{
                 SqliteInstanceStorage, SqlitePackStorage,
             },
         },
-        java::infra::SqliteJavaStorage,
+        java::infra::{MemoryJavaInstallationTracker, SqliteJavaStorage},
         minecraft::infra::{CachedMetadataStorage, ModrinthMetadataStorage},
         plugins::{
             LoadConfigType, PluginLoaderRegistry, PluginRegistry,
@@ -87,6 +87,7 @@ pub struct LazyLocator {
         >,
     >,
     sqlite_pool: OnceCell<sqlx::SqlitePool>,
+    java_installation_tracker: OnceCell<Arc<MemoryJavaInstallationTracker>>,
 }
 
 fn get_reqwest_client() -> Arc<ClientWithMiddleware> {
@@ -143,6 +144,7 @@ impl LazyLocator {
                     content_provider_registry: OnceCell::new(),
                     plugin_infrastructure_listener: OnceCell::new(),
                     sqlite_pool: OnceCell::from(sqlite_pool),
+                    java_installation_tracker: OnceCell::new(),
                 })
             })
             .await;
@@ -468,6 +470,13 @@ impl LazyLocator {
         self.sqlite_pool
             .get()
             .expect("Sqlite pool must be initialized via LazyLocator::init")
+            .clone()
+    }
+
+    pub async fn get_java_installation_tracker(&self) -> Arc<MemoryJavaInstallationTracker> {
+        self.java_installation_tracker
+            .get_or_init(|| async { Arc::new(MemoryJavaInstallationTracker::default()) })
+            .await
             .clone()
     }
 }

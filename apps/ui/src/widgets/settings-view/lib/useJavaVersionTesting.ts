@@ -5,8 +5,6 @@ import { isLauncherError } from '@/shared/model';
 
 import type { JavaTestStatus } from '../model';
 
-import { parseJavaVersion } from './parseJavaVersion';
-
 const DEFAULT_STATUS: JavaTestStatus = 'idle';
 
 export const useJavaVersionTesting = () => {
@@ -19,10 +17,8 @@ export const useJavaVersionTesting = () => {
     setTestingStatus(DEFAULT_STATUS);
   };
 
-  const test = async (majorVersion: string, path: string) => {
-    const versionNum = parseJavaVersion(majorVersion);
-
-    if (!versionNum) {
+  const test = async (majorVersion: number, path: string) => {
+    if (Number.isNaN(majorVersion)) {
       return;
     }
 
@@ -30,7 +26,7 @@ export const useJavaVersionTesting = () => {
     try {
       const java = await testJava.mutateAsync(path);
 
-      if (versionNum !== java.majorVersion) {
+      if (majorVersion !== java.majorVersion) {
         setTestingStatus('version-mismatch');
       } else {
         setTestingStatus('valid');

@@ -13,16 +13,16 @@ import type { ButtonProps } from '@/shared/ui';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { Button, CombinedTooltip } from '@/shared/ui';
 
 import type { JavaTestStatus } from '../../model';
 
 import { useJavaVersionTesting } from '../../lib';
 
 export type JavaVersionStatusButtonProps = ButtonProps & {
-  majorVersion?: string;
+  majorVersion: number;
   path?: string;
-  disabled?: boolean;
+  isInstalling?: boolean;
 };
 
 const VARIANT_MAP = {
@@ -51,6 +51,7 @@ export const JavaVersionStatusButton: Component<
   const [local, others] = splitProps(props, [
     'majorVersion',
     'path',
+    'isInstalling',
     'disabled',
     'class',
   ]);
@@ -80,9 +81,7 @@ export const JavaVersionStatusButton: Component<
 
   const displayStatus = createMemo(() => uiStatus() || 'idle');
 
-  const isDataValid = createMemo(
-    () => local.majorVersion !== undefined && Boolean(local.path),
-  );
+  const isDataValid = createMemo(() => Boolean(local.path));
 
   let sameStatusTimer: number = 0;
   let coolingOffPeriodTimer: number = 0;
@@ -130,22 +129,39 @@ export const JavaVersionStatusButton: Component<
     );
   });
 
+  const isDisabled = createMemo(
+    () =>
+      local.disabled ||
+      local.isInstalling ||
+      testingStatus() === 'testing' ||
+      isCoolingOff() ||
+      !isDataValid(),
+  );
+
+  const tooltipLabel = createMemo(() => {
+    if (local.isInstalling) {
+      return t('javaVersion.installing');
+    } else if (!isDataValid()) {
+      return t('javaVersion.emptyPath');
+    } else {
+      return undefined;
+    }
+  });
+
   return (
-    <Button
+    <CombinedTooltip
+      label={tooltipLabel()}
+      disableTooltip={!tooltipLabel()}
+      as={Button}
       class={cn('w-full', local.class)}
       variant={variant()}
       onClick={handleClick}
       loading={uiStatus() === 'testing'}
-      disabled={
-        local.disabled ||
-        !isDataValid() ||
-        testingStatus() === 'testing' ||
-        isCoolingOff()
-      }
+      disabled={isDisabled()}
       leadingIcon={leadingIcon()}
       {...others}
     >
       {t(TEXT_MAP[displayStatus()])}
-    </Button>
+    </CombinedTooltip>
   );
 };

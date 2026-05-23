@@ -1,16 +1,13 @@
 import type { ComponentProps } from 'solid-js';
 
-import { createMemo, splitProps, type Component } from 'solid-js';
+import { splitProps, type Component } from 'solid-js';
 
-import { useJavaList, type Java } from '@/entities/java';
+import { useJavaList } from '@/entities/java';
 import { cn } from '@/shared/lib';
 import { DataTable } from '@/shared/ui';
 
-import type { JavaVersion } from '../../model';
-
 import { createJavaVersionsTable } from '../../lib';
-
-const MAJOR_JAVA_VERSIONS_TO_DISPLAY = ['25', '21', '17', '8'];
+import { useJavaVersionsTableData } from '../../lib/useJavaVersionsTableData';
 
 export type JavaVersionsTableProps = ComponentProps<'div'>;
 
@@ -18,26 +15,10 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
   const javaVersions = useJavaList();
-
-  const versionToJava = createMemo(() => {
-    return javaVersions.data?.reduce(
-      (acc, java) => {
-        acc[java.majorVersion] = java;
-        return acc;
-      },
-      {} as Record<string, Java | undefined>,
-    );
-  });
-
-  const mappedJavaVersions = createMemo(() => {
-    return MAJOR_JAVA_VERSIONS_TO_DISPLAY.map<JavaVersion>((version) => ({
-      majorVersion: version,
-      path: versionToJava()?.[version]?.path,
-    }));
-  });
+  const tableData = useJavaVersionsTableData(() => javaVersions.data);
 
   const table = createJavaVersionsTable({
-    data: mappedJavaVersions,
+    data: tableData,
   });
 
   return (

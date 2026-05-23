@@ -1,22 +1,91 @@
-import { useInstallJava } from '@/entities/java';
+import { type Accessor } from 'solid-js';
 
-import { parseJavaVersion } from './parseJavaVersion';
+import {
+  useActiveJavaInstallations,
+  useDiscoverJava,
+  useEditJava,
+  useInstallJava,
+} from '@/entities/java';
+import { logError } from '@/shared/lib';
+import { closeDialog, showDialog } from '@/shared/model';
 
-export const useJavaVersionActions = () => {
+import type { JavaVersion, StrictJavaVersion } from '../model';
+
+import { DetectJavaDialog } from '../ui/JavaPane/DetectJavaDialog';
+import { browseJavaInstallation } from './browseJavaInstallation';
+
+const DETECT_JAVA_DIALOG_ID = 'detect-java';
+
+export const useJavaVersionActions = (
+  javaVersions: Accessor<JavaVersion[]>,
+) => {
   const installJava = useInstallJava();
+  const editJava = useEditJava();
+  const discoverJava = useDiscoverJava();
 
-  const installRecommended = async (version: string) => {
-    const versionNum = parseJavaVersion(version);
+  const activeInstallations = useActiveJavaInstallations();
 
-    if (!versionNum) {
+  const checkIsInstalling = (majorVersion: number) => {
+    return activeInstallations.data?.includes(majorVersion) ?? false;
+  };
+
+  const updateJavaPath = async (majorVersion: number, path: string) => {
+    if (!path) {
       return;
     }
 
-    await installJava.mutateAsync(versionNum);
+    try {
+      await editJava.mutateAsync({ majorVersion, path });
+    } catch (error) {
+      logError('Failed to update Java path:', error);
+      throw error;
+    }
+  };
+
+  const handleDetect = async (majorVersion: number) => {
+    if (Number.isNaN(majorVersion)) {
+      return;
+    }
+
+    const selectedVersionPath = () =>
+      javaVersions().find((java) => java.majorVersion === majorVersion)?.path;
+
+    const discovered = await discoverJava.mutateAsync();
+    const versions = discovered.filter((v) => v.majorVersion === majorVersion);
+
+    const onSelect = async (newVersion: StrictJavaVersion) => {
+      await updateJavaPath(newVersion.majorVersion, newVersion.path);
+      closeDialog(DETECT_JAVA_DIALOG_ID);
+    };
+
+    showDialog(DETECT_JAVA_DIALOG_ID, DetectJavaDialog, {
+      versions,
+      selectedVersionPath,
+      onSelect,
+      majorVersion,
+    });
+  };
+
+  const handleBrowse = async (majorVersion: number) => {
+    if (Number.isNaN(majorVersion)) {
+      return;
+    }
+
+    const path = await browseJavaInstallation();
+
+    if (typeof path === 'string') {
+      await updateJavaPath(majorVersion, path);
+    }
+  };
+
+  const installRecommended = async (majorVersion: number) => {
+    await installJava.mutateAsync(majorVersion);
   };
 
   return {
     installRecommended,
-    isInstalling: () => installJava.isPending,
+    isInstalling: checkIsInstalling,
+    onDetect: handleDetect,
+    onBrowse: handleBrowse,
   };
 };

@@ -1,4 +1,5 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
+import type { Accessor } from 'solid-js';
 
 import { createMemo, splitProps, type Component } from 'solid-js';
 
@@ -13,22 +14,22 @@ import {
   DialogTitle,
 } from '@/shared/ui';
 
-import type { JavaVersion } from '../../model';
+import type { StrictJavaVersion } from '../../model';
 
 import { createDetectedJavaVersionsTable } from '../../lib/createDetectedJavaVersionsTable';
 
 export type DetectJavaDialogProps = DialogRootProps & {
   versions?: Java[];
-  majorVersion?: string;
-  selectedVersion?: JavaVersion;
-  onSelect?: (version: JavaVersion) => void;
+  majorVersion?: number;
+  selectedVersionPath?: Accessor<string | undefined>;
+  onSelect?: (version: StrictJavaVersion) => void;
 };
 
 export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
   const [local, others] = splitProps(props, [
     'versions',
     'majorVersion',
-    'selectedVersion',
+    'selectedVersionPath',
     'onSelect',
   ]);
 
@@ -36,8 +37,8 @@ export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
 
   const mappedVersions = createMemo(
     () =>
-      local.versions?.map<JavaVersion>((v) => ({
-        majorVersion: v.majorVersion.toString(),
+      local.versions?.map<StrictJavaVersion>((v) => ({
+        majorVersion: v.majorVersion,
         version: v.version,
         path: v.path,
       })) ?? [],
@@ -49,7 +50,7 @@ export const DetectJavaDialog: Component<DetectJavaDialogProps> = (props) => {
 
   const table = createDetectedJavaVersionsTable({
     data: () => mappedVersions(),
-    currentVersion: () => local.selectedVersion,
+    selectedVersionPath: () => local.selectedVersionPath?.(),
     onSelect: (version) => local.onSelect?.(version),
   });
 

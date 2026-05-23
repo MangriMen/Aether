@@ -467,7 +467,9 @@
     "installRecommended": "Установить рекомендуемую",
     "browse": "Выбрать файл",
     "detect": "Найти автоматически",
-    "versionWithNumber": "Java {{majorVersion}}"
+    "versionWithNumber": "Java {{majorVersion}}",
+    "installing": "Устанавливается",
+    "emptyPath": "Путь не указан"
   },
   "detectJava": {
     "dialogTitle": "Выберите установку Java {{majorVersion}}",

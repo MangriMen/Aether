@@ -1,15 +1,11 @@
 import { createSolidTable, getCoreRowModel } from '@tanstack/solid-table';
-import { open } from '@tauri-apps/plugin-dialog';
 import { type Accessor } from 'solid-js';
 
-import { useDiscoverJava, useEditJava } from '@/entities/java';
-import { closeDialog, showDialog, useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/model';
 
 import type { JavaVersion } from '../model';
 
-import { createJavaVersionColumns } from '../model';
-import { DetectJavaDialog } from '../ui/JavaPane/DetectJavaDialog';
-import { parseJavaVersion } from './parseJavaVersion';
+import { createJavaVersionsColumns } from '../model';
 import { useJavaVersionActions } from './useJavaVersionActions';
 
 export interface JavaVersionsTableProps {
@@ -19,81 +15,14 @@ export interface JavaVersionsTableProps {
 export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
   const [{ t }] = useTranslation();
 
-  const actions = useJavaVersionActions();
+  const actions = useJavaVersionActions(() => props.data());
 
-  const editJava = useEditJava();
-
-  const discoverJava = useDiscoverJava();
-
-  const handleDetect = async (version: string) => {
-    const result = await discoverJava.mutateAsync();
-
-    const versionNum = parseJavaVersion(version);
-    const filtered = result.filter((java) => java.majorVersion === versionNum);
-
-    const dialogId = 'detect-java';
-
-    const handleSelect = async (newVersion: JavaVersion) => {
-      if (newVersion.majorVersion !== version) {
-        return;
-      }
-
-      if (!versionNum || !newVersion.path) {
-        return;
-      }
-
-      await editJava.mutateAsync({
-        majorVersion: versionNum,
-        path: newVersion.path,
-      });
-
-      closeDialog(dialogId);
-    };
-
-    const selectedVersion = props
-      .data()
-      .find((java) => java.majorVersion === version);
-
-    showDialog(dialogId, DetectJavaDialog, {
-      versions: filtered,
-      selectedVersion,
-      onSelect: handleSelect,
-      majorVersion: version,
-    });
-  };
-
-  const handleBrowse = async (version: string) => {
-    const versionNum = parseJavaVersion(version);
-
-    if (!versionNum) {
-      return;
-    }
-
-    const path = await open({
-      title: 'Select javaw executable',
-      filters: [
-        { name: 'Java Window Executable', extensions: ['exe'] },
-        { name: 'All', extensions: ['*'] },
-      ],
-      multiple: false,
-    });
-
-    if (!path) {
-      return;
-    }
-
-    editJava.mutateAsync({
-      majorVersion: versionNum,
-      path,
-    });
-  };
-
-  const columns = createJavaVersionColumns({
+  const columns = createJavaVersionsColumns({
     t,
     onInstallRecommended: actions.installRecommended,
     isInstalling: actions.isInstalling,
-    onDetect: handleDetect,
-    onBrowse: handleBrowse,
+    onDetect: actions.onDetect,
+    onBrowse: actions.onBrowse,
   });
 
   const table = createSolidTable({
@@ -103,8 +32,8 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
     get columns() {
       return columns();
     },
-    getRowId: (row) => row.majorVersion,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => `${row.majorVersion}`,
   });
 
   return table;

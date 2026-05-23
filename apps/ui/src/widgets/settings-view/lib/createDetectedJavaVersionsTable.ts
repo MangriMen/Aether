@@ -3,14 +3,15 @@ import { type Accessor } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
 
-import type { JavaVersion } from '../model';
-
-import { createDetectedJavaVersionColumns } from '../model';
+import {
+  createDetectedJavaVersionsColumns,
+  type StrictJavaVersion,
+} from '../model';
 
 export interface DetectedJavaVersionsTableProps {
-  data: Accessor<JavaVersion[]>;
-  currentVersion?: Accessor<JavaVersion | undefined>;
-  onSelect?: (version: JavaVersion) => void;
+  data: Accessor<StrictJavaVersion[]>;
+  selectedVersionPath?: Accessor<string | undefined>;
+  onSelect?: (version: StrictJavaVersion) => void;
 }
 
 export const createDetectedJavaVersionsTable = (
@@ -18,11 +19,10 @@ export const createDetectedJavaVersionsTable = (
 ) => {
   const [{ t }] = useTranslation();
 
-  const columns = createDetectedJavaVersionColumns({
+  const columns = createDetectedJavaVersionsColumns({
     t,
     onSelect: (version) => props.onSelect?.(version),
-    // eslint-disable-next-line solid/reactivity
-    currentVersion: props.currentVersion,
+    selectedVersionPath: () => props.selectedVersionPath?.(),
   });
 
   const table = createSolidTable({
@@ -32,8 +32,8 @@ export const createDetectedJavaVersionsTable = (
     get columns() {
       return columns();
     },
-    getRowId: (row) => row.majorVersion,
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => `${row.majorVersion}`,
   });
 
   return table;

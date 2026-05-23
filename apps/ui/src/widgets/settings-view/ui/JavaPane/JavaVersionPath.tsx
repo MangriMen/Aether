@@ -14,10 +14,8 @@ import type { CombinedTextFieldProps } from '@/shared/ui';
 import { useEditJava, useRemoveJava } from '@/entities/java';
 import { CombinedTextField } from '@/shared/ui';
 
-import { parseJavaVersion } from '../../lib/parseJavaVersion';
-
 export type JavaVersionPathProps = CombinedTextFieldProps & {
-  majorVersion: string;
+  majorVersion: number;
 };
 
 const JAVA_PATH_EXAMPLES = {
@@ -41,22 +39,20 @@ export const JavaVersionPath: Component<JavaVersionPathProps> = (props) => {
       return;
     }
 
-    const versionNum = parseJavaVersion(local.majorVersion);
-
-    if (versionNum === undefined || Number.isNaN(versionNum)) {
+    if (Number.isNaN(local.majorVersion)) {
       return;
     }
 
     if (!trimmedPath) {
       try {
-        await removeJava.mutateAsync(versionNum);
+        await removeJava.mutateAsync(local.majorVersion);
       } catch {
         setValue(local.value ?? '');
       }
     } else {
       try {
         await editJava.mutateAsync({
-          majorVersion: versionNum,
+          majorVersion: local.majorVersion,
           path: trimmedPath,
         });
       } catch {

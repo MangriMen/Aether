@@ -467,7 +467,9 @@
     "installRecommended": "Install recommended",
     "browse": "Browse",
     "detect": "Detect",
-    "versionWithNumber": "Java {{majorVersion}}"
+    "versionWithNumber": "Java {{majorVersion}}",
+    "installing": "Installing",
+    "emptyPath": "Path is empty"
   },
   "detectJava": {
     "dialogTitle": "Select java {{majorVersion}} installation",
