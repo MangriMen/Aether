@@ -13,7 +13,7 @@ use aether_core::{
 
 use crate::{
     FrontendResult,
-    features::java::{EditJavaDto, JavaDto},
+    features::java::{EditJavaDto, InstallJavaDto, JavaDto},
     shared::commands::{JAVA_PLUGIN_NAME, java_commands},
 };
 
@@ -76,7 +76,7 @@ async fn remove(version: u32) -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn install(version: u32) -> FrontendResult<JavaDto> {
+async fn install(install_java: InstallJavaDto) -> FrontendResult<JavaDto> {
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
     let state = LauncherState::get().await.map_err(crate::Error::from)?;
 
@@ -92,7 +92,7 @@ async fn install(version: u32) -> FrontendResult<JavaDto> {
         state.location_info.clone(),
         lazy_locator.get_java_installation_tracker().await,
     )
-    .execute(version)
+    .execute(install_java.into())
     .await
     .map_err(aether_core::Error::from)
     .map_err(crate::Error::from)?

@@ -79,7 +79,7 @@ export const useJavaVersionActions = (
   };
 
   const installRecommended = async (majorVersion: number) => {
-    await installJava.mutateAsync(majorVersion);
+    await installJava.mutateAsync({ version: majorVersion, force: true });
   };
 
   return {

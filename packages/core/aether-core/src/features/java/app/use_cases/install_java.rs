@@ -1,7 +1,10 @@
 use std::{path::PathBuf, sync::Arc};
 
 use crate::features::{
-    java::{Java, JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
+    java::{
+        Java, JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
+        app::InstallJava,
+    },
     settings::LocationInfo,
 };
 
@@ -39,10 +42,13 @@ impl<JS: JavaStorage, JIS: JavaInstallationService, JP: JreProvider, JIT: JavaIn
         }
     }
 
-    pub async fn execute(&self, version: u32) -> Result<Java, JavaApplicationError> {
+    pub async fn execute(&self, install_java: InstallJava) -> Result<Java, JavaApplicationError> {
+        let InstallJava { version, force } = install_java;
+
         let _guard = self.java_installation_tracker.lock(version).await;
 
-        if let Ok(Some(existing_java)) = self.storage.get(version).await
+        if !force
+            && let Ok(Some(existing_java)) = self.storage.get(version).await
             && self
                 .java_installation_service
                 .locate_java(&PathBuf::from(existing_java.path().to_owned()))

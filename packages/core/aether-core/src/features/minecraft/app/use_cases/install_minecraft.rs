@@ -6,7 +6,7 @@ use crate::features::{
     events::{ProgressBarId, ProgressService},
     java::{
         Java, JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
-        app::{GetJavaUseCase, InstallJavaUseCase, JavaApplicationError},
+        app::{GetJavaUseCase, InstallJava, InstallJavaUseCase, JavaApplicationError},
     },
     minecraft::{
         LoaderVersionResolver, MetadataStorage, MinecraftDomainError, MinecraftDownloader,
@@ -157,7 +157,7 @@ impl<
                 Ok(java) => Ok(java),
                 Err(_) => self
                     .install_java_use_case
-                    .execute(compatible_java_version)
+                    .execute(InstallJava::new(compatible_java_version))
                     .await
                     .map_err(Into::into),
             }

@@ -4,7 +4,7 @@ use crate::{
     core::{LauncherState, domain::LazyLocator},
     features::java::{
         Java,
-        app::{GetJavaUseCase, InstallJavaUseCase},
+        app::{GetJavaUseCase, InstallJava, InstallJavaUseCase},
         infra::{AzulJreProvider, FsJavaInstallationService},
     },
 };
@@ -27,7 +27,9 @@ pub async fn install(version: u32) -> crate::Result<Java> {
         lazy_locator.get_java_installation_tracker().await,
     );
 
-    Ok(install_java_use_case.execute(version).await?)
+    Ok(install_java_use_case
+        .execute(InstallJava::new(version))
+        .await?)
 }
 
 pub async fn get(version: u32) -> crate::Result<Java> {
