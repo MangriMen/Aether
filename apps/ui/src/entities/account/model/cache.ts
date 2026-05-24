@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import { commands } from '../api';
+import { authCommands } from '../api';
 import { accountKeys } from './queryKeys';
 
 export const accountQueries = {
   list: () => ({
     queryKey: accountKeys.list(),
-    queryFn: commands.listAccounts,
+    queryFn: authCommands.listAccounts,
     reconcile: 'id',
     staleTime: Infinity,
   }),

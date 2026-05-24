@@ -1,9 +1,13 @@
+use tauri::State;
 use uuid::Uuid;
 
 use crate::{
     FrontendResult,
     features::auth::infra::tauri::dtos::AccountDto,
-    shared::commands::{AUTH_PLUGIN_NAME, auth_commands},
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{AUTH_PLUGIN_NAME, auth_commands},
+    },
 };
 
 #[must_use]
@@ -20,7 +24,13 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[tauri::command]
 #[specta::specta]
-async fn create_offline_account(username: String) -> FrontendResult<AccountDto> {
+async fn create_offline_account(
+    username: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<AccountDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::auth::create_offline_account(username)
         .await
         .map_err(crate::Error::from)?
@@ -40,7 +50,13 @@ async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn change_account(id: Uuid) -> FrontendResult<AccountDto> {
+async fn change_account(
+    id: Uuid,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<AccountDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::auth::change_account(id)
         .await
         .map_err(crate::Error::from)?
@@ -49,7 +65,13 @@ async fn change_account(id: Uuid) -> FrontendResult<AccountDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn logout(id: Uuid) -> FrontendResult<()> {
+async fn logout(
+    id: Uuid,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::auth::logout(id)
         .await
         .map_err(crate::Error::from)?)

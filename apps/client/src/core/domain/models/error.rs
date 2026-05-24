@@ -1,6 +1,8 @@
 use serr::SerializeError;
 
-use crate::{core::WindowError, features::settings::AppSettingsError};
+use crate::{
+    core::WindowError, features::settings::AppSettingsError, shared::IdempotencyManagerError,
+};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -17,6 +19,9 @@ pub enum Error {
 
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+
+    #[error(transparent)]
+    IdempotencyManager(#[from] IdempotencyManagerError),
 
     #[error(transparent)]
     Core(#[from] aether_core::Error),
