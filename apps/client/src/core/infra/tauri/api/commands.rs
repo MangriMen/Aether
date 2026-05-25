@@ -1,14 +1,14 @@
 #![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
-use sqlx::SqlitePool;
+use aether_core::core::LazyLocator;
 use tauri::State;
 
 use crate::{
     FrontendResult,
     core::{
-        AppSettingsStorageState, EventEmitterState, InitializeLauncherUseCase,
-        InitializePluginsUseCase, LocationInfoState, RecreateWindowUseCase, WindowManagerState,
+        AppSettingsStorageState, InitializePluginsUseCase, RecreateWindowUseCase,
+        WindowManagerState,
     },
     shared::{
         self,
@@ -28,18 +28,25 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     application_commands!(tauri_specta::collect_commands!)
 }
 
+// #[tauri::command]
+// #[specta::specta]
+// pub async fn initialize_state(
+//     event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
+//     location_info: State<'_, LocationInfoState>,
+//     pool: State<'_, SqlitePool>,
+// ) -> FrontendResult<()> {
+//     Ok(
+//         InitializeLauncherUseCase::new(event_emitter.inner().clone())
+//             .execute(location_info.inner().clone(), pool.inner().clone())
+//             .await?,
+//     )
+// }
+
 #[tauri::command]
 #[specta::specta]
-pub async fn initialize_state(
-    event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
-    location_info: State<'_, LocationInfoState>,
-    pool: State<'_, SqlitePool>,
-) -> FrontendResult<()> {
-    Ok(
-        InitializeLauncherUseCase::new(event_emitter.inner().clone())
-            .execute(location_info.inner().clone(), pool.inner().clone())
-            .await?,
-    )
+pub async fn wait_for_initialization() -> FrontendResult<()> {
+    let _locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    Ok(())
 }
 
 #[tauri::command]

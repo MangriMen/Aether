@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use aether_core::{
-    core::{LauncherState, domain::LazyLocator},
+    core::LazyLocator,
     features::java::{
         app::{
             DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
@@ -36,9 +36,9 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[tauri::command]
 #[specta::specta]
 async fn list() -> FrontendResult<Vec<JavaDto>> {
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
-    Ok(ListJavaUseCase::new(lazy_locator.get_java_storage().await)
+    Ok(ListJavaUseCase::new(locator.get_java_storage().await)
         .execute()
         .await
         .map_err(aether_core::Error::from)
@@ -57,10 +57,10 @@ async fn edit(
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     Ok(EditJavaUseCase::new(
-        lazy_locator.get_java_storage().await,
+        locator.get_java_storage().await,
         Arc::new(FsJavaInstallationService {}),
     )
     .execute(edit_java.into())
@@ -79,15 +79,13 @@ async fn remove(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
-    Ok(
-        RemoveJavaUseCase::new(lazy_locator.get_java_storage().await)
-            .execute(version)
-            .await
-            .map_err(aether_core::Error::from)
-            .map_err(crate::Error::from)?,
-    )
+    Ok(RemoveJavaUseCase::new(locator.get_java_storage().await)
+        .execute(version)
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
@@ -99,20 +97,19 @@ async fn install(
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
-    let state = LauncherState::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     let jre_provider = Arc::new(AzulJreProvider::new(
-        lazy_locator.get_progress_service().await,
-        lazy_locator.get_request_client().await,
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
     ));
 
     Ok(InstallJavaUseCase::new(
-        lazy_locator.get_java_storage().await,
+        locator.get_java_storage().await,
         FsJavaInstallationService,
         jre_provider,
-        state.location_info.clone(),
-        lazy_locator.get_java_installation_tracker().await,
+        locator.location_info.clone(),
+        locator.get_java_installation_tracker().await,
     )
     .execute(install_java.into())
     .await
@@ -135,10 +132,10 @@ async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
 #[tauri::command]
 #[specta::specta]
 async fn discover() -> FrontendResult<Vec<JavaDto>> {
-    let state = LauncherState::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     let mut discovery_paths = get_default_discovery_paths();
-    discovery_paths.push(state.location_info.java_dir());
+    discovery_paths.push(locator.location_info.java_dir());
 
     Ok(
         DiscoverJavaUseCase::new(Arc::new(FsJavaInstallationService {}), discovery_paths)
@@ -155,10 +152,10 @@ async fn discover() -> FrontendResult<Vec<JavaDto>> {
 #[tauri::command]
 #[specta::specta]
 async fn get_active_installations() -> FrontendResult<HashSet<u32>> {
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     Ok(
-        GetActiveJavaInstallationsUseCase::new(lazy_locator.get_java_installation_tracker().await)
+        GetActiveJavaInstallationsUseCase::new(locator.get_java_installation_tracker().await)
             .execute()
             .await,
     )

@@ -1,4 +1,4 @@
-import { commands as applicationCommands } from '@/entities/application';
+import { applicationCommands } from '@/entities/application';
 import { logError } from '@/shared/lib';
 
 import { exposeWindowMethods } from '../lib';
@@ -8,7 +8,7 @@ export const setupApp = async () => {
   try {
     exposeWindowMethods();
 
-    await applicationCommands.initializeState();
+    await applicationCommands.waitForInitialization();
 
     await showWindow().catch(logError);
 

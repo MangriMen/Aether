@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::core::LauncherState;
+use aether_core::core::LazyLocator;
 use tauri::State;
 
 use crate::FrontendResult;
@@ -163,8 +163,8 @@ async fn edit_settings(
 #[tauri::command]
 #[specta::specta]
 async fn open_plugins_folder() -> FrontendResult<()> {
-    let state = LauncherState::get().await.map_err(crate::Error::from)?;
-    let plugins_path = state.location_info.plugins_dir();
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let plugins_path = locator.location_info.plugins_dir();
 
     let path_to_open = if plugins_path.exists() {
         // If the folder exists, open it directly

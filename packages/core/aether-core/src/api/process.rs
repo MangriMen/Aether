@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    core::domain::LazyLocator,
+    core::LazyLocator,
     features::process::{
         MinecraftProcessMetadata,
         app::{
@@ -12,10 +12,10 @@ use crate::{
 };
 
 pub async fn list() -> crate::Result<Vec<MinecraftProcessMetadata>> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        ListProcessMetadataUseCase::new(lazy_locator.get_process_storage().await)
+        ListProcessMetadataUseCase::new(locator.get_process_storage().await)
             .execute()
             .await?,
     )
@@ -25,10 +25,10 @@ pub async fn list() -> crate::Result<Vec<MinecraftProcessMetadata>> {
 pub async fn get_by_instance_id(
     instance_id: String,
 ) -> crate::Result<Vec<MinecraftProcessMetadata>> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        GetProcessMetadataByInstanceIdUseCase::new(lazy_locator.get_process_storage().await)
+        GetProcessMetadataByInstanceIdUseCase::new(locator.get_process_storage().await)
             .execute(instance_id)
             .await?,
     )
@@ -36,20 +36,18 @@ pub async fn get_by_instance_id(
 
 #[tracing::instrument]
 pub async fn kill(uuid: Uuid) -> crate::Result<()> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
-    Ok(
-        KillProcessUseCase::new(lazy_locator.get_process_storage().await)
-            .execute(uuid)
-            .await?,
-    )
+    Ok(KillProcessUseCase::new(locator.get_process_storage().await)
+        .execute(uuid)
+        .await?)
 }
 
 pub async fn wait_for(uuid: Uuid) -> crate::Result<()> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        WaitForProcessUseCase::new(lazy_locator.get_process_storage().await)
+        WaitForProcessUseCase::new(locator.get_process_storage().await)
             .execute(uuid)
             .await?,
     )

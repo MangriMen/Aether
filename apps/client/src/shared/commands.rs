@@ -13,7 +13,7 @@ pub const UPDATE_PLUGIN_NAME: &str = "update";
 macro_rules! application_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
-            initialize_state,
+            wait_for_initialization,
             initialize_plugins,
             recreate_window
         ]

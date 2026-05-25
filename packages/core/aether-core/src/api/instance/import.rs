@@ -1,5 +1,5 @@
 use crate::{
-    core::domain::LazyLocator,
+    core::LazyLocator,
     features::instance::{
         ImporterCapabilityMetadata,
         app::{ImportInstance, ImportInstanceUseCase, ListImportersUseCase},
@@ -9,10 +9,10 @@ use crate::{
 
 #[tracing::instrument]
 pub async fn import(import_instance: ImportInstance) -> crate::Result<()> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        ImportInstanceUseCase::new(lazy_locator.get_importers_registry().await)
+        ImportInstanceUseCase::new(locator.get_importers_registry().await)
             .execute(import_instance)
             .await?,
     )
@@ -20,10 +20,10 @@ pub async fn import(import_instance: ImportInstance) -> crate::Result<()> {
 
 #[tracing::instrument]
 pub async fn list_importers() -> crate::Result<Vec<CapabilityEntry<ImporterCapabilityMetadata>>> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        ListImportersUseCase::new(lazy_locator.get_importers_registry().await)
+        ListImportersUseCase::new(locator.get_importers_registry().await)
             .execute()
             .await?,
     )

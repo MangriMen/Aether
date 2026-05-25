@@ -1,4 +1,4 @@
-use aether_core::{core::domain::LazyLocator, features::events::ListProgressBarsUseCase};
+use aether_core::{core::LazyLocator, features::events::ListProgressBarsUseCase};
 
 use crate::{
     FrontendResult,
