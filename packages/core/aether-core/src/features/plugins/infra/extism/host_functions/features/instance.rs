@@ -3,7 +3,7 @@ use dashmap::DashMap;
 use extism::{convert::Msgpack, host_fn};
 use path_slash::PathBufExt;
 
-use crate::{core::LauncherState, shared::execute_async};
+use crate::{core::LazyLocator, shared::execute_async};
 
 use super::super::{super::mappers::to_extism_res, PluginContext};
 
@@ -11,9 +11,9 @@ host_fn!(
 pub instance_get_dir(user_data: PluginContext; id: String) -> HostResult<String> {
     to_extism_res::<String>(
         execute_async(async move {
-            let state =  LauncherState::get().await?;
+            let locator = LazyLocator::get().await?;
             let dir = crate::api::instance::get_dir(&id).await?;
-            let relative_path = dir.strip_prefix(state.location_info.config_dir())
+            let relative_path = dir.strip_prefix(locator.location_info.config_dir())
                 .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
                 .to_path_buf();
 
@@ -29,11 +29,11 @@ pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> Ho
 
     to_extism_res::<String>(
         execute_async(async move {
-            let state = LauncherState::get().await?;
+            let locator = LazyLocator::get().await?;
 
-            let dir = state.location_info.instance_plugin_dir(&instance_id, &id);
+            let dir = locator.location_info.instance_plugin_dir(&instance_id, &id);
 
-            let dir = dir.strip_prefix(state.location_info.config_dir())
+            let dir = dir.strip_prefix(locator.location_info.config_dir())
                 .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
                 .to_path_buf();
 

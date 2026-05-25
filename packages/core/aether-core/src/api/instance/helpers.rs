@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use crate::core::LauncherState;
+use crate::core::LazyLocator;
 
 pub async fn get_dir(instance_id: &str) -> crate::Result<PathBuf> {
-    let state = LauncherState::get().await?;
-    Ok(state.location_info.instance_dir(instance_id))
+    let locator = LazyLocator::get().await?;
+    Ok(locator.location_info.instance_dir(instance_id))
 }

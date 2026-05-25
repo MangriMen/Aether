@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    core::domain::LazyLocator,
+    core::LazyLocator,
     features::auth::{
         AccountData, CreateOfflineAccountUseCase, GetAccountsUseCase, LogoutUseCase,
         SetActiveAccountUseCase,
@@ -10,20 +10,20 @@ use crate::{
 
 #[tracing::instrument]
 pub async fn create_offline_account(username: String) -> crate::Result<AccountData> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        CreateOfflineAccountUseCase::new(lazy_locator.get_credentials_storage().await)
+        CreateOfflineAccountUseCase::new(locator.get_credentials_storage().await)
             .execute(username)
             .await?,
     )
 }
 
 pub async fn list_accounts() -> crate::Result<Vec<AccountData>> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        GetAccountsUseCase::new(lazy_locator.get_credentials_storage().await)
+        GetAccountsUseCase::new(locator.get_credentials_storage().await)
             .execute()
             .await?,
     )
@@ -31,10 +31,10 @@ pub async fn list_accounts() -> crate::Result<Vec<AccountData>> {
 
 #[tracing::instrument]
 pub async fn change_account(account_id: Uuid) -> crate::Result<AccountData> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
     Ok(
-        SetActiveAccountUseCase::new(lazy_locator.get_credentials_storage().await)
+        SetActiveAccountUseCase::new(locator.get_credentials_storage().await)
             .execute(account_id)
             .await?,
     )
@@ -42,11 +42,9 @@ pub async fn change_account(account_id: Uuid) -> crate::Result<AccountData> {
 
 #[tracing::instrument]
 pub async fn logout(account_id: Uuid) -> crate::Result<()> {
-    let lazy_locator = LazyLocator::get().await?;
+    let locator = LazyLocator::get().await?;
 
-    Ok(
-        LogoutUseCase::new(lazy_locator.get_credentials_storage().await)
-            .execute(account_id)
-            .await?,
-    )
+    Ok(LogoutUseCase::new(locator.get_credentials_storage().await)
+        .execute(account_id)
+        .await?)
 }

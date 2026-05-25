@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
+use aether_core::{core::LazyLocator, features::settings::LocationInfo};
 use log::error;
+use sqlx::SqlitePool;
 use tauri::{App, AppHandle, Manager};
 
 use crate::{
@@ -30,12 +32,16 @@ pub fn initialize_app<R: tauri::Runtime>(app: &mut App<R>) {
         pool
     });
 
-    register_state(app_handle, location_info, pool);
+    register_state(app_handle, location_info.clone(), pool.clone());
 
-    post_initialize(app_handle);
+    post_initialize(app_handle, location_info, pool);
 }
 
-fn post_initialize<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
+fn post_initialize<R: tauri::Runtime>(
+    app_handle: &AppHandle<R>,
+    location_info: Arc<LocationInfo>,
+    pool: SqlitePool,
+) {
     let app_settings_storage_state = app_handle.state::<AppSettingsStorageState>();
     let app_settings_storage = app_settings_storage_state.inner().clone();
 
@@ -46,6 +52,10 @@ fn post_initialize<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
     let event_emitter = event_emitter_state.inner().clone();
 
     tauri::async_runtime::spawn(async move {
+        if let Err(err) = LazyLocator::init(location_info, event_emitter.clone(), pool).await {
+            panic!("CRITICAL: Failed to initialize LazyLocator: {err}");
+        }
+
         let main_window_label = WindowLabel::Main;
 
         let app_settings = app_settings_storage.get().await.unwrap_or_else(|err| {
@@ -74,7 +84,7 @@ fn post_initialize<R: tauri::Runtime>(app_handle: &AppHandle<R>) {
         setup_listeners(
             app_settings_storage.clone(),
             window_manager.clone(),
-            event_emitter.clone(),
+            event_emitter,
         );
 
         let main_window = window_manager

@@ -2,7 +2,7 @@ use log::error;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::{core::domain::LazyLocator, features::events::ProgressBarStorage};
+use crate::{core::LazyLocator, features::events::ProgressBarStorage};
 
 use super::{ProgressEvent, ProgressEventType};
 

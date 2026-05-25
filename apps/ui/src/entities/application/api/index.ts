@@ -1,2 +1,2 @@
-export { commands } from '@/shared/api/bindings/application';
+export { applicationCommands } from '@/shared/api';
 export type * from '@/shared/api/bindings/application';

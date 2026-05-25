@@ -1,5 +1,5 @@
 use aether_core::{
-    core::{LauncherState, domain::LazyLocator},
+    core::LazyLocator,
     features::instance::app::EditInstanceIconUseCase,
     shared::{AssetsResolver, FileCache, FsAssetsStorage},
 };
@@ -376,16 +376,15 @@ async fn edit_icon(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
-    let state = LauncherState::get().await.map_err(crate::Error::from)?;
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     let assets_cache = Arc::new(FileCache::new(AssetsResolver::new(
-        state.location_info.clone(),
+        locator.location_info.clone(),
     )));
 
     let assets_manager = Arc::new(FsAssetsStorage::new(assets_cache));
 
-    EditInstanceIconUseCase::new(lazy_locator.get_instance_storage().await, assets_manager)
+    EditInstanceIconUseCase::new(locator.get_instance_storage().await, assets_manager)
         .execute(edit_instance_icon.into())
         .await
         .map_err(aether_core::Error::from)

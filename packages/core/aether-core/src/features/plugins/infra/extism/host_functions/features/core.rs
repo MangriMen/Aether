@@ -2,7 +2,7 @@ use aether_core_plugin_api::v0::{CommandDto, OutputDto};
 use extism::host_fn;
 use extism_convert::Msgpack;
 
-use crate::{core::LauncherState, shared::execute_async};
+use crate::{core::LazyLocator, shared::execute_async};
 
 use super::super::{
     super::{
@@ -44,9 +44,9 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
             let id = id.clone();
             let command = command.clone();
 
-            let state = LauncherState::get().await?;
+            let locator = LazyLocator::get().await?;
 
-            let host_command = plugin_utils::plugin_command_to_host(&id, &command, &state.location_info)?;
+            let host_command = plugin_utils::plugin_command_to_host(&id, &command, &locator.location_info)?;
             let mut cmd = host_command.to_tokio_command();
 
             log::debug!("Running command: {host_command:?}");

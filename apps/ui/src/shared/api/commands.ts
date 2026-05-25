@@ -113,7 +113,7 @@ export const eventsCommands = {
 };
 
 export const applicationCommands = {
-  initializeState: applicationRawCommands.initializeState,
+  waitForInitialization: applicationRawCommands.waitForInitialization,
   initializePlugins: applicationRawCommands.initializePlugins,
   recreateWindow: applicationRawCommands.recreateWindow,
 };
