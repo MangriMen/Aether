@@ -3,12 +3,12 @@ use aether_core::{
     features::instance::app::EditInstanceIconUseCase,
     shared::{AssetsResolver, FileCache, FsAssetsStorage},
 };
-use log::debug;
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
     sync::Arc,
 };
+use tauri::State;
 use uuid::Uuid;
 
 use crate::{
@@ -24,7 +24,10 @@ use crate::{
         },
         process::MinecraftProcessMetadataDto,
     },
-    shared::commands::{INSTANCE_PLUGIN_NAME, instance_commands},
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{INSTANCE_PLUGIN_NAME, instance_commands},
+    },
 };
 
 #[must_use]
@@ -46,18 +49,27 @@ pub fn get_specta_events() -> tauri_specta::Events {
 
 #[tauri::command]
 #[specta::specta]
-async fn create(new_instance: NewInstanceDto) -> FrontendResult<()> {
-    tokio::spawn(async move {
-        if let Err(err) = aether_core::api::instance::create(new_instance.into()).await {
-            debug!("{err:?}");
-        }
-    });
-    Ok(())
+async fn create(
+    new_instance: NewInstanceDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<String> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    Ok(aether_core::api::instance::create(new_instance.into())
+        .await
+        .map_err(crate::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn import(import_instance: ImportInstanceDto) -> FrontendResult<()> {
+async fn import(
+    import_instance: ImportInstanceDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::import(import_instance.into())
         .await
         .map_err(crate::Error::from)?)
@@ -105,7 +117,14 @@ async fn get_dir(id: String) -> FrontendResult<PathBuf> {
 
 #[tauri::command]
 #[specta::specta]
-async fn install(id: String, force: bool) -> FrontendResult<()> {
+async fn install(
+    id: String,
+    force: bool,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::install(id, force)
         .await
         .map_err(crate::Error::from)?)
@@ -113,7 +132,13 @@ async fn install(id: String, force: bool) -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn update(id: String) -> FrontendResult<()> {
+async fn update(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::update(id)
         .await
         .map_err(crate::Error::from)?)
@@ -128,7 +153,14 @@ async fn update(id: String) -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn edit(id: String, edit_instance: EditInstanceDto) -> FrontendResult<InstanceDto> {
+async fn edit(
+    id: String,
+    edit_instance: EditInstanceDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<InstanceDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::edit(id, edit_instance.into())
         .await
         .map_err(crate::Error::from)?
@@ -137,7 +169,13 @@ async fn edit(id: String, edit_instance: EditInstanceDto) -> FrontendResult<Inst
 
 #[tauri::command]
 #[specta::specta]
-async fn remove(id: String) -> FrontendResult<()> {
+async fn remove(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::remove(id)
         .await
         .map_err(crate::Error::from)?)
@@ -145,7 +183,13 @@ async fn remove(id: String) -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn launch(id: String) -> FrontendResult<MinecraftProcessMetadataDto> {
+async fn launch(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<MinecraftProcessMetadataDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::run(id)
         .await
         .map_err(crate::Error::from)?
@@ -154,7 +198,13 @@ async fn launch(id: String) -> FrontendResult<MinecraftProcessMetadataDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn stop(uuid: Uuid) -> FrontendResult<()> {
+async fn stop(
+    uuid: Uuid,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::process::kill(uuid)
         .await
         .map_err(crate::Error::from)?)
@@ -166,7 +216,11 @@ async fn import_contents(
     instance_id: String,
     content_type: ContentTypeDto,
     source_paths: Vec<String>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::import_contents(
         instance_id,
         content_type.into(),
@@ -189,7 +243,13 @@ async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFileD
 
 #[tauri::command]
 #[specta::specta]
-async fn install_content(payload: ContentInstallParamsDto) -> FrontendResult<()> {
+async fn install_content(
+    payload: ContentInstallParamsDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::instance::install_content(payload.into())
         .await
         .map_err(crate::Error::from)?)
@@ -197,7 +257,14 @@ async fn install_content(payload: ContentInstallParamsDto) -> FrontendResult<()>
 
 #[tauri::command]
 #[specta::specta]
-async fn enable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+async fn enable_contents(
+    id: String,
+    content_paths: Vec<String>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(
         aether_core::api::instance::enable_contents(id, content_paths)
             .await
@@ -207,7 +274,14 @@ async fn enable_contents(id: String, content_paths: Vec<String>) -> FrontendResu
 
 #[tauri::command]
 #[specta::specta]
-async fn disable_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+async fn disable_contents(
+    id: String,
+    content_paths: Vec<String>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(
         aether_core::api::instance::disable_contents(id, content_paths)
             .await
@@ -217,7 +291,14 @@ async fn disable_contents(id: String, content_paths: Vec<String>) -> FrontendRes
 
 #[tauri::command]
 #[specta::specta]
-async fn remove_contents(id: String, content_paths: Vec<String>) -> FrontendResult<()> {
+async fn remove_contents(
+    id: String,
+    content_paths: Vec<String>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(
         aether_core::api::instance::remove_contents(id, content_paths)
             .await
@@ -288,7 +369,13 @@ async fn list_content_version(
 
 #[tauri::command]
 #[specta::specta]
-async fn edit_icon(edit_instance_icon: EditInstanceIconDto) -> FrontendResult<()> {
+async fn edit_icon(
+    edit_instance_icon: EditInstanceIconDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
     let state = LauncherState::get().await.map_err(crate::Error::from)?;
 

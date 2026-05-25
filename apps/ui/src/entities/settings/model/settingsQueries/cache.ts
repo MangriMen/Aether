@@ -1,16 +1,16 @@
 import type { QueryClient, Updater } from '@tanstack/solid-query';
 
-import { commands, type SettingsDto } from '../../api';
+import { settingsCommands, type SettingsDto } from '../../api';
 import { settingsKeys } from './queryKeys';
 
 export const settingsQueries = {
   get: () => ({
     queryKey: settingsKeys.get(),
-    queryFn: commands.get,
+    queryFn: settingsCommands.get,
   }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
-    queryFn: commands.getMaxRam,
+    queryFn: settingsCommands.getMaxRam,
     staleTime: Infinity,
   }),
 } as const;

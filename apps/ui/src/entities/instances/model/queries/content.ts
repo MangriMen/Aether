@@ -21,7 +21,7 @@ import type {
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 import { ContentType, contentVersionDtoToContentVersion } from '..';
-import { commands } from '../../api';
+import { instanceCommands } from '../../api';
 import { contentSearchResultDtoToContentSearchResult } from '../mappers';
 import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
@@ -29,7 +29,7 @@ import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 export const useContentProviders = () => {
   return useQuery(() => ({
     queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
-    queryFn: commands.listContentProviders,
+    queryFn: instanceCommands.listContentProviders,
   }));
 };
 
@@ -43,7 +43,7 @@ export const useSearchContent = (
       queryKey: data
         ? CONTENT_QUERY_KEYS.SEARCH(data)
         : CONTENT_QUERY_KEYS.SEARCH_EMPTY(),
-      queryFn: () => commands.searchContent(data!),
+      queryFn: () => instanceCommands.searchContent(data!),
       enabled: Boolean(data),
       placeholderData: keepPreviousData,
       select: contentSearchResultDtoToContentSearchResult,
@@ -53,7 +53,7 @@ export const useSearchContent = (
 
 export const instanceContentsQuery = (id: string | undefined) => ({
   queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
-  queryFn: () => commands.listContent(id ?? ''),
+  queryFn: () => instanceCommands.listContent(id ?? ''),
   enabled: !!id,
 });
 
@@ -67,7 +67,7 @@ export const useDisableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      commands.disableContents(id, paths),
+      instanceCommands.disableContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -87,7 +87,7 @@ export const useEnableContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      commands.enableContents(id, paths),
+      instanceCommands.enableContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -107,7 +107,7 @@ export const useRemoveContents = () => {
 
   return useMutation(() => ({
     mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
-      commands.removeContents(id, paths),
+      instanceCommands.removeContents(id, paths),
     onSuccess: (_, { id }) => {
       invalidateInstanceContent(queryClient, id);
     },
@@ -132,7 +132,7 @@ export const useInstallContent = () => {
         throw new Error('Installing modpacks is prohibited');
       }
 
-      return commands.installContent(payload);
+      return instanceCommands.installContent(payload);
     },
     onSuccess: (_, payload) => {
       if (payload.type === 'atomic') {
@@ -174,7 +174,7 @@ export const useImportContents = () => {
       id: string;
       paths: string[];
       type: ContentType;
-    }) => commands.importContents(id, type, paths),
+    }) => instanceCommands.importContents(id, type, paths),
     onSuccess: (_, { id, type }) => {
       invalidateInstanceContent(queryClient, id);
 
@@ -207,7 +207,7 @@ export const CHECK_COMPATIBILITY_QUERY = (
       params as ContentCompatibilityCheckParams,
     ),
     queryFn: () =>
-      commands.checkCompatibility(
+      instanceCommands.checkCompatibility(
         ids,
         params as ContentCompatibilityCheckParams,
       ),
@@ -231,7 +231,7 @@ export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
       queryKey: params_
         ? CONTENT_QUERY_KEYS.GET(params_)
         : CONTENT_QUERY_KEYS.GET_EMPTY(),
-      queryFn: () => commands.getContent(params_!),
+      queryFn: () => instanceCommands.getContent(params_!),
       enabled: Boolean(params_),
     };
   });
@@ -247,7 +247,7 @@ export const useContentVersions = (
       queryKey: params_
         ? CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION(params_)
         : CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION_EMPTY(),
-      queryFn: () => commands.listContentVersion(params_!),
+      queryFn: () => instanceCommands.listContentVersion(params_!),
       enabled: Boolean(params_),
       select: (data) => data.map(contentVersionDtoToContentVersion),
     };

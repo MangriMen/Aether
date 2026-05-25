@@ -24,6 +24,10 @@ export const withIdempotency = <
 
   return (...args: DropRequestId<Parameters<Fn>>): ReturnType<Fn> => {
     const requestId = crypto.randomUUID() as SpectaRequestId;
-    return originalFn(...args, requestId);
+
+    const expectedArgsCount = originalFn.length - 1;
+    const cleanArgs = args.slice(0, expectedArgsCount) as typeof args;
+
+    return originalFn(...cleanArgs, requestId);
   };
 };

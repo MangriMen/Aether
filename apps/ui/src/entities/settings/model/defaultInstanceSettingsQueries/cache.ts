@@ -1,12 +1,12 @@
 import type { QueryClient, Updater } from '@tanstack/solid-query';
 
-import { commands, type DefaultInstanceSettingsDto } from '../../api';
+import { settingsCommands, type DefaultInstanceSettingsDto } from '../../api';
 import { defaultInstanceSettingsKeys } from './queryKeys';
 
 export const defaultInstanceSettingsQueries = {
   get: () => ({
     queryKey: defaultInstanceSettingsKeys.get(),
-    queryFn: commands.getDefaultInstanceSettings,
+    queryFn: settingsCommands.getDefaultInstanceSettings,
   }),
 } as const;
 

@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import { commands } from '../../api';
+import { settingsCommands } from '../../api';
 import { appSettingsKeys } from './queryKeys';
 
 export const appSettingsQueries = {
   get: () => ({
     queryKey: appSettingsKeys.get(),
-    queryFn: commands.getAppSettings,
+    queryFn: settingsCommands.getAppSettings,
   }),
 } as const;
 

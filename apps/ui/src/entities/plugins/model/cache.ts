@@ -2,46 +2,46 @@ import type { QueryClient } from '@tanstack/solid-query';
 
 import type { PluginId } from './pluginManifest';
 
-import { commands } from '../api';
+import { pluginsCommands } from '../api';
 import { pluginKeys } from './queryKeys';
 
 export const pluginsQueries = {
   list: () => ({
     queryKey: pluginKeys.list(),
-    queryFn: commands.list,
+    queryFn: pluginsCommands.list,
     staleTime: 60 * 1000,
   }),
   get: (queryClient: QueryClient, id: PluginId) => ({
     queryKey: pluginKeys.get(id),
-    queryFn: () => commands.get(id),
+    queryFn: () => pluginsCommands.get(id),
     enabled: !!id,
     initialData: () => pluginsCache.getData.fromList(queryClient, id),
     staleTime: 60 * 1000,
   }),
   settings: (id: PluginId) => ({
     queryKey: pluginKeys.settings(id),
-    queryFn: () => commands.getSettings(id),
+    queryFn: () => pluginsCommands.getSettings(id),
     enabled: !!id,
   }),
   apiVersion: () => ({
     queryKey: pluginKeys.apiVersion(),
-    queryFn: commands.getApiVersion,
+    queryFn: pluginsCommands.getApiVersion,
   }),
 } as const;
 
 export const pluginsCache = {
   getData: {
     list: (queryClient: QueryClient) =>
-      queryClient.getQueryData<Awaited<ReturnType<typeof commands.list>>>(
-        pluginKeys.list(),
-      ),
+      queryClient.getQueryData<
+        Awaited<ReturnType<typeof pluginsCommands.list>>
+      >(pluginKeys.list()),
     fromList: (queryClient: QueryClient, id: PluginId) =>
       pluginsCache.getData
         .list(queryClient)
         ?.find((p) => p.manifest.metadata.id === id),
     settings: (queryClient: QueryClient, id: PluginId) =>
       queryClient.getQueryData<
-        Awaited<ReturnType<typeof commands.getSettings>>
+        Awaited<ReturnType<typeof pluginsCommands.getSettings>>
       >(pluginKeys.settings(id)),
   },
   invalidate: {

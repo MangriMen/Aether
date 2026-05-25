@@ -1,2 +1,2 @@
-export * from '@/shared/api/bindings/update';
+export { updateCommands } from '@/shared/api';
 export type * from '@/shared/api/bindings/update';

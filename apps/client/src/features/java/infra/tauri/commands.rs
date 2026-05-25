@@ -10,11 +10,15 @@ use aether_core::{
         infra::{AzulJreProvider, FsJavaInstallationService, get_default_discovery_paths},
     },
 };
+use tauri::State;
 
 use crate::{
     FrontendResult,
     features::java::{EditJavaDto, InstallJavaDto, JavaDto},
-    shared::commands::{JAVA_PLUGIN_NAME, java_commands},
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{JAVA_PLUGIN_NAME, java_commands},
+    },
 };
 
 #[must_use]
@@ -46,7 +50,13 @@ async fn list() -> FrontendResult<Vec<JavaDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn edit(edit_java: EditJavaDto) -> FrontendResult<JavaDto> {
+async fn edit(
+    edit_java: EditJavaDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<JavaDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     Ok(EditJavaUseCase::new(
@@ -62,7 +72,13 @@ async fn edit(edit_java: EditJavaDto) -> FrontendResult<JavaDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn remove(version: u32) -> FrontendResult<()> {
+async fn remove(
+    version: u32,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
 
     Ok(
@@ -76,7 +92,13 @@ async fn remove(version: u32) -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn install(install_java: InstallJavaDto) -> FrontendResult<JavaDto> {
+async fn install(
+    install_java: InstallJavaDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<JavaDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
     let state = LauncherState::get().await.map_err(crate::Error::from)?;
 

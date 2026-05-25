@@ -5,7 +5,7 @@ import { onCleanup, onMount } from 'solid-js';
 
 import { logDebug } from '@/shared/lib';
 
-import { events } from '../api';
+import { pluginsEvents } from '../api';
 import { pluginsCache } from '../model';
 
 export const usePluginEventListener = () => {
@@ -14,7 +14,7 @@ export const usePluginEventListener = () => {
   const queryClient = useQueryClient();
 
   const startListen = async () => {
-    unlistenFn = await events.pluginEventDto.listen((e) => {
+    unlistenFn = await pluginsEvents.pluginEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       switch (e.payload.type) {

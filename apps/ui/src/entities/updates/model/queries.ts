@@ -3,20 +3,20 @@ import { useMutation, useQuery } from '@tanstack/solid-query';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import { commands } from '../api';
+import { updateCommands } from '../api';
 import { updateKeys } from './queryKeys';
 
 export const useCheckUpdate = () =>
   useQuery(() => ({
     queryKey: updateKeys.check(),
-    queryFn: commands.checkForUpdates,
+    queryFn: updateCommands.checkForUpdates,
   }));
 
 export const useInstallUpdate = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.installUpdate,
+    mutationFn: updateCommands.installUpdate,
     onError: () => {
       showToast({
         title: t('update.updateError'),
