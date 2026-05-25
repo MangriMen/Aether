@@ -2,7 +2,10 @@ use crate::{
     FrontendResult,
     core::UpdateServiceState,
     features::update::{CheckForUpdatesUseCase, InstallUpdateUseCase},
-    shared::commands::{UPDATE_PLUGIN_NAME, update_commands},
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{UPDATE_PLUGIN_NAME, update_commands},
+    },
 };
 
 use tauri::State;
@@ -36,7 +39,13 @@ pub async fn check_for_updates(
 #[specta::specta]
 pub async fn install_update(
     update_service: State<'_, UpdateServiceState<tauri::Wry>>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<(), String> {
+    let _guard = idempotency
+        .lock_cmd(request_id)
+        .map_err(|e| e.to_string())?;
+
     InstallUpdateUseCase::new(update_service.inner().clone())
         .execute()
         .await

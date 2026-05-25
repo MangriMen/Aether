@@ -16,6 +16,7 @@ use crate::{
         },
         update::TauriUpdateService,
     },
+    shared::IdempotencyManager,
 };
 
 pub fn register_state<R: tauri::Runtime>(
@@ -38,6 +39,8 @@ pub fn register_state<R: tauri::Runtime>(
 
     let prevent_exit_state = PreventExitState::new(false);
 
+    let idempotency_manager = IdempotencyManager::default();
+
     app_handle.manage(location_info);
     app_handle.manage(pool);
     app_handle.manage(app_settings_storage);
@@ -45,6 +48,7 @@ pub fn register_state<R: tauri::Runtime>(
     app_handle.manage(event_emitter);
     app_handle.manage(tauri_update_service);
     app_handle.manage(prevent_exit_state);
+    app_handle.manage(idempotency_manager);
 }
 
 pub async fn migrate<R: tauri::Runtime>(

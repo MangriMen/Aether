@@ -52,6 +52,7 @@ impl From<crate::Error> for FrontendError {
             crate::Error::WindowError(err) => Self::Window(err.into()),
             crate::Error::LaunchError(err) => Self::Internal(err),
             crate::Error::IoError(err) => Self::Generic(err.to_string()),
+            crate::Error::IdempotencyManager(err) => Self::Generic(err.to_string()),
             crate::Error::Core(core_err) => Self::from(core_err.raw.as_ref()),
         }
     }

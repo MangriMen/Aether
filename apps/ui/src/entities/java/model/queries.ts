@@ -3,14 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { logDebug, showError } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
 
-import { commands } from '../api';
+import { javaCommands } from '../api';
 import { javaCache } from './cache';
 import { javaKeys } from './queryKeys';
 
 export const useJavaList = () =>
   useQuery(() => ({
     queryKey: javaKeys.list(),
-    queryFn: commands.list,
+    queryFn: javaCommands.list,
     reconcile: 'majorVersion',
   }));
 
@@ -19,7 +19,7 @@ export const useInstallJava = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.install,
+    mutationFn: javaCommands.install,
     onSuccess: () => javaCache.invalidate.list(queryClient),
     onError: (err) => {
       showError({
@@ -35,7 +35,7 @@ export const useTestJre = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.testJre,
+    mutationFn: javaCommands.testJre,
     onError: (err) => {
       showError({
         title: t('java.testError'),
@@ -51,7 +51,7 @@ export const useEditJava = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.edit,
+    mutationFn: javaCommands.edit,
     onSuccess: () => {
       javaCache.invalidate.list(queryClient);
     },
@@ -70,7 +70,7 @@ export const useRemoveJava = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.remove,
+    mutationFn: javaCommands.remove,
     onSuccess: () => {
       javaCache.invalidate.list(queryClient);
     },
@@ -97,7 +97,7 @@ export const useDiscoverJava = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.discover,
+    mutationFn: javaCommands.discover,
     onError: (err) => {
       showError({
         title: t('java.removeError'),
@@ -111,5 +111,5 @@ export const useDiscoverJava = () => {
 export const useActiveJavaInstallations = () =>
   useQuery(() => ({
     queryKey: javaKeys.getActiveInstallations(),
-    queryFn: commands.getActiveInstallations,
+    queryFn: javaCommands.getActiveInstallations,
   }));

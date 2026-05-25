@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
 
-import { commands } from '../api';
+import { authCommands } from '../api';
 import { accountCache, accountQueries } from './cache';
 import { isAuthValidationError } from './error';
 
@@ -14,7 +14,7 @@ export const useCreateOfflineAccount = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.createOfflineAccount,
+    mutationFn: authCommands.createOfflineAccount,
     onSuccess: () => accountCache.invalidate.list(queryClient),
     onError: (err) => {
       if (
@@ -39,7 +39,7 @@ export const useChangeAccount = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.changeAccount,
+    mutationFn: authCommands.changeAccount,
     onSuccess: () => accountCache.invalidate.list(queryClient),
     onError: (err) => {
       showError({
@@ -56,7 +56,7 @@ export const useLogout = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.logout,
+    mutationFn: authCommands.logout,
     onSuccess: () => accountCache.invalidate.list(queryClient),
     onError: (err) => {
       showError({

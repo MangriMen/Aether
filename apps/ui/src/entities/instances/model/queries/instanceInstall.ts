@@ -3,14 +3,14 @@ import { useMutation } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import { commands } from '../../api';
+import { instanceCommands } from '../../api';
 
 export const useInstallInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
     mutationFn: ({ id, force }: { id: string; force?: boolean }) =>
-      commands.install(id, force ?? false),
+      instanceCommands.install(id, force ?? false),
     onError: (err, { id }) => {
       showError({
         title: t('instance.removeError', { id }),
@@ -25,7 +25,7 @@ export const useUpdateInstance = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: (id: string) => commands.update(id),
+    mutationFn: (id: string) => instanceCommands.update(id),
     onError: (err, id) => {
       showError({
         title: t('instance.updateError', { id }),

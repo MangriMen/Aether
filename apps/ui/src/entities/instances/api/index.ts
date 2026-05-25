@@ -1,4 +1,4 @@
 export * from './tauriApiRaw';
 
-export { commands, events } from '@/shared/api/bindings/instance';
+export { instanceCommands, instanceEvents } from '@/shared/api';
 export type * from '@/shared/api/bindings/instance';

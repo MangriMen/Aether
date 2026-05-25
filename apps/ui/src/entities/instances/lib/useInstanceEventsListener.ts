@@ -5,7 +5,7 @@ import { onCleanup, onMount } from 'solid-js';
 
 import { logDebug } from '@/shared/lib';
 
-import { events } from '../api';
+import { instanceEvents } from '../api';
 import { invalidateInstanceData } from '../model';
 
 export const useInstanceEventsListener = () => {
@@ -14,7 +14,7 @@ export const useInstanceEventsListener = () => {
   const queryClient = useQueryClient();
 
   const startListen = async () => {
-    unlistenFn = await events.instanceEventDto.listen((e) => {
+    unlistenFn = await instanceEvents.instanceEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
 
       invalidateInstanceData(queryClient, e.payload.instanceId);

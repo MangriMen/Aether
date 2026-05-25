@@ -8,7 +8,7 @@ import { useTranslation } from '@/shared/model';
 import type { EditPluginSettingsDto } from '../api';
 import type { PluginId } from './pluginManifest';
 
-import { commands } from '../api';
+import { pluginsCommands } from '../api';
 import { pluginsCache, pluginsQueries } from './cache';
 import { pluginKeys } from './queryKeys';
 
@@ -30,7 +30,7 @@ export const useSyncPlugins = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.sync,
+    mutationFn: pluginsCommands.sync,
     onSuccess: () => pluginsCache.invalidate.all(queryClient),
     onError: (err) => {
       showError({
@@ -46,7 +46,7 @@ export const useEnablePlugin = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: commands.enable,
+    mutationFn: pluginsCommands.enable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
   }));
 };
@@ -55,7 +55,7 @@ export const useDisablePlugin = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: commands.disable,
+    mutationFn: pluginsCommands.disable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
   }));
 };
@@ -71,7 +71,7 @@ export const useEditPluginSettings = () => {
     }: {
       id: string;
       editSettings: EditPluginSettingsDto;
-    }) => commands.editSettings(id, editSettings),
+    }) => pluginsCommands.editSettings(id, editSettings),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: pluginKeys.settings(variables.id),
@@ -100,7 +100,7 @@ export const useOpenPluginFolder = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.openPluginsFolder,
+    mutationFn: pluginsCommands.openPluginsFolder,
     onError: (err) => {
       showError({
         title: t('plugins.openPluginsFolderError'),
@@ -115,7 +115,7 @@ export const useImportPlugins = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.import,
+    mutationFn: pluginsCommands.import,
     onError: (err) => {
       showError({
         title: t('plugins.failedToImport'),
@@ -131,7 +131,7 @@ export const useRemovePlugin = () => {
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
-    mutationFn: commands.remove,
+    mutationFn: pluginsCommands.remove,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
     onError: (err, id) => {
       const plugin = pluginsCache.getData.fromList(queryClient, id);

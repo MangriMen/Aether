@@ -1,10 +1,13 @@
-use tauri::{AppHandle, State};
+use tauri::State;
 
 use crate::{
     FrontendResult,
     core::{AppSettingsStorageState, WindowManagerState},
     features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase, dtos::RamSettingsDto},
-    shared::commands::{SETTINGS_PLUGIN_NAME, settings_commands},
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{SETTINGS_PLUGIN_NAME, settings_commands},
+    },
 };
 
 use super::dtos::{
@@ -35,7 +38,13 @@ async fn get() -> FrontendResult<SettingsDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn edit(edit_settings: EditSettingsDto) -> FrontendResult<SettingsDto> {
+async fn edit(
+    edit_settings: EditSettingsDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<SettingsDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(aether_core::api::settings::edit(edit_settings.into())
         .await
         .map_err(crate::Error::from)?
@@ -63,7 +72,11 @@ async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettin
 #[specta::specta]
 async fn edit_default_instance_settings(
     edit_settings: EditDefaultInstanceSettingsDto,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<DefaultInstanceSettingsDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(
         aether_core::api::settings::upsert_default_instance_settings(edit_settings.into())
             .await
@@ -89,11 +102,14 @@ async fn get_app_settings(
 #[tauri::command]
 #[specta::specta]
 async fn edit_app_settings(
-    _app_handle: AppHandle,
+    edit_app_settings: EditAppSettingsDto,
+    request_id: RequestId,
     app_settings_storage: State<'_, AppSettingsStorageState>,
     window_manager: State<'_, WindowManagerState<tauri::Wry>>,
-    edit_app_settings: EditAppSettingsDto,
+    idempotency: State<'_, IdempotencyManager>,
 ) -> FrontendResult<AppSettingsDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
     Ok(EditAppSettingsUseCase::new(
         app_settings_storage.inner().clone(),
         window_manager.inner().clone(),

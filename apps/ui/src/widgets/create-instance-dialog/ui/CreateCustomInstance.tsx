@@ -137,7 +137,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     filterGameVersions(loaderGameVersions(), shouldIncludeSnapshots()),
   );
 
-  const { mutateAsync: createInstance } = useCreateInstance();
+  const createInstance = useCreateInstance();
   const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
     values,
   ) => {
@@ -153,7 +153,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     props.onOpenChange?.(false);
 
     try {
-      await createInstance(payload);
+      await createInstance.mutateAsync(payload);
     } catch {
       /* empty */
     }

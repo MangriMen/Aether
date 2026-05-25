@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
-import { commands } from '../../api';
+import { settingsCommands } from '../../api';
 import {
   defaultInstanceSettingsCache,
   defaultInstanceSettingsQueries,
@@ -17,7 +17,7 @@ export const useEditDefaultInstanceSettings = () => {
   const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: commands.editDefaultInstanceSettings,
+    mutationFn: settingsCommands.editDefaultInstanceSettings,
     onSuccess: (data) => {
       defaultInstanceSettingsCache.set(queryClient, data);
     },

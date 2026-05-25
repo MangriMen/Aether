@@ -7,7 +7,7 @@ import { useProgressStore } from '@/widgets/app-titlebar';
 
 import type { ProgressEvent } from '../model';
 
-import { commands, events } from '../api';
+import { eventsCommands, eventsEvents } from '../api';
 
 export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
 
@@ -45,7 +45,7 @@ export const useProgressEventsListener = () => {
 
   const fetchEvents = async () => {
     try {
-      const bars = await commands.listProgressBars();
+      const bars = await eventsCommands.listProgressBars();
 
       for (const bar of bars) {
         addEvent({
@@ -66,7 +66,7 @@ export const useProgressEventsListener = () => {
   const startListen = async () => {
     fetchEvents();
 
-    unlistenFn = await events.progressEventDto.listen((e) => {
+    unlistenFn = await eventsEvents.progressEventDto.listen((e) => {
       logDebug('[EVENT][DEBUG]', e);
       addEvent(e.payload);
 
