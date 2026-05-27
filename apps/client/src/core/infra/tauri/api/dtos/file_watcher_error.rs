@@ -18,7 +18,7 @@ impl From<&FileWatcherError> for FileWatcherErrorDto {
             },
             FileWatcherError::WatchNotFound => Self::WatchNotFound,
             FileWatcherError::NotifyError(err) => Self::NotifyError {
-                details: err.to_string(),
+                details: err.clone(),
             },
         }
     }

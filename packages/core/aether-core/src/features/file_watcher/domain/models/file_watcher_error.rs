@@ -11,5 +11,5 @@ pub enum FileWatcherError {
     WatchNotFound,
 
     #[error("File watching error: {0}")]
-    NotifyError(#[from] notify::Error),
+    NotifyError(String),
 }

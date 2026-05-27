@@ -10,8 +10,27 @@ use notify_debouncer_mini::{DebounceEventResult, Debouncer, new_debouncer};
 use tokio::sync::RwLock;
 
 use crate::features::file_watcher::{
-    FileEvent, FileEventHandler, FileEventKind, FileWatcher, FileWatcherError,
+    FileEvent, FileEventKind, FileWatcherError,
+    app::{FileEventHandler, FileWatcher},
 };
+
+impl From<notify::Error> for FileWatcherError {
+    fn from(value: notify::Error) -> Self {
+        Self::NotifyError(value.to_string())
+    }
+}
+
+impl From<Vec<notify::Error>> for FileWatcherError {
+    fn from(value: Vec<notify::Error>) -> Self {
+        Self::NotifyError(
+            value
+                .into_iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<_>>()
+                .join("; "),
+        )
+    }
+}
 
 pub struct NotifyFileWatcher<FEH: FileEventHandler> {
     watcher: RwLock<Debouncer<RecommendedWatcher>>,
