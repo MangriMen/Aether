@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::features::auth::{AuthApplicationError, Credential};
+use crate::features::auth::{app::AuthApplicationError, domain::Credential};
 
 #[async_trait]
 pub trait CredentialsStorage: Send + Sync {

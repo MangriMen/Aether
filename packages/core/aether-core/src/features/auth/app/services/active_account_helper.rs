@@ -1,5 +1,6 @@
 use crate::features::auth::{
-    AuthApplicationError, AuthDomainError, Credential, CredentialsStorage,
+    app::{AuthApplicationError, CredentialsStorage},
+    domain::{AuthDomainError, Credential},
 };
 use uuid::Uuid;
 

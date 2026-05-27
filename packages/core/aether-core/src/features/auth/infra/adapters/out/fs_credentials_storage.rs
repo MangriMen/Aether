@@ -4,7 +4,10 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::{
-    features::auth::{AuthApplicationError, AuthDomainError, Credential, CredentialsStorage},
+    features::auth::{
+        app::{AuthApplicationError, CredentialsStorage},
+        domain::{AuthDomainError, Credential},
+    },
     shared::{IoError, JsonEntityStore, UpdateAction},
 };
 

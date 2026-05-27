@@ -1,4 +1,4 @@
-use aether_core::features::auth::{AuthApplicationError, AuthDomainError};
+use aether_core::features::auth::{app::AuthApplicationError, domain::AuthDomainError};
 use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;

@@ -2,15 +2,14 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use crate::features::auth::{
+    app::{AccountData, ActiveAccountHelper, AuthApplicationError, CredentialsStorage},
+    domain::{Credential, Username},
+};
+
 pub struct CreateOfflineAccountUseCase<CS: CredentialsStorage> {
     credentials_storage: Arc<CS>,
 }
-
-use crate::features::auth::{
-    ActiveAccountHelper, AuthApplicationError, Credential, CredentialsStorage, Username,
-};
-
-use super::super::AccountData;
 
 impl<CS: CredentialsStorage> CreateOfflineAccountUseCase<CS> {
     pub fn new(credentials_storage: Arc<CS>) -> Self {

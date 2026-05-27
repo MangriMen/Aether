@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::features::auth::AuthDomainError;
+use crate::features::auth::domain::AuthDomainError;
 
 use super::Username;
 

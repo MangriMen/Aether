@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::auth::{CreateOfflineAccountUseCase, CredentialsStorage};
+use crate::features::auth::app::{CreateOfflineAccountUseCase, CredentialsStorage};
 
 use super::fixtures::MockCredentialsStorage;
 

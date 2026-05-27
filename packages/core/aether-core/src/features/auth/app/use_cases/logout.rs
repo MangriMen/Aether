@@ -3,7 +3,8 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::features::auth::{
-    ActiveAccountHelper, AuthApplicationError, AuthDomainError, CredentialsStorage,
+    app::{ActiveAccountHelper, AuthApplicationError, CredentialsStorage},
+    domain::AuthDomainError,
 };
 
 pub struct LogoutUseCase<CS: CredentialsStorage> {

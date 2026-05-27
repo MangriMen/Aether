@@ -2,7 +2,7 @@ use tracing::info;
 
 use crate::{
     features::auth::{
-        CredentialsStorage,
+        app::CredentialsStorage,
         infra::{FsCredentialsStorage, SqliteCredentialsStorage},
     },
     shared::archive_legacy_file,

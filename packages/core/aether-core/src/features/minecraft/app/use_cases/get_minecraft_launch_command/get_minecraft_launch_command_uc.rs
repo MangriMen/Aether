@@ -8,7 +8,7 @@ use tokio::process::Command;
 
 use crate::{
     features::{
-        auth::Credential,
+        auth::domain::Credential,
         java::{
             JavaInstallationService, JavaStorage,
             app::{GetJavaUseCase, JavaApplicationError},

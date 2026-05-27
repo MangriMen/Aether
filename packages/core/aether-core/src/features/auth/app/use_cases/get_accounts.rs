@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::auth::{AuthApplicationError, CredentialsStorage};
-
-use super::super::AccountData;
+use crate::features::auth::app::{AccountData, AuthApplicationError, CredentialsStorage};
 
 pub struct GetAccountsUseCase<CS: CredentialsStorage> {
     credentials_storage: Arc<CS>,

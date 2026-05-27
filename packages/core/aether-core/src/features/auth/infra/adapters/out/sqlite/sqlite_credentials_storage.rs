@@ -4,7 +4,8 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::features::auth::{
-    AuthApplicationError, AuthDomainError, Credential, CredentialsStorage,
+    app::{AuthApplicationError, CredentialsStorage},
+    domain::{AuthDomainError, Credential},
 };
 
 pub struct SqliteCredentialsStorage {

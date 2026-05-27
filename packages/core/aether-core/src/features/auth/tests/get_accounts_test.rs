@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::features::auth::{CredentialsStorage, GetAccountsUseCase};
+use crate::features::auth::app::{CredentialsStorage, GetAccountsUseCase};
 
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 

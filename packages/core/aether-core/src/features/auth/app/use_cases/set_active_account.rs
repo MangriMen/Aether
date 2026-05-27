@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use crate::features::auth::{ActiveAccountHelper, AuthApplicationError, CredentialsStorage};
+use crate::features::auth::app::{ActiveAccountHelper, AuthApplicationError, CredentialsStorage};
 
 use super::super::AccountData;
 

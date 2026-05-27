@@ -1,8 +1,10 @@
-use crate::features::auth::*;
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
+
+use crate::features::auth::app::{AuthApplicationError, CredentialsStorage};
+use crate::features::auth::domain::{AuthDomainError, Credential};
 
 #[derive(Default)]
 pub struct MockCredentialsStorage {
