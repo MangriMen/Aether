@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::features::instance::{InstanceError, UpdaterCapabilityMetadata};
+use crate::features::instance::domain::{InstanceError, UpdaterCapabilityMetadata};
 
 #[async_trait]
 pub trait Updater: Send + Sync {

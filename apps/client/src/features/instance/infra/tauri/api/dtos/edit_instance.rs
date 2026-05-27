@@ -1,4 +1,4 @@
-use aether_core::features::instance::app::EditInstance;
+use aether_core::features::instance::EditInstance;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

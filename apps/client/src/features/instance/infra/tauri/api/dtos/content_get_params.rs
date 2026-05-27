@@ -1,4 +1,4 @@
-use aether_core::features::instance::app::ContentGetParams;
+use aether_core::features::instance::ContentGetParams;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

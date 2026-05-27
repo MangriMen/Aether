@@ -81,10 +81,10 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         &self,
         project_id: &str,
         game_version: &str,
-        loader: &Option<String>,
+        loader: Option<&String>,
     ) -> Result<ProjectVersionResponse, InstanceError> {
         let request_params = ProjectVersionsRequest {
-            loaders: loader.as_ref().map(|l| vec![l.clone()]),
+            loaders: loader.map(|l| vec![l.clone()]),
             game_versions: Some(vec![game_version.to_string()]),
             include_changelog: false,
             ..Default::default()
@@ -96,7 +96,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .await
             .map_err(InstanceError::ContentDownloadError)?;
 
-        find_best_version(&versions, game_version, loader.as_ref())
+        find_best_version(&versions, game_version, loader)
             .cloned()
             .ok_or_else(|| InstanceError::ContentForGameVersionNotFound {
                 game_version: game_version.to_owned(),
@@ -117,7 +117,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 self.get_project_version_for_game_version(
                     &install_params.content_id,
                     &install_params.game_version,
-                    &install_params.loader,
+                    install_params.loader.as_ref(),
                 )
                 .await
             }

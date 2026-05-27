@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::features::instance::InstanceError;
+use crate::features::instance::domain::InstanceError;
 
 #[async_trait]
 pub trait InstanceWatcherService: Send + Sync {

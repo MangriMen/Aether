@@ -16,12 +16,11 @@ use crate::{
         },
         file_watcher::infra::NotifyFileWatcher,
         instance::{
-            self, ContentProvider, Importer, InstanceWatcherService, InstanceWatcherServiceImpl,
-            Updater,
+            self, ContentProvider, Importer, InstanceWatcherService, Updater,
             infra::{
                 EventEmittingInstanceStorage, FsInstanceStorage, FsPackStorage,
-                InstanceEventHandler, ModrinthContentProvider, SqliteInstanceStorage,
-                SqlitePackStorage,
+                InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
+                SqliteInstanceStorage, SqlitePackStorage,
             },
         },
         java::{

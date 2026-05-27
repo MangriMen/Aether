@@ -1,4 +1,4 @@
-use aether_core::features::instance::app::ContentCompatibilityResult;
+use aether_core::features::instance::ContentCompatibilityResult;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

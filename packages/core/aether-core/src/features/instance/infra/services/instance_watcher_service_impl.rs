@@ -4,7 +4,10 @@ use async_trait::async_trait;
 
 use crate::features::{
     file_watcher::FileWatcher,
-    instance::{ContentType, InstanceError, InstanceWatcherService},
+    instance::{
+        app::InstanceWatcherService,
+        domain::{ContentType, InstanceError},
+    },
     settings::LocationInfo,
 };
 

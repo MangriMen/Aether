@@ -4,12 +4,9 @@ use crate::{
     core::LazyLocator,
     features::{
         instance::{
-            Instance,
-            app::{
-                CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
-                InstallInstanceUseCase, ListInstancesUseCase, NewInstance, RemoveInstanceUseCase,
-                UpdateInstanceUseCase,
-            },
+            CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
+            InstallInstanceUseCase, Instance, ListInstancesUseCase, NewInstance,
+            RemoveInstanceUseCase, UpdateInstanceUseCase,
         },
         java::{
             app::{GetJavaUseCase, InstallJavaUseCase},

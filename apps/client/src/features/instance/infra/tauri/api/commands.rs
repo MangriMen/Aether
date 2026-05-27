@@ -1,6 +1,6 @@
 use aether_core::{
     core::LazyLocator,
-    features::instance::app::EditInstanceIconUseCase,
+    features::instance::EditInstanceIconUseCase,
     shared::{AssetsResolver, FileCache, FsAssetsStorage},
 };
 use std::{

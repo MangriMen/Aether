@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::features::instance::{InstanceError, Pack, PackFile, ProviderId};
+use crate::features::instance::domain::{InstanceError, Pack, PackFile, ProviderId};
 
 #[async_trait]
 pub trait PackStorage: Send + Sync {

@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::features::instance::{
+use crate::features::instance::app::dtos::{
+    ContentCompatibilityCheckParams, ContentCompatibilityResult,
+};
+use crate::features::instance::domain::{
     AtomicInstallParams, ContentFile, ContentItem, ContentProviderCapabilityMetadata,
     ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
     InstanceError, ModpackInstallParams,
-    app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
 };
 
 #[async_trait]

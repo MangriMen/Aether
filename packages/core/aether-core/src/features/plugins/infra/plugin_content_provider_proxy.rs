@@ -7,10 +7,10 @@ use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{
-        AtomicInstallParams, ContentFile, ContentItem, ContentProvider,
-        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-        ContentVersion, DownloadedContent, Instance, InstanceError, ModpackInstallParams,
-        app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
+        AtomicInstallParams, ContentCompatibilityCheckParams, ContentCompatibilityResult,
+        ContentFile, ContentItem, ContentProvider, ContentProviderCapabilityMetadata,
+        ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
+        InstanceError, ModpackInstallParams,
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance,

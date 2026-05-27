@@ -5,10 +5,7 @@ use crate::{
     features::{
         auth::domain::Credential,
         instance::{
-            app::{
-                InstallInstanceUseCase, LaunchInstanceUseCase,
-                LaunchInstanceWithActiveAccountUseCase,
-            },
+            InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
             infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{

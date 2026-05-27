@@ -1,5 +1,7 @@
-use crate::features::instance::{Instance, InstanceError, InstanceStorage};
 use async_trait::async_trait;
+
+use crate::features::instance::app::InstanceStorage;
+use crate::features::instance::domain::{Instance, InstanceError};
 
 #[async_trait]
 pub trait InstanceStorageExt: InstanceStorage {
