@@ -1,7 +1,17 @@
-pub mod app;
-pub mod domain;
-pub mod infra;
-pub mod utils;
+mod app;
+mod domain;
+pub(crate) mod infra;
 
-pub use app::*;
-pub use domain::*;
+// App-layer exports
+pub use app::list_progress_bars::ListProgressBarsUseCase;
+pub use app::ports::{EventEmitter, ProgressBarStorage, ProgressService, SharedEventEmitter};
+pub use app::services::ProgressServiceImpl;
+pub use app::stream_utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress};
+
+// Domain models — explicitly re-exported for cross-feature use
+pub use domain::{
+    Event, EventEmitterExt, EventError, InstanceEvent, InstanceEventType, PluginEvent,
+    ProcessEvent, ProcessEventType, ProgressBar, ProgressBarId, ProgressBarStorageError,
+    ProgressBarStorageExt, ProgressConfig, ProgressEvent, ProgressEventType, ProgressServiceExt,
+    WarningEvent,
+};

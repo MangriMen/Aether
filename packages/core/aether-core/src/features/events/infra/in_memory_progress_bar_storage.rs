@@ -4,9 +4,7 @@ use uuid::Uuid;
 
 use dashmap::mapref::one::Ref as DashMapRef;
 
-use crate::features::events::{
-    ProgressBar, ProgressBarStorage, progress_bar_error::ProgressBarStorageError,
-};
+use crate::features::events::{ProgressBar, ProgressBarStorage, ProgressBarStorageError};
 
 #[derive(Debug, Default)]
 pub struct InMemoryProgressBarStorage {

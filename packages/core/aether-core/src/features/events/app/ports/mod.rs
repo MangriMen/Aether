@@ -1,6 +1,6 @@
-pub mod event_emitter;
-pub mod progress_bar_storage;
-pub mod progress_service;
+mod event_emitter;
+mod progress_bar_storage;
+mod progress_service;
 
 pub use event_emitter::*;
 pub use progress_bar_storage::*;

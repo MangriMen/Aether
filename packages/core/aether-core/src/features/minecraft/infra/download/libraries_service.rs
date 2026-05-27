@@ -7,8 +7,8 @@ use tracing::{debug, error, info, trace, warn};
 use crate::{
     features::{
         events::{
-            ProgressConfig, ProgressService,
-            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
+            ProgressConfig, ProgressConfigWithMessage, ProgressService,
+            try_for_each_concurrent_with_progress,
         },
         minecraft::{MinecraftDomainError, utils::parse_rules, vanilla},
         settings::LocationInfo,

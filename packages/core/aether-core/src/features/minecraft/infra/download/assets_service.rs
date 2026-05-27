@@ -8,8 +8,8 @@ use tracing::trace;
 use crate::{
     features::{
         events::{
-            ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt,
-            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
+            ProgressBarId, ProgressConfig, ProgressConfigWithMessage, ProgressService,
+            ProgressServiceExt, try_for_each_concurrent_with_progress,
         },
         minecraft::{MinecraftDomainError, vanilla},
         settings::LocationInfo,

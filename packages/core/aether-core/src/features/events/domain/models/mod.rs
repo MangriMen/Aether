@@ -1,7 +1,6 @@
 mod event;
 pub mod event_error;
 pub mod instance;
-pub mod launcher_event;
 pub mod plugin_event;
 pub mod process;
 pub mod progress;
@@ -12,7 +11,6 @@ pub mod warning;
 pub use event::*;
 pub use event_error::*;
 pub use instance::*;
-pub use launcher_event::*;
 pub use plugin_event::*;
 pub use process::*;
 pub use progress::*;

@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::features::events::{
     EventError, ProgressBar, ProgressBarId, ProgressBarStorage, ProgressBarStorageExt,
-    ProgressEvent, ProgressEventType, SharedEventEmitter, progress_service::ProgressService,
+    ProgressEvent, ProgressEventType, SharedEventEmitter, app::ports::ProgressService,
 };
 
 pub struct ProgressServiceImpl<PS: ProgressBarStorage> {
@@ -101,8 +101,7 @@ impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
 
         let display_frac = progress_bar.current / progress_bar.total;
         let opt_display_frac = if display_frac >= 1.0 {
-            None // by convention, when its done, we submit None
-        // any further updates will be ignored (also sending None)
+            None
         } else {
             Some(display_frac)
         };

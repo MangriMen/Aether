@@ -11,17 +11,12 @@ pub struct ProgressConfigWithMessage<'a> {
     pub progress_message: Option<&'a str>,
 }
 
-// A drop in replacement to try_for_each_concurrent that emits progress events as it goes
-// Key is the key to use for which progress bar- a ProgressBarId. If None, does nothing
-// Total is the total amount of progress that the progress bar should take up by all futures in this (will be split evenly amongst them).
-// If message is Some(t) you will overwrite this loading bar's message with a custom one
-// futures_count is the number of futures that will be run, which is needed as we allow Iterator to be passed in, which doesn't have a size
 #[tracing::instrument(skip(progress_service, stream, f))]
 pub async fn try_for_each_concurrent_with_progress<PS, ST, Fut, F, T, E>(
     progress_service: Arc<PS>,
     stream: ST,
     limit: Option<usize>,
-    futures_count: usize, // num is in here as we allow Iterator to be passed in, which doesn't have a size
+    futures_count: usize,
     progress_config: Option<&ProgressConfigWithMessage<'_>>,
     mut f: F,
 ) -> Result<(), E>
