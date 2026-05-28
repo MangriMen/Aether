@@ -16,14 +16,12 @@ use crate::{
             },
         },
         minecraft::{
+            GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
             LoaderVersionResolver,
-            app::{
-                GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase,
-                InstallMinecraftUseCase,
-            },
             infra::{
-                AssetsService, CachedMetadataStorage, ClientService, LibrariesService,
-                MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
+                AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor,
+                LibrariesService, MinecraftDownloadResolver, MinecraftDownloadService,
+                ModrinthMetadataStorage,
             },
         },
         process::{
@@ -54,6 +52,7 @@ async fn get_launch_instance_use_case(
         FileCache<MinecraftDownloadResolver>,
         FileCache<MinecraftDownloadResolver>,
     >,
+    ForgeProcessor<ProgressServiceType>,
     ProgressServiceType,
     FsJavaInstallationService,
     SqliteJavaStorage,
@@ -120,12 +119,16 @@ async fn get_launch_instance_use_case(
         locator.get_metadata_storage().await,
     ));
 
-    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
+    let forge_processor = Arc::new(ForgeProcessor::new(
         locator.get_progress_service().await,
+        locator.location_info.clone(),
+    ));
+
+    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
         loader_version_resolver.clone(),
         get_loader_manifest_use_case.clone(),
-        locator.location_info.clone(),
         minecraft_download_service,
+        forge_processor,
         FsJavaInstallationService,
         get_java_use_case.clone(),
         install_java_use_case.clone(),

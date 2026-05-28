@@ -15,8 +15,8 @@ use crate::{
         },
         java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
-            LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftDownloader,
-            ModLoader, app::MinecraftApplicationError,
+            LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
+            MinecraftApplicationError, MinecraftDownloader, ModLoader, ModLoaderProcessor,
         },
         settings::LocationInfo,
     },
@@ -42,6 +42,7 @@ pub struct CreateInstanceUseCase<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
     PS: ProgressService,
+    MLP: ModLoaderProcessor,
     IWS: InstanceWatcherService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
@@ -51,7 +52,7 @@ pub struct CreateInstanceUseCase<
     instance_storage: Arc<IS>,
     loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
     #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP, JIT>>,
+    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>>,
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<IWS>,
@@ -62,18 +63,21 @@ impl<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
     PS: ProgressService,
+    MLP: ModLoaderProcessor,
     IWS: InstanceWatcherService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
-> CreateInstanceUseCase<IS, MS, MD, PS, IWS, JIS, JS, JP, JIT>
+> CreateInstanceUseCase<IS, MS, MD, PS, MLP, IWS, JIS, JS, JP, JIT>
 {
     #[allow(clippy::type_complexity)]
     pub fn new(
         instance_storage: Arc<IS>,
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP, JIT>>,
+        install_instance_use_case: Arc<
+            InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>,
+        >,
         location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<IWS>,

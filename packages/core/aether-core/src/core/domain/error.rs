@@ -30,7 +30,7 @@ pub enum ErrorKind {
 
     #[error(transparent)]
     #[serialize_error]
-    MinecraftError(#[from] minecraft::app::MinecraftApplicationError),
+    MinecraftError(#[from] minecraft::MinecraftApplicationError),
 
     #[error(transparent)]
     #[serialize_error]

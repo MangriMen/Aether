@@ -3,37 +3,31 @@ use std::{path::Path, sync::Arc};
 use tracing::debug;
 
 use crate::features::{
-    events::{ProgressBarId, ProgressService},
+    events::ProgressBarId,
     java::{
         GetJavaUseCase, InstallJava, InstallJavaUseCase, Java, JavaApplicationError,
         JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
     },
     minecraft::{
-        LoaderVersionResolver, MetadataStorage, MinecraftDomainError, MinecraftDownloader,
-        ModLoader, ModLoaderProcessor,
-        app::{GetVersionManifestUseCase, InstallMinecraftParams, MinecraftApplicationError},
-        infra::ForgeProcessor,
-        resolve_minecraft_version,
-        utils::get_compatible_java_version,
-        vanilla,
+        GetVersionManifestUseCase, InstallMinecraftParams, LoaderVersionResolver, MetadataStorage,
+        MinecraftApplicationError, MinecraftDomainError, MinecraftDownloader, ModLoader,
+        ModLoaderProcessor, get_compatible_java_version, resolve_minecraft_version, vanilla,
     },
-    settings::LocationInfo,
 };
 
 pub struct InstallMinecraftUseCase<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
-    PS: ProgressService,
+    MLP: ModLoaderProcessor,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
 > {
-    progress_service: Arc<PS>,
     loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
     get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-    location_info: Arc<LocationInfo>,
     minecraft_download_service: MD,
+    mod_loader_processor: Arc<MLP>,
     java_installation_service: JIS,
     get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
     install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
@@ -42,31 +36,29 @@ pub struct InstallMinecraftUseCase<
 impl<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
-    PS: ProgressService,
+    MLP: ModLoaderProcessor,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
-> InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP, JIT>
+> InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>
 {
     // TODO: try to decrease arguments count
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        progress_service: Arc<PS>,
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
         get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-        location_info: Arc<LocationInfo>,
         minecraft_download_service: MD,
+        mod_loader_processor: Arc<MLP>,
         java_installation_service: JIS,
         get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
         install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
     ) -> Self {
         Self {
-            progress_service,
             loader_version_resolver,
             get_version_manifest_use_case,
-            location_info,
             minecraft_download_service,
+            mod_loader_processor,
             java_installation_service,
             get_java_use_case,
             install_java_use_case,
@@ -87,7 +79,7 @@ impl<
     ) -> Result<(), MinecraftDomainError> {
         match loader {
             ModLoader::NeoForge | ModLoader::Forge => {
-                ForgeProcessor::new(self.progress_service.clone(), self.location_info.clone())
+                self.mod_loader_processor
                     .run(
                         game_version,
                         version_jar,

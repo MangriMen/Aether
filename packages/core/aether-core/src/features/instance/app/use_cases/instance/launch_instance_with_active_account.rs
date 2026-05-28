@@ -5,7 +5,7 @@ use crate::features::{
     events::ProgressService,
     instance::{InstanceError, InstanceStorage},
     java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
-    minecraft::{MetadataStorage, MinecraftDownloader},
+    minecraft::{MetadataStorage, MinecraftDownloader, ModLoaderProcessor},
     process::{MinecraftProcessMetadata, ProcessStorage},
     settings::DefaultInstanceSettingsStorage,
 };
@@ -19,6 +19,7 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
     CS: CredentialsStorage,
     GISS: DefaultInstanceSettingsStorage,
     MD: MinecraftDownloader,
+    MLP: ModLoaderProcessor,
     PGS: ProgressService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
@@ -26,7 +27,8 @@ pub struct LaunchInstanceWithActiveAccountUseCase<
     JIT: JavaInstallationTracker,
 > {
     credentials_storage: Arc<CS>,
-    launch_instance_use_case: LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP, JIT>,
+    launch_instance_use_case:
+        LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>,
 }
 
 impl<
@@ -36,12 +38,13 @@ impl<
     CS: CredentialsStorage,
     GISS: DefaultInstanceSettingsStorage,
     MD: MinecraftDownloader,
+    MLP: ModLoaderProcessor,
     PGS: ProgressService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
-> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, PGS, JIS, JS, JP, JIT>
+> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
 {
     pub fn new(
         credentials_storage: Arc<CS>,
@@ -51,6 +54,7 @@ impl<
             PS,
             GISS,
             MD,
+            MLP,
             PGS,
             JIS,
             JS,

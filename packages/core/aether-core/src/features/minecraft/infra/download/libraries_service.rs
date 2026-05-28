@@ -10,7 +10,7 @@ use crate::{
             ProgressConfig, ProgressConfigWithMessage, ProgressService,
             try_for_each_concurrent_with_progress,
         },
-        minecraft::{MinecraftDomainError, utils::parse_rules, vanilla},
+        minecraft::{MinecraftDomainError, parse_rules, vanilla},
         settings::LocationInfo,
     },
     libs::request_client::{Request, RequestClient},

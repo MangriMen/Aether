@@ -2,11 +2,7 @@ use std::path::Path;
 
 use crate::features::{
     java::Java,
-    minecraft::{
-        MinecraftDomainError,
-        utils::{get_class_paths, get_jvm_arguments},
-        vanilla,
-    },
+    minecraft::{MinecraftDomainError, get_class_paths, get_jvm_arguments, vanilla},
 };
 
 // TODO: Wrap arguments in struct

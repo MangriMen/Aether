@@ -4,8 +4,8 @@ use serr::SerializeError;
 use uuid::Uuid;
 
 use crate::features::{
-    auth::app::AuthApplicationError, instance::ContentType,
-    minecraft::app::MinecraftApplicationError, process::ProcessError, settings::SettingsError,
+    auth::app::AuthApplicationError, instance::ContentType, minecraft::MinecraftApplicationError,
+    process::ProcessError, settings::SettingsError,
 };
 
 #[derive(Debug, thiserror::Error, SerializeError)]

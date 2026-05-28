@@ -1,6 +1,4 @@
-use aether_core::features::minecraft::{
-    app::MinecraftApplicationError, domain::MinecraftDomainError,
-};
+use aether_core::features::minecraft::{MinecraftApplicationError, MinecraftDomainError};
 use serde::Serialize;
 use specta::Type;
 

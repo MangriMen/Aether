@@ -1,8 +1,10 @@
-use std::sync::Arc;
-
 use crate::features::minecraft::{
-    LoaderVersionPreference, MetadataStorage, MinecraftDomainError, ModLoader, modded,
+    LoaderVersionPreference, MinecraftDomainError, ModLoader, modded,
 };
+
+use super::super::ports::MetadataStorage;
+
+use std::sync::Arc;
 
 pub struct LoaderVersionResolver<MS> {
     metadata_storage: Arc<MS>,

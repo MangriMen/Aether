@@ -1,6 +1,6 @@
 use crate::features::minecraft::{MinecraftDomainError, TEMPORARY_REPLACE_CHAR, vanilla};
 
-use super::parse_rules;
+use super::rules::parse_rules;
 
 pub fn parse_arguments<F>(
     arguments: &[vanilla::Argument],

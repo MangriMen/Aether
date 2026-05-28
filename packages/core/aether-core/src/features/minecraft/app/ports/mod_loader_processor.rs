@@ -1,6 +1,5 @@
-use std::path::Path;
-
 use async_trait::async_trait;
+use std::path::Path;
 
 use crate::features::{
     events::ProgressBarId,
@@ -9,7 +8,7 @@ use crate::features::{
 };
 
 #[async_trait]
-pub trait ModLoaderProcessor {
+pub trait ModLoaderProcessor: Send + Sync {
     async fn run(
         &self,
         game_version: String,

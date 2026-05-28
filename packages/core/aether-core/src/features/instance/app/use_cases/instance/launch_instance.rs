@@ -9,8 +9,8 @@ use crate::{
         },
         java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
-            LaunchSettings, MetadataStorage, MinecraftDownloader,
-            app::{GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase},
+            GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
+            MetadataStorage, MinecraftDownloader, ModLoaderProcessor,
         },
         process::{
             MinecraftProcessMetadata, ProcessStorage,
@@ -29,6 +29,7 @@ pub struct LaunchInstanceUseCase<
     PS: ProcessStorage,
     GISS: DefaultInstanceSettingsStorage,
     MD: MinecraftDownloader,
+    MLP: ModLoaderProcessor,
     PGS: ProgressService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
@@ -40,7 +41,7 @@ pub struct LaunchInstanceUseCase<
     location_info: Arc<LocationInfo>,
     get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
     #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP, JIT>>,
+    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>>,
     get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
     start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
 }
@@ -51,12 +52,13 @@ impl<
     PS: ProcessStorage + 'static,
     GISS: DefaultInstanceSettingsStorage,
     MD: MinecraftDownloader,
+    MLP: ModLoaderProcessor,
     PGS: ProgressService,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
-> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, PGS, JIS, JS, JP, JIT>
+> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
 {
     #[allow(clippy::type_complexity)]
     pub fn new(
@@ -64,7 +66,9 @@ impl<
         default_instance_settings_storage: Arc<GISS>,
         location_info: Arc<LocationInfo>,
         get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-        install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, JIS, JS, JP, JIT>>,
+        install_instance_use_case: Arc<
+            InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>,
+        >,
         get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
         start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
     ) -> Self {
