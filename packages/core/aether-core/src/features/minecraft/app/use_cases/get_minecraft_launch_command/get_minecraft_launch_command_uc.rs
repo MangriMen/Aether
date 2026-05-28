@@ -9,10 +9,7 @@ use tokio::process::Command;
 use crate::{
     features::{
         auth::domain::Credential,
-        java::{
-            JavaInstallationService, JavaStorage,
-            app::{GetJavaUseCase, JavaApplicationError},
-        },
+        java::{GetJavaUseCase, JavaApplicationError, JavaInstallationService, JavaStorage},
         minecraft::{
             LaunchSettings, LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
             MinecraftDownloader, ModLoader,

@@ -3,10 +3,8 @@ use std::{collections::HashSet, path::PathBuf, sync::Arc};
 use aether_core::{
     core::LazyLocator,
     features::java::{
-        app::{
-            DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
-            InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
-        },
+        DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
+        InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
         infra::{AzulJreProvider, FsJavaInstallationService, get_default_discovery_paths},
     },
 };

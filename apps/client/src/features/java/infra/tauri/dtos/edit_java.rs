@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use aether_core::features::java::app::EditJava;
+use aether_core::features::java::EditJava;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

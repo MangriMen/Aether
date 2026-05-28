@@ -9,7 +9,7 @@ use crate::{
             infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{
-            app::{GetJavaUseCase, InstallJavaUseCase},
+            GetJavaUseCase, InstallJavaUseCase,
             infra::{
                 AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker,
                 SqliteJavaStorage,

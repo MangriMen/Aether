@@ -1,6 +1,6 @@
 use std::{path::Path, sync::Arc};
 
-use crate::features::java::{Java, JavaDomainError, JavaInstallationService, JavaStorage};
+use crate::features::java::{Java, JavaInstallationService, JavaStorage, domain::JavaDomainError};
 
 use super::super::JavaApplicationError;
 

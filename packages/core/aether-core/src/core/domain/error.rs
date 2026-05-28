@@ -26,7 +26,7 @@ pub enum ErrorKind {
 
     #[error(transparent)]
     #[serialize_error]
-    JavaError(#[from] java::app::JavaApplicationError),
+    JavaError(#[from] java::JavaApplicationError),
 
     #[error(transparent)]
     #[serialize_error]

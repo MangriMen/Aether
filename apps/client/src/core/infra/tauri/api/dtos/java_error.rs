@@ -1,4 +1,4 @@
-use aether_core::features::java::{app::JavaApplicationError, domain::JavaDomainError};
+use aether_core::features::java::{JavaApplicationError, JavaDomainError};
 use serde::Serialize;
 use specta::Type;
 

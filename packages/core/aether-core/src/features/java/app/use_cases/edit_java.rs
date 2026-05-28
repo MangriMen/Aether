@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::features::java::{
-    CUSTOM_JAVA_VERSION, Java, JavaDomainError, JavaInstallationService, JavaStorage,
-    UNKNOWN_JAVA_ARCHITECTURE,
+    Java, JavaInstallationService, JavaStorage,
     app::{JavaApplicationError, dtos::EditJava},
+    domain::{CUSTOM_JAVA_VERSION, JavaDomainError, UNKNOWN_JAVA_ARCHITECTURE},
 };
 
 pub struct EditJavaUseCase<JS: JavaStorage, JIS: JavaInstallationService> {

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 
-use crate::features::java::{Java, JavaDomainError};
+use crate::features::java::domain::{Java, JavaDomainError};
 
 #[async_trait]
 pub trait JavaInstallationService: Send + Sync {

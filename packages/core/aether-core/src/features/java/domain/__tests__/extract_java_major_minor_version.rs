@@ -1,4 +1,6 @@
-use crate::features::java::{JavaDomainError, utils::extract_java_major_minor_version};
+use crate::features::java::domain::extract_java_major_minor_version;
+
+use super::super::JavaDomainError;
 
 #[test]
 fn check_java_8() -> Result<(), JavaDomainError> {

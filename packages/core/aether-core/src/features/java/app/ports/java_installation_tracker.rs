@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 
-use crate::features::java::JavaInstallationGuard;
+use crate::features::java::domain::JavaInstallationGuard;
 
 #[async_trait]
 pub trait JavaInstallationTracker: Send + Sync {

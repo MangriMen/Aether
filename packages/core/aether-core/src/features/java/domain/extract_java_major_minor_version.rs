@@ -1,4 +1,4 @@
-use crate::features::java::JavaDomainError;
+use super::JavaDomainError;
 
 /// Extracts the major and minor version from a Java version string.
 ///

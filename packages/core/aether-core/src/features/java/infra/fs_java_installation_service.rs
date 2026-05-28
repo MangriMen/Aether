@@ -6,8 +6,8 @@ use futures::StreamExt;
 use crate::{
     features::java::{
         Java, JavaDomainError, JavaInstallationService,
+        domain::extract_java_major_minor_version,
         infra::{JavaProperties, get_java_properties},
-        utils::extract_java_major_minor_version,
     },
     shared,
 };

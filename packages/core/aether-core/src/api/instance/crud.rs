@@ -9,7 +9,7 @@ use crate::{
             RemoveInstanceUseCase, UpdateInstanceUseCase,
         },
         java::{
-            app::{GetJavaUseCase, InstallJavaUseCase},
+            GetJavaUseCase, InstallJavaUseCase,
             infra::{AzulJreProvider, FsJavaInstallationService},
         },
         minecraft::{

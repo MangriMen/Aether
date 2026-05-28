@@ -1,4 +1,4 @@
-use aether_core::features::java::app::InstallJava;
+use aether_core::features::java::InstallJava;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

@@ -5,8 +5,8 @@ use tracing::debug;
 use crate::features::{
     events::{ProgressBarId, ProgressService},
     java::{
-        Java, JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
-        app::{GetJavaUseCase, InstallJava, InstallJavaUseCase, JavaApplicationError},
+        GetJavaUseCase, InstallJava, InstallJavaUseCase, Java, JavaApplicationError,
+        JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
     },
     minecraft::{
         LoaderVersionResolver, MetadataStorage, MinecraftDomainError, MinecraftDownloader,
