@@ -1,6 +1,21 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serr::SerializeError;
 use uuid::Uuid;
+
+use crate::shared::IoError;
+
+#[derive(Debug, thiserror::Error, SerializeError)]
+pub enum ProcessError {
+    #[error("Failed to kill process {id}")]
+    KillError { id: String },
+
+    #[error("Failed to wait process {id}")]
+    WaitError { id: String },
+
+    #[error(transparent)]
+    Io(#[from] IoError),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MinecraftProcessMetadata {

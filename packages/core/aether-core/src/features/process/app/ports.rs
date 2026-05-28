@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use tokio::process::Child;
 use uuid::Uuid;
 
-use crate::features::process::{MinecraftProcessMetadata, ProcessError};
+use super::super::domain::{MinecraftProcessMetadata, ProcessError};
 
 #[async_trait]
 pub trait ProcessStorage: Send + Sync {

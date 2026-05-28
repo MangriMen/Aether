@@ -25,12 +25,8 @@ use crate::{
             },
         },
         process::{
-            MinecraftProcessMetadata,
-            app::{
-                GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, StartProcessUseCase,
-                TrackProcessUseCase,
-            },
-            infra::InMemoryProcessStorage,
+            GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, MinecraftProcessMetadata,
+            StartProcessUseCase, TrackProcessUseCase, infra::InMemoryProcessStorage,
         },
         settings::infra::SqliteDefaultInstanceSettingsStorage,
     },

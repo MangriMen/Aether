@@ -5,7 +5,8 @@ use dashmap::DashMap;
 use tokio::process::Child;
 use uuid::Uuid;
 
-use crate::features::process::{MinecraftProcessMetadata, ProcessError, ProcessStorage};
+use super::super::app::ProcessStorage;
+use super::super::domain::{MinecraftProcessMetadata, ProcessError};
 
 #[derive(Debug)]
 struct ActiveProcess {

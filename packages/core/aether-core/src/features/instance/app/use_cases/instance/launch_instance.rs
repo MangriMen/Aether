@@ -13,8 +13,8 @@ use crate::{
             MetadataStorage, MinecraftDownloader, ModLoaderProcessor,
         },
         process::{
-            MinecraftProcessMetadata, ProcessStorage,
-            app::{GetProcessMetadataByInstanceIdUseCase, StartProcessUseCase},
+            GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, ProcessStorage,
+            StartProcessUseCase,
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
