@@ -1,4 +1,4 @@
-use aether_core::features::plugins::{PluginSettings, app::EditPluginSettings};
+use aether_core::features::plugins::{EditPluginSettings, PluginSettings};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

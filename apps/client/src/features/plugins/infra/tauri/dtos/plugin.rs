@@ -19,8 +19,8 @@ pub struct PluginDto {
     pub state: PluginDtoState,
 }
 
-impl From<aether_core::features::plugins::app::PluginDto> for PluginDto {
-    fn from(value: aether_core::features::plugins::app::PluginDto) -> Self {
+impl From<aether_core::features::plugins::PluginDto> for PluginDto {
+    fn from(value: aether_core::features::plugins::PluginDto) -> Self {
         Self {
             manifest: value.manifest.into(),
             capabilities: value.capabilities.map(Into::into),
@@ -29,15 +29,14 @@ impl From<aether_core::features::plugins::app::PluginDto> for PluginDto {
     }
 }
 
-impl From<aether_core::features::plugins::app::PluginDtoState> for PluginDtoState {
-    fn from(value: aether_core::features::plugins::app::PluginDtoState) -> Self {
-        use aether_core::features::plugins::app::PluginDtoState;
+impl From<aether_core::features::plugins::PluginDtoState> for PluginDtoState {
+    fn from(value: aether_core::features::plugins::PluginDtoState) -> Self {
         match value {
-            PluginDtoState::NotLoaded => Self::NotLoaded,
-            PluginDtoState::Loading => Self::Loading,
-            PluginDtoState::Loaded => Self::Loaded,
-            PluginDtoState::Unloading => Self::Unloading,
-            PluginDtoState::Failed => Self::Failed,
+            aether_core::features::plugins::PluginDtoState::NotLoaded => Self::NotLoaded,
+            aether_core::features::plugins::PluginDtoState::Loading => Self::Loading,
+            aether_core::features::plugins::PluginDtoState::Loaded => Self::Loaded,
+            aether_core::features::plugins::PluginDtoState::Unloading => Self::Unloading,
+            aether_core::features::plugins::PluginDtoState::Failed => Self::Failed,
         }
     }
 }

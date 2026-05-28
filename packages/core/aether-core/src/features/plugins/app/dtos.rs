@@ -1,6 +1,7 @@
-use crate::features::plugins::{Plugin, PluginCapabilities, PluginManifest, PluginState};
 use dashmap::mapref::{multiple::RefMulti as DashMapRefMulti, one::Ref as DashMapRef};
 use serde::{Deserialize, Serialize};
+
+use crate::features::plugins::domain::{Plugin, PluginCapabilities, PluginManifest, PluginState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PluginDtoState {

@@ -1,16 +1,18 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use dashmap::DashMap;
-
-use crate::features::{
-    events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-    plugins::{Plugin, PluginCapabilities, PluginError, PluginManifest, PluginState},
-};
-
 use dashmap::mapref::{
     multiple::RefMulti as DashMapRefMulti,
     one::{Ref as DashMapRef, RefMut as DashMapRefMut},
 };
+
+use crate::features::{
+    events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
+    plugins::domain::LoadConfigType,
+    plugins::{Plugin, PluginCapabilities, PluginError, PluginManifest, PluginState},
+};
+
+use super::ports::PluginLoader;
 
 pub struct PluginRegistry {
     plugins: DashMap<String, Plugin>,
@@ -99,5 +101,32 @@ impl PluginRegistry {
             .ok_or_else(|| PluginError::NotFound {
                 plugin_id: plugin_id.to_owned(),
             })
+    }
+}
+
+#[derive(Default)]
+pub struct PluginLoaderRegistry<PL> {
+    loaders: HashMap<LoadConfigType, PL>,
+}
+
+impl<PL: PluginLoader> PluginLoaderRegistry<PL> {
+    pub fn new(loaders: HashMap<LoadConfigType, PL>) -> Self {
+        Self { loaders }
+    }
+
+    pub fn get(&self, load_config_type: &LoadConfigType) -> Result<&PL, PluginError> {
+        self.loaders
+            .get(load_config_type)
+            .ok_or(PluginError::LoaderNotFound {
+                config_type: *load_config_type,
+            })
+    }
+
+    pub fn register(&mut self, load_config_type: LoadConfigType, provider: PL) {
+        self.loaders.insert(load_config_type, provider);
+    }
+
+    pub fn unregister(&mut self, load_config_type: &LoadConfigType) {
+        self.loaders.remove(load_config_type);
     }
 }

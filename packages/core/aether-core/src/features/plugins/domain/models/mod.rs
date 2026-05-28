@@ -10,14 +10,20 @@ mod plugin_manifest;
 mod plugin_settings;
 mod serializable_output;
 
-pub use constants::*;
-pub use extracted_plugin::*;
-pub use manifest_error::*;
-pub use plugin::*;
-pub use plugin_capabilities::*;
-pub use plugin_dtos::*;
-pub use plugin_error::*;
-pub use plugin_internal_event::*;
-pub use plugin_manifest::*;
-pub use plugin_settings::*;
-pub use serializable_output::*;
+pub use constants::PLUGIN_API_VERSION;
+pub use extracted_plugin::{ExtractedPlugin, PluginContent};
+pub use manifest_error::ManifestError;
+pub use plugin::{Plugin, PluginState};
+pub use plugin_capabilities::{
+    PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
+    PluginUpdaterCapability, ProviderHandlers,
+};
+pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
+pub use plugin_error::PluginError;
+pub use plugin_internal_event::PluginInternalEvent;
+pub use plugin_manifest::{
+    ApiConfig, LoadConfig, LoadConfigType, PathMapping, PluginManifest, PluginMetadata,
+    RuntimeConfig,
+};
+pub use plugin_settings::PluginSettings;
+pub use serializable_output::SerializableOutput;
