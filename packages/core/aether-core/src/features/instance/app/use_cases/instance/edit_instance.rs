@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::{
     instance::{Instance, InstanceError, InstanceStorage},
-    settings::{MemorySettings, WindowSettings, app::EditHooks},
+    settings::{EditHooks, MemorySettings, WindowSettings},
 };
 
 #[derive(Debug, Serialize, Deserialize)]

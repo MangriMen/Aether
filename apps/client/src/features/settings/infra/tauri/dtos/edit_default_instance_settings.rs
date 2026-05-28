@@ -1,4 +1,4 @@
-use aether_core::features::settings::app::{EditDefaultInstanceSettings, EditHooks};
+use aether_core::features::settings::{EditDefaultInstanceSettings, EditHooks};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
