@@ -6,7 +6,7 @@ use crate::{
         DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
         SettingsError, SettingsStorage,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct SqliteSettingsStorage {

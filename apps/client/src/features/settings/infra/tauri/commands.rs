@@ -57,7 +57,7 @@ async fn edit(
 #[specta::specta]
 async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
     Ok(RamSettingsDto {
-        total_memory: aether_core::shared::infra::get_total_memory(),
+        total_memory: aether_core::shared::system::get_total_memory(),
     })
 }
 

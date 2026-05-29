@@ -1,6 +1,6 @@
 use tracing::{info, warn};
 
-use crate::{features::settings::LocationInfo, shared::remove_dir_all};
+use crate::{features::settings::LocationInfo, shared::io::infra::remove_dir_all};
 
 pub async fn migrate_minecraft_metadata_to_sqlite(location_info: &LocationInfo) {
     let minecraft_metadata_cache = location_info.cache_dir().join("minecraft");

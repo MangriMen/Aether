@@ -8,7 +8,7 @@ use crate::{
         minecraft::{MinecraftDomainError, parse_arguments, vanilla},
         settings::WindowSize,
     },
-    shared::canonicalize,
+    shared::io::infra::canonicalize,
 };
 
 // Replaces the space separator with a newline character, as to not split the arguments

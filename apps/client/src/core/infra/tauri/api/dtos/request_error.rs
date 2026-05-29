@@ -1,4 +1,4 @@
-use aether_core::libs::request_client::RequestError;
+use aether_core::shared::request_client::RequestError;
 use serde::Serialize;
 use specta::Type;
 

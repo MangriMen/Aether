@@ -1,4 +1,4 @@
-use aether_core::shared::CapabilityEntry;
+use aether_core::shared::capability::CapabilityEntry;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

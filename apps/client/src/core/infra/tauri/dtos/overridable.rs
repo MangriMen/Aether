@@ -1,4 +1,4 @@
-use aether_core::shared::Overridable;
+use aether_core::shared::overridable::Overridable;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

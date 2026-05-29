@@ -6,7 +6,7 @@ use crate::{
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
-    shared::Overridable,
+    shared::overridable::domain::Overridable,
 };
 
 use super::{InstanceInstallStage, PackInfo};

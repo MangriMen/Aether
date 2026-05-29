@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::settings::{Settings, SettingsError, SettingsStorage, app::EditSettings},
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct EditSettingsUseCase<SS: SettingsStorage> {

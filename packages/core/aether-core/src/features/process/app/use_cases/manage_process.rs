@@ -9,7 +9,7 @@ use crate::{
         process::{ProcessError, ProcessStorage},
         settings::LocationInfo,
     },
-    shared::{IoError, SerializableCommand},
+    shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
 use super::{TrackProcessParams, TrackProcessUseCase};

@@ -5,7 +5,7 @@ use crate::{
         DefaultInstanceSettingsStorage,
         infra::{FsDefaultInstanceSettingsStorage, SqliteDefaultInstanceSettingsStorage},
     },
-    shared::archive_legacy_file,
+    shared::archive::infra::archive_legacy_file,
 };
 
 pub async fn migrate_default_instance_settings_to_sqlite(

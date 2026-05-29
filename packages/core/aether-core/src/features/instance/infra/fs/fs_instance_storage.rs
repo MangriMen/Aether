@@ -8,7 +8,7 @@ use crate::{
         instance::{Instance, InstanceError, InstanceStorage},
         settings::LocationInfo,
     },
-    shared::{read_json_async, remove_dir_all, write_json_async},
+    shared::io::infra::{read_json_async, remove_dir_all, write_json_async},
 };
 
 pub struct FsInstanceStorage {

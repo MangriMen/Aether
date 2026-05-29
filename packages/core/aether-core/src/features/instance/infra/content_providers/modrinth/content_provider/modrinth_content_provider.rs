@@ -28,8 +28,8 @@ use crate::{
         minecraft::LoaderVersionPreference,
         settings::LocationInfo,
     },
-    libs::request_client::{Request, RequestClient},
-    shared::{create_dir_all, write_async},
+    shared::io::infra::{create_dir_all, write_async},
+    shared::request_client::{Request, RequestClient},
 };
 
 use super::{find_best_version, get_first_file_from_project_version, is_version_compatible};

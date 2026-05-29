@@ -2,7 +2,7 @@ use crate::{
     features::java::{
         JavaInstallationService, JavaStorage, app::JavaApplicationError, infra::SqliteJavaStorage,
     },
-    shared::rename,
+    shared::io::infra::rename,
 };
 use std::path::Path;
 use tracing::{info, warn};

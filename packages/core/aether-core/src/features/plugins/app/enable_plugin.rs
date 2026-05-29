@@ -8,7 +8,7 @@ use crate::{
         },
         settings::SettingsStorage,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct EnablePluginUseCase<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader> {

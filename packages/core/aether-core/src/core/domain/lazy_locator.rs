@@ -47,8 +47,11 @@ use crate::{
             },
         },
     },
-    libs::request_client::ReqwestClient,
-    shared::{CapabilityRegistry, FetchSemaphore, MemoryCapabilityRegistry, SqliteCache},
+    shared::{
+        cache::infra::SqliteCache, capability::domain::CapabilityRegistry,
+        capability::infra::MemoryCapabilityRegistry, fetch::domain::FetchSemaphore,
+        request_client::infra::ReqwestClient,
+    },
 };
 
 use super::ErrorKind;

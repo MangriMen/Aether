@@ -7,7 +7,7 @@ use crate::{
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
     },
-    shared::Overridable,
+    shared::overridable::domain::Overridable,
 };
 
 #[derive(Deserialize, Clone, Debug)]

@@ -5,7 +5,11 @@ use tracing::warn;
 
 use crate::{
     features::settings::{Settings, SettingsError, SettingsStorage},
-    shared::{IoError, JsonValueStore, UpdateAction, read_json_async},
+    shared::{
+        io::domain::IoError,
+        io::infra::read_json_async,
+        json_store::{domain::UpdateAction, infra::JsonValueStore},
+    },
 };
 
 pub struct FsSettingsStorage {

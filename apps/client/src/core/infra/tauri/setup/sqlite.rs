@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use aether_core::shared::create_dir_all;
+use aether_core::shared::io::infra::create_dir_all;
 
 pub async fn create_pool(db_path: PathBuf) -> crate::Result<sqlx::SqlitePool> {
     if let Some(parent) = db_path.parent() {

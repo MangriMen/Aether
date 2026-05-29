@@ -2,7 +2,7 @@ use aether_core_plugin_api::v0::{CommandDto, OutputDto};
 use extism::host_fn;
 use extism_convert::Msgpack;
 
-use crate::{core::LazyLocator, shared::execute_async};
+use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
 
 use super::super::{
     super::{

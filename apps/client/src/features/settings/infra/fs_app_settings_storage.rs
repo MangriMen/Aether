@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use aether_core::shared::JsonValueStore;
+use aether_core::shared::json_store::infra::JsonValueStore;
 use async_trait::async_trait;
 use log::warn;
 

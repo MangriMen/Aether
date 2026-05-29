@@ -1,5 +1,4 @@
-pub mod domain;
-pub mod infra;
+mod domain;
+pub(crate) mod infra;
 
-pub use domain::*;
-pub use infra::*;
+pub use domain::{ActiveRequest, IdempotencyManager, IdempotencyManagerError, RequestId};

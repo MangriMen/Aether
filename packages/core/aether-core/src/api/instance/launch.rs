@@ -30,8 +30,8 @@ use crate::{
         },
         settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
-    libs::request_client::ReqwestClient,
-    shared::{FileCache, SqliteCache},
+    shared::cache::infra::{FileCache, SqliteCache},
+    shared::request_client::infra::ReqwestClient,
 };
 
 #[allow(clippy::too_many_lines)]

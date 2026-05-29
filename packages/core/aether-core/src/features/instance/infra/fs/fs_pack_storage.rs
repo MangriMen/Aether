@@ -7,7 +7,7 @@ use crate::{
         instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage, ProviderId},
         settings::LocationInfo,
     },
-    shared::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
+    shared::io::infra::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
 };
 
 use super::pack_file::PackFileV1;

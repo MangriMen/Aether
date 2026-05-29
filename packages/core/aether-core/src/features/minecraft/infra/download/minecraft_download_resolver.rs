@@ -1,6 +1,6 @@
 use crate::{
     features::settings::LocationInfo,
-    shared::{CacheId, CachePathResolver},
+    shared::cache::domain::{CacheId, CachePathResolver},
 };
 use std::{path::PathBuf, sync::Arc};
 

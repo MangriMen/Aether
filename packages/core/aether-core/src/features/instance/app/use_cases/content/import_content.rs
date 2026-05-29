@@ -9,7 +9,7 @@ use crate::{
         instance::{ContentType, InstanceError, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::read_async,
+    shared::io::infra::read_async,
 };
 
 pub struct ImportContent {

@@ -7,6 +7,7 @@ use crate::{
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug, SerializeError)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     #[error(transparent)]
     AppSettingsError(#[from] AppSettingsError),

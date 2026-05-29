@@ -12,7 +12,7 @@ use crate::{
         instance::{ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::read_async,
+    shared::io::infra::read_async,
 };
 
 pub struct ListContentUseCase<PS: PackStorage> {

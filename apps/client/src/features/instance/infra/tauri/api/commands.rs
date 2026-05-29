@@ -1,7 +1,7 @@
 use aether_core::{
     core::LazyLocator,
     features::instance::EditInstanceIconUseCase,
-    shared::{AssetsResolver, FileCache, FsAssetsStorage},
+    shared::cache::infra::{AssetsResolver, FileCache, FsAssetsStorage},
 };
 use std::{
     collections::{HashMap, HashSet},

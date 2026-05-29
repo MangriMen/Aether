@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId},
-    shared::sha1_async,
+    shared::hash::infra::sha1_async,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

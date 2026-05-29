@@ -10,7 +10,7 @@ use crate::{
         },
         settings::SettingsStorage,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct DisablePluginUseCase<SS: SettingsStorage, PL: PluginLoader> {

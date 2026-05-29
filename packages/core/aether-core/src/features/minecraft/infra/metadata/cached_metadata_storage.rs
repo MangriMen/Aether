@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::minecraft::{MetadataStorage, MinecraftDomainError, ModLoader, modded, vanilla},
-    shared::{Cache, CachedResource},
+    shared::{cache::domain::Cache, cache::infra::CachedResource},
 };
 
 use super::{loader_manifest_key, version_manifest_key};

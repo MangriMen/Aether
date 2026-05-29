@@ -3,7 +3,7 @@ use dashmap::DashMap;
 use extism::{convert::Msgpack, host_fn};
 use path_slash::PathBufExt;
 
-use crate::{core::LazyLocator, shared::execute_async};
+use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
 
 use super::super::{super::mappers::to_extism_res, PluginContext};
 

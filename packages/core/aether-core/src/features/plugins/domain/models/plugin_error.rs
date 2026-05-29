@@ -5,7 +5,7 @@ use crate::{
         plugins::{LoadConfig, LoadConfigType},
         settings::SettingsError,
     },
-    shared::IoError,
+    shared::io::domain::IoError,
 };
 
 #[derive(thiserror::Error, Debug, SerializeError)]

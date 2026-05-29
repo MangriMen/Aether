@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::settings::{DefaultInstanceSettings, Settings, SettingsError},
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 #[async_trait]

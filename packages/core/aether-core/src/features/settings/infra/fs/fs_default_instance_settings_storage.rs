@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError},
-    shared::{JsonValueStore, UpdateAction},
+    shared::json_store::{domain::UpdateAction, infra::JsonValueStore},
 };
 
 pub struct FsDefaultInstanceSettingsStorage {

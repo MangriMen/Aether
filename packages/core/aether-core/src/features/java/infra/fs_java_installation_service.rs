@@ -77,7 +77,7 @@ impl JavaInstallationService for FsJavaInstallationService {
         // Attempt to canonicalize the potential Java filepath
         // If it fails, return None (Java is not here)
         let canonical_path =
-            shared::canonicalize(path).map_err(|_| JavaDomainError::InvalidPath {
+            shared::io::infra::canonicalize(path).map_err(|_| JavaDomainError::InvalidPath {
                 path: path.to_path_buf(),
             })?;
 

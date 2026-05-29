@@ -5,7 +5,7 @@ use crate::{
         app::CredentialsStorage,
         infra::{FsCredentialsStorage, SqliteCredentialsStorage},
     },
-    shared::archive_legacy_file,
+    shared::archive::infra::archive_legacy_file,
 };
 
 pub async fn migrate_credentials_to_sqlite(

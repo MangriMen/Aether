@@ -14,8 +14,11 @@ use crate::{
         minecraft::{MinecraftDomainError, vanilla},
         settings::LocationInfo,
     },
-    libs::request_client::{Request, RequestClient, RequestClientExt},
-    shared::{Cache, InfinityCachedResource, IoError, write_async},
+    shared::request_client::{Request, RequestClient, RequestClientExt},
+    shared::{
+        cache::domain::Cache, cache::infra::InfinityCachedResource, io::domain::IoError,
+        io::infra::write_async,
+    },
 };
 
 use super::assets_index_key;

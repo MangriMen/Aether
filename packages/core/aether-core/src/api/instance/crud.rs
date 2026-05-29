@@ -20,7 +20,7 @@ use crate::{
             },
         },
     },
-    shared::FileCache,
+    shared::cache::infra::FileCache,
 };
 
 #[tracing::instrument]

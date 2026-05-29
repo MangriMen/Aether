@@ -5,7 +5,7 @@ use crate::{
         DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
         app::EditDefaultInstanceSettings,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct EditDefaultInstanceSettingsUseCase<DISS: DefaultInstanceSettingsStorage> {

@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::Path};
 
 use crate::features::minecraft::{MinecraftDomainError, parse_arguments, parse_rules, vanilla};
-use crate::shared::{canonicalize, utils::get_classpath_separator};
+use crate::shared::{io::infra::canonicalize, java::domain::get_classpath_separator};
 
 // TODO: Wrap arguments in struct
 #[allow(clippy::too_many_arguments)]

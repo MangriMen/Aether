@@ -34,7 +34,7 @@ pub struct PluginMetadata {
     pub name: String,
 
     /// Semantic version of the plugin.
-    #[serde(with = "crate::shared::serde_semver")]
+    #[serde(with = "crate::shared::serde_semver::domain")]
     #[schemars(with = "String")]
     pub version: semver::Version,
 
@@ -110,7 +110,7 @@ pub enum LoadConfig {
 #[schemars(deny_unknown_fields)]
 pub struct ApiConfig {
     /// Required API version range (`SemVer` requirement).
-    #[serde(with = "crate::shared::serde_semver")]
+    #[serde(with = "crate::shared::serde_semver::domain")]
     #[schemars(with = "String")]
     pub version: semver::VersionReq,
 

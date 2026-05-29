@@ -16,8 +16,11 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        IoError, copy_dir_all, create_dir_all, read_async, read_dir, read_json_async,
-        remove_dir_all, sha1_async,
+        hash::infra::sha1_async,
+        io::domain::IoError,
+        io::infra::{
+            copy_dir_all, create_dir_all, read_async, read_dir, read_json_async, remove_dir_all,
+        },
     },
 };
 

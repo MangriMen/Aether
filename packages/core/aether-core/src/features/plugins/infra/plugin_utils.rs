@@ -7,7 +7,7 @@ use aether_core_plugin_api::v0::CommandDto;
 
 use crate::{
     features::{plugins::PluginError, settings::LocationInfo},
-    shared::{IoError, domain::SerializableCommand},
+    shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
 pub fn get_default_allowed_paths(
@@ -99,8 +99,8 @@ pub fn plugin_path_to_host(
     let stripped_path = plugin_path_to_relative(id, cleaned_path_str, plugin_to_host.keys())?;
     let host_path = base_dir.join(stripped_path);
 
-    let canonical_base = crate::shared::canonicalize(base_dir)?;
-    let canonical_host = crate::shared::canonicalize(&host_path)?;
+    let canonical_base = crate::shared::io::infra::canonicalize(base_dir)?;
+    let canonical_host = crate::shared::io::infra::canonicalize(&host_path)?;
 
     if !canonical_host.starts_with(&canonical_base) {
         return Err(PluginError::AccessViolation {

@@ -7,7 +7,7 @@ use crate::{
     features::plugins::{
         ExtractedPlugin, PluginContent, PluginError, PluginExtractor, PluginManifest,
     },
-    shared::{IoError, read_async},
+    shared::{io::domain::IoError, io::infra::read_async},
 };
 
 use super::ZipPluginExtractorConstants;

@@ -7,7 +7,7 @@ use crate::FrontendResult;
 use crate::features::plugins::{
     EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto,
 };
-use crate::shared::file::reveal_in_explorer;
+use crate::shared::reveal_in_explorer::infra::reveal_in_explorer;
 use crate::shared::{
     IdempotencyManager, RequestId, TauriIdempotencyExt,
     commands::{PLUGIN_PLUGIN_NAME, plugin_commands},

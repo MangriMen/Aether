@@ -17,7 +17,7 @@ use crate::{
         ListContentVersionsUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
         SearchContentUseCase,
     },
-    shared::CapabilityEntry,
+    shared::capability::domain::CapabilityEntry,
 };
 
 pub async fn list_content(instance_id: String) -> crate::Result<DashMap<String, ContentFile>> {

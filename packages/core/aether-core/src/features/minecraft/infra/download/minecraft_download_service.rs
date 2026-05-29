@@ -9,8 +9,12 @@ use crate::{
         events::{ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt},
         minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla},
     },
-    libs::request_client::{Request, RequestClient, RequestClientExt},
-    shared::{Cache, FileStore, InfinityCachedResource, IoError},
+    shared::request_client::{Request, RequestClient, RequestClientExt},
+    shared::{
+        cache::domain::{Cache, FileStore},
+        cache::infra::InfinityCachedResource,
+        io::domain::IoError,
+    },
 };
 
 use super::{AssetsService, ClientService, LibrariesService, version_info_key};

@@ -3,7 +3,7 @@ use crate::{
     features::instance::{
         ImportInstance, ImportInstanceUseCase, ImporterCapabilityMetadata, ListImportersUseCase,
     },
-    shared::CapabilityEntry,
+    shared::capability::domain::CapabilityEntry,
 };
 
 #[tracing::instrument]

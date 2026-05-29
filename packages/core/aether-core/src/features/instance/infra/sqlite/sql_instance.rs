@@ -5,7 +5,7 @@ use crate::{
         instance::{Instance, InstanceError, InstanceSnapshot},
         settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
     },
-    shared::Overridable,
+    shared::overridable::domain::Overridable,
 };
 
 #[derive(Debug, sqlx::FromRow)]

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::instance::{ContentProvider, ContentProviderCapabilityMetadata, InstanceError},
-    shared::{CapabilityEntry, CapabilityRegistry},
+    shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
 };
 
 pub struct ListProvidersUseCase<CP>

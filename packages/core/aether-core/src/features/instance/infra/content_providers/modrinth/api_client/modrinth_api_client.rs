@@ -1,4 +1,4 @@
-use crate::libs::request_client::{Request, RequestClient, RequestClientExt};
+use crate::shared::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
 use super::models::{

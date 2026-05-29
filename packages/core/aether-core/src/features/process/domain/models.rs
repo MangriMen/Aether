@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serr::SerializeError;
 use uuid::Uuid;
 
-use crate::shared::IoError;
+use crate::shared::io::domain::IoError;
 
 #[derive(Debug, thiserror::Error, SerializeError)]
 pub enum ProcessError {

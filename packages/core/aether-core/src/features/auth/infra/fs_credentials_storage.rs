@@ -8,7 +8,10 @@ use crate::{
         app::{AuthApplicationError, CredentialsStorage},
         domain::{AuthDomainError, Credential},
     },
-    shared::{IoError, JsonEntityStore, UpdateAction},
+    shared::{
+        io::domain::IoError,
+        json_store::{domain::UpdateAction, infra::JsonEntityStore},
+    },
 };
 
 pub struct FsCredentialsStorage {

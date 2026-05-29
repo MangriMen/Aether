@@ -6,7 +6,7 @@ use crate::{
         instance::InstanceError,
         settings::LocationInfo,
     },
-    shared::rename,
+    shared::io::infra::rename,
 };
 
 pub enum ContentStateAction {

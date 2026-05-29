@@ -11,7 +11,7 @@ use crate::{
         plugins::{PluginError, PluginSettings, PluginSettingsStorage},
         settings::LocationInfo,
     },
-    shared::{read_toml_async, write_toml_async},
+    shared::io::infra::{read_toml_async, write_toml_async},
 };
 
 pub struct FsPluginSettingsStorage {

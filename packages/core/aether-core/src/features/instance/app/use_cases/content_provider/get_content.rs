@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::instance::{ContentItem, ContentProvider, InstanceError, app::ContentGetParams},
-    shared::CapabilityRegistry,
+    shared::capability::domain::CapabilityRegistry,
 };
 
 pub struct GetContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {

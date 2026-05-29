@@ -19,7 +19,7 @@ use crate::{
         settings::LocationInfo,
     },
     processor_rules,
-    shared::IoError,
+    shared::io::domain::IoError,
     with_mut_ref,
 };
 

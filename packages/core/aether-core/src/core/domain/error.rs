@@ -3,7 +3,7 @@ use tracing_error::InstrumentError;
 
 use crate::{
     features::{auth, events, file_watcher, instance, java, minecraft, plugins, process, settings},
-    libs::request_client,
+    shared::request_client,
 };
 
 #[derive(thiserror::Error, Debug, SerializeError)]

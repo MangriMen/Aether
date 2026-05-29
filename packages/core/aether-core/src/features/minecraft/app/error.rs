@@ -2,7 +2,7 @@ use serr::SerializeError;
 
 use crate::{
     features::{java::JavaApplicationError, minecraft::MinecraftDomainError},
-    shared::IoError,
+    shared::io::domain::IoError,
 };
 
 #[derive(Debug, thiserror::Error, SerializeError)]

@@ -1,4 +1,4 @@
-use aether_core::shared::read_async;
+use aether_core::shared::io::infra::read_async;
 use tauri::{
     AppHandle, Manager, Runtime,
     http::{Response, StatusCode, header::ACCESS_CONTROL_ALLOW_ORIGIN},

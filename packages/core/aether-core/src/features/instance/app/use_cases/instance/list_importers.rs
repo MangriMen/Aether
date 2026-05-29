@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::instance::{Importer, ImporterCapabilityMetadata, InstanceError},
-    shared::{CapabilityEntry, CapabilityRegistry},
+    shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
 };
 
 pub struct ListImportersUseCase<IR: CapabilityRegistry<Arc<dyn Importer>>> {
