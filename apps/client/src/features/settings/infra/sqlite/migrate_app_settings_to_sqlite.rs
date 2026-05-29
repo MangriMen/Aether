@@ -1,4 +1,4 @@
-use aether_core::shared::archive::archive_legacy_file;
+use aether_core::shared::archive::infra::archive_legacy_file;
 use log::info;
 
 use crate::features::settings::domain::AppSettingsStorage;

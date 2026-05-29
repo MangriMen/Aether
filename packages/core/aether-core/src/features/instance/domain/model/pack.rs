@@ -2,10 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::collections::HashMap;
 
-use crate::{
-    features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId},
-    shared::hash::infra::sha1_async,
-};
+use crate::features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
@@ -81,9 +78,5 @@ impl PackFile {
             update_provider_id: None,
             update: None,
         }
-    }
-
-    pub async fn from_contents(file_name: String, contents: Vec<u8>) -> Self {
-        Self::from_hash(file_name, sha1_async(contents).await)
     }
 }
