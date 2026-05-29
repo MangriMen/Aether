@@ -7,6 +7,7 @@ use specta::Type;
 pub struct EditInstanceIconDto {
     pub instance_id: String,
 
+    #[allow(clippy::option_option)]
     #[specta(optional, type = Option<String>)]
     #[serde(default, with = "::serde_with::rust::double_option")]
     pub icon_path: Option<Option<String>>,

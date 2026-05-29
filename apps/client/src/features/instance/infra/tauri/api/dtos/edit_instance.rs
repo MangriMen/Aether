@@ -2,9 +2,9 @@ use aether_core::features::instance::EditInstance;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::settings::{
+use crate::features::settings::infra::{
     dtos::WindowSettingsDto,
-    infra::tauri::dtos::{EditHooksDto, MemorySettingsDto},
+    dtos::{EditHooksDto, MemorySettingsDto},
 };
 
 #[derive(Debug, Serialize, Deserialize, Type)]

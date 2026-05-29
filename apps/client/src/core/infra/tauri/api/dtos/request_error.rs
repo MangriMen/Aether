@@ -5,36 +5,36 @@ use specta::Type;
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RequestErrorDto {
-    AcquireError,
-    RequestSendError { details: String },
-    MiddlewareError { details: String },
-    HashError { actual: String, expected: String },
-    JsonError { details: String },
-    TomlError { details: String },
-    ParseError,
+    Acquire,
+    RequestSend { details: String },
+    Middleware { details: String },
+    Hash { actual: String, expected: String },
+    Json { details: String },
+    Toml { details: String },
+    Parse,
 }
 
 impl From<&RequestError> for RequestErrorDto {
     fn from(value: &RequestError) -> Self {
         match value {
-            RequestError::AcquireError(_) => Self::AcquireError,
-            RequestError::RequestSendError(err) => Self::RequestSendError {
+            RequestError::Acquire(_) => Self::Acquire,
+            RequestError::RequestSend(err) => Self::RequestSend {
                 details: err.to_string(),
             },
-            RequestError::MiddlewareError(err) => Self::MiddlewareError {
+            RequestError::Middleware(err) => Self::Middleware {
                 details: err.to_string(),
             },
-            RequestError::HashError { actual, expected } => Self::HashError {
+            RequestError::Hash { actual, expected } => Self::Hash {
                 actual: actual.clone(),
                 expected: expected.clone(),
             },
-            RequestError::JsonError(err) => Self::JsonError {
+            RequestError::Json(err) => Self::Json {
                 details: err.to_string(),
             },
-            RequestError::TomlError(err) => Self::TomlError {
+            RequestError::Toml(err) => Self::Toml {
                 details: err.to_string(),
             },
-            RequestError::ParseError(_) => Self::ParseError,
+            RequestError::Parse(_) => Self::Parse,
         }
     }
 }

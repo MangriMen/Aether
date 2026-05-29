@@ -122,13 +122,13 @@
       "IO": "Process I/O error"
     },
     "request": {
-      "ACQUIRE_ERROR": "Failed to initiate network request",
-      "REQUEST_SEND_ERROR": "Failed to send request",
-      "MIDDLEWARE_ERROR": "Request middleware error",
-      "HASH_ERROR": "Data integrity check failed (hash mismatch)",
-      "JSON_ERROR": "Failed to parse JSON",
-      "TOML_ERROR": "Failed to parse TOML",
-      "PARSE_ERROR": "Failed to process response data"
+      "ACQUIRE": "Failed to initiate network request",
+      "REQUEST_SEND": "Failed to send request",
+      "MIDDLEWARE": "Request middleware error",
+      "HASH": "Data integrity check failed (hash mismatch)",
+      "JSON": "Failed to parse JSON",
+      "TOML": "Failed to parse TOML",
+      "PARSE": "Failed to process response data"
     },
     "settings": {
       "NOT_FOUND": "Settings file not found",

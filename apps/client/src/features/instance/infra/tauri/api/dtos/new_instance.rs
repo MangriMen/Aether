@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::features::{
-    instance::PackInfoDto,
+    instance::infra::PackInfoDto,
     minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
 };
 

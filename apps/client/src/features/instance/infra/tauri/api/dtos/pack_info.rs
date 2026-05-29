@@ -2,7 +2,7 @@ use aether_core::features::instance::PackInfo;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::instance::ProviderIdDto;
+use crate::features::instance::infra::ProviderIdDto;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]

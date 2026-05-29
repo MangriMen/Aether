@@ -3,7 +3,7 @@ use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
 
-use crate::features::events::ProgressEventTypeDto;
+use crate::features::events::infra::ProgressEventTypeDto;
 
 #[derive(Debug, Clone, Serialize, Type)]
 #[serde(rename_all = "camelCase")]

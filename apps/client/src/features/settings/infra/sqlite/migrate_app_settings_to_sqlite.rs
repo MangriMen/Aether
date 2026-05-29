@@ -1,9 +1,8 @@
 use aether_core::shared::archive_legacy_file;
 use log::info;
 
-use crate::features::settings::{
-    AppSettingsStorage, FsAppSettingsStorage, SqliteAppSettingsStorage,
-};
+use crate::features::settings::domain::AppSettingsStorage;
+use crate::features::settings::infra::{FsAppSettingsStorage, SqliteAppSettingsStorage};
 
 pub async fn migrate_app_settings_to_sqlite(
     fs_storage: &FsAppSettingsStorage,

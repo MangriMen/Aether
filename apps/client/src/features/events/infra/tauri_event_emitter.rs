@@ -2,7 +2,7 @@ use aether_core::features::events::{Event as CoreEvent, EventEmitter, EventError
 use async_trait::async_trait;
 use tokio::sync::broadcast;
 
-use crate::features::events::{AppEvent, AppEventExt, CoreEventExt};
+use crate::features::events::{AppEvent, infra::AppEventExt, infra::CoreEventExt};
 
 pub struct TauriEventEmitter<R: tauri::Runtime> {
     app_handle: tauri::AppHandle<R>,

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
-use crate::features::{instance::ContentTypeDto, minecraft::ModLoaderDto};
+use crate::features::{instance::infra::ContentTypeDto, minecraft::infra::ModLoaderDto};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]

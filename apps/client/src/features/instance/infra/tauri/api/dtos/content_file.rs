@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
-use crate::features::instance::{ContentTypeDto, ProviderIdDto};
+use crate::features::instance::infra::{ContentTypeDto, ProviderIdDto};
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]

@@ -5,7 +5,7 @@ use aether_core::features::plugins::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::instance::{
+use crate::features::instance::infra::{
     ContentProviderCapabilityMetadataDto, ImporterCapabilityMetadataDto,
     UpdaterCapabilityMetadataDto,
 };

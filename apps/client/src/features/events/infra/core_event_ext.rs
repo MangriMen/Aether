@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use tauri_specta::Event;
 
 use crate::features::{
-    events::{ProgressEventDto, WarningEventDto},
-    instance::InstanceEventDto,
-    plugins::PluginEventDto,
-    process::ProcessEventDto,
+    events::{infra::ProgressEventDto, infra::WarningEventDto},
+    instance::infra::InstanceEventDto,
+    plugins::infra::PluginEventDto,
+    process::infra::ProcessEventDto,
 };
 
 #[async_trait]

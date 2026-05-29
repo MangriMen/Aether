@@ -5,7 +5,7 @@ use aether_core::features::events::ProcessEvent;
 
 use crate::{
     core::{AppSettingsStorageState, EventEmitterState, WindowManagerState},
-    features::{events::DualEventEmitterExt, instance::InstanceLaunchListener},
+    features::{events::DualEventEmitterExt, instance::infra::InstanceLaunchListener},
 };
 
 pub fn setup_listeners<R: tauri::Runtime>(

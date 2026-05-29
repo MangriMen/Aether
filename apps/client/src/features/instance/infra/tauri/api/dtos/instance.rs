@@ -7,11 +7,11 @@ use specta::Type;
 use crate::{
     core::{OverridableDto, format_asset_url},
     features::{
-        instance::{InstanceInstallStageDto, PackInfoDto},
-        minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
-        settings::{
+        instance::infra::{InstanceInstallStageDto, PackInfoDto},
+        minecraft::infra::{LoaderVersionPreferenceDto, ModLoaderDto},
+        settings::infra::{
             dtos::WindowSettingsDto,
-            infra::tauri::dtos::{HooksDto, MemorySettingsDto},
+            dtos::{HooksDto, MemorySettingsDto},
         },
     },
 };

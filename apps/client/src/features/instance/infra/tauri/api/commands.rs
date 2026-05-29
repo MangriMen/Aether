@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::{
     FrontendResult,
     features::{
-        instance::{
+        instance::infra::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
             ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
             ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,

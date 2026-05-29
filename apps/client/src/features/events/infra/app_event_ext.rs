@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use tauri_specta::Event;
 
-use crate::features::events::{AppEvent, ProgressEventDto};
+use crate::features::events::{AppEvent, infra::ProgressEventDto};
 
 #[async_trait]
 pub trait AppEventExt {

@@ -10,11 +10,10 @@ use crate::{
         WindowManagerState,
     },
     features::{
-        events::TauriEventEmitter,
-        settings::{
-            FsAppSettingsStorage, SqliteAppSettingsStorage, migrate_app_settings_to_sqlite,
-        },
-        update::TauriUpdateService,
+        events::infra::TauriEventEmitter,
+        settings::infra::migrate_app_settings_to_sqlite,
+        settings::infra::{FsAppSettingsStorage, SqliteAppSettingsStorage},
+        update::infra::TauriUpdateService,
     },
     shared::IdempotencyManager,
 };

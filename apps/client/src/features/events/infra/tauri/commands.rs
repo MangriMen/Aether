@@ -2,7 +2,7 @@ use aether_core::{core::LazyLocator, features::events::ListProgressBarsUseCase};
 
 use crate::{
     FrontendResult,
-    features::events::{ProgressBarDto, ProgressEventDto, WarningEventDto},
+    features::events::infra::{ProgressBarDto, ProgressEventDto, WarningEventDto},
     shared::commands::{EVENTS_PLUGIN_NAME, events_commands},
 };
 

@@ -1,6 +1,6 @@
-mod commands;
-mod dtos;
-mod tauri_update_service;
+pub(crate) mod commands;
+pub(crate) mod dtos;
+pub(crate) mod tauri_update_service;
 
 pub use commands::*;
 pub use dtos::*;

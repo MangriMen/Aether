@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
-use crate::features::{instance::ProviderIdDto, minecraft::ModLoaderDto};
+use crate::features::{instance::infra::ProviderIdDto, minecraft::infra::ModLoaderDto};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]

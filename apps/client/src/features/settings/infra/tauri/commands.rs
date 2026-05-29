@@ -3,7 +3,7 @@ use tauri::State;
 use crate::{
     FrontendResult,
     core::{AppSettingsStorageState, WindowManagerState},
-    features::settings::{EditAppSettingsUseCase, GetAppSettingsUseCase, dtos::RamSettingsDto},
+    features::settings::app::{EditAppSettingsUseCase, GetAppSettingsUseCase},
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
         commands::{SETTINGS_PLUGIN_NAME, settings_commands},
@@ -14,6 +14,8 @@ use super::dtos::{
     AppSettingsDto, DefaultInstanceSettingsDto, EditAppSettingsDto, EditDefaultInstanceSettingsDto,
     EditSettingsDto, SettingsDto,
 };
+
+use crate::features::settings::infra::dtos::RamSettingsDto;
 
 #[must_use]
 pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {

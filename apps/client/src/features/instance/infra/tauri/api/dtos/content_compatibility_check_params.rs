@@ -2,7 +2,7 @@ use aether_core::features::instance::ContentCompatibilityCheckParams;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::features::instance::{ContentItemDto, ProviderIdDto};
+use crate::features::instance::infra::{ContentItemDto, ProviderIdDto};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]

@@ -1,3 +1,3 @@
-mod tauri;
+pub(crate) mod tauri;
 
-pub use tauri::*;
+pub(crate) use tauri::*;

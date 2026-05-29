@@ -45,7 +45,7 @@ impl<PS: ProgressService> ReqwestClient<PS> {
 
         let (progress_bar_id, total) = progress_bar;
         while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(RequestError::RequestSendError)?;
+            let chunk = chunk.map_err(RequestError::RequestSend)?;
             bytes.extend_from_slice(&chunk);
 
             #[allow(clippy::cast_precision_loss)]
@@ -65,7 +65,7 @@ impl<PS: ProgressService> ReqwestClient<PS> {
         if actual_sha1 == *expected_sha1 {
             Ok(())
         } else {
-            Err(RequestError::HashError {
+            Err(RequestError::Hash {
                 actual: actual_sha1,
                 expected: expected_sha1,
             })
@@ -105,8 +105,8 @@ impl<PS: ProgressService> RequestClient for ReqwestClient<PS> {
         }
 
         let response = request.send().await.map_err(|e| match e {
-            reqwest_middleware::Error::Middleware(error) => RequestError::MiddlewareError(error),
-            reqwest_middleware::Error::Reqwest(error) => RequestError::RequestSendError(error),
+            reqwest_middleware::Error::Middleware(error) => RequestError::Middleware(error),
+            reqwest_middleware::Error::Reqwest(error) => RequestError::RequestSend(error),
         })?;
 
         let bytes = match progress_bar {

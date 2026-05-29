@@ -3,7 +3,7 @@ use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
 
-use crate::features::instance::ContentTypeDto;
+use crate::features::instance::infra::ContentTypeDto;
 
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]

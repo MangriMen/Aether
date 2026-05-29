@@ -1,4 +1,5 @@
-mod commands;
-pub mod dtos;
+pub(crate) mod commands;
+pub(crate) mod dtos;
 
-pub use commands::*;
+pub(crate) use commands::get_specta_commands;
+pub(crate) use commands::init;
