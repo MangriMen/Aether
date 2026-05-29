@@ -84,3 +84,29 @@ Improper re-exports break architectural boundaries and ruin automated linting.
 2. **Respect Encapsulation**: Never reference `infra` types inside `domain` or `app` (except when writing the actual adapter implementations inside `infra/`). Cross-feature communication must happen exclusively by invoking another feature's public Use Cases or accessing explicitly exposed safe domain models.
 3. **UI Boundary DTOs**: DTO conversion for presentation layers (e.g., Tauri Commands delivering data to the frontend) must live at the boundary interface (the Tauri/API layer itself), separating presentation serializability from internal Rust core communication.
 4. **Code Comments**: Keep code comments to an absolute minimum. Use them only for complex algorithmic behavior or compiler workarounds. Code comments must be written strictly in English.
+
+## 7. Testing Strategy & Guidelines
+
+This section defines how the codebase must be covered by tests. These rules apply equally to human developers and AI agents to ensure architectural boundaries are never violated during testing.
+
+### 7.1. Test Placement ("Keep it Close")
+
+- **Domain & Application Layers**: Use **inline test modules** (`mod tests`) at the bottom of the implementation file. This preserves encapsulation, allowing you to test `pub(crate)` types and functions without bloating the file tree.
+  - _Exception_: If the implementation file exceeds ~400 lines, you may move tests to a peer file (e.g., `logic.rs` and `logic_tests.rs`) within the same directory.
+- **Infrastructure Layer**: For complex adapters (e.g., network clients, heavy file system interaction), prefer a separate peer test file next to the adapter to keep production code readable.
+
+### 7.2. Layer-Specific Testing Rules
+
+| Layer      | Target                                              | Test Nature                            | Allowed Tools / Dependencies                                          |
+| :--------- | :-------------------------------------------------- | :------------------------------------- | :-------------------------------------------------------------------- |
+| **Domain** | Business rules, invariants, validation.             | Pure, synchronous, 100% deterministic. | **No async, no mocks, no external I/O.** Pure Rust only.              |
+| **App**    | Use Cases, coordination logic, DTO flows.           | Asynchronous, isolated behavior.       | `tokio::test`, `mockall` (to mock Outbound Ports).                    |
+| **Infra**  | Adapters, third-party integrations (SQLx, reqwest). | Component/Integration testing.         | `wiremock` (network), `tempfile` (OS/FS). **No absolute host paths.** |
+
+### 7.3. Strict Testing Constraints
+
+1. **No Outward Leaks**: Never import `infra` adapters or actual technical implementations when testing `domain` or `app` layers. Test the layers in complete isolation using ports (traits) and mocks.
+2. **Preserve Encapsulation**: Do not change visibility modifiers (e.g., changing `pub(crate)` to `pub`) or expose internal fields _just to satisfy a test_. Use internal module visibility via `super::*` in your inline tests.
+3. **Naming Convention**: Test names must explicitly state the expected outcome and condition using the following pattern:
+   `should_[expect_behavior]_when_[condition]`
+   _(Example: `should_fail_validation_when_username_is_empty`)_.
