@@ -1,6 +1,6 @@
-pub(crate) mod app;
+mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 pub use app::FileEventHandler;
 pub use app::FileWatcher;

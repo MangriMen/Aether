@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 // App-layer exports
 pub use app::list_progress_bars::ListProgressBarsUseCase;

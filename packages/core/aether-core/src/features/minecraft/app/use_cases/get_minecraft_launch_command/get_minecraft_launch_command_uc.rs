@@ -8,7 +8,7 @@ use tokio::process::Command;
 
 use crate::{
     features::{
-        auth::domain::Credential,
+        auth::Credential,
         java::{GetJavaUseCase, JavaApplicationError, JavaInstallationService, JavaStorage},
         minecraft::{
             GetVersionManifestUseCase, LaunchSettings, LoaderVersionPreference,

@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 // ── Domain models (pure data containers) ──
 pub use domain::{

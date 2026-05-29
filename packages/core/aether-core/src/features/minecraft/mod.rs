@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 // Re-export domain types explicitly (domain is private, but pub use works from private modules)
 pub use domain::LaunchSettings;

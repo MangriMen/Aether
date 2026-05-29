@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::{
-    auth::app::{ActiveAccountHelper, CredentialsStorage},
+    auth::{ActiveAccountHelper, CredentialsStorage},
     events::ProgressService,
     instance::{InstanceError, InstanceStorage},
     java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},

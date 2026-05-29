@@ -3,7 +3,10 @@ mod error;
 mod ports;
 mod use_cases;
 
-pub use dtos::*;
-pub use error::*;
-pub use ports::*;
-pub use use_cases::*;
+pub use dtos::{EditJava, InstallJava};
+pub use error::JavaApplicationError;
+pub use ports::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider};
+pub use use_cases::{
+    DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase, GetJavaUseCase,
+    InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
+};

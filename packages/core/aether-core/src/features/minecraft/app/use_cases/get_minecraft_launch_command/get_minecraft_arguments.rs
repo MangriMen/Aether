@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     features::{
-        auth::domain::Credential,
+        auth::Credential,
         minecraft::{MinecraftDomainError, parse_arguments, vanilla},
         settings::WindowSize,
     },

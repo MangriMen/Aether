@@ -4,7 +4,7 @@ use serr::SerializeError;
 use uuid::Uuid;
 
 use crate::features::{
-    auth::app::AuthApplicationError, instance::ContentType, minecraft::MinecraftApplicationError,
+    auth::AuthApplicationError, instance::ContentType, minecraft::MinecraftApplicationError,
     process::ProcessError, settings::SettingsError,
 };
 

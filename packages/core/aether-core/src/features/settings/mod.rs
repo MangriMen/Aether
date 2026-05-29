@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 pub use domain::{
     CACHE_FOLDER_NAME, DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64,

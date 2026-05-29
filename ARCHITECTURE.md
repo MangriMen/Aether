@@ -49,9 +49,11 @@ Improper re-exports break architectural boundaries and ruin automated linting.
 
 ### Rules for the Feature Root (`src/features/[feature_name]/mod.rs`):
 
-1. **Strict Layer Encapsulation**: Making internal layer modules fully public (`pub mod app;` etc.) is strictly prohibited.
-   - `domain` and `app` must be private (`mod domain;`, `mod app;`).
-   - `infra` must be crate-public (`pub(crate) mod infra;`). This allows the Composition Root (`src/core/infra/tauri`) to wire up dependencies during system bootstrap while completely hiding technical internals from neighboring features.
+1. **Strict Layer Encapsulation & Composition Root Exception**:
+   - Making `domain` and `app` layers public is strictly prohibited (`mod domain;`, `mod app;`).
+   - `infra` visibility depends on the location of the **Composition Root**:
+     - If DI container / wiring happens within the same crate: use `pub(crate) mod infra;`.
+     - If dependencies are wired by an external crate (e.g., Tauri frontend app / multi-crate architecture):
 2. **No Layer Wildcards**: Broad layer re-exports (e.g., `pub use domain::*;` or `pub use app::*;`) at the feature root are strictly prohibited. Every exposed component must be listed explicitly.
 3. **Facade Principle**: The feature root acts as a strict facade. It must expose **only** what the outside world requires to interact with the slice: `Use Cases` (Inbound Ports), input/output `DTOs`, and `Application Errors`.
 4. **Pragmatic Model Exposure**: Pure data-container domain models (Anemic Models / Value Objects without private invariants, heavy logic, or security risks) **may** be re-exported from the feature root via explicit `pub use` for direct use by other Rust features.

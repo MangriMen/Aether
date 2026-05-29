@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     core::{LazyLocator, domain::ProgressServiceType},
     features::{
-        auth::domain::Credential,
+        auth::Credential,
         instance::{
             InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
             infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},

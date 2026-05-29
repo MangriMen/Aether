@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 pub use app::{
     GetProcessMetadataByInstanceIdUseCase, KillProcessUseCase, ListProcessMetadataUseCase,

@@ -10,7 +10,7 @@ use crate::{
 pub enum ErrorKind {
     #[error(transparent)]
     #[serialize_error]
-    AuthError(#[from] auth::app::AuthApplicationError),
+    AuthError(#[from] auth::AuthApplicationError),
 
     #[error(transparent)]
     #[serialize_error]

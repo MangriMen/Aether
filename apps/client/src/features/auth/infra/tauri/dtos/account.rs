@@ -1,4 +1,4 @@
-use aether_core::features::auth::{app::AccountData, domain::AccountType};
+use aether_core::features::auth::{AccountData, AccountType};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use uuid::Uuid;

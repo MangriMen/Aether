@@ -1,6 +1,6 @@
 mod app;
 mod domain;
-pub(crate) mod infra;
+pub mod infra;
 
 // Domain (models + PluginInstance/PluginInstanceExt)
 pub use domain::{

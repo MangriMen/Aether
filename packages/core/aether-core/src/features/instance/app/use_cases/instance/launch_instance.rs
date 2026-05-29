@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     features::{
-        auth::domain::Credential,
+        auth::Credential,
         events::ProgressService,
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
