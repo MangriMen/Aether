@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use serr::SerializeError;
+
 use uuid::Uuid;
 
 use crate::shared::io::domain::IoError;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum ProcessError {
     #[error("Failed to kill process {id}")]
     KillError { id: String },

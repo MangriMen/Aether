@@ -1,5 +1,3 @@
-use serr::SerializeError;
-
 use crate::{
     features::{
         plugins::{LoadConfig, LoadConfigType},
@@ -8,7 +6,7 @@ use crate::{
     shared::io::domain::IoError,
 };
 
-#[derive(thiserror::Error, Debug, SerializeError)]
+#[derive(thiserror::Error, Debug)]
 pub enum PluginError {
     // Plugin lifecycle errors
     #[error("Plugin \"{plugin_id}\" not found")]

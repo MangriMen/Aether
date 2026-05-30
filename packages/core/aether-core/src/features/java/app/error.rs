@@ -1,10 +1,8 @@
-use serr::SerializeError;
-
 use crate::{
     features::java::JavaDomainError, shared::request_client::domain::models::RequestError,
 };
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum JavaApplicationError {
     #[error(transparent)]
     Domain(#[from] JavaDomainError),

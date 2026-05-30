@@ -7,10 +7,6 @@ name = "Inflector"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-dependencies = [
- "lazy_static",
- "regex",
-]
 
 [[package]]
 name = "addr2line"
@@ -55,7 +51,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "serr",
  "specta",
  "specta-typescript",
  "sqlx",
@@ -104,7 +99,6 @@ dependencies = [
  "serde_json",
  "serde_qs",
  "serde_with",
- "serr",
  "sha1_smol",
  "sqlx",
  "sys-info",
@@ -5706,29 +5700,6 @@ checksum = "772ee033c0916d670af7860b6e1ef7d658a4629a6d0b4c8c3e67f09b3765b75d"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "serr"
-version = "0.2.0"
-source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
-dependencies = [
- "serde",
- "serde_json",
- "serr_derive",
-]
-
-[[package]]
-name = "serr_derive"
-version = "0.2.0"
-source = "git+https://github.com/MangriMen/serr.git#0e5440a91df0472b5ce4e23f3bd4ff3232694f75"
-dependencies = [
- "Inflector",
- "proc-macro2",
- "quote",
- "serde",
- "serde_json",
  "syn 2.0.117",
 ]
 

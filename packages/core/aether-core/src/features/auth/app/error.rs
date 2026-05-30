@@ -1,8 +1,6 @@
-use serr::SerializeError;
-
 use crate::features::auth::domain::AuthDomainError;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum AuthApplicationError {
     #[error(transparent)]
     Domain(#[from] AuthDomainError),

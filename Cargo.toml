@@ -31,9 +31,6 @@ register-schema-derive = { path = "packages/core/register-schema-derive" }
 # Error Handling & Logging
 anyhow = "1"
 log = "0.4"
-serr = { git = "https://github.com/MangriMen/serr.git", version = "0.2.0", features = [
-    "derive",
-] }
 thiserror = "2"
 
 # Serialization & Data

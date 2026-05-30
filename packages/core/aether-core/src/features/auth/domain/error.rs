@@ -1,7 +1,6 @@
-use serr::SerializeError;
 use uuid::Uuid;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum AuthDomainError {
     #[error("Credentials with id: {id} not found")]
     CredentialsNotFound { id: Uuid },

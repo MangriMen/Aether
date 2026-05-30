@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serr::SerializeError;
 
 // --- CapabilityEntry ---
 
@@ -12,7 +11,7 @@ pub struct CapabilityEntry<C: Send + Sync + Clone> {
 
 // --- RegistryError ---
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum RegistryError {
     #[error("Capability {capability_type} with id \"{capability_id}\" not found")]
     CapabilityNotFound {

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use serde::Serialize;
-use serr::SerializeError;
+
 use uuid::Uuid;
 
 use crate::features::{
@@ -9,7 +9,7 @@ use crate::features::{
     process::ProcessError, settings::SettingsError,
 };
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
     Storage(String),
@@ -89,19 +89,15 @@ pub enum InstanceError {
 
     // Features errors
     #[error("Settings load error")]
-    #[serialize_error]
     SettingsLoadError(#[from] SettingsError),
 
     #[error("Failed to get launch command")]
-    #[serialize_error]
     MinecraftError(#[from] MinecraftApplicationError),
 
     #[error("Failed to launch instance")]
-    #[serialize_error]
     ProcessError(#[from] ProcessError),
 
     #[error(transparent)]
-    #[serialize_error]
     CredentialsError(#[from] AuthApplicationError),
 }
 

@@ -8,7 +8,7 @@ use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
 use super::super::{super::mappers::to_extism_res, PluginContext};
 
 host_fn!(
-pub instance_get_dir(user_data: PluginContext; id: String) -> HostResult<String> {
+pub instance_get_dir(user_data: PluginContext; id: String) -> MsgpackResult<String> {
     to_extism_res::<String>(
         execute_async(async move {
             let locator = LazyLocator::get().await?;
@@ -23,7 +23,7 @@ pub instance_get_dir(user_data: PluginContext; id: String) -> HostResult<String>
 });
 
 host_fn!(
-pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> HostResult<String> {
+pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> MsgpackResult<String> {
     let context = user_data.get()?;
     let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
 
@@ -46,7 +46,7 @@ host_fn!(
     pub instance_create(
         user_data: PluginContext;
         new_instance_dto: Msgpack<NewInstanceDto>
-    ) -> HostResult<String> {
+    ) -> MsgpackResult<String> {
         to_extism_res::<String>(
             execute_async(async move {
                 crate::api::instance::create(new_instance_dto.0.into()).await
@@ -56,7 +56,7 @@ host_fn!(
 );
 
 host_fn!(
-pub list_content(user_data: PluginContext; id: String) -> HostResult<DashMap<String, ContentFileDto>> {
+pub list_content(user_data: PluginContext; id: String) -> MsgpackResult<DashMap<String, ContentFileDto>> {
     to_extism_res::<DashMap<String, ContentFileDto>>(
         execute_async(async move {
             crate::api::instance::list_content(id).await
@@ -69,7 +69,7 @@ pub list_content(user_data: PluginContext; id: String) -> HostResult<DashMap<Str
 });
 
 host_fn!(
-pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> HostResult<()> {
+pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
     to_extism_res::<()>(
         execute_async(async move {
             crate::api::instance::enable_contents(instance_id, content_paths.0).await
@@ -78,7 +78,7 @@ pub enable_contents(user_data: PluginContext; instance_id: String, content_paths
 });
 
 host_fn!(
-pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> HostResult<()> {
+pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
     to_extism_res::<()>(
         execute_async(async move {
             crate::api::instance::disable_contents(instance_id, content_paths.0).await

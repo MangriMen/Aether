@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
-use serr::SerializeError;
-
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum JavaDomainError {
     #[error("No JRE found for version {version}")]
     NotFound { version: u32 },

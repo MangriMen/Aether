@@ -51,7 +51,6 @@ semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
-serr.workspace = true
 sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono"] }
 thiserror.workspace = true
 tokio.workspace = true

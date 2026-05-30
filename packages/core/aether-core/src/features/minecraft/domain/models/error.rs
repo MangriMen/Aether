@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
-use serr::SerializeError;
-
 use super::LoaderVersionPreference;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum MinecraftDomainError {
     #[error("Minecraft version \"{version}\" not found")]
     VersionNotFound { version: String },

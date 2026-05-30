@@ -1,6 +1,4 @@
-use serr::SerializeError;
-
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum AppSettingsError {
     #[error("Can't set effect: {0}")]
     CanNotSetEffect(String),

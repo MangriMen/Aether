@@ -1,4 +1,3 @@
-use serr::SerializeError;
 use tracing_error::InstrumentError;
 
 use crate::{
@@ -6,46 +5,36 @@ use crate::{
     shared::request_client,
 };
 
-#[derive(thiserror::Error, Debug, SerializeError)]
+#[derive(thiserror::Error, Debug)]
 pub enum ErrorKind {
     #[error(transparent)]
-    #[serialize_error]
     AuthError(#[from] auth::AuthApplicationError),
 
     #[error(transparent)]
-    #[serialize_error]
     EventError(#[from] events::EventError),
 
     #[error(transparent)]
-    #[serialize_error]
     FileWatcherError(#[from] file_watcher::FileWatcherError),
 
     #[error(transparent)]
-    #[serialize_error]
     InstanceError(#[from] instance::InstanceError),
 
     #[error(transparent)]
-    #[serialize_error]
     JavaError(#[from] java::JavaApplicationError),
 
     #[error(transparent)]
-    #[serialize_error]
     MinecraftError(#[from] minecraft::MinecraftApplicationError),
 
     #[error(transparent)]
-    #[serialize_error]
     PluginError(#[from] plugins::PluginError),
 
     #[error(transparent)]
-    #[serialize_error]
     ProcessError(#[from] process::ProcessError),
 
     #[error(transparent)]
-    #[serialize_error]
     SettingsError(#[from] settings::SettingsError),
 
     #[error(transparent)]
-    #[serialize_error]
     RequestError(#[from] request_client::RequestError),
 
     #[error("Core error: {0}")]

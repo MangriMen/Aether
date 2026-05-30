@@ -1,9 +1,8 @@
-use serr::SerializeError;
 use uuid::Uuid;
 
 use super::progress_bar_error::ProgressBarStorageError;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum EventError {
     #[error("Event state was not properly initialized")]
     NotInitialized,
