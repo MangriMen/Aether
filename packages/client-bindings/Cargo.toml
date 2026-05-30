@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 # This is a dev-only utility, never meant to be published or bundled.
 # By residing in its own crate (packages/client-bindings/), cargo tauri build
-# (which operates from apps/client/) will never pick it up.
+# (which operates from apps/desktop/) will never pick it up.
 
 [[bin]]
 name = "client-bindings"
@@ -16,7 +16,7 @@ doc = false
 
 [dependencies]
 # Depends on the Tauri app library for specta command/event builders
-aether = { path = "../../apps/client", features = ["bindings"] }
+aether = { path = "../../apps/desktop", features = ["bindings"] }
 
 # Specta type-generation stack
 specta.workspace = true

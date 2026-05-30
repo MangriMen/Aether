@@ -11,18 +11,18 @@
         "typescript": "^6.0.3",
       },
     },
-    "apps/client": {
-      "name": "@aether/client",
+    "apps/desktop": {
+      "name": "@aether/desktop",
       "dependencies": {
         "@aether/core": "workspace:*",
-        "@aether/ui": "workspace:*",
+        "@aether/frontend": "workspace:*",
       },
       "devDependencies": {
         "@tauri-apps/cli": "^2.11.2",
       },
     },
-    "apps/ui": {
-      "name": "@aether/ui",
+    "apps/frontend": {
+      "name": "@aether/frontend",
       "version": "0.8.7",
       "dependencies": {
         "@kobalte/core": "^0.13.11",
@@ -101,11 +101,11 @@
     },
   },
   "packages": {
-    "@aether/client": ["@aether/client@workspace:apps/client"],
-
     "@aether/core": ["@aether/core@workspace:packages/core"],
 
-    "@aether/ui": ["@aether/ui@workspace:apps/ui"],
+    "@aether/desktop": ["@aether/desktop@workspace:apps/desktop"],
+
+    "@aether/frontend": ["@aether/frontend@workspace:apps/frontend"],
 
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 

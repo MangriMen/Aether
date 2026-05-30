@@ -1,5 +1,5 @@
 {
-  "name": "@aether/client",
+  "name": "@aether/desktop",
   "scripts": {
     "build": "tauri build",
     "clean": "bun x rimraf .turbo",
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@aether/core": "workspace:*",
-    "@aether/ui": "workspace:*"
+    "@aether/frontend": "workspace:*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.2"

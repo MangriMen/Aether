@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "apps/client/",
+    "apps/desktop/",
     "packages/client-bindings",
     "packages/core/aether-core",
     "packages/core/aether-core-gen",

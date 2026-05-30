@@ -18,8 +18,8 @@
     }
   },
   "build": {
-    "beforeDevCommand": "bun x turbo run dev --filter @aether/ui",
-    "beforeBuildCommand": "bun x turbo run build --filter @aether/ui",
+    "beforeDevCommand": "bun x turbo run dev --filter @aether/frontend",
+    "beforeBuildCommand": "bun x turbo run build --filter @aether/frontend",
     "frontendDist": "../ui/dist",
     "devUrl": "http://localhost:1420"
   },
