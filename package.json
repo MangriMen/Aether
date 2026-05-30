@@ -11,14 +11,14 @@
     "clean": "turbo run clean && bun x rimraf .turbo && cargo clean",
     "desktop:build": "turbo run build --filter=@aether/desktop",
     "desktop:dev": "turbo run dev --filter=@aether/desktop",
-    "lint": "turbo run lintt --continue",
-    "prepare": "lefthook install",
     "frontend:build": "turbo run build --filter=@aether/frontend",
-    "frontend:dev": "turbo run dev --filter=@aether/frontend"
+    "frontend:dev": "turbo run dev --filter=@aether/frontend",
+    "lint": "turbo run lintt --continue",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260523.1",
-    "lefthook": "^2.1.8",
+    "@typescript/native-preview": "^7.0.0-dev.20260527.2",
+    "lefthook": "^2.1.9",
     "turbo": "latest",
     "typescript": "^6.0.3"
   },
