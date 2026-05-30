@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use aether_core_plugin_api::v0::PluginCheckCompatibilityParamsDto;
 use async_trait::async_trait;
 use extism_convert::Msgpack;
 use serde::{Serialize, de::DeserializeOwned};
@@ -151,12 +152,15 @@ impl ContentProvider for PluginContentProviderProxy {
         instances: &[Instance],
         check_params: &ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        let params: PluginCheckCompatibilityParamsDto = PluginCheckCompatibilityParams {
+            instances: instances.to_vec(),
+            check_params: check_params.clone(),
+        }
+        .into();
+
         self.call_optional(
             self.capability.handlers.check_compatibility.as_ref(),
-            PluginCheckCompatibilityParams {
-                instances: instances.to_vec(),
-                check_params: check_params.clone(),
-            },
+            params,
         )
         .await
     }

@@ -11,3 +11,13 @@ impl From<LoaderVersionPreferenceDto> for LoaderVersionPreference {
         }
     }
 }
+
+impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
+    fn from(value: LoaderVersionPreference) -> Self {
+        match value {
+            LoaderVersionPreference::Latest => Self::Latest,
+            LoaderVersionPreference::Stable => Self::Stable,
+            LoaderVersionPreference::Exact(version) => Self::Exact(version),
+        }
+    }
+}

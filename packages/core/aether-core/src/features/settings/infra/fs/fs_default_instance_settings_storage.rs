@@ -3,12 +3,15 @@ use std::path::{Path, PathBuf};
 use async_trait::async_trait;
 
 use crate::{
-    features::settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError},
+    features::settings::{
+        DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
+        infra::fs::models::DefaultInstanceSettingsV1,
+    },
     shared::json_store::{domain::UpdateAction, infra::JsonValueStore},
 };
 
 pub struct FsDefaultInstanceSettingsStorage {
-    store: JsonValueStore<DefaultInstanceSettings>,
+    store: JsonValueStore<DefaultInstanceSettingsV1>,
     path: PathBuf,
 }
 
@@ -29,14 +32,16 @@ impl FsDefaultInstanceSettingsStorage {
 #[async_trait]
 impl DefaultInstanceSettingsStorage for FsDefaultInstanceSettingsStorage {
     async fn get(&self) -> Result<DefaultInstanceSettings, SettingsError> {
-        Ok(self.store.read_or_default().await?)
+        Ok(self.store.read_or_default().await?.into())
     }
 
     async fn upsert(
         &self,
         settings: DefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
-        self.store.write(&settings).await?;
+        self.store
+            .write(&DefaultInstanceSettingsV1::from(&settings))
+            .await?;
         Ok(settings)
     }
 
@@ -44,6 +49,21 @@ impl DefaultInstanceSettingsStorage for FsDefaultInstanceSettingsStorage {
     where
         F: FnOnce(&mut DefaultInstanceSettings) -> UpdateAction<R> + Send,
     {
-        Ok(self.store.update_with_default(f).await?)
+        Ok(self
+            .store
+            .update_with_default(|dto| {
+                let mut domain_settings = DefaultInstanceSettings::from(dto.clone());
+
+                let action = f(&mut domain_settings);
+
+                match action {
+                    UpdateAction::Save(return_value) => {
+                        *dto = DefaultInstanceSettingsV1::from(&domain_settings);
+                        UpdateAction::Save(return_value)
+                    }
+                    UpdateAction::NoChanges(return_value) => UpdateAction::NoChanges(return_value),
+                }
+            })
+            .await?)
     }
 }

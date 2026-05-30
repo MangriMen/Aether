@@ -9,9 +9,10 @@ pub use domain::{
     ContentSearchResult, ContentType, ContentVersion, ContentVersionDependency,
     ContentVersionDependencyType, ContentVersionStatus, ContentVersionType,
     CreateContentFileParams, DownloadedContent, ImporterCapabilityMetadata, Instance,
-    InstanceBuilder, InstanceError, InstanceInstallStage, InstanceSnapshot, ModpackInstallParams,
-    Pack, PackEntry, PackFile, PackFileDownload, PackFileOption, PackInfo, ProviderId,
-    RequestedContentVersionStatus, UpdaterCapabilityMetadata,
+    InstanceBuilder, InstanceError, InstanceField, InstanceInstallStage, InstanceSnapshot,
+    InstanceValidationErrorReason, ModpackInstallParams, Pack, PackEntry, PackFile,
+    PackFileDownload, PackFileOption, PackInfo, ProviderId, RequestedContentVersionStatus,
+    UpdaterCapabilityMetadata,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

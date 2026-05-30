@@ -10,6 +10,16 @@ impl<T> Overridable<T> {
     pub fn new(data: T, is_active: bool) -> Self {
         Self { data, is_active }
     }
+
+    pub fn map<U, F>(self, f: F) -> Overridable<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Overridable {
+            data: f(self.data),
+            is_active: self.is_active,
+        }
+    }
 }
 
 impl<T: Default> Overridable<T> {

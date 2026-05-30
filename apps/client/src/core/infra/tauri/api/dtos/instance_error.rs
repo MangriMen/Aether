@@ -1,4 +1,6 @@
-use aether_core::features::instance::InstanceError;
+use aether_core::features::instance::{
+    InstanceError, InstanceField, InstanceValidationErrorReason,
+};
 use serde::Serialize;
 use specta::Type;
 use uuid::Uuid;
@@ -30,8 +32,8 @@ pub enum InstanceErrorDto {
         code: i32,
     },
     ValidationError {
-        field: String,
-        reason: String,
+        field: InstanceFieldDto,
+        reason: InstanceValidationErrorReasonDto,
     },
     ImporterNotFound {
         importer_id: String,
@@ -113,8 +115,8 @@ impl From<&InstanceError> for InstanceErrorDto {
                 Self::PrelaunchCommandError { code: *code }
             }
             InstanceError::ValidationError { field, reason } => Self::ValidationError {
-                field: field.clone(),
-                reason: reason.clone(),
+                field: (*field).into(),
+                reason: reason.clone().into(),
             },
             InstanceError::ImporterNotFound { importer_id } => Self::ImporterNotFound {
                 importer_id: importer_id.clone(),
@@ -168,6 +170,34 @@ impl From<&InstanceError> for InstanceErrorDto {
             InstanceError::CredentialsError(err) => Self::CredentialsError {
                 details: err.to_string(),
             },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum InstanceFieldDto {
+    Name,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum InstanceValidationErrorReasonDto {
+    CannotBeEmpty,
+}
+
+impl From<InstanceField> for InstanceFieldDto {
+    fn from(value: InstanceField) -> Self {
+        match value {
+            InstanceField::Name => Self::Name,
+        }
+    }
+}
+
+impl From<InstanceValidationErrorReason> for InstanceValidationErrorReasonDto {
+    fn from(value: InstanceValidationErrorReason) -> Self {
+        match value {
+            InstanceValidationErrorReason::CannotBeEmpty => Self::CannotBeEmpty,
         }
     }
 }

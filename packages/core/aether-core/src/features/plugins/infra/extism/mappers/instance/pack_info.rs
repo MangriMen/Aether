@@ -7,7 +7,17 @@ impl From<PackInfoDto> for PackInfo {
         Self {
             provider_id: value.provider_id.into(),
             modpack_id: value.modpack_id,
-            version_id: value.version,
+            version_id: value.version_id,
+        }
+    }
+}
+
+impl From<PackInfo> for PackInfoDto {
+    fn from(value: PackInfo) -> Self {
+        Self {
+            provider_id: value.provider_id.into(),
+            modpack_id: value.modpack_id,
+            version_id: value.version_id,
         }
     }
 }

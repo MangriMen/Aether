@@ -7,5 +7,5 @@ use crate::v0::ProviderIdDto;
 pub struct PackInfoDto {
     pub provider_id: ProviderIdDto,
     pub modpack_id: String,
-    pub version: String,
+    pub version_id: String,
 }

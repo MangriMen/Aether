@@ -1,9 +1,11 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     features::{
-        instance::{InstanceError, InstanceSnapshot},
+        instance::{
+            InstanceError, InstanceSnapshot,
+            domain::{InstanceField, InstanceValidationErrorReason},
+        },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings},
     },
@@ -12,8 +14,7 @@ use crate::{
 
 use super::{InstanceInstallStage, PackInfo};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct Instance {
     id: String,
 
@@ -66,16 +67,24 @@ impl Instance {
         self.icon_path.as_deref()
     }
 
-    pub fn rename(&mut self, new_name: String) -> Result<(), InstanceError> {
-        if new_name.trim().is_empty() {
+    pub fn rename(&mut self, new_name: String) -> Result<bool, InstanceError> {
+        let trimmed = new_name.trim();
+
+        if trimmed.is_empty() {
             return Err(InstanceError::ValidationError {
-                field: "name".into(),
-                reason: "Name cannot be empty".into(),
+                field: InstanceField::Name,
+                reason: InstanceValidationErrorReason::CannotBeEmpty,
             });
         }
+
+        if self.name == trimmed {
+            return Ok(false);
+        }
+
         self.name = new_name;
         self.mark_modified();
-        Ok(())
+
+        Ok(true)
     }
 
     pub fn set_icon(&mut self, icon_id: Option<String>) {
@@ -85,6 +94,105 @@ impl Instance {
 
     fn mark_modified(&mut self) {
         self.modified = Utc::now();
+    }
+
+    pub fn update_java_path_active(&mut self, is_active: bool) -> bool {
+        if self.java_path.is_active != is_active {
+            self.java_path.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_java_path_data(&mut self, data: String) -> bool {
+        if self.java_path.data != data {
+            self.java_path.data = data;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_launch_args_active(&mut self, is_active: bool) -> bool {
+        if self.launch_args.is_active != is_active {
+            self.launch_args.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_launch_args_data(&mut self, data: Vec<String>) -> bool {
+        if self.launch_args.data != data {
+            self.launch_args.data = data;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_env_vars_active(&mut self, is_active: bool) -> bool {
+        if self.env_vars.is_active != is_active {
+            self.env_vars.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_env_vars_data(&mut self, data: Vec<(String, String)>) -> bool {
+        if self.env_vars.data != data {
+            self.env_vars.data = data;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_memory_active(&mut self, is_active: bool) -> bool {
+        if self.memory.is_active != is_active {
+            self.memory.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_memory_data(&mut self, data: MemorySettings) -> bool {
+        if self.memory.data != data {
+            self.memory.data = data;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_window_active(&mut self, is_active: bool) -> bool {
+        if self.window.is_active != is_active {
+            self.window.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_window_data(&mut self, data: WindowSettings) -> bool {
+        if self.window.data != data {
+            self.window.data = data;
+            return true;
+        }
+        false
+    }
+
+    pub fn update_hooks_active(&mut self, is_active: bool) -> bool {
+        if self.hooks.is_active != is_active {
+            self.hooks.is_active = is_active;
+            return true;
+        }
+        false
+    }
+
+    // Помнишь, мы перенесли update_hooks внутрь самих Hooks?
+    // Теперь это просто проброс чистого метода
+    pub fn update_hooks_data(
+        &mut self,
+        pre_launch: Option<String>,
+        wrapper: Option<String>,
+        post_exit: Option<String>,
+    ) -> bool {
+        self.hooks.data.update_hooks(pre_launch, wrapper, post_exit)
     }
 
     pub fn from_snapshot(snapshot: InstanceSnapshot) -> Self {

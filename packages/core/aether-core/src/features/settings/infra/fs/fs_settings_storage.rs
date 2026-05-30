@@ -4,16 +4,17 @@ use async_trait::async_trait;
 use tracing::warn;
 
 use crate::{
-    features::settings::{Settings, SettingsError, SettingsStorage},
+    features::settings::{
+        Settings, SettingsError, SettingsStorage, infra::fs::settings::SettingsV2,
+    },
     shared::{
-        io::domain::IoError,
-        io::infra::read_json_async,
+        io::{domain::IoError, infra::read_json_async},
         json_store::{domain::UpdateAction, infra::JsonValueStore},
     },
 };
 
 pub struct FsSettingsStorage {
-    store: JsonValueStore<Settings>,
+    store: JsonValueStore<SettingsV2>,
     path: PathBuf,
 }
 
@@ -32,14 +33,15 @@ impl FsSettingsStorage {
 
     async fn load_settings_internal(&self) -> Result<Settings, SettingsError> {
         match self.store.read().await {
-            Ok(instance) => Ok(instance),
+            Ok(settings) => Ok(settings.into()),
             Err(original_err) => {
                 match read_json_async::<super::settings::SettingsV1>(self.path.clone()).await {
                     Ok(v1) => {
                         warn!("Migrating instance from V1 at {:?}", self.path.clone());
                         let migrated: Settings = v1.into();
+                        let v2 = SettingsV2::from(&migrated);
 
-                        if let Err(e) = self.store.write(&migrated).await {
+                        if let Err(e) = self.store.write(&v2).await {
                             warn!("Failed to save migrated instance: {:?}", e);
                         }
 
@@ -59,7 +61,7 @@ impl SettingsStorage for FsSettingsStorage {
     }
 
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {
-        self.store.write(&settings).await?;
+        self.store.write(&(&settings).into()).await?;
         Ok(settings)
     }
 
@@ -67,7 +69,22 @@ impl SettingsStorage for FsSettingsStorage {
     where
         F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
     {
-        Ok(self.store.update(f).await?)
+        Ok(self
+            .store
+            .update(|dto| {
+                let mut settings = Settings::from(dto.clone());
+
+                let action = f(&mut settings);
+
+                match action {
+                    UpdateAction::Save(return_value) => {
+                        *dto = SettingsV2::from(&settings);
+                        UpdateAction::Save(return_value)
+                    }
+                    UpdateAction::NoChanges(return_value) => UpdateAction::NoChanges(return_value),
+                }
+            })
+            .await?)
     }
 }
 

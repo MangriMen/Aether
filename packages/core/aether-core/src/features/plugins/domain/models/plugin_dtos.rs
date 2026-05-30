@@ -12,8 +12,7 @@ pub struct PluginImportInstance {
     pub path: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct PluginCheckCompatibilityParams {
     pub instances: Vec<Instance>,
     pub check_params: ContentCompatibilityCheckParams,

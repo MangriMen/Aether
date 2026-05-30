@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::features::settings::{Hooks, MemorySettings, WindowSettings};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct LaunchSettings {
     pub launch_args: Vec<String>,
 

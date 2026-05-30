@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     features::{
@@ -11,8 +10,7 @@ use crate::{
 
 use super::{InstanceInstallStage, PackInfo};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct InstanceSnapshot {
     pub id: String,
 

@@ -1,44 +1,10 @@
-use aether_core::features::settings::{
+use aether_core_plugin_api::v0::{
+    DefaultInstanceSettingsDto, HooksDto, MemorySettingsDto, WindowSettingsDto, WindowSizeDto,
+};
+
+use crate::features::settings::{
     DefaultInstanceSettings, Hooks, MemorySettings, WindowSettings, WindowSize,
 };
-use serde::{Deserialize, Serialize};
-use specta::Type;
-
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct DefaultInstanceSettingsDto {
-    launch_args: Vec<String>,
-    env_vars: Vec<(String, String)>,
-
-    memory: MemorySettingsDto,
-    window: WindowSettingsDto,
-
-    hooks: HooksDto,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MemorySettingsDto {
-    pub maximum: u32,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
-pub struct WindowSizeDto(pub u16, pub u16);
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct WindowSettingsDto {
-    pub force_fullscreen: bool,
-    pub game_resolution: WindowSizeDto,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct HooksDto {
-    pre_launch: String,
-    wrapper: String,
-    post_exit: String,
-}
 
 impl From<DefaultInstanceSettings> for DefaultInstanceSettingsDto {
     fn from(value: DefaultInstanceSettings) -> Self {
