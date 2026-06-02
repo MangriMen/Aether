@@ -1,28 +1,24 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::features::auth::domain::AuthDomainError;
 
 use super::Username;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Credential {
     id: Uuid,
     username: Username,
     account_type: AccountType,
-    #[serde(alias = "active")]
     is_active: bool,
     access_token: String,
     refresh_token: String,
     expires: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AccountType {
     Offline,
     Microsoft,

@@ -1,11 +1,8 @@
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
-
 use super::super::AuthDomainError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-#[serde(try_from = "String")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Username(String);
 
 const MIN_USERNAME_LENGTH: usize = 3;
@@ -25,6 +22,10 @@ impl Username {
         }
 
         Ok(Self(s.to_owned()))
+    }
+
+    pub(crate) fn reconstitute(s: String) -> Self {
+        Self(s)
     }
 
     pub fn as_str(&self) -> &str {

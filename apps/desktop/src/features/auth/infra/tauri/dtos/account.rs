@@ -1,4 +1,4 @@
-use aether_core::features::auth::{AccountData, AccountType};
+use aether_core::features::auth::{Account, AccountType};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use uuid::Uuid;
@@ -19,8 +19,8 @@ pub enum AccountTypeDto {
     Microsoft,
 }
 
-impl From<AccountData> for AccountDto {
-    fn from(core: AccountData) -> Self {
+impl From<Account> for AccountDto {
+    fn from(core: Account) -> Self {
         Self {
             id: core.id,
             username: core.username,
