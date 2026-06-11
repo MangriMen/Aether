@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use aether_core_plugin_api::v0::PluginCheckCompatibilityParamsDto;
+use aether_core_plugin_api::v0::{
+    AtomicInstallParamsDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
+    DownloadedContentDto, ModpackInstallParamsDto, PluginCheckCompatibilityParamsDto,
+};
 use async_trait::async_trait;
 use extism_convert::Msgpack;
 use serde::{Serialize, de::DeserializeOwned};
@@ -111,40 +114,76 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         search_content: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError> {
-        self.call_plugin(&self.capability.handlers.search, search_content)
-            .await
+        let dto: ContentSearchParamsDto = search_content.into();
+        let result_dto: ContentSearchResultDto = self
+            .call_plugin(&self.capability.handlers.search, dto)
+            .await?;
+        // Convert back from DTO — build domain result manually
+        Ok(ContentSearchResult {
+            page: result_dto.page,
+            page_size: result_dto.page_size,
+            page_count: result_dto.page_count,
+            provider_id: result_dto.provider_id.into(),
+            items: result_dto
+                .items
+                .into_iter()
+                .map(|item| ContentItem {
+                    id: item.id,
+                    slug: item.slug,
+                    name: item.name,
+                    description: item.description,
+                    long_description: item.long_description,
+                    author: item.author,
+                    url: item.url,
+                    icon_url: item.icon_url,
+                    versions: item.versions,
+                    content_type: item.content_type.into(),
+                })
+                .collect(),
+        })
     }
 
     async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
-        self.call_plugin(&self.capability.handlers.get_content, content_id)
-            .await
+        let result_dto: aether_core_plugin_api::v0::ContentItemDto = self
+            .call_plugin(&self.capability.handlers.get_content, content_id)
+            .await?;
+        Ok(result_dto.into())
     }
 
     async fn list_versions(
         &self,
         content_id: String,
     ) -> Result<Vec<ContentVersion>, InstanceError> {
-        self.call_optional(self.capability.handlers.list_version.as_ref(), content_id)
-            .await
+        let result_dto: Vec<ContentVersionDto> = self
+            .call_optional(self.capability.handlers.list_version.as_ref(), content_id)
+            .await?;
+        Ok(result_dto.into_iter().map(Into::into).collect())
     }
 
     async fn install_atomic(
         &self,
         install_params: &AtomicInstallParams,
     ) -> Result<DownloadedContent, InstanceError> {
-        self.call_plugin(&self.capability.handlers.install_atomic, install_params)
-            .await
+        let dto: AtomicInstallParamsDto = install_params.clone().into();
+        let result_dto: DownloadedContentDto = self
+            .call_plugin(&self.capability.handlers.install_atomic, dto)
+            .await?;
+        Ok(DownloadedContent {
+            metadata: result_dto.metadata.into(),
+            temp_path: result_dto.temp_path,
+        })
     }
 
     async fn install_modpack(
         &self,
         install_params: &ModpackInstallParams,
     ) -> Result<(String, Vec<ContentFile>), InstanceError> {
-        self.call_optional(
-            self.capability.handlers.install_modpack.as_ref(),
-            install_params,
-        )
-        .await
+        let dto: ModpackInstallParamsDto = install_params.clone().into();
+        let result_dto: (String, Vec<aether_core_plugin_api::v0::ContentFileDto>) = self
+            .call_optional(self.capability.handlers.install_modpack.as_ref(), dto)
+            .await?;
+        let files: Vec<ContentFile> = result_dto.1.into_iter().map(Into::into).collect();
+        Ok((result_dto.0, files))
     }
 
     async fn check_compatibility(
@@ -158,10 +197,22 @@ impl ContentProvider for PluginContentProviderProxy {
         }
         .into();
 
-        self.call_optional(
-            self.capability.handlers.check_compatibility.as_ref(),
-            params,
-        )
-        .await
+        let result_dto: HashMap<String, aether_core_plugin_api::v0::ContentCompatibilityResultDto> =
+            self.call_optional(
+                self.capability.handlers.check_compatibility.as_ref(),
+                params,
+            )
+            .await?;
+        Ok(result_dto
+            .into_iter()
+            .map(|(k, v)| {
+                (
+                    k,
+                    ContentCompatibilityResult {
+                        is_compatible: v.is_compatible,
+                    },
+                )
+            })
+            .collect())
     }
 }

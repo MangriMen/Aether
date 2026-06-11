@@ -1,9 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::features::minecraft::ModLoader;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ContentVersionDependencyType {
     Required,
     Optional,
@@ -11,7 +8,7 @@ pub enum ContentVersionDependencyType {
     Embedded,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ContentVersionDependency {
     pub version_id: Option<String>,
     pub content_id: Option<String>,
@@ -19,16 +16,14 @@ pub struct ContentVersionDependency {
     pub dependency_type: ContentVersionDependencyType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ContentVersionType {
     Release,
     Beta,
     Alpha,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ContentVersionStatus {
     Listed,
     Archived,
@@ -38,8 +33,7 @@ pub enum ContentVersionStatus {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RequestedContentVersionStatus {
     Listed,
     Archived,
@@ -47,8 +41,7 @@ pub enum RequestedContentVersionStatus {
     Unlisted,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct ContentVersion {
     pub id: String,
     pub content_id: String,

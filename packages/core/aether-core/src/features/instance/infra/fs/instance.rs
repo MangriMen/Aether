@@ -46,6 +46,41 @@ impl From<LoaderVersionPreference> for LoaderVersionPreferenceV1 {
     }
 }
 
+/// DTO for `ModLoader` serialization in FS storage.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ModLoaderV1 {
+    Vanilla,
+    Forge,
+    Fabric,
+    Quilt,
+    NeoForge,
+}
+
+impl From<ModLoaderV1> for ModLoader {
+    fn from(value: ModLoaderV1) -> Self {
+        match value {
+            ModLoaderV1::Vanilla => Self::Vanilla,
+            ModLoaderV1::Forge => Self::Forge,
+            ModLoaderV1::Fabric => Self::Fabric,
+            ModLoaderV1::Quilt => Self::Quilt,
+            ModLoaderV1::NeoForge => Self::NeoForge,
+        }
+    }
+}
+
+impl From<ModLoader> for ModLoaderV1 {
+    fn from(value: ModLoader) -> Self {
+        match value {
+            ModLoader::Vanilla => Self::Vanilla,
+            ModLoader::Forge => Self::Forge,
+            ModLoader::Fabric => Self::Fabric,
+            ModLoader::Quilt => Self::Quilt,
+            ModLoader::NeoForge => Self::NeoForge,
+        }
+    }
+}
+
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceV1 {
@@ -54,11 +89,11 @@ pub struct InstanceV1 {
     pub name: String,
     pub icon_path: Option<String>,
 
-    pub install_stage: InstanceInstallStage,
+    pub install_stage: String,
 
     // Main minecraft metadata
     pub game_version: String,
-    pub loader: ModLoader,
+    pub loader: ModLoaderV1,
     pub loader_version: Option<LoaderVersionPreferenceV1>,
 
     // Launch arguments
@@ -101,10 +136,13 @@ impl From<InstanceV1> for Instance {
 
             icon_path: v1.icon_path,
 
-            install_stage: v1.install_stage,
+            install_stage: v1
+                .install_stage
+                .parse()
+                .unwrap_or(InstanceInstallStage::NotInstalled),
 
             game_version: v1.game_version,
-            loader: v1.loader,
+            loader: v1.loader.into(),
             loader_version: v1.loader_version.map(Into::into),
 
             java_path: Overridable::new(
@@ -170,11 +208,11 @@ pub struct InstanceV2 {
     pub name: String,
     pub icon_path: Option<String>,
 
-    pub install_stage: InstanceInstallStage,
+    pub install_stage: String,
 
     // Metadata
     pub game_version: String,
-    pub loader: ModLoader,
+    pub loader: ModLoaderV1,
     pub loader_version: Option<LoaderVersionPreferenceV1>,
 
     // Launch arguments
@@ -212,10 +250,13 @@ impl From<InstanceV2> for Instance {
 
             icon_path: v2.icon_path,
 
-            install_stage: v2.install_stage,
+            install_stage: v2
+                .install_stage
+                .parse()
+                .unwrap_or(InstanceInstallStage::NotInstalled),
 
             game_version: v2.game_version,
-            loader: v2.loader,
+            loader: v2.loader.into(),
             loader_version: v2.loader_version.map(Into::into),
 
             java_path: v2.java_path,
@@ -252,10 +293,10 @@ impl From<&Instance> for InstanceV2 {
             name: value.name().to_owned(),
             icon_path: value.icon_path().map(ToString::to_string),
 
-            install_stage: value.install_stage,
+            install_stage: value.install_stage.as_str().to_string(),
 
             game_version: value.game_version.clone(),
-            loader: value.loader,
+            loader: value.loader.into(),
             loader_version: value.loader_version.clone().map(Into::into),
 
             java_path: value.java_path.clone(),

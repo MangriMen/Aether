@@ -20,8 +20,36 @@ impl From<ContentFile> for ContentFileDto {
     }
 }
 
+impl From<ContentFileDto> for ContentFile {
+    fn from(value: ContentFileDto) -> Self {
+        Self {
+            content_path: value.content_path,
+            content_type: value.content_type.into(),
+            disabled: value.disabled,
+            file_name: value.file_name,
+            hash: value.hash,
+            name: value.name,
+            size: value.size,
+            version: None,
+            update_provider_id: value.update_provider_id.map(Into::into),
+            update: value
+                .update
+                .map(|m| m.into_iter().map(|(k, v)| (k.into(), v.into())).collect()),
+        }
+    }
+}
+
 impl From<ContentFileUpdateInfo> for ContentFileUpdateInfoDto {
     fn from(value: ContentFileUpdateInfo) -> Self {
+        Self {
+            content_id: value.content_id,
+            version: value.version,
+        }
+    }
+}
+
+impl From<ContentFileUpdateInfoDto> for ContentFileUpdateInfo {
+    fn from(value: ContentFileUpdateInfoDto) -> Self {
         Self {
             content_id: value.content_id,
             version: value.version,

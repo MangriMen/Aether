@@ -1,11 +1,7 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Default)]
 pub enum LoaderVersionPreference {
     Latest,
     #[default]
     Stable,
-    #[serde(untagged)]
     Exact(String),
 }

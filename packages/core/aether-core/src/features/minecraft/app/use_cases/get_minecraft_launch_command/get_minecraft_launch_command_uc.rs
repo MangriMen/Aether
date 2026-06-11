@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
 use crate::{
@@ -26,7 +25,7 @@ use super::{
     get_minecraft_jvm_arguments::get_minecraft_jvm_arguments,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct GetMinecraftLaunchCommandParams {
     pub game_version: String,
     pub loader: ModLoader,

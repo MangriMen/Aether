@@ -1,11 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Serialize};
-
 use crate::features::minecraft::ModLoader;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Copy, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub enum ContentType {
     Modpack,
     Mod,

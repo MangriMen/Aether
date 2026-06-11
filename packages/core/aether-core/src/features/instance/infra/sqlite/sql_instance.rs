@@ -1,12 +1,44 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
         instance::{Instance, InstanceError, InstanceSnapshot},
+        minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
     },
     shared::overridable::domain::Overridable,
 };
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LoaderVersionPreferenceDto {
+    Latest,
+    Stable,
+    #[serde(untagged)]
+    Exact(String),
+}
+
+impl From<LoaderVersionPreferenceDto> for LoaderVersionPreference {
+    fn from(value: LoaderVersionPreferenceDto) -> Self {
+        match value {
+            LoaderVersionPreferenceDto::Latest => Self::Latest,
+            LoaderVersionPreferenceDto::Stable => Self::Stable,
+            LoaderVersionPreferenceDto::Exact(x) => Self::Exact(x),
+        }
+    }
+}
+
+impl From<LoaderVersionPreference> for LoaderVersionPreferenceDto {
+    fn from(value: LoaderVersionPreference) -> Self {
+        match value {
+            LoaderVersionPreference::Latest => Self::Latest,
+            LoaderVersionPreference::Stable => Self::Stable,
+            LoaderVersionPreference::Exact(x) => Self::Exact(x),
+        }
+    }
+}
 
 #[derive(Debug, sqlx::FromRow)]
 #[allow(clippy::struct_excessive_bools)]
@@ -68,8 +100,11 @@ impl From<Instance> for SqlInstance {
             install_stage: s.install_stage.as_str().to_string(),
 
             game_version: s.game_version,
-            loader: serde_json::to_string(&s.loader).unwrap_or_default(),
-            loader_version_json: s.loader_version.map(|v| serde_json::to_string(&v).unwrap()),
+            loader: s.loader.as_str().to_string(),
+            loader_version_json: s.loader_version.map(|v| {
+                let dto: LoaderVersionPreferenceDto = v.into();
+                serde_json::to_string(&dto).unwrap()
+            }),
 
             // Java
             override_java_path: s.java_path.is_active,
@@ -140,11 +175,12 @@ impl TryFrom<SqlInstance> for Instance {
                 .map_err(|_| InstanceError::Storage("Invalid stage".into()))?,
 
             game_version: row.game_version,
-            loader: serde_json::from_str(&row.loader)
-                .map_err(|e| InstanceError::Storage(e.to_string()))?,
-            loader_version: row
-                .loader_version_json
-                .map(|s| serde_json::from_str(&s).unwrap()),
+            loader: ModLoader::from_str(&row.loader)
+                .map_err(|()| InstanceError::Storage("Invalid mod loader".into()))?,
+            loader_version: row.loader_version_json.map(|s| {
+                let dto: LoaderVersionPreferenceDto = serde_json::from_str(&s).unwrap();
+                dto.into()
+            }),
 
             // Java
             java_path: Overridable::new(row.java_path, row.override_java_path),

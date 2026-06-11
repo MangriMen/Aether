@@ -1,13 +1,10 @@
 use std::{ops::Deref, str::FromStr};
 
-use serde::{Deserialize, Serialize};
-
 use crate::features::minecraft::ModLoader;
 
 use super::ContentType;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentSearchParams {
     pub content_type: ContentType,
     pub provider_id: ProviderId,
@@ -18,8 +15,7 @@ pub struct ContentSearchParams {
     pub loader: Option<ModLoader>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentSearchResult {
     pub page: i64,
     pub page_size: i64,
@@ -28,8 +24,7 @@ pub struct ContentSearchResult {
     pub items: Vec<ContentItem>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ProviderId {
     pub plugin_id: String,
     pub capability_id: String,
@@ -69,18 +64,15 @@ impl FromStr for ProviderId {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct BaseContentParams {
     pub content_id: String,
     pub content_version: Option<String>,
     pub provider_id: ProviderId,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct AtomicInstallParams {
-    #[serde(flatten)]
     pub base: BaseContentParams,
     pub instance_id: String,
     pub game_version: String,
@@ -96,10 +88,8 @@ impl Deref for AtomicInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ModpackInstallParams {
-    #[serde(flatten)]
     pub base: BaseContentParams,
 }
 
@@ -111,8 +101,7 @@ impl Deref for ModpackInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "type", content = "data", rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub enum ContentInstallParams {
     Atomic(AtomicInstallParams),
     Modpack(ModpackInstallParams),
@@ -127,8 +116,7 @@ impl ContentInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentItem {
     pub id: String,
     pub slug: String,

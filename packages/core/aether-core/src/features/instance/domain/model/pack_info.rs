@@ -1,9 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::features::instance::ProviderId;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct PackInfo {
     pub provider_id: ProviderId,
     pub modpack_id: String,

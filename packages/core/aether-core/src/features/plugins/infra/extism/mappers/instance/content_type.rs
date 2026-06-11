@@ -13,3 +13,15 @@ impl From<ContentType> for ContentTypeDto {
         }
     }
 }
+
+impl From<ContentTypeDto> for ContentType {
+    fn from(value: ContentTypeDto) -> Self {
+        match value {
+            ContentTypeDto::Modpack => Self::Modpack,
+            ContentTypeDto::Mod => Self::Mod,
+            ContentTypeDto::DataPack => Self::DataPack,
+            ContentTypeDto::ResourcePack => Self::ResourcePack,
+            ContentTypeDto::ShaderPack => Self::ShaderPack,
+        }
+    }
+}

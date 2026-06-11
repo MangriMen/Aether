@@ -1,16 +1,12 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use path_slash::PathBufExt;
-use serde::{Deserialize, Serialize};
-use serde_with::{DisplayFromStr, serde_as};
 
 use crate::features::instance::{PackFile, ProviderId};
 
 use super::ContentType;
 
-#[serde_as]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct ContentFile {
     pub content_path: String,
     pub content_type: ContentType,
@@ -21,12 +17,10 @@ pub struct ContentFile {
     pub size: u64,
     pub version: Option<String>,
     pub update_provider_id: Option<ProviderId>,
-    #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct ContentFileUpdateInfo {
     pub content_id: String,
     pub version: String,

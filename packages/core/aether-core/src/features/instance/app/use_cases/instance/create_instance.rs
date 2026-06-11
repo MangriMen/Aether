@@ -4,7 +4,6 @@ use std::{
 };
 
 use log::{error, info};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     features::{
@@ -25,8 +24,7 @@ use crate::{
 
 use super::InstallInstanceUseCase;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 pub struct NewInstance {
     pub name: String,
     pub game_version: String,

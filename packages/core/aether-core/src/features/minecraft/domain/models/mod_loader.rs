@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ModLoader {
     Vanilla,
     Forge,

@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InstanceInstallStage {
     /// Instance is installed
     Installed,

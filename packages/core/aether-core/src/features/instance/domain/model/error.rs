@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use serde::Serialize;
-
 use uuid::Uuid;
 
 use crate::features::{
@@ -101,8 +99,7 @@ pub enum InstanceError {
     CredentialsError(#[from] AuthApplicationError),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstanceField {
     Name,
 }
@@ -121,8 +118,7 @@ pub enum InstanceField {
 //     }
 // }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InstanceValidationErrorReason {
     CannotBeEmpty,
 }
