@@ -1,25 +1,22 @@
 use log::error;
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::{core::LazyLocator, features::events::ProgressBarStorage};
 
 use super::{ProgressEvent, ProgressEventType};
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct ProgressBar {
     // id not be used directly by external functions as it may not reflect the current state
     pub id: Uuid,
     pub message: String,
     pub total: f64,
     pub current: f64,
-    #[serde(skip)]
     pub last_sent: f64,
     pub progress_type: ProgressEventType,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct ProgressBarId(pub Uuid);
 
 #[derive(Debug)]

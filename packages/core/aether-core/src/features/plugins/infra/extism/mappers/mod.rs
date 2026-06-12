@@ -4,6 +4,9 @@ mod content_provider;
 mod instance;
 mod java;
 mod overridable;
+mod plugin_capabilities_dto;
+mod plugin_import_instance;
+mod plugin_manifest;
 mod result;
 mod settings;
 

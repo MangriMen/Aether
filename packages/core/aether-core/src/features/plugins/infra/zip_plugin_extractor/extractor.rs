@@ -32,9 +32,13 @@ impl ZipPluginExtractor {
                 path: self.constants.manifest_filename.to_string(),
             })?;
 
-        serde_json::from_reader(manifest_file).map_err(|e| PluginError::InvalidManifestFormat {
-            error: e.to_string(),
-        })
+        let dto: aether_core_plugin_api::v0::PluginManifestDto =
+            serde_json::from_reader(manifest_file).map_err(|e| {
+                PluginError::InvalidManifestFormat {
+                    error: e.to_string(),
+                }
+            })?;
+        Ok(dto.into())
     }
 }
 

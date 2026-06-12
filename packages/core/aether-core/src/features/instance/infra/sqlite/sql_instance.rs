@@ -1,15 +1,80 @@
-use std::str::FromStr;
-
 use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
-        instance::{Instance, InstanceError, InstanceSnapshot},
+        instance::{Instance, InstanceError, InstanceInstallStage, InstanceSnapshot},
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
     },
     shared::overridable::domain::Overridable,
 };
+
+/// DTO for `ModLoader` serialization in `SQLite` storage.
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModLoaderDto {
+    Vanilla,
+    Forge,
+    Fabric,
+    Quilt,
+    NeoForge,
+}
+
+impl From<ModLoaderDto> for ModLoader {
+    fn from(value: ModLoaderDto) -> Self {
+        match value {
+            ModLoaderDto::Vanilla => Self::Vanilla,
+            ModLoaderDto::Forge => Self::Forge,
+            ModLoaderDto::Fabric => Self::Fabric,
+            ModLoaderDto::Quilt => Self::Quilt,
+            ModLoaderDto::NeoForge => Self::NeoForge,
+        }
+    }
+}
+
+impl From<ModLoader> for ModLoaderDto {
+    fn from(value: ModLoader) -> Self {
+        match value {
+            ModLoader::Vanilla => Self::Vanilla,
+            ModLoader::Forge => Self::Forge,
+            ModLoader::Fabric => Self::Fabric,
+            ModLoader::Quilt => Self::Quilt,
+            ModLoader::NeoForge => Self::NeoForge,
+        }
+    }
+}
+
+/// DTO for `InstanceInstallStage` serialization in `SQLite` storage.
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InstanceInstallStageDto {
+    Installed,
+    Installing,
+    PackInstalling,
+    NotInstalled,
+}
+
+impl From<InstanceInstallStageDto> for InstanceInstallStage {
+    fn from(value: InstanceInstallStageDto) -> Self {
+        match value {
+            InstanceInstallStageDto::Installed => Self::Installed,
+            InstanceInstallStageDto::Installing => Self::Installing,
+            InstanceInstallStageDto::PackInstalling => Self::PackInstalling,
+            InstanceInstallStageDto::NotInstalled => Self::NotInstalled,
+        }
+    }
+}
+
+impl From<InstanceInstallStage> for InstanceInstallStageDto {
+    fn from(value: InstanceInstallStage) -> Self {
+        match value {
+            InstanceInstallStage::Installed => Self::Installed,
+            InstanceInstallStage::Installing => Self::Installing,
+            InstanceInstallStage::PackInstalling => Self::PackInstalling,
+            InstanceInstallStage::NotInstalled => Self::NotInstalled,
+        }
+    }
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -97,10 +162,22 @@ impl From<Instance> for SqlInstance {
             id: s.id,
             name: s.name,
             icon_path: s.icon_path,
-            install_stage: s.install_stage.as_str().to_string(),
+            install_stage: {
+                let dto: InstanceInstallStageDto = s.install_stage.into();
+                serde_json::to_string(&dto)
+                    .unwrap_or_default()
+                    .trim_matches('"')
+                    .to_owned()
+            },
 
             game_version: s.game_version,
-            loader: s.loader.as_str().to_string(),
+            loader: {
+                let dto: ModLoaderDto = s.loader.into();
+                serde_json::to_string(&dto)
+                    .unwrap_or_default()
+                    .trim_matches('"')
+                    .to_owned()
+            },
             loader_version_json: s.loader_version.map(|v| {
                 let dto: LoaderVersionPreferenceDto = v.into();
                 serde_json::to_string(&dto).unwrap()
@@ -169,14 +246,20 @@ impl TryFrom<SqlInstance> for Instance {
             id: row.id,
             name: row.name,
             icon_path: row.icon_path,
-            install_stage: row
-                .install_stage
-                .parse()
-                .map_err(|_| InstanceError::Storage("Invalid stage".into()))?,
+            install_stage: {
+                let dto: InstanceInstallStageDto =
+                    serde_json::from_str(&format!("\"{}\"", row.install_stage.trim_matches('"')))
+                        .map_err(|_| InstanceError::Storage("Invalid stage".into()))?;
+                dto.into()
+            },
 
             game_version: row.game_version,
-            loader: ModLoader::from_str(&row.loader)
-                .map_err(|()| InstanceError::Storage("Invalid mod loader".into()))?,
+            loader: {
+                let dto: ModLoaderDto =
+                    serde_json::from_str(&format!("\"{}\"", row.loader.trim_matches('"')))
+                        .map_err(|_| InstanceError::Storage("Invalid mod loader".into()))?;
+                dto.into()
+            },
             loader_version: row.loader_version_json.map(|s| {
                 let dto: LoaderVersionPreferenceDto = serde_json::from_str(&s).unwrap();
                 dto.into()

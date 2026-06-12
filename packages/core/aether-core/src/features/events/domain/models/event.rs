@@ -1,10 +1,8 @@
-use serde::{Deserialize, Serialize};
-
 use crate::features::events::{
     InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Event {
     Instance(InstanceEvent),
     Process(ProcessEvent),

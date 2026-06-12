@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
@@ -17,7 +16,7 @@ pub enum ProcessError {
     Io(#[from] IoError),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct MinecraftProcessMetadata {
     uuid: Uuid,
     instance_id: String,

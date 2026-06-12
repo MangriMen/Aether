@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ProcessEvent {
     pub instance_id: String,
     pub process_id: Uuid,
@@ -10,8 +8,7 @@ pub struct ProcessEvent {
     pub message: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Debug)]
 pub enum ProcessEventType {
     Launched,
     Finished,

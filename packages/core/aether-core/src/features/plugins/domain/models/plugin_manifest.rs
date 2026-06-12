@@ -1,16 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use register_schema::RegisterSchema;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use super::ManifestError;
 
 /// Root configuration for an Aether plugin.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
-#[schema_category("plugin_api")]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PluginManifest {
     /// Information about the plugin identity.
     pub metadata: PluginMetadata,
@@ -22,49 +15,39 @@ pub struct PluginManifest {
     pub api: ApiConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PluginMetadata {
     /// Unique identifier for the plugin (lowercase, kebab-case).
-    #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
     pub id: String,
 
     /// Readable name of the plugin.
     pub name: String,
 
     /// Semantic version of the plugin.
-    #[serde(with = "crate::shared::serde_semver::domain")]
-    #[schemars(with = "String")]
     pub version: semver::Version,
 
     /// Short summary of the plugin's purpose.
     pub description: Option<String>,
 
     /// List of plugin authors.
-    #[serde(default)]
     pub authors: Vec<String>,
 
     /// License under which the plugin is distributed.
     pub license: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RuntimeConfig {
     /// List of domains or IP addresses the plugin is allowed to connect to.
-    #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
     /// Filesystem access restrictions. Maps host paths to plugin-internal paths.
-    #[serde(default)]
     pub allowed_paths: Vec<PathMapping>,
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
 /// Format: [`host_path`, `virtual_path`]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PathMapping(
     /// Path on the host disk.
     pub String,
@@ -78,44 +61,34 @@ impl From<PathMapping> for (String, PathBuf) {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Eq, PartialEq)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum LoadConfigType {
     Extism,
     Native,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case", tag = "type")]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum LoadConfig {
     /// Use WebAssembly (Extism) for a secure, cross-platform sandbox.
-    #[serde(rename_all = "camelCase")]
     Extism {
         /// Path to the .wasm file relative to the plugin root.
         file: PathBuf,
         /// Maximum memory (in bytes) the plugin is allowed to allocate.
-        #[serde(default)]
         memory_limit: Option<usize>,
     },
-    /// Load a native shared library (.dll, .so, .dylib). Less secure, but faster.
-    #[serde(rename_all = "camelCase")]
+    /// Load a native shared library (.dll, .so, .dylib).
     Native {
         /// Path to the dynamic library file relative to the plugin root.
         lib_path: PathBuf,
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ApiConfig {
     /// Required API version range (`SemVer` requirement).
-    #[serde(with = "crate::shared::serde_semver::domain")]
-    #[schemars(with = "String")]
     pub version: semver::VersionReq,
 
     /// List of optional host features requested by the plugin.
-    #[serde(default)]
     pub features: Vec<String>,
 }
 
@@ -178,11 +151,4 @@ impl ApiConfig {
     }
 }
 
-impl From<&LoadConfig> for LoadConfigType {
-    fn from(config: &LoadConfig) -> Self {
-        match config {
-            LoadConfig::Extism { .. } => LoadConfigType::Extism,
-            LoadConfig::Native { .. } => LoadConfigType::Native,
-        }
-    }
-}
+// Note: From<&LoadConfig> for LoadConfigType is implemented in mappers/plugin_manifest.rs

@@ -69,12 +69,35 @@ impl From<CapabilityMetadata> for CapabilityMetadataDto {
     }
 }
 
+impl From<aether_core::plugin_api::v0::CapabilityMetadataDto> for CapabilityMetadataDto {
+    fn from(dto: aether_core::plugin_api::v0::CapabilityMetadataDto) -> Self {
+        Self {
+            id: dto.id,
+            name: dto.name,
+            description: dto.description,
+            icon: dto.icon,
+        }
+    }
+}
+
 impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
     fn from(m: ImporterCapabilityMetadata) -> Self {
         Self {
             base: m.base.into(),
             field_label: m.field_label,
             supported_extensions: m.supported_extensions,
+        }
+    }
+}
+
+impl From<aether_core::plugin_api::v0::ImporterCapabilityMetadataDto>
+    for ImporterCapabilityMetadataDto
+{
+    fn from(dto: aether_core::plugin_api::v0::ImporterCapabilityMetadataDto) -> Self {
+        Self {
+            base: dto.base.into(),
+            field_label: dto.field_label,
+            supported_extensions: dto.supported_extensions,
         }
     }
 }
@@ -94,6 +117,28 @@ impl From<UpdaterCapabilityMetadata> for UpdaterCapabilityMetadataDto {
     fn from(m: UpdaterCapabilityMetadata) -> Self {
         Self {
             base: m.base.into(),
+        }
+    }
+}
+
+impl From<aether_core::plugin_api::v0::UpdaterCapabilityMetadataDto>
+    for UpdaterCapabilityMetadataDto
+{
+    fn from(dto: aether_core::plugin_api::v0::UpdaterCapabilityMetadataDto) -> Self {
+        Self {
+            base: dto.base.into(),
+        }
+    }
+}
+
+impl From<aether_core::plugin_api::v0::ContentProviderCapabilityMetadataDto>
+    for ContentProviderCapabilityMetadataDto
+{
+    fn from(dto: aether_core::plugin_api::v0::ContentProviderCapabilityMetadataDto) -> Self {
+        Self {
+            base: dto.base.into(),
+            supports_install_atomic: dto.supports_install_atomic,
+            supports_install_modpacks: dto.supports_install_modpacks,
         }
     }
 }

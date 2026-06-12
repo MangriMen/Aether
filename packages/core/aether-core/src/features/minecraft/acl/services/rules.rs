@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::features::minecraft::vanilla;
+use crate::features::minecraft::acl::models::vanilla;
 
 pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_updated: bool) -> bool {
     let mut parse_results = rules

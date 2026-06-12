@@ -2,7 +2,9 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
-use super::vanilla::{Argument, ArgumentType, Library, VersionInfo, VersionType};
+use crate::features::minecraft::acl::models::vanilla::{
+    Argument, ArgumentType, Library, VersionInfo, VersionType,
+};
 
 /// The latest version of the format the fabric model structs deserialize to
 pub const CURRENT_FABRIC_FORMAT_VERSION: usize = 0;

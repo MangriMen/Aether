@@ -1,6 +1,6 @@
 mod download;
-mod error;
-mod metadata;
+pub(crate) mod error;
+pub(crate) mod metadata;
 mod processors;
 
 pub use download::AssetsService;

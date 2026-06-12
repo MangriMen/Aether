@@ -1,19 +1,20 @@
+pub(crate) mod acl;
 mod app;
 mod domain;
 pub mod infra;
 
 // Re-export domain types explicitly (domain is private, but pub use works from private modules)
+pub use acl::models::modded;
+pub use acl::models::vanilla;
+pub use acl::services::parse_arguments;
+pub use acl::services::parse_rules;
 pub use domain::LaunchSettings;
 pub use domain::LoaderVersionPreference;
 pub use domain::MinecraftDomainError;
 pub use domain::ModLoader;
 pub use domain::TEMPORARY_REPLACE_CHAR;
 pub use domain::get_compatible_java_version;
-pub use domain::modded;
-pub use domain::parse_arguments;
-pub use domain::parse_rules;
 pub use domain::resolve_minecraft_version;
-pub use domain::vanilla;
 
 // Re-export app types (app is private, but pub use works)
 pub use app::GetLoaderVersionManifestUseCase;

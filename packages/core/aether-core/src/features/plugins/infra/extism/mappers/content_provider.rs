@@ -1,17 +1,6 @@
-use aether_core_plugin_api::v0::{
-    InstanceDto, PluginCheckCompatibilityParamsDto, PluginImportInstanceDto,
-};
+use aether_core_plugin_api::v0::{InstanceDto, PluginCheckCompatibilityParamsDto};
 
-use crate::features::plugins::{PluginCheckCompatibilityParams, PluginImportInstance};
-
-impl From<PluginImportInstance> for PluginImportInstanceDto {
-    fn from(value: PluginImportInstance) -> Self {
-        Self {
-            importer_id: value.importer_id,
-            path: value.path,
-        }
-    }
-}
+use crate::features::plugins::PluginCheckCompatibilityParams;
 
 impl From<PluginCheckCompatibilityParams> for PluginCheckCompatibilityParamsDto {
     fn from(value: PluginCheckCompatibilityParams) -> Self {

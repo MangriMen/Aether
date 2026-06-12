@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ModLoader {
     Vanilla,
@@ -27,21 +25,6 @@ impl ModLoader {
             Self::Fabric => "fabric",
             Self::Quilt => "quilt",
             Self::NeoForge => "neo",
-        }
-    }
-}
-
-impl FromStr for ModLoader {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "vanilla" => Ok(Self::Vanilla),
-            "forge" => Ok(Self::Forge),
-            "fabric" => Ok(Self::Fabric),
-            "quilt" => Ok(Self::Quilt),
-            "neoforge" | "neo" => Ok(Self::NeoForge),
-            _ => Err(()),
         }
     }
 }

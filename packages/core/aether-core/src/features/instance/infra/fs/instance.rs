@@ -81,6 +81,38 @@ impl From<ModLoader> for ModLoaderV1 {
     }
 }
 
+/// DTO for `InstanceInstallStage` serialization in FS storage.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InstanceInstallStageV1 {
+    Installed,
+    Installing,
+    PackInstalling,
+    NotInstalled,
+}
+
+impl From<InstanceInstallStageV1> for InstanceInstallStage {
+    fn from(value: InstanceInstallStageV1) -> Self {
+        match value {
+            InstanceInstallStageV1::Installed => Self::Installed,
+            InstanceInstallStageV1::Installing => Self::Installing,
+            InstanceInstallStageV1::PackInstalling => Self::PackInstalling,
+            InstanceInstallStageV1::NotInstalled => Self::NotInstalled,
+        }
+    }
+}
+
+impl From<InstanceInstallStage> for InstanceInstallStageV1 {
+    fn from(value: InstanceInstallStage) -> Self {
+        match value {
+            InstanceInstallStage::Installed => Self::Installed,
+            InstanceInstallStage::Installing => Self::Installing,
+            InstanceInstallStage::PackInstalling => Self::PackInstalling,
+            InstanceInstallStage::NotInstalled => Self::NotInstalled,
+        }
+    }
+}
+
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceV1 {
@@ -136,10 +168,12 @@ impl From<InstanceV1> for Instance {
 
             icon_path: v1.icon_path,
 
-            install_stage: v1
-                .install_stage
-                .parse()
-                .unwrap_or(InstanceInstallStage::NotInstalled),
+            install_stage: {
+                let dto: InstanceInstallStageV1 =
+                    serde_json::from_str(&format!("\"{}\"", v1.install_stage))
+                        .unwrap_or(InstanceInstallStageV1::NotInstalled);
+                dto.into()
+            },
 
             game_version: v1.game_version,
             loader: v1.loader.into(),
@@ -250,10 +284,12 @@ impl From<InstanceV2> for Instance {
 
             icon_path: v2.icon_path,
 
-            install_stage: v2
-                .install_stage
-                .parse()
-                .unwrap_or(InstanceInstallStage::NotInstalled),
+            install_stage: {
+                let dto: InstanceInstallStageV1 =
+                    serde_json::from_str(&format!("\"{}\"", v2.install_stage))
+                        .unwrap_or(InstanceInstallStageV1::NotInstalled);
+                dto.into()
+            },
 
             game_version: v2.game_version,
             loader: v2.loader.into(),
@@ -293,7 +329,13 @@ impl From<&Instance> for InstanceV2 {
             name: value.name().to_owned(),
             icon_path: value.icon_path().map(ToString::to_string),
 
-            install_stage: value.install_stage.as_str().to_string(),
+            install_stage: {
+                let dto: InstanceInstallStageV1 = value.install_stage.into();
+                serde_json::to_string(&dto)
+                    .unwrap_or_default()
+                    .trim_matches('"')
+                    .to_owned()
+            },
 
             game_version: value.game_version.clone(),
             loader: value.loader.into(),

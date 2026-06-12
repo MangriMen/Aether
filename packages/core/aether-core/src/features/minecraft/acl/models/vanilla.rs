@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::modded::{Processor, SidedDataEntry};
+use crate::features::minecraft::acl::models::modded::{Processor, SidedDataEntry};
 
 /// The latest version of the format the model structs deserialize to
 pub const CURRENT_FORMAT_VERSION: usize = 0;
