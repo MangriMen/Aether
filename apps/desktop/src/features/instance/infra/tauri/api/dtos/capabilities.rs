@@ -69,8 +69,8 @@ impl From<CapabilityMetadata> for CapabilityMetadataDto {
     }
 }
 
-impl From<aether_core::plugin_api::v0::CapabilityMetadataDto> for CapabilityMetadataDto {
-    fn from(dto: aether_core::plugin_api::v0::CapabilityMetadataDto) -> Self {
+impl From<aether_core::features::plugins::CapabilityMetadataDto> for CapabilityMetadataDto {
+    fn from(dto: aether_core::features::plugins::CapabilityMetadataDto) -> Self {
         Self {
             id: dto.id,
             name: dto.name,
@@ -90,10 +90,10 @@ impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
     }
 }
 
-impl From<aether_core::plugin_api::v0::ImporterCapabilityMetadataDto>
+impl From<aether_core::features::plugins::ImporterCapabilityMetadataDto>
     for ImporterCapabilityMetadataDto
 {
-    fn from(dto: aether_core::plugin_api::v0::ImporterCapabilityMetadataDto) -> Self {
+    fn from(dto: aether_core::features::plugins::ImporterCapabilityMetadataDto) -> Self {
         Self {
             base: dto.base.into(),
             field_label: dto.field_label,
@@ -121,20 +121,20 @@ impl From<UpdaterCapabilityMetadata> for UpdaterCapabilityMetadataDto {
     }
 }
 
-impl From<aether_core::plugin_api::v0::UpdaterCapabilityMetadataDto>
+impl From<aether_core::features::plugins::UpdaterCapabilityMetadataDto>
     for UpdaterCapabilityMetadataDto
 {
-    fn from(dto: aether_core::plugin_api::v0::UpdaterCapabilityMetadataDto) -> Self {
+    fn from(dto: aether_core::features::plugins::UpdaterCapabilityMetadataDto) -> Self {
         Self {
             base: dto.base.into(),
         }
     }
 }
 
-impl From<aether_core::plugin_api::v0::ContentProviderCapabilityMetadataDto>
+impl From<aether_core::features::plugins::ContentProviderCapabilityMetadataDto>
     for ContentProviderCapabilityMetadataDto
 {
-    fn from(dto: aether_core::plugin_api::v0::ContentProviderCapabilityMetadataDto) -> Self {
+    fn from(dto: aether_core::features::plugins::ContentProviderCapabilityMetadataDto) -> Self {
         Self {
             base: dto.base.into(),
             supports_install_atomic: dto.supports_install_atomic,

@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -35,89 +33,121 @@ impl From<aether_core::features::plugins::PluginDto> for PluginDto {
     }
 }
 
-impl From<aether_core::plugin_api::v0::PluginManifestDto> for PluginManifestDto {
-    fn from(dto: aether_core::plugin_api::v0::PluginManifestDto) -> Self {
+// ── App DTO → Desktop DTO converters ──
+
+impl From<aether_core::features::plugins::PluginManifestDto> for PluginManifestDto {
+    fn from(dto: aether_core::features::plugins::PluginManifestDto) -> Self {
         Self {
-            metadata: PluginMetadataDto {
-                id: dto.metadata.id,
-                name: dto.metadata.name,
-                version: semver::Version::parse(&dto.metadata.version)
-                    .unwrap_or(semver::Version::new(0, 0, 0)),
-                description: dto.metadata.description,
-                authors: dto.metadata.authors,
-                license: dto.metadata.license,
-            },
-            runtime: RuntimeConfigDto {
-                allowed_hosts: dto.runtime.allowed_hosts,
-                allowed_paths: dto
-                    .runtime
-                    .allowed_paths
-                    .into_iter()
-                    .map(|pm| PathMappingDto(pm.0, PathBuf::from(pm.1)))
-                    .collect(),
-            },
+            metadata: dto.metadata.into(),
+            runtime: dto.runtime.into(),
             load: dto.load.into(),
-            api: ApiConfigDto {
-                version: semver::VersionReq::parse(&dto.api.version)
-                    .unwrap_or(semver::VersionReq::STAR),
-                features: dto.api.features,
-            },
+            api: dto.api.into(),
         }
     }
 }
 
-impl From<aether_core::plugin_api::v0::PluginCapabilitiesDto> for PluginCapabilitiesDto {
-    fn from(dto: aether_core::plugin_api::v0::PluginCapabilitiesDto) -> Self {
-        use aether_core::plugin_api::v0::{
-            PluginContentProviderCapabilityDto as SrcProvider,
-            PluginImporterCapabilityDto as SrcImporter, PluginUpdaterCapabilityDto as SrcUpdater,
-        };
-
+impl From<aether_core::features::plugins::PluginMetadataDto> for PluginMetadataDto {
+    fn from(dto: aether_core::features::plugins::PluginMetadataDto) -> Self {
         Self {
-            importers: dto
-                .importers
-                .into_iter()
-                .map(|i: SrcImporter| PluginImporterCapabilityDto {
-                    metadata: i.metadata.into(),
-                    handler: i.handler,
-                })
-                .collect(),
-            updaters: dto
-                .updaters
-                .into_iter()
-                .map(|u: SrcUpdater| PluginUpdaterCapabilityDto {
-                    metadata: u.metadata.into(),
-                    handler: u.handler,
-                })
-                .collect(),
-            content_providers: dto
-                .content_providers
-                .into_iter()
-                .map(|cp: SrcProvider| PluginContentProviderCapabilityDto {
-                    metadata: cp.metadata.into(),
-                    handlers: ProviderHandlersDto {
-                        search: cp.handlers.search,
-                        get_content: cp.handlers.get_content,
-                        list_version: cp.handlers.list_version,
-                        install_atomic: cp.handlers.install_atomic,
-                        install_modpack: cp.handlers.install_modpack,
-                        check_compatibility: cp.handlers.check_compatibility,
-                    },
-                })
-                .collect(),
+            id: dto.id,
+            name: dto.name,
+            version: dto.version,
+            description: dto.description,
+            authors: dto.authors,
+            license: dto.license,
         }
     }
 }
 
-impl From<aether_core::plugin_api::v0::LoadConfigDto> for LoadConfigDto {
-    fn from(dto: aether_core::plugin_api::v0::LoadConfigDto) -> Self {
+impl From<aether_core::features::plugins::RuntimeConfigDto> for RuntimeConfigDto {
+    fn from(dto: aether_core::features::plugins::RuntimeConfigDto) -> Self {
+        Self {
+            allowed_hosts: dto.allowed_hosts,
+            allowed_paths: dto.allowed_paths.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PathMappingDto> for PathMappingDto {
+    fn from(dto: aether_core::features::plugins::PathMappingDto) -> Self {
+        Self(dto.0, dto.1)
+    }
+}
+
+impl From<aether_core::features::plugins::LoadConfigDto> for LoadConfigDto {
+    fn from(dto: aether_core::features::plugins::LoadConfigDto) -> Self {
         match dto {
-            aether_core::plugin_api::v0::LoadConfigDto::Extism { file, memory_limit } => {
+            aether_core::features::plugins::LoadConfigDto::Extism { file, memory_limit } => {
                 Self::Extism { file, memory_limit }
             }
-            aether_core::plugin_api::v0::LoadConfigDto::Native { lib_path } => {
+            aether_core::features::plugins::LoadConfigDto::Native { lib_path } => {
                 Self::Native { lib_path }
             }
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::ApiConfigDto> for ApiConfigDto {
+    fn from(dto: aether_core::features::plugins::ApiConfigDto) -> Self {
+        Self {
+            version: dto.version,
+            features: dto.features,
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginCapabilitiesDto> for PluginCapabilitiesDto {
+    fn from(dto: aether_core::features::plugins::PluginCapabilitiesDto) -> Self {
+        Self {
+            importers: dto.importers.into_iter().map(Into::into).collect(),
+            updaters: dto.updaters.into_iter().map(Into::into).collect(),
+            content_providers: dto.content_providers.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginImporterCapabilityDto>
+    for PluginImporterCapabilityDto
+{
+    fn from(dto: aether_core::features::plugins::PluginImporterCapabilityDto) -> Self {
+        Self {
+            metadata: dto.metadata.into(),
+            handler: dto.handler,
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginUpdaterCapabilityDto>
+    for PluginUpdaterCapabilityDto
+{
+    fn from(dto: aether_core::features::plugins::PluginUpdaterCapabilityDto) -> Self {
+        Self {
+            metadata: dto.metadata.into(),
+            handler: dto.handler,
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginContentProviderCapabilityDto>
+    for PluginContentProviderCapabilityDto
+{
+    fn from(dto: aether_core::features::plugins::PluginContentProviderCapabilityDto) -> Self {
+        Self {
+            metadata: dto.metadata.into(),
+            handlers: dto.handlers.into(),
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::ProviderHandlersDto> for ProviderHandlersDto {
+    fn from(dto: aether_core::features::plugins::ProviderHandlersDto) -> Self {
+        Self {
+            search: dto.search,
+            get_content: dto.get_content,
+            list_version: dto.list_version,
+            install_atomic: dto.install_atomic,
+            install_modpack: dto.install_modpack,
+            check_compatibility: dto.check_compatibility,
         }
     }
 }

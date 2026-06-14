@@ -14,9 +14,14 @@ pub use domain::{
 
 // App (use cases, ports, services, DTOs)
 pub use app::{
-    AsCapabilityMetadata, DisablePluginUseCase, EditPluginSettings, EditPluginSettingsUseCase,
-    EnablePluginUseCase, GetPluginApiVersionUseCase, GetPluginDtoUseCase, GetPluginSettingsUseCase,
-    ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto, PluginDtoState, PluginExtractor,
-    PluginLoader, PluginLoaderRegistry, PluginRegistry, PluginSettingsStorage, PluginStorage,
-    RemovePluginUseCase, SyncPluginsUseCase,
+    ApiConfigDto, AsCapabilityMetadata, CapabilityMetadataDto,
+    ContentProviderCapabilityMetadataDto, DisablePluginUseCase, EditPluginSettings,
+    EditPluginSettingsUseCase, EnablePluginUseCase, GetPluginApiVersionUseCase,
+    GetPluginDtoUseCase, GetPluginSettingsUseCase, ImportPluginsUseCase,
+    ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, LoadConfigDto, LoadConfigTypeDto,
+    PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto,
+    PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
+    PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginRegistry,
+    PluginSettingsStorage, PluginStorage, PluginUpdaterCapabilityDto, ProviderHandlersDto,
+    RemovePluginUseCase, RuntimeConfigDto, SyncPluginsUseCase, UpdaterCapabilityMetadataDto,
 };

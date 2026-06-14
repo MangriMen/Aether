@@ -13,7 +13,13 @@ mod services;
 mod sync_plugins;
 
 pub use disable_plugin::DisablePluginUseCase;
-pub use dtos::{PluginDto, PluginDtoState};
+pub use dtos::{
+    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto,
+    ImporterCapabilityMetadataDto, LoadConfigDto, LoadConfigTypeDto, PathMappingDto,
+    PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto, PluginDtoState,
+    PluginImporterCapabilityDto, PluginManifestDto, PluginMetadataDto, PluginUpdaterCapabilityDto,
+    ProviderHandlersDto, RuntimeConfigDto, UpdaterCapabilityMetadataDto,
+};
 pub use edit_plugin_settings::{EditPluginSettings, EditPluginSettingsUseCase};
 pub use enable_plugin::EnablePluginUseCase;
 pub use get_plugin_api_version::GetPluginApiVersionUseCase;
