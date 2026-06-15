@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy, Default)]
 pub struct AppSettings {
     pub action_on_instance_launch: ActionOnInstanceLaunch,
     pub is_actual_transparent: bool,
@@ -11,8 +8,7 @@ pub struct AppSettings {
     pub window_effect: WindowEffect,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub enum ActionOnInstanceLaunch {
     #[default]
     Nothing,
@@ -20,8 +16,7 @@ pub enum ActionOnInstanceLaunch {
     Close,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Hash, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub enum WindowEffect {
     #[default]
     Off,
