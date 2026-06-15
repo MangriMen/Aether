@@ -243,3 +243,76 @@ impl Hooks {
         is_changed
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Hooks::update_hooks ──
+
+    #[test]
+    fn should_update_all_hooks_and_return_true() {
+        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
+        assert!(hooks.update_hooks(
+            Some("pre2".into()),
+            Some("wrap2".into()),
+            Some("post2".into()),
+        ));
+        assert_eq!(hooks.pre_launch(), "pre2");
+        assert_eq!(hooks.wrapper(), "wrap2");
+        assert_eq!(hooks.post_exit(), "post2");
+    }
+
+    #[test]
+    fn should_return_false_when_nothing_changed() {
+        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
+        assert!(!hooks.update_hooks(Some("pre".into()), Some("wrap".into()), Some("post".into()),));
+    }
+
+    #[test]
+    fn should_skip_none_fields_and_still_detect_change() {
+        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
+        assert!(hooks.update_hooks(Some("pre2".into()), None, None));
+        assert_eq!(hooks.pre_launch(), "pre2");
+        assert_eq!(hooks.wrapper(), "wrap");
+    }
+
+    #[test]
+    fn should_return_true_when_only_partial_update() {
+        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
+        assert!(hooks.update_hooks(None, None, Some("post2".into())));
+        assert_eq!(hooks.post_exit(), "post2");
+    }
+
+    #[test]
+    fn should_not_change_field_when_none_passed() {
+        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
+        hooks.update_hooks(None, None, None);
+        assert_eq!(hooks.pre_launch(), "pre");
+        assert_eq!(hooks.wrapper(), "wrap");
+        assert_eq!(hooks.post_exit(), "post");
+    }
+
+    // ── DefaultInstanceSettings::update_launch_args (representative) ──
+
+    #[test]
+    fn should_update_launch_args_and_return_true() {
+        let mut settings = DefaultInstanceSettings::default();
+        assert!(settings.update_launch_args(vec!["--arg".into()]));
+        assert_eq!(settings.launch_args(), &["--arg"]);
+    }
+
+    #[test]
+    fn should_return_false_when_launch_args_unchanged() {
+        let mut settings = DefaultInstanceSettings::default();
+        assert!(!settings.update_launch_args(vec![]));
+    }
+
+    #[test]
+    fn should_update_hooks_on_default_instance_settings() {
+        let mut settings = DefaultInstanceSettings::default();
+        settings.update_hooks(Some("pre".into()), Some("wrap".into()), None);
+        assert_eq!(settings.hooks().pre_launch(), "pre");
+        assert_eq!(settings.hooks().wrapper(), "wrap");
+    }
+}
