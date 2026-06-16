@@ -27,3 +27,55 @@ pub fn extract_java_major_minor_version(version: &str) -> Result<(u32, u32), Jav
         Ok((major, minor))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_old_format() {
+        assert_eq!(
+            extract_java_major_minor_version("1.8.0_361").unwrap(),
+            (1, 8)
+        );
+    }
+
+    #[test]
+    fn extract_new_format() {
+        assert_eq!(extract_java_major_minor_version("17").unwrap(), (1, 17));
+        assert_eq!(extract_java_major_minor_version("20").unwrap(), (1, 20));
+        assert_eq!(extract_java_major_minor_version("21").unwrap(), (1, 21));
+    }
+
+    #[test]
+    fn extract_detailed_format() {
+        assert_eq!(extract_java_major_minor_version("17.0.1").unwrap(), (1, 17));
+        assert_eq!(
+            extract_java_major_minor_version("17.0.2.3").unwrap(),
+            (1, 17)
+        );
+    }
+
+    #[test]
+    fn extract_java_8_format() {
+        assert_eq!(extract_java_major_minor_version("1.8").unwrap(), (1, 8));
+    }
+
+    #[test]
+    fn extract_invalid_version_returns_error() {
+        let err = extract_java_major_minor_version("").unwrap_err();
+        assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
+    }
+
+    #[test]
+    fn extract_non_numeric_returns_error() {
+        let err = extract_java_major_minor_version("abc").unwrap_err();
+        assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
+    }
+
+    #[test]
+    fn extract_partial_non_numeric_returns_error() {
+        let err = extract_java_major_minor_version("1.abc").unwrap_err();
+        assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
+    }
+}

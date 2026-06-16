@@ -145,7 +145,48 @@ impl TryFrom<String> for AccountType {
 }
 
 #[cfg(test)]
-mod tests {
+mod account_type_tests {
+    use super::*;
+
+    #[test]
+    fn account_type_display() {
+        assert_eq!(AccountType::Offline.to_string(), "offline");
+        assert_eq!(AccountType::Microsoft.to_string(), "microsoft");
+    }
+
+    #[test]
+    fn account_type_from_string_valid() {
+        assert_eq!(
+            AccountType::from_string("offline").unwrap(),
+            AccountType::Offline
+        );
+        assert_eq!(
+            AccountType::from_string("microsoft").unwrap(),
+            AccountType::Microsoft
+        );
+    }
+
+    #[test]
+    fn account_type_from_string_invalid() {
+        let err = AccountType::from_string("unknown").unwrap_err();
+        assert!(matches!(err, AuthDomainError::InvalidAccountType));
+    }
+
+    #[test]
+    fn account_type_try_from_string() {
+        let result: Result<AccountType, _> = "microsoft".to_string().try_into();
+        assert_eq!(result.unwrap(), AccountType::Microsoft);
+    }
+
+    #[test]
+    fn account_type_into_string() {
+        let s: String = AccountType::Offline.into();
+        assert_eq!(s, "offline");
+    }
+}
+
+#[cfg(test)]
+mod credential_tests {
     use super::*;
 
     #[test]

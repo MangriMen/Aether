@@ -64,6 +64,53 @@ impl FromStr for ProviderId {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_id_display() {
+        let id = ProviderId {
+            plugin_id: "my_plugin".to_string(),
+            capability_id: "mod_provider".to_string(),
+        };
+        assert_eq!(id.to_string(), "my_plugin#mod_provider");
+    }
+
+    #[test]
+    fn provider_id_from_str_valid() {
+        let id: ProviderId = "my_plugin#mod_provider".parse().unwrap();
+        assert_eq!(id.plugin_id, "my_plugin");
+        assert_eq!(id.capability_id, "mod_provider");
+    }
+
+    #[test]
+    fn provider_id_from_str_invalid_no_separator() {
+        let err = "my_plugin".parse::<ProviderId>().unwrap_err();
+        assert!(err.contains("Invalid format"));
+        assert!(err.contains("my_plugin"));
+    }
+
+    #[test]
+    fn provider_id_from_str_empty_parts() {
+        let id: ProviderId = "#only_cap".parse().unwrap();
+        assert!(id.plugin_id.is_empty());
+        assert_eq!(id.capability_id, "only_cap");
+    }
+
+    #[test]
+    fn provider_id_roundtrip() {
+        let original = ProviderId {
+            plugin_id: "test".to_string(),
+            capability_id: "cap".to_string(),
+        };
+        let serialized = original.to_string();
+        let deserialized: ProviderId = serialized.parse().unwrap();
+        assert_eq!(original.plugin_id, deserialized.plugin_id);
+        assert_eq!(original.capability_id, deserialized.capability_id);
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct BaseContentParams {
     pub content_id: String,

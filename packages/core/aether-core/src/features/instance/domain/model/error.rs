@@ -99,6 +99,51 @@ pub enum InstanceError {
     CredentialsError(#[from] AuthApplicationError),
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn storage_format() {
+        let err = InstanceError::Storage("db error".into());
+        assert_eq!(err.to_string(), "Storage error: db error");
+    }
+
+    #[test]
+    fn not_found_format() {
+        let err = InstanceError::NotFound {
+            instance_id: "abc".into(),
+        };
+        assert_eq!(err.to_string(), "Instance with id \"abc\" not found");
+    }
+
+    #[test]
+    fn capability_operation_error_format() {
+        let err = InstanceError::CapabilityOperationError;
+        assert_eq!(err.to_string(), "Capability operation error");
+    }
+
+    #[test]
+    fn prelaunch_command_error_format() {
+        let err = InstanceError::PrelaunchCommandError { code: 1 };
+        assert_eq!(err.to_string(), "Prelaunch command error with code: 1");
+    }
+
+    #[test]
+    fn instance_already_running_format() {
+        let pid = Uuid::new_v4();
+        let err = InstanceError::InstanceAlreadyRunning {
+            instance_id: "inst-1".into(),
+            process_id: pid,
+        };
+        assert_eq!(
+            err.to_string(),
+            format!("Instance \"inst-1\" already running with pid \"{pid}\"",)
+        );
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstanceField {
     Name,

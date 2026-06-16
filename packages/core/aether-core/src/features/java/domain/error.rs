@@ -44,3 +44,34 @@ pub enum JavaDomainError {
     #[error("Storage error: {0}")]
     Storage(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn not_found_format() {
+        let err = JavaDomainError::NotFound { version: 17 };
+        assert_eq!(err.to_string(), "No JRE found for version 17");
+    }
+
+    #[test]
+    fn invalid_version_format() {
+        let err = JavaDomainError::InvalidVersion {
+            version: "abc".into(),
+        };
+        assert_eq!(err.to_string(), "Invalid JRE version: abc");
+    }
+
+    #[test]
+    fn storage_format() {
+        let err = JavaDomainError::Storage("db error".into());
+        assert_eq!(err.to_string(), "Storage error: db error");
+    }
+
+    #[test]
+    fn empty_path_format() {
+        let err = JavaDomainError::EmptyPath;
+        assert_eq!(err.to_string(), "Path can't be empty for edit operations");
+    }
+}
