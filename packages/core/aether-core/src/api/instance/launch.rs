@@ -194,6 +194,7 @@ async fn get_launch_instance_use_case(
     );
 
     LaunchInstanceUseCase::new(
+        locator.get_plugin_registry().await,
         locator.get_instance_storage().await,
         locator.get_default_instance_settings_storage().await,
         locator.location_info.clone(),

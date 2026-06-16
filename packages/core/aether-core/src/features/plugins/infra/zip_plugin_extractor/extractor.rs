@@ -38,7 +38,7 @@ impl ZipPluginExtractor {
                     error: e.to_string(),
                 }
             })?;
-        Ok(dto.into())
+        Ok(dto.try_into()?)
     }
 }
 

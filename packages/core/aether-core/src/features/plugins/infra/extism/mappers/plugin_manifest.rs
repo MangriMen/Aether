@@ -6,33 +6,44 @@ use aether_core_plugin_api::v0::{
 };
 
 use crate::features::plugins::domain::{
-    ApiConfig, LoadConfig, LoadConfigType, PathMapping, PluginManifest, PluginMetadata,
-    RuntimeConfig,
+    ApiConfig, LoadConfig, LoadConfigType, ManifestError, PathMapping, PluginManifest,
+    PluginMetadata, RuntimeConfig,
 };
 
-// ── DTO → Domain ──
+// ── DTO → Domain (fallible — semver parsing) ──
 
-impl From<PluginManifestDto> for PluginManifest {
-    fn from(dto: PluginManifestDto) -> Self {
-        Self {
-            metadata: dto.metadata.into(),
+impl TryFrom<PluginManifestDto> for PluginManifest {
+    type Error = ManifestError;
+
+    fn try_from(dto: PluginManifestDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            metadata: dto.metadata.try_into()?,
             runtime: dto.runtime.into(),
             load: dto.load.into(),
-            api: dto.api.into(),
-        }
+            api: dto.api.try_into()?,
+        })
     }
 }
 
-impl From<PluginMetadataDto> for PluginMetadata {
-    fn from(dto: PluginMetadataDto) -> Self {
-        Self {
+impl TryFrom<PluginMetadataDto> for PluginMetadata {
+    type Error = ManifestError;
+
+    fn try_from(dto: PluginMetadataDto) -> Result<Self, Self::Error> {
+        let version =
+            semver::Version::parse(&dto.version).map_err(|e| ManifestError::InvalidSemver {
+                field: "metadata.version".to_owned(),
+                value: dto.version.clone(),
+                error: e.to_string(),
+            })?;
+
+        Ok(Self {
             id: dto.id,
             name: dto.name,
-            version: semver::Version::parse(&dto.version).unwrap_or(semver::Version::new(0, 0, 0)),
+            version,
             description: dto.description,
             authors: dto.authors,
             license: dto.license,
-        }
+        })
     }
 }
 
@@ -60,16 +71,26 @@ impl From<LoadConfigDto> for LoadConfig {
     }
 }
 
-impl From<ApiConfigDto> for ApiConfig {
-    fn from(dto: ApiConfigDto) -> Self {
-        Self {
-            version: semver::VersionReq::from_str(&dto.version).unwrap_or_default(),
+impl TryFrom<ApiConfigDto> for ApiConfig {
+    type Error = ManifestError;
+
+    fn try_from(dto: ApiConfigDto) -> Result<Self, Self::Error> {
+        let version = semver::VersionReq::from_str(&dto.version).map_err(|e| {
+            ManifestError::InvalidSemver {
+                field: "api.version".to_owned(),
+                value: dto.version.clone(),
+                error: e.to_string(),
+            }
+        })?;
+
+        Ok(Self {
+            version,
             features: dto.features,
-        }
+        })
     }
 }
 
-// ── Domain → DTO ──
+// ── Domain → DTO (infallible) ──
 
 impl From<PluginManifest> for PluginManifestDto {
     fn from(v: PluginManifest) -> Self {

@@ -12,6 +12,7 @@ use crate::{
             GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
             MetadataStorage, MinecraftDownloader, ModLoaderProcessor,
         },
+        plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
             GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, ProcessStorage,
             StartProcessUseCase,
@@ -36,6 +37,7 @@ pub struct LaunchInstanceUseCase<
     JP: JreProvider,
     JIT: JavaInstallationTracker,
 > {
+    plugin_registry: Arc<PluginRegistry>,
     instance_storage: Arc<IS>,
     default_instance_settings_storage: Arc<GISS>,
     location_info: Arc<LocationInfo>,
@@ -60,8 +62,9 @@ impl<
     JIT: JavaInstallationTracker,
 > LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
 {
-    #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn new(
+        plugin_registry: Arc<PluginRegistry>,
         instance_storage: Arc<IS>,
         default_instance_settings_storage: Arc<GISS>,
         location_info: Arc<LocationInfo>,
@@ -73,6 +76,7 @@ impl<
         start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
     ) -> Self {
         Self {
+            plugin_registry,
             instance_storage,
             default_instance_settings_storage,
             location_info,
@@ -96,6 +100,7 @@ impl<
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn execute(
         &self,
         instance_id: String,
@@ -157,23 +162,22 @@ impl<
             }
         }
 
-        // run_pre_launch_command(&pre_launch_command, &instance_path).await?;
-
-        // let lazy_locator = LazyLocator::get().await?;
-        // let plugin_registry = lazy_locator.get_plugin_registry().await;
-
-        // if let Some(pack_info) = &instance.pack_info {
-        //     if let Ok(plugin) = plugin_registry.get(&pack_info.pack_type) {
-        //         if let Some(plugin) = &plugin.instance {
-        //             let mut plugin = plugin.lock().await;
-        //             if plugin.supports_handle_events() {
-        //                 plugin.handle_event(&PluginEvent::BeforeInstanceLaunch {
-        //                     instance_id: instance.id().clone(),
-        //                 })?;
-        //             }
-        //         }
-        //     }
-        // }
+        // Fire BeforeInstanceLaunch event to the pack-type plugin
+        if let Some(pack_info) = &instance.pack_info
+            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
+            && let PluginState::Loaded(instance_arc) = &plugin.state
+        {
+            let mut plugin = instance_arc.lock().await;
+            if let Err(e) = plugin.handle_event(&PluginInternalEvent::BeforeInstanceLaunch {
+                instance_id: instance.id().to_string(),
+            }) {
+                tracing::warn!(
+                    "Plugin '{}' failed to handle BeforeInstanceLaunch: {}",
+                    pack_info.provider_id.plugin_id,
+                    e
+                );
+            }
+        }
 
         let command = self
             .get_minecraft_launch_command_use_case
@@ -210,18 +214,22 @@ impl<
             )
             .await;
 
-        // if let Some(pack_info) = &instance.pack_info {
-        //     if let Ok(plugin) = plugin_registry.get(&pack_info.pack_type) {
-        //         if let Some(plugin) = &plugin.instance {
-        //             let mut plugin = plugin.lock().await;
-        //             if plugin.supports_handle_events() {
-        //                 plugin.handle_event(&PluginEvent::AfterInstanceLaunch {
-        //                     instance_id: instance.id().clone(),
-        //                 })?;
-        //             }
-        //         }
-        //     }
-        // }
+        // Fire AfterInstanceLaunch event to the pack-type plugin
+        if let Some(pack_info) = &instance.pack_info
+            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
+            && let PluginState::Loaded(instance_arc) = &plugin.state
+        {
+            let mut plugin = instance_arc.lock().await;
+            if let Err(e) = plugin.handle_event(&PluginInternalEvent::AfterInstanceLaunch {
+                instance_id: instance.id().to_string(),
+            }) {
+                tracing::warn!(
+                    "Plugin '{}' failed to handle AfterInstanceLaunch: {}",
+                    pack_info.provider_id.plugin_id,
+                    e
+                );
+            }
+        }
 
         Ok(metadata?)
     }

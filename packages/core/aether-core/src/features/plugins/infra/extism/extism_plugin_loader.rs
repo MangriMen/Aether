@@ -11,8 +11,8 @@ use tokio::sync::Mutex;
 use crate::{
     features::{
         plugins::{
-            LoadConfig, PathMapping, PluginError, PluginInstance, PluginLoader, PluginManifest,
-            PluginSettings,
+            LoadConfig, PathMapping, PluginError, PluginInstance, PluginInternalEvent,
+            PluginLoader, PluginManifest, PluginSettings,
         },
         settings::LocationInfo,
     },
@@ -133,7 +133,7 @@ impl PluginLoader for ExtismPluginLoader {
         let extism_plugin = Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config))?;
 
         let mut plugin = ExtismPluginInstance::new(extism_plugin, plugin_id.clone());
-        if let Err(err) = plugin.on_load() {
+        if let Err(err) = plugin.handle_event(&PluginInternalEvent::Loaded) {
             tracing::debug!(
                 "Failed to call on_load on plugin {}: {:?}",
                 plugin.get_id(),
@@ -147,7 +147,7 @@ impl PluginLoader for ExtismPluginLoader {
     async fn unload(&self, instance: Arc<Mutex<dyn PluginInstance>>) -> Result<(), PluginError> {
         let mut plugin = instance.lock().await;
 
-        if let Err(err) = plugin.on_unload() {
+        if let Err(err) = plugin.handle_event(&PluginInternalEvent::Unloaded) {
             tracing::debug!(
                 "Failed to call on_unload on plugin {}: {:?}",
                 plugin.get_id(),

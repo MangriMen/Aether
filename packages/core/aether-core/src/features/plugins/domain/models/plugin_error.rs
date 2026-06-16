@@ -1,6 +1,6 @@
 use crate::{
     features::{
-        plugins::{LoadConfig, LoadConfigType},
+        plugins::{LoadConfig, LoadConfigType, ManifestError},
         settings::SettingsError,
     },
     shared::io::domain::IoError,
@@ -41,6 +41,9 @@ pub enum PluginError {
 
     #[error("Invalid plugin manifest format: {error}")]
     InvalidManifestFormat { error: String },
+
+    #[error("{0}")]
+    Manifest(#[from] ManifestError),
 
     #[error("Loader not found for config type: {config_type:?}")]
     LoaderNotFound { config_type: LoadConfigType },

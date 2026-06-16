@@ -16,11 +16,10 @@ use crate::features::{
         ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
         InstanceError, ModpackInstallParams,
     },
-    plugins::{
-        PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance,
-        PluginInstanceExt,
-    },
+    plugins::{PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance},
 };
+
+use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 
 pub struct PluginContentProviderProxy {
     instance: Arc<Mutex<dyn PluginInstance>>,

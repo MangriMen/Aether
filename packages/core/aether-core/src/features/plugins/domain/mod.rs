@@ -8,4 +8,4 @@ pub use models::{
     PluginInternalEvent, PluginManifest, PluginMetadata, PluginSettings, PluginState,
     PluginUpdaterCapability, ProviderHandlers, RuntimeConfig, SerializableOutput,
 };
-pub use plugin_instance::{PluginInstance, PluginInstanceExt};
+pub use plugin_instance::PluginInstance;

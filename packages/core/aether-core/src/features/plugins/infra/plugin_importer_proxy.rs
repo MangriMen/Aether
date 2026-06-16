@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use extism_convert::Msgpack;
 use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{Importer, ImporterCapabilityMetadata, InstanceError},
-    plugins::{PluginImportInstance, PluginImporterCapability, PluginInstance, PluginInstanceExt},
+    plugins::{PluginImportInstance, PluginImporterCapability, PluginInstance},
 };
+
+use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 
 pub struct PluginImporterProxy {
     instance: Arc<Mutex<dyn PluginInstance>>,
@@ -52,10 +55,10 @@ impl Importer for PluginImporterProxy {
         plugin
             .call(
                 &self.capability.handler,
-                PluginImportInstance {
+                Msgpack(PluginImportInstance {
                     importer_id: self.capability.id.clone(),
                     path: path.to_owned(),
-                },
+                }),
             )
             .map_err(|err| {
                 tracing::error!(

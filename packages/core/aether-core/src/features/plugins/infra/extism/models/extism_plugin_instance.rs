@@ -1,4 +1,5 @@
-use crate::features::plugins::{PluginError, PluginInstance, PluginInstanceExt};
+use super::PluginInstanceExt;
+use crate::features::plugins::{PluginError, PluginInstance, PluginInternalEvent};
 
 #[derive(Debug)]
 pub struct ExtismPluginInstance {
@@ -20,25 +21,6 @@ impl PluginInstance for ExtismPluginInstance {
         self.inner.function_exists(name)
     }
 
-    fn on_load(&mut self) -> Result<(), PluginError> {
-        let handle = "on_load";
-
-        if !self.supports(handle) {
-            return Ok(());
-        }
-
-        self.call(handle, ())
-    }
-    fn on_unload(&mut self) -> Result<(), PluginError> {
-        let handle = "on_unload";
-
-        if !self.supports(handle) {
-            return Ok(());
-        }
-
-        self.call(handle, ())
-    }
-
     fn call_bytes<'b>(&'b mut self, name: &str, args: &[u8]) -> Result<&'b [u8], PluginError> {
         self.inner
             .call(name, args)
@@ -47,5 +29,16 @@ impl PluginInstance for ExtismPluginInstance {
                 plugin_id: self.id.clone(),
                 error: e.to_string(),
             })
+    }
+
+    fn handle_event(&mut self, event: &PluginInternalEvent) -> Result<(), PluginError> {
+        let handle = "handle_event";
+
+        if !self.supports(handle) {
+            return Ok(());
+        }
+
+        let dto: aether_core_plugin_api::v0::PluginInternalEventDto = event.into();
+        self.call::<extism_convert::Msgpack<_>, ()>(handle, extism_convert::Msgpack(dto))
     }
 }

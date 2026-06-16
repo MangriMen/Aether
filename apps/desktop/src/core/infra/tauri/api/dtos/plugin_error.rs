@@ -37,6 +37,9 @@ pub enum PluginErrorDto {
     InvalidManifestFormat {
         error: String,
     },
+    Manifest {
+        message: String,
+    },
     LoaderNotFound {
         config_type: LoadConfigTypeDto,
     },
@@ -105,6 +108,9 @@ impl From<&PluginError> for PluginErrorDto {
             PluginError::ManifestNotFound { path } => Self::ManifestNotFound { path: path.clone() },
             PluginError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
                 error: error.clone(),
+            },
+            PluginError::Manifest(err) => Self::Manifest {
+                message: err.to_string(),
             },
             PluginError::LoaderNotFound { config_type } => Self::LoaderNotFound {
                 config_type: (*config_type).into(),

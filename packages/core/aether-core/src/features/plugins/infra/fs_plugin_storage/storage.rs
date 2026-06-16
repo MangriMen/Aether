@@ -53,7 +53,7 @@ impl FsPluginStorage {
     async fn load_manifest(&self, dir: &Path) -> Result<PluginManifest, PluginError> {
         let dto: aether_core_plugin_api::v0::PluginManifestDto =
             read_json_async(&self.get_manifest_path(dir)).await?;
-        Ok(dto.into())
+        Ok(dto.try_into()?)
     }
 
     async fn load_capabilities(

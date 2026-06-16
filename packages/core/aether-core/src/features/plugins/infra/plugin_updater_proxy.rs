@@ -5,8 +5,10 @@ use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{InstanceError, Updater, UpdaterCapabilityMetadata},
-    plugins::{PluginInstance, PluginInstanceExt, PluginUpdaterCapability},
+    plugins::{PluginInstance, PluginUpdaterCapability},
 };
+
+use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 
 pub struct PluginUpdaterProxy {
     instance: Arc<Mutex<dyn PluginInstance>>,

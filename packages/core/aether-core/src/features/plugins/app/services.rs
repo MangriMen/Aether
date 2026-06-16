@@ -79,6 +79,19 @@ impl PluginRegistry {
         Ok(self.get(plugin_id)?.manifest.clone())
     }
 
+    /// Clone state and manifest then drop the `DashMap` lock immediately.
+    /// Prevents deadlocks when `upsert_with()` is called later.
+    pub fn get_state_and_manifest(
+        &self,
+        plugin_id: &str,
+    ) -> Result<(PluginState, PluginManifest), PluginError> {
+        let plugin = self.get(plugin_id)?;
+        let state = plugin.state.clone();
+        let manifest = plugin.manifest.clone();
+        // Lock released on drop(plugin)
+        Ok((state, manifest))
+    }
+
     pub async fn upsert_with<F>(&self, plugin_id: &str, update_fn: F) -> Result<(), PluginError>
     where
         F: FnOnce(&mut Plugin) -> Result<(), PluginError> + Send,
