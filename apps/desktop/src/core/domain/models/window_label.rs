@@ -10,3 +10,13 @@ impl AsRef<str> for WindowLabel {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn window_label_main_returns_main_str() {
+        assert_eq!(WindowLabel::Main.as_ref(), "main");
+    }
+}

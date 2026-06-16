@@ -30,7 +30,7 @@ impl Default for AppSettingsV1 {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ActionOnInstanceLaunchV1 {
     Nothing,
@@ -38,7 +38,7 @@ pub enum ActionOnInstanceLaunchV1 {
     Close,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WindowEffectV1 {
     Off,
@@ -87,6 +87,178 @@ impl From<AppSettingsV1> for AppSettings {
                 WindowEffectV1::Acrylic => WindowEffect::Acrylic,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── AppSettingsV1 conversion tests ──
+
+    #[test]
+    fn app_settings_v1_default() {
+        let dto = AppSettingsV1::default();
+        assert_eq!(
+            dto.action_on_instance_launch,
+            ActionOnInstanceLaunchV1::Nothing
+        );
+        assert!(!dto.transparent);
+        assert_eq!(dto.window_effect, WindowEffectV1::Off);
+    }
+
+    #[test]
+    fn app_settings_to_v1_roundtrip_default() {
+        let domain = AppSettings::default();
+        let dto: AppSettingsV1 = domain.into();
+        let back: AppSettings = dto.into();
+        assert_eq!(
+            back.action_on_instance_launch,
+            ActionOnInstanceLaunch::Nothing
+        );
+        assert!(!back.transparent);
+        assert!(!back.is_actual_transparent);
+        assert_eq!(back.window_effect, WindowEffect::Off);
+    }
+
+    #[test]
+    fn app_settings_to_v1_roundtrip_custom() {
+        let domain = AppSettings {
+            action_on_instance_launch: ActionOnInstanceLaunch::Close,
+            is_actual_transparent: true,
+            transparent: true,
+            window_effect: WindowEffect::Acrylic,
+        };
+        let dto: AppSettingsV1 = domain.into();
+        let back: AppSettings = dto.into();
+        assert_eq!(
+            back.action_on_instance_launch,
+            ActionOnInstanceLaunch::Close
+        );
+        assert!(back.transparent);
+        assert!(back.is_actual_transparent);
+        assert_eq!(back.window_effect, WindowEffect::Acrylic);
+    }
+
+    // ── ActionOnInstanceLaunchV1 conversion ──
+
+    #[test]
+    fn action_v1_domain_roundtrip_all_variants() {
+        let domain_variants = [
+            ActionOnInstanceLaunch::Nothing,
+            ActionOnInstanceLaunch::Hide,
+            ActionOnInstanceLaunch::Close,
+        ];
+        for variant in domain_variants {
+            let dto: ActionOnInstanceLaunchV1 = match variant {
+                ActionOnInstanceLaunch::Nothing => ActionOnInstanceLaunchV1::Nothing,
+                ActionOnInstanceLaunch::Hide => ActionOnInstanceLaunchV1::Hide,
+                ActionOnInstanceLaunch::Close => ActionOnInstanceLaunchV1::Close,
+            };
+            let back = match dto {
+                ActionOnInstanceLaunchV1::Nothing => ActionOnInstanceLaunch::Nothing,
+                ActionOnInstanceLaunchV1::Hide => ActionOnInstanceLaunch::Hide,
+                ActionOnInstanceLaunchV1::Close => ActionOnInstanceLaunch::Close,
+            };
+            assert_eq!(variant, back);
+        }
+    }
+
+    // ── WindowEffectV1 conversion ──
+
+    #[test]
+    fn window_effect_v1_domain_roundtrip_all_variants() {
+        let domain_variants = [
+            WindowEffect::Off,
+            WindowEffect::MicaLight,
+            WindowEffect::MicaDark,
+            WindowEffect::Mica,
+            WindowEffect::Acrylic,
+        ];
+        for variant in domain_variants {
+            let dto: WindowEffectV1 = match variant {
+                WindowEffect::Off => WindowEffectV1::Off,
+                WindowEffect::MicaLight => WindowEffectV1::MicaLight,
+                WindowEffect::MicaDark => WindowEffectV1::MicaDark,
+                WindowEffect::Mica => WindowEffectV1::Mica,
+                WindowEffect::Acrylic => WindowEffectV1::Acrylic,
+            };
+            let back = match dto {
+                WindowEffectV1::Off => WindowEffect::Off,
+                WindowEffectV1::MicaLight => WindowEffect::MicaLight,
+                WindowEffectV1::MicaDark => WindowEffect::MicaDark,
+                WindowEffectV1::Mica => WindowEffect::Mica,
+                WindowEffectV1::Acrylic => WindowEffect::Acrylic,
+            };
+            assert_eq!(variant, back);
+        }
+    }
+
+    // ── JSON serialization ──
+
+    #[test]
+    fn app_settings_v1_serialize_camel_case() {
+        let dto = AppSettingsV1 {
+            action_on_instance_launch: ActionOnInstanceLaunchV1::Hide,
+            is_actual_transparent: false,
+            transparent: true,
+            window_effect: WindowEffectV1::Mica,
+        };
+        let json = serde_json::to_string(&dto).unwrap();
+        assert!(json.contains("isActualTransparent"), "camelCase: {json}");
+        assert!(json.contains("windowEffect"), "camelCase: {json}");
+        assert!(json.contains("actionOnInstanceLaunch"), "camelCase: {json}");
+    }
+
+    #[test]
+    fn app_settings_v1_deserialize_camel_case() {
+        let json = r#"{
+            "actionOnInstanceLaunch": "hide",
+            "isActualTransparent": false,
+            "transparent": true,
+            "windowEffect": "mica"
+        }"#;
+        let dto: AppSettingsV1 = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            dto.action_on_instance_launch,
+            ActionOnInstanceLaunchV1::Hide
+        );
+        assert!(dto.transparent);
+        assert_eq!(dto.window_effect, WindowEffectV1::Mica);
+    }
+
+    // ── Enum serialization ──
+
+    #[test]
+    fn action_v1_serialize_snake_case() {
+        assert_eq!(
+            serde_json::to_string(&ActionOnInstanceLaunchV1::Nothing).unwrap(),
+            "\"nothing\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ActionOnInstanceLaunchV1::Hide).unwrap(),
+            "\"hide\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ActionOnInstanceLaunchV1::Close).unwrap(),
+            "\"close\""
+        );
+    }
+
+    #[test]
+    fn window_effect_v1_serialize_snake_case() {
+        assert_eq!(
+            serde_json::to_string(&WindowEffectV1::MicaLight).unwrap(),
+            "\"mica_light\""
+        );
+        assert_eq!(
+            serde_json::to_string(&WindowEffectV1::MicaDark).unwrap(),
+            "\"mica_dark\""
+        );
+        assert_eq!(
+            serde_json::to_string(&WindowEffectV1::Acrylic).unwrap(),
+            "\"acrylic\""
+        );
     }
 }
 

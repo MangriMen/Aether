@@ -17,3 +17,36 @@ pub enum WindowError {
     #[error("Unexpected error: {0}")]
     Other(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn window_error_already_exists_format() {
+        let err = WindowError::AlreadyExists {
+            label: WindowLabel::Main,
+        };
+        assert_eq!(err.to_string(), "Window with label 'main' already exists");
+    }
+
+    #[test]
+    fn window_error_not_found_format() {
+        let err = WindowError::NotFound {
+            label: WindowLabel::Main,
+        };
+        assert_eq!(err.to_string(), "Window with label 'main' was not found");
+    }
+
+    #[test]
+    fn window_error_platform_not_supported_format() {
+        let err = WindowError::PlatformNotSupported("linux".to_string());
+        assert_eq!(err.to_string(), "Platform error: linux");
+    }
+
+    #[test]
+    fn window_error_other_format() {
+        let err = WindowError::Other("something went wrong".to_string());
+        assert_eq!(err.to_string(), "Unexpected error: something went wrong");
+    }
+}
