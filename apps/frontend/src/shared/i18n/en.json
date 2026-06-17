@@ -104,6 +104,7 @@
       "FUNCTION_CALL_FAILED": "Failed to call plugin function",
       "MANIFEST_NOT_FOUND": "Plugin manifest not found",
       "INVALID_MANIFEST_FORMAT": "Invalid manifest format",
+      "MANIFEST": "Plugin manifest error: {message}",
       "LOADER_NOT_FOUND": "Plugin loader not found",
       "INVALID_CONFIG": "Invalid plugin configuration",
       "EXTRACTION_FAILED": "Plugin extraction failed",

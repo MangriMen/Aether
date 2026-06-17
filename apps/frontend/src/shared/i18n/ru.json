@@ -104,6 +104,7 @@
       "FUNCTION_CALL_FAILED": "Ошибка вызова функции плагина",
       "MANIFEST_NOT_FOUND": "Манифест плагина не найден",
       "INVALID_MANIFEST_FORMAT": "Неверный формат манифеста",
+      "MANIFEST": "Ошибка манифеста плагина: {message}",
       "LOADER_NOT_FOUND": "Загрузчик плагина не найден",
       "INVALID_CONFIG": "Неверная конфигурация плагина",
       "EXTRACTION_FAILED": "Ошибка извлечения плагина",

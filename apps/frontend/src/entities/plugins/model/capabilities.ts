@@ -1,13 +1,10 @@
-import type {
-  ImporterCapability,
-  UpdaterCapability,
-} from './pluginCapabilities';
-import type { PluginMetadata } from './pluginManifest';
+import type { CapabilityEntryDto } from '@/entities/instances';
+import type { ImporterCapabilityMetadataDto } from '@/entities/instances';
 
-export interface CapabilityEntry<C> {
-  pluginId: PluginMetadata['id'];
-  capability: C;
-}
+import type { UpdaterCapability } from './pluginCapabilities';
 
-export type ImporterCapabilityEntry = CapabilityEntry<ImporterCapability>;
+export type CapabilityEntry<C> = CapabilityEntryDto<C>;
+
+export type ImporterCapabilityEntry =
+  CapabilityEntry<ImporterCapabilityMetadataDto>;
 export type UpdaterCapabilityEntry = CapabilityEntry<UpdaterCapability>;
