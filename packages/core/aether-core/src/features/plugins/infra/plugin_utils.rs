@@ -38,6 +38,34 @@ pub fn to_wasi_path(input: &str) -> String {
     result.trim_end_matches('/').to_string()
 }
 
+/// Convert a WASI path (`/mnt/d/path/to/file`) back to a Windows path (`D:\path\to\file`).
+/// On non-Windows, returns the path as-is.
+pub fn from_wasi_path(input: &str) -> String {
+    if cfg!(not(windows)) {
+        return input.to_owned();
+    }
+
+    let path = input.replace('\\', "/");
+
+    // Match /mnt/<letter>/...
+    if let Some(rest) = path.strip_prefix("/mnt/") {
+        if let Some(drive_end) = rest.find('/') {
+            let drive_letter = &rest[..drive_end];
+            let path_after = &rest[drive_end + 1..];
+            format!(
+                "{}:\\{}",
+                drive_letter.to_uppercase(),
+                path_after.replace('/', "\\")
+            )
+        } else {
+            // Just /mnt/<letter>
+            format!("{}:\\", rest.to_uppercase())
+        }
+    } else {
+        path
+    }
+}
+
 pub fn get_default_allowed_paths(
     location_info: &LocationInfo,
     plugin_id: &str,
@@ -102,29 +130,36 @@ pub fn plugin_path_to_host(
     path: &str,
     location_info: &LocationInfo,
 ) -> Result<PathBuf, PluginError> {
+    // Convert WASI /mnt/<letter>/ paths back to Windows paths
+    // so the host can use them (e.g., in run_command)
+    let path = if path.starts_with("/mnt/") {
+        from_wasi_path(path)
+    } else {
+        path.to_owned()
+    };
+
     if !path.starts_with('#') {
         return Ok(PathBuf::from(path));
     }
 
-    let cleaned_path_str = path.strip_prefix('#').unwrap_or(path);
-    let cleaned_path_start_segment = get_first_segment(cleaned_path_str);
+    let cleaned_path_str: String = path.strip_prefix('#').unwrap_or(&path).to_owned();
+    let cleaned_path_start_segment = get_first_segment(&cleaned_path_str);
 
     let allowed_paths = get_default_allowed_paths(location_info, id);
     let plugin_to_host = invert_allowed_paths(&allowed_paths);
 
-    let base_dir =
-        plugin_to_host
-            .get(cleaned_path_start_segment)
-            .ok_or(PluginError::AccessViolation {
-                plugin_id: id.to_owned(),
-                path: path.to_owned(),
-            })?;
+    let base_dir = plugin_to_host
+        .get(cleaned_path_start_segment)
+        .ok_or_else(|| PluginError::AccessViolation {
+            plugin_id: id.to_owned(),
+            path: path.clone(),
+        })?;
 
     if !base_dir.is_dir() {
         std::fs::create_dir_all(base_dir).map_err(|e| IoError::with_path(e, path))?;
     }
 
-    let stripped_path = plugin_path_to_relative(id, cleaned_path_str, plugin_to_host.keys())?;
+    let stripped_path = plugin_path_to_relative(id, &cleaned_path_str, plugin_to_host.keys())?;
     let host_path = base_dir.join(stripped_path);
 
     let canonical_base = crate::shared::io::infra::canonicalize(base_dir)?;
@@ -191,7 +226,7 @@ pub fn log_level_from_u32(level: u32) -> log::Level {
 
 #[cfg(test)]
 mod tests {
-    use super::to_wasi_path;
+    use super::{from_wasi_path, to_wasi_path};
 
     #[test]
     fn test_windows_drive_with_backslash() {
@@ -255,5 +290,47 @@ mod tests {
     #[test]
     fn test_no_drive_letter_just_colon() {
         assert_eq!(to_wasi_path("some:path"), "some:path");
+    }
+
+    // ── from_wasi_path tests ──
+
+    #[test]
+    fn test_from_wasi_path_full() {
+        assert_eq!(
+            from_wasi_path("/mnt/d/Documents/Minecraft/Test/simple/pack.toml"),
+            r"D:\Documents\Minecraft\Test\simple\pack.toml"
+        );
+    }
+
+    #[test]
+    fn test_from_wasi_path_drive_only() {
+        assert_eq!(from_wasi_path("/mnt/c"), r"C:\");
+        assert_eq!(from_wasi_path("/mnt/D"), r"D:\");
+    }
+
+    #[test]
+    fn test_from_wasi_path_linux() {
+        assert_eq!(from_wasi_path("/home/user/file.txt"), "/home/user/file.txt");
+    }
+
+    #[test]
+    fn test_from_wasi_path_relative() {
+        assert_eq!(
+            from_wasi_path("relative/path/file.txt"),
+            "relative/path/file.txt"
+        );
+    }
+
+    #[test]
+    fn test_from_wasi_path_empty() {
+        assert_eq!(from_wasi_path(""), "");
+    }
+
+    #[test]
+    fn test_roundtrip() {
+        let original = r"D:\Documents\Minecraft\Test\simple\pack.toml";
+        let wasi = to_wasi_path(original);
+        let back = from_wasi_path(&wasi);
+        assert_eq!(back, original);
     }
 }
