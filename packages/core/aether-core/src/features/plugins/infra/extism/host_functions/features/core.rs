@@ -12,12 +12,56 @@ use super::super::{
     PluginContext,
 };
 
+// ── Testable business logic ──
+
+/// Handle `log` — forward a log message from the plugin.
+pub(crate) fn handle_log(plugin_id: &str, level: u32, msg: &str) {
+    log::log!(
+        target: "plugin",
+        plugin_utils::log_level_from_u32(level),
+        "[{plugin_id}]: {msg}"
+    );
+}
+
+/// Handle `run_command` — execute a shell command on behalf of a plugin.
+pub(crate) async fn handle_run_command(
+    plugin_id: &str,
+    command: CommandDto,
+) -> crate::Result<OutputDto> {
+    let command_for_log = command.clone();
+    log::debug!("Processing command from plugin: {command_for_log:?}");
+
+    let locator = LazyLocator::get().await?;
+
+    let host_command =
+        plugin_utils::plugin_command_to_host(plugin_id, &command, &locator.location_info)?;
+    let mut cmd = host_command.to_tokio_command();
+
+    log::debug!("Running command: {host_command:?}");
+    let output = cmd.output().await.map_err(|_err| {
+        crate::ErrorKind::CoreError(format!("Failed to run command: {cmd:?}")).as_error()
+    })?;
+
+    if !output.status.success() {
+        log::error!(
+            "Command failed: {:?}, stderr: {:?}",
+            command_for_log,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return Err(crate::ErrorKind::CoreError("Command execution failed".to_string()).as_error());
+    }
+
+    Ok(OutputDto::from_output(&output))
+}
+
+// ── Extism host function wrappers ──
+
 host_fn!(
 pub log(user_data: PluginContext; level: u32, msg: String) -> () {
     let context = user_data.get()?;
     let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
 
-    log::log!(target: "plugin", plugin_utils::log_level_from_u32(level), "[{id}]: {msg}");
+    handle_log(&id, level, &msg);
     Ok(())
 });
 
@@ -34,38 +78,7 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
     let context = user_data.get()?;
     let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
 
-    let command = command.0;
-
-    let command_for_log = command.clone();
-    log::debug!("Processing command from plugin: {command_for_log:?}");
-
     to_extism_res::<OutputDto>(
-        execute_async(async move {
-            let id = id.clone();
-            let command = command.clone();
-
-            let locator = LazyLocator::get().await?;
-
-            let host_command = plugin_utils::plugin_command_to_host(&id, &command, &locator.location_info)?;
-            let mut cmd = host_command.to_tokio_command();
-
-            log::debug!("Running command: {host_command:?}");
-            let output = cmd.output().await;
-
-            match output {
-                Ok(output) => {
-                    if !output.status.success() {
-                        log::error!("Command failed: {:?}, stderr: {:?}", command_for_log, String::from_utf8_lossy(&output.stderr));
-                        return Err(crate::ErrorKind::CoreError("Command execution failed".to_string()).as_error());
-                    }
-
-                    Ok(OutputDto::from_output(&output))
-                },
-                Err(err) => {
-                    log::debug!("Update command run error {err:?}");
-                    Err(crate::ErrorKind::CoreError(format!("Failed to run command: {cmd:?}")).as_error())
-                }
-            }
-        })
+        execute_async(handle_run_command(&id, command.0))
     )
 });
