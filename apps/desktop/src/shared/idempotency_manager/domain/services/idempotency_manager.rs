@@ -79,10 +79,7 @@ mod tests {
         let _first = manager.lock_request(id.clone()).unwrap();
         let result = manager.lock_request(id.clone());
         assert!(result.is_err());
-        let err = match result {
-            Err(e) => e,
-            _ => unreachable!(),
-        };
+        let Err(err) = result else { unreachable!() };
         assert_eq!(err.to_string(), format!("Duplicate request {id}"));
     }
 

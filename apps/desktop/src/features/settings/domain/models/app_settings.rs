@@ -236,16 +236,18 @@ mod tests {
             settings.action_on_instance_launch,
             ActionOnInstanceLaunch::Nothing
         );
-        assert_eq!(settings.transparent, false);
-        assert_eq!(settings.is_actual_transparent, false);
+        assert!(!settings.transparent);
+        assert!(!settings.is_actual_transparent);
         assert_eq!(settings.window_effect, WindowEffect::Off);
     }
 
     #[test]
     fn app_settings_fields_mutate_independently() {
-        let mut settings = AppSettings::default();
-        settings.transparent = true;
-        settings.window_effect = WindowEffect::Acrylic;
+        let settings = AppSettings {
+            transparent: true,
+            window_effect: WindowEffect::Acrylic,
+            ..Default::default()
+        };
         assert!(settings.transparent);
         assert!(!settings.is_actual_transparent);
         assert_eq!(settings.window_effect, WindowEffect::Acrylic);

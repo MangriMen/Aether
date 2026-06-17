@@ -59,8 +59,7 @@ mod tests {
         let err: Error = idem_err.into();
         assert!(
             err.to_string().contains("Duplicate request"),
-            "Expected Duplicate request error, got: {}",
-            err
+            "Expected Duplicate request error, got: {err}"
         );
     }
 }

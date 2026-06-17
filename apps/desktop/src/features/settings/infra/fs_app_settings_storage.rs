@@ -90,6 +90,45 @@ impl From<AppSettingsV1> for AppSettings {
     }
 }
 
+pub struct FsAppSettingsStorage {
+    store: JsonValueStore<AppSettingsV1>,
+    path: PathBuf,
+}
+
+impl FsAppSettingsStorage {
+    #[must_use]
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            store: JsonValueStore::new(path.clone()),
+            path,
+        }
+    }
+
+    pub fn get_file_path(&self) -> PathBuf {
+        self.path.clone()
+    }
+}
+
+#[async_trait]
+impl AppSettingsStorage for FsAppSettingsStorage {
+    async fn get(&self) -> Result<AppSettings, AppSettingsError> {
+        let dto: AppSettingsV1 = self.store.read_or_default().await.unwrap_or_else(|err| {
+            warn!("Failed to read settings: {err}");
+            AppSettingsV1::default()
+        });
+        Ok(dto.into())
+    }
+
+    async fn upsert(&self, settings: AppSettings) -> Result<(), AppSettingsError> {
+        let dto: AppSettingsV1 = settings.into();
+        Ok(self
+            .store
+            .write(&dto)
+            .await
+            .map_err(|err| AppSettingsError::Storage(err.to_string()))?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -259,44 +298,5 @@ mod tests {
             serde_json::to_string(&WindowEffectV1::Acrylic).unwrap(),
             "\"acrylic\""
         );
-    }
-}
-
-pub struct FsAppSettingsStorage {
-    store: JsonValueStore<AppSettingsV1>,
-    path: PathBuf,
-}
-
-impl FsAppSettingsStorage {
-    #[must_use]
-    pub fn new(path: PathBuf) -> Self {
-        Self {
-            store: JsonValueStore::new(path.clone()),
-            path,
-        }
-    }
-
-    pub fn get_file_path(&self) -> PathBuf {
-        self.path.clone()
-    }
-}
-
-#[async_trait]
-impl AppSettingsStorage for FsAppSettingsStorage {
-    async fn get(&self) -> Result<AppSettings, AppSettingsError> {
-        let dto: AppSettingsV1 = self.store.read_or_default().await.unwrap_or_else(|err| {
-            warn!("Failed to read settings: {err}");
-            AppSettingsV1::default()
-        });
-        Ok(dto.into())
-    }
-
-    async fn upsert(&self, settings: AppSettings) -> Result<(), AppSettingsError> {
-        let dto: AppSettingsV1 = settings.into();
-        Ok(self
-            .store
-            .write(&dto)
-            .await
-            .map_err(|err| AppSettingsError::Storage(err.to_string()))?)
     }
 }
