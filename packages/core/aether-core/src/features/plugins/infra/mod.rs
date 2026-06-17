@@ -6,7 +6,7 @@ mod plugin_dtos_v1;
 mod plugin_importer_proxy;
 mod plugin_infrastructure_listener;
 mod plugin_updater_proxy;
-mod plugin_utils;
+pub(crate) mod plugin_utils;
 mod zip_plugin_extractor;
 
 pub use extism::ExtismPluginLoader;

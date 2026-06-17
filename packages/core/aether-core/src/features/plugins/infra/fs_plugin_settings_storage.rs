@@ -14,6 +14,7 @@ use crate::{
 };
 
 use super::PluginSettingsV1;
+use super::plugin_utils::to_wasi_path;
 
 pub struct FsPluginSettingsStorage {
     location_info: Arc<LocationInfo>,
@@ -65,7 +66,7 @@ impl PluginSettingsStorage for FsPluginSettingsStorage {
             allowed_paths: settings
                 .allowed_paths
                 .iter()
-                .map(|pm| (pm.0.clone(), pm.1.to_string_lossy().to_string()))
+                .map(|pm| (pm.0.clone(), to_wasi_path(&pm.1.to_string_lossy())))
                 .collect(),
         };
         self.write(&self.get_plugin_settings_path(plugin_id), &dto)

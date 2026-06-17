@@ -10,6 +10,34 @@ use crate::{
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
+/// Convert a Windows absolute path (e.g. `D:\path\to\file`) to a WASI-compatible
+/// path (`/mnt/d/path/to/file`). Non-Windows paths are returned as-is with `/` normalization.
+pub fn to_wasi_path(input: &str) -> String {
+    let path = input.replace('\\', "/");
+
+    // Check for Windows drive letter pattern (e.g., "C:/" or "d:/")
+    let path = if path.len() >= 2
+        && path.as_bytes()[1] == b':'
+        && (path.len() == 2 || path.as_bytes()[2] == b'/')
+    {
+        let drive_letter = path.as_bytes()[0].to_ascii_lowercase() as char;
+        let rest = if path.len() > 3 { &path[3..] } else { "" };
+        format!("/mnt/{drive_letter}/{rest}")
+    } else {
+        path
+    };
+
+    // Collapse double slashes and trailing slash
+    let mut result = String::with_capacity(path.len());
+    for c in path.chars() {
+        if c == '/' && result.ends_with('/') {
+            continue;
+        }
+        result.push(c);
+    }
+    result.trim_end_matches('/').to_string()
+}
+
 pub fn get_default_allowed_paths(
     location_info: &LocationInfo,
     plugin_id: &str,
@@ -158,5 +186,74 @@ pub fn log_level_from_u32(level: u32) -> log::Level {
         3 => log::Level::Info,
         4 => log::Level::Debug,
         _ => log::Level::Trace,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_wasi_path;
+
+    #[test]
+    fn test_windows_drive_with_backslash() {
+        assert_eq!(
+            to_wasi_path(r"D:\Documents\Minecraft\Test\simple\pack.toml"),
+            "/mnt/d/Documents/Minecraft/Test/simple/pack.toml"
+        );
+    }
+
+    #[test]
+    fn test_windows_drive_with_slash() {
+        assert_eq!(
+            to_wasi_path("C:/Users/test/file.txt"),
+            "/mnt/c/Users/test/file.txt"
+        );
+    }
+
+    #[test]
+    fn test_windows_drive_root() {
+        assert_eq!(to_wasi_path("D:\\"), "/mnt/d");
+    }
+
+    #[test]
+    fn test_already_wasi_path() {
+        assert_eq!(to_wasi_path("/mnt/c/path/to/file"), "/mnt/c/path/to/file");
+    }
+
+    #[test]
+    fn test_linux_absolute_path() {
+        assert_eq!(to_wasi_path("/home/user/file.txt"), "/home/user/file.txt");
+    }
+
+    #[test]
+    fn test_relative_path() {
+        assert_eq!(
+            to_wasi_path("relative/path/file.txt"),
+            "relative/path/file.txt"
+        );
+    }
+
+    #[test]
+    fn test_windows_drive_lowercase() {
+        assert_eq!(to_wasi_path("d:/path/to/file"), "/mnt/d/path/to/file");
+    }
+
+    #[test]
+    fn test_trailing_slash() {
+        assert_eq!(to_wasi_path("C:\\Users\\"), "/mnt/c/Users");
+    }
+
+    #[test]
+    fn test_double_slashes() {
+        assert_eq!(to_wasi_path("C://path//to//file"), "/mnt/c/path/to/file");
+    }
+
+    #[test]
+    fn test_empty_string() {
+        assert_eq!(to_wasi_path(""), "");
+    }
+
+    #[test]
+    fn test_no_drive_letter_just_colon() {
+        assert_eq!(to_wasi_path("some:path"), "some:path");
     }
 }
