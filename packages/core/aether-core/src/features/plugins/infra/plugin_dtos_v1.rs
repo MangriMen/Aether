@@ -9,6 +9,7 @@ use crate::features::plugins::{
 
 /// DTO for `PluginCapabilities` that can be read/written as JSON file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginCapabilitiesV1 {
     pub importers: Option<Vec<PluginImporterCapabilityV1>>,
     pub updaters: Option<Vec<PluginUpdaterCapabilityV1>>,
@@ -16,17 +17,20 @@ pub struct PluginCapabilitiesV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginImporterCapabilityV1 {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
     pub icon: Option<String>,
     pub field_label: Option<String>,
+    #[serde(default)]
     pub supported_extensions: Vec<String>,
     pub handler: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginUpdaterCapabilityV1 {
     pub id: String,
     pub name: String,
@@ -36,6 +40,7 @@ pub struct PluginUpdaterCapabilityV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginContentProviderCapabilityV1 {
     pub id: String,
     pub name: String,
@@ -47,6 +52,7 @@ pub struct PluginContentProviderCapabilityV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProviderHandlersV1 {
     pub search: String,
     pub get_content: String,

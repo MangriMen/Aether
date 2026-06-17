@@ -40,6 +40,7 @@ pub fn default_log_builder() -> tauri_plugin_log::Builder {
             .level_for("hyper_util", external_level)
             // Plugin runtime
             .level_for("wasmtime", external_level)
+            .level_for("wasmtime_internal_cranelift", LevelFilter::Info)
             .level_for("cranelift_codegen", external_level)
             // Tauri plugins
             .level_for("tauri_plugin_updater", LevelFilter::Info)

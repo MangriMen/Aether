@@ -21,7 +21,7 @@ use crate::{
 
 use super::{
     host_functions::get_host_functions,
-    models::{ExtismPluginInstance, WasmCache, WasmCacheConfig},
+    models::{ExtismPluginInstance, get_default_cache_config},
 };
 
 use super::super::plugin_utils::get_default_allowed_paths;
@@ -156,17 +156,6 @@ impl PluginLoader for ExtismPluginLoader {
         }
 
         Ok(())
-    }
-}
-
-fn get_default_cache_config(cache_dir: PathBuf) -> WasmCacheConfig {
-    WasmCacheConfig {
-        cache: WasmCache {
-            enabled: true,
-            cleanup_interval: "30m".to_owned(),
-            files_total_size_soft_limit: "1Gi".to_owned(),
-            directory: cache_dir,
-        },
     }
 }
 
