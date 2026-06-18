@@ -20,7 +20,7 @@
   "build": {
     "beforeDevCommand": "bun x turbo run dev --filter @aether/frontend",
     "beforeBuildCommand": "bun x turbo run build --filter @aether/frontend",
-    "frontendDist": "../ui/dist",
+    "frontendDist": "../frontend/dist",
     "devUrl": "http://localhost:1420"
   },
   "bundle": {
