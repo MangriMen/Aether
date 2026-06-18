@@ -7,10 +7,17 @@ import { ResponsiveIcon } from '..';
 import { cn } from '../../lib';
 
 export type ImageProps = ComponentProps<'div'> &
-  Pick<ComponentProps<'img'>, 'src' | 'alt'>;
+  Pick<ComponentProps<'img'>, 'src' | 'alt'> & {
+    imgClass?: string;
+  };
 
 export const Image: Component<ImageProps> = (props) => {
-  const [local, others] = splitProps(props, ['src', 'alt', 'class']);
+  const [local, others] = splitProps(props, [
+    'src',
+    'alt',
+    'class',
+    'imgClass',
+  ]);
 
   const [isValidSrc, setIsValidSrc] = createSignal(true);
 
@@ -36,7 +43,7 @@ export const Image: Component<ImageProps> = (props) => {
         }
       >
         <img
-          class='size-full'
+          class={cn('size-full', local.imgClass)}
           src={local.src}
           alt={local.alt}
           onError={handleError}
