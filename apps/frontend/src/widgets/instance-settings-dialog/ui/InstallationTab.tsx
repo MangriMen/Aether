@@ -71,7 +71,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
           </span>
         }
       >
-        <div class='flex items-center gap-3 rounded-lg bg-card/card p-3 text-muted-foreground'>
+        <div class='flex items-center gap-3 rounded-md bg-card/card p-3 text-muted-foreground'>
           <Image class='size-12 p-1' />
           <div class='flex flex-col'>
             <div class='text-base font-medium'>
@@ -104,7 +104,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               </span>
             }
           >
-            <div class='flex items-center gap-3 rounded-lg bg-card/card p-3 text-muted-foreground'>
+            <div class='flex items-center gap-3 rounded-md bg-card/card p-3 text-muted-foreground'>
               <Image class='size-12 p-1' src={content.data?.iconUrl} />
 
               <div class='flex flex-col'>

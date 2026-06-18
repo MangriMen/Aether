@@ -3,6 +3,7 @@ export * from './IncludeSnapshotsCheckbox';
 export * from './InstanceCard';
 export * from './InstanceContextMenu';
 export * from './InstanceGameVersion';
+export * from './InstanceIcon';
 export * from './InstancePlayButton';
 export * from './InstanceStopButton';
 export * from './InstanceTitle';

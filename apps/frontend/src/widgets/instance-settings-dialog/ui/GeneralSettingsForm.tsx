@@ -77,8 +77,8 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
   };
 
   const handleRemoveIcon = () => {
-    setValue(form, 'icon', undefined);
-    local.onChangePartial?.({ icon: undefined });
+    setValue(form, 'icon', null);
+    local.onChangePartial?.({ icon: null });
   };
 
   return (

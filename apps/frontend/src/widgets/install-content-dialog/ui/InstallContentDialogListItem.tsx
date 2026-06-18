@@ -8,12 +8,13 @@ import type { ContentCompatibilityResult } from '@/entities/instances';
 import {
   ContentInstallButton,
   type ContentItem,
+  InstanceIcon,
   type Instance,
 } from '@/entities/instances';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, Image } from '@/shared/ui';
+import { CombinedTooltip } from '@/shared/ui';
 
 import type { ContentManager } from '../model';
 
@@ -83,7 +84,10 @@ export const InstallContentDialogListItem: Component<
         onClick={local.onCloseDialog}
       >
         <div class='flex items-center gap-1 hover:underline'>
-          <Image class='h-8 w-max' src={local.instance.iconPath ?? undefined} />
+          <InstanceIcon
+            class='h-8'
+            src={local.instance.iconPath ?? undefined}
+          />
           {local.instance.name}
         </div>
       </A>

@@ -9,7 +9,7 @@ export const NameSchema = z
 
 export const GeneralSettingsSchema = z.object({
   name: NameSchema,
-  icon: z.string().optional(),
+  icon: z.string().optional().nullable(),
 });
 
 export type GeneralSettingsSchemaInput = z.input<typeof GeneralSettingsSchema>;
