@@ -13,10 +13,6 @@
     },
     "apps/desktop": {
       "name": "@aether/desktop",
-      "dependencies": {
-        "@aether/core": "workspace:*",
-        "@aether/frontend": "workspace:*",
-      },
       "devDependencies": {
         "@tauri-apps/cli": "^2.11.2",
       },
