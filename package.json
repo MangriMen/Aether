@@ -17,7 +17,7 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260527.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260618.1",
     "lefthook": "^2.1.9",
     "turbo": "latest",
     "typescript": "^6.0.3"
