@@ -74,6 +74,7 @@ export default [
       'sonarjs/no-unused-vars': 'off',
       'sonarjs/todo-tag': 'off',
       'sonarjs/no-skipped-tests': 'off',
+      "sonarjs/no-redundant-optional": "off"
     },
   },
   jsxA11y.flatConfigs.recommended,

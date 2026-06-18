@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-commented-code */
 import type { Plugin } from '@/entities/plugins';
 import type { TabConfig } from '@/shared/model';
 

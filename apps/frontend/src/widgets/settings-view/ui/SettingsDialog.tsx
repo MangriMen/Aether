@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-commented-code */
 import type { DialogRootProps } from '@kobalte/core/dialog';
 
 import { makePersisted } from '@solid-primitives/storage';
