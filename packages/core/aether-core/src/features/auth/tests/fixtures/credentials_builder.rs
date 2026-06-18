@@ -1,4 +1,4 @@
-use crate::features::auth::{AccountType, Credential, Username};
+use crate::features::auth::domain::{AccountType, Credential, Username};
 use uuid::Uuid;
 
 /// Builder for constructing test Credentials with customizable fields.

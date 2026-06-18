@@ -9,7 +9,7 @@ use crate::{
         instance::{ContentType, InstanceError, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::read_async,
+    shared::{hash::infra::sha1_async, io::infra::read_async},
 };
 
 pub struct ImportContent {
@@ -116,7 +116,7 @@ impl<PS: PackStorage> ImportContentUseCase<PS> {
 
         Ok((
             content_path,
-            PackFile::from_contents(file_name.to_owned(), file_content).await,
+            PackFile::from_hash(file_name.to_owned(), sha1_async(file_content).await),
         ))
     }
 

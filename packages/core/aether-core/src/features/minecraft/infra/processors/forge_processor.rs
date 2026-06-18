@@ -13,14 +13,13 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         java::Java,
         minecraft::{
-            MinecraftDomainError, ModLoaderProcessor, modded,
-            utils::{get_class_paths_jar, get_lib_path},
+            MinecraftDomainError, ModLoaderProcessor, get_class_paths_jar, get_lib_path, modded,
             vanilla::VersionInfo,
         },
         settings::LocationInfo,
     },
     processor_rules,
-    shared::IoError,
+    shared::io::domain::IoError,
     with_mut_ref,
 };
 

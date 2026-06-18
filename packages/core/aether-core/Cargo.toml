@@ -59,7 +59,6 @@ semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
-serr.workspace = true
 sqlx = { workspace = true, features = [
     "json",
     "macros",
@@ -72,6 +71,9 @@ sqlx = { workspace = true, features = [
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+
+[dev-dependencies]
+rust_arkitect = "0.3.7"
 
 [lints]
 workspace = true

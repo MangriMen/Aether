@@ -12,7 +12,7 @@ use crate::{
         instance::{ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage},
         settings::LocationInfo,
     },
-    shared::read_async,
+    shared::{hash::infra::sha1_async, io::infra::read_async},
 };
 
 pub struct ListContentUseCase<PS: PackStorage> {
@@ -179,7 +179,7 @@ impl<PS: PackStorage> ListContentUseCase<PS> {
         let file_content = read_async(file_path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
-        let pack_file = PackFile::from_contents(file_name.to_owned(), file_content).await;
+        let pack_file = PackFile::from_hash(file_name.to_owned(), sha1_async(file_content).await);
 
         self.pack_storage
             .update_pack_file(instance_id, content_path, &pack_file)

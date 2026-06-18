@@ -16,14 +16,46 @@ pub struct OutputDto {
     pub stderr: Vec<u8>,
 }
 
+/// Parse a command string into parts, respecting single and double quotes.
+/// Example: `git commit -m "my message"` → `program="git"`, `args=["commit", "-m", "my message"]`
+fn split_shell_words(s: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    let mut in_single_quote = false;
+    let mut in_double_quote = false;
+
+    let mut chars = s.chars().peekable();
+    for c in chars.by_ref() {
+        match c {
+            '\'' if !in_double_quote => {
+                in_single_quote = !in_single_quote;
+            }
+            '"' if !in_single_quote => {
+                in_double_quote = !in_double_quote;
+            }
+            ' ' | '\t' if !in_single_quote && !in_double_quote => {
+                if !current.is_empty() {
+                    words.push(std::mem::take(&mut current));
+                }
+            }
+            _ => current.push(c),
+        }
+    }
+    if !current.is_empty() {
+        words.push(current);
+    }
+    words
+}
+
 impl FromStr for CommandDto {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.split_whitespace();
+        let parts = split_shell_words(s);
+        let mut parts = parts.into_iter();
         Ok(Self {
-            program: parts.next().ok_or("Failed to parse command")?.to_string(),
-            args: parts.map(ToString::to_string).collect(),
+            program: parts.next().ok_or("Failed to parse command")?.clone(),
+            args: parts.collect(),
             current_dir: None,
         })
     }
@@ -35,11 +67,31 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn test_command_from_str() {
-        let cmd = CommandDto::from_str("git commit -m 'hello'").unwrap();
+    fn test_command_from_str_simple() {
+        let cmd = CommandDto::from_str("git commit -m hello").unwrap();
         assert_eq!(cmd.program, "git");
-        assert_eq!(cmd.args, vec!["commit", "-m", "'hello'"]);
-        assert!(cmd.current_dir.is_none());
+        assert_eq!(cmd.args, vec!["commit", "-m", "hello"]);
+    }
+
+    #[test]
+    fn test_command_from_str_single_quotes() {
+        let cmd = CommandDto::from_str("git commit -m 'hello world'").unwrap();
+        assert_eq!(cmd.program, "git");
+        assert_eq!(cmd.args, vec!["commit", "-m", "hello world"]);
+    }
+
+    #[test]
+    fn test_command_from_str_double_quotes() {
+        let cmd = CommandDto::from_str("git commit -m \"hello world\"").unwrap();
+        assert_eq!(cmd.program, "git");
+        assert_eq!(cmd.args, vec!["commit", "-m", "hello world"]);
+    }
+
+    #[test]
+    fn test_command_from_str_mixed_quotes() {
+        let cmd = CommandDto::from_str("echo \"double quoted\" 'single quoted'").unwrap();
+        assert_eq!(cmd.program, "echo");
+        assert_eq!(cmd.args, vec!["double quoted", "single quoted"]);
     }
 
     #[test]

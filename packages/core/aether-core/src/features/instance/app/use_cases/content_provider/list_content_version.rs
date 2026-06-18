@@ -4,7 +4,7 @@ use crate::{
     features::instance::{
         ContentProvider, ContentVersion, InstanceError, app::ContentListVersionsParams,
     },
-    shared::CapabilityRegistry,
+    shared::capability::domain::CapabilityRegistry,
 };
 
 pub struct ListContentVersionsUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {

@@ -10,7 +10,7 @@ use crate::{
         },
         settings::SettingsStorage,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct DisablePluginUseCase<SS: SettingsStorage, PL: PluginLoader> {
@@ -33,11 +33,7 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
     }
 
     pub async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
-        let plugin = self.plugin_registry.get(&plugin_id)?;
-        let manifest = plugin.manifest.clone();
-        let state = plugin.state.clone();
-        // Drop immediate to prevent dead lock in dash map
-        drop(plugin);
+        let (state, manifest) = self.plugin_registry.get_state_and_manifest(&plugin_id)?;
 
         let plugin_instance = Self::check_is_able_to_unload(&plugin_id, &state)?;
 

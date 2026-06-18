@@ -11,17 +11,17 @@ use tokio::sync::Mutex;
 use crate::{
     features::{
         plugins::{
-            LoadConfig, PathMapping, PluginError, PluginInstance, PluginLoader, PluginManifest,
-            PluginSettings,
+            LoadConfig, PathMapping, PluginError, PluginInstance, PluginInternalEvent,
+            PluginLoader, PluginManifest, PluginSettings,
         },
         settings::LocationInfo,
     },
-    shared::{create_dir_all, write_toml_async},
+    shared::io::infra::{create_dir_all, write_toml_async},
 };
 
 use super::{
     host_functions::get_host_functions,
-    models::{ExtismPluginInstance, WasmCache, WasmCacheConfig},
+    models::{ExtismPluginInstance, get_default_cache_config},
 };
 
 use super::super::plugin_utils::get_default_allowed_paths;
@@ -133,7 +133,7 @@ impl PluginLoader for ExtismPluginLoader {
         let extism_plugin = Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config))?;
 
         let mut plugin = ExtismPluginInstance::new(extism_plugin, plugin_id.clone());
-        if let Err(err) = plugin.on_load() {
+        if let Err(err) = plugin.handle_event(&PluginInternalEvent::Loaded) {
             tracing::debug!(
                 "Failed to call on_load on plugin {}: {:?}",
                 plugin.get_id(),
@@ -147,7 +147,7 @@ impl PluginLoader for ExtismPluginLoader {
     async fn unload(&self, instance: Arc<Mutex<dyn PluginInstance>>) -> Result<(), PluginError> {
         let mut plugin = instance.lock().await;
 
-        if let Err(err) = plugin.on_unload() {
+        if let Err(err) = plugin.handle_event(&PluginInternalEvent::Unloaded) {
             tracing::debug!(
                 "Failed to call on_unload on plugin {}: {:?}",
                 plugin.get_id(),
@@ -156,17 +156,6 @@ impl PluginLoader for ExtismPluginLoader {
         }
 
         Ok(())
-    }
-}
-
-fn get_default_cache_config(cache_dir: PathBuf) -> WasmCacheConfig {
-    WasmCacheConfig {
-        cache: WasmCache {
-            enabled: true,
-            cleanup_interval: "30m".to_owned(),
-            files_total_size_soft_limit: "1Gi".to_owned(),
-            directory: cache_dir,
-        },
     }
 }
 

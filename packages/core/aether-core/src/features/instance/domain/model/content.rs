@@ -1,13 +1,10 @@
 use std::{ops::Deref, str::FromStr};
 
-use serde::{Deserialize, Serialize};
-
 use crate::features::minecraft::ModLoader;
 
 use super::ContentType;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentSearchParams {
     pub content_type: ContentType,
     pub provider_id: ProviderId,
@@ -18,8 +15,7 @@ pub struct ContentSearchParams {
     pub loader: Option<ModLoader>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentSearchResult {
     pub page: i64,
     pub page_size: i64,
@@ -28,8 +24,7 @@ pub struct ContentSearchResult {
     pub items: Vec<ContentItem>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ProviderId {
     pub plugin_id: String,
     pub capability_id: String,
@@ -69,18 +64,62 @@ impl FromStr for ProviderId {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_id_display() {
+        let id = ProviderId {
+            plugin_id: "my_plugin".to_string(),
+            capability_id: "mod_provider".to_string(),
+        };
+        assert_eq!(id.to_string(), "my_plugin#mod_provider");
+    }
+
+    #[test]
+    fn provider_id_from_str_valid() {
+        let id: ProviderId = "my_plugin#mod_provider".parse().unwrap();
+        assert_eq!(id.plugin_id, "my_plugin");
+        assert_eq!(id.capability_id, "mod_provider");
+    }
+
+    #[test]
+    fn provider_id_from_str_invalid_no_separator() {
+        let err = "my_plugin".parse::<ProviderId>().unwrap_err();
+        assert!(err.contains("Invalid format"));
+        assert!(err.contains("my_plugin"));
+    }
+
+    #[test]
+    fn provider_id_from_str_empty_parts() {
+        let id: ProviderId = "#only_cap".parse().unwrap();
+        assert!(id.plugin_id.is_empty());
+        assert_eq!(id.capability_id, "only_cap");
+    }
+
+    #[test]
+    fn provider_id_roundtrip() {
+        let original = ProviderId {
+            plugin_id: "test".to_string(),
+            capability_id: "cap".to_string(),
+        };
+        let serialized = original.to_string();
+        let deserialized: ProviderId = serialized.parse().unwrap();
+        assert_eq!(original.plugin_id, deserialized.plugin_id);
+        assert_eq!(original.capability_id, deserialized.capability_id);
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct BaseContentParams {
     pub content_id: String,
     pub content_version: Option<String>,
     pub provider_id: ProviderId,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct AtomicInstallParams {
-    #[serde(flatten)]
     pub base: BaseContentParams,
     pub instance_id: String,
     pub game_version: String,
@@ -96,10 +135,8 @@ impl Deref for AtomicInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ModpackInstallParams {
-    #[serde(flatten)]
     pub base: BaseContentParams,
 }
 
@@ -111,8 +148,7 @@ impl Deref for ModpackInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "type", content = "data", rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub enum ContentInstallParams {
     Atomic(AtomicInstallParams),
     Modpack(ModpackInstallParams),
@@ -127,8 +163,7 @@ impl ContentInstallParams {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ContentItem {
     pub id: String,
     pub slug: String,

@@ -1,5 +1,10 @@
 mod content_file;
+mod content_item;
+mod content_provider_params;
 mod content_type;
+mod content_version;
+mod install_stage;
+mod instance_;
 mod loader_version_preference;
 mod mod_loader;
 mod new_instance;

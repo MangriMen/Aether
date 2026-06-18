@@ -7,8 +7,8 @@ use crate::{
         events::{ProgressBarId, ProgressService, ProgressServiceExt},
         minecraft::{MinecraftDomainError, vanilla},
     },
-    libs::request_client::{Request, RequestClient},
-    shared::{FileStore, InfinityCachedResource, IoError},
+    shared::request_client::{Request, RequestClient},
+    shared::{cache::domain::FileStore, cache::infra::InfinityCachedResource, io::domain::IoError},
 };
 
 use super::version_jar_key;

@@ -8,18 +8,16 @@ use dashmap::DashMap;
 use crate::{
     core::LazyLocator,
     features::instance::{
-        ContentFile, ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
-        app::{
-            ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentGetParams,
-            ContentListVersionsParams, ContentStateAction, GetContentUseCase, ImportContent,
-            ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
-            ListContentVersionsUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
-            SearchContentUseCase,
-        },
+        ChangeContentState, ChangeContentStateUseCase, CheckContentCompatibilityUseCase,
+        ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile, ContentGetParams,
+        ContentInstallParams, ContentItem, ContentListVersionsParams,
+        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+        ContentStateAction, ContentType, ContentVersion, GetContentUseCase, ImportContent,
+        ImportContentUseCase, InstallContentUseCase, ListContentUseCase,
+        ListContentVersionsUseCase, ListProvidersUseCase, RemoveContent, RemoveContentUseCase,
+        SearchContentUseCase,
     },
-    shared::CapabilityEntry,
+    shared::capability::domain::CapabilityEntry,
 };
 
 pub async fn list_content(instance_id: String) -> crate::Result<DashMap<String, ContentFile>> {

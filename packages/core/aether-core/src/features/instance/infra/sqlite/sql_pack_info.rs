@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::features::instance::{PackInfo, ProviderId};
 
+#[allow(clippy::struct_field_names)]
 pub struct SqlPackInfo {
     pub provider_id: String,
     pub modpack_id: String,

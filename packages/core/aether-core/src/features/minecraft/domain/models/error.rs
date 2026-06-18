@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
-use serr::SerializeError;
-
 use super::LoaderVersionPreference;
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum MinecraftDomainError {
     #[error("Minecraft version \"{version}\" not found")]
     VersionNotFound { version: String },
@@ -42,4 +40,51 @@ pub enum MinecraftDomainError {
 
     #[error("Storage failure: {reason}")]
     StorageFailure { reason: String },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_not_found_format() {
+        let err = MinecraftDomainError::VersionNotFound {
+            version: "1.20".into(),
+        };
+        assert_eq!(err.to_string(), "Minecraft version \"1.20\" not found");
+    }
+
+    #[test]
+    fn loader_version_required_format() {
+        let err = MinecraftDomainError::LoaderVersionRequired;
+        assert_eq!(
+            err.to_string(),
+            "Loader version not specified for non-vanilla loader"
+        );
+    }
+
+    #[test]
+    fn processor_failed_format() {
+        let err = MinecraftDomainError::ProcessorFailed {
+            reason: "out of memory".into(),
+        };
+        assert_eq!(err.to_string(), "Modloader processor failed: out of memory");
+    }
+
+    #[test]
+    fn pre_launch_failed_format() {
+        let err = MinecraftDomainError::PreLaunchFailed { code: -1 };
+        assert_eq!(
+            err.to_string(),
+            "Failed to execute pre-launch command: exit code -1"
+        );
+    }
+
+    #[test]
+    fn storage_failure_format() {
+        let err = MinecraftDomainError::StorageFailure {
+            reason: "disk full".into(),
+        };
+        assert_eq!(err.to_string(), "Storage failure: disk full");
+    }
 }

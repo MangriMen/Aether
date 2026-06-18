@@ -12,7 +12,7 @@ if (Test-Path $envScript) {
 }
 
 $corePath = Join-Path $root "packages/core/aether-core"
-$clientPath = Join-Path $root "apps/client"
+$clientPath = Join-Path $root "apps/desktop"
 $migrationsLinksDir = Join-Path $clientPath "migrations_links"
 
 # Helper to check exit codes of external commands (cargo, sqlx, etc.)

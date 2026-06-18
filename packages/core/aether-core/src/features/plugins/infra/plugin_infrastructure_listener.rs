@@ -8,11 +8,12 @@ use crate::{
         plugins::{
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
             PluginState,
-            infra::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy},
         },
     },
-    shared::CapabilityRegistry,
+    shared::capability::domain::CapabilityRegistry,
 };
+
+use super::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy};
 
 pub struct PluginInfrastructureListener<
     IR: CapabilityRegistry<Arc<dyn Importer>>,

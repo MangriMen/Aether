@@ -1,9 +1,7 @@
 use crate::{
     core::LazyLocator,
     features::minecraft::{
-        ModLoader,
-        app::{GetLoaderVersionManifestUseCase, GetVersionManifestUseCase},
-        modded, vanilla,
+        GetLoaderVersionManifestUseCase, GetVersionManifestUseCase, ModLoader, modded, vanilla,
     },
 };
 

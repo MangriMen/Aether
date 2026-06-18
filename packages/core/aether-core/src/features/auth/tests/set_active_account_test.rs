@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::features::auth::{CredentialsStorage, SetActiveAccountUseCase};
+use crate::features::auth::app::{CredentialsStorage, SetActiveAccountUseCase};
 
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 

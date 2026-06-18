@@ -5,10 +5,10 @@ use tracing::warn;
 
 use crate::{
     features::{
-        instance::{Instance, InstanceError, InstanceStorage},
+        instance::{Instance, InstanceError, InstanceStorage, infra::fs::instance::InstanceV2},
         settings::LocationInfo,
     },
-    shared::{read_json_async, remove_dir_all, write_json_async},
+    shared::io::infra::{read_json_async, remove_dir_all, write_json_async},
 };
 
 pub struct FsInstanceStorage {
@@ -21,14 +21,15 @@ impl FsInstanceStorage {
     }
 
     async fn load_instance_internal(&self, path: &Path) -> Result<Instance, InstanceError> {
-        match read_json_async::<Instance>(path).await {
-            Ok(instance) => Ok(instance),
+        match read_json_async::<InstanceV2>(path).await {
+            Ok(instance) => Ok(instance.into()),
             Err(original_err) => match read_json_async::<super::instance::InstanceV1>(path).await {
                 Ok(v1) => {
                     warn!("Migrating instance from V1 at {:?}", path);
                     let migrated: Instance = v1.into();
+                    let v2 = InstanceV2::from(&migrated);
 
-                    if let Err(e) = write_json_async(path, &migrated).await {
+                    if let Err(e) = write_json_async(path, &v2).await {
                         warn!("Failed to save migrated instance: {:?}", e);
                     }
 
@@ -81,7 +82,7 @@ impl InstanceStorage for FsInstanceStorage {
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
         let path = self.location_info.instance_metadata_file(instance.id());
-        write_json_async(&path, instance)
+        write_json_async(&path, InstanceV2::from(instance))
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())

@@ -7,10 +7,10 @@ use crate::{
         instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage, ProviderId},
         settings::LocationInfo,
     },
-    shared::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
+    shared::io::infra::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
 };
 
-use super::pack_file::PackFileV1;
+use super::pack_file::{PackFileV1, PackFileV2, PackV2};
 
 pub struct FsPackStorage {
     location_info: Arc<LocationInfo>,
@@ -36,13 +36,30 @@ impl FsPackStorage {
 #[async_trait]
 impl PackStorage for FsPackStorage {
     async fn get_pack(&self, instance_id: &str) -> Result<Pack, InstanceError> {
-        Ok(ensure_read_toml_async(&self.get_pack_path(instance_id))
+        let dto: PackV2 = ensure_read_toml_async(&self.get_pack_path(instance_id))
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?)
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+        Ok(Pack {
+            files: dto
+                .files
+                .into_iter()
+                .map(|e| PackEntry { file: e.file })
+                .collect(),
+        })
     }
 
     async fn update_pack(&self, instance_id: &str, pack: &Pack) -> Result<(), InstanceError> {
-        write_toml_async(&self.get_pack_path(instance_id), &pack)
+        let dto = PackV2 {
+            files: pack
+                .files
+                .iter()
+                .map(|e| super::pack_file::PackEntryV2 {
+                    file: e.file.clone(),
+                })
+                .collect(),
+        };
+        write_toml_async(&self.get_pack_path(instance_id), &dto)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())
@@ -55,10 +72,10 @@ impl PackStorage for FsPackStorage {
     ) -> Result<PackFile, InstanceError> {
         let path = self.get_pack_file_path(instance_id, content_path);
 
-        let pack_file_result: Result<PackFile, _> = read_toml_async(&path).await;
+        let pack_file_result: Result<PackFileV2, _> = read_toml_async(&path).await;
 
-        if let Ok(pack_file) = pack_file_result {
-            Ok(pack_file)
+        if let Ok(dto) = pack_file_result {
+            Ok(dto.into())
         } else {
             let v1_result: Result<PackFileV1, _> = read_toml_async(&path).await;
 
@@ -120,7 +137,8 @@ impl PackStorage for FsPackStorage {
     ) -> Result<(), InstanceError> {
         for (content_path, pack_file) in content_paths.iter().zip(pack_files) {
             let pack_file_path = self.get_pack_file_path(instance_id, content_path);
-            write_toml_async(&pack_file_path, &pack_file)
+            let dto: PackFileV2 = pack_file.clone().into();
+            write_toml_async(&pack_file_path, &dto)
                 .await
                 .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }

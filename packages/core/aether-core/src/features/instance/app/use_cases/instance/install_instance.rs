@@ -5,8 +5,8 @@ use crate::features::{
     instance::{Instance, InstanceError, InstanceInstallStage, InstanceStorage},
     java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
     minecraft::{
-        MetadataStorage, MinecraftDownloader,
-        app::{InstallMinecraftParams, InstallMinecraftUseCase},
+        InstallMinecraftParams, InstallMinecraftUseCase, MetadataStorage, MinecraftDownloader,
+        ModLoaderProcessor,
     },
     settings::LocationInfo,
 };
@@ -16,13 +16,14 @@ pub struct InstallInstanceUseCase<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
     PS: ProgressService,
+    MLP: ModLoaderProcessor,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
 > {
     instance_storage: Arc<IS>,
-    install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP, JIT>>,
+    install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
     progress_service: Arc<PS>,
     location_info: Arc<LocationInfo>,
 }
@@ -32,15 +33,16 @@ impl<
     MS: MetadataStorage,
     MD: MinecraftDownloader,
     PS: ProgressService,
+    MLP: ModLoaderProcessor,
     JIS: JavaInstallationService,
     JS: JavaStorage,
     JP: JreProvider,
     JIT: JavaInstallationTracker,
-> InstallInstanceUseCase<IS, MS, MD, PS, JIS, JS, JP, JIT>
+> InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>
 {
     pub fn new(
         instance_storage: Arc<IS>,
-        install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, PS, JIS, JS, JP, JIT>>,
+        install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
         progress_service: Arc<PS>,
         location_info: Arc<LocationInfo>,
     ) -> Self {

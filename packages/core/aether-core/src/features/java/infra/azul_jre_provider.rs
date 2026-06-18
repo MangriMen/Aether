@@ -13,8 +13,8 @@ use crate::{
         events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
         java::{JavaDomainError, JreProvider},
     },
-    libs::request_client::{Request, RequestClient, RequestClientExt, RequestError},
-    shared::remove_dir_all,
+    shared::io::infra::remove_dir_all,
+    shared::request_client::{Request, RequestClient, RequestClientExt, RequestError},
 };
 
 use super::JAVA_WINDOW_BIN;

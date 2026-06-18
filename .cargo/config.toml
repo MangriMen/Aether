@@ -6,4 +6,4 @@ rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
 gen = "run --package client-bindings"
 
 [env]
-BINDINGS_EXPORT_PATH = { value = "apps/ui/src/shared/api/bindings", relative = true }
+BINDINGS_EXPORT_PATH = { value = "apps/frontend/src/shared/api/bindings", relative = true }

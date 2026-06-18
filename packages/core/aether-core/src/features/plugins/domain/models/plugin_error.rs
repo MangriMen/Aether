@@ -1,14 +1,12 @@
-use serr::SerializeError;
-
 use crate::{
     features::{
-        plugins::{LoadConfig, LoadConfigType},
+        plugins::{LoadConfig, LoadConfigType, ManifestError},
         settings::SettingsError,
     },
-    shared::IoError,
+    shared::io::domain::IoError,
 };
 
-#[derive(thiserror::Error, Debug, SerializeError)]
+#[derive(thiserror::Error, Debug)]
 pub enum PluginError {
     // Plugin lifecycle errors
     #[error("Plugin \"{plugin_id}\" not found")]
@@ -43,6 +41,9 @@ pub enum PluginError {
 
     #[error("Invalid plugin manifest format: {error}")]
     InvalidManifestFormat { error: String },
+
+    #[error("{0}")]
+    Manifest(#[from] ManifestError),
 
     #[error("Loader not found for config type: {config_type:?}")]
     LoaderNotFound { config_type: LoadConfigType },

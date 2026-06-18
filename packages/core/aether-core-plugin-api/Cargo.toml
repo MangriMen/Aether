@@ -1,9 +1,11 @@
 [package]
 name = "aether-core-plugin-api"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 
 [dependencies]
+chrono.workspace = true
+schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true

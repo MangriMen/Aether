@@ -3,13 +3,10 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{
     core::LazyLocator,
     features::plugins::{
-        PluginSettings,
-        app::{
-            DisablePluginUseCase, EditPluginSettings, EditPluginSettingsUseCase,
-            EnablePluginUseCase, GetPluginApiVersionUseCase, GetPluginDtoUseCase,
-            GetPluginSettingsUseCase, ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto,
-            RemovePluginUseCase, SyncPluginsUseCase,
-        },
+        DisablePluginUseCase, EditPluginSettings, EditPluginSettingsUseCase, EnablePluginUseCase,
+        GetPluginApiVersionUseCase, GetPluginDtoUseCase, GetPluginSettingsUseCase,
+        ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto, PluginSettings,
+        RemovePluginUseCase, SyncPluginsUseCase,
     },
 };
 

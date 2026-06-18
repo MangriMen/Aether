@@ -1,9 +1,4 @@
-mod extensions;
 mod model;
-mod ports;
-mod services;
 
-pub use extensions::*;
+// Domain re-exports — used by external features and app/infra layers
 pub use model::*;
-pub use ports::*;
-pub use services::*;

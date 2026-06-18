@@ -1,29 +1,19 @@
-use serde::{Deserialize, Serialize};
-use serde_with::{DisplayFromStr, serde_as};
 use std::collections::HashMap;
 
-use crate::{
-    features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId},
-    shared::sha1_async,
-};
+use crate::features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Default)]
 pub struct Pack {
     pub files: Vec<PackEntry>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone, Default)]
 pub struct PackEntry {
     pub file: String,
 }
 
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone)]
 pub struct PackFile {
-    #[serde(alias = "filename")]
     pub file_name: String,
     pub name: Option<String>,
     pub hash: String,
@@ -31,12 +21,10 @@ pub struct PackFile {
     pub option: Option<PackFileOption>,
     pub side: Option<String>,
     pub update_provider_id: Option<ProviderId>,
-    #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone)]
 pub struct PackFileDownload {
     /// File hash for verification
     pub hash: String,
@@ -44,8 +32,7 @@ pub struct PackFileDownload {
     pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, Clone)]
 pub struct PackFileOption {
     /// Whether this file is optional
     pub optional: bool,
@@ -81,9 +68,5 @@ impl PackFile {
             update_provider_id: None,
             update: None,
         }
-    }
-
-    pub async fn from_contents(file_name: String, contents: Vec<u8>) -> Self {
-        Self::from_hash(file_name, sha1_async(contents).await)
     }
 }

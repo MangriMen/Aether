@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::features::{
     instance::{
         ContentItem, ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
@@ -234,7 +232,14 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
 
         let loaders = loaders
             .into_iter()
-            .filter_map(|l| ModLoader::from_str(&l).ok())
+            .filter_map(|l| match l.to_lowercase().as_str() {
+                "vanilla" => Some(ModLoader::Vanilla),
+                "forge" => Some(ModLoader::Forge),
+                "fabric" => Some(ModLoader::Fabric),
+                "quilt" => Some(ModLoader::Quilt),
+                "neoforge" | "neo" => Some(ModLoader::NeoForge),
+                _ => None,
+            })
             .collect();
 
         let web_url = format!("{MODRINTH_WEB_URL}/project/{project_id}/version/{id}");

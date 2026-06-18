@@ -1,11 +1,9 @@
-use serr::SerializeError;
-
 use crate::{
-    features::{java::app::JavaApplicationError, minecraft::MinecraftDomainError},
-    shared::IoError,
+    features::{java::JavaApplicationError, minecraft::MinecraftDomainError},
+    shared::io::domain::IoError,
 };
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum MinecraftApplicationError {
     #[error(transparent)]
     Domain(#[from] MinecraftDomainError),

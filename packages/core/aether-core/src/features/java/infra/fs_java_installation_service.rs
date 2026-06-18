@@ -6,8 +6,8 @@ use futures::StreamExt;
 use crate::{
     features::java::{
         Java, JavaDomainError, JavaInstallationService,
+        domain::extract_java_major_minor_version,
         infra::{JavaProperties, get_java_properties},
-        utils::extract_java_major_minor_version,
     },
     shared,
 };
@@ -77,7 +77,7 @@ impl JavaInstallationService for FsJavaInstallationService {
         // Attempt to canonicalize the potential Java filepath
         // If it fails, return None (Java is not here)
         let canonical_path =
-            shared::canonicalize(path).map_err(|_| JavaDomainError::InvalidPath {
+            shared::io::infra::canonicalize(path).map_err(|_| JavaDomainError::InvalidPath {
                 path: path.to_path_buf(),
             })?;
 

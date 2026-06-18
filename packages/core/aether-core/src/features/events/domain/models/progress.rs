@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct ProgressEvent {
     pub event: ProgressEventType,
     pub progress_bar_id: Uuid,
@@ -12,8 +10,7 @@ pub struct ProgressEvent {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum ProgressEventType {
     JavaDownload {
         version: u32,

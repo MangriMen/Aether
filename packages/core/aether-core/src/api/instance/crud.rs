@@ -4,27 +4,23 @@ use crate::{
     core::LazyLocator,
     features::{
         instance::{
-            Instance,
-            app::{
-                CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
-                InstallInstanceUseCase, ListInstancesUseCase, NewInstance, RemoveInstanceUseCase,
-                UpdateInstanceUseCase,
-            },
+            CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
+            InstallInstanceUseCase, Instance, ListInstancesUseCase, NewInstance,
+            RemoveInstanceUseCase, UpdateInstanceUseCase,
         },
         java::{
-            app::{GetJavaUseCase, InstallJavaUseCase},
+            GetJavaUseCase, InstallJavaUseCase,
             infra::{AzulJreProvider, FsJavaInstallationService},
         },
         minecraft::{
-            LoaderVersionResolver,
-            app::{GetVersionManifestUseCase, InstallMinecraftUseCase},
+            GetVersionManifestUseCase, InstallMinecraftUseCase, LoaderVersionResolver,
             infra::{
-                AssetsService, ClientService, LibrariesService, MinecraftDownloadResolver,
-                MinecraftDownloadService,
+                AssetsService, ClientService, ForgeProcessor, LibrariesService,
+                MinecraftDownloadResolver, MinecraftDownloadService,
             },
         },
     },
-    shared::FileCache,
+    shared::cache::infra::FileCache,
 };
 
 #[tracing::instrument]
@@ -87,12 +83,16 @@ pub async fn create(new_instance: NewInstance) -> crate::Result<String> {
         locator.get_java_installation_tracker().await,
     ));
 
-    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
+    let forge_processor = Arc::new(ForgeProcessor::new(
         locator.get_progress_service().await,
+        locator.location_info.clone(),
+    ));
+
+    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
         loader_version_resolver.clone(),
         get_loader_manifest_use_case.clone(),
-        locator.location_info.clone(),
         minecraft_download_service,
+        forge_processor,
         FsJavaInstallationService,
         get_java_use_case.clone(),
         install_java_use_case.clone(),
@@ -177,12 +177,16 @@ pub async fn install(instance_id: String, force: bool) -> crate::Result<()> {
         locator.get_java_installation_tracker().await,
     ));
 
-    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
+    let forge_processor_2 = Arc::new(ForgeProcessor::new(
         locator.get_progress_service().await,
+        locator.location_info.clone(),
+    ));
+
+    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
         loader_version_resolver.clone(),
         get_loader_manifest_use_case.clone(),
-        locator.location_info.clone(),
         minecraft_download_service,
+        forge_processor_2,
         FsJavaInstallationService,
         get_java_use_case.clone(),
         install_java_use_case.clone(),

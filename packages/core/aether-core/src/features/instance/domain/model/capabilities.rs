@@ -1,14 +1,8 @@
 use std::ops::Deref;
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone)]
 pub struct CapabilityMetadata {
     /// Identifier for the capability (lowercase, kebab/underscore allowed).
-    #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
     pub id: String,
 
     /// Display name of the capability.
@@ -21,11 +15,8 @@ pub struct CapabilityMetadata {
     pub icon: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone)]
 pub struct ImporterCapabilityMetadata {
-    #[serde(flatten)]
     pub base: CapabilityMetadata,
 
     ///Optional field label shown in the importer UI.
@@ -35,19 +26,13 @@ pub struct ImporterCapabilityMetadata {
     pub supported_extensions: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone)]
 pub struct UpdaterCapabilityMetadata {
-    #[serde(flatten)]
     pub base: CapabilityMetadata,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[derive(Debug, Clone)]
 pub struct ContentProviderCapabilityMetadata {
-    #[serde(flatten)]
     pub base: CapabilityMetadata,
 
     /// Whether the provider supports installing individual items (e.g., a single mod or resource pack).

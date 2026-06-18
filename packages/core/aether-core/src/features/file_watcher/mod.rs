@@ -1,4 +1,9 @@
-pub mod domain;
+mod app;
+mod domain;
 pub mod infra;
 
-pub use domain::*;
+pub use app::FileEventHandler;
+pub use app::FileWatcher;
+pub use domain::FileEvent;
+pub use domain::FileEventKind;
+pub use domain::FileWatcherError;

@@ -1,6 +1,6 @@
 use crate::{
     features::minecraft::{ModLoader, modded, vanilla},
-    shared::{CacheId, CacheKey, CachedValue},
+    shared::cache::domain::{CacheId, CacheKey, CachedValue},
 };
 
 pub enum MinecraftMetadataCacheNamespaces {

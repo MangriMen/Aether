@@ -3,8 +3,7 @@ use std::sync::Arc;
 use crate::{
     core::LazyLocator,
     features::java::{
-        Java,
-        app::{GetJavaUseCase, InstallJava, InstallJavaUseCase},
+        GetJavaUseCase, InstallJava, InstallJavaUseCase, Java,
         infra::{AzulJreProvider, FsJavaInstallationService},
     },
 };

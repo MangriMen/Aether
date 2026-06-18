@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
-use serr::SerializeError;
-
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum FileWatcherError {
     #[error("Path not found: {path}")]
     PathNotFound { path: PathBuf },
@@ -11,5 +9,5 @@ pub enum FileWatcherError {
     WatchNotFound,
 
     #[error("File watching error: {0}")]
-    NotifyError(#[from] notify::Error),
+    NotifyError(String),
 }

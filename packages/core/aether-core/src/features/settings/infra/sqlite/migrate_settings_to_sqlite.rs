@@ -5,7 +5,7 @@ use crate::{
         SettingsStorage,
         infra::{FsSettingsStorage, SqliteSettingsStorage},
     },
-    shared::archive_legacy_file,
+    shared::archive::infra::archive_legacy_file,
 };
 
 pub async fn migrate_settings_to_sqlite(

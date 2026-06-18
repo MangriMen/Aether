@@ -1,14 +1,13 @@
 use std::path::PathBuf;
 
-use serr::SerializeError;
 use uuid::Uuid;
 
 use crate::features::{
-    auth::AuthApplicationError, instance::ContentType, minecraft::app::MinecraftApplicationError,
+    auth::AuthApplicationError, instance::ContentType, minecraft::MinecraftApplicationError,
     process::ProcessError, settings::SettingsError,
 };
 
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum InstanceError {
     #[error("Storage error: {0}")]
     Storage(String),
@@ -39,8 +38,11 @@ pub enum InstanceError {
     #[error("Prelaunch command error with code: {code}")]
     PrelaunchCommandError { code: i32 },
 
-    #[error("Instance validation error: \"{field}\" is invalid because \"{reason}\"")]
-    ValidationError { field: String, reason: String },
+    #[error("Instance validation error: \"{field:?}\" is invalid because \"{reason:?}\"")]
+    ValidationError {
+        field: InstanceField,
+        reason: InstanceValidationErrorReason,
+    },
 
     #[error("Not found importer {importer_id}")]
     ImporterNotFound { importer_id: String },
@@ -85,18 +87,97 @@ pub enum InstanceError {
 
     // Features errors
     #[error("Settings load error")]
-    #[serialize_error]
     SettingsLoadError(#[from] SettingsError),
 
     #[error("Failed to get launch command")]
-    #[serialize_error]
     MinecraftError(#[from] MinecraftApplicationError),
 
     #[error("Failed to launch instance")]
-    #[serialize_error]
     ProcessError(#[from] ProcessError),
 
     #[error(transparent)]
-    #[serialize_error]
     CredentialsError(#[from] AuthApplicationError),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn storage_format() {
+        let err = InstanceError::Storage("db error".into());
+        assert_eq!(err.to_string(), "Storage error: db error");
+    }
+
+    #[test]
+    fn not_found_format() {
+        let err = InstanceError::NotFound {
+            instance_id: "abc".into(),
+        };
+        assert_eq!(err.to_string(), "Instance with id \"abc\" not found");
+    }
+
+    #[test]
+    fn capability_operation_error_format() {
+        let err = InstanceError::CapabilityOperationError;
+        assert_eq!(err.to_string(), "Capability operation error");
+    }
+
+    #[test]
+    fn prelaunch_command_error_format() {
+        let err = InstanceError::PrelaunchCommandError { code: 1 };
+        assert_eq!(err.to_string(), "Prelaunch command error with code: 1");
+    }
+
+    #[test]
+    fn instance_already_running_format() {
+        let pid = Uuid::new_v4();
+        let err = InstanceError::InstanceAlreadyRunning {
+            instance_id: "inst-1".into(),
+            process_id: pid,
+        };
+        assert_eq!(
+            err.to_string(),
+            format!("Instance \"inst-1\" already running with pid \"{pid}\"",)
+        );
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstanceField {
+    Name,
+}
+
+// impl InstanceField {
+//     pub fn as_str(&self) -> &'static str {
+//         match self {
+//             InstanceField::Name => "name",
+//         }
+//     }
+// }
+
+// impl Display for InstanceField {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", self.as_str())
+//     }
+// }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InstanceValidationErrorReason {
+    CannotBeEmpty,
+}
+
+// impl ValidationErrorReason {
+//     pub fn as_str(&self) -> &'static str {
+//         match self {
+//             ValidationErrorReason::CannotBeEmpty => "cannot_be_empty",
+//         }
+//     }
+// }
+
+// impl Display for ValidationErrorReason {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", self.as_str())
+//     }
+// }

@@ -1,6 +1,4 @@
-use serr::SerializeError;
-
-#[derive(Debug, thiserror::Error, SerializeError)]
+#[derive(Debug, thiserror::Error)]
 pub enum SettingsError {
     #[error("Settings file not found. Please run initial setup.")]
     NotFound,

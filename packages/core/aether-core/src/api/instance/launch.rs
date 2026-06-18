@@ -5,42 +5,33 @@ use crate::{
     features::{
         auth::Credential,
         instance::{
-            app::{
-                InstallInstanceUseCase, LaunchInstanceUseCase,
-                LaunchInstanceWithActiveAccountUseCase,
-            },
+            InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
             infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{
-            app::{GetJavaUseCase, InstallJavaUseCase},
+            GetJavaUseCase, InstallJavaUseCase,
             infra::{
                 AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker,
                 SqliteJavaStorage,
             },
         },
         minecraft::{
-            LoaderVersionResolver,
-            app::{
-                GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase,
-                InstallMinecraftUseCase,
-            },
+            GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
+            LoaderVersionResolver, MinecraftHealthService,
             infra::{
-                AssetsService, CachedMetadataStorage, ClientService, LibrariesService,
-                MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
+                AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor,
+                LibrariesService, MinecraftDownloadResolver, MinecraftDownloadService,
+                ModrinthMetadataStorage,
             },
         },
         process::{
-            MinecraftProcessMetadata,
-            app::{
-                GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, StartProcessUseCase,
-                TrackProcessUseCase,
-            },
-            infra::InMemoryProcessStorage,
+            GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, MinecraftProcessMetadata,
+            StartProcessUseCase, TrackProcessUseCase, infra::InMemoryProcessStorage,
         },
         settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
-    libs::request_client::ReqwestClient,
-    shared::{FileCache, SqliteCache},
+    shared::cache::infra::{FileCache, SqliteCache},
+    shared::request_client::infra::ReqwestClient,
 };
 
 #[allow(clippy::too_many_lines)]
@@ -57,6 +48,7 @@ async fn get_launch_instance_use_case(
         FileCache<MinecraftDownloadResolver>,
         FileCache<MinecraftDownloadResolver>,
     >,
+    ForgeProcessor<ProgressServiceType>,
     ProgressServiceType,
     FsJavaInstallationService,
     SqliteJavaStorage,
@@ -123,12 +115,16 @@ async fn get_launch_instance_use_case(
         locator.get_metadata_storage().await,
     ));
 
-    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
+    let forge_processor = Arc::new(ForgeProcessor::new(
         locator.get_progress_service().await,
+        locator.location_info.clone(),
+    ));
+
+    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
         loader_version_resolver.clone(),
         get_loader_manifest_use_case.clone(),
-        locator.location_info.clone(),
         minecraft_download_service,
+        forge_processor,
         FsJavaInstallationService,
         get_java_use_case.clone(),
         install_java_use_case.clone(),
@@ -188,21 +184,58 @@ async fn get_launch_instance_use_case(
         minecraft_cache.clone(),
     );
 
+    let minecraft_health_service = Arc::new(MinecraftHealthService::new(
+        loader_version_resolver.clone(),
+        get_version_manifest_use_case.clone(),
+        minecraft_download_service,
+        get_java_use_case.clone(),
+        locator.location_info.clone(),
+    ));
+
+    // Third instance of MinecraftDownloadService for GetMinecraftLaunchCommandUseCase
+    let client_service = ClientService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        minecraft_cache.clone(),
+    );
+    let assets_service = AssetsService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        locator.location_info.clone(),
+        minecraft_cache.clone(),
+    );
+    let libraries_service = LibrariesService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        locator.location_info.clone(),
+    );
+    let minecraft_download_service = MinecraftDownloadService::new(
+        client_service,
+        assets_service,
+        libraries_service,
+        locator.get_request_client().await,
+        locator.get_progress_service().await,
+        minecraft_cache.clone(),
+    );
+
     let get_minecraft_launch_command_use_case = GetMinecraftLaunchCommandUseCase::new(
         loader_version_resolver,
         get_version_manifest_use_case,
         minecraft_download_service,
         FsJavaInstallationService,
         get_java_use_case.clone(),
+        install_java_use_case.clone(),
         locator.location_info.clone(),
     );
 
     LaunchInstanceUseCase::new(
+        locator.get_plugin_registry().await,
         locator.get_instance_storage().await,
         locator.get_default_instance_settings_storage().await,
         locator.location_info.clone(),
         get_process_by_instance_id_use_case,
         install_instance_use_case,
+        minecraft_health_service,
         get_minecraft_launch_command_use_case,
         start_process_use_case,
     )

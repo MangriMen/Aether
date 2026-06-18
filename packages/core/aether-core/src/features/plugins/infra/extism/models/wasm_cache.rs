@@ -1,32 +1,29 @@
 use std::path::PathBuf;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+/// Wasm cache config written to disk for extism/wasmtime.
+/// Note: wasmtime's `CacheConfig` has `#[serde(deny_unknown_fields)]` —
+/// only include fields that exist in its struct.
+#[derive(Serialize)]
 pub struct WasmCacheConfig {
     pub cache: WasmCache,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct WasmCache {
-    #[serde(default = "default_enabled")]
-    pub enabled: bool,
-    #[serde(default = "default_cleanup_interval")]
     pub cleanup_interval: String,
-    #[serde(default = "default_files_total_size_soft_limit")]
     pub files_total_size_soft_limit: String,
     pub directory: PathBuf,
 }
 
-fn default_enabled() -> bool {
-    true
-}
-
-fn default_cleanup_interval() -> String {
-    "30m".to_owned()
-}
-
-fn default_files_total_size_soft_limit() -> String {
-    "1Gi".to_owned()
+pub fn get_default_cache_config(cache_dir: PathBuf) -> WasmCacheConfig {
+    WasmCacheConfig {
+        cache: WasmCache {
+            cleanup_interval: "30m".to_owned(),
+            files_total_size_soft_limit: "1Gi".to_owned(),
+            directory: cache_dir,
+        },
+    }
 }

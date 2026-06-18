@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum PluginInternalEvent {
+    Loaded,
+    Unloaded,
     BeforeInstanceLaunch { instance_id: String },
     AfterInstanceLaunch { instance_id: String },
 }

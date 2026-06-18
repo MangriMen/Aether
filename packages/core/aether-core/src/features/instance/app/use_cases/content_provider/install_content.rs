@@ -11,7 +11,10 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{CapabilityRegistry, create_dir_all, remove_file, rename},
+    shared::{
+        capability::domain::CapabilityRegistry,
+        io::infra::{create_dir_all, remove_file, rename},
+    },
 };
 
 pub struct InstallContentUseCase<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>

@@ -5,10 +5,10 @@ use uuid::Uuid;
 use crate::{
     features::{
         auth::Credential,
-        minecraft::{MinecraftDomainError, utils::parse_arguments, vanilla},
+        minecraft::{MinecraftDomainError, parse_arguments, vanilla},
         settings::WindowSize,
     },
-    shared::canonicalize,
+    shared::io::infra::canonicalize,
 };
 
 // Replaces the space separator with a newline character, as to not split the arguments
@@ -99,8 +99,8 @@ fn replace_placeholders_in_argument_string(
     let uuid_str = uuid.simple().to_string();
     let game_dir_str = resolve_path(game_directory, "game")?;
     let assets_dir_str = resolve_path(assets_directory, "assets")?;
-    let resolution_width = resolution.0.to_string();
-    let resolution_height = resolution.1.to_string();
+    let resolution_width = resolution.width().to_string();
+    let resolution_height = resolution.height().to_string();
 
     Ok(argument
         .replace("${accessToken}", access_token)

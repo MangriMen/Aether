@@ -1,12 +1,16 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use extism_convert::Msgpack;
 use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{Importer, ImporterCapabilityMetadata, InstanceError},
-    plugins::{PluginImportInstance, PluginImporterCapability, PluginInstance, PluginInstanceExt},
+    plugins::{PluginImportInstance, PluginImporterCapability, PluginInstance},
 };
+
+use crate::features::plugins::infra::extism::models::PluginInstanceExt;
+use crate::features::plugins::infra::plugin_utils::to_wasi_path;
 
 pub struct PluginImporterProxy {
     instance: Arc<Mutex<dyn PluginInstance>>,
@@ -49,13 +53,16 @@ impl Importer for PluginImporterProxy {
             });
         }
 
+        // Normalize Windows paths to WASI-compatible /mnt/<letter>/... format
+        let wasi_path = to_wasi_path(path);
+
         plugin
             .call(
                 &self.capability.handler,
-                PluginImportInstance {
+                Msgpack(PluginImportInstance {
                     importer_id: self.capability.id.clone(),
-                    path: path.to_owned(),
-                },
+                    path: wasi_path,
+                }),
             )
             .map_err(|err| {
                 tracing::error!(

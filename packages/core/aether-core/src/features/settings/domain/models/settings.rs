@@ -1,13 +1,10 @@
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
-
 pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS: usize = 10;
 #[allow(clippy::cast_possible_wrap)]
 pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64: i64 = DEFAULT_MAX_CONCURRENT_DOWNLOADS as i64;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct Settings {
     max_concurrent_downloads: usize,
 
@@ -57,5 +54,29 @@ impl Settings {
 
     pub fn disable_plugin(&mut self, plugin_id: &str) -> bool {
         self.enabled_plugins.remove(plugin_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_return_false_when_enabling_an_already_enabled_plugin() {
+        let mut settings = Settings::default();
+        settings.enable_plugin("my_plugin");
+
+        let result = settings.enable_plugin("my_plugin");
+
+        assert!(!result);
+    }
+
+    #[test]
+    fn should_return_false_when_disabling_a_not_enabled_plugin() {
+        let mut settings = Settings::default();
+
+        let result = settings.disable_plugin("nonexistent");
+
+        assert!(!result);
     }
 }

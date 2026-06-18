@@ -6,7 +6,7 @@ use crate::{
         DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemorySettings,
         SettingsError, WindowSettings, WindowSize,
     },
-    shared::UpdateAction,
+    shared::json_store::domain::UpdateAction,
 };
 
 pub struct SqliteDefaultInstanceSettingsStorage {

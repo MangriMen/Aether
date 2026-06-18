@@ -1,5 +1,10 @@
-pub mod app;
-pub mod domain;
+mod app;
+mod domain;
 pub mod infra;
 
-pub use domain::*;
+pub use app::{
+    GetProcessMetadataByInstanceIdUseCase, KillProcessUseCase, ListProcessMetadataUseCase,
+    ManageProcessUseCase, ProcessStorage, StartProcessUseCase, TrackProcessUseCase,
+    WaitForProcessUseCase,
+};
+pub use domain::{MinecraftProcessMetadata, ProcessError};

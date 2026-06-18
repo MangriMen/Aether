@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::instance::{Importer, InstanceError},
-    shared::CapabilityRegistry,
+    shared::capability::domain::CapabilityRegistry,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::instance::{Instance, InstanceError, InstanceStorage},
-    shared::AssetsStorage,
+    shared::cache::domain::AssetsStorage,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

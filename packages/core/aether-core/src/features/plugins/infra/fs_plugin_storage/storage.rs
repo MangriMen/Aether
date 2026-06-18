@@ -16,8 +16,11 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        IoError, copy_dir_all, create_dir_all, read_async, read_dir, read_json_async,
-        remove_dir_all, sha1_async,
+        hash::infra::sha1_async,
+        io::domain::IoError,
+        io::infra::{
+            copy_dir_all, create_dir_all, read_async, read_dir, read_json_async, remove_dir_all,
+        },
     },
 };
 
@@ -48,26 +51,33 @@ impl FsPluginStorage {
     }
 
     async fn load_manifest(&self, dir: &Path) -> Result<PluginManifest, PluginError> {
-        Ok(read_json_async(&self.get_manifest_path(dir)).await?)
+        let dto: aether_core_plugin_api::v0::PluginManifestDto =
+            read_json_async(&self.get_manifest_path(dir)).await?;
+        Ok(dto.try_into()?)
     }
 
     async fn load_capabilities(
         &self,
         dir: &Path,
     ) -> Result<Option<PluginCapabilities>, PluginError> {
-        Ok(read_json_async(&self.get_capabilities_path(dir))
-            .await
-            .map(Some)
-            .or_else(|e| {
-                if let Some(io_error) = match &e {
-                    IoError::IoPathError { source, .. } | IoError::IoError(source) => Some(source),
-                    _ => None,
-                } && io_error.kind() == std::io::ErrorKind::NotFound
-                {
-                    return Ok(None);
-                }
-                Err(e)
-            })?)
+        let dto: Option<super::super::PluginCapabilitiesV1> =
+            read_json_async(&self.get_capabilities_path(dir))
+                .await
+                .map(Some)
+                .or_else(|e| {
+                    if let Some(io_error) = match &e {
+                        IoError::IoPathError { source, .. } | IoError::IoError(source) => {
+                            Some(source)
+                        }
+                        _ => None,
+                    } && io_error.kind() == std::io::ErrorKind::NotFound
+                    {
+                        return Ok(None);
+                    }
+                    Err(e)
+                })?;
+
+        Ok(dto.map(PluginCapabilities::from))
     }
 
     async fn calc_hash(dir: &Path, manifest: &PluginManifest) -> Result<String, PluginError> {

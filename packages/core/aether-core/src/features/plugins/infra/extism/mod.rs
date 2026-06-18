@@ -1,6 +1,6 @@
 mod extism_plugin_loader;
 mod host_functions;
 mod mappers;
-mod models;
+pub(crate) mod models;
 
-pub use extism_plugin_loader::*;
+pub use extism_plugin_loader::ExtismPluginLoader;

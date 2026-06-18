@@ -1,14 +1,10 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct InstanceEvent {
     pub event: InstanceEventType,
     pub instance_id: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone)]
 pub enum InstanceEventType {
     Created,
     Synced,

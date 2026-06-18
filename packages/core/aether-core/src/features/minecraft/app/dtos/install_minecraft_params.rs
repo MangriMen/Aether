@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
-use serde::{Deserialize, Serialize};
-
 use crate::features::minecraft::{LoaderVersionPreference, ModLoader};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct InstallMinecraftParams {
     pub game_version: String,
     pub loader: ModLoader,

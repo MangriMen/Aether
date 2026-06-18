@@ -1,9 +1,4 @@
-use std::str::FromStr;
-
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ModLoader {
     Vanilla,
     Forge,
@@ -34,17 +29,25 @@ impl ModLoader {
     }
 }
 
-impl FromStr for ModLoader {
-    type Err = ();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "vanilla" => Ok(Self::Vanilla),
-            "forge" => Ok(Self::Forge),
-            "fabric" => Ok(Self::Fabric),
-            "quilt" => Ok(Self::Quilt),
-            "neoforge" | "neo" => Ok(Self::NeoForge),
-            _ => Err(()),
-        }
+    #[test]
+    fn mod_loader_as_str() {
+        assert_eq!(ModLoader::Vanilla.as_str(), "vanilla");
+        assert_eq!(ModLoader::Forge.as_str(), "forge");
+        assert_eq!(ModLoader::Fabric.as_str(), "fabric");
+        assert_eq!(ModLoader::Quilt.as_str(), "quilt");
+        assert_eq!(ModLoader::NeoForge.as_str(), "neoforge");
+    }
+
+    #[test]
+    fn mod_loader_as_meta_str() {
+        assert_eq!(ModLoader::Vanilla.as_meta_str(), "vanilla");
+        assert_eq!(ModLoader::Forge.as_meta_str(), "forge");
+        assert_eq!(ModLoader::Fabric.as_meta_str(), "fabric");
+        assert_eq!(ModLoader::Quilt.as_meta_str(), "quilt");
+        assert_eq!(ModLoader::NeoForge.as_meta_str(), "neo");
     }
 }

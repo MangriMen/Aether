@@ -1,6 +1,6 @@
 use crate::{
     features::minecraft::vanilla,
-    shared::{CacheId, CacheKey},
+    shared::cache::domain::{CacheId, CacheKey},
 };
 
 pub enum MinecraftDownloadCacheNamespaces {

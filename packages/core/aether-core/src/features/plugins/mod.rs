@@ -1,5 +1,26 @@
-pub mod app;
-pub mod domain;
+mod app;
+mod domain;
 pub mod infra;
 
-pub use domain::*;
+// Domain (models + PluginInstance)
+pub use domain::{
+    ApiConfig, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError, PLUGIN_API_VERSION,
+    PathMapping, Plugin, PluginCapabilities, PluginCheckCompatibilityParams, PluginContent,
+    PluginContentProviderCapability, PluginError, PluginImportInstance, PluginImporterCapability,
+    PluginInstance, PluginInternalEvent, PluginManifest, PluginMetadata, PluginSettings,
+    PluginState, PluginUpdaterCapability, ProviderHandlers, RuntimeConfig, SerializableOutput,
+};
+
+// App (use cases, ports, services, DTOs)
+pub use app::{
+    ApiConfigDto, AsCapabilityMetadata, CapabilityMetadataDto,
+    ContentProviderCapabilityMetadataDto, DisablePluginUseCase, EditPluginSettings,
+    EditPluginSettingsUseCase, EnablePluginUseCase, GetPluginApiVersionUseCase,
+    GetPluginDtoUseCase, GetPluginSettingsUseCase, ImportPluginsUseCase,
+    ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, LoadConfigDto, LoadConfigTypeDto,
+    PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto,
+    PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
+    PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginRegistry,
+    PluginSettingsStorage, PluginStorage, PluginUpdaterCapabilityDto, ProviderHandlersDto,
+    RemovePluginUseCase, RuntimeConfigDto, SyncPluginsUseCase, UpdaterCapabilityMetadataDto,
+};

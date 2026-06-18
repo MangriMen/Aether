@@ -4,8 +4,8 @@ use async_trait::async_trait;
 
 use crate::{
     features::minecraft::{MetadataStorage, MinecraftDomainError, ModLoader, modded, vanilla},
-    libs::request_client::{Request, RequestClient, RequestClientExt},
-    shared::IoError,
+    shared::io::domain::IoError,
+    shared::request_client::{Request, RequestClient, RequestClientExt},
 };
 
 pub const META_URL: &str = "https://launcher-meta.modrinth.com/";

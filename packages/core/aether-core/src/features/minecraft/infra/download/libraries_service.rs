@@ -7,14 +7,17 @@ use tracing::{debug, error, info, trace, warn};
 use crate::{
     features::{
         events::{
-            ProgressConfig, ProgressService,
-            utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress},
+            ProgressConfig, ProgressConfigWithMessage, ProgressService,
+            try_for_each_concurrent_with_progress,
         },
-        minecraft::{MinecraftDomainError, utils::parse_rules, vanilla},
+        minecraft::{MinecraftDomainError, parse_rules, vanilla},
         settings::LocationInfo,
     },
-    libs::request_client::{Request, RequestClient},
-    shared::{IoError, create_dir_all, write_async},
+    shared::request_client::{Request, RequestClient},
+    shared::{
+        io::domain::IoError,
+        io::infra::{create_dir_all, write_async},
+    },
 };
 
 const MINECRAFT_LIBRARIES_BASE_URL: &str = "https://libraries.minecraft.net/";
@@ -297,7 +300,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
             return Ok(());
         };
 
-        let parsed_key = os_key.replace("${arch}", crate::shared::ARCH_WIDTH);
+        let parsed_key = os_key.replace("${arch}", crate::core::domain::extensions::ARCH_WIDTH);
 
         let Some(native) = classifiers.get(&parsed_key) else {
             trace!("No native found for key: {}", parsed_key);

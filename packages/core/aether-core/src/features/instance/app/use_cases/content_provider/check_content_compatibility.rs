@@ -8,7 +8,7 @@ use crate::{
         ContentProvider, Instance, InstanceError, InstanceStorage,
         app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
-    shared::CapabilityRegistry,
+    shared::capability::domain::CapabilityRegistry,
 };
 
 pub struct CheckContentCompatibilityUseCase<

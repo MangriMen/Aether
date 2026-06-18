@@ -8,7 +8,7 @@ use crate::{
         instance::InstanceStorage,
         process::{MinecraftProcessMetadata, ProcessError, ProcessStorage},
     },
-    shared::IoError,
+    shared::io::domain::IoError,
 };
 
 use super::{ManageProcessParams, ManageProcessUseCase};

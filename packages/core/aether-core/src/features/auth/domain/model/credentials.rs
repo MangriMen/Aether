@@ -1,28 +1,24 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::features::auth::AuthDomainError;
+use crate::features::auth::domain::AuthDomainError;
 
 use super::Username;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Credential {
     id: Uuid,
     username: Username,
     account_type: AccountType,
-    #[serde(alias = "active")]
     is_active: bool,
     access_token: String,
     refresh_token: String,
     expires: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AccountType {
     Offline,
     Microsoft,
@@ -145,5 +141,100 @@ impl TryFrom<String> for AccountType {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::from_string(&value)
+    }
+}
+
+#[cfg(test)]
+mod account_type_tests {
+    use super::*;
+
+    #[test]
+    fn account_type_display() {
+        assert_eq!(AccountType::Offline.to_string(), "offline");
+        assert_eq!(AccountType::Microsoft.to_string(), "microsoft");
+    }
+
+    #[test]
+    fn account_type_from_string_valid() {
+        assert_eq!(
+            AccountType::from_string("offline").unwrap(),
+            AccountType::Offline
+        );
+        assert_eq!(
+            AccountType::from_string("microsoft").unwrap(),
+            AccountType::Microsoft
+        );
+    }
+
+    #[test]
+    fn account_type_from_string_invalid() {
+        let err = AccountType::from_string("unknown").unwrap_err();
+        assert!(matches!(err, AuthDomainError::InvalidAccountType));
+    }
+
+    #[test]
+    fn account_type_try_from_string() {
+        let result: Result<AccountType, _> = "microsoft".to_string().try_into();
+        assert_eq!(result.unwrap(), AccountType::Microsoft);
+    }
+
+    #[test]
+    fn account_type_into_string() {
+        let s: String = AccountType::Offline.into();
+        assert_eq!(s, "offline");
+    }
+}
+
+#[cfg(test)]
+mod credential_tests {
+    use super::*;
+
+    #[test]
+    fn should_activate_offline_credential() {
+        let id = Uuid::new_v4();
+        let mut cred = Credential::new_offline(id, Username::parse("Player").unwrap());
+
+        assert!(!cred.is_active());
+        cred.activate().unwrap();
+        assert!(cred.is_active());
+    }
+
+    #[test]
+    fn should_activate_microsoft_credential_when_not_expired() {
+        let id = Uuid::new_v4();
+        let expires = Utc::now() + Duration::hours(1);
+        let mut cred = Credential::new(
+            id,
+            Username::parse("MSPlayer").unwrap(),
+            AccountType::Microsoft,
+            false,
+            "access".into(),
+            "refresh".into(),
+            expires,
+        );
+
+        assert!(!cred.is_active());
+        cred.activate().unwrap();
+        assert!(cred.is_active());
+    }
+
+    #[test]
+    fn should_fail_activation_when_microsoft_token_expired() {
+        let id = Uuid::new_v4();
+        let expires = Utc::now() - Duration::hours(1);
+        let mut cred = Credential::new(
+            id,
+            Username::parse("MSPlayer").unwrap(),
+            AccountType::Microsoft,
+            false,
+            "access".into(),
+            "refresh".into(),
+            expires,
+        );
+
+        assert!(cred.is_expired());
+        let err = cred.activate().unwrap_err();
+        assert!(matches!(err, AuthDomainError::TokenExpired));
+        assert!(!cred.is_active());
     }
 }

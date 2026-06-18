@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::features::process::{MinecraftProcessMetadata, ProcessError, ProcessStorage};
+use super::super::super::domain::{MinecraftProcessMetadata, ProcessError};
+use super::super::ports::ProcessStorage;
 
 pub struct ListProcessMetadataUseCase<PS: ProcessStorage> {
     process_storage: Arc<PS>,
