@@ -8,7 +8,10 @@ use tokio::process::Command;
 use crate::{
     features::{
         auth::Credential,
-        java::{GetJavaUseCase, JavaApplicationError, JavaInstallationService, JavaStorage},
+        java::{
+            GetJavaUseCase, InstallJava, InstallJavaUseCase, JavaApplicationError,
+            JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
+        },
         minecraft::{
             GetVersionManifestUseCase, LaunchSettings, LoaderVersionPreference,
             LoaderVersionResolver, MetadataStorage, MinecraftApplicationError, MinecraftDownloader,
@@ -39,17 +42,26 @@ pub struct GetMinecraftLaunchCommandUseCase<
     MD: MinecraftDownloader,
     JIS: JavaInstallationService,
     JS: JavaStorage,
+    JP: JreProvider,
+    JIT: JavaInstallationTracker,
 > {
     loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
     get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
     minecraft_downloader: MD,
     java_installation_service: JIS,
     get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
+    install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService, JS: JavaStorage>
-    GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>
+impl<
+    MS: MetadataStorage,
+    MD: MinecraftDownloader,
+    JIS: JavaInstallationService,
+    JS: JavaStorage,
+    JP: JreProvider,
+    JIT: JavaInstallationTracker,
+> GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS, JP, JIT>
 {
     pub fn new(
         loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
@@ -57,6 +69,7 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
         minecraft_downloader: MD,
         java_installation_service: JIS,
         get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
+        install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
@@ -65,6 +78,7 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
             minecraft_downloader,
             java_installation_service,
             get_java_use_case,
+            install_java_use_case,
             location_info,
         }
     }
@@ -111,10 +125,20 @@ impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService,
                 })
         } else {
             let compatible_java_version = get_compatible_java_version(&version_info);
-            self.get_java_use_case
+
+            let java = self
+                .get_java_use_case
                 .execute(compatible_java_version)
-                .await
-                .map_err(Into::into)
+                .await;
+
+            match java {
+                Ok(java) => Ok(java),
+                Err(_) => self
+                    .install_java_use_case
+                    .execute(InstallJava::new(compatible_java_version))
+                    .await
+                    .map_err(Into::into),
+            }
         }?;
 
         // TODO: refactor

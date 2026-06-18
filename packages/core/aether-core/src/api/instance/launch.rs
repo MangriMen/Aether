@@ -17,7 +17,7 @@ use crate::{
         },
         minecraft::{
             GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
-            LoaderVersionResolver,
+            LoaderVersionResolver, MinecraftHealthService,
             infra::{
                 AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor,
                 LibrariesService, MinecraftDownloadResolver, MinecraftDownloadService,
@@ -184,12 +184,47 @@ async fn get_launch_instance_use_case(
         minecraft_cache.clone(),
     );
 
+    let minecraft_health_service = Arc::new(MinecraftHealthService::new(
+        loader_version_resolver.clone(),
+        get_version_manifest_use_case.clone(),
+        minecraft_download_service,
+        get_java_use_case.clone(),
+        locator.location_info.clone(),
+    ));
+
+    // Third instance of MinecraftDownloadService for GetMinecraftLaunchCommandUseCase
+    let client_service = ClientService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        minecraft_cache.clone(),
+    );
+    let assets_service = AssetsService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        locator.location_info.clone(),
+        minecraft_cache.clone(),
+    );
+    let libraries_service = LibrariesService::new(
+        locator.get_progress_service().await,
+        locator.get_request_client().await,
+        locator.location_info.clone(),
+    );
+    let minecraft_download_service = MinecraftDownloadService::new(
+        client_service,
+        assets_service,
+        libraries_service,
+        locator.get_request_client().await,
+        locator.get_progress_service().await,
+        minecraft_cache.clone(),
+    );
+
     let get_minecraft_launch_command_use_case = GetMinecraftLaunchCommandUseCase::new(
         loader_version_resolver,
         get_version_manifest_use_case,
         minecraft_download_service,
         FsJavaInstallationService,
         get_java_use_case.clone(),
+        install_java_use_case.clone(),
         locator.location_info.clone(),
     );
 
@@ -200,6 +235,7 @@ async fn get_launch_instance_use_case(
         locator.location_info.clone(),
         get_process_by_instance_id_use_case,
         install_instance_use_case,
+        minecraft_health_service,
         get_minecraft_launch_command_use_case,
         start_process_use_case,
     )

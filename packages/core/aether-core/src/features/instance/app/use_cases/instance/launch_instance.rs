@@ -10,7 +10,8 @@ use crate::{
         java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
             GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
-            MetadataStorage, MinecraftDownloader, ModLoaderProcessor,
+            MetadataStorage, MinecraftDownloader, MinecraftHealthParams, MinecraftHealthService,
+            ModLoaderProcessor,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
@@ -44,7 +45,9 @@ pub struct LaunchInstanceUseCase<
     get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
     #[allow(clippy::type_complexity)]
     install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>>,
-    get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
+    minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
+    get_minecraft_launch_command_use_case:
+        GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS, JP, JIT>,
     start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
 }
 
@@ -72,7 +75,15 @@ impl<
         install_instance_use_case: Arc<
             InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>,
         >,
-        get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS>,
+        minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
+        get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<
+            MS,
+            MD,
+            JIS,
+            JS,
+            JP,
+            JIT,
+        >,
         start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
     ) -> Self {
         Self {
@@ -82,6 +93,7 @@ impl<
             location_info,
             get_process_by_instance_id_use_case,
             install_instance_use_case,
+            minecraft_health_service,
             get_minecraft_launch_command_use_case,
             start_process_use_case,
         }
@@ -133,7 +145,26 @@ impl<
             });
         }
 
-        if instance.install_stage != InstanceInstallStage::Installed {
+        // Stat-only health check before launch (uses MinecraftHealthService).
+        // Checks every library, client.jar, Java binary, and asset index.
+        // On network error (offline), unwrap_or(true) skips the check.
+        // If something is missing, the full install runs with a progress bar.
+        if instance.install_stage != InstanceInstallStage::Installed
+            || !self
+                .minecraft_health_service
+                .verify_files(MinecraftHealthParams {
+                    game_version: instance.game_version.clone(),
+                    loader: instance.loader,
+                    loader_version: instance.loader_version.clone(),
+                    java_path: if instance.java_path.data.is_empty() {
+                        None
+                    } else {
+                        Some(instance.java_path.data.clone())
+                    },
+                })
+                .await
+                .unwrap_or(true)
+        {
             self.install_instance_use_case
                 .execute(instance_id.clone(), false)
                 .await?;

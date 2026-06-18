@@ -27,6 +27,8 @@ pub use app::LoaderVersionResolver;
 pub use app::MetadataStorage;
 pub use app::MinecraftApplicationError;
 pub use app::MinecraftDownloader;
+pub use app::MinecraftHealthParams;
+pub use app::MinecraftHealthService;
 pub use app::ModLoaderProcessor;
 pub use app::get_class_paths;
 pub use app::get_class_paths_jar;
