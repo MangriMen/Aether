@@ -8,6 +8,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import { InstanceIcon } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
 import {
   Button,
@@ -16,7 +17,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Image,
 } from '@/shared/ui';
 
 export type InstanceIconDropdownButtonProps = ComponentProps<'div'> & {
@@ -48,7 +48,7 @@ export const InstanceIconDropdownButton: Component<
           placement='top'
           {...others}
         >
-          <Image src={local.src} alt='Instance icon' />
+          <InstanceIcon src={local.src} alt={t('instance.icon')} />
           <div class='absolute inset-0 flex size-full items-center justify-center opacity-0 transition-opacity hover:bg-popover/50 hover:opacity-100 focus:opacity-100'>
             <IconMdiImageEditOutline class='text-2xl text-muted-foreground' />
           </div>
@@ -57,24 +57,27 @@ export const InstanceIconDropdownButton: Component<
       <DropdownMenuContent>
         <DropdownMenuItem
           as={Button}
-          class='w-full'
+          class='w-full justify-start'
           variant='ghost'
           leadingIcon={IconMdiDownload}
           onClick={local.onSelectIcon}
         >
-          <Show when={local.src === undefined} fallback='Change icon'>
-            Select icon
+          <Show
+            when={local.src === undefined}
+            fallback={t('instance.changeIcon')}
+          >
+            {t('instance.selectIcon')}
           </Show>
         </DropdownMenuItem>
         <Show when={local.src !== undefined}>
           <DropdownMenuItem
             as={Button}
-            class='w-full text-destructive enabled:hover:text-destructive'
+            class='w-full justify-start text-destructive enabled:hover:text-destructive'
             variant='ghost'
             leadingIcon={IconMdiDelete}
             onClick={local.onRemoveIcon}
           >
-            Remove icon
+            {t('instance.removeIcon')}
           </DropdownMenuItem>
         </Show>
       </DropdownMenuContent>

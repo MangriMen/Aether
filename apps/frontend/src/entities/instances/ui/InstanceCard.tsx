@@ -3,9 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import { Match, splitProps, Switch } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { Image } from '@/shared/ui';
 
-import { type Instance } from '..';
+import { InstanceIcon, type Instance } from '..';
 import { InstanceTitle } from './InstanceTitle';
 
 export type InstanceCardProps = ComponentProps<'div'> & {
@@ -32,14 +31,16 @@ export const InstanceCard: Component<InstanceCardProps> = (props) => {
     <div
       class={cn(
         local.class,
-        'group w-[132px] flex flex-col cursor-pointer gap-2 bg-card/card hover:bg-card/hover active:bg-card/active drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
+        'group flex min-w-[132px] flex-col cursor-pointer gap-2 bg-card/card hover:bg-card/hover active:bg-card/active drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
       )}
       {...others}
     >
-      <Image
-        class='mx-auto size-24 min-w-max border-none bg-transparent'
-        src={local.overrideIcon ?? local.instance.iconPath ?? undefined}
-      />
+      <div class='flex items-center justify-center'>
+        <InstanceIcon
+          class='size-28'
+          src={local.overrideIcon ?? local.instance.iconPath ?? undefined}
+        />
+      </div>
       <InstanceTitle
         name={local.instance.name}
         loader={local.instance.loader}

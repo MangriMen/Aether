@@ -2,9 +2,9 @@ import IconMdiChevronRight from '~icons/mdi/chevron-right';
 // import IconMdiMenu from '~icons/mdi/menu';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { type Instance } from '@/entities/instances';
+import { type Instance, InstanceIcon } from '@/entities/instances';
 import { useTranslation } from '@/shared/model';
-import { DialogHeader, DialogTitle, Image } from '@/shared/ui';
+import { DialogHeader, DialogTitle } from '@/shared/ui';
 
 export type InstanceSettingsDialogHeaderProps = ComponentProps<'div'> & {
   instance: Instance;
@@ -34,8 +34,8 @@ const InstanceSettingsDialogHeader: Component<
         /> */}
         <div class='flex items-center gap-1'>
           <div class='flex items-center gap-2'>
-            <Image
-              class='size-8 min-w-max'
+            <InstanceIcon
+              class='size-8'
               src={local.instance.iconPath ?? undefined}
             />
             <span class='line-clamp-1 leading-8 [word-break:break-word]'>

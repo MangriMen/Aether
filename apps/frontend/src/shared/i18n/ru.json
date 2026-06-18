@@ -271,7 +271,10 @@
     "notCompatibleWithContent": "Этот инстанс несовместим с этим контентом",
     "searchInstance": "Поиск инстанса",
     "unableToGetCompatibilityStatistics": "Не удалось получить статистику совместимости",
-    "changeIcon": "Изменить иконку"
+    "changeIcon": "Изменить иконку",
+    "icon": "Иконка инстанса",
+    "selectIcon": "Выбрать иконку",
+    "removeIcon": "Удалить иконку"
   },
   "instanceSettings": {
     "tab": {

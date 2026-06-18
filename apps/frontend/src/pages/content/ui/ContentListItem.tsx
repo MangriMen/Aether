@@ -30,7 +30,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
   return (
     <div
       class={cn(
-        'relative flex gap-2 border bg-card/card rounded-lg p-3 group',
+        'relative flex gap-2 border bg-card/card rounded-md p-3 group',
         local.class,
       )}
       {...others}

@@ -3,8 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { type Instance } from '@/entities/instances';
+import { InstanceIcon } from '@/entities/instances';
 import { InstanceActionButton } from '@/features/instance-action-button';
-import { Image } from '@/shared/ui';
 
 import { InstanceHeaderInfo } from './InstanceHeaderInfo';
 import { OpenFolderButton } from './OpenFolderButton';
@@ -25,7 +25,7 @@ export const Header: Component<HeaderProps> = (props) => {
   return (
     <div class='flex gap-6' {...others}>
       <div class='flex gap-3 overflow-hidden'>
-        <Image class='min-w-max' src={props.instance.iconPath ?? undefined} />
+        <InstanceIcon src={props.instance.iconPath ?? undefined} />
         <InstanceHeaderInfo class='w-full' instance={local.instance} />
       </div>
       <div class='ml-auto flex items-center gap-2'>

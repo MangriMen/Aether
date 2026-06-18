@@ -6,10 +6,10 @@ import { createSignal, Show, splitProps } from 'solid-js';
 import { ResponsiveIcon } from '..';
 import { cn } from '../../lib';
 
-export type InstanceImageProps = ComponentProps<'div'> &
+export type ImageProps = ComponentProps<'div'> &
   Pick<ComponentProps<'img'>, 'src' | 'alt'>;
 
-export const Image: Component<InstanceImageProps> = (props) => {
+export const Image: Component<ImageProps> = (props) => {
   const [local, others] = splitProps(props, ['src', 'alt', 'class']);
 
   const [isValidSrc, setIsValidSrc] = createSignal(true);
@@ -21,7 +21,7 @@ export const Image: Component<InstanceImageProps> = (props) => {
   return (
     <div
       class={cn(
-        'size-16 rounded-lg flex items-center justify-center bg-secondary/secondary border',
+        'size-16 rounded-md flex items-center justify-center bg-secondary/secondary border',
         local.class,
       )}
       {...others}

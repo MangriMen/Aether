@@ -65,7 +65,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
 
       <Show when={local.error}>
         {(error) => (
-          <div class='flex max-h-max min-w-96 max-w-screen-2xl grow flex-col gap-1 overflow-hidden rounded-lg border border-destructive/20 bg-destructive/15 p-4'>
+          <div class='flex max-h-max min-w-96 max-w-screen-2xl grow flex-col gap-1 overflow-hidden rounded-md border border-destructive/20 bg-destructive/15 p-4'>
             <button
               class={cn(
                 'rounded bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/solid-hover',

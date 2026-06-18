@@ -271,7 +271,10 @@
     "notCompatibleWithContent": "This instance is not compatible with this content",
     "searchInstance": "Search instance",
     "unableToGetCompatibilityStatistics": "Unable to get compatibility statistics",
-    "changeIcon": "Change icon"
+    "changeIcon": "Change icon",
+    "icon": "Instance icon",
+    "selectIcon": "Select icon",
+    "removeIcon": "Remove icon"
   },
   "instanceSettings": {
     "tab": {
