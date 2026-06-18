@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-commented-code */
 import IconMdiChevronRight from '~icons/mdi/chevron-right';
 // import IconMdiMenu from '~icons/mdi/menu';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
