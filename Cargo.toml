@@ -61,8 +61,9 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 semver = "1.0"
 
 [profile.release]
-opt-level = 3      # Maximize runtime performance
-codegen-units = 16 # Split crates into 16 chunks for parallel compilation
-lto = "thin"       # Enable fast parallel Link-Time Optimization
-strip = true       # Automatically strip symbols (reduces binary size)
-panic = "abort"    # Remove stack unwinding code
+opt-level = 3       # Maximize runtime performance
+codegen-units = 16  # Split crates into 16 chunks for parallel compilation
+lto = "thin"        # Enable fast parallel Link-Time Optimization
+strip = true        # Automatically strip symbols (reduces binary size)
+panic = "abort"     # Remove stack unwinding code
+incremental = false
