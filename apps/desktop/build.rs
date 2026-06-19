@@ -1,3 +1,5 @@
+// Use English comments for code documentation
+
 #[path = "src/shared/commands.rs"]
 mod commands;
 
@@ -34,9 +36,12 @@ struct PluginMeta {
 }
 
 fn main() {
+    // Corrected paths to prevent Windows cache invalidation on consecutive runs
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=src/commands.rs");
+    println!("cargo:rerun-if-changed=Cargo.toml");
     println!("cargo:rerun-if-changed=tauri.conf.json");
+    println!("cargo:rerun-if-changed=src/shared/commands.rs"); // Fixed typo: src/commands.rs -> src/shared/commands.rs
+    println!("cargo:rerun-if-changed=src"); // Watches the whole desktop app src directory
 
     let plugins = make_plugin_meta![
         application,

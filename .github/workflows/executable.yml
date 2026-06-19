@@ -91,7 +91,9 @@ jobs:
           cp packages/core/aether-core/migrations/*.sql apps/desktop/migrations_links/
 
       - name: generate TypeScript bindings
-        run: cargo gen --release
+        env:
+          BINDINGS_EXPORT_PATH: "apps/frontend/src/shared/api/bindings"
+        run: cargo gen
 
       - name: build and publish tauri app
         if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
