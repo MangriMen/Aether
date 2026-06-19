@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "aether:bump": "bun --filter @aether/frontend run bump",
     "build": "turbo run build --continue",
     "clean": "turbo run clean && bun x rimraf .turbo && cargo clean",
     "desktop:build": "turbo run build --filter=@aether/desktop",
