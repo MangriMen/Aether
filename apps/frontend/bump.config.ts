@@ -21,7 +21,7 @@ export default defineConfig({
 
 const syncCargoLock = async () => {
   await execa('cargo', ['update', '--workspace', '--offline'], {
-    cwd: './src-tauri',
+    cwd: '../../',
     stdio: 'inherit',
   });
 };

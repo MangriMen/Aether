@@ -33,7 +33,7 @@ jobs:
         id: get_version
         shell: bash
         run: |
-          JSON_VERSION=$(jq -r .version apps/desktop/src-tauri/tauri.conf.json)
+          JSON_VERSION=$(jq -r .version apps/desktop/tauri.conf.json)
           TAG_VERSION=${GITHUB_REF_NAME#v}
 
           if [ "$JSON_VERSION" != "$TAG_VERSION" ]; then
@@ -48,7 +48,7 @@ jobs:
         uses: mindsers/changelog-reader-action@v2
         with:
           version: ${{ steps.get_version.outputs.APP_VERSION }}
-          path: ./apps/desktop/CHANGELOG.md
+          path: ./apps/frontend/CHANGELOG.md
 
       - name: setup node
         uses: actions/setup-node@v4
