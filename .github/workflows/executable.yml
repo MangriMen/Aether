@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   publish-tauri:
@@ -34,16 +35,19 @@ jobs:
         shell: bash
         run: |
           JSON_VERSION=$(jq -r .version apps/desktop/tauri.conf.json)
-          TAG_VERSION=${GITHUB_REF_NAME#v}
 
-          if [ "$JSON_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::Version mismatch! Tag is $TAG_VERSION but tauri.conf.json is $JSON_VERSION"
-            exit 1
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG_VERSION=${GITHUB_REF_NAME#v}
+            if [ "$JSON_VERSION" != "$TAG_VERSION" ]; then
+              echo "::error::Version mismatch! Tag is $TAG_VERSION but tauri.conf.json is $JSON_VERSION"
+              exit 1
+            fi
           fi
 
           echo "APP_VERSION=$JSON_VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract changelog
+        if: github.ref_type == 'tag'
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
         with:
@@ -76,6 +80,9 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
+      - name: generate TypeScript bindings
+        run: cargo gen
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,10 +90,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: apps/desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: "v${{ steps.get_version.outputs.APP_VERSION }}"
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('v{0}', steps.get_version.outputs.APP_VERSION) || '' }}
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
-          releaseDraft: true
+          releaseDraft: ${{ github.ref_type == 'tag' && 'true' || 'false' }}
           prerelease: false
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
