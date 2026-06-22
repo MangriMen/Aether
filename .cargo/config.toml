@@ -3,7 +3,7 @@ linker = "rust-lld"
 rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
 
 [alias]
-gen = "run --package client-bindings"
+gen = "run --bin gen --release"
 
 [env]
 BINDINGS_EXPORT_PATH = { value = "apps/frontend/src/shared/api/bindings", relative = true }

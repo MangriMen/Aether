@@ -970,18 +970,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "client-bindings"
-version = "0.1.0"
-dependencies = [
- "aether",
- "specta",
- "specta-typescript",
- "tauri",
- "tauri-build",
- "tauri-specta",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"

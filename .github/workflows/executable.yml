@@ -2,6 +2,8 @@ name: Build executable
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -57,7 +59,7 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - uses: oven-sh/setup-bun@v2
 
@@ -75,15 +77,22 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
+          shared-key: "aether-tauri-cache"
           workspaces: "./ -> target"
 
       - name: install frontend dependencies
         run: bun install
 
-      - name: generate TypeScript bindings
-        run: cargo gen
+      - name: collect migration files
+        shell: bash
+        run: |
+          mkdir -p apps/desktop/migrations_links
+          cp apps/desktop/migrations/*.sql apps/desktop/migrations_links/
+          cp packages/core/aether-core/migrations/*.sql apps/desktop/migrations_links/
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: build and publish tauri app
+        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

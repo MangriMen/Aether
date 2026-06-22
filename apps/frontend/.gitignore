@@ -9,6 +9,3 @@ tsconfig.tsbuildinfo
 
 # LLM
 .roo/rules
-
-# Codegen
-src/shared/api/bindings
