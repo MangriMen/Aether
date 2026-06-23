@@ -13,6 +13,7 @@ pub enum PluginDtoState {
     Loading,
     Loaded,
     Unloading,
+    Incompatible,
     Failed,
 }
 
@@ -160,6 +161,7 @@ impl From<aether_core::features::plugins::PluginDtoState> for PluginDtoState {
             aether_core::features::plugins::PluginDtoState::Loaded => Self::Loaded,
             aether_core::features::plugins::PluginDtoState::Unloading => Self::Unloading,
             aether_core::features::plugins::PluginDtoState::Failed => Self::Failed,
+            aether_core::features::plugins::PluginDtoState::Incompatible => Self::Incompatible,
         }
     }
 }

@@ -107,6 +107,20 @@ async fn enable(
 
 #[tauri::command]
 #[specta::specta]
+async fn force_enable(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    Ok(aether_core::api::plugin::force_enable(id)
+        .await
+        .map_err(crate::Error::from)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn disable(
     id: String,
     request_id: RequestId,

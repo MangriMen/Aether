@@ -22,8 +22,8 @@ pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
 pub use plugin_error::PluginError;
 pub use plugin_internal_event::PluginInternalEvent;
 pub use plugin_manifest::{
-    ApiConfig, LoadConfig, LoadConfigType, PathMapping, PluginManifest, PluginMetadata,
-    RuntimeConfig,
+    ApiConfig, Compatibility, LoadConfig, LoadConfigType, PathMapping, PluginManifest,
+    PluginMetadata, RuntimeConfig,
 };
 pub use plugin_settings::PluginSettings;
 pub use serializable_output::SerializableOutput;

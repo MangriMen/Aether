@@ -4,9 +4,9 @@ use crate::{
     core::LazyLocator,
     features::plugins::{
         DisablePluginUseCase, EditPluginSettings, EditPluginSettingsUseCase, EnablePluginUseCase,
-        GetPluginApiVersionUseCase, GetPluginDtoUseCase, GetPluginSettingsUseCase,
-        ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto, PluginSettings,
-        RemovePluginUseCase, SyncPluginsUseCase,
+        ForceEnablePluginUseCase, GetPluginApiVersionUseCase, GetPluginDtoUseCase,
+        GetPluginSettingsUseCase, ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto,
+        PluginSettings, RemovePluginUseCase, SyncPluginsUseCase,
     },
 };
 
@@ -104,6 +104,22 @@ pub async fn enable(plugin_id: String) -> crate::Result<()> {
     let locator = LazyLocator::get().await?;
 
     Ok(EnablePluginUseCase::new(
+        locator.get_plugin_registry().await,
+        locator.get_plugin_loader_registry().await,
+        locator.get_plugin_settings_storage().await,
+        locator.get_settings_storage().await,
+    )
+    .execute(plugin_id)
+    .await?)
+}
+
+/// Force-enable a plugin despite an API version major mismatch.
+/// The user acknowledges the risk and the plugin will be loaded anyway.
+#[tracing::instrument]
+pub async fn force_enable(plugin_id: String) -> crate::Result<()> {
+    let locator = LazyLocator::get().await?;
+
+    Ok(ForceEnablePluginUseCase::new(
         locator.get_plugin_registry().await,
         locator.get_plugin_loader_registry().await,
         locator.get_plugin_settings_storage().await,

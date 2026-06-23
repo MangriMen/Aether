@@ -26,6 +26,10 @@ pub enum PluginErrorDto {
         plugin_id: String,
         reason: String,
     },
+    IncompatibleApiVersion {
+        plugin_id: String,
+        reason: String,
+    },
     FunctionCallFailed {
         function_name: String,
         plugin_id: String,
@@ -96,6 +100,12 @@ impl From<&PluginError> for PluginErrorDto {
                 plugin_id: plugin_id.clone(),
                 reason: reason.clone(),
             },
+            PluginError::IncompatibleApiVersion { plugin_id, reason } => {
+                Self::IncompatibleApiVersion {
+                    plugin_id: plugin_id.clone(),
+                    reason: reason.clone(),
+                }
+            }
             PluginError::FunctionCallFailed {
                 function_name,
                 plugin_id,

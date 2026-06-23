@@ -11,6 +11,7 @@ export const commands = {
 	get: (id: string) => __TAURI_INVOKE<PluginDto>("plugin:plugin|get", { id }),
 	remove: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|remove", { id, requestId }),
 	enable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|enable", { id, requestId }),
+	forceEnable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|force_enable", { id, requestId }),
 	disable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|disable", { id, requestId }),
 	call: (id: string, data: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|call", { id, data, requestId }),
 	getSettings: (id: string) => __TAURI_INVOKE<{
@@ -258,7 +259,7 @@ export type PluginDto = {
 	state: PluginDtoState,
 };
 
-export type PluginDtoState = "NotLoaded" | "Loading" | "Loaded" | "Unloading" | "Failed";
+export type PluginDtoState = "NotLoaded" | "Loading" | "Loaded" | "Unloading" | "Incompatible" | "Failed";
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
@@ -271,6 +272,9 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "ALREADY_UNLOADED"; payload: {
 	plugin_id: string,
 } } | { code: "LOAD_FAILED"; payload: {
+	plugin_id: string,
+	reason: string,
+} } | { code: "INCOMPATIBLE_API_VERSION"; payload: {
 	plugin_id: string,
 	reason: string,
 } } | { code: "FUNCTION_CALL_FAILED"; payload: {

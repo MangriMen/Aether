@@ -62,7 +62,7 @@ impl SettingsStorage for SqliteSettingsStorage {
         .execute(&mut *tx)
         .await?;
 
-        // Sync plugins: Delete removed and insert new
+        // Sync enabled_plugins: Delete removed and insert new
         sqlx::query!("DELETE FROM enabled_plugins")
             .execute(&mut *tx)
             .await?;

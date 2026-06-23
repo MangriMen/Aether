@@ -2,6 +2,7 @@ mod disable_plugin;
 mod dtos;
 mod edit_plugin_settings;
 mod enable_plugin;
+mod force_enable_plugin;
 mod get_plugin_api_version;
 mod get_plugin_dto;
 mod get_plugin_settings;
@@ -22,6 +23,7 @@ pub use dtos::{
 };
 pub use edit_plugin_settings::{EditPluginSettings, EditPluginSettingsUseCase};
 pub use enable_plugin::EnablePluginUseCase;
+pub use force_enable_plugin::ForceEnablePluginUseCase;
 pub use get_plugin_api_version::GetPluginApiVersionUseCase;
 pub use get_plugin_dto::GetPluginDtoUseCase;
 pub use get_plugin_settings::GetPluginSettingsUseCase;

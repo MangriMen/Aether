@@ -120,6 +120,22 @@ impl LoadConfig {
     }
 }
 
+/// Result of checking a plugin's API version compatibility against the host.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Compatibility {
+    /// The plugin API version is fully compatible with the host.
+    Compatible,
+    /// The plugin requires a higher major version of the host API.
+    /// It can still be force-loaded at the user's own risk.
+    MajorMismatch {
+        required: semver::VersionReq,
+        host: semver::Version,
+    },
+    /// The plugin version requirement cannot be satisfied (same-major mismatch
+    /// or other incompatibility).
+    Incompatible(String),
+}
+
 impl ApiConfig {
     pub fn validate(&self, api_version: &semver::Version) -> Result<(), ManifestError> {
         if !self.version.matches(api_version) {
@@ -127,6 +143,32 @@ impl ApiConfig {
         }
 
         Ok(())
+    }
+
+    /// Check compatibility returning a detailed [`Compatibility`] enum instead
+    /// of a simple error. This allows the caller to distinguish between a
+    /// major-version mismatch (which can be force-enabled) and other failures.
+    pub fn check_compatibility(&self, api_version: &semver::Version) -> Compatibility {
+        if self.version.matches(api_version) {
+            return Compatibility::Compatible;
+        }
+
+        // Detect major mismatch: does the requirement match the *next* major version?
+        let next_major = api_version.major + 1;
+        if self
+            .version
+            .matches(&semver::Version::new(next_major, 0, 0))
+        {
+            return Compatibility::MajorMismatch {
+                required: self.version.clone(),
+                host: api_version.clone(),
+            };
+        }
+
+        Compatibility::Incompatible(format!(
+            "Plugin requires {}, host API version is {}",
+            self.version, api_version
+        ))
     }
 }
 

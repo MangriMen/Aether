@@ -27,6 +27,10 @@ pub enum PluginError {
     #[error("Failed to load plugin \"{plugin_id}\": {reason}")]
     LoadFailed { plugin_id: String, reason: String },
 
+    // API version compatibility errors
+    #[error("Plugin \"{plugin_id}\" requires an incompatible API version: {reason}")]
+    IncompatibleApiVersion { plugin_id: String, reason: String },
+
     // Plugin execution errors
     #[error("Function \"{function_name}\" call failed in plugin \"{plugin_id}\": {error}")]
     FunctionCallFailed {
