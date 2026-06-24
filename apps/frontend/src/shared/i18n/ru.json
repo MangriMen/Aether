@@ -103,6 +103,7 @@
       "LOAD_FAILED": "Не удалось загрузить плагин",
       "FUNCTION_CALL_FAILED": "Ошибка вызова функции плагина",
       "MANIFEST_NOT_FOUND": "Манифест плагина не найден",
+      "INCOMPATIBLE_API_VERSION": "Плагин требует новую версию API. Включайте на свой страх и риск",
       "INVALID_MANIFEST_FORMAT": "Неверный формат манифеста",
       "MANIFEST": "Ошибка манифеста плагина: {message}",
       "LOADER_NOT_FOUND": "Загрузчик плагина не найден",
@@ -427,6 +428,10 @@
     "capabilities": "Возможности",
     "importers": "Импортеры",
     "incompatibleApiVersion": "Версия API несовместима. Использование плагина может привести к сбою или повреждению данных",
+    "forceEnableTitle": "Включить несовместимый плагин?",
+    "forceEnableDescription": "Этот плагин требует новую версию API лаунчера. Он может работать некорректно или вызывать сбои. Включить в любом случае?",
+    "forceEnableConfirm": "Включить в любом случае",
+    "forceEnableCancel": "Отмена",
     "updaters": "Апдейтеры"
   },
   "pluginSettings": {

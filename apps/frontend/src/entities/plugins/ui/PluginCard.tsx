@@ -7,6 +7,8 @@ import { Image } from '@/shared/ui';
 
 import type { Plugin } from '..';
 
+import { PluginApiCompatibilityBadge } from './PluginApiCompatibilityBadge';
+
 export type PluginCardBaseProps = {
   plugin: Plugin;
   isSelected?: boolean;
@@ -23,7 +25,9 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
   const isDisabled = createMemo(() => {
     const state = local.plugin.state;
 
-    return state === 'Failed' || state === 'NotLoaded';
+    return (
+      state === 'Failed' || state === 'NotLoaded' || state === 'Incompatible'
+    );
   });
 
   return (
@@ -36,9 +40,15 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
       data-active={local.isSelected ? '' : undefined}
       {...others}
     >
-      <Image class='h-12 w-max' />
+      <Image class='h-14 min-h-14 w-max min-w-max' />
       <div class='flex flex-col truncate font-normal'>
-        <span class='font-medium'>{metadata().name}</span>
+        <span class='flex items-center gap-1 text-base font-medium'>
+          {metadata().name}
+          <PluginApiCompatibilityBadge
+            class='text-sm'
+            apiVersion={local.plugin.manifest.api.version}
+          />
+        </span>
         <span class='w-full truncate'>{metadata().description}</span>
         <span class='w-full truncate font-medium'>{authors()}</span>
       </div>

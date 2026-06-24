@@ -23,7 +23,10 @@ fn main() {
         PathBuf::from,
     );
 
-    println!("Generating TypeScript bindings into: {}", export_path.display());
+    println!(
+        "Generating TypeScript bindings into: {}",
+        export_path.display()
+    );
 
     let builders = aether_lib::shared::specta::get_all_features_builders();
     aether_lib::shared::specta::export_specta_builders(&builders);

@@ -240,6 +240,9 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "LOAD_FAILED"; payload: {
 	plugin_id: string,
 	reason: string,
+} } | { code: "INCOMPATIBLE_API_VERSION"; payload: {
+	plugin_id: string,
+	reason: string,
 } } | { code: "FUNCTION_CALL_FAILED"; payload: {
 	function_name: string,
 	plugin_id: string,

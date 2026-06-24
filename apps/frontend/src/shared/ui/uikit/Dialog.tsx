@@ -32,6 +32,7 @@ const dialogOverlayVariants = cva(
       variant: {
         default: 'bg-background/80',
         destructive: 'bg-destructive/35',
+        warning: 'bg-warning/35',
         unstyled: 'backdrop-blur-none',
       },
     },

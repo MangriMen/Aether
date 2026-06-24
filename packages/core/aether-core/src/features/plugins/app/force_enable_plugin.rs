@@ -3,16 +3,25 @@ use std::sync::Arc;
 use crate::{
     features::{
         plugins::{
-            Compatibility, LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoader,
-            PluginLoaderRegistry, PluginManifest, PluginRegistry, PluginSettingsStorage,
-            PluginState,
+            LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoader, PluginLoaderRegistry,
+            PluginManifest, PluginRegistry, PluginSettingsStorage, PluginState,
         },
         settings::SettingsStorage,
     },
     shared::json_store::domain::UpdateAction,
 };
 
-pub struct EnablePluginUseCase<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader> {
+/// Force-enables a plugin by skipping the API version compatibility check
+/// and persisting the user's choice in the plugin settings.
+///
+/// On next restart the plugin will auto-load if the API version hasn't
+/// changed. If the launcher is updated, the flag is ignored and the user
+/// must re-confirm.
+pub struct ForceEnablePluginUseCase<
+    PSS: PluginSettingsStorage,
+    SS: SettingsStorage,
+    PL: PluginLoader,
+> {
     plugin_registry: Arc<PluginRegistry>,
     plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
     plugin_settings_storage: Arc<PSS>,
@@ -20,7 +29,7 @@ pub struct EnablePluginUseCase<PSS: PluginSettingsStorage, SS: SettingsStorage, 
 }
 
 impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
-    EnablePluginUseCase<PSS, SS, PL>
+    ForceEnablePluginUseCase<PSS, SS, PL>
 {
     pub fn new(
         plugin_registry: Arc<PluginRegistry>,
@@ -36,44 +45,20 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
         }
     }
 
+    /// Bypasses the API version check and loads the plugin directly.
+    /// First resets any `Incompatible` state and saves the force-enable
+    /// flag in plugin settings with the current API version.
     pub async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
         let (state, manifest) = self.plugin_registry.get_state_and_manifest(&plugin_id)?;
 
-        Self::check_is_able_to_load(&plugin_id, &state)?;
-
-        // Check if plugin was force-enabled by user (persisted in plugin settings)
-        let plugin_settings = self.plugin_settings_storage.get(&plugin_id).await?;
-        let is_force_enabled = plugin_settings
-            .as_ref()
-            .and_then(|s| s.force_enabled_at_api_version.as_deref())
-            .is_some_and(|v| v == PLUGIN_API_VERSION.to_string());
-
-        if !is_force_enabled {
-            // Run compatibility check
-            match manifest.api.check_compatibility(&PLUGIN_API_VERSION) {
-                Compatibility::Compatible => { /* proceed */ }
-                Compatibility::MajorMismatch { required, host } => {
-                    let reason = format!(
-                        "Plugin requires API {required}, host version is {host} — major version mismatch",
-                    );
-                    self.plugin_registry
-                        .upsert_with(&plugin_id, |plugin| {
-                            plugin.state = PluginState::Incompatible(reason.clone());
-                            Ok(())
-                        })
-                        .await?;
-                    return Err(PluginError::IncompatibleApiVersion { plugin_id, reason });
-                }
-                Compatibility::Incompatible(reason) => {
-                    self.plugin_registry
-                        .upsert_with(&plugin_id, |plugin| {
-                            plugin.state = PluginState::Incompatible(reason.clone());
-                            Ok(())
-                        })
-                        .await?;
-                    return Err(PluginError::IncompatibleApiVersion { plugin_id, reason });
-                }
-            }
+        // Reset incompatible / failed state so load can proceed
+        if matches!(state, PluginState::Incompatible(_) | PluginState::Failed(_)) {
+            self.plugin_registry
+                .upsert_with(&plugin_id, |plugin| {
+                    plugin.state = PluginState::NotLoaded;
+                    Ok(())
+                })
+                .await?;
         }
 
         self.plugin_registry
@@ -84,7 +69,11 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
             .await?;
 
         match self.load_plugin(&plugin_id, &manifest).await {
-            Ok(()) => self.add_to_enabled_plugins(&plugin_id).await,
+            Ok(()) => {
+                // Persist the force-enable flag in plugin settings
+                self.save_force_enabled_flag(&plugin_id).await?;
+                self.add_to_enabled_plugins(&plugin_id).await
+            }
             Err(err) => {
                 self.plugin_registry
                     .upsert_with(&plugin_id, |plugin| {
@@ -94,34 +83,28 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
                             }
                             _ => plugin.state = PluginState::NotLoaded,
                         }
-
                         Ok(())
                     })
                     .await?;
-
                 Err(err)
             }
         }
     }
 
-    fn check_is_able_to_load(
-        plugin_id: &str,
-        plugin_state: &PluginState,
-    ) -> Result<(), PluginError> {
-        match plugin_state {
-            PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {
-                Ok(())
-            }
-            PluginState::Loading => Err(PluginError::LoadingInProgress {
-                plugin_id: plugin_id.to_owned(),
-            }),
-            PluginState::Loaded(_) => Err(PluginError::AlreadyLoaded {
-                plugin_id: plugin_id.to_owned(),
-            }),
-            PluginState::Unloading => Err(PluginError::UnloadingInProgress {
-                plugin_id: plugin_id.to_owned(),
-            }),
-        }
+    async fn save_force_enabled_flag(&self, plugin_id: &str) -> Result<(), PluginError> {
+        let mut settings = self
+            .plugin_settings_storage
+            .get(plugin_id)
+            .await?
+            .unwrap_or_default();
+
+        settings.force_enabled_at_api_version = Some(PLUGIN_API_VERSION.to_string());
+
+        self.plugin_settings_storage
+            .upsert(plugin_id, &settings)
+            .await?;
+
+        Ok(())
     }
 
     async fn load_plugin(

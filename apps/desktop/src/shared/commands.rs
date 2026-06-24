@@ -102,6 +102,7 @@ macro_rules! plugin_commands {
             get,
             remove,
             enable,
+            force_enable,
             disable,
             call,
             get_settings,

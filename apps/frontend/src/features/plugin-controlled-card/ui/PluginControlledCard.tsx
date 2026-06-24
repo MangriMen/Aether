@@ -6,10 +6,10 @@ import {
   PluginCard,
   PluginContextMenu,
   useDisablePlugin,
-  useEnablePlugin,
   usePluginStates,
   useRemovePlugin,
 } from '@/entities/plugins';
+import { useForceEnablePluginWithDialog } from '@/features/toggle-plugin-button';
 import { ContextMenuTrigger } from '@/shared/ui';
 
 export type PluginControlledCardProps = {
@@ -25,7 +25,7 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
     () => local.plugin.state,
   );
 
-  const enablePlugin = useEnablePlugin();
+  const { tryEnable } = useForceEnablePluginWithDialog();
   const disablePlugin = useDisablePlugin();
 
   const handleToggleEnabled = async () => {
@@ -38,7 +38,7 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
       if (isEnabled()) {
         await disablePlugin.mutateAsync(id);
       } else {
-        await enablePlugin.mutateAsync(id);
+        await tryEnable(local.plugin);
       }
     } catch {
       /* empty */

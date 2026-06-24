@@ -41,6 +41,7 @@ export const pluginsCommands = {
   get: pluginsRawCommands.get,
   remove: withIdempotency(pluginsRawCommands.remove),
   enable: withIdempotency(pluginsRawCommands.enable),
+  forceEnable: withIdempotency(pluginsRawCommands.forceEnable),
   disable: withIdempotency(pluginsRawCommands.disable),
   call: withIdempotency(pluginsRawCommands.call),
   getSettings: pluginsRawCommands.getSettings,

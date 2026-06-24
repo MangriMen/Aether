@@ -140,6 +140,8 @@ pub enum PluginDtoState {
     Loading,
     Loaded,
     Unloading,
+    /// The plugin's API version requirement is incompatible with the host version.
+    Incompatible,
     Failed,
 }
 
@@ -316,6 +318,7 @@ impl From<&PluginState> for PluginDtoState {
             PluginState::Loading => PluginDtoState::Loading,
             PluginState::Loaded(_) => PluginDtoState::Loaded,
             PluginState::Unloading => PluginDtoState::Unloading,
+            PluginState::Incompatible(_) => PluginDtoState::Incompatible,
             PluginState::Failed(_) => PluginDtoState::Failed,
         }
     }

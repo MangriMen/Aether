@@ -8,12 +8,13 @@ import {
 
 import {
   useDisablePlugin,
-  useEnablePlugin,
   usePluginStates,
   type Plugin,
 } from '@/entities/plugins';
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
+
+import { useForceEnablePluginWithDialog } from '../lib/useForceEnablePluginWithDialog';
 
 export type TogglePluginButtonProps = ComponentProps<'div'> & {
   plugin: Plugin;
@@ -30,7 +31,7 @@ export const TogglePluginButton: Component<TogglePluginButtonProps> = (
     () => local.plugin.state,
   );
 
-  const { mutateAsync: enablePlugin } = useEnablePlugin();
+  const { tryEnable } = useForceEnablePluginWithDialog();
   const { mutateAsync: disablePlugin } = useDisablePlugin();
 
   const togglePluginEnabled = async () => {
@@ -43,7 +44,7 @@ export const TogglePluginButton: Component<TogglePluginButtonProps> = (
       if (isEnabled()) {
         await disablePlugin(id);
       } else {
-        await enablePlugin(id);
+        await tryEnable(local.plugin);
       }
     } catch {
       /* empty */

@@ -69,7 +69,10 @@ where
                         self.sync_all_capabilities(&plugin_id, Some(instance), &caps)
                             .await?;
                     }
-                    PluginState::NotLoaded | PluginState::Unloading | PluginState::Failed(_) => {
+                    PluginState::NotLoaded
+                    | PluginState::Unloading
+                    | PluginState::Failed(_)
+                    | PluginState::Incompatible(_) => {
                         self.sync_all_capabilities(&plugin_id, None, &caps).await?;
                     }
                     PluginState::Loading => (),

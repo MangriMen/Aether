@@ -11,6 +11,9 @@ pub enum PluginState {
     Loading,
     Loaded(Arc<Mutex<dyn PluginInstance>>),
     Unloading,
+    /// The plugin's API version requirement is incompatible with the host version.
+    /// Contains a human-readable explanation (e.g. "requires ^3.0.0, host is 2.5.0").
+    Incompatible(String),
     Failed(String),
 }
 

@@ -78,11 +78,12 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
             PluginState::Loading => Err(PluginError::LoadingInProgress {
                 plugin_id: plugin_id.to_owned(),
             }),
-            PluginState::NotLoaded | PluginState::Unloading | PluginState::Failed(_) => {
-                Err(PluginError::AlreadyUnloaded {
-                    plugin_id: plugin_id.to_owned(),
-                })
-            }
+            PluginState::NotLoaded
+            | PluginState::Unloading
+            | PluginState::Failed(_)
+            | PluginState::Incompatible(_) => Err(PluginError::AlreadyUnloaded {
+                plugin_id: plugin_id.to_owned(),
+            }),
         }
     }
 

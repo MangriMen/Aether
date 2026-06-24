@@ -51,6 +51,15 @@ export const useEnablePlugin = () => {
   }));
 };
 
+export const useForceEnablePlugin = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: pluginsCommands.forceEnable,
+    onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
+  }));
+};
+
 export const useDisablePlugin = () => {
   const queryClient = useQueryClient();
 

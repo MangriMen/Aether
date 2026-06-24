@@ -103,6 +103,7 @@
       "LOAD_FAILED": "Failed to load plugin",
       "FUNCTION_CALL_FAILED": "Failed to call plugin function",
       "MANIFEST_NOT_FOUND": "Plugin manifest not found",
+      "INCOMPATIBLE_API_VERSION": "Plugin requires a newer API version. Enable at your own risk",
       "INVALID_MANIFEST_FORMAT": "Invalid manifest format",
       "MANIFEST": "Plugin manifest error: {message}",
       "LOADER_NOT_FOUND": "Plugin loader not found",
@@ -427,6 +428,10 @@
     "capabilities": "Capabilities",
     "importers": "Importers",
     "incompatibleApiVersion": "The API version is incompatible. Using the plugin may cause a crash or data corruption",
+    "forceEnableTitle": "Enable incompatible plugin?",
+    "forceEnableDescription": "This plugin requires a newer version of the launcher API. It may not work correctly or could cause crashes. Do you want to enable it anyway?",
+    "forceEnableConfirm": "Enable anyway",
+    "forceEnableCancel": "Cancel",
     "updaters": "Updaters"
   },
   "pluginSettings": {

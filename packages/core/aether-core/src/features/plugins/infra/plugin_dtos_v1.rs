@@ -63,9 +63,13 @@ pub struct ProviderHandlersV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginSettingsV1 {
     pub allowed_hosts: Vec<String>,
     pub allowed_paths: Vec<(String, String)>,
+
+    #[serde(default)]
+    pub force_enabled_at_api_version: Option<String>,
 }
 
 // ── Converters V1 → Domain ──
@@ -145,6 +149,7 @@ impl From<PluginSettingsV1> for PluginSettings {
                 .into_iter()
                 .map(|(host, virt)| PathMapping(host, PathBuf::from(virt)))
                 .collect(),
+            force_enabled_at_api_version: v1.force_enabled_at_api_version,
         }
     }
 }
@@ -214,6 +219,7 @@ impl From<PluginSettings> for PluginSettingsV1 {
                 .into_iter()
                 .map(|pm| (pm.0, pm.1.to_string_lossy().to_string()))
                 .collect(),
+            force_enabled_at_api_version: v.force_enabled_at_api_version,
         }
     }
 }

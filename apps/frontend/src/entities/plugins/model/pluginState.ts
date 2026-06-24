@@ -3,7 +3,7 @@ import type { PluginDtoState } from '../api';
 export type PluginState = PluginDtoState;
 
 export const isPluginDisabled = (state: PluginState) =>
-  state === 'NotLoaded' || state === 'Failed';
+  state === 'NotLoaded' || state === 'Failed' || state === 'Incompatible';
 
 export const isPluginLoading = (state: PluginState) =>
   state === 'Loading' || state === 'Unloading';
