@@ -1,14 +1,7 @@
-import {
-  For,
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { PluginCapabilityCard } from '@/entities/plugins';
+import { PluginCapabilitiesSection } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 
 import type { PluginDetailsTabProps } from '../model';
 
@@ -24,34 +17,14 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
     'class',
   ]);
 
-  const [{ t }] = useTranslation();
-
   return (
     <div
       class={cn('flex flex-col gap-4 overflow-y-auto', local.class)}
       {...others}
     >
-      <Show
-        when={local.plugin.capabilities}
-        fallback={<div>There is no capabilities</div>}
-      >
-        {(capabilities) => (
-          <>
-            <div class='flex flex-col gap-2'>
-              <span class='text-lg font-medium'>{t('plugin.importers')}</span>
-              <For each={capabilities().importers}>
-                {(importer) => <PluginCapabilityCard capability={importer} />}
-              </For>
-            </div>
-            <div class='flex flex-col gap-2'>
-              <span class='text-lg font-medium'>{t('plugin.updaters')}</span>
-              <For each={capabilities().updaters}>
-                {(importer) => <PluginCapabilityCard capability={importer} />}
-              </For>
-            </div>
-          </>
-        )}
-      </Show>
+      <PluginCapabilitiesSection
+        capabilities={local.plugin.capabilities ?? null}
+      />
     </div>
   );
 };

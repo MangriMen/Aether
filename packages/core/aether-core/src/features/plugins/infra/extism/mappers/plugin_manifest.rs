@@ -95,6 +95,7 @@ impl TryFrom<ApiConfigDto> for ApiConfig {
 impl From<PluginManifest> for PluginManifestDto {
     fn from(v: PluginManifest) -> Self {
         Self {
+            dollar_schema: None,
             metadata: v.metadata.into(),
             runtime: v.runtime.into(),
             load: v.load.into(),

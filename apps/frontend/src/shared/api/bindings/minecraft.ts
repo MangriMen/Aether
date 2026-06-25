@@ -254,6 +254,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
 	details: string,
+} } | { code: "GIT_HUB_FETCH_ERROR"; payload: {
+	owner: string,
+	repo: string,
+	details: string,
+} } | { code: "GIT_HUB_NO_ASSETS"; payload: {
+	owner: string,
+	repo: string,
+	tag: string,
+} } | { code: "NOT_A_GIT_HUB_PLUGIN"; payload: {
+	plugin_id: string,
+} } | { code: "DOWNLOAD_FAILED"; payload: {
+	url: string,
+	details: string,
 } };
 
 export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {

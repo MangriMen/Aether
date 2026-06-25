@@ -160,3 +160,100 @@ export const useRemovePlugin = () => {
     },
   }));
 };
+
+// ── GitHub / Remote source hooks ──
+
+export const usePluginSource = (id: Accessor<PluginId>) =>
+  useQuery(() => pluginsQueries.source(id()));
+
+export const useCheckForUpdates = (id: Accessor<PluginId>) =>
+  useQuery(() => pluginsQueries.updates(id()));
+
+export const usePluginPreview = (url: Accessor<string>) =>
+  useQuery(() => pluginsQueries.preview(url()));
+
+export const useInstallFromGithub = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      owner,
+      repo,
+      tag,
+    }: {
+      owner: string;
+      repo: string;
+      tag: string;
+    }) => pluginsCommands.installFromGithub(owner, repo, tag),
+    onSuccess: () => pluginsCache.invalidate.all(queryClient),
+    onError: (err) => {
+      showError({
+        title: t('plugins.installFromGithubError'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useUpdatePlugin = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({ id, targetTag }: { id: string; targetTag?: string }) =>
+      pluginsCommands.updatePlugin(id, targetTag ?? null),
+    onSuccess: (_, { id }) => pluginsCache.invalidate.full(queryClient, id),
+    onError: (err, { id }) => {
+      const plugin = pluginsCache.getData.fromList(queryClient, id);
+
+      const name =
+        plugin?.manifest.metadata.name ??
+        plugin?.manifest.metadata.id ??
+        '"unknown"';
+
+      showError({
+        title: t('plugins.failedToUpdatePlugin', {
+          name,
+        }),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useInstallPluginFromProvider = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      identifier,
+      downloadUrl,
+      tagName,
+      version,
+    }: {
+      identifier: string;
+      downloadUrl: string;
+      tagName: string;
+      version: string;
+    }) =>
+      pluginsCommands.installPluginFromProvider(
+        'git_hub',
+        identifier,
+        downloadUrl,
+        tagName,
+        version,
+      ),
+    onSuccess: () => pluginsCache.invalidate.all(queryClient),
+    onError: (err) => {
+      showError({
+        title: t('plugins.installFromGithubError'),
+        err,
+        t,
+      });
+    },
+  }));
+};

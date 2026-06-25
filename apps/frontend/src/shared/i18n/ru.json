@@ -116,7 +116,11 @@
       "ACCESS_VIOLATION": "Нарушение прав доступа плагина",
       "HASH_COMPUTATION_FAILED": "Ошибка вычисления хэша плагина",
       "SETTINGS": "Ошибка настроек плагина",
-      "STORAGE": "Ошибка хранилища плагина"
+      "STORAGE": "Ошибка хранилища плагина",
+      "GIT_HUB_FETCH_ERROR": "Не удалось получить релиз с GitHub",
+      "GIT_HUB_NO_ASSETS": "В релизе нет .zip файла",
+      "NOT_A_GIT_HUB_PLUGIN": "Плагин установлен не из GitHub",
+      "DOWNLOAD_FAILED": "Не удалось загрузить плагин"
     },
     "process": {
       "KILL_ERROR": "Не удалось завершить процесс",
@@ -178,7 +182,11 @@
     "close": "Закрыть",
     "incompatible": "Несовместимый",
     "error": "Ошибка",
-    "noData": "Нет данных для отображения"
+    "noData": "Нет данных для отображения",
+    "loading": "Загрузка...",
+    "clear": "Очистить",
+    "current": "Текущая",
+    "updating": "Обновление..."
   },
   "content": {
     "backToInstance": "Вернуться к инстансу",
@@ -329,7 +337,33 @@
     "openPluginsFolderError": "Не удалось открыть папку плагинов",
     "importFromPackage": "Импортировать",
     "failedToRemove": "Не удалось удалить плагин {{name}}",
-    "failedToImport": "Не удалось импортировать плагин"
+    "failedToImport": "Не удалось импортировать плагин",
+    "installFromGithub": "Установить с GitHub",
+    "githubOwner": "Владелец",
+    "githubRepo": "Репозиторий",
+    "githubTag": "Тег релиза",
+    "install": "Установить",
+    "installFromGithubError": "Не удалось установить плагин с GitHub",
+    "failedToUpdatePlugin": "Не удалось обновить плагин {{name}}",
+    "addPlugin": "Добавить плагин",
+    "back": "Вернуться к плагинам",
+    "addTitle": "Добавить плагин",
+    "githubUrl": "URL GitHub",
+    "preview": "Предпросмотр",
+    "githubPreviewError": "Не удалось загрузить предпросмотр плагина",
+    "selectVersion": "Выбрать версию",
+    "prerelease": "Пре-релиз",
+    "switchVersion": "Переключиться на версию",
+    "pluginCapabilities": "Возможности",
+    "pluginLicense": "Лицензия",
+    "pluginId": "ID плагина",
+    "pluginVersion": "Версия",
+    "pluginAuthors": "Авторы",
+    "searchVersion": "Поиск версии...",
+    "noVersionsFound": "Версии не найдены",
+    "updateAvailable": "Доступно обновление",
+    "updateToLatest": "Обновить до последней",
+    "restartPlugin": "Перезапустить"
   },
   "progress": {
     "seeDetails": "Показать детали",
@@ -432,7 +466,8 @@
     "forceEnableDescription": "Этот плагин требует новую версию API лаунчера. Он может работать некорректно или вызывать сбои. Включить в любом случае?",
     "forceEnableConfirm": "Включить в любом случае",
     "forceEnableCancel": "Отмена",
-    "updaters": "Апдейтеры"
+    "updaters": "Апдейтеры",
+    "contentProviders": "Поставщики контента"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Введите путь на хосте",

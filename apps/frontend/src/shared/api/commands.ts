@@ -48,6 +48,15 @@ export const pluginsCommands = {
   editSettings: withIdempotency(pluginsRawCommands.editSettings),
   openPluginsFolder: pluginsRawCommands.openPluginsFolder,
   getApiVersion: pluginsRawCommands.getApiVersion,
+  installFromGithub: withIdempotency(pluginsRawCommands.installFromGithub),
+  getPluginSource: pluginsRawCommands.getPluginSource,
+  checkForUpdates: pluginsRawCommands.checkForUpdates,
+  updatePlugin: withIdempotency(pluginsRawCommands.updatePlugin),
+  getAvailableProviders: pluginsRawCommands.getAvailableProviders,
+  previewPluginFromProvider: pluginsRawCommands.previewPluginFromProvider,
+  installPluginFromProvider: withIdempotency(
+    pluginsRawCommands.installPluginFromProvider,
+  ),
 };
 
 export const settingsCommands = {

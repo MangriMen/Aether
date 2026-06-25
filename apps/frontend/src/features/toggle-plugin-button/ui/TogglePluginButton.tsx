@@ -18,12 +18,13 @@ import { useForceEnablePluginWithDialog } from '../lib/useForceEnablePluginWithD
 
 export type TogglePluginButtonProps = ComponentProps<'div'> & {
   plugin: Plugin;
+  disabled?: boolean;
 };
 
 export const TogglePluginButton: Component<TogglePluginButtonProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['plugin', 'class']);
+  const [local, others] = splitProps(props, ['plugin', 'class', 'disabled']);
 
   const [{ t }] = useTranslation();
 
@@ -54,6 +55,7 @@ export const TogglePluginButton: Component<TogglePluginButtonProps> = (
   return (
     <Button
       size='sm'
+      disabled={local.disabled}
       loading={isLoading()}
       onClick={togglePluginEnabled}
       {...others}

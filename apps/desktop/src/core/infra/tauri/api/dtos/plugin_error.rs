@@ -76,6 +76,24 @@ pub enum PluginErrorDto {
     Storage {
         details: String,
     },
+    // ── GitHub / Remote source errors ──
+    GitHubFetchError {
+        owner: String,
+        repo: String,
+        details: String,
+    },
+    GitHubNoAssets {
+        owner: String,
+        repo: String,
+        tag: String,
+    },
+    NotAGitHubPlugin {
+        plugin_id: String,
+    },
+    DownloadFailed {
+        url: String,
+        details: String,
+    },
 }
 
 impl From<&PluginError> for PluginErrorDto {
@@ -157,6 +175,27 @@ impl From<&PluginError> for PluginErrorDto {
             },
             PluginError::Storage(err) => Self::Storage {
                 details: err.to_string(),
+            },
+            PluginError::GitHubFetchError {
+                owner,
+                repo,
+                details,
+            } => Self::GitHubFetchError {
+                owner: owner.clone(),
+                repo: repo.clone(),
+                details: details.clone(),
+            },
+            PluginError::GitHubNoAssets { owner, repo, tag } => Self::GitHubNoAssets {
+                owner: owner.clone(),
+                repo: repo.clone(),
+                tag: tag.clone(),
+            },
+            PluginError::NotAGitHubPlugin { plugin_id } => Self::NotAGitHubPlugin {
+                plugin_id: plugin_id.clone(),
+            },
+            PluginError::DownloadFailed { url, details } => Self::DownloadFailed {
+                url: url.clone(),
+                details: details.clone(),
             },
         }
     }

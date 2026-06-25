@@ -7,7 +7,9 @@ mod plugin_dtos;
 mod plugin_error;
 mod plugin_internal_event;
 mod plugin_manifest;
+mod plugin_provider;
 mod plugin_settings;
+mod plugin_source;
 mod serializable_output;
 
 pub use constants::PLUGIN_API_VERSION;
@@ -25,5 +27,11 @@ pub use plugin_manifest::{
     ApiConfig, Compatibility, LoadConfig, LoadConfigType, PathMapping, PluginManifest,
     PluginMetadata, RuntimeConfig,
 };
+pub use plugin_provider::{
+    PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+};
 pub use plugin_settings::PluginSettings;
+pub use plugin_source::{
+    GitHubPluginPreview, GitHubReleaseInfo, PluginManifestPreview, PluginSource, PluginUpdateInfo,
+};
 pub use serializable_output::SerializableOutput;

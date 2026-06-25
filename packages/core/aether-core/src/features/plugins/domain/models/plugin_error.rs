@@ -91,4 +91,25 @@ pub enum PluginError {
 
     #[error("Storage operation failed: {0}")]
     Storage(#[from] IoError),
+
+    // ── GitHub / Remote source errors ──
+    #[error("Failed to fetch GitHub release info for {owner}/{repo}: {details}")]
+    GitHubFetchError {
+        owner: String,
+        repo: String,
+        details: String,
+    },
+
+    #[error("No release assets found for tag \"{tag}\" in {owner}/{repo}: expected a .zip file")]
+    GitHubNoAssets {
+        owner: String,
+        repo: String,
+        tag: String,
+    },
+
+    #[error("Plugin \"{plugin_id}\" has no GitHub source configured")]
+    NotAGitHubPlugin { plugin_id: String },
+
+    #[error("Failed to download plugin from {url}: {details}")]
+    DownloadFailed { url: String, details: String },
 }

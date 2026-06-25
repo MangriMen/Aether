@@ -27,6 +27,21 @@ export const pluginsQueries = {
     queryKey: pluginKeys.apiVersion(),
     queryFn: pluginsCommands.getApiVersion,
   }),
+  source: (id: PluginId) => ({
+    queryKey: pluginKeys.source(id),
+    queryFn: () => pluginsCommands.getPluginSource(id),
+    enabled: !!id,
+  }),
+  updates: (id: PluginId) => ({
+    queryKey: pluginKeys.updates(id),
+    queryFn: () => pluginsCommands.checkForUpdates(id),
+    enabled: !!id,
+  }),
+  preview: (url: string) => ({
+    queryKey: pluginKeys.preview(url),
+    queryFn: () => pluginsCommands.previewPluginFromProvider('git_hub', url),
+    enabled: url.length > 0,
+  }),
 } as const;
 
 export const pluginsCache = {
@@ -61,10 +76,20 @@ export const pluginsCache = {
       queryClient.invalidateQueries({
         queryKey: pluginKeys.settings(id),
       }),
+    source: (queryClient: QueryClient, id: PluginId) =>
+      queryClient.invalidateQueries({
+        queryKey: pluginKeys.source(id),
+      }),
+    updates: (queryClient: QueryClient, id: PluginId) =>
+      queryClient.invalidateQueries({
+        queryKey: pluginKeys.updates(id),
+      }),
     full: async (queryClient: QueryClient, id: PluginId) => {
       await pluginsCache.invalidate.list(queryClient);
       await pluginsCache.invalidate.get(queryClient, id);
       await pluginsCache.invalidate.settings(queryClient, id);
+      await pluginsCache.invalidate.source(queryClient, id);
+      await pluginsCache.invalidate.updates(queryClient, id);
     },
   },
   prefetch: {
