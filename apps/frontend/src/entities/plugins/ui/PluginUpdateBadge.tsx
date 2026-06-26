@@ -5,7 +5,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useCheckForUpdates } from '@/entities/plugins';
+import { useUpdatesData } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
@@ -17,13 +17,13 @@ export type PluginUpdateBadgeProps = ComponentProps<'span'> & {
 
 /**
  * Text-only badge indicating an update is available for a plugin.
- * Used on plugin cards — shows a subtle label, not an interactive button.
+ * Reads cached update data only — does NOT trigger a network request.
  */
 export const PluginUpdateBadge: Component<PluginUpdateBadgeProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const pluginId = () => props.plugin.manifest.metadata.id;
-  const updates = useCheckForUpdates(pluginId);
+  const updates = useUpdatesData(pluginId);
 
   const hasUpdate = createMemo(() => updates.data?.has_update ?? false);
 

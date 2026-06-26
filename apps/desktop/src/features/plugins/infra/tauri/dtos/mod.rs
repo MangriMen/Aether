@@ -5,7 +5,6 @@ mod plugin_manifest;
 mod plugin_preview;
 mod plugin_settings;
 mod plugin_source;
-mod plugin_source_type;
 mod provider_preview;
 
 pub use plugin::*;
@@ -15,5 +14,4 @@ pub use plugin_manifest::*;
 pub use plugin_preview::*;
 pub use plugin_settings::*;
 pub use plugin_source::*;
-pub use plugin_source_type::*;
 pub use provider_preview::*;

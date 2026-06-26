@@ -31,7 +31,5 @@ pub use plugin_provider::{
     PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
 };
 pub use plugin_settings::PluginSettings;
-pub use plugin_source::{
-    GitHubPluginPreview, GitHubReleaseInfo, PluginManifestPreview, PluginSource, PluginUpdateInfo,
-};
+pub use plugin_source::{PluginManifestPreview, PluginSource};
 pub use serializable_output::SerializableOutput;

@@ -2,9 +2,8 @@ use std::sync::Arc;
 
 use reqwest_middleware::ClientWithMiddleware;
 
-use crate::features::plugins::{
-    GitHubPluginPreview, GitHubReleaseInfo, PluginError, PluginManifestPreview, PluginUpdateInfo,
-};
+use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
+use crate::features::plugins::{PluginError, PluginManifestPreview, PluginSourceType};
 
 /// Fetches plugin release information from GitHub repositories.
 pub struct GitHubPluginFetcher {
@@ -14,6 +13,37 @@ pub struct GitHubPluginFetcher {
 impl GitHubPluginFetcher {
     pub fn new(client: Arc<ClientWithMiddleware>) -> Self {
         Self { client }
+    }
+
+    /// Check if the response status indicates rate limiting.
+    fn check_rate_limit(
+        status: reqwest::StatusCode,
+        _headers: &reqwest::header::HeaderMap,
+    ) -> bool {
+        status == reqwest::StatusCode::FORBIDDEN || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+    }
+
+    /// Extract retry-after seconds from response headers.
+    fn retry_after_from(headers: &reqwest::header::HeaderMap) -> Option<u32> {
+        headers
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<u32>().ok())
+    }
+
+    /// Build a rate-limit error when applicable.
+    fn rate_limit_error_or(
+        status: reqwest::StatusCode,
+        headers: &reqwest::header::HeaderMap,
+        fallback: PluginError,
+    ) -> PluginError {
+        if Self::check_rate_limit(status, headers) {
+            return PluginError::ProviderRateLimited {
+                source_type: PluginSourceType::GitHub,
+                retry_after: Self::retry_after_from(headers),
+            };
+        }
+        fallback
     }
 
     /// Fetch all releases for a GitHub repo, limited to `max_results`.
@@ -34,9 +64,8 @@ impl GitHubPluginFetcher {
             .header("Accept", "application/vnd.github+json")
             .send()
             .await
-            .map_err(|e| PluginError::GitHubFetchError {
-                owner: owner.to_string(),
-                repo: repo.to_string(),
+            .map_err(|e| PluginError::ProviderFetchError {
+                source_type: PluginSourceType::GitHub,
                 details: e.to_string(),
             })?;
 
@@ -57,20 +86,23 @@ impl GitHubPluginFetcher {
 
         if !response.status().is_success() {
             let status = response.status();
-            return Err(PluginError::GitHubFetchError {
-                owner: owner.to_string(),
-                repo: repo.to_string(),
-                details: format!("HTTP {status}"),
-            });
+            let headers = response.headers().clone();
+            return Err(Self::rate_limit_error_or(
+                status,
+                &headers,
+                PluginError::ProviderFetchError {
+                    source_type: PluginSourceType::GitHub,
+                    details: format!("HTTP {status}"),
+                },
+            ));
         }
 
         let releases: Vec<GitHubRelease> =
             response
                 .json()
                 .await
-                .map_err(|e| PluginError::GitHubFetchError {
-                    owner: owner.to_string(),
-                    repo: repo.to_string(),
+                .map_err(|e| PluginError::ProviderFetchError {
+                    source_type: PluginSourceType::GitHub,
                     details: format!("Failed to parse response: {e}"),
                 })?;
 
@@ -174,10 +206,16 @@ impl GitHubPluginFetcher {
             })?;
 
         if !response.status().is_success() {
-            return Err(PluginError::DownloadFailed {
-                url: url.to_string(),
-                details: format!("HTTP {}", response.status()),
-            });
+            let status = response.status();
+            let headers = response.headers().clone();
+            return Err(Self::rate_limit_error_or(
+                status,
+                &headers,
+                PluginError::DownloadFailed {
+                    url: url.to_string(),
+                    details: format!("HTTP {status}"),
+                },
+            ));
         }
 
         response

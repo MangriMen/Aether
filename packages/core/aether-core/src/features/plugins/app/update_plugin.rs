@@ -4,7 +4,7 @@ use crate::features::plugins::{
     PluginError, PluginExtractor, PluginSource, PluginSourceStorage, PluginStorage,
 };
 
-use super::{PluginProviderFactory, install_from_github::write_bytes_to_temp_file};
+use super::{PluginProviderFactory, write_bytes_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
@@ -42,7 +42,7 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
             .plugin_source_storage
             .get(plugin_id)
             .await?
-            .ok_or_else(|| PluginError::NotAGitHubPlugin {
+            .ok_or_else(|| PluginError::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             })?;
 
@@ -52,7 +52,7 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
         let provider = self
             .provider_factory
             .get_provider(&source_type)
-            .ok_or_else(|| PluginError::NotAGitHubPlugin {
+            .ok_or_else(|| PluginError::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             })?;
 
@@ -60,15 +60,15 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
             t.to_string()
         } else {
             let current_tag = source.current_tag().unwrap_or_default();
+            let current_version = source_version(&source);
             let updates = provider
-                .fetch_latest_version(&identifier, current_tag, "")
+                .fetch_latest_version(&identifier, current_tag, current_version)
                 .await?;
 
             updates
                 .latest_tag
-                .ok_or_else(|| PluginError::GitHubFetchError {
-                    owner: identifier.clone(),
-                    repo: identifier.clone(),
+                .ok_or_else(|| PluginError::ProviderFetchError {
+                    source_type: source_type.clone(),
                     details: "No releases found".to_string(),
                 })?
         };
@@ -80,10 +80,8 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
             .releases
             .into_iter()
             .find(|r| r.tag_name == tag)
-            .ok_or_else(|| PluginError::GitHubNoAssets {
-                owner: identifier.clone(),
-                repo: identifier.clone(),
-                tag: tag.clone(),
+            .ok_or_else(|| PluginError::ProviderNoAssets {
+                source_type: source_type.clone(),
             })?;
 
         // Download zip to temp file, reuse PluginExtractor
@@ -96,10 +94,9 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
         self.plugin_storage.add(extracted).await?;
 
         // Update source info
-        let (owner_str, repo_str) = identifier.rsplit_once('/').unwrap_or((&identifier, ""));
-        let updated_source = PluginSource::GitHub {
-            owner: owner_str.to_string(),
-            repo: repo_str.to_string(),
+        let updated_source = PluginSource::Remote {
+            source_type: source_type.clone(),
+            identifier: identifier.clone(),
             current_tag: release.tag_name.clone(),
             current_version: release.version.clone(),
         };
@@ -114,7 +111,17 @@ impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
 /// Build a provider identifier from a `PluginSource`.
 fn source_identifier(source: &PluginSource) -> String {
     match source {
-        PluginSource::GitHub { owner, repo, .. } => format!("{owner}/{repo}"),
+        PluginSource::Remote { identifier, .. } => identifier.clone(),
         PluginSource::Local => String::new(),
+    }
+}
+
+/// Build a provider version from a `PluginSource`.
+fn source_version(source: &PluginSource) -> &str {
+    match source {
+        PluginSource::Remote {
+            current_version, ..
+        } => current_version,
+        PluginSource::Local => "",
     }
 }

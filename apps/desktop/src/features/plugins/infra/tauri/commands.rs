@@ -5,8 +5,8 @@ use tauri::State;
 
 use crate::FrontendResult;
 use crate::features::plugins::{
-    EditPluginSettingsDto, GitHubPluginPreviewDto, PluginDto, PluginEventDto, PluginSettingsDto,
-    PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
+    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
+    PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
 };
 use crate::shared::reveal_in_explorer::infra::reveal_in_explorer;
 use crate::shared::{
@@ -215,25 +215,7 @@ async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
         .collect())
 }
 
-// ── GitHub / Remote source commands ──
-
-#[tauri::command]
-#[specta::specta]
-async fn install_from_github(
-    owner: String,
-    repo: String,
-    tag: String,
-    request_id: RequestId,
-    idempotency: State<'_, IdempotencyManager>,
-) -> FrontendResult<String> {
-    let _guard = idempotency.lock_cmd(request_id)?;
-
-    Ok(
-        aether_core::api::plugin::install_from_github(owner, repo, tag)
-            .await
-            .map_err(crate::Error::from)?,
-    )
-}
+// ── Remote source commands ──
 
 #[tauri::command]
 #[specta::specta]
@@ -266,15 +248,6 @@ async fn update_plugin(
     Ok(aether_core::api::plugin::update_plugin(id, target_tag)
         .await
         .map_err(crate::Error::from)?)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn preview_plugin_from_github(url: String) -> FrontendResult<GitHubPluginPreviewDto> {
-    Ok(aether_core::api::plugin::preview_plugin_from_github(url)
-        .await
-        .map_err(crate::Error::from)?
-        .into())
 }
 
 // ── Generic provider-based commands ──

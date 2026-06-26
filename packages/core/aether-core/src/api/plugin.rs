@@ -195,35 +195,9 @@ pub async fn get_available_providers() -> crate::Result<Vec<PluginSourceType>> {
     Ok(factory.list_source_types())
 }
 
-// ── GitHub / Remote source operations ──
+// ── Remote source operations (provider-agnostic) ──
 
-/// Install a plugin from a GitHub release.
-pub async fn install_from_github(
-    owner: String,
-    repo: String,
-    tag: String,
-) -> crate::Result<String> {
-    let locator = LazyLocator::get().await?;
-
-    let plugin_source_storage = locator.get_plugin_source_storage().await;
-    let github_fetcher = locator.get_github_plugin_fetcher().await;
-
-    let plugin_id = crate::features::plugins::InstallFromGithubUseCase::new(
-        locator.get_plugin_extractor().await,
-        locator.get_plugin_storage().await,
-        plugin_source_storage,
-        github_fetcher,
-    )
-    .execute(&owner, &repo, &tag)
-    .await?;
-
-    // Sync the plugin registry so the new plugin appears
-    sync().await?;
-
-    Ok(plugin_id)
-}
-
-/// Get the source info for a plugin (if it was installed from GitHub).
+/// Get the source info for a plugin.
 pub async fn get_plugin_source(plugin_id: String) -> crate::Result<Option<PluginSource>> {
     let locator = LazyLocator::get().await?;
     Ok(locator
@@ -257,26 +231,6 @@ pub async fn update_plugin(plugin_id: String, target_tag: Option<String>) -> cra
     )
     .execute(&plugin_id, target_tag.as_deref())
     .await?)
-}
-
-/// Preview a plugin from a GitHub URL (e.g. <https://github.com/owner/repo>).
-/// Returns releases and manifest info without installing.
-pub async fn preview_plugin_from_github(
-    url: String,
-) -> crate::Result<crate::features::plugins::GitHubPluginPreview> {
-    use crate::features::plugins::infra::GitHubPluginFetcher;
-
-    let (owner, repo) = GitHubPluginFetcher::parse_github_url(&url).ok_or_else(|| {
-        crate::ErrorKind::CoreError(format!("Invalid GitHub URL: {url}")).as_error()
-    })?;
-
-    let locator = LazyLocator::get().await?;
-    let github_fetcher = locator.get_github_plugin_fetcher().await;
-
-    github_fetcher
-        .preview_plugin(&owner, &repo)
-        .await
-        .map_err(Into::into)
 }
 
 // ── Generic provider-based API ──
@@ -318,8 +272,6 @@ pub async fn install_plugin_from_provider(
     tag_name: String,
     version: String,
 ) -> crate::Result<String> {
-    use crate::features::plugins::PluginSource;
-
     let locator = LazyLocator::get().await?;
     let factory = locator.get_plugin_provider_factory().await;
 
@@ -342,30 +294,18 @@ pub async fn install_plugin_from_provider(
     let plugin_id = extracted.plugin_id.clone();
     locator.get_plugin_storage().await.add(extracted).await?;
 
-    // Save source info
-    match st {
-        crate::features::plugins::PluginSourceType::GitHub => {
-            let (owner, repo) = normalized.split_once('/').unwrap_or((&normalized, ""));
-            let source = PluginSource::GitHub {
-                owner: owner.to_string(),
-                repo: repo.to_string(),
-                current_tag: tag_name,
-                current_version: version,
-            };
-            locator
-                .get_plugin_source_storage()
-                .await
-                .save(&plugin_id, &source)
-                .await?;
-        }
-        crate::features::plugins::PluginSourceType::Local => {
-            locator
-                .get_plugin_source_storage()
-                .await
-                .save(&plugin_id, &PluginSource::Local)
-                .await?;
-        }
-    }
+    // Save source info — provider-agnostic
+    let source = PluginSource::Remote {
+        source_type: st.clone(),
+        identifier: normalized,
+        current_tag: tag_name,
+        current_version: version,
+    };
+    locator
+        .get_plugin_source_storage()
+        .await
+        .save(&plugin_id, &source)
+        .await?;
 
     // Sync registry
     sync().await?;

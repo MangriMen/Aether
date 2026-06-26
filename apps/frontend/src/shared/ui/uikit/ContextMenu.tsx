@@ -85,7 +85,7 @@ const ContextMenuSeparator = <T extends ValidComponent = 'hr'>(
   ]);
   return (
     <ContextMenuPrimitive.Separator
-      class={cn('-mx-1 my-1 h-px bg-secondary/secondary', local.class)}
+      class={cn('-mx-1 my-1 h-px bg-border', local.class)}
       {...others}
     />
   );

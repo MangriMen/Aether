@@ -14,9 +14,9 @@ import {
 } from '@tanstack/solid-table';
 import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import { cn } from '../../lib';
 import { Skeleton } from './Skeleton';
 import {
   Table,

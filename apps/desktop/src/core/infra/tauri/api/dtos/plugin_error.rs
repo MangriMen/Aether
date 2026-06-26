@@ -76,26 +76,29 @@ pub enum PluginErrorDto {
     Storage {
         details: String,
     },
-    // ── GitHub / Remote source errors ──
-    GitHubFetchError {
-        owner: String,
-        repo: String,
+    // ── Provider errors (provider-agnostic) ──
+    ProviderFetchError {
+        source_type: String,
         details: String,
     },
-    GitHubNoAssets {
-        owner: String,
-        repo: String,
-        tag: String,
+    ProviderNoAssets {
+        source_type: String,
     },
-    NotAGitHubPlugin {
+    NoRemoteSource {
         plugin_id: String,
     },
     DownloadFailed {
         url: String,
         details: String,
     },
+    // ── Rate limiting ──
+    ProviderRateLimited {
+        source_type: String,
+        retry_after: Option<u32>,
+    },
 }
 
+#[allow(clippy::too_many_lines)]
 impl From<&PluginError> for PluginErrorDto {
     fn from(value: &PluginError) -> Self {
         match value {
@@ -176,26 +179,29 @@ impl From<&PluginError> for PluginErrorDto {
             PluginError::Storage(err) => Self::Storage {
                 details: err.to_string(),
             },
-            PluginError::GitHubFetchError {
-                owner,
-                repo,
+            PluginError::ProviderFetchError {
+                source_type,
                 details,
-            } => Self::GitHubFetchError {
-                owner: owner.clone(),
-                repo: repo.clone(),
+            } => Self::ProviderFetchError {
+                source_type: source_type.to_string(),
                 details: details.clone(),
             },
-            PluginError::GitHubNoAssets { owner, repo, tag } => Self::GitHubNoAssets {
-                owner: owner.clone(),
-                repo: repo.clone(),
-                tag: tag.clone(),
+            PluginError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
+                source_type: source_type.to_string(),
             },
-            PluginError::NotAGitHubPlugin { plugin_id } => Self::NotAGitHubPlugin {
+            PluginError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.clone(),
             },
             PluginError::DownloadFailed { url, details } => Self::DownloadFailed {
                 url: url.clone(),
                 details: details.clone(),
+            },
+            PluginError::ProviderRateLimited {
+                source_type,
+                retry_after,
+            } => Self::ProviderRateLimited {
+                source_type: source_type.to_string(),
+                retry_after: *retry_after,
             },
         }
     }

@@ -2,8 +2,7 @@ import type { JSX } from 'solid-js';
 
 import { createSignal, splitProps, type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-
+import { cn } from '../../lib';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../uikit';
 import { CollapsibleIcon } from './CollapsibleIcon';
 import { SettingsEntry, type SettingsEntryProps } from './SettingsEntry';

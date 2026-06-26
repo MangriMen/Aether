@@ -117,9 +117,10 @@
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
       "SETTINGS": "Plugin settings error",
       "STORAGE": "Plugin storage error",
-      "GIT_HUB_FETCH_ERROR": "Failed to fetch GitHub release",
-      "GIT_HUB_NO_ASSETS": "No .zip asset in the release",
-      "NOT_A_GIT_HUB_PLUGIN": "Plugin is not installed from GitHub",
+      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider",
+      "PROVIDER_NO_ASSETS": "No suitable release assets found",
+      "NO_REMOTE_SOURCE": "Plugin has no remote source configured",
+      "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please wait {retry_after, plural, one {1 second} other {{retry_after} seconds}} before trying again.",
       "DOWNLOAD_FAILED": "Failed to download plugin"
     },
     "process": {
@@ -362,8 +363,11 @@
     "searchVersion": "Search version...",
     "noVersionsFound": "No versions found",
     "updateAvailable": "Update available",
-    "updateToLatest": "Update to latest",
-    "restartPlugin": "Restart to apply"
+    "update": "Update",
+    "restartPlugin": "Restart to apply",
+    "checkUpdates": "Check for updates",
+    "upToDate": "Up to date",
+    "updateCheckError": "Failed to check for updates"
   },
   "progress": {
     "seeDetails": "See details",

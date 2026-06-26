@@ -117,9 +117,10 @@
       "HASH_COMPUTATION_FAILED": "Ошибка вычисления хэша плагина",
       "SETTINGS": "Ошибка настроек плагина",
       "STORAGE": "Ошибка хранилища плагина",
-      "GIT_HUB_FETCH_ERROR": "Не удалось получить релиз с GitHub",
-      "GIT_HUB_NO_ASSETS": "В релизе нет .zip файла",
-      "NOT_A_GIT_HUB_PLUGIN": "Плагин установлен не из GitHub",
+      "PROVIDER_FETCH_ERROR": "Не удалось получить информацию о плагине от провайдера",
+      "PROVIDER_NO_ASSETS": "В релизе нет подходящего файла для установки",
+      "NO_REMOTE_SOURCE": "У плагина не настроен удалённый источник",
+      "PROVIDER_RATE_LIMITED": "Превышен лимит запросов к провайдеру. Попробуйте позже.",
       "DOWNLOAD_FAILED": "Не удалось загрузить плагин"
     },
     "process": {
@@ -362,8 +363,11 @@
     "searchVersion": "Поиск версии...",
     "noVersionsFound": "Версии не найдены",
     "updateAvailable": "Доступно обновление",
-    "updateToLatest": "Обновить до последней",
-    "restartPlugin": "Перезапустить"
+    "update": "Обновить",
+    "restartPlugin": "Перезапустить",
+    "checkUpdates": "Проверить обновления",
+    "upToDate": "Обновлений нет",
+    "updateCheckError": "Не удалось проверить обновления"
   },
   "progress": {
     "seeDetails": "Показать детали",

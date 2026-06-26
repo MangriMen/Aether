@@ -40,7 +40,7 @@ impl PluginSourceStorage for FsPluginSourceStorage {
         match read_json_async::<PluginSource>(&path).await {
             Ok(source) => Ok(Some(source)),
             Err(e) => {
-                // If file doesn't exist, it's not from GitHub
+                // If file doesn't exist, there's no remote source configured
                 if let Some(io_error) = match &e {
                     crate::shared::io::domain::IoError::IoPathError { source, .. }
                     | crate::shared::io::domain::IoError::IoError(source) => Some(source),

@@ -6,9 +6,9 @@ use super::ProviderReleaseInfoDto;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
 #[serde(tag = "source", rename_all = "snake_case")]
 pub enum PluginSourceDto {
-    GitHub {
-        owner: String,
-        repo: String,
+    Remote {
+        source_type: PluginSourceTypeDto,
+        identifier: String,
         current_tag: String,
         current_version: String,
     },
@@ -18,14 +18,14 @@ pub enum PluginSourceDto {
 impl From<aether_core::features::plugins::PluginSource> for PluginSourceDto {
     fn from(value: aether_core::features::plugins::PluginSource) -> Self {
         match value {
-            aether_core::features::plugins::PluginSource::GitHub {
-                owner,
-                repo,
+            aether_core::features::plugins::PluginSource::Remote {
+                source_type,
+                identifier,
                 current_tag,
                 current_version,
-            } => Self::GitHub {
-                owner,
-                repo,
+            } => Self::Remote {
+                source_type: source_type.into(),
+                identifier,
                 current_tag,
                 current_version,
             },
@@ -34,31 +34,28 @@ impl From<aether_core::features::plugins::PluginSource> for PluginSourceDto {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
-pub struct GitHubReleaseInfoDto {
-    pub tag_name: String,
-    pub version: String,
-    pub is_prerelease: bool,
-    pub published_at: String,
-    pub html_url: String,
-    pub zip_download_url: String,
-    pub manifest_download_url: Option<String>,
-    pub capabilities_download_url: Option<String>,
-    pub plugin_id: Option<String>,
+/// Provider source type for plugin installation.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum PluginSourceTypeDto {
+    GitHub,
+    Local,
 }
 
-impl From<aether_core::features::plugins::GitHubReleaseInfo> for GitHubReleaseInfoDto {
-    fn from(value: aether_core::features::plugins::GitHubReleaseInfo) -> Self {
-        Self {
-            tag_name: value.tag_name,
-            version: value.version,
-            is_prerelease: value.is_prerelease,
-            published_at: value.published_at,
-            html_url: value.html_url,
-            zip_download_url: value.zip_download_url,
-            manifest_download_url: value.manifest_download_url,
-            capabilities_download_url: value.capabilities_download_url,
-            plugin_id: value.plugin_id,
+impl From<aether_core::features::plugins::PluginSourceType> for PluginSourceTypeDto {
+    fn from(value: aether_core::features::plugins::PluginSourceType) -> Self {
+        match value {
+            aether_core::features::plugins::PluginSourceType::GitHub => Self::GitHub,
+            aether_core::features::plugins::PluginSourceType::Local => Self::Local,
+        }
+    }
+}
+
+impl From<PluginSourceTypeDto> for aether_core::features::plugins::PluginSourceType {
+    fn from(value: PluginSourceTypeDto) -> Self {
+        match value {
+            PluginSourceTypeDto::GitHub => Self::GitHub,
+            PluginSourceTypeDto::Local => Self::Local,
         }
     }
 }

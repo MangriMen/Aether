@@ -30,7 +30,7 @@ impl<Src: PluginSourceStorage> CheckForPluginUpdatesUseCase<Src> {
             .plugin_source_storage
             .get(plugin_id)
             .await?
-            .ok_or_else(|| PluginError::NotAGitHubPlugin {
+            .ok_or_else(|| PluginError::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             })?;
 
@@ -40,15 +40,14 @@ impl<Src: PluginSourceStorage> CheckForPluginUpdatesUseCase<Src> {
         let provider = self
             .provider_factory
             .get_provider(&source_type)
-            .ok_or_else(|| PluginError::NotAGitHubPlugin {
+            .ok_or_else(|| PluginError::NoRemoteSource {
                 plugin_id: plugin_id.to_string(),
             })?;
 
         let current_tag = source.current_tag().unwrap_or_default();
-        // We don't track current_version separately in the provider trait;
-        // fetch the latest version info
+        let current_version = source_version(&source);
         provider
-            .fetch_latest_version(&identifier, current_tag, "")
+            .fetch_latest_version(&identifier, current_tag, current_version)
             .await
     }
 }
@@ -56,7 +55,16 @@ impl<Src: PluginSourceStorage> CheckForPluginUpdatesUseCase<Src> {
 /// Build a provider identifier from a `PluginSource`.
 fn source_identifier(source: &PluginSource) -> String {
     match source {
-        PluginSource::GitHub { owner, repo, .. } => format!("{owner}/{repo}"),
+        PluginSource::Remote { identifier, .. } => identifier.clone(),
         PluginSource::Local => String::new(),
+    }
+}
+
+fn source_version(source: &PluginSource) -> &str {
+    match source {
+        PluginSource::Remote {
+            current_version, ..
+        } => current_version,
+        PluginSource::Local => "",
     }
 }

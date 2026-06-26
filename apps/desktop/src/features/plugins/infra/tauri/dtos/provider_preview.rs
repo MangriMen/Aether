@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use super::PluginManifestPreviewDto;
+use super::{PluginCapabilitiesDto, PluginManifestPreviewDto};
 
 /// Generic provider-agnostic plugin preview for the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -9,12 +9,17 @@ pub struct ProviderPluginPreviewDto {
     pub owner: String,
     pub repo: String,
     pub manifest: Option<PluginManifestPreviewDto>,
-    pub capabilities: Option<String>,
+    pub capabilities: Option<PluginCapabilitiesDto>,
     pub releases: Vec<ProviderReleaseInfoDto>,
 }
 
 impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPluginPreviewDto {
     fn from(value: aether_core::features::plugins::ProviderPluginPreview) -> Self {
+        let capabilities = value
+            .capabilities
+            .as_deref()
+            .and_then(|raw| serde_json::from_str::<PluginCapabilitiesDto>(raw).ok());
+
         Self {
             owner: value.owner,
             repo: value.repo,
@@ -27,7 +32,7 @@ impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPlu
                 license: m.license,
                 api_version: m.api_version,
             }),
-            capabilities: value.capabilities,
+            capabilities,
             releases: value
                 .releases
                 .into_iter()

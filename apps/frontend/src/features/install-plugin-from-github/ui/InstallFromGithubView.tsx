@@ -6,42 +6,25 @@ import {
   type Component,
 } from 'solid-js';
 
+import type { ProviderPluginPreviewDto } from '@/entities/plugins';
+
 import {
-  PluginCapabilitiesSection,
-  PluginInfoHeader,
   useInstallPluginFromProvider,
   usePluginPreview,
-  type PluginCapabilities,
 } from '@/entities/plugins';
+import { debounce } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-import {
-  Button,
-  CombinedSelect,
-  CombinedTextField,
-  FieldLabel,
-  Image,
-  Separator,
-} from '@/shared/ui';
+import { CombinedTextField } from '@/shared/ui';
+
+import type { ReleaseOption } from './PluginPreviewCard';
+
+import { PluginPreviewCard } from './PluginPreviewCard';
 
 export type InstallFromGithubViewProps = {
   onInstalled?: () => void;
 };
 
-interface ReleaseOption {
-  value: string;
-  label: string;
-}
-
-const tryParseCapabilities = (
-  raw: string | null,
-): PluginCapabilities | null => {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as PluginCapabilities;
-  } catch {
-    return null;
-  }
-};
+const DEBOUNCE_MS = 500;
 
 export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   props,
@@ -49,53 +32,40 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const [{ t }] = useTranslation();
 
   const [url, setUrl] = createSignal('');
-  const [shouldFetch, setShouldFetch] = createSignal(false);
-  const [selectedTag, setSelectedTag] = createSignal('');
+  const [debouncedUrl, setDebouncedUrl] = createSignal('');
 
-  const previewQuery = usePluginPreview(() =>
-    shouldFetch() ? url().trim() : '',
+  const debounceUrl = debounce(
+    (value: string) => setDebouncedUrl(value),
+    DEBOUNCE_MS,
   );
+
+  const handleUrlChange = (value: string) => {
+    setUrl(value);
+    debounceUrl(value);
+  };
+
+  const handleUrlClear = () => {
+    setUrl('');
+    setDebouncedUrl('');
+  };
+
+  const previewQuery = usePluginPreview(debouncedUrl);
   const installMutation = useInstallPluginFromProvider();
+
+  const previewData = createMemo<ProviderPluginPreviewDto | null | undefined>(
+    () => previewQuery.data,
+  );
+
+  const [selectedTag, setSelectedTag] = createSignal('');
 
   // Auto-select first release when preview loads
   createEffect(() => {
-    const data = previewQuery.data as
-      | { releases: Array<{ tag_name: string }> }
-      | undefined;
-    if (data && data.releases.length > 0 && !selectedTag()) {
-      setSelectedTag(data.releases[0]!.tag_name);
+    const data = previewData();
+    const firstRelease = data?.releases?.[0];
+    if (firstRelease && !selectedTag()) {
+      setSelectedTag(firstRelease.tag_name);
     }
   });
-
-  const previewData = createMemo(() => {
-    const result = previewQuery.data as
-      | {
-          owner: string;
-          repo: string;
-          manifest: {
-            id: string;
-            name: string;
-            version: string;
-            description: string | null;
-            authors: string[];
-            license: string | null;
-            api_version: string | null;
-          } | null;
-          capabilities: string | null;
-          releases: Array<{
-            tag_name: string;
-            version: string;
-            is_prerelease: boolean;
-            download_url: string;
-          }>;
-        }
-      | undefined;
-    return result ?? null;
-  });
-
-  const capabilities = createMemo(() =>
-    tryParseCapabilities(previewData()?.capabilities ?? null),
-  );
 
   const releaseOptions = createMemo<ReleaseOption[]>(() => {
     const p = previewData();
@@ -112,16 +82,6 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     if (option) setSelectedTag(option.value);
   };
 
-  const currentReleaseOption = createMemo(
-    () => releaseOptions().find((r) => r.value === selectedTag()) ?? null,
-  );
-
-  const handlePreview = () => {
-    if (!url().trim()) return;
-    setSelectedTag('');
-    setShouldFetch(true);
-  };
-
   const handleInstall = async () => {
     const p = previewData();
     const tag = selectedTag();
@@ -132,7 +92,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
     try {
       await installMutation.mutateAsync({
-        identifier: url().trim(),
+        identifier: debouncedUrl(),
         downloadUrl: release.download_url,
         tagName: release.tag_name,
         version: release.version,
@@ -143,106 +103,51 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     }
   };
 
-  const handleReset = () => {
-    setShouldFetch(false);
-    setUrl('');
-    setSelectedTag('');
-  };
-
-  const authorsStr = () => previewData()?.manifest?.authors?.join(', ');
+  const authorsStr = createMemo(() => {
+    const authors = previewData()?.manifest?.authors;
+    return authors ? authors.join(', ') : undefined;
+  });
 
   return (
     <div class='flex flex-col gap-4'>
       {/* URL input row */}
-      <div class='flex items-end gap-2'>
-        <CombinedTextField
-          class='flex-1'
-          label={t('plugins.githubUrl')}
-          inputProps={{
-            placeholder: 'https://github.com/owner/repo',
-          }}
-          value={url()}
-          onChange={setUrl}
-        />
-        <Button
-          variant='default'
-          onClick={handlePreview}
-          disabled={previewQuery.isLoading || !url().trim()}
-        >
-          <Show when={!previewQuery.isLoading} fallback={t('common.loading')}>
-            {t('plugins.preview')}
-          </Show>
-        </Button>
-      </div>
+      <CombinedTextField
+        class='flex-1'
+        label={t('plugins.githubUrl')}
+        inputProps={{
+          placeholder: 'https://github.com/owner/repo',
+        }}
+        value={url()}
+        onChange={handleUrlChange}
+      />
+
+      {/* Loading indicator */}
+      <Show when={previewQuery.isLoading}>
+        <p class='text-sm text-muted-foreground'>{t('common.loading')}</p>
+      </Show>
 
       {/* Error message */}
       <Show when={previewQuery.isError}>
         <p class='text-sm text-destructive'>
           {previewQuery.error instanceof Error
             ? previewQuery.error.message
-            : String(t('plugins.githubPreviewError') ?? 'Preview failed')}
+            : t('plugins.githubPreviewError')}
         </p>
       </Show>
 
       {/* Preview card */}
       <Show when={previewData()}>
         {(p) => (
-          <div class='flex flex-col gap-4 rounded-lg border p-4'>
-            {/* Header: icon + info row */}
-            <div class='flex items-center gap-4'>
-              <Image class='h-[124px] w-max' />
-              <PluginInfoHeader
-                class='flex-1'
-                name={p().manifest?.name ?? p().repo}
-                version={p().manifest?.version ?? ''}
-                apiVersion={p().manifest?.api_version ?? null}
-                authors={authorsStr()}
-                description={p().manifest?.description ?? null}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Capabilities */}
-            <PluginCapabilitiesSection capabilities={capabilities()} />
-
-            {/* License */}
-            <Show when={p().manifest?.license}>
-              <span class='text-sm text-muted-foreground'>
-                {t('plugins.pluginLicense')}: {p().manifest!.license}
-              </span>
-            </Show>
-
-            {/* Version selector */}
-            <Show when={releaseOptions().length > 0}>
-              <div class='flex flex-col gap-2'>
-                <FieldLabel>{t('plugins.selectVersion')}</FieldLabel>
-                <CombinedSelect
-                  options={releaseOptions()}
-                  optionValue='value'
-                  optionTextValue='label'
-                  value={currentReleaseOption()}
-                  onChange={handleReleaseChange}
-                />
-              </div>
-            </Show>
-
-            {/* Actions row */}
-            <div class='flex justify-end gap-2'>
-              <Button variant='secondary' onClick={handleReset}>
-                {t('common.clear')}
-              </Button>
-              <Button
-                variant='default'
-                onClick={handleInstall}
-                disabled={!selectedTag() || installMutation.isPending}
-              >
-                {installMutation.isPending
-                  ? t('common.installing')
-                  : t('plugins.install')}
-              </Button>
-            </div>
-          </div>
+          <PluginPreviewCard
+            preview={p()}
+            releaseOptions={releaseOptions()}
+            selectedTag={selectedTag()}
+            onReleaseChange={handleReleaseChange}
+            onInstall={handleInstall}
+            onClear={handleUrlClear}
+            authors={authorsStr()}
+            isInstalling={installMutation.isPending}
+          />
         )}
       </Show>
     </div>

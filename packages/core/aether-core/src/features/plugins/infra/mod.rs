@@ -15,7 +15,9 @@ pub use extism::ExtismPluginLoader;
 pub use fs_plugin_settings_storage::FsPluginSettingsStorage;
 pub use fs_plugin_source_storage::FsPluginSourceStorage;
 pub use fs_plugin_storage::FsPluginStorage;
-pub use github_plugin::{GitHubPluginFetcher, GithubProvider};
+pub use github_plugin::{
+    GitHubPluginFetcher, GitHubPluginPreview, GitHubReleaseInfo, GithubProvider, PluginUpdateInfo,
+};
 pub use plugin_content_provider_proxy::PluginContentProviderProxy;
 pub use plugin_dtos_v1::*;
 pub use plugin_importer_proxy::PluginImporterProxy;

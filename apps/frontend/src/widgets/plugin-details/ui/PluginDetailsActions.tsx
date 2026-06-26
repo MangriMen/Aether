@@ -1,6 +1,7 @@
 import IconMdiDelete from '~icons/mdi/delete';
 import {
   createMemo,
+  Show,
   splitProps,
   type Component,
   type ComponentProps,
@@ -8,8 +9,11 @@ import {
 
 import {
   PluginUpdateButton,
+  useDisablePlugin,
+  useEnablePlugin,
   useRemovePlugin,
   useUpdatePlugin,
+  useUpdatesData,
   type Plugin,
 } from '@/entities/plugins';
 import { TogglePluginButton } from '@/features/toggle-plugin-button';
@@ -31,12 +35,25 @@ export const PluginDetailsActions: Component<PluginDetailsActionsProps> = (
 
   const removePlugin = useRemovePlugin();
   const updatePlugin = useUpdatePlugin();
+  const disablePlugin = useDisablePlugin();
+  const enablePlugin = useEnablePlugin();
 
-  const isMutating = createMemo(() => updatePlugin.isPending);
+  // Block ALL actions while any mutation is in-flight
+  const isMutating = createMemo(
+    () =>
+      updatePlugin.isPending ||
+      removePlugin.isPending ||
+      disablePlugin.isPending ||
+      enablePlugin.isPending,
+  );
 
   const handleRemove = () => {
     removePlugin.mutate(local.plugin.manifest.metadata.id);
   };
+
+  const pluginId = () => local.plugin.manifest.metadata.id;
+  const updates = useUpdatesData(pluginId);
+  const hasChecked = createMemo(() => updates.data != null);
 
   return (
     <div class={cn('flex items-center gap-2', local.class)} {...others}>
@@ -47,14 +64,16 @@ export const PluginDetailsActions: Component<PluginDetailsActionsProps> = (
         <Button
           variant='destructive'
           size='sm'
-          class='rounded-none border-0'
+          class={cn('rounded-none', { 'border-0': hasChecked() })}
           leadingIcon={IconMdiDelete}
           onClick={handleRemove}
           disabled={isMutating()}
         >
           {t('common.remove')}
         </Button>
-        <Separator orientation='vertical' />
+        <Show when={hasChecked()}>
+          <Separator orientation='vertical' />
+        </Show>
         <PluginVersionDropdown plugin={local.plugin} disabled={isMutating()} />
       </div>
     </div>

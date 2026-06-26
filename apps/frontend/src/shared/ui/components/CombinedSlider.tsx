@@ -4,7 +4,6 @@ import { Show, splitProps, type ValidComponent } from 'solid-js';
 
 import type { SliderRootProps } from '../uikit/Slider';
 
-import { cn } from '../../lib';
 import {
   Slider,
   SliderFill,
@@ -25,7 +24,7 @@ export const CombinedSlider = <T extends ValidComponent = 'div'>(
 
   return (
     <Slider
-      class={cn('w-[300px]', others.class)}
+      class={others.class}
       {...(others as PolymorphicProps<T, SliderRootProps<T>>)}
     >
       <Show when={local.withLabel}>

@@ -4,14 +4,13 @@ pub mod infra;
 
 // Domain (models + PluginInstance)
 pub use domain::{
-    ApiConfig, Compatibility, ExtractedPlugin, GitHubPluginPreview, GitHubReleaseInfo, LoadConfig,
-    LoadConfigType, ManifestError, PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities,
-    PluginCheckCompatibilityParams, PluginContent, PluginContentProviderCapability, PluginError,
-    PluginImportInstance, PluginImporterCapability, PluginInstance, PluginInternalEvent,
-    PluginManifest, PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource,
-    PluginSourceType, PluginState, PluginUpdateInfo, PluginUpdaterCapability, ProviderHandlers,
-    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
-    SerializableOutput,
+    ApiConfig, Compatibility, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError,
+    PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities, PluginCheckCompatibilityParams,
+    PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
+    PluginImporterCapability, PluginInstance, PluginInternalEvent, PluginManifest,
+    PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource, PluginSourceType,
+    PluginState, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
+    ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
 };
 
 // App (use cases, ports, services, DTOs)
@@ -20,14 +19,14 @@ pub use app::{
     ContentProviderCapabilityMetadataDto, DisablePluginUseCase, EditPluginSettings,
     EditPluginSettingsUseCase, EnablePluginUseCase, ForceEnablePluginUseCase,
     GetPluginApiVersionUseCase, GetPluginDtoUseCase, GetPluginSettingsUseCase,
-    ImportPluginsUseCase, ImporterCapabilityMetadataDto, InstallFromGithubUseCase,
-    ListPluginsDtoUseCase, LoadConfigDto, LoadConfigTypeDto, PathMappingDto, PluginCapabilitiesDto,
-    PluginContentProviderCapabilityDto, PluginDto, PluginDtoState, PluginExtractor,
-    PluginImporterCapabilityDto, PluginLoader, PluginLoaderRegistry, PluginManifestDto,
-    PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
-    PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginUpdaterCapabilityDto,
-    ProviderHandlersDto, RemovePluginUseCase, RuntimeConfigDto, SyncPluginsUseCase,
-    UpdatePluginUseCase, UpdaterCapabilityMetadataDto, write_bytes_to_temp_file,
+    ImportPluginsUseCase, ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, LoadConfigDto,
+    LoadConfigTypeDto, PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto,
+    PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
+    PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
+    PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
+    PluginStorage, PluginUpdaterCapabilityDto, ProviderHandlersDto, RemovePluginUseCase,
+    RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase, UpdaterCapabilityMetadataDto,
+    write_bytes_to_temp_file,
 };
 
 // Infrastructure re-exports (commonly used by app layer)

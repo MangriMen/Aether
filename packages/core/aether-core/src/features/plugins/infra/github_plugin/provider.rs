@@ -33,9 +33,8 @@ impl PluginProvider for GithubProvider {
 
     fn parse_identifier(&self, raw: &str) -> Result<String, PluginError> {
         let (owner, repo) = GitHubPluginFetcher::parse_github_url(raw).ok_or_else(|| {
-            PluginError::GitHubFetchError {
-                owner: "? ".to_string(),
-                repo: "? ".to_string(),
+            PluginError::ProviderFetchError {
+                source_type: PluginSourceType::GitHub,
                 details: format!("Cannot parse GitHub URL: {raw}"),
             }
         })?;

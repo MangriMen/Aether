@@ -36,8 +36,7 @@ use crate::{
             PluginRegistry,
             infra::{
                 ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage,
-                FsPluginStorage, GitHubPluginFetcher, GithubProvider, PluginInfrastructureListener,
-                ZipPluginExtractor,
+                FsPluginStorage, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
             },
         },
         process::infra::InMemoryProcessStorage,
@@ -104,7 +103,6 @@ pub struct LazyLocator {
     plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry<ExtismPluginLoader>>>,
     plugin_storage: OnceCell<Arc<FsPluginStorage>>,
     plugin_source_storage: OnceCell<Arc<FsPluginSourceStorage>>,
-    github_plugin_fetcher: OnceCell<Arc<GitHubPluginFetcher>>,
     plugin_provider_factory: OnceCell<Arc<PluginProviderFactory>>,
     event_emitter: OnceCell<SharedEventEmitter>,
     progress_bar_storage: OnceCell<Arc<InMemoryProgressBarStorage>>,
@@ -180,7 +178,6 @@ impl LazyLocator {
                     plugin_loader_registry: OnceCell::new(),
                     plugin_storage: OnceCell::new(),
                     plugin_source_storage: OnceCell::new(),
-                    github_plugin_fetcher: OnceCell::new(),
                     plugin_provider_factory: OnceCell::new(),
                     event_emitter: OnceCell::from(event_emitter),
                     progress_bar_storage: OnceCell::new(),
@@ -481,15 +478,6 @@ impl LazyLocator {
         self.plugin_source_storage
             .get_or_init(|| async {
                 Arc::new(FsPluginSourceStorage::new(self.location_info.clone()))
-            })
-            .await
-            .clone()
-    }
-
-    pub async fn get_github_plugin_fetcher(&self) -> Arc<GitHubPluginFetcher> {
-        self.github_plugin_fetcher
-            .get_or_init(|| async {
-                Arc::new(GitHubPluginFetcher::new(self.reqwest_client.clone()))
             })
             .await
             .clone()

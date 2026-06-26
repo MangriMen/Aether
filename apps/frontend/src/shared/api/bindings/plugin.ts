@@ -21,11 +21,9 @@ export const commands = {
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
 	openPluginsFolder: () => __TAURI_INVOKE<null>("plugin:plugin|open_plugins_folder"),
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
-	installFromGithub: (owner: string, repo: string, tag: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_from_github", { owner, repo, tag, requestId }),
-	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "git_hub"; owner: string; repo: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
+	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
 	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
 	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
-	previewPluginFromGithub: (url: string) => __TAURI_INVOKE<GitHubPluginPreviewDto>("plugin:plugin|preview_plugin_from_github", { url }),
 	getAvailableProviders: () => __TAURI_INVOKE<PluginSourceTypeDto[]>("plugin:plugin|get_available_providers"),
 	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier }),
 	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, downloadUrl: string, tagName: string, version: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, downloadUrl, tagName, version, requestId }),
@@ -107,26 +105,6 @@ export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto 
  *  but serve as a safety net to prevent silent crashes.
  */
 { type: "internal"; payload: string };
-
-export type GitHubPluginPreviewDto = {
-	owner: string,
-	repo: string,
-	manifest: PluginManifestPreviewDto | null,
-	capabilities: string | null,
-	releases: GitHubReleaseInfoDto[],
-};
-
-export type GitHubReleaseInfoDto = {
-	tag_name: string,
-	version: string,
-	is_prerelease: boolean,
-	published_at: string,
-	html_url: string,
-	zip_download_url: string,
-	manifest_download_url: string | null,
-	capabilities_download_url: string | null,
-	plugin_id: string | null,
-};
 
 export type ImporterCapabilityMetadataDto = {
 	/** Optional field label shown in the importer UI. */
@@ -336,19 +314,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
 	details: string,
-} } | { code: "GIT_HUB_FETCH_ERROR"; payload: {
-	owner: string,
-	repo: string,
+} } | { code: "PROVIDER_FETCH_ERROR"; payload: {
+	source_type: string,
 	details: string,
-} } | { code: "GIT_HUB_NO_ASSETS"; payload: {
-	owner: string,
-	repo: string,
-	tag: string,
-} } | { code: "NOT_A_GIT_HUB_PLUGIN"; payload: {
+} } | { code: "PROVIDER_NO_ASSETS"; payload: {
+	source_type: string,
+} } | { code: "NO_REMOTE_SOURCE"; payload: {
 	plugin_id: string,
 } } | { code: "DOWNLOAD_FAILED"; payload: {
 	url: string,
 	details: string,
+} } | { code: "PROVIDER_RATE_LIMITED"; payload: {
+	source_type: string,
+	retry_after: number | null,
 } };
 
 export type PluginEventDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
@@ -400,12 +378,9 @@ export type PluginSettingsDto = {
 	allowedPaths?: PathMappingDto[],
 };
 
-export type PluginSourceDto = { source: "git_hub"; owner: string; repo: string; current_tag: string; current_version: string } | { source: "local" };
+export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
 
-/**
- *  Provider source type for plugin installation.
- *  Mirrors `PluginSourceType` from the domain layer for the frontend.
- */
+/**  Provider source type for plugin installation. */
 export type PluginSourceTypeDto = "git_hub" | "local";
 
 /**
@@ -455,7 +430,7 @@ export type ProviderPluginPreviewDto = {
 	owner: string,
 	repo: string,
 	manifest: PluginManifestPreviewDto | null,
-	capabilities: string | null,
+	capabilities: PluginCapabilitiesDto | null,
 	releases: ProviderReleaseInfoDto[],
 };
 

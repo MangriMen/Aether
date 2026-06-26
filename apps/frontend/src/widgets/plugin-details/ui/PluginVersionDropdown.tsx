@@ -10,8 +10,8 @@ import {
 } from 'solid-js';
 
 import {
-  useCheckForUpdates,
-  usePluginSource,
+  useCheckPluginUpdates,
+  useUpdatesData,
   useUpdatePlugin,
   type Plugin,
 } from '@/entities/plugins';
@@ -24,7 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Skeleton,
 } from '@/shared/ui';
 
 export type PluginVersionDropdownProps = ComponentProps<'div'> & {
@@ -40,15 +39,18 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
   const [local] = splitProps(props, ['plugin', 'class', 'disabled']);
 
   const pluginId = () => local.plugin.manifest.metadata.id;
-  const source = usePluginSource(pluginId);
-  const updates = useCheckForUpdates(pluginId);
+  const updates = useUpdatesData(pluginId);
+  const checkUpdates = useCheckPluginUpdates();
   const updatePlugin = useUpdatePlugin();
 
   const [searchQuery, setSearchQuery] = createSignal('');
 
-  // Show dropdown for any plugin that has a stored source (GitHub, etc.)
-  // Local plugins have no source → no updates, so no dropdown
-  const hasSource = createMemo(() => source.data != null);
+  // Show dropdown for any plugin that has cached updates
+  const hasChecked = createMemo(() => updates.data != null);
+
+  const isDisabled = createMemo(
+    () => local.disabled || updatePlugin.isPending || checkUpdates.isPending,
+  );
 
   const filteredVersions = createMemo(() => {
     const all = updates.data?.all_releases ?? [];
@@ -57,12 +59,16 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
     return all.filter((r) => r.tag_name.toLowerCase().includes(query));
   });
 
+  const handleCheckUpdates = () => {
+    checkUpdates.mutate(pluginId());
+  };
+
   const handleSwitchVersion = (tag: string) => {
     updatePlugin.mutate({ id: pluginId(), targetTag: tag });
   };
 
   return (
-    <Show when={hasSource()}>
+    <Show when={hasChecked() || checkUpdates.isPending}>
       <DropdownMenu>
         <DropdownMenuTrigger
           as={Button<'button'>}
@@ -70,56 +76,69 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
           size='sm'
           class='aspect-square rounded-none border-0 p-0 text-base'
           aria-label={t('plugins.switchVersion')}
-          disabled={local.disabled}
+          disabled={isDisabled()}
         >
           <IconMdiChevronDown />
         </DropdownMenuTrigger>
         <DropdownMenuContent class='min-w-52 rounded-lg'>
-          <Show when={source.isLoading || updates.isLoading}>
-            <div class='flex flex-col gap-0.5'>
-              <Skeleton height={32} class='w-full rounded-md' />
-              <Skeleton height={32} class='w-full rounded-md' />
-              <Skeleton height={32} class='w-full rounded-md' />
-              <Skeleton height={32} class='w-full rounded-md' />
-            </div>
-          </Show>
-
-          {/* Search input */}
-          <Show when={updates.data && updates.data.all_releases.length > 0}>
-            <CombinedTextField
-              class='p-1'
-              value={searchQuery()}
-              onChange={setSearchQuery}
-              inputProps={{
-                placeholder: t('plugins.searchVersion'),
-              }}
-            />
-            <DropdownMenuSeparator />
-            <div class='max-h-60 overflow-y-auto'>
-              <For each={filteredVersions()}>
-                {(release) => (
-                  <DropdownMenuItem
-                    as={Button}
-                    variant='ghost'
-                    class='w-full justify-start'
-                    onClick={() => handleSwitchVersion(release.tag_name)}
-                    disabled={release.tag_name === updates.data?.current_tag}
-                  >
-                    <span>{release.tag_name}</span>
-                    <Show when={release.tag_name === updates.data?.current_tag}>
-                      <span class='ml-auto text-xs text-muted-foreground'>
-                        {t('common.current')}
-                      </span>
-                    </Show>
-                  </DropdownMenuItem>
-                )}
-              </For>
-              <Show when={filteredVersions().length === 0}>
-                <div class='px-2 py-3 text-center text-sm text-muted-foreground'>
-                  {t('plugins.noVersionsFound')}
-                </div>
-              </Show>
-            </div>
+          <Show
+            when={hasChecked()}
+            fallback={
+              <div class='p-2'>
+                <Button
+                  variant='default'
+                  size='sm'
+                  class='w-full'
+                  onClick={handleCheckUpdates}
+                  disabled={checkUpdates.isPending}
+                  loading={checkUpdates.isPending}
+                >
+                  {t('plugins.checkUpdates')}
+                </Button>
+              </div>
+            }
+          >
+            <Show when={updates.data && updates.data.all_releases.length > 0}>
+              <CombinedTextField
+                class='p-1'
+                value={searchQuery()}
+                onChange={setSearchQuery}
+                inputProps={{
+                  placeholder: t('plugins.searchVersion'),
+                }}
+              />
+              <DropdownMenuSeparator />
+              <div class='max-h-60 overflow-y-auto'>
+                <For each={filteredVersions()}>
+                  {(release) => (
+                    <DropdownMenuItem
+                      as={Button}
+                      variant='ghost'
+                      class='w-full justify-start'
+                      onClick={() => handleSwitchVersion(release.tag_name)}
+                      disabled={
+                        isDisabled() ||
+                        release.tag_name === updates.data?.current_tag
+                      }
+                    >
+                      <span>{release.tag_name}</span>
+                      <Show
+                        when={release.tag_name === updates.data?.current_tag}
+                      >
+                        <span class='ml-auto text-xs text-muted-foreground'>
+                          {t('common.current')}
+                        </span>
+                      </Show>
+                    </DropdownMenuItem>
+                  )}
+                </For>
+                <Show when={filteredVersions().length === 0}>
+                  <div class='px-2 py-3 text-center text-sm text-muted-foreground'>
+                    {t('plugins.noVersionsFound')}
+                  </div>
+                </Show>
+              </div>
+            </Show>
           </Show>
         </DropdownMenuContent>
       </DropdownMenu>

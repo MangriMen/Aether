@@ -41,7 +41,7 @@ const PaginationItem = <T extends ValidComponent = 'button'>(
         buttonVariants({
           variant: 'ghost',
         }),
-        'size-10 p-0 data-[current]:bg-secondary/secondary border',
+        'size-9 p-0 data-[current]:bg-secondary/secondary border',
         local.class,
       )}
       {...others}
@@ -65,7 +65,7 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
 
   return (
     <PaginationPrimitive.Ellipsis
-      class={cn('flex size-10 items-center justify-center', local.class)}
+      class={cn('flex size-9 items-center justify-center', local.class)}
       {...others}
     >
       <svg
@@ -109,7 +109,7 @@ const PaginationPrevious = <T extends ValidComponent = 'button'>(
         buttonVariants({
           variant: 'ghost',
         }),
-        'gap-1 p-0 size-10',
+        'gap-1 p-0 size-9',
         local.class,
       )}
       {...others}
@@ -157,7 +157,7 @@ const PaginationNext = <T extends ValidComponent = 'button'>(
         buttonVariants({
           variant: 'ghost',
         }),
-        'gap-1 p-0 size-10',
+        'gap-1 p-0 size-9',
         local.class,
       )}
       {...others}

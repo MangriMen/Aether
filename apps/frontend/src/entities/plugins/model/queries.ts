@@ -163,39 +163,35 @@ export const useRemovePlugin = () => {
 
 // ── GitHub / Remote source hooks ──
 
-export const usePluginSource = (id: Accessor<PluginId>) =>
-  useQuery(() => pluginsQueries.source(id()));
+/** Read previously fetched updates data from cache (does NOT auto-fetch). */
+export const useUpdatesData = (id: Accessor<PluginId>) =>
+  useQuery(() => ({
+    ...pluginsQueries.updates(id()),
+    enabled: false,
+  }));
 
-export const useCheckForUpdates = (id: Accessor<PluginId>) =>
-  useQuery(() => pluginsQueries.updates(id()));
-
-export const usePluginPreview = (url: Accessor<string>) =>
-  useQuery(() => pluginsQueries.preview(url()));
-
-export const useInstallFromGithub = () => {
-  const [{ t }] = useTranslation();
+/** Manually check for updates and cache the result. */
+export const useCheckPluginUpdates = () => {
   const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
 
   return useMutation(() => ({
-    mutationFn: ({
-      owner,
-      repo,
-      tag,
-    }: {
-      owner: string;
-      repo: string;
-      tag: string;
-    }) => pluginsCommands.installFromGithub(owner, repo, tag),
-    onSuccess: () => pluginsCache.invalidate.all(queryClient),
+    mutationFn: (id: string) => pluginsCommands.checkForUpdates(id),
+    onSuccess: (data, id) => {
+      queryClient.setQueryData(pluginKeys.updates(id), data);
+    },
     onError: (err) => {
       showError({
-        title: t('plugins.installFromGithubError'),
+        title: t('plugins.updateCheckError'),
         err,
         t,
       });
     },
   }));
 };
+
+export const usePluginPreview = (url: Accessor<string>) =>
+  useQuery(() => pluginsQueries.preview(url()));
 
 export const useUpdatePlugin = () => {
   const [{ t }] = useTranslation();
@@ -204,7 +200,10 @@ export const useUpdatePlugin = () => {
   return useMutation(() => ({
     mutationFn: ({ id, targetTag }: { id: string; targetTag?: string }) =>
       pluginsCommands.updatePlugin(id, targetTag ?? null),
-    onSuccess: (_, { id }) => pluginsCache.invalidate.full(queryClient, id),
+    onSuccess: async (_, { id }) => {
+      await pluginsCache.invalidate.full(queryClient, id);
+      await queryClient.fetchQuery(pluginsQueries.updates(id));
+    },
     onError: (err, { id }) => {
       const plugin = pluginsCache.getData.fromList(queryClient, id);
 

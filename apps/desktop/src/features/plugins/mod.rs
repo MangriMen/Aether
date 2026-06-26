@@ -6,8 +6,6 @@ pub use infra::tauri::commands::get_specta_events;
 pub(crate) use infra::tauri::commands::init;
 pub use infra::tauri::dtos::ApiConfigDto;
 pub use infra::tauri::dtos::EditPluginSettingsDto;
-pub use infra::tauri::dtos::GitHubPluginPreviewDto;
-pub use infra::tauri::dtos::GitHubReleaseInfoDto;
 pub use infra::tauri::dtos::LoadConfigDto;
 pub use infra::tauri::dtos::LoadConfigTypeDto;
 pub use infra::tauri::dtos::PathMappingDto;
