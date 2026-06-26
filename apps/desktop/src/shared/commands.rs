@@ -109,6 +109,12 @@ macro_rules! plugin_commands {
             edit_settings,
             open_plugins_folder,
             get_api_version,
+            get_plugin_source,
+            check_for_updates,
+            update_plugin,
+            get_available_providers,
+            preview_plugin_from_provider,
+            install_plugin_from_provider,
         ]
     };
 }

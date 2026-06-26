@@ -230,6 +230,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
 	details: string,
+} } | { code: "PROVIDER_FETCH_ERROR"; payload: {
+	source_type: string,
+	details: string,
+} } | { code: "PROVIDER_NO_ASSETS"; payload: {
+	source_type: string,
+} } | { code: "NO_REMOTE_SOURCE"; payload: {
+	plugin_id: string,
+} } | { code: "DOWNLOAD_FAILED"; payload: {
+	url: string,
+	details: string,
+} } | { code: "PROVIDER_RATE_LIMITED"; payload: {
+	source_type: string,
+	retry_after: number | null,
 } };
 
 export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {

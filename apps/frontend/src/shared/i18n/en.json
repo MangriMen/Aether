@@ -116,7 +116,12 @@
       "ACCESS_VIOLATION": "Plugin access violation",
       "HASH_COMPUTATION_FAILED": "Failed to compute plugin hash",
       "SETTINGS": "Plugin settings error",
-      "STORAGE": "Plugin storage error"
+      "STORAGE": "Plugin storage error",
+      "PROVIDER_FETCH_ERROR": "Failed to fetch plugin info from provider",
+      "PROVIDER_NO_ASSETS": "No suitable release assets found",
+      "NO_REMOTE_SOURCE": "Plugin has no remote source configured",
+      "PROVIDER_RATE_LIMITED": "Provider rate limit exceeded. Please wait {retry_after, plural, one {1 second} other {{retry_after} seconds}} before trying again.",
+      "DOWNLOAD_FAILED": "Failed to download plugin"
     },
     "process": {
       "KILL_ERROR": "Failed to terminate process",
@@ -178,7 +183,11 @@
     "close": "Close",
     "incompatible": "Incompatible",
     "error": "Error",
-    "noData": "No data to display"
+    "noData": "No data to display",
+    "loading": "Loading...",
+    "clear": "Clear",
+    "current": "Current",
+    "updating": "Updating..."
   },
   "content": {
     "backToInstance": "Back to instance",
@@ -329,7 +338,36 @@
     "openPluginsFolderError": "Failed to open plugins folder",
     "importFromPackage": "Import",
     "failedToRemove": "Failed to remove plugin {{name}}",
-    "failedToImport": "Failed to import plugin"
+    "failedToImport": "Failed to import plugin",
+    "installFromGithub": "Install from GitHub",
+    "githubOwner": "Owner",
+    "githubRepo": "Repository",
+    "githubTag": "Release tag",
+    "install": "Install",
+    "installFromGithubError": "Failed to install plugin from GitHub",
+    "failedToUpdatePlugin": "Failed to update plugin {{name}}",
+    "addPlugin": "Add plugin",
+    "back": "Back to plugins",
+    "addTitle": "Add plugin",
+    "githubUrl": "GitHub URL",
+    "preview": "Preview",
+    "githubPreviewError": "Failed to preview plugin",
+    "selectVersion": "Select version",
+    "prerelease": "Pre-release",
+    "switchVersion": "Switch to version",
+    "pluginCapabilities": "Capabilities",
+    "pluginLicense": "License",
+    "pluginId": "Plugin ID",
+    "pluginVersion": "Version",
+    "pluginAuthors": "Authors",
+    "searchVersion": "Search version...",
+    "noVersionsFound": "No versions found",
+    "updateAvailable": "Update available",
+    "update": "Update",
+    "restartPlugin": "Restart to apply",
+    "checkUpdates": "Check for updates",
+    "upToDate": "Up to date",
+    "updateCheckError": "Failed to check for updates"
   },
   "progress": {
     "seeDetails": "See details",
@@ -432,7 +470,8 @@
     "forceEnableDescription": "This plugin requires a newer version of the launcher API. It may not work correctly or could cause crashes. Do you want to enable it anyway?",
     "forceEnableConfirm": "Enable anyway",
     "forceEnableCancel": "Cancel",
-    "updaters": "Updaters"
+    "updaters": "Updaters",
+    "contentProviders": "Content Providers"
   },
   "pluginSettings": {
     "hostPathPlaceholder": "Enter host path",

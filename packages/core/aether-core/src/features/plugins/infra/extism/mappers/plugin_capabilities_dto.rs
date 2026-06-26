@@ -18,6 +18,7 @@ use crate::features::{
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
     fn from(v: PluginCapabilities) -> Self {
         Self {
+            dollar_schema: None,
             importers: v.importers.into_iter().map(Into::into).collect(),
             updaters: v.updaters.into_iter().map(Into::into).collect(),
             content_providers: v.content_providers.into_iter().map(Into::into).collect(),

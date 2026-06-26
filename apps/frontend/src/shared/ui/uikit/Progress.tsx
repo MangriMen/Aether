@@ -6,8 +6,7 @@ import * as ProgressPrimitive from '@kobalte/core/progress';
 import { cva } from 'class-variance-authority';
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-
+import { cn } from '../../lib';
 import { Label } from './Label';
 
 const progressVariants = cva('', {

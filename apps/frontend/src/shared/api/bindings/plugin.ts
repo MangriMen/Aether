@@ -21,6 +21,12 @@ export const commands = {
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
 	openPluginsFolder: () => __TAURI_INVOKE<null>("plugin:plugin|open_plugins_folder"),
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
+	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
+	checkForUpdates: (id: string) => __TAURI_INVOKE<PluginUpdateInfoDto>("plugin:plugin|check_for_updates", { id }),
+	updatePlugin: (id: string, targetTag: string | null, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|update_plugin", { id, targetTag, requestId }),
+	getAvailableProviders: () => __TAURI_INVOKE<PluginSourceTypeDto[]>("plugin:plugin|get_available_providers"),
+	previewPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string) => __TAURI_INVOKE<ProviderPluginPreviewDto>("plugin:plugin|preview_plugin_from_provider", { sourceType, identifier }),
+	installPluginFromProvider: (sourceType: PluginSourceTypeDto, identifier: string, downloadUrl: string, tagName: string, version: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:plugin|install_plugin_from_provider", { sourceType, identifier, downloadUrl, tagName, version, requestId }),
 };
 
 /** Events */
@@ -308,6 +314,19 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
 	details: string,
+} } | { code: "PROVIDER_FETCH_ERROR"; payload: {
+	source_type: string,
+	details: string,
+} } | { code: "PROVIDER_NO_ASSETS"; payload: {
+	source_type: string,
+} } | { code: "NO_REMOTE_SOURCE"; payload: {
+	plugin_id: string,
+} } | { code: "DOWNLOAD_FAILED"; payload: {
+	url: string,
+	details: string,
+} } | { code: "PROVIDER_RATE_LIMITED"; payload: {
+	source_type: string,
+	retry_after: number | null,
 } };
 
 export type PluginEventDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
@@ -329,6 +348,16 @@ export type PluginManifestDto = {
 	api: ApiConfigDto,
 };
 
+export type PluginManifestPreviewDto = {
+	id: string,
+	name: string,
+	version: string,
+	description: string | null,
+	authors: string[],
+	license: string | null,
+	api_version: string | null,
+};
+
 export type PluginMetadataDto = {
 	/**  Unique identifier for the plugin (lowercase, kebab-case). */
 	id: string,
@@ -347,6 +376,24 @@ export type PluginMetadataDto = {
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
 	allowedPaths?: PathMappingDto[],
+};
+
+export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
+
+/**  Provider source type for plugin installation. */
+export type PluginSourceTypeDto = "git_hub" | "local";
+
+/**
+ *  Provider-agnostic plugin update info.
+ *  Uses `ProviderReleaseInfoDto` for releases so it works with any source type.
+ */
+export type PluginUpdateInfoDto = {
+	current_version: string,
+	current_tag: string,
+	latest_version: string | null,
+	latest_tag: string | null,
+	has_update: boolean,
+	all_releases: ProviderReleaseInfoDto[],
 };
 
 export type PluginUpdaterCapabilityDto = {
@@ -376,6 +423,24 @@ export type ProviderHandlersDto = {
 	installModpack: string | null,
 	/**  Optional function to check if a specific content item is compatible with current environment. */
 	checkCompatibility: string | null,
+};
+
+/**  Generic provider-agnostic plugin preview for the frontend. */
+export type ProviderPluginPreviewDto = {
+	owner: string,
+	repo: string,
+	manifest: PluginManifestPreviewDto | null,
+	capabilities: PluginCapabilitiesDto | null,
+	releases: ProviderReleaseInfoDto[],
+};
+
+export type ProviderReleaseInfoDto = {
+	tag_name: string,
+	version: string,
+	is_prerelease: boolean,
+	published_at: string,
+	html_url: string,
+	download_url: string,
 };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {

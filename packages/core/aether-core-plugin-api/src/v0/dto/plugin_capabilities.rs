@@ -11,6 +11,12 @@ use crate::v0::{
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
 pub struct PluginCapabilitiesDto {
+    /// Optional URI pointing to the JSON Schema for this capabilities file.
+    /// Ignored during parsing — reserved for editor tooling and validation.
+    #[serde(rename = "$schema", default, skip_serializing)]
+    #[schemars(skip)]
+    pub dollar_schema: Option<String>,
+
     /// List of supported modpack importers provided by the plugin.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub importers: Vec<PluginImporterCapabilityDto>,

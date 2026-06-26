@@ -5,7 +5,8 @@ use tauri::State;
 
 use crate::FrontendResult;
 use crate::features::plugins::{
-    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto,
+    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
+    PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
 };
 use crate::shared::reveal_in_explorer::infra::reveal_in_explorer;
 use crate::shared::{
@@ -199,4 +200,94 @@ async fn get_api_version() -> FrontendResult<semver::Version> {
     Ok(aether_core::api::plugin::get_api_version()
         .await
         .map_err(crate::Error::from)?)
+}
+
+// ── Provider factory commands ──
+
+#[tauri::command]
+#[specta::specta]
+async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
+    Ok(aether_core::api::plugin::get_available_providers()
+        .await
+        .map_err(crate::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+// ── Remote source commands ──
+
+#[tauri::command]
+#[specta::specta]
+async fn get_plugin_source(id: String) -> FrontendResult<Option<PluginSourceDto>> {
+    Ok(aether_core::api::plugin::get_plugin_source(id)
+        .await
+        .map_err(crate::Error::from)?
+        .map(Into::into))
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn check_for_updates(id: String) -> FrontendResult<PluginUpdateInfoDto> {
+    Ok(aether_core::api::plugin::check_for_updates(id)
+        .await
+        .map_err(crate::Error::from)?
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn update_plugin(
+    id: String,
+    target_tag: Option<String>,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    Ok(aether_core::api::plugin::update_plugin(id, target_tag)
+        .await
+        .map_err(crate::Error::from)?)
+}
+
+// ── Generic provider-based commands ──
+
+#[tauri::command]
+#[specta::specta]
+async fn preview_plugin_from_provider(
+    source_type: PluginSourceTypeDto,
+    identifier: String,
+) -> FrontendResult<ProviderPluginPreviewDto> {
+    let st: aether_core::features::plugins::PluginSourceType = source_type.into();
+    Ok(
+        aether_core::api::plugin::preview_plugin_from_provider(st.to_string(), identifier)
+            .await
+            .map_err(crate::Error::from)?
+            .into(),
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn install_plugin_from_provider(
+    source_type: PluginSourceTypeDto,
+    identifier: String,
+    download_url: String,
+    tag_name: String,
+    version: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+) -> FrontendResult<String> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+    let st: aether_core::features::plugins::PluginSourceType = source_type.into();
+
+    Ok(aether_core::api::plugin::install_plugin_from_provider(
+        st.to_string(),
+        identifier,
+        download_url,
+        tag_name,
+        version,
+    )
+    .await
+    .map_err(crate::Error::from)?)
 }

@@ -11,10 +11,17 @@ import {
   Image,
 } from '@/shared/ui';
 
-import type { ImporterCapability, UpdaterCapability } from '../model';
+import type {
+  ContentProviderCapability,
+  ImporterCapability,
+  UpdaterCapability,
+} from '../model';
 
 export type PluginImporterProps = ComponentProps<'div'> & {
-  capability: ImporterCapability | UpdaterCapability;
+  capability:
+    | ImporterCapability
+    | UpdaterCapability
+    | ContentProviderCapability;
 };
 
 export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {

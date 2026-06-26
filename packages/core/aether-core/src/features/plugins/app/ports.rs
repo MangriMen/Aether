@@ -7,8 +7,15 @@ use tokio::sync::Mutex;
 
 use crate::features::plugins::domain::PluginInstance;
 use crate::features::plugins::{
-    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginSettings,
+    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginSettings, PluginSource,
 };
+
+#[async_trait]
+pub trait PluginSourceStorage: Send + Sync {
+    async fn save(&self, plugin_id: &str, source: &PluginSource) -> Result<(), PluginError>;
+    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError>;
+    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
+}
 
 #[async_trait]
 pub trait PluginLoader: Send + Sync {

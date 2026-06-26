@@ -160,3 +160,99 @@ export const useRemovePlugin = () => {
     },
   }));
 };
+
+// ── GitHub / Remote source hooks ──
+
+/** Read previously fetched updates data from cache (does NOT auto-fetch). */
+export const useUpdatesData = (id: Accessor<PluginId>) =>
+  useQuery(() => ({
+    ...pluginsQueries.updates(id()),
+    enabled: false,
+  }));
+
+/** Manually check for updates and cache the result. */
+export const useCheckPluginUpdates = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: (id: string) => pluginsCommands.checkForUpdates(id),
+    onSuccess: (data, id) => {
+      queryClient.setQueryData(pluginKeys.updates(id), data);
+    },
+    onError: (err) => {
+      showError({
+        title: t('plugins.updateCheckError'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const usePluginPreview = (url: Accessor<string>) =>
+  useQuery(() => pluginsQueries.preview(url()));
+
+export const useUpdatePlugin = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({ id, targetTag }: { id: string; targetTag?: string }) =>
+      pluginsCommands.updatePlugin(id, targetTag ?? null),
+    onSuccess: async (_, { id }) => {
+      await pluginsCache.invalidate.full(queryClient, id);
+      await queryClient.fetchQuery(pluginsQueries.updates(id));
+    },
+    onError: (err, { id }) => {
+      const plugin = pluginsCache.getData.fromList(queryClient, id);
+
+      const name =
+        plugin?.manifest.metadata.name ??
+        plugin?.manifest.metadata.id ??
+        '"unknown"';
+
+      showError({
+        title: t('plugins.failedToUpdatePlugin', {
+          name,
+        }),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useInstallPluginFromProvider = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      identifier,
+      downloadUrl,
+      tagName,
+      version,
+    }: {
+      identifier: string;
+      downloadUrl: string;
+      tagName: string;
+      version: string;
+    }) =>
+      pluginsCommands.installPluginFromProvider(
+        'git_hub',
+        identifier,
+        downloadUrl,
+        tagName,
+        version,
+      ),
+    onSuccess: () => pluginsCache.invalidate.all(queryClient),
+    onError: (err) => {
+      showError({
+        title: t('plugins.installFromGithubError'),
+        err,
+        t,
+      });
+    },
+  }));
+};

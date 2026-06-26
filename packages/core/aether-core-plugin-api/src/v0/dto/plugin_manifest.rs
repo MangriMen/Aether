@@ -8,6 +8,13 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
 pub struct PluginManifestDto {
+    /// Optional URI pointing to the JSON Schema for this manifest version.
+    /// Ignored during parsing — reserved for editor tooling and validation.
+    /// Follows the JSON Schema specification: "$schema" keyword.
+    #[serde(rename = "$schema", default, skip_serializing)]
+    #[schemars(skip)]
+    pub dollar_schema: Option<String>,
+
     /// Information about the plugin identity.
     pub metadata: PluginMetadataDto,
     /// Sandbox and security restrictions for the plugin.
