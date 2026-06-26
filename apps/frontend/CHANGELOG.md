@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-26
+
 ### Added
 
 - **Plugin Management**: Added the ability to install plugins directly from GitHub repositories (in addition to local archive imports).
