@@ -36,7 +36,7 @@ export const ContentProviderSelect = <
       <Show
         when={!local.isLoading}
         fallback={
-          <div class='flex size-full h-10 w-32'>
+          <div class='flex size-full h-9 w-32'>
             <Skeleton radius={6} />
           </div>
         }

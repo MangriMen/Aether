@@ -39,7 +39,7 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        'flex h-10 w-full items-center justify-between data-[invalid]:border-destructive rounded-md border  bg-card/card enabled:hover:bg-card/hover px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-9 w-full items-center justify-between data-[invalid]:border-destructive rounded-md border  bg-card/card enabled:hover:bg-card/hover px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
         local.class,
       )}
       {...others}

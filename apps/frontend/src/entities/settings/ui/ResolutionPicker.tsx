@@ -155,7 +155,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
       {...others}
     >
       <div class='flex flex-col gap-2'>
-        <div class='flex h-10 w-min items-center rounded-md border bg-card/card pr-2 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring'>
+        <div class='flex h-9 w-min items-center rounded-md border bg-card/card pr-2 focus-within:bg-background focus-within:ring-2 focus-within:ring-ring'>
           <div class='flex'>
             <Field of={local.form} name='resolution.width'>
               {(field, inputProps) => (

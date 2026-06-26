@@ -35,7 +35,7 @@ const TabsList = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.List
       class={cn(
-        'inline-flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-full h-10 gap-0.5 items-center justify-center rounded-md bg-card/card p-1 text-muted-foreground',
+        'inline-flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-full h-9 gap-0.5 items-center justify-center rounded-md bg-card/card p-1 text-muted-foreground',
         local.class,
       )}
       {...others}
