@@ -2,10 +2,17 @@
   "name": "@aether/monorepo",
   "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalogs": {
+      "build": {
+        "@tauri-apps/cli": "^2.11.3"
+      }
+    }
+  },
   "scripts": {
     "aether:bump": "bun --filter @aether/frontend run bump",
     "build": "turbo run build --continue",

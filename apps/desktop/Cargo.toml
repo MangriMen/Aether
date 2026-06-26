@@ -16,6 +16,18 @@ ignored = ["serde_json"]
 name = "aether_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[[bin]]
+name = "aether"
+path = "src/main.rs"
+
+[[bin]]
+name = "generate-bindings"
+path = "src/bin/generate-bindings.rs"
+required-features = ["generate-bindings"]
+
+[features]
+generate-bindings = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
