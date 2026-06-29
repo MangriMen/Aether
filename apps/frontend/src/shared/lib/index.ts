@@ -22,4 +22,5 @@ export * from './showError';
 export * from './stopPropagation';
 export * from './useDeveloperModeCounter';
 export * from './useFieldOnChangeSync';
+export * from './useIsOverflow';
 export * from './useMaximizeObserver';
