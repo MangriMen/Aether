@@ -194,6 +194,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
   const handleInstallModpack = async (
     item: Pick<ContentItem, 'id' | 'contentType'>,
+    contentVersion?: string,
   ) => {
     const contentId = item.id;
 
@@ -210,6 +211,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     const payload: InstallContentParams = {
       type: 'modpack',
       data: {
+        contentVersion,
         contentId,
         providerId,
       },
@@ -238,7 +240,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     }
 
     if (item.contentType === 'modpack') {
-      handleInstallModpack(item);
+      handleInstallModpack(item, contentVersion);
     } else {
       handleInstallAtomicContent(item, instanceId, contentVersion);
     }

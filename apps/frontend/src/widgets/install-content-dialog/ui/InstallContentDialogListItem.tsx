@@ -83,9 +83,9 @@ export const InstallContentDialogListItem: Component<
         href={ROUTES.INSTANCE(local.instance.id)}
         onClick={local.onCloseDialog}
       >
-        <div class='flex items-center gap-1 hover:underline'>
+        <div class='flex items-center gap-2 hover:underline'>
           <InstanceIcon
-            class='h-8'
+            class='size-8'
             src={local.instance.iconPath ?? undefined}
           />
           {local.instance.name}
