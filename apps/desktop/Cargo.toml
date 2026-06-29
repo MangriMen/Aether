@@ -35,6 +35,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 
 [dependencies]
+
 # Tauri & Plugins
 tauri.workspace = true
 tauri-plugin-dialog = "2"
@@ -42,28 +43,29 @@ tauri-plugin-log = { version = "2", features = ["colored"] }
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2"
 
-# External Libraries
-open = { version = "5", features = ["shellexecute-on-windows"] }
-specta.workspace = true
-specta-typescript.workspace = true
-tauri-specta.workspace = true
-
 # Workspace Dependencies
 aether-core.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 log.workspace = true
-mime_guess = "2.0.5"
-percent-encoding = "2.3.2"
 semver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+specta.workspace = true
+specta-typescript.workspace = true
 sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono"] }
+tauri-specta.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+
+# External Libraries
+mime_guess = "2.0.5"
+open = { version = "5", features = ["shellexecute-on-windows"] }
+percent-encoding = "2.3.2"
+windows-sys = "0.61.2"
 
 [build-dependencies]
 paste = "1"
