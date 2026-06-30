@@ -75,7 +75,7 @@ const TabsContent = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Content
       class={cn(
-        'data-[orientation=vertical]:grow data-[orientation=vertical]:ml-2 data-[orientation=horizontal]:mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
+        'data-[orientation=vertical]:grow rounded-sm data-[orientation=vertical]:ml-2 data-[orientation=horizontal]:mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
         local.class,
       )}
       {...others}

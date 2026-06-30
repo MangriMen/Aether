@@ -4,7 +4,7 @@ import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { useInstances } from '@/entities/instances';
 import { InstanceActionButton } from '@/features/instance-action-button';
-import { cn } from '@/shared/lib';
+import { cn, useArrowNavigation } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 import { InstanceControlledCard } from './InstanceControlledCard';
@@ -18,8 +18,16 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
 
   const instances = useInstances();
 
+  const { setRef, onKeyDown } = useArrowNavigation();
+
   return (
-    <div class={cn('flex flex-wrap gap-4', local.class)} {...others}>
+    <div
+      role='presentation'
+      ref={setRef}
+      onKeyDown={onKeyDown}
+      class={cn('flex flex-wrap gap-4', local.class)}
+      {...others}
+    >
       <Switch>
         <Match when={instances.data?.length && !instances.isLoading}>
           <Show

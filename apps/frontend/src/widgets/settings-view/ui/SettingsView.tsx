@@ -60,7 +60,7 @@ export const SettingsView = <T extends ValidComponent = 'div'>(
   return (
     <div class={cn('flex flex-col overflow-hidden', local.class)} {...others}>
       <Tabs
-        class='flex grow overflow-hidden'
+        class='flex grow overflow-hidden p-0.5'
         value={currentTab()}
         onChange={handleChangeTab}
         defaultValue={DEFAULT_SETTINGS_TAB}

@@ -78,23 +78,30 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   return (
     <>
-      <InstanceContextMenu
-        isLoading={runningInstanceData()?.isLoading}
-        onPlay={handleLaunch}
-        onOpenFolder={handleOpenFolder}
-        onOpenSettings={handleOpenSettings}
-        onRemove={openRemoveModal}
-        disableOpenFolder={!instancePath}
-      >
-        <ContextMenuTrigger
-          as={InstanceCard}
-          onClick={goToInstancePage}
+      <div class='group relative p-0.5'>
+        <InstanceContextMenu
           isLoading={runningInstanceData()?.isLoading}
-          isRunning={runningInstanceData()?.isRunning}
-          overrideIcon={props.instance.iconPath ?? undefined}
-          {...props}
+          onPlay={handleLaunch}
+          onOpenFolder={handleOpenFolder}
+          onOpenSettings={handleOpenSettings}
+          onRemove={openRemoveModal}
+          disableOpenFolder={!instancePath}
+        >
+          <ContextMenuTrigger
+            as={InstanceCard}
+            onClick={goToInstancePage}
+            isLoading={runningInstanceData()?.isLoading}
+            isRunning={runningInstanceData()?.isRunning}
+            overrideIcon={props.instance.iconPath ?? undefined}
+            {...props}
+          />
+        </InstanceContextMenu>
+
+        <props.instanceActionButton
+          class='absolute right-4 top-[72px] z-50 p-0 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
+          instance={props.instance}
         />
-      </InstanceContextMenu>
+      </div>
 
       <CombinedDialog
         variant='destructive'
