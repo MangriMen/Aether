@@ -31,8 +31,10 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
     'class',
   ]);
 
-  const [context, { installContent, createInstalledVersion }] =
-    useContentContext();
+  const [
+    context,
+    { installContent, createInstalledVersion, createIsInstalling },
+  ] = useContentContext();
 
   const handleInstall = () => {
     if (!local.contentType) {
@@ -70,12 +72,18 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
     return installedVersion() ? IconMdiSwapVertical : IconMdiDownload;
   });
 
+  const isInstallingMemo = createMemo(() =>
+    createIsInstalling(() => local.version.contentId),
+  );
+  const isInstalling = () => isInstallingMemo()();
+
   return (
     <div class={cn('flex gap-1', local.class)} {...others}>
       <IconButton
         class='bg-transparent enabled:group-hover:bg-primary enabled:group-hover:hover:bg-primary/solid-hover'
         icon={installIcon()}
         onClick={handleInstall}
+        loading={isInstalling()}
         disabled={isCurrentVersionInstalled()}
       />
       <Show when={local.version.webUrl}>

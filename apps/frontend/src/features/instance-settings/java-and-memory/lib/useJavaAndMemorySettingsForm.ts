@@ -27,6 +27,7 @@ export const useResetJavaAndMemorySettingsForm = (
 ) => {
   createEffect(() => {
     const overrideMemory = settings()?.overrideMemory;
+
     if (overrideMemory !== undefined) {
       setValues(form, { overrideMemory });
     }
@@ -34,6 +35,7 @@ export const useResetJavaAndMemorySettingsForm = (
 
   createEffect(() => {
     const overrideLaunchArgs = settings()?.overrideLaunchArgs;
+
     if (overrideLaunchArgs !== undefined) {
       setValues(form, { overrideLaunchArgs });
     }
@@ -41,6 +43,7 @@ export const useResetJavaAndMemorySettingsForm = (
 
   createEffect(() => {
     const overrideEnvVars = settings()?.overrideEnvVars;
+
     if (overrideEnvVars !== undefined) {
       setValues(form, { overrideEnvVars });
     }
@@ -48,6 +51,7 @@ export const useResetJavaAndMemorySettingsForm = (
 
   createEffect(() => {
     const maximum = settings()?.memory?.maximum;
+
     if (maximum !== undefined) {
       setValues(form, { memory: { maximum } });
     }
@@ -65,6 +69,7 @@ export const useResetJavaAndMemorySettingsForm = (
 
   createEffect(() => {
     const envVars = settings()?.envVars;
+
     if (envVars !== undefined) {
       setValues(form, {
         envVars,

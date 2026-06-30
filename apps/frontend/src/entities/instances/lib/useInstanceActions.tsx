@@ -25,6 +25,7 @@ export const useInstanceActions = () => {
 
   const launch = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
+
     if (
       instance.installStage !== 'installed' ||
       runningInstance?.isLoading ||
@@ -34,16 +35,19 @@ export const useInstanceActions = () => {
     }
 
     setIsLoading(instance.id, true);
+
     try {
       await launchInstance(instance.id);
     } catch {
       /* empty */
     }
+
     setIsLoading(instance.id, false);
   };
 
   const stop = async (instance: Instance) => {
     const runningInstance = getRunningInstance(context, instance.id);
+
     if (
       instance.installStage !== 'installed' ||
       !runningInstance ||
@@ -53,16 +57,19 @@ export const useInstanceActions = () => {
     }
 
     const uuid = runningInstance.payload?.processId;
+
     if (uuid === undefined) {
       return;
     }
 
     setIsLoading(instance.id, true);
+
     try {
       await stopInstance(uuid);
     } catch {
       /* empty */
     }
+
     setIsLoading(instance.id, false);
   };
 
@@ -104,11 +111,13 @@ export const useInstanceActions = () => {
     }
 
     setIsLoading(instance.id, true);
+
     try {
       await removeInstance(instance.id);
     } catch {
       /* empty */
     }
+
     setIsLoading(instance.id, false);
   };
 

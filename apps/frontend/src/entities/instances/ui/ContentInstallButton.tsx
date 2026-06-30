@@ -28,8 +28,14 @@ export const ContentInstallButton: Component<
   ]);
 
   const installButtonText = createMemo(() => {
-    if (local.isInstalling) return t('common.installing');
-    if (local.isInstalled) return t('common.installed');
+    if (local.isInstalling) {
+      return t('common.installing');
+    }
+
+    if (local.isInstalled) {
+      return t('common.installed');
+    }
+
     return t('common.install');
   });
 

@@ -26,6 +26,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
   );
 
   const { open: openSettings } = useSettingsSearchParams();
+
   const handleClick = () => {
     openSettings();
   };

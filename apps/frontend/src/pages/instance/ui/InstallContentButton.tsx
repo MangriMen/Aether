@@ -47,6 +47,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
   );
 
   const { mutateAsync: importContents } = useImportContents();
+
   const handleAddContents = async (contentType: AtomicContentType) => {
     const paths = await open({
       multiple: true,

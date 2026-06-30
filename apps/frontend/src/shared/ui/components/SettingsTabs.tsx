@@ -15,10 +15,7 @@ export const SettingsTabsList = <T extends ValidComponent = 'div'>(
 ) => (
   <TabsList
     {...props}
-    class={cn(
-      'min-w-40 sm:static justify-start bg-[unset] p-0 pl-1 pt-1',
-      props.class,
-    )}
+    class={cn('min-w-40 sm:static justify-start bg-[unset] p-0 ', props.class)}
   />
 );
 

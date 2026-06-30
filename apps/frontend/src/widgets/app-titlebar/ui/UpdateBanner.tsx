@@ -27,6 +27,7 @@ export const UpdateBanner: Component<UpdateBannerProps> = (props) => {
   );
 
   const { open } = useSettingsSearchParams();
+
   const handleGoToUpdate = () => {
     open(SettingsTab.Update);
   };

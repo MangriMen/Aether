@@ -16,11 +16,13 @@ export const useJavaVersionsTableData = (
     if (list) {
       for (let i = 0; i < list.length; i++) {
         const item = list[i];
+
         if (item) {
           map.set(item.majorVersion, item);
         }
       }
     }
+
     return map;
   });
 

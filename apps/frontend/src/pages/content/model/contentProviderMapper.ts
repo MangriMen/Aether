@@ -24,7 +24,9 @@ export function contentProvidersToOptions<T extends ContentProviderEntry>(
 export function contentProvidersToOptions<T extends ContentProviderEntry>(
   values: T[] | undefined,
 ) {
-  if (!values) return undefined;
+  if (!values) {
+    return undefined;
+  }
 
   return values.map(contentProviderToOption);
 }

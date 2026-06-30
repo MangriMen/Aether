@@ -16,6 +16,7 @@ export const useUpdate = () => {
     }
 
     setStore('isUpdating', true);
+
     try {
       await installUpdate();
     } catch {

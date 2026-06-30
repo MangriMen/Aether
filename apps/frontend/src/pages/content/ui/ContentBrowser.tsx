@@ -99,9 +99,11 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
   const content = useSearchContent(() => {
     const params = contentSearchParams();
+
     if (!params) {
       return params;
     }
+
     return contentSearchParamsToContentSearchParamsDto(params);
   });
 

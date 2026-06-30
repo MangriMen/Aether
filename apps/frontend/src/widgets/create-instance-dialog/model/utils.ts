@@ -52,6 +52,7 @@ export const getLoaderVersionsForGameVersion = (
   }
 
   const dummyReplaceString = '${modrinth.gameVersion}';
+
   switch (loader) {
     case 'forge':
       return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];

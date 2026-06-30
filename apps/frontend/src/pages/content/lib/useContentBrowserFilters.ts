@@ -65,13 +65,14 @@ export const useContentBrowserFilters = (
   );
 
   const setProvider = (provider: Option<ContentProviderEntry> | null) => {
-    if (provider)
+    if (provider) {
       setFilters({
         providerId: {
           pluginId: provider.value.pluginId,
           capabilityId: provider.value.capability.id,
         },
       });
+    }
   };
 
   createEffect(() => {

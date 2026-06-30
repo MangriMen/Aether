@@ -34,7 +34,6 @@ export default [
       'no-unused-vars': 'off',
       'prefer-object-spread': 'warn',
       'object-shorthand': ['error', 'always'],
-      curly: 'error',
       'no-debugger': 'warn',
       'no-console': 'warn',
     },
@@ -111,6 +110,14 @@ export default [
   {
     plugins: { react },
     rules: {
+      curly: ['error', 'all'],
+      'padding-line-between-statements': [
+        'error',
+        // Empty line before blocks (if, switch, for)
+        { blankLine: 'always', prev: '*', next: 'multiline-block-like' },
+        // Empty line after blocks
+        { blankLine: 'always', prev: 'multiline-block-like', next: '*' },
+      ],
       'react/jsx-curly-brace-presence': [
         'error',
         { 

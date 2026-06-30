@@ -76,6 +76,7 @@ export const PluginUpdateButton: Component<PluginUpdateButtonProps> = (
     } catch {
       // Error handled by mutations
     }
+
     try {
       await updates.refetch();
     } catch {

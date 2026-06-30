@@ -64,7 +64,10 @@ export const JavaVersionStatusButton: Component<
   const ui = useJavaVersionStatusUi({
     testingStatus,
     onTest: () => {
-      if (!local.majorVersion || !local.path) return Promise.resolve();
+      if (!local.majorVersion || !local.path) {
+        return Promise.resolve();
+      }
+
       return test(local.majorVersion, local.path);
     },
   });

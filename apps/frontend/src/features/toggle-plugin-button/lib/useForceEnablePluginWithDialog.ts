@@ -60,6 +60,7 @@ export const useForceEnablePluginWithDialog = () => {
           });
         });
       }
+
       throw err;
     }
   };

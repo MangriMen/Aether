@@ -18,6 +18,7 @@ export const getOrCreateProgressStore = () => {
       { name: 'progressStore' },
     );
   }
+
   return progressStore;
 };
 

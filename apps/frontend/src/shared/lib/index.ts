@@ -20,6 +20,7 @@ export * from './responseResult';
 export * from './searchParamsToQueryString';
 export * from './showError';
 export * from './stopPropagation';
+export * from './useArrowNavigation';
 export * from './useDeveloperModeCounter';
 export * from './useFieldOnChangeSync';
 export * from './useIsOverflow';

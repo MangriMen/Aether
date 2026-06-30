@@ -14,6 +14,7 @@ export const toggleMaximize = async () => {
   const appWindow = getCurrentWebviewWindow();
 
   const isMaximized = await appWindow.isMaximized();
+
   if (isMaximized) {
     appWindow.unmaximize();
   } else {

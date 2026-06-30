@@ -28,9 +28,11 @@ export const usePluginSelection = (
   const selectPluginAnimated = (pluginId: PluginMetadata['id']) => {
     if (pluginId === selectedPluginId()) {
       setHasSelectedPlugin(false);
+
       if (!withAnimation()) {
         setSelectedPluginId(undefined);
       }
+
       return;
     }
 

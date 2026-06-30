@@ -55,7 +55,11 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
   const filteredVersions = createMemo(() => {
     const all = updates.data?.all_releases ?? [];
     const query = searchQuery().toLowerCase();
-    if (!query) return all;
+
+    if (!query) {
+      return all;
+    }
+
     return all.filter((r) => r.tag_name.toLowerCase().includes(query));
   });
 

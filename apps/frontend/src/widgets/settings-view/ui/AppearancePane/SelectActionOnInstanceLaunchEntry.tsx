@@ -47,6 +47,7 @@ export const SelectActionOnInstanceLaunchEntry: Component<
   );
 
   const updateAppSettings = useEditAppSettings();
+
   const handleChangeActionOnInstanceLaunch = async (
     value: Option<ActionOnInstanceLaunchType> | null,
   ) => {
