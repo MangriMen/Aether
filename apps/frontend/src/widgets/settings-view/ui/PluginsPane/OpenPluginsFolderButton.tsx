@@ -14,6 +14,7 @@ export const OpenPluginsFolderButton: Component<
   const [{ t }] = useTranslation();
 
   const openPluginsFolder = useOpenPluginFolder();
+
   const handleOpenPluginsFolder = async () => {
     await openPluginsFolder.mutateAsync();
   };

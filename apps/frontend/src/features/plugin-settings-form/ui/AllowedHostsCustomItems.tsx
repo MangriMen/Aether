@@ -51,7 +51,11 @@ export const AllowedHostsCustomItems: Component<
     const parsed = schema
       .pick({ [name]: true })
       .safeParse({ [name]: fieldArray });
-    if (!parsed.success) return;
+
+    if (!parsed.success) {
+      return;
+    }
+
     const finalValue = parsed.data[name];
 
     local.onChangePartial?.({

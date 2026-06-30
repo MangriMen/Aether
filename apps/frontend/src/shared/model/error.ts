@@ -12,6 +12,7 @@ export function isLauncherError(error: unknown): error is FrontendError {
     typeof error.type === 'string'
   );
 }
+
 type LauncherErrorWithoutGenericErrors = Exclude<
   LauncherError,
   { type: 'generic' | 'internal' }

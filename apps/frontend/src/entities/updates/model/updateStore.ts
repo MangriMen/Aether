@@ -16,6 +16,7 @@ export const getOrCreateUpdateStore = () => {
       { name: 'updateStore' },
     );
   }
+
   return updateStore;
 };
 

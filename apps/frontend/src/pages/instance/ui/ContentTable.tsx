@@ -43,6 +43,7 @@ export const ContentTable: Component<ContentTableProps> = (props) => {
     if (props.searchQuery === undefined) {
       return;
     }
+
     handleSearch(props.searchQuery);
   });
 

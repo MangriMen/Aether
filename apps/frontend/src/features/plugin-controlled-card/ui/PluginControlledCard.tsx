@@ -35,6 +35,7 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
 
     try {
       const id = local.plugin.manifest.metadata.id;
+
       if (isEnabled()) {
         await disablePlugin.mutateAsync(id);
       } else {

@@ -43,6 +43,7 @@ export const ContentVersionTypeBadge: Component<
 
   const variantClass = createMemo(() => {
     const key = data().typeKey;
+
     if (!key || !isVariant(key)) {
       return;
     }

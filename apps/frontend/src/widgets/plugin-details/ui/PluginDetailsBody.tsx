@@ -30,6 +30,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
         (tab) => tab.value !== PluginDetailsTabs.Capabilities,
       );
     }
+
     return PLUGIN_DETAILS_TABS;
   });
 

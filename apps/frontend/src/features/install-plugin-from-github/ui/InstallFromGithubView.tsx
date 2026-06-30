@@ -62,6 +62,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   createEffect(() => {
     const data = previewData();
     const firstRelease = data?.releases?.[0];
+
     if (firstRelease && !selectedTag()) {
       setSelectedTag(firstRelease.tag_name);
     }
@@ -69,7 +70,11 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
   const releaseOptions = createMemo<ReleaseOption[]>(() => {
     const p = previewData();
-    if (!p) return [];
+
+    if (!p) {
+      return [];
+    }
+
     return p.releases.map((r) => ({
       value: r.tag_name,
       label: r.is_prerelease
@@ -79,16 +84,24 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   });
 
   const handleReleaseChange = (option: ReleaseOption | null) => {
-    if (option) setSelectedTag(option.value);
+    if (option) {
+      setSelectedTag(option.value);
+    }
   };
 
   const handleInstall = async () => {
     const p = previewData();
     const tag = selectedTag();
-    if (!p || !tag) return;
+
+    if (!p || !tag) {
+      return;
+    }
 
     const release = p.releases.find((r) => r.tag_name === tag);
-    if (!release) return;
+
+    if (!release) {
+      return;
+    }
 
     try {
       await installMutation.mutateAsync({

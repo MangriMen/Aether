@@ -97,6 +97,7 @@ function getLimitedValue(input: number | undefined) {
   } else if (input > 100) {
     return 100;
   }
+
   return input;
 }
 

@@ -40,7 +40,10 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
   const [{ t }] = useTranslation();
 
   const handleChangeProvider = (option: ProviderOption | null) => {
-    if (option === null) return;
+    if (option === null) {
+      return;
+    }
+
     local.onProviderChange(option.value);
   };
 

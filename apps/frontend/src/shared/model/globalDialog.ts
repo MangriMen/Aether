@@ -33,6 +33,7 @@ const getOrCreateDialogStore = () => {
       { name: 'globalDialog' },
     );
   }
+
   return globalDialogStore;
 };
 

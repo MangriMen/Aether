@@ -37,9 +37,11 @@ export const I18nProvider = (
 
   const getLocale = (): Locale => {
     const locale = getSystemLocale();
+
     if (!locale || !(locale in local.resources)) {
       return local.fallbackLocale;
     }
+
     return locale as Locale;
   };
 

@@ -50,7 +50,9 @@ function translateError(
   t: TFunction,
   error: string | undefined,
 ): string | undefined {
-  if (!error) return error;
+  if (!error) {
+    return error;
+  }
 
   if (knownErrors.includes(error as ResolutionErrorKeys)) {
     return t(error as ResolutionErrorKeys);
@@ -119,6 +121,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     if (typeof inputProps.onBlur === 'function') {
       inputProps.onBlur(e);
     }
+
     handleResolutionSubmit();
   };
 

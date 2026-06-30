@@ -23,6 +23,7 @@ export const useJavaVersionTesting = () => {
     }
 
     setTestingStatus('testing');
+
     try {
       const java = await testJava.mutateAsync(path);
 

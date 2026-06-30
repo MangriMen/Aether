@@ -80,6 +80,7 @@ export const useProgressEventsListener = () => {
     if (activeTimers.size !== 0) {
       activeTimers.forEach(clearTimeout);
     }
+
     unlistenFn?.();
   };
 

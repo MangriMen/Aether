@@ -20,10 +20,12 @@ export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+
   const handleClick = () => {
     if (!local.instancePath) {
       return;
     }
+
     revealInExplorer({ path: local.instancePath });
   };
 

@@ -91,6 +91,7 @@ export const createThemeContext = (
   );
 
   let prevThemeSet = 0;
+
   const setThemeLeadingEdge = (theme: Theme) => {
     const currentTime = performance.now();
 

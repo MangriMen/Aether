@@ -41,6 +41,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   const [showRemoveModal, setShowRemoveModal] = createSignal(false);
 
   const openRemoveModal = () => setShowRemoveModal(true);
+
   const closeRemoveModal = () => {
     setShowRemoveModal(false);
   };
@@ -57,6 +58,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
     removeInstance(props.instance).then(() => closeRemoveModal());
 
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
+
   const handleOpenFolder = () => {
     if (!instancePath.data) {
       return;

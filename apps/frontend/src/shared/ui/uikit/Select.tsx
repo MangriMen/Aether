@@ -172,6 +172,7 @@ const SelectListboxVirtualized = <
     }
 
     const optionValue = local.optionValue ?? null;
+
     if (optionValue == null) {
       return String(option);
     }

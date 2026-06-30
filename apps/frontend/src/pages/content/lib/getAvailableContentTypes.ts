@@ -18,6 +18,7 @@ export const getAvailableContentTypes = (
         ContentType.ShaderPack,
       ];
     }
+
     // Undefined means all content types
     return;
   }

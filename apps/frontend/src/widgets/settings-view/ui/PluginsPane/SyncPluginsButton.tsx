@@ -12,6 +12,7 @@ export const SyncPluginsButton: Component<SyncPluginsButtonProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const syncPlugins = useSyncPlugins();
+
   const handleRefreshPlugins = async () => {
     await syncPlugins.mutateAsync();
   };

@@ -37,6 +37,7 @@ export const RunningInstancesProvider: Component<
           }));
           return;
         }
+
         setContextValue('instances', id, 'isLoading', () => value);
       },
     },

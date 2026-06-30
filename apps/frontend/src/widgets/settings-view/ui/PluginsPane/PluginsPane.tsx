@@ -27,6 +27,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
   );
 
   const [tab, setTab] = createSignal<PluginPaneTab>('view');
+
   const handlePluginAdd = () => {
     setTab('add');
   };

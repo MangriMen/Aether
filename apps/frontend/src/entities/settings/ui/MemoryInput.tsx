@@ -80,6 +80,7 @@ export const MemoryInput: Component<MemoryInputProps> = (props) => {
 
     const input = e.target as HTMLInputElement;
     const value = Number.parseInt(input.value);
+
     if (Number.isNaN(value)) {
       return;
     }

@@ -42,6 +42,7 @@ export const TogglePluginButton: Component<TogglePluginButtonProps> = (
 
     try {
       const id = local.plugin.manifest.metadata.id;
+
       if (isEnabled()) {
         await disablePlugin(id);
       } else {

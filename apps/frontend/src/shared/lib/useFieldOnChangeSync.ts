@@ -35,7 +35,9 @@ export const useFieldOnChangeSync = <
       shouldFocus: false,
     });
 
-    if (!valid) return;
+    if (!valid) {
+      return;
+    }
 
     const raw = getValue(form, path, { shouldValid: true });
 
@@ -46,6 +48,7 @@ export const useFieldOnChangeSync = <
       const shapeField = objectSchema.shape[path as string] as
         | ZodTypeAny
         | undefined;
+
       if (shapeField) {
         fieldSchema = shapeField;
       }
@@ -53,7 +56,9 @@ export const useFieldOnChangeSync = <
 
     const result = fieldSchema.safeParse(raw);
 
-    if (!result.success) return;
+    if (!result.success) {
+      return;
+    }
 
     // Теперь parsedValue имеет корректный тип из схемы, а не unknown
     const parsedValue = result.data as TTransformedValue;

@@ -31,5 +31,6 @@ const CollapsibleContent = <T extends ValidComponent = 'div'>(
     />
   );
 };
+
 export type { CollapsibleContentProps };
 export { Collapsible, CollapsibleTrigger, CollapsibleContent };

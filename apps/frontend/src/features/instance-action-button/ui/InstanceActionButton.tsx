@@ -51,6 +51,7 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
     e.stopPropagation();
     launchInstance(local.instance);
   };
+
   const handleStop = (e: MouseEvent) => {
     e.stopPropagation();
     stopInstance(local.instance);

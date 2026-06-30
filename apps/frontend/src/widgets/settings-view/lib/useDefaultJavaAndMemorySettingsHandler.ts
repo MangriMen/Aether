@@ -28,5 +28,6 @@ export const useDefaultJavaAndMemorySettingsHandler = () => {
 
     editSettings.mutateAsync(dto);
   };
+
   return { initialValues, onChange };
 };

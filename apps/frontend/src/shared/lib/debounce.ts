@@ -18,21 +18,32 @@ export const debounce: ScheduleCallback = (callback, wait) => {
       callAndClear: () => void 0,
     });
   }
+
   let timeoutId: number | undefined;
   let timeoutFn: (() => void) | undefined;
   const clear = () => clearTimeout(timeoutId);
+
   const callAndClear = () => {
     timeoutFn?.();
     clear();
   };
-  if (getOwner()) onCleanup(clear);
+
+  if (getOwner()) {
+    onCleanup(clear);
+  }
+
   const debounced: typeof callback = (...args) => {
-    if (timeoutId !== undefined) clear();
+    if (timeoutId !== undefined) {
+      clear();
+    }
+
     timeoutFn = () => {
       callback(...args);
       timeoutFn = undefined;
     };
+
     timeoutId = setTimeout(timeoutFn, wait);
   };
+
   return Object.assign(debounced, { clear, callAndClear });
 };

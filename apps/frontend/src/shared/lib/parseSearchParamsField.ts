@@ -10,7 +10,10 @@ export const parseSearchParamToNumber = (
   field: SearchParam,
 ): number | undefined => {
   const val = parseSearchParamToString(field);
-  if (val === undefined) return undefined;
+
+  if (val === undefined) {
+    return undefined;
+  }
 
   const number = Number.parseFloat(val);
   return Number.isNaN(number) ? undefined : number;
