@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.10.2"
+version = "0.10.3"
 description = "Desktop application for managing Minecraft instances and mods"
 edition.workspace = true
 rust-version.workspace = true
