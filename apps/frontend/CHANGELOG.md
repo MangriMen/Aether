@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Instance Cards:** Added full keyboard-driven navigation support for instance cards.
+
+### Fixed
+
+- **Version Installation Table:** Fixed an issue where the loading state (loader) wouldn't appear and the install button wasn't disabled while content was installing.
+- **UI Focus Rings:** Fixed overflow issues on interactive elements' focus rings.
+- **Instance Cards:** Fixed accessibility and focus navigation bugs.
+
 ## [0.10.2] - 2026-06-29
 
 ### Fixed
