@@ -1,36 +1,39 @@
-import type { SetStoreFunction, Store } from 'solid-js/store';
-
-import { createStore } from 'solid-js/store';
+import { makePersisted } from '@solid-primitives/storage';
+import { createStore, type SetStoreFunction, type Store } from 'solid-js/store';
 
 export interface FeatureFlagsStore {
   isAllowInstallModpacks: boolean;
 }
 
-let featureFlagsStore:
-  | ReturnType<typeof createStore<FeatureFlagsStore>>
-  | undefined = undefined;
-
-export const getOrCreateFeatureFlagsStore = (): [
+// Simplified type definition
+type FeatureFlagsStoreTuple = [
   Store<FeatureFlagsStore>,
   SetStoreFunction<FeatureFlagsStore>,
-] => {
+];
+
+let featureFlagsStore: FeatureFlagsStoreTuple | undefined = undefined;
+
+export const getOrCreateFeatureFlagsStore = (): FeatureFlagsStoreTuple => {
   if (!featureFlagsStore) {
-    // eslint-disable-next-line solid/reactivity
-    featureFlagsStore = createStore<FeatureFlagsStore>(
-      {
+    // Correct usage of makePersisted with createStore
+    const [state, setState] = makePersisted(
+      // eslint-disable-next-line solid/reactivity
+      createStore<FeatureFlagsStore>({
         isAllowInstallModpacks: false,
-      },
-      { name: 'featureFlagsStore' },
+      }),
+      { name: 'feature-flags-store' }, // Better to use kebab-case or distinct storage key
     );
+
+    featureFlagsStore = [state, setState];
   }
 
   return featureFlagsStore;
 };
 
-export const useFeatureFlagsStore = () => {
-  return getOrCreateFeatureFlagsStore();
-};
+// Custom hook alias
+export const useFeatureFlagsStore = () => getOrCreateFeatureFlagsStore();
 
+// Meta-information actions
 export const featureFlagsActions = {
   getBooleanFeatureFlags: (): (keyof FeatureFlagsStore)[] => [
     'isAllowInstallModpacks',
