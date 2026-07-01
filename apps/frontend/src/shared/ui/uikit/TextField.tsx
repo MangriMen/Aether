@@ -54,7 +54,7 @@ const TextFieldInput = <T extends ValidComponent = 'input'>(
     <TextFieldPrimitive.Input
       type={local.type}
       class={cn(
-        'flex h-9 w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none enabled:read-only:text-muted-foreground enabled:read-only:focus:bg-card/card disabled:cursor-not-allowed disabled:opacity-50 data-[invalid]:border-destructive',
+        'flex h-9 w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none enabled:read-only:text-muted-foreground enabled:read-only:focus:bg-card/card disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
         local.class,
       )}
       autocomplete='off'
@@ -75,7 +75,7 @@ const TextFieldTextArea = <T extends ValidComponent = 'textarea'>(
   return (
     <TextFieldPrimitive.TextArea
       class={cn(
-        'flex  min-h-[80px] w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[invalid]:border-destructive',
+        'flex  min-h-[80px] w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
         local.class,
       )}
       {...others}
@@ -88,7 +88,7 @@ const labelVariants = cva(
   {
     variants: {
       variant: {
-        label: 'data-[invalid]:text-destructive',
+        label: 'data-invalid:text-destructive',
         description: 'font-medium text-muted-foreground',
         error: 'text-destructive',
       },

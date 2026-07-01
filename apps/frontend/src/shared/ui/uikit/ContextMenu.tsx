@@ -33,7 +33,7 @@ const ContextMenuContent = <T extends ValidComponent = 'div'>(
     <ContextMenuPrimitive.Portal>
       <ContextMenuPrimitive.Content
         class={cn(
-          'z-50 min-w-32 origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-md border  bg-popover p-1 text-popover-foreground shadow-md animate-in',
+          'z-50 min-w-32 origin-(--kb-menu-content-transform-origin) overflow-hidden rounded-md border  bg-popover p-1 text-popover-foreground shadow-md animate-in',
           local.class,
         )}
         {...others}
@@ -54,7 +54,7 @@ const ContextMenuItem = <T extends ValidComponent = 'div'>(
   return (
     <ContextMenuPrimitive.Item
       class={cn(
-        'relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
         local.class,
       )}
       {...others}
@@ -143,7 +143,7 @@ const ContextMenuSubContent = <T extends ValidComponent = 'div'>(
   return (
     <ContextMenuPrimitive.SubContent
       class={cn(
-        'z-50 min-w-32 origin-[var(--kb-menu-content-transform-origin)] overflow-hidden rounded-md border  bg-popover p-1 text-popover-foreground shadow-md animate-in',
+        'z-50 min-w-32 origin-(--kb-menu-content-transform-origin) overflow-hidden rounded-md border  bg-popover p-1 text-popover-foreground shadow-md animate-in',
         local.class,
       )}
       {...others}
@@ -167,7 +167,7 @@ const ContextMenuCheckboxItem = <T extends ValidComponent = 'div'>(
   return (
     <ContextMenuPrimitive.CheckboxItem
       class={cn(
-        'relative flex cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
         local.class,
       )}
       {...others}
@@ -228,7 +228,7 @@ const ContextMenuRadioItem = <T extends ValidComponent = 'div'>(
   return (
     <ContextMenuPrimitive.RadioItem
       class={cn(
-        'relative flex cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-sm transition-colors outline-none select-none focus:bg-secondary/control focus:text-secondary-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
         local.class,
       )}
       {...others}

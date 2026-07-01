@@ -26,8 +26,8 @@ const Checkbox = <T extends ValidComponent = 'div'>(
       {...others}
     >
       <CheckboxPrimitive.Input role='checkbox' class='peer' />
-      <CheckboxPrimitive.Control class='size-4 shrink-0 rounded-sm border border-border-dynamic/15 bg-secondary/control ring-offset-background transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-0 peer-focus-visible:outline-none hover:border-border-dynamic/25 hover:bg-secondary/hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 data-[checked]:border-none data-[checked]:bg-primary data-[checked]:text-primary-foreground data-[checked]:brightness-110 data-[checked]:hover:bg-primary/solid-hover'>
-        <CheckboxPrimitive.Indicator class='data-[checked]:hidden'>
+      <CheckboxPrimitive.Control class='size-4 shrink-0 rounded-sm border border-border-dynamic/15 bg-secondary/control ring-offset-background transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-0 peer-focus-visible:outline-none hover:border-border-dynamic/25 hover:bg-secondary/hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-none data-checked:bg-primary data-checked:text-primary-foreground data-checked:brightness-110 data-checked:hover:bg-primary/solid-hover'>
+        <CheckboxPrimitive.Indicator class='data-checked:hidden'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
             viewBox='0 0 24 24'
@@ -41,7 +41,7 @@ const Checkbox = <T extends ValidComponent = 'div'>(
             <path d='M5 12l11 0' />
           </svg>
         </CheckboxPrimitive.Indicator>
-        <CheckboxPrimitive.Indicator class='data-[indeterminate]:hidden'>
+        <CheckboxPrimitive.Indicator class='data-indeterminate:hidden'>
           <svg
             xmlns='http://www.w3.org/2000/svg'
             viewBox='0 0 24 24'

@@ -10,7 +10,7 @@ import { Portal } from 'solid-js/web';
 import { cn } from '../../lib';
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all data-[closed]:animate-out data-[closed]:fade-out-80 data-[closed]:slide-out-to-right-full data-[opened]:animate-in data-[opened]:slide-in-from-top-full data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--kb-toast-swipe-end-x)] data-[swipe=end]:animate-out data-[swipe=move]:translate-x-[var(--kb-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[opened]:sm:slide-in-from-bottom-full',
+  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all data-closed:animate-out data-closed:fade-out-80 data-closed:slide-out-to-right-full data-opened:animate-in data-opened:slide-in-from-top-full data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-(--kb-toast-swipe-end-x) data-[swipe=end]:animate-out data-[swipe=move]:translate-x-(--kb-toast-swipe-move-x) data-[swipe=move]:transition-none data-opened:sm:slide-in-from-bottom-full',
   {
     variants: {
       variant: {
@@ -43,7 +43,7 @@ const Toaster = <T extends ValidComponent = 'ol'>(
       <ToastPrimitive.Region>
         <ToastPrimitive.List
           class={cn(
-            'fixed top-0 z-[100] flex max-h-screen w-[calc(100%-48px)] flex-col-reverse gap-2 p-4 sm:top-auto sm:right-0 sm:bottom-0 sm:max-w-[420px] sm:flex-col',
+            'fixed top-0 z-100 flex max-h-screen w-[calc(100%-48px)] flex-col-reverse gap-2 p-4 sm:top-auto sm:right-0 sm:bottom-0 sm:max-w-[420px] sm:flex-col',
             local.class,
           )}
           {...others}

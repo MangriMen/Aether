@@ -36,7 +36,7 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       )}
       {...others}
     >
-      <div class='grid w-full grid-cols-[1fr,auto,1fr] items-start'>
+      <div class='grid w-full grid-cols-[1fr_auto_1fr] items-start'>
         <div class='flex h-full flex-col'>
           <AllowedPathComponent
             class='grow'

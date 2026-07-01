@@ -39,7 +39,7 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        'flex h-9 w-full items-center justify-between rounded-md border bg-card/card  px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none enabled:hover:bg-card/hover disabled:cursor-not-allowed disabled:opacity-50 data-[invalid]:border-destructive',
+        'flex h-9 w-full items-center justify-between rounded-md border bg-card/card  px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none enabled:hover:bg-card/hover disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
         local.class,
       )}
       {...others}
@@ -109,7 +109,7 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         class={cn(
-          'relative z-50 min-w-32 origin-[var(--kb-select-content-transform-origin)] animate-content-hide overflow-hidden  rounded-md border bg-popover/hard text-popover-foreground shadow-lg data-[expanded]:animate-content-show',
+          'relative z-50 min-w-32 origin-(--kb-select-content-transform-origin) animate-content-hide overflow-hidden  rounded-md border bg-popover/hard text-popover-foreground shadow-lg data-expanded:animate-content-show',
           local.class,
           {
             'py-1': local.virtualized,
@@ -283,7 +283,7 @@ const SelectItem = <T extends ValidComponent = 'li'>(
   return (
     <SelectPrimitive.Item
       class={cn(
-        'relative mt-0 flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none hover:bg-secondary/hover hover:text-foreground focus:bg-secondary/control focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative mt-0 flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none hover:bg-secondary/hover hover:text-foreground focus:bg-secondary/control focus:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
         local.class,
       )}
       {...others}
@@ -313,7 +313,7 @@ const labelVariants = cva(
   {
     variants: {
       variant: {
-        label: 'data-[invalid]:text-destructive',
+        label: 'data-invalid:text-destructive',
         description: 'font-normal text-muted-foreground',
         error: 'text-destructive',
       },

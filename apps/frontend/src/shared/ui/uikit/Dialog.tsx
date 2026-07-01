@@ -26,7 +26,7 @@ const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
 };
 
 const dialogOverlayVariants = cva(
-  'fixed inset-0 z-50 backdrop-blur-sm data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:animate-in data-[expanded]:fade-in-0',
+  'fixed inset-0 z-50 backdrop-blur-sm data-closed:animate-out data-closed:fade-out-0 data-expanded:animate-in data-expanded:fade-in-0',
   {
     variants: {
       variant: {
@@ -97,7 +97,7 @@ const DialogContent = <T extends ValidComponent = 'div'>(
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
           local.variant !== 'unstyled' &&
-            'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-[closed]:animate-out data-[closed]:fade-out-0 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[closed]:zoom-out-95 data-[expanded]:animate-in data-[expanded]:fade-in-0 data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] data-[expanded]:zoom-in-95 sm:rounded-lg',
+            'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-left-1/2 data-closed:slide-out-to-top-[48%] data-closed:zoom-out-95 data-expanded:animate-in data-expanded:fade-in-0 data-expanded:slide-in-from-left-1/2 data-expanded:slide-in-from-top-[48%] data-expanded:zoom-in-95 sm:rounded-lg',
           local.class,
         )}
         {...rest}
@@ -110,7 +110,7 @@ const DialogContent = <T extends ValidComponent = 'div'>(
               as={IconButton}
               size='sm'
               variant='ghost'
-              class='opacity-70 transition-opacity hover:opacity-100 data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'
+              class='opacity-70 transition-opacity hover:opacity-100 data-expanded:bg-accent data-expanded:text-muted-foreground'
               title={t('common.close')}
             >
               <svg

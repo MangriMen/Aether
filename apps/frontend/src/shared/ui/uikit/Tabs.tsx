@@ -55,7 +55,7 @@ const TabsTrigger = <T extends ValidComponent = 'button'>(
   return (
     <TabsPrimitive.Trigger
       class={cn(
-        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none enabled:hover:bg-primary/solid-hover enabled:hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:shadow-sm',
+        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none enabled:hover:bg-primary/solid-hover enabled:hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-50 data-selected:bg-primary data-selected:text-primary-foreground data-selected:shadow-sm',
         local.class,
       )}
       {...others}
@@ -95,7 +95,7 @@ const TabsIndicator = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Indicator
       class={cn(
-        'absolute transition-all duration-[250ms] data-[orientation=horizontal]:-bottom-px data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:-right-px data-[orientation=vertical]:w-[2px]',
+        'absolute transition-all duration-250 data-[orientation=horizontal]:-bottom-px data-[orientation=horizontal]:h-0.5 data-[orientation=vertical]:-right-px data-[orientation=vertical]:w-0.5',
         local.class,
       )}
       {...others}

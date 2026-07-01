@@ -40,7 +40,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
       {local.children}
       <ContextMenuContent>
         <ContextMenuItem
-          class='w-full hover:!bg-success hover:text-success-foreground'
+          class='w-full hover:bg-success! hover:text-success-foreground'
           onClick={local.onPlay}
           disabled={local.isLoading}
         >
@@ -63,7 +63,7 @@ export const InstanceContextMenu: Component<InstanceContextMenuProps> = (
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
-          class='w-full hover:!bg-destructive hover:text-destructive-foreground'
+          class='w-full hover:bg-destructive! hover:text-destructive-foreground'
           onClick={local.onRemove}
           disabled={local.isLoading}
         >

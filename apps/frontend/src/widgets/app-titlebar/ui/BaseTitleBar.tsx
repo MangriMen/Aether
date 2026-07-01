@@ -16,7 +16,7 @@ export const BaseTitleBar: Component<BaseTitleBarProps> = (props) => {
       <TitleBar
         id='title-bar'
         class={cn(
-          'pointer-events-auto fixed inset-x-0 top-0 z-[100] items-center gap-2 bg-transparent',
+          'pointer-events-auto fixed inset-x-0 top-0 z-100 items-center gap-2 bg-transparent',
           local.class,
         )}
         data-ignore-outside-click

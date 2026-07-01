@@ -64,7 +64,7 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
         }
       >
         <DialogHeader class='z-50 w-max flex-row gap-2 pr-20 pl-6'>
-          <DialogTitle class='!mt-0 self-center'>
+          <DialogTitle class='mt-0! self-center'>
             {t('settings.title')}
           </DialogTitle>
         </DialogHeader>
