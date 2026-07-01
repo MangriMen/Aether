@@ -5,7 +5,7 @@ export const ComponentShelf = (props: {
   children: JSX.Element;
 }) => (
   <section class='mb-12'>
-    <h2 class='mb-4 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground'>
+    <h2 class='mb-4 text-sm font-bold tracking-[0.2em] text-muted-foreground uppercase'>
       {props.title}
     </h2>
 

@@ -29,7 +29,7 @@ export const PluginUpdateBadge: Component<PluginUpdateBadgeProps> = (props) => {
 
   return (
     <Show when={hasUpdate()}>
-      <span class={cn('text-xs text-warning font-medium', props.class)}>
+      <span class={cn('text-xs font-medium text-warning', props.class)}>
         {t('plugins.updateAvailable')}
       </span>
     </Show>

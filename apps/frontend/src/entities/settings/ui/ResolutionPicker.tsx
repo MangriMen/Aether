@@ -173,7 +173,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
               )}
             </Field>
 
-            <span class='mt-1 select-none text-xl text-muted-foreground'>
+            <span class='mt-1 text-xl text-muted-foreground select-none'>
               &times;
             </span>
 

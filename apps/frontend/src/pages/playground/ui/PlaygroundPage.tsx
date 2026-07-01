@@ -39,7 +39,7 @@ export const PlaygroundPage: Component<PlaygroundPageProps> = (props) => {
   return (
     <div
       class={cn(
-        'p-page size-full flex grow flex-col text-foreground',
+        'flex size-full grow flex-col p-page text-foreground',
         local.class,
       )}
       {...others}

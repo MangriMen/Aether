@@ -19,7 +19,7 @@ const Slider = <T extends ValidComponent = 'div'>(
   return (
     <SliderPrimitive.Root
       class={cn(
-        'relative flex w-full touch-none select-none flex-col items-center',
+        'relative flex w-full touch-none flex-col items-center select-none',
         local.class,
       )}
       {...others}
@@ -39,7 +39,7 @@ const SliderTrack = <T extends ValidComponent = 'div'>(
   return (
     <SliderPrimitive.Track
       class={cn(
-        'relative h-1.5 w-full grow rounded-full bg-secondary/secondary data-[disabled]:opacity-50 data-[disabled]:pointer-events-none my-4',
+        'relative my-4 h-1.5 w-full grow rounded-full bg-secondary/secondary data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         local.class,
       )}
       {...others}
@@ -83,7 +83,7 @@ const SliderThumb = <T extends ValidComponent = 'span'>(
   return (
     <SliderPrimitive.Thumb
       class={cn(
-        'data-[disabled]:border-primary top-[-6px] block w-3 h-5 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50',
+        'top-[-6px] block h-5 w-3 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[disabled]:border-primary',
         local.class,
       )}
       {...others}

@@ -55,7 +55,7 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
 
   return (
     <div
-      class={cn('flex justify-between items-center pt-0.5', local.class)}
+      class={cn('flex items-center justify-between pt-0.5', local.class)}
       {...others}
     >
       <div class='flex gap-2'>

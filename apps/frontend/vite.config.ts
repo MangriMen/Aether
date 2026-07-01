@@ -1,5 +1,6 @@
 import type { UserConfig } from 'vite';
 
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
@@ -28,6 +29,7 @@ const iconsConfig = Icons({
 const plugins = [
   vitePluginCheckerConfig,
   solidPluginConfig,
+  tailwindcss(),
   iconsConfig,
   solidSvg(),
 ];

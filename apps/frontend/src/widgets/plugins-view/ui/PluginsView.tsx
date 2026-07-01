@@ -40,13 +40,13 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
 
   return (
     <div
-      class={cn('flex relative overflow-hidden', local.class)}
+      class={cn('relative flex overflow-hidden', local.class)}
       style={{ '--min-list-width': '18rem' }}
       {...others}
     >
       <PluginsList
         class={cn(
-          'shrink-0 grow min-w-[var(--min-list-width)] transition-[max-width] duration-200 max-w-full p-px',
+          'max-w-full min-w-[var(--min-list-width)] shrink-0 grow p-px transition-[max-width] duration-200',
           {
             'max-w-[var(--min-list-width)]': hasSelectedPlugin(),
           },
@@ -59,7 +59,7 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
 
       <div
         class={cn(
-          'flex right-0 inset-y-0 absolute left-[var(--min-list-width)] transition-[transform,opacity] duration-200 translate-x-full opacity-0',
+          'absolute inset-y-0 right-0 left-[var(--min-list-width)] flex translate-x-full opacity-0 transition-[transform,opacity] duration-200',
           {
             'translate-x-0 opacity-100': hasSelectedPlugin(),
           },

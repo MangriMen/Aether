@@ -46,7 +46,7 @@ const SettingsButton: Component<SettingsButtonProps> = (props) => {
       onClick={handleClick}
       {...props}
     >
-      <UpdateBadge class='absolute right-2 top-1' />
+      <UpdateBadge class='absolute top-1 right-2' />
       <IconMdiCog />
     </CombinedTooltip>
   );

@@ -29,7 +29,7 @@ const SortableHeader = <TData,>(props: SortableHeaderProps<TData>) => {
       }
       trailingIcon={() => (
         <IconMdiChevronDown
-          class={cn('transition-transform text-base', {
+          class={cn('text-base transition-transform', {
             'rotate-180': props.column.getIsSorted() === 'asc',
           })}
         />

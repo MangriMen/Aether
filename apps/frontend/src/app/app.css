@@ -1,6 +1,228 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
+
+@theme {
+  /* Colors from ui.presets.cjs */
+  --color-border: oklch(var(--border) / 0.07);
+  --color-border-dynamic: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  --color-info: oklch(var(--info));
+  --color-info-foreground: oklch(var(--info-foreground));
+  --color-success: oklch(var(--success));
+  --color-success-foreground: oklch(var(--success-foreground));
+  --color-warning: oklch(var(--warning));
+  --color-warning-foreground: oklch(var(--warning-foreground));
+  --color-error: oklch(var(--error));
+  --color-error-foreground: oklch(var(--error-foreground));
+
+  /* Custom colors from tailwind.config.ts */
+  --color-release: oklch(var(--release));
+  --color-release-foreground: oklch(var(--release-foreground));
+  --color-beta: oklch(var(--beta));
+  --color-beta-foreground: oklch(var(--beta-foreground));
+  --color-alpha: oklch(var(--alpha));
+  --color-alpha-foreground: oklch(var(--alpha-foreground));
+
+  /* Border radius from ui.presets.cjs */
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Spacing from tailwind.config.ts */
+  --spacing-titlebar: 2.5rem;
+
+  /* Transition timing */
+  --ease-custom-expo: cubic-bezier(0, 0.9, 0.1, 1);
+
+  /* Keyframes & animations from tailwind.config.ts + ui.presets.cjs */
+  --animate-content-show: content-show 0.2s ease-out;
+  --animate-content-hide: content-hide 0.2s ease-out;
+  --animate-slide-down: slide-down 0.2s ease-out;
+  --animate-slide-up: slide-up 0.2s ease-out;
+  --animate-bump-in: bump-in 0.05s ease-in-out forwards;
+  --animate-bump-out: bump-out 0.05s ease-in-out forwards;
+  --animate-pulse-border: pulse-border 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  /* Custom opacity modifiers (indirection — real values in :root/.dark) */
+  --opacity-card: var(--opacity-card-val);
+  --opacity-secondary: var(--opacity-secondary-val);
+  --opacity-hard: var(--opacity-hard-val);
+  --opacity-control: var(--opacity-control-val);
+  --opacity-hover: var(--opacity-hover-val);
+  --opacity-active: var(--opacity-active-val);
+  --opacity-solid-hover: var(--opacity-solid-hover-val);
+  --opacity-solid-active: var(--opacity-solid-active-val);
+  --opacity-solid-text-active: var(--opacity-solid-text-active-val);
+}
+
+@custom-variant dark (&:where(.dark, [data-kb-theme="dark"]));
+
+@custom-variant aether-light (&:where([data-theme="aether-light"]));
+
+@custom-variant aether-dark (&:where([data-theme="aether-dark"]));
+
+@keyframes content-show {
+  from {
+    opacity: 0;
+    transform: scaleY(0) translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+  }
+}
+@keyframes content-hide {
+  from {
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scaleY(0) translateY(-40px);
+  }
+}
+@keyframes slide-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--kb-collapsible-content-height);
+  }
+}
+@keyframes slide-up {
+  from {
+    height: var(--kb-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+@keyframes bump-out {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0.95);
+  }
+}
+@keyframes bump-in {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.05);
+  }
+}
+@keyframes pulse-border {
+  0% {
+    box-shadow:
+      0 0 0 0.5px oklch(var(--pulse-color) / 0.4),
+      0 0 4px 1px oklch(var(--pulse-color) / 0.2);
+  }
+  40% {
+    box-shadow:
+      0 0 0 1.2px oklch(var(--pulse-color) / 0.8),
+      0 0 12px 3.5px oklch(var(--pulse-color) / 0.45);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0.5px oklch(var(--pulse-color) / 0.4),
+      0 0 4px 1px oklch(var(--pulse-color) / 0.2);
+  }
+}
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--kb-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--kb-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@utility p-page {
+  padding: calc(var(--spacing) * 6);
+  padding-top: 1px;
+}
+
+@utility step {
+  counter-increment: step;
+  position: relative;
+
+  &:before {
+    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
+    @apply -ml-12.5 -mt-1;
+    content: counter(step);
+  }
+}
+
+@utility animate-tab-content-wrapper {
+  @apply grid overflow-x-hidden;
+}
+
+@utility animate-tab-content {
+  @apply row-start-1 col-start-1 overflow-hidden p-0.5 w-full h-[calc(100%-4px-4px)]
+      transition-[transform,opacity,visibility] duration-200 max-h-0 opacity-0 invisible;
+
+  &[data-selected] {
+    @apply translate-x-0 opacity-100 visible max-h-full;
+  }
+
+  &[data-selected] ~ & {
+    @apply translate-x-full;
+  }
+
+  &:not([data-selected]) {
+    @apply -translate-x-full;
+  }
+}
+
+@utility modal-adaptive-bounds {
+  width: 80%;
+  min-width: min(1248px, 80%);
+  max-width: 80%;
+  height: 80%;
+  min-height: min(860px, 80%);
+  max-height: 80%;
+
+  @media (min-width: 1280px) {
+    width: 70%;
+    min-width: min(1248px, 70%);
+    max-width: min(70%, 1680px);
+    height: 70%;
+    min-height: min(860px, calc(100% - 96px));
+    max-height: min(70%, 1600px);
+  }
+}
 
 @layer base {
   :root {
@@ -50,17 +272,17 @@
 
     --ring: 21.78% 0 0;
 
-    --opacity-card: 0.03;
-    --opacity-secondary: 0.08;
-    --opacity-hard: 0.97;
+    --opacity-card-val: 3%;
+    --opacity-secondary-val: 8%;
+    --opacity-hard-val: 97%;
 
-    --opacity-control: 0.0605;
-    --opacity-hover: 0.0903;
-    --opacity-active: 0.12;
+    --opacity-control-val: 6.05%;
+    --opacity-hover-val: 9.03%;
+    --opacity-active-val: 12%;
 
-    --opacity-solid-hover: 0.9;
-    --opacity-solid-active: 0.8;
-    --opacity-solid-text-active: 0.7;
+    --opacity-solid-hover-val: 90%;
+    --opacity-solid-active-val: 80%;
+    --opacity-solid-text-active-val: 70%;
 
     --release: 92% 0.05 151.91;
     --release-foreground: 25.82% 0.0584 151.91;
@@ -122,17 +344,17 @@
 
     --ring: 85% 0.01 231;
 
-    --opacity-card: 0.03;
-    --opacity-secondary: 0.08;
-    --opacity-hard: 0.97;
+    --opacity-card-val: 3%;
+    --opacity-secondary-val: 8%;
+    --opacity-hard-val: 97%;
 
-    --opacity-control: 0.0605;
-    --opacity-hover: 0.0903;
-    --opacity-active: 0.0302;
+    --opacity-control-val: 6.05%;
+    --opacity-hover-val: 9.03%;
+    --opacity-active-val: 3.02%;
 
-    --opacity-solid-hover: 0.9;
-    --opacity-solid-active: 0.8;
-    --opacity-solid-text-active: 0.7;
+    --opacity-solid-hover-val: 90%;
+    --opacity-solid-active-val: 80%;
+    --opacity-solid-text-active-val: 70%;
 
     /* Custom colors */
 
@@ -171,7 +393,7 @@
   }
 
   body {
-    @apply text-foreground bg-background;
+    @apply text-foreground;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
@@ -198,89 +420,40 @@
 }
 
 @layer utilities {
-  .step {
-    counter-increment: step;
-  }
-
-  .step:before {
-    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px border-4 border-background;
-    @apply ml-[-50px] mt-[-4px];
-    content: counter(step);
-  }
-
-  .animate-tab-content-wrapper {
-    @apply grid overflow-x-hidden;
-  }
-
-  .animate-tab-content {
-    @apply row-start-1 col-start-1 overflow-hidden p-0.5 w-full h-[calc(100%-4px-4px)]
-      transition-[transform,opacity,visibility] duration-200 max-h-0 opacity-0 invisible;
-  }
-
-  .animate-tab-content[data-selected] {
-    @apply translate-x-0 opacity-100 visible max-h-full;
-  }
-
-  .animate-tab-content[data-selected] ~ .animate-tab-content {
-    @apply translate-x-full;
-  }
-
-  .animate-tab-content:not([data-selected]) {
-    @apply -translate-x-full;
-  }
-
-  .modal-adaptive-bounds {
-    width: 80%;
-    min-width: min(1248px, 80%);
-    max-width: 80%;
-    height: 80%;
-    min-height: min(860px, 80%);
-    max-height: 80%;
-
-    @media (min-width: 1280px) {
-      width: 70%;
-      min-width: min(1248px, 70%);
-      max-width: min(70%, 1680px);
-      height: 70%;
-      min-height: min(860px, calc(100% - 96px));
-      max-height: min(70%, 1600px);
+  @media (max-width: 640px) {
+    .container {
+      @apply px-4;
     }
   }
-}
 
-@media (max-width: 640px) {
-  .container {
-    @apply px-4;
+  ::-webkit-scrollbar {
+    width: 16px;
   }
-}
 
-::-webkit-scrollbar {
-  width: 16px;
-}
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 4px solid transparent;
+    background-clip: content-box;
+    @apply bg-accent/control;
+  }
 
-::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  border: 4px solid transparent;
-  background-clip: content-box;
-  @apply bg-accent/control;
-}
+  ::-webkit-scrollbar-corner {
+    display: none;
+  }
 
-::-webkit-scrollbar-corner {
-  display: none;
-}
+  /* List items reordering */
 
-/* List items reordering */
+  .animate-list-item {
+    transition: all 0.2s ease-out;
+    transition-property: opacity, transform;
+  }
 
-.animate-list-item {
-  transition: all 0.2s ease-out;
-  transition-property: opacity, transform;
-}
-
-.animate-list-item-enter,
-.animate-list-item-exit-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.animate-list-item-exit-active {
-  position: absolute;
+  .animate-list-item-enter,
+  .animate-list-item-exit-to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .animate-list-item-exit-active {
+    position: absolute;
+  }
 }

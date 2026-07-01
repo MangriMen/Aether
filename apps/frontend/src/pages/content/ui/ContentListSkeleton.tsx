@@ -31,7 +31,7 @@ const ContentListItemSkeleton: Component<ComponentProps<'div'>> = (props) => {
 
   return (
     <div
-      class={cn('flex gap-2 border bg-card/card rounded-md p-3', local.class)}
+      class={cn('flex gap-2 rounded-md border bg-card/card p-3', local.class)}
       {...others}
     >
       <Skeleton class='border' radius={8} width={96} height={96} />

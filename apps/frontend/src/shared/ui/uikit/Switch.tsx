@@ -26,13 +26,13 @@ const SwitchControl = <T extends ValidComponent = 'input'>(
     <>
       <SwitchPrimitive.Input
         class={cn(
-          '[&:focus-visible+div]:outline-none [&:focus-visible+div]:ring-2 [&:focus-visible+div]:ring-ring [&:focus-visible+div]:ring-offset-0 [&:focus-visible+div]:ring-offset-background',
+          '[&:focus-visible+div]:ring-2 [&:focus-visible+div]:ring-ring [&:focus-visible+div]:ring-offset-0 [&:focus-visible+div]:ring-offset-background [&:focus-visible+div]:outline-none',
           local.class,
         )}
       />
       <SwitchPrimitive.Control
         class={cn(
-          'inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-card/card transition-[color,background-color,box-shadow] data-[disabled]:cursor-not-allowed data-[checked]:bg-primary data-[disabled]:opacity-50',
+          'inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-card/card transition-[color,background-color,box-shadow] data-[checked]:bg-primary data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
           local.class,
         )}
         {...others}
@@ -73,7 +73,7 @@ const SwitchLabel = <T extends ValidComponent = 'label'>(
   return (
     <SwitchPrimitive.Label
       class={cn(
-        'text-sm font-medium leading-none data-[disabled]:cursor-not-allowed data-[disabled]:text-muted-foreground',
+        'text-sm leading-none font-medium data-[disabled]:cursor-not-allowed data-[disabled]:text-muted-foreground',
         local.class,
       )}
       {...others}

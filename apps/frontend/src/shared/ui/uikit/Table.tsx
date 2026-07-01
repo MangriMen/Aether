@@ -75,7 +75,7 @@ const TableHead: Component<ComponentProps<'th'>> = (props) => {
 
 const TableCell: Component<ComponentProps<'td'>> = (props) => {
   const [local, others] = splitProps(props, ['class']);
-  return <td class={cn('py-2 px-4 align-middle', local.class)} {...others} />;
+  return <td class={cn('px-4 py-2 align-middle', local.class)} {...others} />;
 };
 
 const TableCaption: Component<ComponentProps<'caption'>> = (props) => {

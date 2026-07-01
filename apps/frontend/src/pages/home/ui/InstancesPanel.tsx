@@ -33,7 +33,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           <Show
             when={instances.data?.length}
             fallback={
-              <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
+              <p class='m-auto text-center whitespace-pre-line text-muted-foreground'>
                 {t('home.noInstances')}
               </p>
             }

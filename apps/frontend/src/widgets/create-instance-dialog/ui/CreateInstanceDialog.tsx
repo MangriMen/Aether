@@ -46,7 +46,7 @@ export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
               )}
             </For>
           </TabsList>
-          <Separator class='mb-4 mt-2' />
+          <Separator class='mt-2 mb-4' />
           <div class='animate-tab-content-wrapper flex min-h-[305px] flex-1 flex-col p-0.5'>
             <For each={TAB_VALUES}>
               {(tabValue) => (

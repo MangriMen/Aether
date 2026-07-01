@@ -38,7 +38,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
     <Polymorphic
       class={cn(
         local.class,
-        'text-left flex min-w-[132px] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 max-w-[132px] flex-col cursor-pointer gap-2 bg-card/card hover:bg-card/hover active:bg-card/active drop-shadow-md border rounded-md p-2 h-max overflow-hidden relative active:animate-bump-out',
+        'relative flex h-max max-w-[132px] min-w-[132px] cursor-pointer flex-col gap-2 overflow-hidden rounded-md border bg-card/card p-2 text-left drop-shadow-md outline-none hover:bg-card/hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 active:animate-bump-out active:bg-card/active',
       )}
       {...others}
     >
@@ -58,7 +58,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
         <Match when={local.isLoading}>
           <div
             class={cn(
-              'size-2.5 rounded-full bg-warning absolute right-2 top-2 animate-pulse fade-in-0',
+              'absolute top-2 right-2 size-2.5 animate-pulse rounded-full bg-warning fade-in-0',
               local.class,
             )}
           />
@@ -66,7 +66,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
         <Match when={local.isRunning}>
           <div
             class={cn(
-              'size-2.5 rounded-full bg-success absolute right-2 top-2',
+              'absolute top-2 right-2 size-2.5 rounded-full bg-success',
               local.class,
             )}
           />

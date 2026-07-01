@@ -26,7 +26,7 @@ const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
 };
 
 const dialogOverlayVariants = cva(
-  'fixed inset-0 z-50 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0',
+  'fixed inset-0 z-50 backdrop-blur-sm data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:animate-in data-[expanded]:fade-in-0',
   {
     variants: {
       variant: {
@@ -97,14 +97,14 @@ const DialogContent = <T extends ValidComponent = 'div'>(
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
           local.variant !== 'unstyled' &&
-            'fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] sm:rounded-lg',
+            'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-[closed]:animate-out data-[closed]:fade-out-0 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[closed]:zoom-out-95 data-[expanded]:animate-in data-[expanded]:fade-in-0 data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] data-[expanded]:zoom-in-95 sm:rounded-lg',
           local.class,
         )}
         {...rest}
       >
         {local.children}
         <Show when={local.showActions ?? true}>
-          <div class='absolute right-6 top-[22px] flex'>
+          <div class='absolute top-[22px] right-6 flex'>
             {local.actions}
             <DialogPrimitive.CloseButton
               as={IconButton}
@@ -173,7 +173,7 @@ const DialogTitle = <T extends ValidComponent = 'h2'>(
   return (
     <DialogPrimitive.Title
       class={cn(
-        'text-lg font-semibold leading-none tracking-tight',
+        'text-lg leading-none font-semibold tracking-tight',
         props.class,
       )}
       {...rest}

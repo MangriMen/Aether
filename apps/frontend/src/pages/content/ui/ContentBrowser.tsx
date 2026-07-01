@@ -109,7 +109,7 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col grow gap-3 overflow-hidden p-0.5', local.class)}
+      class={cn('flex grow flex-col gap-3 overflow-hidden p-0.5', local.class)}
       {...others}
     >
       <div class='flex flex-col gap-2'>

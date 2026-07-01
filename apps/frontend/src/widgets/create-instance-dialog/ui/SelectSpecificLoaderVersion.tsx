@@ -33,7 +33,7 @@ export const SelectSpecificLoaderVersion = <
 
   return (
     <Select
-      class={cn('flex flex-col gap-2 w-full', local.class)}
+      class={cn('flex w-full flex-col gap-2', local.class)}
       virtualized
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionValue='id'

@@ -27,7 +27,7 @@ export const MarkdownRenderer: Component<MarkdownRendererProps> = (props) => {
     >
       <div
         class={cn(
-          'prose prose-li:my-0 prose-h1:mb-6 prose-h2:mb-4 prose-h2:mt-3 prose-h1:pb-1 prose-h1:border-b-2 prose-h1:border-b-secondary/secondary prose-h2:pb-1 prose-h2:border-b-2 prose-h2:border-b-secondary/secondary prose-p:m-0 prose-p:mb-4 max-w-none dark:prose-invert',
+          'prose max-w-none dark:prose-invert prose-h1:mb-6 prose-h1:border-b-2 prose-h1:border-b-secondary/secondary prose-h1:pb-1 prose-h2:mt-3 prose-h2:mb-4 prose-h2:border-b-2 prose-h2:border-b-secondary/secondary prose-h2:pb-1 prose-p:m-0 prose-p:mb-4 prose-li:my-0',
           local.class,
         )}
         // Mute warning because we are use sanitized text in inner html

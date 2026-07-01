@@ -28,7 +28,7 @@ export const Image: Component<ImageProps> = (props) => {
   return (
     <div
       class={cn(
-        'size-16 rounded-md flex items-center justify-center bg-secondary/secondary border',
+        'flex size-16 items-center justify-center rounded-md border bg-secondary/secondary',
         local.class,
       )}
       {...others}

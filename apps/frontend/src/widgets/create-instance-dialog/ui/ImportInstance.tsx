@@ -25,7 +25,7 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
         when={pluginsImporters.data?.length}
         fallback={
           <div class='flex grow items-center justify-center'>
-            <span class='whitespace-pre-line text-center text-lg text-muted-foreground'>
+            <span class='text-center text-lg whitespace-pre-line text-muted-foreground'>
               {t('createInstance.noImportConfigs')}
             </span>
           </div>

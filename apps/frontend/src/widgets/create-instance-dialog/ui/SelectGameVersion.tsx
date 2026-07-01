@@ -26,7 +26,7 @@ export function SelectGameVersion<T extends Version = Version>(
 
   return (
     <Select
-      class={cn('flex flex-col gap-2 w-full', local.class)}
+      class={cn('flex w-full flex-col gap-2', local.class)}
       virtualized
       value={local.value}
       validationState={local.errorMessage ? 'invalid' : 'valid'}

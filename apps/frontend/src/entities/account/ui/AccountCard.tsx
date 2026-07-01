@@ -42,7 +42,7 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
 
   return (
     <Polymorphic
-      class={cn('flex justify-between border rounded-md h-12', local.class)}
+      class={cn('flex h-12 justify-between rounded-md border', local.class)}
       {...others}
     >
       <AccountButton

@@ -51,7 +51,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
 
   return (
     <nav
-      class={cn('flex gap-2 justify-between', local.class)}
+      class={cn('flex justify-between gap-2', local.class)}
       aria-label='Content pagination'
       {...others}
     >

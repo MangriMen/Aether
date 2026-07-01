@@ -30,7 +30,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
   return (
     <div
       class={cn(
-        'relative flex gap-2 border bg-card/card rounded-md p-3 group',
+        'group relative flex gap-2 rounded-md border bg-card/card p-3',
         local.class,
       )}
       {...others}
@@ -41,7 +41,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
       >
         <ContentItemInfo item={local.item} />
       </A>
-      <div class='relative z-20 ml-auto mt-auto flex size-max flex-col justify-end'>
+      <div class='relative z-20 mt-auto ml-auto flex size-max flex-col justify-end'>
         <ContentInstallButton
           isInstalling={isInstalling()}
           isInstalled={isInstalled()}

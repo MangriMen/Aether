@@ -76,7 +76,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
   return (
     <Form
-      class={cn('flex flex-col h-full grow', local.class)}
+      class={cn('flex h-full grow flex-col', local.class)}
       onSubmit={handleSubmit}
       {...others}
     >

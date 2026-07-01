@@ -82,26 +82,28 @@ export default [
       'jsx-a11y/label-has-associated-control': 'off',
     },
   },
-  ...tailwind.configs['flat/recommended'],
+tailwind.configs.recommended,
   {
     settings: {
       tailwindcss: {
         callees: ['cva', 'clsx', 'twMerge'],
+        cssConfigPath: './src/app/app.css',
       },
     },
-  },
-  {
     rules: {
       'tailwindcss/no-custom-classname': [
         'warn',
         {
-          cssFiles: ['src/app/app.css'],
-          "whitelist": [
-            "animate-list-item",
-            "animate-list-item-enter",
-            "animate-list-item-exit-to",
-            "animate-list-item-exit-active"
-          ]
+          whitelist: [
+            'animate-list-item',
+            'animate-list-item-enter',
+            'animate-list-item-exit-to',
+            'animate-list-item-exit-active',
+            'destructive',
+            'success',
+            'warning',
+            'error',
+          ],
         },
       ],
     },

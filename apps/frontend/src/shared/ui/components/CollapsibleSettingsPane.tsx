@@ -32,7 +32,7 @@ export const CollapsibleSettingsPane: Component<
       open={isOpened()}
       onOpenChange={setIsOpened}
       class={cn(
-        'flex flex-col rounded-md bg-card/card px-6 py-4 gap-2',
+        'flex flex-col gap-2 rounded-md bg-card/card px-6 py-4',
         local.class,
       )}
       {...others}
@@ -42,7 +42,7 @@ export const CollapsibleSettingsPane: Component<
           <h2 class='text-xl font-bold'>{local.label}</h2>
           <IconMdiChevronDown
             class={cn(
-              'aspect-square h-full text-2xl -rotate-180 transition-transform',
+              'aspect-square h-full -rotate-180 text-2xl transition-transform',
               {
                 'rotate-0': isOpened(),
               },

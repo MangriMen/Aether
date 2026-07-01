@@ -63,7 +63,7 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         <CombinedTooltip label={title()} as='span' class='truncate font-bold'>
           {title()}
         </CombinedTooltip>
-        <span class='shrink-0 tabular-nums text-muted-foreground'>
+        <span class='shrink-0 text-muted-foreground tabular-nums'>
           {percentStr()}
         </span>
       </div>

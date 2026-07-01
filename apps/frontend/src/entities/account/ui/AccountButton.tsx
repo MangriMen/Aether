@@ -33,7 +33,7 @@ export const AccountButton = (
       label={t('account.activate')}
       disableTooltip={local.active}
       as={Button}
-      class={cn('size-full rounded-r-none justify-start px-2', local.class, {
+      class={cn('size-full justify-start rounded-r-none px-2', local.class, {
         'bg-secondary/secondary pointer-events-none': local.active,
       })}
       variant='ghost'
@@ -41,7 +41,7 @@ export const AccountButton = (
     >
       <div class='flex flex-col items-start'>
         <span class='font-bold'>{local.username}</span>
-        <span class='capitalize text-muted-foreground'>
+        <span class='text-muted-foreground capitalize'>
           {t(`account.${local.accountType}`)}
         </span>
       </div>

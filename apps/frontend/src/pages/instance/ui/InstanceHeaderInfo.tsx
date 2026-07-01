@@ -27,7 +27,7 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
   return (
     <div
       class={cn(
-        'flex flex-col text-muted-foreground justify-evenly',
+        'flex flex-col justify-evenly text-muted-foreground',
         local.class,
       )}
       {...others}
@@ -40,7 +40,7 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
           <CombinedTooltip
             label={name()}
             as='h2'
-            class='line-clamp-2 text-2xl font-bold text-foreground [word-break:break-word]'
+            class='line-clamp-2 text-2xl font-bold [word-break:break-word] text-foreground'
           >
             {name()}
           </CombinedTooltip>

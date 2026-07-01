@@ -33,7 +33,7 @@ export const InstanceTitle: Component<InstanceTitleProps> = (props) => {
       >
         {local.name}
       </CombinedTooltip>
-      <div class='inline-flex justify-between text-sm capitalize text-muted-foreground'>
+      <div class='inline-flex justify-between text-sm text-muted-foreground capitalize'>
         <span>{local.loader}</span>
         <span>{local.gameVersion}</span>
       </div>

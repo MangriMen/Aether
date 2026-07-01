@@ -18,7 +18,7 @@ export const FixedItemsList = <TValue, TError>(
 
   return (
     <ul
-      class={cn('flex flex-col bg-black/20 rounded-sm', local.class)}
+      class={cn('flex flex-col rounded-sm bg-black/20', local.class)}
       {...others}
     >
       <For each={local.items}>

@@ -32,7 +32,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
   return (
     <Sidebar
-      class={cn('justify-between pt-px pl-4 pr-1 pb-4', local.class)}
+      class={cn('justify-between pt-px pr-1 pb-4 pl-4', local.class)}
       {...others}
     >
       <div class='flex flex-col items-center gap-2'>

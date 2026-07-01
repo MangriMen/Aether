@@ -23,7 +23,7 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col @sm/settings-pane:flex-row justify-between @sm/settings-pane:items-center w-full gap-8',
+        'flex w-full flex-col justify-between gap-8 @sm/settings-pane:flex-row @sm/settings-pane:items-center',
         local.class,
         {
           'bg-card/card border p-4 rounded-md': local.variant === 'card',
@@ -36,7 +36,7 @@ export const SettingsEntry: Component<SettingsEntryProps> = (props) => {
           <FieldLabel class='text-lg font-medium'>{local.title}</FieldLabel>
         </Show>
         <Show when={local.description}>
-          <p class='whitespace-pre-line text-sm text-muted-foreground'>
+          <p class='text-sm whitespace-pre-line text-muted-foreground'>
             {local.description}
           </p>
         </Show>

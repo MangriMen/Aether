@@ -21,7 +21,7 @@ export const AppErrorBoundary: Component<AppErrorBoundaryProps> = (props) => {
       )}
       {...others}
     >
-      <h1 class='whitespace-pre-line text-center'>{t('common.appError')}</h1>
+      <h1 class='text-center whitespace-pre-line'>{t('common.appError')}</h1>
       <Button onClick={props.reset}>{t('common.reset')}</Button>
     </div>
   );

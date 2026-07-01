@@ -44,7 +44,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
   return (
     <div
       class={cn(
-        'flex grow flex-col gap-8 items-center justify-center px-8 pb-8 overflow-hidden',
+        'flex grow flex-col items-center justify-center gap-8 overflow-hidden px-8 pb-8',
         local.class,
       )}
       {...others}
@@ -65,7 +65,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
 
       <Show when={local.error}>
         {(error) => (
-          <div class='flex max-h-max min-w-96 max-w-screen-2xl grow flex-col gap-1 overflow-hidden rounded-md border border-destructive/20 bg-destructive/15 p-4'>
+          <div class='flex max-h-max max-w-screen-2xl min-w-96 grow flex-col gap-1 overflow-hidden rounded-md border border-destructive/20 bg-destructive/15 p-4'>
             <button
               class={cn(
                 'rounded bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/solid-hover',
@@ -80,7 +80,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
                 Copied!
               </Show>
             </button>
-            <p class='overflow-y-auto break-all font-mono text-sm leading-relaxed text-destructive-foreground'>
+            <p class='overflow-y-auto font-mono text-sm leading-relaxed break-all text-destructive-foreground'>
               {error()}
             </p>
           </div>

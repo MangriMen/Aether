@@ -35,7 +35,7 @@ const TabsList = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.List
       class={cn(
-        'inline-flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-full h-9 gap-0.5 items-center justify-center rounded-md bg-card/card p-1 text-muted-foreground',
+        'inline-flex h-9 items-center justify-center gap-0.5 rounded-md bg-card/card p-1 text-muted-foreground data-[orientation=vertical]:h-full data-[orientation=vertical]:flex-col',
         local.class,
       )}
       {...others}
@@ -55,7 +55,7 @@ const TabsTrigger = <T extends ValidComponent = 'button'>(
   return (
     <TabsPrimitive.Trigger
       class={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:shadow-sm enabled:hover:bg-primary/solid-hover enabled:hover:text-primary-foreground',
+        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none enabled:hover:bg-primary/solid-hover enabled:hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:shadow-sm',
         local.class,
       )}
       {...others}
@@ -75,7 +75,7 @@ const TabsContent = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Content
       class={cn(
-        'data-[orientation=vertical]:grow rounded-sm data-[orientation=vertical]:ml-2 data-[orientation=horizontal]:mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
+        'rounded-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none data-[orientation=horizontal]:mt-2 data-[orientation=vertical]:ml-2 data-[orientation=vertical]:grow',
         local.class,
       )}
       {...others}
@@ -95,7 +95,7 @@ const TabsIndicator = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Indicator
       class={cn(
-        'duration-250ms absolute transition-all data-[orientation=horizontal]:-bottom-px data-[orientation=vertical]:-right-px data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:w-[2px]',
+        'absolute transition-all duration-[250ms] data-[orientation=horizontal]:-bottom-px data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:-right-px data-[orientation=vertical]:w-[2px]',
         local.class,
       )}
       {...others}

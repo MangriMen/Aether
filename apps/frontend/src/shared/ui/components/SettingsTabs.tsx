@@ -15,7 +15,7 @@ export const SettingsTabsList = <T extends ValidComponent = 'div'>(
 ) => (
   <TabsList
     {...props}
-    class={cn('min-w-40 sm:static justify-start bg-[unset] p-0 ', props.class)}
+    class={cn('min-w-40 justify-start bg-[unset] p-0 sm:static ', props.class)}
   />
 );
 
@@ -34,7 +34,7 @@ export const SettingsTabsContent = <T extends ValidComponent = 'div'>(
   <TabsContent
     {...props}
     class={cn(
-      'flex-1 overflow-y-auto pl-6 duration-200 animate-in fade-in slide-in-from-bottom-12 data-[orientation=vertical]:mx-auto ease-customExpo',
+      'flex-1 overflow-y-auto pl-6 duration-200 ease-custom-expo animate-in fade-in slide-in-from-bottom-12 data-[orientation=vertical]:mx-auto',
       props.class,
     )}
   />
