@@ -37,7 +37,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
           onClick={handleOpenDetails}
         />
       </div>
-      <div class='flex max-h-[244px] flex-col gap-3 overflow-y-auto px-2'>
+      <div class='flex max-h-61 flex-col gap-3 overflow-y-auto px-2'>
         <For each={local.payloads()}>
           {(payload) => <ProgressCard payload={payload} />}
         </For>

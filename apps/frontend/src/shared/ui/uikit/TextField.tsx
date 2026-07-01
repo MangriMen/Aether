@@ -75,7 +75,7 @@ const TextFieldTextArea = <T extends ValidComponent = 'textarea'>(
   return (
     <TextFieldPrimitive.TextArea
       class={cn(
-        'flex  min-h-[80px] w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
+        'flex  min-h-20 w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
         local.class,
       )}
       {...others}

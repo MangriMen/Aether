@@ -97,14 +97,14 @@ const DialogContent = <T extends ValidComponent = 'div'>(
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
           local.variant !== 'unstyled' &&
-            'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-left-1/2 data-closed:slide-out-to-top-[48%] data-closed:zoom-out-95 data-expanded:animate-in data-expanded:fade-in-0 data-expanded:slide-in-from-left-1/2 data-expanded:slide-in-from-top-[48%] data-expanded:zoom-in-95 sm:rounded-lg',
+            'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-expanded:animate-in data-expanded:fade-in-0 data-expanded:zoom-in-95 sm:rounded-lg',
           local.class,
         )}
         {...rest}
       >
         {local.children}
         <Show when={local.showActions ?? true}>
-          <div class='absolute top-[22px] right-6 flex'>
+          <div class='absolute top-5.5 right-6 flex'>
             {local.actions}
             <DialogPrimitive.CloseButton
               as={IconButton}

@@ -83,7 +83,7 @@ const SliderThumb = <T extends ValidComponent = 'span'>(
   return (
     <SliderPrimitive.Thumb
       class={cn(
-        'top-[-6px] block h-5 w-3 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-disabled:border-primary',
+        '-top-1.5 block h-5 w-3 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-disabled:border-primary',
         local.class,
       )}
       {...others}

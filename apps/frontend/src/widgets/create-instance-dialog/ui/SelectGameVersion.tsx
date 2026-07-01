@@ -40,7 +40,7 @@ export function SelectGameVersion<T extends Version = Version>(
         </SelectValue>
       </SelectTrigger>
       <SelectContent
-        class='h-[170px]'
+        class='h-42.5'
         virtualized
         options={others.options}
         optionValue='id'

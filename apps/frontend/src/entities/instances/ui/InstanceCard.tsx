@@ -38,7 +38,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
     <Polymorphic
       class={cn(
         local.class,
-        'relative flex h-max max-w-[132px] min-w-[132px] cursor-pointer flex-col gap-2 overflow-hidden rounded-md border bg-card/card p-2 text-left drop-shadow-md outline-none hover:bg-card/hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 active:animate-bump-out active:bg-card/active',
+        'relative flex h-max max-w-33 min-w-33 cursor-pointer flex-col gap-2 overflow-hidden rounded-md border bg-card/card p-2 text-left drop-shadow-md outline-none hover:bg-card/hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 active:animate-bump-out active:bg-card/active',
       )}
       {...others}
     >

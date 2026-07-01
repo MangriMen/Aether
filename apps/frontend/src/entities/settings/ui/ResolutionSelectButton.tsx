@@ -78,7 +78,7 @@ export const ResolutionSelectButton: Component<ResolutionSelectButtonProps> = (
         disabled={local.disabled}
         icon={IconMdiMonitor}
       />
-      <DropdownMenuContent class='max-h-[230px] overflow-auto'>
+      <DropdownMenuContent class='max-h-57.5 overflow-auto'>
         <For each={filteredResolutions()}>
           {(option) => (
             <DropdownMenuItem

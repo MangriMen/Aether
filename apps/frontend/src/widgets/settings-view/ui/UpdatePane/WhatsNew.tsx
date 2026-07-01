@@ -48,7 +48,7 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
         <CombinedTooltip
           label={t('common.copyToClipboard')}
           as={IconButton}
-          class='pr-[3px]'
+          class='pr-0.75'
           size='sm'
           variant='secondary'
           icon={IconMdiContentCopy}
@@ -57,7 +57,7 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
         <CombinedTooltip
           label={t('update.translateChangelogInBrowser')}
           as={IconButton}
-          class='pr-[3px]'
+          class='pr-0.75'
           size='sm'
           variant='secondary'
           icon={IconMdiTranslate}

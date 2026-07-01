@@ -43,7 +43,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
     <div class='flex flex-col gap-4 rounded-lg border p-4'>
       {/* Header: icon + info row */}
       <div class='flex items-center gap-4'>
-        <Image class='h-[124px] w-max' />
+        <Image class='h-31 w-max' />
         <PluginInfoHeader
           class='flex-1'
           name={manifest()?.name ?? props.preview.repo}

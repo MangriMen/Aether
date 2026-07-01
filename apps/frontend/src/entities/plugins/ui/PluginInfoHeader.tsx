@@ -27,7 +27,7 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
           <span class='text-muted-foreground'>{props.version}</span>
           <Show when={props.apiVersion}>
             <PluginApiCompatibilityBadge
-              class='mb-[3px]'
+              class='mb-0.75'
               apiVersion={props.apiVersion!}
             />
           </Show>

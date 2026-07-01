@@ -63,7 +63,7 @@ export const ContentItemPageInfo: Component<
       />
       <div class='flex grow flex-col'>
         <div class='flex grow justify-between'>
-          <div class='flex max-w-[512px] flex-col'>
+          <div class='flex max-w-lg flex-col'>
             <h1 class='text-2xl font-bold text-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}

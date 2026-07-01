@@ -17,7 +17,7 @@ export const DialogLab = () => {
     <ComponentShelf title='Dialog'>
       <Dialog>
         <DialogTrigger as={Button<'button'>}>Edit Profile</DialogTrigger>
-        <DialogContent class='sm:max-w-[425px]'>
+        <DialogContent class='sm:max-w-106.25'>
           <DialogHeader>
             <DialogTitle>Edit profile</DialogTitle>
             <DialogDescription>

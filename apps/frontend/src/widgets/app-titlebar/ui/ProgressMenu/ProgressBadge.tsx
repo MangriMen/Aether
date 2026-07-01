@@ -18,7 +18,7 @@ export const ProgressBadge: Component<ProgressBadgeProps> = (props) => {
       {...others}
     >
       <div class='size-full bg-secondary/secondary' />
-      <div class='absolute top-[-18px] left-[-22px] aspect-square w-[130%] animate-spin rounded-[110%_30%_80%_20%/40%_90%_40%_60%] bg-green-500 [animation-duration:12s]' />
+      <div class='absolute -top-4.5 -left-5.5 aspect-square w-[130%] animate-spin rounded-[110%_30%_80%_20%/40%_90%_40%_60%] bg-green-500 [animation-duration:12s]' />
     </div>
   );
 };

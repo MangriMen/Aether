@@ -36,7 +36,7 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
   return (
     <div class={cn('flex flex-col gap-4', local.class)} {...others}>
       <div class='ml-4 flex items-center gap-4'>
-        <Image class='h-[124px] w-max' />
+        <Image class='h-31 w-max' />
         <div class='flex flex-col gap-2'>
           <PluginDetailsInfo plugin={local.plugin} />
           <PluginDetailsActions plugin={local.plugin} />

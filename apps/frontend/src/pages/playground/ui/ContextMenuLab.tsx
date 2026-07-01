@@ -28,7 +28,7 @@ export const ContextMenuLab = () => {
   return (
     <ComponentShelf title='Context Menu'>
       <ContextMenu>
-        <ContextMenuTrigger class='flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed  text-sm'>
+        <ContextMenuTrigger class='flex h-37.5 w-75 items-center justify-center rounded-md border border-dashed  text-sm'>
           Right click here.
         </ContextMenuTrigger>
         <ContextMenuPortal>

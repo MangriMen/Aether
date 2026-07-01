@@ -11,7 +11,7 @@ import { ComponentShelf } from './ComponentShelf';
 export const CollapsibleLab = () => {
   return (
     <ComponentShelf title='Collapsible'>
-      <Collapsible class='w-[300px]'>
+      <Collapsible class='w-75'>
         <CollapsibleTrigger class='flex w-full items-center justify-between rounded-md border p-3'>
           <span>What is Kobalte ?</span>
           <IconMdiChevronDown />

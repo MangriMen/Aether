@@ -44,7 +44,7 @@ export const SelectSpecificLoaderVersion = <
         <SelectValue<T>>{(state) => state.selectedOption()?.id}</SelectValue>
       </SelectTrigger>
       <SelectContent
-        class='h-[170px]'
+        class='h-42.5'
         virtualized
         options={others.options}
         optionValue='id'
