@@ -21,12 +21,18 @@ export const ButtonsLab = () => {
 
   return (
     <ComponentShelf title='Button'>
-      <div class='grid grid-cols-3 gap-8 md:grid-cols-8'>
+      <div
+        class='
+          gap-8
+          md:grid-cols-8
+          grid grid-cols-3
+        '
+      >
         <For each={variants}>
           {(v) => (
             <div class='space-y-4'>
               <p class='font-mono text-xs text-muted-foreground'>{v}</p>
-              <div class='flex flex-col gap-2'>
+              <div class='gap-2 flex flex-col'>
                 <For each={sizes}>
                   {(s) => (
                     <Button variant={v} size={s}>

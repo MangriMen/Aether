@@ -164,7 +164,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   return (
     <Form
-      class={cn('flex flex-col gap-4', local.class)}
+      class={cn('gap-4 flex flex-col', local.class)}
       onSubmit={handleSubmit}
       shouldActive
       {...others}
@@ -201,7 +201,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       </LabeledField>
 
       <LabeledField label={t('common.gameVersion')}>
-        <div class='flex items-start gap-2'>
+        <div class='gap-2 flex items-start'>
           <Field name='gameVersion'>
             {(field, props) => (
               <SelectGameVersion

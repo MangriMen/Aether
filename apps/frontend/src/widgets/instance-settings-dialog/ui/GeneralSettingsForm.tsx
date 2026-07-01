@@ -83,7 +83,7 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
 
   return (
     <Form class={cn('flex flex-col', local.class)} {...others}>
-      <div class='flex gap-4'>
+      <div class='gap-4 flex'>
         <Field name='icon' type='string'>
           {(_) => (
             <InstanceIconDropdownButton

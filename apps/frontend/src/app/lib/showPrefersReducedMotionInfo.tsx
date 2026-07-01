@@ -18,7 +18,7 @@ export const showPrefersReducedMotionInfo = (
     const number = showToast({
       title: <span>{t('settings.animationsDisabled')}</span>,
       description: (
-        <div class='flex flex-col gap-2'>
+        <div class='gap-2 flex flex-col'>
           <span>{t('settings.animationsDisabledDescription')}</span>
           <Button class='self-start' onClick={handleEnableAnimations}>
             {t('common.enable')}

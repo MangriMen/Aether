@@ -137,11 +137,11 @@ export const DataTable = <TData,>(
 
   return (
     <div
-      class={cn('relative w-full overflow-auto rounded-md border', local.class)}
+      class={cn('rounded-md relative w-full overflow-auto border', local.class)}
       {...others}
     >
       <Table class={local.tableClass} disableWrapper>
-        <TableHeader class='sticky top-0 z-10 bg-popover'>
+        <TableHeader class='top-0 bg-popover sticky z-10'>
           <For each={getTable().getHeaderGroups()}>
             {(headerGroup) => (
               <DataTableHeaderRow

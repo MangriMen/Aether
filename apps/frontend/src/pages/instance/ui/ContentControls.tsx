@@ -42,7 +42,7 @@ export const ContentControls: Component<ContentControlsProps> = (props) => {
   );
 
   return (
-    <div class={cn('flex items-center gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex items-center', local.class)} {...others}>
       <CombinedTextField
         class='w-full'
         name='search'

@@ -32,7 +32,7 @@ export const AccountsMenu: Component<AccountsMenuProps> = (props) => {
   return (
     <div class={cn('w-56', local.class)} {...others}>
       <AccountsList
-        class='max-h-48 overflow-y-auto p-3'
+        class='max-h-48 p-3 overflow-y-auto'
         accounts={sortedAccounts()}
         onActivate={local.onActivate}
         onRemove={local.onLogout}

@@ -76,7 +76,7 @@ export const CreateOfflineAccountForm: Component<
 
   return (
     <Form onSubmit={handleSubmit}>
-      <div class='flex flex-col gap-4' {...others}>
+      <div class='gap-4 flex flex-col' {...others}>
         <Field name='username'>
           {(field, props) => (
             <CombinedTextField

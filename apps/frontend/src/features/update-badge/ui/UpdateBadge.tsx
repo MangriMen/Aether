@@ -33,7 +33,7 @@ export const UpdateBadge: Component<UpdateBadgeProps> = (props) => {
 
   return (
     <Show when={local.isAbleToShow && isUpdateAvailable()}>
-      <Badge class={cn('aspect-square size-2 p-0', local.class)} {...others} />
+      <Badge class={cn('size-2 p-0 aspect-square', local.class)} {...others} />
     </Show>
   );
 };

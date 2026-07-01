@@ -22,7 +22,7 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
   });
 
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
       <DataTable table={table} isLoading={javaVersions.isLoading} />
     </div>
   );

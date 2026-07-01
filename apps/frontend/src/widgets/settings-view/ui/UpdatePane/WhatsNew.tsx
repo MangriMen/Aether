@@ -42,8 +42,8 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
   };
 
   return (
-    <div class={cn('mt-2 flex flex-col gap-2', local.class)} {...others}>
-      <div class='flex items-end gap-2'>
+    <div class={cn('mt-2 gap-2 flex flex-col', local.class)} {...others}>
+      <div class='gap-2 flex items-end'>
         <h3 class='text-xl font-medium'>{t('settings.whatsNew')}</h3>
         <CombinedTooltip
           label={t('common.copyToClipboard')}
@@ -64,7 +64,7 @@ export const WhatsNew: Component<WhatsNewProps> = (props) => {
           onClick={handleTranslateInBrowser}
         />
       </div>
-      <div class='max-w-full overflow-auto rounded-md border bg-card/card'>
+      <div class='rounded-md bg-card/card max-w-full overflow-auto border'>
         <MarkdownRenderer class='p-4' children={local.changelogBody} />
       </div>
     </div>

@@ -14,7 +14,7 @@ export const Sidebar: Component<SidebarProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col items-center px-2 pb-2', local.class)}
+      class={cn('px-2 pb-2 flex flex-col items-center', local.class)}
       {...others}
     >
       {local.children}

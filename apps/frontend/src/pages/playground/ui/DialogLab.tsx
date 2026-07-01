@@ -24,8 +24,8 @@ export const DialogLab = () => {
               Make changes to your profile here. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <div class='grid gap-4 py-4'>
-            <TextField class='grid grid-cols-4 items-center gap-4'>
+          <div class='gap-4 py-4 grid'>
+            <TextField class='gap-4 grid grid-cols-4 items-center'>
               <TextFieldLabel class='text-right'>Name</TextFieldLabel>
               <TextFieldInput
                 value='Pedro Duarte'
@@ -33,7 +33,7 @@ export const DialogLab = () => {
                 type='text'
               />
             </TextField>
-            <TextField class='grid grid-cols-4 items-center gap-4'>
+            <TextField class='gap-4 grid grid-cols-4 items-center'>
               <TextFieldLabel class='text-right'>Username</TextFieldLabel>
               <TextFieldInput
                 value='@peduarte'

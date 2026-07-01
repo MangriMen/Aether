@@ -43,7 +43,7 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
     <Popover open={isOpen()} onOpenChange={setIsOpen}>
       <PopoverTrigger
         as={IconButton}
-        class={cn('aspect-square p-0 px-1', local.class, {
+        class={cn('p-0 px-1 aspect-square', local.class, {
           'bg-success/10': isOpen(),
           invisible: !payloadValues().length,
         })}

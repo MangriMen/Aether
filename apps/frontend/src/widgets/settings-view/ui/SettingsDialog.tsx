@@ -48,28 +48,31 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
   return (
     <Dialog {...props}>
       <DialogContent
-        class={cn('@container/tabs-root flex flex-col p-0 pt-6', {
+        class={cn('p-0 pt-6 @container/tabs-root flex flex-col', {
           'modal-adaptive-bounds': !isFullScreen(),
-          'size-full top-[calc(50%+20px)] max-w-[calc(100%-16px)] max-h-[calc(100%-60px)]':
+          'top-[calc(50%+20px)] size-full max-h-[calc(100%-60px)] max-w-[calc(100%-16px)]':
             isFullScreen(),
         })}
         actions={
           <IconButton
             size='sm'
             variant='ghost'
-            class='opacity-70 transition-opacity hover:opacity-100'
+            class='
+              opacity-70 transition-opacity
+              hover:opacity-100
+            '
             icon={isFullScreen() ? IconMdiFullscreenExit : IconMdiFullscreen}
             onClick={toggleFullscreen}
           />
         }
       >
-        <DialogHeader class='z-50 w-max flex-row gap-2 pr-20 pl-6'>
+        <DialogHeader class='gap-2 pr-20 pl-6 z-50 w-max flex-row'>
           <DialogTitle class='mt-0! self-center'>
             {t('settings.title')}
           </DialogTitle>
         </DialogHeader>
         <SettingsView
-          class='grow pl-6'
+          class='pl-6 grow'
           tab={params().tab}
           onChangeTab={handleChangeTab}
         />

@@ -27,7 +27,11 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
       fallback={
         <div
           class={cn(
-            '@container/settings-pane container flex flex-col gap-4 rounded-md px-0 md:pl-6',
+            `
+              gap-4 rounded-md px-0
+              md:pl-6
+              @container/settings-pane container flex flex-col
+            `,
             local.class,
           )}
           {...others}
@@ -37,7 +41,7 @@ export const SettingsPane: Component<SettingsPaneProps> = (props) => {
           </Show>
           <div
             class={cn(
-              'flex grow flex-col gap-2 overflow-y-auto pr-6 pb-6',
+              'gap-2 pr-6 pb-6 flex grow flex-col overflow-y-auto',
               local.childrenWrapperClass,
             )}
           >

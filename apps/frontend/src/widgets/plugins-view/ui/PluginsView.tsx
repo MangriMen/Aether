@@ -46,7 +46,10 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
     >
       <PluginsList
         class={cn(
-          'max-w-full min-w-(--min-list-width) shrink-0 grow p-px transition-[max-width] duration-200',
+          `
+            max-w-full min-w-(--min-list-width) shrink-0 grow p-px
+            transition-[max-width] duration-200
+          `,
           {
             'max-w-(--min-list-width)': hasSelectedPlugin(),
           },
@@ -59,7 +62,11 @@ export const PluginsView: Component<PluginsViewProps> = (props) => {
 
       <div
         class={cn(
-          'absolute inset-y-0 right-0 left-(--min-list-width) flex translate-x-full opacity-0 transition-[transform,opacity] duration-200',
+          `
+            inset-y-0 right-0 absolute left-(--min-list-width) flex
+            translate-x-full opacity-0 transition-[transform,opacity]
+            duration-200
+          `,
           {
             'translate-x-0 opacity-100': hasSelectedPlugin(),
           },

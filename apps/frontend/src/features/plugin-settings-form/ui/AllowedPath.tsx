@@ -31,7 +31,11 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
   return (
     <div
       class={cn(
-        'group flex min-h-7.5 items-start justify-between gap-2 rounded-sm px-2 py-1 select-none hover:bg-secondary/hover',
+        `
+          group min-h-7.5 gap-2 rounded-sm px-2 py-1
+          hover:bg-secondary/hover
+          flex items-start justify-between select-none
+        `,
         local.class,
       )}
       {...others}
@@ -59,7 +63,12 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       </div>
       <Show when={local.leadingItems}>
         {(leadingItems) => (
-          <div class='flex items-center opacity-0 transition-opacity group-hover:opacity-100'>
+          <div
+            class='
+              flex items-center opacity-0 transition-opacity
+              group-hover:opacity-100
+            '
+          >
             {leadingItems()}
           </div>
         )}

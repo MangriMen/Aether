@@ -39,7 +39,16 @@ const SelectTrigger = <T extends ValidComponent = 'button'>(
   return (
     <SelectPrimitive.Trigger
       class={cn(
-        'flex h-9 w-full items-center justify-between rounded-md border bg-card/card  px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:outline-none enabled:hover:bg-card/hover disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
+        `
+          h-9 rounded-md bg-card/card px-3 py-2 text-sm ring-offset-background
+          placeholder:text-muted-foreground
+          focus:ring-ring
+          enabled:hover:bg-card/hover
+          data-invalid:border-destructive
+          flex w-full items-center justify-between border
+          focus:ring-2 focus:outline-none
+          disabled:cursor-not-allowed disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}
@@ -109,7 +118,13 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         class={cn(
-          'relative z-50 min-w-32 origin-(--kb-select-content-transform-origin) animate-content-hide overflow-hidden  rounded-md border bg-popover/hard text-popover-foreground shadow-lg data-expanded:animate-content-show',
+          `
+            min-w-32 animate-content-hide rounded-md bg-popover/hard
+            text-popover-foreground shadow-lg
+            data-expanded:animate-content-show
+            relative z-50 origin-(--kb-select-content-transform-origin)
+            overflow-hidden border
+          `,
           local.class,
           {
             'py-1': local.virtualized,
@@ -119,10 +134,10 @@ const SelectContent = <Option, T extends ValidComponent = 'div'>(
       >
         <Show
           when={local.virtualized && !!local.options}
-          fallback={<SelectPrimitive.Listbox class='m-0 max-h-full p-1' />}
+          fallback={<SelectPrimitive.Listbox class='m-0 p-1 max-h-full' />}
         >
           <SelectListboxVirtualized
-            class='max-h-full px-1'
+            class='px-1 max-h-full'
             options={local.options ?? []}
             optionValue={local.optionValue}
             itemComponent={local.itemComponent}
@@ -283,12 +298,23 @@ const SelectItem = <T extends ValidComponent = 'li'>(
   return (
     <SelectPrimitive.Item
       class={cn(
-        'relative mt-0 flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none hover:bg-secondary/hover hover:text-foreground focus:bg-secondary/control focus:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
+        `
+          mt-0 rounded-sm py-1.5 pr-8 pl-2 text-sm
+          hover:bg-secondary/hover hover:text-foreground
+          focus:bg-secondary/control focus:text-foreground
+          relative flex w-full cursor-default items-center outline-none
+          select-none
+          data-disabled:pointer-events-none data-disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}
     >
-      <SelectPrimitive.ItemIndicator class='absolute right-2 flex size-3.5 items-center justify-center'>
+      <SelectPrimitive.ItemIndicator
+        class='
+        right-2 size-3.5 absolute flex items-center justify-center
+      '
+      >
         <svg
           xmlns='http://www.w3.org/2000/svg'
           viewBox='0 0 24 24'
@@ -309,7 +335,10 @@ const SelectItem = <T extends ValidComponent = 'li'>(
 };
 
 const labelVariants = cva(
-  'text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  `
+    text-sm font-medium leading-none
+    peer-disabled:cursor-not-allowed peer-disabled:opacity-70
+  `,
   {
     variants: {
       variant: {

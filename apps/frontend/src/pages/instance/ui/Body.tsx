@@ -26,11 +26,11 @@ export const Body: Component<BodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn('flex flex-col overflow-hidden p-0.5', local.class)}
+      class={cn('p-0.5 flex flex-col overflow-hidden', local.class)}
       defaultValue={InstanceContentTabs.Content}
       {...others}
     >
-      <TabsList class='self-start p-0'>
+      <TabsList class='p-0 self-start'>
         <TabsTrigger value={InstanceContentTabs.Content}>
           {t('instance.content')}
         </TabsTrigger>

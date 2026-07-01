@@ -55,7 +55,7 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
       {...others}
     >
       <fieldset
-        class={cn('flex-1 grow flex-col gap-2', {
+        class={cn('gap-2 flex-1 grow flex-col', {
           'text-muted-foreground': local.disabled,
         })}
         disabled={local.disabled}

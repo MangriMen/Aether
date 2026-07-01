@@ -22,11 +22,26 @@ const Checkbox = <T extends ValidComponent = 'div'>(
 
   return (
     <CheckboxPrimitive.Root
-      class={cn('group inline-flex items-center gap-2', local.class)}
+      class={cn('group gap-2 inline-flex items-center', local.class)}
       {...others}
     >
       <CheckboxPrimitive.Input role='checkbox' class='peer' />
-      <CheckboxPrimitive.Control class='size-4 shrink-0 rounded-sm border border-border-dynamic/15 bg-secondary/control ring-offset-background transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-0 peer-focus-visible:outline-none hover:border-border-dynamic/25 hover:bg-secondary/hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-none data-checked:bg-primary data-checked:text-primary-foreground data-checked:brightness-110 data-checked:hover:bg-primary/solid-hover'>
+      <CheckboxPrimitive.Control
+        class='
+          size-4 rounded-sm border-border-dynamic/15 bg-secondary/control
+          ring-offset-background
+          peer-focus-visible:ring-ring
+          hover:border-border-dynamic/25 hover:bg-secondary/hover
+          data-checked:bg-primary data-checked:text-primary-foreground
+          data-checked:hover:bg-primary/solid-hover
+          shrink-0 border transition-colors
+          peer-focus-visible:ring-2 peer-focus-visible:ring-offset-0
+          peer-focus-visible:outline-none
+          active:scale-95
+          disabled:cursor-not-allowed disabled:opacity-50
+          data-checked:border-none data-checked:brightness-110
+        '
+      >
         <CheckboxPrimitive.Indicator class='data-checked:hidden'>
           <svg
             xmlns='http://www.w3.org/2000/svg'

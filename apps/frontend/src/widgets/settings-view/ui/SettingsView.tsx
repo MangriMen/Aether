@@ -60,7 +60,7 @@ export const SettingsView = <T extends ValidComponent = 'div'>(
   return (
     <div class={cn('flex flex-col overflow-hidden', local.class)} {...others}>
       <Tabs
-        class='flex grow overflow-hidden p-0.5'
+        class='p-0.5 flex grow overflow-hidden'
         value={currentTab()}
         onChange={handleChangeTab}
         defaultValue={DEFAULT_SETTINGS_TAB}
@@ -79,7 +79,7 @@ export const SettingsView = <T extends ValidComponent = 'div'>(
                 children={
                   <span class='overflow-hidden text-ellipsis'>
                     <UpdateBadge
-                      class='absolute inset-y-0 right-2 my-auto'
+                      class='inset-y-0 right-2 absolute my-auto'
                       isAbleToShow={tab.value === SettingsTab.Update}
                     />
                     {t(`settings.tab.${tab.label}`)}
@@ -89,7 +89,7 @@ export const SettingsView = <T extends ValidComponent = 'div'>(
             )}
           </For>
 
-          <VersionInfo class='mt-auto self-start pl-6 text-sm' />
+          <VersionInfo class='pl-6 text-sm mt-auto self-start' />
         </SettingsTabsList>
 
         <For each={tabs()}>

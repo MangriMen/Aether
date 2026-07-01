@@ -42,7 +42,7 @@ export const EditAllowedHost: Component<EditAllowedHostProps> = (props) => {
 
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
-      <div class='flex size-full items-center gap-2'>
+      <div class='gap-2 flex size-full items-center'>
         <CombinedTextField
           class='w-full'
           name={local.name}

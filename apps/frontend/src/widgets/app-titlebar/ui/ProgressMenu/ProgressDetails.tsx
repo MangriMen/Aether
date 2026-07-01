@@ -19,7 +19,7 @@ export const ProgressDetails: Component<ProgressDetailsProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col gap-3 overflow-x-hidden overflow-y-scroll',
+        'gap-3 flex flex-col overflow-x-hidden overflow-y-scroll',
         local.class,
       )}
       {...others}

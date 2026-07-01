@@ -31,12 +31,12 @@ export const ContentProviderSelect = <
   const [{ t }] = useTranslation();
 
   return (
-    <div class={cn('flex items-center gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex items-center', local.class)} {...others}>
       <span class='text-muted-foreground'>{t('content.provider')}:</span>
       <Show
         when={!local.isLoading}
         fallback={
-          <div class='flex size-full h-9 w-32'>
+          <div class='h-9 w-32 flex size-full'>
             <Skeleton radius={6} />
           </div>
         }

@@ -17,7 +17,7 @@ export const AllowedPathComponent: Component<AllowedPathComponentProps> = (
   return (
     <CombinedTooltip
       as='div'
-      class={cn('flex items-center gap-2', local.class)}
+      class={cn('gap-2 flex items-center', local.class)}
       {...others}
     >
       {local.icon?.({})}

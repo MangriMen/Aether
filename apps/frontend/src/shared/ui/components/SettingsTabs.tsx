@@ -15,7 +15,14 @@ export const SettingsTabsList = <T extends ValidComponent = 'div'>(
 ) => (
   <TabsList
     {...props}
-    class={cn('min-w-40 justify-start bg-[unset] p-0 sm:static ', props.class)}
+    class={cn(
+      `
+        min-w-40 p-0
+        sm:static
+        justify-start bg-[unset]
+      `,
+      props.class,
+    )}
   />
 );
 
@@ -24,7 +31,7 @@ export const SettingsTabsTrigger = <T extends ValidComponent = 'button'>(
 ) => (
   <TabsTrigger
     {...props}
-    class={cn('w-full justify-start gap-2', props.class)}
+    class={cn('gap-2 w-full justify-start', props.class)}
   />
 );
 
@@ -34,7 +41,11 @@ export const SettingsTabsContent = <T extends ValidComponent = 'div'>(
   <TabsContent
     {...props}
     class={cn(
-      'flex-1 overflow-y-auto pl-6 duration-200 ease-custom-expo animate-in fade-in slide-in-from-bottom-12 data-[orientation=vertical]:mx-auto',
+      `
+        pl-6 ease-custom-expo animate-in fade-in slide-in-from-bottom-12 flex-1
+        overflow-y-auto duration-200
+        data-[orientation=vertical]:mx-auto
+      `,
       props.class,
     )}
   />

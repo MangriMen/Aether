@@ -33,7 +33,7 @@ export const AccountButton = (
       label={t('account.activate')}
       disableTooltip={local.active}
       as={Button}
-      class={cn('size-full justify-start rounded-r-none px-2', local.class, {
+      class={cn('px-2 size-full justify-start rounded-r-none', local.class, {
         'bg-secondary/secondary pointer-events-none': local.active,
       })}
       variant='ghost'

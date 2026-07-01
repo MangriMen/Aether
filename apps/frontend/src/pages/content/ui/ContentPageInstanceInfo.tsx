@@ -33,7 +33,7 @@ export const ContentPageInstanceInfo: Component<
   };
 
   return (
-    <div class={cn('flex gap-3', local.class)} {...others}>
+    <div class={cn('gap-3 flex', local.class)} {...others}>
       <InstanceIcon src={local.instance?.iconPath ?? undefined} />
       <InstanceHeaderInfo instance={local.instance} showTimePlayed={false} />
       <div class='ml-auto flex items-center'>

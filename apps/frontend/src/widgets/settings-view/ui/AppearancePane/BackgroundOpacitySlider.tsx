@@ -52,7 +52,7 @@ export const BackgroundOpacitySlider: Component<
   return (
     <div
       class={cn(
-        'flex items-center gap-4 rounded-md bg-background p-1.5',
+        'gap-4 rounded-md bg-background p-1.5 flex items-center',
         local.class,
       )}
       {...others}

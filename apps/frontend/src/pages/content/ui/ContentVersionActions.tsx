@@ -78,9 +78,13 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
   const isInstalling = () => isInstallingMemo()();
 
   return (
-    <div class={cn('flex gap-1', local.class)} {...others}>
+    <div class={cn('gap-1 flex', local.class)} {...others}>
       <IconButton
-        class='bg-transparent enabled:group-hover:bg-primary enabled:group-hover:hover:bg-primary/solid-hover'
+        class='
+          enabled:group-hover:bg-primary
+          enabled:group-hover:hover:bg-primary/solid-hover
+          bg-transparent
+        '
         icon={installIcon()}
         onClick={handleInstall}
         loading={isInstalling()}
@@ -90,7 +94,10 @@ export const ContentVersionActions: Component<ContentVersionActionsProps> = (
         {(href) => (
           <IconButton
             as='a'
-            class='bg-transparent group-hover:hover:bg-secondary/hover'
+            class='
+              group-hover:hover:bg-secondary/hover
+              bg-transparent
+            '
             variant='secondary'
             icon={IconMdiOpenInNew}
             href={href()}

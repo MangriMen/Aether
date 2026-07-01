@@ -19,7 +19,7 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
 
   return (
     <div
-      class={cn('flex flex-col gap-4 overflow-y-auto', local.class)}
+      class={cn('gap-4 flex flex-col overflow-y-auto', local.class)}
       {...others}
     >
       <PluginCapabilitiesSection

@@ -158,7 +158,7 @@ export const JavaAndMemorySettingsForm: Component<
   };
 
   return (
-    <Form class={cn('flex flex-col gap-4', local.class)} {...others}>
+    <Form class={cn('gap-4 flex flex-col', local.class)} {...others}>
       <Field name='overrideMemory' type='boolean'>
         {(overrideMemory) => (
           <Field name='memory.maximum' type='number'>

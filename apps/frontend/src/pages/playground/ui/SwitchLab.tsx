@@ -5,7 +5,7 @@ import { ComponentShelf } from './ComponentShelf';
 export const SwitchLab = () => {
   return (
     <ComponentShelf title='Switch'>
-      <Switch class='flex items-center space-x-2'>
+      <Switch class='space-x-2 flex items-center'>
         <SwitchControl>
           <SwitchThumb />
         </SwitchControl>

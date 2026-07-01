@@ -87,16 +87,16 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
               type: 'text',
             }}
             leadingIcons={
-              <div class='my-px flex h-full items-center px-2.5'>
+              <div class='px-2.5 my-px flex h-full items-center'>
                 <IconMdiMagnify />
               </div>
             }
           />
-          <div class='flex flex-col gap-2'>
+          <div class='gap-2 flex flex-col'>
             <Show
               when={filteredInstances.length <= 0}
               fallback={
-                <span class='self-center text-muted-foreground'>
+                <span class='text-muted-foreground self-center'>
                   {t('content.noMatchingInstances')}
                 </span>
               }

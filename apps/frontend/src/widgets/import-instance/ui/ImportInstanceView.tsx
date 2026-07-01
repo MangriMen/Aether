@@ -32,7 +32,7 @@ export const ImportInstanceView: Component<ImportInstanceViewProps> = (
   });
 
   return (
-    <Tabs class='flex grow gap-4' orientation='vertical' {...others}>
+    <Tabs class='gap-4 flex grow' orientation='vertical' {...others}>
       <TabsList class='max-h-max'>
         <For each={tabs()}>
           {(tab) => <TabsTrigger value={tab.value}>{tab.label}</TabsTrigger>}
@@ -41,7 +41,7 @@ export const ImportInstanceView: Component<ImportInstanceViewProps> = (
       <For each={tabs()}>
         {(tab) => (
           <TabsContent
-            class='flex-1 overflow-hidden p-0.5'
+            class='p-0.5 flex-1 overflow-hidden'
             value={tab.value}
             as={tab.component}
             footerButtons={local.footerButtons}

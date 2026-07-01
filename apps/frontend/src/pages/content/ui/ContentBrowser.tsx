@@ -109,11 +109,11 @@ export const ContentBrowser: Component<ContentBrowserProps> = (props) => {
 
   return (
     <div
-      class={cn('flex grow flex-col gap-3 overflow-hidden p-0.5', local.class)}
+      class={cn('gap-3 p-0.5 flex grow flex-col overflow-hidden', local.class)}
       {...others}
     >
-      <div class='flex flex-col gap-2'>
-        <div class='flex justify-between gap-2'>
+      <div class='gap-2 flex flex-col'>
+        <div class='gap-2 flex justify-between'>
           <ContentTypeTabs
             items={local.types}
             value={state.contentType()}

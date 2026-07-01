@@ -10,35 +10,78 @@ import { Dynamic } from 'solid-js/web';
 import { cn } from '../../lib';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity,padding] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  `
+    gap-1 rounded-md text-sm font-medium ring-offset-background
+    focus-visible:ring-ring
+    inline-flex items-center justify-center
+    transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity,padding]
+    focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none
+    disabled:cursor-not-allowed disabled:opacity-50
+  `,
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground enabled:hover:bg-primary/solid-hover enabled:active:bg-primary/solid-active enabled:active:text-primary-foreground/solid-text-active',
+        default: `
+          bg-primary text-primary-foreground
+          enabled:hover:bg-primary/solid-hover
+          enabled:active:bg-primary/solid-active
+          enabled:active:text-primary-foreground/solid-text-active
+        `,
 
-        secondary:
-          'border bg-secondary/secondary text-secondary-foreground enabled:hover:bg-secondary/hover enabled:active:bg-secondary/active enabled:active:text-secondary-foreground/solid-text-active',
+        secondary: `
+          bg-secondary/secondary text-secondary-foreground
+          enabled:hover:bg-secondary/hover
+          enabled:active:bg-secondary/active
+          enabled:active:text-secondary-foreground/solid-text-active
+          border
+        `,
 
-        outline:
-          'border bg-transparent enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
+        outline: `
+          enabled:hover:bg-accent/hover
+          enabled:active:bg-accent/active
+          border bg-transparent
+        `,
 
-        ghost:
-          'bg-transparent text-foreground enabled:hover:bg-accent/hover enabled:active:bg-accent/active',
+        ghost: `
+          text-foreground
+          enabled:hover:bg-accent/hover
+          enabled:active:bg-accent/active
+          bg-transparent
+        `,
 
-        success:
-          'bg-success text-success-foreground transition-all enabled:hover:bg-success/solid-hover enabled:active:bg-success/solid-active enabled:active:text-success-foreground/solid-text-active',
+        success: `
+          bg-success text-success-foreground
+          enabled:hover:bg-success/solid-hover
+          enabled:active:bg-success/solid-active
+          enabled:active:text-success-foreground/solid-text-active
+          transition-all
+        `,
 
-        destructive:
-          'bg-destructive text-destructive-foreground transition-all enabled:hover:bg-destructive/solid-hover enabled:active:bg-destructive/solid-active enabled:active:text-destructive-foreground/solid-text-active',
+        destructive: `
+          bg-destructive text-destructive-foreground
+          enabled:hover:bg-destructive/solid-hover
+          enabled:active:bg-destructive/solid-active
+          enabled:active:text-destructive-foreground/solid-text-active
+          transition-all
+        `,
 
-        link: 'text-primary underline-offset-4 enabled:hover:underline',
+        link: `
+          text-primary underline-offset-4
+          enabled:hover:underline
+        `,
 
-        warning:
-          'bg-warning text-warning-foreground enabled:hover:bg-warning/solid-hover enabled:active:bg-warning/solid-active enabled:active:text-warning-foreground/solid-text-active',
+        warning: `
+          bg-warning text-warning-foreground
+          enabled:hover:bg-warning/solid-hover
+          enabled:active:bg-warning/solid-active
+          enabled:active:text-warning-foreground/solid-text-active
+        `,
 
-        ghostWarning:
-          'text-warning enabled:hover:bg-warning/control enabled:active:bg-warning/secondary',
+        ghostWarning: `
+          text-warning
+          enabled:hover:bg-warning/control
+          enabled:active:bg-warning/secondary
+        `,
       },
       size: {
         default: 'h-9 gap-2 px-4 py-2 leading-4',

@@ -45,9 +45,9 @@ export const PluginCapabilitiesSection: Component<
 
   return (
     <Show when={hasImporters() || hasUpdaters() || hasContentProviders()}>
-      <div class={cn('flex flex-col gap-4', local.class)} {...others}>
+      <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
         <Show when={hasImporters()}>
-          <div class='flex flex-col gap-2'>
+          <div class='gap-2 flex flex-col'>
             <FieldLabel>{t('plugin.importers')}</FieldLabel>
             <For each={caps()!.importers as ImporterCapability[]}>
               {(importer) => <PluginCapabilityCard capability={importer} />}
@@ -55,7 +55,7 @@ export const PluginCapabilitiesSection: Component<
           </div>
         </Show>
         <Show when={hasUpdaters()}>
-          <div class='flex flex-col gap-2'>
+          <div class='gap-2 flex flex-col'>
             <FieldLabel>{t('plugin.updaters')}</FieldLabel>
             <For each={caps()!.updaters as UpdaterCapability[]}>
               {(updater) => <PluginCapabilityCard capability={updater} />}
@@ -63,7 +63,7 @@ export const PluginCapabilitiesSection: Component<
           </div>
         </Show>
         <Show when={hasContentProviders()}>
-          <div class='flex flex-col gap-2'>
+          <div class='gap-2 flex flex-col'>
             <FieldLabel>{t('plugin.contentProviders')}</FieldLabel>
             <For each={caps()!.contentProviders as ContentProviderCapability[]}>
               {(provider) => <PluginCapabilityCard capability={provider} />}

@@ -7,17 +7,22 @@ import { splitProps } from 'solid-js';
 import { cn } from '../../lib';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-md border font-semibold transition-colors focus:ring-2 focus:ring-ring focus:ring-offset-0 focus:outline-none',
+  `
+    rounded-md font-semibold
+    focus:ring-ring
+    inline-flex items-center border transition-colors
+    focus:ring-2 focus:ring-offset-0 focus:outline-none
+  `,
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground',
+        default: 'bg-primary text-primary-foreground border-transparent',
         secondary:
-          'border-transparent bg-secondary/secondary text-secondary-foreground',
+          'bg-secondary/secondary text-secondary-foreground border-transparent',
         outline: 'text-foreground',
-        success: 'border-transparent bg-success text-success-foreground',
-        warning: 'border-transparent bg-warning text-warning-foreground',
-        error: 'border-transparent bg-error text-error-foreground',
+        success: 'bg-success text-success-foreground border-transparent',
+        warning: 'bg-warning text-warning-foreground border-transparent',
+        error: 'bg-error text-error-foreground border-transparent',
       },
       size: {
         sm: 'px-2 py-0 text-xs',

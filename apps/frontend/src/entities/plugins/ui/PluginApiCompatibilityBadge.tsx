@@ -35,7 +35,7 @@ export const PluginApiCompatibilityBadge: Component<
       <CombinedTooltip
         label={t('plugin.incompatibleApiVersion')}
         as='div'
-        class={cn('flex text-warning', local.class)}
+        class={cn('text-warning flex', local.class)}
         {...others}
       >
         <IconMdiAlertOutline />

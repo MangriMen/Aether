@@ -16,7 +16,7 @@ export const AppErrorBoundary: Component<AppErrorBoundaryProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex size-full flex-col items-center justify-center gap-5',
+        'gap-5 flex size-full flex-col items-center justify-center',
         local.class,
       )}
       {...others}

@@ -33,7 +33,7 @@ export const ContentList: Component<ContentListProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col gap-3 overflow-y-auto', local.class)}
+      class={cn('gap-3 flex flex-col overflow-y-auto', local.class)}
       {...others}
     >
       <Switch>
@@ -42,13 +42,23 @@ export const ContentList: Component<ContentListProps> = (props) => {
         </Match>
 
         <Match when={local.isError}>
-          <span class='flex grow items-center justify-center text-xl font-medium text-muted-foreground'>
+          <span
+            class='
+              text-xl font-medium text-muted-foreground flex grow items-center
+              justify-center
+            '
+          >
             {t('content.providerErrorOrNotFound')}
           </span>
         </Match>
 
         <Match when={local.items?.length === 0}>
-          <span class='flex grow items-center justify-center text-lg text-muted-foreground italic'>
+          <span
+            class='
+              text-lg text-muted-foreground flex grow items-center
+              justify-center italic
+            '
+          >
             {t('content.noResultsFound')}
           </span>
         </Match>

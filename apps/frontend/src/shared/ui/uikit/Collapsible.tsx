@@ -24,7 +24,11 @@ const CollapsibleContent = <T extends ValidComponent = 'div'>(
   return (
     <CollapsiblePrimitive.Content
       class={cn(
-        'animate-slide-up overflow-hidden data-expanded:animate-slide-down',
+        `
+          animate-slide-up
+          data-expanded:animate-slide-down
+          overflow-hidden
+        `,
         local.class,
       )}
       {...others}

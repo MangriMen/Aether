@@ -44,17 +44,20 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
   return (
     <div
       class={cn(
-        'flex grow flex-col items-center justify-center gap-8 overflow-hidden px-8 pb-8',
+        `
+          gap-8 px-8 pb-8 flex grow flex-col items-center justify-center
+          overflow-hidden
+        `,
         local.class,
       )}
       {...others}
     >
-      <div class='flex flex-col items-center justify-center gap-2'>
+      <div class='gap-2 flex flex-col items-center justify-center'>
         <h1 class='text-4xl font-bold text-destructive'>
           Initialization Error
         </h1>
 
-        <div class='flex flex-col items-center gap-0.5'>
+        <div class='gap-0.5 flex flex-col items-center'>
           <p class='text-xl'>The app encountered a problem during startup.</p>
           <p class='text-lg text-muted-foreground'>
             Try restarting the app. If the issue persists, please <br />
@@ -65,10 +68,21 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
 
       <Show when={local.error}>
         {(error) => (
-          <div class='flex max-h-max max-w-(--breakpoint-2xl) min-w-96 grow flex-col gap-1 overflow-hidden rounded-md border border-destructive/20 bg-destructive/15 p-4'>
+          <div
+            class='
+              min-w-96 gap-1 rounded-md border-destructive/20 bg-destructive/15
+              p-4 flex max-h-max max-w-(--breakpoint-2xl) grow flex-col
+              overflow-hidden border
+            '
+          >
             <button
               class={cn(
-                'rounded bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/solid-hover',
+                `
+                  rounded-sm bg-destructive px-3 py-1 text-xs font-medium
+                  text-destructive-foreground
+                  hover:bg-destructive/solid-hover
+                  transition-colors
+                `,
                 {
                   'bg-success text-success-foreground hover:bg-success/solid-hover':
                     errorHasBeenCopied(),
@@ -80,7 +94,12 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
                 Copied!
               </Show>
             </button>
-            <p class='overflow-y-auto font-mono text-sm leading-relaxed break-all text-destructive-foreground'>
+            <p
+              class='
+                font-mono text-sm leading-relaxed text-destructive-foreground
+                overflow-y-auto break-all
+              '
+            >
               {error()}
             </p>
           </div>

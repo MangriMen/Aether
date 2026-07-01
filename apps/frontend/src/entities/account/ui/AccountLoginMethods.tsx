@@ -30,17 +30,17 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
   };
 
   return (
-    <div class={cn('flex gap-2 whitespace-nowrap', local.class)} {...others}>
+    <div class={cn('gap-2 flex whitespace-nowrap', local.class)} {...others}>
       <CombinedTooltip
         label={t('account.signInMinecraft')}
         as={Button}
         variant='outline'
-        class='w-full px-2'
+        class='px-2 w-full'
         onClick={onMicrosoft}
         // TODO: implement minecraft login
         disabled
       >
-        <span class='flex items-center gap-2'>
+        <span class='gap-2 flex items-center'>
           {t('account.signIn')}
           <IconMdiLoginVariant />
         </span>
@@ -49,10 +49,10 @@ export const AccountLoginMethods: Component<AccountLoginMethodsProps> = (
         label={t('account.signInOffline')}
         as={Button}
         variant='outline'
-        class='w-full px-2'
+        class='px-2 w-full'
         onClick={onOffline}
       >
-        <span class='flex items-center gap-2'>
+        <span class='gap-2 flex items-center'>
           {t('account.offline')}
           <IconMdiCloudOffOutline />
         </span>

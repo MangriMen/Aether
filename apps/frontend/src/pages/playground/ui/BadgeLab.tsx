@@ -16,7 +16,7 @@ export const BadgeLab = () => {
 
   return (
     <ComponentShelf title='Badge'>
-      <div class='flex gap-2'>
+      <div class='gap-2 flex'>
         <For each={variants}>
           {(v) => (
             <Badge class='capitalize' variant={v}>

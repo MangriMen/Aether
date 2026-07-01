@@ -54,7 +54,21 @@ const TextFieldInput = <T extends ValidComponent = 'input'>(
     <TextFieldPrimitive.Input
       type={local.type}
       class={cn(
-        'flex h-9 w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none enabled:read-only:text-muted-foreground enabled:read-only:focus:bg-card/card disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
+        `
+          h-9 rounded-md bg-card/card px-3 py-2 text-sm ring-offset-background
+          file:text-sm file:font-medium
+          placeholder:text-muted-foreground
+          focus:bg-background/solid-active
+          focus-visible:ring-ring
+          enabled:read-only:text-muted-foreground
+          enabled:read-only:focus:bg-card/card
+          data-invalid:border-destructive
+          flex w-full border
+          file:border-0 file:bg-transparent
+          focus-visible:ring-2 focus-visible:ring-offset-0
+          focus-visible:outline-none
+          disabled:cursor-not-allowed disabled:opacity-50
+        `,
         local.class,
       )}
       autocomplete='off'
@@ -75,7 +89,18 @@ const TextFieldTextArea = <T extends ValidComponent = 'textarea'>(
   return (
     <TextFieldPrimitive.TextArea
       class={cn(
-        'flex  min-h-20 w-full rounded-md border bg-card/card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:bg-background/solid-active focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive',
+        `
+          min-h-20 rounded-md bg-card/card px-3 py-2 text-sm
+          ring-offset-background
+          placeholder:text-muted-foreground
+          focus:bg-background/solid-active
+          focus-visible:ring-ring
+          data-invalid:border-destructive
+          flex w-full border
+          focus-visible:ring-2 focus-visible:ring-offset-0
+          focus-visible:outline-none
+          disabled:cursor-not-allowed disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}
@@ -84,7 +109,10 @@ const TextFieldTextArea = <T extends ValidComponent = 'textarea'>(
 };
 
 const labelVariants = cva(
-  'text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+  `
+    text-sm font-medium leading-none
+    peer-disabled:cursor-not-allowed peer-disabled:opacity-70
+  `,
   {
     variants: {
       variant: {

@@ -10,13 +10,28 @@ import { Portal } from 'solid-js/web';
 import { cn } from '../../lib';
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-4 pr-8 shadow-lg transition-all data-closed:animate-out data-closed:fade-out-80 data-closed:slide-out-to-right-full data-opened:animate-in data-opened:slide-in-from-top-full data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-(--kb-toast-swipe-end-x) data-[swipe=end]:animate-out data-[swipe=move]:translate-x-(--kb-toast-swipe-move-x) data-[swipe=move]:transition-none data-opened:sm:slide-in-from-bottom-full',
+  `
+    group space-x-4 rounded-md p-4 pr-8 shadow-lg
+    data-closed:animate-out data-closed:fade-out-80
+    data-closed:slide-out-to-right-full
+    data-opened:animate-in data-opened:slide-in-from-top-full
+    data-[swipe=cancel]:translate-x-0
+    data-[swipe=end]:animate-out
+    data-opened:sm:slide-in-from-bottom-full
+    pointer-events-auto relative flex w-full items-center justify-between
+    overflow-hidden border transition-all
+    data-[swipe=end]:translate-x-(--kb-toast-swipe-end-x)
+    data-[swipe=move]:translate-x-(--kb-toast-swipe-move-x)
+    data-[swipe=move]:transition-none
+  `,
   {
     variants: {
       variant: {
-        default: 'border  bg-popover text-foreground',
-        destructive:
-          'destructive group border-destructive bg-destructive text-destructive-foreground',
+        default: 'bg-popover text-foreground border',
+        destructive: `
+          destructive group border-destructive bg-destructive
+          text-destructive-foreground
+        `,
         success: 'success bg-success text-success-foreground',
         warning: 'warning bg-warning text-warning-foreground',
         error: 'error bg-error text-error-foreground',
@@ -43,7 +58,11 @@ const Toaster = <T extends ValidComponent = 'ol'>(
       <ToastPrimitive.Region>
         <ToastPrimitive.List
           class={cn(
-            'fixed top-0 z-100 flex max-h-screen w-[calc(100%-48px)] flex-col-reverse gap-2 p-4 sm:top-auto sm:right-0 sm:bottom-0 sm:max-w-105 sm:flex-col',
+            `
+              top-0 gap-2 p-4
+              sm:top-auto sm:right-0 sm:bottom-0 sm:max-w-105 sm:flex-col
+              fixed z-100 flex max-h-screen w-[calc(100%-48px)] flex-col-reverse
+            `,
             local.class,
           )}
           {...others}
@@ -82,7 +101,16 @@ const ToastClose = <T extends ValidComponent = 'button'>(
   return (
     <ToastPrimitive.CloseButton
       class={cn(
-        'absolute top-2 right-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100 group-[.destructive]:text-destructive-foreground group-[.error]:text-error-foreground group-[.success]:text-success-foreground group-[.warning]:text-warning-foreground focus:opacity-100 focus:ring-2 focus:outline-none',
+        `
+          top-2 right-2 rounded-md p-1 text-foreground/50
+          group-[.destructive]:text-destructive-foreground
+          group-[.error]:text-error-foreground
+          group-[.success]:text-success-foreground
+          group-[.warning]:text-warning-foreground
+          absolute opacity-0 transition-opacity
+          group-hover:opacity-100
+          focus:opacity-100 focus:ring-2 focus:outline-none
+        `,
         local.class,
       )}
       {...others}
@@ -152,7 +180,7 @@ function showToast(props: ShowToastParams) {
       duration={props.duration}
       persistent={props.persistent}
     >
-      <div class='grid w-full gap-1'>
+      <div class='gap-1 grid w-full'>
         {props.title && <ToastTitle>{props.title}</ToastTitle>}
         {props.description && (
           <ToastDescription>{props.description}</ToastDescription>

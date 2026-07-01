@@ -99,7 +99,10 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                   label={t('common.browse')}
                   as={IconButton}
                   variant='ghost'
-                  class='size-7 bg-secondary/secondary enabled:hover:bg-secondary/hover'
+                  class='
+                    size-7 bg-secondary/secondary
+                    enabled:hover:bg-secondary/hover
+                  '
                   type='button'
                   size='sm'
                   onClick={handleBrowse}

@@ -57,7 +57,7 @@ const TOAST_VARIANTS: {
 export const ToastLab = () => {
   return (
     <ComponentShelf title='Toast'>
-      <div class='flex flex-wrap gap-2'>
+      <div class='gap-2 flex flex-wrap'>
         <For each={TOAST_VARIANTS}>
           {(item) => (
             <Button

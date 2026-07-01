@@ -48,7 +48,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
 
     const number = showToast({
       description: (
-        <div class='flex flex-col gap-3'>
+        <div class='gap-3 flex flex-col'>
           <span>
             {t('common.version')}
             &nbsp;
@@ -56,7 +56,7 @@ export const showUpdateAvailable = (update: UpdateStatus) => {
             &nbsp;
             {t('settings.updateIsReadyToInstall')}
           </span>
-          <div class='flex gap-4'>
+          <div class='gap-4 flex'>
             <Button
               class='h-auto'
               size='sm'

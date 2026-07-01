@@ -73,7 +73,7 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
 
   return (
     <div
-      class={cn('flex items-center gap-2 text-foreground', local.class)}
+      class={cn('gap-2 text-foreground flex items-center', local.class)}
       {...others}
     >
       <Show when={selectionDisableStatus().enabled > 0}>

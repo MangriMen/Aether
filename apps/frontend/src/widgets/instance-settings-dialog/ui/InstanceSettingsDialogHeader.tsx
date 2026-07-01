@@ -25,20 +25,20 @@ const InstanceSettingsDialogHeader: Component<
 
   return (
     <DialogHeader {...others}>
-      <DialogTitle class='flex items-center gap-2 pl-6 text-muted-foreground'>
+      <DialogTitle class='gap-2 pl-6 text-muted-foreground flex items-center'>
         {/* <IconButton
           class='z-50'
           variant='ghost'
           icon={IconMdiMenu}
           onClick={toggleTabList}
         /> */}
-        <div class='flex items-center gap-1'>
-          <div class='flex items-center gap-2'>
+        <div class='gap-1 flex items-center'>
+          <div class='gap-2 flex items-center'>
             <InstanceIcon
               class='size-8'
               src={local.instance.iconPath ?? undefined}
             />
-            <span class='line-clamp-1 leading-8 [word-break:break-word]'>
+            <span class='leading-8 line-clamp-1 [word-break:break-word]'>
               {local.instance.name}
             </span>
           </div>

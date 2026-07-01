@@ -76,7 +76,7 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
   };
 
   return (
-    <div class={cn('flex items-center gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex items-center', local.class)} {...others}>
       <Switch checked={!local.content.disabled} onChange={handleToggleDisable}>
         <SwitchControl>
           <SwitchThumb />
@@ -86,7 +86,11 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
         label={t('common.remove')}
         as={IconButton}
         variant='ghost'
-        class='p-0 enabled:hover:bg-destructive/solid-hover enabled:active:bg-destructive/solid-active'
+        class='
+          p-0
+          enabled:hover:bg-destructive/solid-hover
+          enabled:active:bg-destructive/solid-active
+        '
         icon={IconMdiDelete}
         onClick={handleRemove}
       />

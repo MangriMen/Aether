@@ -51,7 +51,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
 
   return (
     <nav
-      class={cn('flex justify-between gap-2', local.class)}
+      class={cn('gap-2 flex justify-between', local.class)}
       aria-label='Content pagination'
       {...others}
     >
@@ -60,7 +60,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
         contentType={local.contentType}
         onSearch={local.onSearch}
       />
-      <div class='flex justify-between gap-2'>
+      <div class='gap-2 flex justify-between'>
         <ItemsPerPageSelect
           value={local.pageSize}
           onChange={local.onPageSizeChange}
@@ -69,7 +69,7 @@ export const ContentSearchCard: Component<ContentFiltersProps> = (props) => {
         <Show
           when={local.pageCount !== undefined}
           fallback={
-            <div class='flex h-full gap-1'>
+            <div class='gap-1 flex h-full'>
               <For each={DEFAULT_PAGINATION_COUNT_ARRAY}>
                 {() => <Skeleton width={40} radius={6} />}
               </For>

@@ -11,7 +11,7 @@ const Table: Component<
 
   const table = createMemo(() => (
     <table
-      class={cn('w-full caption-bottom text-sm', local.class)}
+      class={cn('text-sm w-full caption-bottom', local.class)}
       {...others}
     />
   ));
@@ -52,7 +52,11 @@ const TableRow: Component<ComponentProps<'tr'>> = (props) => {
   return (
     <tr
       class={cn(
-        'border-b transition-colors hover:bg-card/hover data-[state=selected]:bg-secondary/secondary',
+        `
+          hover:bg-card/hover
+          data-[state=selected]:bg-secondary/secondary
+          border-b transition-colors
+        `,
         local.class,
       )}
       {...others}
@@ -65,7 +69,7 @@ const TableHead: Component<ComponentProps<'th'>> = (props) => {
   return (
     <th
       class={cn(
-        'h-10 px-4 text-left align-middle font-medium text-muted-foreground',
+        'h-10 px-4 font-medium text-muted-foreground text-left align-middle',
         local.class,
       )}
       {...others}

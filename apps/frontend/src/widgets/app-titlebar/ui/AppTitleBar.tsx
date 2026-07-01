@@ -22,7 +22,7 @@ export const AppTitleBar: Component<AppTitleBarProps> = (props) => {
   return (
     <BaseTitleBar {...props}>
       <div class='min-w-39 pl-2'>
-        <div class='flex max-w-15 min-w-15 justify-center'>
+        <div class='max-w-15 min-w-15 flex justify-center'>
           <BackForwardButtons />
         </div>
       </div>

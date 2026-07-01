@@ -80,7 +80,7 @@ const ProgressCircle: Component<ProgressCircleProps> = (rawProps) => {
             class={cn(
               'stroke-primary transition-colors ease-linear',
               local.showAnimation
-                ? 'transition-all duration-300 ease-in-out'
+                ? 'ease-in-out transition-all duration-300'
                 : '',
             )}
           />

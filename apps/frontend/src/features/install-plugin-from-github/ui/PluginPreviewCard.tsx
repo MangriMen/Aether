@@ -40,9 +40,9 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
   const hasTag = () => props.selectedTag.length > 0;
 
   return (
-    <div class='flex flex-col gap-4 rounded-lg border p-4'>
+    <div class='gap-4 rounded-lg p-4 flex flex-col border'>
       {/* Header: icon + info row */}
-      <div class='flex items-center gap-4'>
+      <div class='gap-4 flex items-center'>
         <Image class='h-31 w-max' />
         <PluginInfoHeader
           class='flex-1'
@@ -72,7 +72,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
 
       {/* Version selector */}
       <Show when={hasReleases()}>
-        <div class='flex flex-col gap-2'>
+        <div class='gap-2 flex flex-col'>
           <FieldLabel>{t('plugins.selectVersion')}</FieldLabel>
           <CombinedSelect
             options={props.releaseOptions}
@@ -88,7 +88,7 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
       </Show>
 
       {/* Actions row */}
-      <div class='flex justify-end gap-2'>
+      <div class='gap-2 flex justify-end'>
         <Button variant='secondary' onClick={props.onClear}>
           {t('common.clear')}
         </Button>

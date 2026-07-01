@@ -39,17 +39,17 @@ export const ContentItemPage: Component<ContentItemPageProps> = (props) => {
 
   return (
     <div
-      class={cn('flex grow flex-col gap-4 overflow-hidden p-0.5', local.class)}
+      class={cn('gap-4 p-0.5 flex grow flex-col overflow-hidden', local.class)}
       {...others}
     >
       <ContentItemPageInfo item={item.data} isLoading={item.isFetching} />
       <Separator />
 
       <Tabs
-        class='flex flex-col overflow-hidden p-0.5'
+        class='p-0.5 flex flex-col overflow-hidden'
         defaultValue={CONTENT_ITEM_PAGE_TABS_DEFINITION[0].value}
       >
-        <TabsList class='self-start p-0'>
+        <TabsList class='p-0 self-start'>
           <For each={CONTENT_ITEM_PAGE_TABS_DEFINITION}>
             {(tab) => (
               <TabsTrigger value={tab.value}>

@@ -53,7 +53,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
       <For each={tabs()}>
         {(tab) => (
           <TabsContent
-            class='flex flex-col overflow-hidden pl-1'
+            class='pl-1 flex flex-col overflow-hidden'
             value={tab.value}
           >
             <Dynamic

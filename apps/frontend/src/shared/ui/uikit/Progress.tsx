@@ -35,7 +35,12 @@ const Progress = <T extends ValidComponent = 'div'>(
   return (
     <ProgressPrimitive.Root {...others}>
       {local.children}
-      <ProgressPrimitive.Track class='relative h-2 w-full overflow-hidden rounded-full bg-secondary/secondary'>
+      <ProgressPrimitive.Track
+        class='
+          h-2 bg-secondary/secondary relative w-full overflow-hidden
+          rounded-full
+        '
+      >
         <ProgressPrimitive.Fill
           class={cn(
             progressVariants({ variant: local.variant }),

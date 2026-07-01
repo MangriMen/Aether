@@ -30,7 +30,7 @@ export const ContentVersionsTable: Component<ContentVersionsTableProps> = (
 
   return (
     <div
-      class={cn('flex flex-col gap-4 overflow-hidden p-1', local.class)}
+      class={cn('gap-4 p-1 flex flex-col overflow-hidden', local.class)}
       {...others}
     >
       <DataTable table={table} isLoading={local.isLoading} />

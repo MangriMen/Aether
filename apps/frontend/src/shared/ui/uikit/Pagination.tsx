@@ -19,7 +19,7 @@ const Pagination = <T extends ValidComponent = 'nav'>(
   const [local, others] = splitProps(props as PaginationRootProps, ['class']);
   return (
     <PaginationPrimitive.Root
-      class={cn('*:flex *:flex-row *:items-center *:gap-1', local.class)}
+      class={cn('*:gap-1 *:flex *:flex-row *:items-center', local.class)}
       {...others}
     />
   );
@@ -38,7 +38,11 @@ const PaginationItem = <T extends ValidComponent = 'button'>(
         buttonVariants({
           variant: 'ghost',
         }),
-        'size-9 border p-0 data-current:bg-secondary/secondary',
+        `
+          size-9 p-0
+          data-current:bg-secondary/secondary
+          border
+        `,
         local.class,
       )}
       {...others}
@@ -62,7 +66,7 @@ const PaginationEllipsis = <T extends ValidComponent = 'div'>(
 
   return (
     <PaginationPrimitive.Ellipsis
-      class={cn('flex size-9 items-center justify-center', local.class)}
+      class={cn('size-9 flex items-center justify-center', local.class)}
       {...others}
     >
       <svg

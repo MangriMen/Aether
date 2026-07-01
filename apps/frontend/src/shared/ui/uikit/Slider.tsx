@@ -39,12 +39,15 @@ const SliderTrack = <T extends ValidComponent = 'div'>(
   return (
     <SliderPrimitive.Track
       class={cn(
-        'relative my-4 h-1.5 w-full grow rounded-full bg-secondary/secondary data-disabled:pointer-events-none data-disabled:opacity-50',
+        `
+          my-4 h-1.5 bg-secondary/secondary relative w-full grow rounded-full
+          data-disabled:pointer-events-none data-disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}
     >
-      <div class='absolute inset-y-0 my-auto h-9 w-full grow rounded-md' />
+      <div class='inset-y-0 h-9 rounded-md absolute my-auto w-full grow' />
       {props.children}
     </SliderPrimitive.Track>
   );
@@ -61,7 +64,7 @@ const SliderFill = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props as SliderFillProps, ['class']);
   return (
     <SliderPrimitive.Fill
-      class={cn('absolute h-full rounded-full bg-primary', local.class)}
+      class={cn('bg-primary absolute h-full rounded-full', local.class)}
       {...others}
     />
   );
@@ -83,7 +86,15 @@ const SliderThumb = <T extends ValidComponent = 'span'>(
   return (
     <SliderPrimitive.Thumb
       class={cn(
-        '-top-1.5 block h-5 w-3 rounded-full border-[3px] border-primary bg-background ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-disabled:border-primary',
+        `
+          -top-1.5 h-5 w-3 border-primary bg-background ring-offset-background
+          focus-visible:ring-ring
+          data-disabled:border-primary
+          block rounded-full border-[3px] transition-colors
+          focus-visible:ring-2 focus-visible:ring-offset-0
+          focus-visible:outline-none
+          disabled:pointer-events-none disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}

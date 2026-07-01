@@ -36,7 +36,7 @@ export const InheritanceLabel: Component<InheritanceLabelProps> = (props) => {
   return (
     <span
       class={cn(
-        'inline-flex items-baseline gap-2 text-lg font-medium',
+        'gap-2 text-lg font-medium inline-flex items-baseline',
         local.class,
       )}
       {...others}
@@ -44,10 +44,10 @@ export const InheritanceLabel: Component<InheritanceLabelProps> = (props) => {
       {local.label}
       <span
         class={cn(
-          'invisible text-sm font-normal text-muted-foreground italic opacity-0',
+          'text-sm font-normal text-muted-foreground invisible italic opacity-0',
           {
             'transition-opacity': isReady(),
-            'opacity-100 visible': local.isInheritance,
+            'visible opacity-100': local.isInheritance,
           },
         )}
       >

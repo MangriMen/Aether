@@ -44,7 +44,7 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
 
   return (
     <TextField
-      class={cn('flex flex-col gap-2', local.class)}
+      class={cn('gap-2 flex flex-col', local.class)}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       {...others}
     >
@@ -52,9 +52,9 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
         <TextFieldLabel {...local.labelProps}>{local.label}</TextFieldLabel>
       </Show>
       <div class='relative flex'>
-        <div class='absolute inset-y-0 left-0'>{local.leadingIcons}</div>
+        <div class='inset-y-0 left-0 absolute'>{local.leadingIcons}</div>
         <TextFieldInput type='text' {...local.inputProps} />
-        <div class='absolute inset-y-0 right-0'>{local.trailingIcons}</div>
+        <div class='inset-y-0 right-0 absolute'>{local.trailingIcons}</div>
       </div>
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
     </TextField>

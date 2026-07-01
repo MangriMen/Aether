@@ -32,7 +32,7 @@ const ToggleGroup = <T extends ValidComponent = 'div'>(
 
   return (
     <ToggleGroupPrimitive.Root
-      class={cn('flex items-center justify-center gap-1', local.class)}
+      class={cn('gap-1 flex items-center justify-center', local.class)}
       {...others}
     >
       <ToggleGroupContext.Provider
@@ -71,7 +71,12 @@ const ToggleGroupItem = <T extends ValidComponent = 'button'>(
           size: context.size || local.size,
           variant: context.variant || local.variant,
         }),
-        'hover:bg-secondary/hover hover:text-secondary-foreground/solid-text-active data-pressed:bg-secondary/secondary data-pressed:text-accent-foreground',
+        `
+          hover:bg-secondary/hover
+          hover:text-secondary-foreground/solid-text-active
+          data-pressed:bg-secondary/secondary
+          data-pressed:text-accent-foreground
+        `,
         local.class,
       )}
       {...others}

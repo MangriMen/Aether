@@ -33,7 +33,7 @@ export const SelectSpecificLoaderVersion = <
 
   return (
     <Select
-      class={cn('flex w-full flex-col gap-2', local.class)}
+      class={cn('gap-2 flex w-full flex-col', local.class)}
       virtualized
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionValue='id'
@@ -50,7 +50,7 @@ export const SelectSpecificLoaderVersion = <
         optionValue='id'
         itemComponent={(props) => (
           <SelectItem item={props.item} style={props.style}>
-            <div class='inline-flex gap-2'>
+            <div class='gap-2 inline-flex'>
               {props.item.rawValue.id}
               {props.item.rawValue.stable ? (
                 <Badge variant='default'>

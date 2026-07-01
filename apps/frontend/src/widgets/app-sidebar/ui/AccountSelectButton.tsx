@@ -83,7 +83,7 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
             />
           )}
         />
-        <PopoverContent class='w-max p-0'>
+        <PopoverContent class='p-0 w-max'>
           <local.accountsMenu
             accounts={local.accounts}
             onCreate={handleCreate}

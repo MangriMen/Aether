@@ -18,7 +18,7 @@ export const ContentVersionBadgeList = (
   const [local, others] = splitProps(props, ['badgeProps', 'class']);
 
   return (
-    <div class={cn('flex flex-wrap gap-1', local.class)} {...others}>
+    <div class={cn('gap-1 flex flex-wrap', local.class)} {...others}>
       <For each={props.items}>
         {(item) => (
           <Badge variant='secondary' {...local.badgeProps}>

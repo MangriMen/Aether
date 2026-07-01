@@ -22,7 +22,7 @@ export const ContentDescriptionTab: Component<ContentDescriptionTabProps> = (
     <div class={cn('', local.class)} {...others}>
       <Show when={local.item?.longDescription}>
         {(description) => (
-          <div class='max-w-full overflow-auto rounded-md border bg-card/card'>
+          <div class='rounded-md bg-card/card max-w-full overflow-auto border'>
             <MarkdownRenderer class='p-4' children={description()} />
           </div>
         )}
