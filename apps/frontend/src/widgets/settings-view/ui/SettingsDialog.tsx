@@ -53,7 +53,6 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
           'size-full top-[calc(50%+20px)] max-w-[calc(100%-16px)] max-h-[calc(100%-60px)]':
             isFullScreen(),
         })}
-        onEscapeKeyDown={(e) => e.preventDefault()}
         actions={
           <IconButton
             size='sm'
