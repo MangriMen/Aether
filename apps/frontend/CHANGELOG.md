@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Settings Dialog:** Fixed settings dialog not closing on `Escape` key press.
+
 ## [0.10.3] - 2026-06-30
 
 ### Added
