@@ -95,7 +95,7 @@ export const useInstanceActions = () => {
           </span>
         ),
         description: (
-          <div class='inline-flex w-full flex-col gap-2'>
+          <div class='gap-2 inline-flex w-full flex-col'>
             {t('instance.failedToRemoveDescription')}
             <Button
               class='w-full'

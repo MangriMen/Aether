@@ -26,7 +26,7 @@ export function SelectGameVersion<T extends Version = Version>(
 
   return (
     <Select
-      class={cn('flex flex-col gap-2 w-full', local.class)}
+      class={cn('gap-2 flex w-full flex-col', local.class)}
       virtualized
       value={local.value}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
@@ -40,7 +40,7 @@ export function SelectGameVersion<T extends Version = Version>(
         </SelectValue>
       </SelectTrigger>
       <SelectContent
-        class='h-[170px]'
+        class='h-42.5'
         virtualized
         options={others.options}
         optionValue='id'

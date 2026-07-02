@@ -56,14 +56,14 @@ export const ContentItemPageInfo: Component<
   const itemIsLoading = createMemo(() => !local.item && local.isLoading);
 
   return (
-    <div class={cn('flex gap-3', local.class)} {...others}>
+    <div class={cn('gap-3 flex', local.class)} {...others}>
       <Image
-        class='aspect-square size-24'
+        class='size-24 aspect-square'
         src={local.item?.iconUrl || undefined}
       />
       <div class='flex grow flex-col'>
         <div class='flex grow justify-between'>
-          <div class='flex max-w-[512px] flex-col'>
+          <div class='max-w-lg flex flex-col'>
             <h1 class='text-2xl font-bold text-foreground'>
               <DelayedShow
                 when={!itemIsLoading()}
@@ -81,7 +81,7 @@ export const ContentItemPageInfo: Component<
               </DelayedShow>
             </span>
           </div>
-          <div class='flex gap-2'>
+          <div class='gap-2 flex'>
             <CombinedTooltip
               label={t('content.alreadyInstalled')}
               disableTooltip={!isInstalled()}

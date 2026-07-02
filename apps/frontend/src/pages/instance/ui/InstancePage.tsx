@@ -30,7 +30,7 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
   const instancePath = useInstanceDir(() => id());
 
   return (
-    <div class='p-page flex size-full flex-col gap-4' {...others}>
+    <div class='gap-4 p-page flex size-full flex-col' {...others}>
       <DelayedShow
         when={instance.data}
         fallback={
@@ -40,7 +40,12 @@ export const InstancePage: Component<InstancePageProps> = (props) => {
               <Skeleton class='grow' radius={8} />
             </Match>
             <Match when={instance.isError}>
-              <h2 class='flex size-full flex-col items-center justify-center text-xl font-semibold'>
+              <h2
+                class='
+                  text-xl font-semibold flex size-full flex-col items-center
+                  justify-center
+                '
+              >
                 {t('instance.notFound', { id: id() ?? '???' })}
               </h2>
             </Match>

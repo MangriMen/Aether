@@ -17,9 +17,11 @@ export const ContentItemInfo: Component<
   const [local, others] = splitProps(props, ['item', 'class']);
 
   return (
-    <div class={cn('flex gap-3', local.class)} {...others}>
+    <div class={cn('gap-3 flex', local.class)} {...others}>
       <Image
-        class='aspect-square size-24 min-h-24 min-w-24 overflow-hidden rounded-md'
+        class='
+          size-24 min-h-24 min-w-24 rounded-md aspect-square overflow-hidden
+        '
         src={local.item.iconUrl || undefined}
       />
       <div class='flex flex-col'>

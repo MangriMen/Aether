@@ -59,7 +59,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
 
   return (
     <div
-      class={cn('flex size-full items-start gap-2', local.class)}
+      class={cn('gap-2 flex size-full items-start', local.class)}
       {...others}
     >
       <CombinedTextField
@@ -78,7 +78,10 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
               label={t('common.browse')}
               as={IconButton}
               variant='ghost'
-              class='size-7 bg-secondary/secondary enabled:hover:bg-secondary/hover'
+              class='
+                size-7 bg-secondary/secondary
+                enabled:hover:bg-secondary/hover
+              '
               type='button'
               size='sm'
               onClick={handleBrowse}

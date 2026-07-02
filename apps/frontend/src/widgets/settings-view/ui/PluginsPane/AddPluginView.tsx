@@ -20,7 +20,7 @@ export const AddPluginView: Component<AddPluginViewProps> = (props) => {
   ]);
 
   return (
-    <div class={cn('flex flex-col p-0.5', local.class)} {...others}>
+    <div class={cn('p-0.5 flex flex-col', local.class)} {...others}>
       <Switch>
         <Match when={local.provider === 'git_hub'}>
           <InstallFromGithubView onInstalled={local.onInstalled} />

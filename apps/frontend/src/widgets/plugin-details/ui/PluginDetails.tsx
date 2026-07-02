@@ -34,10 +34,10 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
   onMount(() => pluginsCache.prefetch.settings(queryClient, pluginId()));
 
   return (
-    <div class={cn('flex flex-col gap-4', local.class)} {...others}>
-      <div class='ml-4 flex items-center gap-4'>
-        <Image class='h-[124px] w-max' />
-        <div class='flex flex-col gap-2'>
+    <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
+      <div class='ml-4 gap-4 flex items-center'>
+        <Image class='h-31 w-max' />
+        <div class='gap-2 flex flex-col'>
           <PluginDetailsInfo plugin={local.plugin} />
           <PluginDetailsActions plugin={local.plugin} />
         </div>

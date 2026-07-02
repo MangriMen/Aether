@@ -19,11 +19,11 @@ export const PluginsPaneTitle: Component<PluginsPaneTitleProps> = (props) => {
 
   return (
     <div
-      class={cn('flex justify-between items-center pt-0.5', local.class)}
+      class={cn('pt-0.5 flex items-center justify-between', local.class)}
       {...others}
     >
       <h2>{t('plugins.title')}</h2>
-      <div class='flex gap-2'>
+      <div class='gap-2 flex'>
         <AddPluginIconButton onClick={local.onPluginAddClick} />
         <InstallFromPluginPackageButton />
         <OpenPluginsFolderButton />

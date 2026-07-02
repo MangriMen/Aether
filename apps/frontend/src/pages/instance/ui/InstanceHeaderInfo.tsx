@@ -27,7 +27,7 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
   return (
     <div
       class={cn(
-        'flex flex-col text-muted-foreground justify-evenly',
+        'text-muted-foreground flex flex-col justify-evenly',
         local.class,
       )}
       {...others}
@@ -40,14 +40,17 @@ export const InstanceHeaderInfo: Component<InstanceHeaderInfoProps> = (
           <CombinedTooltip
             label={name()}
             as='h2'
-            class='line-clamp-2 text-2xl font-bold text-foreground [word-break:break-word]'
+            class='
+              text-2xl font-bold text-foreground line-clamp-2
+              [word-break:break-word]
+            '
           >
             {name()}
           </CombinedTooltip>
         )}
       </DelayedShow>
 
-      <div class='flex gap-4'>
+      <div class='gap-4 flex'>
         <DelayedShow
           when={local.instance}
           fallback={<Skeleton width={128} height={16} radius={4} />}

@@ -63,7 +63,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   );
 
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
       <LabeledField
         label={
           <span class='text-lg font-medium'>
@@ -71,7 +71,12 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
           </span>
         }
       >
-        <div class='flex items-center gap-3 rounded-md bg-card/card p-3 text-muted-foreground'>
+        <div
+          class='
+            gap-3 rounded-md bg-card/card p-3 text-muted-foreground flex
+            items-center
+          '
+        >
           <Image class='size-12 p-1' />
           <div class='flex flex-col'>
             <div class='text-base font-medium'>
@@ -81,7 +86,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               {local.instance.loader}&nbsp;{local.instance.loaderVersion}
             </div>
           </div>
-          <div class='ml-auto flex items-center gap-1'>
+          <div class='gap-1 ml-auto flex items-center'>
             <Button
               size='sm'
               variant='ghostWarning'
@@ -104,7 +109,12 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               </span>
             }
           >
-            <div class='flex items-center gap-3 rounded-md bg-card/card p-3 text-muted-foreground'>
+            <div
+              class='
+                gap-3 rounded-md bg-card/card p-3 text-muted-foreground flex
+                items-center
+              '
+            >
               <Image class='size-12 p-1' src={content.data?.iconUrl} />
 
               <div class='flex flex-col'>
@@ -113,7 +123,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
                     when={!content.isLoading}
                     fallback={
                       <Skeleton
-                        class='w-full rounded-sm'
+                        class='rounded-sm w-full'
                         height={18}
                         width={128}
                       />
@@ -126,7 +136,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
                   {currentVersion()?.versionNumber ?? packInfo().version}
                 </span>
               </div>
-              <div class='ml-auto flex items-center gap-1'>
+              <div class='gap-1 ml-auto flex items-center'>
                 <Button
                   size='sm'
                   variant='ghost'

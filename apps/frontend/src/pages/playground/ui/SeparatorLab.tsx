@@ -13,7 +13,7 @@ export const SeparatorLab = () => {
           </p>
         </div>
         <Separator class='my-4' />
-        <div class='flex h-5 items-center space-x-4 text-sm'>
+        <div class='h-5 space-x-4 text-sm flex items-center'>
           <div>Blog</div>
           <Separator orientation='vertical' />
           <div>Docs</div>

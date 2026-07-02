@@ -72,7 +72,7 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
       >
         {t('instance.installContent')}
       </Button>
-      <Separator class='h-auto bg-primary/50' orientation='vertical' />
+      <Separator class='bg-primary/50 h-auto' orientation='vertical' />
       <DropdownMenu>
         <DropdownMenuTrigger
           as={IconButton}

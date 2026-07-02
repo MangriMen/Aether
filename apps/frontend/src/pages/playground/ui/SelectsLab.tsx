@@ -24,7 +24,7 @@ export const SelectLab = () => {
           <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
         )}
       >
-        <SelectTrigger aria-label='Fruit' class='w-[180px]'>
+        <SelectTrigger aria-label='Fruit' class='w-45'>
           <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
         </SelectTrigger>
         <SelectContent />

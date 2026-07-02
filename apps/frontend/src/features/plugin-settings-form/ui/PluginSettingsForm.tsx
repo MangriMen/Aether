@@ -50,12 +50,12 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
 
   return (
     <Form
-      class={cn('flex flex-1 flex-col grow', local.class)}
+      class={cn('flex flex-1 grow flex-col', local.class)}
       onSubmit={local.onSubmit}
       {...others}
     >
       <fieldset
-        class={cn('flex-1 grow flex-col gap-2', {
+        class={cn('gap-2 flex-1 grow flex-col', {
           'text-muted-foreground': local.disabled,
         })}
         disabled={local.disabled}

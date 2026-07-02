@@ -31,14 +31,14 @@ export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {
 
   return (
     <Collapsible
-      class={cn('flex flex-col rounded-md bg-card/card p-2', local.class)}
+      class={cn('rounded-md bg-card/card p-2 flex flex-col', local.class)}
       open={isOpened()}
       onOpenChange={setIsOpened}
       {...others}
     >
-      <CollapsibleTrigger class='flex items-center gap-2'>
+      <CollapsibleTrigger class='gap-2 flex items-center'>
         <Image class='size-8 border' src={local.capability.icon ?? undefined} />
-        <span class='inline-flex items-center gap-1'>
+        <span class='gap-1 inline-flex items-center'>
           <span>{local.capability.name}</span>
           <span class='text-muted-foreground'>({local.capability.id})</span>
         </span>

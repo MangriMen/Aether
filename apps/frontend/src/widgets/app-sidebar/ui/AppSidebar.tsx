@@ -32,10 +32,10 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
 
   return (
     <Sidebar
-      class={cn('justify-between pt-px pl-4 pr-1 pb-4', local.class)}
+      class={cn('pr-1 pb-4 pl-4 justify-between pt-px', local.class)}
       {...others}
     >
-      <div class='flex flex-col items-center gap-2'>
+      <div class='gap-2 flex flex-col items-center'>
         <HomeButton />
         <ContentButton />
         <Separator />
@@ -43,7 +43,7 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
           createInstanceDialog={local.createInstanceDialog}
         />
       </div>
-      <div class='flex flex-col items-center gap-2'>
+      <div class='gap-2 flex flex-col items-center'>
         <AccountSelectButton
           accounts={accounts.data ?? []}
           accountsMenu={AccountsMenu}

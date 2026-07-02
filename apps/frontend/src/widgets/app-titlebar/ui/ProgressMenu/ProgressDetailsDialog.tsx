@@ -24,7 +24,12 @@ export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
 
   return (
     <Dialog {...props}>
-      <DialogContent class='max-h-[calc(100%-128px)] w-full max-w-[calc(100%-128px)] 2xl:max-w-screen-2xl'>
+      <DialogContent
+        class='
+          2xl:max-w-(--breakpoint-2xl)
+          max-h-[calc(100%-128px)] w-full max-w-[calc(100%-128px)]
+        '
+      >
         <DialogHeader>
           <DialogTitle>{t('progress.dialogTitle')}</DialogTitle>
         </DialogHeader>

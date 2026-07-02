@@ -10,7 +10,7 @@ export const ProgressLab = () => {
         minValue={0}
         maxValue={10}
         getValueLabel={({ value, max }) => `${value} of ${max} tasks completed`}
-        class='w-[300px] space-y-1'
+        class='w-75 space-y-1'
       >
         <div class='flex justify-between'>
           <ProgressLabel>Processing...</ProgressLabel>

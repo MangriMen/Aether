@@ -122,7 +122,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   });
 
   return (
-    <div class='flex flex-col gap-4'>
+    <div class='gap-4 flex flex-col'>
       {/* URL input row */}
       <CombinedTextField
         class='flex-1'

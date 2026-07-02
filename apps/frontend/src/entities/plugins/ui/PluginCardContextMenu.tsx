@@ -41,7 +41,10 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
         onKeyDown={stopPropagation}
       >
         <ContextMenuItem
-          class='w-full hover:!bg-primary hover:text-primary-foreground'
+          class='
+            hover:bg-primary! hover:text-primary-foreground
+            w-full
+          '
           onClick={local.onToggleEnabled}
           disabled={local.isLoading}
         >
@@ -54,7 +57,10 @@ export const PluginContextMenu: Component<PluginContextMenuProps> = (props) => {
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
-          class='w-full hover:!bg-destructive hover:text-destructive-foreground'
+          class='
+            hover:bg-destructive! hover:text-destructive-foreground
+            w-full
+          '
           onClick={local.onRemove}
           disabled={local.isLoading}
         >

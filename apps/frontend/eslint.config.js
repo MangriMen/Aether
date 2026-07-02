@@ -5,7 +5,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import tsParser from '@typescript-eslint/parser';
 import sonarjs from 'eslint-plugin-sonarjs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
-import tailwind from 'eslint-plugin-tailwindcss';
+import tailwind from 'eslint-plugin-better-tailwindcss';
 import solid from 'eslint-plugin-solid/configs/recommended';
 import perfectionist from 'eslint-plugin-perfectionist';
 import react from 'eslint-plugin-react';
@@ -82,28 +82,17 @@ export default [
       'jsx-a11y/label-has-associated-control': 'off',
     },
   },
-  ...tailwind.configs['flat/recommended'],
+  tailwind.configs['stylistic-warn'],
   {
     settings: {
-      tailwindcss: {
-        callees: ['cva', 'clsx', 'twMerge'],
+      'better-tailwindcss': {
+        entryPoint: './src/app/app.css',
+        detectComponentClasses: true,
       },
     },
-  },
-  {
     rules: {
-      'tailwindcss/no-custom-classname': [
-        'warn',
-        {
-          cssFiles: ['src/app/app.css'],
-          "whitelist": [
-            "animate-list-item",
-            "animate-list-item-enter",
-            "animate-list-item-exit-to",
-            "animate-list-item-exit-active"
-          ]
-        },
-      ],
+      'better-tailwindcss/enforce-consistent-class-order': 'off',
+      'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
     },
   },
   solid,

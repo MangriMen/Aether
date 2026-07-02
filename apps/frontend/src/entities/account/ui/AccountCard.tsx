@@ -42,7 +42,7 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
 
   return (
     <Polymorphic
-      class={cn('flex justify-between border rounded-md h-12', local.class)}
+      class={cn('h-12 rounded-md flex justify-between border', local.class)}
       {...others}
     >
       <AccountButton
@@ -57,7 +57,12 @@ export const AccountCard = <T extends ValidComponent = 'div'>(
         <CombinedTooltip
           label={t('account.removeAccount')}
           as={IconButton}
-          class='aspect-square size-full rounded-l-none p-0 hover:!bg-destructive focus:z-10'
+          class='
+            p-0
+            hover:bg-destructive!
+            aspect-square size-full rounded-l-none
+            focus:z-10
+          '
           variant='ghost'
           icon={IconMdiDelete}
           onClick={local.onRemove}

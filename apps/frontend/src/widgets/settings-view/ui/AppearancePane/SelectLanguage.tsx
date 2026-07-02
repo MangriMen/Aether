@@ -26,7 +26,7 @@ const SelectLanguage = <T extends Option<Locale> = Option<Locale>>(
 
   return (
     <Select
-      class={cn('flex flex-col gap-2', local.class)}
+      class={cn('gap-2 flex flex-col', local.class)}
       validationState={local.errorMessage ? 'invalid' : 'valid'}
       optionTextValue='name'
       optionValue='value'

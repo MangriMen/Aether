@@ -55,10 +55,10 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
 
   return (
     <div
-      class={cn('flex justify-between items-center pt-0.5', local.class)}
+      class={cn('pt-0.5 flex items-center justify-between', local.class)}
       {...others}
     >
-      <div class='flex gap-2'>
+      <div class='gap-2 flex'>
         <CombinedTooltip
           label={t('plugins.back')}
           as={IconButton}
@@ -69,7 +69,7 @@ export const PluginsPaneAddTitle: Component<PluginsPaneAddTitleProps> = (
         />
         <h2>{t('plugins.addTitle')}</h2>
       </div>
-      <div class='flex gap-2'>
+      <div class='gap-2 flex'>
         <CombinedSelect
           optionValue='value'
           optionTextValue='label'

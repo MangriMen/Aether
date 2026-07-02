@@ -20,7 +20,7 @@ const Separator = <T extends ValidComponent = 'hr'>(
     <SeparatorPrimitive.Root
       orientation={local.orientation ?? 'horizontal'}
       class={cn(
-        'shrink-0 bg-border',
+        'bg-border shrink-0',
         local.orientation === 'vertical' ? 'h-full w-px' : 'h-px w-full',
         local.class,
       )}

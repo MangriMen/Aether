@@ -58,12 +58,12 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
 
   return (
-    <div class='flex flex-col gap-2' {...others}>
-      <div class='flex items-end justify-between gap-4'>
-        <CombinedTooltip label={title()} as='span' class='truncate font-bold'>
+    <div class='gap-2 flex flex-col' {...others}>
+      <div class='gap-4 flex items-end justify-between'>
+        <CombinedTooltip label={title()} as='span' class='font-bold truncate'>
           {title()}
         </CombinedTooltip>
-        <span class='shrink-0 tabular-nums text-muted-foreground'>
+        <span class='text-muted-foreground shrink-0 tabular-nums'>
           {percentStr()}
         </span>
       </div>
@@ -75,7 +75,7 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         maxValue={1}
       />
 
-      <span class='truncate text-sm text-muted-foreground'>{message()}</span>
+      <span class='text-sm text-muted-foreground truncate'>{message()}</span>
     </div>
   );
 };

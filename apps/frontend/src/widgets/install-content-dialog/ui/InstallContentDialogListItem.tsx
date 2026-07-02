@@ -74,7 +74,7 @@ export const InstallContentDialogListItem: Component<
       as='div'
       label={t('instance.notCompatibleWithContent')}
       disableTooltip={isFulfilledCompatible()}
-      class={cn('flex items-center justify-between rounded py-1.5', {
+      class={cn('rounded-sm py-1.5 flex items-center justify-between', {
         'text-muted-foreground': !isFulfilledCompatible(),
       })}
       {...others}
@@ -83,7 +83,12 @@ export const InstallContentDialogListItem: Component<
         href={ROUTES.INSTANCE(local.instance.id)}
         onClick={local.onCloseDialog}
       >
-        <div class='flex items-center gap-2 hover:underline'>
+        <div
+          class='
+            gap-2 flex items-center
+            hover:underline
+          '
+        >
           <InstanceIcon
             class='size-8'
             src={local.instance.iconPath ?? undefined}

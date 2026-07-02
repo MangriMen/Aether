@@ -19,7 +19,7 @@ export const BackForwardButtons: Component<BackForwardButtonsProps> = (
   const handleGoForward = () => navigate(1);
 
   return (
-    <div class='flex gap-2' {...props}>
+    <div class='gap-2 flex' {...props}>
       <CombinedTooltip
         label={t('navigation.goBack')}
         as={IconButton}

@@ -41,7 +41,7 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
 
   return (
     <span
-      class={cn('mt-auto inline-flex items-center gap-1', local.class)}
+      class={cn('gap-1 mt-auto inline-flex items-center', local.class)}
       {...others}
     >
       <IconMdiClock />
@@ -49,7 +49,7 @@ export const TimePlayed: Component<LastPlayedDateProps> = (props) => {
         <CombinedTooltip
           as='span'
           label={lastPlayedDateTitle()}
-          class='mt-auto inline-flex items-center gap-1 capitalize'
+          class='gap-1 mt-auto inline-flex items-center capitalize'
         >
           {lastPlayedText()}
         </CombinedTooltip>

@@ -113,7 +113,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   };
 
   return (
-    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <Form class={cn('gap-2 flex flex-col', local.class)} {...others}>
       <Field name='overrideHooks' type='boolean'>
         {(overrideHooks) => (
           <>

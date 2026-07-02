@@ -26,7 +26,7 @@ export const CollapsibleSettingsEntry: Component<
   return (
     <Collapsible
       class={cn('flex flex-col', local.class, {
-        'bg-card/card border rounded-md hover:bg-card/hover':
+        'bg-card/card rounded-md hover:bg-card/hover border':
           local.variant === 'card',
       })}
       open={isOpened()}
@@ -39,13 +39,13 @@ export const CollapsibleSettingsEntry: Component<
         tabIndex={-1}
         {...others}
       >
-        <div class='flex items-center gap-1'>
+        <div class='gap-1 flex items-center'>
           {local.children}
 
           <CollapsibleIcon open={isOpened()} />
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent class='flex flex-col gap-4 pb-4'>
+      <CollapsibleContent class='gap-4 pb-4 flex flex-col'>
         {local.collapsibleContent}
       </CollapsibleContent>
     </Collapsible>

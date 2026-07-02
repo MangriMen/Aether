@@ -76,7 +76,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
   return (
     <Form
-      class={cn('flex flex-col h-full grow', local.class)}
+      class={cn('flex h-full grow flex-col', local.class)}
       onSubmit={handleSubmit}
       {...others}
     >
@@ -99,7 +99,10 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                   label={t('common.browse')}
                   as={IconButton}
                   variant='ghost'
-                  class='size-7 bg-secondary/secondary enabled:hover:bg-secondary/hover'
+                  class='
+                    size-7 bg-secondary/secondary
+                    enabled:hover:bg-secondary/hover
+                  '
                   type='button'
                   size='sm'
                   onClick={handleBrowse}

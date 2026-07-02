@@ -30,7 +30,7 @@ export const WindowControls: Component<WindowControlsProps> = (props) => {
 
   return (
     <div
-      class={cn('flex h-full text-muted-foreground', local.class)}
+      class={cn('text-muted-foreground flex h-full', local.class)}
       data-ignore-outside-click
       {...others}
     >

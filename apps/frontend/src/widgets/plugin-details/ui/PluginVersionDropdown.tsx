@@ -78,7 +78,7 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
           as={Button<'button'>}
           variant='destructive'
           size='sm'
-          class='aspect-square rounded-none border-0 p-0 text-base'
+          class='p-0 text-base aspect-square rounded-none border-0'
           aria-label={t('plugins.switchVersion')}
           disabled={isDisabled()}
         >
@@ -129,7 +129,7 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
                       <Show
                         when={release.tag_name === updates.data?.current_tag}
                       >
-                        <span class='ml-auto text-xs text-muted-foreground'>
+                        <span class='text-xs text-muted-foreground ml-auto'>
                           {t('common.current')}
                         </span>
                       </Show>
@@ -137,7 +137,11 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
                   )}
                 </For>
                 <Show when={filteredVersions().length === 0}>
-                  <div class='px-2 py-3 text-center text-sm text-muted-foreground'>
+                  <div
+                    class='
+                    px-2 py-3 text-sm text-muted-foreground text-center
+                  '
+                  >
                     {t('plugins.noVersionsFound')}
                   </div>
                 </Show>

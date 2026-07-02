@@ -36,7 +36,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
 
   return (
     <Tabs
-      class={cn('flex flex-col flex-1 overflow-hidden', local.class)}
+      class={cn('flex flex-1 flex-col overflow-hidden', local.class)}
       defaultValue={PluginDetailsTabs.Capabilities}
       orientation='horizontal'
       {...others}
@@ -53,7 +53,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
       <For each={tabs()}>
         {(tab) => (
           <TabsContent
-            class='flex flex-col overflow-hidden pl-1'
+            class='pl-1 flex flex-col overflow-hidden'
             value={tab.value}
           >
             <Dynamic

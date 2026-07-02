@@ -80,7 +80,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
 
   return (
     <>
-      <div class='group relative p-0.5'>
+      <div class='group p-0.5 relative'>
         <InstanceContextMenu
           isLoading={runningInstanceData()?.isLoading}
           onPlay={handleLaunch}
@@ -100,7 +100,13 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
         </InstanceContextMenu>
 
         <props.instanceActionButton
-          class='absolute right-4 top-[72px] z-50 p-0 opacity-0 transition-[bottom,opacity] focus-within:bottom-1/4 focus-within:opacity-100 disabled:opacity-0 group-hover:bottom-1/4 group-hover:opacity-100'
+          class='
+            top-18 right-4 p-0 absolute z-50 opacity-0
+            transition-[bottom,opacity]
+            group-hover:bottom-1/4 group-hover:opacity-100
+            focus-within:bottom-1/4 focus-within:opacity-100
+            disabled:opacity-0
+          '
           instance={props.instance}
         />
       </div>

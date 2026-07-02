@@ -53,7 +53,7 @@ export const OverridableEnvVarsField: Component<
   );
 
   return (
-    <div class={cn('flex flex-col gap-1', local.class)} {...others}>
+    <div class={cn('gap-1 flex flex-col', local.class)} {...others}>
       <InheritanceLabel
         label={t('instanceSettings.environmentVariables')}
         inheritanceLabel={t('settings.usedFromDefaultSettings')}

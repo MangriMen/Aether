@@ -5,7 +5,7 @@ import { ComponentShelf } from './ComponentShelf';
 export const TabsLab = () => {
   return (
     <ComponentShelf title='Tabs'>
-      <Tabs defaultValue='account' class='w-[400px]'>
+      <Tabs defaultValue='account' class='w-100'>
         <TabsList class='grid w-full grid-cols-2'>
           <TabsTrigger value='account'>Account</TabsTrigger>
           <TabsTrigger value='password'>Password</TabsTrigger>

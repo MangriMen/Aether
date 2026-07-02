@@ -15,7 +15,7 @@ export const VersionInfo: Component<VersionInfoProps> = (props) => {
   return (
     <div
       class={cn(
-        'inline-flex flex-col text-muted-foreground rounded-md select-none',
+        'rounded-md text-muted-foreground inline-flex flex-col select-none',
         local.class,
       )}
       {...others}

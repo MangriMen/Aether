@@ -68,7 +68,7 @@ export const ContentPageLayout: Component<ContentPageProps> = (props) => {
       onFiltersChange={handleFiltersChange}
     >
       <div
-        class='p-page flex size-full flex-col gap-4 overflow-hidden'
+        class='gap-4 p-page flex size-full flex-col overflow-hidden'
         {...others}
       >
         <Show when={isInstancePage()}>

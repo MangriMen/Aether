@@ -25,7 +25,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
       role='presentation'
       ref={setRef}
       onKeyDown={onKeyDown}
-      class={cn('flex flex-wrap gap-4', local.class)}
+      class={cn('gap-4 flex flex-wrap', local.class)}
       {...others}
     >
       <Switch>
@@ -33,7 +33,11 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
           <Show
             when={instances.data?.length}
             fallback={
-              <p class='m-auto whitespace-pre-line text-center text-muted-foreground'>
+              <p
+                class='
+                  text-muted-foreground m-auto text-center whitespace-pre-line
+                '
+              >
                 {t('home.noInstances')}
               </p>
             }

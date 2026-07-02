@@ -45,7 +45,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col grow overflow-y-auto',
+        'flex grow flex-col overflow-y-auto',
         {
           'text-muted-foreground': local.isSettingsDisabled,
         },
@@ -54,7 +54,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
       {...others}
     >
       <Show when={local.isSettingsDisabled}>
-        <span class='text-xl font-medium leading-10 brightness-125'>
+        <span class='text-xl leading-10 font-medium brightness-125'>
           {t('plugins.disableToChangeSettings')}
         </span>
       </Show>

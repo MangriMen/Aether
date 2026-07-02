@@ -25,9 +25,9 @@ export const IncludeSnapshotsCheckbox: Component<
   return (
     <div
       class={cn(
-        'flex min-w-max items-center gap-2 animate-in fade-in-0 duration-300',
+        'gap-2 animate-in fade-in-0 flex min-w-max items-center duration-300',
         {
-          'invisible animate-out fade-out-0': !local.show,
+          'animate-out fade-out-0 invisible': !local.show,
         },
         local.class,
       )}

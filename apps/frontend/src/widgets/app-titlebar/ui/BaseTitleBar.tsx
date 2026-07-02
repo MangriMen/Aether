@@ -12,11 +12,14 @@ export const BaseTitleBar: Component<BaseTitleBarProps> = (props) => {
 
   return (
     <>
-      <div class='fixed inset-x-0 top-0 h-titlebar w-full' />
+      <div class='inset-x-0 top-0 h-titlebar fixed w-full' />
       <TitleBar
         id='title-bar'
         class={cn(
-          'pointer-events-auto fixed inset-x-0 top-0 z-[100] items-center gap-2 bg-transparent',
+          `
+            inset-x-0 top-0 gap-2 pointer-events-auto fixed z-100 items-center
+            bg-transparent
+          `,
           local.class,
         )}
         data-ignore-outside-click
@@ -25,7 +28,7 @@ export const BaseTitleBar: Component<BaseTitleBarProps> = (props) => {
       >
         {local.children}
         <WindowControls
-          class='ml-auto w-[121px] min-w-[121px] self-end pr-px pt-px'
+          class='w-30.25 min-w-30.25 ml-auto self-end pt-px pr-px'
           data-ignore-outside-click
         />
       </TitleBar>

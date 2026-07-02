@@ -16,12 +16,12 @@ export const AppErrorBoundary: Component<AppErrorBoundaryProps> = (props) => {
   return (
     <div
       class={cn(
-        'flex size-full flex-col items-center justify-center gap-5',
+        'gap-5 flex size-full flex-col items-center justify-center',
         local.class,
       )}
       {...others}
     >
-      <h1 class='whitespace-pre-line text-center'>{t('common.appError')}</h1>
+      <h1 class='text-center whitespace-pre-line'>{t('common.appError')}</h1>
       <Button onClick={props.reset}>{t('common.reset')}</Button>
     </div>
   );

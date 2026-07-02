@@ -43,13 +43,26 @@ export const InstanceIconDropdownButton: Component<
         <CombinedTooltip
           as={Button}
           label={t('instance.changeIcon')}
-          class='relative size-full max-h-max max-w-max p-0 active:animate-bump-out'
+          class='
+            p-0
+            active:animate-bump-out
+            relative size-full max-h-max max-w-max
+          '
           variant='ghost'
           placement='top'
           {...others}
         >
           <InstanceIcon src={local.src} alt={t('instance.icon')} />
-          <div class='absolute inset-0 flex size-full items-center justify-center opacity-0 transition-opacity hover:bg-popover/50 hover:opacity-100 focus:opacity-100'>
+          <div
+            class='
+              inset-0
+              hover:bg-popover/50
+              absolute flex size-full items-center justify-center opacity-0
+              transition-opacity
+              hover:opacity-100
+              focus:opacity-100
+            '
+          >
             <IconMdiImageEditOutline class='text-2xl text-muted-foreground' />
           </div>
         </CombinedTooltip>
@@ -72,7 +85,11 @@ export const InstanceIconDropdownButton: Component<
         <Show when={local.src !== undefined}>
           <DropdownMenuItem
             as={Button}
-            class='w-full justify-start text-destructive enabled:hover:text-destructive'
+            class='
+              text-destructive
+              enabled:hover:text-destructive
+              w-full justify-start
+            '
             variant='ghost'
             leadingIcon={IconMdiDelete}
             onClick={local.onRemoveIcon}

@@ -28,7 +28,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
 
   return (
     <ul
-      class={cn('flex flex-col gap-2 relative overflow-x-hidden ', local.class)}
+      class={cn('gap-2 relative flex flex-col overflow-x-hidden', local.class)}
       {...others}
     >
       <TransitionGroup name='animate-list-item'>
@@ -36,7 +36,7 @@ export const AccountsList: Component<AccountsListProps> = (props) => {
           each={local.accounts}
           fallback={
             <span
-              class={cn('inline-flex w-full justify-center items-center h-12')}
+              class={cn('h-12 inline-flex w-full items-center justify-center')}
             >
               {t('account.notFound')}
             </span>

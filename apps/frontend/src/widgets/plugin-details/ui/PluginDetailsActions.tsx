@@ -56,11 +56,11 @@ export const PluginDetailsActions: Component<PluginDetailsActionsProps> = (
   const hasChecked = createMemo(() => updates.data != null);
 
   return (
-    <div class={cn('flex items-center gap-2', local.class)} {...others}>
+    <div class={cn('gap-2 flex items-center', local.class)} {...others}>
       <PluginUpdateButton plugin={local.plugin} />
       <TogglePluginButton plugin={local.plugin} disabled={isMutating()} />
 
-      <div class='flex overflow-hidden rounded-md border'>
+      <div class='rounded-md flex overflow-hidden border'>
         <Button
           variant='destructive'
           size='sm'

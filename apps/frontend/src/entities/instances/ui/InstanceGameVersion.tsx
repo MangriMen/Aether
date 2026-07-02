@@ -24,7 +24,7 @@ export const InstanceGameVersion: Component<InstanceGameVersionProps> = (
       label={t('common.gameVersion')}
       as='span'
       class={cn(
-        'capitalize inline-flex max-w-max items-center gap-1',
+        'gap-1 inline-flex max-w-max items-center capitalize',
         local.class,
       )}
       {...others}

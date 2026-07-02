@@ -18,9 +18,9 @@ export const DefaultInstanceSettingsPane: Component<
 
   return (
     <SettingsPane label={t('settings.tab.defaultInstanceSettings')} {...props}>
-      <WindowSettings class='rounded-md border bg-card/card p-4' />
-      <JavaAndMemorySettings class='rounded-md border bg-card/card p-4' />
-      <HooksSettings class='rounded-md border bg-card/card p-4' />
+      <WindowSettings class='rounded-md bg-card/card p-4 border' />
+      <JavaAndMemorySettings class='rounded-md bg-card/card p-4 border' />
+      <HooksSettings class='rounded-md bg-card/card p-4 border' />
     </SettingsPane>
   );
 };

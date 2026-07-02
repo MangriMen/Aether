@@ -60,7 +60,7 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
   };
 
   return (
-    <Form class={cn('flex flex-col gap-2', local.class)} {...others}>
+    <Form class={cn('gap-2 flex flex-col', local.class)} {...others}>
       <Field name='overrideWindowSettings' type='boolean'>
         {(overrideWindowSettings) => {
           const isDisabled = createMemo(

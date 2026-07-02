@@ -75,8 +75,8 @@ export const AllowedPathsCustomItems: Component<
   } = useCustomItemsEditing(() => local.form, name, handleChange);
 
   return (
-    <div class={cn('flex flex-col gap-2', local.class)} {...others}>
-      <ul class='flex flex-col rounded-sm bg-black/20'>
+    <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
+      <ul class='rounded-sm bg-black/20 flex flex-col'>
         <FieldArrayFor of={local.form} name={name}>
           {({ index }) => (
             <li>

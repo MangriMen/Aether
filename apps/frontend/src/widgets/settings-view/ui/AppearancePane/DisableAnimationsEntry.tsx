@@ -22,7 +22,7 @@ export const DisableAnimationsEntry: Component<DisableAnimationsEntryProps> = (
     <SettingsEntry
       title={t('settings.animations')}
       description={
-        <div class='flex flex-col gap-2'>
+        <div class='gap-2 flex flex-col'>
           <span>{t('settings.animationsDescription')}</span>
           <Show when={themeContext.prefersReducedMotion}>
             <span class='rounded-md bg-muted p-2 text-muted-foreground'>

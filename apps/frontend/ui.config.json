@@ -3,7 +3,7 @@
   "tsx": true,
   "tailwind": {
     "css": "src/app/app.css",
-    "config": "src/shared/config/ui.presets.cjs",
+    "config": "",
     "prefix": ""
   },
   "aliases": {

@@ -18,7 +18,7 @@ export const AllowedItemActionButtons: Component<
       <CombinedTooltip
         label='Edit'
         as={IconButton}
-        class='size-max p-1'
+        class='p-1 size-max'
         variant='ghost'
         size='sm'
         icon={IconMdiPencil}
@@ -27,7 +27,7 @@ export const AllowedItemActionButtons: Component<
       <CombinedTooltip
         label='Remove'
         as={IconButton}
-        class='size-max p-1'
+        class='p-1 size-max'
         variant='ghost'
         size='sm'
         icon={IconMdiClose}

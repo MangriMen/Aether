@@ -23,7 +23,7 @@ export const PluginsList: Component<PluginsListProps> = (props) => {
   ]);
 
   return (
-    <div class={cn('flex flex-col gap-1', local.class)} {...others}>
+    <div class={cn('gap-1 flex flex-col', local.class)} {...others}>
       <DelayedShow
         when={!local.isLoading}
         fallback={<SkeletonList itemsCount={3} height={60} radius={6} />}

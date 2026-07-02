@@ -37,7 +37,7 @@ export const UpdateBanner: Component<UpdateBannerProps> = (props) => {
       <CombinedTooltip
         label={t('settings.goToUpdatePage')}
         as={Button}
-        class={cn('mt-auto bg-primary/40 border-primary border', local.class)}
+        class={cn('border-primary bg-primary/40 mt-auto border', local.class)}
         onClick={handleGoToUpdate}
         size='sm'
         {...others}

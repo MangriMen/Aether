@@ -30,18 +30,22 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
   return (
     <div
       class={cn(
-        'relative flex gap-2 border bg-card/card rounded-md p-3 group',
+        'group gap-2 rounded-md bg-card/card p-3 relative flex border',
         local.class,
       )}
       {...others}
     >
       <A
         href={contentPageHref()}
-        class='after:absolute after:inset-0 after:z-10'
+        class='after:inset-0 after:absolute after:z-10'
       >
         <ContentItemInfo item={local.item} />
       </A>
-      <div class='relative z-20 ml-auto mt-auto flex size-max flex-col justify-end'>
+      <div
+        class='
+        relative z-20 mt-auto ml-auto flex size-max flex-col justify-end
+      '
+      >
         <ContentInstallButton
           isInstalling={isInstalling()}
           isInstalled={isInstalled()}

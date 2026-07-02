@@ -18,7 +18,13 @@ const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
   const [, rest] = splitProps(props, ['children']);
   return (
     <DialogPrimitive.Portal {...rest}>
-      <div class='fixed inset-0 z-50 flex items-start justify-center sm:items-center'>
+      <div
+        class='
+          inset-0
+          sm:items-center
+          fixed z-50 flex items-start justify-center
+        '
+      >
         {props.children}
       </div>
     </DialogPrimitive.Portal>
@@ -26,7 +32,12 @@ const DialogPortal: Component<DialogPrimitive.DialogPortalProps> = (props) => {
 };
 
 const dialogOverlayVariants = cva(
-  'fixed inset-0 z-50 backdrop-blur-sm data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0',
+  `
+    inset-0 backdrop-blur-sm
+    data-closed:animate-out data-closed:fade-out-0
+    data-expanded:animate-in data-expanded:fade-in-0
+    fixed z-50
+  `,
   {
     variants: {
       variant: {
@@ -97,20 +108,33 @@ const DialogContent = <T extends ValidComponent = 'div'>(
         onPointerDownOutside={onPointerDownOutsideGuard}
         class={cn(
           local.variant !== 'unstyled' &&
-            'fixed left-1/2 top-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-2 overflow-y-auto border bg-popover/hard p-6 shadow-lg duration-200 data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-[48%] data-[expanded]:slide-in-from-left-1/2 data-[expanded]:slide-in-from-top-[48%] sm:rounded-lg',
+            `
+              max-w-lg gap-2 bg-popover/hard p-6 shadow-lg
+              data-closed:animate-out data-closed:fade-out-0
+              data-closed:zoom-out-95
+              data-expanded:animate-in data-expanded:fade-in-0
+              data-expanded:zoom-in-95
+              sm:rounded-lg
+              fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full
+              -translate-1/2 overflow-y-auto border duration-200
+            `,
           local.class,
         )}
         {...rest}
       >
         {local.children}
         <Show when={local.showActions ?? true}>
-          <div class='absolute right-6 top-[22px] flex'>
+          <div class='top-5.5 right-6 absolute flex'>
             {local.actions}
             <DialogPrimitive.CloseButton
               as={IconButton}
               size='sm'
               variant='ghost'
-              class='opacity-70 transition-opacity hover:opacity-100 data-[expanded]:bg-accent data-[expanded]:text-muted-foreground'
+              class='
+                data-expanded:bg-accent data-expanded:text-muted-foreground
+                opacity-70 transition-opacity
+                hover:opacity-100
+              '
               title={t('common.close')}
             >
               <svg
@@ -140,7 +164,11 @@ const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col space-y-1.5 text-center sm:text-left',
+        `
+          space-y-1.5
+          sm:text-left
+          flex flex-col text-center
+        `,
         props.class,
       )}
       {...rest}
@@ -153,7 +181,11 @@ const DialogFooter: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+        `
+          gap-2
+          sm:flex-row sm:justify-end
+          flex flex-col-reverse
+        `,
         props.class,
       )}
       {...rest}
@@ -173,7 +205,7 @@ const DialogTitle = <T extends ValidComponent = 'h2'>(
   return (
     <DialogPrimitive.Title
       class={cn(
-        'text-lg font-semibold leading-none tracking-tight',
+        'text-lg font-semibold tracking-tight leading-none',
         props.class,
       )}
       {...rest}

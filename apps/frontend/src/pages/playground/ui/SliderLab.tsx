@@ -19,7 +19,7 @@ export const SliderLab = () => {
         getValueLabel={(params) =>
           `$${params.values[0]} - $${params.values[1]}`
         }
-        class='w-[300px] space-y-3'
+        class='w-75 space-y-3'
       >
         <div class='flex w-full justify-between'>
           <SliderLabel>Money</SliderLabel>

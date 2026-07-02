@@ -17,7 +17,7 @@ const Tabs = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props as TabsProps, ['class']);
   return (
     <TabsPrimitive.Root
-      class={cn('data-[orientation=vertical]:flex ', local.class)}
+      class={cn('data-[orientation=vertical]:flex', local.class)}
       {...others}
     />
   );
@@ -35,7 +35,12 @@ const TabsList = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.List
       class={cn(
-        'inline-flex data-[orientation=vertical]:flex-col data-[orientation=vertical]:h-full h-9 gap-0.5 items-center justify-center rounded-md bg-card/card p-1 text-muted-foreground',
+        `
+          bg-card/card text-muted-foreground h-9 gap-0.5 rounded-md p-1
+          inline-flex items-center justify-center
+          data-[orientation=vertical]:h-full
+          data-[orientation=vertical]:flex-col
+        `,
         local.class,
       )}
       {...others}
@@ -55,7 +60,19 @@ const TabsTrigger = <T extends ValidComponent = 'button'>(
   return (
     <TabsPrimitive.Trigger
       class={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:shadow-sm enabled:hover:bg-primary/solid-hover enabled:hover:text-primary-foreground',
+        `
+          ring-offset-background
+          focus-visible:ring-ring
+          enabled:hover:bg-primary/solid-hover
+          enabled:hover:text-primary-foreground
+          data-selected:bg-primary data-selected:text-primary-foreground
+          rounded-sm px-3 py-1.5 text-sm font-medium
+          data-selected:shadow-sm
+          inline-flex items-center justify-center whitespace-nowrap
+          transition-all
+          focus-visible:ring-2 focus-visible:outline-none
+          disabled:pointer-events-none disabled:opacity-50
+        `,
         local.class,
       )}
       {...others}
@@ -75,7 +92,16 @@ const TabsContent = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Content
       class={cn(
-        'data-[orientation=vertical]:grow rounded-sm data-[orientation=vertical]:ml-2 data-[orientation=horizontal]:mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0',
+        `
+          ring-offset-background
+          focus-visible:ring-ring
+          rounded-sm
+          data-[orientation=horizontal]:mt-2
+          data-[orientation=vertical]:ml-2
+          focus-visible:ring-2 focus-visible:ring-offset-0
+          focus-visible:outline-none
+          data-[orientation=vertical]:grow
+        `,
         local.class,
       )}
       {...others}
@@ -95,7 +121,13 @@ const TabsIndicator = <T extends ValidComponent = 'div'>(
   return (
     <TabsPrimitive.Indicator
       class={cn(
-        'duration-250ms absolute transition-all data-[orientation=horizontal]:-bottom-px data-[orientation=vertical]:-right-px data-[orientation=horizontal]:h-[2px] data-[orientation=vertical]:w-[2px]',
+        `
+          data-[orientation=horizontal]:h-0.5
+          data-[orientation=vertical]:w-0.5
+          absolute transition-all duration-250
+          data-[orientation=horizontal]:-bottom-px
+          data-[orientation=vertical]:-right-px
+        `,
         local.class,
       )}
       {...others}

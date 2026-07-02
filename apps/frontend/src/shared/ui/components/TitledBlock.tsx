@@ -12,7 +12,7 @@ export const TitledBlock: Component<TitledBlockProps> = (props) => {
   const [local, others] = splitProps(props, ['title', 'class', 'children']);
 
   return (
-    <div class={cn('flex flex-col gap-4', local.class)} {...others}>
+    <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
       <Show when={local.title}>
         <h2 class='text-2xl font-bold'>{local.title}</h2>
       </Show>

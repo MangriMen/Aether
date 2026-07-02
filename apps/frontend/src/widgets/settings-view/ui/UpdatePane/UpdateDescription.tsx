@@ -31,7 +31,7 @@ export const UpdateDescription: Component<UpdateDescriptionProps> = (props) => {
       when={local.isUpdateAvailable}
       fallback={t('settings.checkForUpdatesDescriptionNoUpdates')}
     >
-      <div class={cn('flex flex-col gap-0.5', local.class)} {...others}>
+      <div class={cn('gap-0.5 flex flex-col', local.class)} {...others}>
         {t('settings.checkForUpdatesDescription')}
         <Show when={version()}>
           {(version) => (

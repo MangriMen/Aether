@@ -67,7 +67,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
   });
 
   return (
-    <div class={cn('flex flex-col gap-4 p-1', local.class)} {...others}>
+    <div class={cn('gap-4 p-1 flex flex-col', local.class)} {...others}>
       <DelayedShow
         when={
           instanceContentArray() !== undefined &&
@@ -76,7 +76,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
         }
         delay={20}
         fallback={
-          <div class='mx-auto mt-20 flex flex-col items-center gap-4'>
+          <div class='mt-20 gap-4 mx-auto flex flex-col items-center'>
             <span class='text-lg text-muted-foreground'>
               {t('instance.noContent')}
             </span>

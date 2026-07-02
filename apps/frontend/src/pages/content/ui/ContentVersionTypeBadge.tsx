@@ -54,7 +54,10 @@ export const ContentVersionTypeBadge: Component<
   return (
     <div
       class={cn(
-        'flex items-center justify-center size-9 rounded bg-muted text-muted-foreground font-medium text-base',
+        `
+          size-9 rounded-sm bg-muted text-base font-medium text-muted-foreground
+          flex items-center justify-center
+        `,
         local.class,
         {
           [variantClass() ?? '']: Boolean(variantClass()),
