@@ -1,4 +1,276 @@
-/* ... верхняя часть файла (@theme, @keyframes, @utility) остается как у вас ... */
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
+
+@theme {
+  /* Colors from ui.presets.cjs */
+  --color-border: oklch(var(--border) / var(--opacity-border-base));
+  --color-border-dynamic: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  --color-info: oklch(var(--info));
+  --color-info-foreground: oklch(var(--info-foreground));
+  --color-success: oklch(var(--success));
+  --color-success-foreground: oklch(var(--success-foreground));
+  --color-warning: oklch(var(--warning));
+  --color-warning-foreground: oklch(var(--warning-foreground));
+  --color-error: oklch(var(--error));
+  --color-error-foreground: oklch(var(--error-foreground));
+
+  /* Custom colors from tailwind.config.ts */
+  --color-release: oklch(var(--release));
+  --color-release-foreground: oklch(var(--release-foreground));
+  --color-beta: oklch(var(--beta));
+  --color-beta-foreground: oklch(var(--beta-foreground));
+  --color-alpha: oklch(var(--alpha));
+  --color-alpha-foreground: oklch(var(--alpha-foreground));
+
+  /* Border radius from ui.presets.cjs */
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Spacing from tailwind.config.ts */
+  --spacing-titlebar: 2.5rem;
+
+  /* Transition timing */
+  --ease-custom-expo: cubic-bezier(0, 0.9, 0.1, 1);
+
+  /* Keyframes & animations from tailwind.config.ts + ui.presets.cjs */
+  --animate-content-show: content-show 0.2s ease-out;
+  --animate-content-hide: content-hide 0.2s ease-out;
+  --animate-slide-down: slide-down 0.2s ease-out;
+  --animate-slide-up: slide-up 0.2s ease-out;
+  --animate-bump-in: bump-in 0.05s ease-in-out forwards;
+  --animate-bump-out: bump-out 0.05s ease-in-out forwards;
+  --animate-pulse-border: pulse-border 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  /* Custom opacity modifiers */
+  --opacity-card: var(--opacity-card-val);
+  --opacity-secondary: var(--opacity-secondary-val);
+  --opacity-hard: var(--opacity-hard-val);
+  --opacity-control: var(--opacity-control-val);
+  --opacity-hover: var(--opacity-hover-val);
+  --opacity-active: var(--opacity-active-val);
+  --opacity-solid-hover: var(--opacity-solid-hover-val);
+  --opacity-solid-active: var(--opacity-solid-active-val);
+  --opacity-solid-text-active: var(--opacity-solid-text-active-val);
+}
+
+@custom-variant dark (&:where(.dark, [data-kb-theme="dark"]));
+@custom-variant aether-light (&:where([data-theme="aether-light"]));
+@custom-variant aether-dark (&:where([data-theme="aether-dark"]));
+
+@keyframes content-show {
+  from {
+    opacity: 0;
+    transform: scaleY(0) translateY(-40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+  }
+}
+
+@keyframes content-hide {
+  from {
+    opacity: 1;
+    transform: scaleY(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scaleY(0) translateY(-40px);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--kb-collapsible-content-height);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    height: var(--kb-collapsible-content-height);
+  }
+
+  to {
+    height: 0;
+  }
+}
+
+@keyframes bump-out {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes bump-in {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow:
+      0 0 0 0.5px oklch(var(--pulse-color) / 0.4),
+      0 0 4px 1px oklch(var(--pulse-color) / 0.2);
+  }
+
+  40% {
+    box-shadow:
+      0 0 0 1.2px oklch(var(--pulse-color) / 0.8),
+      0 0 12px 3.5px oklch(var(--pulse-color) / 0.45);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0.5px oklch(var(--pulse-color) / 0.4),
+      0 0 4px 1px oklch(var(--pulse-color) / 0.2);
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--kb-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--kb-accordion-content-height);
+  }
+
+  to {
+    height: 0;
+  }
+}
+
+/* Utilities */
+
+@utility p-page {
+  padding: calc(var(--spacing) * 6);
+  padding-top: 1px;
+}
+
+@utility step {
+  counter-increment: step;
+  position: relative;
+
+  &:before {
+    position: absolute;
+    width: 2.25rem;
+    height: 2.25rem;
+    background-color: var(--color-muted);
+    border-radius: 9999px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    text-align: center;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-indent: -1px;
+    border: 4px solid var(--color-background);
+    margin-left: -3.125rem;
+    margin-top: -0.25rem;
+    content: counter(step);
+  }
+}
+
+@utility animate-tab-content-wrapper {
+  display: grid;
+  overflow-x: hidden;
+}
+
+@utility animate-tab-content {
+  grid-row-start: 1;
+  grid-column-start: 1;
+  overflow: hidden;
+  padding: 0.125rem;
+  width: 100%;
+  height: calc(100% - 8px);
+  transition:
+    transform 0.2s,
+    opacity 0.2s,
+    visibility 0.2s;
+
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+
+  &[data-selected] {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    max-height: 100%;
+  }
+
+  &[data-selected] ~ & {
+    transform: translateX(100%);
+  }
+
+  &:not([data-selected]) {
+    transform: translateX(-100%);
+  }
+}
+
+@utility modal-adaptive-bounds {
+  width: 80%;
+  min-width: min(1248px, 80%);
+  max-width: 80%;
+  height: 80%;
+  min-height: min(860px, 80%);
+  max-height: 80%;
+
+  @media (min-width: 1280px) {
+    width: 70%;
+    min-width: min(1248px, 70%);
+    max-width: min(70%, 1680px);
+    height: 70%;
+    min-height: min(860px, calc(100% - 96px));
+    max-height: min(70%, 1600px);
+  }
+}
 
 /* Base Styles */
 @layer base {
@@ -115,12 +387,10 @@
     --primary-foreground: 98% 0 231;
   }
 
-  /* Безопасный глобальный сброс границ */
   * {
     border-color: var(--color-border);
   }
 
-  /* Чистый CSS для селекторов выделения */
   html {
     max-height: 100vh;
     overflow: hidden;
@@ -155,7 +425,6 @@
     transition: none !important;
   }
 
-  /* Перенесли внутрь слоя base для правильного каскада */
   @media (max-width: 640px) {
     .container {
       padding-left: 1rem;
