@@ -9,7 +9,7 @@
     ],
     "catalogs": {
       "build": {
-        "@tauri-apps/cli": "^2.11.3"
+        "@tauri-apps/cli": "^2.11.4"
       }
     }
   },
@@ -25,7 +25,7 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260626.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260702.3",
     "lefthook": "^2.1.9",
     "turbo": "latest",
     "typescript": "^6.0.3"
