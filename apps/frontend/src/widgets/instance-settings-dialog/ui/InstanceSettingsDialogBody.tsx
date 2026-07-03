@@ -45,7 +45,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 
   return (
     <Tabs
-      class={cn('h-96 p-0.5 flex overflow-hidden', local.class)}
+      class={cn('h-98 p-0.5 flex overflow-hidden', local.class)}
       defaultValue={InstanceSettingsDialogTabs.General}
       orientation='vertical'
       onChange={handleOnTabChange}
