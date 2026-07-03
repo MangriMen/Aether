@@ -1,11 +1,9 @@
-import { setInput } from '@formisch/solid';
-import { Form, Field } from '@formisch/solid';
+import { setInput, Form, Field } from '@formisch/solid';
 import { createMemo, Show, splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
-import { ResolutionPicker } from '@/entities/settings';
-import { OverrideCheckbox } from '@/entities/settings';
-import { cn } from '@/shared/lib';
+import { ResolutionPicker, OverrideCheckbox } from '@/entities/settings';
+import { cn, noop } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 import type {
@@ -63,7 +61,7 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
     <Form
       of={form}
       class={cn('gap-2 flex flex-col', local.class)}
-      onSubmit={() => {}}
+      onSubmit={noop}
       {...others}
     >
       <Field of={form} path={['overrideWindowSettings']}>

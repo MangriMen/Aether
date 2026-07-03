@@ -4,7 +4,7 @@ import { setInput, getInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn, noop } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
 
@@ -70,7 +70,7 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
     <Form
       of={form}
       class={cn('flex flex-col', local.class)}
-      onSubmit={() => {}}
+      onSubmit={noop}
       {...others}
     >
       <div class='gap-4 flex'>

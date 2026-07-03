@@ -1,10 +1,11 @@
 import type { Accessor } from 'solid-js';
 
+import { Form } from '@formisch/solid';
 import { splitProps, type Component } from 'solid-js';
 
 import type { RuntimeConfig } from '@/entities/plugins';
 
-import { cn } from '@/shared/lib';
+import { cn, noop } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 import type { PluginSettingsSchemaInput } from '../model';
@@ -45,7 +46,12 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   useResetPluginSettingsFormValues(form, local.initialValues);
 
   return (
-    <form class={cn('flex flex-1 grow flex-col', local.class)} {...others}>
+    <Form
+      of={form}
+      onSubmit={noop}
+      class={cn('flex flex-1 grow flex-col', local.class)}
+      {...others}
+    >
       <fieldset
         class={cn('gap-2 flex-1 grow flex-col', {
           'text-muted-foreground': local.disabled,
@@ -87,6 +93,6 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           }
         />
       </fieldset>
-    </form>
+    </Form>
   );
 };
