@@ -26,20 +26,7 @@ export const MarkdownRenderer: Component<MarkdownRendererProps> = (props) => {
       fallback={<ProgressCircle />}
     >
       <div
-        class={cn(
-          `
-            prose
-            dark:prose-invert
-            prose-h1:mb-6 prose-h1:border-b-2
-            prose-h1:border-b-secondary/secondary prose-h1:pb-1
-            prose-h2:mt-3 prose-h2:mb-4 prose-h2:border-b-2
-            prose-h2:border-b-secondary/secondary prose-h2:pb-1
-            prose-p:m-0 prose-p:mb-4
-            prose-li:my-0
-            max-w-none
-          `,
-          local.class,
-        )}
+        class={cn('prose dark:prose-invert max-w-none markdown', local.class)}
         // Mute warning because we are use sanitized text in inner html
         // eslint-disable-next-line solid/no-innerhtml
         innerHTML={sanitizedMarkdown.latest}
