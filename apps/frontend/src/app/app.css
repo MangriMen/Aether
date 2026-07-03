@@ -3,6 +3,14 @@
 @plugin "tailwindcss-animate";
 
 @theme {
+  /* TODO: check inter font */
+  /* --font-sans:
+    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace; */
+
   /* Colors from ui.presets.cjs */
   --color-border: oklch(var(--border) / var(--opacity-border-base));
   --color-border-dynamic: oklch(var(--border));
@@ -77,7 +85,7 @@
   --opacity-solid-text-active: var(--opacity-solid-text-active-val);
 }
 
-@custom-variant dark (&:where(.dark, [data-kb-theme="dark"]));
+@custom-variant dark (&:where(.dark, .dark *, [data-kb-theme=dark], [data-kb-theme=dark] *));
 @custom-variant aether-light (&:where([data-theme="aether-light"]));
 @custom-variant aether-dark (&:where([data-theme="aether-dark"]));
 
@@ -460,5 +468,171 @@
 
   .animate-list-item-exit-active {
     position: absolute;
+  }
+}
+
+@layer utilities {
+  .markdown {
+    line-height: 1.5;
+
+    :where(strong) {
+      color: var(--color-muted-foreground);
+      font-weight: 700;
+    }
+
+    :where(h1, h2, h3) {
+      color: var(--color-foreground);
+    }
+
+    :where(h1, h2, h3) strong,
+    :where(h1, h2, h3) :where(strong) {
+      color: var(--color-foreground) !important;
+    }
+
+    :where(h3) {
+      text-align: unset !important;
+    }
+
+    :where(span) {
+      text-decoration: none !important;
+    }
+
+    :where(blockquote) {
+      font-style: normal;
+    }
+
+    /* 1. Core spacing and word wraps (Cleaned from hidden conflicts) */
+    :where(
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      li,
+      p,
+      blockquote,
+      details,
+      dl,
+      ol,
+      code,
+      pre,
+      table,
+      ul
+    ) {
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Group elements that strictly separate paragraphs with bottom margin */
+    :where(blockquote, details, dl, ol, p, code, pre, table, ul) {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+
+    /* Proper content rhythm: add space above headings if they follow any content */
+    :where(h1, h2, h3, h4, h5, h6) {
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+
+    :where(li, p) {
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    /* Lists items should stay tight, spacing controlled by container */
+    :where(ol, ul) :where(li) {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    /* 2. Headlines & Borders */
+    h1:first-child,
+    :where(h1, h2, h3, h4, h5, h6):first-child {
+      margin-top: 0 !important;
+      margin-block-start: 0;
+      padding-block-start: 0;
+    }
+
+    :where(h1, h2) {
+      padding: 10px 0 5px;
+      border-bottom: 1px solid var(--color-border, currentColor);
+    }
+
+    :where(hr) {
+      margin: 20px 0;
+    }
+
+    /* 3. Inline Images (Badges fix) */
+    img {
+      max-width: 100%;
+      height: auto;
+      margin: 0 !important;
+      display: inline-block;
+      vertical-align: middle;
+      border-radius: var(--radius-md, 6px);
+    }
+
+    a > img {
+      transition: scale 0.1s ease;
+    }
+
+    a:active > img {
+      scale: 0.98;
+    }
+
+    /* GitHub-style dark/light image switches support */
+    &:not(.dark, [data-kb-theme='dark']) img[src$='#gh-dark-mode-only'] {
+      display: none;
+    }
+    &.dark img[src$='#gh-light-mode-only'],
+    &[data-kb-theme='dark'] img[src$='#gh-light-mode-only'] {
+      display: none;
+    }
+
+    /* 4. Custom Modrinth-styled Links */
+    a {
+      cursor: pointer;
+      font-weight: 400;
+      text-decoration: none;
+      color: var(--color-blue-300, #8ec5ff);
+
+      &:focus-visible,
+      &:hover {
+        filter: brightness(1.2);
+        text-decoration: underline;
+      }
+
+      &:active {
+        filter: brightness(1.1);
+      }
+    }
+
+    /* 5. Blockquotes */
+    blockquote {
+      padding: 0 1em;
+      margin-inline: 0;
+      border-left: 0.25em solid var(--color-border, currentColor);
+      color: var(--color-muted-foreground);
+    }
+
+    /* 6. Video Embeds & Iframes */
+    :where(iframe, video) {
+      aspect-ratio: 16 / 9;
+      width: 850px;
+      max-width: 100%;
+      height: auto;
+    }
+
+    @media screen and (max-width: 1280px) {
+      :where(iframe, video) {
+        width: 100%;
+      }
+    }
+
+    > :last-child {
+      margin-bottom: 0 !important;
+    }
   }
 }
