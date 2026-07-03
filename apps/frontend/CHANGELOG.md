@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Markdown Renderer:** Fixed colors, images, inline videos, and other rendering issues in the Markdown renderer.
 - **Instance Card:** Fixed context menu for instance cards and other interactive elements.
 - **Instance Settings Dialog:** Fixed dialog height being too small.
 - **Settings Dialog:** Fixed settings dialog not closing on `Escape` key press.
