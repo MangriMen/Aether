@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Instance Card:** Fixed context menu for instance cards and other interactive elements.
+- **Instance Settings Dialog:** Fixed dialog height being too small.
 - **Settings Dialog:** Fixed settings dialog not closing on `Escape` key press.
 
 ## [0.10.3] - 2026-06-30
