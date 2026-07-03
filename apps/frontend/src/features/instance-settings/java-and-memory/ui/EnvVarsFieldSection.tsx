@@ -1,4 +1,10 @@
-import { setInput, validate, Field, type FormStore } from '@formisch/solid';
+import {
+  setInput,
+  validate,
+  setErrors,
+  Field,
+  type FormStore,
+} from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
 import { OverridableEnvVarsField } from '@/entities/settings';
@@ -75,12 +81,22 @@ export const EnvVarsFieldSection: Component<Props> = (props) => {
                 type: 'text',
                 onBlur: async (e) => {
                   field.props.onBlur?.(e);
-                  const result = await validate(props.form);
 
-                  if (result.success) {
-                    props.onChangePartial({
-                      envVars: result.output.envVars,
-                    });
+                  try {
+                    const result = await validate(props.form);
+
+                    if (result.success) {
+                      props.onChangePartial({
+                        envVars: result.output.envVars,
+                      });
+                    }
+                  } catch (err) {
+                    if (err instanceof Error && err.message) {
+                      setErrors(props.form, {
+                        path: ['envVars'],
+                        errors: [err.message],
+                      });
+                    }
                   }
                 },
               }}
