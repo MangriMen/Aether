@@ -1,18 +1,12 @@
-import type { Maybe, PartialValues } from '@modular-forms/solid';
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import { setValue } from '@modular-forms/solid';
+import { setInput, getInput, validate, Form, Field } from '@formisch/solid';
 import { onCleanup, splitProps, createMemo } from 'solid-js';
 
 import { OverridableEnvVarsField } from '@/entities/settings';
 import { OverridableLaunchArgsField } from '@/entities/settings';
 import { OverridableMemoryField } from '@/entities/settings';
-import {
-  cn,
-  debounce,
-  parseI18nError,
-  useFieldOnChangeSync,
-} from '@/shared/lib';
+import { cn, debounce, parseI18nError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
 import type {
@@ -24,12 +18,7 @@ import {
   useJavaAndMemorySettingsForm,
   useResetJavaAndMemorySettingsForm,
 } from '../lib';
-import {
-  isEnvVarsError,
-  JavaAndMemorySettingsSchema,
-  MEMORY_SLIDER_HANDLE_DEBOUNCE,
-  MemoryMaximumSchema,
-} from '../model';
+import { isEnvVarsError, MEMORY_SLIDER_HANDLE_DEBOUNCE } from '../model';
 
 export type JavaAndMemorySettingsFormProps = Omit<
   ComponentProps<'form'>,
@@ -37,10 +26,10 @@ export type JavaAndMemorySettingsFormProps = Omit<
 > & {
   overridable?: boolean;
   initialValues: Accessor<
-    PartialValues<JavaAndMemorySettingsSchemaInput> | undefined
+    Partial<JavaAndMemorySettingsSchemaInput> | undefined
   >;
   defaultValues?: Accessor<
-    PartialValues<JavaAndMemorySettingsSchemaInput> | undefined
+    Partial<JavaAndMemorySettingsSchemaInput> | undefined
   >;
   onChangePartial: (values: Partial<JavaAndMemorySettingsSchemaOutput>) => void;
 };
@@ -58,7 +47,7 @@ export const JavaAndMemorySettingsForm: Component<
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = useJavaAndMemorySettingsForm();
+  const form = useJavaAndMemorySettingsForm();
   useResetJavaAndMemorySettingsForm(form, local.initialValues);
 
   const onChangePartialDebounced = createMemo(() =>
@@ -68,61 +57,11 @@ export const JavaAndMemorySettingsForm: Component<
     onChangePartialDebounced().callAndClear();
   });
 
-  const updateMemory = useFieldOnChangeSync(
-    MemoryMaximumSchema,
-    form,
-    'memory.maximum',
-    (maximum) => {
-      onChangePartialDebounced()({
-        memory: { maximum },
-      });
-    },
-  );
-
-  const updateLaunchArgs = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'launchArgs',
-    (launchArgs) => {
-      local.onChangePartial({
-        launchArgs,
-      });
-    },
-  );
-
-  const updateEnvVars = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'envVars',
-    (envVars) => local.onChangePartial({ envVars }),
-  );
-
-  const updateOverrideMemory = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'overrideMemory',
-    (overrideMemory) => local.onChangePartial({ overrideMemory }),
-  );
-
-  const updateOverrideLaunchArgs = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'overrideLaunchArgs',
-    (overrideLaunchArgs) => local.onChangePartial({ overrideLaunchArgs }),
-  );
-
-  const updateOverrideEnvVars = useFieldOnChangeSync(
-    JavaAndMemorySettingsSchema,
-    form,
-    'overrideEnvVars',
-    (overrideEnvVars) => local.onChangePartial({ overrideEnvVars }),
-  );
-
   const getMemoryDisplayValue = (
-    value: Maybe<number>,
+    value: number | undefined,
     isOverridden: boolean | undefined,
   ) => {
-    const defaultMemory = local.defaultValues?.()?.memory?.maximum ?? undefined;
+    const defaultMemory = local.defaultValues?.()?.memory?.maximum;
 
     if (local.overridable && !isOverridden) {
       return defaultMemory;
@@ -132,7 +71,7 @@ export const JavaAndMemorySettingsForm: Component<
   };
 
   const getLaunchArgsDisplayValue = (
-    value: Maybe<string>,
+    value: string | undefined,
     isOverridden: boolean | undefined,
   ) => {
     const defaultLaunchArgs = local.defaultValues?.()?.launchArgs ?? '';
@@ -145,66 +84,81 @@ export const JavaAndMemorySettingsForm: Component<
   };
 
   const getEnvVarsDisplayValue = (
-    value: Maybe<string>,
+    value: string | undefined,
     isOverridden: boolean | undefined,
   ) => {
-    const defaultMemory = local.defaultValues?.()?.envVars ?? '';
+    const defaultEnvVars = local.defaultValues?.()?.envVars ?? '';
 
     if (local.overridable && !isOverridden) {
-      return defaultMemory;
+      return defaultEnvVars;
     }
 
-    return value ?? defaultMemory;
+    return value ?? defaultEnvVars;
   };
 
   return (
-    <Form class={cn('gap-4 flex flex-col', local.class)} {...others}>
-      <Field name='overrideMemory' type='boolean'>
+    <Form
+      of={form}
+      class={cn('gap-4 flex flex-col', local.class)}
+      onSubmit={() => {}}
+      {...others}
+    >
+      <Field of={form} path={['overrideMemory']}>
         {(overrideMemory) => (
-          <Field name='memory.maximum' type='number'>
+          <Field of={form} path={['memory', 'maximum']}>
             {(field) => (
               <OverridableMemoryField
                 overridable={
-                  local.overridable && overrideMemory.value !== undefined
+                  local.overridable && overrideMemory.input !== undefined
                 }
-                isOverridden={overrideMemory.value}
-                value={getMemoryDisplayValue(field.value, overrideMemory.value)}
-                onChange={(value) => {
-                  setValue(form, 'memory.maximum', value);
-                  updateMemory();
+                isOverridden={overrideMemory.input as boolean | undefined}
+                value={getMemoryDisplayValue(
+                  field.input as number | undefined,
+                  overrideMemory.input as boolean | undefined,
+                )}
+                onChange={(value: number) => {
+                  setInput(form, { path: ['memory', 'maximum'], input: value });
+                  onChangePartialDebounced()({
+                    memory: { maximum: value },
+                  });
                 }}
                 onOverrideChange={(value) => {
-                  setValue(form, 'overrideMemory', value);
-                  updateOverrideMemory();
+                  setInput(form, { path: ['overrideMemory'], input: value });
+                  local.onChangePartial({ overrideMemory: value });
                 }}
               />
             )}
           </Field>
         )}
       </Field>
-      <Field name='overrideLaunchArgs' type='boolean'>
+      <Field of={form} path={['overrideLaunchArgs']}>
         {(overrideLaunchArgs) => (
-          <Field name='launchArgs' type='string'>
-            {(field, inputProps) => (
+          <Field of={form} path={['launchArgs']}>
+            {(field) => (
               <OverridableLaunchArgsField
                 overridable={
-                  local.overridable && overrideLaunchArgs.value !== undefined
+                  local.overridable && overrideLaunchArgs.input !== undefined
                 }
-                isOverridden={overrideLaunchArgs.value}
+                isOverridden={overrideLaunchArgs.input}
                 value={getLaunchArgsDisplayValue(
-                  field.value,
-                  overrideLaunchArgs.value,
+                  field.input as string | undefined,
+                  overrideLaunchArgs.input as boolean | undefined,
                 )}
                 onOverrideChange={(value) => {
-                  setValue(form, 'overrideLaunchArgs', value);
-                  updateOverrideLaunchArgs();
+                  setInput(form, {
+                    path: ['overrideLaunchArgs'],
+                    input: value,
+                  });
+                  local.onChangePartial({ overrideLaunchArgs: value });
                 }}
                 inputProps={{
-                  ...inputProps,
+                  ...field.props,
                   type: 'text',
                   onBlur: (e) => {
-                    inputProps.onBlur(e);
-                    updateLaunchArgs();
+                    field.props.onBlur?.(e);
+                    local.onChangePartial({
+                      launchArgs: getInput(form, { path: ['launchArgs'] }),
+                    });
                   },
                 }}
               />
@@ -212,28 +166,34 @@ export const JavaAndMemorySettingsForm: Component<
           </Field>
         )}
       </Field>
-      <Field name='overrideEnvVars' type='boolean'>
+      <Field of={form} path={['overrideEnvVars']}>
         {(overrideEnvVars) => (
-          <Field name='envVars' type='string'>
-            {(field, inputProps) => (
+          <Field of={form} path={['envVars']}>
+            {(field) => (
               <OverridableEnvVarsField
                 overridable={
-                  local.overridable && overrideEnvVars.value !== undefined
+                  local.overridable && overrideEnvVars.input !== undefined
                 }
-                isOverridden={overrideEnvVars.value}
+                isOverridden={overrideEnvVars.input}
                 value={getEnvVarsDisplayValue(
-                  field.value,
-                  overrideEnvVars.value,
+                  field.input as string | undefined,
+                  overrideEnvVars.input as boolean | undefined,
                 )}
                 onOverrideChange={(value) => {
-                  setValue(form, 'overrideEnvVars', value);
-                  updateOverrideEnvVars();
+                  setInput(form, { path: ['overrideEnvVars'], input: value });
+                  local.onChangePartial({ overrideEnvVars: value });
                 }}
                 errorMessage={(() => {
-                  const parsed = parseI18nError(field.error);
+                  const error = field.errors?.[0];
+
+                  if (!error) {
+                    return undefined;
+                  }
+
+                  const parsed = parseI18nError(error);
 
                   if (!parsed) {
-                    return field.error;
+                    return error;
                   }
 
                   return isEnvVarsError(parsed.key)
@@ -241,14 +201,20 @@ export const JavaAndMemorySettingsForm: Component<
                         `settings.environmentVariablesError.${parsed.key}`,
                         parsed.values,
                       )
-                    : field.error;
+                    : error;
                 })()}
                 inputProps={{
-                  ...inputProps,
+                  ...field.props,
                   type: 'text',
-                  onBlur: (e) => {
-                    inputProps.onBlur(e);
-                    updateEnvVars();
+                  onBlur: async (e) => {
+                    field.props.onBlur?.(e);
+                    const result = await validate(form);
+
+                    if (result.success) {
+                      local.onChangePartial({
+                        envVars: result.output.envVars,
+                      });
+                    }
                   },
                 }}
               />

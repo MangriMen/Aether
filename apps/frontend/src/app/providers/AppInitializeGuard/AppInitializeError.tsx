@@ -96,7 +96,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
             </button>
             <p
               class='
-                font-mono text-sm leading-relaxed text-destructive-foreground
+                font-mono text-sm/relaxed text-destructive-foreground
                 overflow-y-auto break-all
               '
             >

@@ -1,32 +1,29 @@
-import type { FormStore, PartialValues } from '@modular-forms/solid';
+import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createForm, setInput } from '@formisch/solid';
 import { createEffect } from 'solid-js';
 
-import type { WindowSettingsSchemaInput } from '../model';
+import { WindowSettingsSchema, type WindowSettingsSchemaInput } from '../model';
 
-import { WindowSettingsSchema } from '../model';
+type WindowFormStore = FormStore<typeof WindowSettingsSchema>;
 
-export const useWindowSettingsForm = (): ReturnType<
-  typeof createForm<WindowSettingsSchemaInput>
-> => {
-  const [form, components] = createForm({
-    validate: zodForm(WindowSettingsSchema),
-  });
-
-  return [form, components];
+export const useWindowSettingsForm = (): WindowFormStore => {
+  return createForm({ schema: WindowSettingsSchema });
 };
 
 export const useResetWindowSettingsFormValues = (
-  form: FormStore<WindowSettingsSchemaInput>,
-  initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>,
+  form: WindowFormStore,
+  initialValues: Accessor<Partial<WindowSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
     const overrideWindowSettings = initialValues()?.overrideWindowSettings;
 
     if (overrideWindowSettings !== undefined) {
-      setValues(form, { overrideWindowSettings });
+      setInput(form, {
+        path: ['overrideWindowSettings'],
+        input: overrideWindowSettings,
+      });
     }
   });
 
@@ -34,11 +31,13 @@ export const useResetWindowSettingsFormValues = (
     const resolution = initialValues()?.resolution;
 
     if (resolution?.width && resolution?.height) {
-      setValues(form, {
-        resolution: {
-          width: resolution.width,
-          height: resolution.height,
-        },
+      setInput(form, {
+        path: ['resolution', 'width'],
+        input: resolution.width,
+      });
+      setInput(form, {
+        path: ['resolution', 'height'],
+        input: resolution.height,
       });
     }
   });

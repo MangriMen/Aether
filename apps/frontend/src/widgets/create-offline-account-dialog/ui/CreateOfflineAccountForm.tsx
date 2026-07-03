@@ -1,7 +1,6 @@
-import type { FormErrors, SubmitHandler } from '@modular-forms/solid';
 import type { Component, ComponentProps } from 'solid-js';
 
-import { createForm, reset, setError, zodForm } from '@modular-forms/solid';
+import { createForm, reset, setErrors, Form, Field } from '@formisch/solid';
 import { createEffect, splitProps, untrack } from 'solid-js';
 
 import { useTranslation } from '@/shared/model';
@@ -19,7 +18,7 @@ export type CreateOfflineAccountFormProps = ComponentProps<'div'> & {
   onCreate: (username: string) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  externalErrors?: FormErrors<CreateOfflineAccountFormValues>;
+  externalErrors?: Record<string, string>;
   onClearErrors?: () => void;
 };
 
@@ -36,13 +35,9 @@ export const CreateOfflineAccountForm: Component<
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm<CreateOfflineAccountFormValues>({
-    validate: zodForm(CreateOfflineAccountFormSchema),
-  });
+  const form = createForm({ schema: CreateOfflineAccountFormSchema });
 
-  const handleSubmit: SubmitHandler<CreateOfflineAccountFormValues> = (
-    values,
-  ) => {
+  const handleSubmit = (values: CreateOfflineAccountFormValues) => {
     local.onCreate(values.username);
   };
 
@@ -53,16 +48,14 @@ export const CreateOfflineAccountForm: Component<
 
   createEffect(() => {
     const errors = local.externalErrors;
-    const isSubmitting = form.submitting;
-    const isInvalid = form.invalid;
     untrack(() => {
-      if (!isSubmitting && !isInvalid && errors?.username) {
-        setError(form, 'username', errors.username);
+      if (errors?.username) {
+        setErrors(form, { path: ['username'], errors: [errors.username] });
       }
     });
   });
 
-  const formatError = (error: string) => {
+  const formatError = (error: string | undefined) => {
     if (!error) {
       return;
     }
@@ -75,15 +68,15 @@ export const CreateOfflineAccountForm: Component<
   };
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form of={form} onSubmit={handleSubmit}>
       <div class='gap-4 flex flex-col' {...others}>
-        <Field name='username'>
-          {(field, props) => (
+        <Field of={form} path={['username']}>
+          {(field) => (
             <CombinedTextField
-              value={field.value}
+              value={field.input as string}
               label={t('common.username')}
-              inputProps={{ type: 'text', ...props }}
-              errorMessage={formatError(field.error)}
+              inputProps={{ type: 'text', ...field.props }}
+              errorMessage={formatError(field.errors?.[0])}
             />
           )}
         </Field>

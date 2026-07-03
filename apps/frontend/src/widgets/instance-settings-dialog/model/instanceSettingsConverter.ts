@@ -1,5 +1,3 @@
-import { type PartialValues } from '@modular-forms/solid';
-
 import type {
   EditInstance,
   EditInstanceSettings,
@@ -32,7 +30,7 @@ import type {
 
 export const instanceToGeneralSettingsValues = (
   instance: Instance | undefined,
-): PartialValues<GeneralSettingsSchemaInput> | undefined => {
+): Partial<GeneralSettingsSchemaInput> | undefined => {
   if (!instance) {
     return;
   }
@@ -42,7 +40,7 @@ export const instanceToGeneralSettingsValues = (
 
 export const instanceSettingsToWindowSettingsValues = (
   settings: InstanceSettings | undefined,
-): PartialValues<WindowSettingsSchemaInput> | undefined => {
+): Partial<WindowSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -63,7 +61,7 @@ export const instanceSettingsToWindowSettingsValues = (
 
 export const instanceSettingsToJavaAndMemorySettingsValues = (
   settings: InstanceSettings | undefined,
-): PartialValues<JavaAndMemorySettingsSchemaInput> | undefined => {
+): Partial<JavaAndMemorySettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -88,7 +86,7 @@ export const instanceSettingsToJavaAndMemorySettingsValues = (
 
 export const instanceSettingsToHooksSettingsValues = (
   settings: InstanceSettings | undefined,
-): PartialValues<HooksSettingsSchemaInput> | undefined => {
+): Partial<HooksSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }

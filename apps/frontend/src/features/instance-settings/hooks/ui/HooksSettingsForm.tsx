@@ -1,6 +1,4 @@
-import type { Maybe } from '@modular-forms/solid';
-
-import { type PartialValues } from '@modular-forms/solid';
+import { getInput, Form, Field } from '@formisch/solid';
 import {
   Show,
   splitProps,
@@ -10,13 +8,12 @@ import {
 } from 'solid-js';
 
 import { InheritanceLabel, OverrideCheckbox } from '@/entities/settings';
-import { cn, useFieldOnChangeSync } from '@/shared/lib';
+import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField, LabeledField } from '@/shared/ui';
 
 import { useHooksSettingsForm, useResetHooksSettingsFormValues } from '../lib';
 import {
-  HooksSettingsSchema,
   type HooksSettingsSchemaInput,
   type HooksSettingsSchemaOutput,
 } from '../model';
@@ -26,8 +23,8 @@ export type HooksSettingsFormProps = Omit<
   'onSubmit' | 'children'
 > & {
   overridable?: boolean;
-  initialValues: Accessor<PartialValues<HooksSettingsSchemaInput> | undefined>;
-  defaultValues?: Accessor<PartialValues<HooksSettingsSchemaInput> | undefined>;
+  initialValues: Accessor<Partial<HooksSettingsSchemaInput> | undefined>;
+  defaultValues?: Accessor<Partial<HooksSettingsSchemaInput> | undefined>;
   onChangePartial?: (values: Partial<HooksSettingsSchemaOutput>) => void;
 };
 
@@ -42,38 +39,17 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = useHooksSettingsForm();
+  const form = useHooksSettingsForm();
   useResetHooksSettingsFormValues(form, () => local.initialValues());
 
-  const handleOverrideChange = async (value: boolean) => {
+  const handleOverrideChange = (value: boolean) => {
     local.onChangePartial?.({
       overrideHooks: value,
     });
   };
 
-  const updatePreLaunch = useFieldOnChangeSync(
-    HooksSettingsSchema,
-    form,
-    'preLaunch',
-    (value) => local.onChangePartial?.({ preLaunch: value }),
-  );
-
-  const updateWrapper = useFieldOnChangeSync(
-    HooksSettingsSchema,
-    form,
-    'wrapper',
-    (value) => local.onChangePartial?.({ wrapper: value }),
-  );
-
-  const updatePostExit = useFieldOnChangeSync(
-    HooksSettingsSchema,
-    form,
-    'postExit',
-    (value) => local.onChangePartial?.({ postExit: value }),
-  );
-
   const getPreLaunchDisplayValue = (
-    value: Maybe<string>,
+    value: string | undefined,
     isOverridden: boolean | undefined,
   ) => {
     const defaultPreLaunch =
@@ -87,7 +63,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   };
 
   const getWrapperDisplayValue = (
-    value: Maybe<string>,
+    value: string | undefined,
     isOverridden: boolean | undefined,
   ) => {
     const defaultWrapper = local.defaultValues?.()?.wrapper?.toString() ?? '';
@@ -100,7 +76,7 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   };
 
   const getPostExitDisplayValue = (
-    value: Maybe<string>,
+    value: string | undefined,
     isOverridden: boolean | undefined,
   ) => {
     const defaultPostExit = local.defaultValues?.()?.postExit?.toString() ?? '';
@@ -113,45 +89,52 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
   };
 
   return (
-    <Form class={cn('gap-2 flex flex-col', local.class)} {...others}>
-      <Field name='overrideHooks' type='boolean'>
+    <Form
+      of={form}
+      class={cn('gap-2 flex flex-col', local.class)}
+      onSubmit={() => {}}
+      {...others}
+    >
+      <Field of={form} path={['overrideHooks']}>
         {(overrideHooks) => (
           <>
             <InheritanceLabel
               label={t('instanceSettings.hookSettings.title')}
               inheritanceLabel={t('settings.usedFromDefaultSettings')}
-              isInheritance={local.overridable && !overrideHooks.value}
+              isInheritance={local.overridable && !overrideHooks.input}
             />
-            <Show when={local.overridable && overrideHooks.value !== undefined}>
+            <Show when={local.overridable && overrideHooks.input !== undefined}>
               <OverrideCheckbox
                 class='mb-1'
                 label={t('instanceSettings.customHooksSettings')}
-                checked={overrideHooks.value}
+                checked={overrideHooks.input}
                 onOverrideChange={handleOverrideChange}
               />
             </Show>
 
             <LabeledField label={t('instanceSettings.hookSettings.preLaunch')}>
-              <Field name='preLaunch' type='string'>
-                {(field, inputProps) => (
+              <Field of={form} path={['preLaunch']}>
+                {(field) => (
                   <CombinedTextField
                     disabled={(() =>
-                      local.overridable && !overrideHooks.value)()}
+                      local.overridable && !overrideHooks.input)()}
                     value={getPreLaunchDisplayValue(
-                      field.value,
-                      overrideHooks.value,
+                      field.input as string | undefined,
+                      overrideHooks.input as boolean | undefined,
                     )}
                     label={t('instanceSettings.hookSettings.preLaunchLabel')}
                     labelProps={{ variant: 'description' }}
                     inputProps={{
-                      ...inputProps,
+                      ...field.props,
                       type: 'text',
                       placeholder: t(
                         'instanceSettings.hookSettings.enterCommandPlaceholder',
                       ),
                       onBlur: (e) => {
-                        inputProps.onBlur(e);
-                        updatePreLaunch();
+                        field.props.onBlur?.(e);
+                        local.onChangePartial?.({
+                          preLaunch: getInput(form, { path: ['preLaunch'] }),
+                        });
                       },
                     }}
                   />
@@ -160,26 +143,28 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
             </LabeledField>
 
             <LabeledField label={t('instanceSettings.hookSettings.wrapper')}>
-              <Field name='wrapper' type='string'>
-                {(field, inputProps) => (
+              <Field of={form} path={['wrapper']}>
+                {(field) => (
                   <CombinedTextField
                     disabled={(() =>
-                      local.overridable && !overrideHooks.value)()}
+                      local.overridable && !overrideHooks.input)()}
                     value={getWrapperDisplayValue(
-                      field.value,
-                      overrideHooks.value,
+                      field.input as string | undefined,
+                      overrideHooks.input as boolean | undefined,
                     )}
                     label={t('instanceSettings.hookSettings.wrapperLabel')}
                     labelProps={{ variant: 'description' }}
                     inputProps={{
-                      ...inputProps,
+                      ...field.props,
                       type: 'text',
                       placeholder: t(
                         'instanceSettings.hookSettings.enterCommandPlaceholder',
                       ),
                       onBlur: (e) => {
-                        inputProps.onBlur(e);
-                        updateWrapper();
+                        field.props.onBlur?.(e);
+                        local.onChangePartial?.({
+                          wrapper: getInput(form, { path: ['wrapper'] }),
+                        });
                       },
                     }}
                   />
@@ -188,26 +173,28 @@ export const HooksSettingsForm: Component<HooksSettingsFormProps> = (props) => {
             </LabeledField>
 
             <LabeledField label={t('instanceSettings.hookSettings.postExit')}>
-              <Field name='postExit' type='string'>
-                {(field, inputProps) => (
+              <Field of={form} path={['postExit']}>
+                {(field) => (
                   <CombinedTextField
                     disabled={(() =>
-                      local.overridable && !overrideHooks.value)()}
+                      local.overridable && !overrideHooks.input)()}
                     value={getPostExitDisplayValue(
-                      field.value,
-                      overrideHooks.value,
+                      field.input as string | undefined,
+                      overrideHooks.input as boolean | undefined,
                     )}
                     label={t('instanceSettings.hookSettings.postExitLabel')}
                     labelProps={{ variant: 'description' }}
                     inputProps={{
-                      ...inputProps,
+                      ...field.props,
                       type: 'text',
                       placeholder: t(
                         'instanceSettings.hookSettings.enterCommandPlaceholder',
                       ),
                       onBlur: (e) => {
-                        inputProps.onBlur(e);
-                        updatePostExit();
+                        field.props.onBlur?.(e);
+                        local.onChangePartial?.({
+                          postExit: getInput(form, { path: ['postExit'] }),
+                        });
                       },
                     }}
                   />

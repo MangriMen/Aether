@@ -8,8 +8,4 @@ export type StrictJavaVersion = {
   [K in keyof JavaVersion]: NonNullable<JavaVersion[K]>;
 };
 export type JavaTestStatus =
-  | 'idle'
-  | 'testing'
-  | 'valid'
-  | 'error'
-  | 'version-mismatch';
+  'idle' | 'testing' | 'valid' | 'error' | 'version-mismatch';

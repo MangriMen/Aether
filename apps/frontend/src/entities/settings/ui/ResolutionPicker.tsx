@@ -1,20 +1,9 @@
-import type {
-  FieldElementProps,
-  FieldPath,
-  FieldValues,
-  Maybe,
-} from '@modular-forms/solid';
+import type { FormStore } from '@formisch/solid';
 
-import {
-  Field,
-  getValue,
-  setValues,
-  validate,
-  type FormStore,
-} from '@modular-forms/solid';
+import { Field, setInput, getInput } from '@formisch/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { WindowSettingsSchemaInput } from '@/features/instance-settings/window';
+import type { WindowSettingsSchema } from '@/features/instance-settings/window';
 import type { TFunction } from '@/shared/model';
 
 import { cn } from '@/shared/lib';
@@ -29,7 +18,7 @@ export type ResolutionFieldProps = Omit<
   ComponentProps<'div'>,
   'onChange' | 'onSubmit'
 > & {
-  form: FormStore<WindowSettingsSchemaInput>;
+  form: FormStore<typeof WindowSettingsSchema>;
   defaultWidth?: number | string;
   defaultHeight?: number | string;
   forceDefaultValuesOnDisabled?: boolean;
@@ -79,27 +68,24 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     number,
     number,
   ]) => {
-    setValues(local.form, {
-      resolution: {
-        width: width.toString(),
-        height: height.toString(),
-      },
+    setInput(local.form, {
+      path: ['resolution', 'width'],
+      input: width.toString(),
+    });
+    setInput(local.form, {
+      path: ['resolution', 'height'],
+      input: height.toString(),
     });
     handleResolutionSubmit();
   };
 
-  const handleResolutionSubmit = async () => {
-    const [isWidthValid, isHeightValid] = await Promise.all([
-      validate(local.form, 'resolution.width', { shouldFocus: false }),
-      validate(local.form, 'resolution.height', { shouldFocus: false }),
-    ]);
-
-    if (!isWidthValid || !isHeightValid) {
-      return;
-    }
-
-    const width = getValue(local.form, 'resolution.width');
-    const height = getValue(local.form, 'resolution.height');
+  const handleResolutionSubmit = () => {
+    const width = getInput(local.form, {
+      path: ['resolution', 'width'],
+    });
+    const height = getInput(local.form, {
+      path: ['resolution', 'height'],
+    });
 
     if (!width || !height) {
       return;
@@ -108,24 +94,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     local.onSubmit?.(Number(width), Number(height));
   };
 
-  const handleBlur = <
-    TFieldValues extends FieldValues,
-    TFieldName extends FieldPath<TFieldValues>,
-  >(
-    e: FocusEvent & {
-      currentTarget: HTMLInputElement;
-      target: HTMLInputElement;
-    },
-    inputProps: FieldElementProps<TFieldValues, TFieldName>,
-  ) => {
-    if (typeof inputProps.onBlur === 'function') {
-      inputProps.onBlur(e);
-    }
-
-    handleResolutionSubmit();
-  };
-
-  const getWidthDisplayValue = (value: Maybe<string>) => {
+  const getWidthDisplayValue = (value: string | undefined) => {
     const defaultWidth = local.defaultWidth?.toString() ?? '';
 
     if (local.disabled && local.forceDefaultValuesOnDisabled) {
@@ -135,7 +104,7 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
     return value ?? defaultWidth;
   };
 
-  const getHeightDisplayValue = (value: Maybe<string>) => {
+  const getHeightDisplayValue = (value: string | undefined) => {
     const defaultHeight = local.defaultHeight?.toString() ?? '';
 
     if (local.disabled && local.forceDefaultValuesOnDisabled) {
@@ -167,14 +136,19 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
           '
         >
           <div class='flex'>
-            <Field of={local.form} name='resolution.width'>
-              {(field, inputProps) => (
+            <Field of={local.form} path={['resolution', 'width']}>
+              {(field) => (
                 <ResolutionInput
-                  value={getWidthDisplayValue(field.value)}
+                  value={getWidthDisplayValue(
+                    field.input as string | undefined,
+                  )}
                   disabled={local.disabled}
                   inputProps={{
-                    ...inputProps,
-                    onBlur: (e) => handleBlur(e, inputProps),
+                    ...field.props,
+                    onBlur: (e) => {
+                      field.props.onBlur?.(e);
+                      handleResolutionSubmit();
+                    },
                   }}
                 />
               )}
@@ -184,14 +158,19 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
               &times;
             </span>
 
-            <Field of={local.form} name='resolution.height'>
-              {(field, inputProps) => (
+            <Field of={local.form} path={['resolution', 'height']}>
+              {(field) => (
                 <ResolutionInput
-                  value={getHeightDisplayValue(field.value)}
+                  value={getHeightDisplayValue(
+                    field.input as string | undefined,
+                  )}
                   disabled={local.disabled}
                   inputProps={{
-                    ...inputProps,
-                    onBlur: (e) => handleBlur(e, inputProps),
+                    ...field.props,
+                    onBlur: (e) => {
+                      field.props.onBlur?.(e);
+                      handleResolutionSubmit();
+                    },
                   }}
                 />
               )}
@@ -204,14 +183,17 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
           />
         </div>
 
-        <Field of={local.form} name='resolution.width'>
+        <Field of={local.form} path={['resolution', 'width']}>
           {(width) => (
-            <Field of={local.form} name='resolution.height'>
+            <Field of={local.form} path={['resolution', 'height']}>
               {(height) => (
                 <StandaloneTextFieldErrorMessage
-                  showError={Boolean(width.error) || Boolean(height.error)}
+                  showError={
+                    Boolean(width.errors?.length) ||
+                    Boolean(height.errors?.length)
+                  }
                 >
-                  {translateError(t, width.error || height.error)}
+                  {translateError(t, width.errors?.[0] || height.errors?.[0])}
                 </StandaloneTextFieldErrorMessage>
               )}
             </Field>

@@ -1,36 +1,32 @@
-import type { FormStore } from '@modular-forms/solid';
+import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createForm, setInput } from '@formisch/solid';
 import { createEffect, on, untrack } from 'solid-js';
 
-import type { PluginSettingsSchemaInput } from '../model';
+import { PluginSettingsSchema, type PluginSettingsSchemaInput } from '../model';
 
-import { PluginSettingsSchema } from '../model';
-
-export const usePluginSettingsForm = (): ReturnType<
-  typeof createForm<PluginSettingsSchemaInput>
-> => {
-  const [form, components] = createForm<PluginSettingsSchemaInput>({
-    validate: zodForm(PluginSettingsSchema),
-    initialValues: {
+export const usePluginSettingsForm = () => {
+  const form = createForm({
+    schema: PluginSettingsSchema,
+    initialInput: {
       allowedHosts: [],
       allowedPaths: [],
     },
   });
 
-  return [form, components];
+  return form;
 };
 
 export const useResetPluginSettingsFormValues = (
-  form: FormStore<PluginSettingsSchemaInput>,
-  initialValues: Accessor<PluginSettingsSchemaInput | undefined>,
+  form: FormStore<typeof PluginSettingsSchema>,
+  initialValues: Accessor<Partial<PluginSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(
-    on([() => form, initialValues], ([formInstance, initial]) => {
+    on([() => form, initialValues], ([_formInstance, initial]) => {
       if (initial) {
         untrack(() => {
-          setValues(formInstance, initial);
+          setInput(form, { input: initial });
         });
       }
     }),

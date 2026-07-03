@@ -1,5 +1,4 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { FormErrors } from '@modular-forms/solid';
 
 import { createEffect, createSignal, type Component } from 'solid-js';
 
@@ -14,8 +13,6 @@ import {
 } from '@/shared/model';
 import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
 
-import type { CreateOfflineAccountFormValues } from '../model';
-
 import { CreateOfflineAccountForm } from './CreateOfflineAccountForm';
 
 export type CreateOfflineAccountDialogProps = DialogRootProps;
@@ -28,7 +25,7 @@ export const CreateOfflineAccountDialog: Component<
   const createOfflineAccount = useCreateOfflineAccount();
 
   const [externalErrors, setExternalErrors] = createSignal<
-    FormErrors<CreateOfflineAccountFormValues> | undefined
+    Record<string, string> | undefined
   >(undefined);
 
   const handleCreate = async (username: string) => {

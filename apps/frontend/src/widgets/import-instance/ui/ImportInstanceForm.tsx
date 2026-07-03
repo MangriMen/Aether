@@ -1,4 +1,4 @@
-import { createForm, setValue, zodForm } from '@modular-forms/solid';
+import { createForm, setInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import { splitProps, type Component, type JSX } from 'solid-js';
@@ -14,9 +14,10 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField, CombinedTooltip, IconButton } from '@/shared/ui';
 
-import type { ImportInstanceSchemaInput } from '../model';
-
-import { ImportInstanceSchema } from '../model';
+import {
+  ImportInstanceSchema,
+  type ImportInstanceSchemaOutput,
+} from '../model';
 
 export type ImportInstanceFormProps = {
   pluginId: PluginMetadata['id'];
@@ -39,23 +40,17 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm({
-    validate: zodForm(ImportInstanceSchema),
+  const form = createForm({
+    schema: ImportInstanceSchema,
   });
 
   const importInstance = useImportInstance();
 
-  const handleSubmit = async (values: ImportInstanceSchemaInput) => {
-    const outValues = ImportInstanceSchema.safeParse(values);
-
-    if (outValues.error) {
-      return;
-    }
-
+  const handleSubmit = (values: ImportInstanceSchemaOutput) => {
     const dto: ImportInstance = {
       pluginId: local.pluginId,
       importerId: local.importer.id,
-      path: outValues.data.path,
+      path: values.path,
     };
 
     importInstance.mutateAsync(dto);
@@ -70,28 +65,28 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     });
 
     if (file) {
-      setValue(form, 'path', file);
+      setInput(form, { path: ['path'], input: file });
     }
   };
 
   return (
     <Form
+      of={form}
       class={cn('flex h-full grow flex-col', local.class)}
       onSubmit={handleSubmit}
       {...others}
     >
-      <Field name='path'>
-        {(field, fieldProps) => (
+      <Field of={form} path={['path']}>
+        {(field) => (
           <CombinedTextField
             label={local.importer.fieldLabel}
-            name={field.name}
-            value={field.value}
-            errorMessage={field.error}
+            name='path'
+            value={field.input}
+            errorMessage={field.errors?.[0]}
             inputProps={{
               type: 'text',
-              value: field.value,
               class: 'pr-9',
-              ...fieldProps,
+              ...field.props,
             }}
             trailingIcons={
               <div class='mr-1 flex h-full items-center justify-center'>

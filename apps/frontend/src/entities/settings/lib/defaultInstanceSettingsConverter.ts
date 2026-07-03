@@ -1,5 +1,3 @@
-import type { PartialValues } from '@modular-forms/solid';
-
 import type {
   HooksSettingsSchemaInput,
   HooksSettingsSchemaOutput,
@@ -23,7 +21,7 @@ import {
 
 export const defaultInstanceSettingsToWindowSettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<WindowSettingsSchemaInput> | undefined => {
+): Partial<WindowSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -43,7 +41,7 @@ export const defaultInstanceSettingsToWindowSettingsValues = (
 
 export const defaultInstanceSettingsToJavaAndMemorySettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<JavaAndMemorySettingsSchemaInput> | undefined => {
+): Partial<JavaAndMemorySettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }
@@ -63,7 +61,7 @@ export const defaultInstanceSettingsToJavaAndMemorySettingsValues = (
 
 export const defaultInstanceSettingsToHooksSettingsValues = (
   settings: DefaultInstanceSettings | undefined,
-): PartialValues<HooksSettingsSchemaInput> | undefined => {
+): Partial<HooksSettingsSchemaInput> | undefined => {
   if (!settings) {
     return;
   }

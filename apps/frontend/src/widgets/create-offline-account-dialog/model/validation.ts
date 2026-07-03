@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
 import { MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH } from './constants';
 
@@ -6,26 +6,19 @@ export type CreateOfflineAccountFormValues = {
   username: string;
 };
 
-export const CreateOfflineAccountFormSchema = z.object({
-  username: z
-    .string()
-    // .min and .max are used for clearer error reporting than a single regex
-    .min(MIN_USERNAME_LENGTH, {
-      message: 'INVALID_USERNAME_LENGTH',
-    })
-    .max(MAX_USERNAME_LENGTH, {
-      message: 'INVALID_USERNAME_LENGTH',
-    })
-    // Matches: ASCII alphanumeric or underscore
-    // eslint-disable-next-line sonarjs/concise-regex
-    .regex(/^[a-zA-Z0-9_]+$/, {
-      message: 'INVALID_USERNAME_CHARS',
-    }),
+const UsernameSchema = v.pipe(
+  v.string(),
+  v.minLength(MIN_USERNAME_LENGTH, 'INVALID_USERNAME_LENGTH'),
+  v.maxLength(MAX_USERNAME_LENGTH, 'INVALID_USERNAME_LENGTH'),
+  v.regex(/^\w+$/, 'INVALID_USERNAME_CHARS'),
+);
+
+export const CreateOfflineAccountFormSchema = v.object({
+  username: UsernameSchema,
 });
 
 export type CreateOfflineAccountFormSchemaError =
-  | 'INVALID_USERNAME_LENGTH'
-  | 'INVALID_USERNAME_CHARS';
+  'INVALID_USERNAME_LENGTH' | 'INVALID_USERNAME_CHARS';
 
 type EnsureAllKeys = { [K in CreateOfflineAccountFormSchemaError]: K };
 

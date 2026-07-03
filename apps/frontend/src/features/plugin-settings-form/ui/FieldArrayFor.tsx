@@ -1,40 +1,37 @@
 import type {
-  FieldArrayPath,
-  FieldArrayStore,
-  FieldValues,
+  FormSchema,
   FormStore,
-  ResponseData,
-} from '@modular-forms/solid';
-import type { Accessor, JSX } from 'solid-js';
+  RequiredPath,
+  ValidArrayPath,
+} from '@formisch/solid';
+import type { JSX } from 'solid-js';
+import type { InferInput } from 'valibot';
 
-import { FieldArray } from '@modular-forms/solid';
+import { FieldArray } from '@formisch/solid';
 import { For } from 'solid-js';
 
-export interface FieldArrayForProps<
-  TFieldValues extends FieldValues,
-  TResponseData extends ResponseData,
-  TFieldArrayName extends FieldArrayPath<TFieldValues>,
-> {
-  of: FormStore<TFieldValues, TResponseData>;
-  name: TFieldArrayName;
-  children: (props: {
-    fieldArray: FieldArrayStore<TFieldValues, TFieldArrayName>;
-    index: Accessor<number>;
-  }) => JSX.Element;
+export interface FieldArrayForProps<TSchema extends FormSchema> {
+  of: FormStore<TSchema>;
+  name: string;
+  children: (props: { index: () => number }) => JSX.Element;
 }
 
-export const FieldArrayFor = <
-  TFieldValues extends FieldValues,
-  TResponseData extends ResponseData,
-  TFieldArrayName extends FieldArrayPath<TFieldValues>,
->(
-  props: FieldArrayForProps<TFieldValues, TResponseData, TFieldArrayName>,
+export const FieldArrayFor = <TSchema extends FormSchema>(
+  props: FieldArrayForProps<TSchema>,
 ) => {
   return (
-    <FieldArray of={props.of} name={props.name}>
+    <FieldArray
+      of={props.of}
+      path={
+        [props.name] as unknown as ValidArrayPath<
+          InferInput<TSchema>,
+          [typeof props.name] & RequiredPath
+        >
+      }
+    >
       {(fieldArray) => (
         <For each={fieldArray.items}>
-          {(_, index) => props.children({ fieldArray, index })}
+          {(_, getIndex) => props.children({ index: getIndex })}
         </For>
       )}
     </FieldArray>

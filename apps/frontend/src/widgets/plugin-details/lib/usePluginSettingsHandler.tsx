@@ -1,5 +1,3 @@
-import type { SubmitHandler } from '@modular-forms/solid';
-
 import { createMemo, type Accessor } from 'solid-js';
 
 import type {
@@ -7,7 +5,10 @@ import type {
   PluginMetadata,
   PluginSettings,
 } from '@/entities/plugins';
-import type { PluginSettingsSchemaInput } from '@/features/plugin-settings-form';
+import type {
+  PluginSettingsSchemaInput,
+  PluginSettingsSchemaOutput,
+} from '@/features/plugin-settings-form';
 
 import {
   pluginSettingsToPluginSettingsValues,
@@ -34,14 +35,14 @@ export const usePluginSettingsHandler = ({
     pluginSettingsToPluginSettingsValues(pluginSettings()),
   );
 
-  const onChangePartial = (values: Partial<PluginSettingsSchemaInput>) => {
+  const onChangePartial = (values: PluginSettingsSchemaInput) => {
     editPluginSettings()({
       id: pluginId(),
       editSettings: pluginSettingsValuesToEditPluginSettings(values),
     });
   };
 
-  const onSubmit: SubmitHandler<PluginSettingsSchemaInput> = (values) =>
+  const onSubmit = (values: PluginSettingsSchemaOutput) =>
     onChangePartial(values);
 
   return { initialValues, onChangePartial, onSubmit };

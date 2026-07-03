@@ -1,6 +1,5 @@
 import type { Accessor } from 'solid-js';
 
-import { type SubmitHandler } from '@modular-forms/solid';
 import { splitProps, type Component } from 'solid-js';
 
 import type { RuntimeConfig } from '@/entities/plugins';
@@ -8,11 +7,12 @@ import type { RuntimeConfig } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import type { PluginSettingsSchemaInput } from '../model';
+
 import {
   usePluginSettingsForm,
   useResetPluginSettingsFormValues,
 } from '../lib';
-import { type PluginSettingsSchemaInput } from '../model';
 import { AllowedHost } from './AllowedHost';
 import { AllowedHostsCustomItems } from './AllowedHostsCustomItems';
 import { AllowedItems } from './AllowedItems';
@@ -23,10 +23,8 @@ import { FixedItemsList } from './FixedItemsList';
 export type PluginSettingsFormProps = {
   initialValues: Accessor<PluginSettingsSchemaInput | undefined>;
   runtimeConfig: RuntimeConfig;
-  isLoading?: boolean;
   disabled?: boolean;
-  onSubmit?: SubmitHandler<PluginSettingsSchemaInput>;
-  onChangePartial?: (values: Partial<PluginSettingsSchemaInput>) => void;
+  onChangePartial?: (values: PluginSettingsSchemaInput) => void;
   class?: string;
 };
 
@@ -36,24 +34,18 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   const [local, others] = splitProps(props, [
     'initialValues',
     'runtimeConfig',
-    'isLoading',
     'disabled',
     'onChangePartial',
-    'onSubmit',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form }] = usePluginSettingsForm();
+  const form = usePluginSettingsForm();
   useResetPluginSettingsFormValues(form, local.initialValues);
 
   return (
-    <Form
-      class={cn('flex flex-1 grow flex-col', local.class)}
-      onSubmit={local.onSubmit}
-      {...others}
-    >
+    <form class={cn('flex flex-1 grow flex-col', local.class)} {...others}>
       <fieldset
         class={cn('gap-2 flex-1 grow flex-col', {
           'text-muted-foreground': local.disabled,
@@ -95,6 +87,6 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
           }
         />
       </fieldset>
-    </Form>
+    </form>
   );
 };

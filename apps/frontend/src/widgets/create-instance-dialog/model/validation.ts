@@ -1,66 +1,62 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
-import type {
-  ModdedLoaderVersion,
-  Version,
-  VersionType,
-  ModLoader,
-} from '@/entities/minecraft';
+import type { VersionType, ModLoader } from '@/entities/minecraft';
 
 import { MOD_LOADERS, VERSION_TYPES } from '@/entities/minecraft';
 
-export const ModLoaderSchema: z.ZodType<ModLoader> = z.enum(
+export const ModLoaderSchema = v.picklist(
   MOD_LOADERS as [ModLoader, ...ModLoader[]],
-  {
-    required_error: 'Mod loader is required',
-  },
+  'Mod loader is required',
 );
 
-export const VersionSchema: z.ZodType<Version> = z.object({
-  id: z.string().min(1),
-  type: z.enum(VERSION_TYPES as [VersionType, ...VersionType[]]),
-  url: z.string().min(1),
-  time: z.string().min(1),
-  releaseTime: z.string().min(1),
-  sha1: z.string().min(1),
-  complianceLevel: z.number(),
-  originalSha1: z.string().min(1).optional(),
+export const VersionSchema = v.object({
+  id: v.pipe(v.string(), v.minLength(1)),
+  type: v.picklist(VERSION_TYPES as [VersionType, ...VersionType[]]),
+  url: v.pipe(v.string(), v.minLength(1)),
+  time: v.pipe(v.string(), v.minLength(1)),
+  releaseTime: v.pipe(v.string(), v.minLength(1)),
+  sha1: v.pipe(v.string(), v.minLength(1)),
+  complianceLevel: v.number(),
+  originalSha1: v.optional(v.pipe(v.string(), v.minLength(1))),
 });
 
-export const LoaderVersionSchema: z.ZodType<ModdedLoaderVersion> = z.object({
-  id: z.string().min(0),
-  url: z.string().min(0),
-  stable: z.boolean(),
+export const LoaderVersionSchema = v.object({
+  id: v.pipe(v.string(), v.minLength(0)),
+  url: v.pipe(v.string(), v.minLength(0)),
+  stable: v.boolean(),
 });
 
-export const CreateCustomInstanceSchema = z
-  .object({
-    name: z
-      .string({ required_error: 'Name is required' })
-      .min(1, { message: 'Name is required' })
-      .max(64, { message: 'Max length 64 symbols' }),
-    gameVersion: z
-      .string({ required_error: 'Game version is required' })
-      .min(1, { message: 'Game version is required' }),
+export const CreateCustomInstanceSchema = v.pipe(
+  v.object({
+    name: v.pipe(
+      v.string('Name is required'),
+      v.minLength(1, 'Name is required'),
+      v.maxLength(64, 'Max length 64 symbols'),
+    ),
+    gameVersion: v.pipe(
+      v.string('Game version is required'),
+      v.minLength(1, 'Game version is required'),
+    ),
     loader: ModLoaderSchema,
-    loaderVersionType: z.string().optional(),
-    loaderVersion: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.loaderVersionType === 'other' && !data.loaderVersion) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Loader version is required if loader version type is other',
-        path: ['loaderVersion'],
-      });
-    }
-  });
-
-export const ImportInstanceSchema = z.object({
-  pluginId: z.string().min(1),
-  pathOrUrl: z.string().min(1, {
-    message: 'Path is required',
+    loaderVersionType: v.optional(v.string()),
+    loaderVersion: v.optional(v.string()),
   }),
+  v.forward(
+    v.check(
+      (data) => !(data.loaderVersionType === 'other' && !data.loaderVersion),
+      'Loader version is required if loader version type is other',
+    ),
+    ['loaderVersion'],
+  ),
+);
+
+export const ImportInstanceSchema = v.object({
+  pluginId: v.pipe(v.string(), v.minLength(1)),
+  pathOrUrl: v.pipe(v.string(), v.minLength(1, 'Path is required')),
 });
 
-export type ImportInstanceValues = z.infer<typeof ImportInstanceSchema>;
+export type CreateCustomInstanceSchemaOutput = v.InferOutput<
+  typeof CreateCustomInstanceSchema
+>;
+
+export type ImportInstanceValues = v.InferOutput<typeof ImportInstanceSchema>;

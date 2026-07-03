@@ -19,9 +19,7 @@ import type {
 
 export type PluginImporterProps = ComponentProps<'div'> & {
   capability:
-    | ImporterCapability
-    | UpdaterCapability
-    | ContentProviderCapability;
+    ImporterCapability | UpdaterCapability | ContentProviderCapability;
 };
 
 export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {

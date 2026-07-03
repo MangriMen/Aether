@@ -1,4 +1,5 @@
-import { setValue, type PartialValues } from '@modular-forms/solid';
+import { setInput } from '@formisch/solid';
+import { Form, Field } from '@formisch/solid';
 import { createMemo, Show, splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
@@ -7,24 +8,23 @@ import { OverrideCheckbox } from '@/entities/settings';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import type {
+  WindowSettingsSchemaInput,
+  WindowSettingsSchemaOutput,
+} from '../model';
+
 import {
   useResetWindowSettingsFormValues,
   useWindowSettingsForm,
 } from '../lib';
-import {
-  type WindowSettingsSchemaInput,
-  type WindowSettingsSchemaOutput,
-} from '../model';
 
 export type WindowSettingsFormProps = Omit<
   ComponentProps<'form'>,
   'onSubmit' | 'children'
 > & {
   overridable?: boolean;
-  initialValues: Accessor<PartialValues<WindowSettingsSchemaInput> | undefined>;
-  defaultValues?: Accessor<
-    PartialValues<WindowSettingsSchemaInput> | undefined
-  >;
+  initialValues: Accessor<Partial<WindowSettingsSchemaInput> | undefined>;
+  defaultValues?: Accessor<Partial<WindowSettingsSchemaInput> | undefined>;
   onChangePartial?: (values: Partial<WindowSettingsSchemaOutput>) => void;
 };
 
@@ -41,7 +41,7 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = useWindowSettingsForm();
+  const form = useWindowSettingsForm();
   useResetWindowSettingsFormValues(form, local.initialValues);
 
   const handleResolutionSubmit = (width: number, height: number) => {
@@ -60,11 +60,16 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
   };
 
   return (
-    <Form class={cn('gap-2 flex flex-col', local.class)} {...others}>
-      <Field name='overrideWindowSettings' type='boolean'>
+    <Form
+      of={form}
+      class={cn('gap-2 flex flex-col', local.class)}
+      onSubmit={() => {}}
+      {...others}
+    >
+      <Field of={form} path={['overrideWindowSettings']}>
         {(overrideWindowSettings) => {
           const isDisabled = createMemo(
-            () => local.overridable && !overrideWindowSettings.value,
+            () => local.overridable && !overrideWindowSettings.input,
           );
 
           return (
@@ -72,15 +77,18 @@ export const WindowSettingsForm: Component<WindowSettingsFormProps> = (
               <Show
                 when={
                   local.overridable &&
-                  overrideWindowSettings.value !== undefined
+                  overrideWindowSettings.input !== undefined
                 }
               >
                 <OverrideCheckbox
                   class='mb-1'
                   label={t('instanceSettings.customWindowSettings')}
-                  checked={overrideWindowSettings.value}
+                  checked={overrideWindowSettings.input}
                   onOverrideChange={(value) => {
-                    setValue(form, 'overrideWindowSettings', value);
+                    setInput(form, {
+                      path: ['overrideWindowSettings'],
+                      input: value,
+                    });
                     handleOverrideChange(value);
                   }}
                 />
