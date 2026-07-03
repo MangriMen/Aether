@@ -11,9 +11,9 @@ import type { InferInput } from 'valibot';
 import { insert, remove, replace } from '@formisch/solid';
 import { createMemo, createSignal } from 'solid-js';
 
-// Хелпер, который оставляет только ключи, являющиеся массивами
-// NonNullable нужен, так как InferInput для v.optional(v.array(...))
-// выдаёт Type[] | undefined, а undefined не extends readonly unknown[]
+// Filters keys whose values are arrays.
+// NonNullable handles v.optional(v.array(...)), where InferInput
+// gives Type[] | undefined and undefined doesn't extend readonly unknown[].
 type ValidArrayKeys<T> = {
   [K in keyof T]: NonNullable<T[K]> extends readonly unknown[] ? K : never;
 }[keyof T] &
