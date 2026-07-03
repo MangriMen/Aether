@@ -1,12 +1,8 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import {
-  Field,
-  getValues,
-  validate,
-  type FormStore,
-} from '@modular-forms/solid';
+import { Field, validate, type FormStore } from '@formisch/solid';
 import { splitProps } from 'solid-js';
+import * as v from 'valibot';
 
 import { cn } from '@/shared/lib';
 
@@ -14,18 +10,21 @@ import {
   getEditableAllowedItemArrayProps,
   useCustomItemsEditing,
 } from '../lib';
-import { PluginSettingsSchema, type PluginSettingsSchemaInput } from '../model';
+import {
+  PluginSettingsSchema,
+  type PluginSettingsSchemaOutput,
+} from '../model';
 import { AddNewItem } from './AddNewItem';
 import { AllowedHost } from './AllowedHost';
 import { EditableAllowedItem } from './EditableAllowedItem';
 import { EditAllowedHost } from './EditAllowedHost';
 import { FieldArrayFor } from './FieldArrayFor';
 
-const name = 'allowedHosts' as const;
+const name = 'allowedHosts';
 
 export type AllowedHostsCustomItemsProps = ComponentProps<'div'> & {
-  form: FormStore<PluginSettingsSchemaInput>;
-  onChangePartial?: (values: Partial<PluginSettingsSchemaInput>) => void;
+  form: FormStore<typeof PluginSettingsSchema>;
+  onChangePartial?: (values: Partial<PluginSettingsSchemaOutput>) => void;
 };
 
 export const AllowedHostsCustomItems: Component<
@@ -38,28 +37,23 @@ export const AllowedHostsCustomItems: Component<
   ]);
 
   const handleChange = async () => {
-    if (!(await validate(local.form, name))) {
+    const result = await validate(local.form);
+
+    if (!result.success) {
       return;
     }
 
-    const values = getValues(local.form, { shouldValid: true });
-
-    const fieldArray = values[name];
-
-    const schema = PluginSettingsSchema;
-
-    const parsed = schema
-      .pick({ [name]: true })
-      .safeParse({ [name]: fieldArray });
+    const TargetSchema = v.pick(PluginSettingsSchema, [name]);
+    const parsed = v.safeParse(TargetSchema, result.output);
 
     if (!parsed.success) {
       return;
     }
 
-    const finalValue = parsed.data[name];
+    const finalValue = parsed.output[name];
 
     local.onChangePartial?.({
-      allowedHosts: finalValue,
+      [name]: finalValue,
     });
   };
 
@@ -80,7 +74,7 @@ export const AllowedHostsCustomItems: Component<
         <FieldArrayFor of={local.form} name={name}>
           {({ index }) => (
             <li>
-              <Field of={local.form} name={`${name}.${index()}`}>
+              <Field of={local.form} path={[name, index()]}>
                 {(field) => (
                   <EditableAllowedItem
                     {...getEditableAllowedItemArrayProps(
@@ -91,9 +85,9 @@ export const AllowedHostsCustomItems: Component<
                     )}
                     item={AllowedHost}
                     editItem={EditAllowedHost}
-                    name={field.name}
-                    value={field.value}
-                    error={field.error}
+                    name={String(index())}
+                    value={field.input}
+                    error={field.errors?.[0]}
                     editing={editingIndex() === index()}
                   />
                 )}
@@ -108,10 +102,11 @@ export const AllowedHostsCustomItems: Component<
         onAddingStart={startAdding}
         onAdd={add}
         onCancel={endAdding}
-        children={({ onAdd, onCancel }) => (
+      >
+        {({ onAdd, onCancel }) => (
           <EditAllowedHost onSave={onAdd} onCancel={onCancel} />
         )}
-      />
+      </AddNewItem>
     </div>
   );
 };

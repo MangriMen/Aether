@@ -22,8 +22,8 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@formisch/solid": "^1.0.0-rc.0",
     "@kobalte/core": "^0.13.12",
-    "@modular-forms/solid": "^0.25.1",
     "@solid-primitives/i18n": "^2.2.1",
     "@solid-primitives/media": "^2.3.5",
     "@solid-primitives/resize-observer": "^2.1.5",
@@ -48,8 +48,8 @@
     "solid-transition-group": "^0.3.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "vite-plugin-solid-svg": "^0.8.1",
-    "zod": "^3.25.76"
+    "valibot": "^1.4.2",
+    "vite-plugin-solid-svg": "^0.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

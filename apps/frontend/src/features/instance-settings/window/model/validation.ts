@@ -1,29 +1,30 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
-export const ResolutionPartSchema = z
-  .string()
-  .trim()
-  .min(1, 'instanceSettings.windowError.resolution.emptyValue' as const)
-  .regex(
-    /^\d+$/,
-    'instanceSettings.windowError.resolution.invalidValue' as const,
-  )
-  .transform(Number)
-  .refine(
-    (v) => v >= 1 && v <= 65535,
-    'instanceSettings.windowError.resolution.invalidRange' as const,
-  );
+export const ResolutionPartSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.minLength(1, 'instanceSettings.windowError.resolution.emptyValue'),
+  v.regex(/^\d+$/, 'instanceSettings.windowError.resolution.invalidValue'),
+  v.transform(Number),
+  v.number(),
+  v.minValue(1, 'instanceSettings.windowError.resolution.invalidRange'),
+  v.maxValue(65535, 'instanceSettings.windowError.resolution.invalidRange'),
+);
 
-export const ResolutionSchema = z.object({
+export const ResolutionSchema = v.object({
   width: ResolutionPartSchema,
   height: ResolutionPartSchema,
 });
 
-export const WindowSettingsSchema = z.object({
+export const WindowSettingsSchema = v.object({
   resolution: ResolutionSchema,
-  forceFullscreen: z.boolean().optional(),
-  overrideWindowSettings: z.boolean().optional(),
+  forceFullscreen: v.optional(v.boolean()),
+  overrideWindowSettings: v.optional(v.boolean()),
 });
 
-export type WindowSettingsSchemaInput = z.input<typeof WindowSettingsSchema>;
-export type WindowSettingsSchemaOutput = z.output<typeof WindowSettingsSchema>;
+export type WindowSettingsSchemaInput = v.InferInput<
+  typeof WindowSettingsSchema
+>;
+export type WindowSettingsSchemaOutput = v.InferOutput<
+  typeof WindowSettingsSchema
+>;

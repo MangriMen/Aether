@@ -45,7 +45,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
 
   return (
     <Tabs
-      class={cn('h-96 p-0.5 flex overflow-hidden', local.class)}
+      class={cn('h-98 p-0.5 flex overflow-hidden', local.class)}
       defaultValue={InstanceSettingsDialogTabs.General}
       orientation='vertical'
       onChange={handleOnTabChange}
@@ -71,7 +71,7 @@ const InstanceSettingsDialogBody = <T extends ValidComponent = 'div'>(
           <SettingsTabsContent
             value={tabContent.value}
             as={tabContent.component}
-            class='pb-6'
+            class='pb-6 pr-0.5'
             instance={local.instance}
             editInstance={editInstance.mutateAsync}
             defaultSettings={globalSettings.data}

@@ -1,18 +1,21 @@
-import z from 'zod';
+import * as v from 'valibot';
 
-export const NameSchema = z
-  .string()
-  .trim()
-  .min(1, 'generalSettingsError.name.minLength')
-  .max(64, 'generalSettingsError.name.maxLength');
+export const NameSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.minLength(1, 'generalSettingsError.name.minLength'),
+  v.maxLength(64, 'generalSettingsError.name.maxLength'),
+);
 // .regex(/^[a-zA-Z0-9]+$/, 'generalSettingsError.name.invalidSymbol')
 
-export const GeneralSettingsSchema = z.object({
+export const GeneralSettingsSchema = v.object({
   name: NameSchema,
-  icon: z.string().optional().nullable(),
+  icon: v.optional(v.nullable(v.string())),
 });
 
-export type GeneralSettingsSchemaInput = z.input<typeof GeneralSettingsSchema>;
-export type GeneralSettingsSchemaOutput = z.output<
+export type GeneralSettingsSchemaInput = v.InferInput<
+  typeof GeneralSettingsSchema
+>;
+export type GeneralSettingsSchemaOutput = v.InferOutput<
   typeof GeneralSettingsSchema
 >;

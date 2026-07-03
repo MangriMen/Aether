@@ -1,5 +1,4 @@
 import {
-  createMemo,
   Show,
   splitProps,
   type Component,
@@ -38,10 +37,6 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
     editPluginSettings: () => editPluginSettings.mutateAsync,
   });
 
-  const isLoading = createMemo(
-    () => pluginSettings.isLoading || editPluginSettings.isPending,
-  );
-
   return (
     <div
       class={cn(
@@ -54,7 +49,7 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
       {...others}
     >
       <Show when={local.isSettingsDisabled}>
-        <span class='text-xl leading-10 font-medium brightness-125'>
+        <span class='text-xl/10 font-medium brightness-125'>
           {t('plugins.disableToChangeSettings')}
         </span>
       </Show>
@@ -62,7 +57,6 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
         runtimeConfig={local.plugin.manifest.runtime}
         initialValues={initialValues}
         onChangePartial={onChangePartial}
-        isLoading={isLoading()}
         disabled={local.isSettingsDisabled}
       />
     </div>

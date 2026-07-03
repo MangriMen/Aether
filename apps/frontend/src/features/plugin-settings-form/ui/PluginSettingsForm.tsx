@@ -1,18 +1,19 @@
 import type { Accessor } from 'solid-js';
 
-import { type SubmitHandler } from '@modular-forms/solid';
+import { Form } from '@formisch/solid';
 import { splitProps, type Component } from 'solid-js';
 
 import type { RuntimeConfig } from '@/entities/plugins';
 
-import { cn } from '@/shared/lib';
+import { cn, noop } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+
+import type { PluginSettingsSchemaInput } from '../model';
 
 import {
   usePluginSettingsForm,
   useResetPluginSettingsFormValues,
 } from '../lib';
-import { type PluginSettingsSchemaInput } from '../model';
 import { AllowedHost } from './AllowedHost';
 import { AllowedHostsCustomItems } from './AllowedHostsCustomItems';
 import { AllowedItems } from './AllowedItems';
@@ -23,10 +24,8 @@ import { FixedItemsList } from './FixedItemsList';
 export type PluginSettingsFormProps = {
   initialValues: Accessor<PluginSettingsSchemaInput | undefined>;
   runtimeConfig: RuntimeConfig;
-  isLoading?: boolean;
   disabled?: boolean;
-  onSubmit?: SubmitHandler<PluginSettingsSchemaInput>;
-  onChangePartial?: (values: Partial<PluginSettingsSchemaInput>) => void;
+  onChangePartial?: (values: PluginSettingsSchemaInput) => void;
   class?: string;
 };
 
@@ -36,22 +35,21 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
   const [local, others] = splitProps(props, [
     'initialValues',
     'runtimeConfig',
-    'isLoading',
     'disabled',
     'onChangePartial',
-    'onSubmit',
     'class',
   ]);
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form }] = usePluginSettingsForm();
+  const form = usePluginSettingsForm();
   useResetPluginSettingsFormValues(form, local.initialValues);
 
   return (
     <Form
+      of={form}
+      onSubmit={noop}
       class={cn('flex flex-1 grow flex-col', local.class)}
-      onSubmit={local.onSubmit}
       {...others}
     >
       <fieldset

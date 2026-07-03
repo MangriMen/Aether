@@ -1,22 +1,39 @@
 import type {
-  FieldArrayPath,
-  FieldArrayPathValue,
-  FieldValues,
+  DeepPartial,
+  FormSchema,
   FormStore,
-} from '@modular-forms/solid';
+  PathValue,
+  ValidArrayPath,
+} from '@formisch/solid';
 import type { Accessor } from 'solid-js';
+import type { InferInput } from 'valibot';
 
-import { insert, remove, replace } from '@modular-forms/solid';
+import { insert, remove, replace } from '@formisch/solid';
 import { createMemo, createSignal } from 'solid-js';
 
+// Filters keys whose values are arrays.
+// NonNullable handles v.optional(v.array(...)), where InferInput
+// gives Type[] | undefined and undefined doesn't extend readonly unknown[].
+type ValidArrayKeys<T> = {
+  [K in keyof T]: NonNullable<T[K]> extends readonly unknown[] ? K : never;
+}[keyof T] &
+  string;
+
 export const useCustomItemsEditing = <
-  TFieldValues extends FieldValues,
-  TFieldName extends FieldArrayPath<TFieldValues>,
+  TSchema extends FormSchema,
+  TName extends ValidArrayKeys<InferInput<TSchema>>,
 >(
-  form: Accessor<FormStore<TFieldValues>>,
-  name: TFieldName,
+  form: Accessor<FormStore<TSchema>>,
+  name: TName,
   onChange?: () => void,
 ) => {
+  type ArrayItem = PathValue<InferInput<TSchema>, readonly [TName, number]>;
+
+  const arrayPath = [name] as unknown as ValidArrayPath<
+    InferInput<TSchema>,
+    readonly [TName]
+  >;
+
   const [editingIndex, setEditingIndex] = createSignal<number | null>(null);
 
   const startAdding = () => setEditingIndex(-1);
@@ -24,28 +41,28 @@ export const useCustomItemsEditing = <
 
   const isAdding = createMemo(() => editingIndex() === -1);
 
-  const handleAdd = (
-    value: FieldArrayPathValue<TFieldValues, TFieldName>[number],
-  ) => {
+  const handleAdd = (value: ArrayItem) => {
     endAdding();
-    insert(form(), name, { value });
+    insert(form(), {
+      path: arrayPath,
+      initialInput: value as DeepPartial<ArrayItem>,
+    });
     onChange?.();
   };
 
-  const handleEdit = (
-    index: number,
-    value: FieldArrayPathValue<TFieldValues, TFieldName>[number],
-  ) => {
-    replace(form(), name, {
+  const handleEdit = (index: number, value: ArrayItem) => {
+    replace(form(), {
+      path: arrayPath,
       at: index,
-      value,
+      initialInput: value as DeepPartial<ArrayItem>,
     });
     setEditingIndex(null);
     onChange?.();
   };
 
   const handleRemove = (index: number) => {
-    remove(form(), name, {
+    remove(form(), {
+      path: arrayPath,
       at: index,
     });
     onChange?.();

@@ -43,7 +43,7 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
           hover:bg-card/hover
           focus-visible:ring-ring
           active:animate-bump-out active:bg-card/active
-          relative flex h-max cursor-pointer flex-col overflow-hidden border
+          relative flex h-max flex-col overflow-hidden border
           text-left outline-none
           focus-visible:ring-2 focus-visible:ring-offset-0
         `,

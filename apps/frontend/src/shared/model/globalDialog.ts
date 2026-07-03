@@ -22,8 +22,7 @@ export type GlobalDialogType<
 };
 
 let globalDialogStore:
-  | ReturnType<typeof createStore<GlobalDialogType>>
-  | undefined;
+  ReturnType<typeof createStore<GlobalDialogType>> | undefined;
 
 const getOrCreateDialogStore = () => {
   if (!globalDialogStore) {

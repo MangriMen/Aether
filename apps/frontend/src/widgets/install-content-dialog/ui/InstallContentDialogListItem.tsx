@@ -23,8 +23,7 @@ export interface InstallContentDialogListItemProps {
   instance: Instance;
   manager: ContentManager;
   checkCompatibilityData:
-    | Record<Instance['id'], ContentCompatibilityResult>
-    | undefined;
+    Record<Instance['id'], ContentCompatibilityResult> | undefined;
   isLoadingCheckCompatibilityData?: boolean;
   onCloseDialog?: () => void;
 }

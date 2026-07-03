@@ -60,7 +60,12 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
       isLoading={isLoading()}
       isEnabled={isEnabled()}
     >
-      <ContextMenuTrigger as={PluginCard} plugin={local.plugin} {...others} />
+      <ContextMenuTrigger
+        as={PluginCard}
+        data-context-menu-safe='true'
+        plugin={local.plugin}
+        {...others}
+      />
     </PluginContextMenu>
   );
 };

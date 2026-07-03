@@ -1,7 +1,7 @@
-import type { FormStore, PartialValues } from '@modular-forms/solid';
+import type { FormStore } from '@formisch/solid';
 import type { Accessor } from 'solid-js';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
+import { createForm, setInput } from '@formisch/solid';
 import { createEffect } from 'solid-js';
 
 import {
@@ -9,27 +9,20 @@ import {
   type JavaAndMemorySettingsSchemaInput,
 } from '../model';
 
-export const useJavaAndMemorySettingsForm = (): ReturnType<
-  typeof createForm<JavaAndMemorySettingsSchemaInput>
-> => {
-  const [form, components] = createForm<JavaAndMemorySettingsSchemaInput>({
-    validate: zodForm(JavaAndMemorySettingsSchema),
-  });
-
-  return [form, components];
+export const useJavaAndMemorySettingsForm = () => {
+  const form = createForm({ schema: JavaAndMemorySettingsSchema });
+  return form;
 };
 
 export const useResetJavaAndMemorySettingsForm = (
-  form: FormStore<JavaAndMemorySettingsSchemaInput>,
-  settings: Accessor<
-    PartialValues<JavaAndMemorySettingsSchemaInput> | undefined
-  >,
+  form: FormStore<typeof JavaAndMemorySettingsSchema>,
+  settings: Accessor<Partial<JavaAndMemorySettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
     const overrideMemory = settings()?.overrideMemory;
 
     if (overrideMemory !== undefined) {
-      setValues(form, { overrideMemory });
+      setInput(form, { path: ['overrideMemory'], input: overrideMemory });
     }
   });
 
@@ -37,7 +30,10 @@ export const useResetJavaAndMemorySettingsForm = (
     const overrideLaunchArgs = settings()?.overrideLaunchArgs;
 
     if (overrideLaunchArgs !== undefined) {
-      setValues(form, { overrideLaunchArgs });
+      setInput(form, {
+        path: ['overrideLaunchArgs'],
+        input: overrideLaunchArgs,
+      });
     }
   });
 
@@ -45,7 +41,7 @@ export const useResetJavaAndMemorySettingsForm = (
     const overrideEnvVars = settings()?.overrideEnvVars;
 
     if (overrideEnvVars !== undefined) {
-      setValues(form, { overrideEnvVars });
+      setInput(form, { path: ['overrideEnvVars'], input: overrideEnvVars });
     }
   });
 
@@ -53,7 +49,7 @@ export const useResetJavaAndMemorySettingsForm = (
     const maximum = settings()?.memory?.maximum;
 
     if (maximum !== undefined) {
-      setValues(form, { memory: { maximum } });
+      setInput(form, { path: ['memory', 'maximum'], input: maximum });
     }
   });
 
@@ -61,9 +57,7 @@ export const useResetJavaAndMemorySettingsForm = (
     const launchArgs = settings()?.launchArgs;
 
     if (launchArgs !== undefined) {
-      setValues(form, {
-        launchArgs,
-      });
+      setInput(form, { path: ['launchArgs'], input: launchArgs });
     }
   });
 
@@ -71,9 +65,7 @@ export const useResetJavaAndMemorySettingsForm = (
     const envVars = settings()?.envVars;
 
     if (envVars !== undefined) {
-      setValues(form, {
-        envVars,
-      });
+      setInput(form, { path: ['envVars'], input: envVars });
     }
   });
 };

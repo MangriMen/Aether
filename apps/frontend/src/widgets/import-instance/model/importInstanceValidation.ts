@@ -1,8 +1,12 @@
-import z from 'zod';
+import * as v from 'valibot';
 
-export const ImportInstanceSchema = z.object({
-  path: z.string().min(1),
+export const ImportInstanceSchema = v.object({
+  path: v.pipe(v.string(), v.minLength(1)),
 });
 
-export type ImportInstanceSchemaInput = z.input<typeof ImportInstanceSchema>;
-export type ImportInstanceSchemaOutput = z.output<typeof ImportInstanceSchema>;
+export type ImportInstanceSchemaInput = v.InferInput<
+  typeof ImportInstanceSchema
+>;
+export type ImportInstanceSchemaOutput = v.InferOutput<
+  typeof ImportInstanceSchema
+>;

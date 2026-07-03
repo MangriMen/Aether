@@ -1,22 +1,20 @@
 import type { Accessor } from 'solid-js';
 
-import { setValue, type PartialValues } from '@modular-forms/solid';
+import { setInput, getInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn, useFieldOnChangeSync } from '@/shared/lib';
+import { cn, noop } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField } from '@/shared/ui';
+
+import type { GeneralSettingsSchemaInput } from '../model';
 
 import {
   useGeneralSettingsForm,
   useResetGeneralSettingsFormValues,
 } from '../lib';
-import {
-  GeneralSettingsSchema,
-  type GeneralSettingsSchemaInput,
-  type GeneralSettingsSchemaOutput,
-} from '../model';
+import { type GeneralSettingsSchemaOutput } from '../model';
 import { InstanceIconDropdownButton } from './InstanceIconDropdownButton';
 
 export type GeneralSettingsFormProps = Omit<
@@ -24,9 +22,7 @@ export type GeneralSettingsFormProps = Omit<
   'onSubmit' | 'children'
 > & {
   realIconSrc?: string;
-  initialValues: Accessor<
-    PartialValues<GeneralSettingsSchemaInput> | undefined
-  >;
+  initialValues: Accessor<Partial<GeneralSettingsSchemaInput> | undefined>;
   onChangePartial?: (values: Partial<GeneralSettingsSchemaOutput>) => void;
 };
 
@@ -42,19 +38,8 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = useGeneralSettingsForm();
+  const form = useGeneralSettingsForm();
   useResetGeneralSettingsFormValues(form, () => local.initialValues());
-
-  const updateName = useFieldOnChangeSync(
-    GeneralSettingsSchema,
-    form,
-    'name',
-    (value) => {
-      local.onChangePartial?.({
-        name: value,
-      });
-    },
-  );
 
   const handleSelectIcon = async () => {
     const file = await open({
@@ -72,19 +57,24 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
       return;
     }
 
-    setValue(form, 'icon', file);
+    setInput(form, { path: ['icon'], input: file });
     local.onChangePartial?.({ icon: file });
   };
 
   const handleRemoveIcon = () => {
-    setValue(form, 'icon', null);
+    setInput(form, { path: ['icon'], input: null });
     local.onChangePartial?.({ icon: null });
   };
 
   return (
-    <Form class={cn('flex flex-col', local.class)} {...others}>
+    <Form
+      of={form}
+      class={cn('flex flex-col', local.class)}
+      onSubmit={noop}
+      {...others}
+    >
       <div class='gap-4 flex'>
-        <Field name='icon' type='string'>
+        <Field of={form} path={['icon']}>
           {(_) => (
             <InstanceIconDropdownButton
               src={local.realIconSrc}
@@ -93,20 +83,22 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
             />
           )}
         </Field>
-        <Field name='name' type='string'>
-          {(field, inputProps) => (
+        <Field of={form} path={['name']}>
+          {(field) => (
             <CombinedTextField
               class='grow'
               label={t('common.name')}
-              value={field.value ?? ''}
-              errorMessage={field.error}
+              value={(field.input as string) ?? ''}
+              errorMessage={field.errors?.[0]}
               inputProps={{
                 type: 'text',
                 maxLength: 64,
-                ...inputProps,
+                ...field.props,
                 onBlur: (e) => {
-                  inputProps.onBlur(e);
-                  updateName();
+                  field.props.onBlur?.(e);
+                  local.onChangePartial?.({
+                    name: getInput(form, { path: ['name'] }),
+                  });
                 },
               }}
             />

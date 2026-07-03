@@ -1,66 +1,73 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
 import { createI18nError } from '@/shared/lib';
 
-export const MemoryMaximumSchema = z.number();
-
-export const MemorySchema = z.object({
-  maximum: MemoryMaximumSchema,
-});
-
-export const JavaAndMemorySettingsSchema = z.object({
-  memory: MemorySchema,
-  launchArgs: z.string(),
-  envVars: z.string().transform((val, ctx) => {
+const EnvVarsTransformation = v.pipe(
+  v.string(),
+  v.transform((val) => {
     const parts = val
       .split(';')
       .map((p) => p.trim())
       .filter(Boolean);
 
     const result: [string, string][] = [];
-    let hasError = false;
 
     for (const part of parts) {
       if (!part.includes('=')) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: createI18nError('invalidFormat', { part }),
-        });
-        hasError = true;
-        continue;
+        throw new v.ValiError([
+          {
+            kind: 'validation',
+            type: 'custom',
+            input: val,
+            expected: null,
+            received: 'string',
+            message: createI18nError('invalidFormat', { part }),
+          },
+        ]);
       }
 
       const [key, ...valueParts] = part.split('=');
       const value = valueParts.join('=');
 
       if (!key?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: createI18nError('emptyKey', { part }),
-        });
-        hasError = true;
-        continue;
+        throw new v.ValiError([
+          {
+            kind: 'validation',
+            type: 'custom',
+            input: val,
+            expected: null,
+            received: 'string',
+            message: createI18nError('emptyKey', { part }),
+          },
+        ]);
       }
 
       result.push([key.trim(), value.trim()]);
     }
 
-    if (hasError) {
-      return z.NEVER;
-    }
-
     return result;
   }),
+);
 
-  overrideMemory: z.boolean().optional(),
-  overrideLaunchArgs: z.boolean().optional(),
-  overrideEnvVars: z.boolean().optional(),
+export const MemoryMaximumSchema = v.number();
+
+export const MemorySchema = v.object({
+  maximum: MemoryMaximumSchema,
 });
 
-export type JavaAndMemorySettingsSchemaInput = z.input<
+export const JavaAndMemorySettingsSchema = v.object({
+  memory: MemorySchema,
+  launchArgs: v.string(),
+  envVars: EnvVarsTransformation,
+  overrideMemory: v.optional(v.boolean()),
+  overrideLaunchArgs: v.optional(v.boolean()),
+  overrideEnvVars: v.optional(v.boolean()),
+});
+
+export type JavaAndMemorySettingsSchemaInput = v.InferInput<
   typeof JavaAndMemorySettingsSchema
 >;
 
-export type JavaAndMemorySettingsSchemaOutput = z.output<
+export type JavaAndMemorySettingsSchemaOutput = v.InferOutput<
   typeof JavaAndMemorySettingsSchema
 >;

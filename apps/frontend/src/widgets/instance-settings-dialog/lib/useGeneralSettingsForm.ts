@@ -1,33 +1,28 @@
-import type { FormStore, PartialValues } from '@modular-forms/solid';
+import type { FormStore } from '@formisch/solid';
+import type { Accessor } from 'solid-js';
 
-import { createForm, setValues, zodForm } from '@modular-forms/solid';
-import { createEffect, type Accessor } from 'solid-js';
+import { createForm, setInput } from '@formisch/solid';
+import { createEffect } from 'solid-js';
 
-import type { GeneralSettingsSchemaInput } from '../model';
+import {
+  GeneralSettingsSchema,
+  type GeneralSettingsSchemaInput,
+} from '../model';
 
-import { GeneralSettingsSchema } from '../model';
-
-export const useGeneralSettingsForm = (): ReturnType<
-  typeof createForm<GeneralSettingsSchemaInput>
-> => {
-  const [form, components] = createForm({
-    validate: zodForm(GeneralSettingsSchema),
-  });
-
-  return [form, components];
+export const useGeneralSettingsForm = () => {
+  const form = createForm({ schema: GeneralSettingsSchema });
+  return form;
 };
 
 export const useResetGeneralSettingsFormValues = (
-  form: FormStore<GeneralSettingsSchemaInput>,
-  initialValues: Accessor<
-    PartialValues<GeneralSettingsSchemaInput> | undefined
-  >,
+  form: FormStore<typeof GeneralSettingsSchema>,
+  initialValues: Accessor<Partial<GeneralSettingsSchemaInput> | undefined>,
 ) => {
   createEffect(() => {
     const name = initialValues()?.name;
 
-    if (name) {
-      setValues(form, { name });
+    if (name !== undefined) {
+      setInput(form, { path: ['name'], input: name });
     }
   });
 };

@@ -1,11 +1,13 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
-export const HooksSettingsSchema = z.object({
-  preLaunch: z.string(),
-  wrapper: z.string(),
-  postExit: z.string(),
-  overrideHooks: z.boolean().optional(),
+export const HooksSettingsSchema = v.object({
+  preLaunch: v.string(),
+  wrapper: v.string(),
+  postExit: v.string(),
+  overrideHooks: v.optional(v.boolean()),
 });
 
-export type HooksSettingsSchemaInput = z.input<typeof HooksSettingsSchema>;
-export type HooksSettingsSchemaOutput = z.output<typeof HooksSettingsSchema>;
+export type HooksSettingsSchemaInput = v.InferInput<typeof HooksSettingsSchema>;
+export type HooksSettingsSchemaOutput = v.InferOutput<
+  typeof HooksSettingsSchema
+>;

@@ -1,9 +1,7 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { FieldValues, SubmitHandler } from '@modular-forms/solid';
 import type { Component } from 'solid-js';
-import type { z } from 'zod';
 
-import { createForm, getValue, setValue, zodForm } from '@modular-forms/solid';
+import { createForm, setInput, getInput, Form, Field } from '@formisch/solid';
 import {
   createMemo,
   createSignal,
@@ -14,11 +12,7 @@ import {
 } from 'solid-js';
 
 import type { NewInstance } from '@/entities/instances';
-import type {
-  ModdedLoaderVersion,
-  Version,
-  ModLoader,
-} from '@/entities/minecraft';
+import type { ModdedLoaderVersion, ModLoader } from '@/entities/minecraft';
 
 import {
   IncludeSnapshotsCheckbox,
@@ -42,6 +36,7 @@ import {
 import { loaderManifestToMapped } from '../lib';
 import {
   CreateCustomInstanceSchema,
+  type CreateCustomInstanceSchemaOutput,
   filterGameVersions,
   filterGameVersionsForLoader,
   getLoaderVersionsForGameVersion,
@@ -58,9 +53,6 @@ export type CreateCustomInstanceProps = { class?: string } & Pick<
   'onOpenChange'
 >;
 
-export type CreateCustomInstanceFormValues = FieldValues &
-  z.infer<typeof CreateCustomInstanceSchema>;
-
 export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
   props,
 ) => {
@@ -68,9 +60,9 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const [{ t }] = useTranslation();
 
-  const [form, { Form, Field }] = createForm<CreateCustomInstanceFormValues>({
-    validate: zodForm(CreateCustomInstanceSchema),
-    initialValues: {
+  const form = createForm({
+    schema: CreateCustomInstanceSchema,
+    initialInput: {
       loader: 'vanilla',
       loaderVersionType: LOADER_VERSION_TYPES[0].value,
     },
@@ -109,8 +101,8 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const loaderVersions = createMemo(() =>
     getLoaderVersionsForGameVersion(
-      getValue(form, 'loader'),
-      getValue(form, 'gameVersion'),
+      getInput(form, { path: ['loader'] }),
+      getInput(form, { path: ['gameVersion'] }),
       {
         fabric: fabricVersionsMapped(),
         forge: forgeVersionsMapped(),
@@ -122,7 +114,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const loaderGameVersions = createMemo(() =>
     filterGameVersionsForLoader(
-      getValue(form, 'loader'),
+      getInput(form, { path: ['loader'] }),
       versionManifest.data?.versions ?? [],
       {
         fabric: fabricVersionsMapped(),
@@ -139,9 +131,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   const createInstance = useCreateInstance();
 
-  const handleSubmit: SubmitHandler<CreateCustomInstanceFormValues> = async (
-    values,
-  ) => {
+  const handleSubmit = async (values: CreateCustomInstanceSchemaOutput) => {
     setIsCreating(true);
 
     const payload: NewInstance = {
@@ -164,36 +154,42 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
   return (
     <Form
+      of={form}
       class={cn('gap-4 flex flex-col', local.class)}
       onSubmit={handleSubmit}
-      shouldActive
       {...others}
     >
-      <Field name='name'>
-        {(field, props) => (
+      <Field of={form} path={['name']}>
+        {(field) => (
           <CombinedTextField
             label={t('common.name')}
-            value={field.value}
-            errorMessage={field.error}
+            value={field.input ?? ''}
+            errorMessage={field.errors?.[0]}
             inputProps={{
               class: 'max-w-[36ch]',
               maxLength: 64,
               type: 'text',
-              ...props,
+              ...field.props,
             }}
           />
         )}
       </Field>
 
       <LabeledField label={t('common.loader')}>
-        <Field name='loader'>
+        <Field of={form} path={['loader']}>
           {(field) => (
             <LoaderChipsToggleGroup
               loaders={LOADERS}
-              value={field.value}
+              value={field.input ?? ''}
               onChange={(value) => {
-                setValue(form, 'loader', value as ModLoader);
-                setValue(form, 'loaderVersion', undefined);
+                setInput(form, {
+                  path: ['loader'],
+                  input: value as ModLoader,
+                });
+                setInput(form, {
+                  path: ['loaderVersion'],
+                  input: undefined,
+                });
               }}
             />
           )}
@@ -202,18 +198,18 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
       <LabeledField label={t('common.gameVersion')}>
         <div class='gap-2 flex items-start'>
-          <Field name='gameVersion'>
-            {(field, props) => (
+          <Field of={form} path={['gameVersion']}>
+            {(field) => (
               <SelectGameVersion
-                value={filteredGameVersions().find((v) => v.id === field.value)}
+                value={filteredGameVersions().find((v) => v.id === field.input)}
                 class='max-w-[31.5ch]'
                 placeholder={t('createInstance.gameVersionPlaceholder')}
                 options={filteredGameVersions()}
-                errorMessage={field.error}
-                {...props}
-                onChange={(value: Version | null) => {
+                errorMessage={field.errors?.[0]}
+                {...field.props}
+                onChange={(value) => {
                   if (value) {
-                    setValue(form, 'gameVersion', value.id);
+                    setInput(form, { path: ['gameVersion'], input: value.id });
                   }
                 }}
               />
@@ -229,18 +225,24 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       </LabeledField>
 
       <Collapsible
-        open={isAdvanced() && getValue(form, 'loader') !== 'vanilla'}
+        open={
+          isAdvanced() &&
+          (getInput(form, { path: ['loader'] }) ?? '') !== 'vanilla'
+        }
       >
         <CollapsibleContent class='p-2'>
           <LabeledField label={t('createInstance.loaderVersion')}>
-            <Field name='loaderVersionType'>
+            <Field of={form} path={['loaderVersionType']}>
               {(field) => (
                 <LoaderVersionTypeChipsToggleGroup
                   loaderTypes={LOADER_VERSION_TYPES}
-                  value={field.value}
+                  value={field.input ?? ''}
                   onChange={(value) => {
                     if (value) {
-                      setValue(form, 'loaderVersionType', value);
+                      setInput(form, {
+                        path: ['loaderVersionType'],
+                        input: value,
+                      });
                     }
                   }}
                 />
@@ -248,9 +250,14 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             </Field>
           </LabeledField>
 
-          <Show when={getValue(form, 'loaderVersionType') === 'other'}>
+          <Show
+            when={
+              (getInput(form, { path: ['loaderVersionType'] }) ?? '') ===
+              'other'
+            }
+          >
             <Show
-              when={getValue(form, 'gameVersion') !== undefined}
+              when={getInput(form, { path: ['gameVersion'] }) !== undefined}
               fallback={
                 <span class='italic'>
                   {t('createInstance.loaderVersionNoGameVersion')}
@@ -258,16 +265,19 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
               }
             >
               <LabeledField label={t('createInstance.loaderVersion')}>
-                <Field name='loaderVersion'>
-                  {(field, props) => (
+                <Field of={form} path={['loaderVersion']}>
+                  {(field) => (
                     <SelectSpecificLoaderVersion
                       placeholder={t('createInstance.loaderVersionPlaceholder')}
                       options={loaderVersions()}
-                      errorMessage={field.error}
-                      {...props}
+                      errorMessage={field.errors?.[0]}
+                      {...field.props}
                       onChange={(value: ModdedLoaderVersion | null) => {
                         if (value) {
-                          setValue(form, 'loaderVersion', value.id);
+                          setInput(form, {
+                            path: ['loaderVersion'],
+                            input: value.id,
+                          });
                         }
                       }}
                     />
