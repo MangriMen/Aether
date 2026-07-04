@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-07-04
+
 ### Fixed
 
 - **Content Deletion:** Fixed an issue where removing mods or other content from an instance only removed the database entry but left the actual files on disk — everything is now properly cleaned up.
