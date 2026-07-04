@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5] - 2026-07-04
+
 ### Fixed
 
 - **Content Search Validation:** Fixed a build failure caused by using an undeclared `zod` dependency — migrated validation schema to use `valibot` instead.
