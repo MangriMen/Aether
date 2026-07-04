@@ -18,9 +18,9 @@ use crate::{
         instance::{
             self, ContentProvider, Importer, InstanceWatcherService, Updater,
             infra::{
-                EventEmittingInstanceStorage, FsInstanceStorage, FsPackStorage,
-                InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
-                SqliteInstanceStorage, SqlitePackStorage,
+                EventEmittingInstanceStorage, FsContentFileService, FsInstanceStorage,
+                FsPackStorage, InstanceEventHandler, InstanceWatcherServiceImpl,
+                ModrinthContentProvider, SqliteInstanceStorage, SqlitePackStorage,
             },
         },
         java::{
@@ -114,6 +114,7 @@ pub struct LazyLocator {
     importers_registry: OnceCell<Arc<ImporterRegistry>>,
     updaters_registry: OnceCell<Arc<UpdaterRegistry>>,
     content_provider_registry: OnceCell<Arc<ContentProviderRegistry>>,
+    content_file_service: OnceCell<Arc<FsContentFileService>>,
     plugin_infrastructure_listener: OnceCell<
         Arc<
             PluginInfrastructureListener<
@@ -188,6 +189,7 @@ impl LazyLocator {
                     importers_registry: OnceCell::new(),
                     updaters_registry: OnceCell::new(),
                     content_provider_registry: OnceCell::new(),
+                    content_file_service: OnceCell::new(),
                     plugin_infrastructure_listener: OnceCell::new(),
                     sqlite_pool: OnceCell::from(sqlite_pool),
                     java_installation_tracker: OnceCell::new(),
@@ -428,6 +430,15 @@ impl LazyLocator {
         self.pack_storage
             .get_or_init(|| async {
                 Arc::new(SqlitePackStorage::new(self.get_sqlite_pool().await))
+            })
+            .await
+            .clone()
+    }
+
+    pub async fn get_content_file_service(&self) -> Arc<FsContentFileService> {
+        self.content_file_service
+            .get_or_init(|| async {
+                Arc::new(FsContentFileService::new(self.location_info.clone()))
             })
             .await
             .clone()

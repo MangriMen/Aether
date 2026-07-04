@@ -37,6 +37,7 @@ pub async fn remove_contents(instance_id: String, content_paths: Vec<String>) ->
     Ok(RemoveContentUseCase::new(
         locator.get_event_emitter().await,
         locator.get_pack_storage().await,
+        locator.get_content_file_service().await,
     )
     .execute(RemoveContent::multiple(instance_id, content_paths))
     .await?)
@@ -47,7 +48,7 @@ pub async fn enable_contents(instance_id: String, content_paths: Vec<String>) ->
 
     Ok(ChangeContentStateUseCase::new(
         locator.get_event_emitter().await,
-        locator.location_info.clone(),
+        locator.get_content_file_service().await,
     )
     .execute(ChangeContentState::multiple(
         instance_id,
@@ -65,7 +66,7 @@ pub async fn disable_contents(
 
     Ok(ChangeContentStateUseCase::new(
         locator.get_event_emitter().await,
-        locator.location_info.clone(),
+        locator.get_content_file_service().await,
     )
     .execute(ChangeContentState::multiple(
         instance_id,

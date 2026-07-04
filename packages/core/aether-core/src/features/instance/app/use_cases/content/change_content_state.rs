@@ -1,12 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    features::{
-        events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-        instance::InstanceError,
-        settings::LocationInfo,
-    },
-    shared::io::infra::rename,
+use crate::features::{
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
+    instance::{InstanceError, app::ContentFileService},
 };
 
 pub enum ContentStateAction {
@@ -44,14 +40,17 @@ impl ChangeContentState {
 
 pub struct ChangeContentStateUseCase {
     event_emitter: SharedEventEmitter,
-    location_info: Arc<LocationInfo>,
+    content_file_service: Arc<dyn ContentFileService>,
 }
 
 impl ChangeContentStateUseCase {
-    pub fn new(event_emitter: SharedEventEmitter, location_info: Arc<LocationInfo>) -> Self {
+    pub fn new(
+        event_emitter: SharedEventEmitter,
+        content_file_service: Arc<dyn ContentFileService>,
+    ) -> Self {
         Self {
             event_emitter,
-            location_info,
+            content_file_service,
         }
     }
 
@@ -64,113 +63,24 @@ impl ChangeContentStateUseCase {
 
         match action {
             ContentStateAction::Enable => {
-                self.enable_many(&instance_id, content_paths.as_slice())
-                    .await
+                self.content_file_service
+                    .enable_content_files(&instance_id, content_paths.as_slice())
+                    .await?;
             }
             ContentStateAction::Disable => {
-                self.disable_many(&instance_id, content_paths.as_slice())
-                    .await
+                self.content_file_service
+                    .disable_content_files(&instance_id, content_paths.as_slice())
+                    .await?;
             }
-        }?;
-
-        Ok(())
-    }
-
-    pub async fn enable_many(
-        &self,
-        instance_id: &str,
-        content_paths: &[String],
-    ) -> Result<(), InstanceError> {
-        for content_path in content_paths {
-            self.enable(instance_id, content_path).await?;
         }
 
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::Edited,
-                instance_id: instance_id.to_string(),
+                instance_id,
             })
             .await;
 
         Ok(())
-    }
-
-    pub async fn disable_many(
-        &self,
-        instance_id: &str,
-        content_paths: &[String],
-    ) -> Result<(), InstanceError> {
-        for content_path in content_paths {
-            self.disable(instance_id, content_path).await?;
-        }
-
-        self.event_emitter
-            .emit_safe(InstanceEvent {
-                event: InstanceEventType::Edited,
-                instance_id: instance_id.to_string(),
-            })
-            .await;
-
-        Ok(())
-    }
-
-    async fn enable(
-        &self,
-        instance_id: &str,
-        content_path: &str,
-    ) -> Result<Option<String>, InstanceError> {
-        let instance_dir = self.location_info.instance_dir(instance_id);
-
-        let absolute_enabled_content_path = instance_dir.join(content_path);
-
-        if absolute_enabled_content_path.exists() {
-            return Ok(None);
-        }
-
-        let disabled_content_path = format!("{content_path}.disabled");
-        let absolute_disabled_content_path = instance_dir.join(disabled_content_path);
-
-        if !absolute_disabled_content_path.exists() {
-            return Ok(None);
-        }
-
-        rename(
-            absolute_disabled_content_path,
-            absolute_enabled_content_path,
-        )
-        .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?;
-
-        Ok(Some(content_path.to_string()))
-    }
-
-    async fn disable(
-        &self,
-        instance_id: &str,
-        content_path: &str,
-    ) -> Result<Option<String>, InstanceError> {
-        let instance_dir = self.location_info.instance_dir(instance_id);
-
-        let disabled_content_path = format!("{content_path}.disabled");
-        let absolute_disabled_content_path = instance_dir.join(disabled_content_path.clone());
-
-        if absolute_disabled_content_path.exists() {
-            return Ok(None);
-        }
-
-        let absolute_enabled_content_path = instance_dir.join(content_path);
-
-        if !absolute_enabled_content_path.exists() {
-            return Ok(None);
-        }
-
-        rename(
-            absolute_enabled_content_path,
-            absolute_disabled_content_path,
-        )
-        .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?;
-
-        Ok(Some(disabled_content_path))
     }
 }

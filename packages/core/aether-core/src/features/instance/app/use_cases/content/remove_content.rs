@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, PackStorage},
+    instance::{InstanceError, PackStorage, app::ContentFileService},
 };
 
 pub struct RemoveContent {
@@ -22,13 +22,19 @@ impl RemoveContent {
 pub struct RemoveContentUseCase<PS: PackStorage> {
     event_emitter: SharedEventEmitter,
     pack_storage: Arc<PS>,
+    content_file_service: Arc<dyn ContentFileService>,
 }
 
 impl<PS: PackStorage> RemoveContentUseCase<PS> {
-    pub fn new(event_emitter: SharedEventEmitter, pack_storage: Arc<PS>) -> Self {
+    pub fn new(
+        event_emitter: SharedEventEmitter,
+        pack_storage: Arc<PS>,
+        content_file_service: Arc<dyn ContentFileService>,
+    ) -> Self {
         Self {
             event_emitter,
             pack_storage,
+            content_file_service,
         }
     }
 
@@ -40,6 +46,10 @@ impl<PS: PackStorage> RemoveContentUseCase<PS> {
 
         self.pack_storage
             .remove_pack_file_many(&instance_id, content_paths.as_slice())
+            .await?;
+
+        self.content_file_service
+            .remove_content_files(&instance_id, content_paths.as_slice())
             .await?;
 
         self.event_emitter
