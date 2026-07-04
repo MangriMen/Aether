@@ -276,4 +276,34 @@ impl PackStorage for SqlitePackStorage {
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))
     }
+
+    async fn remove_all_for_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        sqlx::query!(
+            "DELETE FROM pack_file_updates WHERE instance_id = ?",
+            instance_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        sqlx::query!("DELETE FROM pack_files WHERE instance_id = ?", instance_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        sqlx::query!("DELETE FROM packs WHERE instance_id = ?", instance_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
 }

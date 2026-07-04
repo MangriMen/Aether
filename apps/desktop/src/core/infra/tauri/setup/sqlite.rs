@@ -12,6 +12,7 @@ pub async fn create_pool(db_path: PathBuf) -> crate::Result<sqlx::SqlitePool> {
     let connection_options = sqlx::sqlite::SqliteConnectOptions::new()
         .filename(db_path)
         .create_if_missing(true)
+        .foreign_keys(true)
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
     let pool = sqlx::SqlitePool::connect_with(connection_options)

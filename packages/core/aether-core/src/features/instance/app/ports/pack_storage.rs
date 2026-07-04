@@ -46,4 +46,6 @@ pub trait PackStorage: Send + Sync {
         instance_id: &str,
         content_paths: &[String],
     ) -> Result<(), InstanceError>;
+
+    async fn remove_all_for_instance(&self, instance_id: &str) -> Result<(), InstanceError>;
 }

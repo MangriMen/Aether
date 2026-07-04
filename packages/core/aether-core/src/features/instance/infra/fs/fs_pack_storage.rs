@@ -7,7 +7,9 @@ use crate::{
         instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage, ProviderId},
         settings::LocationInfo,
     },
-    shared::io::infra::{ensure_read_toml_async, read_toml_async, remove_file, write_toml_async},
+    shared::io::infra::{
+        ensure_read_toml_async, read_toml_async, remove_dir_all, remove_file, write_toml_async,
+    },
 };
 
 use super::pack_file::{PackFileV1, PackFileV2, PackV2};
@@ -201,5 +203,17 @@ impl PackStorage for FsPackStorage {
         pack.files.retain(|e| !success_deleted.contains(&&e.file));
         pack.files.dedup_by_key(|item| item.file.clone());
         self.update_pack(instance_id, &pack).await
+    }
+
+    async fn remove_all_for_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+        let pack_dir = self.location_info.instance_pack_dir(instance_id);
+
+        if pack_dir.exists() {
+            remove_dir_all(&pack_dir)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        }
+
+        Ok(())
     }
 }

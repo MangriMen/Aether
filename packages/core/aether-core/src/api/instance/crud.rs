@@ -6,7 +6,7 @@ use crate::{
         instance::{
             CreateInstanceUseCase, EditInstance, EditInstanceUseCase, GetInstanceUseCase,
             InstallInstanceUseCase, Instance, ListInstancesUseCase, NewInstance,
-            RemoveInstanceUseCase, UpdateInstanceUseCase,
+            RemoveInstanceUseCase, UpdateInstanceUseCase, infra::FsInstanceFileService,
         },
         java::{
             GetJavaUseCase, InstallJavaUseCase,
@@ -252,6 +252,8 @@ pub async fn remove(instance_id: String) -> crate::Result<()> {
     Ok(RemoveInstanceUseCase::new(
         locator.get_instance_storage().await,
         locator.get_instance_watcher_service().await?,
+        Arc::new(FsInstanceFileService::new(locator.location_info.clone())),
+        locator.get_pack_storage().await,
     )
     .execute(instance_id)
     .await?)
