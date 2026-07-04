@@ -1,23 +1,25 @@
-import z from 'zod';
+import * as v from 'valibot';
 
 import { ContentType } from '@/entities/instances';
 
-const ContentTypeSchema = z.nativeEnum(ContentType);
+const ContentTypeSchema = v.enum(ContentType);
 
-const ProviderIdSchema = z.object({
-  pluginId: z.string(),
-  capabilityId: z.string(),
+const ProviderIdSchema = v.object({
+  pluginId: v.string(),
+  capabilityId: v.string(),
 });
 
-export const ContentSearchSchema = z.object({
-  page: z.number().min(1),
-  pageSize: z.number().min(1),
-  query: z.string(),
+export const ContentSearchSchema = v.object({
+  page: v.pipe(v.number(), v.minValue(1)),
+  pageSize: v.pipe(v.number(), v.minValue(1)),
+  query: v.string(),
   providerId: ProviderIdSchema,
   contentType: ContentTypeSchema,
-  gameVersions: z.string().array(),
-  loaders: z.string().array(),
+  gameVersions: v.array(v.string()),
+  loaders: v.array(v.string()),
 });
 
-export type ContentSearchInputValues = z.input<typeof ContentSearchSchema>;
-export type ContentSearchOutputValues = z.output<typeof ContentSearchSchema>;
+export type ContentSearchInputValues = v.InferInput<typeof ContentSearchSchema>;
+export type ContentSearchOutputValues = v.InferOutput<
+  typeof ContentSearchSchema
+>;
