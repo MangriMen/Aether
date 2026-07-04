@@ -9,6 +9,12 @@ import tailwind from 'eslint-plugin-better-tailwindcss';
 import solid from 'eslint-plugin-solid/configs/recommended';
 import perfectionist from 'eslint-plugin-perfectionist';
 import react from 'eslint-plugin-react';
+import importX from 'eslint-plugin-import-x';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -40,6 +46,18 @@ export default [
   },
   js.configs.recommended,
   ...ts.configs.recommended,
+  {
+    plugins: { 'import-x': importX },
+    rules: {
+      'import-x/no-extraneous-dependencies': [
+        'error',
+        {
+          includeTypes: true,
+          packageDir: [__dirname, path.resolve(__dirname, '../..')],
+        },
+      ],
+    },
+  },
   {
     rules: {
       '@typescript-eslint/no-unused-vars': [
