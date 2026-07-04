@@ -1,3 +1,5 @@
+mod instance_file_service_impl;
 mod instance_watcher_service_impl;
 
+pub use instance_file_service_impl::FsInstanceFileService;
 pub use instance_watcher_service_impl::InstanceWatcherServiceImpl;

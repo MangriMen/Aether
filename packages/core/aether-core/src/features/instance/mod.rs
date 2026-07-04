@@ -2,6 +2,9 @@ mod app;
 mod domain;
 pub mod infra;
 
+#[cfg(test)]
+mod tests;
+
 // ── Domain models (pure data containers) ──
 pub use domain::{
     AtomicInstallParams, BaseContentParams, CapabilityMetadata, ContentFile, ContentFileUpdateInfo,
