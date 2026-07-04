@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Instance Deletion:** Fixed an issue where deleting an instance didn't fully clean up its files, folders, and associated content packs — everything is now properly removed.
 - **Markdown Renderer:** Fixed colors, images, inline videos, and other rendering issues in the Markdown renderer.
 - **Instance Card:** Fixed context menu for instance cards and other interactive elements.
 - **Instance Settings Dialog:** Fixed dialog height being too small.
