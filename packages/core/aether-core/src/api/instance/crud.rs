@@ -112,6 +112,7 @@ pub async fn create(new_instance: NewInstance) -> crate::Result<String> {
         locator.location_info.clone(),
         locator.get_event_emitter().await,
         locator.get_instance_watcher_service().await?,
+        Arc::new(FsInstanceFileService::new(locator.location_info.clone())),
     )
     .execute(new_instance)
     .await?)

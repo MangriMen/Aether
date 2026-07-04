@@ -1,27 +1,20 @@
-use std::sync::Arc;
-
 use path_slash::PathBufExt;
+use std::sync::Arc;
 use tracing::error;
 
 use crate::{
-    features::{
-        instance::{
-            ContentInstallParams, ContentProvider, ContentType, InstanceError, PackFile,
-            PackStorage,
-        },
-        settings::LocationInfo,
+    features::instance::{
+        ContentInstallParams, ContentProvider, ContentType, InstanceError, PackFile, PackStorage,
+        app::ContentFileService,
     },
-    shared::{
-        capability::domain::CapabilityRegistry,
-        io::infra::{create_dir_all, remove_file, rename},
-    },
+    shared::capability::domain::CapabilityRegistry,
 };
 
 pub struct InstallContentUseCase<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
 {
     pack_storage: Arc<PS>,
     provider_registry: Arc<CP>,
-    location_info: Arc<LocationInfo>,
+    content_file_service: Arc<dyn ContentFileService>,
 }
 
 impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
@@ -30,12 +23,12 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
     pub fn new(
         pack_storage: Arc<PS>,
         provider_registry: Arc<CP>,
-        location_info: Arc<LocationInfo>,
+        content_file_service: Arc<dyn ContentFileService>,
     ) -> Self {
         Self {
             pack_storage,
             provider_registry,
-            location_info,
+            content_file_service,
         }
     }
 
@@ -84,20 +77,14 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
                     }
 
                     let content_path = instance_file.metadata.content_path.clone();
-                    let absolute_content_path = self
-                        .location_info
-                        .instance_dir(&params.instance_id)
-                        .join(&content_path);
 
-                    if let Some(parent) = absolute_content_path.parent() {
-                        create_dir_all(parent)
-                            .await
-                            .map_err(|err| InstanceError::Storage(err.to_string()))?;
-                    }
-
-                    rename(instance_file.temp_path.clone(), absolute_content_path)
-                        .await
-                        .map_err(|err| InstanceError::Storage(err.to_string()))?;
+                    self.content_file_service
+                        .install_content_file(
+                            &params.instance_id,
+                            &content_path,
+                            &instance_file.temp_path,
+                        )
+                        .await?;
 
                     self.pack_storage
                         .update_pack_file(
@@ -113,8 +100,6 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
 
                 if install_result.is_err() {
                     error!("Failed to install content: {:?}", install_result);
-                    let _ = remove_file(&instance_file.temp_path).await;
-                    return install_result;
                 }
             }
             ContentInstallParams::Modpack(params) => {

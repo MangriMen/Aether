@@ -1,10 +1,12 @@
 import type { SearchParams } from '@solidjs/router';
 
 import { isContentType } from '@/entities/instances';
+import { ROUTES } from '@/shared/config';
 import {
   parseSearchParamToNumber,
   parseSearchParamToString,
   parseSearchParamToStringArray,
+  searchParamsToQueryString,
 } from '@/shared/lib';
 
 import type { ContentPageSearchParams } from '../model';
@@ -63,4 +65,26 @@ export const encodeContentSearchParams = (
       : undefined,
     loaders: filters.loaders?.length ? filters.loaders : undefined,
   };
+};
+
+export const createContentPageHref = (
+  contentId: string,
+  params: {
+    instanceId: string | undefined;
+    providerId: { pluginId: string; capabilityId: string } | undefined;
+  },
+): string => {
+  const encodedFilters = encodeContentSearchParams({
+    instanceId: params.instanceId,
+    providerId: params.providerId,
+  });
+  const queryString = searchParamsToQueryString(encodedFilters);
+
+  const baseUrl = ROUTES.CONTENT_ITEM(contentId);
+
+  if (!queryString) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}?${queryString}`;
 };

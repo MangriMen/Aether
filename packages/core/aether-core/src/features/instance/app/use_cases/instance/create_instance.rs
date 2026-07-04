@@ -5,21 +5,18 @@ use std::{
 
 use log::{error, info};
 
-use crate::{
-    features::{
-        events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
-        instance::{
-            Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
-            PackInfo,
-        },
-        java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
-        minecraft::{
-            LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
-            MinecraftApplicationError, MinecraftDownloader, ModLoader, ModLoaderProcessor,
-        },
-        settings::LocationInfo,
+use crate::features::{
+    events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
+    instance::{
+        Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
+        PackInfo, app::InstanceFileService,
     },
-    shared::io::infra::create_dir_all,
+    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
+    minecraft::{
+        LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftApplicationError,
+        MinecraftDownloader, ModLoader, ModLoaderProcessor,
+    },
+    settings::LocationInfo,
 };
 
 use super::InstallInstanceUseCase;
@@ -54,6 +51,7 @@ pub struct CreateInstanceUseCase<
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<IWS>,
+    instance_file_service: Arc<dyn InstanceFileService>,
 }
 
 impl<
@@ -79,6 +77,7 @@ impl<
         location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<IWS>,
+        instance_file_service: Arc<dyn InstanceFileService>,
     ) -> Self {
         Self {
             instance_storage,
@@ -87,6 +86,7 @@ impl<
             location_info,
             event_emitter,
             instance_watcher_service,
+            instance_file_service,
         }
     }
     async fn setup_instance(
@@ -121,7 +121,11 @@ impl<
         } = new_instance;
 
         let (instance_dir, sanitized_name) =
-            create_unique_instance_dir(&name, &self.location_info.instances_dir()).await?;
+            create_unique_instance_path(&name, &self.location_info.instances_dir());
+
+        self.instance_file_service
+            .create_instance_dir(&sanitized_name)
+            .await?;
 
         info!(
             "Creating instance \"{}\" at path \"{}\"",
@@ -207,17 +211,6 @@ fn build_instance(
     .with_icon(icon_path.cloned())
     .with_pack_info(pack_info.cloned())
     .build()
-}
-
-async fn create_unique_instance_dir(
-    name: &str,
-    base_dir: &Path,
-) -> Result<(PathBuf, String), InstanceError> {
-    let (instance_path, sanitized_name) = create_unique_instance_path(name, base_dir);
-    create_dir_all(&instance_path)
-        .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?;
-    Ok((instance_path, sanitized_name))
 }
 
 fn create_unique_instance_path(name: &str, base_dir: &Path) -> (PathBuf, String) {

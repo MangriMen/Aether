@@ -7,7 +7,7 @@ use crate::{
         instance::{app::InstanceFileService, domain::InstanceError},
         settings::LocationInfo,
     },
-    shared::io::infra::remove_dir_all,
+    shared::io::infra::{create_dir_all, remove_dir_all},
 };
 
 pub struct FsInstanceFileService {
@@ -22,6 +22,14 @@ impl FsInstanceFileService {
 
 #[async_trait]
 impl InstanceFileService for FsInstanceFileService {
+    async fn create_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {
+        let instance_dir = self.location_info.instance_dir(instance_id);
+
+        create_dir_all(&instance_dir)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
     async fn remove_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
 

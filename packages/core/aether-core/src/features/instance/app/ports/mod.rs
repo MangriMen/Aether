@@ -1,3 +1,4 @@
+mod content_file_service;
 mod content_provider;
 mod importer;
 mod instance_file_service;
@@ -6,6 +7,7 @@ mod instance_watcher_service;
 mod pack_storage;
 mod updater;
 
+pub use content_file_service::ContentFileService;
 pub use content_provider::ContentProvider;
 pub use importer::Importer;
 pub use instance_file_service::InstanceFileService;
