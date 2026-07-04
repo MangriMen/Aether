@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -8,7 +8,7 @@ use crate::{
         instance::{app::ContentFileService, domain::InstanceError},
         settings::LocationInfo,
     },
-    shared::io::infra::{remove_file, rename},
+    shared::io::infra::{create_dir_all, remove_file, rename},
 };
 
 pub struct FsContentFileService {
@@ -98,5 +98,27 @@ impl ContentFileService for FsContentFileService {
         }
 
         Ok(())
+    }
+
+    async fn install_content_file(
+        &self,
+        instance_id: &str,
+        content_path: &str,
+        temp_path: &Path,
+    ) -> Result<(), InstanceError> {
+        let absolute_content_path = self
+            .location_info
+            .instance_dir(instance_id)
+            .join(content_path);
+
+        if let Some(parent) = absolute_content_path.parent() {
+            create_dir_all(parent)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        }
+
+        rename(temp_path, absolute_content_path)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 }

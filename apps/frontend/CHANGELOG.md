@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Content Deletion:** Fixed an issue where removing mods or other content from an instance only removed the database entry but left the actual files on disk — everything is now properly cleaned up.
 - **Instance Deletion:** Fixed an issue where deleting an instance didn't fully clean up its files, folders, and associated content packs — everything is now properly removed.
 - **Markdown Renderer:** Fixed colors, images, inline videos, and other rendering issues in the Markdown renderer.
 - **Instance Card:** Fixed context menu for instance cards and other interactive elements.
 - **Instance Settings Dialog:** Fixed dialog height being too small.
 - **Settings Dialog:** Fixed settings dialog not closing on `Escape` key press.
+- **Content Install Button:** Fixed the install button in the content item page header not working — now triggers the same install flow as the list items.
+
+### Changed
+
+- **Performance & Stability:** Internal refactoring of file management logic for improved reliability and maintainability.
 
 ## [0.10.3] - 2026-06-30
 

@@ -121,7 +121,7 @@ pub async fn install_content(install_params: ContentInstallParams) -> crate::Res
     Ok(InstallContentUseCase::new(
         locator.get_pack_storage().await,
         locator.get_content_provider_registry().await,
-        locator.location_info.clone(),
+        locator.get_content_file_service().await,
     )
     .execute(install_params)
     .await?)

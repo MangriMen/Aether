@@ -1,10 +1,16 @@
 import { A } from '@solidjs/router';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  createMemo,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
 import { ContentInstallButton, type ContentItem } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 
-import { useContentListItem } from '../lib';
+import { createContentPageHref, useContentItemActions } from '../lib';
+import { useContentContext } from '../model';
 import { ContentItemInfo } from './ContentItemInfo';
 
 export type ContentListItemProps = ComponentProps<'div'> & {
@@ -14,13 +20,17 @@ export type ContentListItemProps = ComponentProps<'div'> & {
 export const ContentListItem: Component<ContentListItemProps> = (props) => {
   const [local, others] = splitProps(props, ['item', 'class']);
 
-  const {
-    requestInstall,
-    isInstalling,
-    isInstalled,
-    isLoading,
-    contentPageHref,
-  } = useContentListItem(() => local.item);
+  const [context] = useContentContext();
+
+  const { isInstalled, isInstalling, isPrefetching, requestInstall } =
+    useContentItemActions(() => local.item);
+
+  const contentPageHref = createMemo(() =>
+    createContentPageHref(local.item.id, {
+      instanceId: context.instanceId,
+      providerId: context.providerId,
+    }),
+  );
 
   const handleInstall = (e: MouseEvent) => {
     e.stopPropagation();
@@ -49,7 +59,7 @@ export const ContentListItem: Component<ContentListItemProps> = (props) => {
         <ContentInstallButton
           isInstalling={isInstalling()}
           isInstalled={isInstalled()}
-          isLoading={isLoading()}
+          isLoading={isPrefetching()}
           onClick={handleInstall}
         />
       </div>

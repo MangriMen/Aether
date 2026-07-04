@@ -17,7 +17,7 @@ import {
   Skeleton,
 } from '@/shared/ui';
 
-import { useContentContext } from '../model';
+import { useContentItemActions } from '../lib';
 
 export type ContentItemPageInfoProps = {
   item: ContentItem | undefined;
@@ -37,21 +37,9 @@ export const ContentItemPageInfo: Component<
 
   const [{ t }] = useTranslation();
 
-  const [context, { createIsInstalled, createIsInstalling }] =
-    useContentContext();
-
-  const isInstalledMemo = createMemo(() =>
-    createIsInstalled(
-      () => local.item?.id,
-      () => context.instanceId,
-    ),
+  const { isInstalled, isInstalling, requestInstall } = useContentItemActions(
+    () => local.item,
   );
-  const isInstalled = () => isInstalledMemo()();
-
-  const isInstallingMemo = createMemo(() =>
-    createIsInstalling(() => local.item?.id),
-  );
-  const isInstalling = () => isInstallingMemo()();
 
   const itemIsLoading = createMemo(() => !local.item && local.isLoading);
 
@@ -88,6 +76,7 @@ export const ContentItemPageInfo: Component<
               as={Button}
               loading={itemIsLoading() || isInstalling()}
               disabled={isInstalled()}
+              onClick={requestInstall}
             >
               <MdiDownloadIcon />
               {t('common.install')}
