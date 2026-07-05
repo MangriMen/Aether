@@ -24,4 +24,4 @@ pub trait ProgressServiceExt: ProgressService {
     }
 }
 
-impl<T: ProgressService> ProgressServiceExt for T {}
+impl<T: ?Sized + ProgressService> ProgressServiceExt for T {}

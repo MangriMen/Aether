@@ -5,25 +5,24 @@ use tokio::process::Command;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        instance::InstanceStorage,
-        process::{MinecraftProcessMetadata, ProcessError, ProcessStorage},
+        process::{ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStorage},
     },
     shared::io::domain::IoError,
 };
 
-use super::{ManageProcessParams, ManageProcessUseCase};
+use super::ManageProcessParams;
 
-pub struct StartProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
+pub struct StartProcessUseCase {
     event_emitter: SharedEventEmitter,
-    process_storage: Arc<PS>,
-    manage_process_use_case: Arc<ManageProcessUseCase<PS, IS>>,
+    process_storage: Arc<dyn ProcessStorage>,
+    manage_process_use_case: Arc<dyn ManageProcessService>,
 }
 
-impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUseCase<PS, IS> {
+impl StartProcessUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        process_storage: Arc<PS>,
-        manage_process_use_case: Arc<ManageProcessUseCase<PS, IS>>,
+        process_storage: Arc<dyn ProcessStorage>,
+        manage_process_use_case: Arc<dyn ManageProcessService>,
     ) -> Self {
         Self {
             event_emitter,

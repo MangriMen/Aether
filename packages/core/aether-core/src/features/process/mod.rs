@@ -4,7 +4,7 @@ pub mod infra;
 
 pub use app::{
     GetProcessMetadataByInstanceIdUseCase, KillProcessUseCase, ListProcessMetadataUseCase,
-    ManageProcessUseCase, ProcessStorage, StartProcessUseCase, TrackProcessUseCase,
-    WaitForProcessUseCase,
+    ManageProcessService, ManageProcessUseCase, ProcessStorage, StartProcessUseCase,
+    TrackProcessService, TrackProcessUseCase, WaitForProcessUseCase,
 };
 pub use domain::{MinecraftProcessMetadata, ProcessError};

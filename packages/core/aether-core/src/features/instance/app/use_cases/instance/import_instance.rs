@@ -15,12 +15,12 @@ pub struct ImportInstance {
     pub path: String,
 }
 
-pub struct ImportInstanceUseCase<IR: CapabilityRegistry<Arc<dyn Importer>>> {
-    importers_registry: Arc<IR>,
+pub struct ImportInstanceUseCase {
+    importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
 }
 
-impl<IR: CapabilityRegistry<Arc<dyn Importer>>> ImportInstanceUseCase<IR> {
-    pub fn new(importers_registry: Arc<IR>) -> Self {
+impl ImportInstanceUseCase {
+    pub fn new(importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>) -> Self {
         Self { importers_registry }
     }
 

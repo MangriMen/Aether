@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::events::{ProgressBar, ProgressBarStorage};
 
-pub struct ListProgressBarsUseCase<PBS: ProgressBarStorage> {
-    progress_bar_storage: Arc<PBS>,
+pub struct ListProgressBarsUseCase {
+    progress_bar_storage: Arc<dyn ProgressBarStorage>,
 }
 
-impl<PBS: ProgressBarStorage> ListProgressBarsUseCase<PBS> {
-    pub fn new(progress_bar_storage: Arc<PBS>) -> Self {
+impl ListProgressBarsUseCase {
+    pub fn new(progress_bar_storage: Arc<dyn ProgressBarStorage>) -> Self {
         Self {
             progress_bar_storage,
         }

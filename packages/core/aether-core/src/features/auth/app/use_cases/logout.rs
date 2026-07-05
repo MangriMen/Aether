@@ -7,12 +7,12 @@ use crate::features::auth::{
     domain::AuthDomainError,
 };
 
-pub struct LogoutUseCase<CS: CredentialsStorage> {
-    credentials_storage: Arc<CS>,
+pub struct LogoutUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
 }
 
-impl<CS: CredentialsStorage> LogoutUseCase<CS> {
-    pub fn new(credentials_storage: Arc<CS>) -> Self {
+impl LogoutUseCase {
+    pub fn new(credentials_storage: Arc<dyn CredentialsStorage>) -> Self {
         Self {
             credentials_storage,
         }

@@ -5,12 +5,12 @@ use uuid::Uuid;
 use super::super::super::domain::ProcessError;
 use super::super::ports::ProcessStorage;
 
-pub struct WaitForProcessUseCase<PS: ProcessStorage> {
-    process_storage: Arc<PS>,
+pub struct WaitForProcessUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
 }
 
-impl<PS: ProcessStorage> WaitForProcessUseCase<PS> {
-    pub fn new(process_storage: Arc<PS>) -> Self {
+impl WaitForProcessUseCase {
+    pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
 

@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::instance::{Instance, InstanceError, InstanceStorage};
 
-pub struct ListInstancesUseCase<IS> {
-    instance_storage: Arc<IS>,
+pub struct ListInstancesUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<IS: InstanceStorage> ListInstancesUseCase<IS> {
-    pub fn new(instance_storage: Arc<IS>) -> Self {
+impl ListInstancesUseCase {
+    pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
 

@@ -64,8 +64,11 @@ impl SettingsStorage for FsSettingsStorage {
         self.store.write(&(&settings).into()).await?;
         Ok(settings)
     }
+}
 
-    async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
+impl FsSettingsStorage {
+    /// Same signature as `SettingsStorage` trait but with boxed closure for object-safety.
+    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
     where
         F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
     {

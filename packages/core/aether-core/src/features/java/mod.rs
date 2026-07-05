@@ -16,8 +16,10 @@ pub use app::{
     // Application Error
     JavaApplicationError,
     // Outbound Ports (re-exported explicitly for cross-feature consumption)
+    JavaInstallService,
     JavaInstallationService,
     JavaInstallationTracker,
+    JavaQueryService,
     JavaStorage,
     JreProvider,
     ListJavaUseCase,

@@ -1,60 +1,34 @@
 use std::sync::Arc;
 
 use crate::{
-    core::{LazyLocator, domain::ProgressServiceType},
+    core::LazyLocator,
     features::{
         auth::Credential,
         instance::{
             InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
-            infra::{EventEmittingInstanceStorage, SqliteInstanceStorage},
         },
         java::{
             GetJavaUseCase, InstallJavaUseCase,
-            infra::{
-                AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker,
-                SqliteJavaStorage,
-            },
+            infra::{AzulJreProvider, FsJavaInstallationService},
         },
         minecraft::{
             GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
             LoaderVersionResolver, MinecraftHealthService,
             infra::{
-                AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor,
-                LibrariesService, MinecraftDownloadResolver, MinecraftDownloadService,
-                ModrinthMetadataStorage,
+                AssetsService, ClientService, ForgeProcessor, LibrariesService,
+                MinecraftDownloadResolver, MinecraftDownloadService,
             },
         },
         process::{
             GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, MinecraftProcessMetadata,
-            StartProcessUseCase, TrackProcessUseCase, infra::InMemoryProcessStorage,
+            StartProcessUseCase, TrackProcessUseCase,
         },
-        settings::infra::SqliteDefaultInstanceSettingsStorage,
     },
-    shared::cache::infra::{FileCache, SqliteCache},
-    shared::request_client::infra::ReqwestClient,
+    shared::cache::infra::FileCache,
 };
 
 #[allow(clippy::too_many_lines)]
-async fn get_launch_instance_use_case(
-    locator: &LazyLocator,
-) -> LaunchInstanceUseCase<
-    EventEmittingInstanceStorage<SqliteInstanceStorage>,
-    CachedMetadataStorage<SqliteCache, ModrinthMetadataStorage<ReqwestClient<ProgressServiceType>>>,
-    InMemoryProcessStorage,
-    SqliteDefaultInstanceSettingsStorage,
-    MinecraftDownloadService<
-        ReqwestClient<ProgressServiceType>,
-        ProgressServiceType,
-        FileCache<MinecraftDownloadResolver>,
-        FileCache<MinecraftDownloadResolver>,
-    >,
-    ForgeProcessor<ProgressServiceType>,
-    ProgressServiceType,
-    FsJavaInstallationService,
-    SqliteJavaStorage,
-    AzulJreProvider<ProgressServiceType, ReqwestClient<ProgressServiceType>>,
-    MemoryJavaInstallationTracker,
-> {
+async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUseCase {
     let loader_version_resolver = Arc::new(LoaderVersionResolver::new(
         locator.get_metadata_storage().await,
     ));
@@ -95,7 +69,7 @@ async fn get_launch_instance_use_case(
 
     let get_java_use_case = Arc::new(GetJavaUseCase::new(
         locator.get_java_storage().await,
-        FsJavaInstallationService,
+        Arc::new(FsJavaInstallationService),
     ));
 
     let jre_provider = Arc::new(AzulJreProvider::new(
@@ -105,7 +79,7 @@ async fn get_launch_instance_use_case(
 
     let install_java_use_case = Arc::new(InstallJavaUseCase::new(
         locator.get_java_storage().await,
-        FsJavaInstallationService,
+        Arc::new(FsJavaInstallationService),
         jre_provider,
         locator.location_info.clone(),
         locator.get_java_installation_tracker().await,
@@ -123,9 +97,9 @@ async fn get_launch_instance_use_case(
     let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
         loader_version_resolver.clone(),
         get_loader_manifest_use_case.clone(),
-        minecraft_download_service,
+        Arc::new(minecraft_download_service),
         forge_processor,
-        FsJavaInstallationService,
+        Arc::new(FsJavaInstallationService),
         get_java_use_case.clone(),
         install_java_use_case.clone(),
     ));
@@ -187,7 +161,7 @@ async fn get_launch_instance_use_case(
     let minecraft_health_service = Arc::new(MinecraftHealthService::new(
         loader_version_resolver.clone(),
         get_version_manifest_use_case.clone(),
-        minecraft_download_service,
+        Arc::new(minecraft_download_service),
         get_java_use_case.clone(),
         locator.location_info.clone(),
     ));
@@ -218,15 +192,15 @@ async fn get_launch_instance_use_case(
         minecraft_cache.clone(),
     );
 
-    let get_minecraft_launch_command_use_case = GetMinecraftLaunchCommandUseCase::new(
+    let get_minecraft_launch_command_use_case = Arc::new(GetMinecraftLaunchCommandUseCase::new(
         loader_version_resolver,
         get_version_manifest_use_case,
-        minecraft_download_service,
-        FsJavaInstallationService,
+        Arc::new(minecraft_download_service),
+        Arc::new(FsJavaInstallationService),
         get_java_use_case.clone(),
         install_java_use_case.clone(),
         locator.location_info.clone(),
-    );
+    ));
 
     LaunchInstanceUseCase::new(
         locator.get_plugin_registry().await,

@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::plugins::{PluginError, PluginSettings, PluginSettingsStorage};
 
-pub struct GetPluginSettingsUseCase<PSS: PluginSettingsStorage> {
-    plugin_settings_storage: Arc<PSS>,
+pub struct GetPluginSettingsUseCase {
+    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
 }
 
-impl<PSS: PluginSettingsStorage> GetPluginSettingsUseCase<PSS> {
-    pub fn new(plugin_settings_storage: Arc<PSS>) -> Self {
+impl GetPluginSettingsUseCase {
+    pub fn new(plugin_settings_storage: Arc<dyn PluginSettingsStorage>) -> Self {
         Self {
             plugin_settings_storage,
         }

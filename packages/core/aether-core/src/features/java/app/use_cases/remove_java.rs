@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::java::{JavaStorage, app::JavaApplicationError};
 
-pub struct RemoveJavaUseCase<JS: JavaStorage> {
-    java_storage: Arc<JS>,
+pub struct RemoveJavaUseCase {
+    java_storage: Arc<dyn JavaStorage>,
 }
 
-impl<JS: JavaStorage> RemoveJavaUseCase<JS> {
-    pub fn new(java_storage: Arc<JS>) -> Self {
+impl RemoveJavaUseCase {
+    pub fn new(java_storage: Arc<dyn JavaStorage>) -> Self {
         Self { java_storage }
     }
 

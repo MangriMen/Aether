@@ -5,24 +5,23 @@ use std::{
 
 use crate::features::{
     events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-    plugins::{Plugin, PluginError, PluginLoader, PluginRegistry, PluginStorage},
-    settings::SettingsStorage,
+    plugins::{Plugin, PluginError, PluginRegistry, PluginStorage},
 };
 
 use super::DisablePluginUseCase;
 
-pub struct SyncPluginsUseCase<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> {
-    plugin_storage: Arc<PS>,
+pub struct SyncPluginsUseCase {
+    plugin_storage: Arc<dyn PluginStorage>,
     plugin_registry: Arc<PluginRegistry>,
-    disable_plugin_use_case: DisablePluginUseCase<SS, PL>,
+    disable_plugin_use_case: DisablePluginUseCase,
     event_emitter: SharedEventEmitter,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCase<PS, SS, PL> {
+impl SyncPluginsUseCase {
     pub fn new(
-        plugin_storage: Arc<PS>,
+        plugin_storage: Arc<dyn PluginStorage>,
         plugin_registry: Arc<PluginRegistry>,
-        disable_plugin_use_case: DisablePluginUseCase<SS, PL>,
+        disable_plugin_use_case: DisablePluginUseCase,
         event_emitter: SharedEventEmitter,
     ) -> Self {
         Self {

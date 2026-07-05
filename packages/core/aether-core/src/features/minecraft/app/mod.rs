@@ -6,6 +6,9 @@ mod use_cases;
 
 pub use dtos::*;
 pub use error::*;
-pub use ports::*;
+pub use ports::{
+    LoaderVersionService, MetadataStorage, MinecraftDownloader, ModLoaderProcessor,
+    VersionManifestService,
+};
 pub use services::*;
 pub use use_cases::*;

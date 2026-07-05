@@ -104,7 +104,7 @@ async fn install(
 
     Ok(InstallJavaUseCase::new(
         locator.get_java_storage().await,
-        FsJavaInstallationService,
+        Arc::new(FsJavaInstallationService),
         jre_provider,
         locator.location_info.clone(),
         locator.get_java_installation_tracker().await,

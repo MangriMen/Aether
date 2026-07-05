@@ -5,12 +5,12 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct GetContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
-    provider_registry: Arc<CP>,
+pub struct GetContentUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> GetContentUseCase<CP> {
-    pub fn new(provider_registry: Arc<CP>) -> Self {
+impl GetContentUseCase {
+    pub fn new(provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>) -> Self {
         Self { provider_registry }
     }
 

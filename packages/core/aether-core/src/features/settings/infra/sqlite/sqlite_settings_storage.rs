@@ -1,12 +1,9 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 
-use crate::{
-    features::settings::{
-        DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
-        SettingsError, SettingsStorage,
-    },
-    shared::json_store::domain::UpdateAction,
+use crate::features::settings::{
+    DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
+    SettingsError, SettingsStorage,
 };
 
 pub struct SqliteSettingsStorage {
@@ -79,20 +76,5 @@ impl SettingsStorage for SqliteSettingsStorage {
         tx.commit().await?;
 
         Ok(settings)
-    }
-
-    async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
-    where
-        F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
-    {
-        let mut settings = self.get().await?;
-
-        match f(&mut settings) {
-            UpdateAction::Save(result) => {
-                self.upsert(settings).await?;
-                Ok(result)
-            }
-            UpdateAction::NoChanges(result) => Ok(result),
-        }
     }
 }

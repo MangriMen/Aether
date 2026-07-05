@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use dashmap::mapref::{
@@ -118,16 +119,19 @@ impl PluginRegistry {
 }
 
 #[derive(Default)]
-pub struct PluginLoaderRegistry<PL> {
-    loaders: HashMap<LoadConfigType, PL>,
+pub struct PluginLoaderRegistry {
+    loaders: HashMap<LoadConfigType, Arc<dyn PluginLoader>>,
 }
 
-impl<PL: PluginLoader> PluginLoaderRegistry<PL> {
-    pub fn new(loaders: HashMap<LoadConfigType, PL>) -> Self {
+impl PluginLoaderRegistry {
+    pub fn new(loaders: HashMap<LoadConfigType, Arc<dyn PluginLoader>>) -> Self {
         Self { loaders }
     }
 
-    pub fn get(&self, load_config_type: &LoadConfigType) -> Result<&PL, PluginError> {
+    pub fn get(
+        &self,
+        load_config_type: &LoadConfigType,
+    ) -> Result<&Arc<dyn PluginLoader>, PluginError> {
         self.loaders
             .get(load_config_type)
             .ok_or(PluginError::LoaderNotFound {
@@ -135,7 +139,7 @@ impl<PL: PluginLoader> PluginLoaderRegistry<PL> {
             })
     }
 
-    pub fn register(&mut self, load_config_type: LoadConfigType, provider: PL) {
+    pub fn register(&mut self, load_config_type: LoadConfigType, provider: Arc<dyn PluginLoader>) {
         self.loaders.insert(load_config_type, provider);
     }
 

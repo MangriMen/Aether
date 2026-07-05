@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::settings::{Settings, SettingsError, SettingsStorage};
 
-pub struct GetSettingsUseCase<SS: SettingsStorage> {
-    settings_storage: Arc<SS>,
+pub struct GetSettingsUseCase {
+    settings_storage: Arc<dyn SettingsStorage>,
 }
 
-impl<SS: SettingsStorage> GetSettingsUseCase<SS> {
-    pub fn new(settings_storage: Arc<SS>) -> Self {
+impl GetSettingsUseCase {
+    pub fn new(settings_storage: Arc<dyn SettingsStorage>) -> Self {
         Self { settings_storage }
     }
 

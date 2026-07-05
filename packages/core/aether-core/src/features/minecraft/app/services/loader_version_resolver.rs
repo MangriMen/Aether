@@ -1,21 +1,18 @@
 use crate::features::minecraft::{
-    LoaderVersionPreference, MinecraftDomainError, ModLoader, modded,
+    LoaderVersionPreference, LoaderVersionService, MinecraftDomainError, ModLoader, modded,
 };
 
 use super::super::ports::MetadataStorage;
 
 use std::sync::Arc;
 
-pub struct LoaderVersionResolver<MS> {
-    metadata_storage: Arc<MS>,
+pub struct LoaderVersionResolver {
+    metadata_storage: Arc<dyn MetadataStorage>,
 }
 
-impl<MS: MetadataStorage> LoaderVersionResolver<MS> {
-    pub fn new(metadata_storage: Arc<MS>) -> Self {
-        Self { metadata_storage }
-    }
-
-    pub async fn resolve(
+#[async_trait::async_trait]
+impl LoaderVersionService for LoaderVersionResolver {
+    async fn resolve(
         &self,
         game_version: &str,
         loader: &ModLoader,
@@ -43,7 +40,7 @@ impl<MS: MetadataStorage> LoaderVersionResolver<MS> {
         .await
     }
 
-    pub async fn try_get_default(
+    async fn try_get_default(
         &self,
         game_version: &str,
         loader: &ModLoader,
@@ -72,6 +69,29 @@ impl<MS: MetadataStorage> LoaderVersionResolver<MS> {
         }
 
         Err(MinecraftDomainError::DefaultLoaderNotFound)
+    }
+}
+
+impl LoaderVersionResolver {
+    pub fn new(metadata_storage: Arc<dyn MetadataStorage>) -> Self {
+        Self { metadata_storage }
+    }
+
+    pub async fn resolve(
+        &self,
+        game_version: &str,
+        loader: &ModLoader,
+        loader_version: Option<&LoaderVersionPreference>,
+    ) -> Result<Option<modded::LoaderVersion>, MinecraftDomainError> {
+        LoaderVersionService::resolve(self, game_version, loader, loader_version).await
+    }
+
+    pub async fn try_get_default(
+        &self,
+        game_version: &str,
+        loader: &ModLoader,
+    ) -> Result<Option<LoaderVersionPreference>, MinecraftDomainError> {
+        LoaderVersionService::try_get_default(self, game_version, loader).await
     }
 }
 

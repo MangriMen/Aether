@@ -6,15 +6,13 @@ use std::{
 use log::{error, info};
 
 use crate::features::{
-    events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
+    events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
         PackInfo, app::InstanceFileService,
     },
-    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
     minecraft::{
-        LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftApplicationError,
-        MinecraftDownloader, ModLoader, ModLoaderProcessor,
+        LoaderVersionPreference, LoaderVersionResolver, MinecraftApplicationError, ModLoader,
     },
     settings::LocationInfo,
 };
@@ -32,51 +30,24 @@ pub struct NewInstance {
     pub pack_info: Option<PackInfo>,
 }
 
-pub struct CreateInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    IWS: InstanceWatcherService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    instance_storage: Arc<IS>,
-    loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-    #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>>,
+pub struct CreateInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    loader_version_resolver: Arc<LoaderVersionResolver>,
+    install_instance_use_case: Arc<InstallInstanceUseCase>,
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,
-    instance_watcher_service: Arc<IWS>,
+    instance_watcher_service: Arc<dyn InstanceWatcherService>,
     instance_file_service: Arc<dyn InstanceFileService>,
 }
 
-impl<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    IWS: InstanceWatcherService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> CreateInstanceUseCase<IS, MS, MD, PS, MLP, IWS, JIS, JS, JP, JIT>
-{
-    #[allow(clippy::type_complexity)]
+impl CreateInstanceUseCase {
     pub fn new(
-        instance_storage: Arc<IS>,
-        loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        install_instance_use_case: Arc<
-            InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>,
-        >,
+        instance_storage: Arc<dyn InstanceStorage>,
+        loader_version_resolver: Arc<LoaderVersionResolver>,
+        install_instance_use_case: Arc<InstallInstanceUseCase>,
         location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
-        instance_watcher_service: Arc<IWS>,
+        instance_watcher_service: Arc<dyn InstanceWatcherService>,
         instance_file_service: Arc<dyn InstanceFileService>,
     ) -> Self {
         Self {

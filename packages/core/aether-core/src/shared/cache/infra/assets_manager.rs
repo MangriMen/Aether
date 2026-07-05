@@ -23,9 +23,7 @@ impl<C: FileStore> FsAssetsStorage<C> {
 
 #[async_trait]
 impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
-    async fn import_file(&self, source: impl AsRef<Path> + Send) -> Result<String, AssetError> {
-        let source = source.as_ref();
-
+    async fn import_file(&self, source: &Path) -> Result<String, AssetError> {
         let ext = source
             .extension()
             .and_then(|e| e.to_str())

@@ -32,8 +32,8 @@ use crate::{
             infra::{CachedMetadataStorage, ModrinthMetadataStorage},
         },
         plugins::{
-            LoadConfigType, PluginLoaderRegistry, PluginProvider, PluginProviderFactory,
-            PluginRegistry,
+            LoadConfigType, PluginLoader, PluginLoaderRegistry, PluginProvider,
+            PluginProviderFactory, PluginRegistry,
             infra::{
                 ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage,
                 FsPluginStorage, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
@@ -100,7 +100,7 @@ pub struct LazyLocator {
     pack_storage: OnceCell<Arc<SqlitePackStorage>>,
     plugin_settings_storage: OnceCell<Arc<FsPluginSettingsStorage>>,
     plugin_registry: OnceCell<Arc<PluginRegistry>>,
-    plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry<ExtismPluginLoader>>>,
+    plugin_loader_registry: OnceCell<Arc<PluginLoaderRegistry>>,
     plugin_storage: OnceCell<Arc<FsPluginStorage>>,
     plugin_source_storage: OnceCell<Arc<FsPluginSourceStorage>>,
     plugin_provider_factory: OnceCell<Arc<PluginProviderFactory>>,
@@ -460,14 +460,13 @@ impl LazyLocator {
             .clone()
     }
 
-    pub async fn get_plugin_loader_registry(
-        &self,
-    ) -> Arc<PluginLoaderRegistry<ExtismPluginLoader>> {
+    pub async fn get_plugin_loader_registry(&self) -> Arc<PluginLoaderRegistry> {
         self.plugin_loader_registry
             .get_or_init(|| async {
                 let loaders = HashMap::from([(
                     LoadConfigType::Extism,
-                    ExtismPluginLoader::new(self.location_info.clone()),
+                    Arc::new(ExtismPluginLoader::new(self.location_info.clone()))
+                        as Arc<dyn PluginLoader>,
                 )]);
 
                 Arc::new(PluginLoaderRegistry::new(loaders))

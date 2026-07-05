@@ -7,12 +7,12 @@ use crate::features::auth::{
     domain::{Credential, Username},
 };
 
-pub struct CreateOfflineAccountUseCase<CS: CredentialsStorage> {
-    credentials_storage: Arc<CS>,
+pub struct CreateOfflineAccountUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
 }
 
-impl<CS: CredentialsStorage> CreateOfflineAccountUseCase<CS> {
-    pub fn new(credentials_storage: Arc<CS>) -> Self {
+impl CreateOfflineAccountUseCase {
+    pub fn new(credentials_storage: Arc<dyn CredentialsStorage>) -> Self {
         Self {
             credentials_storage,
         }

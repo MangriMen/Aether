@@ -6,12 +6,12 @@ use crate::features::auth::app::{ActiveAccountHelper, AuthApplicationError, Cred
 
 use super::super::Account;
 
-pub struct SetActiveAccountUseCase<CS: CredentialsStorage> {
-    credentials_storage: Arc<CS>,
+pub struct SetActiveAccountUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
 }
 
-impl<CS: CredentialsStorage> SetActiveAccountUseCase<CS> {
-    pub fn new(credentials_storage: Arc<CS>) -> Self {
+impl SetActiveAccountUseCase {
+    pub fn new(credentials_storage: Arc<dyn CredentialsStorage>) -> Self {
         Self {
             credentials_storage,
         }

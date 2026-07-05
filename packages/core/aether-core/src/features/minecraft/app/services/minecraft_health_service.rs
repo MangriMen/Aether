@@ -3,10 +3,10 @@ use std::{path::Path, sync::Arc};
 use daedalus::get_path_from_artifact;
 
 use crate::features::{
-    java::{GetJavaUseCase, JavaInstallationService, JavaStorage},
+    java::JavaQueryService,
     minecraft::{
-        GetVersionManifestUseCase, LoaderVersionPreference, LoaderVersionResolver, MetadataStorage,
-        MinecraftApplicationError, MinecraftDownloader, ModLoader, get_compatible_java_version,
+        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
+        MinecraftDownloader, ModLoader, VersionManifestService, get_compatible_java_version,
         parse_rules, resolve_minecraft_version, vanilla,
     },
     settings::LocationInfo,
@@ -21,27 +21,20 @@ pub struct MinecraftHealthParams {
 }
 
 #[allow(dead_code)]
-pub struct MinecraftHealthService<
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-> {
-    loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-    get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-    minecraft_downloader: MD,
-    get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
+pub struct MinecraftHealthService {
+    loader_version_resolver: Arc<dyn LoaderVersionService>,
+    get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+    minecraft_downloader: Arc<dyn MinecraftDownloader>,
+    get_java_use_case: Arc<dyn JavaQueryService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<MS: MetadataStorage, MD: MinecraftDownloader, JIS: JavaInstallationService, JS: JavaStorage>
-    MinecraftHealthService<MS, MD, JIS, JS>
-{
+impl MinecraftHealthService {
     pub fn new(
-        loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-        minecraft_downloader: MD,
-        get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
+        loader_version_resolver: Arc<dyn LoaderVersionService>,
+        get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+        minecraft_downloader: Arc<dyn MinecraftDownloader>,
+        get_java_use_case: Arc<dyn JavaQueryService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {

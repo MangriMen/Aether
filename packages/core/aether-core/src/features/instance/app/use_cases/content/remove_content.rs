@@ -19,16 +19,16 @@ impl RemoveContent {
     }
 }
 
-pub struct RemoveContentUseCase<PS: PackStorage> {
+pub struct RemoveContentUseCase {
     event_emitter: SharedEventEmitter,
-    pack_storage: Arc<PS>,
+    pack_storage: Arc<dyn PackStorage>,
     content_file_service: Arc<dyn ContentFileService>,
 }
 
-impl<PS: PackStorage> RemoveContentUseCase<PS> {
+impl RemoveContentUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        pack_storage: Arc<PS>,
+        pack_storage: Arc<dyn PackStorage>,
         content_file_service: Arc<dyn ContentFileService>,
     ) -> Self {
         Self {

@@ -1,23 +1,18 @@
 use std::{path::Path, sync::Arc};
 
-use crate::features::java::{Java, JavaInstallationService, JavaStorage, domain::JavaDomainError};
+use crate::features::java::{
+    Java, JavaApplicationError, JavaInstallationService, JavaQueryService, JavaStorage,
+    domain::JavaDomainError,
+};
 
-use super::super::JavaApplicationError;
-
-pub struct GetJavaUseCase<JS: JavaStorage, JIS: JavaInstallationService> {
-    storage: Arc<JS>,
-    java_installation_service: JIS,
+pub struct GetJavaUseCase {
+    storage: Arc<dyn JavaStorage>,
+    java_installation_service: Arc<dyn JavaInstallationService>,
 }
 
-impl<JS: JavaStorage, JIS: JavaInstallationService> GetJavaUseCase<JS, JIS> {
-    pub fn new(storage: Arc<JS>, java_installation_service: JIS) -> Self {
-        Self {
-            storage,
-            java_installation_service,
-        }
-    }
-
-    pub async fn execute(&self, version: u32) -> Result<Java, JavaApplicationError> {
+#[async_trait::async_trait]
+impl JavaQueryService for GetJavaUseCase {
+    async fn execute(&self, version: u32) -> Result<Java, JavaApplicationError> {
         let java = self
             .storage
             .get(version)
@@ -28,5 +23,21 @@ impl<JS: JavaStorage, JIS: JavaInstallationService> GetJavaUseCase<JS, JIS> {
             .java_installation_service
             .locate_java(Path::new(java.path()))
             .await?)
+    }
+}
+
+impl GetJavaUseCase {
+    pub fn new(
+        storage: Arc<dyn JavaStorage>,
+        java_installation_service: Arc<dyn JavaInstallationService>,
+    ) -> Self {
+        Self {
+            storage,
+            java_installation_service,
+        }
+    }
+
+    pub async fn execute(&self, version: u32) -> Result<Java, JavaApplicationError> {
+        JavaQueryService::execute(self, version).await
     }
 }

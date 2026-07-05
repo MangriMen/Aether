@@ -15,13 +15,13 @@ use crate::{
     shared::{hash::infra::sha1_async, io::infra::read_async},
 };
 
-pub struct ListContentUseCase<PS: PackStorage> {
-    pack_storage: Arc<PS>,
+pub struct ListContentUseCase {
+    pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<PS: PackStorage> ListContentUseCase<PS> {
-    pub fn new(pack_storage: Arc<PS>, location_info: Arc<LocationInfo>) -> Self {
+impl ListContentUseCase {
+    pub fn new(pack_storage: Arc<dyn PackStorage>, location_info: Arc<LocationInfo>) -> Self {
         Self {
             pack_storage,
             location_info,

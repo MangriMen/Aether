@@ -2,12 +2,12 @@ use std::{collections::HashSet, sync::Arc};
 
 use crate::features::java::JavaInstallationTracker;
 
-pub struct GetActiveJavaInstallationsUseCase<JIT: JavaInstallationTracker> {
-    java_installation_tracker: Arc<JIT>,
+pub struct GetActiveJavaInstallationsUseCase {
+    java_installation_tracker: Arc<dyn JavaInstallationTracker>,
 }
 
-impl<JIT: JavaInstallationTracker> GetActiveJavaInstallationsUseCase<JIT> {
-    pub fn new(java_installation_tracker: Arc<JIT>) -> Self {
+impl GetActiveJavaInstallationsUseCase {
+    pub fn new(java_installation_tracker: Arc<dyn JavaInstallationTracker>) -> Self {
         Self {
             java_installation_tracker,
         }

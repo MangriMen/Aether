@@ -5,12 +5,12 @@ use crate::{
     shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
 };
 
-pub struct ListImportersUseCase<IR: CapabilityRegistry<Arc<dyn Importer>>> {
-    importers_registry: Arc<IR>,
+pub struct ListImportersUseCase {
+    importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
 }
 
-impl<IR: CapabilityRegistry<Arc<dyn Importer>>> ListImportersUseCase<IR> {
-    pub fn new(importers_registry: Arc<IR>) -> Self {
+impl ListImportersUseCase {
+    pub fn new(importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>) -> Self {
         Self { importers_registry }
     }
 

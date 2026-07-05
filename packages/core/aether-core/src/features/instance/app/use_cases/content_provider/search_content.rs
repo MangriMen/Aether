@@ -7,12 +7,12 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct SearchContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
-    provider_registry: Arc<CP>,
+pub struct SearchContentUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> SearchContentUseCase<CP> {
-    pub fn new(provider_registry: Arc<CP>) -> Self {
+impl SearchContentUseCase {
+    pub fn new(provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>) -> Self {
         Self { provider_registry }
     }
 

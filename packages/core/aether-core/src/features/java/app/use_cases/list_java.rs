@@ -4,12 +4,12 @@ use crate::features::java::{Java, JavaStorage};
 
 use super::super::JavaApplicationError;
 
-pub struct ListJavaUseCase<JS: JavaStorage> {
-    storage: Arc<JS>,
+pub struct ListJavaUseCase {
+    storage: Arc<dyn JavaStorage>,
 }
 
-impl<JS: JavaStorage> ListJavaUseCase<JS> {
-    pub fn new(storage: Arc<JS>) -> Self {
+impl ListJavaUseCase {
+    pub fn new(storage: Arc<dyn JavaStorage>) -> Self {
         Self { storage }
     }
 

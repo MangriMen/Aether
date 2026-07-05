@@ -1,30 +1,20 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::features::{
-    plugins::{PluginError, PluginExtractor, PluginLoader, PluginStorage},
-    settings::SettingsStorage,
-};
+use crate::features::plugins::{PluginError, PluginExtractor, PluginStorage};
 
 use super::SyncPluginsUseCase;
 
-pub struct ImportPluginsUseCase<
-    PS: PluginStorage,
-    SS: SettingsStorage,
-    PL: PluginLoader,
-    PE: PluginExtractor,
-> {
-    plugin_extractor: Arc<PE>,
-    plugin_storage: Arc<PS>,
-    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+pub struct ImportPluginsUseCase {
+    plugin_extractor: Arc<dyn PluginExtractor>,
+    plugin_storage: Arc<dyn PluginStorage>,
+    sync_plugins_use_case: Arc<SyncPluginsUseCase>,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader, PE: PluginExtractor>
-    ImportPluginsUseCase<PS, SS, PL, PE>
-{
+impl ImportPluginsUseCase {
     pub fn new(
-        plugin_extractor: Arc<PE>,
-        plugin_storage: Arc<PS>,
-        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+        plugin_extractor: Arc<dyn PluginExtractor>,
+        plugin_storage: Arc<dyn PluginStorage>,
+        sync_plugins_use_case: Arc<SyncPluginsUseCase>,
     ) -> Self {
         Self {
             plugin_extractor,

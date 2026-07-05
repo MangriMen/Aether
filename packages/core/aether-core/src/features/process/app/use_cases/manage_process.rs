@@ -5,14 +5,13 @@ use uuid::Uuid;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        instance::InstanceStorage,
-        process::{ProcessError, ProcessStorage},
+        process::{ManageProcessService, ProcessError, ProcessStorage, TrackProcessService},
         settings::LocationInfo,
     },
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
-use super::{TrackProcessParams, TrackProcessUseCase};
+use super::TrackProcessParams;
 
 pub struct ManageProcessParams {
     pub process_id: Uuid,
@@ -20,18 +19,25 @@ pub struct ManageProcessParams {
     pub post_exit_command: String,
 }
 
-pub struct ManageProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
+pub struct ManageProcessUseCase {
     event_emitter: SharedEventEmitter,
-    process_storage: Arc<PS>,
-    track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
+    process_storage: Arc<dyn ProcessStorage>,
+    track_process_use_case: Arc<dyn TrackProcessService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
+#[async_trait::async_trait]
+impl ManageProcessService for ManageProcessUseCase {
+    async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
+        self.execute_inner(params).await
+    }
+}
+
+impl ManageProcessUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        process_storage: Arc<PS>,
-        track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
+        process_storage: Arc<dyn ProcessStorage>,
+        track_process_use_case: Arc<dyn TrackProcessService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
@@ -41,7 +47,8 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
             location_info,
         }
     }
-    pub async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
+
+    async fn execute_inner(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
         let ManageProcessParams {
             process_id,
             instance_id,
@@ -72,6 +79,10 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
         }
 
         Ok(())
+    }
+
+    pub async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
+        ManageProcessService::execute(self, params).await
     }
 
     fn run_post_exit(&self, command: &str, instance_id: &str) -> Result<(), ProcessError> {

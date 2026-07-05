@@ -5,12 +5,12 @@ use uuid::Uuid;
 use super::super::super::domain::ProcessError;
 use super::super::ports::ProcessStorage;
 
-pub struct KillProcessUseCase<PS: ProcessStorage> {
-    process_storage: Arc<PS>,
+pub struct KillProcessUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
 }
 
-impl<PS: ProcessStorage> KillProcessUseCase<PS> {
-    pub fn new(process_storage: Arc<PS>) -> Self {
+impl KillProcessUseCase {
+    pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
     pub async fn execute(&self, process_id: Uuid) -> Result<(), ProcessError> {

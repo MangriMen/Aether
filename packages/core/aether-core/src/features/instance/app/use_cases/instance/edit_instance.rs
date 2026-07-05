@@ -7,12 +7,12 @@ use crate::features::instance::{
     domain::{InstanceField, InstanceValidationErrorReason},
 };
 
-pub struct EditInstanceUseCase<IS> {
-    instance_storage: Arc<IS>,
+pub struct EditInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
-    pub fn new(instance_storage: Arc<IS>) -> Self {
+impl EditInstanceUseCase {
+    pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
 

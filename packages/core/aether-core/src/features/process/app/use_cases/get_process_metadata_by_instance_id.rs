@@ -3,12 +3,12 @@ use std::sync::Arc;
 use super::super::super::domain::{MinecraftProcessMetadata, ProcessError};
 use super::super::ports::ProcessStorage;
 
-pub struct GetProcessMetadataByInstanceIdUseCase<PS: ProcessStorage> {
-    process_storage: Arc<PS>,
+pub struct GetProcessMetadataByInstanceIdUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
 }
 
-impl<PS: ProcessStorage> GetProcessMetadataByInstanceIdUseCase<PS> {
-    pub fn new(process_storage: Arc<PS>) -> Self {
+impl GetProcessMetadataByInstanceIdUseCase {
+    pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
 

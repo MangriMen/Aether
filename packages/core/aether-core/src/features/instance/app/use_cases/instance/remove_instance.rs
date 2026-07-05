@@ -5,21 +5,19 @@ use crate::features::instance::{
     InstanceError, InstanceStorage, InstanceWatcherService, PackStorage,
 };
 
-pub struct RemoveInstanceUseCase<IS, IWS, IFS, PS> {
-    storage: Arc<IS>,
-    watcher_service: Arc<IWS>,
-    file_service: Arc<IFS>,
-    pack_storage: Arc<PS>,
+pub struct RemoveInstanceUseCase {
+    storage: Arc<dyn InstanceStorage>,
+    watcher_service: Arc<dyn InstanceWatcherService>,
+    file_service: Arc<dyn InstanceFileService>,
+    pack_storage: Arc<dyn PackStorage>,
 }
 
-impl<IS: InstanceStorage, IWS: InstanceWatcherService, IFS: InstanceFileService, PS: PackStorage>
-    RemoveInstanceUseCase<IS, IWS, IFS, PS>
-{
+impl RemoveInstanceUseCase {
     pub fn new(
-        storage: Arc<IS>,
-        watcher_service: Arc<IWS>,
-        file_service: Arc<IFS>,
-        pack_storage: Arc<PS>,
+        storage: Arc<dyn InstanceStorage>,
+        watcher_service: Arc<dyn InstanceWatcherService>,
+        file_service: Arc<dyn InstanceFileService>,
+        pack_storage: Arc<dyn PackStorage>,
     ) -> Self {
         Self {
             storage,

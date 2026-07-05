@@ -44,8 +44,11 @@ impl DefaultInstanceSettingsStorage for FsDefaultInstanceSettingsStorage {
             .await?;
         Ok(settings)
     }
+}
 
-    async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
+impl FsDefaultInstanceSettingsStorage {
+    /// Same signature as trait but with boxed closure for object-safety.
+    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
     where
         F: FnOnce(&mut DefaultInstanceSettings) -> UpdateAction<R> + Send,
     {

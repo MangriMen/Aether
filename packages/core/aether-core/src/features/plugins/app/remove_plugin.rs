@@ -1,22 +1,19 @@
 use std::sync::Arc;
 
-use crate::features::{
-    plugins::{PluginError, PluginLoader, PluginStorage},
-    settings::SettingsStorage,
-};
+use crate::features::plugins::{PluginError, PluginStorage};
 
 use super::SyncPluginsUseCase;
 
-pub struct RemovePluginUseCase<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> {
-    plugin_storage: Arc<PS>,
-    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+pub struct RemovePluginUseCase {
+    plugin_storage: Arc<dyn PluginStorage>,
+    sync_plugins_use_case: Arc<SyncPluginsUseCase>,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> RemovePluginUseCase<PS, SS, PL> {
+impl RemovePluginUseCase {
     pub fn new(
-        plugin_storage: Arc<PS>,
+        plugin_storage: Arc<dyn PluginStorage>,
 
-        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+        sync_plugins_use_case: Arc<SyncPluginsUseCase>,
     ) -> Self {
         Self {
             plugin_storage,

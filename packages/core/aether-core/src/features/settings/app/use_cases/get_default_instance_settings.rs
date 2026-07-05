@@ -4,12 +4,12 @@ use crate::features::settings::{
     DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
 };
 
-pub struct GetDefaultInstanceSettingsUseCase<SS: DefaultInstanceSettingsStorage> {
-    instance_settings_storage: Arc<SS>,
+pub struct GetDefaultInstanceSettingsUseCase {
+    instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
 }
 
-impl<SS: DefaultInstanceSettingsStorage> GetDefaultInstanceSettingsUseCase<SS> {
-    pub fn new(instance_settings_storage: Arc<SS>) -> Self {
+impl GetDefaultInstanceSettingsUseCase {
+    pub fn new(instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>) -> Self {
         Self {
             instance_settings_storage,
         }

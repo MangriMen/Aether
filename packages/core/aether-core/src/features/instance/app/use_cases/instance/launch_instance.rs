@@ -3,20 +3,16 @@ use std::sync::Arc;
 use crate::{
     features::{
         auth::Credential,
-        events::ProgressService,
         instance::{
             Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
         },
-        java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
             GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
-            MetadataStorage, MinecraftDownloader, MinecraftHealthParams, MinecraftHealthService,
-            ModLoaderProcessor,
+            MinecraftHealthParams, MinecraftHealthService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
         process::{
-            GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, ProcessStorage,
-            StartProcessUseCase,
+            GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, StartProcessUseCase,
         },
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
@@ -25,66 +21,30 @@ use crate::{
 
 use super::InstallInstanceUseCase;
 
-pub struct LaunchInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    PS: ProcessStorage,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
+pub struct LaunchInstanceUseCase {
     plugin_registry: Arc<PluginRegistry>,
-    instance_storage: Arc<IS>,
-    default_instance_settings_storage: Arc<GISS>,
+    instance_storage: Arc<dyn InstanceStorage>,
+    default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
     location_info: Arc<LocationInfo>,
-    get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-    #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>>,
-    minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
-    get_minecraft_launch_command_use_case:
-        GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS, JP, JIT>,
-    start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
+    get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase>,
+    install_instance_use_case: Arc<InstallInstanceUseCase>,
+    minecraft_health_service: Arc<MinecraftHealthService>,
+    get_minecraft_launch_command_use_case: Arc<GetMinecraftLaunchCommandUseCase>,
+    start_process_use_case: Arc<StartProcessUseCase>,
 }
 
-impl<
-    IS: InstanceStorage + 'static,
-    MS: MetadataStorage,
-    PS: ProcessStorage + 'static,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
-{
+impl LaunchInstanceUseCase {
     #[allow(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn new(
         plugin_registry: Arc<PluginRegistry>,
-        instance_storage: Arc<IS>,
-        default_instance_settings_storage: Arc<GISS>,
+        instance_storage: Arc<dyn InstanceStorage>,
+        default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
         location_info: Arc<LocationInfo>,
-        get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-        install_instance_use_case: Arc<
-            InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>,
-        >,
-        minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
-        get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<
-            MS,
-            MD,
-            JIS,
-            JS,
-            JP,
-            JIT,
-        >,
-        start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
+        get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase>,
+        install_instance_use_case: Arc<InstallInstanceUseCase>,
+        minecraft_health_service: Arc<MinecraftHealthService>,
+        get_minecraft_launch_command_use_case: Arc<GetMinecraftLaunchCommandUseCase>,
+        start_process_use_case: Arc<StartProcessUseCase>,
     ) -> Self {
         Self {
             plugin_registry,

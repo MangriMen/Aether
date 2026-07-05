@@ -1,19 +1,16 @@
 use std::sync::Arc;
 
-use crate::{
-    features::settings::{
-        DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
-        app::EditDefaultInstanceSettings,
-    },
-    shared::json_store::domain::UpdateAction,
+use crate::features::settings::{
+    DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
+    app::EditDefaultInstanceSettings,
 };
 
-pub struct EditDefaultInstanceSettingsUseCase<DISS: DefaultInstanceSettingsStorage> {
-    default_instance_settings_storage: Arc<DISS>,
+pub struct EditDefaultInstanceSettingsUseCase {
+    default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
 }
 
-impl<DIS: DefaultInstanceSettingsStorage> EditDefaultInstanceSettingsUseCase<DIS> {
-    pub fn new(default_instance_settings_storage: Arc<DIS>) -> Self {
+impl EditDefaultInstanceSettingsUseCase {
+    pub fn new(default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>) -> Self {
         Self {
             default_instance_settings_storage,
         }
@@ -23,14 +20,10 @@ impl<DIS: DefaultInstanceSettingsStorage> EditDefaultInstanceSettingsUseCase<DIS
         &self,
         edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
+        let mut settings = self.default_instance_settings_storage.get().await?;
+        edit_settings.apply_to(&mut settings);
         self.default_instance_settings_storage
-            .upsert_with(|settings| {
-                if edit_settings.apply_to(settings) {
-                    UpdateAction::Save(settings.to_owned())
-                } else {
-                    UpdateAction::NoChanges(settings.to_owned())
-                }
-            })
+            .upsert(settings)
             .await
     }
 }

@@ -28,16 +28,16 @@ impl ImportContent {
     }
 }
 
-pub struct ImportContentUseCase<PS: PackStorage> {
+pub struct ImportContentUseCase {
     event_emitter: SharedEventEmitter,
-    pack_storage: Arc<PS>,
+    pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<PS: PackStorage> ImportContentUseCase<PS> {
+impl ImportContentUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        pack_storage: Arc<PS>,
+        pack_storage: Arc<dyn PackStorage>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {

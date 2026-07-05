@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use crate::features::auth::app::{Account, AuthApplicationError, CredentialsStorage};
 
-pub struct GetAccountsUseCase<CS: CredentialsStorage> {
-    credentials_storage: Arc<CS>,
+pub struct GetAccountsUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
 }
 
-impl<CS: CredentialsStorage> GetAccountsUseCase<CS> {
-    pub fn new(credentials_storage: Arc<CS>) -> Self {
+impl GetAccountsUseCase {
+    pub fn new(credentials_storage: Arc<dyn CredentialsStorage>) -> Self {
         Self {
             credentials_storage,
         }

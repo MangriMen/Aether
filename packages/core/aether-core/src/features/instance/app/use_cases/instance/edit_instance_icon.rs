@@ -20,13 +20,16 @@ pub struct EditInstanceIcon {
     pub icon_path: Option<Option<String>>,
 }
 
-pub struct EditInstanceIconUseCase<IS, AP> {
-    instance_storage: Arc<IS>,
-    assets_storage: Arc<AP>,
+pub struct EditInstanceIconUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    assets_storage: Arc<dyn AssetsStorage>,
 }
 
-impl<IS: InstanceStorage, AP: AssetsStorage> EditInstanceIconUseCase<IS, AP> {
-    pub fn new(instance_storage: Arc<IS>, assets_storage: Arc<AP>) -> Self {
+impl EditInstanceIconUseCase {
+    pub fn new(
+        instance_storage: Arc<dyn InstanceStorage>,
+        assets_storage: Arc<dyn AssetsStorage>,
+    ) -> Self {
         Self {
             instance_storage,
             assets_storage,
@@ -47,7 +50,7 @@ impl<IS: InstanceStorage, AP: AssetsStorage> EditInstanceIconUseCase<IS, AP> {
                 Some(icon_path) => {
                     let asset_id = self
                         .assets_storage
-                        .import_file(icon_path)
+                        .import_file(icon_path.as_ref())
                         .await
                         .map_err(|err| InstanceError::Storage(err.to_string()))?;
 

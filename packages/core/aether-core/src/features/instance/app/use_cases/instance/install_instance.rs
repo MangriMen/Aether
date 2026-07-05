@@ -3,47 +3,22 @@ use std::sync::Arc;
 use crate::features::{
     events::{ProgressEventType, ProgressService, ProgressServiceExt},
     instance::{Instance, InstanceError, InstanceInstallStage, InstanceStorage},
-    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
-    minecraft::{
-        InstallMinecraftParams, InstallMinecraftUseCase, MetadataStorage, MinecraftDownloader,
-        ModLoaderProcessor,
-    },
+    minecraft::{InstallMinecraftParams, InstallMinecraftUseCase},
     settings::LocationInfo,
 };
 
-pub struct InstallInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    instance_storage: Arc<IS>,
-    install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
-    progress_service: Arc<PS>,
+pub struct InstallInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    install_minecraft_use_case: Arc<InstallMinecraftUseCase>,
+    progress_service: Arc<dyn ProgressService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>
-{
+impl InstallInstanceUseCase {
     pub fn new(
-        instance_storage: Arc<IS>,
-        install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
-        progress_service: Arc<PS>,
+        instance_storage: Arc<dyn InstanceStorage>,
+        install_minecraft_use_case: Arc<InstallMinecraftUseCase>,
+        progress_service: Arc<dyn ProgressService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {

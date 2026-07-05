@@ -7,13 +7,16 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct UpdateInstanceUseCase<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> {
-    instance_storage: Arc<IS>,
-    updaters_registry: Arc<UR>,
+pub struct UpdateInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
 }
 
-impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstanceUseCase<IS, UR> {
-    pub fn new(instance_storage: Arc<IS>, updaters_registry: Arc<UR>) -> Self {
+impl UpdateInstanceUseCase {
+    pub fn new(
+        instance_storage: Arc<dyn InstanceStorage>,
+        updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
+    ) -> Self {
         Self {
             instance_storage,
             updaters_registry,

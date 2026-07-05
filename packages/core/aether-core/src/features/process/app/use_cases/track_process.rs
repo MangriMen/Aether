@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::features::{
     instance::{InstanceStorage, InstanceStorageExt},
-    process::ProcessStorage,
+    process::{ProcessStorage, TrackProcessService},
 };
 
 const PROCESS_CHECK_INTERVAL: time::Duration = time::Duration::from_millis(50);
@@ -16,13 +16,23 @@ pub struct TrackProcessParams {
     pub instance_id: String,
 }
 
-pub struct TrackProcessUseCase<PS, IS> {
-    process_storage: Arc<PS>,
-    instance_storage: Arc<IS>,
+pub struct TrackProcessUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
-    pub fn new(process_storage: Arc<PS>, instance_storage: Arc<IS>) -> Self {
+#[async_trait::async_trait]
+impl TrackProcessService for TrackProcessUseCase {
+    async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
+        self.execute_inner(params).await
+    }
+}
+
+impl TrackProcessUseCase {
+    pub fn new(
+        process_storage: Arc<dyn ProcessStorage>,
+        instance_storage: Arc<dyn InstanceStorage>,
+    ) -> Self {
         Self {
             process_storage,
             instance_storage,
@@ -53,6 +63,10 @@ impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
     }
 
     pub async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
+        TrackProcessService::execute(self, params).await
+    }
+
+    async fn execute_inner(&self, params: TrackProcessParams) -> ExitStatus {
         let TrackProcessParams {
             process_id,
             instance_id,

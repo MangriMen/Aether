@@ -2,65 +2,21 @@ use std::sync::Arc;
 
 use crate::features::{
     auth::{ActiveAccountHelper, CredentialsStorage},
-    events::ProgressService,
-    instance::{InstanceError, InstanceStorage},
-    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
-    minecraft::{MetadataStorage, MinecraftDownloader, ModLoaderProcessor},
-    process::{MinecraftProcessMetadata, ProcessStorage},
-    settings::DefaultInstanceSettingsStorage,
+    instance::InstanceError,
+    process::MinecraftProcessMetadata,
 };
 
 use super::LaunchInstanceUseCase;
 
-pub struct LaunchInstanceWithActiveAccountUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    PS: ProcessStorage,
-    CS: CredentialsStorage,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    credentials_storage: Arc<CS>,
-    launch_instance_use_case:
-        LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>,
+pub struct LaunchInstanceWithActiveAccountUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
+    launch_instance_use_case: LaunchInstanceUseCase,
 }
 
-impl<
-    IS: InstanceStorage + 'static,
-    MS: MetadataStorage,
-    PS: ProcessStorage + 'static,
-    CS: CredentialsStorage,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> LaunchInstanceWithActiveAccountUseCase<IS, MS, PS, CS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
-{
+impl LaunchInstanceWithActiveAccountUseCase {
     pub fn new(
-        credentials_storage: Arc<CS>,
-        launch_with_credentials_use_case: LaunchInstanceUseCase<
-            IS,
-            MS,
-            PS,
-            GISS,
-            MD,
-            MLP,
-            PGS,
-            JIS,
-            JS,
-            JP,
-            JIT,
-        >,
+        credentials_storage: Arc<dyn CredentialsStorage>,
+        launch_with_credentials_use_case: LaunchInstanceUseCase,
     ) -> Self {
         Self {
             credentials_storage,

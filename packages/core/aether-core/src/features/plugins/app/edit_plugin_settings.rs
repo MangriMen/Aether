@@ -10,12 +10,12 @@ pub struct EditPluginSettings {
     pub allowed_paths: Option<Vec<PathMapping>>,
 }
 
-pub struct EditPluginSettingsUseCase<PSS: PluginSettingsStorage> {
-    plugin_settings_storage: Arc<PSS>,
+pub struct EditPluginSettingsUseCase {
+    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
 }
 
-impl<PSS: PluginSettingsStorage> EditPluginSettingsUseCase<PSS> {
-    pub fn new(plugin_settings_storage: Arc<PSS>) -> Self {
+impl EditPluginSettingsUseCase {
+    pub fn new(plugin_settings_storage: Arc<dyn PluginSettingsStorage>) -> Self {
         Self {
             plugin_settings_storage,
         }

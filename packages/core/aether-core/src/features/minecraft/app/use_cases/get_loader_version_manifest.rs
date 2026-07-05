@@ -4,12 +4,12 @@ use crate::features::minecraft::{
     MetadataStorage, ModLoader, app::MinecraftApplicationError, modded,
 };
 
-pub struct GetLoaderVersionManifestUseCase<MS: MetadataStorage> {
-    metadata_storage: Arc<MS>,
+pub struct GetLoaderVersionManifestUseCase {
+    metadata_storage: Arc<dyn MetadataStorage>,
 }
 
-impl<MS: MetadataStorage> GetLoaderVersionManifestUseCase<MS> {
-    pub fn new(metadata_storage: Arc<MS>) -> Self {
+impl GetLoaderVersionManifestUseCase {
+    pub fn new(metadata_storage: Arc<dyn MetadataStorage>) -> Self {
         Self { metadata_storage }
     }
 

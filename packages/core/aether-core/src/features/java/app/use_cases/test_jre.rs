@@ -2,12 +2,12 @@ use std::{path::PathBuf, sync::Arc};
 
 use crate::features::java::{Java, JavaInstallationService, app::JavaApplicationError};
 
-pub struct TestJreUseCase<JIS: JavaInstallationService> {
-    java_installation_service: Arc<JIS>,
+pub struct TestJreUseCase {
+    java_installation_service: Arc<dyn JavaInstallationService>,
 }
 
-impl<JIS: JavaInstallationService> TestJreUseCase<JIS> {
-    pub fn new(java_installation_service: Arc<JIS>) -> Self {
+impl TestJreUseCase {
+    pub fn new(java_installation_service: Arc<dyn JavaInstallationService>) -> Self {
         Self {
             java_installation_service,
         }
