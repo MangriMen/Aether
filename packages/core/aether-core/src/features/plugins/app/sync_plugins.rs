@@ -5,7 +5,7 @@ use std::{
 
 use crate::features::{
     events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-    plugins::{Plugin, PluginError, PluginRegistry, PluginStorage},
+    plugins::{Plugin, PluginError, PluginRegistry, PluginStorage, PluginSyncService},
 };
 
 use super::DisablePluginUseCase;
@@ -142,8 +142,11 @@ impl SyncPluginsUseCase {
         self.plugin_registry.remove(plugin_id);
         Ok(())
     }
+}
 
-    pub async fn execute(&self) -> Result<(), PluginError> {
+#[async_trait::async_trait]
+impl PluginSyncService for SyncPluginsUseCase {
+    async fn execute(&self) -> Result<(), PluginError> {
         let found_plugins = self.plugin_storage.list().await?;
         self.sync_plugins(found_plugins).await?;
         self.event_emitter.emit_safe(PluginEvent::Sync).await;

@@ -24,7 +24,7 @@ use crate::{
             },
         },
         java::{
-            self,
+            self, JavaInstallationService,
             infra::{FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage},
         },
         minecraft::{
@@ -107,6 +107,7 @@ pub struct LazyLocator {
     event_emitter: OnceCell<SharedEventEmitter>,
     progress_bar_storage: OnceCell<Arc<InMemoryProgressBarStorage>>,
     progress_service: OnceCell<Arc<ProgressServiceType>>,
+    java_installation_service: OnceCell<Arc<dyn JavaInstallationService>>,
     instance_watcher_service:
         OnceCell<Arc<InstanceWatcherServiceImpl<NotifyFileWatcher<InstanceEventHandler>>>>,
     default_instance_settings_storage: OnceCell<Arc<SqliteDefaultInstanceSettingsStorage>>,
@@ -193,6 +194,7 @@ impl LazyLocator {
                     plugin_infrastructure_listener: OnceCell::new(),
                     sqlite_pool: OnceCell::from(sqlite_pool),
                     java_installation_tracker: OnceCell::new(),
+                    java_installation_service: OnceCell::new(),
                 })
             })
             .await;
@@ -402,6 +404,15 @@ impl LazyLocator {
         self.java_storage
             .get_or_init(|| async {
                 Arc::new(SqliteJavaStorage::new(self.get_sqlite_pool().await))
+            })
+            .await
+            .clone()
+    }
+
+    pub async fn get_java_installation_service(&self) -> Arc<dyn JavaInstallationService> {
+        self.java_installation_service
+            .get_or_init(|| async {
+                Arc::new(FsJavaInstallationService) as Arc<dyn JavaInstallationService>
             })
             .await
             .clone()

@@ -4,8 +4,8 @@ use aether_core::{
     core::LazyLocator,
     features::java::{
         DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
-        InstallJavaUseCase, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
-        infra::{AzulJreProvider, FsJavaInstallationService, get_default_discovery_paths},
+        InstallJavaUseCase, JavaInstallService, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
+        infra::{AzulJreProvider, get_default_discovery_paths},
     },
 };
 use tauri::State;
@@ -59,7 +59,7 @@ async fn edit(
 
     Ok(EditJavaUseCase::new(
         locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService {}),
+        locator.get_java_installation_service().await,
     )
     .execute(edit_java.into())
     .await
@@ -102,14 +102,16 @@ async fn install(
         locator.get_request_client().await,
     ));
 
-    Ok(InstallJavaUseCase::new(
-        locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService),
-        jre_provider,
-        locator.location_info.clone(),
-        locator.get_java_installation_tracker().await,
+    Ok(JavaInstallService::execute(
+        &InstallJavaUseCase::new(
+            locator.get_java_storage().await,
+            locator.get_java_installation_service().await,
+            jre_provider,
+            locator.location_info.clone(),
+            locator.get_java_installation_tracker().await,
+        ),
+        install_java.into(),
     )
-    .execute(install_java.into())
     .await
     .map_err(aether_core::Error::from)
     .map_err(crate::Error::from)?
@@ -119,12 +121,16 @@ async fn install(
 #[tauri::command]
 #[specta::specta]
 async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
-    Ok(TestJreUseCase::new(Arc::new(FsJavaInstallationService {}))
-        .execute(path)
-        .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
-        .into())
+    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+
+    Ok(
+        TestJreUseCase::new(locator.get_java_installation_service().await)
+            .execute(path)
+            .await
+            .map_err(aether_core::Error::from)
+            .map_err(crate::Error::from)?
+            .into(),
+    )
 }
 
 #[tauri::command]
@@ -135,16 +141,17 @@ async fn discover() -> FrontendResult<Vec<JavaDto>> {
     let mut discovery_paths = get_default_discovery_paths();
     discovery_paths.push(locator.location_info.java_dir());
 
-    Ok(
-        DiscoverJavaUseCase::new(Arc::new(FsJavaInstallationService {}), discovery_paths)
-            .execute()
-            .await
-            .map_err(aether_core::Error::from)
-            .map_err(crate::Error::from)?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+    Ok(DiscoverJavaUseCase::new(
+        locator.get_java_installation_service().await,
+        discovery_paths,
     )
+    .execute()
+    .await
+    .map_err(aether_core::Error::from)
+    .map_err(crate::Error::from)?
+    .into_iter()
+    .map(Into::into)
+    .collect())
 }
 
 #[tauri::command]

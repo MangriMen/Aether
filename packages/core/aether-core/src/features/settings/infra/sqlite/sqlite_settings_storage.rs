@@ -77,4 +77,17 @@ impl SettingsStorage for SqliteSettingsStorage {
 
         Ok(settings)
     }
+
+    async fn update_mut(
+        &self,
+        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+    ) -> Result<Settings, SettingsError> {
+        let settings = self.get().await?;
+        let (settings, changed) = f(settings);
+        if changed {
+            self.upsert(settings).await
+        } else {
+            Ok(settings)
+        }
+    }
 }

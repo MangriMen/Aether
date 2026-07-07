@@ -106,9 +106,13 @@ impl DisablePluginUseCase {
     }
 
     async fn remove_from_enabled_plugins(&self, plugin_id: &str) -> Result<(), PluginError> {
-        let mut settings = self.settings_storage.get().await?;
-        settings.disable_plugin(plugin_id);
-        self.settings_storage.upsert(settings).await?;
+        let owned = plugin_id.to_owned();
+        self.settings_storage
+            .update_mut(Box::new(move |mut settings| {
+                let changed = settings.disable_plugin(&owned);
+                (settings, changed)
+            }))
+            .await?;
         Ok(())
     }
 }

@@ -15,19 +15,19 @@ use super::ManageProcessParams;
 pub struct StartProcessUseCase {
     event_emitter: SharedEventEmitter,
     process_storage: Arc<dyn ProcessStorage>,
-    manage_process_use_case: Arc<dyn ManageProcessService>,
+    manage_process_service: Arc<dyn ManageProcessService>,
 }
 
 impl StartProcessUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
         process_storage: Arc<dyn ProcessStorage>,
-        manage_process_use_case: Arc<dyn ManageProcessService>,
+        manage_process_service: Arc<dyn ManageProcessService>,
     ) -> Self {
         Self {
             event_emitter,
             process_storage,
-            manage_process_use_case,
+            manage_process_service,
         }
     }
 
@@ -44,12 +44,12 @@ impl StartProcessUseCase {
             .insert(metadata.clone(), process)
             .await?;
 
-        let manage_process_use_case = self.manage_process_use_case.clone();
+        let manage_process_service = self.manage_process_service.clone();
         let instance_id_clone = instance_id.clone();
         let process_uuid_clone = metadata.uuid();
 
         tokio::spawn(async move {
-            let _ = manage_process_use_case
+            let _ = manage_process_service
                 .execute(ManageProcessParams {
                     process_id: process_uuid_clone,
                     instance_id: instance_id_clone,

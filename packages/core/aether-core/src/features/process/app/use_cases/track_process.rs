@@ -24,7 +24,34 @@ pub struct TrackProcessUseCase {
 #[async_trait::async_trait]
 impl TrackProcessService for TrackProcessUseCase {
     async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
-        self.execute_inner(params).await
+        let TrackProcessParams {
+            process_id,
+            instance_id,
+        } = params;
+
+        let mut last_updated_playtime = Utc::now();
+
+        loop {
+            match self.process_storage.try_wait(process_id).await {
+                Ok(Some(Some(exit_status))) => {
+                    // Process exited successfully
+                    self.update_playtime(&mut last_updated_playtime, &instance_id, true)
+                        .await;
+                    return exit_status;
+                }
+                Ok(Some(None)) => {} // Still running
+                Ok(None) | Err(_) => {
+                    self.update_playtime(&mut last_updated_playtime, &instance_id, true)
+                        .await;
+                    return ExitStatus::default();
+                }
+            }
+
+            tokio::time::sleep(PROCESS_CHECK_INTERVAL).await;
+
+            self.update_playtime(&mut last_updated_playtime, &instance_id, false)
+                .await;
+        }
     }
 }
 
@@ -59,41 +86,6 @@ impl TrackProcessUseCase {
             }
 
             *last_updated = Utc::now();
-        }
-    }
-
-    pub async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
-        TrackProcessService::execute(self, params).await
-    }
-
-    async fn execute_inner(&self, params: TrackProcessParams) -> ExitStatus {
-        let TrackProcessParams {
-            process_id,
-            instance_id,
-        } = params;
-
-        let mut last_updated_playtime = Utc::now();
-
-        loop {
-            match self.process_storage.try_wait(process_id).await {
-                Ok(Some(Some(exit_status))) => {
-                    // Process exited successfully
-                    self.update_playtime(&mut last_updated_playtime, &instance_id, true)
-                        .await;
-                    return exit_status;
-                }
-                Ok(Some(None)) => {} // Still running
-                Ok(None) | Err(_) => {
-                    self.update_playtime(&mut last_updated_playtime, &instance_id, true)
-                        .await;
-                    return ExitStatus::default();
-                }
-            }
-
-            tokio::time::sleep(PROCESS_CHECK_INTERVAL).await;
-
-            self.update_playtime(&mut last_updated_playtime, &instance_id, false)
-                .await;
         }
     }
 }

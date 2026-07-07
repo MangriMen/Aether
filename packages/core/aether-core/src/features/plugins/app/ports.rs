@@ -49,3 +49,8 @@ pub trait PluginExtractor: Send + Sync {
 pub trait AsCapabilityMetadata {
     fn as_metadata(&self) -> &crate::features::instance::CapabilityMetadata;
 }
+
+#[async_trait]
+pub trait PluginSyncService: Send + Sync {
+    async fn execute(&self) -> Result<(), PluginError>;
+}

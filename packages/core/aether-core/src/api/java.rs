@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::{
     core::LazyLocator,
     features::java::{
-        GetJavaUseCase, InstallJava, InstallJavaUseCase, Java,
-        infra::{AzulJreProvider, FsJavaInstallationService},
+        GetJavaUseCase, InstallJava, InstallJavaUseCase, Java, JavaInstallService,
+        JavaQueryService, infra::AzulJreProvider,
     },
 };
 
@@ -19,15 +19,13 @@ pub async fn install(version: u32) -> crate::Result<Java> {
 
     let install_java_use_case = InstallJavaUseCase::new(
         locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
         jre_provider,
         locator.location_info.clone(),
         locator.get_java_installation_tracker().await,
     );
 
-    Ok(install_java_use_case
-        .execute(InstallJava::new(version))
-        .await?)
+    Ok(JavaInstallService::execute(&install_java_use_case, InstallJava::new(version)).await?)
 }
 
 pub async fn get(version: u32) -> crate::Result<Java> {
@@ -35,8 +33,8 @@ pub async fn get(version: u32) -> crate::Result<Java> {
 
     let get_java_use_case = GetJavaUseCase::new(
         locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
     );
 
-    Ok(get_java_use_case.execute(version).await?)
+    Ok(JavaQueryService::execute(&get_java_use_case, version).await?)
 }

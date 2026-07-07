@@ -24,9 +24,9 @@ pub use app::{
     PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto, PluginLoader,
     PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
     PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginUpdaterCapabilityDto, ProviderHandlersDto, RemovePluginUseCase,
-    RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase, UpdaterCapabilityMetadataDto,
-    write_bytes_to_temp_file,
+    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, ProviderHandlersDto,
+    RemovePluginUseCase, RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase,
+    UpdaterCapabilityMetadataDto, write_bytes_to_temp_file,
 };
 
 // Infrastructure re-exports (commonly used by app layer)

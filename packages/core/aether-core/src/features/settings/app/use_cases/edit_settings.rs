@@ -12,8 +12,11 @@ impl EditSettingsUseCase {
     }
 
     pub async fn execute(&self, edit_settings: EditSettings) -> Result<Settings, SettingsError> {
-        let mut settings = self.settings_storage.get().await?;
-        edit_settings.apply_to(&mut settings);
-        self.settings_storage.upsert(settings).await
+        self.settings_storage
+            .update_mut(Box::new(move |mut settings| {
+                let changed = edit_settings.apply_to(&mut settings);
+                (settings, changed)
+            }))
+            .await
     }
 }

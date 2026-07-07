@@ -1,7 +1,8 @@
 use crate::{
     core::LazyLocator,
     features::minecraft::{
-        GetLoaderVersionManifestUseCase, GetVersionManifestUseCase, ModLoader, modded, vanilla,
+        GetLoaderVersionManifestUseCase, GetVersionManifestUseCase, ModLoader,
+        VersionManifestService, modded, vanilla,
     },
 };
 
@@ -9,9 +10,10 @@ pub async fn get_version_manifest() -> crate::Result<vanilla::VersionManifest> {
     let locator = LazyLocator::get().await?;
 
     Ok(
-        GetVersionManifestUseCase::new(locator.get_metadata_storage().await)
-            .execute()
-            .await?,
+        VersionManifestService::execute(&GetVersionManifestUseCase::new(
+            locator.get_metadata_storage().await,
+        ))
+        .await?,
     )
 }
 

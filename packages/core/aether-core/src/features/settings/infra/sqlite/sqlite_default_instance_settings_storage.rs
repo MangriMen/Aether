@@ -1,12 +1,9 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 
-use crate::{
-    features::settings::{
-        DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemorySettings,
-        SettingsError, WindowSettings, WindowSize,
-    },
-    shared::json_store::domain::UpdateAction,
+use crate::features::settings::{
+    DefaultInstanceSettings, DefaultInstanceSettingsStorage, Hooks, MemorySettings, SettingsError,
+    WindowSettings, WindowSize,
 };
 
 pub struct SqliteDefaultInstanceSettingsStorage {
@@ -120,22 +117,17 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
 
         Ok(settings)
     }
-}
 
-impl SqliteDefaultInstanceSettingsStorage {
-    /// Same signature as trait but with boxed closure for object-safety.
-    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
-    where
-        F: FnOnce(&mut DefaultInstanceSettings) -> UpdateAction<R> + Send,
-    {
-        let mut settings = self.get().await.unwrap_or_default();
-
-        match f(&mut settings) {
-            UpdateAction::Save(result) => {
-                self.upsert(settings).await?;
-                Ok(result)
-            }
-            UpdateAction::NoChanges(result) => Ok(result),
+    async fn update_mut(
+        &self,
+        f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
+    ) -> Result<DefaultInstanceSettings, SettingsError> {
+        let settings = self.get().await.unwrap_or_default();
+        let (settings, changed) = f(settings);
+        if changed {
+            self.upsert(settings).await
+        } else {
+            Ok(settings)
         }
     }
 }

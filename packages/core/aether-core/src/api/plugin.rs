@@ -8,8 +8,8 @@ use crate::{
         ForceEnablePluginUseCase, GetPluginApiVersionUseCase, GetPluginDtoUseCase,
         GetPluginSettingsUseCase, ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto,
         PluginExtractor, PluginSettings, PluginSource, PluginSourceStorage, PluginSourceType,
-        PluginStorage, ProviderUpdateInfo, RemovePluginUseCase, SyncPluginsUseCase,
-        write_bytes_to_temp_file,
+        PluginStorage, PluginSyncService, ProviderUpdateInfo, RemovePluginUseCase,
+        SyncPluginsUseCase, write_bytes_to_temp_file,
     },
 };
 
@@ -23,7 +23,7 @@ pub async fn import(paths: Vec<PathBuf>) -> crate::Result<()> {
         locator.get_settings_storage().await,
     );
 
-    let sync_plugins_use_case = Arc::new(SyncPluginsUseCase::new(
+    let sync_plugins_service = Arc::new(SyncPluginsUseCase::new(
         locator.get_plugin_storage().await,
         locator.get_plugin_registry().await,
         disable_plugin_use_case,
@@ -33,7 +33,7 @@ pub async fn import(paths: Vec<PathBuf>) -> crate::Result<()> {
     Ok(ImportPluginsUseCase::new(
         locator.get_plugin_extractor().await,
         locator.get_plugin_storage().await,
-        sync_plugins_use_case,
+        sync_plugins_service,
     )
     .execute(paths)
     .await?)
@@ -88,7 +88,7 @@ pub async fn remove(plugin_id: String) -> crate::Result<()> {
         locator.get_settings_storage().await,
     );
 
-    let sync_plugins_use_case = Arc::new(SyncPluginsUseCase::new(
+    let sync_plugins_service = Arc::new(SyncPluginsUseCase::new(
         locator.get_plugin_storage().await,
         locator.get_plugin_registry().await,
         disable_plugin_use_case,
@@ -96,7 +96,7 @@ pub async fn remove(plugin_id: String) -> crate::Result<()> {
     ));
 
     Ok(
-        RemovePluginUseCase::new(locator.get_plugin_storage().await, sync_plugins_use_case)
+        RemovePluginUseCase::new(locator.get_plugin_storage().await, sync_plugins_service)
             .execute(plugin_id)
             .await?,
     )

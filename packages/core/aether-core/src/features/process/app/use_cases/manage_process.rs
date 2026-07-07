@@ -22,33 +22,13 @@ pub struct ManageProcessParams {
 pub struct ManageProcessUseCase {
     event_emitter: SharedEventEmitter,
     process_storage: Arc<dyn ProcessStorage>,
-    track_process_use_case: Arc<dyn TrackProcessService>,
+    track_process_service: Arc<dyn TrackProcessService>,
     location_info: Arc<LocationInfo>,
 }
 
 #[async_trait::async_trait]
 impl ManageProcessService for ManageProcessUseCase {
     async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
-        self.execute_inner(params).await
-    }
-}
-
-impl ManageProcessUseCase {
-    pub fn new(
-        event_emitter: SharedEventEmitter,
-        process_storage: Arc<dyn ProcessStorage>,
-        track_process_use_case: Arc<dyn TrackProcessService>,
-        location_info: Arc<LocationInfo>,
-    ) -> Self {
-        Self {
-            event_emitter,
-            process_storage,
-            track_process_use_case,
-            location_info,
-        }
-    }
-
-    async fn execute_inner(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
         let ManageProcessParams {
             process_id,
             instance_id,
@@ -56,7 +36,7 @@ impl ManageProcessUseCase {
         } = params;
 
         let mc_exit_status = self
-            .track_process_use_case
+            .track_process_service
             .execute(TrackProcessParams {
                 process_id,
                 instance_id: instance_id.clone(),
@@ -80,9 +60,21 @@ impl ManageProcessUseCase {
 
         Ok(())
     }
+}
 
-    pub async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
-        ManageProcessService::execute(self, params).await
+impl ManageProcessUseCase {
+    pub fn new(
+        event_emitter: SharedEventEmitter,
+        process_storage: Arc<dyn ProcessStorage>,
+        track_process_service: Arc<dyn TrackProcessService>,
+        location_info: Arc<LocationInfo>,
+    ) -> Self {
+        Self {
+            event_emitter,
+            process_storage,
+            track_process_service,
+            location_info,
+        }
     }
 
     fn run_post_exit(&self, command: &str, instance_id: &str) -> Result<(), ProcessError> {

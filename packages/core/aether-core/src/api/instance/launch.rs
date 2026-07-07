@@ -7,10 +7,7 @@ use crate::{
         instance::{
             InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         },
-        java::{
-            GetJavaUseCase, InstallJavaUseCase,
-            infra::{AzulJreProvider, FsJavaInstallationService},
-        },
+        java::{GetJavaUseCase, InstallJavaUseCase, infra::AzulJreProvider},
         minecraft::{
             GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
             LoaderVersionResolver, MinecraftHealthService,
@@ -69,7 +66,7 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
 
     let get_java_use_case = Arc::new(GetJavaUseCase::new(
         locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
     ));
 
     let jre_provider = Arc::new(AzulJreProvider::new(
@@ -79,7 +76,7 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
 
     let install_java_use_case = Arc::new(InstallJavaUseCase::new(
         locator.get_java_storage().await,
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
         jre_provider,
         locator.location_info.clone(),
         locator.get_java_installation_tracker().await,
@@ -99,7 +96,7 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
         get_loader_manifest_use_case.clone(),
         Arc::new(minecraft_download_service),
         forge_processor,
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
         get_java_use_case.clone(),
         install_java_use_case.clone(),
     ));
@@ -115,22 +112,22 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
         locator.get_process_storage().await,
     ));
 
-    let track_process_use_case = Arc::new(TrackProcessUseCase::new(
+    let track_process_service = Arc::new(TrackProcessUseCase::new(
         locator.get_process_storage().await,
         locator.get_instance_storage().await,
     ));
 
-    let manage_process_use_case = Arc::new(ManageProcessUseCase::new(
+    let manage_process_service = Arc::new(ManageProcessUseCase::new(
         locator.get_event_emitter().await,
         locator.get_process_storage().await,
-        track_process_use_case,
+        track_process_service,
         locator.location_info.clone(),
     ));
 
     let start_process_use_case = Arc::new(StartProcessUseCase::new(
         locator.get_event_emitter().await,
         locator.get_process_storage().await,
-        manage_process_use_case,
+        manage_process_service,
     ));
 
     let client_service = ClientService::new(
@@ -196,7 +193,7 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
         loader_version_resolver,
         get_version_manifest_use_case,
         Arc::new(minecraft_download_service),
-        Arc::new(FsJavaInstallationService),
+        locator.get_java_installation_service().await,
         get_java_use_case.clone(),
         install_java_use_case.clone(),
         locator.location_info.clone(),

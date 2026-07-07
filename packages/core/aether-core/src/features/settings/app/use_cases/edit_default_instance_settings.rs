@@ -20,10 +20,11 @@ impl EditDefaultInstanceSettingsUseCase {
         &self,
         edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
-        let mut settings = self.default_instance_settings_storage.get().await?;
-        edit_settings.apply_to(&mut settings);
         self.default_instance_settings_storage
-            .upsert(settings)
+            .update_mut(Box::new(move |mut settings| {
+                let changed = edit_settings.apply_to(&mut settings);
+                (settings, changed)
+            }))
             .await
     }
 }
