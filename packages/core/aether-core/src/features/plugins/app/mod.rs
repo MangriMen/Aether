@@ -36,8 +36,8 @@ pub use import_plugins::ImportPluginsUseCase;
 pub use list_plugins_dto::ListPluginsDtoUseCase;
 pub use plugin_provider::{PluginProvider, PluginProviderFactory};
 pub use ports::{
-    AsCapabilityMetadata, PluginExtractor, PluginLoader, PluginSettingsStorage,
-    PluginSourceStorage, PluginStorage, PluginSyncService,
+    AsCapabilityMetadata, PluginDisableService, PluginExtractor, PluginLoader,
+    PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
 };
 pub use remove_plugin::RemovePluginUseCase;
 pub use services::{PluginLoaderRegistry, PluginRegistry};

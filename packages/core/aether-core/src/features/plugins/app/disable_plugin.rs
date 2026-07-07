@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 use crate::features::{
     plugins::{
-        LoadConfigType, PluginError, PluginInstance, PluginLoaderRegistry, PluginManifest,
-        PluginRegistry, PluginState,
+        LoadConfigType, PluginDisableService, PluginError, PluginInstance, PluginLoaderRegistry,
+        PluginManifest, PluginRegistry, PluginState,
     },
     settings::SettingsStorage,
 };
@@ -114,5 +115,12 @@ impl DisablePluginUseCase {
             }))
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl PluginDisableService for DisablePluginUseCase {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.execute(plugin_id).await
     }
 }

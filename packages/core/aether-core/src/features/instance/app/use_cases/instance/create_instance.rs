@@ -8,16 +8,14 @@ use log::{error, info};
 use crate::features::{
     events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
-        Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
-        PackInfo, app::InstanceFileService,
+        Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
+        InstanceWatcherService, PackInfo, app::InstanceFileService,
     },
     minecraft::{
-        LoaderVersionPreference, LoaderVersionResolver, MinecraftApplicationError, ModLoader,
+        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
     },
     settings::LocationInfo,
 };
-
-use super::InstallInstanceUseCase;
 
 #[derive(Debug)]
 pub struct NewInstance {
@@ -32,8 +30,8 @@ pub struct NewInstance {
 
 pub struct CreateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
-    loader_version_resolver: Arc<LoaderVersionResolver>,
-    install_instance_use_case: Arc<InstallInstanceUseCase>,
+    loader_version_service: Arc<dyn LoaderVersionService>,
+    instance_install_service: Arc<dyn InstanceInstallService>,
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
@@ -43,8 +41,8 @@ pub struct CreateInstanceUseCase {
 impl CreateInstanceUseCase {
     pub fn new(
         instance_storage: Arc<dyn InstanceStorage>,
-        loader_version_resolver: Arc<LoaderVersionResolver>,
-        install_instance_use_case: Arc<InstallInstanceUseCase>,
+        loader_version_service: Arc<dyn LoaderVersionService>,
+        instance_install_service: Arc<dyn InstanceInstallService>,
         location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<dyn InstanceWatcherService>,
@@ -52,8 +50,8 @@ impl CreateInstanceUseCase {
     ) -> Self {
         Self {
             instance_storage,
-            loader_version_resolver,
-            install_instance_use_case,
+            loader_version_service,
+            instance_install_service,
             location_info,
             event_emitter,
             instance_watcher_service,
@@ -72,7 +70,7 @@ impl CreateInstanceUseCase {
             .await?;
 
         if !skip_install_instance.unwrap_or(false) {
-            self.install_instance_use_case
+            self.instance_install_service
                 .execute(instance.id().to_owned(), false)
                 .await?;
         }
@@ -106,14 +104,14 @@ impl CreateInstanceUseCase {
 
         // Check that loader version is valid
         let loader_version = if mod_loader != ModLoader::Vanilla && loader_version.is_some() {
-            self.loader_version_resolver
+            self.loader_version_service
                 .resolve(&game_version, &mod_loader, loader_version.as_ref())
                 .await
                 .map_err(MinecraftApplicationError::Domain)?;
 
             loader_version
         } else if mod_loader != ModLoader::Vanilla && loader_version.is_none() {
-            self.loader_version_resolver
+            self.loader_version_service
                 .try_get_default(&game_version, &mod_loader)
                 .await
                 .map_err(MinecraftApplicationError::Domain)?

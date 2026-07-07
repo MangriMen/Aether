@@ -54,3 +54,8 @@ pub trait AsCapabilityMetadata {
 pub trait PluginSyncService: Send + Sync {
     async fn execute(&self) -> Result<(), PluginError>;
 }
+
+#[async_trait]
+pub trait PluginDisableService: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}

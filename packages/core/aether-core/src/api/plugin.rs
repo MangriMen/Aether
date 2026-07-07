@@ -6,10 +6,10 @@ use crate::{
     features::plugins::{
         DisablePluginUseCase, EditPluginSettings, EditPluginSettingsUseCase, EnablePluginUseCase,
         ForceEnablePluginUseCase, GetPluginApiVersionUseCase, GetPluginDtoUseCase,
-        GetPluginSettingsUseCase, ImportPluginsUseCase, ListPluginsDtoUseCase, PluginDto,
-        PluginExtractor, PluginSettings, PluginSource, PluginSourceStorage, PluginSourceType,
-        PluginStorage, PluginSyncService, ProviderUpdateInfo, RemovePluginUseCase,
-        SyncPluginsUseCase, write_bytes_to_temp_file,
+        GetPluginSettingsUseCase, ImportPluginsUseCase, ListPluginsDtoUseCase,
+        PluginDisableService, PluginDto, PluginExtractor, PluginSettings, PluginSource,
+        PluginSourceStorage, PluginSourceType, PluginStorage, PluginSyncService,
+        ProviderUpdateInfo, RemovePluginUseCase, SyncPluginsUseCase, write_bytes_to_temp_file,
     },
 };
 
@@ -17,16 +17,17 @@ use crate::{
 pub async fn import(paths: Vec<PathBuf>) -> crate::Result<()> {
     let locator = LazyLocator::get().await?;
 
-    let disable_plugin_use_case = DisablePluginUseCase::new(
-        locator.get_plugin_registry().await,
-        locator.get_plugin_loader_registry().await,
-        locator.get_settings_storage().await,
-    );
+    let disable_plugin_service: Arc<dyn PluginDisableService> =
+        Arc::new(DisablePluginUseCase::new(
+            locator.get_plugin_registry().await,
+            locator.get_plugin_loader_registry().await,
+            locator.get_settings_storage().await,
+        ));
 
     let sync_plugins_service = Arc::new(SyncPluginsUseCase::new(
         locator.get_plugin_storage().await,
         locator.get_plugin_registry().await,
-        disable_plugin_use_case,
+        disable_plugin_service,
         locator.get_event_emitter().await,
     ));
 
@@ -42,16 +43,17 @@ pub async fn import(paths: Vec<PathBuf>) -> crate::Result<()> {
 pub async fn sync() -> crate::Result<()> {
     let locator = LazyLocator::get().await?;
 
-    let disable_plugin_use_case = DisablePluginUseCase::new(
-        locator.get_plugin_registry().await,
-        locator.get_plugin_loader_registry().await,
-        locator.get_settings_storage().await,
-    );
+    let disable_plugin_service: Arc<dyn PluginDisableService> =
+        Arc::new(DisablePluginUseCase::new(
+            locator.get_plugin_registry().await,
+            locator.get_plugin_loader_registry().await,
+            locator.get_settings_storage().await,
+        ));
 
     Ok(SyncPluginsUseCase::new(
         locator.get_plugin_storage().await,
         locator.get_plugin_registry().await,
-        disable_plugin_use_case,
+        disable_plugin_service,
         locator.get_event_emitter().await,
     )
     .execute()
@@ -82,16 +84,17 @@ pub async fn get(plugin_id: String) -> crate::Result<PluginDto> {
 pub async fn remove(plugin_id: String) -> crate::Result<()> {
     let locator = LazyLocator::get().await?;
 
-    let disable_plugin_use_case = DisablePluginUseCase::new(
-        locator.get_plugin_registry().await,
-        locator.get_plugin_loader_registry().await,
-        locator.get_settings_storage().await,
-    );
+    let disable_plugin_service: Arc<dyn PluginDisableService> =
+        Arc::new(DisablePluginUseCase::new(
+            locator.get_plugin_registry().await,
+            locator.get_plugin_loader_registry().await,
+            locator.get_settings_storage().await,
+        ));
 
     let sync_plugins_service = Arc::new(SyncPluginsUseCase::new(
         locator.get_plugin_storage().await,
         locator.get_plugin_registry().await,
-        disable_plugin_use_case,
+        disable_plugin_service,
         locator.get_event_emitter().await,
     ));
 

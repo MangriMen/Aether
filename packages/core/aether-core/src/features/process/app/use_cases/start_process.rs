@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use tokio::process::Command;
 
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        process::{ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStorage},
+        process::{
+            ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStartService,
+            ProcessStorage,
+        },
     },
     shared::io::domain::IoError,
 };
@@ -68,5 +72,17 @@ impl StartProcessUseCase {
             .await;
 
         Ok(metadata)
+    }
+}
+
+#[async_trait]
+impl ProcessStartService for StartProcessUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+        command: Command,
+        post_exit_command: String,
+    ) -> Result<MinecraftProcessMetadata, ProcessError> {
+        self.execute(instance_id, command, post_exit_command).await
     }
 }

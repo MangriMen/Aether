@@ -1,5 +1,6 @@
 use std::{path::Path, sync::Arc};
 
+use async_trait::async_trait;
 use tracing::debug;
 
 use crate::features::{
@@ -10,8 +11,9 @@ use crate::features::{
     },
     minecraft::{
         InstallMinecraftParams, LoaderVersionService, MinecraftApplicationError,
-        MinecraftDomainError, MinecraftDownloader, ModLoader, ModLoaderProcessor,
-        VersionManifestService, get_compatible_java_version, resolve_minecraft_version, vanilla,
+        MinecraftDomainError, MinecraftDownloader, MinecraftInstallService, ModLoader,
+        ModLoaderProcessor, VersionManifestService, get_compatible_java_version,
+        resolve_minecraft_version, vanilla,
     },
 };
 
@@ -160,5 +162,17 @@ impl InstallMinecraftUseCase {
         .await?;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl MinecraftInstallService for InstallMinecraftUseCase {
+    async fn execute(
+        &self,
+        params: InstallMinecraftParams,
+        loading_bar: Option<&ProgressBarId>,
+        force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        self.execute(params, loading_bar, force).await
     }
 }

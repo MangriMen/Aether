@@ -1,36 +1,35 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::{
     features::{
         auth::Credential,
         instance::{
-            Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
+            Instance, InstanceError, InstanceInstallService, InstanceInstallStage,
+            InstanceLaunchService, InstanceStorage, InstanceStorageExt,
         },
         minecraft::{
-            GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
-            MinecraftHealthParams, MinecraftHealthService,
+            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
+            MinecraftHealthService, MinecraftLaunchCommandService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
-        process::{
-            GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, StartProcessUseCase,
-        },
+        process::{MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
-
-use super::InstallInstanceUseCase;
 
 pub struct LaunchInstanceUseCase {
     plugin_registry: Arc<PluginRegistry>,
     instance_storage: Arc<dyn InstanceStorage>,
     default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
     location_info: Arc<LocationInfo>,
-    get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase>,
-    install_instance_use_case: Arc<InstallInstanceUseCase>,
-    minecraft_health_service: Arc<MinecraftHealthService>,
-    get_minecraft_launch_command_use_case: Arc<GetMinecraftLaunchCommandUseCase>,
-    start_process_use_case: Arc<StartProcessUseCase>,
+    process_storage: Arc<dyn ProcessStorage>,
+    instance_install_service: Arc<dyn InstanceInstallService>,
+    minecraft_health_service: Arc<dyn MinecraftHealthService>,
+    minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
+    process_start_service: Arc<dyn ProcessStartService>,
 }
 
 impl LaunchInstanceUseCase {
@@ -40,22 +39,22 @@ impl LaunchInstanceUseCase {
         instance_storage: Arc<dyn InstanceStorage>,
         default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
         location_info: Arc<LocationInfo>,
-        get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase>,
-        install_instance_use_case: Arc<InstallInstanceUseCase>,
-        minecraft_health_service: Arc<MinecraftHealthService>,
-        get_minecraft_launch_command_use_case: Arc<GetMinecraftLaunchCommandUseCase>,
-        start_process_use_case: Arc<StartProcessUseCase>,
+        process_storage: Arc<dyn ProcessStorage>,
+        instance_install_service: Arc<dyn InstanceInstallService>,
+        minecraft_health_service: Arc<dyn MinecraftHealthService>,
+        minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
+        process_start_service: Arc<dyn ProcessStartService>,
     ) -> Self {
         Self {
             plugin_registry,
             instance_storage,
             default_instance_settings_storage,
             location_info,
-            get_process_by_instance_id_use_case,
-            install_instance_use_case,
+            process_storage,
+            instance_install_service,
             minecraft_health_service,
-            get_minecraft_launch_command_use_case,
-            start_process_use_case,
+            minecraft_launch_command_service,
+            process_start_service,
         }
     }
 
@@ -94,10 +93,11 @@ impl LaunchInstanceUseCase {
         // Check if profile has a running profile, and reject running the command if it does
         // Done late so a quick double call doesn't launch two instances
         if let Some(process) = self
-            .get_process_by_instance_id_use_case
-            .execute(instance_id.clone())
+            .process_storage
+            .list_metadata()
             .await?
-            .first()
+            .into_iter()
+            .find(|p| p.instance_id() == instance_id)
         {
             return Err(InstanceError::InstanceAlreadyRunning {
                 instance_id: instance_id.clone(),
@@ -125,7 +125,7 @@ impl LaunchInstanceUseCase {
                 .await
                 .unwrap_or(true)
         {
-            self.install_instance_use_case
+            self.instance_install_service
                 .execute(instance_id.clone(), false)
                 .await?;
         }
@@ -171,7 +171,7 @@ impl LaunchInstanceUseCase {
         }
 
         let command = self
-            .get_minecraft_launch_command_use_case
+            .minecraft_launch_command_service
             .execute(
                 GetMinecraftLaunchCommandParams {
                     game_version: instance.game_version.clone(),
@@ -197,7 +197,7 @@ impl LaunchInstanceUseCase {
             .await?;
 
         let metadata = self
-            .start_process_use_case
+            .process_start_service
             .execute(
                 instance_id,
                 command,
@@ -223,5 +223,16 @@ impl LaunchInstanceUseCase {
         }
 
         Ok(metadata?)
+    }
+}
+
+#[async_trait]
+impl InstanceLaunchService for LaunchInstanceUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+        credentials: Credential,
+    ) -> Result<MinecraftProcessMetadata, InstanceError> {
+        self.execute(instance_id, credentials).await
     }
 }

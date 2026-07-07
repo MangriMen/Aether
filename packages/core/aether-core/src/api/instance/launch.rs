@@ -5,19 +5,21 @@ use crate::{
     features::{
         auth::Credential,
         instance::{
-            InstallInstanceUseCase, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
+            InstallInstanceUseCase, InstanceInstallService, InstanceLaunchService,
+            LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         },
         java::{GetJavaUseCase, InstallJavaUseCase, infra::AzulJreProvider},
         minecraft::{
             GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
-            LoaderVersionResolver, MinecraftHealthService,
+            LoaderVersionResolver, MinecraftFileHealthService, MinecraftHealthService,
+            MinecraftInstallService, MinecraftLaunchCommandService,
             infra::{
                 AssetsService, ClientService, ForgeProcessor, LibrariesService,
                 MinecraftDownloadResolver, MinecraftDownloadService,
             },
         },
         process::{
-            GetProcessMetadataByInstanceIdUseCase, ManageProcessUseCase, MinecraftProcessMetadata,
+            ManageProcessUseCase, MinecraftProcessMetadata, ProcessStartService,
             StartProcessUseCase, TrackProcessUseCase,
         },
     },
@@ -91,26 +93,24 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
         locator.location_info.clone(),
     ));
 
-    let install_minecraft_use_case = Arc::new(InstallMinecraftUseCase::new(
-        loader_version_resolver.clone(),
-        get_loader_manifest_use_case.clone(),
-        Arc::new(minecraft_download_service),
-        forge_processor,
-        locator.get_java_installation_service().await,
-        get_java_use_case.clone(),
-        install_java_use_case.clone(),
-    ));
+    let install_minecraft_service: Arc<dyn MinecraftInstallService> =
+        Arc::new(InstallMinecraftUseCase::new(
+            loader_version_resolver.clone(),
+            get_loader_manifest_use_case.clone(),
+            Arc::new(minecraft_download_service),
+            forge_processor,
+            locator.get_java_installation_service().await,
+            get_java_use_case.clone(),
+            install_java_use_case.clone(),
+        ));
 
-    let install_instance_use_case = Arc::new(InstallInstanceUseCase::new(
-        locator.get_instance_storage().await,
-        install_minecraft_use_case,
-        locator.get_progress_service().await,
-        locator.location_info.clone(),
-    ));
-
-    let get_process_by_instance_id_use_case = Arc::new(GetProcessMetadataByInstanceIdUseCase::new(
-        locator.get_process_storage().await,
-    ));
+    let instance_install_service: Arc<dyn InstanceInstallService> =
+        Arc::new(InstallInstanceUseCase::new(
+            locator.get_instance_storage().await,
+            install_minecraft_service,
+            locator.get_progress_service().await,
+            locator.location_info.clone(),
+        ));
 
     let track_process_service = Arc::new(TrackProcessUseCase::new(
         locator.get_process_storage().await,
@@ -124,91 +124,86 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
         locator.location_info.clone(),
     ));
 
-    let start_process_use_case = Arc::new(StartProcessUseCase::new(
+    let process_start_service: Arc<dyn ProcessStartService> = Arc::new(StartProcessUseCase::new(
         locator.get_event_emitter().await,
         locator.get_process_storage().await,
         manage_process_service,
     ));
 
-    let client_service = ClientService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        minecraft_cache.clone(),
-    );
-    let assets_service = AssetsService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        locator.location_info.clone(),
-        minecraft_cache.clone(),
-    );
-    let libraries_service = LibrariesService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        locator.location_info.clone(),
-    );
-    let minecraft_download_service = MinecraftDownloadService::new(
-        client_service,
-        assets_service,
-        libraries_service,
+    let minecraft_download_service2 = MinecraftDownloadService::new(
+        ClientService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            minecraft_cache.clone(),
+        ),
+        AssetsService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            locator.location_info.clone(),
+            minecraft_cache.clone(),
+        ),
+        LibrariesService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            locator.location_info.clone(),
+        ),
         locator.get_request_client().await,
         locator.get_progress_service().await,
         minecraft_cache.clone(),
     );
 
-    let minecraft_health_service = Arc::new(MinecraftHealthService::new(
-        loader_version_resolver.clone(),
-        get_version_manifest_use_case.clone(),
-        Arc::new(minecraft_download_service),
-        get_java_use_case.clone(),
-        locator.location_info.clone(),
-    ));
+    let minecraft_health_service: Arc<dyn MinecraftHealthService> =
+        Arc::new(MinecraftFileHealthService::new(
+            loader_version_resolver.clone(),
+            get_version_manifest_use_case.clone(),
+            Arc::new(minecraft_download_service2),
+            get_java_use_case.clone(),
+            locator.location_info.clone(),
+        ));
 
-    // Third instance of MinecraftDownloadService for GetMinecraftLaunchCommandUseCase
-    let client_service = ClientService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        minecraft_cache.clone(),
-    );
-    let assets_service = AssetsService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        locator.location_info.clone(),
-        minecraft_cache.clone(),
-    );
-    let libraries_service = LibrariesService::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-        locator.location_info.clone(),
-    );
-    let minecraft_download_service = MinecraftDownloadService::new(
-        client_service,
-        assets_service,
-        libraries_service,
+    let minecraft_download_service3 = MinecraftDownloadService::new(
+        ClientService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            minecraft_cache.clone(),
+        ),
+        AssetsService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            locator.location_info.clone(),
+            minecraft_cache.clone(),
+        ),
+        LibrariesService::new(
+            locator.get_progress_service().await,
+            locator.get_request_client().await,
+            locator.location_info.clone(),
+        ),
         locator.get_request_client().await,
         locator.get_progress_service().await,
-        minecraft_cache.clone(),
+        minecraft_cache,
     );
 
-    let get_minecraft_launch_command_use_case = Arc::new(GetMinecraftLaunchCommandUseCase::new(
-        loader_version_resolver,
-        get_version_manifest_use_case,
-        Arc::new(minecraft_download_service),
-        locator.get_java_installation_service().await,
-        get_java_use_case.clone(),
-        install_java_use_case.clone(),
-        locator.location_info.clone(),
-    ));
+    let minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService> =
+        Arc::new(GetMinecraftLaunchCommandUseCase::new(
+            loader_version_resolver,
+            get_version_manifest_use_case,
+            Arc::new(minecraft_download_service3),
+            locator.get_java_installation_service().await,
+            get_java_use_case.clone(),
+            install_java_use_case.clone(),
+            locator.location_info.clone(),
+        ));
 
     LaunchInstanceUseCase::new(
         locator.get_plugin_registry().await,
         locator.get_instance_storage().await,
         locator.get_default_instance_settings_storage().await,
         locator.location_info.clone(),
-        get_process_by_instance_id_use_case,
-        install_instance_use_case,
+        locator.get_process_storage().await,
+        instance_install_service,
         minecraft_health_service,
-        get_minecraft_launch_command_use_case,
-        start_process_use_case,
+        minecraft_launch_command_service,
+        process_start_service,
     )
 }
 
@@ -216,11 +211,12 @@ async fn get_launch_instance_use_case(locator: &LazyLocator) -> LaunchInstanceUs
 pub async fn run(instance_id: String) -> crate::Result<MinecraftProcessMetadata> {
     let locator = LazyLocator::get().await?;
 
-    let launch_instance_use_case = get_launch_instance_use_case(&locator).await;
+    let launch_instance_service: Arc<dyn InstanceLaunchService> =
+        Arc::new(get_launch_instance_use_case(&locator).await);
 
     Ok(LaunchInstanceWithActiveAccountUseCase::new(
         locator.get_credentials_storage().await,
-        launch_instance_use_case,
+        launch_instance_service,
     )
     .execute(instance_id)
     .await?)

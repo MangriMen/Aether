@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use tokio::process::Command;
 
 use crate::{
@@ -14,8 +15,9 @@ use crate::{
         },
         minecraft::{
             LaunchSettings, LoaderVersionPreference, LoaderVersionService,
-            MinecraftApplicationError, MinecraftDownloader, ModLoader, VersionManifestService,
-            get_compatible_java_version, resolve_minecraft_version, vanilla,
+            MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
+            ModLoader, VersionManifestService, get_compatible_java_version,
+            resolve_minecraft_version, vanilla,
         },
         settings::LocationInfo,
     },
@@ -197,5 +199,17 @@ impl GetMinecraftLaunchCommandUseCase {
         // options.txt override
 
         Ok(command)
+    }
+}
+
+#[async_trait]
+impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
+    async fn execute(
+        &self,
+        params: GetMinecraftLaunchCommandParams,
+        launch_settings: LaunchSettings,
+        credentials: Credential,
+    ) -> Result<Command, MinecraftApplicationError> {
+        self.execute(params, launch_settings, credentials).await
     }
 }

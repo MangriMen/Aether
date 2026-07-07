@@ -1,13 +1,14 @@
 use std::{path::Path, sync::Arc};
 
+use async_trait::async_trait;
 use daedalus::get_path_from_artifact;
 
 use crate::features::{
     java::JavaQueryService,
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
-        MinecraftDownloader, ModLoader, VersionManifestService, get_compatible_java_version,
-        parse_rules, resolve_minecraft_version, vanilla,
+        MinecraftDownloader, MinecraftHealthService, ModLoader, VersionManifestService,
+        get_compatible_java_version, parse_rules, resolve_minecraft_version, vanilla,
     },
     settings::LocationInfo,
 };
@@ -21,7 +22,7 @@ pub struct MinecraftHealthParams {
 }
 
 #[allow(dead_code)]
-pub struct MinecraftHealthService {
+pub struct MinecraftFileHealthService {
     loader_version_resolver: Arc<dyn LoaderVersionService>,
     get_version_manifest_use_case: Arc<dyn VersionManifestService>,
     minecraft_downloader: Arc<dyn MinecraftDownloader>,
@@ -29,7 +30,7 @@ pub struct MinecraftHealthService {
     location_info: Arc<LocationInfo>,
 }
 
-impl MinecraftHealthService {
+impl MinecraftFileHealthService {
     pub fn new(
         loader_version_resolver: Arc<dyn LoaderVersionService>,
         get_version_manifest_use_case: Arc<dyn VersionManifestService>,
@@ -45,14 +46,11 @@ impl MinecraftHealthService {
             location_info,
         }
     }
+}
 
-    /// Perform a stat-only health check of all critical Minecraft files.
-    ///
-    /// Returns:
-    /// - `Ok(true)` — all files present, launch can proceed without install
-    /// - `Ok(false)` — some files missing, full install should run
-    /// - `Err` — network/metadata error (offline), caller should skip check
-    pub async fn verify_files(
+#[async_trait]
+impl MinecraftHealthService for MinecraftFileHealthService {
+    async fn verify_files(
         &self,
         params: MinecraftHealthParams,
     ) -> Result<bool, MinecraftApplicationError> {
