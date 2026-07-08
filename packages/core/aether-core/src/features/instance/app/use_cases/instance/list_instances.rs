@@ -13,10 +13,6 @@ impl ListInstancesUseCase {
     pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
-
-    pub async fn execute(&self) -> Result<Vec<Instance>, InstanceError> {
-        ListInstancesUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

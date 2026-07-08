@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::{
     plugins::{
         LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoaderRegistry, PluginManifest,
@@ -7,6 +9,8 @@ use crate::features::{
     },
     settings::SettingsStorage,
 };
+
+use super::ports::ForceEnablePluginUseCasePort;
 
 /// Force-enables a plugin by skipping the API version compatibility check
 /// and persisting the user's choice in the plugin settings.
@@ -128,5 +132,12 @@ impl ForceEnablePluginUseCase {
             }))
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ForceEnablePluginUseCasePort for ForceEnablePluginUseCase {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.execute(plugin_id).await
     }
 }

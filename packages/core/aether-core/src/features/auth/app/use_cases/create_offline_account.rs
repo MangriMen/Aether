@@ -21,10 +21,6 @@ impl CreateOfflineAccountUseCase {
             credentials_storage,
         }
     }
-
-    pub async fn execute(&self, username: String) -> Result<Account, AuthApplicationError> {
-        CreateOfflineAccountUseCasePort::execute(self, username).await
-    }
 }
 
 #[async_trait]

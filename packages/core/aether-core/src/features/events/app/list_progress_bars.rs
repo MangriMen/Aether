@@ -15,10 +15,6 @@ impl ListProgressBarsUseCase {
             progress_bar_storage,
         }
     }
-
-    pub async fn execute(&self) -> Vec<ProgressBar> {
-        ListProgressBarsUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

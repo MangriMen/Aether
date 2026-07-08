@@ -16,9 +16,9 @@ use crate::{
 use super::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy};
 
 pub struct PluginInfrastructureListener<
-    IR: CapabilityRegistry<Arc<dyn Importer>>,
-    UR: CapabilityRegistry<Arc<dyn Updater>>,
-    CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
+    IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
+    UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
+    CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
 > {
     plugin: Arc<PluginRegistry>,
     importers: Arc<IR>,
@@ -28,9 +28,9 @@ pub struct PluginInfrastructureListener<
 
 impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
 where
-    IR: CapabilityRegistry<Arc<dyn Importer>>,
-    UR: CapabilityRegistry<Arc<dyn Updater>>,
-    CR: CapabilityRegistry<Arc<dyn ContentProvider>>,
+    IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
+    UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
+    CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
 {
     pub fn new(
         plugin: Arc<PluginRegistry>,

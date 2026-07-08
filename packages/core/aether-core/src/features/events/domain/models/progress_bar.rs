@@ -1,7 +1,7 @@
 use log::error;
 use uuid::Uuid;
 
-use crate::{core::LazyLocator, features::events::ProgressBarStorage};
+use crate::{core::app::AetherContainer, features::events::ProgressBarStorage};
 
 use super::{ProgressEvent, ProgressEventType};
 
@@ -30,14 +30,13 @@ impl Drop for ProgressBarId {
     fn drop(&mut self) {
         let progress_bar_id = self.0;
         tokio::spawn(async move {
-            let lazy_locator = LazyLocator::get().await;
+            let container = AetherContainer::try_get();
 
-            match lazy_locator {
-                Ok(lazy_locator) => {
-                    let progress_bar_storage = lazy_locator.get_progress_bar_storage().await;
-                    let event_emitter = lazy_locator.get_event_emitter().await;
+            match container {
+                Some(container) => {
+                    let progress_bar_storage = container.progress_bar_storage();
+                    let event_emitter = container.event_emitter();
 
-                    // TODO: remove unwrap
                     let removed_progress_bar =
                         progress_bar_storage.remove(progress_bar_id).await.unwrap();
 
@@ -59,7 +58,7 @@ impl Drop for ProgressBarId {
                         }
                     }
                 }
-                Err(e) => error!("Failed to get EventState: {e:?}"),
+                None => error!("Failed to get AetherContainer in ProgressBarId::drop"),
             }
         });
     }

@@ -29,10 +29,6 @@ impl RemoveInstanceUseCase {
             pack_storage,
         }
     }
-
-    pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
-        RemoveInstanceUseCasePort::execute(self, instance_id).await
-    }
 }
 
 #[async_trait]

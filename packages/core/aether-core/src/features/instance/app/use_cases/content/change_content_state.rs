@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ChangeContentStateUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     instance::{InstanceError, app::ContentFileService},
@@ -82,5 +85,12 @@ impl ChangeContentStateUseCase {
             .await;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ChangeContentStateUseCasePort for ChangeContentStateUseCase {
+    async fn execute(&self, input: ChangeContentState) -> Result<(), InstanceError> {
+        self.execute(input).await
     }
 }

@@ -19,8 +19,4 @@ impl GetVersionManifestUseCase {
     pub fn new(metadata_storage: Arc<dyn MetadataStorage>) -> Self {
         Self { metadata_storage }
     }
-
-    pub async fn execute(&self) -> Result<vanilla::VersionManifest, MinecraftApplicationError> {
-        VersionManifestService::execute(self).await
-    }
 }

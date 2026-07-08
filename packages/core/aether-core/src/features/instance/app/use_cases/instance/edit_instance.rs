@@ -17,14 +17,6 @@ impl EditInstanceUseCase {
     pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
-
-    pub async fn execute(
-        &self,
-        instance_id: String,
-        edit_instance: EditInstance,
-    ) -> Result<Instance, InstanceError> {
-        EditInstanceUseCasePort::execute(self, instance_id, edit_instance).await
-    }
 }
 
 #[async_trait]

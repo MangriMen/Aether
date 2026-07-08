@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use aether_core::{core::LazyLocator, features::settings::LocationInfo};
+use aether_core::{core::app::AetherContainer, features::settings::LocationInfo};
 use log::error;
 use sqlx::SqlitePool;
 use tauri::{App, AppHandle, Manager};
@@ -52,8 +52,8 @@ fn post_initialize<R: tauri::Runtime>(
     let event_emitter = event_emitter_state.inner().clone();
 
     tauri::async_runtime::spawn(async move {
-        if let Err(err) = LazyLocator::init(location_info, event_emitter.clone(), pool).await {
-            panic!("CRITICAL: Failed to initialize LazyLocator: {err}");
+        if let Err(err) = AetherContainer::init(location_info, event_emitter.clone(), pool).await {
+            panic!("CRITICAL: Failed to initialize AetherContainer: {err}");
         }
 
         let main_window_label = WindowLabel::Main;

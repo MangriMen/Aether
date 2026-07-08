@@ -13,10 +13,6 @@ impl ListProcessMetadataUseCase {
     pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
-
-    pub async fn execute(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
-        ListProcessMetadataUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

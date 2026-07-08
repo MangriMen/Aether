@@ -3,13 +3,17 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use dashmap::DashMap;
 use futures::TryStreamExt;
 use path_slash::PathBufExt;
 
 use crate::{
     features::{
-        instance::{ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage},
+        instance::{
+            ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage,
+            app::ports::ListContentUseCasePort,
+        },
         settings::LocationInfo,
     },
     shared::{hash::infra::sha1_async, io::infra::read_async},
@@ -186,5 +190,15 @@ impl ListContentUseCase {
             .await?;
 
         Ok(pack_file)
+    }
+}
+
+#[async_trait]
+impl ListContentUseCasePort for ListContentUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+    ) -> Result<DashMap<String, ContentFile>, InstanceError> {
+        self.execute(instance_id).await
     }
 }

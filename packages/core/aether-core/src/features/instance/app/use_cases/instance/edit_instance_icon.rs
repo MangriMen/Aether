@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::features::instance::app::ports::EditInstanceIconUseCasePort;
 use crate::{
     features::instance::{Instance, InstanceError, InstanceStorage},
     shared::cache::domain::AssetsStorage,
@@ -63,5 +65,15 @@ impl EditInstanceIconUseCase {
         self.instance_storage.upsert(&instance).await?;
 
         Ok(instance)
+    }
+}
+
+#[async_trait]
+impl EditInstanceIconUseCasePort for EditInstanceIconUseCase {
+    async fn execute(
+        &self,
+        edit_instance_icon: EditInstanceIcon,
+    ) -> Result<Instance, InstanceError> {
+        self.execute(edit_instance_icon).await
     }
 }

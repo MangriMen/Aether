@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListContentVersionsUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, ContentVersion, InstanceError, app::ContentListVersionsParams,
@@ -35,5 +38,15 @@ impl ListContentVersionsUseCase {
             .capability
             .list_versions(get_params.content_id)
             .await
+    }
+}
+
+#[async_trait]
+impl ListContentVersionsUseCasePort for ListContentVersionsUseCase {
+    async fn execute(
+        &self,
+        get_params: ContentListVersionsParams,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
+        self.execute(get_params).await
     }
 }

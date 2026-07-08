@@ -26,10 +26,6 @@ impl UpdateInstanceUseCase {
         }
     }
 
-    pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
-        UpdateInstanceUseCasePort::execute(self, instance_id).await
-    }
-
     pub async fn update_by_plugin(
         &self,
         instance_id: &str,

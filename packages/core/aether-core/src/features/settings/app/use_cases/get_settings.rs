@@ -14,10 +14,6 @@ impl GetSettingsUseCase {
     pub fn new(settings_storage: Arc<dyn SettingsStorage>) -> Self {
         Self { settings_storage }
     }
-
-    pub async fn execute(&self) -> Result<Settings, SettingsError> {
-        GetSettingsUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

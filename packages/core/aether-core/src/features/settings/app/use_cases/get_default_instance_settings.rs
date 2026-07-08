@@ -17,10 +17,6 @@ impl GetDefaultInstanceSettingsUseCase {
             instance_settings_storage,
         }
     }
-
-    pub async fn execute(&self) -> Result<DefaultInstanceSettings, SettingsError> {
-        GetDefaultInstanceSettingsUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

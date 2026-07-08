@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::features::instance::app::ports::ImportInstanceUseCasePort;
 use crate::{
     features::instance::{Importer, InstanceError},
     shared::capability::domain::CapabilityRegistry,
@@ -40,5 +42,12 @@ impl ImportInstanceUseCase {
             })?;
 
         importer.capability.import(&path).await
+    }
+}
+
+#[async_trait]
+impl ImportInstanceUseCasePort for ImportInstanceUseCase {
+    async fn execute(&self, import_instance: ImportInstance) -> Result<(), InstanceError> {
+        self.execute(import_instance).await
     }
 }

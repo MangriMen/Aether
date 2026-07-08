@@ -2,7 +2,10 @@ use aether_core_plugin_api::v0::{CommandDto, OutputDto};
 use extism::host_fn;
 use extism_convert::Msgpack;
 
-use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
+use crate::{
+    core::app::AetherContainer, features::settings::SettingsFeature,
+    shared::execute_async::infra::execute_async,
+};
 
 use super::super::{
     super::{
@@ -31,10 +34,10 @@ pub(crate) async fn handle_run_command(
     let command_for_log = command.clone();
     log::debug!("Processing command from plugin: {command_for_log:?}");
 
-    let locator = LazyLocator::get().await?;
+    let container = AetherContainer::get();
 
     let host_command =
-        plugin_utils::plugin_command_to_host(plugin_id, &command, &locator.location_info)?;
+        plugin_utils::plugin_command_to_host(plugin_id, &command, &container.location_info())?;
     let mut cmd = host_command.to_tokio_command();
 
     log::debug!("Running command: {host_command:?}");

@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use crate::core::LazyLocator;
+use crate::{core::app::AetherContainer, features::settings::SettingsFeature};
 
 pub async fn get_dir(instance_id: &str) -> crate::Result<PathBuf> {
-    let locator = LazyLocator::get().await?;
-    Ok(locator.location_info.instance_dir(instance_id))
+    let container = AetherContainer::get();
+    Ok(container.location_info().instance_dir(instance_id))
 }

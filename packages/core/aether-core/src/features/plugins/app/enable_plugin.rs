@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::{
     plugins::{
         Compatibility, LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoaderRegistry,
@@ -7,6 +9,8 @@ use crate::features::{
     },
     settings::SettingsStorage,
 };
+
+use super::ports::EnablePluginUseCasePort;
 
 pub struct EnablePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
@@ -148,5 +152,12 @@ impl EnablePluginUseCase {
             }))
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl EnablePluginUseCasePort for EnablePluginUseCase {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.execute(plugin_id).await
     }
 }

@@ -3,17 +3,20 @@ use dashmap::DashMap;
 use extism::{convert::Msgpack, host_fn};
 use path_slash::PathBufExt;
 
-use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
+use crate::{
+    core::app::AetherContainer, features::settings::SettingsFeature,
+    shared::execute_async::infra::execute_async,
+};
 
 use super::super::{super::mappers::to_extism_res, PluginContext};
 
 // ── Testable business logic ──
 
 pub(crate) async fn handle_instance_get_dir(id: &str) -> crate::Result<String> {
-    let locator = LazyLocator::get().await?;
+    let container = AetherContainer::get();
     let dir = crate::api::instance::get_dir(id).await?;
     let relative_path = dir
-        .strip_prefix(locator.location_info.config_dir())
+        .strip_prefix(container.location_info().config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
         .to_path_buf();
 
@@ -24,12 +27,12 @@ pub(crate) async fn handle_instance_plugin_get_dir(
     plugin_id: &str,
     instance_id: &str,
 ) -> crate::Result<String> {
-    let locator = LazyLocator::get().await?;
-    let dir = locator
-        .location_info
+    let container = AetherContainer::get();
+    let dir = container
+        .location_info()
         .instance_plugin_dir(instance_id, plugin_id);
     let relative_path = dir
-        .strip_prefix(locator.location_info.config_dir())
+        .strip_prefix(container.location_info().config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
         .to_path_buf();
 

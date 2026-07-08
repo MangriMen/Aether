@@ -15,10 +15,6 @@ impl RemoveJavaUseCase {
     pub fn new(java_storage: Arc<dyn JavaStorage>) -> Self {
         Self { java_storage }
     }
-
-    pub async fn execute(&self, major_version: u32) -> Result<(), JavaApplicationError> {
-        RemoveJavaUseCasePort::execute(self, major_version).await
-    }
 }
 
 #[async_trait]

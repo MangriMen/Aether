@@ -1,28 +1,17 @@
 use crate::{
-    core::LazyLocator,
-    features::minecraft::{
-        GetLoaderVersionManifestUseCase, GetVersionManifestUseCase, ModLoader,
-        VersionManifestService, modded, vanilla,
-    },
+    core::app::AetherContainer,
+    features::minecraft::{MinecraftFeature, ModLoader, modded, vanilla},
 };
 
 pub async fn get_version_manifest() -> crate::Result<vanilla::VersionManifest> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(
-        VersionManifestService::execute(&GetVersionManifestUseCase::new(
-            locator.get_metadata_storage().await,
-        ))
-        .await?,
-    )
+    let container = AetherContainer::get();
+    Ok(container.get_version_manifest_use_case().execute().await?)
 }
 
 pub async fn get_loader_version_manifest(loader: ModLoader) -> crate::Result<modded::Manifest> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(
-        GetLoaderVersionManifestUseCase::new(locator.get_metadata_storage().await)
-            .execute(loader)
-            .await?,
-    )
+    let container = AetherContainer::get();
+    Ok(container
+        .get_loader_version_manifest_use_case()
+        .execute(loader)
+        .await?)
 }

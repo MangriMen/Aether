@@ -23,10 +23,6 @@ impl EditJavaUseCase {
             java_installation_service,
         }
     }
-
-    pub async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
-        EditJavaUseCasePort::execute(self, edit_java).await
-    }
 }
 
 #[async_trait]

@@ -1,50 +1,38 @@
 use crate::{
-    core::LazyLocator,
+    core::app::AetherContainer,
     features::settings::{
-        DefaultInstanceSettings, EditDefaultInstanceSettings, EditDefaultInstanceSettingsUseCase,
-        EditSettings, EditSettingsUseCase, GetDefaultInstanceSettingsUseCase, GetSettingsUseCase,
-        Settings,
+        DefaultInstanceSettings, EditDefaultInstanceSettings, EditSettings, Settings,
+        SettingsFeature,
     },
 };
 
 pub async fn get() -> crate::Result<Settings> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(
-        GetSettingsUseCase::new(locator.get_settings_storage().await)
-            .execute()
-            .await?,
-    )
+    let container = AetherContainer::get();
+    Ok(container.get_settings_use_case().execute().await?)
 }
 
 pub async fn edit(edit_settings: EditSettings) -> crate::Result<Settings> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(
-        EditSettingsUseCase::new(locator.get_settings_storage().await)
-            .execute(edit_settings)
-            .await?,
-    )
+    let container = AetherContainer::get();
+    Ok(container
+        .edit_settings_use_case()
+        .execute(edit_settings)
+        .await?)
 }
 
 pub async fn get_default_instance_settings() -> crate::Result<DefaultInstanceSettings> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(GetDefaultInstanceSettingsUseCase::new(
-        locator.get_default_instance_settings_storage().await,
-    )
-    .execute()
-    .await?)
+    let container = AetherContainer::get();
+    Ok(container
+        .get_default_instance_settings_use_case()
+        .execute()
+        .await?)
 }
 
 pub async fn upsert_default_instance_settings(
     settings: EditDefaultInstanceSettings,
 ) -> crate::Result<DefaultInstanceSettings> {
-    let locator = LazyLocator::get().await?;
-
-    Ok(EditDefaultInstanceSettingsUseCase::new(
-        locator.get_default_instance_settings_storage().await,
-    )
-    .execute(settings)
-    .await?)
+    let container = AetherContainer::get();
+    Ok(container
+        .edit_default_instance_settings_use_case()
+        .execute(settings)
+        .await?)
 }

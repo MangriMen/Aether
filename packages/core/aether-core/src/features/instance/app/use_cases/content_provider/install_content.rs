@@ -1,7 +1,9 @@
+use async_trait::async_trait;
 use path_slash::PathBufExt;
 use std::sync::Arc;
 use tracing::error;
 
+use crate::features::instance::app::ports::InstallContentUseCasePort;
 use crate::{
     features::instance::{
         ContentInstallParams, ContentProvider, ContentType, InstanceError, PackFile, PackStorage,
@@ -118,5 +120,12 @@ impl InstallContentUseCase {
         }
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl InstallContentUseCasePort for InstallContentUseCase {
+    async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
+        self.execute(install_params).await
     }
 }

@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginSource, PluginSourceStorage, PluginStorage,
 };
 
+use super::ports::UpdatePluginUseCasePort;
 use super::{PluginProviderFactory, write_bytes_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
@@ -121,5 +124,12 @@ fn source_version(source: &PluginSource) -> &str {
             current_version, ..
         } => current_version,
         PluginSource::Local => "",
+    }
+}
+
+#[async_trait]
+impl UpdatePluginUseCasePort for UpdatePluginUseCase {
+    async fn execute(&self, plugin_id: &str, target_tag: Option<&str>) -> Result<(), PluginError> {
+        self.execute(plugin_id, target_tag).await
     }
 }

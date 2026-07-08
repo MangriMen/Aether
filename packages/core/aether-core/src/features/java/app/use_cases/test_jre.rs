@@ -17,10 +17,6 @@ impl TestJreUseCase {
             java_installation_service,
         }
     }
-
-    pub async fn execute(&self, path: PathBuf) -> Result<Java, JavaApplicationError> {
-        TestJreUseCasePort::execute(self, path).await
-    }
 }
 
 #[async_trait]

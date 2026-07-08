@@ -20,10 +20,6 @@ impl SetActiveAccountUseCase {
             credentials_storage,
         }
     }
-
-    pub async fn execute(&self, account_id: Uuid) -> Result<Account, AuthApplicationError> {
-        SetActiveAccountUseCasePort::execute(self, account_id).await
-    }
 }
 
 #[async_trait]

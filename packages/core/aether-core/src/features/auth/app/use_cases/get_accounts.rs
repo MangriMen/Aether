@@ -16,10 +16,6 @@ impl GetAccountsUseCase {
             credentials_storage,
         }
     }
-
-    pub async fn execute(&self) -> Result<Vec<Account>, AuthApplicationError> {
-        GetAccountsUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

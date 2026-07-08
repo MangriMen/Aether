@@ -22,10 +22,6 @@ impl DiscoverJavaUseCase {
             discovery_paths,
         }
     }
-
-    pub async fn execute(&self) -> Result<Vec<Java>, JavaApplicationError> {
-        DiscoverJavaUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

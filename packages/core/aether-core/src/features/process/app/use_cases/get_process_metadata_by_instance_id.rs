@@ -13,13 +13,6 @@ impl GetProcessMetadataByInstanceIdUseCase {
     pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
-
-    pub async fn execute(
-        &self,
-        instance_id: String,
-    ) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
-        GetProcessMetadataByInstanceIdUseCasePort::execute(self, instance_id).await
-    }
 }
 
 #[async_trait]

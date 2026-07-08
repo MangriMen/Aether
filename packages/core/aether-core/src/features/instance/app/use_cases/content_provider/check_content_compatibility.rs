@@ -3,6 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::CheckContentCompatibilityUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, Instance, InstanceError, InstanceStorage,
@@ -55,5 +58,16 @@ impl CheckContentCompatibilityUseCase {
             .capability
             .check_compatibility(&instances, &check_params)
             .await
+    }
+}
+
+#[async_trait]
+impl CheckContentCompatibilityUseCasePort for CheckContentCompatibilityUseCase {
+    async fn execute(
+        &self,
+        instance_ids: HashSet<String>,
+        check_params: ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        self.execute(instance_ids, check_params).await
     }
 }

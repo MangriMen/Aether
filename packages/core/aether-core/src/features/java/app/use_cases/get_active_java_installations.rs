@@ -16,10 +16,6 @@ impl GetActiveJavaInstallationsUseCase {
             java_installation_tracker,
         }
     }
-
-    pub async fn execute(&self) -> HashSet<u32> {
-        GetActiveJavaInstallationsUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

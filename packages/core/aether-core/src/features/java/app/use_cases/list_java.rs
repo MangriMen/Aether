@@ -15,10 +15,6 @@ impl ListJavaUseCase {
     pub fn new(storage: Arc<dyn JavaStorage>) -> Self {
         Self { storage }
     }
-
-    pub async fn execute(&self) -> Result<Vec<Java>, JavaApplicationError> {
-        ListJavaUseCasePort::execute(self).await
-    }
 }
 
 #[async_trait]

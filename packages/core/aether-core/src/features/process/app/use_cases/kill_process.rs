@@ -14,10 +14,6 @@ impl KillProcessUseCase {
     pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
-
-    pub async fn execute(&self, process_id: Uuid) -> Result<(), ProcessError> {
-        KillProcessUseCasePort::execute(self, process_id).await
-    }
 }
 
 #[async_trait]

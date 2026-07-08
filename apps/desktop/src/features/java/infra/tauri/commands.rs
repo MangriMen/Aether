@@ -1,13 +1,6 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf};
 
-use aether_core::{
-    core::LazyLocator,
-    features::java::{
-        DiscoverJavaUseCase, EditJavaUseCase, GetActiveJavaInstallationsUseCase,
-        InstallJavaUseCase, JavaInstallService, ListJavaUseCase, RemoveJavaUseCase, TestJreUseCase,
-        infra::{AzulJreProvider, get_default_discovery_paths},
-    },
-};
+use aether_core::{core::app::AetherContainer, features::java::JavaFeature};
 use tauri::State;
 
 use crate::{
@@ -34,9 +27,10 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[tauri::command]
 #[specta::specta]
 async fn list() -> FrontendResult<Vec<JavaDto>> {
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    Ok(ListJavaUseCase::new(locator.get_java_storage().await)
+    Ok(container
+        .list_java_use_case()
         .execute()
         .await
         .map_err(aether_core::Error::from)
@@ -55,17 +49,15 @@ async fn edit(
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    Ok(EditJavaUseCase::new(
-        locator.get_java_storage().await,
-        locator.get_java_installation_service().await,
-    )
-    .execute(edit_java.into())
-    .await
-    .map_err(aether_core::Error::from)
-    .map_err(crate::Error::from)?
-    .into())
+    Ok(container
+        .edit_java_use_case()
+        .execute(edit_java.into())
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
@@ -77,9 +69,10 @@ async fn remove(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    Ok(RemoveJavaUseCase::new(locator.get_java_storage().await)
+    Ok(container
+        .remove_java_use_case()
         .execute(version)
         .await
         .map_err(aether_core::Error::from)
@@ -95,73 +88,54 @@ async fn install(
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    let jre_provider = Arc::new(AzulJreProvider::new(
-        locator.get_progress_service().await,
-        locator.get_request_client().await,
-    ));
-
-    Ok(JavaInstallService::execute(
-        &InstallJavaUseCase::new(
-            locator.get_java_storage().await,
-            locator.get_java_installation_service().await,
-            jre_provider,
-            locator.location_info.clone(),
-            locator.get_java_installation_tracker().await,
-        ),
-        install_java.into(),
-    )
-    .await
-    .map_err(aether_core::Error::from)
-    .map_err(crate::Error::from)?
-    .into())
+    Ok(container
+        .install_java_use_case()
+        .execute(install_java.into())
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    Ok(
-        TestJreUseCase::new(locator.get_java_installation_service().await)
-            .execute(path)
-            .await
-            .map_err(aether_core::Error::from)
-            .map_err(crate::Error::from)?
-            .into(),
-    )
+    Ok(container
+        .test_jre_use_case()
+        .execute(path)
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn discover() -> FrontendResult<Vec<JavaDto>> {
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    let mut discovery_paths = get_default_discovery_paths();
-    discovery_paths.push(locator.location_info.java_dir());
-
-    Ok(DiscoverJavaUseCase::new(
-        locator.get_java_installation_service().await,
-        discovery_paths,
-    )
-    .execute()
-    .await
-    .map_err(aether_core::Error::from)
-    .map_err(crate::Error::from)?
-    .into_iter()
-    .map(Into::into)
-    .collect())
+    Ok(container
+        .discover_java_use_case()
+        .execute()
+        .await
+        .map_err(aether_core::Error::from)
+        .map_err(crate::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn get_active_installations() -> FrontendResult<HashSet<u32>> {
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    Ok(
-        GetActiveJavaInstallationsUseCase::new(locator.get_java_installation_tracker().await)
-            .execute()
-            .await,
-    )
+    Ok(container
+        .get_active_java_installations_use_case()
+        .execute()
+        .await)
 }

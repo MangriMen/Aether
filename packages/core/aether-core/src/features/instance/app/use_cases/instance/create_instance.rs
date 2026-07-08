@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use log::{error, info};
 
 use crate::features::{
@@ -10,6 +11,7 @@ use crate::features::{
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
         InstanceWatcherService, PackInfo, app::InstanceFileService,
+        app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -203,4 +205,11 @@ pub fn sanitize_instance_name(name: &str) -> String {
         ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
         "_",
     )
+}
+
+#[async_trait]
+impl CreateInstanceUseCasePort for CreateInstanceUseCase {
+    async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+        self.execute(new_instance).await
+    }
 }

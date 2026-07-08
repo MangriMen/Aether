@@ -1,6 +1,10 @@
 use std::{path::PathBuf, sync::Arc};
 
+use async_trait::async_trait;
+
 use crate::features::plugins::{PluginError, PluginExtractor, PluginStorage, PluginSyncService};
+
+use super::ports::ImportPluginsUseCasePort;
 
 pub struct ImportPluginsUseCase {
     plugin_extractor: Arc<dyn PluginExtractor>,
@@ -29,5 +33,12 @@ impl ImportPluginsUseCase {
 
         self.sync_plugins_service.execute().await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ImportPluginsUseCasePort for ImportPluginsUseCase {
+    async fn execute(&self, paths: Vec<PathBuf>) -> Result<(), PluginError> {
+        self.execute(paths).await
     }
 }

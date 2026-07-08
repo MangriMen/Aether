@@ -62,8 +62,4 @@ impl InstallJavaUseCase {
             java_installation_tracker,
         }
     }
-
-    pub async fn execute(&self, install_java: InstallJava) -> Result<Java, JavaApplicationError> {
-        JavaInstallService::execute(self, install_java).await
-    }
 }

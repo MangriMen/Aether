@@ -36,8 +36,4 @@ impl GetJavaUseCase {
             java_installation_service,
         }
     }
-
-    pub async fn execute(&self, version: u32) -> Result<Java, JavaApplicationError> {
-        JavaQueryService::execute(self, version).await
-    }
 }

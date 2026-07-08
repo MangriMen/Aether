@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::RemoveContentUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
     instance::{InstanceError, PackStorage, app::ContentFileService},
@@ -60,5 +63,12 @@ impl RemoveContentUseCase {
             .await;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl RemoveContentUseCasePort for RemoveContentUseCase {
+    async fn execute(&self, input: RemoveContent) -> Result<(), InstanceError> {
+        self.execute(input).await
     }
 }

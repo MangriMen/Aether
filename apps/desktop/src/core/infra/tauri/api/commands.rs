@@ -1,7 +1,7 @@
 #![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
-use aether_core::core::LazyLocator;
+use aether_core::core::app::AetherContainer;
 use tauri::State;
 
 use crate::{
@@ -45,7 +45,7 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 #[tauri::command]
 #[specta::specta]
 pub async fn wait_for_initialization() -> FrontendResult<()> {
-    let _locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let _container = AetherContainer::get();
     Ok(())
 }
 

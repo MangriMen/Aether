@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::LaunchInstanceWithActiveAccountUseCasePort;
 use crate::features::{
     auth::{ActiveAccountHelper, CredentialsStorage},
     instance::{InstanceError, InstanceLaunchService},
@@ -32,5 +35,15 @@ impl LaunchInstanceWithActiveAccountUseCase {
         self.launch_instance
             .execute(instance_id, default_account)
             .await
+    }
+}
+
+#[async_trait]
+impl LaunchInstanceWithActiveAccountUseCasePort for LaunchInstanceWithActiveAccountUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+    ) -> Result<MinecraftProcessMetadata, InstanceError> {
+        self.execute(instance_id).await
     }
 }

@@ -11,7 +11,7 @@ use crate::features::instance::infra::{
 };
 use crate::features::instance::{
     Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
-    RemoveInstanceUseCase,
+    RemoveInstanceUseCase, RemoveInstanceUseCasePort,
 };
 use crate::features::minecraft::ModLoader;
 use crate::features::settings::LocationInfo;

@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::SearchContentUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, ContentSearchParams, ContentSearchResult, InstanceError,
@@ -32,5 +35,15 @@ impl SearchContentUseCase {
             })?;
 
         provider.capability.search(search_params).await
+    }
+}
+
+#[async_trait]
+impl SearchContentUseCasePort for SearchContentUseCase {
+    async fn execute(
+        &self,
+        search_params: ContentSearchParams,
+    ) -> Result<ContentSearchResult, InstanceError> {
+        self.execute(search_params).await
     }
 }

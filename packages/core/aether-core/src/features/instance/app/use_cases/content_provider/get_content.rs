@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::GetContentUseCasePort;
 use crate::{
     features::instance::{ContentItem, ContentProvider, InstanceError, app::ContentGetParams},
     shared::capability::domain::CapabilityRegistry,
@@ -30,5 +33,12 @@ impl GetContentUseCase {
             })?;
 
         provider.capability.get_content(get_params.content_id).await
+    }
+}
+
+#[async_trait]
+impl GetContentUseCasePort for GetContentUseCase {
+    async fn execute(&self, get_params: ContentGetParams) -> Result<ContentItem, InstanceError> {
+        self.execute(get_params).await
     }
 }

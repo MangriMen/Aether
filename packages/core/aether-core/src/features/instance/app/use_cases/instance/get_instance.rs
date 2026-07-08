@@ -13,10 +13,6 @@ impl GetInstanceUseCase {
     pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
-
-    pub async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
-        GetInstanceUseCasePort::execute(self, instance_id).await
-    }
 }
 
 #[async_trait]

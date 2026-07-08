@@ -3,6 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ImportContentUseCasePort;
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
@@ -168,5 +171,12 @@ impl ImportContentUseCase {
             .await;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ImportContentUseCasePort for ImportContentUseCase {
+    async fn execute(&self, input: ImportContent) -> Result<(), InstanceError> {
+        self.execute(input).await
     }
 }

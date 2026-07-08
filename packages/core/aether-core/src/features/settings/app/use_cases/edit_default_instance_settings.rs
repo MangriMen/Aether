@@ -17,13 +17,6 @@ impl EditDefaultInstanceSettingsUseCase {
             default_instance_settings_storage,
         }
     }
-
-    pub async fn execute(
-        &self,
-        edit_settings: EditDefaultInstanceSettings,
-    ) -> Result<DefaultInstanceSettings, SettingsError> {
-        EditDefaultInstanceSettingsUseCasePort::execute(self, edit_settings).await
-    }
 }
 
 #[async_trait]

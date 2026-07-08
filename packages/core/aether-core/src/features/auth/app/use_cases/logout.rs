@@ -20,10 +20,6 @@ impl LogoutUseCase {
             credentials_storage,
         }
     }
-
-    pub async fn execute(&self, account_id: Uuid) -> Result<(), AuthApplicationError> {
-        LogoutUseCasePort::execute(self, account_id).await
-    }
 }
 
 #[async_trait]

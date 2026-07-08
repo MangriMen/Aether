@@ -15,10 +15,6 @@ impl EditSettingsUseCase {
     pub fn new(settings_storage: Arc<dyn SettingsStorage>) -> Self {
         Self { settings_storage }
     }
-
-    pub async fn execute(&self, edit_settings: EditSettings) -> Result<Settings, SettingsError> {
-        EditSettingsUseCasePort::execute(self, edit_settings).await
-    }
 }
 
 #[async_trait]

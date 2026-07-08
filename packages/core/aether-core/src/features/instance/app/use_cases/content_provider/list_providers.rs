@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListProvidersUseCasePort;
 use crate::{
     features::instance::{ContentProvider, ContentProviderCapabilityMetadata, InstanceError},
     shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
@@ -32,5 +35,14 @@ impl ListProvidersUseCase {
                 capability: entry.capability.metadata().clone(),
             })
             .collect())
+    }
+}
+
+#[async_trait]
+impl ListProvidersUseCasePort for ListProvidersUseCase {
+    async fn execute(
+        &self,
+    ) -> Result<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>, InstanceError> {
+        self.execute().await
     }
 }

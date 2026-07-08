@@ -1,12 +1,7 @@
-use aether_core::{
-    core::LazyLocator,
-    features::instance::EditInstanceIconUseCase,
-    shared::cache::infra::{AssetsResolver, FileCache, FsAssetsStorage},
-};
+use aether_core::{core::app::AetherContainer, features::instance::InstanceFeature};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
-    sync::Arc,
 };
 use tauri::State;
 use uuid::Uuid;
@@ -376,15 +371,10 @@ async fn edit_icon(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = AetherContainer::get();
 
-    let assets_cache = Arc::new(FileCache::new(AssetsResolver::new(
-        locator.location_info.clone(),
-    )));
-
-    let assets_manager = Arc::new(FsAssetsStorage::new(assets_cache));
-
-    EditInstanceIconUseCase::new(locator.get_instance_storage().await, assets_manager)
+    container
+        .edit_instance_icon_use_case()
         .execute(edit_instance_icon.into())
         .await
         .map_err(aether_core::Error::from)

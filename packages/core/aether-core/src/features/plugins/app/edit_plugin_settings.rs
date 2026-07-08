@@ -1,8 +1,11 @@
 use std::{path::PathBuf, sync::Arc};
 
+use async_trait::async_trait;
 use path_slash::PathBufExt;
 
 use crate::features::plugins::{PathMapping, PluginError, PluginSettings, PluginSettingsStorage};
+
+use super::ports::EditPluginSettingsUseCasePort;
 
 #[derive(Debug, Default)]
 pub struct EditPluginSettings {
@@ -66,4 +69,15 @@ fn apply_edit_changes(
     }
 
     settings
+}
+
+#[async_trait]
+impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
+    async fn execute(
+        &self,
+        plugin_id: String,
+        edit_settings: EditPluginSettings,
+    ) -> Result<(), PluginError> {
+        self.execute(plugin_id, edit_settings).await
+    }
 }

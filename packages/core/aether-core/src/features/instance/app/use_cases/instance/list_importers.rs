@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListImportersUseCasePort;
 use crate::{
     features::instance::{Importer, ImporterCapabilityMetadata, InstanceError},
     shared::capability::domain::{CapabilityEntry, CapabilityRegistry},
@@ -28,5 +31,14 @@ impl ListImportersUseCase {
                 capability: entry.capability.metadata().clone(),
             })
             .collect())
+    }
+}
+
+#[async_trait]
+impl ListImportersUseCasePort for ListImportersUseCase {
+    async fn execute(
+        &self,
+    ) -> Result<Vec<CapabilityEntry<ImporterCapabilityMetadata>>, InstanceError> {
+        self.execute().await
     }
 }
