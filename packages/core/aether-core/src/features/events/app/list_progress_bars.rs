@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::events::app::ports::ListProgressBarsUseCasePort;
 use crate::features::events::{ProgressBar, ProgressBarStorage};
 
 pub struct ListProgressBarsUseCase {
@@ -14,6 +17,13 @@ impl ListProgressBarsUseCase {
     }
 
     pub async fn execute(&self) -> Vec<ProgressBar> {
+        ListProgressBarsUseCasePort::execute(self).await
+    }
+}
+
+#[async_trait]
+impl ListProgressBarsUseCasePort for ListProgressBarsUseCase {
+    async fn execute(&self) -> Vec<ProgressBar> {
         self.progress_bar_storage.list().await
     }
 }

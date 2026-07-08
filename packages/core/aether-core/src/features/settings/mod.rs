@@ -10,6 +10,8 @@ pub use domain::{
 
 pub use app::{
     DefaultInstanceSettingsStorage, EditDefaultInstanceSettings,
-    EditDefaultInstanceSettingsUseCase, EditHooks, EditSettings, EditSettingsUseCase,
-    GetDefaultInstanceSettingsUseCase, GetSettingsUseCase, SettingsStorage,
+    EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort, EditHooks,
+    EditSettings, EditSettingsUseCase, EditSettingsUseCasePort, GetDefaultInstanceSettingsUseCase,
+    GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCase, GetSettingsUseCasePort,
+    SettingsFeature, SettingsStorage,
 };

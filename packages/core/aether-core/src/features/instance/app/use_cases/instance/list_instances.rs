@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListInstancesUseCasePort;
 use crate::features::instance::{Instance, InstanceError, InstanceStorage};
 
 pub struct ListInstancesUseCase {
@@ -12,6 +15,13 @@ impl ListInstancesUseCase {
     }
 
     pub async fn execute(&self) -> Result<Vec<Instance>, InstanceError> {
+        ListInstancesUseCasePort::execute(self).await
+    }
+}
+
+#[async_trait]
+impl ListInstancesUseCasePort for ListInstancesUseCase {
+    async fn execute(&self) -> Result<Vec<Instance>, InstanceError> {
         self.instance_storage.list().await
     }
 }

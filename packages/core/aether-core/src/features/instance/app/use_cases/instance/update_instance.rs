@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::UpdateInstanceUseCasePort;
 use crate::{
     features::instance::{
         InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt, PackInfo, Updater,
@@ -24,6 +27,32 @@ impl UpdateInstanceUseCase {
     }
 
     pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+        UpdateInstanceUseCasePort::execute(self, instance_id).await
+    }
+
+    pub async fn update_by_plugin(
+        &self,
+        instance_id: &str,
+        pack_info: &PackInfo,
+    ) -> Result<(), InstanceError> {
+        let updater = self
+            .updaters_registry
+            .find_by_plugin_and_capability_id(
+                &pack_info.provider_id.plugin_id,
+                &pack_info.provider_id.capability_id,
+            )
+            .await
+            .map_err(|_| InstanceError::UpdaterNotFound {
+                modpack_id: pack_info.modpack_id.clone(),
+            })?;
+
+        updater.capability.update(instance_id).await
+    }
+}
+
+#[async_trait]
+impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
+    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         let instance = self.instance_storage.get(&instance_id).await?;
 
         let original_stage = instance.install_stage;
@@ -54,24 +83,5 @@ impl UpdateInstanceUseCase {
             .await?;
 
         result
-    }
-
-    pub async fn update_by_plugin(
-        &self,
-        instance_id: &str,
-        pack_info: &PackInfo,
-    ) -> Result<(), InstanceError> {
-        let updater = self
-            .updaters_registry
-            .find_by_plugin_and_capability_id(
-                &pack_info.provider_id.plugin_id,
-                &pack_info.provider_id.capability_id,
-            )
-            .await
-            .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: pack_info.modpack_id.clone(),
-            })?;
-
-        updater.capability.update(instance_id).await
     }
 }

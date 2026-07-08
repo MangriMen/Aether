@@ -8,6 +8,7 @@ mod instance_storage;
 mod instance_watcher_service;
 mod pack_storage;
 mod updater;
+mod use_case_ports;
 
 pub use content_file_service::ContentFileService;
 pub use content_provider::ContentProvider;
@@ -19,3 +20,4 @@ pub use instance_storage::InstanceStorage;
 pub use instance_watcher_service::InstanceWatcherService;
 pub use pack_storage::PackStorage;
 pub use updater::Updater;
+pub use use_case_ports::*;

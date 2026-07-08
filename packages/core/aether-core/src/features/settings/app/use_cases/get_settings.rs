@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use crate::features::settings::{Settings, SettingsError, SettingsStorage};
+use async_trait::async_trait;
+
+use crate::features::settings::{
+    Settings, SettingsError, SettingsStorage, app::ports::GetSettingsUseCasePort,
+};
 
 pub struct GetSettingsUseCase {
     settings_storage: Arc<dyn SettingsStorage>,
@@ -12,6 +16,13 @@ impl GetSettingsUseCase {
     }
 
     pub async fn execute(&self) -> Result<Settings, SettingsError> {
+        GetSettingsUseCasePort::execute(self).await
+    }
+}
+
+#[async_trait]
+impl GetSettingsUseCasePort for GetSettingsUseCase {
+    async fn execute(&self) -> Result<Settings, SettingsError> {
         self.settings_storage.get().await
     }
 }

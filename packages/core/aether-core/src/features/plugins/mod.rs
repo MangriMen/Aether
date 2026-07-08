@@ -16,17 +16,21 @@ pub use domain::{
 // App (use cases, ports, services, DTOs)
 pub use app::{
     ApiConfigDto, AsCapabilityMetadata, CapabilityMetadataDto, CheckForPluginUpdatesUseCase,
-    ContentProviderCapabilityMetadataDto, DisablePluginUseCase, EditPluginSettings,
-    EditPluginSettingsUseCase, EnablePluginUseCase, ForceEnablePluginUseCase,
-    GetPluginApiVersionUseCase, GetPluginDtoUseCase, GetPluginSettingsUseCase,
-    ImportPluginsUseCase, ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, LoadConfigDto,
+    CheckForPluginUpdatesUseCasePort, ContentProviderCapabilityMetadataDto, DisablePluginUseCase,
+    EditPluginSettings, EditPluginSettingsUseCase, EditPluginSettingsUseCasePort,
+    EnablePluginUseCase, EnablePluginUseCasePort, ForceEnablePluginUseCase,
+    ForceEnablePluginUseCasePort, GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort,
+    GetPluginDtoUseCase, GetPluginDtoUseCasePort, GetPluginSettingsUseCase,
+    GetPluginSettingsUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
+    ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigDto,
     LoadConfigTypeDto, PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto,
     PluginDisableService, PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto,
     PluginLoader, PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
     PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, ProviderHandlersDto,
-    RemovePluginUseCase, RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase,
-    UpdaterCapabilityMetadataDto, write_bytes_to_temp_file,
+    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, PluginsFeature,
+    ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort, RuntimeConfigDto,
+    SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort, UpdaterCapabilityMetadataDto,
+    write_bytes_to_temp_file,
 };
 
 // Infrastructure re-exports (commonly used by app layer)

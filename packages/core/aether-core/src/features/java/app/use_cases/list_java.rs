@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::features::java::{Java, JavaStorage};
+use async_trait::async_trait;
 
-use super::super::JavaApplicationError;
+use crate::features::java::{
+    Java, JavaStorage,
+    app::{JavaApplicationError, ports::ListJavaUseCasePort},
+};
 
 pub struct ListJavaUseCase {
     storage: Arc<dyn JavaStorage>,
@@ -14,6 +17,13 @@ impl ListJavaUseCase {
     }
 
     pub async fn execute(&self) -> Result<Vec<Java>, JavaApplicationError> {
+        ListJavaUseCasePort::execute(self).await
+    }
+}
+
+#[async_trait]
+impl ListJavaUseCasePort for ListJavaUseCase {
+    async fn execute(&self) -> Result<Vec<Java>, JavaApplicationError> {
         Ok(self.storage.list().await?)
     }
 }

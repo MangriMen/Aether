@@ -18,6 +18,7 @@ pub use domain::resolve_minecraft_version;
 
 // Re-export app types (app is private, but pub use works)
 pub use app::GetLoaderVersionManifestUseCase;
+pub use app::GetLoaderVersionManifestUseCasePort;
 pub use app::GetMinecraftLaunchCommandParams;
 pub use app::GetMinecraftLaunchCommandUseCase;
 pub use app::GetVersionManifestUseCase;
@@ -28,6 +29,7 @@ pub use app::LoaderVersionService;
 pub use app::MetadataStorage;
 pub use app::MinecraftApplicationError;
 pub use app::MinecraftDownloader;
+pub use app::MinecraftFeature;
 pub use app::MinecraftFileHealthService;
 pub use app::MinecraftHealthParams;
 pub use app::MinecraftHealthService;

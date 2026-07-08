@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use chrono::Utc;
 
+use crate::features::instance::app::ports::EditInstanceUseCasePort;
 use crate::features::instance::{
     EditInstance, Instance, InstanceError, InstanceStorage,
     domain::{InstanceField, InstanceValidationErrorReason},
@@ -17,6 +19,17 @@ impl EditInstanceUseCase {
     }
 
     pub async fn execute(
+        &self,
+        instance_id: String,
+        edit_instance: EditInstance,
+    ) -> Result<Instance, InstanceError> {
+        EditInstanceUseCasePort::execute(self, instance_id, edit_instance).await
+    }
+}
+
+#[async_trait]
+impl EditInstanceUseCasePort for EditInstanceUseCase {
+    async fn execute(
         &self,
         instance_id: String,
         edit_instance: EditInstance,

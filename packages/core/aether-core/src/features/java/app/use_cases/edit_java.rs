@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::java::{
     Java, JavaInstallationService, JavaStorage,
-    app::{JavaApplicationError, dtos::EditJava},
+    app::{JavaApplicationError, dtos::EditJava, ports::EditJavaUseCasePort},
     domain::{CUSTOM_JAVA_VERSION, JavaDomainError, UNKNOWN_JAVA_ARCHITECTURE},
 };
 
@@ -23,6 +25,13 @@ impl EditJavaUseCase {
     }
 
     pub async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
+        EditJavaUseCasePort::execute(self, edit_java).await
+    }
+}
+
+#[async_trait]
+impl EditJavaUseCasePort for EditJavaUseCase {
+    async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
         if edit_java.path.to_string_lossy().is_empty() {
             return Err(JavaDomainError::EmptyPath)?;
         }

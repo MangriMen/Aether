@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::features::auth::{
-    app::{ActiveAccountHelper, AuthApplicationError, CredentialsStorage},
+    app::{
+        ActiveAccountHelper, AuthApplicationError, CredentialsStorage, ports::LogoutUseCasePort,
+    },
     domain::AuthDomainError,
 };
 
@@ -19,6 +22,13 @@ impl LogoutUseCase {
     }
 
     pub async fn execute(&self, account_id: Uuid) -> Result<(), AuthApplicationError> {
+        LogoutUseCasePort::execute(self, account_id).await
+    }
+}
+
+#[async_trait]
+impl LogoutUseCasePort for LogoutUseCase {
+    async fn execute(&self, account_id: Uuid) -> Result<(), AuthApplicationError> {
         self.credentials_storage.remove(account_id).await?;
 
         match ActiveAccountHelper::ensure_active(self.credentials_storage.as_ref()).await {

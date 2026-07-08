@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::minecraft::{
-    MetadataStorage, ModLoader, app::MinecraftApplicationError, modded,
+    MetadataStorage, ModLoader, app::MinecraftApplicationError,
+    app::ports::GetLoaderVersionManifestUseCasePort, modded,
 };
 
 pub struct GetLoaderVersionManifestUseCase {
@@ -14,6 +17,16 @@ impl GetLoaderVersionManifestUseCase {
     }
 
     pub async fn execute(
+        &self,
+        loader: ModLoader,
+    ) -> Result<modded::Manifest, MinecraftApplicationError> {
+        GetLoaderVersionManifestUseCasePort::execute(self, loader).await
+    }
+}
+
+#[async_trait]
+impl GetLoaderVersionManifestUseCasePort for GetLoaderVersionManifestUseCase {
+    async fn execute(
         &self,
         loader: ModLoader,
     ) -> Result<modded::Manifest, MinecraftApplicationError> {

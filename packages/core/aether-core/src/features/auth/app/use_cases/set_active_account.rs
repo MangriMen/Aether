@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::features::auth::app::{ActiveAccountHelper, AuthApplicationError, CredentialsStorage};
+use crate::features::auth::app::{
+    ActiveAccountHelper, AuthApplicationError, CredentialsStorage,
+    ports::SetActiveAccountUseCasePort,
+};
 
 use super::super::Account;
 
@@ -18,6 +22,13 @@ impl SetActiveAccountUseCase {
     }
 
     pub async fn execute(&self, account_id: Uuid) -> Result<Account, AuthApplicationError> {
+        SetActiveAccountUseCasePort::execute(self, account_id).await
+    }
+}
+
+#[async_trait]
+impl SetActiveAccountUseCasePort for SetActiveAccountUseCase {
+    async fn execute(&self, account_id: Uuid) -> Result<Account, AuthApplicationError> {
         let account =
             ActiveAccountHelper::set_active(self.credentials_storage.as_ref(), account_id).await?;
 

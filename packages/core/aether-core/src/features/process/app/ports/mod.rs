@@ -33,3 +33,28 @@ pub trait ProcessStorage: Send + Sync {
     async fn wait_for(&self, id: Uuid) -> Result<(), ProcessError>;
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError>;
 }
+
+// ── Use case ports ──
+
+#[async_trait]
+pub trait WaitForProcessUseCasePort: Send + Sync {
+    async fn execute(&self, process_id: Uuid) -> Result<(), ProcessError>;
+}
+
+#[async_trait]
+pub trait KillProcessUseCasePort: Send + Sync {
+    async fn execute(&self, process_id: Uuid) -> Result<(), ProcessError>;
+}
+
+#[async_trait]
+pub trait ListProcessMetadataUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<MinecraftProcessMetadata>, ProcessError>;
+}
+
+#[async_trait]
+pub trait GetProcessMetadataByInstanceIdUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        instance_id: String,
+    ) -> Result<Vec<MinecraftProcessMetadata>, ProcessError>;
+}

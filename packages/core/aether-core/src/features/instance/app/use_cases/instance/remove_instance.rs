@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::instance::app::InstanceFileService;
+use crate::features::instance::app::ports::RemoveInstanceUseCasePort;
 use crate::features::instance::{
     InstanceError, InstanceStorage, InstanceWatcherService, PackStorage,
 };
@@ -28,6 +31,13 @@ impl RemoveInstanceUseCase {
     }
 
     pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+        RemoveInstanceUseCasePort::execute(self, instance_id).await
+    }
+}
+
+#[async_trait]
+impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
+    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         self.watcher_service.unwatch_instance(&instance_id).await?;
         self.pack_storage
             .remove_all_for_instance(&instance_id)

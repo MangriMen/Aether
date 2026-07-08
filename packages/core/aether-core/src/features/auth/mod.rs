@@ -6,7 +6,9 @@ pub mod infra;
 mod tests;
 
 pub use app::{
-    Account, ActiveAccountHelper, AuthApplicationError, CreateOfflineAccountUseCase,
-    CredentialsStorage, GetAccountsUseCase, LogoutUseCase, SetActiveAccountUseCase,
+    Account, ActiveAccountHelper, AuthApplicationError, AuthFeature, CreateOfflineAccountUseCase,
+    CreateOfflineAccountUseCasePort, CredentialsStorage, GetAccountsUseCase,
+    GetAccountsUseCasePort, LogoutUseCase, LogoutUseCasePort, SetActiveAccountUseCase,
+    SetActiveAccountUseCasePort,
 };
 pub use domain::{AccountType, AuthDomainError, Credential, Username};

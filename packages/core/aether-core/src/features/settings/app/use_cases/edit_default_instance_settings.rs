@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::settings::{
     DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
-    app::EditDefaultInstanceSettings,
+    app::{EditDefaultInstanceSettings, ports::EditDefaultInstanceSettingsUseCasePort},
 };
 
 pub struct EditDefaultInstanceSettingsUseCase {
@@ -17,6 +19,16 @@ impl EditDefaultInstanceSettingsUseCase {
     }
 
     pub async fn execute(
+        &self,
+        edit_settings: EditDefaultInstanceSettings,
+    ) -> Result<DefaultInstanceSettings, SettingsError> {
+        EditDefaultInstanceSettingsUseCasePort::execute(self, edit_settings).await
+    }
+}
+
+#[async_trait]
+impl EditDefaultInstanceSettingsUseCasePort for EditDefaultInstanceSettingsUseCase {
+    async fn execute(
         &self,
         edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {

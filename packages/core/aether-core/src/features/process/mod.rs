@@ -3,8 +3,10 @@ mod domain;
 pub mod infra;
 
 pub use app::{
-    GetProcessMetadataByInstanceIdUseCase, KillProcessUseCase, ListProcessMetadataUseCase,
-    ManageProcessService, ManageProcessUseCase, ProcessStartService, ProcessStorage,
-    StartProcessUseCase, TrackProcessService, TrackProcessUseCase, WaitForProcessUseCase,
+    GetProcessMetadataByInstanceIdUseCase, GetProcessMetadataByInstanceIdUseCasePort,
+    KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
+    ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
+    ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
+    TrackProcessUseCase, WaitForProcessUseCase, WaitForProcessUseCasePort,
 };
 pub use domain::{MinecraftProcessMetadata, ProcessError};

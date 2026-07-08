@@ -1,6 +1,11 @@
 use async_trait::async_trait;
 
-use crate::features::settings::{DefaultInstanceSettings, Settings, SettingsError};
+use crate::features::settings::{
+    DefaultInstanceSettings, Settings, SettingsError,
+    app::{EditDefaultInstanceSettings, EditSettings},
+};
+
+// ── Storage ports ──
 
 #[async_trait]
 pub trait SettingsStorage: Send + Sync {
@@ -29,5 +34,30 @@ pub trait DefaultInstanceSettingsStorage: Send + Sync {
     async fn update_mut(
         &self,
         f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
+    ) -> Result<DefaultInstanceSettings, SettingsError>;
+}
+
+// ── Use case ports ──
+
+#[async_trait]
+pub trait GetSettingsUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Settings, SettingsError>;
+}
+
+#[async_trait]
+pub trait GetDefaultInstanceSettingsUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<DefaultInstanceSettings, SettingsError>;
+}
+
+#[async_trait]
+pub trait EditSettingsUseCasePort: Send + Sync {
+    async fn execute(&self, edit_settings: EditSettings) -> Result<Settings, SettingsError>;
+}
+
+#[async_trait]
+pub trait EditDefaultInstanceSettingsUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError>;
 }
