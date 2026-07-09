@@ -368,7 +368,10 @@ impl AetherContainer {
         let plugin_extractor: Arc<dyn PluginExtractor> = Arc::new(ZipPluginExtractor::default());
 
         let instance_watcher_service: Arc<dyn InstanceWatcherService> = {
-            let event_handler = Arc::new(InstanceEventHandler::new(event_emitter.clone()));
+            let event_handler = Arc::new(InstanceEventHandler::new(
+                event_emitter.clone(),
+                Arc::new(GetInstanceUseCase::new(instance_storage.clone())),
+            ));
             let watcher = NotifyFileWatcher::new(event_handler).map_err(|e| {
                 crate::ErrorKind::CoreError(format!("File watcher: {e}")).as_error()
             })?;
@@ -383,24 +386,8 @@ impl AetherContainer {
         let updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>> =
             Arc::new(MemoryCapabilityRegistry::new("updater"));
 
-        let content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> = {
-            let registry: Arc<MemoryCapabilityRegistry<Arc<dyn ContentProvider>>> =
-                Arc::new(MemoryCapabilityRegistry::new("content_provider"));
-            let provider = Arc::new(ModrinthContentProvider::new(
-                location_info.clone(),
-                None,
-                http_client.clone(),
-            ));
-            let meta = provider.metadata();
-            let _ = registry
-                .add(
-                    ModrinthContentProvider::ID.to_owned(),
-                    meta.id.clone(),
-                    provider,
-                )
-                .await;
-            registry
-        };
+        let content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> =
+            Arc::new(MemoryCapabilityRegistry::new("content_provider"));
 
         let file_cache_assets = Arc::new(FileCache::new(
             crate::shared::cache::infra::AssetsResolver::new(location_info.clone()),
@@ -451,6 +438,25 @@ impl AetherContainer {
 
         let c = Self::get();
         c.instance_watcher_service.watch_instances().await?;
+
+        // Register ModrinthContentProvider with explicit use case dependency
+        {
+            let provider = Arc::new(ModrinthContentProvider::new(
+                c.location_info.clone(),
+                None,
+                c.request_client.clone(),
+                c.create_instance_use_case(),
+            ));
+            let meta = provider.metadata();
+            let _ = c
+                .content_provider_registry
+                .add(
+                    ModrinthContentProvider::ID.to_owned(),
+                    meta.id.clone(),
+                    provider,
+                )
+                .await;
+        }
 
         let plugin_infra_listener = Arc::new(PluginInfrastructureListener::new(
             c.plugin_registry.clone(),

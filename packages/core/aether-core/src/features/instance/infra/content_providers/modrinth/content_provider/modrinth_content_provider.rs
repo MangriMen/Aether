@@ -14,8 +14,8 @@ use crate::{
         instance::{
             AtomicInstallParams, CapabilityMetadata, ContentFile, ContentItem, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentType, ContentVersion, CreateContentFileParams, DownloadedContent, Instance,
-            InstanceError, InstanceFeature, ModpackInstallParams, PackInfo, ProviderId,
+            ContentType, ContentVersion, CreateContentFileParams, CreateInstanceUseCasePort,
+            DownloadedContent, Instance, InstanceError, ModpackInstallParams, PackInfo, ProviderId,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult, NewInstance},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -39,6 +39,7 @@ pub struct ModrinthContentProvider<RC> {
     request_client: Arc<RC>,
     api: ModrinthApiClient<RC>,
     capability: ContentProviderCapabilityMetadata,
+    create_instance_uc: Arc<dyn CreateInstanceUseCasePort>,
 }
 
 impl ModrinthContentProvider<()> {
@@ -50,6 +51,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         location_info: Arc<LocationInfo>,
         base_headers: Option<reqwest::header::HeaderMap>,
         request_client: Arc<RC>,
+        create_instance_uc: Arc<dyn CreateInstanceUseCasePort>,
     ) -> Self {
         let capability = ContentProviderCapabilityMetadata {
             base: CapabilityMetadata {
@@ -67,6 +69,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             api: ModrinthApiClient::new(MODRINTH_API_URL.to_string(), base_headers, request_client),
             location_info,
             capability,
+            create_instance_uc,
         }
     }
 
@@ -409,8 +412,8 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             pack_info,
         };
 
-        let instance_id = crate::core::app::AetherContainer::get()
-            .create_instance_use_case()
+        let instance_id = self
+            .create_instance_uc
             .execute(new_instance)
             .await
             .map_err(|_| InstanceError::ImportFailed {

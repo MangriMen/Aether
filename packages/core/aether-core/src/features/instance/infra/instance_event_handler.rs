@@ -1,26 +1,28 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
 
-use crate::{
-    core::app::AetherContainer,
-    features::{
-        events::{
-            EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent,
-        },
-        file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
-        instance::{InstanceFeature, InstanceInstallStage},
-        settings::INSTANCES_FOLDER_NAME,
-    },
+use crate::features::{
+    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent},
+    file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
+    instance::{GetInstanceUseCasePort, InstanceInstallStage},
+    settings::INSTANCES_FOLDER_NAME,
 };
 
 pub struct InstanceEventHandler {
     event_emitter: SharedEventEmitter,
+    get_instance_uc: Arc<dyn GetInstanceUseCasePort>,
 }
 
 impl InstanceEventHandler {
-    pub fn new(event_emitter: SharedEventEmitter) -> Self {
-        Self { event_emitter }
+    pub fn new(
+        event_emitter: SharedEventEmitter,
+        get_instance_uc: Arc<dyn GetInstanceUseCasePort>,
+    ) -> Self {
+        Self {
+            event_emitter,
+            get_instance_uc,
+        }
     }
 
     fn extract_instance_path(path: &Path) -> Option<String> {
@@ -42,12 +44,12 @@ impl InstanceEventHandler {
     }
 
     fn crash_task(&self, id: String) {
+        let get_instance_uc = self.get_instance_uc.clone();
         tokio::task::spawn({
             let event_emitter = self.event_emitter.clone();
             async move {
                 let res = async {
-                    let container = AetherContainer::get();
-                    let instance = container.get_instance_use_case().execute(id).await;
+                    let instance = get_instance_uc.execute(id).await;
 
                     if let Ok(instance) = instance {
                         // Don't show warning if profile is not yet installed
