@@ -58,7 +58,8 @@ fn post_initialize<R: tauri::Runtime>(
         let container = build_container(location_info, core_event_emitter, pool)
             .await
             .unwrap_or_else(|err| {
-                panic!("CRITICAL: Failed to initialize AetherContainer: {err}");
+                eprintln!("CRITICAL: Failed to initialize AetherContainer: {err}");
+                std::process::exit(1);
             });
 
         app_handle.manage(ContainerState(container));
@@ -66,7 +67,8 @@ fn post_initialize<R: tauri::Runtime>(
         let main_window_label = WindowLabel::Main;
 
         let app_settings = app_settings_storage.get().await.unwrap_or_else(|err| {
-            panic!("CRITICAL: Failed to get app settings: {err}");
+            eprintln!("CRITICAL: Failed to get app settings: {err}");
+            std::process::exit(1);
         });
 
         window_manager
@@ -77,7 +79,8 @@ fn post_initialize<R: tauri::Runtime>(
             )
             .await
             .unwrap_or_else(|err| {
-                panic!("CRITICAL: Failed to create main window: {err}");
+                eprintln!("CRITICAL: Failed to create main window: {err}");
+                std::process::exit(1);
             });
 
         app_settings_storage

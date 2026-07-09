@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use aether_core::core::app::{AetherContainer, AetherContainerParams};
+use aether_core::core::app::{
+    AetherContainer, AetherContainerParams, MinecraftParams, PluginParams, StorageParams,
+};
 use aether_core::features::auth::infra::SqliteCredentialsStorage;
 use aether_core::features::events::ProgressServiceImpl;
 use aether_core::features::events::SharedEventEmitter;
@@ -278,28 +280,35 @@ pub async fn build_container(
 
     // ── Assemble container ──────────────────────────────────────────
     let container = AetherContainer::new(AetherContainerParams {
-        credentials_storage,
-        settings_storage,
-        default_instance_settings_storage,
-        process_storage,
-        instance_storage,
-        pack_storage,
-        content_file_service,
-        instance_file_service,
-        java_storage,
-        java_installation_service,
-        java_installation_tracker,
-        jre_provider,
-        metadata_storage,
-        minecraft_downloader,
-        forge_processor,
-        plugin_registry: plugin_registry.clone(),
-        plugin_loader_registry,
-        plugin_storage,
-        plugin_source_storage,
-        plugin_settings_storage,
-        plugin_provider_factory,
-        plugin_extractor,
+        storage: StorageParams {
+            credentials_storage,
+            settings_storage,
+            default_instance_settings_storage,
+            process_storage,
+            instance_storage,
+            pack_storage,
+            content_file_service,
+            instance_file_service,
+            java_storage,
+            java_installation_service,
+            java_installation_tracker,
+            jre_provider,
+            metadata_storage,
+            assets_storage,
+        },
+        minecraft: MinecraftParams {
+            minecraft_downloader,
+            mod_loader_processor: forge_processor,
+        },
+        plugins: PluginParams {
+            registry: plugin_registry.clone(),
+            loader_registry: plugin_loader_registry,
+            storage: plugin_storage,
+            source_storage: plugin_source_storage,
+            settings_storage: plugin_settings_storage,
+            provider_factory: plugin_provider_factory,
+            extractor: plugin_extractor,
+        },
         event_emitter: event_emitter.clone(),
         progress_bar_storage,
         progress_service: progress_service
@@ -309,11 +318,10 @@ pub async fn build_container(
         importers_registry: importers_registry.clone(),
         updaters_registry: updaters_registry.clone(),
         content_provider_registry: content_provider_registry.clone(),
-        assets_storage,
     });
 
     // ── Post-construction wiring ────────────────────────────────────
-    extism_loader.set_container(container.clone());
+    extism_loader.set_container(&container);
 
     instance_watcher_service
         .watch_instances()

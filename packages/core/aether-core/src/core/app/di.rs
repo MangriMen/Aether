@@ -12,7 +12,6 @@ use crate::features::{
         Event, EventEmitter, EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
         ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
-    file_watcher::{FileEventHandler, FileWatcher, FileWatcherFeature},
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, CheckContentCompatibilityUseCase,
         CheckContentCompatibilityUseCasePort, ContentFileService, ContentProvider,
@@ -106,12 +105,7 @@ impl UseCaseCache {
     }
 }
 
-/// Dependency injection parameters for constructing an [`AetherContainer`].
-///
-/// All dependencies are expressed as trait objects or core domain types —
-/// no concrete infrastructure types are imported here.
-#[allow(clippy::too_many_lines)]
-pub struct AetherContainerParams {
+pub struct StorageParams {
     pub credentials_storage: Arc<dyn CredentialsStorage>,
     pub settings_storage: Arc<dyn SettingsStorage>,
     pub default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
@@ -125,15 +119,33 @@ pub struct AetherContainerParams {
     pub java_installation_tracker: Arc<dyn JavaInstallationTracker>,
     pub jre_provider: Arc<dyn JreProvider>,
     pub metadata_storage: Arc<dyn MetadataStorage>,
+    pub assets_storage: Arc<dyn AssetsStorage>,
+}
+
+pub struct MinecraftParams {
     pub minecraft_downloader: Arc<dyn MinecraftDownloader>,
-    pub forge_processor: Arc<dyn ModLoaderProcessor>,
-    pub plugin_registry: Arc<PluginRegistry>,
-    pub plugin_loader_registry: Arc<PluginLoaderRegistry>,
-    pub plugin_storage: Arc<dyn PluginStorage>,
-    pub plugin_source_storage: Arc<dyn PluginSourceStorage>,
-    pub plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
-    pub plugin_provider_factory: Arc<PluginProviderFactory>,
-    pub plugin_extractor: Arc<dyn PluginExtractor>,
+    pub mod_loader_processor: Arc<dyn ModLoaderProcessor>,
+}
+
+pub struct PluginParams {
+    pub registry: Arc<PluginRegistry>,
+    pub loader_registry: Arc<PluginLoaderRegistry>,
+    pub storage: Arc<dyn PluginStorage>,
+    pub source_storage: Arc<dyn PluginSourceStorage>,
+    pub settings_storage: Arc<dyn PluginSettingsStorage>,
+    pub provider_factory: Arc<PluginProviderFactory>,
+    pub extractor: Arc<dyn PluginExtractor>,
+}
+
+/// Dependency injection parameters for constructing an [`AetherContainer`].
+///
+/// All dependencies are expressed as trait objects or core domain types —
+/// no concrete infrastructure types are imported here.
+#[allow(clippy::too_many_lines)]
+pub struct AetherContainerParams {
+    pub storage: StorageParams,
+    pub minecraft: MinecraftParams,
+    pub plugins: PluginParams,
     pub event_emitter: SharedEventEmitter,
     pub progress_bar_storage: Arc<dyn ProgressBarStorage>,
     pub progress_service: Arc<dyn ProgressService>,
@@ -142,7 +154,6 @@ pub struct AetherContainerParams {
     pub importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
     pub updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
     pub content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
-    pub assets_storage: Arc<dyn AssetsStorage>,
 }
 
 pub struct AetherContainer {
@@ -179,29 +190,31 @@ impl AetherContainer {
     }
 
     fn loader_version_resolver(&self) -> Arc<dyn LoaderVersionService> {
-        Arc::new(LoaderVersionResolver::new(self.metadata_storage.clone()))
+        Arc::new(LoaderVersionResolver::new(
+            self.storage.metadata_storage.clone(),
+        ))
     }
 
     fn get_version_manifest_use_case(&self) -> Arc<dyn VersionManifestService> {
         Arc::new(GetVersionManifestUseCase::new(
-            self.metadata_storage.clone(),
+            self.storage.metadata_storage.clone(),
         ))
     }
 
     fn get_java_use_case(&self) -> Arc<dyn JavaQueryService> {
         Arc::new(GetJavaUseCase::new(
-            self.java_storage.clone(),
-            self.java_installation_service.clone(),
+            self.storage.java_storage.clone(),
+            self.storage.java_installation_service.clone(),
         ))
     }
 
     fn install_java_use_case(&self) -> Arc<dyn JavaInstallService> {
         Arc::new(InstallJavaUseCase::new(
-            self.java_storage.clone(),
-            self.java_installation_service.clone(),
-            self.jre_provider.clone(),
+            self.storage.java_storage.clone(),
+            self.storage.java_installation_service.clone(),
+            self.storage.jre_provider.clone(),
             self.location_info.clone(),
-            self.java_installation_tracker.clone(),
+            self.storage.java_installation_tracker.clone(),
         ))
     }
 
@@ -212,9 +225,9 @@ impl AetherContainer {
                 Arc::new(InstallMinecraftUseCase::new(
                     self.loader_version_resolver(),
                     self.get_version_manifest_use_case(),
-                    self.minecraft_downloader.clone(),
-                    self.forge_processor.clone(),
-                    self.java_installation_service.clone(),
+                    self.minecraft.minecraft_downloader.clone(),
+                    self.minecraft.mod_loader_processor.clone(),
+                    self.storage.java_installation_service.clone(),
                     self.get_java_use_case(),
                     self.install_java_use_case(),
                 ))
@@ -227,7 +240,7 @@ impl AetherContainer {
             .install_instance_uc
             .get_or_init(|| {
                 Arc::new(InstallInstanceUseCase::new(
-                    self.instance_storage.clone(),
+                    self.storage.instance_storage.clone(),
                     self.minecraft_install_use_case(),
                     self.progress_service.clone(),
                     self.location_info.clone(),
@@ -243,7 +256,7 @@ impl AetherContainer {
                 Arc::new(MinecraftFileHealthService::new(
                     self.loader_version_resolver(),
                     self.get_version_manifest_use_case(),
-                    self.minecraft_downloader.clone(),
+                    self.minecraft.minecraft_downloader.clone(),
                     self.get_java_use_case(),
                     self.location_info.clone(),
                 ))
@@ -258,8 +271,8 @@ impl AetherContainer {
                 Arc::new(GetMinecraftLaunchCommandUseCase::new(
                     self.loader_version_resolver(),
                     self.get_version_manifest_use_case(),
-                    self.minecraft_downloader.clone(),
-                    self.java_installation_service.clone(),
+                    self.minecraft.minecraft_downloader.clone(),
+                    self.storage.java_installation_service.clone(),
                     self.get_java_use_case(),
                     self.install_java_use_case(),
                     self.location_info.clone(),
@@ -272,18 +285,13 @@ impl AetherContainer {
         self.cache
             .launch_instance_uc
             .get_or_init(|| {
-                let manage = self.manage_process_service();
-                let start: Arc<dyn ProcessStartService> = Arc::new(StartProcessUseCase::new(
-                    self.event_emitter.clone(),
-                    self.process_storage.clone(),
-                    manage,
-                ));
+                let start = self.process_start_service();
                 Arc::new(LaunchInstanceUseCase::new(
-                    self.plugin_registry.clone(),
-                    self.instance_storage.clone(),
-                    self.default_instance_settings_storage.clone(),
+                    self.plugins.registry.clone(),
+                    self.storage.instance_storage.clone(),
+                    self.storage.default_instance_settings_storage.clone(),
                     self.location_info.clone(),
-                    self.process_storage.clone(),
+                    self.storage.process_storage.clone(),
                     self.instance_install_service(),
                     self.health_service(),
                     self.launch_command_service(),
@@ -298,8 +306,8 @@ impl AetherContainer {
             .track_process_uc
             .get_or_init(|| {
                 Arc::new(TrackProcessUseCase::new(
-                    self.process_storage.clone(),
-                    self.instance_storage.clone(),
+                    self.storage.process_storage.clone(),
+                    self.storage.instance_storage.clone(),
                 ))
             })
             .clone()
@@ -311,7 +319,7 @@ impl AetherContainer {
             .get_or_init(|| {
                 Arc::new(ManageProcessUseCase::new(
                     self.event_emitter.clone(),
-                    self.process_storage.clone(),
+                    self.storage.process_storage.clone(),
                     self.track_process_service(),
                     self.location_info.clone(),
                 ))
@@ -325,7 +333,7 @@ impl AetherContainer {
             .get_or_init(|| {
                 Arc::new(StartProcessUseCase::new(
                     self.event_emitter.clone(),
-                    self.process_storage.clone(),
+                    self.storage.process_storage.clone(),
                     self.manage_process_service(),
                 ))
             })
@@ -337,9 +345,9 @@ impl AetherContainer {
             .disable_plugin_uc
             .get_or_init(|| {
                 Arc::new(DisablePluginUseCase::new(
-                    self.plugin_registry.clone(),
-                    self.plugin_loader_registry.clone(),
-                    self.settings_storage.clone(),
+                    self.plugins.registry.clone(),
+                    self.plugins.loader_registry.clone(),
+                    self.storage.settings_storage.clone(),
                 ))
             })
             .clone()
@@ -350,8 +358,8 @@ impl AetherContainer {
             .sync_plugins_uc
             .get_or_init(|| {
                 Arc::new(SyncPluginsUseCase::new(
-                    self.plugin_storage.clone(),
-                    self.plugin_registry.clone(),
+                    self.plugins.storage.clone(),
+                    self.plugins.registry.clone(),
                     self.disable_plugin_service(),
                     self.event_emitter.clone(),
                 ))
@@ -364,30 +372,34 @@ impl AetherContainer {
 
 impl SettingsFeature for AetherContainer {
     fn get_settings_use_case(&self) -> Arc<dyn GetSettingsUseCasePort> {
-        Arc::new(GetSettingsUseCase::new(self.settings_storage.clone()))
+        Arc::new(GetSettingsUseCase::new(
+            self.storage.settings_storage.clone(),
+        ))
     }
     fn get_default_instance_settings_use_case(
         &self,
     ) -> Arc<dyn GetDefaultInstanceSettingsUseCasePort> {
         Arc::new(GetDefaultInstanceSettingsUseCase::new(
-            self.default_instance_settings_storage.clone(),
+            self.storage.default_instance_settings_storage.clone(),
         ))
     }
     fn edit_settings_use_case(&self) -> Arc<dyn EditSettingsUseCasePort> {
-        Arc::new(EditSettingsUseCase::new(self.settings_storage.clone()))
+        Arc::new(EditSettingsUseCase::new(
+            self.storage.settings_storage.clone(),
+        ))
     }
     fn edit_default_instance_settings_use_case(
         &self,
     ) -> Arc<dyn EditDefaultInstanceSettingsUseCasePort> {
         Arc::new(EditDefaultInstanceSettingsUseCase::new(
-            self.default_instance_settings_storage.clone(),
+            self.storage.default_instance_settings_storage.clone(),
         ))
     }
     fn settings_storage(&self) -> Arc<dyn SettingsStorage> {
-        self.settings_storage.clone()
+        self.storage.settings_storage.clone()
     }
     fn default_instance_settings_storage(&self) -> Arc<dyn DefaultInstanceSettingsStorage> {
-        self.default_instance_settings_storage.clone()
+        self.storage.default_instance_settings_storage.clone()
     }
     fn location_info(&self) -> Arc<LocationInfo> {
         self.location_info.clone()
@@ -397,18 +409,20 @@ impl SettingsFeature for AetherContainer {
 impl AuthFeature for AetherContainer {
     fn create_offline_account_use_case(&self) -> Arc<dyn CreateOfflineAccountUseCasePort> {
         Arc::new(CreateOfflineAccountUseCase::new(
-            self.credentials_storage.clone(),
+            self.storage.credentials_storage.clone(),
         ))
     }
     fn get_accounts_use_case(&self) -> Arc<dyn GetAccountsUseCasePort> {
-        Arc::new(GetAccountsUseCase::new(self.credentials_storage.clone()))
+        Arc::new(GetAccountsUseCase::new(
+            self.storage.credentials_storage.clone(),
+        ))
     }
     fn logout_use_case(&self) -> Arc<dyn LogoutUseCasePort> {
-        Arc::new(LogoutUseCase::new(self.credentials_storage.clone()))
+        Arc::new(LogoutUseCase::new(self.storage.credentials_storage.clone()))
     }
     fn set_active_account_use_case(&self) -> Arc<dyn SetActiveAccountUseCasePort> {
         Arc::new(SetActiveAccountUseCase::new(
-            self.credentials_storage.clone(),
+            self.storage.credentials_storage.clone(),
         ))
     }
     fn active_account_helper(&self) -> Arc<ActiveAccountHelper> {
@@ -419,31 +433,33 @@ impl AuthFeature for AetherContainer {
 impl JavaFeature for AetherContainer {
     fn discover_java_use_case(&self) -> Arc<dyn DiscoverJavaUseCasePort> {
         Arc::new(DiscoverJavaUseCase::new(
-            self.java_installation_service.clone(),
+            self.storage.java_installation_service.clone(),
             get_default_discovery_paths(),
         ))
     }
     fn edit_java_use_case(&self) -> Arc<dyn EditJavaUseCasePort> {
         Arc::new(EditJavaUseCase::new(
-            self.java_storage.clone(),
-            self.java_installation_service.clone(),
+            self.storage.java_storage.clone(),
+            self.storage.java_installation_service.clone(),
         ))
     }
     fn get_active_java_installations_use_case(
         &self,
     ) -> Arc<dyn GetActiveJavaInstallationsUseCasePort> {
         Arc::new(GetActiveJavaInstallationsUseCase::new(
-            self.java_installation_tracker.clone(),
+            self.storage.java_installation_tracker.clone(),
         ))
     }
     fn list_java_use_case(&self) -> Arc<dyn ListJavaUseCasePort> {
-        Arc::new(ListJavaUseCase::new(self.java_storage.clone()))
+        Arc::new(ListJavaUseCase::new(self.storage.java_storage.clone()))
     }
     fn remove_java_use_case(&self) -> Arc<dyn RemoveJavaUseCasePort> {
-        Arc::new(RemoveJavaUseCase::new(self.java_storage.clone()))
+        Arc::new(RemoveJavaUseCase::new(self.storage.java_storage.clone()))
     }
     fn test_jre_use_case(&self) -> Arc<dyn TestJreUseCasePort> {
-        Arc::new(TestJreUseCase::new(self.java_installation_service.clone()))
+        Arc::new(TestJreUseCase::new(
+            self.storage.java_installation_service.clone(),
+        ))
     }
     fn get_java_use_case(&self) -> Arc<dyn JavaQueryService> {
         self.get_java_use_case()
@@ -452,16 +468,16 @@ impl JavaFeature for AetherContainer {
         self.install_java_use_case()
     }
     fn java_installation_service(&self) -> Arc<dyn JavaInstallationService> {
-        self.java_installation_service.clone()
+        self.storage.java_installation_service.clone()
     }
     fn java_installation_tracker(&self) -> Arc<dyn JavaInstallationTracker> {
-        self.java_installation_tracker.clone()
+        self.storage.java_installation_tracker.clone()
     }
     fn java_storage(&self) -> Arc<dyn JavaStorage> {
-        self.java_storage.clone()
+        self.storage.java_storage.clone()
     }
     fn jre_provider(&self) -> Arc<dyn JreProvider> {
-        self.jre_provider.clone()
+        self.storage.jre_provider.clone()
     }
 }
 
@@ -477,30 +493,30 @@ impl MinecraftFeature for AetherContainer {
     }
     fn get_loader_version_manifest_use_case(&self) -> Arc<dyn GetLoaderVersionManifestUseCasePort> {
         Arc::new(GetLoaderVersionManifestUseCase::new(
-            self.metadata_storage.clone(),
+            self.storage.metadata_storage.clone(),
         ))
     }
     fn loader_version_service(&self) -> Arc<dyn LoaderVersionService> {
         self.loader_version_resolver()
     }
     fn metadata_storage(&self) -> Arc<dyn MetadataStorage> {
-        self.metadata_storage.clone()
+        self.storage.metadata_storage.clone()
     }
     fn minecraft_downloader(&self) -> Arc<dyn MinecraftDownloader> {
-        self.minecraft_downloader.clone()
+        self.minecraft.minecraft_downloader.clone()
     }
     fn minecraft_health_service(&self) -> Arc<dyn MinecraftHealthService> {
         self.health_service()
     }
     fn mod_loader_processor(&self) -> Arc<dyn ModLoaderProcessor> {
-        self.forge_processor.clone()
+        self.minecraft.mod_loader_processor.clone()
     }
 }
 
 impl InstanceFeature for AetherContainer {
     fn create_instance_use_case(&self) -> Arc<dyn CreateInstanceUseCasePort> {
         Arc::new(CreateInstanceUseCase::new(
-            self.instance_storage.clone(),
+            self.storage.instance_storage.clone(),
             self.loader_version_resolver(),
             self.instance_install_service(),
             self.location_info.clone(),
@@ -509,31 +525,37 @@ impl InstanceFeature for AetherContainer {
         ))
     }
     fn get_instance_use_case(&self) -> Arc<dyn GetInstanceUseCasePort> {
-        Arc::new(GetInstanceUseCase::new(self.instance_storage.clone()))
+        Arc::new(GetInstanceUseCase::new(
+            self.storage.instance_storage.clone(),
+        ))
     }
     fn list_instances_use_case(&self) -> Arc<dyn ListInstancesUseCasePort> {
-        Arc::new(ListInstancesUseCase::new(self.instance_storage.clone()))
+        Arc::new(ListInstancesUseCase::new(
+            self.storage.instance_storage.clone(),
+        ))
     }
     fn edit_instance_use_case(&self) -> Arc<dyn EditInstanceUseCasePort> {
-        Arc::new(EditInstanceUseCase::new(self.instance_storage.clone()))
+        Arc::new(EditInstanceUseCase::new(
+            self.storage.instance_storage.clone(),
+        ))
     }
     fn edit_instance_icon_use_case(&self) -> Arc<dyn EditInstanceIconUseCasePort> {
         Arc::new(EditInstanceIconUseCase::new(
-            self.instance_storage.clone(),
-            self.assets_storage.clone(),
+            self.storage.instance_storage.clone(),
+            self.storage.assets_storage.clone(),
         ))
     }
     fn remove_instance_use_case(&self) -> Arc<dyn RemoveInstanceUseCasePort> {
         Arc::new(RemoveInstanceUseCase::new(
-            self.instance_storage.clone(),
+            self.storage.instance_storage.clone(),
             self.instance_watcher_service.clone(),
-            self.instance_file_service.clone(),
-            self.pack_storage.clone(),
+            self.storage.instance_file_service.clone(),
+            self.storage.pack_storage.clone(),
         ))
     }
     fn update_instance_use_case(&self) -> Arc<dyn UpdateInstanceUseCasePort> {
         Arc::new(UpdateInstanceUseCase::new(
-            self.instance_storage.clone(),
+            self.storage.instance_storage.clone(),
             self.updaters_registry.clone(),
         ))
     }
@@ -547,34 +569,34 @@ impl InstanceFeature for AetherContainer {
         &self,
     ) -> Arc<dyn LaunchInstanceWithActiveAccountUseCasePort> {
         Arc::new(LaunchInstanceWithActiveAccountUseCase::new(
-            self.credentials_storage.clone(),
+            self.storage.credentials_storage.clone(),
             self.launch_instance_use_case(),
         ))
     }
     fn change_content_state_use_case(&self) -> Arc<dyn ChangeContentStateUseCasePort> {
         Arc::new(ChangeContentStateUseCase::new(
             self.event_emitter.clone(),
-            self.content_file_service.clone(),
+            self.storage.content_file_service.clone(),
         ))
     }
     fn import_content_use_case(&self) -> Arc<dyn ImportContentUseCasePort> {
         Arc::new(ImportContentUseCase::new(
             self.event_emitter.clone(),
-            self.pack_storage.clone(),
+            self.storage.pack_storage.clone(),
             self.location_info.clone(),
         ))
     }
     fn list_content_use_case(&self) -> Arc<dyn ListContentUseCasePort> {
         Arc::new(ListContentUseCase::new(
-            self.pack_storage.clone(),
+            self.storage.pack_storage.clone(),
             self.location_info.clone(),
         ))
     }
     fn remove_content_use_case(&self) -> Arc<dyn RemoveContentUseCasePort> {
         Arc::new(RemoveContentUseCase::new(
             self.event_emitter.clone(),
-            self.pack_storage.clone(),
-            self.content_file_service.clone(),
+            self.storage.pack_storage.clone(),
+            self.storage.content_file_service.clone(),
         ))
     }
     fn search_content_use_case(&self) -> Arc<dyn SearchContentUseCasePort> {
@@ -589,9 +611,9 @@ impl InstanceFeature for AetherContainer {
     }
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort> {
         Arc::new(InstallContentUseCase::new(
-            self.pack_storage.clone(),
+            self.storage.pack_storage.clone(),
             self.content_provider_registry.clone(),
-            self.content_file_service.clone(),
+            self.storage.content_file_service.clone(),
         ))
     }
     fn check_content_compatibility_use_case(
@@ -599,7 +621,7 @@ impl InstanceFeature for AetherContainer {
     ) -> Arc<dyn CheckContentCompatibilityUseCasePort> {
         Arc::new(CheckContentCompatibilityUseCase::new(
             self.content_provider_registry.clone(),
-            self.instance_storage.clone(),
+            self.storage.instance_storage.clone(),
         ))
     }
     fn list_content_versions_use_case(&self) -> Arc<dyn ListContentVersionsUseCasePort> {
@@ -612,12 +634,6 @@ impl InstanceFeature for AetherContainer {
             self.content_provider_registry.clone(),
         ))
     }
-    fn instance_storage(&self) -> Arc<dyn InstanceStorage> {
-        self.instance_storage.clone()
-    }
-    fn pack_storage(&self) -> Arc<dyn PackStorage> {
-        self.pack_storage.clone()
-    }
     fn instance_install_service(&self) -> Arc<dyn InstanceInstallService> {
         self.instance_install_service()
     }
@@ -628,30 +644,34 @@ impl InstanceFeature for AetherContainer {
         self.instance_watcher_service.clone()
     }
     fn instance_file_service(&self) -> Arc<dyn InstanceFileService> {
-        self.instance_file_service.clone()
+        self.storage.instance_file_service.clone()
     }
     fn content_file_service(&self) -> Arc<dyn ContentFileService> {
-        self.content_file_service.clone()
+        self.storage.content_file_service.clone()
     }
 }
 
 impl ProcessFeature for AetherContainer {
     fn wait_for_process_use_case(&self) -> Arc<dyn WaitForProcessUseCasePort> {
-        Arc::new(WaitForProcessUseCase::new(self.process_storage.clone()))
+        Arc::new(WaitForProcessUseCase::new(
+            self.storage.process_storage.clone(),
+        ))
     }
     fn kill_process_use_case(&self) -> Arc<dyn KillProcessUseCasePort> {
-        Arc::new(KillProcessUseCase::new(self.process_storage.clone()))
+        Arc::new(KillProcessUseCase::new(
+            self.storage.process_storage.clone(),
+        ))
     }
     fn list_process_metadata_use_case(&self) -> Arc<dyn ListProcessMetadataUseCasePort> {
         Arc::new(ListProcessMetadataUseCase::new(
-            self.process_storage.clone(),
+            self.storage.process_storage.clone(),
         ))
     }
     fn get_process_metadata_by_instance_id_use_case(
         &self,
     ) -> Arc<dyn GetProcessMetadataByInstanceIdUseCasePort> {
         Arc::new(GetProcessMetadataByInstanceIdUseCase::new(
-            self.process_storage.clone(),
+            self.storage.process_storage.clone(),
         ))
     }
     fn process_start_service(&self) -> Arc<dyn ProcessStartService> {
@@ -664,99 +684,100 @@ impl ProcessFeature for AetherContainer {
         self.manage_process_service()
     }
     fn process_storage(&self) -> Arc<dyn ProcessStorage> {
-        self.process_storage.clone()
+        self.storage.process_storage.clone()
     }
 }
 
 impl PluginsFeature for AetherContainer {
     fn check_for_plugin_updates_use_case(&self) -> Arc<dyn CheckForPluginUpdatesUseCasePort> {
         Arc::new(CheckForPluginUpdatesUseCase::new(
-            self.plugin_source_storage.clone(),
-            self.plugin_provider_factory.clone(),
+            self.plugins.source_storage.clone(),
+            self.plugins.provider_factory.clone(),
         ))
     }
     fn edit_plugin_settings_use_case(&self) -> Arc<dyn EditPluginSettingsUseCasePort> {
         Arc::new(EditPluginSettingsUseCase::new(
-            self.plugin_settings_storage.clone(),
+            self.plugins.settings_storage.clone(),
         ))
     }
     fn enable_plugin_use_case(&self) -> Arc<dyn EnablePluginUseCasePort> {
         Arc::new(EnablePluginUseCase::new(
-            self.plugin_registry.clone(),
-            self.plugin_loader_registry.clone(),
-            self.plugin_settings_storage.clone(),
-            self.settings_storage.clone(),
+            self.plugins.registry.clone(),
+            self.plugins.loader_registry.clone(),
+            self.plugins.settings_storage.clone(),
+            self.storage.settings_storage.clone(),
         ))
     }
     fn force_enable_plugin_use_case(&self) -> Arc<dyn ForceEnablePluginUseCasePort> {
         Arc::new(ForceEnablePluginUseCase::new(
-            self.plugin_registry.clone(),
-            self.plugin_loader_registry.clone(),
-            self.plugin_settings_storage.clone(),
-            self.settings_storage.clone(),
+            self.plugins.registry.clone(),
+            self.plugins.loader_registry.clone(),
+            self.plugins.settings_storage.clone(),
+            self.storage.settings_storage.clone(),
         ))
     }
     fn get_plugin_api_version_use_case(&self) -> Arc<dyn GetPluginApiVersionUseCasePort> {
         Arc::new(GetPluginApiVersionUseCase::default())
     }
     fn get_plugin_dto_use_case(&self) -> Arc<dyn GetPluginDtoUseCasePort> {
-        Arc::new(GetPluginDtoUseCase::new(self.plugin_registry.clone()))
+        Arc::new(GetPluginDtoUseCase::new(self.plugins.registry.clone()))
     }
     fn get_plugin_settings_use_case(&self) -> Arc<dyn GetPluginSettingsUseCasePort> {
         Arc::new(GetPluginSettingsUseCase::new(
-            self.plugin_settings_storage.clone(),
+            self.plugins.settings_storage.clone(),
         ))
     }
     fn import_plugins_use_case(&self) -> Arc<dyn ImportPluginsUseCasePort> {
         Arc::new(ImportPluginsUseCase::new(
-            self.plugin_extractor.clone(),
-            self.plugin_storage.clone(),
+            self.plugins.extractor.clone(),
+            self.plugins.storage.clone(),
             self.sync_plugins_service(),
         ))
     }
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort> {
-        Arc::new(ListPluginsDtoUseCase::new(self.plugin_registry.clone()))
+        Arc::new(ListPluginsDtoUseCase::new(self.plugins.registry.clone()))
     }
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort> {
         Arc::new(RemovePluginUseCase::new(
-            self.plugin_storage.clone(),
+            self.plugins.storage.clone(),
             self.sync_plugins_service(),
         ))
     }
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort> {
         Arc::new(UpdatePluginUseCase::new(
-            self.plugin_extractor.clone(),
-            self.plugin_storage.clone(),
-            self.plugin_source_storage.clone(),
-            self.plugin_provider_factory.clone(),
+            self.plugins.extractor.clone(),
+            self.plugins.storage.clone(),
+            self.plugins.source_storage.clone(),
+            self.plugins.provider_factory.clone(),
         ))
     }
     fn plugin_registry(&self) -> Arc<PluginRegistry> {
-        self.plugin_registry.clone()
+        self.plugins.registry.clone()
     }
     fn plugin_loader_registry(&self) -> Arc<PluginLoaderRegistry> {
-        self.plugin_loader_registry.clone()
+        self.plugins.loader_registry.clone()
     }
     fn plugin_provider_factory(&self) -> Arc<PluginProviderFactory> {
-        self.plugin_provider_factory.clone()
+        self.plugins.provider_factory.clone()
     }
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage> {
-        self.plugin_source_storage.clone()
+        self.plugins.source_storage.clone()
     }
     fn plugin_loader(&self) -> Arc<dyn PluginLoader> {
-        self.plugin_loader_registry
+        self.plugins
+            .loader_registry
             .get(&LoadConfigType::Extism)
             .expect("ExtismPluginLoader must be registered")
             .clone()
     }
     fn plugin_storage(&self) -> Arc<dyn PluginStorage> {
-        self.plugin_storage.clone()
+        self.plugins.storage.clone()
     }
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage> {
-        self.plugin_settings_storage.clone()
+        self.plugins.settings_storage.clone()
     }
     fn plugin_extractor(&self) -> Arc<dyn PluginExtractor> {
-        self.plugin_extractor.clone()
+        self.plugins.extractor.clone()
     }
     fn sync_plugins_use_case(&self) -> Arc<dyn PluginSyncService> {
         self.sync_plugins_service()
@@ -777,14 +798,5 @@ impl EventsFeature for AetherContainer {
     }
     fn progress_service(&self) -> Arc<dyn ProgressService> {
         self.progress_service.clone()
-    }
-}
-
-impl FileWatcherFeature for AetherContainer {
-    fn file_watcher(&self) -> Option<Arc<dyn FileWatcher>> {
-        None
-    }
-    fn file_event_handler(&self) -> Option<Arc<dyn FileEventHandler>> {
-        None
     }
 }

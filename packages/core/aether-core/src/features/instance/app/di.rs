@@ -5,10 +5,10 @@ use crate::features::instance::app::ports::{
     CreateInstanceUseCasePort, EditInstanceIconUseCasePort, EditInstanceUseCasePort,
     GetContentUseCasePort, GetInstanceUseCasePort, ImportContentUseCasePort,
     ImportInstanceUseCasePort, InstallContentUseCasePort, InstanceFileService,
-    InstanceInstallService, InstanceLaunchService, InstanceStorage, InstanceWatcherService,
+    InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
     LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCasePort,
     ListContentVersionsUseCasePort, ListImportersUseCasePort, ListInstancesUseCasePort,
-    ListProvidersUseCasePort, PackStorage, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
+    ListProvidersUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
     SearchContentUseCasePort, UpdateInstanceUseCasePort,
 };
 
@@ -49,8 +49,6 @@ pub trait InstanceFeature {
     fn list_providers_use_case(&self) -> Arc<dyn ListProvidersUseCasePort>;
 
     // ── Ports / services ──
-    fn instance_storage(&self) -> Arc<dyn InstanceStorage>;
-    fn pack_storage(&self) -> Arc<dyn PackStorage>;
     fn instance_install_service(&self) -> Arc<dyn InstanceInstallService>;
     fn instance_launch_service(&self) -> Arc<dyn InstanceLaunchService>;
     fn instance_watcher_service(&self) -> Arc<dyn InstanceWatcherService>;

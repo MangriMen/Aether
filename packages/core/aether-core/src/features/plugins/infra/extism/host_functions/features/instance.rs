@@ -106,8 +106,8 @@ host_fn!(
 pub instance_get_dir(user_data: PluginContext; id: String) -> MsgpackResult<String> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let location_info = ctx.container.location_info();
-    let location_info = location_info.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
+    let location_info = container.location_info();
     drop(ctx);
 
     to_extism_res::<String>(
@@ -120,8 +120,8 @@ pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> Ms
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
     let plugin_id = ctx.id.clone();
-    let location_info = ctx.container.location_info();
-    let location_info = location_info.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
+    let location_info = container.location_info();
     drop(ctx);
 
     to_extism_res::<String>(
@@ -136,7 +136,7 @@ host_fn!(
     ) -> MsgpackResult<String> {
         let context = user_data.get()?;
         let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-        let container = ctx.container.clone();
+        let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
         drop(ctx);
 
         to_extism_res::<String>(
@@ -149,7 +149,7 @@ host_fn!(
 pub list_content(user_data: PluginContext; id: String) -> MsgpackResult<DashMap<String, ContentFileDto>> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.container.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<DashMap<String, ContentFileDto>>(
@@ -161,7 +161,7 @@ host_fn!(
 pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.container.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<()>(
@@ -173,7 +173,7 @@ host_fn!(
 pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.container.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<()>(

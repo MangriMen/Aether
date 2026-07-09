@@ -41,7 +41,7 @@ host_fn!(
 pub get_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.container.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<JavaDto>(
@@ -53,7 +53,7 @@ host_fn!(
 pub install_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let container = ctx.container.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
     drop(ctx);
 
     to_extism_res::<JavaDto>(
