@@ -1,13 +1,10 @@
-use aether_core::{
-    core::app::AetherContainer,
-    features::{
+use aether_core::features::{
         instance::{
             ChangeContentState, ContentStateAction, ImportContent, InstanceFeature, RemoveContent,
         },
         process::ProcessFeature,
         settings::SettingsFeature,
-    },
-};
+    };
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -16,6 +13,7 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::{
+    core::ContainerState,
     FrontendResult,
     features::{
         instance::infra::{
@@ -57,10 +55,11 @@ async fn create(
     new_instance: NewInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<String> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .create_instance_use_case()
         .execute(new_instance.into())
@@ -74,10 +73,11 @@ async fn import(
     import_instance: ImportInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .import_instance_use_case()
         .execute(import_instance.into())
@@ -87,9 +87,11 @@ async fn import(
 
 #[tauri::command]
 #[specta::specta]
-async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>>
+async fn list_importers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>>
 {
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .list_importers_use_case()
         .execute()
@@ -102,8 +104,10 @@ async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapab
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<InstanceDto>> {
-    let container = AetherContainer::get();
+async fn list(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<InstanceDto>> {
+    let container = container.0.clone();
     Ok(container
         .list_instances_use_case()
         .execute()
@@ -116,8 +120,11 @@ async fn list() -> FrontendResult<Vec<InstanceDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get(id: String) -> FrontendResult<InstanceDto> {
-    let container = AetherContainer::get();
+async fn get(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<InstanceDto> {
+    let container = container.0.clone();
     Ok(container
         .get_instance_use_case()
         .execute(id)
@@ -128,8 +135,11 @@ async fn get(id: String) -> FrontendResult<InstanceDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_dir(id: String) -> FrontendResult<PathBuf> {
-    let container = AetherContainer::get();
+async fn get_dir(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<PathBuf> {
+    let container = container.0.clone();
     Ok(container.location_info().instance_dir(&id))
 }
 
@@ -140,10 +150,11 @@ async fn install(
     force: bool,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .instance_install_service()
         .execute(id, force)
@@ -157,10 +168,11 @@ async fn update(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .update_instance_use_case()
         .execute(id)
@@ -181,10 +193,11 @@ async fn edit(
     edit_instance: EditInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<InstanceDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .edit_instance_use_case()
         .execute(id, edit_instance.into())
@@ -199,10 +212,11 @@ async fn remove(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .remove_instance_use_case()
         .execute(id)
@@ -216,10 +230,11 @@ async fn launch(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<MinecraftProcessMetadataDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .launch_instance_with_active_account_use_case()
         .execute(id)
@@ -234,10 +249,11 @@ async fn stop(
     uuid: Uuid,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .kill_process_use_case()
         .execute(uuid)
@@ -253,10 +269,11 @@ async fn import_contents(
     source_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .import_content_use_case()
         .execute(ImportContent::new(
@@ -270,8 +287,11 @@ async fn import_contents(
 
 #[tauri::command]
 #[specta::specta]
-async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFileDto>> {
-    let container = AetherContainer::get();
+async fn list_content(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HashMap<String, ContentFileDto>> {
+    let container = container.0.clone();
     Ok(container
         .list_content_use_case()
         .execute(id)
@@ -288,10 +308,11 @@ async fn install_content(
     payload: ContentInstallParamsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .install_content_use_case()
         .execute(payload.into())
@@ -306,10 +327,11 @@ async fn enable_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
         .execute(ChangeContentState::multiple(
@@ -328,10 +350,11 @@ async fn disable_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
         .execute(ChangeContentState::multiple(
@@ -350,10 +373,11 @@ async fn remove_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .remove_content_use_case()
         .execute(RemoveContent::multiple(id, content_paths))
@@ -363,9 +387,11 @@ async fn remove_contents(
 
 #[tauri::command]
 #[specta::specta]
-async fn list_content_providers()
+async fn list_content_providers(
+    container: State<'_, ContainerState>,
+)
 -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .list_providers_use_case()
         .execute()
@@ -378,8 +404,11 @@ async fn list_content_providers()
 
 #[tauri::command]
 #[specta::specta]
-async fn search_content(payload: ContentSearchParamsDto) -> FrontendResult<ContentSearchResultDto> {
-    let container = AetherContainer::get();
+async fn search_content(
+    payload: ContentSearchParamsDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ContentSearchResultDto> {
+    let container = container.0.clone();
     Ok(container
         .search_content_use_case()
         .execute(payload.into())
@@ -393,8 +422,9 @@ async fn search_content(payload: ContentSearchParamsDto) -> FrontendResult<Conte
 async fn check_compatibility(
     instance_ids: HashSet<String>,
     check_params: ContentCompatibilityCheckParamsDto,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<HashMap<String, ContentCompatibilityResultDto>> {
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .check_content_compatibility_use_case()
         .execute(instance_ids, check_params.into())
@@ -407,8 +437,11 @@ async fn check_compatibility(
 
 #[tauri::command]
 #[specta::specta]
-async fn get_content(params: ContentGetParamsDto) -> FrontendResult<ContentItemDto> {
-    let container = AetherContainer::get();
+async fn get_content(
+    params: ContentGetParamsDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ContentItemDto> {
+    let container = container.0.clone();
     Ok(container
         .get_content_use_case()
         .execute(params.into())
@@ -421,8 +454,9 @@ async fn get_content(params: ContentGetParamsDto) -> FrontendResult<ContentItemD
 #[specta::specta]
 async fn list_content_version(
     params: ContentListVersionParamsDto,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<ContentVersionDto>> {
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .list_content_versions_use_case()
         .execute(params.into())
@@ -439,10 +473,11 @@ async fn edit_icon(
     edit_instance_icon: EditInstanceIconDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
 
     container
         .edit_instance_icon_use_case()

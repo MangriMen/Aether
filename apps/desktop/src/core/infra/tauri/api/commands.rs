@@ -1,10 +1,10 @@
 #![allow(clippy::needless_pass_by_value)]
 use std::path::Path;
 
-use aether_core::core::app::AetherContainer;
 use tauri::State;
 
 use crate::{
+    core::ContainerState,
     FrontendResult,
     core::{
         AppSettingsStorageState, InitializePluginsUseCase, RecreateWindowUseCase,
@@ -28,31 +28,21 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
     application_commands!(tauri_specta::collect_commands!)
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// pub async fn initialize_state(
-//     event_emitter: State<'_, EventEmitterState<tauri::Wry>>,
-//     location_info: State<'_, LocationInfoState>,
-//     pool: State<'_, SqlitePool>,
-// ) -> FrontendResult<()> {
-//     Ok(
-//         InitializeLauncherUseCase::new(event_emitter.inner().clone())
-//             .execute(location_info.inner().clone(), pool.inner().clone())
-//             .await?,
-//     )
-// }
-
 #[tauri::command]
 #[specta::specta]
-pub async fn wait_for_initialization() -> FrontendResult<()> {
-    let _container = AetherContainer::get();
+pub async fn wait_for_initialization(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let _container = container.0.clone();
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn initialize_plugins() -> FrontendResult<()> {
-    Ok(InitializePluginsUseCase::execute().await?)
+pub async fn initialize_plugins(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    Ok(InitializePluginsUseCase::execute(container.0.clone()).await?)
 }
 
 #[tauri::command]

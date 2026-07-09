@@ -1,9 +1,10 @@
 use std::{collections::HashSet, path::PathBuf};
 
-use aether_core::{core::app::AetherContainer, features::java::JavaFeature};
+use aether_core::features::java::JavaFeature;
 use tauri::State;
 
 use crate::{
+    core::ContainerState,
     FrontendResult,
     features::java::{EditJavaDto, InstallJavaDto, JavaDto},
     shared::{
@@ -26,8 +27,10 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<JavaDto>> {
-    let container = AetherContainer::get();
+async fn list(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<JavaDto>> {
+    let container = container.0.clone();
 
     Ok(container
         .list_java_use_case()
@@ -45,10 +48,11 @@ async fn edit(
     edit_java: EditJavaDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
 
     Ok(container
         .edit_java_use_case()
@@ -64,10 +68,11 @@ async fn remove(
     version: u32,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
 
     Ok(container
         .remove_java_use_case()
@@ -82,10 +87,11 @@ async fn install(
     install_java: InstallJavaDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<JavaDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
 
     Ok(container
         .install_java_use_case()
@@ -97,8 +103,11 @@ async fn install(
 
 #[tauri::command]
 #[specta::specta]
-async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
-    let container = AetherContainer::get();
+async fn test_jre(
+    path: PathBuf,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<JavaDto> {
+    let container = container.0.clone();
 
     Ok(container
         .test_jre_use_case()
@@ -110,8 +119,10 @@ async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn discover() -> FrontendResult<Vec<JavaDto>> {
-    let container = AetherContainer::get();
+async fn discover(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<JavaDto>> {
+    let container = container.0.clone();
 
     Ok(container
         .discover_java_use_case()
@@ -125,8 +136,10 @@ async fn discover() -> FrontendResult<Vec<JavaDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_active_installations() -> FrontendResult<HashSet<u32>> {
-    let container = AetherContainer::get();
+async fn get_active_installations(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HashSet<u32>> {
+    let container = container.0.clone();
 
     Ok(container
         .get_active_java_installations_use_case()

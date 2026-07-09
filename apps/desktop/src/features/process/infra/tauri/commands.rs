@@ -1,6 +1,8 @@
-use aether_core::{core::app::AetherContainer, features::process::ProcessFeature};
+use aether_core::features::process::ProcessFeature;
+use tauri::State;
 
 use crate::{
+    core::ContainerState,
     FrontendResult,
     features::process::{MinecraftProcessMetadataDto, ProcessEventDto},
     shared::commands::{PROCESS_PLUGIN_NAME, process_commands},
@@ -25,8 +27,10 @@ pub fn get_specta_events() -> tauri_specta::Events {
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
-    let container = AetherContainer::get();
+async fn list(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
+    let container = container.0.clone();
     Ok(container
         .list_process_metadata_use_case()
         .execute()
@@ -39,8 +43,11 @@ async fn list() -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_by_instance_id(id: String) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
-    let container = AetherContainer::get();
+async fn get_by_instance_id(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
+    let container = container.0.clone();
     Ok(container
         .get_process_metadata_by_instance_id_use_case()
         .execute(id)

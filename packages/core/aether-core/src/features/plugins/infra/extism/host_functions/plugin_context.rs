@@ -1,6 +1,9 @@
-use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+use crate::core::app::AetherContainer;
+
+#[derive(Clone)]
 pub struct PluginContext {
     pub id: String,
+    pub container: Arc<AetherContainer>,
 }

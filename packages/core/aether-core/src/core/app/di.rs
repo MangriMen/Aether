@@ -1,29 +1,21 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, OnceLock},
-};
-
-use reqwest_middleware::ClientWithMiddleware;
-use reqwest_retry::policies::ExponentialBackoff;
+use std::sync::{Arc, OnceLock};
 
 use crate::features::{
     auth::{
-        self, ActiveAccountHelper, AuthFeature, CreateOfflineAccountUseCase,
+        ActiveAccountHelper, AuthFeature, CreateOfflineAccountUseCase,
         CreateOfflineAccountUseCasePort, CredentialsStorage, GetAccountsUseCase,
         GetAccountsUseCasePort, LogoutUseCase, LogoutUseCasePort, SetActiveAccountUseCase,
         SetActiveAccountUseCasePort,
-        infra::{FsCredentialsStorage, SqliteCredentialsStorage},
     },
     events::{
-        Event, EventEmitter, EventEmitterExt, EventsFeature, ListProgressBarsUseCase,
-        ListProgressBarsUseCasePort, PluginEvent, ProgressService, ProgressServiceImpl,
-        SharedEventEmitter, infra::InMemoryProgressBarStorage,
+        Event, EventEmitter, EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
+        ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
-    file_watcher::{FileEventHandler, FileWatcher, FileWatcherFeature, infra::NotifyFileWatcher},
+    file_watcher::{FileEventHandler, FileWatcher, FileWatcherFeature},
     instance::{
-        self, ChangeContentStateUseCase, ChangeContentStateUseCasePort,
-        CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
-        ContentProvider, CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
+        ChangeContentStateUseCase, ChangeContentStateUseCasePort, CheckContentCompatibilityUseCase,
+        CheckContentCompatibilityUseCasePort, ContentFileService, ContentProvider,
+        CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
@@ -37,35 +29,22 @@ use crate::features::{
         ListProvidersUseCasePort, PackStorage, RemoveContentUseCase, RemoveContentUseCasePort,
         RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
         SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
-        infra::{
-            EventEmittingInstanceStorage, FsContentFileService, FsInstanceFileService,
-            InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
-            SqliteInstanceStorage, SqlitePackStorage,
-        },
     },
     java::{
-        self, DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
+        DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
         GetActiveJavaInstallationsUseCase, GetActiveJavaInstallationsUseCasePort, GetJavaUseCase,
         InstallJavaUseCase, JavaFeature, JavaInstallService, JavaInstallationService,
         JavaInstallationTracker, JavaQueryService, JavaStorage, JreProvider, ListJavaUseCase,
         ListJavaUseCasePort, RemoveJavaUseCase, RemoveJavaUseCasePort, TestJreUseCase,
-        TestJreUseCasePort,
-        infra::{
-            AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker,
-            SqliteJavaStorage, get_default_discovery_paths,
-        },
+        TestJreUseCasePort, infra::get_default_discovery_paths,
     },
     minecraft::{
-        self, GetLoaderVersionManifestUseCase, GetLoaderVersionManifestUseCasePort,
+        GetLoaderVersionManifestUseCase, GetLoaderVersionManifestUseCasePort,
         GetMinecraftLaunchCommandUseCase, GetVersionManifestUseCase, InstallMinecraftUseCase,
         LoaderVersionResolver, LoaderVersionService, MetadataStorage, MinecraftDownloader,
         MinecraftFeature, MinecraftFileHealthService, MinecraftHealthService,
         MinecraftInstallService, MinecraftLaunchCommandService, ModLoaderProcessor,
         VersionManifestService,
-        infra::{
-            AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor, LibrariesService,
-            MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
-        },
     },
     plugins::{
         CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,
@@ -75,14 +54,10 @@ use crate::features::{
         GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
         ImportPluginsUseCase, ImportPluginsUseCasePort, ListPluginsDtoUseCase,
         ListPluginsDtoUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
-        PluginLoader, PluginLoaderRegistry, PluginProvider, PluginProviderFactory, PluginRegistry,
+        PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
         PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
         PluginsFeature, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
         UpdatePluginUseCase, UpdatePluginUseCasePort,
-        infra::{
-            ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-            GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
-        },
     },
     process::{
         GetProcessMetadataByInstanceIdUseCase, GetProcessMetadataByInstanceIdUseCasePort,
@@ -90,32 +65,15 @@ use crate::features::{
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
         ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
         TrackProcessUseCase, WaitForProcessUseCase, WaitForProcessUseCasePort,
-        infra::InMemoryProcessStorage,
     },
     settings::{
-        self, DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCase,
+        DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCase,
         EditDefaultInstanceSettingsUseCasePort, EditSettingsUseCase, EditSettingsUseCasePort,
         GetDefaultInstanceSettingsUseCase, GetDefaultInstanceSettingsUseCasePort,
-        GetSettingsUseCase, GetSettingsUseCasePort, LocationInfo, Settings, SettingsFeature,
-        SettingsStorage,
-        infra::{
-            FsDefaultInstanceSettingsStorage, FsSettingsStorage,
-            SqliteDefaultInstanceSettingsStorage, SqliteSettingsStorage,
-        },
+        GetSettingsUseCase, GetSettingsUseCasePort, LocationInfo, SettingsFeature, SettingsStorage,
     },
 };
-use crate::shared::{
-    cache::{
-        domain::AssetsStorage,
-        infra::{FileCache, FsAssetsStorage, SqliteCache},
-    },
-    capability::{domain::CapabilityRegistry, infra::MemoryCapabilityRegistry},
-    fetch::domain::FetchSemaphore,
-    request_client::infra::ReqwestClient,
-};
-
-type PBarStorage = InMemoryProgressBarStorage;
-type ProgressServiceType = ProgressServiceImpl<PBarStorage>;
+use crate::shared::{cache::domain::AssetsStorage, capability::domain::CapabilityRegistry};
 
 struct UseCaseCache {
     start_process_uc: OnceLock<Arc<dyn ProcessStartService>>,
@@ -147,7 +105,44 @@ impl UseCaseCache {
     }
 }
 
-static AETHER_CONTAINER: OnceLock<Arc<AetherContainer>> = OnceLock::new();
+/// Dependency injection parameters for constructing an [`AetherContainer`].
+///
+/// All dependencies are expressed as trait objects or core domain types —
+/// no concrete infrastructure types are imported here.
+#[allow(clippy::too_many_lines)]
+pub struct AetherContainerParams {
+    pub credentials_storage: Arc<dyn CredentialsStorage>,
+    pub settings_storage: Arc<dyn SettingsStorage>,
+    pub default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
+    pub process_storage: Arc<dyn ProcessStorage>,
+    pub instance_storage: Arc<dyn InstanceStorage>,
+    pub pack_storage: Arc<dyn PackStorage>,
+    pub content_file_service: Arc<dyn ContentFileService>,
+    pub instance_file_service: Arc<dyn InstanceFileService>,
+    pub java_storage: Arc<dyn JavaStorage>,
+    pub java_installation_service: Arc<dyn JavaInstallationService>,
+    pub java_installation_tracker: Arc<dyn JavaInstallationTracker>,
+    pub jre_provider: Arc<dyn JreProvider>,
+    pub metadata_storage: Arc<dyn MetadataStorage>,
+    pub minecraft_downloader: Arc<dyn MinecraftDownloader>,
+    pub forge_processor: Arc<dyn ModLoaderProcessor>,
+    pub plugin_registry: Arc<PluginRegistry>,
+    pub plugin_loader_registry: Arc<PluginLoaderRegistry>,
+    pub plugin_storage: Arc<dyn PluginStorage>,
+    pub plugin_source_storage: Arc<dyn PluginSourceStorage>,
+    pub plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
+    pub plugin_provider_factory: Arc<PluginProviderFactory>,
+    pub plugin_extractor: Arc<dyn PluginExtractor>,
+    pub event_emitter: SharedEventEmitter,
+    pub progress_bar_storage: Arc<dyn ProgressBarStorage>,
+    pub progress_service: Arc<dyn ProgressService>,
+    pub location_info: Arc<LocationInfo>,
+    pub instance_watcher_service: Arc<dyn InstanceWatcherService>,
+    pub importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
+    pub updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
+    pub content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
+    pub assets_storage: Arc<dyn AssetsStorage>,
+}
 
 pub struct AetherContainer {
     cache: UseCaseCache,
@@ -164,8 +159,6 @@ pub struct AetherContainer {
     java_installation_tracker: Arc<dyn JavaInstallationTracker>,
     jre_provider: Arc<dyn JreProvider>,
     metadata_storage: Arc<dyn MetadataStorage>,
-    #[allow(dead_code)]
-    minecraft_cache: Arc<FileCache<crate::features::minecraft::infra::MinecraftDownloadResolver>>,
     minecraft_downloader: Arc<dyn MinecraftDownloader>,
     forge_processor: Arc<dyn ModLoaderProcessor>,
     plugin_registry: Arc<PluginRegistry>,
@@ -176,11 +169,9 @@ pub struct AetherContainer {
     plugin_provider_factory: Arc<PluginProviderFactory>,
     plugin_extractor: Arc<dyn PluginExtractor>,
     event_emitter: SharedEventEmitter,
-    progress_bar_storage: Arc<PBarStorage>,
-    progress_service: Arc<ProgressServiceType>,
+    progress_bar_storage: Arc<dyn ProgressBarStorage>,
+    progress_service: Arc<dyn ProgressService>,
     location_info: Arc<LocationInfo>,
-    #[allow(dead_code)]
-    request_client: Arc<ReqwestClient<ProgressServiceType>>,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
     importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
     updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
@@ -189,305 +180,48 @@ pub struct AetherContainer {
 }
 
 impl AetherContainer {
-    #[allow(clippy::similar_names, clippy::too_many_lines)]
-    pub async fn init(
-        location_info: Arc<LocationInfo>,
-        event_emitter: SharedEventEmitter,
-        sqlite_pool: sqlx::SqlitePool,
-    ) -> crate::Result<()> {
-        let config_dir = location_info.config_dir();
-        let migrated_dir_name = "migrated";
-
-        settings::infra::migrate_settings_to_sqlite(
-            &FsSettingsStorage::new(config_dir),
-            &SqliteSettingsStorage::new(sqlite_pool.clone()),
-            migrated_dir_name,
-        )
-        .await?;
-
-        settings::infra::migrate_default_instance_settings_to_sqlite(
-            &FsDefaultInstanceSettingsStorage::new(config_dir),
-            &SqliteDefaultInstanceSettingsStorage::new(sqlite_pool.clone()),
-            migrated_dir_name,
-        )
-        .await?;
-
-        auth::infra::migrate_credentials_to_sqlite(
-            &FsCredentialsStorage::new(config_dir),
-            &SqliteCredentialsStorage::new(sqlite_pool.clone()),
-            migrated_dir_name,
-        )
-        .await?;
-
-        instance::infra::migrate_instances_to_sqlite(
-            &crate::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-            &SqliteInstanceStorage::new(sqlite_pool.clone()),
-        )
-        .await?;
-
-        instance::infra::migrate_packs_to_sqlite(
-            &crate::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-            &crate::features::instance::infra::FsPackStorage::new(location_info.clone()),
-            &SqlitePackStorage::new(sqlite_pool.clone()),
-        )
-        .await?;
-
-        java::infra::migrate_java_to_sqlite(
-            &location_info.java_dir(),
-            &FsJavaInstallationService,
-            &SqliteJavaStorage::new(sqlite_pool.clone()),
-        )
-        .await?;
-
-        minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
-
-        let settings_storage_sqlite = Arc::new(SqliteSettingsStorage::new(sqlite_pool.clone()));
-        let settings = if let Ok(s) = settings_storage_sqlite.get().await {
-            s
-        } else {
-            let default = Settings::default();
-            let _ = settings_storage_sqlite.upsert(default.clone()).await;
-            default
-        };
-        let max_downloads = settings.max_concurrent_downloads();
-        let fetch_semaphore = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(max_downloads)));
-
-        let reqwest_client: Arc<ClientWithMiddleware> = {
-            let client = reqwest::Client::builder()
-                .tcp_keepalive(Some(std::time::Duration::from_secs(10)))
-                .build()
-                .expect("Failed to build reqwest client");
-            let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
-            let retry_middleware =
-                reqwest_retry::RetryTransientMiddleware::new_with_policy(retry_policy);
-            Arc::new(
-                reqwest_middleware::ClientBuilder::new(client)
-                    .with(retry_middleware)
-                    .build(),
-            )
-        };
-
-        let progress_bar_storage = Arc::new(InMemoryProgressBarStorage::default());
-        let progress_service: Arc<ProgressServiceType> = Arc::new(ProgressServiceImpl::new(
-            event_emitter.clone(),
-            progress_bar_storage.clone(),
-        ));
-        let http_client: Arc<ReqwestClient<ProgressServiceType>> = Arc::new(ReqwestClient::new(
-            progress_service.clone(),
-            reqwest_client.clone(),
-            fetch_semaphore,
-        ));
-
-        let credentials_storage: Arc<dyn CredentialsStorage> =
-            Arc::new(SqliteCredentialsStorage::new(sqlite_pool.clone()));
-
-        let settings_storage: Arc<dyn SettingsStorage> = settings_storage_sqlite.clone();
-        let default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage> = Arc::new(
-            SqliteDefaultInstanceSettingsStorage::new(sqlite_pool.clone()),
-        );
-
-        let process_storage: Arc<dyn ProcessStorage> = Arc::new(InMemoryProcessStorage::default());
-
-        let instance_storage: Arc<dyn InstanceStorage> =
-            Arc::new(EventEmittingInstanceStorage::new(
-                event_emitter.clone(),
-                SqliteInstanceStorage::new(sqlite_pool.clone()),
-            ));
-        let pack_storage: Arc<dyn PackStorage> =
-            Arc::new(SqlitePackStorage::new(sqlite_pool.clone()));
-        let content_file_service: Arc<dyn ContentFileService> =
-            Arc::new(FsContentFileService::new(location_info.clone()));
-        let instance_file_service: Arc<dyn InstanceFileService> =
-            Arc::new(FsInstanceFileService::new(location_info.clone()));
-
-        let java_storage: Arc<dyn JavaStorage> =
-            Arc::new(SqliteJavaStorage::new(sqlite_pool.clone()));
-        let java_installation_service: Arc<dyn JavaInstallationService> =
-            Arc::new(FsJavaInstallationService);
-        let java_installation_tracker: Arc<dyn JavaInstallationTracker> =
-            Arc::new(MemoryJavaInstallationTracker::default());
-        let jre_provider: Arc<dyn JreProvider> = Arc::new(AzulJreProvider::new(
-            progress_service.clone(),
-            http_client.clone(),
-        ));
-
-        let metadata_storage: Arc<dyn MetadataStorage> = Arc::new(CachedMetadataStorage::new(
-            SqliteCache::new(sqlite_pool.clone()),
-            ModrinthMetadataStorage::new(http_client.clone()),
-        ));
-
-        let minecraft_cache = Arc::new(FileCache::new(MinecraftDownloadResolver::new(
-            location_info.clone(),
-        )));
-
-        let client_svc = ClientService::new(
-            progress_service.clone(),
-            http_client.clone(),
-            minecraft_cache.clone(),
-        );
-        let assets_svc = AssetsService::new(
-            progress_service.clone(),
-            http_client.clone(),
-            location_info.clone(),
-            minecraft_cache.clone(),
-        );
-        let libraries_svc = LibrariesService::new(
-            progress_service.clone(),
-            http_client.clone(),
-            location_info.clone(),
-        );
-        let minecraft_downloader: Arc<dyn MinecraftDownloader> =
-            Arc::new(MinecraftDownloadService::new(
-                client_svc,
-                assets_svc,
-                libraries_svc,
-                http_client.clone(),
-                progress_service.clone(),
-                minecraft_cache.clone(),
-            ));
-        let forge_processor: Arc<dyn ModLoaderProcessor> = Arc::new(ForgeProcessor::new(
-            progress_service.clone(),
-            location_info.clone(),
-        ));
-
-        let plugin_registry = Arc::new(PluginRegistry::new(event_emitter.clone()));
-        let plugin_loader_registry = Arc::new(PluginLoaderRegistry::new(HashMap::from([(
-            LoadConfigType::Extism,
-            Arc::new(ExtismPluginLoader::new(location_info.clone())) as Arc<dyn PluginLoader>,
-        )])));
-        let plugin_storage: Arc<dyn PluginStorage> =
-            Arc::new(FsPluginStorage::new(location_info.clone(), None));
-        let plugin_source_storage: Arc<dyn PluginSourceStorage> =
-            Arc::new(FsPluginSourceStorage::new(location_info.clone()));
-        let plugin_settings_storage: Arc<dyn PluginSettingsStorage> =
-            Arc::new(FsPluginSettingsStorage::new(location_info.clone()));
-        let plugin_provider_factory =
-            Arc::new(PluginProviderFactory::new(vec![
-                Box::new(GithubProvider::new(reqwest_client.clone())) as Box<dyn PluginProvider>,
-            ]));
-        let plugin_extractor: Arc<dyn PluginExtractor> = Arc::new(ZipPluginExtractor::default());
-
-        let instance_watcher_service: Arc<dyn InstanceWatcherService> = {
-            let event_handler = Arc::new(InstanceEventHandler::new(
-                event_emitter.clone(),
-                Arc::new(GetInstanceUseCase::new(instance_storage.clone())),
-            ));
-            let watcher = NotifyFileWatcher::new(event_handler).map_err(|e| {
-                crate::ErrorKind::CoreError(format!("File watcher: {e}")).as_error()
-            })?;
-            Arc::new(InstanceWatcherServiceImpl::new(
-                Arc::new(watcher),
-                location_info.clone(),
-            ))
-        };
-
-        let importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>> =
-            Arc::new(MemoryCapabilityRegistry::new("importer"));
-        let updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>> =
-            Arc::new(MemoryCapabilityRegistry::new("updater"));
-
-        let content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> =
-            Arc::new(MemoryCapabilityRegistry::new("content_provider"));
-
-        let file_cache_assets = Arc::new(FileCache::new(
-            crate::shared::cache::infra::AssetsResolver::new(location_info.clone()),
-        ));
-        let assets_storage: Arc<dyn AssetsStorage> =
-            Arc::new(FsAssetsStorage::new(file_cache_assets));
-
-        let container = Arc::new(Self {
+    /// Construct a new [`AetherContainer`] from pre-built dependencies.
+    ///
+    /// This constructor does not import any concrete infrastructure types —
+    /// all dependencies are provided as trait objects via [`AetherContainerParams`].
+    pub fn new(params: AetherContainerParams) -> Arc<Self> {
+        Arc::new(Self {
             cache: UseCaseCache::new(),
-            credentials_storage,
-            settings_storage,
-            default_instance_settings_storage,
-            process_storage,
-            instance_storage,
-            pack_storage,
-            content_file_service,
-            instance_file_service,
-            java_storage,
-            java_installation_service,
-            java_installation_tracker,
-            jre_provider,
-            metadata_storage,
-            minecraft_cache,
-            minecraft_downloader,
-            forge_processor,
-            plugin_registry,
-            plugin_loader_registry,
-            plugin_storage,
-            plugin_source_storage,
-            plugin_settings_storage,
-            plugin_provider_factory,
-            plugin_extractor,
-            event_emitter: event_emitter.clone(),
-            progress_bar_storage,
-            progress_service,
-            location_info,
-            request_client: http_client,
-            instance_watcher_service,
-            importers_registry,
-            updaters_registry,
-            content_provider_registry,
-            assets_storage,
-        });
-
-        AETHER_CONTAINER.set(container).map_err(|_| {
-            crate::ErrorKind::CoreError("AetherContainer already initialised".into()).as_error()
-        })?;
-
-        let c = Self::get();
-        c.instance_watcher_service.watch_instances().await?;
-
-        // Register ModrinthContentProvider with explicit use case dependency
-        {
-            let provider = Arc::new(ModrinthContentProvider::new(
-                c.location_info.clone(),
-                None,
-                c.request_client.clone(),
-                c.create_instance_use_case(),
-            ));
-            let meta = provider.metadata();
-            let _ = c
-                .content_provider_registry
-                .add(
-                    ModrinthContentProvider::ID.to_owned(),
-                    meta.id.clone(),
-                    provider,
-                )
-                .await;
-        }
-
-        let plugin_infra_listener = Arc::new(PluginInfrastructureListener::new(
-            c.plugin_registry.clone(),
-            c.importers_registry.clone(),
-            c.updaters_registry.clone(),
-            c.content_provider_registry.clone(),
-        ));
-        c.event_emitter.on::<PluginEvent, _>({
-            let listener = plugin_infra_listener.clone();
-            move |event| {
-                let task = listener.clone();
-                tokio::spawn(async move { task.on_plugin_event(event).await });
-            }
-        });
-
-        log::info!("AetherContainer initialized");
-        Ok(())
+            credentials_storage: params.credentials_storage,
+            settings_storage: params.settings_storage,
+            default_instance_settings_storage: params.default_instance_settings_storage,
+            process_storage: params.process_storage,
+            instance_storage: params.instance_storage,
+            pack_storage: params.pack_storage,
+            content_file_service: params.content_file_service,
+            instance_file_service: params.instance_file_service,
+            java_storage: params.java_storage,
+            java_installation_service: params.java_installation_service,
+            java_installation_tracker: params.java_installation_tracker,
+            jre_provider: params.jre_provider,
+            metadata_storage: params.metadata_storage,
+            minecraft_downloader: params.minecraft_downloader,
+            forge_processor: params.forge_processor,
+            plugin_registry: params.plugin_registry,
+            plugin_loader_registry: params.plugin_loader_registry,
+            plugin_storage: params.plugin_storage,
+            plugin_source_storage: params.plugin_source_storage,
+            plugin_settings_storage: params.plugin_settings_storage,
+            plugin_provider_factory: params.plugin_provider_factory,
+            plugin_extractor: params.plugin_extractor,
+            event_emitter: params.event_emitter,
+            progress_bar_storage: params.progress_bar_storage,
+            progress_service: params.progress_service,
+            location_info: params.location_info,
+            instance_watcher_service: params.instance_watcher_service,
+            importers_registry: params.importers_registry,
+            updaters_registry: params.updaters_registry,
+            content_provider_registry: params.content_provider_registry,
+            assets_storage: params.assets_storage,
+        })
     }
 
-    pub fn get() -> Arc<Self> {
-        AETHER_CONTAINER
-            .get()
-            .expect("AetherContainer not initialised")
-            .clone()
-    }
-
-    pub fn try_get() -> Option<Arc<Self>> {
-        AETHER_CONTAINER.get().map(Arc::clone)
-    }
-
-    pub fn progress_bar_storage(&self) -> Arc<PBarStorage> {
+    pub fn progress_bar_storage(&self) -> Arc<dyn ProgressBarStorage> {
         self.progress_bar_storage.clone()
     }
 

@@ -1,2 +1,2 @@
 pub mod di;
-pub use di::AetherContainer;
+pub use di::{AetherContainer, AetherContainerParams};

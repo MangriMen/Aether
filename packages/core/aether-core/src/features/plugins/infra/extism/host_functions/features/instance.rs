@@ -5,10 +5,8 @@ use path_slash::PathBufExt;
 
 use crate::{
     core::app::AetherContainer,
-    features::{
-        instance::{ChangeContentState, ContentStateAction, InstanceFeature},
-        settings::SettingsFeature,
-    },
+    features::instance::{ChangeContentState, ContentStateAction, InstanceFeature},
+    features::settings::SettingsFeature,
     shared::execute_async::infra::execute_async,
 };
 
@@ -16,11 +14,13 @@ use super::super::{super::mappers::to_extism_res, PluginContext};
 
 // ── Testable business logic ──
 
-pub(crate) async fn handle_instance_get_dir(id: &str) -> crate::Result<String> {
-    let container = AetherContainer::get();
-    let dir = container.location_info().instance_dir(id);
+pub(crate) async fn handle_instance_get_dir(
+    id: &str,
+    location_info: &crate::features::settings::LocationInfo,
+) -> crate::Result<String> {
+    let dir = location_info.instance_dir(id);
     let relative_path = dir
-        .strip_prefix(container.location_info().config_dir())
+        .strip_prefix(location_info.config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
         .to_path_buf();
 
@@ -30,21 +30,21 @@ pub(crate) async fn handle_instance_get_dir(id: &str) -> crate::Result<String> {
 pub(crate) async fn handle_instance_plugin_get_dir(
     plugin_id: &str,
     instance_id: &str,
+    location_info: &crate::features::settings::LocationInfo,
 ) -> crate::Result<String> {
-    let container = AetherContainer::get();
-    let dir = container
-        .location_info()
-        .instance_plugin_dir(instance_id, plugin_id);
+    let dir = location_info.instance_plugin_dir(instance_id, plugin_id);
     let relative_path = dir
-        .strip_prefix(container.location_info().config_dir())
+        .strip_prefix(location_info.config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
         .to_path_buf();
 
     Ok(format!("/{}", relative_path.to_slash_lossy()))
 }
 
-pub(crate) async fn handle_instance_create(dto: NewInstanceDto) -> crate::Result<String> {
-    let container = AetherContainer::get();
+pub(crate) async fn handle_instance_create(
+    dto: NewInstanceDto,
+    container: &AetherContainer,
+) -> crate::Result<String> {
     container
         .create_instance_use_case()
         .execute(dto.into())
@@ -54,8 +54,8 @@ pub(crate) async fn handle_instance_create(dto: NewInstanceDto) -> crate::Result
 
 pub(crate) async fn handle_list_content(
     id: String,
+    container: &AetherContainer,
 ) -> crate::Result<DashMap<String, ContentFileDto>> {
-    let container = AetherContainer::get();
     container
         .list_content_use_case()
         .execute(id)
@@ -71,8 +71,8 @@ pub(crate) async fn handle_list_content(
 pub(crate) async fn handle_enable_contents(
     instance_id: String,
     content_paths: Vec<String>,
+    container: &AetherContainer,
 ) -> crate::Result<()> {
-    let container = AetherContainer::get();
     container
         .change_content_state_use_case()
         .execute(ChangeContentState::multiple(
@@ -87,8 +87,8 @@ pub(crate) async fn handle_enable_contents(
 pub(crate) async fn handle_disable_contents(
     instance_id: String,
     content_paths: Vec<String>,
+    container: &AetherContainer,
 ) -> crate::Result<()> {
-    let container = AetherContainer::get();
     container
         .change_content_state_use_case()
         .execute(ChangeContentState::multiple(
@@ -104,18 +104,28 @@ pub(crate) async fn handle_disable_contents(
 
 host_fn!(
 pub instance_get_dir(user_data: PluginContext; id: String) -> MsgpackResult<String> {
+    let context = user_data.get()?;
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let location_info = ctx.container.location_info();
+    let location_info = location_info.clone();
+    drop(ctx);
+
     to_extism_res::<String>(
-        execute_async(handle_instance_get_dir(&id))
+        execute_async(handle_instance_get_dir(&id, &location_info))
     )
 });
 
 host_fn!(
 pub instance_plugin_get_dir(user_data: PluginContext; instance_id: String) -> MsgpackResult<String> {
     let context = user_data.get()?;
-    let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let plugin_id = ctx.id.clone();
+    let location_info = ctx.container.location_info();
+    let location_info = location_info.clone();
+    drop(ctx);
 
     to_extism_res::<String>(
-        execute_async(handle_instance_plugin_get_dir(&id, &instance_id))
+        execute_async(handle_instance_plugin_get_dir(&plugin_id, &instance_id, &location_info))
     )
 });
 
@@ -124,29 +134,49 @@ host_fn!(
         user_data: PluginContext;
         new_instance_dto: Msgpack<NewInstanceDto>
     ) -> MsgpackResult<String> {
+        let context = user_data.get()?;
+        let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+        let container = ctx.container.clone();
+        drop(ctx);
+
         to_extism_res::<String>(
-            execute_async(handle_instance_create(new_instance_dto.0))
+            execute_async(handle_instance_create(new_instance_dto.0, &container))
         )
     }
 );
 
 host_fn!(
 pub list_content(user_data: PluginContext; id: String) -> MsgpackResult<DashMap<String, ContentFileDto>> {
+    let context = user_data.get()?;
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let container = ctx.container.clone();
+    drop(ctx);
+
     to_extism_res::<DashMap<String, ContentFileDto>>(
-        execute_async(handle_list_content(id))
+        execute_async(handle_list_content(id, &container))
     )
 });
 
 host_fn!(
 pub enable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
+    let context = user_data.get()?;
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let container = ctx.container.clone();
+    drop(ctx);
+
     to_extism_res::<()>(
-        execute_async(handle_enable_contents(instance_id, content_paths.0))
+        execute_async(handle_enable_contents(instance_id, content_paths.0, &container))
     )
 });
 
 host_fn!(
 pub disable_contents(user_data: PluginContext; instance_id: String, content_paths: Msgpack<Vec<String>>) -> MsgpackResult<()> {
+    let context = user_data.get()?;
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let container = ctx.container.clone();
+    drop(ctx);
+
     to_extism_res::<()>(
-        execute_async(handle_disable_contents(instance_id, content_paths.0))
+        execute_async(handle_disable_contents(instance_id, content_paths.0, &container))
     )
 });

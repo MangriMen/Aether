@@ -8,12 +8,12 @@ use crate::features::events::{
     ProgressEvent, ProgressEventType, SharedEventEmitter, app::ports::ProgressService,
 };
 
-pub struct ProgressServiceImpl<PS: ProgressBarStorage> {
+pub struct ProgressServiceImpl<PS: ProgressBarStorage + 'static> {
     pub event_emitter: SharedEventEmitter,
     progress_storage: Arc<PS>,
 }
 
-impl<PS: ProgressBarStorage> ProgressServiceImpl<PS> {
+impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
     pub fn new(event_emitter: SharedEventEmitter, progress_storage: Arc<PS>) -> Self {
         Self {
             event_emitter,
@@ -43,20 +43,25 @@ impl<PS: ProgressBarStorage> ProgressServiceImpl<PS> {
 }
 
 #[async_trait]
-impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
+impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<PS> {
     async fn init_progress(
         &self,
         event_type: ProgressEventType,
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        let progress_bar_id = ProgressBarId(Uuid::new_v4());
+        let id = Uuid::new_v4();
+        let progress_bar_id = ProgressBarId {
+            id,
+            progress_storage: Some(self.progress_storage.clone()),
+            event_emitter: Some(self.event_emitter.clone()),
+        };
 
         self.progress_storage
             .insert(
-                progress_bar_id.0,
+                id,
                 ProgressBar {
-                    id: progress_bar_id.0,
+                    id,
                     message,
                     total,
                     current: 0.0,
@@ -94,7 +99,7 @@ impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
         increment_frac: f64,
         message: Option<&str>,
     ) -> Result<(), EventError> {
-        let mut progress_bar = self.progress_storage.get(progress_bar_id.0).await?.clone();
+        let mut progress_bar = self.progress_storage.get(progress_bar_id.id).await?.clone();
 
         // Tick up loading bar
         progress_bar.current += increment_frac;
@@ -108,7 +113,7 @@ impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
 
         if f64::abs(display_frac - progress_bar.last_sent) > 0.005 {
             self.emit_progress_inner(
-                progress_bar_id.0,
+                progress_bar_id.id,
                 opt_display_frac,
                 message.unwrap_or(progress_bar.message.as_ref()).to_string(),
                 progress_bar.progress_type.clone(),
@@ -118,7 +123,7 @@ impl<PS: ProgressBarStorage> ProgressService for ProgressServiceImpl<PS> {
         }
 
         self.progress_storage
-            .upsert(progress_bar_id.0, progress_bar)
+            .upsert(progress_bar_id.id, progress_bar)
             .await?;
 
         Ok(())

@@ -1,23 +1,23 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::{
-    core::app::AetherContainer,
-    features::{
-        plugins::{PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file},
-        settings::SettingsFeature,
-    },
+use aether_core::features::{
+    plugins::{PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file},
+    settings::SettingsFeature,
 };
 use tauri::State;
 
-use crate::FrontendResult;
-use crate::features::plugins::{
-    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
-    PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
-};
-use crate::shared::reveal_in_explorer::infra::reveal_in_explorer;
-use crate::shared::{
-    IdempotencyManager, RequestId, TauriIdempotencyExt,
-    commands::{PLUGIN_PLUGIN_NAME, plugin_commands},
+use crate::{
+    FrontendResult,
+    core::ContainerState,
+    features::plugins::{
+        EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
+        PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
+    },
+    shared::reveal_in_explorer::infra::reveal_in_explorer,
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{PLUGIN_PLUGIN_NAME, plugin_commands},
+    },
 };
 
 #[must_use]
@@ -43,10 +43,11 @@ async fn import(
     paths: Vec<PathBuf>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .import_plugins_use_case()
         .execute(paths)
@@ -59,10 +60,11 @@ async fn import(
 async fn sync(
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .sync_plugins_use_case()
         .execute()
@@ -72,8 +74,8 @@ async fn sync(
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<PluginDto>> {
-    let container = AetherContainer::get();
+async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<PluginDto>> {
+    let container = container.0.clone();
     Ok(container
         .list_plugins_dto_use_case()
         .execute()
@@ -86,8 +88,8 @@ async fn list() -> FrontendResult<Vec<PluginDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get(id: String) -> FrontendResult<PluginDto> {
-    let container = AetherContainer::get();
+async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
+    let container = container.0.clone();
     Ok(container
         .get_plugin_dto_use_case()
         .execute(id)
@@ -102,10 +104,11 @@ async fn remove(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .remove_plugin_use_case()
         .execute(id)
@@ -119,10 +122,11 @@ async fn enable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .enable_plugin_use_case()
         .execute(id)
@@ -136,10 +140,11 @@ async fn force_enable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .force_enable_plugin_use_case()
         .execute(id)
@@ -153,10 +158,11 @@ async fn disable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .disable_plugin_use_case()
         .execute(id)
@@ -171,10 +177,11 @@ async fn call(
     _data: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     let reg = container.plugin_registry();
     let _plugin = reg.get(&id);
     log::debug!("Calling plugin {id:?}");
@@ -183,8 +190,11 @@ async fn call(
 
 #[tauri::command]
 #[specta::specta]
-async fn get_settings(id: String) -> FrontendResult<Option<PluginSettingsDto>> {
-    let container = AetherContainer::get();
+async fn get_settings(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Option<PluginSettingsDto>> {
+    let container = container.0.clone();
     Ok(container
         .get_plugin_settings_use_case()
         .execute(id)
@@ -200,10 +210,11 @@ async fn edit_settings(
     edit_settings: EditPluginSettingsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .edit_plugin_settings_use_case()
         .execute(id, edit_settings.into())
@@ -213,8 +224,8 @@ async fn edit_settings(
 
 #[tauri::command]
 #[specta::specta]
-async fn open_plugins_folder() -> FrontendResult<()> {
-    let container = AetherContainer::get();
+async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendResult<()> {
+    let container = container.0.clone();
     let plugins_path = container.location_info().plugins_dir();
 
     let path_to_open = if plugins_path.exists() {
@@ -232,8 +243,8 @@ async fn open_plugins_folder() -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_api_version() -> FrontendResult<semver::Version> {
-    let container = AetherContainer::get();
+async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult<semver::Version> {
+    let container = container.0.clone();
     Ok(container
         .get_plugin_api_version_use_case()
         .execute()
@@ -245,8 +256,10 @@ async fn get_api_version() -> FrontendResult<semver::Version> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
-    let container = AetherContainer::get();
+async fn get_available_providers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<PluginSourceTypeDto>> {
+    let container = container.0.clone();
     Ok(container
         .plugin_provider_factory()
         .list_source_types()
@@ -259,8 +272,11 @@ async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_plugin_source(id: String) -> FrontendResult<Option<PluginSourceDto>> {
-    let container = AetherContainer::get();
+async fn get_plugin_source(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Option<PluginSourceDto>> {
+    let container = container.0.clone();
     Ok(container
         .plugin_source_storage()
         .get(&id)
@@ -271,8 +287,11 @@ async fn get_plugin_source(id: String) -> FrontendResult<Option<PluginSourceDto>
 
 #[tauri::command]
 #[specta::specta]
-async fn check_for_updates(id: String) -> FrontendResult<PluginUpdateInfoDto> {
-    let container = AetherContainer::get();
+async fn check_for_updates(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<PluginUpdateInfoDto> {
+    let container = container.0.clone();
     Ok(container
         .check_for_plugin_updates_use_case()
         .execute(&id)
@@ -288,10 +307,11 @@ async fn update_plugin(
     target_tag: Option<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .update_plugin_use_case()
         .execute(&id, target_tag.as_deref())
@@ -306,10 +326,11 @@ async fn update_plugin(
 async fn preview_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<ProviderPluginPreviewDto> {
     let st: PluginSourceType = source_type.into();
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     let factory = container.plugin_provider_factory();
     let provider = factory.get_provider(&st).ok_or_else(|| {
         crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
@@ -332,6 +353,7 @@ async fn preview_plugin_from_provider(
 
 #[tauri::command]
 #[specta::specta]
+#[allow(clippy::too_many_arguments)]
 async fn install_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
@@ -340,11 +362,12 @@ async fn install_plugin_from_provider(
     version: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<String> {
     let _guard = idempotency.lock_cmd(request_id)?;
     let st: PluginSourceType = source_type.into();
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     let factory = container.plugin_provider_factory();
     let provider = factory.get_provider(&st).ok_or_else(|| {
         crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(

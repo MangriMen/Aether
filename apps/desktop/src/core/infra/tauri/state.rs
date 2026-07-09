@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use aether_core::features::settings::LocationInfo;
+use aether_core::{core::app::AetherContainer, features::settings::LocationInfo};
 
 use crate::{
     core::TauriWindowManager,
@@ -19,3 +19,5 @@ pub type UpdateServiceState<R> = Arc<TauriUpdateService<R>>;
 pub type EventEmitterState<R> = Arc<TauriEventEmitter<R>>;
 
 pub type LocationInfoState = Arc<LocationInfo>;
+
+pub struct ContainerState(pub Arc<AetherContainer>);

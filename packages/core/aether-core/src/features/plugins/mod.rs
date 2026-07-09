@@ -36,5 +36,5 @@ pub use app::{
 // Infrastructure re-exports (commonly used by app layer)
 pub use infra::{
     ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-    GitHubPluginFetcher, PluginInfrastructureListener, ZipPluginExtractor,
+    GitHubPluginFetcher, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
 };

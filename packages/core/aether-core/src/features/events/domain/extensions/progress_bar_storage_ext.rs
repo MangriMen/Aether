@@ -25,9 +25,9 @@ impl<PS: ProgressBarStorage> ProgressBarStorageExt for PS {
     where
         F: FnOnce(&mut ProgressBar) -> Result<(), ProgressBarStorageError> + Send,
     {
-        let mut progress_bar = self.get(progress_bar_id.0).await?.clone();
+        let mut progress_bar = self.get(progress_bar_id.id).await?.clone();
         update_fn(&mut progress_bar)?;
-        self.upsert(progress_bar_id.0, progress_bar).await?;
+        self.upsert(progress_bar_id.id, progress_bar).await?;
         Ok(())
     }
 }

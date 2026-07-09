@@ -1,8 +1,9 @@
-use aether_core::{core::app::AetherContainer, features::auth::AuthFeature};
+use aether_core::features::auth::AuthFeature;
 use tauri::State;
 use uuid::Uuid;
 
 use crate::{
+    core::ContainerState,
     FrontendResult,
     features::auth::infra::tauri::dtos::AccountDto,
     shared::{
@@ -29,10 +30,11 @@ async fn create_offline_account(
     username: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<AccountDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .create_offline_account_use_case()
         .execute(username)
@@ -43,8 +45,10 @@ async fn create_offline_account(
 
 #[tauri::command]
 #[specta::specta]
-async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
-    let container = AetherContainer::get();
+async fn list_accounts(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<AccountDto>> {
+    let container = container.0.clone();
     Ok(container
         .get_accounts_use_case()
         .execute()
@@ -61,10 +65,11 @@ async fn change_account(
     id: Uuid,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<AccountDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .set_active_account_use_case()
         .execute(id)
@@ -79,10 +84,11 @@ async fn logout(
     id: Uuid,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let container = AetherContainer::get();
+    let container = container.0.clone();
     Ok(container
         .logout_use_case()
         .execute(id)

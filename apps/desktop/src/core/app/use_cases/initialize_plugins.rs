@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use aether_core::{
     core::app::AetherContainer,
     features::{plugins::PluginsFeature, settings::SettingsFeature},
@@ -6,19 +8,17 @@ use aether_core::{
 pub struct InitializePluginsUseCase {}
 
 impl InitializePluginsUseCase {
-    pub async fn execute() -> crate::Result<()> {
-        let container = AetherContainer::get();
+    pub async fn execute(container: Arc<AetherContainer>) -> crate::Result<()> {
         container
             .sync_plugins_use_case()
             .execute()
             .await
             .map_err(aether_core::Error::from)?;
-        Self::load_enabled_plugins().await?;
+        Self::load_enabled_plugins(container).await?;
         Ok(())
     }
 
-    async fn load_enabled_plugins() -> crate::Result<()> {
-        let container = AetherContainer::get();
+    async fn load_enabled_plugins(container: Arc<AetherContainer>) -> crate::Result<()> {
         let settings = container
             .get_settings_use_case()
             .execute()
