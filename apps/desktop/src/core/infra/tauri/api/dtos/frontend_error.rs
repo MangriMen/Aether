@@ -58,6 +58,12 @@ impl From<crate::Error> for FrontendError {
     }
 }
 
+impl From<aether_core::Error> for FrontendError {
+    fn from(value: aether_core::Error) -> Self {
+        Self::from(value.raw.as_ref())
+    }
+}
+
 impl From<&aether_core::ErrorKind> for FrontendError {
     fn from(value: &aether_core::ErrorKind) -> Self {
         match value {

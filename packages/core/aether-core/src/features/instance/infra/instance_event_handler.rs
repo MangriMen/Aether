@@ -2,11 +2,16 @@ use std::path::Path;
 
 use async_trait::async_trait;
 
-use crate::features::{
-    events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent},
-    file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
-    instance::InstanceInstallStage,
-    settings::INSTANCES_FOLDER_NAME,
+use crate::{
+    core::app::AetherContainer,
+    features::{
+        events::{
+            EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent,
+        },
+        file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
+        instance::{InstanceFeature, InstanceInstallStage},
+        settings::INSTANCES_FOLDER_NAME,
+    },
 };
 
 pub struct InstanceEventHandler {
@@ -41,7 +46,8 @@ impl InstanceEventHandler {
             let event_emitter = self.event_emitter.clone();
             async move {
                 let res = async {
-                    let instance = crate::api::instance::get(id).await;
+                    let container = AetherContainer::get();
+                    let instance = container.get_instance_use_case().execute(id).await;
 
                     if let Ok(instance) = instance {
                         // Don't show warning if profile is not yet installed

@@ -33,8 +33,7 @@ async fn list() -> FrontendResult<Vec<JavaDto>> {
         .list_java_use_case()
         .execute()
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -55,8 +54,7 @@ async fn edit(
         .edit_java_use_case()
         .execute(edit_java.into())
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -75,8 +73,7 @@ async fn remove(
         .remove_java_use_case()
         .execute(version)
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -94,8 +91,7 @@ async fn install(
         .install_java_use_case()
         .execute(install_java.into())
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -108,8 +104,7 @@ async fn test_jre(path: PathBuf) -> FrontendResult<JavaDto> {
         .test_jre_use_case()
         .execute(path)
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -122,8 +117,7 @@ async fn discover() -> FrontendResult<Vec<JavaDto>> {
         .discover_java_use_case()
         .execute()
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())

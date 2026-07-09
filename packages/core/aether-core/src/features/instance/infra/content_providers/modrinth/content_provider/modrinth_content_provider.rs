@@ -15,7 +15,7 @@ use crate::{
             AtomicInstallParams, CapabilityMetadata, ContentFile, ContentItem, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentType, ContentVersion, CreateContentFileParams, DownloadedContent, Instance,
-            InstanceError, ModpackInstallParams, PackInfo, ProviderId,
+            InstanceError, InstanceFeature, ModpackInstallParams, PackInfo, ProviderId,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult, NewInstance},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -409,7 +409,9 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             pack_info,
         };
 
-        let instance_id = crate::api::instance::create(new_instance)
+        let instance_id = crate::core::app::AetherContainer::get()
+            .create_instance_use_case()
+            .execute(new_instance)
             .await
             .map_err(|_| InstanceError::ImportFailed {
                 plugin_id: ModrinthContentProvider::ID.to_owned(),

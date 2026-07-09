@@ -4,7 +4,11 @@ use extism::{convert::Msgpack, host_fn};
 use path_slash::PathBufExt;
 
 use crate::{
-    core::app::AetherContainer, features::settings::SettingsFeature,
+    core::app::AetherContainer,
+    features::{
+        instance::{ChangeContentState, ContentStateAction, InstanceFeature},
+        settings::SettingsFeature,
+    },
     shared::execute_async::infra::execute_async,
 };
 
@@ -14,7 +18,7 @@ use super::super::{super::mappers::to_extism_res, PluginContext};
 
 pub(crate) async fn handle_instance_get_dir(id: &str) -> crate::Result<String> {
     let container = AetherContainer::get();
-    let dir = crate::api::instance::get_dir(id).await?;
+    let dir = container.location_info().instance_dir(id);
     let relative_path = dir
         .strip_prefix(container.location_info().config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
@@ -40,31 +44,60 @@ pub(crate) async fn handle_instance_plugin_get_dir(
 }
 
 pub(crate) async fn handle_instance_create(dto: NewInstanceDto) -> crate::Result<String> {
-    crate::api::instance::create(dto.into()).await
+    let container = AetherContainer::get();
+    container
+        .create_instance_use_case()
+        .execute(dto.into())
+        .await
+        .map_err(Into::into)
 }
 
 pub(crate) async fn handle_list_content(
     id: String,
 ) -> crate::Result<DashMap<String, ContentFileDto>> {
-    crate::api::instance::list_content(id).await.map(|map| {
-        map.into_iter()
-            .map(|(key, content)| (key, content.into()))
-            .collect()
-    })
+    let container = AetherContainer::get();
+    container
+        .list_content_use_case()
+        .execute(id)
+        .await
+        .map_err(Into::into)
+        .map(|map| {
+            map.into_iter()
+                .map(|(key, content)| (key, content.into()))
+                .collect()
+        })
 }
 
 pub(crate) async fn handle_enable_contents(
     instance_id: String,
     content_paths: Vec<String>,
 ) -> crate::Result<()> {
-    crate::api::instance::enable_contents(instance_id, content_paths).await
+    let container = AetherContainer::get();
+    container
+        .change_content_state_use_case()
+        .execute(ChangeContentState::multiple(
+            instance_id,
+            content_paths,
+            ContentStateAction::Enable,
+        ))
+        .await
+        .map_err(Into::into)
 }
 
 pub(crate) async fn handle_disable_contents(
     instance_id: String,
     content_paths: Vec<String>,
 ) -> crate::Result<()> {
-    crate::api::instance::disable_contents(instance_id, content_paths).await
+    let container = AetherContainer::get();
+    container
+        .change_content_state_use_case()
+        .execute(ChangeContentState::multiple(
+            instance_id,
+            content_paths,
+            ContentStateAction::Disable,
+        ))
+        .await
+        .map_err(Into::into)
 }
 
 // ── Extism host function wrappers ──

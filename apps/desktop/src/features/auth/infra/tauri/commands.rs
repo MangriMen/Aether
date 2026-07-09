@@ -1,3 +1,4 @@
+use aether_core::{core::app::AetherContainer, features::auth::AuthFeature};
 use tauri::State;
 use uuid::Uuid;
 
@@ -31,18 +32,24 @@ async fn create_offline_account(
 ) -> FrontendResult<AccountDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::auth::create_offline_account(username)
+    let container = AetherContainer::get();
+    Ok(container
+        .create_offline_account_use_case()
+        .execute(username)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn list_accounts() -> FrontendResult<Vec<AccountDto>> {
-    Ok(aether_core::api::auth::list_accounts()
+    let container = AetherContainer::get();
+    Ok(container
+        .get_accounts_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -57,9 +64,12 @@ async fn change_account(
 ) -> FrontendResult<AccountDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::auth::change_account(id)
+    let container = AetherContainer::get();
+    Ok(container
+        .set_active_account_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -72,7 +82,10 @@ async fn logout(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::auth::logout(id)
+    let container = AetherContainer::get();
+    Ok(container
+        .logout_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
