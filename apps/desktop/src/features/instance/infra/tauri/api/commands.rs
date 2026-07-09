@@ -1,10 +1,10 @@
 use aether_core::features::{
-        instance::{
-            ChangeContentState, ContentStateAction, ImportContent, InstanceFeature, RemoveContent,
-        },
-        process::ProcessFeature,
-        settings::SettingsFeature,
-    };
+    instance::{
+        ChangeContentState, ContentStateAction, ImportContent, InstanceFeature, RemoveContent,
+    },
+    process::ProcessFeature,
+    settings::SettingsFeature,
+};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -13,8 +13,8 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     features::{
         instance::infra::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
@@ -89,8 +89,7 @@ async fn import(
 #[specta::specta]
 async fn list_importers(
     container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>>
-{
+) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>> {
     let container = container.0.clone();
     Ok(container
         .list_importers_use_case()
@@ -104,9 +103,7 @@ async fn list_importers(
 
 #[tauri::command]
 #[specta::specta]
-async fn list(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<InstanceDto>> {
+async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<InstanceDto>> {
     let container = container.0.clone();
     Ok(container
         .list_instances_use_case()
@@ -120,10 +117,7 @@ async fn list(
 
 #[tauri::command]
 #[specta::specta]
-async fn get(
-    id: String,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<InstanceDto> {
+async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<InstanceDto> {
     let container = container.0.clone();
     Ok(container
         .get_instance_use_case()
@@ -135,10 +129,7 @@ async fn get(
 
 #[tauri::command]
 #[specta::specta]
-async fn get_dir(
-    id: String,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<PathBuf> {
+async fn get_dir(id: String, container: State<'_, ContainerState>) -> FrontendResult<PathBuf> {
     let container = container.0.clone();
     Ok(container.location_info().instance_dir(&id))
 }
@@ -389,8 +380,7 @@ async fn remove_contents(
 #[specta::specta]
 async fn list_content_providers(
     container: State<'_, ContainerState>,
-)
--> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
+) -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
     let container = container.0.clone();
     Ok(container
         .list_providers_use_case()

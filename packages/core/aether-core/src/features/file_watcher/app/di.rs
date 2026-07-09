@@ -6,7 +6,9 @@ use crate::features::file_watcher::app::{FileEventHandler, FileWatcher};
 ///
 /// Implemented on the core dependency injection container to expose
 /// file-watcher-specific functionality in a centralized manner.
+///
+/// File watcher is not exposed directly — use `InstanceWatcherService` instead.
 pub trait FileWatcherFeature {
-    fn file_watcher(&self) -> Arc<dyn FileWatcher>;
-    fn file_event_handler(&self) -> Arc<dyn FileEventHandler>;
+    fn file_watcher(&self) -> Option<Arc<dyn FileWatcher>>;
+    fn file_event_handler(&self) -> Option<Arc<dyn FileEventHandler>>;
 }

@@ -4,8 +4,8 @@ use aether_core::features::java::JavaFeature;
 use tauri::State;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     features::java::{EditJavaDto, InstallJavaDto, JavaDto},
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
@@ -27,9 +27,7 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[tauri::command]
 #[specta::specta]
-async fn list(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<JavaDto>> {
+async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<JavaDto>> {
     let container = container.0.clone();
 
     Ok(container
@@ -103,10 +101,7 @@ async fn install(
 
 #[tauri::command]
 #[specta::specta]
-async fn test_jre(
-    path: PathBuf,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<JavaDto> {
+async fn test_jre(path: PathBuf, container: State<'_, ContainerState>) -> FrontendResult<JavaDto> {
     let container = container.0.clone();
 
     Ok(container
@@ -119,9 +114,7 @@ async fn test_jre(
 
 #[tauri::command]
 #[specta::specta]
-async fn discover(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<JavaDto>> {
+async fn discover(container: State<'_, ContainerState>) -> FrontendResult<Vec<JavaDto>> {
     let container = container.0.clone();
 
     Ok(container

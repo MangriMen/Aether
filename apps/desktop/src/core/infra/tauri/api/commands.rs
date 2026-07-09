@@ -4,8 +4,8 @@ use std::path::Path;
 use tauri::State;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     core::{
         AppSettingsStorageState, InitializePluginsUseCase, RecreateWindowUseCase,
         WindowManagerState,
@@ -30,18 +30,14 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn wait_for_initialization(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<()> {
+pub async fn wait_for_initialization(container: State<'_, ContainerState>) -> FrontendResult<()> {
     let _container = container.0.clone();
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn initialize_plugins(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<()> {
+pub async fn initialize_plugins(container: State<'_, ContainerState>) -> FrontendResult<()> {
     Ok(InitializePluginsUseCase::execute(container.0.clone()).await?)
 }
 

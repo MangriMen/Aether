@@ -2,8 +2,8 @@ use aether_core::features::minecraft::MinecraftFeature;
 use tauri::State;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     features::minecraft::{ModLoaderDto, ModdedManifestDto, VersionManifestDto},
     shared::commands::{MINECRAFT_PLUGIN_NAME, minecraft_commands},
 };

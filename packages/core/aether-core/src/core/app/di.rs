@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
 use crate::features::{
@@ -146,37 +147,15 @@ pub struct AetherContainerParams {
 
 pub struct AetherContainer {
     cache: UseCaseCache,
-    credentials_storage: Arc<dyn CredentialsStorage>,
-    settings_storage: Arc<dyn SettingsStorage>,
-    default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
-    process_storage: Arc<dyn ProcessStorage>,
-    instance_storage: Arc<dyn InstanceStorage>,
-    pack_storage: Arc<dyn PackStorage>,
-    content_file_service: Arc<dyn ContentFileService>,
-    instance_file_service: Arc<dyn InstanceFileService>,
-    java_storage: Arc<dyn JavaStorage>,
-    java_installation_service: Arc<dyn JavaInstallationService>,
-    java_installation_tracker: Arc<dyn JavaInstallationTracker>,
-    jre_provider: Arc<dyn JreProvider>,
-    metadata_storage: Arc<dyn MetadataStorage>,
-    minecraft_downloader: Arc<dyn MinecraftDownloader>,
-    forge_processor: Arc<dyn ModLoaderProcessor>,
-    plugin_registry: Arc<PluginRegistry>,
-    plugin_loader_registry: Arc<PluginLoaderRegistry>,
-    plugin_storage: Arc<dyn PluginStorage>,
-    plugin_source_storage: Arc<dyn PluginSourceStorage>,
-    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
-    plugin_provider_factory: Arc<PluginProviderFactory>,
-    plugin_extractor: Arc<dyn PluginExtractor>,
-    event_emitter: SharedEventEmitter,
-    progress_bar_storage: Arc<dyn ProgressBarStorage>,
-    progress_service: Arc<dyn ProgressService>,
-    location_info: Arc<LocationInfo>,
-    instance_watcher_service: Arc<dyn InstanceWatcherService>,
-    importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
-    updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
-    content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
-    assets_storage: Arc<dyn AssetsStorage>,
+    params: AetherContainerParams,
+}
+
+impl Deref for AetherContainer {
+    type Target = AetherContainerParams;
+
+    fn deref(&self) -> &Self::Target {
+        &self.params
+    }
 }
 
 impl AetherContainer {
@@ -187,37 +166,7 @@ impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
         Arc::new(Self {
             cache: UseCaseCache::new(),
-            credentials_storage: params.credentials_storage,
-            settings_storage: params.settings_storage,
-            default_instance_settings_storage: params.default_instance_settings_storage,
-            process_storage: params.process_storage,
-            instance_storage: params.instance_storage,
-            pack_storage: params.pack_storage,
-            content_file_service: params.content_file_service,
-            instance_file_service: params.instance_file_service,
-            java_storage: params.java_storage,
-            java_installation_service: params.java_installation_service,
-            java_installation_tracker: params.java_installation_tracker,
-            jre_provider: params.jre_provider,
-            metadata_storage: params.metadata_storage,
-            minecraft_downloader: params.minecraft_downloader,
-            forge_processor: params.forge_processor,
-            plugin_registry: params.plugin_registry,
-            plugin_loader_registry: params.plugin_loader_registry,
-            plugin_storage: params.plugin_storage,
-            plugin_source_storage: params.plugin_source_storage,
-            plugin_settings_storage: params.plugin_settings_storage,
-            plugin_provider_factory: params.plugin_provider_factory,
-            plugin_extractor: params.plugin_extractor,
-            event_emitter: params.event_emitter,
-            progress_bar_storage: params.progress_bar_storage,
-            progress_service: params.progress_service,
-            location_info: params.location_info,
-            instance_watcher_service: params.instance_watcher_service,
-            importers_registry: params.importers_registry,
-            updaters_registry: params.updaters_registry,
-            content_provider_registry: params.content_provider_registry,
-            assets_storage: params.assets_storage,
+            params,
         })
     }
 
@@ -557,7 +506,6 @@ impl InstanceFeature for AetherContainer {
             self.location_info.clone(),
             self.event_emitter.clone(),
             self.instance_watcher_service.clone(),
-            self.instance_file_service.clone(),
         ))
     }
     fn get_instance_use_case(&self) -> Arc<dyn GetInstanceUseCasePort> {
@@ -813,13 +761,7 @@ impl PluginsFeature for AetherContainer {
     fn sync_plugins_use_case(&self) -> Arc<dyn PluginSyncService> {
         self.sync_plugins_service()
     }
-    fn plugin_sync_service(&self) -> Arc<dyn PluginSyncService> {
-        self.sync_plugins_service()
-    }
     fn disable_plugin_use_case(&self) -> Arc<dyn PluginDisableService> {
-        self.disable_plugin_service()
-    }
-    fn plugin_disable_service(&self) -> Arc<dyn PluginDisableService> {
         self.disable_plugin_service()
     }
 }
@@ -839,10 +781,10 @@ impl EventsFeature for AetherContainer {
 }
 
 impl FileWatcherFeature for AetherContainer {
-    fn file_watcher(&self) -> Arc<dyn FileWatcher> {
-        panic!("FileWatcher is not directly exposed; use InstanceWatcherService instead")
+    fn file_watcher(&self) -> Option<Arc<dyn FileWatcher>> {
+        None
     }
-    fn file_event_handler(&self) -> Arc<dyn FileEventHandler> {
-        panic!("FileEventHandler is not directly exposed")
+    fn file_event_handler(&self) -> Option<Arc<dyn FileEventHandler>> {
+        None
     }
 }

@@ -5,13 +5,13 @@ use std::{
 
 use async_trait::async_trait;
 use log::{error, info};
+use tokio::fs;
 
 use crate::features::{
     events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
-        InstanceWatcherService, PackInfo, app::InstanceFileService,
-        app::ports::CreateInstanceUseCasePort,
+        InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -37,7 +37,6 @@ pub struct CreateInstanceUseCase {
     location_info: Arc<LocationInfo>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
-    instance_file_service: Arc<dyn InstanceFileService>,
 }
 
 impl CreateInstanceUseCase {
@@ -48,7 +47,6 @@ impl CreateInstanceUseCase {
         location_info: Arc<LocationInfo>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<dyn InstanceWatcherService>,
-        instance_file_service: Arc<dyn InstanceFileService>,
     ) -> Self {
         Self {
             instance_storage,
@@ -57,7 +55,6 @@ impl CreateInstanceUseCase {
             location_info,
             event_emitter,
             instance_watcher_service,
-            instance_file_service,
         }
     }
     async fn setup_instance(
@@ -91,12 +88,11 @@ impl CreateInstanceUseCase {
             pack_info,
         } = new_instance;
 
-        let (instance_dir, sanitized_name) =
-            create_unique_instance_path(&name, &self.location_info.instances_dir());
+        let base_sanitized_name = sanitize_instance_name(&name);
+        let instances_root = self.location_info.instances_dir();
 
-        self.instance_file_service
-            .create_instance_dir(&sanitized_name)
-            .await?;
+        let (sanitized_name, instance_dir) =
+            create_unique_dir(&instances_root, &base_sanitized_name).await;
 
         info!(
             "Creating instance \"{}\" at path \"{}\"",
@@ -184,20 +180,30 @@ fn build_instance(
     .build()
 }
 
-fn create_unique_instance_path(name: &str, base_dir: &Path) -> (PathBuf, String) {
-    let base_sanitized_name = sanitize_instance_name(name);
-
-    let mut sanitized_name = base_sanitized_name.clone();
-    let mut full_path = base_dir.join(&sanitized_name);
-
-    let mut counter = 1;
-    while full_path.exists() {
-        sanitized_name = format!("{base_sanitized_name}-{counter}");
-        full_path = base_dir.join(&sanitized_name);
-        counter += 1;
+/// Atomically create a unique instance directory by attempting `create_dir`
+/// and retrying with an incrementing suffix on `AlreadyExists`.
+async fn create_unique_dir(base_dir: &Path, base_name: &str) -> (String, PathBuf) {
+    let mut counter = 0u32;
+    loop {
+        let name = if counter == 0 {
+            base_name.to_owned()
+        } else {
+            format!("{base_name}-{counter}")
+        };
+        let path = base_dir.join(&name);
+        match fs::create_dir(&path).await {
+            Ok(()) => return (name, path),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                counter += 1;
+            }
+            Err(e) => {
+                panic!(
+                    "Failed to create instance directory '{}': {e}",
+                    path.display()
+                );
+            }
+        }
     }
-
-    (full_path, sanitized_name)
 }
 
 pub fn sanitize_instance_name(name: &str) -> String {

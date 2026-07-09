@@ -3,8 +3,8 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     features::auth::infra::tauri::dtos::AccountDto,
     shared::{
         IdempotencyManager, RequestId, TauriIdempotencyExt,
@@ -45,9 +45,7 @@ async fn create_offline_account(
 
 #[tauri::command]
 #[specta::specta]
-async fn list_accounts(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<AccountDto>> {
+async fn list_accounts(container: State<'_, ContainerState>) -> FrontendResult<Vec<AccountDto>> {
     let container = container.0.clone();
     Ok(container
         .get_accounts_use_case()

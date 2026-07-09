@@ -44,6 +44,4 @@ pub trait PluginsFeature {
     fn plugin_storage(&self) -> Arc<dyn PluginStorage>;
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage>;
     fn plugin_extractor(&self) -> Arc<dyn PluginExtractor>;
-    fn plugin_sync_service(&self) -> Arc<dyn PluginSyncService>;
-    fn plugin_disable_service(&self) -> Arc<dyn PluginDisableService>;
 }

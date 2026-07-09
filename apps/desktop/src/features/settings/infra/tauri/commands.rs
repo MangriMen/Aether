@@ -2,8 +2,8 @@ use aether_core::features::settings::SettingsFeature;
 use tauri::State;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     core::{AppSettingsStorageState, WindowManagerState},
     features::settings::app::{EditAppSettingsUseCase, GetAppSettingsUseCase},
     shared::{
@@ -33,9 +33,7 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<SettingsDto> {
+async fn get(container: State<'_, ContainerState>) -> FrontendResult<SettingsDto> {
     let container = container.0.clone();
     Ok(container
         .get_settings_use_case()

@@ -137,9 +137,10 @@ impl PluginLoader for ExtismPluginLoader {
         let cache_config = self.ensure_cache_config_file().await?;
         let default_allowed_paths = self.ensure_default_allowed_paths(plugin_id).await?;
 
-        let container = self.container.get().expect(
-            "ExtismPluginLoader::set_container must be called before loading plugins",
-        );
+        let container = self
+            .container
+            .get()
+            .expect("ExtismPluginLoader::set_container must be called before loading plugins");
 
         let wasm_manifest =
             self.build_wasm_manifest(manifest, Some(&default_allowed_paths), settings)?;

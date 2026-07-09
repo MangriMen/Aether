@@ -71,6 +71,28 @@ impl LaunchInstanceUseCase {
         }
     }
 
+    async fn notify_plugin_event(
+        &self,
+        instance: &Instance,
+        event: PluginInternalEvent,
+        event_name: &str,
+    ) {
+        if let Some(pack_info) = &instance.pack_info
+            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
+            && let PluginState::Loaded(instance_arc) = &plugin.state
+        {
+            let mut plugin = instance_arc.lock().await;
+            if let Err(e) = plugin.handle_event(&event) {
+                tracing::warn!(
+                    "Plugin '{}' failed to handle {}: {}",
+                    pack_info.provider_id.plugin_id,
+                    event_name,
+                    e
+                );
+            }
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     pub async fn execute(
         &self,
@@ -81,8 +103,6 @@ impl LaunchInstanceUseCase {
         let instance = self.instance_storage.get(&instance_id).await?;
 
         let launch_settings = Self::resolve_launch_settings(&instance, &settings);
-
-        let instance = self.instance_storage.get(&instance_id).await?;
 
         if instance.install_stage == InstanceInstallStage::PackInstalling
             || instance.install_stage == InstanceInstallStage::Installing
@@ -153,22 +173,14 @@ impl LaunchInstanceUseCase {
             }
         }
 
-        // Fire BeforeInstanceLaunch event to the pack-type plugin
-        if let Some(pack_info) = &instance.pack_info
-            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
-            && let PluginState::Loaded(instance_arc) = &plugin.state
-        {
-            let mut plugin = instance_arc.lock().await;
-            if let Err(e) = plugin.handle_event(&PluginInternalEvent::BeforeInstanceLaunch {
+        self.notify_plugin_event(
+            &instance,
+            PluginInternalEvent::BeforeInstanceLaunch {
                 instance_id: instance.id().to_string(),
-            }) {
-                tracing::warn!(
-                    "Plugin '{}' failed to handle BeforeInstanceLaunch: {}",
-                    pack_info.provider_id.plugin_id,
-                    e
-                );
-            }
-        }
+            },
+            "BeforeInstanceLaunch",
+        )
+        .await;
 
         let command = self
             .minecraft_launch_command_service
@@ -205,22 +217,14 @@ impl LaunchInstanceUseCase {
             )
             .await;
 
-        // Fire AfterInstanceLaunch event to the pack-type plugin
-        if let Some(pack_info) = &instance.pack_info
-            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
-            && let PluginState::Loaded(instance_arc) = &plugin.state
-        {
-            let mut plugin = instance_arc.lock().await;
-            if let Err(e) = plugin.handle_event(&PluginInternalEvent::AfterInstanceLaunch {
+        self.notify_plugin_event(
+            &instance,
+            PluginInternalEvent::AfterInstanceLaunch {
                 instance_id: instance.id().to_string(),
-            }) {
-                tracing::warn!(
-                    "Plugin '{}' failed to handle AfterInstanceLaunch: {}",
-                    pack_info.provider_id.plugin_id,
-                    e
-                );
-            }
-        }
+            },
+            "AfterInstanceLaunch",
+        )
+        .await;
 
         Ok(metadata?)
     }

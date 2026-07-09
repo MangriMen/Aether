@@ -2,8 +2,8 @@ use aether_core::features::events::EventsFeature;
 use tauri::State;
 
 use crate::{
-    core::ContainerState,
     FrontendResult,
+    core::ContainerState,
     features::events::infra::{ProgressBarDto, ProgressEventDto, WarningEventDto},
     shared::commands::{EVENTS_PLUGIN_NAME, events_commands},
 };
