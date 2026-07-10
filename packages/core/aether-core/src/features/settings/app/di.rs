@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use crate::features::settings::app::ports::{
-    DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCasePort,
-    EditSettingsUseCasePort, GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCasePort,
-    SettingsStorage,
+    EditDefaultInstanceSettingsUseCasePort, EditSettingsUseCasePort,
+    GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCasePort,
 };
 use crate::features::settings::domain::LocationInfo;
 
@@ -21,10 +20,6 @@ pub trait SettingsFeature {
     fn edit_default_instance_settings_use_case(
         &self,
     ) -> Arc<dyn EditDefaultInstanceSettingsUseCasePort>;
-
-    // ── Ports ──
-    fn settings_storage(&self) -> Arc<dyn SettingsStorage>;
-    fn default_instance_settings_storage(&self) -> Arc<dyn DefaultInstanceSettingsStorage>;
 
     // ── Domain services ──
     fn location_info(&self) -> Arc<LocationInfo>;

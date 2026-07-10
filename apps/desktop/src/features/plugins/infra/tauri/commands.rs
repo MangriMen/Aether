@@ -1,8 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::features::{
-    plugins::{PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file},
-    settings::SettingsFeature,
+use aether_core::features::plugins::{
+    PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file,
 };
 use tauri::State;
 
@@ -66,7 +65,7 @@ async fn sync(
 
     let container = container.0.clone();
     Ok(container
-        .sync_plugins_use_case()
+        .sync_plugins_service()
         .execute()
         .await
         .map_err(aether_core::Error::from)?)
@@ -164,7 +163,7 @@ async fn disable(
 
     let container = container.0.clone();
     Ok(container
-        .disable_plugin_use_case()
+        .disable_plugin_service()
         .execute(id)
         .await
         .map_err(aether_core::Error::from)?)
@@ -411,7 +410,7 @@ async fn install_plugin_from_provider(
         .map_err(aether_core::Error::from)?;
 
     container
-        .sync_plugins_use_case()
+        .sync_plugins_service()
         .execute()
         .await
         .map_err(aether_core::Error::from)?;

@@ -127,35 +127,45 @@ impl CreateInstanceUseCase {
             pack_info.as_ref(),
         );
 
-        let instance_id = self.setup_instance(&instance, skip_install_instance).await;
+        let result = self.setup_instance(&instance, skip_install_instance).await;
 
-        match instance_id {
-            Ok(instance_id) => {
-                info!(
-                    "Instance \"{}\" created successfully at path \"{}\"",
-                    instance.name(),
-                    &instance_dir.display()
-                );
-                Ok(instance_id)
+        // Full rollback on any failure: unwatch, remove from storage, delete directory
+        if let Err(err) = &result {
+            info!(
+                "Failed to create instance \"{}\". Rolling back",
+                instance.name()
+            );
+
+            self.event_emitter
+                .emit_safe(WarningEvent {
+                    message: format!("Error creating instance {err}"),
+                })
+                .await;
+
+            if let Err(unwatch_err) = self
+                .instance_watcher_service
+                .unwatch_instance(instance.id())
+                .await
+            {
+                error!("Failed to unwatch instance during rollback: {unwatch_err}");
             }
-            Err(err) => {
-                info!(
-                    "Failed to create instance \"{}\". Rolling back",
-                    instance.name()
-                );
-
-                self.event_emitter
-                    .emit_safe(WarningEvent {
-                        message: format!("Error creating instance {err}"),
-                    })
-                    .await;
-
-                if let Err(cleanup_err) = self.instance_storage.remove(instance.id()).await {
-                    error!("Failed to cleanup instance: {cleanup_err}");
-                }
-                Err(err)
+            if let Err(remove_err) = self.instance_storage.remove(instance.id()).await {
+                error!("Failed to remove instance during rollback: {remove_err}");
+            }
+            if let Err(rmdir_err) = fs::remove_dir_all(&instance_dir).await {
+                error!("Failed to remove instance directory during rollback: {rmdir_err}");
             }
         }
+
+        if result.is_ok() {
+            info!(
+                "Instance \"{}\" created successfully at path \"{}\"",
+                instance.name(),
+                &instance_dir.display()
+            );
+        }
+
+        result
     }
 }
 

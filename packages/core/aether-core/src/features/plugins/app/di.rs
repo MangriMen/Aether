@@ -30,8 +30,8 @@ pub trait PluginsFeature {
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort>;
 
     // ── Use cases (via service trait ports) ──
-    fn disable_plugin_use_case(&self) -> Arc<dyn PluginDisableService>;
-    fn sync_plugins_use_case(&self) -> Arc<dyn PluginSyncService>;
+    fn disable_plugin_service(&self) -> Arc<dyn PluginDisableService>;
+    fn sync_plugins_service(&self) -> Arc<dyn PluginSyncService>;
 
     // ── Services ──
     fn plugin_registry(&self) -> Arc<PluginRegistry>;
@@ -40,7 +40,7 @@ pub trait PluginsFeature {
 
     // ── Ports ──
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage>;
-    fn plugin_loader(&self) -> Arc<dyn PluginLoader>;
+    fn plugin_loader(&self) -> Option<Arc<dyn PluginLoader>>;
     fn plugin_storage(&self) -> Arc<dyn PluginStorage>;
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage>;
     fn plugin_extractor(&self) -> Arc<dyn PluginExtractor>;

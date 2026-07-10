@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::features::java::app::ports::{
     DiscoverJavaUseCasePort, EditJavaUseCasePort, GetActiveJavaInstallationsUseCasePort,
-    JavaInstallService, JavaInstallationService, JavaInstallationTracker, JavaQueryService,
-    JavaStorage, JreProvider, ListJavaUseCasePort, RemoveJavaUseCasePort, TestJreUseCasePort,
+    JavaInstallService, JavaQueryService, ListJavaUseCasePort, RemoveJavaUseCasePort,
+    TestJreUseCasePort,
 };
 
 /// Extension trait providing access to all Java feature use cases and services.
@@ -24,10 +24,4 @@ pub trait JavaFeature {
     // ── Ports (use cases that also implement service traits) ──
     fn get_java_use_case(&self) -> Arc<dyn JavaQueryService>;
     fn install_java_use_case(&self) -> Arc<dyn JavaInstallService>;
-
-    // ── Ports / services ──
-    fn java_installation_service(&self) -> Arc<dyn JavaInstallationService>;
-    fn java_installation_tracker(&self) -> Arc<dyn JavaInstallationTracker>;
-    fn java_storage(&self) -> Arc<dyn JavaStorage>;
-    fn jre_provider(&self) -> Arc<dyn JreProvider>;
 }

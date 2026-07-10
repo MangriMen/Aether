@@ -10,7 +10,7 @@ pub struct InitializePluginsUseCase {}
 impl InitializePluginsUseCase {
     pub async fn execute(container: Arc<AetherContainer>) -> crate::Result<()> {
         container
-            .sync_plugins_use_case()
+            .sync_plugins_service()
             .execute()
             .await
             .map_err(aether_core::Error::from)?;

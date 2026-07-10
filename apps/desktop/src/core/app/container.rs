@@ -16,7 +16,7 @@ use aether_core::features::instance::infra::{
     SqliteInstanceStorage, SqlitePackStorage,
 };
 use aether_core::features::instance::{
-    ContentProvider, GetInstanceUseCase, Importer, InstanceFeature, Updater,
+    ContentProvider, GetInstanceUseCase, Importer, InstanceCrudPort, Updater,
 };
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,

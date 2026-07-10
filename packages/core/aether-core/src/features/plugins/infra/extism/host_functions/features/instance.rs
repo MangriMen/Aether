@@ -5,8 +5,9 @@ use path_slash::PathBufExt;
 
 use crate::{
     core::app::AetherContainer,
-    features::instance::{ChangeContentState, ContentStateAction, InstanceFeature},
-    features::settings::SettingsFeature,
+    features::instance::{
+        ChangeContentState, ContentManagementPort, ContentStateAction, InstanceCrudPort,
+    },
     shared::execute_async::infra::execute_async,
 };
 

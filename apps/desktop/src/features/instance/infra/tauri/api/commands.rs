@@ -1,9 +1,10 @@
 use aether_core::features::{
     instance::{
-        ChangeContentState, ContentStateAction, ImportContent, InstanceFeature, RemoveContent,
+        ChangeContentState, ContentManagementPort, ContentProviderPort, ContentStateAction,
+        ImportContent, InstanceCrudPort, InstanceLifecyclePort, InstanceServicesPort,
+        RemoveContent,
     },
     process::ProcessFeature,
-    settings::SettingsFeature,
 };
 use std::{
     collections::{HashMap, HashSet},

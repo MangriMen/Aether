@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use crate::features::minecraft::app::ports::{
-    GetLoaderVersionManifestUseCasePort, LoaderVersionService, MetadataStorage,
-    MinecraftDownloader, MinecraftHealthService, MinecraftInstallService,
-    MinecraftLaunchCommandService, ModLoaderProcessor, VersionManifestService,
+    GetLoaderVersionManifestUseCasePort, LoaderVersionService, MinecraftHealthService,
+    MinecraftInstallService, MinecraftLaunchCommandService, VersionManifestService,
 };
 
 /// Extension trait providing access to all Minecraft feature use cases and services.
@@ -21,8 +20,5 @@ pub trait MinecraftFeature {
 
     // ── Ports ──
     fn loader_version_service(&self) -> Arc<dyn LoaderVersionService>;
-    fn metadata_storage(&self) -> Arc<dyn MetadataStorage>;
-    fn minecraft_downloader(&self) -> Arc<dyn MinecraftDownloader>;
     fn minecraft_health_service(&self) -> Arc<dyn MinecraftHealthService>;
-    fn mod_loader_processor(&self) -> Arc<dyn ModLoaderProcessor>;
 }
