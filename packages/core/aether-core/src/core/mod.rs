@@ -1,3 +1,4 @@
+pub mod app;
 pub mod domain;
 
-pub use domain::{Error, ErrorKind, LazyLocator, Result};
+pub use domain::{Error, ErrorKind, Result};

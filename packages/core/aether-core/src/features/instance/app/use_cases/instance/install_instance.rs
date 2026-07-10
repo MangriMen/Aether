@@ -1,54 +1,33 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::{
     events::{ProgressEventType, ProgressService, ProgressServiceExt},
-    instance::{Instance, InstanceError, InstanceInstallStage, InstanceStorage},
-    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
-    minecraft::{
-        InstallMinecraftParams, InstallMinecraftUseCase, MetadataStorage, MinecraftDownloader,
-        ModLoaderProcessor,
+    instance::{
+        Instance, InstanceError, InstanceInstallService, InstanceInstallStage, InstanceStorage,
     },
+    minecraft::{InstallMinecraftParams, MinecraftInstallService},
     settings::LocationInfo,
 };
 
-pub struct InstallInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    instance_storage: Arc<IS>,
-    install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
-    progress_service: Arc<PS>,
+pub struct InstallInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    install_minecraft_service: Arc<dyn MinecraftInstallService>,
+    progress_service: Arc<dyn ProgressService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>
-{
+impl InstallInstanceUseCase {
     pub fn new(
-        instance_storage: Arc<IS>,
-        install_minecraft_use_case: Arc<InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>>,
-        progress_service: Arc<PS>,
+        instance_storage: Arc<dyn InstanceStorage>,
+        install_minecraft_service: Arc<dyn MinecraftInstallService>,
+        progress_service: Arc<dyn ProgressService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
             instance_storage,
-            install_minecraft_use_case,
+            install_minecraft_service,
             progress_service,
             location_info,
         }
@@ -111,7 +90,7 @@ impl<
         );
 
         let result = self
-            .install_minecraft_use_case
+            .install_minecraft_service
             .execute(
                 InstallMinecraftParams {
                     game_version: instance.game_version.clone(),
@@ -141,5 +120,12 @@ impl<
         }
 
         Ok(result?)
+    }
+}
+
+#[async_trait]
+impl InstanceInstallService for InstallInstanceUseCase {
+    async fn execute(&self, instance_id: String, force: bool) -> Result<(), InstanceError> {
+        self.execute(instance_id, force).await
     }
 }

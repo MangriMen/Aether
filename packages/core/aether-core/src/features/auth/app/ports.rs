@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use crate::features::auth::{app::AuthApplicationError, domain::Credential};
+use crate::features::auth::{
+    app::{Account, AuthApplicationError},
+    domain::Credential,
+};
 
 #[async_trait]
 pub trait CredentialsStorage: Send + Sync {
@@ -19,4 +22,26 @@ pub trait CredentialsStorage: Send + Sync {
 
     // Queries
     async fn find_active(&self) -> Result<Option<Credential>, AuthApplicationError>;
+}
+
+// ── Use case ports ──
+
+#[async_trait]
+pub trait CreateOfflineAccountUseCasePort: Send + Sync {
+    async fn execute(&self, username: String) -> Result<Account, AuthApplicationError>;
+}
+
+#[async_trait]
+pub trait GetAccountsUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<Account>, AuthApplicationError>;
+}
+
+#[async_trait]
+pub trait LogoutUseCasePort: Send + Sync {
+    async fn execute(&self, account_id: Uuid) -> Result<(), AuthApplicationError>;
+}
+
+#[async_trait]
+pub trait SetActiveAccountUseCasePort: Send + Sync {
+    async fn execute(&self, account_id: Uuid) -> Result<Account, AuthApplicationError>;
 }

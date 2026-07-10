@@ -1,28 +1,29 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginSource, PluginSourceStorage, PluginStorage,
 };
 
+use super::ports::UpdatePluginUseCasePort;
 use super::{PluginProviderFactory, write_bytes_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
-pub struct UpdatePluginUseCase<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage> {
-    plugin_extractor: Arc<PE>,
-    plugin_storage: Arc<PS>,
-    plugin_source_storage: Arc<Src>,
+pub struct UpdatePluginUseCase {
+    plugin_extractor: Arc<dyn PluginExtractor>,
+    plugin_storage: Arc<dyn PluginStorage>,
+    plugin_source_storage: Arc<dyn PluginSourceStorage>,
     provider_factory: Arc<PluginProviderFactory>,
 }
 
-impl<PE: PluginExtractor, PS: PluginStorage, Src: PluginSourceStorage>
-    UpdatePluginUseCase<PE, PS, Src>
-{
+impl UpdatePluginUseCase {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        plugin_extractor: Arc<PE>,
-        plugin_storage: Arc<PS>,
-        plugin_source_storage: Arc<Src>,
+        plugin_extractor: Arc<dyn PluginExtractor>,
+        plugin_storage: Arc<dyn PluginStorage>,
+        plugin_source_storage: Arc<dyn PluginSourceStorage>,
         provider_factory: Arc<PluginProviderFactory>,
     ) -> Self {
         Self {
@@ -123,5 +124,12 @@ fn source_version(source: &PluginSource) -> &str {
             current_version, ..
         } => current_version,
         PluginSource::Local => "",
+    }
+}
+
+#[async_trait]
+impl UpdatePluginUseCasePort for UpdatePluginUseCase {
+    async fn execute(&self, plugin_id: &str, target_tag: Option<&str>) -> Result<(), PluginError> {
+        self.execute(plugin_id, target_tag).await
     }
 }

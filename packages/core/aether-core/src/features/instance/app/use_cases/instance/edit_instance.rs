@@ -1,22 +1,27 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use chrono::Utc;
 
+use crate::features::instance::app::ports::EditInstanceUseCasePort;
 use crate::features::instance::{
     EditInstance, Instance, InstanceError, InstanceStorage,
     domain::{InstanceField, InstanceValidationErrorReason},
 };
 
-pub struct EditInstanceUseCase<IS> {
-    instance_storage: Arc<IS>,
+pub struct EditInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<IS: InstanceStorage> EditInstanceUseCase<IS> {
-    pub fn new(instance_storage: Arc<IS>) -> Self {
+impl EditInstanceUseCase {
+    pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
+}
 
-    pub async fn execute(
+#[async_trait]
+impl EditInstanceUseCasePort for EditInstanceUseCase {
+    async fn execute(
         &self,
         instance_id: String,
         edit_instance: EditInstance,

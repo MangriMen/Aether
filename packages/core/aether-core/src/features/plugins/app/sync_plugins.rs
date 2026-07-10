@@ -5,30 +5,29 @@ use std::{
 
 use crate::features::{
     events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
-    plugins::{Plugin, PluginError, PluginLoader, PluginRegistry, PluginStorage},
-    settings::SettingsStorage,
+    plugins::{
+        Plugin, PluginDisableService, PluginError, PluginRegistry, PluginStorage, PluginSyncService,
+    },
 };
 
-use super::DisablePluginUseCase;
-
-pub struct SyncPluginsUseCase<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> {
-    plugin_storage: Arc<PS>,
+pub struct SyncPluginsUseCase {
+    plugin_storage: Arc<dyn PluginStorage>,
     plugin_registry: Arc<PluginRegistry>,
-    disable_plugin_use_case: DisablePluginUseCase<SS, PL>,
+    disable_plugin_service: Arc<dyn PluginDisableService>,
     event_emitter: SharedEventEmitter,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCase<PS, SS, PL> {
+impl SyncPluginsUseCase {
     pub fn new(
-        plugin_storage: Arc<PS>,
+        plugin_storage: Arc<dyn PluginStorage>,
         plugin_registry: Arc<PluginRegistry>,
-        disable_plugin_use_case: DisablePluginUseCase<SS, PL>,
+        disable_plugin_service: Arc<dyn PluginDisableService>,
         event_emitter: SharedEventEmitter,
     ) -> Self {
         Self {
             plugin_storage,
             plugin_registry,
-            disable_plugin_use_case,
+            disable_plugin_service,
             event_emitter,
         }
     }
@@ -126,7 +125,7 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
 
     async fn remove_plugin(&self, plugin_id: &str) -> Result<(), PluginError> {
         let disable_result = self
-            .disable_plugin_use_case
+            .disable_plugin_service
             .execute(plugin_id.to_string())
             .await;
 
@@ -143,8 +142,11 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader> SyncPluginsUseCas
         self.plugin_registry.remove(plugin_id);
         Ok(())
     }
+}
 
-    pub async fn execute(&self) -> Result<(), PluginError> {
+#[async_trait::async_trait]
+impl PluginSyncService for SyncPluginsUseCase {
+    async fn execute(&self) -> Result<(), PluginError> {
         let found_plugins = self.plugin_storage.list().await?;
         self.sync_plugins(found_plugins).await?;
         self.event_emitter.emit_safe(PluginEvent::Sync).await;

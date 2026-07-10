@@ -65,7 +65,30 @@ impl SettingsStorage for FsSettingsStorage {
         Ok(settings)
     }
 
-    async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
+    async fn update_mut(
+        &self,
+        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+    ) -> Result<Settings, SettingsError> {
+        let result: Settings = self
+            .store
+            .update(move |dto| {
+                let settings = Settings::from(dto.clone());
+                let (settings, changed) = f(settings);
+                if changed {
+                    *dto = SettingsV2::from(&settings);
+                    UpdateAction::Save(settings)
+                } else {
+                    UpdateAction::NoChanges(settings)
+                }
+            })
+            .await?;
+        Ok(result)
+    }
+}
+
+impl FsSettingsStorage {
+    /// Same signature as `SettingsStorage` trait but with boxed closure for object-safety.
+    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
     where
         F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
     {

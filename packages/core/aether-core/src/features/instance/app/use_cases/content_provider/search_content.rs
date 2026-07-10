@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::SearchContentUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, ContentSearchParams, ContentSearchResult, InstanceError,
@@ -7,12 +10,12 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct SearchContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
-    provider_registry: Arc<CP>,
+pub struct SearchContentUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> SearchContentUseCase<CP> {
-    pub fn new(provider_registry: Arc<CP>) -> Self {
+impl SearchContentUseCase {
+    pub fn new(provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>) -> Self {
         Self { provider_registry }
     }
 
@@ -32,5 +35,15 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> SearchContentUseCase<CP> 
             })?;
 
         provider.capability.search(search_params).await
+    }
+}
+
+#[async_trait]
+impl SearchContentUseCasePort for SearchContentUseCase {
+    async fn execute(
+        &self,
+        search_params: ContentSearchParams,
+    ) -> Result<ContentSearchResult, InstanceError> {
+        self.execute(search_params).await
     }
 }

@@ -1,25 +1,18 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::sync::Arc;
 
+use async_trait::async_trait;
 use log::{error, info};
 
 use crate::features::{
-    events::{EventEmitterExt, ProgressService, SharedEventEmitter, WarningEvent},
+    events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
-        Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
-        PackInfo, app::InstanceFileService,
+        Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceInstallService,
+        InstanceStorage, InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
     },
-    java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
     minecraft::{
-        LoaderVersionPreference, LoaderVersionResolver, MetadataStorage, MinecraftApplicationError,
-        MinecraftDownloader, ModLoader, ModLoaderProcessor,
+        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
     },
-    settings::LocationInfo,
 };
-
-use super::InstallInstanceUseCase;
 
 #[derive(Debug)]
 pub struct NewInstance {
@@ -32,63 +25,34 @@ pub struct NewInstance {
     pub pack_info: Option<PackInfo>,
 }
 
-pub struct CreateInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    IWS: InstanceWatcherService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    instance_storage: Arc<IS>,
-    loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-    #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>>,
-    location_info: Arc<LocationInfo>,
-    event_emitter: SharedEventEmitter,
-    instance_watcher_service: Arc<IWS>,
+pub struct CreateInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    loader_version_service: Arc<dyn LoaderVersionService>,
+    instance_install_service: Arc<dyn InstanceInstallService>,
     instance_file_service: Arc<dyn InstanceFileService>,
+    event_emitter: SharedEventEmitter,
+    instance_watcher_service: Arc<dyn InstanceWatcherService>,
 }
 
-impl<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    PS: ProgressService,
-    MLP: ModLoaderProcessor,
-    IWS: InstanceWatcherService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> CreateInstanceUseCase<IS, MS, MD, PS, MLP, IWS, JIS, JS, JP, JIT>
-{
-    #[allow(clippy::type_complexity)]
+impl CreateInstanceUseCase {
     pub fn new(
-        instance_storage: Arc<IS>,
-        loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        install_instance_use_case: Arc<
-            InstallInstanceUseCase<IS, MS, MD, PS, MLP, JIS, JS, JP, JIT>,
-        >,
-        location_info: Arc<LocationInfo>,
-        event_emitter: SharedEventEmitter,
-        instance_watcher_service: Arc<IWS>,
+        instance_storage: Arc<dyn InstanceStorage>,
+        loader_version_service: Arc<dyn LoaderVersionService>,
+        instance_install_service: Arc<dyn InstanceInstallService>,
         instance_file_service: Arc<dyn InstanceFileService>,
+        event_emitter: SharedEventEmitter,
+        instance_watcher_service: Arc<dyn InstanceWatcherService>,
     ) -> Self {
         Self {
             instance_storage,
-            loader_version_resolver,
-            install_instance_use_case,
-            location_info,
+            loader_version_service,
+            instance_install_service,
+            instance_file_service,
             event_emitter,
             instance_watcher_service,
-            instance_file_service,
         }
     }
+
     async fn setup_instance(
         &self,
         instance: &Instance,
@@ -101,7 +65,7 @@ impl<
             .await?;
 
         if !skip_install_instance.unwrap_or(false) {
-            self.install_instance_use_case
+            self.instance_install_service
                 .execute(instance.id().to_owned(), false)
                 .await?;
         }
@@ -120,11 +84,11 @@ impl<
             pack_info,
         } = new_instance;
 
-        let (instance_dir, sanitized_name) =
-            create_unique_instance_path(&name, &self.location_info.instances_dir());
+        let base_sanitized_name = sanitize_instance_name(&name);
 
-        self.instance_file_service
-            .create_instance_dir(&sanitized_name)
+        let (sanitized_name, instance_dir) = self
+            .instance_file_service
+            .create_unique_instance_dir(&base_sanitized_name)
             .await?;
 
         info!(
@@ -135,14 +99,14 @@ impl<
 
         // Check that loader version is valid
         let loader_version = if mod_loader != ModLoader::Vanilla && loader_version.is_some() {
-            self.loader_version_resolver
+            self.loader_version_service
                 .resolve(&game_version, &mod_loader, loader_version.as_ref())
                 .await
                 .map_err(MinecraftApplicationError::Domain)?;
 
             loader_version
         } else if mod_loader != ModLoader::Vanilla && loader_version.is_none() {
-            self.loader_version_resolver
+            self.loader_version_service
                 .try_get_default(&game_version, &mod_loader)
                 .await
                 .map_err(MinecraftApplicationError::Domain)?
@@ -150,83 +114,61 @@ impl<
             None
         };
 
-        let instance = build_instance(
-            &name,
-            &sanitized_name,
-            &game_version,
+        let instance = InstanceBuilder::new(
+            sanitized_name.clone(),
+            name.clone(),
+            game_version.clone(),
             mod_loader,
-            loader_version.as_ref(),
-            icon_path.as_ref(),
-            pack_info.as_ref(),
-        );
+        )
+        .with_loader_version(loader_version)
+        .with_icon(icon_path)
+        .with_pack_info(pack_info)
+        .build();
 
-        let instance_id = self.setup_instance(&instance, skip_install_instance).await;
+        let result = self.setup_instance(&instance, skip_install_instance).await;
 
-        match instance_id {
-            Ok(instance_id) => {
-                info!(
-                    "Instance \"{}\" created successfully at path \"{}\"",
-                    instance.name(),
-                    &instance_dir.display()
-                );
-                Ok(instance_id)
+        // Full rollback on any failure: unwatch, remove from storage, delete directory
+        if let Err(err) = &result {
+            info!(
+                "Failed to create instance \"{}\". Rolling back",
+                instance.name()
+            );
+
+            self.event_emitter
+                .emit_safe(WarningEvent {
+                    message: format!("Error creating instance {err}"),
+                })
+                .await;
+
+            if let Err(unwatch_err) = self
+                .instance_watcher_service
+                .unwatch_instance(instance.id())
+                .await
+            {
+                error!("Failed to unwatch instance during rollback: {unwatch_err}");
             }
-            Err(err) => {
-                info!(
-                    "Failed to create instance \"{}\". Rolling back",
-                    instance.name()
-                );
-
-                self.event_emitter
-                    .emit_safe(WarningEvent {
-                        message: format!("Error creating instance {err}"),
-                    })
-                    .await;
-
-                if let Err(cleanup_err) = self.instance_storage.remove(instance.id()).await {
-                    error!("Failed to cleanup instance: {cleanup_err}");
-                }
-                Err(err)
+            if let Err(remove_err) = self.instance_storage.remove(instance.id()).await {
+                error!("Failed to remove instance during rollback: {remove_err}");
+            }
+            if let Err(rmdir_err) = self
+                .instance_file_service
+                .remove_instance_dir(instance.id())
+                .await
+            {
+                error!("Failed to remove instance directory during rollback: {rmdir_err}");
             }
         }
+
+        if result.is_ok() {
+            info!(
+                "Instance \"{}\" created successfully at path \"{}\"",
+                instance.name(),
+                &instance_dir.display()
+            );
+        }
+
+        result
     }
-}
-
-fn build_instance(
-    name: &str,
-    sanitized_name: &str,
-    game_version: &str,
-    mod_loader: ModLoader,
-    loader_version: Option<&LoaderVersionPreference>,
-    icon_path: Option<&String>,
-    pack_info: Option<&PackInfo>,
-) -> Instance {
-    InstanceBuilder::new(
-        sanitized_name.to_owned(),
-        name.to_owned(),
-        game_version.to_owned(),
-        mod_loader,
-    )
-    .with_loader_version(loader_version.cloned())
-    .with_icon(icon_path.cloned())
-    .with_pack_info(pack_info.cloned())
-    .build()
-}
-
-fn create_unique_instance_path(name: &str, base_dir: &Path) -> (PathBuf, String) {
-    let base_sanitized_name = sanitize_instance_name(name);
-
-    let mut sanitized_name = base_sanitized_name.clone();
-    let mut full_path = base_dir.join(&sanitized_name);
-
-    let mut counter = 1;
-    while full_path.exists() {
-        sanitized_name = format!("{base_sanitized_name}-{counter}");
-        full_path = base_dir.join(&sanitized_name);
-        counter += 1;
-    }
-
-    (full_path, sanitized_name)
 }
 
 pub fn sanitize_instance_name(name: &str) -> String {
@@ -234,4 +176,11 @@ pub fn sanitize_instance_name(name: &str) -> String {
         ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
         "_",
     )
+}
+
+#[async_trait]
+impl CreateInstanceUseCasePort for CreateInstanceUseCase {
+    async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+        self.execute(new_instance).await
+    }
 }

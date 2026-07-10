@@ -3,6 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::CheckContentCompatibilityUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, Instance, InstanceError, InstanceStorage,
@@ -11,18 +14,16 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct CheckContentCompatibilityUseCase<
-    CP: CapabilityRegistry<Arc<dyn ContentProvider>>,
-    IS: InstanceStorage,
-> {
-    provider_registry: Arc<CP>,
-    instance_storage: Arc<IS>,
+pub struct CheckContentCompatibilityUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>, IS: InstanceStorage>
-    CheckContentCompatibilityUseCase<CP, IS>
-{
-    pub fn new(provider_registry: Arc<CP>, instance_storage: Arc<IS>) -> Self {
+impl CheckContentCompatibilityUseCase {
+    pub fn new(
+        provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
+        instance_storage: Arc<dyn InstanceStorage>,
+    ) -> Self {
         Self {
             provider_registry,
             instance_storage,
@@ -57,5 +58,16 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>, IS: InstanceStorage>
             .capability
             .check_compatibility(&instances, &check_params)
             .await
+    }
+}
+
+#[async_trait]
+impl CheckContentCompatibilityUseCasePort for CheckContentCompatibilityUseCase {
+    async fn execute(
+        &self,
+        instance_ids: HashSet<String>,
+        check_params: ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        self.execute(instance_ids, check_params).await
     }
 }

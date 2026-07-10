@@ -1,11 +1,13 @@
+use std::sync::Arc;
+
 use extism::{Function, PTR, UserData, ValType};
+
+use crate::core::app::AetherContainer;
 
 use super::{PluginContext, features};
 
-pub fn get_host_functions(plugin_id: &str) -> Vec<Function> {
-    let context = PluginContext {
-        id: plugin_id.to_string(),
-    };
+pub fn get_host_functions(plugin_id: &str, container: &Arc<AetherContainer>) -> Vec<Function> {
+    let context = PluginContext::new(plugin_id.to_string(), container);
 
     [
         get_core_host_functions,

@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListContentVersionsUseCasePort;
 use crate::{
     features::instance::{
         ContentProvider, ContentVersion, InstanceError, app::ContentListVersionsParams,
@@ -7,12 +10,12 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct ListContentVersionsUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
-    provider_registry: Arc<CP>,
+pub struct ListContentVersionsUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionsUseCase<CP> {
-    pub fn new(provider_registry: Arc<CP>) -> Self {
+impl ListContentVersionsUseCase {
+    pub fn new(provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>) -> Self {
         Self { provider_registry }
     }
 
@@ -35,5 +38,15 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> ListContentVersionsUseCas
             .capability
             .list_versions(get_params.content_id)
             .await
+    }
+}
+
+#[async_trait]
+impl ListContentVersionsUseCasePort for ListContentVersionsUseCase {
+    async fn execute(
+        &self,
+        get_params: ContentListVersionsParams,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
+        self.execute(get_params).await
     }
 }

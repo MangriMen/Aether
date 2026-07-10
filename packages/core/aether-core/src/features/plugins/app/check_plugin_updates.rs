@@ -1,21 +1,24 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::plugins::{
     PluginError, PluginSource, PluginSourceStorage, ProviderUpdateInfo,
 };
 
 use super::PluginProviderFactory;
+use super::ports::CheckForPluginUpdatesUseCasePort;
 
 /// Checks for plugin updates using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
-pub struct CheckForPluginUpdatesUseCase<Src: PluginSourceStorage> {
-    plugin_source_storage: Arc<Src>,
+pub struct CheckForPluginUpdatesUseCase {
+    plugin_source_storage: Arc<dyn PluginSourceStorage>,
     provider_factory: Arc<PluginProviderFactory>,
 }
 
-impl<Src: PluginSourceStorage> CheckForPluginUpdatesUseCase<Src> {
+impl CheckForPluginUpdatesUseCase {
     pub fn new(
-        plugin_source_storage: Arc<Src>,
+        plugin_source_storage: Arc<dyn PluginSourceStorage>,
         provider_factory: Arc<PluginProviderFactory>,
     ) -> Self {
         Self {
@@ -66,5 +69,12 @@ fn source_version(source: &PluginSource) -> &str {
             current_version, ..
         } => current_version,
         PluginSource::Local => "",
+    }
+}
+
+#[async_trait]
+impl CheckForPluginUpdatesUseCasePort for CheckForPluginUpdatesUseCase {
+    async fn execute(&self, plugin_id: &str) -> Result<ProviderUpdateInfo, PluginError> {
+        self.execute(plugin_id).await
     }
 }

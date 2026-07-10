@@ -1,21 +1,27 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::settings::{
     DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
+    app::ports::GetDefaultInstanceSettingsUseCasePort,
 };
 
-pub struct GetDefaultInstanceSettingsUseCase<SS: DefaultInstanceSettingsStorage> {
-    instance_settings_storage: Arc<SS>,
+pub struct GetDefaultInstanceSettingsUseCase {
+    instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
 }
 
-impl<SS: DefaultInstanceSettingsStorage> GetDefaultInstanceSettingsUseCase<SS> {
-    pub fn new(instance_settings_storage: Arc<SS>) -> Self {
+impl GetDefaultInstanceSettingsUseCase {
+    pub fn new(instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>) -> Self {
         Self {
             instance_settings_storage,
         }
     }
+}
 
-    pub async fn execute(&self) -> Result<DefaultInstanceSettings, SettingsError> {
+#[async_trait]
+impl GetDefaultInstanceSettingsUseCasePort for GetDefaultInstanceSettingsUseCase {
+    async fn execute(&self) -> Result<DefaultInstanceSettings, SettingsError> {
         self.instance_settings_storage.get().await
     }
 }

@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::UpdateInstanceUseCasePort;
 use crate::{
     features::instance::{
         InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt, PackInfo, Updater,
@@ -7,20 +10,45 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct UpdateInstanceUseCase<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> {
-    instance_storage: Arc<IS>,
-    updaters_registry: Arc<UR>,
+pub struct UpdateInstanceUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
+    updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
 }
 
-impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstanceUseCase<IS, UR> {
-    pub fn new(instance_storage: Arc<IS>, updaters_registry: Arc<UR>) -> Self {
+impl UpdateInstanceUseCase {
+    pub fn new(
+        instance_storage: Arc<dyn InstanceStorage>,
+        updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
+    ) -> Self {
         Self {
             instance_storage,
             updaters_registry,
         }
     }
 
-    pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+    pub async fn update_by_plugin(
+        &self,
+        instance_id: &str,
+        pack_info: &PackInfo,
+    ) -> Result<(), InstanceError> {
+        let updater = self
+            .updaters_registry
+            .find_by_plugin_and_capability_id(
+                &pack_info.provider_id.plugin_id,
+                &pack_info.provider_id.capability_id,
+            )
+            .await
+            .map_err(|_| InstanceError::UpdaterNotFound {
+                modpack_id: pack_info.modpack_id.clone(),
+            })?;
+
+        updater.capability.update(instance_id).await
+    }
+}
+
+#[async_trait]
+impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
+    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         let instance = self.instance_storage.get(&instance_id).await?;
 
         let original_stage = instance.install_stage;
@@ -51,24 +79,5 @@ impl<IS: InstanceStorage, UR: CapabilityRegistry<Arc<dyn Updater>>> UpdateInstan
             .await?;
 
         result
-    }
-
-    pub async fn update_by_plugin(
-        &self,
-        instance_id: &str,
-        pack_info: &PackInfo,
-    ) -> Result<(), InstanceError> {
-        let updater = self
-            .updaters_registry
-            .find_by_plugin_and_capability_id(
-                &pack_info.provider_id.plugin_id,
-                &pack_info.provider_id.capability_id,
-            )
-            .await
-            .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: pack_info.modpack_id.clone(),
-            })?;
-
-        updater.capability.update(instance_id).await
     }
 }

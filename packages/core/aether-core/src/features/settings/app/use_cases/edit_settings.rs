@@ -1,28 +1,30 @@
 use std::sync::Arc;
 
-use crate::{
-    features::settings::{Settings, SettingsError, SettingsStorage, app::EditSettings},
-    shared::json_store::domain::UpdateAction,
+use async_trait::async_trait;
+
+use crate::features::settings::{
+    Settings, SettingsError, SettingsStorage,
+    app::{EditSettings, ports::EditSettingsUseCasePort},
 };
 
-pub struct EditSettingsUseCase<SS: SettingsStorage> {
-    settings_storage: Arc<SS>,
+pub struct EditSettingsUseCase {
+    settings_storage: Arc<dyn SettingsStorage>,
 }
 
-impl<SS: SettingsStorage> EditSettingsUseCase<SS> {
-    pub fn new(settings_storage: Arc<SS>) -> Self {
+impl EditSettingsUseCase {
+    pub fn new(settings_storage: Arc<dyn SettingsStorage>) -> Self {
         Self { settings_storage }
     }
+}
 
-    pub async fn execute(&self, edit_settings: EditSettings) -> Result<Settings, SettingsError> {
+#[async_trait]
+impl EditSettingsUseCasePort for EditSettingsUseCase {
+    async fn execute(&self, edit_settings: EditSettings) -> Result<Settings, SettingsError> {
         self.settings_storage
-            .upsert_with(|settings| {
-                if edit_settings.apply_to(settings) {
-                    UpdateAction::Save(settings.to_owned())
-                } else {
-                    UpdateAction::NoChanges(settings.to_owned())
-                }
-            })
+            .update_mut(Box::new(move |mut settings| {
+                let changed = edit_settings.apply_to(&mut settings);
+                (settings, changed)
+            }))
             .await
     }
 }

@@ -1,19 +1,26 @@
 use std::{collections::HashSet, sync::Arc};
 
-use crate::features::java::JavaInstallationTracker;
+use async_trait::async_trait;
 
-pub struct GetActiveJavaInstallationsUseCase<JIT: JavaInstallationTracker> {
-    java_installation_tracker: Arc<JIT>,
+use crate::features::java::{
+    JavaInstallationTracker, app::ports::GetActiveJavaInstallationsUseCasePort,
+};
+
+pub struct GetActiveJavaInstallationsUseCase {
+    java_installation_tracker: Arc<dyn JavaInstallationTracker>,
 }
 
-impl<JIT: JavaInstallationTracker> GetActiveJavaInstallationsUseCase<JIT> {
-    pub fn new(java_installation_tracker: Arc<JIT>) -> Self {
+impl GetActiveJavaInstallationsUseCase {
+    pub fn new(java_installation_tracker: Arc<dyn JavaInstallationTracker>) -> Self {
         Self {
             java_installation_tracker,
         }
     }
+}
 
-    pub async fn execute(&self) -> HashSet<u32> {
+#[async_trait]
+impl GetActiveJavaInstallationsUseCasePort for GetActiveJavaInstallationsUseCase {
+    async fn execute(&self) -> HashSet<u32> {
         self.java_installation_tracker.get_active_installations()
     }
 }

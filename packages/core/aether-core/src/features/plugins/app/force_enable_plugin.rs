@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
-use crate::{
-    features::{
-        plugins::{
-            LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoader, PluginLoaderRegistry,
-            PluginManifest, PluginRegistry, PluginSettingsStorage, PluginState,
-        },
-        settings::SettingsStorage,
+use async_trait::async_trait;
+
+use crate::features::{
+    plugins::{
+        LoadConfigType, PLUGIN_API_VERSION, PluginError, PluginLoaderRegistry, PluginManifest,
+        PluginRegistry, PluginSettingsStorage, PluginState,
     },
-    shared::json_store::domain::UpdateAction,
+    settings::SettingsStorage,
 };
+
+use super::ports::ForceEnablePluginUseCasePort;
 
 /// Force-enables a plugin by skipping the API version compatibility check
 /// and persisting the user's choice in the plugin settings.
@@ -17,25 +18,19 @@ use crate::{
 /// On next restart the plugin will auto-load if the API version hasn't
 /// changed. If the launcher is updated, the flag is ignored and the user
 /// must re-confirm.
-pub struct ForceEnablePluginUseCase<
-    PSS: PluginSettingsStorage,
-    SS: SettingsStorage,
-    PL: PluginLoader,
-> {
+pub struct ForceEnablePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
-    plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
-    plugin_settings_storage: Arc<PSS>,
-    settings_storage: Arc<SS>,
+    plugin_loader_registry: Arc<PluginLoaderRegistry>,
+    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
+    settings_storage: Arc<dyn SettingsStorage>,
 }
 
-impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
-    ForceEnablePluginUseCase<PSS, SS, PL>
-{
+impl ForceEnablePluginUseCase {
     pub fn new(
         plugin_registry: Arc<PluginRegistry>,
-        plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
-        plugin_settings_storage: Arc<PSS>,
-        settings_storage: Arc<SS>,
+        plugin_loader_registry: Arc<PluginLoaderRegistry>,
+        plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
+        settings_storage: Arc<dyn SettingsStorage>,
     ) -> Self {
         Self {
             plugin_registry,
@@ -129,16 +124,20 @@ impl<PSS: PluginSettingsStorage, SS: SettingsStorage, PL: PluginLoader>
     }
 
     async fn add_to_enabled_plugins(&self, plugin_id: &str) -> Result<(), PluginError> {
+        let owned = plugin_id.to_owned();
         self.settings_storage
-            .upsert_with(|settings| {
-                if settings.enable_plugin(plugin_id) {
-                    UpdateAction::Save(())
-                } else {
-                    UpdateAction::NoChanges(())
-                }
-            })
+            .update_mut(Box::new(move |mut settings| {
+                let changed = settings.enable_plugin(&owned);
+                (settings, changed)
+            }))
             .await?;
-
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ForceEnablePluginUseCasePort for ForceEnablePluginUseCase {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.execute(plugin_id).await
     }
 }

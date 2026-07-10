@@ -5,14 +5,13 @@ use uuid::Uuid;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        instance::InstanceStorage,
-        process::{ProcessError, ProcessStorage},
+        process::{ManageProcessService, ProcessError, ProcessStorage, TrackProcessService},
         settings::LocationInfo,
     },
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
-use super::{TrackProcessParams, TrackProcessUseCase};
+use super::TrackProcessParams;
 
 pub struct ManageProcessParams {
     pub process_id: Uuid,
@@ -20,28 +19,16 @@ pub struct ManageProcessParams {
     pub post_exit_command: String,
 }
 
-pub struct ManageProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
+pub struct ManageProcessUseCase {
     event_emitter: SharedEventEmitter,
-    process_storage: Arc<PS>,
-    track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
+    process_storage: Arc<dyn ProcessStorage>,
+    track_process_service: Arc<dyn TrackProcessService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
-    pub fn new(
-        event_emitter: SharedEventEmitter,
-        process_storage: Arc<PS>,
-        track_process_use_case: Arc<TrackProcessUseCase<PS, IS>>,
-        location_info: Arc<LocationInfo>,
-    ) -> Self {
-        Self {
-            event_emitter,
-            process_storage,
-            track_process_use_case,
-            location_info,
-        }
-    }
-    pub async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
+#[async_trait::async_trait]
+impl ManageProcessService for ManageProcessUseCase {
+    async fn execute(&self, params: ManageProcessParams) -> Result<(), ProcessError> {
         let ManageProcessParams {
             process_id,
             instance_id,
@@ -49,7 +36,7 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
         } = params;
 
         let mc_exit_status = self
-            .track_process_use_case
+            .track_process_service
             .execute(TrackProcessParams {
                 process_id,
                 instance_id: instance_id.clone(),
@@ -72,6 +59,22 @@ impl<PS: ProcessStorage, IS: InstanceStorage> ManageProcessUseCase<PS, IS> {
         }
 
         Ok(())
+    }
+}
+
+impl ManageProcessUseCase {
+    pub fn new(
+        event_emitter: SharedEventEmitter,
+        process_storage: Arc<dyn ProcessStorage>,
+        track_process_service: Arc<dyn TrackProcessService>,
+        location_info: Arc<LocationInfo>,
+    ) -> Self {
+        Self {
+            event_emitter,
+            process_storage,
+            track_process_service,
+            location_info,
+        }
     }
 
     fn run_post_exit(&self, command: &str, instance_id: &str) -> Result<(), ProcessError> {

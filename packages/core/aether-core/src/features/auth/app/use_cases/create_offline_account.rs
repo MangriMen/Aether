@@ -1,24 +1,31 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::features::auth::{
-    app::{Account, ActiveAccountHelper, AuthApplicationError, CredentialsStorage},
+    app::{
+        Account, ActiveAccountHelper, AuthApplicationError, CredentialsStorage,
+        ports::CreateOfflineAccountUseCasePort,
+    },
     domain::{Credential, Username},
 };
 
-pub struct CreateOfflineAccountUseCase<CS: CredentialsStorage> {
-    credentials_storage: Arc<CS>,
+pub struct CreateOfflineAccountUseCase {
+    credentials_storage: Arc<dyn CredentialsStorage>,
 }
 
-impl<CS: CredentialsStorage> CreateOfflineAccountUseCase<CS> {
-    pub fn new(credentials_storage: Arc<CS>) -> Self {
+impl CreateOfflineAccountUseCase {
+    pub fn new(credentials_storage: Arc<dyn CredentialsStorage>) -> Self {
         Self {
             credentials_storage,
         }
     }
+}
 
-    pub async fn execute(&self, username: String) -> Result<Account, AuthApplicationError> {
+#[async_trait]
+impl CreateOfflineAccountUseCasePort for CreateOfflineAccountUseCase {
+    async fn execute(&self, username: String) -> Result<Account, AuthApplicationError> {
         let username = Username::parse(&username)?;
         let credentials = Credential::new_offline(Uuid::new_v4(), username);
 

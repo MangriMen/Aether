@@ -2,7 +2,7 @@ use aether_core_plugin_api::v0::{CommandDto, OutputDto};
 use extism::host_fn;
 use extism_convert::Msgpack;
 
-use crate::{core::LazyLocator, shared::execute_async::infra::execute_async};
+use crate::{core::app::AetherContainer, shared::execute_async::infra::execute_async};
 
 use super::super::{
     super::{
@@ -27,14 +27,13 @@ pub(crate) fn handle_log(plugin_id: &str, level: u32, msg: &str) {
 pub(crate) async fn handle_run_command(
     plugin_id: &str,
     command: CommandDto,
+    container: &AetherContainer,
 ) -> crate::Result<OutputDto> {
     let command_for_log = command.clone();
     log::debug!("Processing command from plugin: {command_for_log:?}");
 
-    let locator = LazyLocator::get().await?;
-
     let host_command =
-        plugin_utils::plugin_command_to_host(plugin_id, &command, &locator.location_info)?;
+        plugin_utils::plugin_command_to_host(plugin_id, &command, &container.location_info())?;
     let mut cmd = host_command.to_tokio_command();
 
     log::debug!("Running command: {host_command:?}");
@@ -59,7 +58,8 @@ pub(crate) async fn handle_run_command(
 host_fn!(
 pub log(user_data: PluginContext; level: u32, msg: String) -> () {
     let context = user_data.get()?;
-    let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let id = ctx.id.clone();
 
     handle_log(&id, level, &msg);
     Ok(())
@@ -68,7 +68,8 @@ pub log(user_data: PluginContext; level: u32, msg: String) -> () {
 host_fn!(
 pub get_id(user_data: PluginContext;) -> String {
     let context = user_data.get()?;
-    let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let id = ctx.id.clone();
 
     Ok(id)
 });
@@ -76,9 +77,12 @@ pub get_id(user_data: PluginContext;) -> String {
 host_fn!(
 pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostResult<OutputDto> {
     let context = user_data.get()?;
-    let id = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?.id.clone();
+    let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
+    let id = ctx.id.clone();
+    let container = ctx.upgrade_container().ok_or_else(|| anyhow::Error::msg("AetherContainer dropped before plugin call"))?;
+    drop(ctx);
 
     to_extism_res::<OutputDto>(
-        execute_async(handle_run_command(&id, command.0))
+        execute_async(handle_run_command(&id, command.0, &container))
     )
 });

@@ -23,6 +23,6 @@ pub(crate) use infra::{
     SettingsErrorDto, WindowErrorDto,
 };
 pub(crate) use infra::{
-    AppSettingsStorageState, EventEmitterState, LocationInfoState, UpdateServiceState,
-    WindowManagerState,
+    AppSettingsStorageState, ContainerState, EventEmitterState, LocationInfoState,
+    UpdateServiceState, WindowManagerState,
 };

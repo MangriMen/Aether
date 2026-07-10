@@ -1,18 +1,21 @@
-use aether_core::{
-    core::LazyLocator,
-    features::instance::EditInstanceIconUseCase,
-    shared::cache::infra::{AssetsResolver, FileCache, FsAssetsStorage},
+use aether_core::features::{
+    instance::{
+        ChangeContentState, ContentManagementPort, ContentProviderPort, ContentStateAction,
+        ImportContent, InstanceCrudPort, InstanceLifecyclePort, InstanceServicesPort,
+        RemoveContent,
+    },
+    process::ProcessFeature,
 };
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
-    sync::Arc,
 };
 use tauri::State;
 use uuid::Uuid;
 
 use crate::{
     FrontendResult,
+    core::ContainerState,
     features::{
         instance::infra::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
@@ -53,12 +56,16 @@ async fn create(
     new_instance: NewInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<String> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::create(new_instance.into())
+    let container = container.0.clone();
+    Ok(container
+        .create_instance_use_case()
+        .execute(new_instance.into())
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -67,21 +74,29 @@ async fn import(
     import_instance: ImportInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::import(import_instance.into())
+    let container = container.0.clone();
+    Ok(container
+        .import_instance_use_case()
+        .execute(import_instance.into())
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>>
-{
-    Ok(aether_core::api::instance::list_importers()
+async fn list_importers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_importers_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -89,10 +104,13 @@ async fn list_importers() -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapab
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<InstanceDto>> {
-    Ok(aether_core::api::instance::list()
+async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<InstanceDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_instances_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(std::convert::Into::into)
         .collect())
@@ -100,19 +118,21 @@ async fn list() -> FrontendResult<Vec<InstanceDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get(id: String) -> FrontendResult<InstanceDto> {
-    Ok(aether_core::api::instance::get(id)
+async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<InstanceDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_instance_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn get_dir(id: String) -> FrontendResult<PathBuf> {
-    Ok(aether_core::api::instance::get_dir(&id)
-        .await
-        .map_err(crate::Error::from)?)
+async fn get_dir(id: String, container: State<'_, ContainerState>) -> FrontendResult<PathBuf> {
+    let container = container.0.clone();
+    Ok(container.location_info().instance_dir(&id))
 }
 
 #[tauri::command]
@@ -122,12 +142,16 @@ async fn install(
     force: bool,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::install(id, force)
+    let container = container.0.clone();
+    Ok(container
+        .instance_install_service()
+        .execute(id, force)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -136,18 +160,21 @@ async fn update(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::update(id)
+    let container = container.0.clone();
+    Ok(container
+        .update_instance_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 // #[tauri::command]
 // #[specta::specta]
 // async fn list_updaters() -> FrontendResult<Vec<CapabilityEntry<UpdaterCapabilityMetadata>>> {
-//     // Ok(aether_core::api::instance::list().await.map_err(crate::Error::from)?)
 //     todo!()
 // }
 
@@ -158,12 +185,16 @@ async fn edit(
     edit_instance: EditInstanceDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<InstanceDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::edit(id, edit_instance.into())
+    let container = container.0.clone();
+    Ok(container
+        .edit_instance_use_case()
+        .execute(id, edit_instance.into())
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -173,12 +204,16 @@ async fn remove(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::remove(id)
+    let container = container.0.clone();
+    Ok(container
+        .remove_instance_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -187,12 +222,16 @@ async fn launch(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<MinecraftProcessMetadataDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::run(id)
+    let container = container.0.clone();
+    Ok(container
+        .launch_instance_with_active_account_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -202,12 +241,16 @@ async fn stop(
     uuid: Uuid,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::process::kill(uuid)
+    let container = container.0.clone();
+    Ok(container
+        .kill_process_use_case()
+        .execute(uuid)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -218,24 +261,34 @@ async fn import_contents(
     source_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::import_contents(
-        instance_id,
-        content_type.into(),
-        source_paths.iter().map(PathBuf::from).collect(),
-    )
-    .await
-    .map_err(crate::Error::from)?)
+    let container = container.0.clone();
+    Ok(container
+        .import_content_use_case()
+        .execute(ImportContent::new(
+            instance_id,
+            content_type.into(),
+            source_paths.iter().map(PathBuf::from).collect(),
+        ))
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn list_content(id: String) -> FrontendResult<HashMap<String, ContentFileDto>> {
-    Ok(aether_core::api::instance::list_content(id)
+async fn list_content(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HashMap<String, ContentFileDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_content_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(|(k, v)| (k, v.into()))
         .collect())
@@ -247,12 +300,16 @@ async fn install_content(
     payload: ContentInstallParamsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::instance::install_content(payload.into())
+    let container = container.0.clone();
+    Ok(container
+        .install_content_use_case()
+        .execute(payload.into())
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -262,14 +319,20 @@ async fn enable_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(
-        aether_core::api::instance::enable_contents(id, content_paths)
-            .await
-            .map_err(crate::Error::from)?,
-    )
+    let container = container.0.clone();
+    Ok(container
+        .change_content_state_use_case()
+        .execute(ChangeContentState::multiple(
+            id,
+            content_paths,
+            ContentStateAction::Enable,
+        ))
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -279,14 +342,20 @@ async fn disable_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(
-        aether_core::api::instance::disable_contents(id, content_paths)
-            .await
-            .map_err(crate::Error::from)?,
-    )
+    let container = container.0.clone();
+    Ok(container
+        .change_content_state_use_case()
+        .execute(ChangeContentState::multiple(
+            id,
+            content_paths,
+            ContentStateAction::Disable,
+        ))
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -296,23 +365,29 @@ async fn remove_contents(
     content_paths: Vec<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(
-        aether_core::api::instance::remove_contents(id, content_paths)
-            .await
-            .map_err(crate::Error::from)?,
-    )
+    let container = container.0.clone();
+    Ok(container
+        .remove_content_use_case()
+        .execute(RemoveContent::multiple(id, content_paths))
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn list_content_providers()
--> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
-    Ok(aether_core::api::instance::list_content_providers()
+async fn list_content_providers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_providers_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -320,10 +395,16 @@ async fn list_content_providers()
 
 #[tauri::command]
 #[specta::specta]
-async fn search_content(payload: ContentSearchParamsDto) -> FrontendResult<ContentSearchResultDto> {
-    Ok(aether_core::api::instance::search_content(payload.into())
+async fn search_content(
+    payload: ContentSearchParamsDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ContentSearchResultDto> {
+    let container = container.0.clone();
+    Ok(container
+        .search_content_use_case()
+        .execute(payload.into())
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -332,23 +413,31 @@ async fn search_content(payload: ContentSearchParamsDto) -> FrontendResult<Conte
 async fn check_compatibility(
     instance_ids: HashSet<String>,
     check_params: ContentCompatibilityCheckParamsDto,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<HashMap<String, ContentCompatibilityResultDto>> {
-    Ok(
-        aether_core::api::instance::check_compatibility(instance_ids, check_params.into())
-            .await
-            .map_err(crate::Error::from)?
-            .into_iter()
-            .map(|(k, v)| (k, v.into()))
-            .collect(),
-    )
+    let container = container.0.clone();
+    Ok(container
+        .check_content_compatibility_use_case()
+        .execute(instance_ids, check_params.into())
+        .await
+        .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(|(k, v)| (k, v.into()))
+        .collect())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn get_content(params: ContentGetParamsDto) -> FrontendResult<ContentItemDto> {
-    Ok(aether_core::api::instance::get_content(params.into())
+async fn get_content(
+    params: ContentGetParamsDto,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ContentItemDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_content_use_case()
+        .execute(params.into())
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -356,15 +445,17 @@ async fn get_content(params: ContentGetParamsDto) -> FrontendResult<ContentItemD
 #[specta::specta]
 async fn list_content_version(
     params: ContentListVersionParamsDto,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<Vec<ContentVersionDto>> {
-    Ok(
-        aether_core::api::instance::list_content_versions(params.into())
-            .await
-            .map_err(crate::Error::from)?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
-    )
+    let container = container.0.clone();
+    Ok(container
+        .list_content_versions_use_case()
+        .execute(params.into())
+        .await
+        .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }
 
 #[tauri::command]
@@ -373,22 +464,17 @@ async fn edit_icon(
     edit_instance_icon: EditInstanceIconDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+    let container = container.0.clone();
 
-    let assets_cache = Arc::new(FileCache::new(AssetsResolver::new(
-        locator.location_info.clone(),
-    )));
-
-    let assets_manager = Arc::new(FsAssetsStorage::new(assets_cache));
-
-    EditInstanceIconUseCase::new(locator.get_instance_storage().await, assets_manager)
+    container
+        .edit_instance_icon_use_case()
         .execute(edit_instance_icon.into())
         .await
-        .map_err(aether_core::Error::from)
-        .map_err(crate::Error::from)?;
+        .map_err(aether_core::Error::from)?;
 
     Ok(())
 }

@@ -1,17 +1,22 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::core::LazyLocator;
+use aether_core::features::plugins::{
+    PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file,
+};
 use tauri::State;
 
-use crate::FrontendResult;
-use crate::features::plugins::{
-    EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
-    PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
-};
-use crate::shared::reveal_in_explorer::infra::reveal_in_explorer;
-use crate::shared::{
-    IdempotencyManager, RequestId, TauriIdempotencyExt,
-    commands::{PLUGIN_PLUGIN_NAME, plugin_commands},
+use crate::{
+    FrontendResult,
+    core::ContainerState,
+    features::plugins::{
+        EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
+        PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
+    },
+    shared::reveal_in_explorer::infra::reveal_in_explorer,
+    shared::{
+        IdempotencyManager, RequestId, TauriIdempotencyExt,
+        commands::{PLUGIN_PLUGIN_NAME, plugin_commands},
+    },
 };
 
 #[must_use]
@@ -37,12 +42,16 @@ async fn import(
     paths: Vec<PathBuf>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::import(paths)
+    let container = container.0.clone();
+    Ok(container
+        .import_plugins_use_case()
+        .execute(paths)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -50,20 +59,27 @@ async fn import(
 async fn sync(
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::sync()
+    let container = container.0.clone();
+    Ok(container
+        .sync_plugins_service()
+        .execute()
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn list() -> FrontendResult<Vec<PluginDto>> {
-    Ok(aether_core::api::plugin::list()
+async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<PluginDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_plugins_dto_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -71,10 +87,13 @@ async fn list() -> FrontendResult<Vec<PluginDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get(id: String) -> FrontendResult<PluginDto> {
-    Ok(aether_core::api::plugin::get(id)
+async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_plugin_dto_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -84,12 +103,16 @@ async fn remove(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::remove(id)
+    let container = container.0.clone();
+    Ok(container
+        .remove_plugin_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -98,12 +121,16 @@ async fn enable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::enable(id)
+    let container = container.0.clone();
+    Ok(container
+        .enable_plugin_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -112,12 +139,16 @@ async fn force_enable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::force_enable(id)
+    let container = container.0.clone();
+    Ok(container
+        .force_enable_plugin_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
@@ -126,35 +157,48 @@ async fn disable(
     id: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::disable(id)
+    let container = container.0.clone();
+    Ok(container
+        .disable_plugin_service()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
 async fn call(
     id: String,
-    data: String,
+    _data: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::call(id, data)
-        .await
-        .map_err(crate::Error::from)?)
+    let container = container.0.clone();
+    let reg = container.plugin_registry();
+    let _plugin = reg.get(&id);
+    log::debug!("Calling plugin {id:?}");
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn get_settings(id: String) -> FrontendResult<Option<PluginSettingsDto>> {
-    Ok(aether_core::api::plugin::get_settings(id)
+async fn get_settings(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Option<PluginSettingsDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .get_plugin_settings_use_case()
+        .execute(id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .map(Into::into))
 }
 
@@ -165,21 +209,23 @@ async fn edit_settings(
     edit_settings: EditPluginSettingsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(
-        aether_core::api::plugin::edit_settings(id, edit_settings.into())
-            .await
-            .map_err(crate::Error::from)?,
-    )
+    let container = container.0.clone();
+    Ok(container
+        .edit_plugin_settings_use_case()
+        .execute(id, edit_settings.into())
+        .await
+        .map_err(aether_core::Error::from)?)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn open_plugins_folder() -> FrontendResult<()> {
-    let locator = LazyLocator::get().await.map_err(crate::Error::from)?;
-    let plugins_path = locator.location_info.plugins_dir();
+async fn open_plugins_folder(container: State<'_, ContainerState>) -> FrontendResult<()> {
+    let container = container.0.clone();
+    let plugins_path = container.location_info().plugins_dir();
 
     let path_to_open = if plugins_path.exists() {
         // If the folder exists, open it directly
@@ -196,20 +242,26 @@ async fn open_plugins_folder() -> FrontendResult<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_api_version() -> FrontendResult<semver::Version> {
-    Ok(aether_core::api::plugin::get_api_version()
+async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult<semver::Version> {
+    let container = container.0.clone();
+    Ok(container
+        .get_plugin_api_version_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 // ── Provider factory commands ──
 
 #[tauri::command]
 #[specta::specta]
-async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
-    Ok(aether_core::api::plugin::get_available_providers()
-        .await
-        .map_err(crate::Error::from)?
+async fn get_available_providers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<PluginSourceTypeDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .plugin_provider_factory()
+        .list_source_types()
         .into_iter()
         .map(Into::into)
         .collect())
@@ -219,19 +271,31 @@ async fn get_available_providers() -> FrontendResult<Vec<PluginSourceTypeDto>> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_plugin_source(id: String) -> FrontendResult<Option<PluginSourceDto>> {
-    Ok(aether_core::api::plugin::get_plugin_source(id)
+async fn get_plugin_source(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Option<PluginSourceDto>> {
+    let container = container.0.clone();
+    Ok(container
+        .plugin_source_storage()
+        .get(&id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .map(Into::into))
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn check_for_updates(id: String) -> FrontendResult<PluginUpdateInfoDto> {
-    Ok(aether_core::api::plugin::check_for_updates(id)
+async fn check_for_updates(
+    id: String,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<PluginUpdateInfoDto> {
+    let container = container.0.clone();
+    Ok(container
+        .check_for_plugin_updates_use_case()
+        .execute(&id)
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -242,12 +306,16 @@ async fn update_plugin(
     target_tag: Option<String>,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::plugin::update_plugin(id, target_tag)
+    let container = container.0.clone();
+    Ok(container
+        .update_plugin_use_case()
+        .execute(&id, target_tag.as_deref())
         .await
-        .map_err(crate::Error::from)?)
+        .map_err(aether_core::Error::from)?)
 }
 
 // ── Generic provider-based commands ──
@@ -257,18 +325,34 @@ async fn update_plugin(
 async fn preview_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<ProviderPluginPreviewDto> {
-    let st: aether_core::features::plugins::PluginSourceType = source_type.into();
-    Ok(
-        aether_core::api::plugin::preview_plugin_from_provider(st.to_string(), identifier)
-            .await
-            .map_err(crate::Error::from)?
-            .into(),
-    )
+    let st: PluginSourceType = source_type.into();
+
+    let container = container.0.clone();
+    let factory = container.plugin_provider_factory();
+    let provider = factory.get_provider(&st).ok_or_else(|| {
+        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
+            format!("No provider registered for: {st:?}"),
+        )))
+    })?;
+
+    let normalized = provider.parse_identifier(&identifier).map_err(|e| {
+        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
+            e.to_string(),
+        )))
+    })?;
+
+    Ok(provider
+        .fetch_preview(&normalized)
+        .await
+        .map_err(|e| crate::Error::from(aether_core::Error::from(e)))?
+        .into())
 }
 
 #[tauri::command]
 #[specta::specta]
+#[allow(clippy::too_many_arguments)]
 async fn install_plugin_from_provider(
     source_type: PluginSourceTypeDto,
     identifier: String,
@@ -277,17 +361,59 @@ async fn install_plugin_from_provider(
     version: String,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<String> {
     let _guard = idempotency.lock_cmd(request_id)?;
-    let st: aether_core::features::plugins::PluginSourceType = source_type.into();
+    let st: PluginSourceType = source_type.into();
 
-    Ok(aether_core::api::plugin::install_plugin_from_provider(
-        st.to_string(),
-        identifier,
-        download_url,
-        tag_name,
-        version,
-    )
-    .await
-    .map_err(crate::Error::from)?)
+    let container = container.0.clone();
+    let factory = container.plugin_provider_factory();
+    let provider = factory.get_provider(&st).ok_or_else(|| {
+        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
+            format!("No provider registered for: {st:?}"),
+        )))
+    })?;
+
+    let normalized = provider.parse_identifier(&identifier).map_err(|e| {
+        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
+            e.to_string(),
+        )))
+    })?;
+
+    let zip_bytes = provider
+        .download_plugin(&download_url)
+        .await
+        .map_err(|e| crate::Error::from(aether_core::Error::from(e)))?;
+    let temp_file = write_bytes_to_temp_file(&zip_bytes).map_err(aether_core::Error::from)?;
+    let extracted = container
+        .plugin_extractor()
+        .extract(temp_file.path())
+        .await
+        .map_err(aether_core::Error::from)?;
+    let plugin_id = extracted.plugin_id.clone();
+    container
+        .plugin_storage()
+        .add(extracted)
+        .await
+        .map_err(aether_core::Error::from)?;
+
+    let source = PluginSource::Remote {
+        source_type: st,
+        identifier: normalized,
+        current_tag: tag_name,
+        current_version: version,
+    };
+    container
+        .plugin_source_storage()
+        .save(&plugin_id, &source)
+        .await
+        .map_err(aether_core::Error::from)?;
+
+    container
+        .sync_plugins_service()
+        .execute()
+        .await
+        .map_err(aether_core::Error::from)?;
+
+    Ok(plugin_id)
 }

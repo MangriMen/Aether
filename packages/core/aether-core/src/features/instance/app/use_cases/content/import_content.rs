@@ -3,6 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ImportContentUseCasePort;
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
@@ -28,16 +31,16 @@ impl ImportContent {
     }
 }
 
-pub struct ImportContentUseCase<PS: PackStorage> {
+pub struct ImportContentUseCase {
     event_emitter: SharedEventEmitter,
-    pack_storage: Arc<PS>,
+    pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<PS: PackStorage> ImportContentUseCase<PS> {
+impl ImportContentUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        pack_storage: Arc<PS>,
+        pack_storage: Arc<dyn PackStorage>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
@@ -168,5 +171,12 @@ impl<PS: PackStorage> ImportContentUseCase<PS> {
             .await;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ImportContentUseCasePort for ImportContentUseCase {
+    async fn execute(&self, input: ImportContent) -> Result<(), InstanceError> {
+        self.execute(input).await
     }
 }

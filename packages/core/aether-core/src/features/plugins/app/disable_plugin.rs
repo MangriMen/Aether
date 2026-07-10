@@ -1,29 +1,27 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use crate::{
-    features::{
-        plugins::{
-            LoadConfigType, PluginError, PluginInstance, PluginLoader, PluginLoaderRegistry,
-            PluginManifest, PluginRegistry, PluginState,
-        },
-        settings::SettingsStorage,
+use crate::features::{
+    plugins::{
+        LoadConfigType, PluginDisableService, PluginError, PluginInstance, PluginLoaderRegistry,
+        PluginManifest, PluginRegistry, PluginState,
     },
-    shared::json_store::domain::UpdateAction,
+    settings::SettingsStorage,
 };
 
-pub struct DisablePluginUseCase<SS: SettingsStorage, PL: PluginLoader> {
+pub struct DisablePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
-    plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
-    settings_storage: Arc<SS>,
+    plugin_loader_registry: Arc<PluginLoaderRegistry>,
+    settings_storage: Arc<dyn SettingsStorage>,
 }
 
-impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
+impl DisablePluginUseCase {
     pub fn new(
         plugin_registry: Arc<PluginRegistry>,
-        plugin_loader_registry: Arc<PluginLoaderRegistry<PL>>,
-        settings_storage: Arc<SS>,
+        plugin_loader_registry: Arc<PluginLoaderRegistry>,
+        settings_storage: Arc<dyn SettingsStorage>,
     ) -> Self {
         Self {
             plugin_registry,
@@ -109,16 +107,20 @@ impl<SS: SettingsStorage, PL: PluginLoader> DisablePluginUseCase<SS, PL> {
     }
 
     async fn remove_from_enabled_plugins(&self, plugin_id: &str) -> Result<(), PluginError> {
+        let owned = plugin_id.to_owned();
         self.settings_storage
-            .upsert_with(|settings| {
-                if settings.disable_plugin(plugin_id) {
-                    UpdateAction::Save(())
-                } else {
-                    UpdateAction::NoChanges(())
-                }
-            })
+            .update_mut(Box::new(move |mut settings| {
+                let changed = settings.disable_plugin(&owned);
+                (settings, changed)
+            }))
             .await?;
-
         Ok(())
+    }
+}
+
+#[async_trait]
+impl PluginDisableService for DisablePluginUseCase {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.execute(plugin_id).await
     }
 }

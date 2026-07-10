@@ -1,35 +1,27 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::features::{
-    plugins::{PluginError, PluginExtractor, PluginLoader, PluginStorage},
-    settings::SettingsStorage,
-};
+use async_trait::async_trait;
 
-use super::SyncPluginsUseCase;
+use crate::features::plugins::{PluginError, PluginExtractor, PluginStorage, PluginSyncService};
 
-pub struct ImportPluginsUseCase<
-    PS: PluginStorage,
-    SS: SettingsStorage,
-    PL: PluginLoader,
-    PE: PluginExtractor,
-> {
-    plugin_extractor: Arc<PE>,
-    plugin_storage: Arc<PS>,
-    sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+use super::ports::ImportPluginsUseCasePort;
+
+pub struct ImportPluginsUseCase {
+    plugin_extractor: Arc<dyn PluginExtractor>,
+    plugin_storage: Arc<dyn PluginStorage>,
+    sync_plugins_service: Arc<dyn PluginSyncService>,
 }
 
-impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader, PE: PluginExtractor>
-    ImportPluginsUseCase<PS, SS, PL, PE>
-{
+impl ImportPluginsUseCase {
     pub fn new(
-        plugin_extractor: Arc<PE>,
-        plugin_storage: Arc<PS>,
-        sync_plugins_use_case: Arc<SyncPluginsUseCase<PS, SS, PL>>,
+        plugin_extractor: Arc<dyn PluginExtractor>,
+        plugin_storage: Arc<dyn PluginStorage>,
+        sync_plugins_service: Arc<dyn PluginSyncService>,
     ) -> Self {
         Self {
             plugin_extractor,
             plugin_storage,
-            sync_plugins_use_case,
+            sync_plugins_service,
         }
     }
 
@@ -39,7 +31,14 @@ impl<PS: PluginStorage, SS: SettingsStorage, PL: PluginLoader, PE: PluginExtract
             self.plugin_storage.add(extracted_plugin).await?;
         }
 
-        self.sync_plugins_use_case.execute().await?;
+        self.sync_plugins_service.execute().await?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl ImportPluginsUseCasePort for ImportPluginsUseCase {
+    async fn execute(&self, paths: Vec<PathBuf>) -> Result<(), PluginError> {
+        self.execute(paths).await
     }
 }

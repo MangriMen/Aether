@@ -1,7 +1,9 @@
+use aether_core::features::settings::SettingsFeature;
 use tauri::State;
 
 use crate::{
     FrontendResult,
+    core::ContainerState,
     core::{AppSettingsStorageState, WindowManagerState},
     features::settings::app::{EditAppSettingsUseCase, GetAppSettingsUseCase},
     shared::{
@@ -31,10 +33,13 @@ pub fn get_specta_commands() -> tauri_specta::Commands<tauri::Wry> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get() -> FrontendResult<SettingsDto> {
-    Ok(aether_core::api::settings::get()
+async fn get(container: State<'_, ContainerState>) -> FrontendResult<SettingsDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_settings_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -44,12 +49,16 @@ async fn edit(
     edit_settings: EditSettingsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<SettingsDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(aether_core::api::settings::edit(edit_settings.into())
+    let container = container.0.clone();
+    Ok(container
+        .edit_settings_use_case()
+        .execute(edit_settings.into())
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -63,10 +72,15 @@ async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
 
 #[tauri::command]
 #[specta::specta]
-async fn get_default_instance_settings() -> FrontendResult<DefaultInstanceSettingsDto> {
-    Ok(aether_core::api::settings::get_default_instance_settings()
+async fn get_default_instance_settings(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<DefaultInstanceSettingsDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_default_instance_settings_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -76,15 +90,17 @@ async fn edit_default_instance_settings(
     edit_settings: EditDefaultInstanceSettingsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<DefaultInstanceSettingsDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
-    Ok(
-        aether_core::api::settings::upsert_default_instance_settings(edit_settings.into())
-            .await
-            .map_err(crate::Error::from)?
-            .into(),
-    )
+    let container = container.0.clone();
+    Ok(container
+        .edit_default_instance_settings_use_case()
+        .execute(edit_settings.into())
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
 }
 
 #[tauri::command]

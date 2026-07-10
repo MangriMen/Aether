@@ -1,5 +1,9 @@
+use aether_core::features::minecraft::MinecraftFeature;
+use tauri::State;
+
 use crate::{
     FrontendResult,
+    core::ContainerState,
     features::minecraft::{ModLoaderDto, ModdedManifestDto, VersionManifestDto},
     shared::commands::{MINECRAFT_PLUGIN_NAME, minecraft_commands},
 };
@@ -18,10 +22,15 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_minecraft_version_manifest() -> FrontendResult<VersionManifestDto> {
-    Ok(aether_core::api::metadata::get_version_manifest()
+pub async fn get_minecraft_version_manifest(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<VersionManifestDto> {
+    let container = container.0.clone();
+    Ok(container
+        .get_version_manifest_use_case()
+        .execute()
         .await
-        .map_err(crate::Error::from)?
+        .map_err(aether_core::Error::from)?
         .into())
 }
 
@@ -29,11 +38,13 @@ pub async fn get_minecraft_version_manifest() -> FrontendResult<VersionManifestD
 #[specta::specta]
 pub async fn get_loader_version_manifest(
     loader: ModLoaderDto,
+    container: State<'_, ContainerState>,
 ) -> FrontendResult<ModdedManifestDto> {
-    Ok(
-        aether_core::api::metadata::get_loader_version_manifest(loader.into())
-            .await
-            .map_err(crate::Error::from)?
-            .into(),
-    )
+    let container = container.0.clone();
+    Ok(container
+        .get_loader_version_manifest_use_case()
+        .execute(loader.into())
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
 }

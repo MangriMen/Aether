@@ -1,7 +1,10 @@
+use std::fmt;
+use std::sync::Arc;
+
 use log::error;
 use uuid::Uuid;
 
-use crate::{core::LazyLocator, features::events::ProgressBarStorage};
+use crate::features::events::{ProgressBarStorage, SharedEventEmitter};
 
 use super::{ProgressEvent, ProgressEventType};
 
@@ -16,8 +19,20 @@ pub struct ProgressBar {
     pub progress_type: ProgressEventType,
 }
 
-#[derive(Debug, Clone)]
-pub struct ProgressBarId(pub Uuid);
+#[derive(Clone)]
+pub struct ProgressBarId {
+    pub id: Uuid,
+    pub(crate) progress_storage: Option<Arc<dyn ProgressBarStorage>>,
+    pub(crate) event_emitter: Option<SharedEventEmitter>,
+}
+
+impl fmt::Debug for ProgressBarId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ProgressBarId")
+            .field("id", &self.id)
+            .finish_non_exhaustive()
+    }
+}
 
 #[derive(Debug)]
 pub struct ProgressConfig<'a> {
@@ -28,38 +43,36 @@ pub struct ProgressConfig<'a> {
 // When Loading bar id is dropped, we should remove it from the state
 impl Drop for ProgressBarId {
     fn drop(&mut self) {
-        let progress_bar_id = self.0;
+        let progress_bar_id = self.id;
+        let progress_storage = self.progress_storage.take();
+        let event_emitter = self.event_emitter.take();
+
         tokio::spawn(async move {
-            let lazy_locator = LazyLocator::get().await;
+            let Some(progress_bar_storage) = progress_storage else {
+                return;
+            };
+            let Some(event_emitter) = event_emitter else {
+                return;
+            };
 
-            match lazy_locator {
-                Ok(lazy_locator) => {
-                    let progress_bar_storage = lazy_locator.get_progress_bar_storage().await;
-                    let event_emitter = lazy_locator.get_event_emitter().await;
+            let removed_progress_bar = progress_bar_storage.remove(progress_bar_id).await.unwrap();
 
-                    // TODO: remove unwrap
-                    let removed_progress_bar =
-                        progress_bar_storage.remove(progress_bar_id).await.unwrap();
+            if let Some((_, progress_bar)) = removed_progress_bar {
+                let completion_event = ProgressEvent {
+                    fraction: None,
+                    message: "Completed".to_string(),
+                    event: progress_bar.progress_type,
+                    progress_bar_id: progress_bar.id,
+                };
 
-                    if let Some((_, progress_bar)) = removed_progress_bar {
-                        let completion_event = ProgressEvent {
-                            fraction: None,
-                            message: "Completed".to_string(),
-                            event: progress_bar.progress_type,
-                            progress_bar_id: progress_bar.id,
-                        };
-
-                        if let Err(e) = event_emitter.emit(completion_event.into()).await {
-                            error!(
-                                "Exited at {:.2}% for progress bar: {}: {:?}",
-                                (progress_bar.current / progress_bar.total) * 100.0,
-                                progress_bar.id,
-                                e
-                            );
-                        }
-                    }
+                if let Err(e) = event_emitter.emit(completion_event.into()).await {
+                    error!(
+                        "Exited at {:.2}% for progress bar: {}: {:?}",
+                        (progress_bar.current / progress_bar.total) * 100.0,
+                        progress_bar.id,
+                        e
+                    );
                 }
-                Err(e) => error!("Failed to get EventState: {e:?}"),
             }
         });
     }

@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::features::{
     instance::{InstanceStorage, InstanceStorageExt},
-    process::ProcessStorage,
+    process::{ProcessStorage, TrackProcessService},
 };
 
 const PROCESS_CHECK_INTERVAL: time::Duration = time::Duration::from_millis(50);
@@ -16,43 +16,14 @@ pub struct TrackProcessParams {
     pub instance_id: String,
 }
 
-pub struct TrackProcessUseCase<PS, IS> {
-    process_storage: Arc<PS>,
-    instance_storage: Arc<IS>,
+pub struct TrackProcessUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
-    pub fn new(process_storage: Arc<PS>, instance_storage: Arc<IS>) -> Self {
-        Self {
-            process_storage,
-            instance_storage,
-        }
-    }
-
-    async fn update_playtime(&self, last_updated: &mut DateTime<Utc>, id: &str, force: bool) {
-        let elapsed_seconds = Utc::now().signed_duration_since(*last_updated);
-
-        if elapsed_seconds >= UPDATE_PLAYTIME_INTERVAL || force {
-            let result = async {
-                self.instance_storage
-                    .upsert_with(id, |instance| {
-                        instance.time_played +=
-                            elapsed_seconds.num_seconds().max(0).cast_unsigned();
-                        Ok(())
-                    })
-                    .await
-            }
-            .await;
-
-            if let Err(e) = result {
-                tracing::warn!("Failed to update playtime for profile {}: {}", id, e);
-            }
-
-            *last_updated = Utc::now();
-        }
-    }
-
-    pub async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
+#[async_trait::async_trait]
+impl TrackProcessService for TrackProcessUseCase {
+    async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
         let TrackProcessParams {
             process_id,
             instance_id,
@@ -80,6 +51,41 @@ impl<PS: ProcessStorage, IS: InstanceStorage> TrackProcessUseCase<PS, IS> {
 
             self.update_playtime(&mut last_updated_playtime, &instance_id, false)
                 .await;
+        }
+    }
+}
+
+impl TrackProcessUseCase {
+    pub fn new(
+        process_storage: Arc<dyn ProcessStorage>,
+        instance_storage: Arc<dyn InstanceStorage>,
+    ) -> Self {
+        Self {
+            process_storage,
+            instance_storage,
+        }
+    }
+
+    async fn update_playtime(&self, last_updated: &mut DateTime<Utc>, id: &str, force: bool) {
+        let elapsed_seconds = Utc::now().signed_duration_since(*last_updated);
+
+        if elapsed_seconds >= UPDATE_PLAYTIME_INTERVAL || force {
+            let result = async {
+                self.instance_storage
+                    .upsert_with(id, |instance| {
+                        instance.time_played +=
+                            elapsed_seconds.num_seconds().max(0).cast_unsigned();
+                        Ok(())
+                    })
+                    .await
+            }
+            .await;
+
+            if let Err(e) = result {
+                tracing::warn!("Failed to update playtime for profile {}: {}", id, e);
+            }
+
+            *last_updated = Utc::now();
         }
     }
 }

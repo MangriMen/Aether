@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, OnceLock, Weak},
 };
 
 use async_trait::async_trait;
@@ -9,6 +9,7 @@ use extism::{Manifest, Plugin, PluginBuilder, Wasm};
 use tokio::sync::Mutex;
 
 use crate::{
+    core::app::AetherContainer,
     features::{
         plugins::{
             LoadConfig, PathMapping, PluginError, PluginInstance, PluginInternalEvent,
@@ -28,11 +29,19 @@ use super::super::plugin_utils::get_default_allowed_paths;
 
 pub struct ExtismPluginLoader {
     location_info: Arc<LocationInfo>,
+    container: OnceLock<Weak<AetherContainer>>,
 }
 
 impl ExtismPluginLoader {
     pub fn new(location_info: Arc<LocationInfo>) -> Self {
-        Self { location_info }
+        Self {
+            location_info,
+            container: OnceLock::new(),
+        }
+    }
+
+    pub fn set_container(&self, container: &Arc<AetherContainer>) {
+        let _ = self.container.set(Arc::downgrade(container));
     }
 
     async fn ensure_cache_config_file(&self) -> Result<PathBuf, PluginError> {
@@ -95,9 +104,10 @@ impl ExtismPluginLoader {
         plugin_id: &str,
         wasm_manifest: &Manifest,
         cache_dir: Option<&PathBuf>,
+        container: &Arc<AetherContainer>,
     ) -> Result<Plugin, PluginError> {
         let mut builder = PluginBuilder::new(wasm_manifest)
-            .with_functions(get_host_functions(plugin_id))
+            .with_functions(get_host_functions(plugin_id, container))
             .with_wasi(true);
 
         if let Some(cache_dir) = cache_dir {
@@ -127,10 +137,17 @@ impl PluginLoader for ExtismPluginLoader {
         let cache_config = self.ensure_cache_config_file().await?;
         let default_allowed_paths = self.ensure_default_allowed_paths(plugin_id).await?;
 
+        let container = self
+            .container
+            .get()
+            .and_then(Weak::upgrade)
+            .expect("ExtismPluginLoader::set_container must be called before loading plugins");
+
         let wasm_manifest =
             self.build_wasm_manifest(manifest, Some(&default_allowed_paths), settings)?;
 
-        let extism_plugin = Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config))?;
+        let extism_plugin =
+            Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config), &container)?;
 
         let mut plugin = ExtismPluginInstance::new(extism_plugin, plugin_id.clone());
         if let Err(err) = plugin.handle_event(&PluginInternalEvent::Loaded) {

@@ -1,36 +1,35 @@
 use std::sync::Arc;
 
-use crate::{
-    features::settings::{
-        DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
-        app::EditDefaultInstanceSettings,
-    },
-    shared::json_store::domain::UpdateAction,
+use async_trait::async_trait;
+
+use crate::features::settings::{
+    DefaultInstanceSettings, DefaultInstanceSettingsStorage, SettingsError,
+    app::{EditDefaultInstanceSettings, ports::EditDefaultInstanceSettingsUseCasePort},
 };
 
-pub struct EditDefaultInstanceSettingsUseCase<DISS: DefaultInstanceSettingsStorage> {
-    default_instance_settings_storage: Arc<DISS>,
+pub struct EditDefaultInstanceSettingsUseCase {
+    default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
 }
 
-impl<DIS: DefaultInstanceSettingsStorage> EditDefaultInstanceSettingsUseCase<DIS> {
-    pub fn new(default_instance_settings_storage: Arc<DIS>) -> Self {
+impl EditDefaultInstanceSettingsUseCase {
+    pub fn new(default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>) -> Self {
         Self {
             default_instance_settings_storage,
         }
     }
+}
 
-    pub async fn execute(
+#[async_trait]
+impl EditDefaultInstanceSettingsUseCasePort for EditDefaultInstanceSettingsUseCase {
+    async fn execute(
         &self,
         edit_settings: EditDefaultInstanceSettings,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
         self.default_instance_settings_storage
-            .upsert_with(|settings| {
-                if edit_settings.apply_to(settings) {
-                    UpdateAction::Save(settings.to_owned())
-                } else {
-                    UpdateAction::NoChanges(settings.to_owned())
-                }
-            })
+            .update_mut(Box::new(move |mut settings| {
+                let changed = edit_settings.apply_to(&mut settings);
+                (settings, changed)
+            }))
             .await
     }
 }

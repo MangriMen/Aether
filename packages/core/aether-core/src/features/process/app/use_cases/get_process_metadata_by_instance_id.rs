@@ -1,18 +1,23 @@
 use std::sync::Arc;
 
-use super::super::super::domain::{MinecraftProcessMetadata, ProcessError};
-use super::super::ports::ProcessStorage;
+use async_trait::async_trait;
 
-pub struct GetProcessMetadataByInstanceIdUseCase<PS: ProcessStorage> {
-    process_storage: Arc<PS>,
+use super::super::super::domain::{MinecraftProcessMetadata, ProcessError};
+use super::super::ports::{GetProcessMetadataByInstanceIdUseCasePort, ProcessStorage};
+
+pub struct GetProcessMetadataByInstanceIdUseCase {
+    process_storage: Arc<dyn ProcessStorage>,
 }
 
-impl<PS: ProcessStorage> GetProcessMetadataByInstanceIdUseCase<PS> {
-    pub fn new(process_storage: Arc<PS>) -> Self {
+impl GetProcessMetadataByInstanceIdUseCase {
+    pub fn new(process_storage: Arc<dyn ProcessStorage>) -> Self {
         Self { process_storage }
     }
+}
 
-    pub async fn execute(
+#[async_trait]
+impl GetProcessMetadataByInstanceIdUseCasePort for GetProcessMetadataByInstanceIdUseCase {
+    async fn execute(
         &self,
         instance_id: String,
     ) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {

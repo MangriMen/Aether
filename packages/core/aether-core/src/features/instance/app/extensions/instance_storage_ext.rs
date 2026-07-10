@@ -16,4 +16,4 @@ pub trait InstanceStorageExt: InstanceStorage {
 }
 
 #[async_trait]
-impl<IS: InstanceStorage> InstanceStorageExt for IS {}
+impl<IS: ?Sized + InstanceStorage> InstanceStorageExt for IS {}

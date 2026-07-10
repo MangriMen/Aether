@@ -1,25 +1,26 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::instance::app::InstanceFileService;
+use crate::features::instance::app::ports::RemoveInstanceUseCasePort;
 use crate::features::instance::{
     InstanceError, InstanceStorage, InstanceWatcherService, PackStorage,
 };
 
-pub struct RemoveInstanceUseCase<IS, IWS, IFS, PS> {
-    storage: Arc<IS>,
-    watcher_service: Arc<IWS>,
-    file_service: Arc<IFS>,
-    pack_storage: Arc<PS>,
+pub struct RemoveInstanceUseCase {
+    storage: Arc<dyn InstanceStorage>,
+    watcher_service: Arc<dyn InstanceWatcherService>,
+    file_service: Arc<dyn InstanceFileService>,
+    pack_storage: Arc<dyn PackStorage>,
 }
 
-impl<IS: InstanceStorage, IWS: InstanceWatcherService, IFS: InstanceFileService, PS: PackStorage>
-    RemoveInstanceUseCase<IS, IWS, IFS, PS>
-{
+impl RemoveInstanceUseCase {
     pub fn new(
-        storage: Arc<IS>,
-        watcher_service: Arc<IWS>,
-        file_service: Arc<IFS>,
-        pack_storage: Arc<PS>,
+        storage: Arc<dyn InstanceStorage>,
+        watcher_service: Arc<dyn InstanceWatcherService>,
+        file_service: Arc<dyn InstanceFileService>,
+        pack_storage: Arc<dyn PackStorage>,
     ) -> Self {
         Self {
             storage,
@@ -28,8 +29,11 @@ impl<IS: InstanceStorage, IWS: InstanceWatcherService, IFS: InstanceFileService,
             pack_storage,
         }
     }
+}
 
-    pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+#[async_trait]
+impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
+    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         self.watcher_service.unwatch_instance(&instance_id).await?;
         self.pack_storage
             .remove_all_for_instance(&instance_id)

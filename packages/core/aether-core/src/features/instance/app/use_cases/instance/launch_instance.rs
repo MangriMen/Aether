@@ -1,101 +1,60 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::{
     features::{
         auth::Credential,
-        events::ProgressService,
         instance::{
-            Instance, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
+            Instance, InstanceError, InstanceInstallService, InstanceInstallStage,
+            InstanceLaunchService, InstanceStorage, InstanceStorageExt,
         },
-        java::{JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider},
         minecraft::{
-            GetMinecraftLaunchCommandParams, GetMinecraftLaunchCommandUseCase, LaunchSettings,
-            MetadataStorage, MinecraftDownloader, MinecraftHealthParams, MinecraftHealthService,
-            ModLoaderProcessor,
+            GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
+            MinecraftHealthService, MinecraftLaunchCommandService,
         },
         plugins::{PluginInternalEvent, PluginRegistry, PluginState},
-        process::{
-            GetProcessMetadataByInstanceIdUseCase, MinecraftProcessMetadata, ProcessStorage,
-            StartProcessUseCase,
-        },
+        process::{MinecraftProcessMetadata, ProcessStartService, ProcessStorage},
         settings::{DefaultInstanceSettings, DefaultInstanceSettingsStorage, LocationInfo},
     },
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
 
-use super::InstallInstanceUseCase;
-
-pub struct LaunchInstanceUseCase<
-    IS: InstanceStorage,
-    MS: MetadataStorage,
-    PS: ProcessStorage,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
+pub struct LaunchInstanceUseCase {
     plugin_registry: Arc<PluginRegistry>,
-    instance_storage: Arc<IS>,
-    default_instance_settings_storage: Arc<GISS>,
+    instance_storage: Arc<dyn InstanceStorage>,
+    default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
     location_info: Arc<LocationInfo>,
-    get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-    #[allow(clippy::type_complexity)]
-    install_instance_use_case: Arc<InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>>,
-    minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
-    get_minecraft_launch_command_use_case:
-        GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS, JP, JIT>,
-    start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
+    process_storage: Arc<dyn ProcessStorage>,
+    instance_install_service: Arc<dyn InstanceInstallService>,
+    minecraft_health_service: Arc<dyn MinecraftHealthService>,
+    minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
+    process_start_service: Arc<dyn ProcessStartService>,
 }
 
-impl<
-    IS: InstanceStorage + 'static,
-    MS: MetadataStorage,
-    PS: ProcessStorage + 'static,
-    GISS: DefaultInstanceSettingsStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    PGS: ProgressService,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> LaunchInstanceUseCase<IS, MS, PS, GISS, MD, MLP, PGS, JIS, JS, JP, JIT>
-{
+impl LaunchInstanceUseCase {
     #[allow(clippy::type_complexity, clippy::too_many_arguments)]
     pub fn new(
         plugin_registry: Arc<PluginRegistry>,
-        instance_storage: Arc<IS>,
-        default_instance_settings_storage: Arc<GISS>,
+        instance_storage: Arc<dyn InstanceStorage>,
+        default_instance_settings_storage: Arc<dyn DefaultInstanceSettingsStorage>,
         location_info: Arc<LocationInfo>,
-        get_process_by_instance_id_use_case: Arc<GetProcessMetadataByInstanceIdUseCase<PS>>,
-        install_instance_use_case: Arc<
-            InstallInstanceUseCase<IS, MS, MD, PGS, MLP, JIS, JS, JP, JIT>,
-        >,
-        minecraft_health_service: Arc<MinecraftHealthService<MS, MD, JIS, JS>>,
-        get_minecraft_launch_command_use_case: GetMinecraftLaunchCommandUseCase<
-            MS,
-            MD,
-            JIS,
-            JS,
-            JP,
-            JIT,
-        >,
-        start_process_use_case: Arc<StartProcessUseCase<PS, IS>>,
+        process_storage: Arc<dyn ProcessStorage>,
+        instance_install_service: Arc<dyn InstanceInstallService>,
+        minecraft_health_service: Arc<dyn MinecraftHealthService>,
+        minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
+        process_start_service: Arc<dyn ProcessStartService>,
     ) -> Self {
         Self {
             plugin_registry,
             instance_storage,
             default_instance_settings_storage,
             location_info,
-            get_process_by_instance_id_use_case,
-            install_instance_use_case,
+            process_storage,
+            instance_install_service,
             minecraft_health_service,
-            get_minecraft_launch_command_use_case,
-            start_process_use_case,
+            minecraft_launch_command_service,
+            process_start_service,
         }
     }
 
@@ -112,6 +71,28 @@ impl<
         }
     }
 
+    async fn notify_plugin_event(
+        &self,
+        instance: &Instance,
+        event: PluginInternalEvent,
+        event_name: &str,
+    ) {
+        if let Some(pack_info) = &instance.pack_info
+            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
+            && let PluginState::Loaded(instance_arc) = &plugin.state
+        {
+            let mut plugin = instance_arc.lock().await;
+            if let Err(e) = plugin.handle_event(&event) {
+                tracing::warn!(
+                    "Plugin '{}' failed to handle {}: {}",
+                    pack_info.provider_id.plugin_id,
+                    event_name,
+                    e
+                );
+            }
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     pub async fn execute(
         &self,
@@ -123,8 +104,6 @@ impl<
 
         let launch_settings = Self::resolve_launch_settings(&instance, &settings);
 
-        let instance = self.instance_storage.get(&instance_id).await?;
-
         if instance.install_stage == InstanceInstallStage::PackInstalling
             || instance.install_stage == InstanceInstallStage::Installing
         {
@@ -134,10 +113,11 @@ impl<
         // Check if profile has a running profile, and reject running the command if it does
         // Done late so a quick double call doesn't launch two instances
         if let Some(process) = self
-            .get_process_by_instance_id_use_case
-            .execute(instance_id.clone())
+            .process_storage
+            .list_metadata()
             .await?
-            .first()
+            .into_iter()
+            .find(|p| p.instance_id() == instance_id)
         {
             return Err(InstanceError::InstanceAlreadyRunning {
                 instance_id: instance_id.clone(),
@@ -165,7 +145,7 @@ impl<
                 .await
                 .unwrap_or(true)
         {
-            self.install_instance_use_case
+            self.instance_install_service
                 .execute(instance_id.clone(), false)
                 .await?;
         }
@@ -193,25 +173,17 @@ impl<
             }
         }
 
-        // Fire BeforeInstanceLaunch event to the pack-type plugin
-        if let Some(pack_info) = &instance.pack_info
-            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
-            && let PluginState::Loaded(instance_arc) = &plugin.state
-        {
-            let mut plugin = instance_arc.lock().await;
-            if let Err(e) = plugin.handle_event(&PluginInternalEvent::BeforeInstanceLaunch {
+        self.notify_plugin_event(
+            &instance,
+            PluginInternalEvent::BeforeInstanceLaunch {
                 instance_id: instance.id().to_string(),
-            }) {
-                tracing::warn!(
-                    "Plugin '{}' failed to handle BeforeInstanceLaunch: {}",
-                    pack_info.provider_id.plugin_id,
-                    e
-                );
-            }
-        }
+            },
+            "BeforeInstanceLaunch",
+        )
+        .await;
 
         let command = self
-            .get_minecraft_launch_command_use_case
+            .minecraft_launch_command_service
             .execute(
                 GetMinecraftLaunchCommandParams {
                     game_version: instance.game_version.clone(),
@@ -237,7 +209,7 @@ impl<
             .await?;
 
         let metadata = self
-            .start_process_use_case
+            .process_start_service
             .execute(
                 instance_id,
                 command,
@@ -245,23 +217,26 @@ impl<
             )
             .await;
 
-        // Fire AfterInstanceLaunch event to the pack-type plugin
-        if let Some(pack_info) = &instance.pack_info
-            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
-            && let PluginState::Loaded(instance_arc) = &plugin.state
-        {
-            let mut plugin = instance_arc.lock().await;
-            if let Err(e) = plugin.handle_event(&PluginInternalEvent::AfterInstanceLaunch {
+        self.notify_plugin_event(
+            &instance,
+            PluginInternalEvent::AfterInstanceLaunch {
                 instance_id: instance.id().to_string(),
-            }) {
-                tracing::warn!(
-                    "Plugin '{}' failed to handle AfterInstanceLaunch: {}",
-                    pack_info.provider_id.plugin_id,
-                    e
-                );
-            }
-        }
+            },
+            "AfterInstanceLaunch",
+        )
+        .await;
 
         Ok(metadata?)
+    }
+}
+
+#[async_trait]
+impl InstanceLaunchService for LaunchInstanceUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+        credentials: Credential,
+    ) -> Result<MinecraftProcessMetadata, InstanceError> {
+        self.execute(instance_id, credentials).await
     }
 }

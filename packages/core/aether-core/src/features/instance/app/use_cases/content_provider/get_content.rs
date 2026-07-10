@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::GetContentUseCasePort;
 use crate::{
     features::instance::{ContentItem, ContentProvider, InstanceError, app::ContentGetParams},
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct GetContentUseCase<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> {
-    provider_registry: Arc<CP>,
+pub struct GetContentUseCase {
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
 }
 
-impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> GetContentUseCase<CP> {
-    pub fn new(provider_registry: Arc<CP>) -> Self {
+impl GetContentUseCase {
+    pub fn new(provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>) -> Self {
         Self { provider_registry }
     }
 
@@ -30,5 +33,12 @@ impl<CP: CapabilityRegistry<Arc<dyn ContentProvider>>> GetContentUseCase<CP> {
             })?;
 
         provider.capability.get_content(get_params.content_id).await
+    }
+}
+
+#[async_trait]
+impl GetContentUseCasePort for GetContentUseCase {
+    async fn execute(&self, get_params: ContentGetParams) -> Result<ContentItem, InstanceError> {
+        self.execute(get_params).await
     }
 }

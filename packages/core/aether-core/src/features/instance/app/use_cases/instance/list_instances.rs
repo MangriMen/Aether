@@ -1,17 +1,23 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
+use crate::features::instance::app::ports::ListInstancesUseCasePort;
 use crate::features::instance::{Instance, InstanceError, InstanceStorage};
 
-pub struct ListInstancesUseCase<IS> {
-    instance_storage: Arc<IS>,
+pub struct ListInstancesUseCase {
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
-impl<IS: InstanceStorage> ListInstancesUseCase<IS> {
-    pub fn new(instance_storage: Arc<IS>) -> Self {
+impl ListInstancesUseCase {
+    pub fn new(instance_storage: Arc<dyn InstanceStorage>) -> Self {
         Self { instance_storage }
     }
+}
 
-    pub async fn execute(&self) -> Result<Vec<Instance>, InstanceError> {
+#[async_trait]
+impl ListInstancesUseCasePort for ListInstancesUseCase {
+    async fn execute(&self) -> Result<Vec<Instance>, InstanceError> {
         self.instance_storage.list().await
     }
 }

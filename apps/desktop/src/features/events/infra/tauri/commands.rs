@@ -1,7 +1,9 @@
-use aether_core::{core::LazyLocator, features::events::ListProgressBarsUseCase};
+use aether_core::features::events::EventsFeature;
+use tauri::State;
 
 use crate::{
     FrontendResult,
+    core::ContainerState,
     features::events::infra::{ProgressBarDto, ProgressEventDto, WarningEventDto},
     shared::commands::{EVENTS_PLUGIN_NAME, events_commands},
 };
@@ -25,15 +27,16 @@ pub fn get_specta_events() -> tauri_specta::Events {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn list_progress_bars() -> FrontendResult<Vec<ProgressBarDto>> {
-    let lazy_locator = LazyLocator::get().await.map_err(crate::Error::from)?;
+pub async fn list_progress_bars(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<ProgressBarDto>> {
+    let container = container.0.clone();
 
-    Ok(
-        ListProgressBarsUseCase::new(lazy_locator.get_progress_bar_storage().await)
-            .execute()
-            .await
-            .into_iter()
-            .map(Into::into)
-            .collect(),
-    )
+    Ok(container
+        .list_progress_bars_use_case()
+        .execute()
+        .await
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }

@@ -1,13 +1,16 @@
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use semver;
 use tokio::sync::Mutex;
 
+use crate::features::plugins::app::{EditPluginSettings, PluginDto};
 use crate::features::plugins::domain::PluginInstance;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginSettings, PluginSource,
+    ProviderUpdateInfo,
 };
 
 #[async_trait]
@@ -48,4 +51,75 @@ pub trait PluginExtractor: Send + Sync {
 
 pub trait AsCapabilityMetadata {
     fn as_metadata(&self) -> &crate::features::instance::CapabilityMetadata;
+}
+
+#[async_trait]
+pub trait PluginSyncService: Send + Sync {
+    async fn execute(&self) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait PluginDisableService: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+// ── Use case ports ──
+
+#[async_trait]
+pub trait CheckForPluginUpdatesUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: &str) -> Result<ProviderUpdateInfo, PluginError>;
+}
+
+#[async_trait]
+pub trait EditPluginSettingsUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        plugin_id: String,
+        edit_settings: EditPluginSettings,
+    ) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait EnablePluginUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait ForceEnablePluginUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait GetPluginApiVersionUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<semver::Version, PluginError>;
+}
+
+#[async_trait]
+pub trait GetPluginDtoUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<PluginDto, PluginError>;
+}
+
+#[async_trait]
+pub trait GetPluginSettingsUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<Option<PluginSettings>, PluginError>;
+}
+
+#[async_trait]
+pub trait ImportPluginsUseCasePort: Send + Sync {
+    async fn execute(&self, paths: Vec<PathBuf>) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait ListPluginsDtoUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<PluginDto>, PluginError>;
+}
+
+#[async_trait]
+pub trait RemovePluginUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait UpdatePluginUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: &str, target_tag: Option<&str>) -> Result<(), PluginError>;
 }

@@ -1,25 +1,33 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::java::{
     Java, JavaInstallationService, JavaStorage,
-    app::{JavaApplicationError, dtos::EditJava},
+    app::{JavaApplicationError, dtos::EditJava, ports::EditJavaUseCasePort},
     domain::{CUSTOM_JAVA_VERSION, JavaDomainError, UNKNOWN_JAVA_ARCHITECTURE},
 };
 
-pub struct EditJavaUseCase<JS: JavaStorage, JIS: JavaInstallationService> {
-    java_storage: Arc<JS>,
-    java_installation_service: Arc<JIS>,
+pub struct EditJavaUseCase {
+    java_storage: Arc<dyn JavaStorage>,
+    java_installation_service: Arc<dyn JavaInstallationService>,
 }
 
-impl<JS: JavaStorage, JIS: JavaInstallationService> EditJavaUseCase<JS, JIS> {
-    pub fn new(java_storage: Arc<JS>, java_installation_service: Arc<JIS>) -> Self {
+impl EditJavaUseCase {
+    pub fn new(
+        java_storage: Arc<dyn JavaStorage>,
+        java_installation_service: Arc<dyn JavaInstallationService>,
+    ) -> Self {
         Self {
             java_storage,
             java_installation_service,
         }
     }
+}
 
-    pub async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
+#[async_trait]
+impl EditJavaUseCasePort for EditJavaUseCase {
+    async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
         if edit_java.path.to_string_lossy().is_empty() {
             return Err(JavaDomainError::EmptyPath)?;
         }

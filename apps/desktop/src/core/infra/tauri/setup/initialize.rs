@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
-use aether_core::{core::LazyLocator, features::settings::LocationInfo};
+use aether_core::features::events::SharedEventEmitter;
+use aether_core::features::settings::LocationInfo;
 use log::error;
 use sqlx::SqlitePool;
 use tauri::{App, AppHandle, Manager};
 
-use crate::{
-    core::{
-        AppSettingsStorageState, EventEmitterState, WindowLabel, WindowManager, WindowManagerState,
-    },
-    features::settings::{AppSettings, AppSettingsStorage},
+use crate::core::app::build_container;
+use crate::core::{
+    AppSettingsStorageState, ContainerState, EventEmitterState, WindowLabel, WindowManager,
+    WindowManagerState,
 };
+use crate::features::settings::{AppSettings, AppSettingsStorage};
 
 use super::{
     listeners::setup_listeners, migrations::run_migrations, sqlite::create_pool,
@@ -34,11 +35,11 @@ pub fn initialize_app<R: tauri::Runtime>(app: &mut App<R>) {
 
     register_state(app_handle, location_info.clone(), pool.clone());
 
-    post_initialize(app_handle, location_info, pool);
+    post_initialize(app_handle.clone(), location_info, pool);
 }
 
 fn post_initialize<R: tauri::Runtime>(
-    app_handle: &AppHandle<R>,
+    app_handle: AppHandle<R>,
     location_info: Arc<LocationInfo>,
     pool: SqlitePool,
 ) {
@@ -51,15 +52,23 @@ fn post_initialize<R: tauri::Runtime>(
     let window_manager = window_manager_state.inner().clone();
     let event_emitter = event_emitter_state.inner().clone();
 
+    let core_event_emitter: SharedEventEmitter = event_emitter.clone();
+
     tauri::async_runtime::spawn(async move {
-        if let Err(err) = LazyLocator::init(location_info, event_emitter.clone(), pool).await {
-            panic!("CRITICAL: Failed to initialize LazyLocator: {err}");
-        }
+        let container = build_container(location_info, core_event_emitter, pool)
+            .await
+            .unwrap_or_else(|err| {
+                eprintln!("CRITICAL: Failed to initialize AetherContainer: {err}");
+                std::process::exit(1);
+            });
+
+        app_handle.manage(ContainerState(container));
 
         let main_window_label = WindowLabel::Main;
 
         let app_settings = app_settings_storage.get().await.unwrap_or_else(|err| {
-            panic!("CRITICAL: Failed to get app settings: {err}");
+            eprintln!("CRITICAL: Failed to get app settings: {err}");
+            std::process::exit(1);
         });
 
         window_manager
@@ -70,7 +79,8 @@ fn post_initialize<R: tauri::Runtime>(
             )
             .await
             .unwrap_or_else(|err| {
-                panic!("CRITICAL: Failed to create main window: {err}");
+                eprintln!("CRITICAL: Failed to create main window: {err}");
+                std::process::exit(1);
             });
 
         app_settings_storage

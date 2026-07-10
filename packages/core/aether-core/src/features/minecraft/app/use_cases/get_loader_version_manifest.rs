@@ -1,19 +1,25 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+
 use crate::features::minecraft::{
-    MetadataStorage, ModLoader, app::MinecraftApplicationError, modded,
+    MetadataStorage, ModLoader, app::MinecraftApplicationError,
+    app::ports::GetLoaderVersionManifestUseCasePort, modded,
 };
 
-pub struct GetLoaderVersionManifestUseCase<MS: MetadataStorage> {
-    metadata_storage: Arc<MS>,
+pub struct GetLoaderVersionManifestUseCase {
+    metadata_storage: Arc<dyn MetadataStorage>,
 }
 
-impl<MS: MetadataStorage> GetLoaderVersionManifestUseCase<MS> {
-    pub fn new(metadata_storage: Arc<MS>) -> Self {
+impl GetLoaderVersionManifestUseCase {
+    pub fn new(metadata_storage: Arc<dyn MetadataStorage>) -> Self {
         Self { metadata_storage }
     }
+}
 
-    pub async fn execute(
+#[async_trait]
+impl GetLoaderVersionManifestUseCasePort for GetLoaderVersionManifestUseCase {
+    async fn execute(
         &self,
         loader: ModLoader,
     ) -> Result<modded::Manifest, MinecraftApplicationError> {

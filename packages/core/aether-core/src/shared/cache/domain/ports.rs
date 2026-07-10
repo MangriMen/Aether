@@ -37,5 +37,5 @@ pub trait FileStore: Send + Sync {
 
 #[async_trait]
 pub trait AssetsStorage: Send + Sync {
-    async fn import_file(&self, source: impl AsRef<Path> + Send) -> Result<String, AssetError>;
+    async fn import_file(&self, source: &Path) -> Result<String, AssetError>;
 }

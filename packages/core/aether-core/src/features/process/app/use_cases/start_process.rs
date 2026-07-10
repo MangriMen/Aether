@@ -1,34 +1,37 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use tokio::process::Command;
 
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
-        instance::InstanceStorage,
-        process::{MinecraftProcessMetadata, ProcessError, ProcessStorage},
+        process::{
+            ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStartService,
+            ProcessStorage,
+        },
     },
     shared::io::domain::IoError,
 };
 
-use super::{ManageProcessParams, ManageProcessUseCase};
+use super::ManageProcessParams;
 
-pub struct StartProcessUseCase<PS: ProcessStorage, IS: InstanceStorage> {
+pub struct StartProcessUseCase {
     event_emitter: SharedEventEmitter,
-    process_storage: Arc<PS>,
-    manage_process_use_case: Arc<ManageProcessUseCase<PS, IS>>,
+    process_storage: Arc<dyn ProcessStorage>,
+    manage_process_service: Arc<dyn ManageProcessService>,
 }
 
-impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUseCase<PS, IS> {
+impl StartProcessUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
-        process_storage: Arc<PS>,
-        manage_process_use_case: Arc<ManageProcessUseCase<PS, IS>>,
+        process_storage: Arc<dyn ProcessStorage>,
+        manage_process_service: Arc<dyn ManageProcessService>,
     ) -> Self {
         Self {
             event_emitter,
             process_storage,
-            manage_process_use_case,
+            manage_process_service,
         }
     }
 
@@ -45,12 +48,12 @@ impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUs
             .insert(metadata.clone(), process)
             .await?;
 
-        let manage_process_use_case = self.manage_process_use_case.clone();
+        let manage_process_service = self.manage_process_service.clone();
         let instance_id_clone = instance_id.clone();
         let process_uuid_clone = metadata.uuid();
 
         tokio::spawn(async move {
-            let _ = manage_process_use_case
+            let _ = manage_process_service
                 .execute(ManageProcessParams {
                     process_id: process_uuid_clone,
                     instance_id: instance_id_clone,
@@ -69,5 +72,17 @@ impl<PS: ProcessStorage + 'static, IS: InstanceStorage + 'static> StartProcessUs
             .await;
 
         Ok(metadata)
+    }
+}
+
+#[async_trait]
+impl ProcessStartService for StartProcessUseCase {
+    async fn execute(
+        &self,
+        instance_id: String,
+        command: Command,
+        post_exit_command: String,
+    ) -> Result<MinecraftProcessMetadata, ProcessError> {
+        self.execute(instance_id, command, post_exit_command).await
     }
 }

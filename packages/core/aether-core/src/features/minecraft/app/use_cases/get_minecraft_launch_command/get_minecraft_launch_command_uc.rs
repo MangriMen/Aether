@@ -3,19 +3,21 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use tokio::process::Command;
 
 use crate::{
     features::{
         auth::Credential,
         java::{
-            GetJavaUseCase, InstallJava, InstallJavaUseCase, JavaApplicationError,
-            JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
+            InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
+            JavaQueryService,
         },
         minecraft::{
-            GetVersionManifestUseCase, LaunchSettings, LoaderVersionPreference,
-            LoaderVersionResolver, MetadataStorage, MinecraftApplicationError, MinecraftDownloader,
-            ModLoader, get_compatible_java_version, resolve_minecraft_version, vanilla,
+            LaunchSettings, LoaderVersionPreference, LoaderVersionService,
+            MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
+            ModLoader, VersionManifestService, get_compatible_java_version,
+            resolve_minecraft_version, vanilla,
         },
         settings::LocationInfo,
     },
@@ -37,39 +39,24 @@ pub struct GetMinecraftLaunchCommandParams {
     pub java_path: Option<String>,
 }
 
-pub struct GetMinecraftLaunchCommandUseCase<
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-    get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-    minecraft_downloader: MD,
-    java_installation_service: JIS,
-    get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-    install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
+pub struct GetMinecraftLaunchCommandUseCase {
+    loader_version_resolver: Arc<dyn LoaderVersionService>,
+    get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+    minecraft_downloader: Arc<dyn MinecraftDownloader>,
+    java_installation_service: Arc<dyn JavaInstallationService>,
+    get_java_use_case: Arc<dyn JavaQueryService>,
+    install_java_use_case: Arc<dyn JavaInstallService>,
     location_info: Arc<LocationInfo>,
 }
 
-impl<
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> GetMinecraftLaunchCommandUseCase<MS, MD, JIS, JS, JP, JIT>
-{
+impl GetMinecraftLaunchCommandUseCase {
     pub fn new(
-        loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-        minecraft_downloader: MD,
-        java_installation_service: JIS,
-        get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-        install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
+        loader_version_resolver: Arc<dyn LoaderVersionService>,
+        get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+        minecraft_downloader: Arc<dyn MinecraftDownloader>,
+        java_installation_service: Arc<dyn JavaInstallationService>,
+        get_java_use_case: Arc<dyn JavaQueryService>,
+        install_java_use_case: Arc<dyn JavaInstallService>,
         location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
@@ -212,5 +199,17 @@ impl<
         // options.txt override
 
         Ok(command)
+    }
+}
+
+#[async_trait]
+impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
+    async fn execute(
+        &self,
+        params: GetMinecraftLaunchCommandParams,
+        launch_settings: LaunchSettings,
+        credentials: Credential,
+    ) -> Result<Command, MinecraftApplicationError> {
+        self.execute(params, launch_settings, credentials).await
     }
 }

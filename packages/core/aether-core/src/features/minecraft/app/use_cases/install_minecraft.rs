@@ -1,58 +1,43 @@
 use std::{path::Path, sync::Arc};
 
+use async_trait::async_trait;
 use tracing::debug;
 
 use crate::features::{
     events::ProgressBarId,
     java::{
-        GetJavaUseCase, InstallJava, InstallJavaUseCase, Java, JavaApplicationError,
-        JavaInstallationService, JavaInstallationTracker, JavaStorage, JreProvider,
+        InstallJava, Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
+        JavaQueryService,
     },
     minecraft::{
-        GetVersionManifestUseCase, InstallMinecraftParams, LoaderVersionResolver, MetadataStorage,
-        MinecraftApplicationError, MinecraftDomainError, MinecraftDownloader, ModLoader,
-        ModLoaderProcessor, get_compatible_java_version, resolve_minecraft_version, vanilla,
+        InstallMinecraftParams, LoaderVersionService, MinecraftApplicationError,
+        MinecraftDomainError, MinecraftDownloader, MinecraftInstallService, ModLoader,
+        ModLoaderProcessor, VersionManifestService, get_compatible_java_version,
+        resolve_minecraft_version, vanilla,
     },
 };
 
-pub struct InstallMinecraftUseCase<
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> {
-    loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-    get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-    minecraft_download_service: MD,
-    mod_loader_processor: Arc<MLP>,
-    java_installation_service: JIS,
-    get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-    install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
+pub struct InstallMinecraftUseCase {
+    loader_version_resolver: Arc<dyn LoaderVersionService>,
+    get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+    minecraft_download_service: Arc<dyn MinecraftDownloader>,
+    mod_loader_processor: Arc<dyn ModLoaderProcessor>,
+    java_installation_service: Arc<dyn JavaInstallationService>,
+    get_java_use_case: Arc<dyn JavaQueryService>,
+    install_java_use_case: Arc<dyn JavaInstallService>,
 }
 
-impl<
-    MS: MetadataStorage,
-    MD: MinecraftDownloader,
-    MLP: ModLoaderProcessor,
-    JIS: JavaInstallationService,
-    JS: JavaStorage,
-    JP: JreProvider,
-    JIT: JavaInstallationTracker,
-> InstallMinecraftUseCase<MS, MD, MLP, JIS, JS, JP, JIT>
-{
+impl InstallMinecraftUseCase {
     // TODO: try to decrease arguments count
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        loader_version_resolver: Arc<LoaderVersionResolver<MS>>,
-        get_version_manifest_use_case: Arc<GetVersionManifestUseCase<MS>>,
-        minecraft_download_service: MD,
-        mod_loader_processor: Arc<MLP>,
-        java_installation_service: JIS,
-        get_java_use_case: Arc<GetJavaUseCase<JS, JIS>>,
-        install_java_use_case: Arc<InstallJavaUseCase<JS, JIS, JP, JIT>>,
+        loader_version_resolver: Arc<dyn LoaderVersionService>,
+        get_version_manifest_use_case: Arc<dyn VersionManifestService>,
+        minecraft_download_service: Arc<dyn MinecraftDownloader>,
+        mod_loader_processor: Arc<dyn ModLoaderProcessor>,
+        java_installation_service: Arc<dyn JavaInstallationService>,
+        get_java_use_case: Arc<dyn JavaQueryService>,
+        install_java_use_case: Arc<dyn JavaInstallService>,
     ) -> Self {
         Self {
             loader_version_resolver,
@@ -177,5 +162,17 @@ impl<
         .await?;
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl MinecraftInstallService for InstallMinecraftUseCase {
+    async fn execute(
+        &self,
+        params: InstallMinecraftParams,
+        loading_bar: Option<&ProgressBarId>,
+        force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        self.execute(params, loading_bar, force).await
     }
 }

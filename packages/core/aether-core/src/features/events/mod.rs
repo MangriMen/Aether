@@ -3,8 +3,12 @@ mod domain;
 pub mod infra;
 
 // App-layer exports
+pub use app::EventsFeature;
 pub use app::list_progress_bars::ListProgressBarsUseCase;
-pub use app::ports::{EventEmitter, ProgressBarStorage, ProgressService, SharedEventEmitter};
+pub use app::ports::{
+    EventEmitter, ListProgressBarsUseCasePort, ProgressBarStorage, ProgressService,
+    SharedEventEmitter,
+};
 pub use app::services::ProgressServiceImpl;
 pub use app::stream_utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress};
 

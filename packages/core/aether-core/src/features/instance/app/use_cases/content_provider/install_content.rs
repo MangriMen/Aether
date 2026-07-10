@@ -1,7 +1,9 @@
+use async_trait::async_trait;
 use path_slash::PathBufExt;
 use std::sync::Arc;
 use tracing::error;
 
+use crate::features::instance::app::ports::InstallContentUseCasePort;
 use crate::{
     features::instance::{
         ContentInstallParams, ContentProvider, ContentType, InstanceError, PackFile, PackStorage,
@@ -10,19 +12,16 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-pub struct InstallContentUseCase<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
-{
-    pack_storage: Arc<PS>,
-    provider_registry: Arc<CP>,
+pub struct InstallContentUseCase {
+    pack_storage: Arc<dyn PackStorage>,
+    provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
     content_file_service: Arc<dyn ContentFileService>,
 }
 
-impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
-    InstallContentUseCase<PS, CP>
-{
+impl InstallContentUseCase {
     pub fn new(
-        pack_storage: Arc<PS>,
-        provider_registry: Arc<CP>,
+        pack_storage: Arc<dyn PackStorage>,
+        provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
         content_file_service: Arc<dyn ContentFileService>,
     ) -> Self {
         Self {
@@ -121,5 +120,12 @@ impl<PS: PackStorage, CP: CapabilityRegistry<Arc<dyn ContentProvider>>>
         }
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl InstallContentUseCasePort for InstallContentUseCase {
+    async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
+        self.execute(install_params).await
     }
 }
