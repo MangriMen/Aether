@@ -7,16 +7,19 @@ use async_trait::async_trait;
 use log::{error, info};
 use tokio::fs;
 
-use crate::features::{
-    events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
-    instance::{
-        Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
-        InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
+use crate::{
+    features::{
+        events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
+        instance::{
+            Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
+            InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
+        },
+        minecraft::{
+            LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
+        },
+        settings::LocationInfo,
     },
-    minecraft::{
-        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
-    },
-    settings::LocationInfo,
+    shared::io::infra::create_dir_all,
 };
 
 #[derive(Debug)]
@@ -192,7 +195,16 @@ fn build_instance(
 
 /// Atomically create a unique instance directory by attempting `create_dir`
 /// and retrying with an incrementing suffix on `AlreadyExists`.
+/// Ensures the parent `base_dir` exists first.
 async fn create_unique_dir(base_dir: &Path, base_name: &str) -> (String, PathBuf) {
+    // Ensure the instances root directory exists first
+    if let Err(e) = create_dir_all(base_dir).await {
+        panic!(
+            "Failed to create instances root directory '{}': {e}",
+            base_dir.display()
+        );
+    }
+
     let mut counter = 0u32;
     loop {
         let name = if counter == 0 {
