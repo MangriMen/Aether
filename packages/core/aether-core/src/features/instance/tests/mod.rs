@@ -1,4 +1,5 @@
 mod change_content_state_test;
+mod create_instance_test;
 mod delete_instance_test;
 mod fs_content_file_service_test;
 mod fs_instance_file_service_test;

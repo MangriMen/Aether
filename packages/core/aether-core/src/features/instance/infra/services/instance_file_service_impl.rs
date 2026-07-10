@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
+use tokio::fs;
 
 use crate::{
     features::{
@@ -28,6 +29,40 @@ impl InstanceFileService for FsInstanceFileService {
         create_dir_all(&instance_dir)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))
+    }
+
+    async fn create_unique_instance_dir(
+        &self,
+        base_name: &str,
+    ) -> Result<(String, PathBuf), InstanceError> {
+        let instances_root = self.location_info.instances_dir();
+
+        // Ensure the instances root directory exists first
+        create_dir_all(&instances_root)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+        let mut counter = 0u32;
+        loop {
+            let name = if counter == 0 {
+                base_name.to_owned()
+            } else {
+                format!("{base_name}-{counter}")
+            };
+            let path = instances_root.join(&name);
+            match fs::create_dir(&path).await {
+                Ok(()) => return Ok((name, path)),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                    counter += 1;
+                }
+                Err(e) => {
+                    return Err(InstanceError::Storage(format!(
+                        "Failed to create instance directory '{}': {e}",
+                        path.display()
+                    )));
+                }
+            }
+        }
     }
 
     async fn remove_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {

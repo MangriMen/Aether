@@ -1,25 +1,17 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use log::{error, info};
-use tokio::fs;
 
-use crate::{
-    features::{
-        events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
-        instance::{
-            Instance, InstanceBuilder, InstanceError, InstanceInstallService, InstanceStorage,
-            InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
-        },
-        minecraft::{
-            LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
-        },
-        settings::LocationInfo,
+use crate::features::{
+    events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
+    instance::{
+        Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceInstallService,
+        InstanceStorage, InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
     },
-    shared::io::infra::create_dir_all,
+    minecraft::{
+        LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
+    },
 };
 
 #[derive(Debug)]
@@ -37,7 +29,7 @@ pub struct CreateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
     loader_version_service: Arc<dyn LoaderVersionService>,
     instance_install_service: Arc<dyn InstanceInstallService>,
-    location_info: Arc<LocationInfo>,
+    instance_file_service: Arc<dyn InstanceFileService>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
 }
@@ -47,7 +39,7 @@ impl CreateInstanceUseCase {
         instance_storage: Arc<dyn InstanceStorage>,
         loader_version_service: Arc<dyn LoaderVersionService>,
         instance_install_service: Arc<dyn InstanceInstallService>,
-        location_info: Arc<LocationInfo>,
+        instance_file_service: Arc<dyn InstanceFileService>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<dyn InstanceWatcherService>,
     ) -> Self {
@@ -55,11 +47,12 @@ impl CreateInstanceUseCase {
             instance_storage,
             loader_version_service,
             instance_install_service,
-            location_info,
+            instance_file_service,
             event_emitter,
             instance_watcher_service,
         }
     }
+
     async fn setup_instance(
         &self,
         instance: &Instance,
@@ -92,10 +85,11 @@ impl CreateInstanceUseCase {
         } = new_instance;
 
         let base_sanitized_name = sanitize_instance_name(&name);
-        let instances_root = self.location_info.instances_dir();
 
-        let (sanitized_name, instance_dir) =
-            create_unique_dir(&instances_root, &base_sanitized_name).await;
+        let (sanitized_name, instance_dir) = self
+            .instance_file_service
+            .create_unique_instance_dir(&base_sanitized_name)
+            .await?;
 
         info!(
             "Creating instance \"{}\" at path \"{}\"",
@@ -120,15 +114,16 @@ impl CreateInstanceUseCase {
             None
         };
 
-        let instance = build_instance(
-            &name,
-            &sanitized_name,
-            &game_version,
+        let instance = InstanceBuilder::new(
+            sanitized_name.clone(),
+            name.clone(),
+            game_version.clone(),
             mod_loader,
-            loader_version.as_ref(),
-            icon_path.as_ref(),
-            pack_info.as_ref(),
-        );
+        )
+        .with_loader_version(loader_version)
+        .with_icon(icon_path)
+        .with_pack_info(pack_info)
+        .build();
 
         let result = self.setup_instance(&instance, skip_install_instance).await;
 
@@ -155,7 +150,11 @@ impl CreateInstanceUseCase {
             if let Err(remove_err) = self.instance_storage.remove(instance.id()).await {
                 error!("Failed to remove instance during rollback: {remove_err}");
             }
-            if let Err(rmdir_err) = fs::remove_dir_all(&instance_dir).await {
+            if let Err(rmdir_err) = self
+                .instance_file_service
+                .remove_instance_dir(instance.id())
+                .await
+            {
                 error!("Failed to remove instance directory during rollback: {rmdir_err}");
             }
         }
@@ -169,62 +168,6 @@ impl CreateInstanceUseCase {
         }
 
         result
-    }
-}
-
-fn build_instance(
-    name: &str,
-    sanitized_name: &str,
-    game_version: &str,
-    mod_loader: ModLoader,
-    loader_version: Option<&LoaderVersionPreference>,
-    icon_path: Option<&String>,
-    pack_info: Option<&PackInfo>,
-) -> Instance {
-    InstanceBuilder::new(
-        sanitized_name.to_owned(),
-        name.to_owned(),
-        game_version.to_owned(),
-        mod_loader,
-    )
-    .with_loader_version(loader_version.cloned())
-    .with_icon(icon_path.cloned())
-    .with_pack_info(pack_info.cloned())
-    .build()
-}
-
-/// Atomically create a unique instance directory by attempting `create_dir`
-/// and retrying with an incrementing suffix on `AlreadyExists`.
-/// Ensures the parent `base_dir` exists first.
-async fn create_unique_dir(base_dir: &Path, base_name: &str) -> (String, PathBuf) {
-    // Ensure the instances root directory exists first
-    if let Err(e) = create_dir_all(base_dir).await {
-        panic!(
-            "Failed to create instances root directory '{}': {e}",
-            base_dir.display()
-        );
-    }
-
-    let mut counter = 0u32;
-    loop {
-        let name = if counter == 0 {
-            base_name.to_owned()
-        } else {
-            format!("{base_name}-{counter}")
-        };
-        let path = base_dir.join(&name);
-        match fs::create_dir(&path).await {
-            Ok(()) => return (name, path),
-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                counter += 1;
-            }
-            Err(e) => {
-                panic!(
-                    "Failed to create instance directory '{}': {e}",
-                    path.display()
-                );
-            }
-        }
     }
 }
 
