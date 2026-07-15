@@ -157,7 +157,7 @@ fn create_test_instance(id: &str) -> Instance {
 /// Count rows in a table (runtime query, no compile-time check).
 async fn count_rows(pool: &SqlitePool, table: &str) -> i64 {
     let query = format!("SELECT COUNT(*) as cnt FROM {table}");
-    sqlx::query_scalar::<_, i64>(&query)
+    sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(query))
         .fetch_one(pool)
         .await
         .unwrap_or(0)
@@ -166,7 +166,7 @@ async fn count_rows(pool: &SqlitePool, table: &str) -> i64 {
 /// Count rows in a table filtered by `instance_id`.
 async fn count_rows_for_instance(pool: &SqlitePool, table: &str, instance_id: &str) -> i64 {
     let query = format!("SELECT COUNT(*) as cnt FROM {table} WHERE instance_id = ?1");
-    sqlx::query_scalar::<_, i64>(&query)
+    sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(query))
         .bind(instance_id)
         .fetch_one(pool)
         .await

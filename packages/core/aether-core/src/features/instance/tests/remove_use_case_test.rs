@@ -214,7 +214,7 @@ async fn test_remove_use_case_cleans_everything() {
         "pack_file_updates",
     ] {
         let query = format!("SELECT COUNT(*) as cnt FROM {table}");
-        let count: i64 = sqlx::query_scalar(&query)
+        let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(query))
             .fetch_one(&pool)
             .await
             .unwrap_or(0);

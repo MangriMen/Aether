@@ -17,11 +17,12 @@
     "aether:bump": "bun --filter @aether/frontend run bump",
     "build": "turbo run build --continue",
     "clean": "turbo run clean && bun x rimraf .turbo && cargo clean",
+    "db:setup": "bun run scripts/db-setup.mjs",
     "desktop:build": "turbo run build --filter=@aether/desktop",
     "desktop:dev": "turbo run dev --filter=@aether/desktop",
     "frontend:build": "turbo run build --filter=@aether/frontend",
     "frontend:dev": "turbo run dev --filter=@aether/frontend",
-    "lint": "turbo run lintt --continue",
+    "lint": "turbo run lint --continue",
     "prepare": "lefthook install"
   },
   "devDependencies": {

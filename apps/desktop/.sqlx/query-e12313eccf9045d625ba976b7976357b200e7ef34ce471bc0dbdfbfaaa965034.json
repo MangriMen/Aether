@@ -6,7 +6,13 @@
       {
         "name": "plugin_id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "enabled_plugins",
+            "name": "plugin_id"
+          }
+        }
       }
     ],
     "parameters": {
