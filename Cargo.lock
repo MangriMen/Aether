@@ -94,7 +94,6 @@ dependencies = [
  "regex",
  "reqwest",
  "reqwest-middleware",
- "reqwest-retry",
  "rust_arkitect",
  "semver",
  "serde",

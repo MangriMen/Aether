@@ -28,22 +28,22 @@ register-schema = { path = "packages/core/register-schema" }
 register-schema-derive = { path = "packages/core/register-schema-derive" }
 
 # Error Handling & Logging
-anyhow = "1"
-log = "0.4"
-thiserror = "2"
+anyhow = "1.0.103"
+log = "0.4.33"
+thiserror = "2.0.18"
 
 # Serialization & Data
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4.45", features = ["serde"] }
 schemars = "1.2.1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-serde_with = "3.18.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+serde_with = "3.21.0"
 sqlx = { version = "0.9.0", default-features = false }
-uuid = { version = "1.10", features = ["serde", "v4"] }
+uuid = { version = "1.23.5", features = ["serde", "v4"] }
 
 # Async & Runtime
 async-trait = "0.1.89"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.52.3", features = ["full"] }
 
 # Tauri & Frontend Bridge
 specta = { version = "=2.0.0-rc.25", features = [
@@ -53,11 +53,15 @@ specta = { version = "=2.0.0-rc.25", features = [
     "semver",
 ] }
 specta-typescript = "0.0.12"
-tauri = { version = "2", features = ["protocol-asset", "tray-icon", "test"] }
+tauri = { version = "2.11.5", features = [
+    "protocol-asset",
+    "tray-icon",
+    "test",
+] }
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # Utilities
-semver = "1.0"
+semver = "1.0.28"
 
 [profile.release]
 opt-level = 3       # Maximize runtime performance

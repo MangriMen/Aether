@@ -22,13 +22,13 @@
     "desktop:dev": "turbo run dev --filter=@aether/desktop",
     "frontend:build": "turbo run build --filter=@aether/frontend",
     "frontend:dev": "turbo run dev --filter=@aether/frontend",
-    "lint": "turbo run lint --continue",
+    "lint": "turbo run lintt --continue",
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260702.3",
-    "lefthook": "^2.1.9",
-    "turbo": "latest",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "lefthook": "^2.1.10",
+    "turbo": "^2.10.5",
     "typescript": "^6.0.3"
   },
   "packageManager": "bun@1.3.11",
