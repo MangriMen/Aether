@@ -22,7 +22,7 @@
     "desktop:dev": "turbo run dev --filter=@aether/desktop",
     "frontend:build": "turbo run build --filter=@aether/frontend",
     "frontend:dev": "turbo run dev --filter=@aether/frontend",
-    "lint": "turbo run lint --continue",
+    "lint": "turbo run lintt --continue",
     "prepare": "lefthook install"
   },
   "devDependencies": {
