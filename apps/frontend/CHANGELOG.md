@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Instance Action Button:** Fixed the action button being completely invisible during loading state on the home page — now stays visible with 90% opacity when disabled.
+
 ## [0.10.5] - 2026-07-04
 
 ### Fixed

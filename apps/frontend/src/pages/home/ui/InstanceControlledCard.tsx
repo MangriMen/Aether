@@ -106,7 +106,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
             transition-[bottom,opacity]
             group-hover:bottom-1/4 group-hover:opacity-100
             focus-within:bottom-1/4 focus-within:opacity-100
-            disabled:opacity-0
+            disabled:opacity-90
           '
           instance={props.instance}
         />
