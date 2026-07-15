@@ -168,4 +168,4 @@ target/
 lefthook-local.yml
 
 # Database
-aether.db
+scripts/db/aether.db

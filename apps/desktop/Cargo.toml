@@ -55,7 +55,7 @@ serde_json.workspace = true
 serde_with.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
-sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono"] }
+sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono", "sqlx-toml"] }
 tauri-specta.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -66,11 +66,11 @@ mime_guess = "2.0.5"
 open = { version = "5", features = ["shellexecute-on-windows"] }
 percent-encoding = "2.3.2"
 reqwest = { version = "0.13.2", features = [
-  "json",
-  "stream",
-  "deflate",
-  "gzip",
-  "brotli",
+    "json",
+    "stream",
+    "deflate",
+    "gzip",
+    "brotli",
 ] }
 reqwest-middleware = "0.5.1"
 reqwest-retry = "0.9.1"

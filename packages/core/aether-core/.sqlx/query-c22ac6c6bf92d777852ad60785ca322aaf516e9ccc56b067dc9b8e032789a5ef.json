@@ -6,157 +6,343 @@
       {
         "name": "id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "id"
+          }
+        }
       },
       {
         "name": "name",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "name"
+          }
+        }
       },
       {
         "name": "icon_path",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "icon_path"
+          }
+        }
       },
       {
         "name": "install_stage",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "install_stage"
+          }
+        }
       },
       {
         "name": "game_version",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "game_version"
+          }
+        }
       },
       {
         "name": "loader",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "loader"
+          }
+        }
       },
       {
         "name": "loader_version_json",
         "ordinal": 6,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "loader_version_json"
+          }
+        }
       },
       {
         "name": "override_java_path",
         "ordinal": 7,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_java_path"
+          }
+        }
       },
       {
         "name": "java_path",
         "ordinal": 8,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "java_path"
+          }
+        }
       },
       {
         "name": "override_launch_args",
         "ordinal": 9,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_launch_args"
+          }
+        }
       },
       {
         "name": "launch_args_json",
         "ordinal": 10,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "launch_args_json"
+          }
+        }
       },
       {
         "name": "override_env_vars",
         "ordinal": 11,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_env_vars"
+          }
+        }
       },
       {
         "name": "env_vars_json",
         "ordinal": 12,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "env_vars_json"
+          }
+        }
       },
       {
         "name": "override_memory",
         "ordinal": 13,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_memory"
+          }
+        }
       },
       {
         "name": "memory_maximum",
         "ordinal": 14,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "memory_maximum"
+          }
+        }
       },
       {
         "name": "override_window_settings",
         "ordinal": 15,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_window_settings"
+          }
+        }
       },
       {
         "name": "force_fullscreen",
         "ordinal": 16,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "force_fullscreen"
+          }
+        }
       },
       {
         "name": "window_width",
         "ordinal": 17,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "window_width"
+          }
+        }
       },
       {
         "name": "window_height",
         "ordinal": 18,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "window_height"
+          }
+        }
       },
       {
         "name": "created_at: chrono::DateTime<chrono::Utc>",
         "ordinal": 19,
-        "type_info": "Datetime"
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "created_at"
+          }
+        }
       },
       {
         "name": "modified_at: chrono::DateTime<chrono::Utc>",
         "ordinal": 20,
-        "type_info": "Datetime"
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "modified_at"
+          }
+        }
       },
       {
         "name": "last_played_at?: chrono::DateTime<chrono::Utc>",
         "ordinal": 21,
-        "type_info": "Datetime"
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "last_played_at"
+          }
+        }
       },
       {
         "name": "time_played",
         "ordinal": 22,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "time_played"
+          }
+        }
       },
       {
         "name": "recent_time_played",
         "ordinal": 23,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "recent_time_played"
+          }
+        }
       },
       {
         "name": "override_hooks",
         "ordinal": 24,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "override_hooks"
+          }
+        }
       },
       {
         "name": "hook_pre_launch",
         "ordinal": 25,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "hook_pre_launch"
+          }
+        }
       },
       {
         "name": "hook_wrapper",
         "ordinal": 26,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "hook_wrapper"
+          }
+        }
       },
       {
         "name": "hook_post_exit",
         "ordinal": 27,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instances",
+            "name": "hook_post_exit"
+          }
+        }
       },
       {
         "name": "pack_provider_id?",
         "ordinal": 28,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_pack_info",
+            "name": "provider_id"
+          }
+        }
       },
       {
         "name": "pack_modpack_id?",
         "ordinal": 29,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_pack_info",
+            "name": "modpack_id"
+          }
+        }
       },
       {
         "name": "pack_version_id?",
         "ordinal": 30,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_pack_info",
+            "name": "version_id"
+          }
+        }
       }
     ],
     "parameters": {

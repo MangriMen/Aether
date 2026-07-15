@@ -6,47 +6,101 @@
       {
         "name": "launch_args_json",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "launch_args_json"
+          }
+        }
       },
       {
         "name": "env_vars_json",
         "ordinal": 1,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "env_vars_json"
+          }
+        }
       },
       {
         "name": "max_memory",
         "ordinal": 2,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "max_memory"
+          }
+        }
       },
       {
         "name": "force_fullscreen",
         "ordinal": 3,
-        "type_info": "Bool"
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "force_fullscreen"
+          }
+        }
       },
       {
         "name": "window_width",
         "ordinal": 4,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "window_width"
+          }
+        }
       },
       {
         "name": "window_height",
         "ordinal": 5,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "window_height"
+          }
+        }
       },
       {
         "name": "hook_pre_launch",
         "ordinal": 6,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "hook_pre_launch"
+          }
+        }
       },
       {
         "name": "hook_wrapper",
         "ordinal": 7,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "hook_wrapper"
+          }
+        }
       },
       {
         "name": "hook_post_exit",
         "ordinal": 8,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "default_instance_settings",
+            "name": "hook_post_exit"
+          }
+        }
       }
     ],
     "parameters": {

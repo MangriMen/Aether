@@ -81,13 +81,6 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
-      - name: collect migration files
-        shell: bash
-        run: |
-          mkdir -p apps/desktop/migrations_links
-          cp apps/desktop/migrations/*.sql apps/desktop/migrations_links/
-          cp packages/core/aether-core/migrations/*.sql apps/desktop/migrations_links/
-
       - name: build and publish tauri app
         if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
         uses: tauri-apps/tauri-action@v0
