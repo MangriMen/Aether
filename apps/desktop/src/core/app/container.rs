@@ -12,12 +12,10 @@ use aether_core::features::events::{EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
     EventEmittingInstanceStorage, FsContentFileService, FsInstanceFileService,
-    InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
+    InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider, ModrinthPackManager,
     SqliteInstanceStorage, SqlitePackStorage,
 };
-use aether_core::features::instance::{
-    ContentProvider, GetInstanceUseCase, InstanceCrudPort, PackManager,
-};
+use aether_core::features::instance::{ContentProvider, GetInstanceUseCase, PackManager};
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
 };
@@ -331,7 +329,6 @@ pub async fn build_container(
             location_info.clone(),
             None,
             http_client.clone(),
-            container.create_instance_use_case(),
         ));
         let meta = provider.metadata();
         let _ = content_provider_registry
@@ -339,6 +336,23 @@ pub async fn build_container(
                 ModrinthContentProvider::ID.to_owned(),
                 meta.id.clone(),
                 provider,
+            )
+            .await;
+    }
+
+    // Register ModrinthPackManager
+    {
+        let manager = Arc::new(ModrinthPackManager::new(
+            location_info.clone(),
+            None,
+            http_client.clone(),
+        ));
+        let meta = manager.metadata();
+        let _ = pack_manager_registry
+            .add(
+                ModrinthPackManager::ID.to_owned(),
+                meta.base.id.clone(),
+                manager,
             )
             .await;
     }

@@ -4,11 +4,10 @@ use std::sync::Arc;
 use tracing::error;
 
 use crate::features::instance::app::ports::InstallContentUseCasePort;
-use crate::features::instance::domain::InstanceInstallStage;
 use crate::{
     features::instance::{
-        ContentInstallParams, ContentProvider, ContentType, InstanceError, InstanceStorage,
-        InstanceStorageExt, PackFile, PackStorage, app::ContentFileService,
+        AtomicInstallParams, ContentProvider, ContentType, InstanceError, PackStorage,
+        app::ContentFileService,
     },
     shared::capability::domain::CapabilityRegistry,
 };
@@ -17,7 +16,6 @@ pub struct InstallContentUseCase {
     pack_storage: Arc<dyn PackStorage>,
     provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
     content_file_service: Arc<dyn ContentFileService>,
-    instance_storage: Arc<dyn InstanceStorage>,
 }
 
 impl InstallContentUseCase {
@@ -25,18 +23,22 @@ impl InstallContentUseCase {
         pack_storage: Arc<dyn PackStorage>,
         provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
         content_file_service: Arc<dyn ContentFileService>,
-        instance_storage: Arc<dyn InstanceStorage>,
     ) -> Self {
         Self {
             pack_storage,
             provider_registry,
             content_file_service,
-            instance_storage,
         }
     }
 
-    pub async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
-        let provider_id = install_params.provider().to_owned();
+    pub async fn execute(&self, params: AtomicInstallParams) -> Result<(), InstanceError> {
+        if params.content_type == ContentType::Modpack {
+            return Err(InstanceError::UnsupportedContentType {
+                content_type: params.content_type,
+            });
+        }
+
+        let provider_id = params.provider_id.clone();
 
         let provider = self
             .provider_registry
@@ -47,88 +49,46 @@ impl InstallContentUseCase {
                 capability_id: provider_id.capability_id.clone(),
             })?;
 
-        match install_params {
-            ContentInstallParams::Atomic(params) => {
-                if params.content_type == ContentType::Modpack {
-                    return Err(InstanceError::UnsupportedContentType {
-                        content_type: params.content_type,
-                    });
-                }
+        let old_file = self
+            .pack_storage
+            .find_by_provider_id(&params.instance_id, &params.provider_id, &params.content_id)
+            .await?;
 
-                let old_file = self
-                    .pack_storage
-                    .find_by_provider_id(
+        let instance_file = provider.capability.install_atomic(&params).await?;
+
+        let install_result = async {
+            if let Some(old_file) = old_file {
+                self.pack_storage
+                    .remove_pack_file(
                         &params.instance_id,
-                        &params.provider_id,
-                        &params.content_id,
+                        &params
+                            .content_type
+                            .get_relative_path(&old_file.file_name)
+                            .to_slash_lossy(),
                     )
                     .await?;
-
-                let instance_file = provider.capability.install_atomic(&params).await?;
-
-                let install_result = async {
-                    if let Some(old_file) = old_file {
-                        self.pack_storage
-                            .remove_pack_file(
-                                &params.instance_id,
-                                &params
-                                    .content_type
-                                    .get_relative_path(&old_file.file_name)
-                                    .to_slash_lossy(),
-                            )
-                            .await?;
-                    }
-
-                    let content_path = instance_file.metadata.content_path.clone();
-
-                    self.content_file_service
-                        .install_content_file(
-                            &params.instance_id,
-                            &content_path,
-                            &instance_file.temp_path,
-                        )
-                        .await?;
-
-                    self.pack_storage
-                        .update_pack_file(
-                            &params.instance_id,
-                            &content_path,
-                            &instance_file.metadata.into(),
-                        )
-                        .await?;
-
-                    Ok::<(), InstanceError>(())
-                }
-                .await;
-
-                if install_result.is_err() {
-                    error!("Failed to install content: {:?}", install_result);
-                }
             }
-            ContentInstallParams::Modpack(params) => {
-                let (instance_id, processed_files) =
-                    provider.capability.install_modpack(&params).await?;
 
-                let content_files: Vec<PackFile> =
-                    processed_files.iter().cloned().map(Into::into).collect();
+            let content_path = instance_file.metadata.content_path.clone();
 
-                let paths: Vec<String> = processed_files
-                    .iter()
-                    .map(|f| f.content_path.clone())
-                    .collect();
+            self.content_file_service
+                .install_content_file(&params.instance_id, &content_path, &instance_file.temp_path)
+                .await?;
 
-                self.pack_storage
-                    .update_pack_file_many(&instance_id, &paths, &content_files)
-                    .await?;
+            self.pack_storage
+                .update_pack_file(
+                    &params.instance_id,
+                    &content_path,
+                    &instance_file.metadata.into(),
+                )
+                .await?;
 
-                // Modpack content fully installed — mark instance as Installed
-                self.instance_storage
-                    .upsert_with(&instance_id, |instance| {
-                        instance.install_stage = InstanceInstallStage::Installed;
-                        Ok(())
-                    })
-                    .await?;
-            }
+            Ok::<(), InstanceError>(())
+        }
+        .await;
+
+        if install_result.is_err() {
+            error!("Failed to install content: {:?}", install_result);
         }
 
         Ok(())
@@ -137,7 +97,7 @@ impl InstallContentUseCase {
 
 #[async_trait]
 impl InstallContentUseCasePort for InstallContentUseCase {
-    async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
-        self.execute(install_params).await
+    async fn execute(&self, params: AtomicInstallParams) -> Result<(), InstanceError> {
+        self.execute(params).await
     }
 }

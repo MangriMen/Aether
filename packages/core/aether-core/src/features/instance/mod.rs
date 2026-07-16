@@ -8,14 +8,14 @@ mod tests;
 // ── Domain models (pure data containers) ──
 pub use domain::{
     AtomicInstallParams, BaseContentParams, CapabilityMetadata, ContentFile, ContentFileUpdateInfo,
-    ContentInstallParams, ContentItem, ContentProviderCapabilityMetadata, ContentSearchParams,
-    ContentSearchResult, ContentType, ContentVersion, ContentVersionDependency,
-    ContentVersionDependencyType, ContentVersionStatus, ContentVersionType,
-    CreateContentFileParams, DownloadContext, DownloadedContent, Instance, InstanceBuilder,
-    InstanceError, InstanceField, InstanceInstallStage, InstanceSnapshot,
-    InstanceValidationErrorReason, ModpackInstallParams, Pack, PackEntry, PackFile,
-    PackFileDownload, PackFileOption, PackInfo, PackInstallParams, PackManagerCapabilityMetadata,
-    PackMetadata, PackSource, ProviderId, RequestedContentVersionStatus, UpdateStatus,
+    ContentItem, ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+    ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
+    ContentVersionStatus, ContentVersionType, CreateContentFileParams, DownloadContext,
+    DownloadedContent, Instance, InstanceBuilder, InstanceError, InstanceField,
+    InstanceInstallStage, InstanceSnapshot, InstanceValidationErrorReason, Pack, PackEntry,
+    PackFile, PackFileDownload, PackFileOption, PackInfo, PackInstallParams,
+    PackManagerCapabilityMetadata, PackMetadata, PackSource, ProviderId,
+    RequestedContentVersionStatus, UpdateStatus,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

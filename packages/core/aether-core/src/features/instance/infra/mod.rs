@@ -5,7 +5,7 @@ mod instance_event_handler;
 mod services;
 mod sqlite;
 
-pub use content_providers::ModrinthContentProvider;
+pub use content_providers::{ModrinthContentProvider, ModrinthPackManager};
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
 pub use fs::{FsInstanceStorage, FsPackStorage};
 pub use instance_event_handler::InstanceEventHandler;

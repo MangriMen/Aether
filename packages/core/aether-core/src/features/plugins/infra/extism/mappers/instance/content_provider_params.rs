@@ -1,11 +1,11 @@
 use aether_core_plugin_api::v0::{
     AtomicInstallParamsDto, BaseContentParamsDto, ContentSearchParamsDto, ContentSearchResultDto,
-    DownloadedContentDto, ModLoaderDto, ModpackInstallParamsDto,
+    DownloadedContentDto, ModLoaderDto,
 };
 
 use crate::features::instance::{
     AtomicInstallParams, BaseContentParams, ContentSearchParams, ContentSearchResult,
-    DownloadedContent, ModpackInstallParams,
+    DownloadedContent,
 };
 
 impl From<ContentSearchParams> for ContentSearchParamsDto {
@@ -52,14 +52,6 @@ impl From<AtomicInstallParams> for AtomicInstallParamsDto {
             game_version: value.game_version,
             loader: value.loader,
             content_type: value.content_type.into(),
-        }
-    }
-}
-
-impl From<ModpackInstallParams> for ModpackInstallParamsDto {
-    fn from(value: ModpackInstallParams) -> Self {
-        Self {
-            base: value.base.into(),
         }
     }
 }

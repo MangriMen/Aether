@@ -136,34 +136,6 @@ impl Deref for AtomicInstallParams {
 }
 
 #[derive(Clone, Debug)]
-pub struct ModpackInstallParams {
-    pub base: BaseContentParams,
-}
-
-impl Deref for ModpackInstallParams {
-    type Target = BaseContentParams;
-
-    fn deref(&self) -> &Self::Target {
-        &self.base
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum ContentInstallParams {
-    Atomic(AtomicInstallParams),
-    Modpack(ModpackInstallParams),
-}
-
-impl ContentInstallParams {
-    pub fn provider(&self) -> &ProviderId {
-        match self {
-            Self::Atomic(p) => &p.base.provider_id,
-            Self::Modpack(p) => &p.base.provider_id,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct ContentItem {
     pub id: String,
     pub slug: String,

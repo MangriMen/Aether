@@ -270,6 +270,7 @@ pub struct Hashes {
 
 // --- Modpack Index (mrpack) ---
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModrinthIndex {
@@ -282,6 +283,7 @@ pub struct ModrinthIndex {
     pub dependencies: ModrinthDependencies,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModrinthIndexFile {
@@ -292,6 +294,7 @@ pub struct ModrinthIndexFile {
     pub file_size: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModrinthDependencies {
@@ -300,6 +303,7 @@ pub struct ModrinthDependencies {
     pub loaders: HashMap<String, String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModrinthEnv {

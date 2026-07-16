@@ -18,8 +18,8 @@ use crate::{
     core::ContainerState,
     features::{
         instance::infra::{
-            CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
-            ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
+            AtomicInstallParamsDto, CapabilityEntryDto, ContentCompatibilityCheckParamsDto,
+            ContentCompatibilityResultDto, ContentFileDto, ContentGetParamsDto, ContentItemDto,
             ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
             ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
             EditInstanceDto, EditInstanceIconDto, InstallPackRequestDto, InstanceDto,
@@ -281,7 +281,7 @@ async fn list_content(
 #[tauri::command]
 #[specta::specta]
 async fn install_content(
-    payload: ContentInstallParamsDto,
+    payload: AtomicInstallParamsDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,

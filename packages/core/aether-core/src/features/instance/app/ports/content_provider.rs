@@ -6,9 +6,8 @@ use crate::features::instance::app::dtos::{
     ContentCompatibilityCheckParams, ContentCompatibilityResult,
 };
 use crate::features::instance::domain::{
-    AtomicInstallParams, ContentFile, ContentItem, ContentProviderCapabilityMetadata,
-    ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
-    InstanceError, ModpackInstallParams,
+    AtomicInstallParams, ContentItem, ContentProviderCapabilityMetadata, ContentSearchParams,
+    ContentSearchResult, ContentVersion, DownloadedContent, Instance, InstanceError,
 };
 
 #[async_trait]
@@ -29,11 +28,6 @@ pub trait ContentProvider: Send + Sync {
         &self,
         install_params: &AtomicInstallParams,
     ) -> Result<DownloadedContent, InstanceError>;
-
-    async fn install_modpack(
-        &self,
-        install_params: &ModpackInstallParams,
-    ) -> Result<(String, Vec<ContentFile>), InstanceError>;
 
     async fn check_compatibility(
         &self,

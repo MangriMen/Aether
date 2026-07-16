@@ -9,10 +9,10 @@ use crate::features::instance::app::{
     InstallPackRequest, NewInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
-    ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion, Instance,
-    InstanceError, PackManagerCapabilityMetadata,
+    AtomicInstallParams, ContentFile, ContentItem, ContentProviderCapabilityMetadata,
+    ContentVersion, Instance, InstanceError, PackManagerCapabilityMetadata,
 };
-use crate::features::instance::{ContentInstallParams, ContentSearchParams, ContentSearchResult};
+use crate::features::instance::{ContentSearchParams, ContentSearchResult};
 use crate::features::process::MinecraftProcessMetadata;
 use crate::shared::capability::domain::CapabilityEntry;
 
@@ -115,7 +115,7 @@ pub trait GetContentUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait InstallContentUseCasePort: Send + Sync {
-    async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError>;
+    async fn execute(&self, install_params: AtomicInstallParams) -> Result<(), InstanceError>;
 }
 
 #[async_trait]

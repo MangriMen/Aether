@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use aether_core::features::instance::{
-    AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem, ContentSearchParams,
-    ContentSearchResult, ModpackInstallParams, ProviderId,
+    AtomicInstallParams, BaseContentParams, ContentItem, ContentSearchParams, ContentSearchResult,
+    ProviderId,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -121,20 +121,6 @@ pub struct AtomicInstallParamsDto {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
 #[serde(rename_all = "camelCase")]
-pub struct ModpackInstallParamsDto {
-    #[serde(flatten)]
-    pub base: BaseContentParamsDto,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Type)]
-#[serde(tag = "type", content = "data", rename_all = "camelCase")]
-pub enum ContentInstallParamsDto {
-    Atomic(AtomicInstallParamsDto),
-    Modpack(ModpackInstallParamsDto),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Type)]
-#[serde(rename_all = "camelCase")]
 pub struct ContentItemDto {
     pub id: String,
     pub slug: String,
@@ -210,23 +196,6 @@ impl From<AtomicInstallParamsDto> for AtomicInstallParams {
             game_version: value.game_version,
             loader: value.loader,
             content_type: value.content_type.into(),
-        }
-    }
-}
-
-impl From<ModpackInstallParamsDto> for ModpackInstallParams {
-    fn from(value: ModpackInstallParamsDto) -> Self {
-        Self {
-            base: value.base.into(),
-        }
-    }
-}
-
-impl From<ContentInstallParamsDto> for ContentInstallParams {
-    fn from(value: ContentInstallParamsDto) -> Self {
-        match value {
-            ContentInstallParamsDto::Atomic(x) => Self::Atomic(x.into()),
-            ContentInstallParamsDto::Modpack(x) => Self::Modpack(x.into()),
         }
     }
 }

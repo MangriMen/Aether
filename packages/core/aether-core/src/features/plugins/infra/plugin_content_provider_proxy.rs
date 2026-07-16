@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use aether_core_plugin_api::v0::{
     AtomicInstallParamsDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
-    DownloadedContentDto, ModpackInstallParamsDto, PluginCheckCompatibilityParamsDto,
+    DownloadedContentDto, PluginCheckCompatibilityParamsDto,
 };
 use async_trait::async_trait;
 use extism_convert::Msgpack;
@@ -12,9 +12,8 @@ use tokio::sync::Mutex;
 use crate::features::{
     instance::{
         AtomicInstallParams, ContentCompatibilityCheckParams, ContentCompatibilityResult,
-        ContentFile, ContentItem, ContentProvider, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, ContentVersion, DownloadedContent, Instance,
-        InstanceError, ModpackInstallParams,
+        ContentItem, ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+        ContentSearchResult, ContentVersion, DownloadedContent, Instance, InstanceError,
     },
     plugins::{PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginInstance},
 };
@@ -171,18 +170,6 @@ impl ContentProvider for PluginContentProviderProxy {
             metadata: result_dto.metadata.into(),
             temp_path: result_dto.temp_path,
         })
-    }
-
-    async fn install_modpack(
-        &self,
-        install_params: &ModpackInstallParams,
-    ) -> Result<(String, Vec<ContentFile>), InstanceError> {
-        let dto: ModpackInstallParamsDto = install_params.clone().into();
-        let result_dto: (String, Vec<aether_core_plugin_api::v0::ContentFileDto>) = self
-            .call_optional(self.capability.handlers.install_modpack.as_ref(), dto)
-            .await?;
-        let files: Vec<ContentFile> = result_dto.1.into_iter().map(Into::into).collect();
-        Ok((result_dto.0, files))
     }
 
     async fn check_compatibility(

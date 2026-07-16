@@ -656,7 +656,6 @@ impl ContentProviderPort for AetherContainer {
             self.storage().pack_storage.clone(),
             self.content_provider_registry().clone(),
             self.storage().content_file_service.clone(),
-            self.storage().instance_storage.clone(),
         ))
     }
     fn check_content_compatibility_use_case(
