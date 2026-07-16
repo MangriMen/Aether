@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PluginPackManagerCapabilityDto",
+  "type": "object",
+  "properties": {
+    "description": {
+      "description": "Optional detailed description of what this capability does.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fieldLabel": {
+      "description": "Optional field label shown in the pack manager UI.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "handlers": {
+      "description": "Set of functions provided by the plugin to handle pack operations.",
+      "$ref": "#/$defs/PackManagerHandlersDto"
+    },
+    "icon": {
+      "description": "Optional icon file name or URL for the UI.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "id": {
+      "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
+      "type": "string",
+      "pattern": "^[a-z0-9_\\-]+$"
+    },
+    "name": {
+      "description": "Display name of the capability.",
+      "type": "string"
+    },
+    "supportedExtensions": {
+      "description": "List of supported file extensions, e.g., [`zip`, `mrpack`].",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "supportsCheckUpdates": {
+      "description": "Whether this manager supports checking for updates.",
+      "type": "boolean"
+    },
+    "supportsInstall": {
+      "description": "Whether this manager supports installing packs.",
+      "type": "boolean"
+    },
+    "supportsUpdate": {
+      "description": "Whether this manager supports updating packs.",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "supportsInstall",
+    "supportsUpdate",
+    "supportsCheckUpdates",
+    "supportedExtensions",
+    "handlers"
+  ],
+  "$defs": {
+    "PackManagerHandlersDto": {
+      "description": "Names of plugin functions that implement specific pack manager logic.",
+      "type": "object",
+      "properties": {
+        "checkUpdates": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "install": {
+          "type": "string"
+        },
+        "update": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "install"
+      ]
+    }
+  }
+}

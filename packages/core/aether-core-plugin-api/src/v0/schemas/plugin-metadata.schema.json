@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PluginMetadataDto",
+  "type": "object",
+  "properties": {
+    "authors": {
+      "description": "List of plugin authors.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "description": "Short summary of the plugin's purpose.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "id": {
+      "description": "Unique identifier for the plugin (lowercase, kebab-case).",
+      "type": "string",
+      "pattern": "^[a-z0-9_\\-]+$"
+    },
+    "license": {
+      "description": "License under which the plugin is distributed.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "Readable name of the plugin.",
+      "type": "string"
+    },
+    "version": {
+      "description": "Semantic version of the plugin.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version"
+  ]
+}

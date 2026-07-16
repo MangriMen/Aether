@@ -43,8 +43,6 @@ macro_rules! instance_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             create,
-            import,
-            list_importers,
             list,
             get,
             get_dir,
@@ -61,11 +59,13 @@ macro_rules! instance_commands {
             disable_contents,
             remove_contents,
             list_content_providers,
+            list_pack_managers,
             search_content,
             check_compatibility,
             get_content,
             list_content_version,
-            edit_icon
+            edit_icon,
+            install_pack
         ]
     };
 }

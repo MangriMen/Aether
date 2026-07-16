@@ -22,11 +22,11 @@ pub use check_plugin_updates::CheckForPluginUpdatesUseCase;
 pub use di::PluginsFeature;
 pub use disable_plugin::DisablePluginUseCase;
 pub use dtos::{
-    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto,
-    ImporterCapabilityMetadataDto, LoadConfigDto, LoadConfigTypeDto, PathMappingDto,
+    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, LoadConfigDto,
+    LoadConfigTypeDto, PackManagerCapabilityMetadataDto, PackManagerHandlersDto, PathMappingDto,
     PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto, PluginDtoState,
-    PluginImporterCapabilityDto, PluginManifestDto, PluginMetadataDto, PluginUpdaterCapabilityDto,
-    ProviderHandlersDto, RuntimeConfigDto, UpdaterCapabilityMetadataDto,
+    PluginManifestDto, PluginMetadataDto, PluginPackManagerCapabilityDto, ProviderHandlersDto,
+    RuntimeConfigDto,
 };
 pub use edit_plugin_settings::{EditPluginSettings, EditPluginSettingsUseCase};
 pub use enable_plugin::EnablePluginUseCase;

@@ -13,13 +13,11 @@ import {
 
 import type {
   ContentProviderCapability,
-  ImporterCapability,
-  UpdaterCapability,
+  PackManagerCapability,
 } from '../model';
 
 export type PluginImporterProps = ComponentProps<'div'> & {
-  capability:
-    ImporterCapability | UpdaterCapability | ContentProviderCapability;
+  capability: PackManagerCapability | ContentProviderCapability;
 };
 
 export const PluginCapabilityCard: Component<PluginImporterProps> = (props) => {

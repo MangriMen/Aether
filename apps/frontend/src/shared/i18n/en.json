@@ -58,11 +58,9 @@
       "MINECRAFT_ERROR": "Minecraft execution error",
       "PROCESS_ERROR": "Instance process error",
       "CREDENTIALS_ERROR": "Active account not found",
-      "IMPORTER_NOT_FOUND": "Importer {{importer_id}} not found",
-      "IMPORT_FAILED": "Failed to import instance via {{importer_id}}",
       "PACK_INFO_NOT_FOUND": "Modpack info not found in instance",
-      "UPDATER_NOT_FOUND": "Updater for modpack {{modpack_id}} not found",
-      "UPDATE_FAILED": "Failed to update instance with modpack {{modpack_id}}",
+      "PACK_INSTALL_FAILED": "Failed to install pack via {{plugin_id}}",
+      "PACK_UPDATE_FAILED": "Failed to update pack {{modpack_id}}",
       "NOT_FOUND": "Instance with id {{instance_id}} not found",
       "STORAGE": "Instance storage error"
     },
@@ -470,6 +468,7 @@
     "forceEnableDescription": "This plugin requires a newer version of the launcher API. It may not work correctly or could cause crashes. Do you want to enable it anyway?",
     "forceEnableConfirm": "Enable anyway",
     "forceEnableCancel": "Cancel",
+    "packManagers": "Pack Managers",
     "updaters": "Updaters",
     "contentProviders": "Content Providers"
   },

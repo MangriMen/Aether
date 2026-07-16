@@ -50,13 +50,6 @@ export const CreateCustomInstanceSchema = v.pipe(
   ),
 );
 
-export const ImportInstanceSchema = v.object({
-  pluginId: v.pipe(v.string(), v.minLength(1)),
-  pathOrUrl: v.pipe(v.string(), v.minLength(1, 'Path is required')),
-});
-
 export type CreateCustomInstanceSchemaOutput = v.InferOutput<
   typeof CreateCustomInstanceSchema
 >;
-
-export type ImportInstanceValues = v.InferOutput<typeof ImportInstanceSchema>;

@@ -1,3 +1,3 @@
-export * from './importerTabConfig';
 export * from './importInstanceValidation';
-export * from './pluginImportersToTabs';
+export * from './packManagerTabConfig';
+export * from './pluginPackManagersToTabs';

@@ -58,11 +58,9 @@
       "MINECRAFT_ERROR": "Ошибка при работе Minecraft",
       "PROCESS_ERROR": "Ошибка процесса инстанса",
       "CREDENTIALS_ERROR": "Активный аккаунт не найден",
-      "IMPORTER_NOT_FOUND": "Импортер {{importer_id}} не найден",
-      "IMPORT_FAILED": "Не удалось импортировать инстанс через {{importer_id}}",
       "PACK_INFO_NOT_FOUND": "Информация о модпаке не найдена",
-      "UPDATER_NOT_FOUND": "Обновление для модпака {{modpack_id}} не найдено",
-      "UPDATE_FAILED": "Не удалось обновить инстанс с модпаком {{modpack_id}}",
+      "PACK_INSTALL_FAILED": "Не удалось установить модпак через {{plugin_id}}",
+      "PACK_UPDATE_FAILED": "Не удалось обновить модпак {{modpack_id}}",
       "NOT_FOUND": "Инстанс с ID {{instance_id}} не найден",
       "STORAGE": "Ошибка хранилища инстансов"
     },
@@ -470,6 +468,7 @@
     "forceEnableDescription": "Этот плагин требует новую версию API лаунчера. Он может работать некорректно или вызывать сбои. Включить в любом случае?",
     "forceEnableConfirm": "Включить в любом случае",
     "forceEnableCancel": "Отмена",
+    "packManagers": "Менеджеры модпаков",
     "updaters": "Апдейтеры",
     "contentProviders": "Поставщики контента"
   },

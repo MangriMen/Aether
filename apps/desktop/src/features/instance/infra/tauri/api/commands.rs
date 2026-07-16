@@ -22,8 +22,8 @@ use crate::{
             ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
             ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
             ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
-            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
-            InstanceDto, InstanceEventDto, NewInstanceDto,
+            EditInstanceDto, EditInstanceIconDto, InstallPackRequestDto, InstanceDto,
+            InstanceEventDto, NewInstanceDto, PackManagerCapabilityMetadataDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -70,8 +70,8 @@ async fn create(
 
 #[tauri::command]
 #[specta::specta]
-async fn import(
-    import_instance: ImportInstanceDto,
+async fn install_pack(
+    payload: InstallPackRequestDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,
@@ -80,26 +80,10 @@ async fn import(
 
     let container = container.0.clone();
     Ok(container
-        .import_instance_use_case()
-        .execute(import_instance.into())
+        .install_pack_use_case()
+        .execute(payload.into())
         .await
         .map_err(aether_core::Error::from)?)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn list_importers(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<CapabilityEntryDto<ImporterCapabilityMetadataDto>>> {
-    let container = container.0.clone();
-    Ok(container
-        .list_importers_use_case()
-        .execute()
-        .await
-        .map_err(aether_core::Error::from)?
-        .into_iter()
-        .map(Into::into)
-        .collect())
 }
 
 #[tauri::command]
@@ -385,6 +369,22 @@ async fn list_content_providers(
     let container = container.0.clone();
     Ok(container
         .list_providers_use_case()
+        .execute()
+        .await
+        .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn list_pack_managers(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<CapabilityEntryDto<PackManagerCapabilityMetadataDto>>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_pack_managers_use_case()
         .execute()
         .await
         .map_err(aether_core::Error::from)?

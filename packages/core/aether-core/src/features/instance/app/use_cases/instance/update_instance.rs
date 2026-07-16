@@ -5,50 +5,31 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::UpdateInstanceUseCasePort;
 use crate::{
     features::instance::{
-        InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt, PackInfo, Updater,
+        DownloadContext, InstanceError, InstanceInstallStage, InstanceStorage, InstanceStorageExt,
+        PackManager,
     },
     shared::capability::domain::CapabilityRegistry,
 };
 
+/// Updates a pack-managed instance via the `PackManager` registered for its
+/// `pack_info.provider_id`.
 pub struct UpdateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
-    updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
+    pack_manager_registry: Arc<dyn CapabilityRegistry<Arc<dyn PackManager>>>,
 }
 
 impl UpdateInstanceUseCase {
     pub fn new(
         instance_storage: Arc<dyn InstanceStorage>,
-        updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
+        pack_manager_registry: Arc<dyn CapabilityRegistry<Arc<dyn PackManager>>>,
     ) -> Self {
         Self {
             instance_storage,
-            updaters_registry,
+            pack_manager_registry,
         }
     }
 
-    pub async fn update_by_plugin(
-        &self,
-        instance_id: &str,
-        pack_info: &PackInfo,
-    ) -> Result<(), InstanceError> {
-        let updater = self
-            .updaters_registry
-            .find_by_plugin_and_capability_id(
-                &pack_info.provider_id.plugin_id,
-                &pack_info.provider_id.capability_id,
-            )
-            .await
-            .map_err(|_| InstanceError::UpdaterNotFound {
-                modpack_id: pack_info.modpack_id.clone(),
-            })?;
-
-        updater.capability.update(instance_id).await
-    }
-}
-
-#[async_trait]
-impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+    pub async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         let instance = self.instance_storage.get(&instance_id).await?;
 
         let original_stage = instance.install_stage;
@@ -57,6 +38,17 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
             .as_ref()
             .ok_or(InstanceError::PackInfoNotFound)?;
 
+        let provider_id = &pack_info.provider_id;
+
+        let manager = self
+            .pack_manager_registry
+            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
+            .await
+            .map_err(|_| InstanceError::PackManagerNotFound {
+                plugin_id: provider_id.plugin_id.clone(),
+                capability_id: provider_id.capability_id.clone(),
+            })?;
+
         self.instance_storage
             .upsert_with(&instance_id, |instance| {
                 instance.install_stage = InstanceInstallStage::PackInstalling;
@@ -64,7 +56,10 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
             })
             .await?;
 
-        let result = self.update_by_plugin(&instance_id, pack_info).await;
+        let result = manager
+            .capability
+            .update(&instance_id, &DownloadContext {})
+            .await;
 
         let final_stage = match result {
             Ok(()) => InstanceInstallStage::Installed,
@@ -79,5 +74,12 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
             .await?;
 
         result
+    }
+}
+
+#[async_trait]
+impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
+    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+        self.execute(instance_id).await
     }
 }

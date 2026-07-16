@@ -3,13 +3,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import { splitProps, type Component, type JSX } from 'solid-js';
 
-import type {
-  ImportInstance,
-  ImporterCapabilityMetadata,
-} from '@/entities/instances';
-import type { PluginMetadata } from '@/entities/plugins';
-
-import { useImportInstance } from '@/entities/instances';
+import { useInstallPack } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField, CombinedTooltip, IconButton } from '@/shared/ui';
@@ -20,8 +14,10 @@ import {
 } from '../model';
 
 export type ImportInstanceFormProps = {
-  pluginId: PluginMetadata['id'];
-  importer: ImporterCapabilityMetadata;
+  pluginId: string;
+  capabilityId: string;
+  fieldLabel: string | null;
+  supportedExtensions: string[];
   footerButtons: JSX.Element;
   onSubmit?: () => void;
   class?: string;
@@ -32,7 +28,9 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 ) => {
   const [local, others] = splitProps(props, [
     'pluginId',
-    'importer',
+    'capabilityId',
+    'fieldLabel',
+    'supportedExtensions',
     'footerButtons',
     'onSubmit',
     'class',
@@ -44,24 +42,34 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     schema: ImportInstanceSchema,
   });
 
-  const importInstance = useImportInstance();
+  const installPack = useInstallPack();
 
   const handleSubmit = (values: ImportInstanceSchemaOutput) => {
-    const dto: ImportInstance = {
-      pluginId: local.pluginId,
-      importerId: local.importer.id,
-      path: values.path,
-    };
-
-    importInstance.mutateAsync(dto);
+    installPack.mutateAsync({
+      packSource: {
+        source: values.path,
+      },
+      providerId: {
+        pluginId: local.pluginId,
+        capabilityId: local.capabilityId,
+      },
+    });
 
     local.onSubmit?.();
   };
 
   const handleBrowse = async () => {
+    const extensions =
+      local.supportedExtensions.length > 0
+        ? local.supportedExtensions
+        : undefined;
+
     const file = await open({
       multiple: false,
       directory: false,
+      filters: extensions
+        ? [{ name: local.fieldLabel ?? '', extensions }]
+        : undefined,
     });
 
     if (file) {
@@ -72,14 +80,14 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   return (
     <Form
       of={form}
-      class={cn('flex h-full grow flex-col', local.class)}
+      class={cn('flex h-full grow flex-col gap-2', local.class)}
       onSubmit={handleSubmit}
       {...others}
     >
       <Field of={form} path={['path']}>
         {(field) => (
           <CombinedTextField
-            label={local.importer.fieldLabel}
+            label={local.fieldLabel ?? t('createInstance.import')}
             name='path'
             value={field.input}
             errorMessage={field.errors?.[0]}
@@ -94,10 +102,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
                   label={t('common.browse')}
                   as={IconButton}
                   variant='ghost'
-                  class='
-                    size-7 bg-secondary/secondary
-                    enabled:hover:bg-secondary/hover
-                  '
+                  class='size-7 bg-secondary/secondary enabled:hover:bg-secondary/hover'
                   type='button'
                   size='sm'
                   onClick={handleBrowse}

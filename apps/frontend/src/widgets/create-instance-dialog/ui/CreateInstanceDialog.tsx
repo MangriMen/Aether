@@ -46,7 +46,7 @@ export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
               )}
             </For>
           </TabsList>
-          <Separator class='mt-2 mb-4' />
+          <Separator class='mt-2' />
           <div
             class='
               animate-tab-content-wrapper min-h-76.25 p-0.5 flex flex-1 flex-col
@@ -56,7 +56,7 @@ export const CreateInstanceDialog: Component<DialogRootProps> = (props) => {
               {(tabValue) => (
                 <TabsContent
                   forceMount
-                  class='animate-tab-content flex flex-col'
+                  class='animate-tab-content flex flex-col grow'
                   value={tabValue}
                   tabIndex={-1}
                 >

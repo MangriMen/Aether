@@ -5,13 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::{
     instance::{
-        CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
-        UpdaterCapabilityMetadata,
+        CapabilityMetadata, ContentProviderCapabilityMetadata, PackManagerCapabilityMetadata,
     },
     plugins::domain::{
-        ApiConfig, LoadConfig, LoadConfigType, PathMapping, Plugin, PluginCapabilities,
-        PluginContentProviderCapability, PluginImporterCapability, PluginManifest, PluginMetadata,
-        PluginState, PluginUpdaterCapability, ProviderHandlers, RuntimeConfig,
+        ApiConfig, LoadConfig, LoadConfigType, PackManagerHandlers, PathMapping, Plugin,
+        PluginCapabilities, PluginContentProviderCapability, PluginManifest, PluginMetadata,
+        PluginPackManagerCapability, PluginState, ProviderHandlers, RuntimeConfig,
     },
 };
 
@@ -79,18 +78,6 @@ pub struct CapabilityMetadataDto {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImporterCapabilityMetadataDto {
-    pub base: CapabilityMetadataDto,
-    pub field_label: Option<String>,
-    pub supported_extensions: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdaterCapabilityMetadataDto {
-    pub base: CapabilityMetadataDto,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContentProviderCapabilityMetadataDto {
     pub base: CapabilityMetadataDto,
     pub supports_install_atomic: bool,
@@ -99,27 +86,20 @@ pub struct ContentProviderCapabilityMetadataDto {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PluginCapabilitiesDto {
-    pub importers: Vec<PluginImporterCapabilityDto>,
-    pub updaters: Vec<PluginUpdaterCapabilityDto>,
     pub content_providers: Vec<PluginContentProviderCapabilityDto>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginImporterCapabilityDto {
-    pub metadata: ImporterCapabilityMetadataDto,
-    pub handler: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PluginUpdaterCapabilityDto {
-    pub metadata: UpdaterCapabilityMetadataDto,
-    pub handler: String,
+    pub pack_managers: Vec<PluginPackManagerCapabilityDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginContentProviderCapabilityDto {
     pub metadata: ContentProviderCapabilityMetadataDto,
     pub handlers: ProviderHandlersDto,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginPackManagerCapabilityDto {
+    pub metadata: PackManagerCapabilityMetadataDto,
+    pub handlers: PackManagerHandlersDto,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,6 +110,24 @@ pub struct ProviderHandlersDto {
     pub install_atomic: String,
     pub install_modpack: Option<String>,
     pub check_compatibility: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackManagerHandlersDto {
+    pub install: String,
+    pub update: Option<String>,
+    pub check_updates: Option<String>,
+    pub resolve_metadata: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackManagerCapabilityMetadataDto {
+    pub base: CapabilityMetadataDto,
+    pub supports_install: bool,
+    pub supports_update: bool,
+    pub supports_check_updates: bool,
+    pub field_label: Option<String>,
+    pub supported_extensions: Vec<String>,
 }
 
 // ── PluginDto ──
@@ -223,27 +221,8 @@ impl From<ApiConfig> for ApiConfigDto {
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
     fn from(v: PluginCapabilities) -> Self {
         Self {
-            importers: v.importers.into_iter().map(Into::into).collect(),
-            updaters: v.updaters.into_iter().map(Into::into).collect(),
             content_providers: v.content_providers.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<PluginImporterCapability> for PluginImporterCapabilityDto {
-    fn from(v: PluginImporterCapability) -> Self {
-        Self {
-            metadata: v.metadata.into(),
-            handler: v.handler,
-        }
-    }
-}
-
-impl From<PluginUpdaterCapability> for PluginUpdaterCapabilityDto {
-    fn from(v: PluginUpdaterCapability) -> Self {
-        Self {
-            metadata: v.metadata.into(),
-            handler: v.handler,
+            pack_managers: v.pack_managers.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -253,6 +232,26 @@ impl From<PluginContentProviderCapability> for PluginContentProviderCapabilityDt
         Self {
             metadata: v.metadata.into(),
             handlers: v.handlers.into(),
+        }
+    }
+}
+
+impl From<PluginPackManagerCapability> for PluginPackManagerCapabilityDto {
+    fn from(v: PluginPackManagerCapability) -> Self {
+        Self {
+            metadata: v.metadata.into(),
+            handlers: v.handlers.into(),
+        }
+    }
+}
+
+impl From<PackManagerHandlers> for PackManagerHandlersDto {
+    fn from(v: PackManagerHandlers) -> Self {
+        Self {
+            install: v.install,
+            update: v.update,
+            check_updates: v.check_updates,
+            resolve_metadata: v.resolve_metadata,
         }
     }
 }
@@ -283,30 +282,25 @@ impl From<CapabilityMetadata> for CapabilityMetadataDto {
     }
 }
 
-impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
-    fn from(v: ImporterCapabilityMetadata) -> Self {
-        Self {
-            base: v.base.into(),
-            field_label: v.field_label,
-            supported_extensions: v.supported_extensions,
-        }
-    }
-}
-
-impl From<UpdaterCapabilityMetadata> for UpdaterCapabilityMetadataDto {
-    fn from(v: UpdaterCapabilityMetadata) -> Self {
-        Self {
-            base: v.base.into(),
-        }
-    }
-}
-
 impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetadataDto {
     fn from(v: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: v.base.into(),
             supports_install_atomic: v.supports_install_atomic,
             supports_install_modpacks: v.supports_install_modpacks,
+        }
+    }
+}
+
+impl From<PackManagerCapabilityMetadata> for PackManagerCapabilityMetadataDto {
+    fn from(v: PackManagerCapabilityMetadata) -> Self {
+        Self {
+            base: v.base.into(),
+            supports_install: v.supports_install,
+            supports_update: v.supports_update,
+            supports_check_updates: v.supports_check_updates,
+            field_label: v.field_label,
+            supported_extensions: v.supported_extensions,
         }
     }
 }

@@ -6,11 +6,11 @@ use dashmap::DashMap;
 use crate::features::instance::app::{
     ChangeContentState, ContentCompatibilityCheckParams, ContentCompatibilityResult,
     ContentGetParams, ContentListVersionsParams, EditInstance, EditInstanceIcon, ImportContent,
-    ImportInstance, NewInstance, RemoveContent,
+    InstallPackRequest, NewInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
-    ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
-    ImporterCapabilityMetadata, Instance, InstanceError,
+    ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion, Instance,
+    InstanceError, PackManagerCapabilityMetadata,
 };
 use crate::features::instance::{ContentInstallParams, ContentSearchParams, ContentSearchResult};
 use crate::features::process::MinecraftProcessMetadata;
@@ -58,19 +58,14 @@ pub trait UpdateInstanceUseCasePort: Send + Sync {
     async fn execute(&self, instance_id: String) -> Result<(), InstanceError>;
 }
 
+// ── Pack management ──
+
+#[async_trait]
+pub trait InstallPackUseCasePort: Send + Sync {
+    async fn execute(&self, request: InstallPackRequest) -> Result<(), InstanceError>;
+}
+
 // ── Instance lifecycle ──
-
-#[async_trait]
-pub trait ImportInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, import_instance: ImportInstance) -> Result<(), InstanceError>;
-}
-
-#[async_trait]
-pub trait ListImportersUseCasePort: Send + Sync {
-    async fn execute(
-        &self,
-    ) -> Result<Vec<CapabilityEntry<ImporterCapabilityMetadata>>, InstanceError>;
-}
 
 #[async_trait]
 pub trait LaunchInstanceWithActiveAccountUseCasePort: Send + Sync {
@@ -145,4 +140,11 @@ pub trait ListProvidersUseCasePort: Send + Sync {
     async fn execute(
         &self,
     ) -> Result<Vec<CapabilityEntry<ContentProviderCapabilityMetadata>>, InstanceError>;
+}
+
+#[async_trait]
+pub trait ListPackManagersUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+    ) -> Result<Vec<CapabilityEntry<PackManagerCapabilityMetadata>>, InstanceError>;
 }

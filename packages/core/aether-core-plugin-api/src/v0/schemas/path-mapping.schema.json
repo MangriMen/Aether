@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PathMappingDto",
+  "description": "A mapping between a path on the host and a virtual path in the plugin.",
+  "type": "array",
+  "maxItems": 2,
+  "minItems": 2,
+  "prefixItems": [
+    {
+      "description": "Path on the host disk.",
+      "type": "string"
+    },
+    {
+      "description": "Virtual path inside the plugin sandbox.",
+      "type": "string"
+    }
+  ]
+}

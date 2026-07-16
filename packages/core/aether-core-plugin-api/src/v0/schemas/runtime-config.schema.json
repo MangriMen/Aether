@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RuntimeConfigDto",
+  "type": "object",
+  "properties": {
+    "allowedHosts": {
+      "description": "List of domains or IP addresses the plugin is allowed to connect to.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowedPaths": {
+      "description": "Filesystem access restrictions. Maps host paths to plugin-internal paths.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PathMappingDto"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "PathMappingDto": {
+      "description": "A mapping between a path on the host and a virtual path in the plugin.",
+      "type": "array",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "description": "Path on the host disk.",
+          "type": "string"
+        },
+        {
+          "description": "Virtual path inside the plugin sandbox.",
+          "type": "string"
+        }
+      ]
+    }
+  }
+}

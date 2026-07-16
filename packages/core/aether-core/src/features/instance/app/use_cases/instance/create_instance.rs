@@ -14,7 +14,7 @@ use crate::features::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NewInstance {
     pub name: String,
     pub game_version: String,

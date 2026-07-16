@@ -416,7 +416,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .create_instance_uc
             .execute(new_instance)
             .await
-            .map_err(|_| InstanceError::ImportFailed {
+            .map_err(|_| InstanceError::PackInstallFailed {
                 plugin_id: ModrinthContentProvider::ID.to_owned(),
                 capability_id: self.capability.id.clone(),
             })?;

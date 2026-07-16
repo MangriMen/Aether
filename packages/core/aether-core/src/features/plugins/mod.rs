@@ -5,11 +5,11 @@ pub mod infra;
 // Domain (models + PluginInstance)
 pub use domain::{
     ApiConfig, Compatibility, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError,
-    PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities, PluginCheckCompatibilityParams,
-    PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
-    PluginImporterCapability, PluginInstance, PluginInternalEvent, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource, PluginSourceType,
-    PluginState, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
+    PLUGIN_API_VERSION, PackManagerHandlers, PathMapping, Plugin, PluginCapabilities,
+    PluginCheckCompatibilityParams, PluginContent, PluginContentProviderCapability, PluginError,
+    PluginImportInstance, PluginInstance, PluginInternalEvent, PluginManifest,
+    PluginManifestPreview, PluginMetadata, PluginPackManagerCapability, PluginSettings,
+    PluginSource, PluginSourceType, PluginState, ProviderHandlers, ProviderPluginPreview,
     ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
 };
 
@@ -22,14 +22,14 @@ pub use app::{
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort,
     GetPluginDtoUseCase, GetPluginDtoUseCasePort, GetPluginSettingsUseCase,
     GetPluginSettingsUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
-    ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigDto,
-    LoadConfigTypeDto, PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto,
-    PluginDisableService, PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto,
-    PluginLoader, PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
-    PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, PluginsFeature,
-    ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort, RuntimeConfigDto,
-    SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort, UpdaterCapabilityMetadataDto,
+    ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigDto, LoadConfigTypeDto,
+    PackManagerCapabilityMetadataDto, PackManagerHandlersDto, PathMappingDto,
+    PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDisableService, PluginDto,
+    PluginDtoState, PluginExtractor, PluginLoader, PluginLoaderRegistry, PluginManifestDto,
+    PluginMetadataDto, PluginPackManagerCapabilityDto, PluginProvider, PluginProviderFactory,
+    PluginRegistry, PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
+    PluginsFeature, ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort,
+    RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
     write_bytes_to_temp_file,
 };
 

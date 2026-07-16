@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PackManagerHandlersDto",
+  "description": "Names of plugin functions that implement specific pack manager logic.",
+  "type": "object",
+  "properties": {
+    "checkUpdates": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "install": {
+      "type": "string"
+    },
+    "update": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "install"
+  ]
+}

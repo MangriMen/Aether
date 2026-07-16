@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LoadConfigDto",
+  "oneOf": [
+    {
+      "description": "Use WebAssembly (Extism) for a secure, cross-platform sandbox.",
+      "type": "object",
+      "properties": {
+        "file": {
+          "description": "Path to the .wasm file relative to the plugin root.",
+          "type": "string"
+        },
+        "memoryLimit": {
+          "description": "Maximum memory (in bytes) the plugin is allowed to allocate.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "default": null,
+          "minimum": 0
+        },
+        "type": {
+          "type": "string",
+          "const": "extism"
+        }
+      },
+      "required": [
+        "type",
+        "file"
+      ]
+    },
+    {
+      "description": "Load a native shared library (.dll, .so, .dylib).",
+      "type": "object",
+      "properties": {
+        "libPath": {
+          "description": "Path to the dynamic library file relative to the plugin root.",
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "native"
+        }
+      },
+      "required": [
+        "type",
+        "libPath"
+      ]
+    }
+  ]
+}

@@ -1,12 +1,15 @@
 use std::path::PathBuf;
 
+use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Root configuration for an Aether plugin.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
+#[schema_category("plugin_api")]
+#[schema_name("plugin_manifest")]
 pub struct PluginManifestDto {
     /// Optional URI pointing to the JSON Schema for this manifest version.
     /// Ignored during parsing — reserved for editor tooling and validation.
@@ -25,9 +28,11 @@ pub struct PluginManifestDto {
     pub api: ApiConfigDto,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
+#[schema_category("plugin_api")]
+#[schema_name("plugin_metadata")]
 pub struct PluginMetadataDto {
     /// Unique identifier for the plugin (lowercase, kebab-case).
     #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
@@ -51,9 +56,11 @@ pub struct PluginMetadataDto {
     pub license: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
+#[schema_category("plugin_api")]
+#[schema_name("runtime_config")]
 pub struct RuntimeConfigDto {
     /// List of domains or IP addresses the plugin is allowed to connect to.
     #[serde(default)]
@@ -65,7 +72,9 @@ pub struct RuntimeConfigDto {
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
+#[schema_category("plugin_api")]
+#[schema_name("path_mapping")]
 pub struct PathMappingDto(
     /// Path on the host disk.
     pub String,
@@ -80,8 +89,10 @@ pub enum LoadConfigTypeDto {
     Native,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "snake_case", tag = "type")]
+#[schema_category("plugin_api")]
+#[schema_name("load_config")]
 pub enum LoadConfigDto {
     /// Use WebAssembly (Extism) for a secure, cross-platform sandbox.
     #[serde(rename_all = "camelCase")]
@@ -100,9 +111,11 @@ pub enum LoadConfigDto {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
 #[schemars(deny_unknown_fields)]
+#[schema_category("plugin_api")]
+#[schema_name("api_config")]
 pub struct ApiConfigDto {
     /// Required API version range (`SemVer` requirement).
     #[schemars(with = "String")]

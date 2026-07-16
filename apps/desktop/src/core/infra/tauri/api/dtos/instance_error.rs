@@ -35,22 +35,16 @@ pub enum InstanceErrorDto {
         field: InstanceFieldDto,
         reason: InstanceValidationErrorReasonDto,
     },
-    ImporterNotFound {
-        importer_id: String,
+    PackInfoNotFound,
+    UnmanagedInstance {
+        instance_id: String,
     },
-    ImportFailed {
+    PackInstallFailed {
         plugin_id: String,
         capability_id: String,
     },
-    PackInfoNotFound,
-    UpdaterNotFound {
+    PackUpdateFailed {
         modpack_id: String,
-    },
-    UpdateFailed {
-        modpack_id: String,
-    },
-    UnmanagedInstance {
-        instance_id: String,
     },
     ContentDuplication {
         content_path: String,
@@ -94,6 +88,10 @@ impl From<&InstanceError> for InstanceErrorDto {
             InstanceError::ContentProviderNotFound {
                 plugin_id,
                 capability_id,
+            }
+            | InstanceError::PackManagerNotFound {
+                plugin_id,
+                capability_id,
             } => Self::ContentProviderNotFound {
                 plugin_id: plugin_id.clone(),
                 capability_id: capability_id.clone(),
@@ -118,23 +116,7 @@ impl From<&InstanceError> for InstanceErrorDto {
                 field: (*field).into(),
                 reason: reason.clone().into(),
             },
-            InstanceError::ImporterNotFound { importer_id } => Self::ImporterNotFound {
-                importer_id: importer_id.clone(),
-            },
-            InstanceError::ImportFailed {
-                plugin_id,
-                capability_id,
-            } => Self::ImportFailed {
-                plugin_id: plugin_id.clone(),
-                capability_id: capability_id.clone(),
-            },
             InstanceError::PackInfoNotFound => Self::PackInfoNotFound,
-            InstanceError::UpdaterNotFound { modpack_id } => Self::UpdaterNotFound {
-                modpack_id: modpack_id.clone(),
-            },
-            InstanceError::UpdateFailed { modpack_id } => Self::UpdateFailed {
-                modpack_id: modpack_id.clone(),
-            },
             InstanceError::UnmanagedInstance { instance_id } => Self::UnmanagedInstance {
                 instance_id: instance_id.clone(),
             },
@@ -158,6 +140,19 @@ impl From<&InstanceError> for InstanceErrorDto {
                     content_type: (*content_type).into(),
                 }
             }
+            InstanceError::UnsupportedOperation(err) => Self::ContentProviderError {
+                reason: err.clone(),
+            },
+            InstanceError::PackInstallFailed {
+                plugin_id,
+                capability_id,
+            } => Self::PackInstallFailed {
+                plugin_id: plugin_id.clone(),
+                capability_id: capability_id.clone(),
+            },
+            InstanceError::PackUpdateFailed { modpack_id } => Self::PackUpdateFailed {
+                modpack_id: modpack_id.clone(),
+            },
             InstanceError::SettingsLoadError(err) => Self::SettingsLoadError {
                 details: err.to_string(),
             },

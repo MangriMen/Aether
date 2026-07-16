@@ -72,8 +72,7 @@ export const settingsCommands = {
 
 export const instanceCommands = {
   create: withIdempotency(instanceRawCommands.create),
-  import: withIdempotency(instanceRawCommands.import),
-  listImporters: instanceRawCommands.listImporters,
+  installPack: withIdempotency(instanceRawCommands.installPack),
   list: instanceRawCommands.list,
   get: instanceRawCommands.get,
   getDir: instanceRawCommands.getDir,
@@ -90,6 +89,7 @@ export const instanceCommands = {
   disableContents: withIdempotency(instanceRawCommands.disableContents),
   removeContents: withIdempotency(instanceRawCommands.removeContents),
   listContentProviders: instanceRawCommands.listContentProviders,
+  listPackManagers: instanceRawCommands.listPackManagers,
   searchContent: instanceRawCommands.searchContent,
   checkCompatibility: instanceRawCommands.checkCompatibility,
   getContent: instanceRawCommands.getContent,

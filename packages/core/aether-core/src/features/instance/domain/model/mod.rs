@@ -10,6 +10,10 @@ mod instance;
 mod instance_snapshot;
 mod pack;
 mod pack_info;
+mod pack_manager_capability;
+mod pack_metadata;
+mod pack_source;
+mod update_status;
 
 pub use capabilities::*;
 pub use content::*;
@@ -23,3 +27,7 @@ pub use instance::*;
 pub use instance_snapshot::*;
 pub use pack::*;
 pub use pack_info::*;
+pub use pack_manager_capability::*;
+pub use pack_metadata::*;
+pub use pack_source::*;
+pub use update_status::*;

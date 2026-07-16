@@ -4,10 +4,11 @@ use std::sync::Arc;
 use tracing::error;
 
 use crate::features::instance::app::ports::InstallContentUseCasePort;
+use crate::features::instance::domain::InstanceInstallStage;
 use crate::{
     features::instance::{
-        ContentInstallParams, ContentProvider, ContentType, InstanceError, PackFile, PackStorage,
-        app::ContentFileService,
+        ContentInstallParams, ContentProvider, ContentType, InstanceError, InstanceStorage,
+        InstanceStorageExt, PackFile, PackStorage, app::ContentFileService,
     },
     shared::capability::domain::CapabilityRegistry,
 };
@@ -16,6 +17,7 @@ pub struct InstallContentUseCase {
     pack_storage: Arc<dyn PackStorage>,
     provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
     content_file_service: Arc<dyn ContentFileService>,
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
 impl InstallContentUseCase {
@@ -23,11 +25,13 @@ impl InstallContentUseCase {
         pack_storage: Arc<dyn PackStorage>,
         provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
         content_file_service: Arc<dyn ContentFileService>,
+        instance_storage: Arc<dyn InstanceStorage>,
     ) -> Self {
         Self {
             pack_storage,
             provider_registry,
             content_file_service,
+            instance_storage,
         }
     }
 
@@ -115,6 +119,14 @@ impl InstallContentUseCase {
 
                 self.pack_storage
                     .update_pack_file_many(&instance_id, &paths, &content_files)
+                    .await?;
+
+                // Modpack content fully installed — mark instance as Installed
+                self.instance_storage
+                    .upsert_with(&instance_id, |instance| {
+                        instance.install_stage = InstanceInstallStage::Installed;
+                        Ok(())
+                    })
                     .await?;
             }
         }

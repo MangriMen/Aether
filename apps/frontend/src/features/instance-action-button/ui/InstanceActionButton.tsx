@@ -34,8 +34,15 @@ export const InstanceActionButton: Component<InstanceActionButtonProps> = (
     () => local.instance.installStage === 'installing',
   );
 
+  const isInstancePackInstalling = createMemo(
+    () => local.instance.installStage === 'pack_installing',
+  );
+
   const isPlayButtonLoading = createMemo(
-    () => isInstanceInstalling() || runningInstance()?.isLoading,
+    () =>
+      isInstanceInstalling() ||
+      isInstancePackInstalling() ||
+      runningInstance()?.isLoading,
   );
 
   const isPlayButton = createMemo(() => !runningInstance()?.isRunning);

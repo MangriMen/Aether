@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApiConfigDto",
+  "type": "object",
+  "properties": {
+    "features": {
+      "description": "List of optional host features requested by the plugin.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "version": {
+      "description": "Required API version range (`SemVer` requirement).",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "version"
+  ]
+}

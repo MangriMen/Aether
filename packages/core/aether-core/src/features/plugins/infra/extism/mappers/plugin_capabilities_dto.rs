@@ -1,17 +1,16 @@
 use aether_core_plugin_api::v0::{
-    CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, ImporterCapabilityMetadataDto,
-    PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginImporterCapabilityDto,
-    PluginUpdaterCapabilityDto, ProviderHandlersDto, UpdaterCapabilityMetadataDto,
+    CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, PackManagerCapabilityMetadataDto,
+    PackManagerHandlersDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto,
+    PluginPackManagerCapabilityDto, ProviderHandlersDto,
 };
 
 use crate::features::{
     instance::{
-        CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
-        UpdaterCapabilityMetadata,
+        CapabilityMetadata, ContentProviderCapabilityMetadata, PackManagerCapabilityMetadata,
     },
     plugins::{
-        PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
-        PluginUpdaterCapability, ProviderHandlers,
+        PackManagerHandlers, PluginCapabilities, PluginContentProviderCapability,
+        PluginPackManagerCapability, ProviderHandlers,
     },
 };
 
@@ -19,27 +18,8 @@ impl From<PluginCapabilities> for PluginCapabilitiesDto {
     fn from(v: PluginCapabilities) -> Self {
         Self {
             dollar_schema: None,
-            importers: v.importers.into_iter().map(Into::into).collect(),
-            updaters: v.updaters.into_iter().map(Into::into).collect(),
             content_providers: v.content_providers.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<PluginImporterCapability> for PluginImporterCapabilityDto {
-    fn from(v: PluginImporterCapability) -> Self {
-        Self {
-            metadata: v.metadata.into(),
-            handler: v.handler,
-        }
-    }
-}
-
-impl From<PluginUpdaterCapability> for PluginUpdaterCapabilityDto {
-    fn from(v: PluginUpdaterCapability) -> Self {
-        Self {
-            metadata: v.metadata.into(),
-            handler: v.handler,
+            pack_managers: v.pack_managers.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -49,6 +29,26 @@ impl From<PluginContentProviderCapability> for PluginContentProviderCapabilityDt
         Self {
             metadata: v.metadata.into(),
             handlers: v.handlers.into(),
+        }
+    }
+}
+
+impl From<PluginPackManagerCapability> for PluginPackManagerCapabilityDto {
+    fn from(v: PluginPackManagerCapability) -> Self {
+        Self {
+            metadata: v.metadata.into(),
+            handlers: v.handlers.into(),
+        }
+    }
+}
+
+impl From<PackManagerHandlers> for PackManagerHandlersDto {
+    fn from(v: PackManagerHandlers) -> Self {
+        Self {
+            install: v.install,
+            update: v.update,
+            check_updates: v.check_updates,
+            resolve_metadata: v.resolve_metadata,
         }
     }
 }
@@ -79,30 +79,25 @@ impl From<CapabilityMetadata> for CapabilityMetadataDto {
     }
 }
 
-impl From<ImporterCapabilityMetadata> for ImporterCapabilityMetadataDto {
-    fn from(v: ImporterCapabilityMetadata) -> Self {
-        Self {
-            base: v.base.into(),
-            field_label: v.field_label,
-            supported_extensions: v.supported_extensions,
-        }
-    }
-}
-
-impl From<UpdaterCapabilityMetadata> for UpdaterCapabilityMetadataDto {
-    fn from(v: UpdaterCapabilityMetadata) -> Self {
-        Self {
-            base: v.base.into(),
-        }
-    }
-}
-
 impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetadataDto {
     fn from(v: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: v.base.into(),
             supports_install_atomic: v.supports_install_atomic,
             supports_install_modpacks: v.supports_install_modpacks,
+        }
+    }
+}
+
+impl From<PackManagerCapabilityMetadata> for PackManagerCapabilityMetadataDto {
+    fn from(v: PackManagerCapabilityMetadata) -> Self {
+        Self {
+            base: v.base.into(),
+            supports_install: v.supports_install,
+            supports_update: v.supports_update,
+            supports_check_updates: v.supports_check_updates,
+            field_label: v.field_label,
+            supported_extensions: v.supported_extensions,
         }
     }
 }

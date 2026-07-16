@@ -16,17 +16,18 @@ use crate::features::{
         CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
-        ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
-        ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
-        InstallInstanceUseCase, InstanceFileService, InstanceInstallService, InstanceLaunchService,
+        ImportContentUseCase, ImportContentUseCasePort, InstallContentUseCase,
+        InstallContentUseCasePort, InstallInstanceUseCase, InstallPackUseCase,
+        InstallPackUseCasePort, InstanceFileService, InstanceInstallService, InstanceLaunchService,
         InstanceStorage, InstanceWatcherService, LaunchInstanceUseCase,
         LaunchInstanceWithActiveAccountUseCase, LaunchInstanceWithActiveAccountUseCasePort,
         ListContentUseCase, ListContentUseCasePort, ListContentVersionsUseCase,
-        ListContentVersionsUseCasePort, ListImportersUseCase, ListImportersUseCasePort,
-        ListInstancesUseCase, ListInstancesUseCasePort, ListProvidersUseCase,
-        ListProvidersUseCasePort, PackStorage, RemoveContentUseCase, RemoveContentUseCasePort,
-        RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
-        SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
+        ListContentVersionsUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort,
+        ListPackManagersUseCase, ListPackManagersUseCasePort, ListProvidersUseCase,
+        ListProvidersUseCasePort, PackManager, PackStorage, RemoveContentUseCase,
+        RemoveContentUseCasePort, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
+        SearchContentUseCase, SearchContentUseCasePort, UpdateInstanceUseCase,
+        UpdateInstanceUseCasePort,
     },
     java::{
         DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
@@ -163,9 +164,8 @@ pub struct AetherContainerParams {
     pub progress_service: Arc<dyn ProgressService>,
     pub location_info: Arc<LocationInfo>,
     pub instance_watcher_service: Arc<dyn InstanceWatcherService>,
-    pub importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
-    pub updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
     pub content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
+    pub pack_manager_registry: Arc<dyn CapabilityRegistry<Arc<dyn PackManager>>>,
 }
 
 pub struct AetherContainer {
@@ -205,16 +205,14 @@ impl AetherContainer {
     pub fn instance_watcher_service(&self) -> Arc<dyn InstanceWatcherService> {
         self.params.instance_watcher_service.clone()
     }
-    pub fn importers_registry(&self) -> Arc<dyn CapabilityRegistry<Arc<dyn Importer>>> {
-        self.params.importers_registry.clone()
-    }
-    pub fn updaters_registry(&self) -> Arc<dyn CapabilityRegistry<Arc<dyn Updater>>> {
-        self.params.updaters_registry.clone()
-    }
     pub fn content_provider_registry(
         &self,
     ) -> Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> {
         self.params.content_provider_registry.clone()
+    }
+
+    pub fn pack_manager_registry(&self) -> Arc<dyn CapabilityRegistry<Arc<dyn PackManager>>> {
+        self.params.pack_manager_registry.clone()
     }
 
     fn loader_version_resolver(&self) -> Arc<dyn LoaderVersionService> {
@@ -587,7 +585,7 @@ impl InstanceCrudPort for AetherContainer {
             .get_or_init(|| {
                 Arc::new(UpdateInstanceUseCase::new(
                     self.storage().instance_storage.clone(),
-                    self.updaters_registry().clone(),
+                    self.pack_manager_registry().clone(),
                 ))
             })
             .clone()
@@ -595,14 +593,14 @@ impl InstanceCrudPort for AetherContainer {
 }
 
 impl InstanceLifecyclePort for AetherContainer {
-    fn import_instance_use_case(&self) -> Arc<dyn ImportInstanceUseCasePort> {
-        Arc::new(ImportInstanceUseCase::new(
-            self.importers_registry().clone(),
+    fn install_pack_use_case(&self) -> Arc<dyn InstallPackUseCasePort> {
+        Arc::new(InstallPackUseCase::new(
+            self.create_instance_use_case(),
+            self.pack_manager_registry().clone(),
+            self.storage().instance_storage.clone(),
         ))
     }
-    fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort> {
-        Arc::new(ListImportersUseCase::new(self.importers_registry().clone()))
-    }
+
     fn launch_instance_with_active_account_use_case(
         &self,
     ) -> Arc<dyn LaunchInstanceWithActiveAccountUseCasePort> {
@@ -658,6 +656,7 @@ impl ContentProviderPort for AetherContainer {
             self.storage().pack_storage.clone(),
             self.content_provider_registry().clone(),
             self.storage().content_file_service.clone(),
+            self.storage().instance_storage.clone(),
         ))
     }
     fn check_content_compatibility_use_case(
@@ -676,6 +675,11 @@ impl ContentProviderPort for AetherContainer {
     fn list_providers_use_case(&self) -> Arc<dyn ListProvidersUseCasePort> {
         Arc::new(ListProvidersUseCase::new(
             self.content_provider_registry().clone(),
+        ))
+    }
+    fn list_pack_managers_use_case(&self) -> Arc<dyn ListPackManagersUseCasePort> {
+        Arc::new(ListPackManagersUseCase::new(
+            self.pack_manager_registry().clone(),
         ))
     }
 }

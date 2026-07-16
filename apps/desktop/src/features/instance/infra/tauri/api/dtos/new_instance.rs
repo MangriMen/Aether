@@ -7,7 +7,7 @@ use crate::features::{
     minecraft::{LoaderVersionPreferenceDto, ModLoaderDto},
 };
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NewInstanceDto {
     pub name: String,

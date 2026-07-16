@@ -3,40 +3,17 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::features::plugins::{
-    PathMapping, PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
-    PluginSettings, PluginUpdaterCapability, ProviderHandlers,
+    PackManagerHandlers, PathMapping, PluginCapabilities, PluginContentProviderCapability,
+    PluginPackManagerCapability, PluginSettings, ProviderHandlers,
 };
 
 /// DTO for `PluginCapabilities` that can be read/written as JSON file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginCapabilitiesV1 {
-    pub importers: Option<Vec<PluginImporterCapabilityV1>>,
-    pub updaters: Option<Vec<PluginUpdaterCapabilityV1>>,
     pub content_providers: Option<Vec<PluginContentProviderCapabilityV1>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginImporterCapabilityV1 {
-    pub id: String,
-    pub name: String,
-    pub description: Option<String>,
-    pub icon: Option<String>,
-    pub field_label: Option<String>,
     #[serde(default)]
-    pub supported_extensions: Vec<String>,
-    pub handler: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginUpdaterCapabilityV1 {
-    pub id: String,
-    pub name: String,
-    pub description: Option<String>,
-    pub icon: Option<String>,
-    pub handler: String,
+    pub pack_managers: Option<Vec<PluginPackManagerCapabilityV1>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,6 +41,39 @@ pub struct ProviderHandlersV1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PluginPackManagerCapabilityV1 {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub icon: Option<String>,
+    #[serde(default = "return_true")]
+    pub supports_install: bool,
+    #[serde(default)]
+    pub supports_update: bool,
+    #[serde(default)]
+    pub supports_check_updates: bool,
+    pub field_label: Option<String>,
+    #[serde(default)]
+    pub supported_extensions: Vec<String>,
+    pub handlers: PackManagerHandlersV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PackManagerHandlersV1 {
+    pub install: String,
+    pub update: Option<String>,
+    pub check_updates: Option<String>,
+    #[serde(default)]
+    pub resolve_metadata: Option<String>,
+}
+
+fn return_true() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginSettingsV1 {
     pub allowed_hosts: Vec<String>,
     pub allowed_paths: Vec<(String, String)>,
@@ -77,40 +87,6 @@ pub struct PluginSettingsV1 {
 impl From<PluginCapabilitiesV1> for PluginCapabilities {
     fn from(v1: PluginCapabilitiesV1) -> Self {
         Self {
-            importers: v1
-                .importers
-                .unwrap_or_default()
-                .into_iter()
-                .map(|i| PluginImporterCapability {
-                    metadata: crate::features::instance::ImporterCapabilityMetadata {
-                        base: crate::features::instance::CapabilityMetadata {
-                            id: i.id,
-                            name: i.name,
-                            description: i.description,
-                            icon: i.icon,
-                        },
-                        field_label: i.field_label,
-                        supported_extensions: i.supported_extensions,
-                    },
-                    handler: i.handler,
-                })
-                .collect(),
-            updaters: v1
-                .updaters
-                .unwrap_or_default()
-                .into_iter()
-                .map(|u| PluginUpdaterCapability {
-                    metadata: crate::features::instance::UpdaterCapabilityMetadata {
-                        base: crate::features::instance::CapabilityMetadata {
-                            id: u.id,
-                            name: u.name,
-                            description: u.description,
-                            icon: u.icon,
-                        },
-                    },
-                    handler: u.handler,
-                })
-                .collect(),
             content_providers: v1
                 .content_providers
                 .unwrap_or_default()
@@ -133,6 +109,32 @@ impl From<PluginCapabilitiesV1> for PluginCapabilities {
                         install_atomic: cp.handlers.install_atomic,
                         install_modpack: cp.handlers.install_modpack,
                         check_compatibility: cp.handlers.check_compatibility,
+                    },
+                })
+                .collect(),
+            pack_managers: v1
+                .pack_managers
+                .unwrap_or_default()
+                .into_iter()
+                .map(|pm| PluginPackManagerCapability {
+                    metadata: crate::features::instance::PackManagerCapabilityMetadata {
+                        base: crate::features::instance::CapabilityMetadata {
+                            id: pm.id,
+                            name: pm.name,
+                            description: pm.description,
+                            icon: pm.icon,
+                        },
+                        supports_install: pm.supports_install,
+                        supports_update: pm.supports_update,
+                        supports_check_updates: pm.supports_check_updates,
+                        field_label: pm.field_label,
+                        supported_extensions: pm.supported_extensions,
+                    },
+                    handlers: PackManagerHandlers {
+                        install: pm.handlers.install,
+                        update: pm.handlers.update,
+                        check_updates: pm.handlers.check_updates,
+                        resolve_metadata: pm.handlers.resolve_metadata,
                     },
                 })
                 .collect(),
@@ -159,32 +161,6 @@ impl From<PluginSettingsV1> for PluginSettings {
 impl From<PluginCapabilities> for PluginCapabilitiesV1 {
     fn from(v: PluginCapabilities) -> Self {
         Self {
-            importers: Some(
-                v.importers
-                    .into_iter()
-                    .map(|i| PluginImporterCapabilityV1 {
-                        id: i.metadata.base.id.clone(),
-                        name: i.metadata.base.name.clone(),
-                        description: i.metadata.base.description.clone(),
-                        icon: i.metadata.base.icon.clone(),
-                        field_label: i.metadata.field_label.clone(),
-                        supported_extensions: i.metadata.supported_extensions.clone(),
-                        handler: i.handler,
-                    })
-                    .collect(),
-            ),
-            updaters: Some(
-                v.updaters
-                    .into_iter()
-                    .map(|u| PluginUpdaterCapabilityV1 {
-                        id: u.metadata.base.id.clone(),
-                        name: u.metadata.base.name.clone(),
-                        description: u.metadata.base.description.clone(),
-                        icon: u.metadata.base.icon.clone(),
-                        handler: u.handler,
-                    })
-                    .collect(),
-            ),
             content_providers: Some(
                 v.content_providers
                     .into_iter()
@@ -202,6 +178,28 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                             install_atomic: cp.handlers.install_atomic,
                             install_modpack: cp.handlers.install_modpack,
                             check_compatibility: cp.handlers.check_compatibility,
+                        },
+                    })
+                    .collect(),
+            ),
+            pack_managers: Some(
+                v.pack_managers
+                    .into_iter()
+                    .map(|pm| PluginPackManagerCapabilityV1 {
+                        id: pm.metadata.base.id.clone(),
+                        name: pm.metadata.base.name.clone(),
+                        description: pm.metadata.base.description.clone(),
+                        icon: pm.metadata.base.icon.clone(),
+                        supports_install: pm.metadata.supports_install,
+                        supports_update: pm.metadata.supports_update,
+                        supports_check_updates: pm.metadata.supports_check_updates,
+                        field_label: pm.metadata.field_label.clone(),
+                        supported_extensions: pm.metadata.supported_extensions.clone(),
+                        handlers: PackManagerHandlersV1 {
+                            install: pm.handlers.install,
+                            update: pm.handlers.update,
+                            check_updates: pm.handlers.check_updates,
+                            resolve_metadata: pm.handlers.resolve_metadata,
                         },
                     })
                     .collect(),

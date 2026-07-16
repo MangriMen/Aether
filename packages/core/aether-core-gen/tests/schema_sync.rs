@@ -80,7 +80,9 @@ fn process_schema(path: &Path, actual_json: &str, update_mode: bool) {
 fn to_kebab_case(s: &str) -> String {
     let mut kebab = String::with_capacity(s.len() + 2);
     for (i, ch) in s.chars().enumerate() {
-        if ch.is_uppercase() {
+        if ch == '_' {
+            kebab.push('-');
+        } else if ch.is_uppercase() {
             if i != 0 {
                 kebab.push('-');
             }

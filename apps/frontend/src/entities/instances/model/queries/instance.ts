@@ -28,21 +28,6 @@ export const useCreateInstance = () => {
   }));
 };
 
-export const useImportInstance = () => {
-  const [{ t }] = useTranslation();
-
-  return useMutation(() => ({
-    mutationFn: instanceCommands.import,
-    onError: (err) => {
-      showError({
-        title: t('instance.importError'),
-        err,
-        t,
-      });
-    },
-  }));
-};
-
 export const useInstances = () => {
   return useQuery(() => ({
     queryKey: INSTANCE_QUERY_KEYS.LIST(),
@@ -139,13 +124,6 @@ export const useInstanceDir = (id: Accessor<string | undefined>) => {
     queryKey: [...INSTANCE_QUERY_KEYS.DIR(id() ?? '')],
     queryFn: () => instanceCommands.getDir(id() ?? ''),
     enabled: !!id(),
-  }));
-};
-
-export const useImporters = () => {
-  return useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.IMPORTER.LIST(),
-    queryFn: instanceCommands.listImporters,
   }));
 };
 

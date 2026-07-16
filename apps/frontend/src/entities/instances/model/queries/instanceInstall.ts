@@ -3,6 +3,8 @@ import { useMutation } from '@tanstack/solid-query';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import type { InstallPackRequestDto } from '../../api';
+
 import { instanceCommands } from '../../api';
 
 export const useInstallInstance = () => {
@@ -29,6 +31,22 @@ export const useUpdateInstance = () => {
     onError: (err, id) => {
       showError({
         title: t('instance.updateError', { id }),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useInstallPack = () => {
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: (payload: InstallPackRequestDto) =>
+      instanceCommands.installPack(payload),
+    onError: (err) => {
+      showError({
+        title: t('instance.importError'),
         err,
         t,
       });

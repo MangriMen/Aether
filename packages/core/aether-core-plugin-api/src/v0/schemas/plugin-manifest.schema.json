@@ -1,24 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PluginManifest",
+  "title": "PluginManifestDto",
   "description": "Root configuration for an Aether plugin.",
   "type": "object",
   "properties": {
     "api": {
       "description": "Integration with the host application API.",
-      "$ref": "#/$defs/ApiConfig"
+      "$ref": "#/$defs/ApiConfigDto"
     },
     "load": {
       "description": "Defines how the plugin code should be loaded and executed.",
-      "$ref": "#/$defs/LoadConfig"
+      "$ref": "#/$defs/LoadConfigDto"
     },
     "metadata": {
       "description": "Information about the plugin identity.",
-      "$ref": "#/$defs/PluginMetadata"
+      "$ref": "#/$defs/PluginMetadataDto"
     },
     "runtime": {
       "description": "Sandbox and security restrictions for the plugin.",
-      "$ref": "#/$defs/RuntimeConfig"
+      "$ref": "#/$defs/RuntimeConfigDto"
     }
   },
   "additionalProperties": false,
@@ -29,7 +29,7 @@
     "api"
   ],
   "$defs": {
-    "ApiConfig": {
+    "ApiConfigDto": {
       "type": "object",
       "properties": {
         "features": {
@@ -41,7 +41,7 @@
           }
         },
         "version": {
-          "description": "Required API version range (SemVer requirement).",
+          "description": "Required API version range (`SemVer` requirement).",
           "type": "string"
         }
       },
@@ -50,7 +50,7 @@
         "version"
       ]
     },
-    "LoadConfig": {
+    "LoadConfigDto": {
       "oneOf": [
         {
           "description": "Use WebAssembly (Extism) for a secure, cross-platform sandbox.",
@@ -81,7 +81,7 @@
           ]
         },
         {
-          "description": "Load a native shared library (.dll, .so, .dylib). Less secure, but faster.",
+          "description": "Load a native shared library (.dll, .so, .dylib).",
           "type": "object",
           "properties": {
             "libPath": {
@@ -100,8 +100,8 @@
         }
       ]
     },
-    "PathMapping": {
-      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: [host_path, virtual_path]",
+    "PathMappingDto": {
+      "description": "A mapping between a path on the host and a virtual path in the plugin.",
       "type": "array",
       "maxItems": 2,
       "minItems": 2,
@@ -116,7 +116,7 @@
         }
       ]
     },
-    "PluginMetadata": {
+    "PluginMetadataDto": {
       "type": "object",
       "properties": {
         "authors": {
@@ -162,7 +162,7 @@
         "version"
       ]
     },
-    "RuntimeConfig": {
+    "RuntimeConfigDto": {
       "type": "object",
       "properties": {
         "allowedHosts": {
@@ -178,7 +178,7 @@
           "type": "array",
           "default": [],
           "items": {
-            "$ref": "#/$defs/PathMapping"
+            "$ref": "#/$defs/PathMappingDto"
           }
         }
       },

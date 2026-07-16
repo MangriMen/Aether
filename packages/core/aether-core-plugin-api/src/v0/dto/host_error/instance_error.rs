@@ -26,20 +26,7 @@ pub enum InstanceErrorDto {
         field: String,
         reason: String,
     },
-    ImporterNotFound {
-        importer_id: String,
-    },
-    ImportFailed {
-        plugin_id: String,
-        capability_id: String,
-    },
     PackInfoNotFound,
-    UpdaterNotFound {
-        modpack_id: String,
-    },
-    UpdateFailed {
-        modpack_id: String,
-    },
     UnmanagedInstance {
         instance_id: String,
     },
@@ -58,5 +45,17 @@ pub enum InstanceErrorDto {
     },
     UnsupportedContentType {
         content_type: String,
+    },
+    UnsupportedOperation(String),
+    PackManagerNotFound {
+        plugin_id: String,
+        capability_id: String,
+    },
+    PackInstallFailed {
+        plugin_id: String,
+        capability_id: String,
+    },
+    PackUpdateFailed {
+        modpack_id: String,
     },
 }

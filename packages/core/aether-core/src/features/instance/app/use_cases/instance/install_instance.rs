@@ -45,7 +45,12 @@ impl InstallInstanceUseCase {
             instance.loader_version
         );
 
-        instance.install_stage = InstanceInstallStage::Installed;
+        if instance.pack_info.is_some() {
+            instance.install_stage = InstanceInstallStage::PackInstalling;
+        } else {
+            instance.install_stage = InstanceInstallStage::Installed;
+        }
+
         self.instance_storage.upsert(instance).await?;
         Ok(())
     }

@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use crate::{
     features::{
         events::PluginEvent,
-        instance::{ContentProvider, Importer, Updater},
+        instance::{ContentProvider, PackManager},
         plugins::{
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
             PluginState,
@@ -13,36 +13,31 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-use super::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy};
+use super::{PluginContentProviderProxy, PluginPackManagerProxy};
 
 pub struct PluginInfrastructureListener<
-    IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
-    UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
     CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
+    PMR: ?Sized + CapabilityRegistry<Arc<dyn PackManager>>,
 > {
     plugin: Arc<PluginRegistry>,
-    importers: Arc<IR>,
-    updaters: Arc<UR>,
     content_providers: Arc<CR>,
+    pack_managers: Arc<PMR>,
 }
 
-impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
+impl<CR, PMR> PluginInfrastructureListener<CR, PMR>
 where
-    IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
-    UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
     CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
+    PMR: ?Sized + CapabilityRegistry<Arc<dyn PackManager>>,
 {
     pub fn new(
         plugin: Arc<PluginRegistry>,
-        importers: Arc<IR>,
-        updaters: Arc<UR>,
         content_providers: Arc<CR>,
+        pack_managers: Arc<PMR>,
     ) -> Self {
         Self {
             plugin,
-            importers,
-            updaters,
             content_providers,
+            pack_managers,
         }
     }
 
@@ -95,27 +90,7 @@ where
         instance: Option<Arc<Mutex<dyn PluginInstance>>>,
         caps: &PluginCapabilities,
     ) -> Result<(), PluginError> {
-        // 1. Importers
-        self.sync_registry(
-            plugin_id,
-            &self.importers,
-            &caps.importers,
-            instance.as_ref(),
-            |inst, cap| Arc::new(PluginImporterProxy::new(inst, cap)),
-        )
-        .await?;
-
-        // 2. Updaters
-        self.sync_registry(
-            plugin_id,
-            &self.updaters,
-            &caps.updaters,
-            instance.as_ref(),
-            |inst, cap| Arc::new(PluginUpdaterProxy::new(inst, cap)),
-        )
-        .await?;
-
-        // 3. Content Providers
+        // 1. Content Providers
         self.sync_registry(
             plugin_id,
             &self.content_providers,
@@ -125,11 +100,24 @@ where
         )
         .await?;
 
+        // 2. Pack Managers
+        self.sync_registry(
+            plugin_id,
+            &self.pack_managers,
+            &caps.pack_managers,
+            instance.as_ref(),
+            |inst, cap| {
+                let meta = cap.metadata.clone();
+                let handlers = cap.handlers.clone();
+                Arc::new(PluginPackManagerProxy::new(inst, meta, handlers))
+            },
+        )
+        .await?;
+
         Ok(())
     }
 
     /// Generic helper to add or remove items from any registry.
-    /// If instance is Some -> Add, if None -> Remove.
     async fn sync_registry<T, C, R, F>(
         &self,
         plugin_id: &str,

@@ -1,11 +1,9 @@
 import type {
   PluginCapabilitiesDto,
   PluginContentProviderCapabilityDto,
-  PluginImporterCapabilityDto,
-  PluginUpdaterCapabilityDto,
+  PluginPackManagerCapabilityDto,
 } from '../api';
 
 export type PluginCapabilities = PluginCapabilitiesDto;
-export type ImporterCapability = PluginImporterCapabilityDto;
-export type UpdaterCapability = PluginUpdaterCapabilityDto;
+export type PackManagerCapability = PluginPackManagerCapabilityDto;
 export type ContentProviderCapability = PluginContentProviderCapabilityDto;

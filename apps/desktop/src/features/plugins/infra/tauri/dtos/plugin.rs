@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::features::plugins::{
-    ApiConfigDto, LoadConfigDto, PathMappingDto, PluginCapabilitiesDto,
-    PluginContentProviderCapabilityDto, PluginImporterCapabilityDto, PluginManifestDto,
-    PluginMetadataDto, PluginUpdaterCapabilityDto, ProviderHandlersDto, RuntimeConfigDto,
+    ApiConfigDto, LoadConfigDto, PackManagerHandlersDto, PathMappingDto, PluginCapabilitiesDto,
+    PluginContentProviderCapabilityDto, PluginManifestDto, PluginMetadataDto,
+    PluginPackManagerCapabilityDto, ProviderHandlersDto, RuntimeConfigDto,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -100,31 +100,8 @@ impl From<aether_core::features::plugins::ApiConfigDto> for ApiConfigDto {
 impl From<aether_core::features::plugins::PluginCapabilitiesDto> for PluginCapabilitiesDto {
     fn from(dto: aether_core::features::plugins::PluginCapabilitiesDto) -> Self {
         Self {
-            importers: dto.importers.into_iter().map(Into::into).collect(),
-            updaters: dto.updaters.into_iter().map(Into::into).collect(),
             content_providers: dto.content_providers.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
-impl From<aether_core::features::plugins::PluginImporterCapabilityDto>
-    for PluginImporterCapabilityDto
-{
-    fn from(dto: aether_core::features::plugins::PluginImporterCapabilityDto) -> Self {
-        Self {
-            metadata: dto.metadata.into(),
-            handler: dto.handler,
-        }
-    }
-}
-
-impl From<aether_core::features::plugins::PluginUpdaterCapabilityDto>
-    for PluginUpdaterCapabilityDto
-{
-    fn from(dto: aether_core::features::plugins::PluginUpdaterCapabilityDto) -> Self {
-        Self {
-            metadata: dto.metadata.into(),
-            handler: dto.handler,
+            pack_managers: dto.pack_managers.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -136,6 +113,28 @@ impl From<aether_core::features::plugins::PluginContentProviderCapabilityDto>
         Self {
             metadata: dto.metadata.into(),
             handlers: dto.handlers.into(),
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginPackManagerCapabilityDto>
+    for PluginPackManagerCapabilityDto
+{
+    fn from(dto: aether_core::features::plugins::PluginPackManagerCapabilityDto) -> Self {
+        Self {
+            metadata: dto.metadata.into(),
+            handlers: dto.handlers.into(),
+        }
+    }
+}
+
+impl From<aether_core::features::plugins::PackManagerHandlersDto> for PackManagerHandlersDto {
+    fn from(dto: aether_core::features::plugins::PackManagerHandlersDto) -> Self {
+        Self {
+            install: dto.install,
+            update: dto.update,
+            check_updates: dto.check_updates,
+            resolve_metadata: dto.resolve_metadata,
         }
     }
 }

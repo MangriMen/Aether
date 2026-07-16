@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PluginContentProviderCapabilityDto",
+  "type": "object",
+  "properties": {
+    "description": {
+      "description": "Optional detailed description of what this capability does.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "handlers": {
+      "description": "Set of functions provided by the plugin to handle content operations.",
+      "$ref": "#/$defs/ProviderHandlersDto"
+    },
+    "icon": {
+      "description": "Optional icon file name or URL for the UI.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "id": {
+      "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
+      "type": "string",
+      "pattern": "^[a-z0-9_\\-]+$"
+    },
+    "name": {
+      "description": "Display name of the capability.",
+      "type": "string"
+    },
+    "supportsInstallAtomic": {
+      "description": "Whether the provider supports installing individual items.",
+      "type": "boolean"
+    },
+    "supportsInstallModpacks": {
+      "description": "Whether the provider supports installing complex modpacks or curated collections.",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "supportsInstallAtomic",
+    "supportsInstallModpacks",
+    "handlers"
+  ],
+  "$defs": {
+    "ProviderHandlersDto": {
+      "description": "Names of plugin functions that implement specific content provider logic.",
+      "type": "object",
+      "properties": {
+        "checkCompatibility": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "getContent": {
+          "type": "string"
+        },
+        "installAtomic": {
+          "type": "string"
+        },
+        "installModpack": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "listVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "search": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "search",
+        "getContent",
+        "installAtomic"
+      ]
+    }
+  }
+}

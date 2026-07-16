@@ -6,8 +6,6 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	create: (newInstance: NewInstanceDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<string>("plugin:instance|create", { newInstance, requestId }),
-	import: (importInstance: ImportInstanceDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|import", { importInstance, requestId }),
-	listImporters: () => __TAURI_INVOKE<CapabilityEntryDto<ImporterCapabilityMetadataDto>[]>("plugin:instance|list_importers"),
 	list: () => __TAURI_INVOKE<InstanceDto[]>("plugin:instance|list"),
 	get: (id: string) => __TAURI_INVOKE<InstanceDto>("plugin:instance|get", { id }),
 	getDir: (id: string) => __TAURI_INVOKE<string>("plugin:instance|get_dir", { id }),
@@ -24,11 +22,13 @@ export const commands = {
 	disableContents: (id: string, contentPaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|disable_contents", { id, contentPaths, requestId }),
 	removeContents: (id: string, contentPaths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|remove_contents", { id, contentPaths, requestId }),
 	listContentProviders: () => __TAURI_INVOKE<CapabilityEntryDto<ContentProviderCapabilityMetadataDto>[]>("plugin:instance|list_content_providers"),
+	listPackManagers: () => __TAURI_INVOKE<CapabilityEntryDto<PackManagerCapabilityMetadataDto>[]>("plugin:instance|list_pack_managers"),
 	searchContent: (payload: ContentSearchParamsDto) => __TAURI_INVOKE<ContentSearchResultDto>("plugin:instance|search_content", { payload }),
 	checkCompatibility: (instanceIds: string[], checkParams: ContentCompatibilityCheckParamsDto) => __TAURI_INVOKE<{ [key in string]: ContentCompatibilityResultDto }>("plugin:instance|check_compatibility", { instanceIds, checkParams }),
 	getContent: (params: ContentGetParamsDto) => __TAURI_INVOKE<ContentItemDto>("plugin:instance|get_content", { params }),
 	listContentVersion: (params: ContentListVersionParamsDto) => __TAURI_INVOKE<ContentVersionDto[]>("plugin:instance|list_content_version", { params }),
 	editIcon: (editInstanceIcon: EditInstanceIconDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|edit_icon", { editInstanceIcon, requestId }),
+	installPack: (payload: InstallPackRequestDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:instance|install_pack", { payload, requestId }),
 };
 
 /** Events */
@@ -249,18 +249,12 @@ export type HooksDto = {
 	postExit: string,
 };
 
-export type ImportInstanceDto = {
-	pluginId: string,
-	importerId: string,
-	path: string,
+export type InstallPackRequestDto = {
+	newInstance?: NewInstanceDto | null,
+	packSource: PackSourceDto,
+	packVersion?: string | null,
+	providerId: ProviderIdDto,
 };
-
-export type ImporterCapabilityMetadataDto = {
-	/** Optional field label shown in the importer UI. */
-	fieldLabel: string | null,
-	/**  List of supported file extensions, e.g., [`zip`, `mrpack`]. */
-	supportedExtensions: string[],
-} & CapabilityMetadataDto;
 
 export type InstanceDto = {
 	id: string,
@@ -301,17 +295,13 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "VALIDATION_ERROR"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,
-} } | { code: "IMPORTER_NOT_FOUND"; payload: {
-	importer_id: string,
-} } | { code: "IMPORT_FAILED"; payload: {
+} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UNMANAGED_INSTANCE"; payload: {
+	instance_id: string,
+} } | { code: "PACK_INSTALL_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
-} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+} } | { code: "PACK_UPDATE_FAILED"; payload: {
 	modpack_id: string,
-} } | { code: "UPDATE_FAILED"; payload: {
-	modpack_id: string,
-} } | { code: "UNMANAGED_INSTANCE"; payload: {
-	instance_id: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
@@ -455,6 +445,35 @@ export type PackInfoDto = {
 	providerId: ProviderIdDto,
 	modpackId: string,
 	version: string,
+};
+
+export type PackManagerCapabilityMetadataDto = {
+	/**  Whether the manager supports installing packs. */
+	supportsInstall: boolean,
+	/**  Whether the manager supports updating existing packs. */
+	supportsUpdate: boolean,
+	/**  Whether the manager supports checking for updates. */
+	supportsCheckUpdates: boolean,
+	/**  Optional label for a file/URL input field shown in the "Import" UI. */
+	fieldLabel: string | null,
+	/**  List of supported file extensions for import, e.g. [`"toml"`, `"mrpack"`]. */
+	supportedExtensions: string[],
+} & CapabilityMetadataDto;
+
+export type PackSourceDto = {
+	providerId?: ProviderIdDto | null,
+	packId?: string | null,
+	versionId?: string | null,
+	localFile?: string | null,
+	remoteUrl?: string | null,
+	/**
+	 *  Universal source string (path or URL).
+	 * 
+	 *  When set, the converter auto-detects the type:
+	 *  - contains `://` → `PackSource::RemoteUrl`
+	 *  - otherwise      → `PackSource::LocalFile`
+	 */
+	source?: string | null,
 };
 
 export type PluginErrorDto = { code: "NOT_FOUND"; payload: {

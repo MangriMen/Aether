@@ -73,17 +73,13 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "VALIDATION_ERROR"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,
-} } | { code: "IMPORTER_NOT_FOUND"; payload: {
-	importer_id: string,
-} } | { code: "IMPORT_FAILED"; payload: {
+} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UNMANAGED_INSTANCE"; payload: {
+	instance_id: string,
+} } | { code: "PACK_INSTALL_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
-} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+} } | { code: "PACK_UPDATE_FAILED"; payload: {
 	modpack_id: string,
-} } | { code: "UPDATE_FAILED"; payload: {
-	modpack_id: string,
-} } | { code: "UNMANAGED_INSTANCE"; payload: {
-	instance_id: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {

@@ -13,9 +13,8 @@ import { FieldLabel } from '@/shared/ui';
 
 import type {
   ContentProviderCapability,
-  ImporterCapability,
+  PackManagerCapability,
   PluginCapabilities,
-  UpdaterCapability,
 } from '../model';
 
 import { PluginCapabilityCard } from './PluginCapabilityCard';
@@ -32,11 +31,8 @@ export const PluginCapabilitiesSection: Component<
 
   const caps = createMemo(() => local.capabilities);
 
-  const hasImporters = createMemo(
-    () => caps()?.importers != null && caps()!.importers!.length > 0,
-  );
-  const hasUpdaters = createMemo(
-    () => caps()?.updaters != null && caps()!.updaters!.length > 0,
+  const hasPackManagers = createMemo(
+    () => caps()?.packManagers != null && caps()!.packManagers!.length > 0,
   );
   const hasContentProviders = createMemo(
     () =>
@@ -44,21 +40,13 @@ export const PluginCapabilitiesSection: Component<
   );
 
   return (
-    <Show when={hasImporters() || hasUpdaters() || hasContentProviders()}>
+    <Show when={hasPackManagers() || hasContentProviders()}>
       <div class={cn('gap-4 flex flex-col', local.class)} {...others}>
-        <Show when={hasImporters()}>
+        <Show when={hasPackManagers()}>
           <div class='gap-2 flex flex-col'>
-            <FieldLabel>{t('plugin.importers')}</FieldLabel>
-            <For each={caps()!.importers as ImporterCapability[]}>
-              {(importer) => <PluginCapabilityCard capability={importer} />}
-            </For>
-          </div>
-        </Show>
-        <Show when={hasUpdaters()}>
-          <div class='gap-2 flex flex-col'>
-            <FieldLabel>{t('plugin.updaters')}</FieldLabel>
-            <For each={caps()!.updaters as UpdaterCapability[]}>
-              {(updater) => <PluginCapabilityCard capability={updater} />}
+            <FieldLabel>{t('plugin.packManagers')}</FieldLabel>
+            <For each={caps()!.packManagers as PackManagerCapability[]}>
+              {(manager) => <PluginCapabilityCard capability={manager} />}
             </For>
           </div>
         </Show>

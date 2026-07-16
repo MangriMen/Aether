@@ -44,24 +44,9 @@ pub enum InstanceError {
         reason: InstanceValidationErrorReason,
     },
 
-    #[error("Not found importer {importer_id}")]
-    ImporterNotFound { importer_id: String },
-
-    #[error("Failed to import instance with {plugin_id} {capability_id}")]
-    ImportFailed {
-        plugin_id: String,
-        capability_id: String,
-    },
-
-    // Update errors
+    // Pack management errors
     #[error("Not found pack info in instance")]
     PackInfoNotFound,
-
-    #[error("Not found updater for modpack {modpack_id}")]
-    UpdaterNotFound { modpack_id: String },
-
-    #[error("Failed to update instance with modpack {modpack_id}")]
-    UpdateFailed { modpack_id: String },
 
     #[error("Unmanaged instance")]
     UnmanagedInstance { instance_id: String },
@@ -84,6 +69,26 @@ pub enum InstanceError {
 
     #[error("Unsupported content type: {content_type:?}")]
     UnsupportedContentType { content_type: ContentType },
+
+    #[error("Unsupported operation: {0}")]
+    UnsupportedOperation(String),
+
+    #[error("Pack manager not found for plugin \"{plugin_id}\" and capability \"{capability_id}\"")]
+    PackManagerNotFound {
+        plugin_id: String,
+        capability_id: String,
+    },
+
+    #[error(
+        "Failed to install pack with plugin \"{plugin_id}\" and capability \"{capability_id}\""
+    )]
+    PackInstallFailed {
+        plugin_id: String,
+        capability_id: String,
+    },
+
+    #[error("Failed to update pack for modpack \"{modpack_id}\"")]
+    PackUpdateFailed { modpack_id: String },
 
     // Features errors
     #[error("Settings load error")]

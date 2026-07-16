@@ -16,7 +16,7 @@ use aether_core::features::instance::infra::{
     SqliteInstanceStorage, SqlitePackStorage,
 };
 use aether_core::features::instance::{
-    ContentProvider, GetInstanceUseCase, Importer, InstanceCrudPort, Updater,
+    ContentProvider, GetInstanceUseCase, InstanceCrudPort, PackManager,
 };
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
@@ -265,12 +265,10 @@ pub async fn build_container(
     };
 
     // ── Capability registries ───────────────────────────────────────
-    let importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>> =
-        Arc::new(MemoryCapabilityRegistry::new("importer"));
-    let updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>> =
-        Arc::new(MemoryCapabilityRegistry::new("updater"));
     let content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> =
         Arc::new(MemoryCapabilityRegistry::new("content_provider"));
+    let pack_manager_registry: Arc<dyn CapabilityRegistry<Arc<dyn PackManager>>> =
+        Arc::new(MemoryCapabilityRegistry::new("pack_manager"));
 
     // ── Assets storage ──────────────────────────────────────────────
     let file_cache_assets = Arc::new(FileCache::new(
@@ -315,9 +313,8 @@ pub async fn build_container(
             as Arc<dyn aether_core::features::events::ProgressService>,
         location_info: location_info.clone(),
         instance_watcher_service: instance_watcher_service.clone(),
-        importers_registry: importers_registry.clone(),
-        updaters_registry: updaters_registry.clone(),
         content_provider_registry: content_provider_registry.clone(),
+        pack_manager_registry: pack_manager_registry.clone(),
     });
 
     // ── Post-construction wiring ────────────────────────────────────
@@ -349,9 +346,8 @@ pub async fn build_container(
     // Set up plugin infrastructure listener
     let plugin_infra_listener = Arc::new(PluginInfrastructureListener::new(
         plugin_registry,
-        importers_registry,
-        updaters_registry,
         content_provider_registry,
+        pack_manager_registry,
     ));
     event_emitter.on::<PluginEvent, _>({
         let listener = plugin_infra_listener.clone();

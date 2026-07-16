@@ -24,7 +24,7 @@ pub struct ContentSearchResult {
     pub items: Vec<ContentItem>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct ProviderId {
     pub plugin_id: String,
     pub capability_id: String,

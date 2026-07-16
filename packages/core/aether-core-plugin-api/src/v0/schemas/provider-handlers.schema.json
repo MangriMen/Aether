@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderHandlersDto",
+  "description": "Names of plugin functions that implement specific content provider logic.",
+  "type": "object",
+  "properties": {
+    "checkCompatibility": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "getContent": {
+      "type": "string"
+    },
+    "installAtomic": {
+      "type": "string"
+    },
+    "installModpack": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "listVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "search": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "search",
+    "getContent",
+    "installAtomic"
+  ]
+}

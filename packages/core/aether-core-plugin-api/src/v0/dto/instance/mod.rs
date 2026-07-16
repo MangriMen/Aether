@@ -12,6 +12,9 @@ pub mod loader_version_preference;
 pub mod mod_loader;
 pub mod new_instance;
 pub mod pack_info;
+pub mod pack_install_params;
+pub mod pack_metadata;
+pub mod pack_source;
 
 pub use base_content_params::*;
 pub use content_file::*;
@@ -27,3 +30,6 @@ pub use loader_version_preference::*;
 pub use mod_loader::*;
 pub use new_instance::*;
 pub use pack_info::*;
+pub use pack_install_params::*;
+pub use pack_metadata::*;
+pub use pack_source::*;

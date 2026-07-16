@@ -106,13 +106,6 @@ export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto 
  */
 { type: "internal"; payload: string };
 
-export type ImporterCapabilityMetadataDto = {
-	/** Optional field label shown in the importer UI. */
-	fieldLabel: string | null,
-	/**  List of supported file extensions, e.g., [`zip`, `mrpack`]. */
-	supportedExtensions: string[],
-} & CapabilityMetadataDto;
-
 export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	details: string,
 } } | { code: "NOT_FOUND"; payload: {
@@ -130,17 +123,13 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "VALIDATION_ERROR"; payload: {
 	field: InstanceFieldDto,
 	reason: InstanceValidationErrorReasonDto,
-} } | { code: "IMPORTER_NOT_FOUND"; payload: {
-	importer_id: string,
-} } | { code: "IMPORT_FAILED"; payload: {
+} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UNMANAGED_INSTANCE"; payload: {
+	instance_id: string,
+} } | { code: "PACK_INSTALL_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
-} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+} } | { code: "PACK_UPDATE_FAILED"; payload: {
 	modpack_id: string,
-} } | { code: "UPDATE_FAILED"; payload: {
-	modpack_id: string,
-} } | { code: "UNMANAGED_INSTANCE"; payload: {
-	instance_id: string,
 } } | { code: "CONTENT_DUPLICATION"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
@@ -234,6 +223,29 @@ export type MinecraftErrorDto = { code: "VERSION_NOT_FOUND"; payload: {
 	details: string,
 } };
 
+export type PackManagerCapabilityMetadataDto = {
+	/**  Whether the manager supports installing packs. */
+	supportsInstall: boolean,
+	/**  Whether the manager supports updating existing packs. */
+	supportsUpdate: boolean,
+	/**  Whether the manager supports checking for updates. */
+	supportsCheckUpdates: boolean,
+	/**  Optional label for a file/URL input field shown in the "Import" UI. */
+	fieldLabel: string | null,
+	/**  List of supported file extensions for import, e.g. [`"toml"`, `"mrpack"`]. */
+	supportedExtensions: string[],
+} & CapabilityMetadataDto;
+
+/**  Names of plugin functions that implement specific pack manager logic. */
+export type PackManagerHandlersDto = {
+	/**  Function to install a pack into an already-created instance. */
+	install: string,
+	/**  Optional function to update an existing pack-managed instance. */
+	update: string | null,
+	/**  Optional function to check whether a newer version of the pack is available. */
+	checkUpdates: string | null,
+};
+
 /**
  *  A mapping between a path on the host and a virtual path in the plugin.
  *  Format: [`host_path`, `virtual_path`]
@@ -244,14 +256,12 @@ string,
 /**  Virtual path inside the plugin sandbox. */
 string];
 
-/**  Describes the declarative capabilities of a plugin, such as supported importers. */
+/**  Describes the declarative capabilities of a plugin, such as supported content providers and pack managers. */
 export type PluginCapabilitiesDto = {
-	/**  List of supported modpack importers provided by the plugin. */
-	importers?: PluginImporterCapabilityDto[],
-	/**  List of supported modpack updaters provided by the plugin. */
-	updaters?: PluginUpdaterCapabilityDto[],
 	/**  List of content providers provided by the plugin. */
 	contentProviders?: PluginContentProviderCapabilityDto[],
+	/**  List of pack managers provided by the plugin. */
+	packManagers?: PluginPackManagerCapabilityDto[],
 };
 
 export type PluginContentProviderCapabilityDto = {
@@ -331,11 +341,6 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 
 export type PluginEventDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
 
-export type PluginImporterCapabilityDto = {
-	/**  Plugin function name to handle this capability call. */
-	handler: string,
-} & ImporterCapabilityMetadataDto;
-
 /**  Root configuration for an Aether plugin. */
 export type PluginManifestDto = {
 	/**  Information about the plugin identity. */
@@ -373,6 +378,11 @@ export type PluginMetadataDto = {
 	license: string | null,
 };
 
+export type PluginPackManagerCapabilityDto = {
+	/**  Set of functions provided by the plugin to handle pack operations. */
+	handlers: PackManagerHandlersDto,
+} & PackManagerCapabilityMetadataDto;
+
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
 	allowedPaths?: PathMappingDto[],
@@ -395,11 +405,6 @@ export type PluginUpdateInfoDto = {
 	has_update: boolean,
 	all_releases: ProviderReleaseInfoDto[],
 };
-
-export type PluginUpdaterCapabilityDto = {
-	/**  Plugin function name to handle this capability call. */
-	handler: string,
-} & UpdaterCapabilityMetadataDto;
 
 export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 	id: string,
@@ -464,8 +469,6 @@ export type RuntimeConfigDto = {
 };
 
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" };
-
-export type UpdaterCapabilityMetadataDto = CapabilityMetadataDto;
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 	label: WindowLabelDto,

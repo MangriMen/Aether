@@ -4,12 +4,11 @@ use crate::features::instance::app::ports::{
     ChangeContentStateUseCasePort, CheckContentCompatibilityUseCasePort, ContentFileService,
     CreateInstanceUseCasePort, EditInstanceIconUseCasePort, EditInstanceUseCasePort,
     GetContentUseCasePort, GetInstanceUseCasePort, ImportContentUseCasePort,
-    ImportInstanceUseCasePort, InstallContentUseCasePort, InstanceFileService,
-    InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
-    LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCasePort,
-    ListContentVersionsUseCasePort, ListImportersUseCasePort, ListInstancesUseCasePort,
-    ListProvidersUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
-    SearchContentUseCasePort, UpdateInstanceUseCasePort,
+    InstallContentUseCasePort, InstallPackUseCasePort, InstanceFileService, InstanceInstallService,
+    InstanceLaunchService, InstanceWatcherService, LaunchInstanceWithActiveAccountUseCasePort,
+    ListContentUseCasePort, ListContentVersionsUseCasePort, ListInstancesUseCasePort,
+    ListPackManagersUseCasePort, ListProvidersUseCasePort, RemoveContentUseCasePort,
+    RemoveInstanceUseCasePort, SearchContentUseCasePort, UpdateInstanceUseCasePort,
 };
 
 pub trait InstanceCrudPort {
@@ -23,8 +22,7 @@ pub trait InstanceCrudPort {
 }
 
 pub trait InstanceLifecyclePort {
-    fn import_instance_use_case(&self) -> Arc<dyn ImportInstanceUseCasePort>;
-    fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort>;
+    fn install_pack_use_case(&self) -> Arc<dyn InstallPackUseCasePort>;
     fn launch_instance_with_active_account_use_case(
         &self,
     ) -> Arc<dyn LaunchInstanceWithActiveAccountUseCasePort>;
@@ -45,6 +43,7 @@ pub trait ContentProviderPort {
     -> Arc<dyn CheckContentCompatibilityUseCasePort>;
     fn list_content_versions_use_case(&self) -> Arc<dyn ListContentVersionsUseCasePort>;
     fn list_providers_use_case(&self) -> Arc<dyn ListProvidersUseCasePort>;
+    fn list_pack_managers_use_case(&self) -> Arc<dyn ListPackManagersUseCasePort>;
 }
 
 pub trait InstanceServicesPort {
