@@ -85,6 +85,9 @@ pub enum InstanceError {
     #[error("Unsupported content type: {content_type:?}")]
     UnsupportedContentType { content_type: ContentType },
 
+    #[error("Unsupported operation: {0}")]
+    UnsupportedOperation(String),
+
     // Features errors
     #[error("Settings load error")]
     SettingsLoadError(#[from] SettingsError),

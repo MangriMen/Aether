@@ -153,6 +153,9 @@ impl From<&InstanceError> for InstanceErrorDto {
                     game_version: game_version.clone(),
                 }
             }
+            InstanceError::UnsupportedOperation(_err) => Self::UnsupportedContentType {
+                content_type: aether_core::features::instance::ContentType::Modpack.into(),
+            },
             InstanceError::UnsupportedContentType { content_type } => {
                 Self::UnsupportedContentType {
                     content_type: (*content_type).into(),

@@ -4,13 +4,14 @@ pub mod infra;
 
 // Domain (models + PluginInstance)
 pub use domain::{
-    ApiConfig, Compatibility, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError,
-    PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities, PluginCheckCompatibilityParams,
-    PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
-    PluginImporterCapability, PluginInstance, PluginInternalEvent, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource, PluginSourceType,
-    PluginState, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
-    ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
+    ApiConfig, Compatibility, ContentSourceHandlers, ExtractedPlugin, LoadConfig, LoadConfigType,
+    ManifestError, PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities,
+    PluginCheckCompatibilityParams, PluginContent, PluginContentProviderCapability,
+    PluginContentSourceCapability, PluginError, PluginImportInstance, PluginImporterCapability,
+    PluginInstance, PluginInternalEvent, PluginManifest, PluginManifestPreview, PluginMetadata,
+    PluginSettings, PluginSource, PluginSourceType, PluginState, PluginUpdaterCapability,
+    ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+    RuntimeConfig, SerializableOutput,
 };
 
 // App (use cases, ports, services, DTOs)

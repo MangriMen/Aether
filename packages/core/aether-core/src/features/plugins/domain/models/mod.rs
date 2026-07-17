@@ -17,8 +17,9 @@ pub use extracted_plugin::{ExtractedPlugin, PluginContent};
 pub use manifest_error::ManifestError;
 pub use plugin::{Plugin, PluginState};
 pub use plugin_capabilities::{
-    PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
-    PluginUpdaterCapability, ProviderHandlers,
+    ContentSourceHandlers, PluginCapabilities, PluginContentProviderCapability,
+    PluginContentSourceCapability, PluginImporterCapability, PluginUpdaterCapability,
+    ProviderHandlers,
 };
 pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
 pub use plugin_error::PluginError;
