@@ -2,8 +2,8 @@ use std::ops::Deref;
 
 use crate::features::{
     instance::{
-        CapabilityMetadata, ContentProviderCapabilityMetadata, ImporterCapabilityMetadata,
-        UpdaterCapabilityMetadata,
+        CapabilityMetadata, ContentProviderCapabilityMetadata, ContentSourceCapabilityMetadata,
+        ImporterCapabilityMetadata, UpdaterCapabilityMetadata,
     },
     plugins::AsCapabilityMetadata,
 };
@@ -14,6 +14,7 @@ pub struct PluginCapabilities {
     pub importers: Vec<PluginImporterCapability>,
     pub updaters: Vec<PluginUpdaterCapability>,
     pub content_providers: Vec<PluginContentProviderCapability>,
+    pub content_sources: Vec<PluginContentSourceCapability>,
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +45,22 @@ pub struct ProviderHandlers {
     pub check_compatibility: Option<String>,
 }
 
+/// New unified capability — replaces `ContentProvider`, `Importer`, and `Updater`.
+#[derive(Debug, Clone)]
+pub struct PluginContentSourceCapability {
+    pub metadata: ContentSourceCapabilityMetadata,
+    pub handlers: ContentSourceHandlers,
+}
+
+#[derive(Debug, Clone)]
+pub struct ContentSourceHandlers {
+    pub search: String,
+    pub get_content: String,
+    pub list_version: Option<String>,
+    pub get_version_info: String,
+    pub check_compatibility: Option<String>,
+}
+
 impl Deref for PluginImporterCapability {
     type Target = ImporterCapabilityMetadata;
     fn deref(&self) -> &Self::Target {
@@ -65,6 +82,13 @@ impl Deref for PluginContentProviderCapability {
     }
 }
 
+impl Deref for PluginContentSourceCapability {
+    type Target = ContentSourceCapabilityMetadata;
+    fn deref(&self) -> &Self::Target {
+        &self.metadata
+    }
+}
+
 impl AsCapabilityMetadata for PluginImporterCapability {
     fn as_metadata(&self) -> &CapabilityMetadata {
         &self.metadata.base
@@ -78,6 +102,12 @@ impl AsCapabilityMetadata for PluginUpdaterCapability {
 }
 
 impl AsCapabilityMetadata for PluginContentProviderCapability {
+    fn as_metadata(&self) -> &CapabilityMetadata {
+        &self.metadata.base
+    }
+}
+
+impl AsCapabilityMetadata for PluginContentSourceCapability {
     fn as_metadata(&self) -> &CapabilityMetadata {
         &self.metadata.base
     }

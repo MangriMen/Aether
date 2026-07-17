@@ -4,6 +4,7 @@ mod fs_plugin_source_storage;
 mod fs_plugin_storage;
 mod github_plugin;
 mod plugin_content_provider_proxy;
+mod plugin_content_source_proxy;
 mod plugin_dtos_v1;
 mod plugin_importer_proxy;
 mod plugin_infrastructure_listener;
@@ -19,6 +20,7 @@ pub use github_plugin::{
     GitHubPluginFetcher, GitHubPluginPreview, GitHubReleaseInfo, GithubProvider, PluginUpdateInfo,
 };
 pub use plugin_content_provider_proxy::PluginContentProviderProxy;
+pub use plugin_content_source_proxy::PluginContentSourceProxy;
 pub use plugin_dtos_v1::*;
 pub use plugin_importer_proxy::PluginImporterProxy;
 pub use plugin_infrastructure_listener::PluginInfrastructureListener;

@@ -19,10 +19,10 @@ use crate::{
     features::{
         instance::infra::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
-            ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
-            ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
-            ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
-            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
+            ContentFileDto, ContentGetParamsDto, ContentItemDto, ContentListVersionParamsDto,
+            ContentProviderCapabilityMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
+            ContentTypeDto, ContentVersionDto, EditInstanceDto, EditInstanceIconDto,
+            ImportInstanceDto, ImporterCapabilityMetadataDto, InstallContentRequestDto,
             InstanceDto, InstanceEventDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
@@ -297,7 +297,7 @@ async fn list_content(
 #[tauri::command]
 #[specta::specta]
 async fn install_content(
-    payload: ContentInstallParamsDto,
+    payload: InstallContentRequestDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
     container: State<'_, ContainerState>,

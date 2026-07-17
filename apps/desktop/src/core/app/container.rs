@@ -16,7 +16,8 @@ use aether_core::features::instance::infra::{
     SqliteInstanceStorage, SqlitePackStorage,
 };
 use aether_core::features::instance::{
-    ContentProvider, GetInstanceUseCase, Importer, InstanceCrudPort, Updater,
+    ContentProvider, ContentSource, GetInstanceUseCase, Importer, InstanceCrudPort,
+    PackLifecycleHandlerRegistry, Updater,
 };
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
@@ -271,6 +272,9 @@ pub async fn build_container(
         Arc::new(MemoryCapabilityRegistry::new("updater"));
     let content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>> =
         Arc::new(MemoryCapabilityRegistry::new("content_provider"));
+    let content_source_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentSource>>> =
+        Arc::new(MemoryCapabilityRegistry::new("content_source"));
+    let pack_lifecycle_handler_registry = Arc::new(PackLifecycleHandlerRegistry::new());
 
     // ── Assets storage ──────────────────────────────────────────────
     let file_cache_assets = Arc::new(FileCache::new(
@@ -318,6 +322,9 @@ pub async fn build_container(
         importers_registry: importers_registry.clone(),
         updaters_registry: updaters_registry.clone(),
         content_provider_registry: content_provider_registry.clone(),
+        content_source_registry: content_source_registry.clone(),
+        pack_lifecycle_handler_registry: pack_lifecycle_handler_registry.clone(),
+        request_client: http_client.clone(),
     });
 
     // ── Post-construction wiring ────────────────────────────────────
@@ -328,7 +335,7 @@ pub async fn build_container(
         .await
         .map_err(|e| anyhow::anyhow!("Instance watcher: {e}"))?;
 
-    // Register ModrinthContentProvider
+    // Register ModrinthContentProvider (as ContentProvider + ContentSource)
     {
         let provider = Arc::new(ModrinthContentProvider::new(
             location_info.clone(),
@@ -336,11 +343,19 @@ pub async fn build_container(
             http_client.clone(),
             container.create_instance_use_case(),
         ));
-        let meta = provider.metadata();
+        let meta = ContentSource::metadata(&*provider);
         let _ = content_provider_registry
             .add(
                 ModrinthContentProvider::ID.to_owned(),
                 meta.id.clone(),
+                provider.clone(),
+            )
+            .await;
+        // Also register as ContentSource
+        let _ = content_source_registry
+            .add(
+                ModrinthContentProvider::ID.to_owned(),
+                "modrinth-content".to_owned(),
                 provider,
             )
             .await;
@@ -352,6 +367,7 @@ pub async fn build_container(
         importers_registry,
         updaters_registry,
         content_provider_registry,
+        content_source_registry,
     ));
     event_emitter.on::<PluginEvent, _>({
         let listener = plugin_infra_listener.clone();

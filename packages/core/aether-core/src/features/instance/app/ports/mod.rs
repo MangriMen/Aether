@@ -1,23 +1,27 @@
 mod content_file_service;
 mod content_provider;
+mod content_source;
 mod importer;
 mod instance_file_service;
 mod instance_install_service;
 mod instance_launch_service;
 mod instance_storage;
 mod instance_watcher_service;
+mod pack_lifecycle_handler;
 mod pack_storage;
 mod updater;
 mod use_case_ports;
 
 pub use content_file_service::ContentFileService;
 pub use content_provider::ContentProvider;
+pub use content_source::ContentSource;
 pub use importer::Importer;
 pub use instance_file_service::InstanceFileService;
 pub use instance_install_service::InstanceInstallService;
 pub use instance_launch_service::InstanceLaunchService;
 pub use instance_storage::InstanceStorage;
 pub use instance_watcher_service::InstanceWatcherService;
+pub use pack_lifecycle_handler::PackLifecycleHandler;
 pub use pack_storage::PackStorage;
 pub use updater::Updater;
 pub use use_case_ports::*;

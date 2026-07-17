@@ -582,3 +582,131 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
             .collect())
     }
 }
+
+#[async_trait]
+impl<RC: RequestClient + 'static> crate::features::instance::ContentSource
+    for ModrinthContentProvider<RC>
+{
+    fn metadata(&self) -> &crate::features::instance::ContentSourceCapabilityMetadata {
+        // Static metadata — ContentSource wraps the same capability info
+        use std::sync::OnceLock;
+        static META: OnceLock<crate::features::instance::ContentSourceCapabilityMetadata> =
+            OnceLock::new();
+        META.get_or_init(
+            || crate::features::instance::ContentSourceCapabilityMetadata {
+                base: crate::features::instance::CapabilityMetadata {
+                    id: "modrinth-content".to_string(),
+                    name: "Modrinth".to_string(),
+                    description: None,
+                    icon: None,
+                },
+            },
+        )
+    }
+
+    async fn search(
+        &self,
+        params: ContentSearchParams,
+    ) -> Result<ContentSearchResult, InstanceError> {
+        ContentProvider::search(self, params).await
+    }
+
+    async fn get_content(&self, content_id: String) -> Result<ContentItem, InstanceError> {
+        ContentProvider::get_content(self, content_id).await
+    }
+
+    async fn list_versions(
+        &self,
+        content_id: String,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
+        ContentProvider::list_versions(self, content_id).await
+    }
+
+    async fn get_version_info(
+        &self,
+        content_id: &str,
+        version_id: &str,
+    ) -> Result<crate::features::instance::VersionInfo, InstanceError> {
+        use crate::features::instance::{
+            Checksum, DownloadInstruction, ModpackPayload, VersionPayload,
+        };
+        use crate::features::minecraft::ModLoader;
+
+        // Fetch the version from Modrinth API
+        let version = self
+            .api
+            .get_project_version(version_id)
+            .await
+            .map_err(|err| InstanceError::ContentDownloadError(err.clone()))?;
+
+        // Parse loaders
+        let loaders: Vec<ModLoader> = version
+            .loaders
+            .iter()
+            .filter_map(|l| match l.to_lowercase().as_str() {
+                "fabric" => Some(ModLoader::Fabric),
+                "forge" => Some(ModLoader::Forge),
+                "neoforge" => Some(ModLoader::NeoForge),
+                "quilt" => Some(ModLoader::Quilt),
+                "vanilla" => Some(ModLoader::Vanilla),
+                _ => None,
+            })
+            .collect();
+
+        // Get the first file
+        let file = get_first_file_from_project_version(&version).ok_or_else(|| {
+            InstanceError::ContentDownloadError(format!(
+                "No files found for version {}",
+                version.id
+            ))
+        })?;
+
+        // Determine payload type based on file extension
+        let payload = if file.filename.ends_with(".mrpack") {
+            // Download the .mrpack and read its manifest bytes
+            let mrpack_bytes = self
+                .request_client
+                .fetch_bytes(crate::shared::request_client::Request::get(&file.url))
+                .await
+                .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
+
+            VersionPayload::Modpack(Box::new(ModpackPayload {
+                format_id: "mrpack".to_string(),
+                manifest_bytes: mrpack_bytes.to_vec(),
+            }))
+        } else {
+            VersionPayload::Asset(Box::new(DownloadInstruction {
+                url: file.url.clone(),
+                file_name: file.filename.clone(),
+                checksum: Some(Checksum {
+                    algorithm: "sha1".to_string(),
+                    value: file.hashes.sha1.clone(),
+                }),
+                headers: None,
+                content_path: std::path::PathBuf::from(&file.filename),
+                content_type: crate::features::instance::ContentType::Mod,
+                content_id: content_id.to_owned(),
+                content_version: version.id.clone(),
+                provider_id: self.get_provider_id(),
+                name: None,
+                size: file.size.try_into().unwrap_or(0),
+            }))
+        };
+
+        Ok(crate::features::instance::VersionInfo {
+            version_id: version.id,
+            version_name: version.name,
+            game_versions: version.game_versions,
+            loaders,
+            payload,
+        })
+    }
+
+    async fn check_compatibility(
+        &self,
+        instances: &[Instance],
+        content_item: &ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        ContentProvider::check_compatibility(self, instances, content_item).await
+    }
+}

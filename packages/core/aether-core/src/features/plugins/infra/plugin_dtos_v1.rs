@@ -14,6 +14,8 @@ pub struct PluginCapabilitiesV1 {
     pub importers: Option<Vec<PluginImporterCapabilityV1>>,
     pub updaters: Option<Vec<PluginUpdaterCapabilityV1>>,
     pub content_providers: Option<Vec<PluginContentProviderCapabilityV1>>,
+    #[serde(default)]
+    pub content_sources: Option<Vec<PluginContentSourceCapabilityV1>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +61,26 @@ pub struct ProviderHandlersV1 {
     pub list_version: Option<String>,
     pub install_atomic: String,
     pub install_modpack: Option<String>,
+    pub check_compatibility: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginContentSourceCapabilityV1 {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub icon: Option<String>,
+    pub handlers: ContentSourceHandlersV1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentSourceHandlersV1 {
+    pub search: String,
+    pub get_content: String,
+    pub list_version: Option<String>,
+    pub get_version_info: String,
     pub check_compatibility: Option<String>,
 }
 
@@ -136,6 +158,7 @@ impl From<PluginCapabilitiesV1> for PluginCapabilities {
                     },
                 })
                 .collect(),
+            content_sources: Vec::new(), // TODO(step-3): parse from V1 when format stabilizes
         }
     }
 }
@@ -202,6 +225,24 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                             install_atomic: cp.handlers.install_atomic,
                             install_modpack: cp.handlers.install_modpack,
                             check_compatibility: cp.handlers.check_compatibility,
+                        },
+                    })
+                    .collect(),
+            ),
+            content_sources: Some(
+                v.content_sources
+                    .into_iter()
+                    .map(|cs| PluginContentSourceCapabilityV1 {
+                        id: cs.metadata.base.id.clone(),
+                        name: cs.metadata.base.name.clone(),
+                        description: cs.metadata.base.description.clone(),
+                        icon: cs.metadata.base.icon.clone(),
+                        handlers: ContentSourceHandlersV1 {
+                            search: cs.handlers.search,
+                            get_content: cs.handlers.get_content,
+                            list_version: cs.handlers.list_version,
+                            get_version_info: cs.handlers.get_version_info,
+                            check_compatibility: cs.handlers.check_compatibility,
                         },
                     })
                     .collect(),
