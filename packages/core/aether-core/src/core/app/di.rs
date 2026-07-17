@@ -17,7 +17,8 @@ use crate::features::{
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
-        ImportInstanceUseCasePort, Importer, InstallContentUseCasePort, InstallInstanceUseCase,
+        ImportInstanceUseCasePort, Importer, InstallContentUseCasePort,
+        InstallInstanceUseCase,
         InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceStorage,
         InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
@@ -71,8 +72,8 @@ use crate::features::{
 };
 use crate::{
     features::instance::{
-        ContentManagementPort, ContentProviderPort, ContentSource, InstanceCrudPort,
-        InstanceLifecyclePort, InstanceServicesPort, LegacyInstallContentUseCase,
+        ContentManagementPort, ContentProviderPort, ContentSource, InstallContentV2UseCasePort,
+        InstanceCrudPort, InstanceLifecyclePort, InstanceServicesPort,
         PackLifecycleHandlerRegistry,
     },
     shared::{
@@ -673,11 +674,23 @@ impl ContentProviderPort for AetherContainer {
         ))
     }
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort> {
-        // TODO: Migrate to new InstallContentUseCase (ContentSource-based)
-        Arc::new(LegacyInstallContentUseCase::new(
+        Arc::new(
+            crate::features::instance::LegacyInstallContentUseCase::new(
+                self.storage().pack_storage.clone(),
+                self.content_provider_registry().clone(),
+                self.storage().content_file_service.clone(),
+            ),
+        )
+    }
+    fn install_content_v2_use_case(&self) -> Arc<dyn InstallContentV2UseCasePort> {
+        Arc::new(crate::features::instance::InstallContentUseCase::new(
+            self.request_client(),
             self.storage().pack_storage.clone(),
-            self.content_provider_registry().clone(),
+            self.content_source_registry(),
             self.storage().content_file_service.clone(),
+            self.create_instance_use_case(),
+            self.storage().instance_storage.clone(),
+            self.pack_lifecycle_handler_registry(),
         ))
     }
     fn check_content_compatibility_use_case(

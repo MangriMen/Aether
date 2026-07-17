@@ -5,7 +5,7 @@ use path_slash::PathBufExt;
 
 use crate::features::instance::app::dtos::InstallContentRequest;
 use crate::features::instance::app::ports::{
-    ContentFileService, CreateInstanceUseCasePort, InstallContentUseCasePort,
+    ContentFileService, CreateInstanceUseCasePort, InstallContentV2UseCasePort,
 };
 use crate::features::instance::app::services::PackLifecycleHandlerRegistry;
 use crate::features::instance::domain::{
@@ -229,15 +229,8 @@ impl InstallContentUseCase {
 }
 
 #[async_trait]
-impl InstallContentUseCasePort for InstallContentUseCase {
-    async fn execute(
-        &self,
-        _install_params: crate::features::instance::ContentInstallParams,
-    ) -> Result<(), InstanceError> {
-        // TODO(step-4): Add a separate port for the v2 request, or migrate
-        // Callers should use the new `execute` method directly with `InstallContentRequest`.
-        Err(InstanceError::UnsupportedOperation(
-            "Use execute_with_request() instead".into(),
-        ))
+impl InstallContentV2UseCasePort for InstallContentUseCase {
+    async fn execute(&self, request: InstallContentRequest) -> Result<(), InstanceError> {
+        self.execute(request).await
     }
 }

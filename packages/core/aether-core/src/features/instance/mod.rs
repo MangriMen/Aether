@@ -31,7 +31,7 @@ pub use app::{
     GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort, ImportContent,
     ImportContentUseCase, ImportContentUseCasePort, ImportInstance, ImportInstanceUseCase,
     ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
-    InstallInstanceUseCase, InstanceCrudPort, InstanceFeature, InstanceFileService,
+    InstallContentV2UseCasePort, InstallInstanceUseCase, InstanceCrudPort, InstanceFeature, InstanceFileService,
     InstanceInstallService, InstanceLaunchService, InstanceLifecyclePort, InstanceServicesPort,
     InstanceStorage, InstanceStorageExt, InstanceWatcherService, LaunchInstanceUseCase,
     LaunchInstanceWithActiveAccountUseCase, LaunchInstanceWithActiveAccountUseCasePort,

@@ -6,7 +6,7 @@ use dashmap::DashMap;
 use crate::features::instance::app::{
     ChangeContentState, ContentCompatibilityCheckParams, ContentCompatibilityResult,
     ContentGetParams, ContentListVersionsParams, EditInstance, EditInstanceIcon, ImportContent,
-    ImportInstance, NewInstance, RemoveContent,
+    ImportInstance, InstallContentRequest, NewInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
     ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
@@ -121,6 +121,14 @@ pub trait GetContentUseCasePort: Send + Sync {
 #[async_trait]
 pub trait InstallContentUseCasePort: Send + Sync {
     async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError>;
+}
+
+/// New port for the unified `InstallContentUseCase` (ContentSource-based).
+///
+/// Accepts `InstallContentRequest` which supports both asset and modpack flows.
+#[async_trait]
+pub trait InstallContentV2UseCasePort: Send + Sync {
+    async fn execute(&self, request: InstallContentRequest) -> Result<(), InstanceError>;
 }
 
 #[async_trait]
