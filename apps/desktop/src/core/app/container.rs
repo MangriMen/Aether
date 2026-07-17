@@ -335,7 +335,7 @@ pub async fn build_container(
         .await
         .map_err(|e| anyhow::anyhow!("Instance watcher: {e}"))?;
 
-    // Register ModrinthContentProvider
+    // Register ModrinthContentProvider (as ContentProvider + ContentSource)
     {
         let provider = Arc::new(ModrinthContentProvider::new(
             location_info.clone(),
@@ -343,11 +343,19 @@ pub async fn build_container(
             http_client.clone(),
             container.create_instance_use_case(),
         ));
-        let meta = provider.metadata();
+        let meta = ContentSource::metadata(&*provider);
         let _ = content_provider_registry
             .add(
                 ModrinthContentProvider::ID.to_owned(),
                 meta.id.clone(),
+                provider.clone(),
+            )
+            .await;
+        // Also register as ContentSource
+        let _ = content_source_registry
+            .add(
+                ModrinthContentProvider::ID.to_owned(),
+                "modrinth-content".to_owned(),
                 provider,
             )
             .await;
