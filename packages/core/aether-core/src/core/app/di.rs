@@ -674,13 +674,7 @@ impl ContentProviderPort for AetherContainer {
         ))
     }
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort> {
-        Arc::new(
-            crate::features::instance::LegacyInstallContentUseCase::new(
-                self.storage().pack_storage.clone(),
-                self.content_provider_registry().clone(),
-                self.storage().content_file_service.clone(),
-            ),
-        )
+        todo!("Migrate to InstallContentV2UseCasePort")
     }
     fn install_content_v2_use_case(&self) -> Arc<dyn InstallContentV2UseCasePort> {
         Arc::new(crate::features::instance::InstallContentUseCase::new(

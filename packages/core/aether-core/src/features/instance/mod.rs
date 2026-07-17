@@ -35,7 +35,7 @@ pub use app::{
     InstanceInstallService, InstanceLaunchService, InstanceLifecyclePort, InstanceServicesPort,
     InstanceStorage, InstanceStorageExt, InstanceWatcherService, LaunchInstanceUseCase,
     LaunchInstanceWithActiveAccountUseCase, LaunchInstanceWithActiveAccountUseCasePort,
-    LegacyInstallContentUseCase, ListContentUseCase, ListContentUseCasePort,
+    ListContentUseCase, ListContentUseCasePort,
     ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
     ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort, ListProvidersUseCase,
     ListProvidersUseCasePort, NewInstance, PackLifecycleHandler, PackLifecycleHandlerRegistry,
