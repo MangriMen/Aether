@@ -2,8 +2,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::v0::{
-    ContentProviderCapabilityMetadataDto, ImporterCapabilityMetadataDto,
-    UpdaterCapabilityMetadataDto,
+    ContentProviderCapabilityMetadataDto, ContentSourceCapabilityMetadataDto,
+    ImporterCapabilityMetadataDto, UpdaterCapabilityMetadataDto,
 };
 
 /// Describes the declarative capabilities of a plugin.
@@ -28,6 +28,10 @@ pub struct PluginCapabilitiesDto {
     /// List of content providers provided by the plugin.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub content_providers: Vec<PluginContentProviderCapabilityDto>,
+
+    /// List of content sources provided by the plugin (new unified capability).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub content_sources: Vec<PluginContentSourceCapabilityDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -72,5 +76,28 @@ pub struct ProviderHandlersDto {
     pub list_version: Option<String>,
     pub install_atomic: String,
     pub install_modpack: Option<String>,
+    pub check_compatibility: Option<String>,
+}
+
+/// New unified content source capability (replaces `ContentProvider`, `Importer`, `Updater`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+#[schemars(deny_unknown_fields)]
+pub struct PluginContentSourceCapabilityDto {
+    #[serde(flatten)]
+    pub metadata: ContentSourceCapabilityMetadataDto,
+
+    /// Set of functions provided by the plugin to handle content source operations.
+    pub handlers: ContentSourceHandlersDto,
+}
+
+/// Names of plugin functions that implement specific content source logic.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentSourceHandlersDto {
+    pub search: String,
+    pub get_content: String,
+    pub list_version: Option<String>,
+    pub get_version_info: String,
     pub check_compatibility: Option<String>,
 }

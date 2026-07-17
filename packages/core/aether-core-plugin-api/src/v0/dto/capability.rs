@@ -54,3 +54,12 @@ pub struct ContentProviderCapabilityMetadataDto {
     /// Whether the provider supports installing complex modpacks or curated collections.
     pub supports_install_modpacks: bool,
 }
+
+/// Metadata for a `ContentSource` capability (new unified type).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+#[schemars(deny_unknown_fields)]
+pub struct ContentSourceCapabilityMetadataDto {
+    #[serde(flatten)]
+    pub base: CapabilityMetadataDto,
+}
