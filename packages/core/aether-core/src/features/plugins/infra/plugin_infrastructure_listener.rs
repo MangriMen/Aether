@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use crate::{
     features::{
         events::PluginEvent,
-        instance::{ContentProvider, Importer, Updater},
+        instance::{ContentProvider, ContentSource, Importer, Updater},
         plugins::{
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
             PluginState,
@@ -13,36 +13,43 @@ use crate::{
     shared::capability::domain::CapabilityRegistry,
 };
 
-use super::{PluginContentProviderProxy, PluginImporterProxy, PluginUpdaterProxy};
+use super::{
+    PluginContentProviderProxy, PluginContentSourceProxy, PluginImporterProxy, PluginUpdaterProxy,
+};
 
 pub struct PluginInfrastructureListener<
     IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
     UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
     CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
+    CSR: ?Sized + CapabilityRegistry<Arc<dyn ContentSource>>,
 > {
     plugin: Arc<PluginRegistry>,
     importers: Arc<IR>,
     updaters: Arc<UR>,
     content_providers: Arc<CR>,
+    content_sources: Arc<CSR>,
 }
 
-impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
+impl<IR, UR, CR, CSR> PluginInfrastructureListener<IR, UR, CR, CSR>
 where
     IR: ?Sized + CapabilityRegistry<Arc<dyn Importer>>,
     UR: ?Sized + CapabilityRegistry<Arc<dyn Updater>>,
     CR: ?Sized + CapabilityRegistry<Arc<dyn ContentProvider>>,
+    CSR: ?Sized + CapabilityRegistry<Arc<dyn ContentSource>>,
 {
     pub fn new(
         plugin: Arc<PluginRegistry>,
         importers: Arc<IR>,
         updaters: Arc<UR>,
         content_providers: Arc<CR>,
+        content_sources: Arc<CSR>,
     ) -> Self {
         Self {
             plugin,
             importers,
             updaters,
             content_providers,
+            content_sources,
         }
     }
 
@@ -122,6 +129,22 @@ where
             &caps.content_providers,
             instance.as_ref(),
             |inst, cap| Arc::new(PluginContentProviderProxy::new(inst, cap)),
+        )
+        .await?;
+
+        // 4. Content Sources (new unified capability)
+        self.sync_registry(
+            plugin_id,
+            &self.content_sources,
+            &caps.content_sources,
+            instance.as_ref(),
+            |inst, cap| {
+                Arc::new(PluginContentSourceProxy::new(
+                    inst,
+                    cap.metadata.clone(),
+                    cap.handlers.clone(),
+                ))
+            },
         )
         .await?;
 

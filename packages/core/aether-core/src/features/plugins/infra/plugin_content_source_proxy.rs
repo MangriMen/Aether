@@ -4,18 +4,19 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use crate::features::instance::domain::InstanceError;
 use crate::features::instance::{
-    ContentItem, ContentSearchParams, ContentSearchResult, ContentSource,
-    ContentSourceCapabilityMetadata, ContentVersion, VersionInfo,
+    ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentSearchParams,
+    ContentSearchResult, ContentSource, ContentSourceCapabilityMetadata, ContentVersion, Instance,
+    InstanceError, VersionInfo,
 };
-use crate::features::plugins::domain::PluginInstance;
 use crate::features::plugins::ContentSourceHandlers;
+use crate::features::plugins::domain::PluginInstance;
 
 /// Bridges a WASM plugin's `ContentSource` capability to the domain `ContentSource` trait.
 ///
-/// Each method serializes parameters via MessagePack, calls the corresponding
+/// Each method serializes parameters via `MessagePack`, calls the corresponding
 /// WASM function on the plugin, and deserializes the result back.
+#[allow(dead_code)]
 pub struct PluginContentSourceProxy {
     instance: Arc<Mutex<dyn PluginInstance>>,
     metadata: ContentSourceCapabilityMetadata,
@@ -57,9 +58,7 @@ impl ContentSource for PluginContentSourceProxy {
         &self,
         _content_id: String,
     ) -> Result<Vec<ContentVersion>, InstanceError> {
-        Err(InstanceError::UnsupportedOperation(
-            "list_versions".into(),
-        ))
+        Err(InstanceError::UnsupportedOperation("list_versions".into()))
     }
 
     async fn get_version_info(
@@ -74,12 +73,9 @@ impl ContentSource for PluginContentSourceProxy {
 
     async fn check_compatibility(
         &self,
-        _instances: &[crate::features::instance::Instance],
-        _content_item: &crate::features::instance::app::ContentCompatibilityCheckParams,
-    ) -> Result<
-        HashMap<String, crate::features::instance::app::ContentCompatibilityResult>,
-        InstanceError,
-    > {
+        _instances: &[Instance],
+        _content_item: &ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
         Err(InstanceError::UnsupportedOperation(
             "check_compatibility".into(),
         ))

@@ -359,6 +359,7 @@ pub async fn build_container(
         importers_registry,
         updaters_registry,
         content_provider_registry,
+        content_source_registry,
     ));
     event_emitter.on::<PluginEvent, _>({
         let listener = plugin_infra_listener.clone();
