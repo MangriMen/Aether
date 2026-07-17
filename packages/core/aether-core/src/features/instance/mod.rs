@@ -30,7 +30,7 @@ pub use app::{
     EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort, GetContentUseCase,
     GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort, ImportContent,
     ImportContentUseCase, ImportContentUseCasePort, ImportInstance, ImportInstanceUseCase,
-    ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
+    ImportInstanceUseCasePort, Importer, InstallContentRequest, InstallContentUseCase, InstallContentUseCasePort,
     InstallContentV2UseCasePort, InstallInstanceUseCase, InstanceCrudPort, InstanceFeature, InstanceFileService,
     InstanceInstallService, InstanceLaunchService, InstanceLifecyclePort, InstanceServicesPort,
     InstanceStorage, InstanceStorageExt, InstanceWatcherService, LaunchInstanceUseCase,

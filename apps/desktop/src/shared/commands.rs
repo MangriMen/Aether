@@ -57,6 +57,7 @@ macro_rules! instance_commands {
             import_contents,
             list_content,
             install_content,
+            install_content_v2,
             enable_contents,
             disable_contents,
             remove_contents,
