@@ -7,14 +7,14 @@ use aether_core_plugin_api::v0::{
 };
 use async_trait::async_trait;
 use extism_convert::Msgpack;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::Mutex;
 
 use crate::features::instance::{
-    ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentSearchParams,
-    ContentSearchResult, ContentSource, ContentSourceCapabilityMetadata, ContentVersion, Instance,
-    InstanceError, VersionInfo, ModpackPayload, VersionPayload, DownloadInstruction, Checksum,
-    ContentType, ProviderId,
+    Checksum, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem,
+    ContentSearchParams, ContentSearchResult, ContentSource, ContentSourceCapabilityMetadata,
+    ContentType, ContentVersion, DownloadInstruction, Instance, InstanceError, ModpackPayload,
+    ProviderId, VersionInfo, VersionPayload,
 };
 use crate::features::plugins::domain::PluginInstance;
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
@@ -120,9 +120,8 @@ impl ContentSource for PluginContentSourceProxy {
         search_content: ContentSearchParams,
     ) -> Result<ContentSearchResult, InstanceError> {
         let dto: ContentSearchParamsDto = search_content.into();
-        let result_dto: ContentSearchResultDto = self
-            .call_plugin(&self.handlers.search, dto)
-            .await?;
+        let result_dto: ContentSearchResultDto =
+            self.call_plugin(&self.handlers.search, dto).await?;
         Ok(ContentSearchResult {
             page: result_dto.page,
             page_size: result_dto.page_size,
@@ -198,7 +197,14 @@ impl ContentSource for PluginContentSourceProxy {
                 .await?;
         Ok(result_dto
             .into_iter()
-            .map(|(k, v)| (k, ContentCompatibilityResult { is_compatible: v.is_compatible }))
+            .map(|(k, v)| {
+                (
+                    k,
+                    ContentCompatibilityResult {
+                        is_compatible: v.is_compatible,
+                    },
+                )
+            })
             .collect())
     }
 }

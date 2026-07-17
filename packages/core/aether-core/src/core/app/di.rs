@@ -17,8 +17,7 @@ use crate::features::{
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
-        ImportInstanceUseCasePort, Importer, InstallContentUseCasePort,
-        InstallInstanceUseCase,
+        ImportInstanceUseCasePort, Importer, InstallContentUseCasePort, InstallInstanceUseCase,
         InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceStorage,
         InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
@@ -72,9 +71,8 @@ use crate::features::{
 };
 use crate::{
     features::instance::{
-        ContentManagementPort, ContentProviderPort, ContentSource, InstallContentV2UseCasePort,
-        InstanceCrudPort, InstanceLifecyclePort, InstanceServicesPort,
-        PackLifecycleHandlerRegistry,
+        ContentManagementPort, ContentProviderPort, ContentSource, InstanceCrudPort,
+        InstanceLifecyclePort, InstanceServicesPort, PackLifecycleHandlerRegistry,
     },
     shared::{
         cache::domain::AssetsStorage, capability::domain::CapabilityRegistry,
@@ -674,9 +672,6 @@ impl ContentProviderPort for AetherContainer {
         ))
     }
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort> {
-        todo!("Migrate to InstallContentV2UseCasePort")
-    }
-    fn install_content_v2_use_case(&self) -> Arc<dyn InstallContentV2UseCasePort> {
         Arc::new(crate::features::instance::InstallContentUseCase::new(
             self.request_client(),
             self.storage().pack_storage.clone(),

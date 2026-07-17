@@ -5,7 +5,7 @@ use path_slash::PathBufExt;
 
 use crate::features::instance::app::dtos::InstallContentRequest;
 use crate::features::instance::app::ports::{
-    ContentFileService, CreateInstanceUseCasePort, InstallContentV2UseCasePort,
+    ContentFileService, CreateInstanceUseCasePort, InstallContentUseCasePort,
 };
 use crate::features::instance::app::services::PackLifecycleHandlerRegistry;
 use crate::features::instance::domain::{
@@ -229,7 +229,7 @@ impl InstallContentUseCase {
 }
 
 #[async_trait]
-impl InstallContentV2UseCasePort for InstallContentUseCase {
+impl InstallContentUseCasePort for InstallContentUseCase {
     async fn execute(&self, request: InstallContentRequest) -> Result<(), InstanceError> {
         self.execute(request).await
     }

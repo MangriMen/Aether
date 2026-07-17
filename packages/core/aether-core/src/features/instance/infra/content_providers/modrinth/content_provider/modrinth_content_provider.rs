@@ -584,24 +584,30 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
 }
 
 #[async_trait]
-impl<RC: RequestClient + 'static> crate::features::instance::ContentSource for ModrinthContentProvider<RC> {
+impl<RC: RequestClient + 'static> crate::features::instance::ContentSource
+    for ModrinthContentProvider<RC>
+{
     fn metadata(&self) -> &crate::features::instance::ContentSourceCapabilityMetadata {
         // Static metadata — ContentSource wraps the same capability info
         use std::sync::OnceLock;
-        static META: OnceLock<crate::features::instance::ContentSourceCapabilityMetadata> = OnceLock::new();
-        META.get_or_init(|| {
-            crate::features::instance::ContentSourceCapabilityMetadata {
+        static META: OnceLock<crate::features::instance::ContentSourceCapabilityMetadata> =
+            OnceLock::new();
+        META.get_or_init(
+            || crate::features::instance::ContentSourceCapabilityMetadata {
                 base: crate::features::instance::CapabilityMetadata {
                     id: "modrinth-content".to_string(),
                     name: "Modrinth".to_string(),
                     description: None,
                     icon: None,
                 },
-            }
-        })
+            },
+        )
     }
 
-    async fn search(&self, params: ContentSearchParams) -> Result<ContentSearchResult, InstanceError> {
+    async fn search(
+        &self,
+        params: ContentSearchParams,
+    ) -> Result<ContentSearchResult, InstanceError> {
         ContentProvider::search(self, params).await
     }
 
@@ -609,7 +615,10 @@ impl<RC: RequestClient + 'static> crate::features::instance::ContentSource for M
         ContentProvider::get_content(self, content_id).await
     }
 
-    async fn list_versions(&self, content_id: String) -> Result<Vec<ContentVersion>, InstanceError> {
+    async fn list_versions(
+        &self,
+        content_id: String,
+    ) -> Result<Vec<ContentVersion>, InstanceError> {
         ContentProvider::list_versions(self, content_id).await
     }
 
@@ -619,8 +628,7 @@ impl<RC: RequestClient + 'static> crate::features::instance::ContentSource for M
         version_id: &str,
     ) -> Result<crate::features::instance::VersionInfo, InstanceError> {
         use crate::features::instance::{
-            Checksum, DownloadInstruction, ModpackPayload,
-            VersionPayload,
+            Checksum, DownloadInstruction, ModpackPayload, VersionPayload,
         };
         use crate::features::minecraft::ModLoader;
 
@@ -658,9 +666,7 @@ impl<RC: RequestClient + 'static> crate::features::instance::ContentSource for M
             // Download the .mrpack and read its manifest bytes
             let mrpack_bytes = self
                 .request_client
-                .fetch_bytes(
-                    crate::shared::request_client::Request::get(&file.url),
-                )
+                .fetch_bytes(crate::shared::request_client::Request::get(&file.url))
                 .await
                 .map_err(|err| InstanceError::ContentDownloadError(err.to_string()))?;
 

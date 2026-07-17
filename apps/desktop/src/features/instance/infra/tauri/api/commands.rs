@@ -19,11 +19,11 @@ use crate::{
     features::{
         instance::infra::{
             CapabilityEntryDto, ContentCompatibilityCheckParamsDto, ContentCompatibilityResultDto,
-            ContentFileDto, ContentGetParamsDto, ContentInstallParamsDto, ContentItemDto,
-            ContentListVersionParamsDto, ContentProviderCapabilityMetadataDto,
-            ContentSearchParamsDto, ContentSearchResultDto, ContentTypeDto, ContentVersionDto,
-            EditInstanceDto, EditInstanceIconDto, ImportInstanceDto, ImporterCapabilityMetadataDto,
-            InstallContentRequestDto, InstanceDto, InstanceEventDto, NewInstanceDto,
+            ContentFileDto, ContentGetParamsDto, ContentItemDto, ContentListVersionParamsDto,
+            ContentProviderCapabilityMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
+            ContentTypeDto, ContentVersionDto, EditInstanceDto, EditInstanceIconDto,
+            ImportInstanceDto, ImporterCapabilityMetadataDto, InstallContentRequestDto,
+            InstanceDto, InstanceEventDto, NewInstanceDto,
         },
         process::MinecraftProcessMetadataDto,
     },
@@ -297,24 +297,6 @@ async fn list_content(
 #[tauri::command]
 #[specta::specta]
 async fn install_content(
-    payload: ContentInstallParamsDto,
-    request_id: RequestId,
-    idempotency: State<'_, IdempotencyManager>,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<()> {
-    let _guard = idempotency.lock_cmd(request_id)?;
-
-    let container = container.0.clone();
-    Ok(container
-        .install_content_use_case()
-        .execute(payload.into())
-        .await
-        .map_err(aether_core::Error::from)?)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn install_content_v2(
     payload: InstallContentRequestDto,
     request_id: RequestId,
     idempotency: State<'_, IdempotencyManager>,
@@ -324,7 +306,7 @@ async fn install_content_v2(
 
     let container = container.0.clone();
     Ok(container
-        .install_content_v2_use_case()
+        .install_content_use_case()
         .execute(payload.into())
         .await
         .map_err(aether_core::Error::from)?)

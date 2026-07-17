@@ -12,7 +12,7 @@ use crate::features::instance::domain::{
     ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
     ImporterCapabilityMetadata, Instance, InstanceError,
 };
-use crate::features::instance::{ContentInstallParams, ContentSearchParams, ContentSearchResult};
+use crate::features::instance::{ContentSearchParams, ContentSearchResult};
 use crate::features::process::MinecraftProcessMetadata;
 use crate::shared::capability::domain::CapabilityEntry;
 
@@ -118,16 +118,11 @@ pub trait GetContentUseCasePort: Send + Sync {
     async fn execute(&self, get_params: ContentGetParams) -> Result<ContentItem, InstanceError>;
 }
 
-#[async_trait]
-pub trait InstallContentUseCasePort: Send + Sync {
-    async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError>;
-}
-
-/// New port for the unified `InstallContentUseCase` (ContentSource-based).
+/// Unified port for the `InstallContentUseCase` (ContentSource-based).
 ///
 /// Accepts `InstallContentRequest` which supports both asset and modpack flows.
 #[async_trait]
-pub trait InstallContentV2UseCasePort: Send + Sync {
+pub trait InstallContentUseCasePort: Send + Sync {
     async fn execute(&self, request: InstallContentRequest) -> Result<(), InstanceError>;
 }
 
