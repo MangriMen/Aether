@@ -21,6 +21,9 @@ use crate::{
 };
 
 use super::{
+    extism_limits::{
+        DEFAULT_FUEL_LIMIT, DEFAULT_MEMORY_LIMIT_BYTES, DEFAULT_TIMEOUT, bytes_to_pages,
+    },
     host_functions::get_host_functions,
     models::{ExtismPluginInstance, get_default_cache_config},
 };
@@ -80,8 +83,10 @@ impl ExtismPluginLoader {
         default_allowed_paths: Option<&HashMap<String, PathBuf>>,
         settings: Option<&PluginSettings>,
     ) -> Result<Manifest, PluginError> {
-        let wasm_file_path = match &manifest.load {
-            LoadConfig::Extism { file, .. } => file,
+        let (wasm_file_path, memory_limit_bytes) = match &manifest.load {
+            LoadConfig::Extism { file, memory_limit } => {
+                (file, memory_limit.unwrap_or(DEFAULT_MEMORY_LIMIT_BYTES))
+            }
             config @ LoadConfig::Native { .. } => {
                 return Err(PluginError::InvalidConfig {
                     config: config.clone(),
@@ -97,7 +102,9 @@ impl ExtismPluginLoader {
 
         Ok(Manifest::new([wasm_file])
             .with_allowed_hosts(allowed_hosts.into_iter())
-            .with_allowed_paths(allowed_paths.into_iter().map(Into::into)))
+            .with_allowed_paths(allowed_paths.into_iter().map(Into::into))
+            .with_memory_max(bytes_to_pages(memory_limit_bytes))
+            .with_timeout(DEFAULT_TIMEOUT))
     }
 
     fn build_plugin(
@@ -108,7 +115,8 @@ impl ExtismPluginLoader {
     ) -> Result<Plugin, PluginError> {
         let mut builder = PluginBuilder::new(wasm_manifest)
             .with_functions(get_host_functions(plugin_id, container))
-            .with_wasi(true);
+            .with_wasi(true)
+            .with_fuel_limit(DEFAULT_FUEL_LIMIT);
 
         if let Some(cache_dir) = cache_dir {
             builder = builder.with_cache_config(cache_dir);
@@ -198,4 +206,84 @@ fn resolve_allowed_paths(
     }
 
     (allowed_hosts, allowed_paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::plugins::domain::{ApiConfig, PluginMetadata, RuntimeConfig};
+
+    use super::super::extism_limits::WASM_PAGE_SIZE_BYTES;
+
+    fn loader() -> ExtismPluginLoader {
+        ExtismPluginLoader::new(Arc::new(LocationInfo::new(
+            PathBuf::from("settings"),
+            PathBuf::from("config"),
+        )))
+    }
+
+    fn manifest_with_memory_limit(memory_limit: Option<usize>) -> PluginManifest {
+        PluginManifest {
+            metadata: PluginMetadata {
+                id: "test".into(),
+                name: "Test".into(),
+                version: semver::Version::new(0, 1, 0),
+                description: None,
+                authors: vec![],
+                license: None,
+            },
+            runtime: RuntimeConfig {
+                allowed_hosts: vec![],
+                allowed_paths: vec![],
+            },
+            load: LoadConfig::Extism {
+                file: PathBuf::from("plugin.wasm"),
+                memory_limit,
+            },
+            api: ApiConfig {
+                version: semver::VersionReq::STAR,
+                features: vec![],
+            },
+        }
+    }
+
+    fn manifest_json(manifest: &PluginManifest) -> serde_json::Value {
+        let wasm_manifest = loader()
+            .build_wasm_manifest(manifest, None, None)
+            .expect("manifest should build");
+        serde_json::to_value(&wasm_manifest).expect("manifest should serialize")
+    }
+
+    #[test]
+    fn should_round_bytes_up_to_pages() {
+        assert_eq!(bytes_to_pages(0), 0);
+        assert_eq!(bytes_to_pages(1), 1);
+        assert_eq!(bytes_to_pages(WASM_PAGE_SIZE_BYTES), 1);
+        assert_eq!(bytes_to_pages(WASM_PAGE_SIZE_BYTES + 1), 2);
+        assert_eq!(bytes_to_pages(256 * 1024 * 1024), 4096);
+    }
+
+    #[test]
+    fn should_saturate_pages_at_u32_max() {
+        assert_eq!(bytes_to_pages(usize::MAX), u32::MAX);
+    }
+
+    #[test]
+    fn should_apply_memory_limit_and_timeout_from_manifest() {
+        let json = manifest_json(&manifest_with_memory_limit(Some(128 * 1024 * 1024)));
+
+        assert_eq!(json["memory"]["max_pages"], 2048);
+        assert_eq!(json["timeout_ms"], DEFAULT_TIMEOUT.as_millis() as u64);
+    }
+
+    #[test]
+    fn should_apply_default_memory_limit_when_absent() {
+        let json = manifest_json(&manifest_with_memory_limit(None));
+
+        assert_eq!(
+            json["memory"]["max_pages"],
+            bytes_to_pages(DEFAULT_MEMORY_LIMIT_BYTES)
+        );
+        assert_eq!(json["timeout_ms"], DEFAULT_TIMEOUT.as_millis() as u64);
+    }
 }

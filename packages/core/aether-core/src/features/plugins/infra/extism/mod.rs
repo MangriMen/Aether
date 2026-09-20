@@ -1,3 +1,4 @@
+mod extism_limits;
 mod extism_plugin_loader;
 mod host_functions;
 mod mappers;
