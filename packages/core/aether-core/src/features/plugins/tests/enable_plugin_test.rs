@@ -284,11 +284,37 @@ async fn force_enable_still_bypasses_api_version_check() {
 
 #[tokio::test]
 async fn enable_succeeds_with_relative_paths_and_compatible_api() {
-    // Mirrors packwiz: relative allowed_paths, API version requirement the host satisfies.
+    // Generic case: a non-empty relative allowed_paths entry, and an API version
+    // requirement the host trivially satisfies.
     let manifest = manifest_with(
         vec![PathMapping("relative/path".into(), "virtual".into())],
         semver::VersionReq::STAR,
     );
+    let harness = Harness::new(manifest);
+
+    let result = harness
+        .enable_use_case()
+        .execute("test-plugin".into())
+        .await;
+
+    assert!(result.is_ok());
+    let (state, _) = harness
+        .plugin_registry
+        .get_state_and_manifest("test-plugin")
+        .unwrap();
+    assert!(matches!(state, PluginState::Loaded(_)));
+}
+
+#[tokio::test]
+async fn enable_succeeds_with_real_packwiz_manifest_values() {
+    // Cross-checked against `../packwiz-plugin/packwiz/Cargo.toml` (`[package.metadata]`):
+    // `api_version = "0.2.0"` (parsed by xtask's manifest generator as a bare semver
+    // requirement, i.e. caret `^0.2.0`) and no `allowed_paths` key at all, which the
+    // generator defaults to an empty Vec. This proves T-0.4's new unconditional
+    // `runtime.validate()` call is a no-op for packwiz's real manifest (empty
+    // `allowed_paths` trivially passes) and that `^0.2.0` is satisfied by the current
+    // host `PLUGIN_API_VERSION` (0.2.0), so packwiz keeps enabling exactly as before.
+    let manifest = manifest_with(vec![], semver::VersionReq::parse("0.2.0").unwrap());
     let harness = Harness::new(manifest);
 
     let result = harness
