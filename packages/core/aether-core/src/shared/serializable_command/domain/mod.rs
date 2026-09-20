@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -10,6 +11,15 @@ pub struct SerializableCommand {
     pub program: String,
     pub args: Vec<String>,
     pub current_dir: Option<PathBuf>,
+    /// Environment the child process is started with.
+    ///
+    /// `None` inherits the launcher's own environment — how user-configured pre-launch and
+    /// post-exit commands have always run. `Some` clears it first and passes exactly these
+    /// variables, which is the isolated form used for plugin `run_command` (T-0.5): the
+    /// launcher's environment routinely carries tokens and credentials that a plugin-started
+    /// process has no business reading.
+    #[serde(default)]
+    pub env: Option<BTreeMap<String, String>>,
 }
 
 impl SerializableCommand {
@@ -20,6 +30,7 @@ impl SerializableCommand {
             program: parts.next().ok_or("Error to parse command")?.to_string(),
             args: parts.map(ToString::to_string).collect(),
             current_dir: current_dir.map(Path::to_path_buf),
+            env: None,
         })
     }
 
@@ -31,6 +42,7 @@ impl SerializableCommand {
                 .map(|s| s.to_string_lossy().to_string())
                 .collect(),
             current_dir: command.get_current_dir().map(Path::to_path_buf),
+            env: None,
         }
     }
 
@@ -38,6 +50,9 @@ impl SerializableCommand {
         let mut command = std::process::Command::new(&self.program);
         if let Some(current_dir) = &self.current_dir {
             command.current_dir(current_dir);
+        }
+        if let Some(env) = &self.env {
+            command.env_clear().envs(env);
         }
         command.args(&self.args);
         command
@@ -47,6 +62,9 @@ impl SerializableCommand {
         let mut command = tokio::process::Command::new(&self.program);
         if let Some(current_dir) = &self.current_dir {
             command.current_dir(current_dir);
+        }
+        if let Some(env) = &self.env {
+            command.env_clear().envs(env);
         }
         command.args(&self.args);
         command

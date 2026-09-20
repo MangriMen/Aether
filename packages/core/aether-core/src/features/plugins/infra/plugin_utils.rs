@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     path::{Path, PathBuf},
 };
 
@@ -9,6 +9,29 @@ use crate::{
     features::{plugins::PluginError, settings::LocationInfo},
     shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
 };
+
+/// Host environment variables a plugin-started process keeps (T-0.5).
+///
+/// `env_clear()` on its own breaks the JVM on Windows — it resolves system DLLs through
+/// `SystemRoot` — so the child gets this explicit minimal set instead of the launcher's full
+/// environment.
+#[cfg(windows)]
+const INHERITED_ENV_VARS: &[&str] = &[
+    "COMSPEC",
+    "NUMBER_OF_PROCESSORS",
+    "OS",
+    "PATH",
+    "PATHEXT",
+    "PROCESSOR_ARCHITECTURE",
+    "SystemDrive",
+    "SystemRoot",
+    "TEMP",
+    "TMP",
+    "windir",
+];
+
+#[cfg(not(windows))]
+const INHERITED_ENV_VARS: &[&str] = &["HOME", "LANG", "LC_ALL", "PATH", "TMPDIR", "TZ"];
 
 /// Convert a Windows absolute path (e.g. `D:\path\to\file`) to a WASI-compatible
 /// path (`/mnt/d/path/to/file`). Non-Windows paths are returned as-is with `/` normalization.
@@ -183,15 +206,91 @@ pub fn plugin_path_to_host_from_path(
     plugin_path_to_host(id, path.to_string_lossy().as_ref(), location_info)
 }
 
+/// Build the minimal environment a plugin-started process runs with.
+///
+/// Values are copied from the launcher's own environment; a variable that is unset here stays
+/// unset in the child.
+pub fn isolated_env() -> BTreeMap<String, String> {
+    INHERITED_ENV_VARS
+        .iter()
+        .filter_map(|name| {
+            std::env::var(name)
+                .ok()
+                .map(|value| ((*name).to_owned(), value))
+        })
+        .collect()
+}
+
+fn access_violation(id: &str, path: impl AsRef<Path>) -> PluginError {
+    PluginError::AccessViolation {
+        plugin_id: id.to_owned(),
+        path: path.as_ref().to_string_lossy().to_string(),
+    }
+}
+
+/// Canonicalise or refuse. A path that cannot be resolved — it does not exist, or it is not
+/// reachable — is never given the benefit of the doubt.
+fn canonicalize_or_deny(id: &str, path: &Path) -> Result<PathBuf, PluginError> {
+    crate::shared::io::infra::canonicalize(path).map_err(|_| access_violation(id, path))
+}
+
+/// Resolve `program` to the one executable a plugin is allowed to start (T-0.5, Q7).
+///
+/// The allowlist in this pass is a single directory: the Java tree the core manages, i.e. what
+/// `get_java` / `install_java` hand out. Matching on the file name (`java`, `java.exe`) is
+/// explicitly **not** a basis — only the path counts, and it is compared after canonicalisation
+/// so neither `..` segments nor symlinks can walk out of the tree.
+fn resolve_allowed_program(
+    id: &str,
+    program: &str,
+    location_info: &LocationInfo,
+) -> Result<String, PluginError> {
+    // F-13: no fallback to the raw string. A `program` that does not resolve is refused
+    // outright instead of being launched as written.
+    let resolved = plugin_path_to_host(id, program, location_info)?;
+
+    let canonical_program = canonicalize_or_deny(id, &resolved)?;
+    // Fails closed: if the core has never installed a Java, there is no allowed program.
+    let canonical_java_dir = canonicalize_or_deny(id, &location_info.java_dir())?;
+
+    if !canonical_program.starts_with(&canonical_java_dir) {
+        return Err(access_violation(id, &canonical_program));
+    }
+
+    // Hand back the path that was actually checked, not the one that was asked for.
+    Ok(canonical_program.to_string_lossy().to_string())
+}
+
+/// Resolve the working directory, which is mandatory and has to sit inside a directory that is
+/// really mounted for this plugin (`/cache`, `/instances`).
+fn resolve_required_current_dir(
+    id: &str,
+    current_dir: Option<&Path>,
+    location_info: &LocationInfo,
+) -> Result<PathBuf, PluginError> {
+    let current_dir = current_dir.ok_or_else(|| access_violation(id, "<no current_dir>"))?;
+
+    let resolved = plugin_path_to_host_from_path(id, current_dir, location_info)?;
+    let canonical = canonicalize_or_deny(id, &resolved)?;
+
+    let is_mounted = get_default_allowed_paths(location_info, id)
+        .keys()
+        .filter_map(|root| crate::shared::io::infra::canonicalize(root).ok())
+        .any(|root| canonical.starts_with(&root));
+
+    if !is_mounted {
+        return Err(access_violation(id, &canonical));
+    }
+
+    Ok(canonical)
+}
+
 pub fn plugin_command_to_host(
     id: &str,
     command: &CommandDto,
     location_info: &LocationInfo,
 ) -> Result<SerializableCommand, PluginError> {
-    let resolved_program = plugin_path_to_host(id, &command.program, location_info).map_or_else(
-        |_| command.program.clone(),
-        |p| p.to_string_lossy().to_string(),
-    );
+    let resolved_program = resolve_allowed_program(id, &command.program, location_info)?;
 
     let resolved_args: Vec<String> = command
         .args
@@ -201,16 +300,14 @@ pub fn plugin_command_to_host(
         })
         .collect::<Result<_, PluginError>>()?;
 
-    let resolved_current_dir = command
-        .current_dir
-        .as_ref()
-        .map(|current_dir| plugin_path_to_host_from_path(id, current_dir, location_info))
-        .transpose()?;
+    let resolved_current_dir =
+        resolve_required_current_dir(id, command.current_dir.as_deref(), location_info)?;
 
     Ok(SerializableCommand {
         program: resolved_program,
         args: resolved_args,
-        current_dir: resolved_current_dir,
+        current_dir: Some(resolved_current_dir),
+        env: Some(isolated_env()),
     })
 }
 
@@ -226,6 +323,7 @@ pub fn log_level_from_u32(level: u32) -> log::Level {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use super::{from_wasi_path, to_wasi_path};
 
     #[test]
@@ -332,5 +430,238 @@ mod tests {
         let wasi = to_wasi_path(original);
         let back = from_wasi_path(&wasi);
         assert_eq!(back, original);
+    }
+
+    // ── plugin_command_to_host: the run_command allowlist (T-0.5, Q7) ──
+
+    const PLUGIN_ID: &str = "packwiz";
+    const INSTANCE_ID: &str = "test-instance";
+
+    /// A layout that mirrors a real install: a core-managed Java, a plugin cache holding the
+    /// packwiz bootstrap jar, and one instance directory.
+    struct Layout {
+        _root: tempfile::TempDir,
+        location_info: LocationInfo,
+        java_bin: PathBuf,
+    }
+
+    fn java_file_name() -> &'static str {
+        if cfg!(windows) { "java.exe" } else { "java" }
+    }
+
+    fn layout() -> Layout {
+        let root = tempfile::tempdir().expect("temp dir");
+        let config_dir = root.path().join("config");
+
+        let location_info = LocationInfo::new(root.path().join("settings"), config_dir);
+
+        let java_bin_dir = location_info.java_dir().join("zulu-8").join("bin");
+        std::fs::create_dir_all(&java_bin_dir).expect("java bin dir");
+        let java_bin = java_bin_dir.join(java_file_name());
+        std::fs::write(&java_bin, b"").expect("java binary");
+
+        let plugin_cache_dir = location_info.plugin_cache_dir(PLUGIN_ID);
+        std::fs::create_dir_all(&plugin_cache_dir).expect("plugin cache dir");
+        std::fs::write(
+            plugin_cache_dir.join("packwiz-installer-bootstrap.jar"),
+            b"",
+        )
+        .expect("bootstrap jar");
+
+        std::fs::create_dir_all(location_info.instance_dir(INSTANCE_ID)).expect("instance dir");
+
+        Layout {
+            _root: root,
+            location_info,
+            java_bin,
+        }
+    }
+
+    /// The shape packwiz actually sends: an absolute Java path from `get_java`, `#`-prefixed
+    /// paths for everything that lives in a mounted directory.
+    fn packwiz_command(program: &str) -> CommandDto {
+        CommandDto {
+            program: program.to_owned(),
+            args: vec![
+                "-jar".to_owned(),
+                "#/cache/packwiz-installer-bootstrap.jar".to_owned(),
+                "--bootstrap-no-update".to_owned(),
+                "https://example.com/pack.toml".to_owned(),
+            ],
+            current_dir: Some(PathBuf::from(format!("#/instances/{INSTANCE_ID}"))),
+        }
+    }
+
+    #[test]
+    fn should_accept_a_host_managed_java_path() {
+        let layout = layout();
+        let command = packwiz_command(&layout.java_bin.to_string_lossy());
+
+        let host_command =
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+
+        let canonical_java = crate::shared::io::infra::canonicalize(&layout.java_bin).unwrap();
+        assert_eq!(
+            PathBuf::from(&host_command.program),
+            canonical_java,
+            "the checked, canonical path must be the one that gets executed"
+        );
+    }
+
+    #[test]
+    fn should_keep_resolving_hash_paths_in_args_and_current_dir() {
+        let layout = layout();
+        let command = packwiz_command(&layout.java_bin.to_string_lossy());
+
+        let host_command =
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+
+        assert_eq!(host_command.args[0], "-jar");
+        assert!(
+            PathBuf::from(&host_command.args[1]).ends_with("packwiz-installer-bootstrap.jar"),
+            "`#/cache/...` must still resolve to the host cache: {}",
+            host_command.args[1]
+        );
+        assert_eq!(host_command.args[2], "--bootstrap-no-update");
+        assert_eq!(host_command.args[3], "https://example.com/pack.toml");
+
+        let current_dir = host_command.current_dir.expect("current_dir is mandatory");
+        assert!(
+            current_dir.ends_with(INSTANCE_ID),
+            "`#/instances/...` must still resolve to the instance: {}",
+            current_dir.display()
+        );
+    }
+
+    #[test]
+    fn should_reject_an_arbitrary_program() {
+        let layout = layout();
+
+        for program in [
+            r"C:\Windows\System32\cmd.exe",
+            "/bin/sh",
+            "cmd.exe",
+            "sh",
+            "#/cache/packwiz-installer-bootstrap.jar",
+        ] {
+            let command = packwiz_command(program);
+            assert!(
+                matches!(
+                    plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+                    Err(PluginError::AccessViolation { .. })
+                ),
+                "`{program}` must be refused"
+            );
+        }
+    }
+
+    #[test]
+    fn should_reject_a_java_named_program_outside_the_managed_java_dir() {
+        let layout = layout();
+
+        // Same file name, different tree: Q7 says the name is not a basis, the path is.
+        let rogue_dir = layout.location_info.config_dir().join("rogue").join("bin");
+        std::fs::create_dir_all(&rogue_dir).expect("rogue dir");
+        let rogue_java = rogue_dir.join(java_file_name());
+        std::fs::write(&rogue_java, b"").expect("rogue java");
+
+        let command = packwiz_command(&rogue_java.to_string_lossy());
+        assert!(matches!(
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_reject_a_traversal_out_of_the_java_dir() {
+        let layout = layout();
+
+        let rogue_dir = layout.location_info.config_dir().join("rogue");
+        std::fs::create_dir_all(&rogue_dir).expect("rogue dir");
+        let rogue_java = rogue_dir.join(java_file_name());
+        std::fs::write(&rogue_java, b"").expect("rogue java");
+
+        let traversal = layout
+            .location_info
+            .java_dir()
+            .join("..")
+            .join("..")
+            .join("rogue")
+            .join(java_file_name());
+
+        let command = packwiz_command(&traversal.to_string_lossy());
+        assert!(matches!(
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_reject_a_program_that_does_not_exist() {
+        let layout = layout();
+        let missing = layout.location_info.java_dir().join("zulu-8").join("nope");
+
+        let command = packwiz_command(&missing.to_string_lossy());
+        assert!(
+            matches!(
+                plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+                Err(PluginError::AccessViolation { .. })
+            ),
+            "an unresolvable program must be refused, not launched as written (F-13)"
+        );
+    }
+
+    #[test]
+    fn should_reject_a_missing_current_dir() {
+        let layout = layout();
+        let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+        command.current_dir = None;
+
+        assert!(matches!(
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_reject_a_current_dir_outside_the_mounted_directories() {
+        let layout = layout();
+
+        let outside = layout.location_info.config_dir().join("elsewhere");
+        std::fs::create_dir_all(&outside).expect("outside dir");
+
+        let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+        command.current_dir = Some(outside);
+
+        assert!(matches!(
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_hand_the_child_an_explicit_environment() {
+        let layout = layout();
+        let command = packwiz_command(&layout.java_bin.to_string_lossy());
+
+        let host_command =
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+
+        let env = host_command
+            .env
+            .expect("a plugin-started process must not inherit the launcher environment");
+        assert!(
+            env.keys()
+                .all(|name| INHERITED_ENV_VARS.contains(&name.as_str())),
+            "only the minimal set may be passed through: {:?}",
+            env.keys().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn should_keep_system_root_so_the_jvm_still_starts() {
+        // env_clear() without SystemRoot breaks JVM startup on Windows.
+        assert!(isolated_env().contains_key("SystemRoot"));
     }
 }
