@@ -3,7 +3,7 @@
 Индекс задач. Детали каждой — в `tasks/<ID>.md`. Протокол работы — `../../AGENT_INSTRUCTIONS.md`.
 Решения владельца — `OPEN_QUESTIONS.md`. Расхождения плана с кодом — `FINDINGS.md`.
 
-Обновлено: 2026-09-21 — T-0.1 (лимиты Extism) выполнена; реализация остальных задач не начиналась.
+Обновлено: 2026-09-21 — T-0.1 (лимиты Extism) и T-0.3 (zip-slip) выполнены; реализация остальных задач не начиналась.
 
 Статусы: `not_started` · `in_progress` · `done` · `blocked` · `needs_decision` · `ОТЛОЖЕНО`.
 `ОТЛОЖЕНО` = задача остаётся в плане, но **не входит в текущий проход** (см. Q1, Q3).
@@ -18,7 +18,7 @@
 | Всего задач | 34 |
 | Активных | 26 |
 | Отложено | 8 (CurseForge — 3, packwiz-native — 4, T-3.1 — 1) |
-| Активных на Flash | 2 |
+| Активных на Flash | 1 |
 | Активных на Sonnet | 8 |
 | Активных на Opus (с обязательным ревью) | 15 |
 
@@ -28,7 +28,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-0.1 | Лимиты Extism: memory / timeout / fuel | aether + packwiz | 0.1 | — | Flash | да | done |
 | T-0.2 | Проверка sha256 wasm (TOFU) | aether | 0.2 | — | Opus | да | not_started |
-| T-0.3 | Zip-slip в `ZipPluginExtractor` | aether | 0.3 | — | Flash | нет | not_started |
+| T-0.3 | Zip-slip в `ZipPluginExtractor` | aether | 0.3 | — | Flash | нет | done |
 | T-0.4 | Вызов `manifest.validate()` при включении плагина | aether | 0.4 | — | Sonnet | нет | not_started |
 | T-0.5 | Ужесточение `run_command` | aether | 0.5 | — | Opus | да | not_started |
 | T-0.6 | Host-функция `http_get` (SSRF/редиректы) | aether | 0.6 | — | Opus | да | not_started |
