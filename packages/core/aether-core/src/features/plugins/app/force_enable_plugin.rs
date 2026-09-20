@@ -46,6 +46,21 @@ impl ForceEnablePluginUseCase {
     pub async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
         let (state, manifest) = self.plugin_registry.get_state_and_manifest(&plugin_id)?;
 
+        // Force-enable bypasses only the API version compatibility check.
+        // Runtime restrictions (e.g. no absolute `allowed_paths`) still apply.
+        if let Err(err) = manifest.runtime.validate() {
+            let reason = format!("Plugin manifest failed validation: {err}");
+            self.plugin_registry
+                .upsert_with(&plugin_id, |plugin| {
+                    plugin.state = PluginState::Incompatible(reason.clone());
+                    Ok(())
+                })
+                .await?;
+            return Err(PluginError::Manifest(err));
+        }
+
+        Self::warn_on_unsupported_features(&plugin_id, &manifest);
+
         // Reset incompatible / failed state so load can proceed
         if matches!(state, PluginState::Incompatible(_) | PluginState::Failed(_)) {
             self.plugin_registry
@@ -83,6 +98,18 @@ impl ForceEnablePluginUseCase {
                     .await?;
                 Err(err)
             }
+        }
+    }
+
+    /// `api.features` is not enforced yet (planned after T-1.4); requesting
+    /// plugins are allowed to load, but the gap is surfaced in the log.
+    fn warn_on_unsupported_features(plugin_id: &str, manifest: &PluginManifest) {
+        if !manifest.api.features.is_empty() {
+            tracing::warn!(
+                plugin_id,
+                features = ?manifest.api.features,
+                "Plugin requests optional API features that are not yet enforced by the host",
+            );
         }
     }
 

@@ -2,6 +2,9 @@ pub(crate) mod app;
 pub mod domain;
 pub mod infra;
 
+#[cfg(test)]
+mod tests;
+
 // Domain (models + PluginInstance)
 pub use domain::{
     ApiConfig, Compatibility, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError,

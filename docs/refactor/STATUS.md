@@ -3,7 +3,9 @@
 Индекс задач. Детали каждой — в `tasks/<ID>.md`. Протокол работы — `../../AGENT_INSTRUCTIONS.md`.
 Решения владельца — `OPEN_QUESTIONS.md`. Расхождения плана с кодом — `FINDINGS.md`.
 
-Обновлено: 2026-09-21 — T-0.1 (лимиты Extism) и T-0.3 (zip-slip) выполнены; реализация остальных задач не начиналась.
+Обновлено: 2026-09-21 — T-0.1 (лимиты Extism) и T-0.3 (zip-slip) выполнены; T-0.4 (manifest.validate())
+реализована и покрыта тестами, но `blocked` — не выполнен ручной сценарий из карточки (нет GUI/Tauri
+и доступа к `../packwiz-plugin` в этой сессии); реализация остальных задач не начиналась.
 
 Статусы: `not_started` · `in_progress` · `done` · `blocked` · `needs_decision` · `ОТЛОЖЕНО`.
 `ОТЛОЖЕНО` = задача остаётся в плане, но **не входит в текущий проход** (см. Q1, Q3).
@@ -29,7 +31,7 @@
 | T-0.1 | Лимиты Extism: memory / timeout / fuel | aether + packwiz | 0.1 | — | Flash | да | done |
 | T-0.2 | Проверка sha256 wasm (TOFU) | aether | 0.2 | — | Opus | да | not_started |
 | T-0.3 | Zip-slip в `ZipPluginExtractor` | aether | 0.3 | — | Flash | нет | done |
-| T-0.4 | Вызов `manifest.validate()` при включении плагина | aether | 0.4 | — | Sonnet | нет | not_started |
+| T-0.4 | Вызов `manifest.validate()` при включении плагина | aether | 0.4 | — | Sonnet | нет | blocked |
 | T-0.5 | Ужесточение `run_command` | aether | 0.5 | — | Opus | да | not_started |
 | T-0.6 | Host-функция `http_get` (SSRF/редиректы) | aether | 0.6 | — | Opus | да | not_started |
 
