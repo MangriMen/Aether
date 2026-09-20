@@ -6,13 +6,18 @@ use crate::core::app::AetherContainer;
 
 use super::{PluginContext, features};
 
-pub fn get_host_functions(plugin_id: &str, container: &Arc<AetherContainer>) -> Vec<Function> {
-    let context = PluginContext::new(plugin_id.to_string(), container);
+pub fn get_host_functions(
+    plugin_id: &str,
+    container: &Arc<AetherContainer>,
+    allowed_hosts: Vec<String>,
+) -> Vec<Function> {
+    let context = PluginContext::new(plugin_id.to_string(), container, allowed_hosts);
 
     [
         get_core_host_functions,
         get_java_host_functions,
         get_instance_host_functions,
+        get_http_host_functions,
     ]
     .iter()
     .flat_map(|func| func(&context))
@@ -43,6 +48,16 @@ pub fn get_core_host_functions(context: &PluginContext) -> Vec<Function> {
             features::run_command,
         ),
     ]
+}
+
+pub fn get_http_host_functions(context: &PluginContext) -> Vec<Function> {
+    vec![Function::new(
+        "http_get",
+        [PTR],
+        [PTR],
+        UserData::new(context.clone()),
+        features::http_get,
+    )]
 }
 
 pub fn get_java_host_functions(context: &PluginContext) -> Vec<Function> {

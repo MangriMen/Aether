@@ -6,13 +6,18 @@ use crate::core::app::AetherContainer;
 pub struct PluginContext {
     pub id: String,
     pub container: Weak<AetherContainer>,
+    /// Hosts the plugin may reach, already merged from the manifest and the user's
+    /// plugin settings. Host functions that touch the network re-check against this
+    /// list themselves instead of trusting Extism's own check (see `features::http`).
+    pub allowed_hosts: Vec<String>,
 }
 
 impl PluginContext {
-    pub fn new(id: String, container: &Arc<AetherContainer>) -> Self {
+    pub fn new(id: String, container: &Arc<AetherContainer>, allowed_hosts: Vec<String>) -> Self {
         Self {
             id,
             container: Arc::downgrade(container),
+            allowed_hosts,
         }
     }
 

@@ -80,8 +80,8 @@ impl ExtismPluginLoader {
     fn build_wasm_manifest(
         &self,
         manifest: &PluginManifest,
-        default_allowed_paths: Option<&HashMap<String, PathBuf>>,
-        settings: Option<&PluginSettings>,
+        allowed_hosts: Vec<String>,
+        allowed_paths: Vec<PathMapping>,
     ) -> Result<Manifest, PluginError> {
         let (wasm_file_path, memory_limit_bytes) = match &manifest.load {
             LoadConfig::Extism { file, memory_limit } => {
@@ -97,9 +97,6 @@ impl ExtismPluginLoader {
         let wasm_file =
             Wasm::file(self.resolve_absolute_wasm_path(&manifest.metadata.id, wasm_file_path));
 
-        let (allowed_hosts, allowed_paths) =
-            resolve_allowed_paths(manifest, settings, default_allowed_paths);
-
         Ok(Manifest::new([wasm_file])
             .with_allowed_hosts(allowed_hosts.into_iter())
             .with_allowed_paths(allowed_paths.into_iter().map(Into::into))
@@ -112,9 +109,10 @@ impl ExtismPluginLoader {
         wasm_manifest: &Manifest,
         cache_dir: Option<&PathBuf>,
         container: &Arc<AetherContainer>,
+        allowed_hosts: Vec<String>,
     ) -> Result<Plugin, PluginError> {
         let mut builder = PluginBuilder::new(wasm_manifest)
-            .with_functions(get_host_functions(plugin_id, container))
+            .with_functions(get_host_functions(plugin_id, container, allowed_hosts))
             .with_wasi(true)
             .with_fuel_limit(DEFAULT_FUEL_LIMIT);
 
@@ -151,11 +149,21 @@ impl PluginLoader for ExtismPluginLoader {
             .and_then(Weak::upgrade)
             .expect("ExtismPluginLoader::set_container must be called before loading plugins");
 
-        let wasm_manifest =
-            self.build_wasm_manifest(manifest, Some(&default_allowed_paths), settings)?;
+        // Resolved once and shared: the Extism manifest and the host functions must agree on
+        // exactly which hosts the plugin may reach (see `features::http`).
+        let (allowed_hosts, allowed_paths) =
+            resolve_allowed_paths(manifest, settings, Some(&default_allowed_paths));
 
-        let extism_plugin =
-            Self::build_plugin(plugin_id, &wasm_manifest, Some(&cache_config), &container)?;
+        let wasm_manifest =
+            self.build_wasm_manifest(manifest, allowed_hosts.clone(), allowed_paths)?;
+
+        let extism_plugin = Self::build_plugin(
+            plugin_id,
+            &wasm_manifest,
+            Some(&cache_config),
+            &container,
+            allowed_hosts,
+        )?;
 
         let mut plugin = ExtismPluginInstance::new(extism_plugin, plugin_id.clone());
         if let Err(err) = plugin.handle_event(&PluginInternalEvent::Loaded) {
@@ -249,7 +257,7 @@ mod tests {
 
     fn manifest_json(manifest: &PluginManifest) -> serde_json::Value {
         let wasm_manifest = loader()
-            .build_wasm_manifest(manifest, None, None)
+            .build_wasm_manifest(manifest, vec![], vec![])
             .expect("manifest should build");
         serde_json::to_value(&wasm_manifest).expect("manifest should serialize")
     }
@@ -274,6 +282,32 @@ mod tests {
 
         assert_eq!(json["memory"]["max_pages"], 2048);
         assert_eq!(json["timeout_ms"], DEFAULT_TIMEOUT.as_millis() as u64);
+    }
+
+    /// The Extism manifest and the `http_get` host function are handed the *same* resolved
+    /// list, so a host reachable through one is reachable through the other — no more, no less.
+    #[test]
+    fn should_merge_allowed_hosts_from_manifest_and_settings() {
+        let mut manifest = manifest_with_memory_limit(None);
+        manifest.runtime.allowed_hosts = vec!["github.com".into()];
+
+        let settings = PluginSettings {
+            allowed_hosts: vec!["*.example.com".into()],
+            ..PluginSettings::default()
+        };
+
+        let (allowed_hosts, _) = resolve_allowed_paths(&manifest, Some(&settings), None);
+
+        assert_eq!(allowed_hosts, vec!["github.com", "*.example.com"]);
+    }
+
+    #[test]
+    fn should_keep_allowed_hosts_empty_without_manifest_or_settings_entries() {
+        let manifest = manifest_with_memory_limit(None);
+
+        let (allowed_hosts, _) = resolve_allowed_paths(&manifest, None, None);
+
+        assert!(allowed_hosts.is_empty());
     }
 
     #[test]

@@ -43,6 +43,8 @@ tracing-error = "0.2.1"
 
 # Utilities
 dashmap = { version = "6.2.1", features = ["serde"] }
+# Host-side `allowed_hosts` matching must use the same glob semantics as Extism's own check.
+glob = "0.3.3"
 regex = "1.13.0"
 sha1_smol = { version = "1.0.1", features = ["alloc", "serde", "std"] }
 toml = "1.1.3"

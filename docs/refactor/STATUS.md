@@ -3,9 +3,11 @@
 Индекс задач. Детали каждой — в `tasks/<ID>.md`. Протокол работы — `../../AGENT_INSTRUCTIONS.md`.
 Решения владельца — `OPEN_QUESTIONS.md`. Расхождения плана с кодом — `FINDINGS.md`.
 
-Обновлено: 2026-09-21 — T-0.1 (лимиты Extism) и T-0.3 (zip-slip) выполнены; T-0.4 (manifest.validate())
-реализована и покрыта тестами, но `blocked` — не выполнен ручной сценарий из карточки (нет GUI/Tauri
-и доступа к `../packwiz-plugin` в этой сессии); реализация остальных задач не начиналась.
+Обновлено: 2026-09-21 — T-0.1 (лимиты Extism), T-0.3 (zip-slip) и T-0.6 (host-функция `http_get`,
+приоритетная находка N1) выполнены; T-0.4 (manifest.validate()) реализована и покрыта тестами, но
+`blocked` — не выполнен ручной сценарий из карточки (нет GUI/Tauri и доступа к `../packwiz-plugin`
+в той сессии); по итогам T-0.6 заведена T-1.5.C (packwiz всё ещё ходит через встроенный
+`http_request`, см. F-16); реализация остальных задач не начиналась.
 
 Статусы: `not_started` · `in_progress` · `done` · `blocked` · `needs_decision` · `ОТЛОЖЕНО`.
 `ОТЛОЖЕНО` = задача остаётся в плане, но **не входит в текущий проход** (см. Q1, Q3).
@@ -17,11 +19,11 @@
 
 | Показатель | Значение |
 | --- | --- |
-| Всего задач | 34 |
-| Активных | 26 |
+| Всего задач | 35 |
+| Активных | 27 |
 | Отложено | 8 (CurseForge — 3, packwiz-native — 4, T-3.1 — 1) |
 | Активных на Flash | 1 |
-| Активных на Sonnet | 8 |
+| Активных на Sonnet | 9 |
 | Активных на Opus (с обязательным ревью) | 15 |
 
 ## Фаза 0 — Безопасность
@@ -33,7 +35,7 @@
 | T-0.3 | Zip-slip в `ZipPluginExtractor` | aether | 0.3 | — | Flash | нет | done |
 | T-0.4 | Вызов `manifest.validate()` при включении плагина | aether | 0.4 | — | Sonnet | нет | blocked |
 | T-0.5 | Ужесточение `run_command` | aether | 0.5 | — | Opus | да | not_started |
-| T-0.6 | Host-функция `http_get` (SSRF/редиректы) | aether | 0.6 | — | Opus | да | not_started |
+| T-0.6 | Host-функция `http_get` (SSRF/редиректы) | aether | 0.6 | — | Opus | да | done |
 
 ## Фаза 1 — Host-функции для I/O
 
@@ -50,6 +52,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-1.5.A | packwiz: запись в инстанс через host-функцию | packwiz | 1.5.2 | T-1.3 | Sonnet | нет | not_started |
 | T-1.5.B | `ro:` на `instances_dir` | aether | 1.5.1 | T-1.5.A | Sonnet | да | not_started |
+| T-1.5.C | packwiz: `http_request` → `http_get` (F-16) | packwiz | — | T-0.6 | Sonnet | нет | not_started |
 
 ## Фаза 2 — InstallPlan + ProviderRef
 

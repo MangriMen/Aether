@@ -87,6 +87,7 @@ dependencies = [
  "extism",
  "extism-convert",
  "futures",
+ "glob",
  "log",
  "notify",
  "notify-debouncer-mini",
