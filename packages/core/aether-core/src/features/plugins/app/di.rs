@@ -6,8 +6,8 @@ use crate::features::plugins::app::ports::{
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
     GetPluginSettingsUseCasePort, ImportPluginsUseCasePort, ListPluginsDtoUseCasePort,
     PluginDisableService, PluginExtractor, PluginLoader, PluginSettingsStorage,
-    PluginSourceStorage, PluginStorage, PluginSyncService, RemovePluginUseCasePort,
-    UpdatePluginUseCasePort,
+    PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
+    RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
 
@@ -40,6 +40,7 @@ pub trait PluginsFeature {
 
     // ── Ports ──
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage>;
+    fn plugin_verification_storage(&self) -> Arc<dyn PluginVerificationStorage>;
     fn plugin_loader(&self) -> Option<Arc<dyn PluginLoader>>;
     fn plugin_storage(&self) -> Arc<dyn PluginStorage>;
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage>;

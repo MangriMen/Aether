@@ -12,6 +12,7 @@ mod import_plugins;
 mod list_plugins_dto;
 mod plugin_provider;
 mod ports;
+mod record_plugin_verification;
 mod remove_plugin;
 mod services;
 mod sync_plugins;
@@ -43,8 +44,9 @@ pub use ports::{
     GetPluginDtoUseCasePort, GetPluginSettingsUseCasePort, ImportPluginsUseCasePort,
     ListPluginsDtoUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
     PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-    RemovePluginUseCasePort, UpdatePluginUseCasePort,
+    PluginVerificationStorage, RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
+pub use record_plugin_verification::record_plugin_verification;
 pub use remove_plugin::RemovePluginUseCase;
 pub use services::{PluginLoaderRegistry, PluginRegistry};
 pub use sync_plugins::SyncPluginsUseCase;

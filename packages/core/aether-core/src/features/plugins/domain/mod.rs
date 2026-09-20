@@ -7,7 +7,7 @@ pub use models::{
     PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
     PluginImporterCapability, PluginInternalEvent, PluginManifest, PluginManifestPreview,
     PluginMetadata, PluginSettings, PluginSource, PluginSourceType, PluginState,
-    PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview, ProviderReleaseInfo,
-    ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
+    PluginUpdaterCapability, PluginVerification, ProviderHandlers, ProviderPluginPreview,
+    ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
 };
 pub use plugin_instance::PluginInstance;

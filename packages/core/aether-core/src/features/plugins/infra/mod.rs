@@ -2,6 +2,7 @@ mod extism;
 mod fs_plugin_settings_storage;
 mod fs_plugin_source_storage;
 mod fs_plugin_storage;
+mod fs_plugin_verification_storage;
 mod github_plugin;
 mod plugin_content_provider_proxy;
 mod plugin_dtos_v1;
@@ -15,6 +16,7 @@ pub use extism::ExtismPluginLoader;
 pub use fs_plugin_settings_storage::FsPluginSettingsStorage;
 pub use fs_plugin_source_storage::FsPluginSourceStorage;
 pub use fs_plugin_storage::FsPluginStorage;
+pub use fs_plugin_verification_storage::FsPluginVerificationStorage;
 pub use github_plugin::{
     GitHubPluginFetcher, GitHubPluginPreview, GitHubReleaseInfo, GithubProvider, PluginUpdateInfo,
 };

@@ -27,7 +27,7 @@ use aether_core::features::minecraft::infra::{
 };
 use aether_core::features::plugins::{
     ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-    GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
+    FsPluginVerificationStorage, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
 };
 use aether_core::features::plugins::{
     LoadConfigType, PluginLoader, PluginLoaderRegistry, PluginProvider, PluginProviderFactory,
@@ -232,7 +232,13 @@ pub async fn build_container(
 
     // ── Plugin infrastructure ───────────────────────────────────────
     let plugin_registry = Arc::new(PluginRegistry::new(event_emitter.clone()));
-    let extism_loader = Arc::new(ExtismPluginLoader::new(location_info.clone()));
+    let plugin_verification_storage: Arc<
+        dyn aether_core::features::plugins::PluginVerificationStorage,
+    > = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
+    let extism_loader = Arc::new(ExtismPluginLoader::new(
+        location_info.clone(),
+        plugin_verification_storage.clone(),
+    ));
     let plugin_loader_registry = Arc::new(PluginLoaderRegistry::new(HashMap::from([(
         LoadConfigType::Extism,
         extism_loader.clone() as Arc<dyn PluginLoader>,
@@ -305,6 +311,7 @@ pub async fn build_container(
             loader_registry: plugin_loader_registry,
             storage: plugin_storage,
             source_storage: plugin_source_storage,
+            verification_storage: plugin_verification_storage,
             settings_storage: plugin_settings_storage,
             provider_factory: plugin_provider_factory,
             extractor: plugin_extractor,

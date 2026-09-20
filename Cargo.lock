@@ -102,6 +102,7 @@ dependencies = [
  "serde_qs",
  "serde_with",
  "sha1_smol",
+ "sha2 0.10.9",
  "sqlx",
  "sys-info",
  "sysinfo",

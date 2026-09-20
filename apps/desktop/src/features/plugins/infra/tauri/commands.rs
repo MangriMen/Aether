@@ -397,6 +397,17 @@ async fn install_plugin_from_provider(
         .await
         .map_err(aether_core::Error::from)?;
 
+    // Trust on first use: these bytes came straight from the release the user
+    // picked, so record their sha256 now — every later load is checked against it.
+    aether_core::features::plugins::record_plugin_verification(
+        container.plugin_storage().as_ref(),
+        container.plugin_verification_storage().as_ref(),
+        &plugin_id,
+        st.clone(),
+    )
+    .await
+    .map_err(aether_core::Error::from)?;
+
     let source = PluginSource::Remote {
         source_type: st,
         identifier: normalized,

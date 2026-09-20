@@ -16,7 +16,7 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        hash::infra::sha1_async,
+        hash::infra::{sha1_async, sha256_async},
         io::domain::IoError,
         io::infra::{
             copy_dir_all, create_dir_all, read_async, read_dir, read_json_async, remove_dir_all,
@@ -80,14 +80,18 @@ impl FsPluginStorage {
         Ok(dto.map(PluginCapabilities::from))
     }
 
-    async fn calc_hash(dir: &Path, manifest: &PluginManifest) -> Result<String, PluginError> {
-        let relative_file_path = match manifest.load.clone() {
+    /// Absolute path of the binary a plugin is loaded from, per its manifest.
+    fn binary_path(dir: &Path, manifest: &PluginManifest) -> PathBuf {
+        let relative_file_path = match &manifest.load {
             LoadConfig::Extism { file, .. } => file,
             LoadConfig::Native { lib_path } => lib_path,
         };
 
-        let absolute_file_path = dir.join(relative_file_path);
-        let file_content = read_async(&absolute_file_path).await?;
+        dir.join(relative_file_path)
+    }
+
+    async fn calc_hash(dir: &Path, manifest: &PluginManifest) -> Result<String, PluginError> {
+        let file_content = read_async(Self::binary_path(dir, manifest)).await?;
 
         Ok(sha1_async(file_content).await)
     }
@@ -162,5 +166,13 @@ impl PluginStorage for FsPluginStorage {
         remove_dir_all(plugin_dir).await?;
 
         Ok(())
+    }
+
+    async fn wasm_sha256(&self, plugin_id: &str) -> Result<String, PluginError> {
+        let plugin_dir = self.location_info.plugin_dir(plugin_id);
+        let manifest = self.load_manifest(&plugin_dir).await?;
+        let file_content = read_async(Self::binary_path(&plugin_dir, &manifest)).await?;
+
+        Ok(sha256_async(file_content).await)
     }
 }

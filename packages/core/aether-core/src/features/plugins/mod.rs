@@ -12,8 +12,9 @@ pub use domain::{
     PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
     PluginImporterCapability, PluginInstance, PluginInternalEvent, PluginManifest,
     PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource, PluginSourceType,
-    PluginState, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
-    ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
+    PluginState, PluginUpdaterCapability, PluginVerification, ProviderHandlers,
+    ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
+    SerializableOutput,
 };
 
 // App (use cases, ports, services, DTOs)
@@ -30,14 +31,15 @@ pub use app::{
     PluginDisableService, PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto,
     PluginLoader, PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
     PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, PluginsFeature,
-    ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort, RuntimeConfigDto,
-    SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort, UpdaterCapabilityMetadataDto,
-    write_bytes_to_temp_file,
+    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, PluginVerificationStorage,
+    PluginsFeature, ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort,
+    RuntimeConfigDto, SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
+    UpdaterCapabilityMetadataDto, record_plugin_verification, write_bytes_to_temp_file,
 };
 
 // Infrastructure re-exports (commonly used by app layer)
 pub use infra::{
     ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-    GitHubPluginFetcher, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
+    FsPluginVerificationStorage, GitHubPluginFetcher, GithubProvider, PluginInfrastructureListener,
+    ZipPluginExtractor,
 };

@@ -52,8 +52,8 @@ use crate::features::{
         ListPluginsDtoUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
         PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
         PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-        PluginsFeature, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
-        UpdatePluginUseCase, UpdatePluginUseCasePort,
+        PluginVerificationStorage, PluginsFeature, RemovePluginUseCase, RemovePluginUseCasePort,
+        SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
         GetProcessMetadataByInstanceIdUseCase, GetProcessMetadataByInstanceIdUseCasePort,
@@ -148,6 +148,7 @@ pub struct PluginParams {
     pub loader_registry: Arc<PluginLoaderRegistry>,
     pub storage: Arc<dyn PluginStorage>,
     pub source_storage: Arc<dyn PluginSourceStorage>,
+    pub verification_storage: Arc<dyn PluginVerificationStorage>,
     pub settings_storage: Arc<dyn PluginSettingsStorage>,
     pub provider_factory: Arc<PluginProviderFactory>,
     pub extractor: Arc<dyn PluginExtractor>,
@@ -792,6 +793,7 @@ impl PluginsFeature for AetherContainer {
             self.plugins().extractor.clone(),
             self.plugins().storage.clone(),
             self.plugins().source_storage.clone(),
+            self.plugins().verification_storage.clone(),
             self.plugins().provider_factory.clone(),
         ))
     }
@@ -806,6 +808,9 @@ impl PluginsFeature for AetherContainer {
     }
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage> {
         self.plugins().source_storage.clone()
+    }
+    fn plugin_verification_storage(&self) -> Arc<dyn PluginVerificationStorage> {
+        self.plugins().verification_storage.clone()
     }
     fn plugin_loader(&self) -> Option<Arc<dyn PluginLoader>> {
         self.plugins()

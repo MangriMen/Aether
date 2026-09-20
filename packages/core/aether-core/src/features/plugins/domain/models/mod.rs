@@ -10,6 +10,7 @@ mod plugin_manifest;
 mod plugin_provider;
 mod plugin_settings;
 mod plugin_source;
+mod plugin_verification;
 mod serializable_output;
 
 pub use constants::PLUGIN_API_VERSION;
@@ -32,4 +33,5 @@ pub use plugin_provider::{
 };
 pub use plugin_settings::PluginSettings;
 pub use plugin_source::{PluginManifestPreview, PluginSource};
+pub use plugin_verification::PluginVerification;
 pub use serializable_output::SerializableOutput;

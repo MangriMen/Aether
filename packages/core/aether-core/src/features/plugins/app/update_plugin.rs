@@ -4,10 +4,11 @@ use async_trait::async_trait;
 
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginSource, PluginSourceStorage, PluginStorage,
+    PluginVerificationStorage,
 };
 
 use super::ports::UpdatePluginUseCasePort;
-use super::{PluginProviderFactory, write_bytes_to_temp_file};
+use super::{PluginProviderFactory, record_plugin_verification, write_bytes_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
@@ -15,6 +16,7 @@ pub struct UpdatePluginUseCase {
     plugin_extractor: Arc<dyn PluginExtractor>,
     plugin_storage: Arc<dyn PluginStorage>,
     plugin_source_storage: Arc<dyn PluginSourceStorage>,
+    plugin_verification_storage: Arc<dyn PluginVerificationStorage>,
     provider_factory: Arc<PluginProviderFactory>,
 }
 
@@ -24,12 +26,14 @@ impl UpdatePluginUseCase {
         plugin_extractor: Arc<dyn PluginExtractor>,
         plugin_storage: Arc<dyn PluginStorage>,
         plugin_source_storage: Arc<dyn PluginSourceStorage>,
+        plugin_verification_storage: Arc<dyn PluginVerificationStorage>,
         provider_factory: Arc<PluginProviderFactory>,
     ) -> Self {
         Self {
             plugin_extractor,
             plugin_storage,
             plugin_source_storage,
+            plugin_verification_storage,
             provider_factory,
         }
     }
@@ -93,6 +97,16 @@ impl UpdatePluginUseCase {
         self.plugin_storage.remove(plugin_id).await?;
         let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
         self.plugin_storage.add(extracted).await?;
+
+        // Re-establish trust on the bytes this release just delivered: the old
+        // record was wiped along with the previous version's directory.
+        record_plugin_verification(
+            self.plugin_storage.as_ref(),
+            self.plugin_verification_storage.as_ref(),
+            plugin_id,
+            source_type.clone(),
+        )
+        .await?;
 
         // Update source info
         let updated_source = PluginSource::Remote {

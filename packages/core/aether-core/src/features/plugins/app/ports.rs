@@ -10,7 +10,7 @@ use crate::features::plugins::app::{EditPluginSettings, PluginDto};
 use crate::features::plugins::domain::PluginInstance;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginSettings, PluginSource,
-    ProviderUpdateInfo,
+    PluginVerification, ProviderUpdateInfo,
 };
 
 #[async_trait]
@@ -18,6 +18,19 @@ pub trait PluginSourceStorage: Send + Sync {
     async fn save(&self, plugin_id: &str, source: &PluginSource) -> Result<(), PluginError>;
     async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError>;
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
+}
+
+/// Persists the trust-on-first-use record established when a plugin is fetched
+/// from a remote provider. Absence of a record means "never verified", which is
+/// a valid state (locally installed plugins), not an error.
+#[async_trait]
+pub trait PluginVerificationStorage: Send + Sync {
+    async fn save(
+        &self,
+        plugin_id: &str,
+        verification: &PluginVerification,
+    ) -> Result<(), PluginError>;
+    async fn get(&self, plugin_id: &str) -> Result<Option<PluginVerification>, PluginError>;
 }
 
 #[async_trait]
@@ -36,6 +49,8 @@ pub trait PluginStorage: Send + Sync {
     async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError>;
     async fn get(&self, plugin_id: &str) -> Result<Plugin, PluginError>;
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
+    /// Lowercase hex sha256 of the plugin's wasm blob as it currently sits on disk.
+    async fn wasm_sha256(&self, plugin_id: &str) -> Result<String, PluginError>;
 }
 
 #[async_trait]
