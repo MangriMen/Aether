@@ -3,8 +3,8 @@
 //! `run_command` is the one place where a plugin can start a process on the host, so it is
 //! fenced in on four sides (T-0.5):
 //!
-//! * only a program inside the core-managed Java tree may be started, by canonicalised path
-//!   (the allowlist lives in [`plugin_utils::plugin_command_to_host`]);
+//! * only a program sitting next to a Java runtime the core knows about may be started, by
+//!   canonicalised path (the allowlist lives in [`plugin_utils::plugin_command_to_host`]);
 //! * the working directory is mandatory and must sit inside a directory mounted for the plugin;
 //! * the child gets an explicit minimal environment rather than the launcher's own;
 //! * the run is capped in both wall-clock time and captured output.
@@ -18,6 +18,7 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 
 use crate::{
     core::app::AetherContainer,
+    features::java::{Java, JavaFeature},
     shared::{
         execute_async::infra::execute_async, serializable_command::domain::SerializableCommand,
     },
@@ -162,8 +163,18 @@ pub(crate) async fn handle_run_command(
     let command_for_log = command.clone();
     log::debug!(target: "plugin", "[{plugin_id}]: run_command {command_for_log:?}");
 
-    let host_command =
-        plugin_utils::plugin_command_to_host(plugin_id, &command, &container.location_info())?;
+    // Q10 (d): the allowlist is whatever the core itself hands out through `get_java` /
+    // `install_java`, so a system-wide Java the user registered counts too (F-22). Read it
+    // fresh on every call — a runtime removed since the last one must stop being allowed.
+    let registered_java = container.list_java_use_case().execute().await?;
+    let allowed_program_dirs = plugin_utils::java_bin_dirs(registered_java.iter().map(Java::path));
+
+    let host_command = plugin_utils::plugin_command_to_host(
+        plugin_id,
+        &command,
+        &container.location_info(),
+        &allowed_program_dirs,
+    )?;
 
     log::debug!(target: "plugin", "[{plugin_id}]: running {host_command:?}");
     let (output, truncated) = run_capped(&host_command, COMMAND_TIMEOUT, MAX_OUTPUT_BYTES).await?;

@@ -234,26 +234,66 @@ fn canonicalize_or_deny(id: &str, path: &Path) -> Result<PathBuf, PluginError> {
     crate::shared::io::infra::canonicalize(path).map_err(|_| access_violation(id, path))
 }
 
-/// Resolve `program` to the one executable a plugin is allowed to start (T-0.5, Q7).
+/// The directories a plugin may start a program from, derived from the Java runtimes the core
+/// knows about (Q10 (d), replacing the `java_dir()` comparison of Q7 — see F-22).
 ///
-/// The allowlist in this pass is a single directory: the Java tree the core manages, i.e. what
-/// `get_java` / `install_java` hand out. Matching on the file name (`java`, `java.exe`) is
-/// explicitly **not** a basis — only the path counts, and it is compared after canonicalisation
-/// so neither `..` segments nor symlinks can walk out of the tree.
+/// Each input is a path as `java_versions` stores it, which is either the launcher binary or
+/// the `bin` directory holding it; both normalise to that `bin` directory. Matching on the
+/// directory rather than the exact file is deliberate: `get_java` hands out `javaw`, and a
+/// caller asking for `java` next to it wants the same runtime. Everything is canonicalised, so
+/// neither `..` segments nor symlinks can point out of the directory afterwards.
+///
+/// A path that no longer resolves is dropped — a stale row must not widen the allowlist.
+pub fn java_bin_dirs<I, S>(registered_java_paths: I) -> Vec<PathBuf>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<Path>,
+{
+    let mut dirs: Vec<PathBuf> = registered_java_paths
+        .into_iter()
+        .filter_map(|path| crate::shared::io::infra::canonicalize(path.as_ref()).ok())
+        .map(|path| {
+            if path.is_dir() {
+                path
+            } else {
+                path.parent().map_or(path.clone(), Path::to_path_buf)
+            }
+        })
+        .collect();
+
+    dirs.sort();
+    dirs.dedup();
+    dirs
+}
+
+/// Resolve `program` to an executable a plugin is allowed to start (T-0.5, Q10 (d)).
+///
+/// `allowed_program_dirs` comes from [`java_bin_dirs`] over what the core itself hands out via
+/// `get_java` / `install_java`, so a Java the user installed system-wide is as acceptable as one
+/// the core downloaded — and nothing else is. Matching on the file name (`java`, `java.exe`) is
+/// explicitly **not** a basis; the canonicalised directory is.
+///
+/// Note what this does *not* do: the plugin still chooses the arguments, and `/cache` is mounted
+/// read-write, so `<allowed java> -jar #/cache/…` runs whatever the plugin put there. This is a
+/// narrowing — no shell, no arbitrary native binary — not a containment boundary (F-23).
 fn resolve_allowed_program(
     id: &str,
     program: &str,
     location_info: &LocationInfo,
+    allowed_program_dirs: &[PathBuf],
 ) -> Result<String, PluginError> {
     // F-13: no fallback to the raw string. A `program` that does not resolve is refused
     // outright instead of being launched as written.
     let resolved = plugin_path_to_host(id, program, location_info)?;
 
     let canonical_program = canonicalize_or_deny(id, &resolved)?;
-    // Fails closed: if the core has never installed a Java, there is no allowed program.
-    let canonical_java_dir = canonicalize_or_deny(id, &location_info.java_dir())?;
 
-    if !canonical_program.starts_with(&canonical_java_dir) {
+    // Fails closed: with no Java registered there is no allowed program at all.
+    let is_allowed = canonical_program
+        .parent()
+        .is_some_and(|parent| allowed_program_dirs.iter().any(|dir| dir == parent));
+
+    if !is_allowed {
         return Err(access_violation(id, &canonical_program));
     }
 
@@ -289,8 +329,10 @@ pub fn plugin_command_to_host(
     id: &str,
     command: &CommandDto,
     location_info: &LocationInfo,
+    allowed_program_dirs: &[PathBuf],
 ) -> Result<SerializableCommand, PluginError> {
-    let resolved_program = resolve_allowed_program(id, &command.program, location_info)?;
+    let resolved_program =
+        resolve_allowed_program(id, &command.program, location_info, allowed_program_dirs)?;
 
     let resolved_args: Vec<String> = command
         .args
@@ -477,6 +519,13 @@ mod tests {
         }
     }
 
+    impl Layout {
+        /// What `handle_run_command` would compute from `java_versions` for this layout.
+        fn allowed(&self) -> Vec<PathBuf> {
+            java_bin_dirs([self.java_bin.as_path()])
+        }
+    }
+
     /// The shape packwiz actually sends: an absolute Java path from `get_java`, `#`-prefixed
     /// paths for everything that lives in a mounted directory.
     fn packwiz_command(program: &str) -> CommandDto {
@@ -497,8 +546,13 @@ mod tests {
         let layout = layout();
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
-        let host_command =
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+        let host_command = plugin_command_to_host(
+            PLUGIN_ID,
+            &command,
+            &layout.location_info,
+            &layout.allowed(),
+        )
+        .expect("allowed");
 
         let canonical_java = crate::shared::io::infra::canonicalize(&layout.java_bin).unwrap();
         assert_eq!(
@@ -513,8 +567,13 @@ mod tests {
         let layout = layout();
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
-        let host_command =
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+        let host_command = plugin_command_to_host(
+            PLUGIN_ID,
+            &command,
+            &layout.location_info,
+            &layout.allowed(),
+        )
+        .expect("allowed");
 
         assert_eq!(host_command.args[0], "-jar");
         assert!(
@@ -547,7 +606,12 @@ mod tests {
             let command = packwiz_command(program);
             assert!(
                 matches!(
-                    plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+                    plugin_command_to_host(
+                        PLUGIN_ID,
+                        &command,
+                        &layout.location_info,
+                        &layout.allowed()
+                    ),
                     Err(PluginError::AccessViolation { .. })
                 ),
                 "`{program}` must be refused"
@@ -567,7 +631,12 @@ mod tests {
 
         let command = packwiz_command(&rogue_java.to_string_lossy());
         assert!(matches!(
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
             Err(PluginError::AccessViolation { .. })
         ));
     }
@@ -591,7 +660,12 @@ mod tests {
 
         let command = packwiz_command(&traversal.to_string_lossy());
         assert!(matches!(
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
             Err(PluginError::AccessViolation { .. })
         ));
     }
@@ -604,7 +678,12 @@ mod tests {
         let command = packwiz_command(&missing.to_string_lossy());
         assert!(
             matches!(
-                plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+                plugin_command_to_host(
+                    PLUGIN_ID,
+                    &command,
+                    &layout.location_info,
+                    &layout.allowed()
+                ),
                 Err(PluginError::AccessViolation { .. })
             ),
             "an unresolvable program must be refused, not launched as written (F-13)"
@@ -618,7 +697,12 @@ mod tests {
         command.current_dir = None;
 
         assert!(matches!(
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
             Err(PluginError::AccessViolation { .. })
         ));
     }
@@ -634,9 +718,122 @@ mod tests {
         command.current_dir = Some(outside);
 
         assert!(matches!(
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info),
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
             Err(PluginError::AccessViolation { .. })
         ));
+    }
+
+    #[test]
+    fn should_accept_a_java_registered_outside_the_managed_java_dir() {
+        // F-22 / Q10 (d): what counts is that the core handed the path out, not where it sits.
+        let layout = layout();
+
+        let system_bin = layout
+            .location_info
+            .config_dir()
+            .join("Program Files")
+            .join("Eclipse Adoptium")
+            .join("jdk-8")
+            .join("bin");
+        std::fs::create_dir_all(&system_bin).expect("system java dir");
+        let system_java = system_bin.join(java_file_name());
+        std::fs::write(&system_java, b"").expect("system java");
+
+        let command = packwiz_command(&system_java.to_string_lossy());
+        let allowed = java_bin_dirs([system_java.as_path()]);
+
+        assert!(
+            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info, &allowed).is_ok(),
+            "a system-wide Java the core registered must be allowed"
+        );
+    }
+
+    #[test]
+    fn should_accept_a_sibling_launcher_in_the_same_bin_directory() {
+        // `get_java` hands out `javaw`; a caller asking for `java` next to it wants the same
+        // runtime, so the allowlist is the `bin` directory, not the exact file.
+        let layout = layout();
+
+        let sibling =
+            layout
+                .java_bin
+                .with_file_name(if cfg!(windows) { "javaw.exe" } else { "javaw" });
+        std::fs::write(&sibling, b"").expect("sibling launcher");
+
+        let command = packwiz_command(&sibling.to_string_lossy());
+        assert!(
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn should_reject_a_program_elsewhere_under_the_managed_java_dir() {
+        // Narrower than the Q7 rule this replaced: being somewhere under `java_dir()` is no
+        // longer enough, the program must sit in a registered runtime's `bin`.
+        let layout = layout();
+
+        let stray = layout.location_info.java_dir().join("zulu-8").join("stray");
+        std::fs::write(&stray, b"").expect("stray binary");
+
+        let command = packwiz_command(&stray.to_string_lossy());
+        assert!(matches!(
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_reject_everything_when_no_java_is_registered() {
+        let layout = layout();
+        let command = packwiz_command(&layout.java_bin.to_string_lossy());
+
+        assert!(
+            matches!(
+                plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info, &[]),
+                Err(PluginError::AccessViolation { .. })
+            ),
+            "an empty allowlist must permit nothing, not everything"
+        );
+    }
+
+    #[test]
+    fn should_drop_registered_paths_that_no_longer_resolve() {
+        let layout = layout();
+        let missing = layout.location_info.java_dir().join("gone").join("bin");
+
+        assert_eq!(
+            java_bin_dirs([missing.as_path()]),
+            Vec::<PathBuf>::new(),
+            "a stale row must not widen the allowlist"
+        );
+    }
+
+    #[test]
+    fn should_normalise_a_registered_bin_directory_and_binary_to_the_same_entry() {
+        let layout = layout();
+        let bin_dir = layout.java_bin.parent().expect("bin dir");
+
+        assert_eq!(
+            java_bin_dirs([layout.java_bin.as_path()]),
+            java_bin_dirs([bin_dir]),
+            "`java_versions` stores either form; both mean the same runtime"
+        );
     }
 
     #[test]
@@ -644,8 +841,13 @@ mod tests {
         let layout = layout();
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
-        let host_command =
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info).expect("allowed");
+        let host_command = plugin_command_to_host(
+            PLUGIN_ID,
+            &command,
+            &layout.location_info,
+            &layout.allowed(),
+        )
+        .expect("allowed");
 
         let env = host_command
             .env
