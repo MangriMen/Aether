@@ -83,6 +83,16 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
 	path: string,
+} } | { code: "INVALID_RELATIVE_PATH"; payload: {
+	path: string,
+	reason: string,
+} } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
+	path: string,
+	instance_id: string,
+} } | { code: "FILE_TOO_LARGE"; payload: {
+	path: string,
+	size: string,
+	limit: string,
 } } | { code: "CONTENT_DOWNLOAD_ERROR"; payload: string } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
 	reason: string,
 } } | { code: "CONTENT_FOR_GAME_VERSION_NOT_FOUND"; payload: {

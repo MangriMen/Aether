@@ -58,6 +58,21 @@ pub enum InstanceErrorDto {
     ContentFilename {
         path: String,
     },
+    InvalidRelativePath {
+        path: String,
+        reason: String,
+    },
+    PathEscapesInstance {
+        path: String,
+        instance_id: String,
+    },
+    FileTooLarge {
+        // Specta refuses to export `u64` to TypeScript, and these two only ever end up in an
+        // error message, so they cross the boundary already formatted.
+        path: String,
+        size: String,
+        limit: String,
+    },
     ContentDownloadError(String),
     ContentProviderError {
         reason: String,
@@ -83,6 +98,8 @@ pub enum InstanceErrorDto {
 }
 
 impl From<&InstanceError> for InstanceErrorDto {
+    // One flat arm per variant; splitting an exhaustive mapping only hides which ones are covered.
+    #[allow(clippy::too_many_lines)]
     fn from(value: &InstanceError) -> Self {
         match value {
             InstanceError::Storage(err) => Self::Storage {
@@ -137,6 +154,21 @@ impl From<&InstanceError> for InstanceErrorDto {
             },
             InstanceError::UnmanagedInstance { instance_id } => Self::UnmanagedInstance {
                 instance_id: instance_id.clone(),
+            },
+            InstanceError::InvalidRelativePath { path, reason } => Self::InvalidRelativePath {
+                path: path.clone(),
+                reason: reason.clone(),
+            },
+            InstanceError::PathEscapesInstance { path, instance_id } => {
+                Self::PathEscapesInstance {
+                    path: path.clone(),
+                    instance_id: instance_id.clone(),
+                }
+            }
+            InstanceError::FileTooLarge { path, size, limit } => Self::FileTooLarge {
+                path: path.clone(),
+                size: size.to_string(),
+                limit: limit.to_string(),
             },
             InstanceError::ContentDuplication { content_path } => Self::ContentDuplication {
                 content_path: content_path.clone(),

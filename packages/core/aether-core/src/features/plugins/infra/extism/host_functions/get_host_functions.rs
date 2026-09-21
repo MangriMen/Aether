@@ -123,5 +123,21 @@ pub fn get_instance_host_functions(context: &PluginContext) -> Vec<Function> {
             UserData::new(context.clone()),
             features::disable_contents,
         ),
+        // T-1.3: the audited way in and out of an instance directory. Both take an instance id
+        // plus a relative path, never a WASI path.
+        Function::new(
+            "write_instance_file",
+            [PTR],
+            [PTR],
+            UserData::new(context.clone()),
+            features::write_instance_file,
+        ),
+        Function::new(
+            "read_instance_file",
+            [PTR],
+            [PTR],
+            UserData::new(context.clone()),
+            features::read_instance_file,
+        ),
     ]
 }

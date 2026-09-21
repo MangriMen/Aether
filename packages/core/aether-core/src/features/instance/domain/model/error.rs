@@ -73,6 +73,20 @@ pub enum InstanceError {
     #[error("Can't get content file_name at path: {path}")]
     ContentFilename { path: PathBuf },
 
+    // Instance files (T-1.3)
+    #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
+    InvalidRelativePath { path: String, reason: String },
+
+    #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
+    PathEscapesInstance { path: String, instance_id: String },
+
+    #[error("File \"{path}\" is {size} bytes, over the {limit} byte limit")]
+    FileTooLarge {
+        path: String,
+        size: u64,
+        limit: u64,
+    },
+
     #[error("Error when downloading content {0}")]
     ContentDownloadError(String),
 

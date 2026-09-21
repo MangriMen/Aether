@@ -114,6 +114,25 @@ impl InstanceFileService for MemInstanceFileService {
         }
         Ok(())
     }
+
+    // Not exercised by these tests; the real path checks live in
+    // `instance_relative_path_test` and `fs_instance_file_service_test`.
+    async fn write_instance_file(
+        &self,
+        _instance_id: &str,
+        _relative_path: &str,
+        _bytes: &[u8],
+    ) -> Result<(), InstanceError> {
+        unimplemented!("create_instance does not write instance files")
+    }
+
+    async fn read_instance_file(
+        &self,
+        _instance_id: &str,
+        _relative_path: &str,
+    ) -> Result<Vec<u8>, InstanceError> {
+        unimplemented!("create_instance does not read instance files")
+    }
 }
 
 /// An in-memory `InstanceStorage` that keeps instances in a Vec.
