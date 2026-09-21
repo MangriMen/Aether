@@ -41,7 +41,7 @@
           }
         },
         "version": {
-          "description": "Required API version range (SemVer requirement).",
+          "description": "Required API version range (`SemVer` requirement).",
           "type": "string"
         }
       },
@@ -101,7 +101,7 @@
       ]
     },
     "PathMapping": {
-      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: [host_path, virtual_path]",
+      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: `[host_path, virtual_path]`",
       "type": "array",
       "maxItems": 2,
       "minItems": 2,

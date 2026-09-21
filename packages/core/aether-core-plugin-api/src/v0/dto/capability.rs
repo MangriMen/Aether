@@ -48,7 +48,7 @@ pub struct ContentProviderCapabilityMetadataDto {
     #[serde(flatten)]
     pub base: CapabilityMetadataDto,
 
-    /// Whether the provider supports installing individual items.
+    /// Whether the provider supports installing individual items (e.g., a single mod or resource pack).
     pub supports_install_atomic: bool,
 
     /// Whether the provider supports installing complex modpacks or curated collections.

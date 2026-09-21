@@ -114,7 +114,7 @@
           "type": "string"
         },
         "supportedExtensions": {
-          "description": "List of supported file extensions, e.g., [\"zip\", \"mrpack\"].",
+          "description": "List of supported file extensions, e.g., [`zip`, `mrpack`].",
           "type": "array",
           "items": {
             "type": "string"

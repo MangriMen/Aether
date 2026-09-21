@@ -1,12 +1,20 @@
 use std::path::PathBuf;
 
+use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Root configuration for an Aether plugin.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+// Published as `schemas/plugin-manifest.schema.json`, which plugin authors validate their
+// `manifest.json` against — including authors not writing in Rust, who cannot import these
+// DTOs. `schema_name` / `schemars(rename)` keep the internal `Dto` suffix out of that
+// published contract. Deliberately a plain `//` comment: a doc comment here would land in
+// the schema `description` that those authors read.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "PluginManifest")]
+#[schema_category("plugin_api")]
+#[schema_name("PluginManifest")]
 pub struct PluginManifestDto {
     /// Optional URI pointing to the JSON Schema for this manifest version.
     /// Ignored during parsing — reserved for editor tooling and validation.
@@ -27,7 +35,7 @@ pub struct PluginManifestDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "PluginMetadata")]
 pub struct PluginMetadataDto {
     /// Unique identifier for the plugin (lowercase, kebab-case).
     #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
@@ -53,7 +61,7 @@ pub struct PluginMetadataDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "RuntimeConfig")]
 pub struct RuntimeConfigDto {
     /// List of domains or IP addresses the plugin is allowed to connect to.
     #[serde(default)]
@@ -65,7 +73,9 @@ pub struct RuntimeConfigDto {
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
+/// Format: `[host_path, virtual_path]`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[schemars(rename = "PathMapping")]
 pub struct PathMappingDto(
     /// Path on the host disk.
     pub String,
@@ -82,6 +92,7 @@ pub enum LoadConfigTypeDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "type")]
+#[schemars(rename = "LoadConfig")]
 pub enum LoadConfigDto {
     /// Use WebAssembly (Extism) for a secure, cross-platform sandbox.
     #[serde(rename_all = "camelCase")]
@@ -92,7 +103,7 @@ pub enum LoadConfigDto {
         #[serde(default)]
         memory_limit: Option<usize>,
     },
-    /// Load a native shared library (.dll, .so, .dylib).
+    /// Load a native shared library (.dll, .so, .dylib). Less secure, but faster.
     #[serde(rename_all = "camelCase")]
     Native {
         /// Path to the dynamic library file relative to the plugin root.
@@ -102,7 +113,7 @@ pub enum LoadConfigDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "ApiConfig")]
 pub struct ApiConfigDto {
     /// Required API version range (`SemVer` requirement).
     #[schemars(with = "String")]

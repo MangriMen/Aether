@@ -132,6 +132,7 @@ name = "aether-core-plugin-api"
 version = "0.2.0"
 dependencies = [
  "chrono",
+ "register-schema",
  "schemars 1.2.1",
  "serde",
  "serde_json",
