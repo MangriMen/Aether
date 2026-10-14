@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[schemars(deny_unknown_fields)]
 pub struct CapabilityMetadataDto {
     /// Identifier for the capability (lowercase, kebab/underscore allowed).
-    #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
+    #[schemars(regex(pattern = r"^[a-z0-9][a-z0-9_\-]*$"))]
     pub id: String,
 
     /// Display name of the capability.
@@ -48,9 +48,13 @@ pub struct ContentProviderCapabilityMetadataDto {
     #[serde(flatten)]
     pub base: CapabilityMetadataDto,
 
-    /// Whether the provider supports installing individual items.
-    pub supports_install_atomic: bool,
-
-    /// Whether the provider supports installing complex modpacks or curated collections.
-    pub supports_install_modpacks: bool,
+    /// The platform whose content this provider serves (`modrinth`, `curseforge`): what an
+    /// install plan's `providerRef` names to point at content without naming a plugin. Several
+    /// providers may serve one platform; the launcher picks which one is asked.
+    ///
+    /// A provider declaring a platform must implement `resolveFile`. Leave it out when the
+    /// provider hosts no content of its own and cannot be the target of a `providerRef`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(regex(pattern = r"^[a-z0-9][a-z0-9_\-]*$"))]
+    pub platform: Option<String>,
 }

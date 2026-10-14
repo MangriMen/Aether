@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT platform, provider_id FROM platform_providers",
+  "describe": {
+    "columns": [
+      {
+        "name": "platform",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platform_providers",
+            "name": "platform"
+          }
+        }
+      },
+      {
+        "name": "provider_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "platform_providers",
+            "name": "provider_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3be646b33b5b13b7bfdfa8a64986c66f3aa20b46a69859f107d4af68343e0cbd"
+}

@@ -47,7 +47,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn version_not_found_format() {
+    fn should_format_version_not_found_error_when_displayed() {
         let err = MinecraftDomainError::VersionNotFound {
             version: "1.20".into(),
         };
@@ -55,7 +55,7 @@ mod tests {
     }
 
     #[test]
-    fn loader_version_required_format() {
+    fn should_format_loader_version_required_error_when_displayed() {
         let err = MinecraftDomainError::LoaderVersionRequired;
         assert_eq!(
             err.to_string(),
@@ -64,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn processor_failed_format() {
+    fn should_format_processor_failed_error_when_displayed() {
         let err = MinecraftDomainError::ProcessorFailed {
             reason: "out of memory".into(),
         };
@@ -72,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn pre_launch_failed_format() {
+    fn should_format_pre_launch_failed_error_when_displayed() {
         let err = MinecraftDomainError::PreLaunchFailed { code: -1 };
         assert_eq!(
             err.to_string(),
@@ -81,7 +81,7 @@ mod tests {
     }
 
     #[test]
-    fn storage_failure_format() {
+    fn should_format_storage_failure_error_when_displayed() {
         let err = MinecraftDomainError::StorageFailure {
             reason: "disk full".into(),
         };

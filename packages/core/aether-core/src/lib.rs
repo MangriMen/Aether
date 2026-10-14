@@ -1,6 +1,8 @@
 pub mod core;
 pub mod features;
 pub mod shared;
+#[cfg(test)]
+mod test_support;
 
 pub use aether_core_plugin_api as plugin_api;
 pub use core::{Error, ErrorKind, Result};

@@ -15,6 +15,10 @@ export const events = {
 };
 
 /* Types */
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
+
+export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
+
 export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
 	details: string,
 } } | { code: "CAN_NOT_RECREATE_WINDOW"; payload: {
@@ -78,6 +82,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "IMPORT_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
+	reason: string,
+} } | { code: "PLUGIN_NOT_RUNNING"; payload: {
+	plugin_id: string,
 } } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
@@ -88,12 +95,33 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
 	path: string,
+} } | { code: "INVALID_RELATIVE_PATH"; payload: {
+	path: string,
+	reason: string,
+} } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
+	path: string,
+	instance_id: string,
+} } | { code: "FILE_TOO_LARGE"; payload: {
+	path: string,
+	size: string,
+	limit: string,
 } } | { code: "CONTENT_DOWNLOAD_ERROR"; payload: string } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
 	reason: string,
 } } | { code: "CONTENT_FOR_GAME_VERSION_NOT_FOUND"; payload: {
 	game_version: string,
 } } | { code: "UNSUPPORTED_CONTENT_TYPE"; payload: {
 	content_type: ContentTypeDto,
+} } | { code: "UNSUPPORTED_OPERATION"; payload: {
+	provider_id: string,
+	operation: string,
+} } | { code: "PLATFORM_PROVIDER_NOT_FOUND"; payload: {
+	platform: string,
+} } | { code: "PLATFORM_PROVIDER_NOT_CHOSEN"; payload: {
+	platform: string,
+} } | { code: "GAME_CHANGE_NOT_ALLOWED"; payload: {
+	instance_id: string,
+	provider_id: string,
+	content_id: string,
 } } | { code: "SETTINGS_LOAD_ERROR"; payload: {
 	details: string,
 } } | { code: "MINECRAFT_ERROR"; payload: {
@@ -136,19 +164,7 @@ export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	details: string,
 } };
 
-export type LoadConfigDto = 
-/**  Use WebAssembly (Extism) for a secure, cross-platform sandbox. */
-{ type: "extism"; 
-/**  Path to the .wasm file relative to the plugin root. */
-file: string; 
-/**  Maximum memory (in bytes) the plugin is allowed to allocate. */
-memoryLimit?: string } | 
-/**  Load a native shared library (.dll, .so, .dylib). Less secure, but faster. */
-{ type: "native"; 
-/**  Path to the dynamic library file relative to the plugin root. */
-libPath: string };
-
-export type LoadConfigTypeDto = "extism" | "native";
+export type LoadConfigTypeDto = "extism";
 
 export type LoaderVersionPreferenceDto = "latest" | "stable" | string;
 
@@ -193,6 +209,13 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 } } | { code: "ALREADY_UNLOADED"; payload: {
 	plugin_id: string,
+} } | { code: "BUSY"; payload: {
+	plugin_id: string,
+} } | { code: "STOPPED"; payload: {
+	plugin_id: string,
+} } | { code: "ID_MISMATCH"; payload: {
+	plugin_id: string,
+	archive_id: string,
 } } | { code: "LOAD_FAILED"; payload: {
 	plugin_id: string,
 	reason: string,
@@ -211,8 +234,6 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	message: string,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
 	config_type: LoadConfigTypeDto,
-} } | { code: "INVALID_CONFIG"; payload: {
-	config: LoadConfigDto,
 } } | { code: "EXTRACTION_FAILED"; payload: {
 	from: string,
 } } | { code: "INVALID_EXTRACTION_FORMAT" } | { code: "FILE_EXTRACTION_FAILED"; payload: {
@@ -226,6 +247,14 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "ACCESS_VIOLATION"; payload: {
 	plugin_id: string,
 	path: string,
+} } | { code: "INVALID_ALLOWED_PATH"; payload: {
+	plugin_id: string,
+	path: string,
+	reason: AllowedPathRejectionDto,
+} } | { code: "INVALID_ALLOWED_HOST"; payload: {
+	plugin_id: string,
+	url: string,
+	reason: AllowedHostRejectionDto,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "SETTINGS"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
@@ -273,9 +302,20 @@ export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payl
 	details: string,
 } } | { code: "TOML"; payload: {
 	details: string,
-} } | { code: "PARSE" };
+} } | { code: "PARSE" } | { code: "STATUS"; payload: {
+	status: number,
+	url: string,
+} } | { code: "TOO_LARGE"; payload: {
+	limit: string,
+} } | { code: "IO"; payload: {
+	path: string,
+	details: string,
+} };
 
-export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" };
+export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
+	platform: string,
+	reason: string,
+} };
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 	label: WindowLabelDto,

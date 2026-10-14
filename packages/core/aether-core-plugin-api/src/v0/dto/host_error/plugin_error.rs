@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::v0::LoadConfigTypeDto;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "kind", content = "data", rename_all = "camelCase")]
 pub enum PluginErrorDto {
@@ -22,11 +24,16 @@ pub enum PluginErrorDto {
         plugin_id: String,
         reason: String,
     },
+    IncompatibleApiVersion {
+        plugin_id: String,
+        reason: String,
+    },
     FunctionCallFailed {
         function_name: String,
         plugin_id: String,
-        error: String,
+        error: PluginCallErrorDto,
     },
+    Manifest(ManifestErrorDto),
     ManifestNotFound {
         path: String,
     },
@@ -34,10 +41,7 @@ pub enum PluginErrorDto {
         error: String,
     },
     LoaderNotFound {
-        config_type: String,
-    },
-    InvalidConfig {
-        config: String,
+        config_type: LoadConfigTypeDto,
     },
     ExtractionFailed {
         from: String,
@@ -59,6 +63,67 @@ pub enum PluginErrorDto {
         path: String,
     },
     HashComputationFailed,
-    Settings(String),
     Storage(String),
+    ProviderFetchError {
+        source_type: PluginSourceTypeDto,
+        details: String,
+    },
+    ProviderNoAssets {
+        source_type: PluginSourceTypeDto,
+    },
+    NoRemoteSource {
+        plugin_id: String,
+    },
+    DownloadFailed {
+        url: String,
+        details: String,
+    },
+    ProviderRateLimited {
+        source_type: PluginSourceTypeDto,
+        retry_after: Option<u32>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PluginSourceTypeDto {
+    GitHub,
+    Local,
+}
+
+/// Why a call into a plugin failed.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+pub enum PluginCallErrorDto {
+    MissingFunction,
+    Timeout,
+    OutOfFuel,
+    OutOfMemory,
+    Trap(String),
+    NonZeroExit(i32),
+    Plugin(String),
+    Codec(String),
+    Reentrant,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+pub enum ManifestErrorDto {
+    UnsupportedApi,
+    InvalidSemver {
+        field: String,
+        value: String,
+        error: String,
+    },
+    InvalidPathMapping,
+    UnknownHostFunctions(Vec<String>),
+    HostFunctionsNotDeclared,
+    InvalidId {
+        field: String,
+        value: String,
+    },
+    ReservedPluginId,
+    PlatformWithoutResolveFile {
+        capability_id: String,
+    },
 }

@@ -204,7 +204,7 @@ fn process_argument(
 
     Ok(result)
 }
-pub fn get_processor_arguments<T: AsRef<str>>(
+pub(super) fn get_processor_arguments<T: AsRef<str>>(
     libraries_path: &Path,
     arguments: &[T],
     data: &HashMap<String, modded::SidedDataEntry>,
@@ -215,7 +215,7 @@ pub fn get_processor_arguments<T: AsRef<str>>(
         .collect()
 }
 
-pub async fn get_processor_main_class(
+pub(super) async fn get_processor_main_class(
     path: String,
 ) -> Result<Option<String>, MinecraftDomainError> {
     tokio::task::spawn_blocking(move || {

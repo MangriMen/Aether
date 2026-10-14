@@ -4,10 +4,11 @@ use crate::features::plugins::app::PluginProviderFactory;
 use crate::features::plugins::app::ports::{
     CheckForPluginUpdatesUseCasePort, EditPluginSettingsUseCasePort, EnablePluginUseCasePort,
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
-    GetPluginSettingsUseCasePort, ImportPluginsUseCasePort, ListPluginsDtoUseCasePort,
+    GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCasePort,
+    GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort, ListPluginsDtoUseCasePort,
     PluginDisableService, PluginExtractor, PluginLoader, PluginSettingsStorage,
-    PluginSourceStorage, PluginStorage, PluginSyncService, RemovePluginUseCasePort,
-    UpdatePluginUseCasePort,
+    PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
+    ReloadPluginUseCasePort, RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
 
@@ -24,8 +25,11 @@ pub trait PluginsFeature {
     fn get_plugin_api_version_use_case(&self) -> Arc<dyn GetPluginApiVersionUseCasePort>;
     fn get_plugin_dto_use_case(&self) -> Arc<dyn GetPluginDtoUseCasePort>;
     fn get_plugin_settings_use_case(&self) -> Arc<dyn GetPluginSettingsUseCasePort>;
+    fn grant_plugin_folder_access_use_case(&self) -> Arc<dyn GrantPluginFolderAccessUseCasePort>;
+    fn grant_plugin_host_access_use_case(&self) -> Arc<dyn GrantPluginHostAccessUseCasePort>;
     fn import_plugins_use_case(&self) -> Arc<dyn ImportPluginsUseCasePort>;
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort>;
+    fn reload_plugin_use_case(&self) -> Arc<dyn ReloadPluginUseCasePort>;
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort>;
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort>;
 
@@ -40,6 +44,7 @@ pub trait PluginsFeature {
 
     // ── Ports ──
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage>;
+    fn plugin_verification_storage(&self) -> Arc<dyn PluginVerificationStorage>;
     fn plugin_loader(&self) -> Option<Arc<dyn PluginLoader>>;
     fn plugin_storage(&self) -> Arc<dyn PluginStorage>;
     fn plugin_settings_storage(&self) -> Arc<dyn PluginSettingsStorage>;

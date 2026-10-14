@@ -109,7 +109,7 @@ impl Rule for StrictLayerRule {
 }
 
 #[test]
-fn test_hexagonal_architecture_boundaries() {
+fn should_keep_layer_boundaries_when_imports_are_checked() {
     Arkitect::init_logger();
     let project = Project::from_current_crate();
 

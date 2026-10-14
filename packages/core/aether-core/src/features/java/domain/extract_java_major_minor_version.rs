@@ -7,7 +7,9 @@ use super::JavaDomainError;
 /// Examples:
 /// - "`1.8.0_361`" -> (1, 8)
 /// - "20" -> (1, 20)
-pub fn extract_java_major_minor_version(version: &str) -> Result<(u32, u32), JavaDomainError> {
+pub(crate) fn extract_java_major_minor_version(
+    version: &str,
+) -> Result<(u32, u32), JavaDomainError> {
     let get_error = || JavaDomainError::InvalidVersion {
         version: version.to_string(),
     };
@@ -33,7 +35,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn extract_old_format() {
+    fn should_extract_version_when_given_the_old_format() {
         assert_eq!(
             extract_java_major_minor_version("1.8.0_361").unwrap(),
             (1, 8)
@@ -41,14 +43,14 @@ mod tests {
     }
 
     #[test]
-    fn extract_new_format() {
+    fn should_extract_version_when_given_the_new_format() {
         assert_eq!(extract_java_major_minor_version("17").unwrap(), (1, 17));
         assert_eq!(extract_java_major_minor_version("20").unwrap(), (1, 20));
         assert_eq!(extract_java_major_minor_version("21").unwrap(), (1, 21));
     }
 
     #[test]
-    fn extract_detailed_format() {
+    fn should_extract_version_when_given_the_detailed_format() {
         assert_eq!(extract_java_major_minor_version("17.0.1").unwrap(), (1, 17));
         assert_eq!(
             extract_java_major_minor_version("17.0.2.3").unwrap(),
@@ -57,24 +59,24 @@ mod tests {
     }
 
     #[test]
-    fn extract_java_8_format() {
+    fn should_extract_version_when_given_the_java_8_format() {
         assert_eq!(extract_java_major_minor_version("1.8").unwrap(), (1, 8));
     }
 
     #[test]
-    fn extract_invalid_version_returns_error() {
+    fn should_return_an_error_when_the_version_is_invalid() {
         let err = extract_java_major_minor_version("").unwrap_err();
         assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
     }
 
     #[test]
-    fn extract_non_numeric_returns_error() {
+    fn should_return_an_error_when_the_version_is_not_numeric() {
         let err = extract_java_major_minor_version("abc").unwrap_err();
         assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
     }
 
     #[test]
-    fn extract_partial_non_numeric_returns_error() {
+    fn should_return_an_error_when_the_version_is_partly_non_numeric() {
         let err = extract_java_major_minor_version("1.abc").unwrap_err();
         assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
     }

@@ -50,13 +50,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn not_found_format() {
+    fn should_format_not_found_error_when_displayed() {
         let err = JavaDomainError::NotFound { version: 17 };
         assert_eq!(err.to_string(), "No JRE found for version 17");
     }
 
     #[test]
-    fn invalid_version_format() {
+    fn should_format_invalid_version_error_when_displayed() {
         let err = JavaDomainError::InvalidVersion {
             version: "abc".into(),
         };
@@ -64,13 +64,13 @@ mod tests {
     }
 
     #[test]
-    fn storage_format() {
+    fn should_format_storage_error_when_displayed() {
         let err = JavaDomainError::Storage("db error".into());
         assert_eq!(err.to_string(), "Storage error: db error");
     }
 
     #[test]
-    fn empty_path_format() {
+    fn should_format_empty_path_error_when_displayed() {
         let err = JavaDomainError::EmptyPath;
         assert_eq!(err.to_string(), "Path can't be empty for edit operations");
     }

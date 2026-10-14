@@ -170,6 +170,8 @@ interface ShowToastParams {
   variant?: ToastVariant;
   duration?: number;
   persistent?: boolean;
+  /** Something the user can do about the toast, shown under the description. */
+  action?: JSX.Element;
 }
 
 function showToast(props: ShowToastParams) {
@@ -185,6 +187,7 @@ function showToast(props: ShowToastParams) {
         {props.description && (
           <ToastDescription>{props.description}</ToastDescription>
         )}
+        {props.action}
       </div>
       <ToastClose />
     </Toast>

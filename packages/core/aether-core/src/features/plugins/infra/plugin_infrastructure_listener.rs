@@ -1,14 +1,14 @@
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 use crate::{
     features::{
         events::PluginEvent,
         instance::{ContentProvider, Importer, Updater},
         plugins::{
-            AsCapabilityMetadata, PluginCapabilities, PluginError, PluginInstance, PluginRegistry,
+            AsCapabilityMetadata, PluginCapabilities, PluginError, PluginHandle, PluginRegistry,
             PluginState,
         },
+        settings::LocationInfo,
     },
     shared::capability::domain::CapabilityRegistry,
 };
@@ -24,6 +24,8 @@ pub struct PluginInfrastructureListener<
     importers: Arc<IR>,
     updaters: Arc<UR>,
     content_providers: Arc<CR>,
+    /// For content provider proxies, which translate the paths a plugin names.
+    location_info: Arc<LocationInfo>,
 }
 
 impl<IR, UR, CR> PluginInfrastructureListener<IR, UR, CR>
@@ -37,12 +39,14 @@ where
         importers: Arc<IR>,
         updaters: Arc<UR>,
         content_providers: Arc<CR>,
+        location_info: Arc<LocationInfo>,
     ) -> Self {
         Self {
             plugin,
             importers,
             updaters,
             content_providers,
+            location_info,
         }
     }
 
@@ -57,7 +61,10 @@ where
                 plugin.state.clone()
             };
 
-            if matches!(state, PluginState::Loading) {
+            // Passing states keep the registrations: during an unload or restart the proxies
+            // answer "not running" over the retired handle instead of the capability going
+            // missing, until the new instance or the final state replaces them.
+            if matches!(state, PluginState::Loading | PluginState::Unloading) {
                 return Ok(());
             }
 
@@ -70,12 +77,11 @@ where
                             .await?;
                     }
                     PluginState::NotLoaded
-                    | PluginState::Unloading
                     | PluginState::Failed(_)
                     | PluginState::Incompatible(_) => {
                         self.sync_all_capabilities(&plugin_id, None, &caps).await?;
                     }
-                    PluginState::Loading => (),
+                    PluginState::Loading | PluginState::Unloading => (),
                 }
             }
 
@@ -92,7 +98,7 @@ where
     async fn sync_all_capabilities(
         &self,
         plugin_id: &str,
-        instance: Option<Arc<Mutex<dyn PluginInstance>>>,
+        instance: Option<PluginHandle>,
         caps: &PluginCapabilities,
     ) -> Result<(), PluginError> {
         // 1. Importers
@@ -121,7 +127,14 @@ where
             &self.content_providers,
             &caps.content_providers,
             instance.as_ref(),
-            |inst, cap| Arc::new(PluginContentProviderProxy::new(inst, cap)),
+            |inst, cap| {
+                Arc::new(PluginContentProviderProxy::new(
+                    plugin_id.to_owned(),
+                    inst,
+                    cap,
+                    self.location_info.clone(),
+                ))
+            },
         )
         .await?;
 
@@ -135,14 +148,14 @@ where
         plugin_id: &str,
         registry: &Arc<R>,
         items: &[C],
-        instance: Option<&Arc<Mutex<dyn PluginInstance>>>,
+        instance: Option<&PluginHandle>,
         proxy_factory: F,
     ) -> Result<(), PluginError>
     where
         T: Send + Sync + ?Sized + 'static,
         R: CapabilityRegistry<Arc<T>> + ?Sized,
         C: Clone + AsCapabilityMetadata,
-        F: Fn(Arc<Mutex<dyn PluginInstance>>, C) -> Arc<T>,
+        F: Fn(PluginHandle, C) -> Arc<T>,
     {
         for capability in items {
             let meta = capability.as_metadata();

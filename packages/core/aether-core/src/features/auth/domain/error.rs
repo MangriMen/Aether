@@ -26,7 +26,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn credentials_not_found_format() {
+    fn should_format_credentials_not_found_error_when_displayed() {
         let id = Uuid::nil();
         let err = AuthDomainError::CredentialsNotFound { id };
         assert_eq!(
@@ -36,31 +36,31 @@ mod tests {
     }
 
     #[test]
-    fn no_active_credentials_format() {
+    fn should_format_no_active_credentials_error_when_displayed() {
         let err = AuthDomainError::NoActiveCredentials;
         assert_eq!(err.to_string(), "Active credentials not found");
     }
 
     #[test]
-    fn invalid_username_length_format() {
+    fn should_format_invalid_username_length_error_when_displayed() {
         let err = AuthDomainError::InvalidUsernameLength { min: 3, max: 16 };
         assert_eq!(err.to_string(), "Invalid username length, min: 3, max: 16");
     }
 
     #[test]
-    fn invalid_username_chars_format() {
+    fn should_format_invalid_username_chars_error_when_displayed() {
         let err = AuthDomainError::InvalidUsernameChars;
         assert_eq!(err.to_string(), "Invalid username chars");
     }
 
     #[test]
-    fn invalid_account_type_format() {
+    fn should_format_invalid_account_type_error_when_displayed() {
         let err = AuthDomainError::InvalidAccountType;
         assert_eq!(err.to_string(), "Invalid account type");
     }
 
     #[test]
-    fn token_expired_format() {
+    fn should_format_token_expired_error_when_displayed() {
         let err = AuthDomainError::TokenExpired;
         assert_eq!(err.to_string(), "Session expired, please login again");
     }

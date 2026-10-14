@@ -1,3 +1,4 @@
+use aether_core::features::plugins::{PluginCapabilities, infra::PluginCapabilitiesV1};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -15,10 +16,13 @@ pub struct ProviderPluginPreviewDto {
 
 impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPluginPreviewDto {
     fn from(value: aether_core::features::plugins::ProviderPluginPreview) -> Self {
+        // Read the raw file the way loading the plugin does, so the preview shows what the
+        // launcher would register (handlers, flags derived from them, platform).
         let capabilities = value
             .capabilities
             .as_deref()
-            .and_then(|raw| serde_json::from_str::<PluginCapabilitiesDto>(raw).ok());
+            .and_then(|raw| serde_json::from_str::<PluginCapabilitiesV1>(raw).ok())
+            .map(|v1| PluginCapabilitiesDto::from(PluginCapabilities::from(v1)));
 
         Self {
             owner: value.owner,

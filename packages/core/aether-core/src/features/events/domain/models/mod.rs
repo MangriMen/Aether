@@ -1,12 +1,12 @@
 mod event;
-pub mod event_error;
-pub mod instance;
-pub mod plugin_event;
-pub mod process;
-pub mod progress;
-pub mod progress_bar;
-pub mod progress_bar_error;
-pub mod warning;
+pub(crate) mod event_error;
+pub(crate) mod instance;
+pub(crate) mod plugin_event;
+pub(crate) mod process;
+pub(crate) mod progress;
+pub(crate) mod progress_bar;
+pub(crate) mod progress_bar_error;
+pub(crate) mod warning;
 
 pub use event::*;
 pub use event_error::*;

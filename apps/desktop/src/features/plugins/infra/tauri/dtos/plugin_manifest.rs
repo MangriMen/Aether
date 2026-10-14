@@ -48,7 +48,8 @@ pub struct RuntimeConfigDto {
     #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
-    /// Filesystem access restrictions. Maps host paths to plugin-internal paths.
+    /// Ignored by the launcher, which logs a warning: folders are given to a plugin by the
+    /// user, in its settings. Kept so that manifests declaring it still load.
     #[serde(default)]
     pub allowed_paths: Vec<PathMappingDto>,
 }
@@ -73,7 +74,6 @@ impl From<PathMappingDto> for (String, PathBuf) {
 #[serde(rename_all = "snake_case")]
 pub enum LoadConfigTypeDto {
     Extism,
-    Native,
 }
 
 #[serde_as]
@@ -91,12 +91,6 @@ pub enum LoadConfigDto {
         #[serde(default)]
         memory_limit: Option<usize>,
     },
-    /// Load a native shared library (.dll, .so, .dylib). Less secure, but faster.
-    #[serde(rename_all = "camelCase")]
-    Native {
-        /// Path to the dynamic library file relative to the plugin root.
-        lib_path: PathBuf,
-    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Type)]
@@ -109,6 +103,11 @@ pub struct ApiConfigDto {
     /// List of optional host features requested by the plugin.
     #[serde(default)]
     pub features: Vec<String>,
+
+    /// Host functions the plugin declares and is linked with. `None`: the manifest predates
+    /// the declaration, and the plugin is incompatible.
+    #[serde(default)]
+    pub host_functions: Option<Vec<String>>,
 }
 
 impl From<aether_core::features::plugins::PluginManifest> for PluginManifestDto {
@@ -162,9 +161,6 @@ impl From<aether_core::features::plugins::LoadConfig> for LoadConfigDto {
             aether_core::features::plugins::LoadConfig::Extism { file, memory_limit } => {
                 Self::Extism { file, memory_limit }
             }
-            aether_core::features::plugins::LoadConfig::Native { lib_path } => {
-                Self::Native { lib_path }
-            }
         }
     }
 }
@@ -174,6 +170,7 @@ impl From<aether_core::features::plugins::ApiConfig> for ApiConfigDto {
         Self {
             version: m.version,
             features: m.features,
+            host_functions: m.host_functions,
         }
     }
 }
@@ -182,7 +179,6 @@ impl From<aether_core::features::plugins::LoadConfigType> for LoadConfigTypeDto 
     fn from(value: aether_core::features::plugins::LoadConfigType) -> Self {
         match value {
             aether_core::features::plugins::LoadConfigType::Extism => Self::Extism,
-            aether_core::features::plugins::LoadConfigType::Native => Self::Native,
         }
     }
 }

@@ -1,20 +1,22 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::features::instance::{
     ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId,
+    infra::legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
-pub struct PackV2 {
+pub(super) struct PackV2 {
     pub files: Vec<PackEntryV2>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
-pub struct PackEntryV2 {
+pub(super) struct PackEntryV2 {
     pub file: String,
 }
 
@@ -68,33 +70,24 @@ pub struct ContentFileUpdateInfoV1 {
 
 impl From<PackFileV1> for PackFile {
     fn from(value: PackFileV1) -> Self {
-        let update_provider_id = value.update_provider.and_then(|s| {
-            if s == "modrinth" {
-                Some(ProviderId {
-                    plugin_id: "core:modrinth".to_string(),
-                    capability_id: "modrinth-content".to_string(),
-                })
-            } else {
-                ProviderId::from_str(&s).ok()
-            }
-        });
+        let update_provider_id = value
+            .update_provider
+            .and_then(|s| parse_v1_provider_id(&s).ok());
 
         let update = value.update.map(|old_map| {
             old_map
                 .into_iter()
-                .map(|(k, v)| {
-                    let new_key_str = if k == "modrinth" {
-                        "core:modrinth#modrinth-content".to_string()
-                    } else {
-                        k
+                .filter_map(|(k, v)| {
+                    let provider_id = parse_update_key(&value.file_name, &k, parse_v1_provider_id)?;
+                    let Some(info) = migrate_update_info(&v) else {
+                        warn!(
+                            "Skipping update info \"{k}\" of pack file \"{}\": not a table",
+                            value.file_name
+                        );
+                        return None;
                     };
 
-                    let provider_id = ProviderId::from_str(&new_key_str)
-                        .expect("Failed to parse ProviderId during migration");
-
-                    let info = migrate_update_info(&v);
-
-                    (provider_id, info)
+                    Some((provider_id, info))
                 })
                 .collect()
         });
@@ -115,6 +108,7 @@ impl From<PackFileV1> for PackFile {
             side: value.side,
             update_provider_id,
             update,
+            installed_by: None,
         }
     }
 }
@@ -124,21 +118,22 @@ impl From<PackFileV2> for PackFile {
         let update_provider_id = value
             .update_provider_id
             .as_ref()
-            .and_then(|s| ProviderId::from_str(s).ok());
+            .and_then(|s| parse_stored_provider_id(s).ok());
 
         let update = value.update.map(|old_map| {
             old_map
                 .into_iter()
-                .map(|(k, v)| {
-                    let provider_id = ProviderId::from_str(&k)
-                        .expect("Failed to parse ProviderId during deserialization");
-                    (
+                .filter_map(|(k, v)| {
+                    let provider_id =
+                        parse_update_key(&value.file_name, &k, parse_stored_provider_id)?;
+
+                    Some((
                         provider_id,
                         ContentFileUpdateInfo {
                             content_id: v.content_id,
                             version: v.version,
                         },
-                    )
+                    ))
                 })
                 .collect()
         });
@@ -159,6 +154,7 @@ impl From<PackFileV2> for PackFile {
             side: value.side,
             update_provider_id,
             update,
+            installed_by: None,
         }
     }
 }
@@ -198,8 +194,20 @@ impl From<PackFile> for PackFileV2 {
     }
 }
 
-fn migrate_update_info(v: &serde_json::Value) -> ContentFileUpdateInfo {
-    let obj = v.as_object().expect("Expected JSON object for update info");
+/// The provider id an `update` entry is keyed by, or `None` — with a warning — when the key is
+/// not one (a hand-edited or damaged pack file): one bad entry costs that entry, not the read.
+fn parse_update_key(
+    file_name: &str,
+    key: &str,
+    parse: fn(&str) -> Result<ProviderId, String>,
+) -> Option<ProviderId> {
+    parse(key)
+        .inspect_err(|e| warn!("Skipping update info of pack file \"{file_name}\": {e}"))
+        .ok()
+}
+
+fn migrate_update_info(v: &serde_json::Value) -> Option<ContentFileUpdateInfo> {
+    let obj = v.as_object()?;
     let content_id = obj
         .get("contentId")
         .or_else(|| obj.get("project_id"))
@@ -212,8 +220,154 @@ fn migrate_update_info(v: &serde_json::Value) -> ContentFileUpdateInfo {
         .unwrap_or_default()
         .to_string();
 
-    ContentFileUpdateInfo {
+    Some(ContentFileUpdateInfo {
         content_id,
         version,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::features::instance::ProviderId;
+
+    use super::*;
+
+    fn aether_modrinth() -> ProviderId {
+        "aether#modrinth".parse().unwrap()
+    }
+
+    #[test]
+    fn should_read_v2_core_modrinth_as_aether_modrinth_when_the_pack_stores_the_old_id() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider-id = "core:modrinth#modrinth-content"
+
+            [update."core:modrinth#modrinth-content"]
+            content-id = "AANobbMI"
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let pack_file = PackFile::from(dto);
+
+        assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
+        let update = pack_file.update.unwrap();
+        assert_eq!(update.len(), 1);
+        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    }
+
+    #[test]
+    fn should_read_v1_bare_modrinth_as_aether_modrinth_when_the_pack_stores_no_prefix() {
+        let dto: PackFileV1 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider = "modrinth"
+
+            [update.modrinth]
+            project_id = "AANobbMI"
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let pack_file = PackFile::from(dto);
+
+        assert_eq!(pack_file.update_provider_id, Some(aether_modrinth()));
+        let update = pack_file.update.unwrap();
+        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    }
+
+    /// A damaged entry costs that entry, not the whole read.
+    #[test]
+    fn should_skip_v2_update_entry_when_its_key_is_unparsable() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+
+            [update.no-separator]
+            content-id = "broken"
+            version = "v0"
+
+            [update."aether#modrinth"]
+            content-id = "AANobbMI"
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let update = PackFile::from(dto).update.unwrap();
+
+        assert_eq!(update.len(), 1);
+        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    }
+
+    #[test]
+    fn should_skip_v1_update_entry_when_its_key_is_unparsable() {
+        let dto: PackFileV1 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+
+            [update.no-separator]
+            project_id = "broken"
+
+            [update.modrinth]
+            project_id = "AANobbMI"
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let update = PackFile::from(dto).update.unwrap();
+
+        assert_eq!(update.len(), 1);
+        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    }
+
+    #[test]
+    fn should_skip_v1_update_entry_when_it_is_not_a_table() {
+        let dto: PackFileV1 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+
+            [update]
+            "curseforge#cf" = "not a table"
+
+            [update.modrinth]
+            project_id = "AANobbMI"
+            version = "v1"
+            "#,
+        )
+        .unwrap();
+
+        let update = PackFile::from(dto).update.unwrap();
+
+        assert_eq!(update.len(), 1);
+        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
+    }
+
+    #[test]
+    fn should_write_aether_modrinth_back_when_the_pack_is_saved() {
+        let dto: PackFileV2 = toml::from_str(
+            r#"
+            file-name = "sodium.jar"
+            hash = "abc"
+            update-provider-id = "core:modrinth#modrinth-content"
+            "#,
+        )
+        .unwrap();
+
+        let written = PackFileV2::from(PackFile::from(dto));
+
+        assert_eq!(
+            written.update_provider_id.as_deref(),
+            Some("aether#modrinth")
+        );
     }
 }

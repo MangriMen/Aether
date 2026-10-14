@@ -3,14 +3,14 @@ use crate::{
     shared::cache::domain::{CacheId, CacheKey},
 };
 
-pub enum MinecraftDownloadCacheNamespaces {
+pub(crate) enum MinecraftDownloadCacheNamespaces {
     AssetsIndex,
     VersionInfo,
     VersionJar,
 }
 
 impl MinecraftDownloadCacheNamespaces {
-    pub fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(&self) -> &'static str {
         match *self {
             Self::AssetsIndex => "minecraft:assets-index",
             Self::VersionInfo => "minecraft:version-info",
@@ -19,21 +19,21 @@ impl MinecraftDownloadCacheNamespaces {
     }
 }
 
-pub fn assets_index_key(id: String) -> CacheKey<vanilla::AssetsIndex> {
+pub(crate) fn assets_index_key(id: String) -> CacheKey<vanilla::AssetsIndex> {
     CacheKey::new(
         MinecraftDownloadCacheNamespaces::AssetsIndex.as_str(),
         CacheId::Named(id),
     )
 }
 
-pub fn version_info_key(version_id: String) -> CacheKey<vanilla::VersionInfo> {
+pub(crate) fn version_info_key(version_id: String) -> CacheKey<vanilla::VersionInfo> {
     CacheKey::new(
         MinecraftDownloadCacheNamespaces::VersionInfo.as_str(),
         CacheId::Named(version_id),
     )
 }
 
-pub fn version_jar_key(version_id: String) -> CacheKey<()> {
+pub(crate) fn version_jar_key(version_id: String) -> CacheKey<()> {
     CacheKey::new(
         MinecraftDownloadCacheNamespaces::VersionJar.as_str(),
         CacheId::Named(version_id),

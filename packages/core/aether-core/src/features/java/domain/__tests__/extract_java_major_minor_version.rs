@@ -3,7 +3,7 @@ use crate::features::java::domain::extract_java_major_minor_version;
 use super::super::JavaDomainError;
 
 #[test]
-fn check_java_8() -> Result<(), JavaDomainError> {
+fn should_extract_version_when_given_java_8() -> Result<(), JavaDomainError> {
     let (major, minor) = extract_java_major_minor_version("1.8.0_361")?;
 
     assert_eq!(major, 1);
@@ -13,7 +13,7 @@ fn check_java_8() -> Result<(), JavaDomainError> {
 }
 
 #[test]
-fn check_java_greater_than_8() -> Result<(), JavaDomainError> {
+fn should_extract_version_when_given_java_greater_than_8() -> Result<(), JavaDomainError> {
     let (major, minor) = extract_java_major_minor_version("17")?;
 
     assert_eq!(major, 1);

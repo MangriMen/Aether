@@ -1,6 +1,6 @@
 mod error;
 mod method;
-pub mod request;
+pub(crate) mod request;
 
 pub use error::*;
 pub use method::*;

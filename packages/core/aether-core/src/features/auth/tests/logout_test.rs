@@ -6,7 +6,7 @@ use crate::features::auth::app::{CredentialsStorage, LogoutUseCase, LogoutUseCas
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
 #[tokio::test]
-async fn test_logout_sets_new_active() {
+async fn should_activate_another_account_when_the_active_one_logs_out() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let cred1_id = Uuid::new_v4();
@@ -35,7 +35,7 @@ async fn test_logout_sets_new_active() {
 }
 
 #[tokio::test]
-async fn test_logout_last_account() {
+async fn should_leave_no_active_account_when_the_last_one_logs_out() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let cred_id = Uuid::new_v4();
@@ -69,7 +69,7 @@ async fn test_logout_last_account() {
 }
 
 #[tokio::test]
-async fn test_logout_nonexistent_account() {
+async fn should_fail_to_log_out_when_the_account_does_not_exist() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     storage

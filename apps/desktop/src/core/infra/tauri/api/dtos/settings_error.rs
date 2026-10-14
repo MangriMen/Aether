@@ -8,6 +8,8 @@ pub enum SettingsErrorDto {
     NotFound,
 
     StorageFailure,
+
+    InvalidPlatformProvider { platform: String, reason: String },
 }
 
 impl From<&SettingsError> for SettingsErrorDto {
@@ -15,6 +17,12 @@ impl From<&SettingsError> for SettingsErrorDto {
         match value {
             SettingsError::NotFound => SettingsErrorDto::NotFound,
             SettingsError::Storage(_) => SettingsErrorDto::StorageFailure,
+            SettingsError::InvalidPlatformProvider { platform, reason } => {
+                SettingsErrorDto::InvalidPlatformProvider {
+                    platform: platform.clone(),
+                    reason: reason.clone(),
+                }
+            }
         }
     }
 }

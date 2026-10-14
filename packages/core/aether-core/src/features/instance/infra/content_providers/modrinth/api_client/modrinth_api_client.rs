@@ -6,14 +6,14 @@ use super::models::{
     ProjectVersionsRequest,
 };
 
-pub struct ModrinthApiClient<RC> {
+pub(crate) struct ModrinthApiClient<RC> {
     base_url: String,
     base_headers: Option<reqwest::header::HeaderMap>,
     request_client: Arc<RC>,
 }
 
 impl<RC: RequestClient> ModrinthApiClient<RC> {
-    pub fn new(
+    pub(crate) fn new(
         base_url: String,
         base_headers: Option<reqwest::header::HeaderMap>,
         request_client: Arc<RC>,
@@ -48,7 +48,7 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
             .map_err(|err| err.to_string())
     }
 
-    pub async fn search(
+    pub(crate) async fn search(
         &self,
         params: &ProjectSearchParams,
     ) -> Result<ProjectSearchResponse, String> {
@@ -57,19 +57,22 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         self.fetch(request).await
     }
 
-    pub async fn get_project(&self, id: &str) -> Result<ProjectResponse, String> {
+    pub(crate) async fn get_project(&self, id: &str) -> Result<ProjectResponse, String> {
         let path = format!("project/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
     }
 
-    pub async fn get_project_version(&self, id: &str) -> Result<ProjectVersionResponse, String> {
+    pub(crate) async fn get_project_version(
+        &self,
+        id: &str,
+    ) -> Result<ProjectVersionResponse, String> {
         let path = format!("version/{id}");
         let request = self.prepare_request(&path, None);
         self.fetch(request).await
     }
 
-    pub async fn get_project_versions(
+    pub(crate) async fn get_project_versions(
         &self,
         id: &str,
         params: &ProjectVersionsRequest,

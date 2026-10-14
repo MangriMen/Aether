@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use dashmap::mapref::{multiple::RefMulti as DashMapRefMulti, one::Ref as DashMapRef};
 use serde::{Deserialize, Serialize};
 
 use crate::features::{
@@ -9,9 +8,9 @@ use crate::features::{
         UpdaterCapabilityMetadata,
     },
     plugins::domain::{
-        ApiConfig, LoadConfig, LoadConfigType, PathMapping, Plugin, PluginCapabilities,
+        ApiConfig, LoadConfig, PathMapping, Plugin, PluginCapabilities,
         PluginContentProviderCapability, PluginImporterCapability, PluginManifest, PluginMetadata,
-        PluginState, PluginUpdaterCapability, ProviderHandlers, RuntimeConfig,
+        PluginState, PluginStateReason, PluginUpdaterCapability, ProviderHandlers, RuntimeConfig,
     },
 };
 
@@ -44,12 +43,6 @@ pub struct RuntimeConfigDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PathMappingDto(pub String, pub PathBuf);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, Eq, PartialEq)]
-pub enum LoadConfigTypeDto {
-    Extism,
-    Native,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq)]
 pub enum LoadConfigDto {
     Extism {
@@ -57,15 +50,14 @@ pub enum LoadConfigDto {
         #[serde(default)]
         memory_limit: Option<usize>,
     },
-    Native {
-        lib_path: PathBuf,
-    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiConfigDto {
     pub version: semver::VersionReq,
     pub features: Vec<String>,
+    /// `None`: the manifest predates `api.hostFunctions`, so the plugin is incompatible.
+    pub host_functions: Option<Vec<String>>,
 }
 
 // ── PluginCapabilities DTO ──
@@ -93,8 +85,7 @@ pub struct UpdaterCapabilityMetadataDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContentProviderCapabilityMetadataDto {
     pub base: CapabilityMetadataDto,
-    pub supports_install_atomic: bool,
-    pub supports_install_modpacks: bool,
+    pub platform: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -127,9 +118,10 @@ pub struct ProviderHandlersDto {
     pub search: String,
     pub get_content: String,
     pub list_version: Option<String>,
-    pub install_atomic: String,
-    pub install_modpack: Option<String>,
     pub check_compatibility: Option<String>,
+    pub resolve_file: Option<String>,
+    pub resolve_install_plan: Option<String>,
+    pub resolve_pack_metadata: Option<String>,
 }
 
 // ── PluginDto ──
@@ -146,10 +138,33 @@ pub enum PluginDtoState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PluginStateReasonDto {
+    IncompatibleApiVersion {
+        required: semver::VersionReq,
+        host: semver::Version,
+    },
+    InvalidManifest {
+        details: String,
+    },
+    LoadFailed {
+        details: String,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginDto {
     pub manifest: PluginManifestDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
     pub state: PluginDtoState,
+    /// Why the plugin is `Incompatible` or `Failed`; `None` in every other state.
+    pub state_reason: Option<PluginStateReasonDto>,
+    /// The plugin runs with other folders than its settings give it now: they take effect once
+    /// it restarts. Hosts never need a restart, so they never set it.
+    pub restart_needed: bool,
+    /// `false` when the plugin was not installed through a provider, so its
+    /// `.wasm` is not integrity-checked on load. The reference digest itself
+    /// is deliberately not exposed.
+    pub verified: bool,
 }
 
 // ── Converters: Domain → App DTO ──
@@ -197,16 +212,6 @@ impl From<LoadConfig> for LoadConfigDto {
     fn from(v: LoadConfig) -> Self {
         match v {
             LoadConfig::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
-            LoadConfig::Native { lib_path } => Self::Native { lib_path },
-        }
-    }
-}
-
-impl From<LoadConfigType> for LoadConfigTypeDto {
-    fn from(v: LoadConfigType) -> Self {
-        match v {
-            LoadConfigType::Extism => Self::Extism,
-            LoadConfigType::Native => Self::Native,
         }
     }
 }
@@ -216,6 +221,7 @@ impl From<ApiConfig> for ApiConfigDto {
         Self {
             version: v.version,
             features: v.features,
+            host_functions: v.host_functions,
         }
     }
 }
@@ -263,9 +269,10 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             search: v.search,
             get_content: v.get_content,
             list_version: v.list_version,
-            install_atomic: v.install_atomic,
-            install_modpack: v.install_modpack,
             check_compatibility: v.check_compatibility,
+            resolve_file: v.resolve_file,
+            resolve_install_plan: v.resolve_install_plan,
+            resolve_pack_metadata: v.resolve_pack_metadata,
         }
     }
 }
@@ -305,8 +312,7 @@ impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetada
     fn from(v: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: v.base.into(),
-            supports_install_atomic: v.supports_install_atomic,
-            supports_install_modpacks: v.supports_install_modpacks,
+            platform: v.platform,
         }
     }
 }
@@ -324,32 +330,34 @@ impl From<&PluginState> for PluginDtoState {
     }
 }
 
-impl From<Plugin> for PluginDto {
-    fn from(value: Plugin) -> Self {
-        Self {
-            manifest: value.manifest.into(),
-            capabilities: value.capabilities.map(Into::into),
-            state: (&value.state).into(),
+impl From<&PluginStateReason> for PluginStateReasonDto {
+    fn from(value: &PluginStateReason) -> Self {
+        match value {
+            PluginStateReason::IncompatibleApiVersion { required, host } => {
+                Self::IncompatibleApiVersion {
+                    required: required.clone(),
+                    host: host.clone(),
+                }
+            }
+            PluginStateReason::InvalidManifest { details } => Self::InvalidManifest {
+                details: details.clone(),
+            },
+            PluginStateReason::LoadFailed { details } => Self::LoadFailed {
+                details: details.clone(),
+            },
         }
     }
 }
 
-impl From<DashMapRef<'_, String, Plugin>> for PluginDto {
-    fn from(value: DashMapRef<'_, String, Plugin>) -> Self {
+impl PluginDto {
+    pub fn new(plugin: Plugin, restart_needed: bool) -> Self {
         Self {
-            manifest: value.manifest.clone().into(),
-            capabilities: value.capabilities.clone().map(Into::into),
-            state: (&value.state).into(),
-        }
-    }
-}
-
-impl From<DashMapRefMulti<'_, String, Plugin>> for PluginDto {
-    fn from(value: DashMapRefMulti<'_, String, Plugin>) -> Self {
-        Self {
-            manifest: value.manifest.clone().into(),
-            capabilities: value.capabilities.clone().map(Into::into),
-            state: (&value.state).into(),
+            manifest: plugin.manifest.into(),
+            capabilities: plugin.capabilities.map(Into::into),
+            state: (&plugin.state).into(),
+            state_reason: plugin.state.reason().map(Into::into),
+            restart_needed,
+            verified: plugin.verified,
         }
     }
 }

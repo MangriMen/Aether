@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO platform_providers (platform, provider_id) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b2843f205c86c84fdacfc4ba8db7689f9c117cb3376a5a15048909e814fb79fe"
+}

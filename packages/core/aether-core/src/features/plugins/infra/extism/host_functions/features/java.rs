@@ -4,10 +4,9 @@ use extism::host_fn;
 use crate::{
     core::app::AetherContainer,
     features::java::{InstallJava, JavaFeature},
-    shared::execute_async::infra::execute_async,
 };
 
-use super::super::{super::mappers::to_extism_res, PluginContext};
+use super::super::{super::mappers::to_extism_res, PluginContext, block_on};
 
 // ── Testable business logic ──
 
@@ -45,7 +44,7 @@ pub get_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> {
     drop(ctx);
 
     to_extism_res::<JavaDto>(
-        execute_async(handle_get_java(version, &container))
+        block_on(handle_get_java(version, &container))
     )
 });
 
@@ -57,6 +56,6 @@ pub install_java(user_data: PluginContext; version: u32) -> HostResult<JavaDto> 
     drop(ctx);
 
     to_extism_res::<JavaDto>(
-        execute_async(handle_install_java(version, &container))
+        block_on(handle_install_java(version, &container))
     )
 });

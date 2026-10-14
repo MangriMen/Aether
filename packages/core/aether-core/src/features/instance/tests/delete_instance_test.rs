@@ -178,7 +178,7 @@ async fn count_rows_for_instance(pool: &SqlitePool, table: &str, instance_id: &s
 // ──────────────────────────────────────────────
 
 #[tokio::test]
-async fn test_instance_delete_with_foreign_keys_cascades_pack_info() {
+async fn should_cascade_pack_info_when_an_instance_is_deleted_with_foreign_keys() {
     let pool = create_pool(true).await;
     let storage = SqliteInstanceStorage::new(pool.clone());
     let instance_id = uuid::Uuid::new_v4().to_string();
@@ -221,7 +221,7 @@ async fn test_instance_delete_with_foreign_keys_cascades_pack_info() {
 }
 
 #[tokio::test]
-async fn test_instance_delete_without_foreign_keys_still_works_with_explicit_cleanup() {
+async fn should_clean_up_explicitly_when_foreign_keys_are_off() {
     let pool = create_pool(false).await;
     let instance_storage = SqliteInstanceStorage::new(pool.clone());
     let pack_storage = SqlitePackStorage::new(pool.clone());
@@ -254,7 +254,7 @@ async fn test_instance_delete_without_foreign_keys_still_works_with_explicit_cle
 }
 
 #[tokio::test]
-async fn test_remove_all_for_instance_cleans_pack_tables() {
+async fn should_clean_the_pack_tables_when_all_data_of_an_instance_is_removed() {
     let pool = create_pool(true).await;
     let instance_storage = SqliteInstanceStorage::new(pool.clone());
     let pack_storage = SqlitePackStorage::new(pool.clone());
@@ -324,7 +324,7 @@ async fn test_remove_all_for_instance_cleans_pack_tables() {
 }
 
 #[tokio::test]
-async fn test_full_instance_deletion_no_orphans() {
+async fn should_leave_no_orphans_when_an_instance_is_deleted_completely() {
     let pool = create_pool(true).await;
     let instance_storage = SqliteInstanceStorage::new(pool.clone());
     let pack_storage = SqlitePackStorage::new(pool.clone());
@@ -411,7 +411,7 @@ async fn test_full_instance_deletion_no_orphans() {
 }
 
 #[tokio::test]
-async fn test_foreign_keys_off_full_cleanup_still_works() {
+async fn should_clean_everything_up_when_foreign_keys_are_off() {
     let pool = create_pool(false).await;
     let instance_storage = SqliteInstanceStorage::new(pool.clone());
     let pack_storage = SqlitePackStorage::new(pool.clone());

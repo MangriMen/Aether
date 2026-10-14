@@ -260,10 +260,14 @@ impl TryFrom<SqlInstance> for Instance {
                         .map_err(|_| InstanceError::Storage("Invalid mod loader".into()))?;
                 dto.into()
             },
-            loader_version: row.loader_version_json.map(|s| {
-                let dto: LoaderVersionPreferenceDto = serde_json::from_str(&s).unwrap();
-                dto.into()
-            }),
+            loader_version: row
+                .loader_version_json
+                .map(|s| {
+                    serde_json::from_str::<LoaderVersionPreferenceDto>(&s)
+                        .map(Into::into)
+                        .map_err(|_| InstanceError::Storage("Invalid loader version".into()))
+                })
+                .transpose()?,
 
             // Java
             java_path: Overridable::new(row.java_path, row.override_java_path),

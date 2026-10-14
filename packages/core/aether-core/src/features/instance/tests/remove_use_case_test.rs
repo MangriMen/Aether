@@ -10,8 +10,8 @@ use crate::features::instance::infra::{
     FsInstanceFileService, SqliteInstanceStorage, SqlitePackStorage,
 };
 use crate::features::instance::{
-    Instance, InstanceBuilder, InstanceError, InstanceStorage, InstanceWatcherService,
-    RemoveInstanceUseCase, RemoveInstanceUseCasePort,
+    Instance, InstanceBuilder, InstanceError, InstanceLocks, InstanceStorage,
+    InstanceWatcherService, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
 };
 use crate::features::minecraft::ModLoader;
 use crate::features::settings::LocationInfo;
@@ -185,14 +185,17 @@ async fn create_instance_dir(location_info: &LocationInfo, instance_id: &str) {
 }
 
 #[tokio::test]
-async fn test_remove_use_case_cleans_everything() {
+async fn should_clean_everything_when_an_instance_is_removed() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
     // ── Arrange: real services with real infrastructure ──
     let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
     let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
-    let file_service = Arc::new(FsInstanceFileService::new(location_info.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
     let watcher = Arc::new(NoOpWatcher);
 
     let instance = create_instance(&instance_id);
@@ -200,7 +203,13 @@ async fn test_remove_use_case_cleans_everything() {
     seed_pack_data(&pool, &instance_id).await;
     create_instance_dir(&location_info, &instance_id).await;
 
-    let use_case = RemoveInstanceUseCase::new(storage, watcher, file_service, pack_storage);
+    let use_case = RemoveInstanceUseCase::new(
+        storage,
+        watcher,
+        file_service,
+        pack_storage,
+        Arc::new(InstanceLocks::new()),
+    );
 
     // ── Act ──
     use_case.execute(instance_id.clone()).await.unwrap();
@@ -230,37 +239,55 @@ async fn test_remove_use_case_cleans_everything() {
 }
 
 #[tokio::test]
-async fn test_remove_use_case_nonexistent_instance() {
+async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
     let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
     let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
-    let file_service = Arc::new(FsInstanceFileService::new(location_info.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
     let watcher = Arc::new(NoOpWatcher);
 
-    let use_case = RemoveInstanceUseCase::new(storage, watcher, file_service, pack_storage);
+    let use_case = RemoveInstanceUseCase::new(
+        storage,
+        watcher,
+        file_service,
+        pack_storage,
+        Arc::new(InstanceLocks::new()),
+    );
 
     // Deleting something that never existed should be fine
     use_case.execute(instance_id).await.unwrap();
 }
 
 #[tokio::test]
-async fn test_remove_use_case_reuses_pool() {
+async fn should_reuse_the_pool_when_an_instance_is_removed() {
     // Ensures all three SQL-based services work on the same pool/connection
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
     let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
     let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
-    let file_service = Arc::new(FsInstanceFileService::new(location_info.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
     let watcher = Arc::new(NoOpWatcher);
 
     let instance = create_instance(&instance_id);
     storage.upsert(&instance).await.unwrap();
     seed_pack_data(&pool, &instance_id).await;
 
-    let use_case = RemoveInstanceUseCase::new(storage, watcher, file_service, pack_storage);
+    let use_case = RemoveInstanceUseCase::new(
+        storage,
+        watcher,
+        file_service,
+        pack_storage,
+        Arc::new(InstanceLocks::new()),
+    );
 
     use_case.execute(instance_id.clone()).await.unwrap();
 
@@ -270,4 +297,38 @@ async fn test_remove_use_case_reuses_pool() {
         .await
         .unwrap();
     assert_eq!(count, 0, "All instances gone on the shared pool");
+}
+
+#[tokio::test]
+async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
+    let file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    ));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    create_instance_dir(&location_info, &instance_id).await;
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = RemoveInstanceUseCase::new(
+        storage,
+        Arc::new(NoOpWatcher),
+        file_service,
+        pack_storage,
+        locks.clone(),
+    );
+    let held = locks.lock(&instance_id).await;
+
+    let mut remove = std::pin::pin!(use_case.execute(instance_id.clone()));
+    assert!(futures::poll!(&mut remove).is_pending());
+    assert!(location_info.instance_dir(&instance_id).exists());
+
+    drop(held);
+    remove.await.unwrap();
+    assert!(!location_info.instance_dir(&instance_id).exists());
 }

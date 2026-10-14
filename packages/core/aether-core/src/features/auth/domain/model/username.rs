@@ -64,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_username_with_underscores() {
+    fn should_parse_username_when_it_contains_underscores() {
         let username = Username::parse("my_player").unwrap();
         assert_eq!(username.as_str(), "my_player");
     }
@@ -119,25 +119,25 @@ mod tests {
     }
 
     #[test]
-    fn should_display_username() {
+    fn should_display_username_when_formatted() {
         let username = Username::parse("DisplayMe").unwrap();
         assert_eq!(format!("{username}"), "DisplayMe");
     }
 
     #[test]
-    fn should_return_str_from_as_ref() {
+    fn should_return_str_when_as_ref_is_called() {
         let username = Username::parse("RefTest").unwrap();
         assert_eq!(username.as_ref(), "RefTest");
     }
 
     #[test]
-    fn should_support_minimum_length_boundary() {
+    fn should_accept_username_when_length_is_the_minimum() {
         let username = Username::parse("abc").unwrap();
         assert_eq!(username.as_str(), "abc");
     }
 
     #[test]
-    fn should_support_maximum_length_boundary() {
+    fn should_accept_username_when_length_is_the_maximum() {
         let long = "a".repeat(16);
         let username = Username::parse(&long).unwrap();
         assert_eq!(username.as_str(), long);

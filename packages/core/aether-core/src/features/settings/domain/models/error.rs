@@ -5,4 +5,7 @@ pub enum SettingsError {
 
     #[error("Storage error: {0}")]
     Storage(String),
+
+    #[error("Invalid content provider choice for platform '{platform}': {reason}")]
+    InvalidPlatformProvider { platform: String, reason: String },
 }

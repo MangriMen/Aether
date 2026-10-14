@@ -32,6 +32,34 @@ pub struct ProviderId {
 
 impl ProviderId {
     pub const SEPARATOR: char = '#';
+
+    /// The `plugin_id` of the providers built into Aether.
+    ///
+    /// Reserved: a plugin declaring it is refused, so no plugin can pass itself off as a
+    /// built-in provider.
+    pub const BUILTIN_PLUGIN_ID: &'static str = "aether";
+
+    /// Whether this is a provider built into Aether rather than one a plugin registered.
+    ///
+    /// Safe to decide trust on: [`Self::BUILTIN_PLUGIN_ID`] is reserved, so a plugin cannot
+    /// claim it.
+    pub fn is_builtin(&self) -> bool {
+        self.plugin_id == Self::BUILTIN_PLUGIN_ID
+    }
+}
+
+/// Whether `value` fits the scheme shared by `plugin_id`, `capability_id` and platform names:
+/// `[a-z0-9][a-z0-9_-]*`.
+///
+/// The scheme leaves no room for [`ProviderId::SEPARATOR`] or `:`, so the string form of a
+/// [`ProviderId`] always parses back into the same pair.
+pub fn is_valid_id(value: &str) -> bool {
+    let mut chars = value.chars();
+
+    chars
+        .next()
+        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
 }
 
 impl std::fmt::Display for ProviderId {
@@ -69,7 +97,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn provider_id_display() {
+    fn should_display_provider_id_when_formatted() {
         let id = ProviderId {
             plugin_id: "my_plugin".to_string(),
             capability_id: "mod_provider".to_string(),
@@ -78,28 +106,28 @@ mod tests {
     }
 
     #[test]
-    fn provider_id_from_str_valid() {
+    fn should_parse_provider_id_when_string_is_valid() {
         let id: ProviderId = "my_plugin#mod_provider".parse().unwrap();
         assert_eq!(id.plugin_id, "my_plugin");
         assert_eq!(id.capability_id, "mod_provider");
     }
 
     #[test]
-    fn provider_id_from_str_invalid_no_separator() {
+    fn should_fail_to_parse_provider_id_when_separator_is_missing() {
         let err = "my_plugin".parse::<ProviderId>().unwrap_err();
         assert!(err.contains("Invalid format"));
         assert!(err.contains("my_plugin"));
     }
 
     #[test]
-    fn provider_id_from_str_empty_parts() {
+    fn should_fail_to_parse_provider_id_when_a_part_is_empty() {
         let id: ProviderId = "#only_cap".parse().unwrap();
         assert!(id.plugin_id.is_empty());
         assert_eq!(id.capability_id, "only_cap");
     }
 
     #[test]
-    fn provider_id_roundtrip() {
+    fn should_roundtrip_provider_id_when_displayed_and_parsed() {
         let original = ProviderId {
             plugin_id: "test".to_string(),
             capability_id: "cap".to_string(),
@@ -108,6 +136,39 @@ mod tests {
         let deserialized: ProviderId = serialized.parse().unwrap();
         assert_eq!(original.plugin_id, deserialized.plugin_id);
         assert_eq!(original.capability_id, deserialized.capability_id);
+    }
+
+    #[test]
+    fn should_accept_ids_when_they_match_the_scheme() {
+        for id in [
+            "aether",
+            "packwiz",
+            "curseforge_plugin",
+            "modrinth-content",
+            "0x",
+            "a",
+        ] {
+            assert!(is_valid_id(id), "{id:?} should be valid");
+        }
+    }
+
+    #[test]
+    fn should_reject_ids_when_they_are_outside_the_scheme() {
+        for id in [
+            "",
+            "core:modrinth",
+            "a#b",
+            "Packwiz",
+            "AETHER",
+            "-leading-dash",
+            "_leading_underscore",
+            "with space",
+            "dotted.id",
+            "../escape",
+            "кириллица",
+        ] {
+            assert!(!is_valid_id(id), "{id:?} should be invalid");
+        }
     }
 }
 

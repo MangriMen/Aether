@@ -1,5 +1,5 @@
 use crate::features::plugins::domain::{
-    PluginError, PluginSourceType, ProviderPluginPreview, ProviderUpdateInfo,
+    PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderUpdateInfo,
 };
 
 /// Common interface for all plugin providers (GitHub, custom server, Modrinth, etc.).
@@ -9,7 +9,10 @@ use crate::features::plugins::domain::{
 #[async_trait::async_trait]
 pub trait PluginProvider: Send + Sync {
     /// Fetch preview metadata (manifest, capabilities, releases) for a plugin.
-    async fn fetch_preview(&self, identifier: &str) -> Result<ProviderPluginPreview, PluginError>;
+    async fn fetch_preview(
+        &self,
+        identifier: &str,
+    ) -> Result<ProviderPluginPreview, PluginProviderError>;
 
     /// Get the latest version info for update checking.
     async fn fetch_latest_version(
@@ -17,16 +20,16 @@ pub trait PluginProvider: Send + Sync {
         identifier: &str,
         current_tag: &str,
         current_version: &str,
-    ) -> Result<ProviderUpdateInfo, PluginError>;
+    ) -> Result<ProviderUpdateInfo, PluginProviderError>;
 
     /// Download the plugin archive bytes for a specific version.
-    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginError>;
+    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginProviderError>;
 
     /// Return which source type this provider handles.
     fn source_type(&self) -> PluginSourceType;
 
     /// Parse a user-facing identifier (e.g., GitHub URL) into a normalized form.
-    fn parse_identifier(&self, raw: &str) -> Result<String, PluginError>;
+    fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError>;
 }
 
 /// Factory that creates the appropriate `PluginProvider` based on source type.

@@ -1,22 +1,37 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 
 use async_trait::async_trait;
 use semver;
-use tokio::sync::Mutex;
 
-use crate::features::plugins::app::{EditPluginSettings, PluginDto};
-use crate::features::plugins::domain::PluginInstance;
+use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess, PluginDto};
+use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
-    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginSettings, PluginSource,
-    ProviderUpdateInfo,
+    ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError, PluginSettings,
+    PluginSource, PluginVerification, ProviderUpdateInfo,
 };
 
 #[async_trait]
 pub trait PluginSourceStorage: Send + Sync {
     async fn save(&self, plugin_id: &str, source: &PluginSource) -> Result<(), PluginError>;
     async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError>;
+    /// No record is not an error.
+    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
+}
+
+/// Persists the trust-on-first-use record established when a plugin is fetched
+/// from a remote provider. Absence of a record means "never verified", which is
+/// a valid state (locally installed plugins), not an error.
+#[async_trait]
+pub trait PluginVerificationStorage: Send + Sync {
+    async fn save(
+        &self,
+        plugin_id: &str,
+        verification: &PluginVerification,
+    ) -> Result<(), PluginError>;
+    async fn get(&self, plugin_id: &str) -> Result<Option<PluginVerification>, PluginError>;
+    /// Forget the record: the bytes on disk are no longer the ones it vouched for. No record
+    /// is not an error.
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
 }
 
@@ -26,8 +41,14 @@ pub trait PluginLoader: Send + Sync {
         &self,
         plugin: &PluginManifest,
         settings: Option<&PluginSettings>,
-    ) -> Result<Arc<Mutex<dyn PluginInstance>>, PluginError>;
-    async fn unload(&self, instance: Arc<Mutex<dyn PluginInstance>>) -> Result<(), PluginError>;
+    ) -> Result<PluginHandle, PluginError>;
+    /// Ends the instance for good: the handle is retired ([`PluginHandle::retire`]) and every
+    /// clone of it refuses further calls. A busy plugin is refused with [`PluginError::Busy`]
+    /// and stays loaded.
+    async fn unload(&self, instance: PluginHandle) -> Result<(), PluginError>;
+    /// Names of the host functions this loader can link into a plugin: what a manifest's
+    /// `api.hostFunctions` is checked against before the plugin is loaded.
+    fn host_functions(&self) -> Vec<&'static str>;
 }
 
 #[async_trait]
@@ -36,6 +57,16 @@ pub trait PluginStorage: Send + Sync {
     async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError>;
     async fn get(&self, plugin_id: &str) -> Result<Plugin, PluginError>;
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError>;
+    /// Puts the extracted plugin in place of the installed one of its id, all at once: on an
+    /// error the installed plugin is as it was. The installed one, with the core's files about
+    /// it, is kept aside until [`Self::discard_replaced`] or [`Self::restore_replaced`].
+    async fn replace(&self, extracted_plugin: ExtractedPlugin) -> Result<(), PluginError>;
+    /// Brings back the plugin [`Self::replace`] kept aside, dropping its replacement.
+    async fn restore_replaced(&self, plugin_id: &str) -> Result<(), PluginError>;
+    /// Drops the plugin [`Self::replace`] kept aside.
+    async fn discard_replaced(&self, plugin_id: &str) -> Result<(), PluginError>;
+    /// Lowercase hex sha256 of the plugin's wasm blob as it currently sits on disk.
+    async fn wasm_sha256(&self, plugin_id: &str) -> Result<String, PluginError>;
 }
 
 #[async_trait]
@@ -46,11 +77,7 @@ pub trait PluginSettingsStorage: Send + Sync {
 
 #[async_trait]
 pub trait PluginExtractor: Send + Sync {
-    async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginError>;
-}
-
-pub trait AsCapabilityMetadata {
-    fn as_metadata(&self) -> &crate::features::instance::CapabilityMetadata;
+    async fn extract(&self, file_path: &Path) -> Result<ExtractedPlugin, PluginProviderError>;
 }
 
 #[async_trait]
@@ -82,6 +109,31 @@ pub trait EditPluginSettingsUseCasePort: Send + Sync {
 #[async_trait]
 pub trait EnablePluginUseCasePort: Send + Sync {
     async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait ReloadPluginUseCasePort: Send + Sync {
+    async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+}
+
+#[async_trait]
+pub trait GrantPluginFolderAccessUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        plugin_id: String,
+        file: PathBuf,
+        dry_run: bool,
+    ) -> Result<FolderAccess, PluginError>;
+}
+
+#[async_trait]
+pub trait GrantPluginHostAccessUseCasePort: Send + Sync {
+    async fn execute(
+        &self,
+        plugin_id: String,
+        url: String,
+        dry_run: bool,
+    ) -> Result<HostAccess, PluginError>;
 }
 
 #[async_trait]

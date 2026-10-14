@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_instance_event() {
+    fn should_roundtrip_instance_event_when_converted_through_event() {
         let original = make_instance_event();
         let event: Event = original.clone().into();
         let recovered: InstanceEvent = event.try_into().unwrap();
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_plugin_event() {
+    fn should_roundtrip_plugin_event_when_converted_through_event() {
         let original = make_plugin_event();
         let event: Event = original.clone().into();
         let recovered: PluginEvent = event.try_into().unwrap();
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_process_event() {
+    fn should_roundtrip_process_event_when_converted_through_event() {
         let original = make_process_event();
         let event: Event = original.clone().into();
         let recovered: ProcessEvent = event.try_into().unwrap();
@@ -169,7 +169,7 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_progress_event() {
+    fn should_roundtrip_progress_event_when_converted_through_event() {
         let original = make_progress_event();
         let event: Event = original.clone().into();
         let recovered: ProgressEvent = event.try_into().unwrap();
@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_warning_event() {
+    fn should_roundtrip_warning_event_when_converted_through_event() {
         let original = make_warning_event();
         let event: Event = original.clone().into();
         let recovered: WarningEvent = event.try_into().unwrap();
@@ -185,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn should_fail_try_from_wrong_variant() {
+    fn should_fail_to_convert_event_when_it_is_another_variant() {
         let event: Event = make_instance_event().into();
         assert!(PluginEvent::try_from(event).is_err());
     }

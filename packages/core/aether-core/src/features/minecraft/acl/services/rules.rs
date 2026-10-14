@@ -46,7 +46,7 @@ fn parse_rule(rule: &vanilla::Rule, java_version: &str, minecraft_updated: bool)
 }
 
 // Platform rule resolving
-pub fn parse_os_rule(
+pub(super) fn parse_os_rule(
     rule: &vanilla::OsRule,
     java_arch: &str,
     // Minecraft updated over 1.18.2 (supports MacOS Natively)

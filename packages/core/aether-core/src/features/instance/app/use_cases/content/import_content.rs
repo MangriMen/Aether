@@ -9,7 +9,7 @@ use crate::features::instance::app::ports::ImportContentUseCasePort;
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-        instance::{ContentType, InstanceError, PackFile, PackStorage},
+        instance::{ContentType, InstanceError, InstanceLocks, PackFile, PackStorage},
         settings::LocationInfo,
     },
     shared::{hash::infra::sha1_async, io::infra::read_async},
@@ -31,10 +31,13 @@ impl ImportContent {
     }
 }
 
+/// Imports files under the instance's lock ([`InstanceLocks`]): the duplicate check, the copy and
+/// the records are one step no plan may interleave with.
 pub struct ImportContentUseCase {
     event_emitter: SharedEventEmitter,
     pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
+    instance_locks: Arc<InstanceLocks>,
 }
 
 impl ImportContentUseCase {
@@ -42,11 +45,13 @@ impl ImportContentUseCase {
         event_emitter: SharedEventEmitter,
         pack_storage: Arc<dyn PackStorage>,
         location_info: Arc<LocationInfo>,
+        instance_locks: Arc<InstanceLocks>,
     ) -> Self {
         Self {
             event_emitter,
             pack_storage,
             location_info,
+            instance_locks,
         }
     }
 
@@ -117,9 +122,13 @@ impl ImportContentUseCase {
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
+        let hash = sha1_async(file_content)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
         Ok((
             content_path,
-            PackFile::from_hash(file_name.to_owned(), sha1_async(file_content).await),
+            PackFile::from_hash(file_name.to_owned(), hash),
         ))
     }
 
@@ -151,6 +160,8 @@ impl ImportContentUseCase {
         if content_type == ContentType::Modpack {
             return Err(InstanceError::UnsupportedContentType { content_type });
         }
+
+        let _lock = self.instance_locks.lock(&instance_id).await;
 
         let (content_paths, pack_files) = self
             .prepare_import_data(&instance_id, content_type, source_paths.as_slice())

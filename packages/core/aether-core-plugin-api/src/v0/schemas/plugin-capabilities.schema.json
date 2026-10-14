@@ -52,27 +52,25 @@
         "id": {
           "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
           "type": "string",
-          "pattern": "^[a-z0-9_\\-]+$"
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$"
         },
         "name": {
           "description": "Display name of the capability.",
           "type": "string"
         },
-        "supportsInstallAtomic": {
-          "description": "Whether the provider supports installing individual items (e.g., a single mod or resource pack).",
-          "type": "boolean"
-        },
-        "supportsInstallModpacks": {
-          "description": "Whether the provider supports installing complex modpacks or curated collections.",
-          "type": "boolean"
+        "platform": {
+          "description": "The platform whose content this provider serves (`modrinth`, `curseforge`): what an\ninstall plan's `providerRef` names to point at content without naming a plugin. Several\nproviders may serve one platform; the launcher picks which one is asked.\n\nA provider declaring a platform must implement `resolveFile`. Leave it out when the\nprovider hosts no content of its own and cannot be the target of a `providerRef`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$"
         }
       },
       "additionalProperties": false,
       "required": [
         "id",
         "name",
-        "supportsInstallAtomic",
-        "supportsInstallModpacks",
         "handlers"
       ]
     },
@@ -107,14 +105,14 @@
         "id": {
           "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
           "type": "string",
-          "pattern": "^[a-z0-9_\\-]+$"
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$"
         },
         "name": {
           "description": "Display name of the capability.",
           "type": "string"
         },
         "supportedExtensions": {
-          "description": "List of supported file extensions, e.g., [\"zip\", \"mrpack\"].",
+          "description": "List of supported file extensions, e.g., [`zip`, `mrpack`].",
           "type": "array",
           "items": {
             "type": "string"
@@ -153,7 +151,7 @@
         "id": {
           "description": "Identifier for the capability (lowercase, kebab/underscore allowed).",
           "type": "string",
-          "pattern": "^[a-z0-9_\\-]+$"
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$"
         },
         "name": {
           "description": "Display name of the capability.",
@@ -168,7 +166,7 @@
       ]
     },
     "ProviderHandlers": {
-      "description": "Names of plugin functions that implement specific content provider logic.",
+      "description": "Names of plugin functions that implement specific content provider logic.\n\nWhich of the optional operations a provider supports follows from which handlers it names:\nan operation without a handler is reported as unsupported.",
       "type": "object",
       "properties": {
         "checkCompatibility": {
@@ -182,19 +180,29 @@
           "description": "Function to get detailed information about a specific piece of content.",
           "type": "string"
         },
-        "installAtomic": {
-          "description": "Function to handle the download and installation of a single item.",
-          "type": "string"
-        },
-        "installModpack": {
-          "description": "Optional function to handle the installation of full modpacks.",
+        "listVersion": {
+          "description": "Optional function to list available versions of a specific content item.",
           "type": [
             "string",
             "null"
           ]
         },
-        "listVersion": {
-          "description": "Optional function to list available versions of a specific content item.",
+        "resolveFile": {
+          "description": "Optional function telling which file a `providerRef` of the provider's `platform` stands\nfor. Takes `ResolveFileParamsDto`, returns `ResolvedFileDto`. Required with `platform`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolveInstallPlan": {
+          "description": "Optional function describing everything to install for a piece of content, a single mod\nand a whole modpack alike. Takes `ResolveInstallPlanParamsDto`, returns `InstallPlanDto`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolvePackMetadata": {
+          "description": "Optional function describing a pack without resolving its files: the preview before\ninstalling and the check for updates. Takes `PackSourceDto`, returns `PackMetadataDto`.",
           "type": [
             "string",
             "null"
@@ -207,8 +215,7 @@
       },
       "required": [
         "search",
-        "getContent",
-        "installAtomic"
+        "getContent"
       ]
     }
   }

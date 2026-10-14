@@ -7,8 +7,13 @@ use crate::{
         plugins::{PluginError, PluginSource, PluginSourceStorage},
         settings::LocationInfo,
     },
-    shared::io::infra::{read_json_async, remove_file, write_json_async},
+    shared::io::{
+        domain::IoError,
+        infra::{read_json_async, write_json_async},
+    },
 };
+
+pub(super) const SOURCE_FILE_NAME: &str = "source.json";
 
 /// Stores `PluginSource` as a `source.json` file alongside each plugin directory.
 pub struct FsPluginSourceStorage {
@@ -21,7 +26,9 @@ impl FsPluginSourceStorage {
     }
 
     fn get_source_path(&self, plugin_id: &str) -> std::path::PathBuf {
-        self.location_info.plugin_dir(plugin_id).join("source.json")
+        self.location_info
+            .plugin_dir(plugin_id)
+            .join(SOURCE_FILE_NAME)
     }
 }
 
@@ -54,8 +61,12 @@ impl PluginSourceStorage for FsPluginSourceStorage {
         }
     }
 
+    /// No record is already the state asked for.
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
         let path = self.get_source_path(plugin_id);
-        remove_file(&path).await.map_err(PluginError::Storage)
+        match tokio::fs::remove_file(&path).await {
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            result => result.map_err(|err| PluginError::Storage(IoError::with_path(err, &path))),
+        }
     }
 }

@@ -7,23 +7,14 @@ use crate::features::{
     events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceInstallService,
-        InstanceStorage, InstanceWatcherService, PackInfo, app::ports::CreateInstanceUseCasePort,
+        InstanceInstallStage, InstanceStorage, InstanceWatcherService, NewInstance,
+        app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
     },
 };
-
-#[derive(Debug)]
-pub struct NewInstance {
-    pub name: String,
-    pub game_version: String,
-    pub mod_loader: ModLoader,
-    pub loader_version: Option<LoaderVersionPreference>,
-    pub icon_path: Option<String>,
-    pub skip_install_instance: Option<bool>,
-    pub pack_info: Option<PackInfo>,
-}
+use crate::shared::cache::domain::AssetsStorage;
 
 pub struct CreateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
@@ -32,6 +23,7 @@ pub struct CreateInstanceUseCase {
     instance_file_service: Arc<dyn InstanceFileService>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
+    assets_storage: Arc<dyn AssetsStorage>,
 }
 
 impl CreateInstanceUseCase {
@@ -42,6 +34,7 @@ impl CreateInstanceUseCase {
         instance_file_service: Arc<dyn InstanceFileService>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<dyn InstanceWatcherService>,
+        assets_storage: Arc<dyn AssetsStorage>,
     ) -> Self {
         Self {
             instance_storage,
@@ -50,6 +43,32 @@ impl CreateInstanceUseCase {
             instance_file_service,
             event_emitter,
             instance_watcher_service,
+            assets_storage,
+        }
+    }
+
+    /// The icon of a new instance is named by a file; the instance keeps the id of its copy in
+    /// the asset store, the only thing the UI can show. A host path kept as it is would read as
+    /// a missing asset. An icon that cannot be read is dropped with a warning: it is no reason
+    /// to refuse the instance.
+    async fn import_icon(&self, icon_path: Option<String>) -> Option<String> {
+        let icon_path = icon_path?;
+
+        match self
+            .assets_storage
+            .import_file(std::path::Path::new(&icon_path))
+            .await
+        {
+            Ok(asset_id) => Some(asset_id),
+            Err(err) => {
+                error!("Failed to import the instance icon: {err}");
+                self.event_emitter
+                    .emit_safe(WarningEvent {
+                        message: format!("The instance icon was not imported: {err}"),
+                    })
+                    .await;
+                None
+            }
         }
     }
 
@@ -74,6 +93,26 @@ impl CreateInstanceUseCase {
     }
 
     pub async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+        self.create(new_instance, InstanceInstallStage::NotInstalled)
+            .await
+    }
+
+    /// See [`CreateInstanceUseCasePort::execute_for_pack`].
+    pub async fn execute_for_pack(
+        &self,
+        new_instance: NewInstance,
+    ) -> Result<String, InstanceError> {
+        self.create(new_instance, InstanceInstallStage::PackInstalling)
+            .await
+    }
+
+    /// `initial_stage` — `PackInstalling` keeps the instance unlaunchable through the install of
+    /// its game, which preserves that stage.
+    async fn create(
+        &self,
+        new_instance: NewInstance,
+        initial_stage: InstanceInstallStage,
+    ) -> Result<String, InstanceError> {
         let NewInstance {
             name,
             game_version,
@@ -83,6 +122,8 @@ impl CreateInstanceUseCase {
             skip_install_instance,
             pack_info,
         } = new_instance;
+
+        let icon = self.import_icon(icon_path).await;
 
         let base_sanitized_name = sanitize_instance_name(&name);
 
@@ -97,33 +138,25 @@ impl CreateInstanceUseCase {
             &instance_dir.display()
         );
 
-        // Check that loader version is valid
-        let loader_version = if mod_loader != ModLoader::Vanilla && loader_version.is_some() {
-            self.loader_version_service
-                .resolve(&game_version, &mod_loader, loader_version.as_ref())
-                .await
-                .map_err(MinecraftApplicationError::Domain)?;
+        let loader_version = resolve_loader_version(
+            self.loader_version_service.as_ref(),
+            &game_version,
+            mod_loader,
+            loader_version,
+        )
+        .await?;
 
-            loader_version
-        } else if mod_loader != ModLoader::Vanilla && loader_version.is_none() {
-            self.loader_version_service
-                .try_get_default(&game_version, &mod_loader)
-                .await
-                .map_err(MinecraftApplicationError::Domain)?
-        } else {
-            None
-        };
-
-        let instance = InstanceBuilder::new(
+        let mut instance = InstanceBuilder::new(
             sanitized_name.clone(),
             name.clone(),
             game_version.clone(),
             mod_loader,
         )
         .with_loader_version(loader_version)
-        .with_icon(icon_path)
+        .with_icon(icon)
         .with_pack_info(pack_info)
         .build();
+        instance.install_stage = initial_stage;
 
         let result = self.setup_instance(&instance, skip_install_instance).await;
 
@@ -171,7 +204,35 @@ impl CreateInstanceUseCase {
     }
 }
 
-pub fn sanitize_instance_name(name: &str) -> String {
+/// The loader version an instance of `game_version` and `mod_loader` gets: `loader_version`
+/// checked to exist, or the default one when it is `None`; nothing for vanilla.
+pub(crate) async fn resolve_loader_version(
+    loader_version_service: &dyn LoaderVersionService,
+    game_version: &str,
+    mod_loader: ModLoader,
+    loader_version: Option<LoaderVersionPreference>,
+) -> Result<Option<LoaderVersionPreference>, InstanceError> {
+    if mod_loader == ModLoader::Vanilla {
+        return Ok(None);
+    }
+
+    match loader_version {
+        Some(loader_version) => {
+            loader_version_service
+                .resolve(game_version, &mod_loader, Some(&loader_version))
+                .await
+                .map_err(MinecraftApplicationError::Domain)?;
+
+            Ok(Some(loader_version))
+        }
+        None => Ok(loader_version_service
+            .try_get_default(game_version, &mod_loader)
+            .await
+            .map_err(MinecraftApplicationError::Domain)?),
+    }
+}
+
+pub(crate) fn sanitize_instance_name(name: &str) -> String {
     name.replace(
         ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
         "_",
@@ -182,5 +243,9 @@ pub fn sanitize_instance_name(name: &str) -> String {
 impl CreateInstanceUseCasePort for CreateInstanceUseCase {
     async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
         self.execute(new_instance).await
+    }
+
+    async fn execute_for_pack(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+        self.execute_for_pack(new_instance).await
     }
 }

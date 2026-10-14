@@ -1,6 +1,9 @@
 use crate::{
     features::{
-        plugins::{LoadConfig, LoadConfigType, ManifestError, PluginSourceType},
+        plugins::{
+            AllowedHostRejection, AllowedPathRejection, LoadConfigType, ManifestError,
+            PluginCallError, PluginProviderError,
+        },
         settings::SettingsError,
     },
     shared::io::domain::IoError,
@@ -24,6 +27,26 @@ pub enum PluginError {
     #[error("Plugin \"{plugin_id}\" is already unloaded")]
     AlreadyUnloaded { plugin_id: String },
 
+    #[error(
+        "Plugin \"{plugin_id}\" is busy: an import, install or update is in progress. Try again once it finishes"
+    )]
+    Busy { plugin_id: String },
+
+    /// A call through a handle that was retired: the plugin was unloaded, or is restarting or
+    /// has restarted with a new instance.
+    #[error(
+        "Plugin \"{plugin_id}\" is not running: it was unloaded or is restarting. Try again once it is loaded"
+    )]
+    Stopped { plugin_id: String },
+
+    #[error(
+        "Plugin \"{plugin_id}\" cannot be updated: the new archive is of plugin \"{archive_id}\""
+    )]
+    IdMismatch {
+        plugin_id: String,
+        archive_id: String,
+    },
+
     #[error("Failed to load plugin \"{plugin_id}\": {reason}")]
     LoadFailed { plugin_id: String, reason: String },
 
@@ -36,33 +59,16 @@ pub enum PluginError {
     FunctionCallFailed {
         function_name: String,
         plugin_id: String,
-        error: String,
+        #[source]
+        error: PluginCallError,
     },
 
     // Configuration & loading errors
-    #[error("Plugin manifest not found: {path}")]
-    ManifestNotFound { path: String },
-
-    #[error("Invalid plugin manifest format: {error}")]
-    InvalidManifestFormat { error: String },
-
     #[error("{0}")]
     Manifest(#[from] ManifestError),
 
     #[error("Loader not found for config type: {config_type:?}")]
     LoaderNotFound { config_type: LoadConfigType },
-
-    #[error("Invalid load configuration: {config:?}")]
-    InvalidConfig { config: LoadConfig },
-
-    #[error("Failed to extract plugin from: {from}")]
-    ExtractionFailed { from: String },
-
-    #[error("Invalid extraction format")]
-    InvalidExtractionFormat,
-
-    #[error("Failed to extract plugin files: {from}")]
-    FileExtractionFailed { from: String },
 
     #[error("Failed to register capability {capability_type} with id \"{capability_id}\"")]
     CapabilityRegistrationFailed {
@@ -82,6 +88,20 @@ pub enum PluginError {
     #[error("Plugin \"{plugin_id}\" attempted to access restricted path: {path}")]
     AccessViolation { plugin_id: String, path: String },
 
+    #[error("Folder \"{path}\" cannot be given to plugin \"{plugin_id}\": {reason}")]
+    InvalidAllowedPath {
+        plugin_id: String,
+        path: String,
+        reason: AllowedPathRejection,
+    },
+
+    #[error("The host of \"{url}\" cannot be given to plugin \"{plugin_id}\": {reason}")]
+    InvalidAllowedHost {
+        plugin_id: String,
+        url: String,
+        reason: AllowedHostRejection,
+    },
+
     // Infrastructure errors
     #[error("Failed to compute hash")]
     HashComputationFailed,
@@ -92,26 +112,6 @@ pub enum PluginError {
     #[error("Storage operation failed: {0}")]
     Storage(#[from] IoError),
 
-    // ── Provider / Remote source errors (provider-agnostic) ──
-    #[error("Failed to fetch plugin info from provider {source_type}: {details}")]
-    ProviderFetchError {
-        source_type: PluginSourceType,
-        details: String,
-    },
-
-    #[error("No release assets found for plugin from provider {source_type}")]
-    ProviderNoAssets { source_type: PluginSourceType },
-
-    #[error("Plugin \"{plugin_id}\" has no remote source configured")]
-    NoRemoteSource { plugin_id: String },
-
-    #[error("Failed to download plugin from {url}: {details}")]
-    DownloadFailed { url: String, details: String },
-
-    // ── Rate limiting ──
-    #[error("Provider {source_type} rate limit exceeded. Retry after {retry_after:?}")]
-    ProviderRateLimited {
-        source_type: PluginSourceType,
-        retry_after: Option<u32>,
-    },
+    #[error(transparent)]
+    Provider(#[from] PluginProviderError),
 }

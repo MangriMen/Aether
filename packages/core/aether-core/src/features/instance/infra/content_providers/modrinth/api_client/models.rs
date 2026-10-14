@@ -2,11 +2,11 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize, Serializer};
 use std::{collections::HashMap, sync::LazyLock};
 
-pub const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
-pub const MODRINTH_WEB_URL: &str = "https://modrinth.com";
+pub(crate) const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
+pub(crate) const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
 #[allow(unused)]
-pub static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
+pub(crate) static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
     let mut headers = HeaderMap::new();
     headers.insert("User-Agent", HeaderValue::from_static("MangriMen/aether"));
     headers
@@ -15,7 +15,7 @@ pub static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
 // --- Request Params ---
 
 #[derive(Serialize, Debug)]
-pub struct ProjectSearchParams {
+pub(crate) struct ProjectSearchParams {
     pub index: SearchIndex,
     pub offset: i64,
     pub limit: i64,
@@ -29,7 +29,7 @@ pub struct ProjectSearchParams {
 
 #[derive(Serialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
-pub enum SearchIndex {
+pub(crate) enum SearchIndex {
     Relevance,
     // Downloads,
     // Follows,
@@ -67,7 +67,7 @@ where
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ProjectVersionsRequest {
+pub(crate) struct ProjectVersionsRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub loaders: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -94,7 +94,7 @@ impl Default for ProjectVersionsRequest {
 }
 
 impl ProjectVersionsRequest {
-    pub fn without_changelog() -> Self {
+    pub(crate) fn without_changelog() -> Self {
         Self {
             loaders: None,
             game_versions: None,
@@ -107,7 +107,7 @@ impl ProjectVersionsRequest {
 // --- Response Objects ---
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProjectSearchResponse {
+pub(crate) struct ProjectSearchResponse {
     pub hits: Vec<Hit>,
     pub offset: i64,
     pub limit: i64,
@@ -272,7 +272,7 @@ pub struct Hashes {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModrinthIndex {
+pub(crate) struct ModrinthIndex {
     pub format_version: u32,
     pub game: String,
     pub version_id: String,
@@ -284,7 +284,7 @@ pub struct ModrinthIndex {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModrinthIndexFile {
+pub(crate) struct ModrinthIndexFile {
     pub path: String,
     pub hashes: Hashes,
     pub env: Option<ModrinthEnv>,
@@ -294,7 +294,7 @@ pub struct ModrinthIndexFile {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModrinthDependencies {
+pub(crate) struct ModrinthDependencies {
     pub minecraft: String,
     #[serde(flatten)]
     pub loaders: HashMap<String, String>,
@@ -302,7 +302,7 @@ pub struct ModrinthDependencies {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ModrinthEnv {
+pub(crate) struct ModrinthEnv {
     pub client: String,
     pub server: String,
 }

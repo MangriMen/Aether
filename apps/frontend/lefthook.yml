@@ -19,3 +19,8 @@ pre-commit:
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:arch
       stage_fixed: true
+
+    - name: frontend:i18n
+      root: 'apps/frontend'
+      glob: 'src/shared/{i18n/*.json,api/bindings/*.ts}'
+      run: bun x vitest run src/shared/i18n

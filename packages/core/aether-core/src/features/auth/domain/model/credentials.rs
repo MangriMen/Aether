@@ -149,13 +149,13 @@ mod account_type_tests {
     use super::*;
 
     #[test]
-    fn account_type_display() {
+    fn should_display_account_type_name_when_formatted() {
         assert_eq!(AccountType::Offline.to_string(), "offline");
         assert_eq!(AccountType::Microsoft.to_string(), "microsoft");
     }
 
     #[test]
-    fn account_type_from_string_valid() {
+    fn should_parse_account_type_when_string_is_valid() {
         assert_eq!(
             AccountType::from_string("offline").unwrap(),
             AccountType::Offline
@@ -167,19 +167,19 @@ mod account_type_tests {
     }
 
     #[test]
-    fn account_type_from_string_invalid() {
+    fn should_fail_to_parse_account_type_when_string_is_invalid() {
         let err = AccountType::from_string("unknown").unwrap_err();
         assert!(matches!(err, AuthDomainError::InvalidAccountType));
     }
 
     #[test]
-    fn account_type_try_from_string() {
+    fn should_convert_string_to_account_type_when_it_is_a_known_name() {
         let result: Result<AccountType, _> = "microsoft".to_string().try_into();
         assert_eq!(result.unwrap(), AccountType::Microsoft);
     }
 
     #[test]
-    fn account_type_into_string() {
+    fn should_convert_account_type_to_string_when_it_is_offline() {
         let s: String = AccountType::Offline.into();
         assert_eq!(s, "offline");
     }
@@ -190,7 +190,7 @@ mod credential_tests {
     use super::*;
 
     #[test]
-    fn should_activate_offline_credential() {
+    fn should_activate_offline_credential_when_it_is_inactive() {
         let id = Uuid::new_v4();
         let mut cred = Credential::new_offline(id, Username::parse("Player").unwrap());
 

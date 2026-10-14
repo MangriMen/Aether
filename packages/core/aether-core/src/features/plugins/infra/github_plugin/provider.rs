@@ -6,7 +6,8 @@ use reqwest_middleware::ClientWithMiddleware;
 use super::fetcher::GitHubPluginFetcher;
 use crate::features::plugins::app::PluginProvider;
 use crate::features::plugins::domain::{
-    PluginError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo,
+    PluginProviderError, PluginSourceType, ProviderPluginPreview, ProviderReleaseInfo,
+    ProviderUpdateInfo,
 };
 
 /// Concrete provider for GitHub-sourced plugins.
@@ -31,9 +32,9 @@ impl PluginProvider for GithubProvider {
         PluginSourceType::GitHub
     }
 
-    fn parse_identifier(&self, raw: &str) -> Result<String, PluginError> {
+    fn parse_identifier(&self, raw: &str) -> Result<String, PluginProviderError> {
         let (owner, repo) = GitHubPluginFetcher::parse_github_url(raw).ok_or_else(|| {
-            PluginError::ProviderFetchError {
+            PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
                 details: format!("Cannot parse GitHub URL: {raw}"),
             }
@@ -41,7 +42,10 @@ impl PluginProvider for GithubProvider {
         Ok(format!("{owner}/{repo}"))
     }
 
-    async fn fetch_preview(&self, identifier: &str) -> Result<ProviderPluginPreview, PluginError> {
+    async fn fetch_preview(
+        &self,
+        identifier: &str,
+    ) -> Result<ProviderPluginPreview, PluginProviderError> {
         let (owner, repo) = split_identifier(identifier);
         let preview = self.fetcher.preview_plugin(owner, repo).await?;
 
@@ -70,7 +74,7 @@ impl PluginProvider for GithubProvider {
         identifier: &str,
         current_tag: &str,
         current_version: &str,
-    ) -> Result<ProviderUpdateInfo, PluginError> {
+    ) -> Result<ProviderUpdateInfo, PluginProviderError> {
         let (owner, repo) = split_identifier(identifier);
         let info = self
             .fetcher
@@ -98,7 +102,7 @@ impl PluginProvider for GithubProvider {
         })
     }
 
-    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginError> {
+    async fn download_plugin(&self, download_url: &str) -> Result<Vec<u8>, PluginProviderError> {
         self.fetcher.download_asset(download_url).await
     }
 }

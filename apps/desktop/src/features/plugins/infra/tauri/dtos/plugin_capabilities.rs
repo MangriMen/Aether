@@ -69,14 +69,17 @@ pub struct ProviderHandlersDto {
     /// Optional function to list available versions of a specific content item.
     pub list_version: Option<String>,
 
-    /// Function to handle the download and installation of a single item.
-    pub install_atomic: String,
-
-    /// Optional function to handle the installation of full modpacks.
-    pub install_modpack: Option<String>,
-
     /// Optional function to check if a specific content item is compatible with current environment.
     pub check_compatibility: Option<String>,
+
+    /// Optional function resolving a reference to the provider's platform to one file.
+    pub resolve_file: Option<String>,
+
+    /// Optional function describing everything to install for a piece of content.
+    pub resolve_install_plan: Option<String>,
+
+    /// Optional function describing a pack without resolving its files.
+    pub resolve_pack_metadata: Option<String>,
 }
 
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
@@ -122,9 +125,10 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             search: m.search,
             get_content: m.get_content,
             list_version: m.list_version,
-            install_atomic: m.install_atomic,
-            install_modpack: m.install_modpack,
             check_compatibility: m.check_compatibility,
+            resolve_file: m.resolve_file,
+            resolve_install_plan: m.resolve_install_plan,
+            resolve_pack_metadata: m.resolve_pack_metadata,
         }
     }
 }

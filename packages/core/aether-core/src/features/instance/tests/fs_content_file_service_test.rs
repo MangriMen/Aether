@@ -2,8 +2,11 @@ use std::sync::Arc;
 
 use tempfile::TempDir;
 
-use crate::features::instance::{app::ContentFileService, infra::FsContentFileService};
+use crate::features::instance::{
+    InstanceError, app::ContentFileService, infra::FsContentFileService,
+};
 use crate::features::settings::LocationInfo;
+use crate::test_support::link_dir;
 
 fn setup_temp_location() -> (TempDir, Arc<LocationInfo>) {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -35,7 +38,7 @@ async fn create_instance_dir(location_info: &LocationInfo, instance_id: &str) {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_removes_single_file() {
+async fn should_remove_a_file_when_one_file_is_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-instance-1";
@@ -65,7 +68,7 @@ async fn test_fs_content_service_removes_single_file() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_removes_multiple_files() {
+async fn should_remove_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-instance-2";
@@ -95,7 +98,7 @@ async fn test_fs_content_service_removes_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_removes_disabled_file() {
+async fn should_remove_a_disabled_file_when_the_file_is_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-instance-3";
@@ -124,7 +127,7 @@ async fn test_fs_content_service_removes_disabled_file() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_nonexistent_file_is_idempotent() {
+async fn should_succeed_when_the_file_to_remove_does_not_exist() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-instance-4";
@@ -136,10 +139,114 @@ async fn test_fs_content_service_nonexistent_file_is_idempotent() {
         .expect("remove_content_files should succeed for non-existent files");
 }
 
+/// A directory at the content path cannot be removed as a file on any OS: it stands for a file
+/// the user's system holds on to.
+#[tokio::test]
+async fn should_fail_with_the_file_kept_when_it_cannot_be_removed() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-instance-held";
+    let instance_dir = location_info.instance_dir(instance_id);
+    std::fs::create_dir_all(instance_dir.join("mods/held.jar")).unwrap();
+
+    let err = service
+        .remove_content_files(instance_id, &["mods/held.jar".to_string()])
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Storage(_)), "{err:?}");
+    assert!(instance_dir.join("mods/held.jar").exists());
+}
+
+// ─── Moving a file out ─────────────────────────────────────────
+
+#[tokio::test]
+async fn should_move_a_file_out_and_back_when_it_is_there() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-instance-move";
+    create_instance_dir(&location_info, instance_id).await;
+    let backup = temp_dir.path().join("backup");
+
+    let moved = service
+        .move_content_file_out(instance_id, "mods/test.jar", &backup)
+        .await
+        .unwrap();
+
+    assert!(moved);
+    let file = location_info
+        .instance_dir(instance_id)
+        .join("mods/test.jar");
+    assert!(!file.exists());
+    assert_eq!(std::fs::read(&backup).unwrap(), b"data");
+
+    service
+        .install_content_file(instance_id, "mods/test.jar", &backup)
+        .await
+        .unwrap();
+    assert_eq!(std::fs::read(&file).unwrap(), b"data");
+}
+
+/// Only the exact path: a disabled file is not taken for the enabled one.
+#[tokio::test]
+async fn should_move_nothing_out_when_the_exact_path_is_empty() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-instance-move-none";
+    let dir = location_info.instance_dir(instance_id);
+    std::fs::create_dir_all(dir.join("mods")).unwrap();
+    std::fs::write(dir.join("mods/a.jar.disabled"), b"data").unwrap();
+
+    let moved = service
+        .move_content_file_out(instance_id, "mods/a.jar", &temp_dir.path().join("backup"))
+        .await
+        .unwrap();
+
+    assert!(!moved);
+    assert!(dir.join("mods/a.jar.disabled").exists());
+}
+
+#[tokio::test]
+async fn should_refuse_to_move_out_a_directory_when_it_sits_at_a_content_path() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-instance-move-dir";
+    let dir = location_info.instance_dir(instance_id);
+    std::fs::create_dir_all(dir.join("mods/a.jar")).unwrap();
+
+    let err = service
+        .move_content_file_out(instance_id, "mods/a.jar", &temp_dir.path().join("backup"))
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Storage(_)), "{err:?}");
+    assert!(dir.join("mods/a.jar").is_dir());
+}
+
+#[tokio::test]
+async fn should_refuse_to_move_out_a_path_when_it_leads_out_of_the_instance() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-instance-move-escape";
+    create_instance_dir(&location_info, instance_id).await;
+    std::fs::write(temp_dir.path().join("escaped.jar"), b"outside").unwrap();
+
+    let result = service
+        .move_content_file_out(
+            instance_id,
+            "../../escaped.jar",
+            &temp_dir.path().join("backup"),
+        )
+        .await;
+
+    assert!(result.is_err());
+    assert!(temp_dir.path().join("escaped.jar").exists());
+}
+
 // ─── Enable / Disable tests ────────────────────────────────────
 
 #[tokio::test]
-async fn test_fs_content_service_enables_file() {
+async fn should_enable_a_file_when_it_is_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-enable-1";
@@ -178,7 +285,7 @@ async fn test_fs_content_service_enables_file() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_disables_file() {
+async fn should_disable_a_file_when_it_is_enabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-disable-1";
@@ -215,7 +322,7 @@ async fn test_fs_content_service_disables_file() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_enable_already_enabled_is_idempotent() {
+async fn should_stay_enabled_when_a_file_is_already_enabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-enable-idempotent";
@@ -242,7 +349,7 @@ async fn test_fs_content_service_enable_already_enabled_is_idempotent() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_disable_already_disabled_is_idempotent() {
+async fn should_stay_disabled_when_a_file_is_already_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-disable-idempotent";
@@ -269,7 +376,7 @@ async fn test_fs_content_service_disable_already_disabled_is_idempotent() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_enable_multiple_files() {
+async fn should_enable_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-enable-multi";
@@ -308,7 +415,7 @@ async fn test_fs_content_service_enable_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_disable_multiple_files() {
+async fn should_disable_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-disable-multi";
@@ -347,7 +454,7 @@ async fn test_fs_content_service_disable_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_fs_content_service_nonexistent_file_enable_disable_is_idempotent() {
+async fn should_succeed_when_the_file_to_enable_or_disable_does_not_exist() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = "test-nonexistent-toggle";
@@ -362,4 +469,220 @@ async fn test_fs_content_service_nonexistent_file_enable_disable_is_idempotent()
         .disable_content_files(instance_id, &["mods/nonexistent.jar".to_string()])
         .await
         .expect("disable should be idempotent for missing files");
+}
+
+// ── install_content_file: where a file may go ──
+
+async fn temp_file(location_info: &LocationInfo, body: &[u8]) -> std::path::PathBuf {
+    let dir = location_info.temp_dir();
+    tokio::fs::create_dir_all(&dir).await.unwrap();
+    let path = dir.join(uuid::Uuid::new_v4().to_string());
+    tokio::fs::write(&path, body).await.unwrap();
+    path
+}
+
+#[tokio::test]
+async fn should_install_into_a_new_subdirectory_when_it_does_not_exist_yet() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-install";
+    tokio::fs::create_dir_all(location_info.instance_dir(instance_id))
+        .await
+        .unwrap();
+    let temp = temp_file(&location_info, b"jar").await;
+
+    service
+        .install_content_file(instance_id, "config/sodium/options.json", &temp)
+        .await
+        .expect("a plain path should be installed");
+
+    assert_eq!(
+        std::fs::read(
+            location_info
+                .instance_dir(instance_id)
+                .join("config/sodium/options.json")
+        )
+        .unwrap(),
+        b"jar"
+    );
+    assert!(!temp.exists(), "the temp file is moved, not copied");
+}
+
+/// A content path may come from a provider's plan: one that leaves the instance, or reaches
+/// into the launcher's `.metadata`, is refused and nothing is moved.
+#[tokio::test]
+async fn should_refuse_a_path_when_it_leads_out_of_the_content_area() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-install-refused";
+    tokio::fs::create_dir_all(location_info.instance_dir(instance_id))
+        .await
+        .unwrap();
+
+    for path in [
+        "../escaped.jar",
+        "mods/../../escaped.jar",
+        "/escaped.jar",
+        "C:/escaped.jar",
+        ".metadata/instance.json",
+        ".Metadata/plugins/packwiz/packwiz.toml",
+    ] {
+        let temp = temp_file(&location_info, b"jar").await;
+
+        let err = service
+            .install_content_file(instance_id, path, &temp)
+            .await
+            .expect_err(path);
+
+        assert!(
+            matches!(err, InstanceError::InvalidRelativePath { .. }),
+            "{path}: {err:?}"
+        );
+        assert!(
+            service.check_content_path(path).is_err(),
+            "{path}: the check alone refuses it too"
+        );
+        assert!(temp.exists(), "{path}: nothing is moved");
+    }
+
+    assert!(!temp_dir.path().join("escaped.jar").exists());
+    assert!(!location_info.instances_dir().join("escaped.jar").exists());
+    assert!(service.check_content_path("mods/sodium.jar").is_ok());
+}
+
+#[tokio::test]
+async fn should_refuse_an_install_when_a_symlink_leads_out_of_the_instance() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-install-symlink";
+    let instance_dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(&instance_dir).await.unwrap();
+    let outside = temp_dir.path().join("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+
+    link_dir(&outside, &instance_dir.join("mods"));
+
+    let temp = temp_file(&location_info, b"jar").await;
+    let err = service
+        .install_content_file(instance_id, "mods/escaped.jar", &temp)
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(err, InstanceError::PathEscapesInstance { .. }),
+        "{err:?}"
+    );
+    assert!(!outside.join("escaped.jar").exists());
+}
+
+// ── remove / enable / disable: where a file may be changed ──
+
+/// Each operation over `paths`, as a name and its result.
+async fn change_all(
+    service: &FsContentFileService,
+    instance_id: &str,
+    paths: &[String],
+) -> Vec<(&'static str, Result<(), InstanceError>)> {
+    vec![
+        (
+            "remove",
+            service.remove_content_files(instance_id, paths).await,
+        ),
+        (
+            "enable",
+            service.enable_content_files(instance_id, paths).await,
+        ),
+        (
+            "disable",
+            service.disable_content_files(instance_id, paths).await,
+        ),
+    ]
+}
+
+/// The paths come from the pack storage and the UI: one out of the instance, or into the
+/// launcher's `.metadata`, is skipped by every operation — nothing is done to it — while the
+/// valid path next to it is changed as asked.
+#[tokio::test]
+async fn should_skip_a_path_out_of_the_content_area_when_changing_a_list() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-change-refused";
+    create_instance_dir(&location_info, instance_id).await;
+    let instance_dir = location_info.instance_dir(instance_id);
+
+    // Targets each path would reach if it were joined as it is.
+    std::fs::write(temp_dir.path().join("escaped.jar"), b"outside").unwrap();
+    std::fs::write(temp_dir.path().join("escaped.jar.disabled"), b"outside").unwrap();
+    std::fs::create_dir_all(instance_dir.join(".metadata")).unwrap();
+    std::fs::write(instance_dir.join(".metadata/instance.json"), b"{}").unwrap();
+    let absolute = temp_dir.path().join("escaped.jar").display().to_string();
+
+    let valid = instance_dir.join("mods/test.jar");
+    for path in [
+        "../../escaped.jar",
+        "mods/../../../escaped.jar",
+        absolute.as_str(),
+        "/escaped.jar",
+        ".metadata/instance.json",
+        ".Metadata/instance.json",
+    ] {
+        let paths = ["mods/test.jar".to_owned(), path.to_owned()];
+        std::fs::create_dir_all(valid.parent().unwrap()).unwrap();
+        std::fs::write(&valid, b"jar").unwrap();
+
+        service
+            .disable_content_files(instance_id, &paths)
+            .await
+            .expect(path);
+        assert!(
+            instance_dir.join("mods/test.jar.disabled").exists(),
+            "{path}"
+        );
+        service
+            .enable_content_files(instance_id, &paths)
+            .await
+            .expect(path);
+        assert!(valid.exists(), "{path}");
+        service
+            .remove_content_files(instance_id, &paths)
+            .await
+            .expect(path);
+        assert!(!valid.exists(), "{path}");
+    }
+
+    assert!(temp_dir.path().join("escaped.jar").exists());
+    assert!(temp_dir.path().join("escaped.jar.disabled").exists());
+    assert!(instance_dir.join(".metadata/instance.json").exists());
+    assert!(
+        !instance_dir
+            .join(".metadata/instance.json.disabled")
+            .exists()
+    );
+}
+
+/// A plain path whose folder is a symlink out of the instance is refused.
+#[tokio::test]
+async fn should_refuse_to_change_a_file_when_a_symlink_leads_out_of_the_instance() {
+    let (temp_dir, location_info) = setup_temp_location();
+    let service = FsContentFileService::new(location_info.clone());
+    let instance_id = "test-change-symlink";
+    let instance_dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(&instance_dir).await.unwrap();
+    let outside = temp_dir.path().join("outside");
+    std::fs::create_dir_all(&outside).unwrap();
+    std::fs::write(outside.join("escaped.jar"), b"outside").unwrap();
+
+    link_dir(&outside, &instance_dir.join("mods"));
+
+    let paths = ["mods/escaped.jar".to_owned()];
+    for (operation, result) in change_all(&service, instance_id, &paths).await {
+        let err = result.expect_err(operation);
+        assert!(
+            matches!(err, InstanceError::PathEscapesInstance { .. }),
+            "{operation}: {err:?}"
+        );
+    }
+
+    assert!(outside.join("escaped.jar").exists());
+    assert!(!outside.join("escaped.jar.disabled").exists());
 }

@@ -5,7 +5,7 @@ use crate::features::auth::app::{CredentialsStorage, GetAccountsUseCase, GetAcco
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
 #[tokio::test]
-async fn test_get_accounts_returns_all() {
+async fn should_return_all_accounts_when_several_exist() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     storage
@@ -34,7 +34,7 @@ async fn test_get_accounts_returns_all() {
 }
 
 #[tokio::test]
-async fn test_get_accounts_empty() {
+async fn should_return_no_accounts_when_none_exist() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let use_case = GetAccountsUseCase::new(storage.clone());

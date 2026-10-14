@@ -1,3 +1,4 @@
+mod change_instance_game;
 mod create_instance;
 mod edit_instance;
 mod edit_instance_icon;
@@ -11,6 +12,7 @@ mod list_instances;
 mod remove_instance;
 mod update_instance;
 
+pub use change_instance_game::*;
 pub use create_instance::*;
 pub use edit_instance::*;
 pub use edit_instance_icon::*;

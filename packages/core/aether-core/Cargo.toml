@@ -18,15 +18,36 @@ reqwest = { version = "0.13.4", features = [
     "brotli",
 ] }
 reqwest-middleware = "0.5.2"
+# `http::Extensions` appears in the `reqwest_middleware::Middleware` signature, which the
+# plugin host functions implement to vet every redirect hop.
+http = "1.4.2"
+# The proxy rules reqwest applies by default (env, then OS settings), read the same way to decide
+# per redirect hop whether a plugin request goes through a proxy.
+hyper-util = { version = "0.1.20", features = ["client-proxy", "client-proxy-system"] }
+# Retries for host-side plugin downloads, which cannot use the application's shared
+# client: that one follows redirects. Same version the desktop app builds its client with.
+reqwest-retry = "0.9.1"
 serde_qs = "1.1.2"
 url = "2.5.8"
 
 # System & Files
 bytes = "1.12.1"
+# Overrides are read out of a plugin's directory one component at a time, never through a
+# symlink, so a directory swapped for one after listing cannot lead out of it.
+cap-fs-ext = "3.4.5"
+cap-std = "3.4.5"
 dunce = "1.0.5"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
 path-slash = "0.2.1"
+# A plugin's `run_command` is stopped as a whole process tree, not only its direct child: a job
+# object on Windows, a process group on Unix.
+process-wrap = { version = "10.0.1", default-features = false, features = [
+    "tokio1",
+    "job-object",
+    "process-group",
+    "kill-on-drop",
+] }
 sys-info = "0.9.1"
 sysinfo = "0.39.6"
 tempfile = "3.27.0"
@@ -43,8 +64,15 @@ tracing-error = "0.2.1"
 
 # Utilities
 dashmap = { version = "6.2.1", features = ["serde"] }
+# Host-side `allowed_hosts` matching must use the same glob semantics as Extism's own check.
+glob = "0.3.3"
 regex = "1.13.0"
 sha1_smol = { version = "1.0.1", features = ["alloc", "serde", "std"] }
+# sha256 for the plugin wasm integrity check and `FileHash`.
+# Same crate Extism uses for `Wasm::with_hash`, so the two digests cannot drift apart.
+sha2 = "0.10.9"
+# Same crate (and version) as `extism_convert::Msgpack`; named encoding of errors needs it directly.
+rmp-serde = "1.3.1"
 toml = "1.1.3"
 
 # Workspace Dependencies

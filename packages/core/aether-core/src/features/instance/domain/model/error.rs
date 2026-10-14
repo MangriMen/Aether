@@ -3,8 +3,11 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::features::{
-    auth::AuthApplicationError, instance::ContentType, minecraft::MinecraftApplicationError,
-    process::ProcessError, settings::SettingsError,
+    auth::AuthApplicationError,
+    instance::{ContentType, ProviderId},
+    minecraft::MinecraftApplicationError,
+    process::ProcessError,
+    settings::SettingsError,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -47,11 +50,19 @@ pub enum InstanceError {
     #[error("Not found importer {importer_id}")]
     ImporterNotFound { importer_id: String },
 
-    #[error("Failed to import instance with {plugin_id} {capability_id}")]
+    #[error("Failed to import instance with {plugin_id} {capability_id}: {reason}")]
     ImportFailed {
         plugin_id: String,
         capability_id: String,
+        /// Why the plugin's importer failed, as the core saw it.
+        reason: String,
     },
+
+    /// The plugin behind a capability was unloaded, or is restarting, when it was called.
+    #[error(
+        "Plugin \"{plugin_id}\" is not running: it was unloaded or is restarting. Try again once it is loaded"
+    )]
+    PluginNotRunning { plugin_id: String },
 
     // Update errors
     #[error("Not found pack info in instance")]
@@ -73,6 +84,16 @@ pub enum InstanceError {
     #[error("Can't get content file_name at path: {path}")]
     ContentFilename { path: PathBuf },
 
+    // Instance files
+    #[error("Path \"{path}\" is not a valid path inside an instance: {reason}")]
+    InvalidRelativePath { path: String, reason: String },
+
+    #[error("Path \"{path}\" resolves outside instance \"{instance_id}\"")]
+    PathEscapesInstance { path: String, instance_id: String },
+
+    #[error("File \"{path}\" is {size} bytes, over the {limit} byte limit")]
+    FileTooLarge { path: String, size: u64, limit: u64 },
+
     #[error("Error when downloading content {0}")]
     ContentDownloadError(String),
 
@@ -84,6 +105,38 @@ pub enum InstanceError {
 
     #[error("Unsupported content type: {content_type:?}")]
     UnsupportedContentType { content_type: ContentType },
+
+    /// A provider was asked for something it does not do — a single-mod provider for a pack
+    /// preview, or one without install plans. The caller may treat it as "not offered"
+    /// rather than as a failure.
+    #[error("Content provider \"{provider_id}\" does not support {operation}")]
+    UnsupportedOperation {
+        provider_id: ProviderId,
+        /// The provider method, as named in the trait (`resolve_pack_metadata`).
+        operation: &'static str,
+    },
+
+    /// A [`ContentSource::ProviderRef`](super::ContentSource::ProviderRef) names a platform no
+    /// available provider serves. There is no fallback to another platform's provider.
+    #[error("No content provider serves platform \"{platform}\"")]
+    PlatformProviderNotFound { platform: String },
+
+    /// Several providers serve the platform and the core may not pick one itself: none is
+    /// chosen in the settings and none is built in, or the chosen one is not available.
+    #[error("Choose a content provider for platform \"{platform}\"")]
+    PlatformProviderNotChosen { platform: String },
+
+    /// A plan for an existing instance names a game to move it to, but is not a plan of the pack
+    /// the instance was installed from: only an update of its own pack may change the game
+    /// an instance runs.
+    #[error(
+        "Content \"{content_id}\" of \"{provider_id}\" may not change the game of instance \"{instance_id}\": it is not the pack the instance was installed from"
+    )]
+    GameChangeNotAllowed {
+        instance_id: String,
+        provider_id: ProviderId,
+        content_id: String,
+    },
 
     // Features errors
     #[error("Settings load error")]
@@ -105,13 +158,13 @@ mod tests {
     use uuid::Uuid;
 
     #[test]
-    fn storage_format() {
+    fn should_format_storage_error_when_displayed() {
         let err = InstanceError::Storage("db error".into());
         assert_eq!(err.to_string(), "Storage error: db error");
     }
 
     #[test]
-    fn not_found_format() {
+    fn should_format_not_found_error_when_displayed() {
         let err = InstanceError::NotFound {
             instance_id: "abc".into(),
         };
@@ -119,19 +172,68 @@ mod tests {
     }
 
     #[test]
-    fn capability_operation_error_format() {
+    fn should_format_capability_operation_error_when_displayed() {
         let err = InstanceError::CapabilityOperationError;
         assert_eq!(err.to_string(), "Capability operation error");
     }
 
     #[test]
-    fn prelaunch_command_error_format() {
+    fn should_format_prelaunch_command_error_when_displayed() {
         let err = InstanceError::PrelaunchCommandError { code: 1 };
         assert_eq!(err.to_string(), "Prelaunch command error with code: 1");
     }
 
     #[test]
-    fn instance_already_running_format() {
+    fn should_format_unsupported_operation_error_when_displayed() {
+        let err = InstanceError::UnsupportedOperation {
+            provider_id: ProviderId {
+                plugin_id: "aether".into(),
+                capability_id: "modrinth".into(),
+            },
+            operation: "resolve_pack_metadata",
+        };
+        assert_eq!(
+            err.to_string(),
+            "Content provider \"aether#modrinth\" does not support resolve_pack_metadata"
+        );
+    }
+
+    #[test]
+    fn should_format_platform_provider_errors_when_displayed() {
+        assert_eq!(
+            InstanceError::PlatformProviderNotFound {
+                platform: "curseforge".into()
+            }
+            .to_string(),
+            "No content provider serves platform \"curseforge\""
+        );
+        assert_eq!(
+            InstanceError::PlatformProviderNotChosen {
+                platform: "curseforge".into()
+            }
+            .to_string(),
+            "Choose a content provider for platform \"curseforge\""
+        );
+    }
+
+    #[test]
+    fn should_format_game_change_not_allowed_error_when_displayed() {
+        let err = InstanceError::GameChangeNotAllowed {
+            instance_id: "inst-1".into(),
+            provider_id: ProviderId {
+                plugin_id: "aether".into(),
+                capability_id: "modrinth".into(),
+            },
+            content_id: "AANobbMI".into(),
+        };
+        assert_eq!(
+            err.to_string(),
+            "Content \"AANobbMI\" of \"aether#modrinth\" may not change the game of instance \"inst-1\": it is not the pack the instance was installed from"
+        );
+    }
+
+    #[test]
+    fn should_format_instance_already_running_error_when_displayed() {
         let pid = Uuid::new_v4();
         let err = InstanceError::InstanceAlreadyRunning {
             instance_id: "inst-1".into(),

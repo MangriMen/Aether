@@ -36,6 +36,7 @@ impl InstallInstanceUseCase {
     async fn handle_success_installation(
         &self,
         instance: &mut Instance,
+        pack_pending: bool,
     ) -> Result<(), InstanceError> {
         log::info!(
             "Installed instance: \"{}\" (minecraft: \"{}\", modloader: \"{:?}\" \"{:?}\")",
@@ -45,7 +46,15 @@ impl InstallInstanceUseCase {
             instance.loader_version
         );
 
-        instance.install_stage = InstanceInstallStage::Installed;
+        // An instance created for a pack isn't ready until its content is deployed: installing
+        // its game keeps it `PackInstalling`, and whoever deploys the pack moves it on. Only that
+        // stage is kept — an instance merely *from* a pack (`pack_info`) reinstalled for a health
+        // check or a game change is as ready as before.
+        instance.install_stage = if pack_pending {
+            InstanceInstallStage::PackInstalling
+        } else {
+            InstanceInstallStage::Installed
+        };
         self.instance_storage.upsert(instance).await?;
         Ok(())
     }
@@ -63,6 +72,7 @@ impl InstallInstanceUseCase {
 
     pub async fn execute(&self, instance_id: String, force: bool) -> Result<(), InstanceError> {
         let mut instance = self.instance_storage.get(&instance_id).await?;
+        let pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
 
         instance.install_stage = InstanceInstallStage::Installing;
         self.instance_storage.upsert(&instance).await?;
@@ -109,7 +119,10 @@ impl InstallInstanceUseCase {
             .await;
 
         match result {
-            Ok(()) => self.handle_success_installation(&mut instance).await,
+            Ok(()) => {
+                self.handle_success_installation(&mut instance, pack_pending)
+                    .await
+            }
             Err(_) => self.handle_failed_installation(&mut instance).await,
         }?;
 

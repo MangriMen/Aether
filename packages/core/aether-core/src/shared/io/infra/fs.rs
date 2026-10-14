@@ -27,6 +27,44 @@ pub async fn write_async(path: impl AsRef<Path>, data: impl AsRef<[u8]>) -> Resu
         .map_err(|err| IoError::with_path(err, path_ref))
 }
 
+/// Replaces the file as a whole or not at all: a crash or a full disk mid-write leaves the
+/// previous content, never a truncated file that no longer parses.
+///
+/// The temporary file sits in the same directory, so the final step is a rename within one
+/// file system, which the OS performs atomically.
+async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<(), IoError> {
+    let parent = match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
+        _ => PathBuf::from("."),
+    };
+
+    tokio::fs::create_dir_all(&parent)
+        .await
+        .map_err(|err| IoError::with_path(err, &parent))?;
+
+    let path = path.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        // Dropping `temp_file` on any early return removes it.
+        let mut temp_file = tempfile::Builder::new()
+            .prefix(".write-")
+            .suffix(".tmp")
+            .tempfile_in(&parent)
+            .map_err(|err| IoError::with_path(err, &parent))?;
+
+        std::io::Write::write_all(&mut temp_file, &data)
+            .and_then(|()| temp_file.as_file().sync_all())
+            .map_err(|err| IoError::with_path(err, temp_file.path()))?;
+
+        temp_file
+            .persist(&path)
+            .map_err(|err| IoError::with_path(err.error, &path))?;
+
+        Ok(())
+    })
+    .await
+    .map_err(|err| IoError::from(std::io::Error::other(err)))?
+}
+
 // JSON
 
 pub async fn read_json_async<T>(path: impl AsRef<Path>) -> Result<T, IoError>
@@ -43,7 +81,7 @@ where
 {
     let bytes =
         serde_json::to_vec(&data).map_err(|e| IoError::SerializationError(e.to_string()))?;
-    write_async(path, bytes).await
+    write_replacing_async(path.as_ref(), bytes).await
 }
 
 pub async fn ensure_read_json_async<T>(path: impl AsRef<Path>) -> Result<T, IoError>
@@ -80,7 +118,7 @@ where
 {
     let toml_str =
         toml::to_string(&data).map_err(|e| IoError::SerializationError(e.to_string()))?;
-    write_async(path, toml_str).await
+    write_replacing_async(path.as_ref(), toml_str.into_bytes()).await
 }
 
 pub async fn ensure_read_toml_async<T>(path: impl AsRef<Path>) -> Result<T, IoError>
@@ -155,4 +193,73 @@ pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> Result<(), 
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+    struct Record {
+        value: String,
+    }
+
+    fn record(value: &str) -> Record {
+        Record {
+            value: value.to_owned(),
+        }
+    }
+
+    fn file_names(dir: &Path) -> Vec<String> {
+        std::fs::read_dir(dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn should_replace_json_and_leave_no_temp_file_when_written_over_an_existing_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("record.json");
+
+        write_json_async(&path, record("old")).await.unwrap();
+        write_json_async(&path, record("new")).await.unwrap();
+
+        assert_eq!(
+            read_json_async::<Record>(&path).await.unwrap(),
+            record("new")
+        );
+        assert_eq!(file_names(dir.path()), vec!["record.json".to_owned()]);
+    }
+
+    #[tokio::test]
+    async fn should_replace_toml_and_leave_no_temp_file_when_written_over_an_existing_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("nested").join("record.toml");
+
+        write_toml_async(&path, record("old")).await.unwrap();
+        write_toml_async(&path, record("new")).await.unwrap();
+
+        assert_eq!(
+            read_toml_async::<Record>(&path).await.unwrap(),
+            record("new")
+        );
+        assert_eq!(
+            file_names(path.parent().unwrap()),
+            vec!["record.toml".to_owned()]
+        );
+    }
+
+    #[tokio::test]
+    async fn should_leave_no_temp_file_when_the_target_cannot_be_replaced() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("record.json");
+        std::fs::create_dir(&path).unwrap();
+        std::fs::write(path.join("inside"), b"").unwrap();
+
+        let result = write_json_async(&path, record("new")).await;
+
+        assert!(result.is_err());
+        assert_eq!(file_names(dir.path()), vec!["record.json".to_owned()]);
+    }
 }

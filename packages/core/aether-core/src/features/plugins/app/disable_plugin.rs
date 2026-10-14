@@ -1,24 +1,23 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tokio::sync::Mutex;
 
 use crate::features::{
     plugins::{
-        LoadConfigType, PluginDisableService, PluginError, PluginInstance, PluginLoaderRegistry,
+        LoadConfigType, PluginDisableService, PluginError, PluginHandle, PluginLoaderRegistry,
         PluginManifest, PluginRegistry, PluginState,
     },
     settings::SettingsStorage,
 };
 
-pub struct DisablePluginUseCase {
+pub(crate) struct DisablePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
     plugin_loader_registry: Arc<PluginLoaderRegistry>,
     settings_storage: Arc<dyn SettingsStorage>,
 }
 
 impl DisablePluginUseCase {
-    pub fn new(
+    pub(crate) fn new(
         plugin_registry: Arc<PluginRegistry>,
         plugin_loader_registry: Arc<PluginLoaderRegistry>,
         settings_storage: Arc<dyn SettingsStorage>,
@@ -30,17 +29,11 @@ impl DisablePluginUseCase {
         }
     }
 
-    pub async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
-        let (state, manifest) = self.plugin_registry.get_state_and_manifest(&plugin_id)?;
-
-        let plugin_instance = Self::check_is_able_to_unload(&plugin_id, &state)?;
-
-        self.plugin_registry
-            .upsert_with(&plugin_id, |plugin| {
-                plugin.state = PluginState::Unloading;
-                Ok(())
-            })
-            .await?;
+    /// A plugin being enabled or restarted is refused with the matching in-progress error rather
+    /// than taken from under it: a restart finishing after the disable would leave it running.
+    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        let manifest = self.plugin_registry.get_manifest(&plugin_id)?;
+        let plugin_instance = self.plugin_registry.begin_unloading(&plugin_id).await?;
 
         match self
             .unload_plugin(&plugin_id, &manifest, plugin_instance.clone())
@@ -50,14 +43,12 @@ impl DisablePluginUseCase {
             Err(err) => {
                 self.plugin_registry
                     .upsert_with(&plugin_id, |plugin| {
-                        match &err {
-                            // If there is error on plugin on_unload call we are anyway drop instance
-                            PluginError::FunctionCallFailed { .. } => {
-                                plugin.state = PluginState::NotLoaded;
-                            }
-                            // If there is others error - plugin still loaded
-                            _ => plugin.state = PluginState::Loaded(plugin_instance),
-                        }
+                        // A busy plugin, refused before its instance was touched, stays loaded.
+                        plugin.state = if plugin_instance.is_retired() {
+                            PluginState::NotLoaded
+                        } else {
+                            PluginState::Loaded(plugin_instance)
+                        };
                         Ok(())
                     })
                     .await?;
@@ -67,29 +58,11 @@ impl DisablePluginUseCase {
         }
     }
 
-    fn check_is_able_to_unload(
-        plugin_id: &str,
-        plugin_state: &PluginState,
-    ) -> Result<Arc<Mutex<dyn PluginInstance>>, PluginError> {
-        match plugin_state {
-            PluginState::Loaded(plugin_instance) => Ok(plugin_instance.clone()),
-            PluginState::Loading => Err(PluginError::LoadingInProgress {
-                plugin_id: plugin_id.to_owned(),
-            }),
-            PluginState::NotLoaded
-            | PluginState::Unloading
-            | PluginState::Failed(_)
-            | PluginState::Incompatible(_) => Err(PluginError::AlreadyUnloaded {
-                plugin_id: plugin_id.to_owned(),
-            }),
-        }
-    }
-
     async fn unload_plugin(
         &self,
         plugin_id: &str,
         manifest: &PluginManifest,
-        plugin_instance: Arc<Mutex<dyn PluginInstance>>,
+        plugin_instance: PluginHandle,
     ) -> Result<(), PluginError> {
         let load_config_type: LoadConfigType = (&manifest.load).into();
         let loader = self.plugin_loader_registry.get(&load_config_type)?;

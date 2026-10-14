@@ -51,11 +51,9 @@ pub struct ContentProviderCapabilityMetadataDto {
     #[serde(flatten)]
     pub base: CapabilityMetadataDto,
 
-    /// Whether the provider supports installing individual items (e.g., a single mod or resource pack).
-    pub supports_install_atomic: bool,
-
-    /// Whether the provider supports installing complex modpacks or curated collections.
-    pub supports_install_modpacks: bool,
+    /// The platform whose content the provider serves; providers sharing one are alternatives,
+    /// and the user picks which of them is asked.
+    pub platform: Option<String>,
 }
 
 impl From<CapabilityMetadata> for CapabilityMetadataDto {
@@ -137,8 +135,7 @@ impl From<aether_core::features::plugins::ContentProviderCapabilityMetadataDto>
     fn from(dto: aether_core::features::plugins::ContentProviderCapabilityMetadataDto) -> Self {
         Self {
             base: dto.base.into(),
-            supports_install_atomic: dto.supports_install_atomic,
-            supports_install_modpacks: dto.supports_install_modpacks,
+            platform: dto.platform,
         }
     }
 }
@@ -147,8 +144,7 @@ impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetada
     fn from(m: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: m.base.into(),
-            supports_install_atomic: m.supports_install_atomic,
-            supports_install_modpacks: m.supports_install_modpacks,
+            platform: m.platform,
         }
     }
 }

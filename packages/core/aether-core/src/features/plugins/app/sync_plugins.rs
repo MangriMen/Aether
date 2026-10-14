@@ -10,7 +10,7 @@ use crate::features::{
     },
 };
 
-pub struct SyncPluginsUseCase {
+pub(crate) struct SyncPluginsUseCase {
     plugin_storage: Arc<dyn PluginStorage>,
     plugin_registry: Arc<PluginRegistry>,
     disable_plugin_service: Arc<dyn PluginDisableService>,
@@ -18,7 +18,7 @@ pub struct SyncPluginsUseCase {
 }
 
 impl SyncPluginsUseCase {
-    pub fn new(
+    pub(crate) fn new(
         plugin_storage: Arc<dyn PluginStorage>,
         plugin_registry: Arc<PluginRegistry>,
         disable_plugin_service: Arc<dyn PluginDisableService>,
@@ -66,7 +66,11 @@ impl SyncPluginsUseCase {
                 let new = found_plugins.get(plugin);
 
                 match (old, new) {
-                    (Ok(old), Some(new)) => old.manifest != new.manifest || old.hash != new.hash,
+                    (Ok(old), Some(new)) => {
+                        old.manifest != new.manifest
+                            || old.hash != new.hash
+                            || old.verified != new.verified
+                    }
                     _ => false,
                 }
             })

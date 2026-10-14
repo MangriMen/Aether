@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_path",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_file_updates",
+            "name": "content_path"
+          }
+        }
+      },
+      {
+        "name": "provider_id",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_file_updates",
+            "name": "provider_id"
+          }
+        }
+      },
+      {
+        "name": "content_id",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_file_updates",
+            "name": "content_id"
+          }
+        }
+      },
+      {
+        "name": "version_id",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_file_updates",
+            "name": "version_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a4afc3521c96187de6716a31e142acf7e4dfe372fcdb77d83e2f333ebc306b4c"
+}

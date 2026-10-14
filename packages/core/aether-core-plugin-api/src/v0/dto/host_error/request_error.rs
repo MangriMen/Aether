@@ -10,4 +10,7 @@ pub enum RequestErrorDto {
     Json(String),
     Toml(String),
     Parse(String),
+    Status { status: u16, url: String },
+    TooLarge { limit: u64 },
+    Io { path: String, details: String },
 }

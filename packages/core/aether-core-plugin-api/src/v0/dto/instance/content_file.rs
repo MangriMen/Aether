@@ -1,7 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
-
 use serde::{Deserialize, Serialize};
-use serde_with::{DisplayFromStr, serde_as};
 
 use super::ContentTypeDto;
 
@@ -12,27 +9,6 @@ pub struct ProviderIdDto {
     pub capability_id: String,
 }
 
-impl std::fmt::Display for ProviderIdDto {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.plugin_id, self.capability_id)
-    }
-}
-
-impl FromStr for ProviderIdDto {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() != 2 {
-            return Err("Invalid ProviderId format. Expected plugin:capability".to_string());
-        }
-        Ok(Self {
-            plugin_id: parts[0].to_string(),
-            capability_id: parts[1].to_string(),
-        })
-    }
-}
-
-#[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentFileDto {
@@ -44,13 +20,17 @@ pub struct ContentFileDto {
     pub name: Option<String>,
     pub size: u64,
     pub update_provider_id: Option<ProviderIdDto>,
-    #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
-    pub update: Option<HashMap<ProviderIdDto, ContentFileUpdateInfoDto>>,
+    /// Where the file can be updated from, one entry per provider.
+    ///
+    /// A list rather than a map keyed by provider: a map key would need a string form of
+    /// [`ProviderIdDto`], and a plugin id may itself contain the separator.
+    pub update: Option<Vec<ContentFileUpdateInfoDto>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentFileUpdateInfoDto {
+    pub provider_id: ProviderIdDto,
     pub content_id: String,
     pub version: String,
 }
@@ -77,5 +57,35 @@ mod tests {
         let json = serde_json::to_string(&file).unwrap();
 
         assert!(json.contains(r#""contentPath""#));
+    }
+
+    #[test]
+    fn should_round_trip_update_info_of_a_builtin_provider() {
+        // A plugin id may contain the separator used in the string form of a provider id.
+        let provider_id = ProviderIdDto {
+            plugin_id: "core:modrinth".into(),
+            capability_id: "modrinth-content".into(),
+        };
+        let file = ContentFileDto {
+            content_path: "mods/sodium.jar".into(),
+            content_type: ContentTypeDto::Mod,
+            disabled: false,
+            file_name: "sodium.jar".into(),
+            hash: "123".into(),
+            name: None,
+            size: 1024,
+            update_provider_id: Some(provider_id.clone()),
+            update: Some(vec![ContentFileUpdateInfoDto {
+                provider_id: provider_id.clone(),
+                content_id: "AANobbMI".into(),
+                version: "IZskON6d".into(),
+            }]),
+        };
+
+        let json = serde_json::to_string(&file).unwrap();
+        let back: ContentFileDto = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(back.update_provider_id, Some(provider_id));
+        assert_eq!(back.update, file.update);
     }
 }
