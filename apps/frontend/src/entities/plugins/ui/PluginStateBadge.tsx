@@ -26,11 +26,19 @@ export const PluginStateBadge: Component<PluginStateBadgeProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const isIncompatible = () => local.plugin.state === 'Incompatible';
-  const isRefused = () => isIncompatible() || local.plugin.state === 'Failed';
+  const label = () => {
+    switch (local.plugin.state) {
+      case 'Incompatible':
+        return t('plugin.stateIncompatible');
+      case 'Failed':
+        return t('plugin.stateFailed');
+      default:
+        return undefined;
+    }
+  };
 
   return (
-    <Show when={isRefused()}>
+    <Show when={label()}>
       <CombinedTooltip
         label={getTranslatedStateReason(local.plugin.state_reason, t)}
         as='span'
@@ -38,9 +46,7 @@ export const PluginStateBadge: Component<PluginStateBadgeProps> = (props) => {
         class={cn('text-xs font-medium text-destructive', local.class)}
         {...others}
       >
-        {isIncompatible()
-          ? t('plugin.stateIncompatible')
-          : t('plugin.stateFailed')}
+        {label()}
       </CombinedTooltip>
     </Show>
   );
