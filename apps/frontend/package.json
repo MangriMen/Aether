@@ -2,7 +2,6 @@
   "name": "@aether/frontend",
   "version": "0.10.5",
   "description": "",
-  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "vite build",
