@@ -8,6 +8,8 @@ import { Image } from '@/shared/ui';
 import type { Plugin } from '..';
 
 import { PluginApiCompatibilityBadge } from './PluginApiCompatibilityBadge';
+import { PluginSourceBadge } from './PluginSourceBadge';
+import { PluginStateBadge } from './PluginStateBadge';
 import { PluginUpdateBadge } from './PluginUpdateBadge';
 
 export type PluginCardBaseProps = {
@@ -57,6 +59,8 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
             apiVersion={local.plugin.manifest.api.version}
           />
           <PluginUpdateBadge plugin={local.plugin} />
+          <PluginStateBadge plugin={local.plugin} />
+          <PluginSourceBadge class='text-sm' verified={local.plugin.verified} />
         </span>
         <span class='w-full truncate'>{metadata().description}</span>
         <span class='font-medium w-full truncate'>{authors()}</span>

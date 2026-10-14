@@ -24,6 +24,8 @@ export const PluginDetailsInfo: Component<PluginDetailsInfoProps> = (props) => {
         name={metadata().name}
         version={metadata().version}
         apiVersion={local.plugin.manifest.api.version}
+        verified={local.plugin.verified}
+        plugin={local.plugin}
         authors={authorsStr()}
         description={metadata().description}
       />

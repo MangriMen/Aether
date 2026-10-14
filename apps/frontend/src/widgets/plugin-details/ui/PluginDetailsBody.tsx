@@ -12,15 +12,10 @@ import { PLUGIN_DETAILS_TABS, PluginDetailsTabs } from '../model';
 
 export type PluginDetailsBodyProps = TabsProps & {
   plugin: Plugin;
-  isSettingsDisabled?: boolean;
 };
 
 export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'plugin',
-    'isSettingsDisabled',
-    'class',
-  ]);
+  const [local, others] = splitProps(props, ['plugin', 'class']);
 
   const [{ t }] = useTranslation();
 
@@ -56,11 +51,7 @@ export const PluginDetailsBody: Component<PluginDetailsBodyProps> = (props) => {
             class='pl-1 flex flex-col overflow-hidden'
             value={tab.value}
           >
-            <Dynamic
-              component={tab.component}
-              plugin={local.plugin}
-              isSettingsDisabled={local.isSettingsDisabled}
-            />
+            <Dynamic component={tab.component} plugin={local.plugin} />
           </TabsContent>
         )}
       </For>

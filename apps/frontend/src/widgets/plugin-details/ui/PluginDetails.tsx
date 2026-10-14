@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/solid-query';
 import {
-  createMemo,
   onMount,
   splitProps,
   type Component,
@@ -24,11 +23,6 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
 
   const queryClient = useQueryClient();
 
-  const isSettingsDisabled = createMemo(() => {
-    const state = local.plugin.state;
-    return state === 'Loaded' || state === 'Loading' || state === 'Unloading';
-  });
-
   const pluginId = () => local.plugin.manifest.metadata.id;
 
   onMount(() => pluginsCache.prefetch.settings(queryClient, pluginId()));
@@ -45,11 +39,7 @@ export const PluginDetails: Component<PluginDetailsProps> = (props) => {
 
       <Separator />
 
-      <PluginDetailsBody
-        class='ml-4'
-        plugin={local.plugin}
-        isSettingsDisabled={isSettingsDisabled()}
-      />
+      <PluginDetailsBody class='ml-4' plugin={local.plugin} />
     </div>
   );
 };

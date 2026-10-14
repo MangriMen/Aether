@@ -9,6 +9,8 @@ import { cn } from '@/shared/lib';
 
 import type { AllowedItemProps } from '../model';
 
+import { AllowedTruncatedText } from './AllowedTruncatedText';
+
 export type AllowedHostProps = ComponentProps<'div'> &
   AllowedItemProps<string, string>;
 
@@ -29,12 +31,12 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
           flex items-center justify-between select-none
         '
       >
-        <span>{local.value}</span>
+        <AllowedTruncatedText value={local.value} />
         <Show when={local.leadingItems}>
           {(leadingItems) => (
             <div
               class='
-                flex items-center opacity-0 transition-opacity
+                flex shrink-0 items-center opacity-0 transition-opacity
                 group-hover:opacity-100
               '
             >

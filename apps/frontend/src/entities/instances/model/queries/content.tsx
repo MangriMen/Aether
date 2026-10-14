@@ -8,10 +8,11 @@ import { type Accessor } from 'solid-js';
 
 import type { PartialBy } from '@/shared/model';
 
+import { SettingsTab, useSettingsSearchParams } from '@/entities/settings';
 import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { isLauncherError, useTranslation } from '@/shared/model';
 import { useFeatureFlagsStore } from '@/shared/model/featureFlags';
-import { showToast } from '@/shared/ui';
+import { Button, showToast } from '@/shared/ui';
 
 import type { ContentGetParams, ContentListVersionParams, Instance } from '..';
 import type {
@@ -121,10 +122,16 @@ export const useRemoveContents = () => {
   }));
 };
 
+const isProviderNotChosen = (err: unknown) =>
+  isLauncherError(err) &&
+  err.type === 'instance' &&
+  err.payload.code === 'PLATFORM_PROVIDER_NOT_CHOSEN';
+
 export const useInstallContent = () => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
   const [ff] = useFeatureFlagsStore();
+  const settingsParams = useSettingsSearchParams();
 
   return useMutation(() => ({
     mutationFn: (payload: ContentInstallParamsDto) => {
@@ -156,6 +163,14 @@ export const useInstallContent = () => {
         title: t('content.failedToInstall'),
         err,
         t,
+        action: isProviderNotChosen(err) ? (
+          <Button
+            size='sm'
+            onClick={() => settingsParams.open(SettingsTab.ContentProviders)}
+          >
+            {t('settings.contentProviders.choose')}
+          </Button>
+        ) : undefined,
       });
     },
   }));

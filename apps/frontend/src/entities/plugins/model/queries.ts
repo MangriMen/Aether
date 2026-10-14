@@ -1,9 +1,15 @@
 import type { Accessor } from 'solid-js';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
 
 import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { isLauncherError, useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
 
 import type { EditPluginSettingsDto } from '../api';
 import type { PluginId } from './pluginManifest';
@@ -42,21 +48,43 @@ export const useSyncPlugins = () => {
   }));
 };
 
-export const useEnablePlugin = () => {
+export const isIncompatibleApiVersionError = (err: unknown): boolean =>
+  isLauncherError(err) &&
+  err.type === 'plugin' &&
+  err.payload.code === 'INCOMPATIBLE_API_VERSION';
+
+/**
+ * The core refuses to enable a plugin with a reason (hash mismatch, missing host function, id
+ * clash...); it is shown here. A caller that offers to force-enable on an incompatible API
+ * version says so with `offersForceEnable`, and that refusal is left to its dialog.
+ */
+export const useEnablePlugin = (options?: { offersForceEnable?: boolean }) => {
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
     mutationFn: pluginsCommands.enable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
+    onError: (err) => {
+      if (options?.offersForceEnable && isIncompatibleApiVersionError(err)) {
+        return;
+      }
+
+      showError({ title: t('plugin.enableError'), err, t });
+    },
   }));
 };
 
 export const useForceEnablePlugin = () => {
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
     mutationFn: pluginsCommands.forceEnable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
+    onError: (err) => {
+      showError({ title: t('plugin.enableError'), err, t });
+    },
   }));
 };
 
@@ -67,6 +95,46 @@ export const useDisablePlugin = () => {
     mutationFn: pluginsCommands.disable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
   }));
+};
+
+/**
+ * Restarts a running plugin, so that changed folders take effect. A busy plugin refuses
+ * (`Busy`) and the refusal is shown, not retried. Attempts share one mutation key so that
+ * {@link useLastPluginReload} can show a refusal from another button.
+ */
+export const useReloadPlugin = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationKey: pluginKeys.reloadAll(),
+    mutationFn: (id: PluginId) => pluginsCommands.reload(id),
+    onSettled: (_, __, id) => pluginsCache.invalidate.state(queryClient, id),
+    onError: (err) => {
+      showError({ title: t('plugin.restartFailed'), err, t });
+    },
+  }));
+};
+
+/**
+ * The last restart of the plugin, from whichever button asked for it: `undefined` before any.
+ * `submittedAt` lets the caller ignore an attempt that predates what it is showing.
+ */
+export const useLastPluginReload = (id: Accessor<PluginId>) => {
+  const states = useMutationState(() => ({
+    filters: { mutationKey: pluginKeys.reloadAll() },
+    select: (mutation) => ({
+      id: mutation.state.variables,
+      status: mutation.state.status,
+      error: mutation.state.error,
+      submittedAt: mutation.state.submittedAt,
+    }),
+  }));
+
+  return () =>
+    states()
+      .filter((state) => state.id === id())
+      .at(-1);
 };
 
 export const useEditPluginSettings = () => {
@@ -81,11 +149,9 @@ export const useEditPluginSettings = () => {
       id: string;
       editSettings: EditPluginSettingsDto;
     }) => pluginsCommands.editSettings(id, editSettings),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: pluginKeys.settings(variables.id),
-      });
-    },
+    // A running plugin may now need a restart, which its state carries.
+    onSuccess: (_, variables) =>
+      pluginsCache.invalidate.state(queryClient, variables.id),
     onError: (err, variables) => {
       const plugin = pluginsCache.getData.fromList(queryClient, variables.id);
 
@@ -98,6 +164,91 @@ export const useEditPluginSettings = () => {
         title: t('pluginSettings.failedToUpdateSettings', {
           name,
         }),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+/**
+ * Gives a plugin read access to the folder of a file the user named for it. With `dryRun` nothing
+ * changes: the answer says whether the plugin lacks the folder (`needed`), so the user is asked
+ * only then. The plugin restarts to see the folder, so a busy plugin refuses and the user retries
+ * later.
+ */
+export const useGrantPluginFolderAccess = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      id,
+      filePath,
+      dryRun,
+    }: {
+      id: PluginId;
+      filePath: string;
+      dryRun: boolean;
+    }) => pluginsCommands.grantFolderAccess(id, filePath, dryRun),
+    onSuccess: (access, variables) => {
+      if (access.type !== 'granted') {
+        return;
+      }
+
+      pluginsCache.invalidate.state(queryClient, variables.id);
+
+      showToast({
+        title: t('pluginSettings.folderAccessGranted'),
+        description: access.folder,
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('pluginSettings.folderAccessFailed'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+/**
+ * Lets a plugin reach the host of a URL the user gave it. With `dryRun` nothing changes: the
+ * answer says whether the plugin lacks the host (`needed`), so the user is asked only then. No
+ * restart: the plugin's requests read its hosts on every call.
+ */
+export const useGrantPluginHostAccess = () => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      id,
+      url,
+      dryRun,
+    }: {
+      id: PluginId;
+      url: string;
+      dryRun: boolean;
+    }) => pluginsCommands.grantHostAccess(id, url, dryRun),
+    onSuccess: (access, variables) => {
+      if (access.type !== 'granted') {
+        return;
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: pluginKeys.settings(variables.id),
+      });
+
+      showToast({
+        title: t('pluginSettings.hostAccessGranted'),
+        description: access.host,
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('pluginSettings.hostAccessFailed'),
         err,
         t,
       });

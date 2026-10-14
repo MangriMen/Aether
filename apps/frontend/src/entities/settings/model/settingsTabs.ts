@@ -4,6 +4,7 @@ export const SettingsTab = {
   DefaultInstanceSettings: 'defaultInstanceSettings',
   Update: 'update',
   Plugins: 'plugins',
+  ContentProviders: 'contentProviders',
   Experimental: 'experimental',
 } as const;
 

@@ -1,14 +1,9 @@
-import {
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { useEditPluginSettings, usePluginSettings } from '@/entities/plugins';
 import { PluginSettingsForm } from '@/features/plugin-settings-form';
+import { PluginRestartNotice } from '@/features/restart-plugin-button';
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
 
 import type { PluginDetailsTabProps } from '../model';
 
@@ -18,13 +13,7 @@ export type PluginSettingsTabProps = ComponentProps<'div'> &
   PluginDetailsTabProps;
 
 export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
-  const [local, others] = splitProps(props, [
-    'plugin',
-    'isSettingsDisabled',
-    'class',
-  ]);
-
-  const [{ t }] = useTranslation();
+  const [local, others] = splitProps(props, ['plugin', 'class']);
 
   const pluginSettings = usePluginSettings(
     () => local.plugin.manifest.metadata.id,
@@ -39,25 +28,14 @@ export const PluginSettingsTab: Component<PluginSettingsTabProps> = (props) => {
 
   return (
     <div
-      class={cn(
-        'flex grow flex-col overflow-y-auto',
-        {
-          'text-muted-foreground': local.isSettingsDisabled,
-        },
-        local.class,
-      )}
+      class={cn('gap-2 flex grow flex-col overflow-y-auto', local.class)}
       {...others}
     >
-      <Show when={local.isSettingsDisabled}>
-        <span class='text-xl/10 font-medium brightness-125'>
-          {t('plugins.disableToChangeSettings')}
-        </span>
-      </Show>
+      <PluginRestartNotice plugin={local.plugin} />
       <PluginSettingsForm
         runtimeConfig={local.plugin.manifest.runtime}
         initialValues={initialValues}
         onChangePartial={onChangePartial}
-        disabled={local.isSettingsDisabled}
       />
     </div>
   );

@@ -17,7 +17,6 @@ import {
 import { AllowedHost } from './AllowedHost';
 import { AllowedHostsCustomItems } from './AllowedHostsCustomItems';
 import { AllowedItems } from './AllowedItems';
-import { AllowedPath } from './AllowedPath';
 import { AllowedPathsCustomItems } from './AllowedPathsCustomItems';
 import { FixedItemsList } from './FixedItemsList';
 
@@ -75,16 +74,10 @@ export const PluginSettingsForm: Component<PluginSettingsFormProps> = (
             />
           }
         />
+        {/* No fixed folders from the manifest: the core does not mount `runtime.allowedPaths`,
+            so listing them would show access the plugin does not have. */}
         <AllowedItems
           label={t('plugins.allowedPaths')}
-          fixedItems={
-            local.runtimeConfig.allowedPaths?.length ? (
-              <FixedItemsList
-                items={local.runtimeConfig.allowedPaths}
-                item={AllowedPath}
-              />
-            ) : undefined
-          }
           customItems={
             <AllowedPathsCustomItems
               form={form}

@@ -20,7 +20,11 @@ export const pluginSettingsValuesToEditPluginSettings = (
   }
 
   if (values.allowedPaths !== undefined) {
-    dto.allowedPaths = [...values.allowedPaths];
+    // A folder is read-only unless the user said otherwise.
+    dto.allowedPaths = values.allowedPaths.map((path) => ({
+      ...path,
+      readOnly: path.readOnly ?? true,
+    }));
   }
 
   return dto;

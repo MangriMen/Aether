@@ -1,14 +1,26 @@
 import { Show, type Component } from 'solid-js';
 
-import { PluginApiCompatibilityBadge } from '@/entities/plugins';
+import {
+  PluginApiCompatibilityBadge,
+  PluginSourceBadge,
+} from '@/entities/plugins';
 import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+
+import type { Plugin } from '../model/plugin';
+
+import { getTranslatedStateReason } from '../model/pluginState';
 
 export type PluginInfoHeaderProps = {
   name: string;
   version: string;
   apiVersion?: string | null;
+  /** Omit when verification does not apply (e.g. a not yet installed plugin). */
+  verified?: boolean;
   authors?: string | null;
   description?: string | null;
+  /** Installed plugin whose refusal reason (`Incompatible`/`Failed`) is shown. */
+  plugin?: Pick<Plugin, 'state' | 'state_reason'>;
   class?: string;
 };
 
@@ -18,6 +30,24 @@ export type PluginInfoHeaderProps = {
  * alongside an image/icon.
  */
 export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
+  const [{ t }] = useTranslation();
+
+  const refusal = () => {
+    const state = props.plugin?.state;
+
+    if (state !== 'Incompatible' && state !== 'Failed') {
+      return null;
+    }
+
+    return {
+      title:
+        state === 'Incompatible'
+          ? t('plugin.stateIncompatible')
+          : t('plugin.stateFailed'),
+      reason: getTranslatedStateReason(props.plugin?.state_reason ?? null, t),
+    };
+  };
+
   return (
     <div class={cn('flex flex-col', props.class)}>
       {/* Title + version + badge */}
@@ -31,8 +61,19 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
               apiVersion={props.apiVersion!}
             />
           </Show>
+          <Show when={props.verified !== undefined}>
+            <PluginSourceBadge class='mb-0.75' verified={props.verified!} />
+          </Show>
         </div>
       </div>
+      {/* Why the core refused to run the plugin */}
+      <Show when={refusal()}>
+        {(r) => (
+          <span class='text-sm text-destructive wrap-break-word'>
+            {r().title}: {r().reason}
+          </span>
+        )}
+      </Show>
       {/* Authors */}
       <Show when={props.authors}>
         <div class='gap-4 flex'>

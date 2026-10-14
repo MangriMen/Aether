@@ -1,6 +1,7 @@
 import IconMdiBrush from '~icons/mdi/brush-variant';
 import IconMdiCoffeeOutline from '~icons/mdi/coffee-outline';
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
+import IconMdiPackageVariant from '~icons/mdi/package-variant';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
 import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
@@ -11,6 +12,7 @@ import type { SettingsPaneProps } from '@/shared/ui';
 import { SettingsTab } from '@/entities/settings';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
+import { ContentProvidersPane } from '../ui/ContentProvidersPane/ContentProvidersPane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import { JavaPane } from '../ui/JavaPane/JavaPane';
@@ -41,6 +43,12 @@ export const SETTINGS_TABS_DEFINITION = [
     label: 'plugins',
     icon: IconMdiPuzzle,
     component: PluginsPane,
+  },
+  {
+    value: SettingsTab.ContentProviders,
+    label: 'contentProviders',
+    icon: IconMdiPackageVariant,
+    component: ContentProvidersPane,
   },
   {
     value: SettingsTab.Update,

@@ -14,6 +14,7 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedTextField, CombinedTooltip, IconButton } from '@/shared/ui';
 
+import { useEnsurePluginAccess } from '../lib';
 import {
   ImportInstanceSchema,
   type ImportInstanceSchemaOutput,
@@ -45,8 +46,16 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   });
 
   const importInstance = useImportInstance();
+  const ensurePluginAccess = useEnsurePluginAccess();
 
-  const handleSubmit = (values: ImportInstanceSchemaOutput) => {
+  const handleSubmit = async (values: ImportInstanceSchemaOutput) => {
+    // The importer reads the file or downloads the URL: the plugin needs the folder or the host
+    // first, and the user's yes for it. A path typed by hand is asked about just like a picked
+    // one; a no, or a failed grant, starts no import.
+    if (!(await ensurePluginAccess(local.pluginId, values.path))) {
+      return;
+    }
+
     const dto: ImportInstance = {
       pluginId: local.pluginId,
       importerId: local.importer.id,
@@ -66,13 +75,18 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
 
     if (file) {
       setInput(form, { path: ['path'], input: file });
+
+      // Asked right after the pick, while the user knows which file it was: the plugin is to
+      // read the folder it lies in, which also holds the rest of the pack. A no is asked again
+      // on submit.
+      void ensurePluginAccess(local.pluginId, file);
     }
   };
 
   return (
     <Form
       of={form}
-      class={cn('flex h-full grow flex-col', local.class)}
+      class={cn('gap-4 flex h-full grow flex-col', local.class)}
       onSubmit={handleSubmit}
       {...others}
     >

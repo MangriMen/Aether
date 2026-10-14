@@ -40,7 +40,7 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
             <ImportInstanceView
               importers={importers()}
               footerButtons={
-                <DialogFooter class='mt-auto'>
+                <DialogFooter>
                   <Button type='submit'>{t('createInstance.import')}</Button>
                   <Button
                     variant='secondary'

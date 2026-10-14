@@ -8,4 +8,6 @@ export const pluginKeys = {
   updates: (id: string) => [...pluginKeys.all, 'updates', id] as const,
   preview: (identifier: string) =>
     [...pluginKeys.all, 'preview', identifier] as const,
+  /** Mutation key of every restart: the plugin is the mutation's variable. */
+  reloadAll: () => [...pluginKeys.all, 'reload'] as const,
 } as const;

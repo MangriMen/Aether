@@ -1,7 +1,7 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import {
-  createEffect,
+  untrack,
   createSignal,
   splitProps,
   type Component,
@@ -12,15 +12,20 @@ import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
   Button,
+  Checkbox,
   CombinedTextField,
   CombinedTooltip,
   IconButton,
 } from '@/shared/ui';
 
-import type { EditAllowedItemProps } from '../model';
+import type {
+  AllowedPathErrors,
+  AllowedPathValue,
+  EditAllowedItemProps,
+} from '../model';
 
 export type EditAllowedPathProps = ComponentProps<'div'> &
-  EditAllowedItemProps<[string, string], [string, string]>;
+  EditAllowedItemProps<AllowedPathValue, AllowedPathErrors>;
 
 export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -33,11 +38,19 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const [src, setSrc] = createSignal('');
-  const [dest, setDest] = createSignal('');
+  // Taken once: the form re-renders its value on every change, which would overwrite the
+  // input the user is typing.
+  const initial = untrack(() => local.value);
+  const [src, setSrc] = createSignal(initial?.hostPath ?? '');
+  const [dest, setDest] = createSignal(initial?.pluginPath ?? '');
+  const [readOnly, setReadOnly] = createSignal(initial?.readOnly ?? true);
 
   const handleSubmit = () => {
-    local.onSave?.([src(), dest()]);
+    local.onSave?.({
+      hostPath: src(),
+      pluginPath: dest(),
+      readOnly: readOnly(),
+    });
   };
 
   const handleBrowse = async () => {
@@ -51,11 +64,6 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
       setDest(file);
     }
   };
-
-  createEffect(() => {
-    setSrc(local.value?.[0] ?? '');
-    setDest(local.value?.[1] ?? '');
-  });
 
   return (
     <div
@@ -71,7 +79,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         }}
         value={src()}
         onChange={setSrc}
-        errorMessage={local.error?.[0]}
+        errorMessage={local.error?.hostPath}
         trailingIcons={
           <div class='mr-1 flex h-full items-center justify-center'>
             <CombinedTooltip
@@ -99,7 +107,13 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         }}
         value={dest()}
         onChange={setDest}
-        errorMessage={local.error?.[1]}
+        errorMessage={local.error?.pluginPath}
+      />
+      <Checkbox
+        class='h-8 shrink-0 text-sm'
+        label={t('pluginSettings.readOnly')}
+        checked={readOnly()}
+        onChange={setReadOnly}
       />
       <Button size='sm' onClick={handleSubmit}>
         {t('common.ok')}
