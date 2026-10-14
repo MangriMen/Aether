@@ -479,6 +479,7 @@ mod tests {
     // ── from_wasi_path tests ──
 
     #[test]
+    #[cfg(windows)]
     fn should_convert_from_wasi_path_when_it_names_a_drive_and_a_file() {
         assert_eq!(
             from_wasi_path("/mnt/d/Documents/Minecraft/Test/simple/pack.toml"),
@@ -487,6 +488,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn should_convert_from_wasi_path_when_it_names_only_a_drive() {
         assert_eq!(from_wasi_path("/mnt/c"), r"C:\");
         assert_eq!(from_wasi_path("/mnt/D"), r"D:\");
@@ -511,6 +513,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn should_roundtrip_when_converted_to_wasi_and_back() {
         let original = r"D:\Documents\Minecraft\Test\simple\pack.toml";
         let wasi = to_wasi_path(original);
