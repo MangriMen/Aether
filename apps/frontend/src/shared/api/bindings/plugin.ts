@@ -18,7 +18,6 @@ export const commands = {
 	 *  the middle of a call refuses with `Busy` and goes on as it was.
 	 */
 	reload: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|reload", { id, requestId }),
-	call: (id: string, data: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|call", { id, data, requestId }),
 	getSettings: (id: string) => __TAURI_INVOKE<{
 	allowedHosts?: string[],
 	allowedPaths?: AllowedPathDto[],
