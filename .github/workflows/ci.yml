@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  frontend:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint and types
+        run: bun run lint
+
+      - name: Test
+        working-directory: apps/frontend
+        run: bun x vitest run
+
+  rust:
+    runs-on: ubuntu-22.04
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "aether-ci-cache"
+          workspaces: "./ -> target"
+
+      # tauri's build script expects the frontend dist directory to exist
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build frontend
+        run: bun run frontend:build
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --locked --no-default-features --features sqlite,rustls
+
+      - name: Create database and run migrations
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          sqlx db create
+          (cd packages/core/aether-core && sqlx migrate run)
+          (cd apps/desktop && sqlx migrate run)
+
+      - name: cargo sqlx prepare --check
+        env:
+          SQLX_OFFLINE: "false"
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          (cd packages/core/aether-core && cargo sqlx prepare --check -- --all-targets)
+          (cd apps/desktop && cargo sqlx prepare --check -- --all-targets)
