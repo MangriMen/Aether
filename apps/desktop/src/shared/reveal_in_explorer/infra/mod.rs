@@ -12,9 +12,10 @@ pub fn reveal_in_explorer(path: &Path, exact: bool) -> crate::Result<()> {
 
         #[cfg(not(target_os = "windows"))]
         {
-            let parent_folder = match path.is_file() {
-                true => path.parent().unwrap().to_path_buf(),
-                false => path.to_path_buf(),
+            let parent_folder = if path.is_file() {
+                path.parent().unwrap().to_path_buf()
+            } else {
+                path.to_path_buf()
             };
 
             Ok(open::that(parent_folder)?)
