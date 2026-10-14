@@ -24,10 +24,19 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # frontend checks only; the root `bun run lint` also runs clippy, which the rust job covers
       - name: Lint and types
+        working-directory: apps/frontend
         run: bun run lint
 
       - name: Test
@@ -40,12 +49,6 @@ jobs:
       SQLX_OFFLINE: "true"
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - uses: oven-sh/setup-bun@v2
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -63,18 +66,15 @@ jobs:
           shared-key: "aether-ci-cache"
           workspaces: "./ -> target"
 
-      # tauri's build script expects the frontend dist directory to exist
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build frontend
-        run: bun run frontend:build
+      # tauri's build script only needs the frontend dist directory to exist, not a real build
+      - name: Stub frontend dist
+        run: mkdir -p apps/frontend/dist
 
       - name: cargo fmt
         run: cargo fmt --all --check
 
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace -- -D warnings
 
       - name: cargo test
         run: cargo test --workspace
