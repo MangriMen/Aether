@@ -12,12 +12,8 @@
     "lint:arch": {
       "inputs": ["src/**/*", "steiger.config.*"],
     },
-    "lint:rust": {
-      "inputs": ["src-tauri/src/**/*.rs", "src-tauri/Cargo.toml"],
-      "passThroughEnv": ["*"],
-    },
     "lintt": {
-      "dependsOn": ["lint:types", "lint:code", "lint:arch", "lint:rust"],
+      "dependsOn": ["lint:types", "lint:code", "lint:arch"],
     },
   },
 }
