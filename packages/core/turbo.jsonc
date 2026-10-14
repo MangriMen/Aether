@@ -2,7 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
-    "lintt": {
+    "lint:all": {
       "inputs": ["**/src/**/*.rs", "**/Cargo.toml", "$TURBO_ROOT$/Cargo.lock"],
     },
   },
