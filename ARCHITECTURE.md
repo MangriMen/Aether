@@ -83,7 +83,7 @@ Improper re-exports break architectural boundaries and ruin automated linting.
 1. **Do not bloat the tree**: Prioritize code encapsulation. Add new DTOs, models, or adapters to existing files unless the high-density threshold or complexity exception in Rule 3 is fully met.
 2. **Respect Encapsulation**: Never reference `infra` types inside `domain` or `app` (except when writing the actual adapter implementations inside `infra/`). Cross-feature communication must happen exclusively by invoking another feature's public Use Cases or accessing explicitly exposed safe domain models.
 3. **UI Boundary DTOs**: DTO conversion for presentation layers (e.g., Tauri Commands delivering data to the frontend) must live at the boundary interface (the Tauri/API layer itself), separating presentation serializability from internal Rust core communication.
-4. **Code Comments**: Keep code comments to an absolute minimum. Use them only for complex algorithmic behavior or compiler workarounds. Code comments must be written strictly in English.
+4. **Code Comments**: Follow the rules in [section 8](#8-code-comments).
 
 ## 7. Testing Strategy & Guidelines
 
@@ -110,3 +110,14 @@ This section defines how the codebase must be covered by tests. These rules appl
 3. **Naming Convention**: Test names must explicitly state the expected outcome and condition using the following pattern:
    `should_[expect_behavior]_when_[condition]`
    _(Example: `should_fail_validation_when_username_is_empty`)_.
+
+## 8. Code Comments
+
+These rules apply equally to human developers and AI agents.
+
+1. **Explain why, not how.** A comment says what the code cannot: the reason for a decision, an invariant, a trap, what a check protects against. Never narrate what the code does or list the steps that the function already shows.
+2. **Security boundaries are the exception to minimalism.** On a sandbox limit, allowlist, path or URL check, say what it guards against and what would break if it were loosened.
+3. **Keep them short.** Usually one to three lines. A doc comment states the contract (what the caller may rely on), not the implementation. Add `///` to a public item only when its name and types do not already say it. Module-level `//!` is for the non-obvious flow or invariants of the module as a whole.
+4. **No task, ticket, finding or question numbers.** `T-1.2`, `F-49`, `Q17` and the like go stale and point nowhere once the planning documents are gone. If the reason matters, write the reason; the link to the task belongs in the commit message or the pull request.
+5. **Do not leave history in code.** Not "was changed from X", not "temporary until Y" without a concrete condition. Describe the code as it is now.
+6. **English only.**
