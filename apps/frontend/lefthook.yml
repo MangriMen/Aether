@@ -2,20 +2,20 @@ pre-commit:
   parallel: true
 
   jobs:
-    - name: desktop:types
-      root: 'apps/desktop'
+    - name: frontend:types
+      root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:types
       stage_fixed: true
 
-    - name: desktop:eslint
-      root: 'apps/desktop'
+    - name: frontend:eslint
+      root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx,css}'
       run: bun run lint:code .
       stage_fixed: true
 
-    - name: desktop:arch
-      root: 'apps/desktop'
+    - name: frontend:arch
+      root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:arch
       stage_fixed: true
