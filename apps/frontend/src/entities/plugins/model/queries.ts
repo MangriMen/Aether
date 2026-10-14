@@ -171,6 +171,43 @@ export const useEditPluginSettings = () => {
   }));
 };
 
+/** Shared shape of the access grants: a `dryRun` changes nothing and only tells if it is `needed`. */
+const useGrantPluginAccess = <
+  Variables extends { id: PluginId; dryRun: boolean },
+  Access extends { type: string },
+>(options: {
+  grant: (variables: Variables) => Promise<Access>;
+  onGranted: (
+    access: Extract<Access, { type: 'granted' }>,
+    id: PluginId,
+    queryClient: ReturnType<typeof useQueryClient>,
+  ) => Parameters<typeof showToast>[0];
+  failedTitle: string | undefined;
+}) => {
+  const [{ t }] = useTranslation();
+  const queryClient = useQueryClient();
+
+  return useMutation(() => ({
+    mutationFn: options.grant,
+    onSuccess: (access, variables) => {
+      if (access.type !== 'granted') {
+        return;
+      }
+
+      showToast(
+        options.onGranted(
+          access as Extract<Access, { type: 'granted' }>,
+          variables.id,
+          queryClient,
+        ),
+      );
+    },
+    onError: (err) => {
+      showError({ title: options.failedTitle, err, t });
+    },
+  }));
+};
+
 /**
  * Gives a plugin read access to the folder of a file the user named for it. With `dryRun` nothing
  * changes: the answer says whether the plugin lacks the folder (`needed`), so the user is asked
@@ -179,10 +216,9 @@ export const useEditPluginSettings = () => {
  */
 export const useGrantPluginFolderAccess = () => {
   const [{ t }] = useTranslation();
-  const queryClient = useQueryClient();
 
-  return useMutation(() => ({
-    mutationFn: ({
+  return useGrantPluginAccess({
+    grant: ({
       id,
       filePath,
       dryRun,
@@ -191,26 +227,16 @@ export const useGrantPluginFolderAccess = () => {
       filePath: string;
       dryRun: boolean;
     }) => pluginsCommands.grantFolderAccess(id, filePath, dryRun),
-    onSuccess: (access, variables) => {
-      if (access.type !== 'granted') {
-        return;
-      }
+    onGranted: (access, id, queryClient) => {
+      pluginsCache.invalidate.state(queryClient, id);
 
-      pluginsCache.invalidate.state(queryClient, variables.id);
-
-      showToast({
+      return {
         title: t('pluginSettings.folderAccessGranted'),
         description: access.folder,
-      });
+      };
     },
-    onError: (err) => {
-      showError({
-        title: t('pluginSettings.folderAccessFailed'),
-        err,
-        t,
-      });
-    },
-  }));
+    failedTitle: t('pluginSettings.folderAccessFailed'),
+  });
 };
 
 /**
@@ -220,10 +246,9 @@ export const useGrantPluginFolderAccess = () => {
  */
 export const useGrantPluginHostAccess = () => {
   const [{ t }] = useTranslation();
-  const queryClient = useQueryClient();
 
-  return useMutation(() => ({
-    mutationFn: ({
+  return useGrantPluginAccess({
+    grant: ({
       id,
       url,
       dryRun,
@@ -232,28 +257,16 @@ export const useGrantPluginHostAccess = () => {
       url: string;
       dryRun: boolean;
     }) => pluginsCommands.grantHostAccess(id, url, dryRun),
-    onSuccess: (access, variables) => {
-      if (access.type !== 'granted') {
-        return;
-      }
+    onGranted: (access, id, queryClient) => {
+      queryClient.invalidateQueries({ queryKey: pluginKeys.settings(id) });
 
-      queryClient.invalidateQueries({
-        queryKey: pluginKeys.settings(variables.id),
-      });
-
-      showToast({
+      return {
         title: t('pluginSettings.hostAccessGranted'),
         description: access.host,
-      });
+      };
     },
-    onError: (err) => {
-      showError({
-        title: t('pluginSettings.hostAccessFailed'),
-        err,
-        t,
-      });
-    },
-  }));
+    failedTitle: t('pluginSettings.hostAccessFailed'),
+  });
 };
 
 export const useOpenPluginFolder = () => {

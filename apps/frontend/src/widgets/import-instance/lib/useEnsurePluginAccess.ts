@@ -83,17 +83,30 @@ export const useEnsurePluginAccess = () => {
     pluginsCache.getData.fromList(queryClient, id)?.manifest.metadata.name ??
     id;
 
-  const ensureHost = async (id: PluginId, url: string) => {
-    const access = await grantHostAccess.mutateAsync({ id, url, dryRun: true });
+  const ensureAccess = async <Access extends { type: string }>(
+    id: PluginId,
+    grant: (dryRun: boolean) => Promise<Access>,
+    subjectOf: (
+      access: Extract<Access, { type: 'needed' }>,
+    ) => Record<string, string>,
+    keyPrefix: 'host' | 'folder',
+  ) => {
+    const access = await grant(true);
 
     if (access.type !== 'needed') {
       return true;
     }
 
-    const texts = { name: pluginName(id), host: access.host };
+    const texts = {
+      name: pluginName(id),
+      ...subjectOf(access as Extract<Access, { type: 'needed' }>),
+    };
     const allowed = await askUser({
-      header: t('pluginSettings.hostAccessConfirmTitle', texts),
-      description: t('pluginSettings.hostAccessConfirmDescription', texts),
+      header: t(`pluginSettings.${keyPrefix}AccessConfirmTitle`, texts),
+      description: t(
+        `pluginSettings.${keyPrefix}AccessConfirmDescription`,
+        texts,
+      ),
       allow: t('pluginSettings.accessConfirmAllow'),
       deny: t('pluginSettings.accessConfirmDeny'),
     });
@@ -102,36 +115,25 @@ export const useEnsurePluginAccess = () => {
       return false;
     }
 
-    await grantHostAccess.mutateAsync({ id, url, dryRun: false });
+    await grant(false);
     return true;
   };
 
-  const ensureFolder = async (id: PluginId, filePath: string) => {
-    const access = await grantFolderAccess.mutateAsync({
+  const ensureHost = (id: PluginId, url: string) =>
+    ensureAccess(
       id,
-      filePath,
-      dryRun: true,
-    });
+      (dryRun) => grantHostAccess.mutateAsync({ id, url, dryRun }),
+      (access) => ({ host: access.host }),
+      'host',
+    );
 
-    if (access.type !== 'needed') {
-      return true;
-    }
-
-    const texts = { name: pluginName(id), folder: access.folder };
-    const allowed = await askUser({
-      header: t('pluginSettings.folderAccessConfirmTitle', texts),
-      description: t('pluginSettings.folderAccessConfirmDescription', texts),
-      allow: t('pluginSettings.accessConfirmAllow'),
-      deny: t('pluginSettings.accessConfirmDeny'),
-    });
-
-    if (!allowed) {
-      return false;
-    }
-
-    await grantFolderAccess.mutateAsync({ id, filePath, dryRun: false });
-    return true;
-  };
+  const ensureFolder = (id: PluginId, filePath: string) =>
+    ensureAccess(
+      id,
+      (dryRun) => grantFolderAccess.mutateAsync({ id, filePath, dryRun }),
+      (access) => ({ folder: access.folder }),
+      'folder',
+    );
 
   const ensure = async (id: PluginId, value: string): Promise<boolean> => {
     const target = pluginAccessTargetOf(value);

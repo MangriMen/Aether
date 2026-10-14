@@ -219,14 +219,6 @@ pub(crate) fn plugin_path_to_host(
     Ok(host_path)
 }
 
-pub(crate) fn plugin_path_to_host_from_path(
-    id: &str,
-    path: &Path,
-    location_info: &LocationInfo,
-) -> Result<PathBuf, PluginError> {
-    plugin_path_to_host(id, path.to_string_lossy().as_ref(), location_info)
-}
-
 /// The host file behind `plugin_path`, a file in the plugin's own `/cache` for the core to read
 /// (such as the overrides of an install plan).
 ///
@@ -372,7 +364,7 @@ fn resolve_required_current_dir(
 ) -> Result<PathBuf, PluginError> {
     let current_dir = current_dir.ok_or_else(|| access_violation(id, "<no current_dir>"))?;
 
-    let resolved = plugin_path_to_host_from_path(id, current_dir, location_info)?;
+    let resolved = plugin_path_to_host(id, current_dir.to_string_lossy().as_ref(), location_info)?;
     let canonical = canonicalize_or_deny(id, &resolved)?;
 
     let is_mounted = get_default_allowed_paths(location_info, id)
@@ -413,16 +405,6 @@ pub(crate) fn plugin_command_to_host(
         current_dir: Some(resolved_current_dir),
         env: Some(isolated_env()),
     })
-}
-
-pub(crate) fn log_level_from_u32(level: u32) -> log::Level {
-    match level {
-        1 => log::Level::Error,
-        2 => log::Level::Warn,
-        3 => log::Level::Info,
-        4 => log::Level::Debug,
-        _ => log::Level::Trace,
-    }
 }
 
 #[cfg(test)]

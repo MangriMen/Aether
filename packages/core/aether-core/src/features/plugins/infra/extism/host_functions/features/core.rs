@@ -38,11 +38,21 @@ pub(crate) const COMMAND_TIMEOUT: Duration = Duration::from_mins(15);
 
 // ── Testable business logic ──
 
+fn log_level_from_u32(level: u32) -> log::Level {
+    match level {
+        1 => log::Level::Error,
+        2 => log::Level::Warn,
+        3 => log::Level::Info,
+        4 => log::Level::Debug,
+        _ => log::Level::Trace,
+    }
+}
+
 /// Handle `log` — forward a log message from the plugin.
 pub(crate) fn handle_log(plugin_id: &str, level: u32, msg: &str) {
     log::log!(
         target: "plugin",
-        plugin_utils::log_level_from_u32(level),
+        log_level_from_u32(level),
         "[{plugin_id}]: {msg}"
     );
 }
