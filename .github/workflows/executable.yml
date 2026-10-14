@@ -79,10 +79,9 @@ jobs:
           workspaces: "./ -> target"
 
       - name: install frontend dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: build and publish tauri app
-        if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,5 +94,6 @@ jobs:
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: ${{ github.ref_type == 'tag' && 'true' || 'false' }}
           prerelease: false
+          uploadWorkflowArtifacts: ${{ github.event_name == 'workflow_dispatch' }}
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
