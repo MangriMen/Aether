@@ -7,6 +7,5 @@ export * from './InstanceIcon';
 export * from './InstancePlayButton';
 export * from './InstanceStopButton';
 export * from './InstanceTitle';
-export * from './MemorySlider';
 export * from './RunningInstancesProvider';
 export * from './TimePlayed';

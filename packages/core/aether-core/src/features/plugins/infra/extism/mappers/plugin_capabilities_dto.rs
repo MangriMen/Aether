@@ -59,9 +59,10 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             search: v.search,
             get_content: v.get_content,
             list_version: v.list_version,
-            install_atomic: v.install_atomic,
-            install_modpack: v.install_modpack,
             check_compatibility: v.check_compatibility,
+            resolve_file: v.resolve_file,
+            resolve_install_plan: v.resolve_install_plan,
+            resolve_pack_metadata: v.resolve_pack_metadata,
         }
     }
 }
@@ -101,8 +102,7 @@ impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetada
     fn from(v: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: v.base.into(),
-            supports_install_atomic: v.supports_install_atomic,
-            supports_install_modpacks: v.supports_install_modpacks,
+            platform: v.platform,
         }
     }
 }

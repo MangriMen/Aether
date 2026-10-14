@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    fn should_find_exact_version() {
+    fn should_find_the_exact_version_when_it_is_in_the_list() {
         let manifest = make_manifest(vec![
             make_version("1.19"),
             make_version("1.20"),
@@ -96,7 +96,7 @@ mod tests {
     }
 
     #[test]
-    fn should_mark_threshold_version_as_updated() {
+    fn should_mark_the_version_as_updated_when_it_is_the_threshold() {
         let manifest = make_manifest(vec![
             make_version("1.19"),
             make_version("22w16a"),
@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn should_find_first_match_version() {
+    fn should_find_the_first_match_when_several_versions_match() {
         let manifest = make_manifest(vec![make_version("1.20"), make_version("1.20")]);
         let (version, _) = resolve_minecraft_version("1.20", &manifest).unwrap();
         assert_eq!(version.id, "1.20");

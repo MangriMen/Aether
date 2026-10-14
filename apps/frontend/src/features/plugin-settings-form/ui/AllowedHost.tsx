@@ -1,13 +1,11 @@
-import {
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 
 import type { AllowedItemProps } from '../model';
+
+import { AllowedItemLeadingItems } from './AllowedItemLeadingItems';
+import { AllowedTruncatedText } from './AllowedTruncatedText';
 
 export type AllowedHostProps = ComponentProps<'div'> &
   AllowedItemProps<string, string>;
@@ -29,19 +27,8 @@ export const AllowedHost: Component<AllowedHostProps> = (props) => {
           flex items-center justify-between select-none
         '
       >
-        <span>{local.value}</span>
-        <Show when={local.leadingItems}>
-          {(leadingItems) => (
-            <div
-              class='
-                flex items-center opacity-0 transition-opacity
-                group-hover:opacity-100
-              '
-            >
-              {leadingItems()}
-            </div>
-          )}
-        </Show>
+        <AllowedTruncatedText value={local.value} />
+        <AllowedItemLeadingItems items={local.leadingItems} />
       </div>
       <span class='text-destructive'>{local.error}</span>
     </div>

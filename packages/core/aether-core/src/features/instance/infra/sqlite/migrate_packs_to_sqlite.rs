@@ -18,8 +18,10 @@ pub async fn migrate_packs_to_sqlite(
             continue;
         };
 
-        let existing_sqlite = sqlite_storage.get_pack(instance_id).await;
-        if existing_sqlite.is_ok() {
+        // The pack row outlives its files, so a pack the user emptied is not migrated again.
+        // A failed lookup counts as migrated: leaving the legacy file unread is the safe side.
+        let already_migrated = sqlite_storage.has_pack(instance_id).await.unwrap_or(true);
+        if already_migrated {
             continue;
         }
 
@@ -58,4 +60,129 @@ pub async fn migrate_packs_to_sqlite(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use async_trait::async_trait;
+    use tempfile::TempDir;
+
+    use super::*;
+    use crate::features::{
+        instance::{Instance, InstanceBuilder, InstanceError, Pack, PackEntry, PackFile},
+        minecraft::ModLoader,
+        settings::LocationInfo,
+    };
+
+    struct MemInstanceStorage(Mutex<Vec<Instance>>);
+
+    #[async_trait]
+    impl InstanceStorage for MemInstanceStorage {
+        async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
+            Ok(self.0.lock().unwrap().clone())
+        }
+        async fn get(&self, _: &str) -> Result<Instance, InstanceError> {
+            unimplemented!()
+        }
+        async fn upsert(&self, _: &Instance) -> Result<(), InstanceError> {
+            unimplemented!()
+        }
+        async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+            unimplemented!()
+        }
+    }
+
+    async fn legacy_pack(fs: &FsPackStorage, instance_id: &str, path: &str, hash: &str) {
+        fs.update_pack(
+            instance_id,
+            &Pack {
+                files: vec![PackEntry { file: path.into() }],
+            },
+        )
+        .await
+        .unwrap();
+        fs.update_pack_file(
+            instance_id,
+            path,
+            &PackFile::from_hash("a.jar".into(), hash.into()),
+        )
+        .await
+        .unwrap();
+    }
+
+    fn setup() -> (TempDir, MemInstanceStorage, FsPackStorage, String) {
+        let temp = TempDir::new().unwrap();
+        let location = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let instance = InstanceBuilder::new(
+            "inst".into(),
+            "Inst".into(),
+            "1.21.1".into(),
+            ModLoader::Fabric,
+        )
+        .build();
+        (
+            temp,
+            MemInstanceStorage(Mutex::new(vec![instance])),
+            FsPackStorage::new(location),
+            "inst".into(),
+        )
+    }
+
+    #[tokio::test]
+    async fn should_migrate_legacy_pack_when_sqlite_is_empty() {
+        let (_temp, instances, fs, id) = setup();
+        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        let sqlite = SqlitePackStorage::in_memory().await;
+
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+
+        let migrated = sqlite.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        assert_eq!(migrated.hash, "legacy");
+    }
+
+    #[tokio::test]
+    async fn should_not_overwrite_pack_when_already_migrated() {
+        let (_temp, instances, fs, id) = setup();
+        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        let sqlite = SqlitePackStorage::in_memory().await;
+        sqlite
+            .update_pack_file(
+                &id,
+                "mods/a.jar",
+                &PackFile::from_hash("a.jar".into(), "current".into()),
+            )
+            .await
+            .unwrap();
+
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+
+        let kept = sqlite.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        assert_eq!(kept.hash, "current");
+    }
+
+    #[tokio::test]
+    async fn should_not_bring_legacy_files_back_when_every_migrated_file_was_removed() {
+        let (_temp, instances, fs, id) = setup();
+        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        let sqlite = SqlitePackStorage::in_memory().await;
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+        sqlite.remove_pack_file(&id, "mods/a.jar").await.unwrap();
+
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+
+        assert!(sqlite.get_pack(&id).await.unwrap().files.is_empty());
+    }
 }

@@ -10,7 +10,7 @@ use crate::features::plugins::domain::{
     PluginMetadata, RuntimeConfig,
 };
 
-// ── DTO → Domain (fallible — semver parsing) ──
+// ── DTO → Domain (fallible — semver parsing, id scheme) ──
 
 impl TryFrom<PluginManifestDto> for PluginManifest {
     type Error = ManifestError;
@@ -36,14 +36,20 @@ impl TryFrom<PluginMetadataDto> for PluginMetadata {
                 error: e.to_string(),
             })?;
 
-        Ok(Self {
+        let metadata = Self {
             id: dto.id,
             name: dto.name,
             version,
             description: dto.description,
             authors: dto.authors,
             license: dto.license,
-        })
+        };
+
+        // Every manifest the core reads passes through here — on installation before any file
+        // is copied, and on loading — so a plugin with an invalid or reserved id never gets in.
+        metadata.validate_id()?;
+
+        Ok(metadata)
     }
 }
 
@@ -66,7 +72,6 @@ impl From<LoadConfigDto> for LoadConfig {
     fn from(dto: LoadConfigDto) -> Self {
         match dto {
             LoadConfigDto::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
-            LoadConfigDto::Native { lib_path } => Self::Native { lib_path },
         }
     }
 }
@@ -86,6 +91,7 @@ impl TryFrom<ApiConfigDto> for ApiConfig {
         Ok(Self {
             version,
             features: dto.features,
+            host_functions: dto.host_functions,
         })
     }
 }
@@ -136,7 +142,6 @@ impl From<LoadConfig> for LoadConfigDto {
     fn from(v: LoadConfig) -> Self {
         match v {
             LoadConfig::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
-            LoadConfig::Native { lib_path } => Self::Native { lib_path },
         }
     }
 }
@@ -146,6 +151,7 @@ impl From<ApiConfig> for ApiConfigDto {
         Self {
             version: v.version.to_string(),
             features: v.features,
+            host_functions: v.host_functions,
         }
     }
 }
@@ -154,7 +160,95 @@ impl From<&LoadConfig> for LoadConfigType {
     fn from(config: &LoadConfig) -> Self {
         match config {
             LoadConfig::Extism { .. } => LoadConfigType::Extism,
-            LoadConfig::Native { .. } => LoadConfigType::Native,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(api: &str) -> PluginManifest {
+        let json = format!(
+            r#"{{
+                "metadata": {{ "id": "test", "name": "Test", "version": "0.1.0" }},
+                "runtime": {{}},
+                "load": {{ "type": "extism", "file": "test.wasm" }},
+                "api": {api}
+            }}"#
+        );
+
+        serde_json::from_str::<PluginManifestDto>(&json)
+            .expect("manifest should parse")
+            .try_into()
+            .expect("manifest should map")
+    }
+
+    /// Manifests written before `api.hostFunctions` existed must keep parsing — and must stay
+    /// distinguishable from an explicit empty declaration.
+    #[test]
+    fn should_read_a_missing_host_function_declaration_as_undeclared_when_the_field_is_absent() {
+        let manifest = parse(r#"{ "version": "0.2.0" }"#);
+
+        assert_eq!(manifest.api.host_functions, None);
+    }
+
+    #[test]
+    fn should_read_an_empty_host_function_declaration_as_declaring_none_when_the_list_is_empty() {
+        let manifest = parse(r#"{ "version": "0.2.0", "hostFunctions": [] }"#);
+
+        assert_eq!(manifest.api.host_functions, Some(vec![]));
+    }
+
+    #[test]
+    fn should_read_declared_host_functions_when_the_list_has_names() {
+        let manifest = parse(r#"{ "version": "0.2.0", "hostFunctions": ["log", "http_get"] }"#);
+
+        assert_eq!(
+            manifest.api.host_functions,
+            Some(vec!["log".to_owned(), "http_get".to_owned()])
+        );
+    }
+
+    fn parse_with_id(id: &str) -> Result<PluginManifest, ManifestError> {
+        let json = format!(
+            r#"{{
+                "metadata": {{ "id": {id:?}, "name": "Test", "version": "0.1.0" }},
+                "runtime": {{}},
+                "load": {{ "type": "extism", "file": "test.wasm" }},
+                "api": {{ "version": "0.2.0" }}
+            }}"#
+        );
+
+        serde_json::from_str::<PluginManifestDto>(&json)
+            .expect("manifest should parse")
+            .try_into()
+    }
+
+    #[test]
+    fn should_reject_manifest_when_the_plugin_id_is_invalid() {
+        for id in ["", "a#b", "core:modrinth", "Packwiz"] {
+            assert!(
+                matches!(parse_with_id(id), Err(ManifestError::InvalidId { .. })),
+                "{id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_reject_manifest_when_the_plugin_id_is_reserved() {
+        assert!(matches!(
+            parse_with_id("aether"),
+            Err(ManifestError::ReservedPluginId)
+        ));
+    }
+
+    #[test]
+    fn should_not_write_a_host_function_declaration_when_none_was_made() {
+        let manifest = parse(r#"{ "version": "0.2.0" }"#);
+
+        let json = serde_json::to_value(PluginManifestDto::from(manifest)).expect("serialize");
+
+        assert!(json["api"].get("hostFunctions").is_none(), "{json}");
     }
 }

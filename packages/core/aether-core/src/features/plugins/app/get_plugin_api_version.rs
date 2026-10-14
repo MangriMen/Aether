@@ -5,10 +5,10 @@ use crate::features::plugins::{PLUGIN_API_VERSION, PluginError};
 use super::ports::GetPluginApiVersionUseCasePort;
 
 #[derive(Default)]
-pub struct GetPluginApiVersionUseCase {}
+pub(crate) struct GetPluginApiVersionUseCase {}
 
 impl GetPluginApiVersionUseCase {
-    pub async fn execute(&self) -> Result<semver::Version, PluginError> {
+    pub(crate) async fn execute(&self) -> Result<semver::Version, PluginError> {
         Ok(PLUGIN_API_VERSION.clone())
     }
 }

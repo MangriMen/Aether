@@ -183,7 +183,10 @@ impl ListContentUseCase {
         let file_content = read_async(file_path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
-        let pack_file = PackFile::from_hash(file_name.to_owned(), sha1_async(file_content).await);
+        let hash = sha1_async(file_content)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let pack_file = PackFile::from_hash(file_name.to_owned(), hash);
 
         self.pack_storage
             .update_pack_file(instance_id, content_path, &pack_file)

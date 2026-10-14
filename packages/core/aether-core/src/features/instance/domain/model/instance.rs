@@ -402,7 +402,7 @@ mod tests {
     // ── rename ──
 
     #[test]
-    fn should_rename_and_return_true() {
+    fn should_rename_and_return_true_when_name_differs() {
         let mut instance = make_built_instance("old_name");
         let result = instance.rename("new_name".into()).unwrap();
         assert!(result);
@@ -417,14 +417,14 @@ mod tests {
     }
 
     #[test]
-    fn should_trim_name_before_comparison() {
+    fn should_return_false_when_the_name_differs_only_by_surrounding_spaces() {
         let mut instance = make_built_instance("name");
         let result = instance.rename("  name  ".into()).unwrap();
         assert!(!result, "should detect same name after trim");
     }
 
     #[test]
-    fn should_fail_on_empty_name() {
+    fn should_fail_when_name_is_empty() {
         let mut instance = make_built_instance("name");
         let err = instance.rename("   ".into()).unwrap_err();
         assert!(matches!(
@@ -437,10 +437,10 @@ mod tests {
     }
 
     #[test]
-    fn should_update_modified_on_rename() {
+    fn should_update_modified_when_renamed() {
         let mut instance = make_built_instance("old");
+        instance.modified -= chrono::Duration::seconds(1);
         let before = instance.modified;
-        std::thread::sleep(std::time::Duration::from_millis(2));
         instance.rename("new".into()).unwrap();
         assert!(instance.modified > before);
     }
@@ -448,7 +448,7 @@ mod tests {
     // ── set_icon ──
 
     #[test]
-    fn should_set_icon() {
+    fn should_set_icon_when_given_a_path() {
         let mut instance = make_built_instance("name");
         instance.set_icon(Some("new_icon.png".into()));
         assert_eq!(instance.icon_path(), Some("new_icon.png"));
@@ -464,7 +464,7 @@ mod tests {
     // ── snapshot roundtrip ──
 
     #[test]
-    fn should_roundtrip_through_snapshot() {
+    fn should_roundtrip_when_converted_through_snapshot() {
         let original = make_full_instance("test");
         let snapshot = original.snapshot();
         let restored = Instance::from_snapshot(snapshot);
@@ -497,7 +497,7 @@ mod tests {
     // ── update_*_active — one representative ──
 
     #[test]
-    fn should_update_java_path_active() {
+    fn should_update_java_path_active_when_the_flag_changes() {
         let mut instance = make_built_instance("name");
         assert!(!instance.java_path.is_active);
         assert!(instance.update_java_path_active(true));
@@ -506,7 +506,7 @@ mod tests {
     }
 
     #[test]
-    fn should_update_java_path_data() {
+    fn should_update_java_path_data_when_the_path_changes() {
         let mut instance = make_built_instance("name");
         assert!(instance.update_java_path_data("/usr/bin/java".into()));
         assert_eq!(instance.java_path.data, "/usr/bin/java");
@@ -516,7 +516,7 @@ mod tests {
     // ── InstanceBuilder ──
 
     #[test]
-    fn should_build_instance_with_defaults() {
+    fn should_build_instance_with_defaults_when_no_options_are_given() {
         let instance = make_built_instance("test");
         assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
         assert!(!instance.java_path.is_active);
@@ -525,7 +525,7 @@ mod tests {
     }
 
     #[test]
-    fn should_build_with_optional_fields() {
+    fn should_build_instance_when_optional_fields_are_given() {
         let instance =
             InstanceBuilder::new("id".into(), "name".into(), "1.20".into(), ModLoader::Forge)
                 .with_loader_version(Some(LoaderVersionPreference::Latest))
@@ -542,7 +542,7 @@ mod tests {
     // ── from_snapshot error handling ──
 
     #[test]
-    fn should_not_panic_with_default_timestamps() {
+    fn should_not_panic_when_timestamps_are_default() {
         let snapshot = InstanceSnapshot {
             id: "id".into(),
             name: "name".into(),

@@ -11,22 +11,23 @@ use crate::features::{
         ProgressBarStorage, ProgressService, SharedEventEmitter,
     },
     instance::{
-        ChangeContentStateUseCase, ChangeContentStateUseCasePort, CheckContentCompatibilityUseCase,
-        CheckContentCompatibilityUseCasePort, ContentFileService, ContentProvider,
-        CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
+        ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
+        CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
+        ContentProvider, CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
         ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
-        InstallInstanceUseCase, InstanceFileService, InstanceInstallService, InstanceLaunchService,
-        InstanceStorage, InstanceWatcherService, LaunchInstanceUseCase,
-        LaunchInstanceWithActiveAccountUseCase, LaunchInstanceWithActiveAccountUseCasePort,
-        ListContentUseCase, ListContentUseCasePort, ListContentVersionsUseCase,
-        ListContentVersionsUseCasePort, ListImportersUseCase, ListImportersUseCasePort,
-        ListInstancesUseCase, ListInstancesUseCasePort, ListProvidersUseCase,
-        ListProvidersUseCasePort, PackStorage, RemoveContentUseCase, RemoveContentUseCasePort,
-        RemoveInstanceUseCase, RemoveInstanceUseCasePort, SearchContentUseCase,
-        SearchContentUseCasePort, UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater,
+        InstallInstanceUseCase, InstallPlanExecutor, InstallPlanExecutorPort, InstanceFileService,
+        InstanceInstallService, InstanceLaunchService, InstanceLocks, InstanceStorage,
+        InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
+        LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
+        ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
+        ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort,
+        ListProvidersUseCase, ListProvidersUseCasePort, PackStorage, RemoveContentUseCase,
+        RemoveContentUseCasePort, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
+        SearchContentUseCase, SearchContentUseCasePort, UpdateInstanceUseCase,
+        UpdateInstanceUseCasePort, Updater,
     },
     java::{
         DiscoverJavaUseCase, DiscoverJavaUseCasePort, EditJavaUseCase, EditJavaUseCasePort,
@@ -48,12 +49,14 @@ use crate::features::{
         EnablePluginUseCasePort, ForceEnablePluginUseCase, ForceEnablePluginUseCasePort,
         GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort, GetPluginDtoUseCase,
         GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
-        ImportPluginsUseCase, ImportPluginsUseCasePort, ListPluginsDtoUseCase,
-        ListPluginsDtoUseCasePort, LoadConfigType, PluginDisableService, PluginExtractor,
-        PluginLoader, PluginLoaderRegistry, PluginProviderFactory, PluginRegistry,
-        PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
-        PluginsFeature, RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase,
-        UpdatePluginUseCase, UpdatePluginUseCasePort,
+        GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
+        GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
+        ImportPluginsUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigType,
+        PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
+        PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
+        PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
+        ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
+        SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
         GetProcessMetadataByInstanceIdUseCase, GetProcessMetadataByInstanceIdUseCasePort,
@@ -70,11 +73,20 @@ use crate::features::{
     },
 };
 use crate::{
-    features::instance::{
-        ContentManagementPort, ContentProviderPort, InstanceCrudPort, InstanceLifecyclePort,
-        InstanceServicesPort,
+    features::{
+        instance::{
+            ContentManagementPort, ContentProviderPort, InstanceCrudPort, InstanceLifecyclePort,
+            InstanceServicesPort, infra::SettingsPlatformProviderSelection,
+        },
+        plugins::infra::ProviderContentDownloader,
     },
-    shared::{cache::domain::AssetsStorage, capability::domain::CapabilityRegistry},
+    shared::{
+        cache::domain::AssetsStorage,
+        capability::domain::CapabilityRegistry,
+        fetch::FetchSemaphore,
+        limits::{ContentInstallLimits, PluginSandboxLimits},
+        request_client::RequestClient,
+    },
 };
 
 struct UseCaseCache {
@@ -84,7 +96,6 @@ struct UseCaseCache {
     edit_instance_icon_uc:
         OnceLock<Arc<dyn crate::features::instance::EditInstanceIconUseCasePort>>,
     remove_instance_uc: OnceLock<Arc<dyn crate::features::instance::RemoveInstanceUseCasePort>>,
-    update_instance_uc: OnceLock<Arc<dyn crate::features::instance::UpdateInstanceUseCasePort>>,
     start_process_uc: OnceLock<Arc<dyn ProcessStartService>>,
     track_process_uc: OnceLock<Arc<dyn TrackProcessService>>,
     manage_process_uc: OnceLock<Arc<dyn ManageProcessService>>,
@@ -105,7 +116,6 @@ impl UseCaseCache {
             edit_instance_uc: OnceLock::new(),
             edit_instance_icon_uc: OnceLock::new(),
             remove_instance_uc: OnceLock::new(),
-            update_instance_uc: OnceLock::new(),
             start_process_uc: OnceLock::new(),
             track_process_uc: OnceLock::new(),
             manage_process_uc: OnceLock::new(),
@@ -148,6 +158,7 @@ pub struct PluginParams {
     pub loader_registry: Arc<PluginLoaderRegistry>,
     pub storage: Arc<dyn PluginStorage>,
     pub source_storage: Arc<dyn PluginSourceStorage>,
+    pub verification_storage: Arc<dyn PluginVerificationStorage>,
     pub settings_storage: Arc<dyn PluginSettingsStorage>,
     pub provider_factory: Arc<PluginProviderFactory>,
     pub extractor: Arc<dyn PluginExtractor>,
@@ -162,22 +173,37 @@ pub struct AetherContainerParams {
     pub progress_bar_storage: Arc<dyn ProgressBarStorage>,
     pub progress_service: Arc<dyn ProgressService>,
     pub location_info: Arc<LocationInfo>,
+    /// The process-wide cap on concurrent downloads. Shared with downloads plugins make
+    /// through the host (`download_to_cache`), so they count against the same limit.
+    pub fetch_semaphore: Arc<FetchSemaphore>,
+    /// The application's HTTP client. It follows redirects unchecked, so it is for URLs from
+    /// the core and from built-in providers only — never for a URL a plugin supplied.
+    pub request_client: Arc<dyn RequestClient>,
     pub instance_watcher_service: Arc<dyn InstanceWatcherService>,
     pub importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
     pub updaters_registry: Arc<dyn CapabilityRegistry<Arc<dyn Updater>>>,
     pub content_provider_registry: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
+    /// Size limits on what installing content brings in.
+    pub content_limits: ContentInstallLimits,
+    /// Limits on what a plugin may do through the host.
+    pub sandbox_limits: PluginSandboxLimits,
 }
 
 pub struct AetherContainer {
     cache: UseCaseCache,
     params: AetherContainerParams,
+    /// Shared by everything that changes an instance's content or launches it.
+    instance_locks: Arc<InstanceLocks>,
 }
 
 impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
+        params.sandbox_limits.assert_consistent();
+
         Arc::new(Self {
             cache: UseCaseCache::new(),
             params,
+            instance_locks: Arc::new(InstanceLocks::new()),
         })
     }
 
@@ -190,11 +216,20 @@ impl AetherContainer {
     pub fn plugins(&self) -> &PluginParams {
         &self.params.plugins
     }
+    pub fn content_limits(&self) -> ContentInstallLimits {
+        self.params.content_limits
+    }
+    pub fn sandbox_limits(&self) -> PluginSandboxLimits {
+        self.params.sandbox_limits
+    }
     pub fn event_emitter(&self) -> SharedEventEmitter {
         self.params.event_emitter.clone()
     }
     pub fn location_info(&self) -> Arc<LocationInfo> {
         self.params.location_info.clone()
+    }
+    pub fn fetch_semaphore(&self) -> Arc<FetchSemaphore> {
+        self.params.fetch_semaphore.clone()
     }
     pub fn progress_bar_storage(&self) -> Arc<dyn ProgressBarStorage> {
         self.params.progress_bar_storage.clone()
@@ -324,6 +359,7 @@ impl AetherContainer {
                     self.health_service(),
                     self.launch_command_service(),
                     start,
+                    self.instance_locks.clone(),
                 ))
             })
             .clone()
@@ -525,6 +561,7 @@ impl InstanceCrudPort for AetherContainer {
             self.storage().instance_file_service.clone(),
             self.event_emitter().clone(),
             self.instance_watcher_service().clone(),
+            self.storage().assets_storage.clone(),
         ))
     }
     fn get_instance_use_case(&self) -> Arc<dyn GetInstanceUseCasePort> {
@@ -577,20 +614,21 @@ impl InstanceCrudPort for AetherContainer {
                     self.instance_watcher_service().clone(),
                     self.storage().instance_file_service.clone(),
                     self.storage().pack_storage.clone(),
+                    self.instance_locks.clone(),
                 ))
             })
             .clone()
     }
+    // Not cached: its executor's downloader serves one update.
     fn update_instance_use_case(&self) -> Arc<dyn UpdateInstanceUseCasePort> {
-        self.cache
-            .update_instance_uc
-            .get_or_init(|| {
-                Arc::new(UpdateInstanceUseCase::new(
-                    self.storage().instance_storage.clone(),
-                    self.updaters_registry().clone(),
-                ))
-            })
-            .clone()
+        Arc::new(UpdateInstanceUseCase::new(
+            self.storage().instance_storage.clone(),
+            self.updaters_registry().clone(),
+            self.content_provider_registry().clone(),
+            self.storage().pack_storage.clone(),
+            self.install_plan_executor(),
+            self.instance_locks.clone(),
+        ))
     }
 }
 
@@ -598,6 +636,7 @@ impl InstanceLifecyclePort for AetherContainer {
     fn import_instance_use_case(&self) -> Arc<dyn ImportInstanceUseCasePort> {
         Arc::new(ImportInstanceUseCase::new(
             self.importers_registry().clone(),
+            self.storage().instance_storage.clone(),
         ))
     }
     fn list_importers_use_case(&self) -> Arc<dyn ListImportersUseCasePort> {
@@ -618,6 +657,7 @@ impl ContentManagementPort for AetherContainer {
         Arc::new(ChangeContentStateUseCase::new(
             self.event_emitter().clone(),
             self.storage().content_file_service.clone(),
+            self.instance_locks.clone(),
         ))
     }
     fn import_content_use_case(&self) -> Arc<dyn ImportContentUseCasePort> {
@@ -625,6 +665,7 @@ impl ContentManagementPort for AetherContainer {
             self.event_emitter().clone(),
             self.storage().pack_storage.clone(),
             self.location_info().clone(),
+            self.instance_locks.clone(),
         ))
     }
     fn list_content_use_case(&self) -> Arc<dyn ListContentUseCasePort> {
@@ -638,6 +679,7 @@ impl ContentManagementPort for AetherContainer {
             self.event_emitter().clone(),
             self.storage().pack_storage.clone(),
             self.storage().content_file_service.clone(),
+            self.instance_locks.clone(),
         ))
     }
 }
@@ -657,7 +699,39 @@ impl ContentProviderPort for AetherContainer {
         Arc::new(InstallContentUseCase::new(
             self.storage().pack_storage.clone(),
             self.content_provider_registry().clone(),
+            self.storage().instance_storage.clone(),
+            self.install_plan_executor(),
+            self.instance_locks.clone(),
+        ))
+    }
+    fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort> {
+        Arc::new(InstallPlanExecutor::new(
+            self.content_provider_registry().clone(),
+            Arc::new(SettingsPlatformProviderSelection::new(
+                self.storage().settings_storage.clone(),
+            )),
+            self.storage().instance_storage.clone(),
+            self.create_instance_use_case(),
+            Arc::new(ChangeInstanceGameUseCase::new(
+                self.storage().instance_storage.clone(),
+                self.loader_version_resolver(),
+                self.instance_install_service(),
+            )),
+            Arc::new(ProviderContentDownloader::new(
+                self.params.request_client.clone(),
+                self.plugins().registry.clone(),
+                self.plugins().settings_storage.clone(),
+                self.fetch_semaphore(),
+                self.progress_service(),
+                self.content_limits(),
+                self.sandbox_limits(),
+            )),
             self.storage().content_file_service.clone(),
+            self.storage().pack_storage.clone(),
+            self.location_info(),
+            self.progress_service(),
+            self.remove_instance_use_case(),
+            self.content_limits(),
         ))
     }
     fn check_content_compatibility_use_case(
@@ -741,7 +815,9 @@ impl PluginsFeature for AetherContainer {
     }
     fn edit_plugin_settings_use_case(&self) -> Arc<dyn EditPluginSettingsUseCasePort> {
         Arc::new(EditPluginSettingsUseCase::new(
+            self.plugins().registry.clone(),
             self.plugins().settings_storage.clone(),
+            self.location_info(),
         ))
     }
     fn enable_plugin_use_case(&self) -> Arc<dyn EnablePluginUseCasePort> {
@@ -760,14 +836,39 @@ impl PluginsFeature for AetherContainer {
             self.storage().settings_storage.clone(),
         ))
     }
+    fn reload_plugin_use_case(&self) -> Arc<dyn ReloadPluginUseCasePort> {
+        Arc::new(ReloadPluginUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().loader_registry.clone(),
+            self.plugins().settings_storage.clone(),
+            self.storage().settings_storage.clone(),
+        ))
+    }
     fn get_plugin_api_version_use_case(&self) -> Arc<dyn GetPluginApiVersionUseCasePort> {
         Arc::new(GetPluginApiVersionUseCase::default())
     }
     fn get_plugin_dto_use_case(&self) -> Arc<dyn GetPluginDtoUseCasePort> {
-        Arc::new(GetPluginDtoUseCase::new(self.plugins().registry.clone()))
+        Arc::new(GetPluginDtoUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().settings_storage.clone(),
+        ))
     }
     fn get_plugin_settings_use_case(&self) -> Arc<dyn GetPluginSettingsUseCasePort> {
         Arc::new(GetPluginSettingsUseCase::new(
+            self.plugins().settings_storage.clone(),
+        ))
+    }
+    fn grant_plugin_folder_access_use_case(&self) -> Arc<dyn GrantPluginFolderAccessUseCasePort> {
+        Arc::new(GrantPluginFolderAccessUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().settings_storage.clone(),
+            self.reload_plugin_use_case(),
+            self.location_info(),
+        ))
+    }
+    fn grant_plugin_host_access_use_case(&self) -> Arc<dyn GrantPluginHostAccessUseCasePort> {
+        Arc::new(GrantPluginHostAccessUseCase::new(
+            self.plugins().registry.clone(),
             self.plugins().settings_storage.clone(),
         ))
     }
@@ -775,11 +876,16 @@ impl PluginsFeature for AetherContainer {
         Arc::new(ImportPluginsUseCase::new(
             self.plugins().extractor.clone(),
             self.plugins().storage.clone(),
+            self.plugins().source_storage.clone(),
+            self.plugin_verification_storage(),
             self.sync_plugins_service(),
         ))
     }
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort> {
-        Arc::new(ListPluginsDtoUseCase::new(self.plugins().registry.clone()))
+        Arc::new(ListPluginsDtoUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().settings_storage.clone(),
+        ))
     }
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort> {
         Arc::new(RemovePluginUseCase::new(
@@ -789,9 +895,12 @@ impl PluginsFeature for AetherContainer {
     }
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort> {
         Arc::new(UpdatePluginUseCase::new(
+            self.plugins().registry.clone(),
             self.plugins().extractor.clone(),
             self.plugins().storage.clone(),
             self.plugins().source_storage.clone(),
+            self.plugins().verification_storage.clone(),
+            self.plugins().settings_storage.clone(),
             self.plugins().provider_factory.clone(),
         ))
     }
@@ -806,6 +915,9 @@ impl PluginsFeature for AetherContainer {
     }
     fn plugin_source_storage(&self) -> Arc<dyn PluginSourceStorage> {
         self.plugins().source_storage.clone()
+    }
+    fn plugin_verification_storage(&self) -> Arc<dyn PluginVerificationStorage> {
+        self.plugins().verification_storage.clone()
     }
     fn plugin_loader(&self) -> Option<Arc<dyn PluginLoader>> {
         self.plugins()

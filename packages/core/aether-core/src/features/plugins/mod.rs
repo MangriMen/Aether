@@ -1,40 +1,47 @@
-pub(crate) mod app;
-pub mod domain;
+mod app;
+mod domain;
 pub mod infra;
 
-// Domain (models + PluginInstance)
+#[cfg(test)]
+mod tests;
+
 pub use domain::{
-    ApiConfig, Compatibility, ExtractedPlugin, LoadConfig, LoadConfigType, ManifestError,
-    PLUGIN_API_VERSION, PathMapping, Plugin, PluginCapabilities, PluginCheckCompatibilityParams,
-    PluginContent, PluginContentProviderCapability, PluginError, PluginImportInstance,
-    PluginImporterCapability, PluginInstance, PluginInternalEvent, PluginManifest,
-    PluginManifestPreview, PluginMetadata, PluginSettings, PluginSource, PluginSourceType,
-    PluginState, PluginUpdaterCapability, ProviderHandlers, ProviderPluginPreview,
-    ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig, SerializableOutput,
+    AllowedHostRejection, AllowedPath, AllowedPathRejection, ApiConfig, LoadConfig, LoadConfigType,
+    PathMapping, PluginCapabilities, PluginContentProviderCapability, PluginError,
+    PluginImporterCapability, PluginManifest, PluginManifestPreview, PluginMetadata,
+    PluginProviderError, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
+    ProviderHandlers, ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig,
+};
+pub(crate) use domain::{
+    AsCapabilityMetadata, Compatibility, ExtractedPlugin, FolderMounts, GrantableHost,
+    ManifestError, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT, PLUGIN_INSTANCES_MOUNT, Plugin,
+    PluginCallError, PluginCheckCompatibilityParams, PluginContent, PluginHandle,
+    PluginImportInstance, PluginInstance, PluginInternalEvent, PluginState, PluginStateReason,
+    PluginVerification, core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root,
+    is_host_allowed, partition_mountable, to_wasi_path,
 };
 
-// App (use cases, ports, services, DTOs)
 pub use app::{
-    ApiConfigDto, AsCapabilityMetadata, CapabilityMetadataDto, CheckForPluginUpdatesUseCase,
-    CheckForPluginUpdatesUseCasePort, ContentProviderCapabilityMetadataDto, DisablePluginUseCase,
-    EditPluginSettings, EditPluginSettingsUseCase, EditPluginSettingsUseCasePort,
-    EnablePluginUseCase, EnablePluginUseCasePort, ForceEnablePluginUseCase,
-    ForceEnablePluginUseCasePort, GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort,
-    GetPluginDtoUseCase, GetPluginDtoUseCasePort, GetPluginSettingsUseCase,
-    GetPluginSettingsUseCasePort, ImportPluginsUseCase, ImportPluginsUseCasePort,
-    ImporterCapabilityMetadataDto, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigDto,
-    LoadConfigTypeDto, PathMappingDto, PluginCapabilitiesDto, PluginContentProviderCapabilityDto,
-    PluginDisableService, PluginDto, PluginDtoState, PluginExtractor, PluginImporterCapabilityDto,
-    PluginLoader, PluginLoaderRegistry, PluginManifestDto, PluginMetadataDto, PluginProvider,
-    PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginSyncService, PluginUpdaterCapabilityDto, PluginsFeature,
-    ProviderHandlersDto, RemovePluginUseCase, RemovePluginUseCasePort, RuntimeConfigDto,
-    SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort, UpdaterCapabilityMetadataDto,
+    ApiConfigDto, CapabilityMetadataDto, ContentProviderCapabilityMetadataDto, EditPluginSettings,
+    FolderAccess, HostAccess, ImporterCapabilityMetadataDto, LoadConfigDto, PathMappingDto,
+    PluginCapabilitiesDto, PluginContentProviderCapabilityDto, PluginDto, PluginDtoState,
+    PluginExtractor, PluginImporterCapabilityDto, PluginLoader, PluginLoaderRegistry,
+    PluginManifestDto, PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
+    PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
+    PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
+    RuntimeConfigDto, UpdaterCapabilityMetadataDto, record_plugin_verification,
     write_bytes_to_temp_file,
 };
-
-// Infrastructure re-exports (commonly used by app layer)
-pub use infra::{
-    ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-    GitHubPluginFetcher, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
+pub(crate) use app::{
+    CheckForPluginUpdatesUseCase, CheckForPluginUpdatesUseCasePort, DisablePluginUseCase,
+    EditPluginSettingsUseCase, EditPluginSettingsUseCasePort, EnablePluginUseCase,
+    EnablePluginUseCasePort, ForceEnablePluginUseCase, ForceEnablePluginUseCasePort,
+    GetPluginApiVersionUseCase, GetPluginApiVersionUseCasePort, GetPluginDtoUseCase,
+    GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
+    GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
+    GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
+    ImportPluginsUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
+    PluginDisableService, PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort,
+    RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
+    UpdatePluginUseCasePort,
 };

@@ -1,9 +1,9 @@
-use crate::features::plugins::{PluginError, PluginInstance};
+use crate::features::plugins::{PluginCallError, PluginError, PluginInstance};
 
 /// Typed call helper for Extism plugins.
 /// Converts args/result using extism's `ToBytes`/`FromBytes` (`MessagePack`).
 /// This lives in the infra layer because it depends on extism serialization.
-pub trait PluginInstanceExt: PluginInstance {
+pub(crate) trait PluginInstanceExt: PluginInstance {
     fn call<'a, 'b, T: extism::ToBytes<'a>, U: extism::FromBytes<'b>>(
         &'b mut self,
         name: &str,
@@ -16,7 +16,7 @@ pub trait PluginInstanceExt: PluginInstance {
             PluginError::FunctionCallFailed {
                 function_name: name.to_owned(),
                 plugin_id: id.clone(),
-                error: e.to_string(),
+                error: PluginCallError::Codec(e.to_string()),
             }
         };
 

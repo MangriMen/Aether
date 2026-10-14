@@ -15,7 +15,7 @@ use crate::{
 const TEMPORARY_REPLACE_CHAR: &str = "\n";
 
 #[allow(clippy::too_many_arguments)]
-pub fn get_minecraft_arguments(
+pub(super) fn get_minecraft_arguments(
     arguments: Option<&[vanilla::Argument]>,
     legacy_arguments: Option<&str>,
     credentials: &Credential,

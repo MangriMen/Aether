@@ -1,12 +1,20 @@
 use std::path::PathBuf;
 
+use register_schema::RegisterSchema;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Root configuration for an Aether plugin.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+// Published as `schemas/plugin-manifest.schema.json`, which plugin authors validate their
+// `manifest.json` against — including authors not writing in Rust, who cannot import these
+// DTOs. `schema_name` / `schemars(rename)` keep the internal `Dto` suffix out of that
+// published contract. Deliberately a plain `//` comment: a doc comment here would land in
+// the schema `description` that those authors read.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema, RegisterSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "PluginManifest")]
+#[schema_category("plugin_api")]
+#[schema_name("PluginManifest")]
 pub struct PluginManifestDto {
     /// Optional URI pointing to the JSON Schema for this manifest version.
     /// Ignored during parsing — reserved for editor tooling and validation.
@@ -27,10 +35,10 @@ pub struct PluginManifestDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "PluginMetadata")]
 pub struct PluginMetadataDto {
     /// Unique identifier for the plugin (lowercase, kebab-case).
-    #[schemars(regex(pattern = r"^[a-z0-9_\-]+$"))]
+    #[schemars(regex(pattern = r"^[a-z0-9][a-z0-9_\-]*$"))]
     pub id: String,
 
     /// Readable name of the plugin.
@@ -53,19 +61,22 @@ pub struct PluginMetadataDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "RuntimeConfig")]
 pub struct RuntimeConfigDto {
     /// List of domains or IP addresses the plugin is allowed to connect to.
     #[serde(default)]
     pub allowed_hosts: Vec<String>,
 
-    /// Filesystem access restrictions. Maps host paths to plugin-internal paths.
+    /// Ignored by the launcher, which logs a warning: folders are given to a plugin by the
+    /// user, in its settings. Kept so that manifests declaring it still load.
     #[serde(default)]
     pub allowed_paths: Vec<PathMappingDto>,
 }
 
 /// A mapping between a path on the host and a virtual path in the plugin.
+/// Format: `[host_path, virtual_path]`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[schemars(rename = "PathMapping")]
 pub struct PathMappingDto(
     /// Path on the host disk.
     pub String,
@@ -77,11 +88,11 @@ pub struct PathMappingDto(
 #[serde(rename_all = "snake_case")]
 pub enum LoadConfigTypeDto {
     Extism,
-    Native,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "type")]
+#[schemars(rename = "LoadConfig")]
 pub enum LoadConfigDto {
     /// Use WebAssembly (Extism) for a secure, cross-platform sandbox.
     #[serde(rename_all = "camelCase")]
@@ -92,17 +103,11 @@ pub enum LoadConfigDto {
         #[serde(default)]
         memory_limit: Option<usize>,
     },
-    /// Load a native shared library (.dll, .so, .dylib).
-    #[serde(rename_all = "camelCase")]
-    Native {
-        /// Path to the dynamic library file relative to the plugin root.
-        lib_path: PathBuf,
-    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-#[schemars(deny_unknown_fields)]
+#[schemars(deny_unknown_fields, rename = "ApiConfig")]
 pub struct ApiConfigDto {
     /// Required API version range (`SemVer` requirement).
     #[schemars(with = "String")]
@@ -111,4 +116,17 @@ pub struct ApiConfigDto {
     /// List of optional host features requested by the plugin.
     #[serde(default)]
     pub features: Vec<String>,
+
+    /// Host functions the plugin calls, by import name (`http_get`, `write_instance_file`, …).
+    /// Only these are linked into the plugin: a name the host does not know keeps the plugin
+    /// from being enabled, and a function the wasm imports without declaring it here keeps it
+    /// from loading. An empty list declares that the plugin calls none.
+    /// Required: a manifest without it is reported as incompatible.
+    // Required in the published schema, but `Option` here (a missing `Option` field reads as
+    // `None` even without `serde(default)`): a manifest from before the field still parses, so
+    // the core can mark the plugin incompatible with a reason instead of dropping it from the
+    // plugin list over a parse error.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Vec<String>")]
+    pub host_functions: Option<Vec<String>>,
 }

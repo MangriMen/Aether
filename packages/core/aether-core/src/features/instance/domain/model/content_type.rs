@@ -132,7 +132,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_return_mod_from_mod_loader_names() {
+    fn should_return_mod_when_given_mod_loader_names() {
         let loaders = vec!["fabric".to_string(), "quilt".to_string()];
         assert_eq!(
             ContentType::get_from_loaders(&loaders),
@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_datapack_from_datapack_loader() {
+    fn should_return_datapack_when_given_the_datapack_loader() {
         let loaders = vec!["datapack".to_string()];
         assert_eq!(
             ContentType::get_from_loaders(&loaders),
@@ -150,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_shaderpack_from_shader_loaders() {
+    fn should_return_shaderpack_when_given_shader_loaders() {
         let loaders = vec!["iris".to_string(), "optifine".to_string()];
         assert_eq!(
             ContentType::get_from_loaders(&loaders),
@@ -159,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_resourcepack_from_resource_loaders() {
+    fn should_return_resourcepack_when_given_resource_loaders() {
         let loaders = vec!["vanilla".to_string(), "minecraft".to_string()];
         assert_eq!(
             ContentType::get_from_loaders(&loaders),
@@ -168,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_none_for_unknown_loaders() {
+    fn should_return_none_when_loaders_are_unknown() {
         let loaders = vec!["unknown".to_string()];
         assert_eq!(ContentType::get_from_loaders(&loaders), None);
     }
@@ -183,13 +183,13 @@ mod tests {
     }
 
     #[test]
-    fn should_return_none_for_empty_loaders() {
+    fn should_return_none_when_loaders_are_empty() {
         let loaders: Vec<String> = vec![];
         assert_eq!(ContentType::get_from_loaders(&loaders), None);
     }
 
     #[test]
-    fn should_return_mod_from_mods_folder() {
+    fn should_return_mod_when_folder_is_mods() {
         let path = Path::new("/some/instance/mods/MyMod.jar");
         assert_eq!(
             ContentType::get_from_parent_folder(path),
@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_datapack_from_datapacks_folder() {
+    fn should_return_datapack_when_folder_is_datapacks() {
         let path = Path::new("/some/instance/datapacks/MyPack.zip");
         assert_eq!(
             ContentType::get_from_parent_folder(path),
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_resourcepack_from_resourcepacks_folder() {
+    fn should_return_resourcepack_when_folder_is_resourcepacks() {
         let path = Path::new("/some/instance/resourcepacks/MyPack.zip");
         assert_eq!(
             ContentType::get_from_parent_folder(path),
@@ -216,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_shaderpack_from_shaderpacks_folder() {
+    fn should_return_shaderpack_when_folder_is_shaderpacks() {
         let path = Path::new("/some/instance/shaderpacks/MyShader.zip");
         assert_eq!(
             ContentType::get_from_parent_folder(path),
@@ -225,19 +225,19 @@ mod tests {
     }
 
     #[test]
-    fn should_return_none_for_unknown_folder() {
+    fn should_return_none_when_folder_is_unknown() {
         let path = Path::new("/some/instance/other/file.txt");
         assert_eq!(ContentType::get_from_parent_folder(path), None);
     }
 
     #[test]
-    fn should_return_none_for_root_path() {
+    fn should_return_none_when_path_is_the_root() {
         let path = Path::new("/file.txt");
         assert_eq!(ContentType::get_from_parent_folder(path), None);
     }
 
     #[test]
-    fn should_map_all_variants_via_from_string_and_to_str_roundtrip() {
+    fn should_roundtrip_every_variant_when_converted_through_string() {
         for variant in ContentType::iterator() {
             let s = variant.to_str();
             let parsed = ContentType::from_string(s);
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn should_map_modpack_via_from_string() {
+    fn should_return_modpack_when_string_is_modpack() {
         assert_eq!(
             ContentType::from_string("modpack"),
             Some(ContentType::Modpack)
@@ -254,12 +254,12 @@ mod tests {
     }
 
     #[test]
-    fn should_return_none_for_unknown_string() {
+    fn should_return_none_when_string_is_unknown() {
         assert_eq!(ContentType::from_string("unknown"), None);
     }
 
     #[test]
-    fn should_return_loader_names_for_mod() {
+    fn should_return_loader_names_when_content_is_a_mod() {
         assert_eq!(
             ContentType::Mod.get_loaders(),
             &["fabric", "forge", "quilt", "neoforge"]
@@ -267,12 +267,12 @@ mod tests {
     }
 
     #[test]
-    fn should_return_empty_loaders_for_modpack() {
+    fn should_return_no_loaders_when_content_is_a_modpack() {
         assert!(ContentType::Modpack.get_loaders().is_empty());
     }
 
     #[test]
-    fn should_return_correct_folder_for_each_variant() {
+    fn should_return_folder_when_given_each_variant() {
         assert_eq!(ContentType::Mod.get_folder(), "mods");
         assert_eq!(ContentType::DataPack.get_folder(), "datapacks");
         assert_eq!(ContentType::ResourcePack.get_folder(), "resourcepacks");
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn should_return_correct_name_for_each_variant() {
+    fn should_return_name_when_given_each_variant() {
         assert_eq!(ContentType::Mod.get_name(), "mod");
         assert_eq!(ContentType::DataPack.get_name(), "datapack");
         assert_eq!(ContentType::ResourcePack.get_name(), "resourcepack");
@@ -290,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn should_build_relative_path() {
+    fn should_build_relative_path_when_given_a_file_name() {
         assert_eq!(
             ContentType::Mod.get_relative_path("MyMod.jar"),
             PathBuf::from("mods/MyMod.jar")
@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn should_iterate_over_non_modpack_variants() {
+    fn should_skip_modpack_when_iterating_variants() {
         let variants: Vec<ContentType> = ContentType::iterator().collect();
         assert_eq!(variants.len(), 4);
         assert!(!variants.contains(&ContentType::Modpack));

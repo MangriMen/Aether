@@ -11,11 +11,17 @@ use crate::features::{
                 ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
                 ProjectVersionResponse, SearchIndex,
             },
-            get_facet_vector,
         },
     },
     minecraft::ModLoader,
 };
+
+fn get_facet_vector<T: AsRef<str>>(facet: &str, values: &[T]) -> Vec<String> {
+    values
+        .iter()
+        .map(|value| format!("{}:{}", facet, value.as_ref()))
+        .collect()
+}
 
 impl TryFrom<ContentSearchParams> for ProjectSearchParams {
     type Error = String;
@@ -52,7 +58,7 @@ impl TryFrom<ContentSearchParams> for ProjectSearchParams {
 }
 
 impl ProjectSearchResponse {
-    pub fn into_content_search(self, provider_id: ProviderId) -> ContentSearchResult {
+    pub(crate) fn into_content_search(self, provider_id: ProviderId) -> ContentSearchResult {
         let (page, page_count) = calculate_pagination(self.offset, self.limit, self.total_hits);
 
         let items = self

@@ -1,4 +1,4 @@
 pub(crate) mod domain;
 pub mod infra;
 
-pub use domain::{Method, Request, RequestClient, RequestClientExt, RequestError};
+pub use domain::{BytesProgress, Method, Request, RequestClient, RequestClientExt, RequestError};

@@ -12,7 +12,8 @@ use crate::features::instance::infra::{
     FsContentFileService, SqliteInstanceStorage, SqlitePackStorage,
 };
 use crate::features::instance::{
-    Instance, InstanceBuilder, InstanceStorage, PackStorage, RemoveContent, RemoveContentUseCase,
+    Instance, InstanceBuilder, InstanceLocks, InstanceStorage, PackStorage, RemoveContent,
+    RemoveContentUseCase,
 };
 use crate::features::minecraft::ModLoader;
 use crate::features::settings::LocationInfo;
@@ -187,7 +188,7 @@ async fn create_content_files(location_info: &LocationInfo, instance_id: &str) {
 // ─── Tests ─────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn test_remove_content_cleans_db_and_disk() {
+async fn should_clean_db_and_disk_when_content_is_removed() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
@@ -216,6 +217,7 @@ async fn test_remove_content_cleans_db_and_disk() {
         event_emitter,
         pack_storage.clone(),
         content_file_service.clone(),
+        Arc::new(InstanceLocks::new()),
     );
 
     use_case
@@ -243,7 +245,7 @@ async fn test_remove_content_cleans_db_and_disk() {
 }
 
 #[tokio::test]
-async fn test_remove_content_multiple_files() {
+async fn should_remove_every_file_when_several_are_given() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
@@ -263,6 +265,7 @@ async fn test_remove_content_multiple_files() {
         event_emitter,
         pack_storage.clone(),
         content_file_service.clone(),
+        Arc::new(InstanceLocks::new()),
     );
 
     use_case
@@ -284,7 +287,7 @@ async fn test_remove_content_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_remove_content_nonexistent_file_is_idempotent() {
+async fn should_succeed_when_the_file_to_remove_does_not_exist() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
@@ -302,6 +305,7 @@ async fn test_remove_content_nonexistent_file_is_idempotent() {
         event_emitter,
         pack_storage.clone(),
         content_file_service.clone(),
+        Arc::new(InstanceLocks::new()),
     );
 
     // Removing a path not in the pack should not fail
@@ -314,8 +318,47 @@ async fn test_remove_content_nonexistent_file_is_idempotent() {
         .expect("Should not fail for non-existent content");
 }
 
+/// A file that cannot be removed (a directory at its path, on any OS) keeps its record; the
+/// other paths are still removed.
 #[tokio::test]
-async fn test_remove_content_removes_only_selected_files() {
+async fn should_keep_the_record_of_a_file_when_it_cannot_be_removed() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+
+    let instance_storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
+    instance_storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    seed_pack_data(&pool, &instance_id).await;
+    let dir = location_info.instance_dir(&instance_id);
+    std::fs::create_dir_all(dir.join("mods/a.jar")).unwrap();
+    std::fs::write(dir.join("mods/b.jar"), b"more data").unwrap();
+
+    let use_case = RemoveContentUseCase::new(
+        Arc::new(MockEventEmitter),
+        pack_storage.clone(),
+        Arc::new(FsContentFileService::new(location_info.clone())),
+        Arc::new(InstanceLocks::new()),
+    );
+    let result = use_case
+        .execute(RemoveContent::multiple(
+            instance_id.clone(),
+            vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
+        ))
+        .await;
+
+    assert!(result.is_err());
+    assert!(dir.join("mods/a.jar").exists());
+    assert!(!dir.join("mods/b.jar").exists());
+    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let remaining: Vec<_> = pack.files.iter().map(|e| e.file.as_str()).collect();
+    assert_eq!(remaining, ["mods/a.jar"]);
+}
+
+#[tokio::test]
+async fn should_remove_only_the_selected_files_when_others_exist() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
 
@@ -352,6 +395,7 @@ async fn test_remove_content_removes_only_selected_files() {
         event_emitter,
         pack_storage.clone(),
         content_file_service.clone(),
+        Arc::new(InstanceLocks::new()),
     );
 
     use_case
@@ -380,5 +424,53 @@ async fn test_remove_content_removes_only_selected_files() {
     assert!(
         !remaining.contains(&"mods/a.jar"),
         "a.jar removed from pack DB"
+    );
+}
+
+#[tokio::test]
+async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let event_emitter: SharedEventEmitter = Arc::new(MockEventEmitter);
+    let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
+    let content_file_service: Arc<dyn ContentFileService> =
+        Arc::new(FsContentFileService::new(location_info.clone()));
+    SqliteInstanceStorage::new(pool.clone())
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    seed_pack_data(&pool, &instance_id).await;
+    create_content_files(&location_info, &instance_id).await;
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = RemoveContentUseCase::new(
+        event_emitter,
+        pack_storage.clone(),
+        content_file_service,
+        locks.clone(),
+    );
+    let held = locks.lock(&instance_id).await;
+
+    let mut remove = std::pin::pin!(use_case.execute(RemoveContent::multiple(
+        instance_id.clone(),
+        vec!["mods/a.jar".to_string()],
+    )));
+    assert!(futures::poll!(&mut remove).is_pending());
+    assert!(
+        location_info
+            .instance_dir(&instance_id)
+            .join("mods/a.jar")
+            .exists()
+    );
+
+    drop(held);
+    remove.await.unwrap();
+    assert_eq!(
+        pack_storage
+            .get_pack(&instance_id)
+            .await
+            .unwrap()
+            .files
+            .len(),
+        1
     );
 }

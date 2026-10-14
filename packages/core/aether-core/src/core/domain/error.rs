@@ -78,3 +78,9 @@ impl ErrorKind {
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
+
+impl From<plugins::PluginProviderError> for ErrorKind {
+    fn from(value: plugins::PluginProviderError) -> Self {
+        Self::PluginError(value.into())
+    }
+}

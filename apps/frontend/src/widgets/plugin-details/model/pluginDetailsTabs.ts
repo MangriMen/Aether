@@ -16,7 +16,6 @@ export type PluginDetailsTab =
 
 export interface PluginDetailsTabProps {
   plugin: Plugin;
-  isSettingsDisabled?: boolean;
 }
 
 export const PLUGIN_DETAILS_TABS = [

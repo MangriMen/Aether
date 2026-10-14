@@ -4,7 +4,7 @@ mod ports;
 mod use_cases;
 
 pub use di::SettingsFeature;
-pub use dtos::{EditDefaultInstanceSettings, EditHooks, EditSettings};
+pub use dtos::{EditDefaultInstanceSettings, EditHooks, EditPlatformProvider, EditSettings};
 pub use ports::{
     DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCasePort,
     EditSettingsUseCasePort, GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCasePort,

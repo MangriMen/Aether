@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{ContentFile, ContentFileUpdateInfo, ProviderId};
+use crate::features::instance::{ContentFile, ContentFileUpdateInfo, PlanOrigin, ProviderId};
 
 #[derive(Debug, Clone, Default)]
 pub struct Pack {
@@ -22,6 +22,11 @@ pub struct PackFile {
     pub side: Option<String>,
     pub update_provider_id: Option<ProviderId>,
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
+    /// The install plan that put this file into the instance; the next plan of the same origin
+    /// may replace or remove it. `None` — the file was found on disk (added by hand) or installed
+    /// some other way: a plan removes it only if its `update` names the plan's own content (see
+    /// `InstallPlanExecutor`).
+    pub installed_by: Option<PlanOrigin>,
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +57,7 @@ impl From<ContentFile> for PackFile {
             side: None,
             update_provider_id: value.update_provider_id,
             update: value.update,
+            installed_by: None,
         }
     }
 }
@@ -67,6 +73,7 @@ impl PackFile {
             side: None,
             update_provider_id: None,
             update: None,
+            installed_by: None,
         }
     }
 }

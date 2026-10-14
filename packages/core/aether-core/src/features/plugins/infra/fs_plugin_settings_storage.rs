@@ -14,7 +14,6 @@ use crate::{
 };
 
 use super::PluginSettingsV1;
-use super::plugin_utils::to_wasi_path;
 
 pub struct FsPluginSettingsStorage {
     location_info: Arc<LocationInfo>,
@@ -61,15 +60,7 @@ impl PluginSettingsStorage for FsPluginSettingsStorage {
     }
 
     async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
-        let dto = PluginSettingsV1 {
-            allowed_hosts: settings.allowed_hosts.clone(),
-            allowed_paths: settings
-                .allowed_paths
-                .iter()
-                .map(|pm| (pm.0.clone(), to_wasi_path(&pm.1.to_string_lossy())))
-                .collect(),
-            force_enabled_at_api_version: settings.force_enabled_at_api_version.clone(),
-        };
+        let dto = PluginSettingsV1::from(settings.clone());
         self.write(&self.get_plugin_settings_path(plugin_id), &dto)
             .await
     }

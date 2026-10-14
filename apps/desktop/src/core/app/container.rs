@@ -15,9 +15,7 @@ use aether_core::features::instance::infra::{
     InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
     SqliteInstanceStorage, SqlitePackStorage,
 };
-use aether_core::features::instance::{
-    ContentProvider, GetInstanceUseCase, Importer, InstanceCrudPort, Updater,
-};
+use aether_core::features::instance::{ContentProvider, GetInstanceUseCase, Importer, Updater};
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
 };
@@ -25,9 +23,9 @@ use aether_core::features::minecraft::infra::{
     AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor, LibrariesService,
     MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
 };
-use aether_core::features::plugins::{
+use aether_core::features::plugins::infra::{
     ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
-    GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
+    FsPluginVerificationStorage, GithubProvider, PluginInfrastructureListener, ZipPluginExtractor,
 };
 use aether_core::features::plugins::{
     LoadConfigType, PluginLoader, PluginLoaderRegistry, PluginProvider, PluginProviderFactory,
@@ -47,6 +45,7 @@ use aether_core::shared::cache::infra::{FileCache, FsAssetsStorage, SqliteCache}
 use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::FetchSemaphore;
+use aether_core::shared::limits::{ContentInstallLimits, PluginSandboxLimits};
 use aether_core::shared::request_client::infra::ReqwestClient;
 use log::info;
 use reqwest_middleware::ClientWithMiddleware;
@@ -115,6 +114,9 @@ pub async fn build_container(
 
     minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 
+    // Before any plan runs: what an install interrupted by a crash left in the temp directory.
+    instance::remove_plan_leftovers(&location_info.temp_dir()).await;
+
     // ── Settings bootstrap ──────────────────────────────────────────
     let settings_storage_sqlite = Arc::new(SqliteSettingsStorage::new(pool.clone()));
     let settings = if let Ok(s) = settings_storage_sqlite.get().await {
@@ -126,6 +128,12 @@ pub async fn build_container(
     };
     let max_downloads = settings.max_concurrent_downloads();
     let fetch_semaphore = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(max_downloads)));
+
+    // ── Limits ──────────────────────────────────────────────────────
+    // The one place to change what an install or a plugin may bring in or use. The plugin
+    // archive extractor's own limits are `ZipPluginExtractorConstants`, set where it is built.
+    let content_limits = ContentInstallLimits::default();
+    let sandbox_limits = PluginSandboxLimits::default();
 
     // ── HTTP client ─────────────────────────────────────────────────
     let reqwest_client: Arc<ClientWithMiddleware> = {
@@ -152,7 +160,7 @@ pub async fn build_container(
     let http_client: Arc<ReqwestClient<ProgressServiceType>> = Arc::new(ReqwestClient::new(
         progress_service.clone(),
         reqwest_client.clone(),
-        fetch_semaphore,
+        fetch_semaphore.clone(),
     ));
 
     // ── Storage implementations ─────────────────────────────────────
@@ -178,7 +186,10 @@ pub async fn build_container(
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
-        Arc::new(FsInstanceFileService::new(location_info.clone()));
+        Arc::new(FsInstanceFileService::new(
+            location_info.clone(),
+            sandbox_limits.max_instance_file_bytes,
+        ));
 
     let java_storage: Arc<dyn aether_core::features::java::JavaStorage> =
         Arc::new(SqliteJavaStorage::new(pool.clone()));
@@ -232,13 +243,24 @@ pub async fn build_container(
 
     // ── Plugin infrastructure ───────────────────────────────────────
     let plugin_registry = Arc::new(PluginRegistry::new(event_emitter.clone()));
-    let extism_loader = Arc::new(ExtismPluginLoader::new(location_info.clone()));
+    let plugin_verification_storage: Arc<
+        dyn aether_core::features::plugins::PluginVerificationStorage,
+    > = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
+    let extism_loader = Arc::new(ExtismPluginLoader::new(
+        location_info.clone(),
+        plugin_verification_storage.clone(),
+        sandbox_limits,
+    ));
     let plugin_loader_registry = Arc::new(PluginLoaderRegistry::new(HashMap::from([(
         LoadConfigType::Extism,
         extism_loader.clone() as Arc<dyn PluginLoader>,
     )])));
     let plugin_storage: Arc<dyn aether_core::features::plugins::PluginStorage> =
-        Arc::new(FsPluginStorage::new(location_info.clone(), None));
+        Arc::new(FsPluginStorage::new(
+            location_info.clone(),
+            plugin_verification_storage.clone(),
+            None,
+        ));
     let plugin_source_storage: Arc<dyn aether_core::features::plugins::PluginSourceStorage> =
         Arc::new(FsPluginSourceStorage::new(location_info.clone()));
     let plugin_settings_storage: Arc<dyn aether_core::features::plugins::PluginSettingsStorage> =
@@ -285,7 +307,7 @@ pub async fn build_container(
             settings_storage,
             default_instance_settings_storage,
             process_storage,
-            instance_storage,
+            instance_storage: instance_storage.clone(),
             pack_storage,
             content_file_service,
             instance_file_service,
@@ -305,6 +327,7 @@ pub async fn build_container(
             loader_registry: plugin_loader_registry,
             storage: plugin_storage,
             source_storage: plugin_source_storage,
+            verification_storage: plugin_verification_storage,
             settings_storage: plugin_settings_storage,
             provider_factory: plugin_provider_factory,
             extractor: plugin_extractor,
@@ -314,10 +337,14 @@ pub async fn build_container(
         progress_service: progress_service
             as Arc<dyn aether_core::features::events::ProgressService>,
         location_info: location_info.clone(),
+        fetch_semaphore,
+        request_client: http_client.clone(),
         instance_watcher_service: instance_watcher_service.clone(),
         importers_registry: importers_registry.clone(),
         updaters_registry: updaters_registry.clone(),
         content_provider_registry: content_provider_registry.clone(),
+        content_limits,
+        sandbox_limits,
     });
 
     // ── Post-construction wiring ────────────────────────────────────
@@ -334,7 +361,7 @@ pub async fn build_container(
             location_info.clone(),
             None,
             http_client.clone(),
-            container.create_instance_use_case(),
+            content_limits.max_mrpack_bytes,
         ));
         let meta = provider.metadata();
         let _ = content_provider_registry
@@ -352,6 +379,7 @@ pub async fn build_container(
         importers_registry,
         updaters_registry,
         content_provider_registry,
+        location_info.clone(),
     ));
     event_emitter.on::<PluginEvent, _>({
         let listener = plugin_infra_listener.clone();

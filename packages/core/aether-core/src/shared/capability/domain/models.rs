@@ -25,7 +25,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn capability_not_found_format() {
+    fn should_format_capability_not_found_error_when_displayed() {
         let err = RegistryError::CapabilityNotFound {
             capability_type: "content_provider",
             capability_id: "my_plugin".into(),

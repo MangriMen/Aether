@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 
 use crate::features::instance::app::ports::ChangeContentStateUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, app::ContentFileService},
+    instance::{InstanceError, InstanceLocks, app::ContentFileService},
 };
+
+/// How long a toggle waits for the instance's lock before the instance counts as busy.
+const LOCK_WAIT: Duration = Duration::from_secs(5);
 
 pub enum ContentStateAction {
     Enable,
@@ -41,20 +44,39 @@ impl ChangeContentState {
     }
 }
 
+/// Enables or disables content under the instance's lock ([`InstanceLocks`]): not while a plan
+/// is changing the same files, which would leave both the enabled and the disabled copy.
+///
+/// It waits for the lock only for [`LOCK_WAIT`]: a toggle behind another toggle is let through,
+/// one behind a plan is refused as the instance still installing. A plugin reaches this use case
+/// through a host function while the core may be calling it under that very lock (an updater, an
+/// event handler of a launch), and the lock is not reentrant: waiting for good would hang it.
 pub struct ChangeContentStateUseCase {
     event_emitter: SharedEventEmitter,
     content_file_service: Arc<dyn ContentFileService>,
+    instance_locks: Arc<InstanceLocks>,
+    lock_wait: Duration,
 }
 
 impl ChangeContentStateUseCase {
     pub fn new(
         event_emitter: SharedEventEmitter,
         content_file_service: Arc<dyn ContentFileService>,
+        instance_locks: Arc<InstanceLocks>,
     ) -> Self {
         Self {
             event_emitter,
             content_file_service,
+            instance_locks,
+            lock_wait: LOCK_WAIT,
         }
+    }
+
+    /// Wait for the lock for `lock_wait` instead of the default.
+    #[must_use]
+    pub fn with_lock_wait(mut self, lock_wait: Duration) -> Self {
+        self.lock_wait = lock_wait;
+        self
     }
 
     pub async fn execute(&self, input: ChangeContentState) -> Result<(), InstanceError> {
@@ -63,6 +85,14 @@ impl ChangeContentStateUseCase {
             content_paths,
             action,
         } = input;
+
+        let Some(_lock) = self
+            .instance_locks
+            .lock_within(&instance_id, self.lock_wait)
+            .await
+        else {
+            return Err(InstanceError::InstanceStillInstalling { instance_id });
+        };
 
         match action {
             ContentStateAction::Enable => {

@@ -34,12 +34,21 @@ impl SettingsStorage for SqliteSettingsStorage {
 
         let enabled_plugins = plugins.into_iter().map(|p| p.plugin_id).collect();
 
+        let platform_providers =
+            sqlx::query!("SELECT platform, provider_id FROM platform_providers")
+                .fetch_all(&self.pool)
+                .await?
+                .into_iter()
+                .map(|row| (row.platform, row.provider_id))
+                .collect();
+
         Ok(Settings::new(
             base.max_concurrent_downloads
                 .try_into()
                 .unwrap_or(DEFAULT_MAX_CONCURRENT_DOWNLOADS),
             enabled_plugins,
-        ))
+        )
+        .with_platform_providers(platform_providers))
     }
 
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {
@@ -68,6 +77,20 @@ impl SettingsStorage for SqliteSettingsStorage {
             sqlx::query!(
                 "INSERT INTO enabled_plugins (plugin_id) VALUES (?)",
                 plugin_id
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        sqlx::query!("DELETE FROM platform_providers")
+            .execute(&mut *tx)
+            .await?;
+
+        for (platform, provider_id) in settings.platform_providers() {
+            sqlx::query!(
+                "INSERT INTO platform_providers (platform, provider_id) VALUES (?, ?)",
+                platform,
+                provider_id
             )
             .execute(&mut *tx)
             .await?;

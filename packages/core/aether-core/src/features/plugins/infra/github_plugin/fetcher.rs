@@ -3,7 +3,7 @@ use std::sync::Arc;
 use reqwest_middleware::ClientWithMiddleware;
 
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
-use crate::features::plugins::{PluginError, PluginManifestPreview, PluginSourceType};
+use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
 
 /// Fetches plugin release information from GitHub repositories.
 pub struct GitHubPluginFetcher {
@@ -35,10 +35,10 @@ impl GitHubPluginFetcher {
     fn rate_limit_error_or(
         status: reqwest::StatusCode,
         headers: &reqwest::header::HeaderMap,
-        fallback: PluginError,
-    ) -> PluginError {
+        fallback: PluginProviderError,
+    ) -> PluginProviderError {
         if Self::check_rate_limit(status, headers) {
-            return PluginError::ProviderRateLimited {
+            return PluginProviderError::ProviderRateLimited {
                 source_type: PluginSourceType::GitHub,
                 retry_after: Self::retry_after_from(headers),
             };
@@ -53,7 +53,7 @@ impl GitHubPluginFetcher {
         owner: &str,
         repo: &str,
         max_results: u32,
-    ) -> Result<Vec<GitHubReleaseInfo>, PluginError> {
+    ) -> Result<Vec<GitHubReleaseInfo>, PluginProviderError> {
         let url =
             format!("https://api.github.com/repos/{owner}/{repo}/releases?per_page={max_results}");
 
@@ -64,7 +64,7 @@ impl GitHubPluginFetcher {
             .header("Accept", "application/vnd.github+json")
             .send()
             .await
-            .map_err(|e| PluginError::ProviderFetchError {
+            .map_err(|e| PluginProviderError::ProviderFetchError {
                 source_type: PluginSourceType::GitHub,
                 details: e.to_string(),
             })?;
@@ -90,7 +90,7 @@ impl GitHubPluginFetcher {
             return Err(Self::rate_limit_error_or(
                 status,
                 &headers,
-                PluginError::ProviderFetchError {
+                PluginProviderError::ProviderFetchError {
                     source_type: PluginSourceType::GitHub,
                     details: format!("HTTP {status}"),
                 },
@@ -101,7 +101,7 @@ impl GitHubPluginFetcher {
             response
                 .json()
                 .await
-                .map_err(|e| PluginError::ProviderFetchError {
+                .map_err(|e| PluginProviderError::ProviderFetchError {
                     source_type: PluginSourceType::GitHub,
                     details: format!("Failed to parse response: {e}"),
                 })?;
@@ -154,7 +154,7 @@ impl GitHubPluginFetcher {
         current_tag: &str,
         current_version: &str,
         max_releases: u32,
-    ) -> Result<PluginUpdateInfo, PluginError> {
+    ) -> Result<PluginUpdateInfo, PluginProviderError> {
         let all_releases = self.fetch_releases(owner, repo, max_releases).await?;
 
         // Find the latest non-prerelease version, falling back to any release
@@ -193,14 +193,14 @@ impl GitHubPluginFetcher {
     }
 
     /// Download a file from a URL and return the bytes.
-    pub async fn download_asset(&self, url: &str) -> Result<Vec<u8>, PluginError> {
+    pub async fn download_asset(&self, url: &str) -> Result<Vec<u8>, PluginProviderError> {
         let response = self
             .client
             .get(url)
             .header("User-Agent", "Aether")
             .send()
             .await
-            .map_err(|e| PluginError::DownloadFailed {
+            .map_err(|e| PluginProviderError::DownloadFailed {
                 url: url.to_string(),
                 details: e.to_string(),
             })?;
@@ -211,21 +211,19 @@ impl GitHubPluginFetcher {
             return Err(Self::rate_limit_error_or(
                 status,
                 &headers,
-                PluginError::DownloadFailed {
+                PluginProviderError::DownloadFailed {
                     url: url.to_string(),
                     details: format!("HTTP {status}"),
                 },
             ));
         }
 
-        response
-            .bytes()
-            .await
-            .map(|b| b.to_vec())
-            .map_err(|e| PluginError::DownloadFailed {
+        response.bytes().await.map(|b| b.to_vec()).map_err(|e| {
+            PluginProviderError::DownloadFailed {
                 url: url.to_string(),
                 details: e.to_string(),
-            })
+            }
+        })
     }
 
     /// Preview a plugin from a GitHub repo URL.
@@ -234,7 +232,7 @@ impl GitHubPluginFetcher {
         &self,
         owner: &str,
         repo: &str,
-    ) -> Result<GitHubPluginPreview, PluginError> {
+    ) -> Result<GitHubPluginPreview, PluginProviderError> {
         let mut releases = self.fetch_releases(owner, repo, 20).await?;
 
         // Try to get manifest + capabilities from the first release that has a manifest

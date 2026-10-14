@@ -13,12 +13,29 @@ export const commands = {
 	enable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|enable", { id, requestId }),
 	forceEnable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|force_enable", { id, requestId }),
 	disable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|disable", { id, requestId }),
+	/**
+	 *  Restarts a running plugin, so that folders changed in its settings take effect. A plugin in
+	 *  the middle of a call refuses with `Busy` and goes on as it was.
+	 */
+	reload: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|reload", { id, requestId }),
 	call: (id: string, data: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|call", { id, data, requestId }),
 	getSettings: (id: string) => __TAURI_INVOKE<{
 	allowedHosts?: string[],
-	allowedPaths?: PathMappingDto[],
+	allowedPaths?: AllowedPathDto[],
 } | null>("plugin:plugin|get_settings", { id }),
 	editSettings: (id: string, editSettings: EditPluginSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|edit_settings", { id, editSettings, requestId }),
+	/**
+	 *  Gives the plugin read access to the folder of a file the user named for it, restarting the
+	 *  plugin if it runs. The UI asks the user first: with `dry_run` nothing changes, and the answer
+	 *  says whether there is anything to ask (`needed`) or the plugin can already read the file.
+	 */
+	grantFolderAccess: (id: string, filePath: string, dryRun: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<FolderAccessDto>("plugin:plugin|grant_folder_access", { id, filePath, dryRun, requestId }),
+	/**
+	 *  Lets the plugin reach the host of a URL the user gave it. No restart: the plugin's requests
+	 *  read its hosts on every call. As with folders, the UI asks the user first, and `dry_run`
+	 *  tells it whether there is anything to ask.
+	 */
+	grantHostAccess: (id: string, url: string, dryRun: boolean, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<HostAccessDto>("plugin:plugin|grant_host_access", { id, url, dryRun, requestId }),
 	openPluginsFolder: () => __TAURI_INVOKE<null>("plugin:plugin|open_plugins_folder"),
 	getApiVersion: () => __TAURI_INVOKE<string>("plugin:plugin|get_api_version"),
 	getPluginSource: (id: string) => __TAURI_INVOKE<{ source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" } | null>("plugin:plugin|get_plugin_source", { id }),
@@ -35,11 +52,33 @@ export const events = {
 };
 
 /* Types */
+export type AllowedHostRejectionDto = "invalid_url" | "unsupported_scheme" | "missing_host" | "not_public" | "wildcard";
+
+/**  A folder of the user's given to a plugin. */
+export type AllowedPathDto = {
+	/**  Path on the host. */
+	hostPath: string,
+	/**
+	 *  Path inside the plugin sandbox. A host-style path is turned into the plugin's name for
+	 *  it (`D:\packs` → `/mnt/d/packs`).
+	 */
+	pluginPath: string,
+	/**  `true` unless the user lets the plugin write there. */
+	readOnly: boolean,
+};
+
+export type AllowedPathRejectionDto = "host_not_absolute" | "host_not_a_folder" | "host_is_root" | "plugin_not_absolute" | "plugin_not_normalized" | "plugin_is_root" | "plugin_reserved" | "host_overlaps_core";
+
 export type ApiConfigDto = {
 	/**  Required API version range (`SemVer` requirement). */
 	version: string,
 	/**  List of optional host features requested by the plugin. */
 	features?: string[],
+	/**
+	 *  Host functions the plugin declares and is linked with. `None`: the manifest predates
+	 *  the declaration, and the plugin is incompatible.
+	 */
+	hostFunctions?: string[] | null,
 };
 
 export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
@@ -69,17 +108,18 @@ export type CapabilityMetadataDto = {
 };
 
 export type ContentProviderCapabilityMetadataDto = {
-	/**  Whether the provider supports installing individual items (e.g., a single mod or resource pack). */
-	supportsInstallAtomic: boolean,
-	/**  Whether the provider supports installing complex modpacks or curated collections. */
-	supportsInstallModpacks: boolean,
+	/**
+	 *  The platform whose content the provider serves; providers sharing one are alternatives,
+	 *  and the user picks which of them is asked.
+	 */
+	platform: string | null,
 } & CapabilityMetadataDto;
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
 export type EditPluginSettingsDto = {
 	allowedHosts?: string[] | null,
-	allowedPaths?: PathMappingDto[] | null,
+	allowedPaths?: AllowedPathDto[] | null,
 };
 
 export type EventErrorDto = { code: "NOT_INITIALIZED" } | { code: "NO_LOADING_BAR"; payload: {
@@ -96,6 +136,14 @@ export type FileWatcherErrorDto = { code: "PATH_NOT_FOUND"; payload: {
 	details: string,
 } };
 
+export type FolderAccessDto = 
+/**  The plugin could already read the file. */
+{ type: "alreadyAllowed"; folder: string } | 
+/**  A dry run: the plugin cannot read the file yet; nothing was changed. */
+{ type: "needed"; folder: string } | 
+/**  The folder was added read-only and the plugin restarted with it. */
+{ type: "granted"; folder: string };
+
 export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto } | { type: "window"; payload: WindowErrorDto } | { type: "auth"; payload: AuthErrorDto } | { type: "event"; payload: EventErrorDto } | { type: "fileWatcher"; payload: FileWatcherErrorDto } | { type: "instance"; payload: InstanceErrorDto } | { type: "java"; payload: JavaErrorDto } | { type: "minecraft"; payload: MinecraftErrorDto } | { type: "plugin"; payload: PluginErrorDto } | { type: "process"; payload: ProcessErrorDto } | { type: "request"; payload: RequestErrorDto } | { type: "settings"; payload: SettingsErrorDto } | 
 /**  General errors that are expected and can be shown to the user. */
 { type: "generic"; payload: string } | 
@@ -105,6 +153,14 @@ export type FrontendError = { type: "appSettings"; payload: AppSettingsErrorDto 
  *  but serve as a safety net to prevent silent crashes.
  */
 { type: "internal"; payload: string };
+
+export type HostAccessDto = 
+/**  The plugin could already reach the host. */
+{ type: "alreadyAllowed"; host: string } | 
+/**  A dry run: the plugin cannot reach the host yet; nothing was changed. */
+{ type: "needed"; host: string } | 
+/**  The host was added to the plugin's allowed hosts. */
+{ type: "granted"; host: string };
 
 export type ImporterCapabilityMetadataDto = {
 	/** Optional field label shown in the importer UI. */
@@ -135,6 +191,9 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } } | { code: "IMPORT_FAILED"; payload: {
 	plugin_id: string,
 	capability_id: string,
+	reason: string,
+} } | { code: "PLUGIN_NOT_RUNNING"; payload: {
+	plugin_id: string,
 } } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
@@ -145,12 +204,33 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	content_path: string,
 } } | { code: "CONTENT_FILENAME"; payload: {
 	path: string,
+} } | { code: "INVALID_RELATIVE_PATH"; payload: {
+	path: string,
+	reason: string,
+} } | { code: "PATH_ESCAPES_INSTANCE"; payload: {
+	path: string,
+	instance_id: string,
+} } | { code: "FILE_TOO_LARGE"; payload: {
+	path: string,
+	size: string,
+	limit: string,
 } } | { code: "CONTENT_DOWNLOAD_ERROR"; payload: string } | { code: "CONTENT_PROVIDER_ERROR"; payload: {
 	reason: string,
 } } | { code: "CONTENT_FOR_GAME_VERSION_NOT_FOUND"; payload: {
 	game_version: string,
 } } | { code: "UNSUPPORTED_CONTENT_TYPE"; payload: {
 	content_type: ContentTypeDto,
+} } | { code: "UNSUPPORTED_OPERATION"; payload: {
+	provider_id: string,
+	operation: string,
+} } | { code: "PLATFORM_PROVIDER_NOT_FOUND"; payload: {
+	platform: string,
+} } | { code: "PLATFORM_PROVIDER_NOT_CHOSEN"; payload: {
+	platform: string,
+} } | { code: "GAME_CHANGE_NOT_ALLOWED"; payload: {
+	instance_id: string,
+	provider_id: string,
+	content_id: string,
 } } | { code: "SETTINGS_LOAD_ERROR"; payload: {
 	details: string,
 } } | { code: "MINECRAFT_ERROR"; payload: {
@@ -199,13 +279,9 @@ export type LoadConfigDto =
 /**  Path to the .wasm file relative to the plugin root. */
 file: string; 
 /**  Maximum memory (in bytes) the plugin is allowed to allocate. */
-memoryLimit?: string } | 
-/**  Load a native shared library (.dll, .so, .dylib). Less secure, but faster. */
-{ type: "native"; 
-/**  Path to the dynamic library file relative to the plugin root. */
-libPath: string };
+memoryLimit?: string };
 
-export type LoadConfigTypeDto = "extism" | "native";
+export type LoadConfigTypeDto = "extism";
 
 export type LoaderVersionPreferenceDto = "latest" | "stable" | string;
 
@@ -263,6 +339,13 @@ export type PluginDto = {
 	manifest: PluginManifestDto,
 	capabilities: PluginCapabilitiesDto | null,
 	state: PluginDtoState,
+	state_reason: PluginStateReasonDto | null,
+	/**
+	 *  The plugin runs with other folders than its settings give it now: they take effect once
+	 *  it restarts.
+	 */
+	restart_needed: boolean,
+	verified: boolean,
 };
 
 export type PluginDtoState = "NotLoaded" | "Loading" | "Loaded" | "Unloading" | "Incompatible" | "Failed";
@@ -277,6 +360,13 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	plugin_id: string,
 } } | { code: "ALREADY_UNLOADED"; payload: {
 	plugin_id: string,
+} } | { code: "BUSY"; payload: {
+	plugin_id: string,
+} } | { code: "STOPPED"; payload: {
+	plugin_id: string,
+} } | { code: "ID_MISMATCH"; payload: {
+	plugin_id: string,
+	archive_id: string,
 } } | { code: "LOAD_FAILED"; payload: {
 	plugin_id: string,
 	reason: string,
@@ -295,8 +385,6 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	message: string,
 } } | { code: "LOADER_NOT_FOUND"; payload: {
 	config_type: LoadConfigTypeDto,
-} } | { code: "INVALID_CONFIG"; payload: {
-	config: LoadConfigDto,
 } } | { code: "EXTRACTION_FAILED"; payload: {
 	from: string,
 } } | { code: "INVALID_EXTRACTION_FORMAT" } | { code: "FILE_EXTRACTION_FAILED"; payload: {
@@ -310,6 +398,14 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 } } | { code: "ACCESS_VIOLATION"; payload: {
 	plugin_id: string,
 	path: string,
+} } | { code: "INVALID_ALLOWED_PATH"; payload: {
+	plugin_id: string,
+	path: string,
+	reason: AllowedPathRejectionDto,
+} } | { code: "INVALID_ALLOWED_HOST"; payload: {
+	plugin_id: string,
+	url: string,
+	reason: AllowedHostRejectionDto,
 } } | { code: "HASH_COMPUTATION_FAILED" } | { code: "SETTINGS"; payload: {
 	details: string,
 } } | { code: "STORAGE"; payload: {
@@ -375,13 +471,23 @@ export type PluginMetadataDto = {
 
 export type PluginSettingsDto = {
 	allowedHosts?: string[],
-	allowedPaths?: PathMappingDto[],
+	allowedPaths?: AllowedPathDto[],
 };
 
 export type PluginSourceDto = { source: "remote"; source_type: PluginSourceTypeDto; identifier: string; current_tag: string; current_version: string } | { source: "local" };
 
 /**  Provider source type for plugin installation. */
 export type PluginSourceTypeDto = "git_hub" | "local";
+
+/**  Translated by its `code`; the payload fills in the message. */
+export type PluginStateReasonDto = { code: "INCOMPATIBLE_API_VERSION"; payload: {
+	required: string,
+	host: string,
+} } | { code: "INVALID_MANIFEST"; payload: {
+	details: string,
+} } | { code: "LOAD_FAILED"; payload: {
+	details: string,
+} };
 
 /**
  *  Provider-agnostic plugin update info.
@@ -417,12 +523,14 @@ export type ProviderHandlersDto = {
 	getContent: string,
 	/**  Optional function to list available versions of a specific content item. */
 	listVersion: string | null,
-	/**  Function to handle the download and installation of a single item. */
-	installAtomic: string,
-	/**  Optional function to handle the installation of full modpacks. */
-	installModpack: string | null,
 	/**  Optional function to check if a specific content item is compatible with current environment. */
 	checkCompatibility: string | null,
+	/**  Optional function resolving a reference to the provider's platform to one file. */
+	resolveFile: string | null,
+	/**  Optional function describing everything to install for a piece of content. */
+	resolveInstallPlan: string | null,
+	/**  Optional function describing a pack without resolving its files. */
+	resolvePackMetadata: string | null,
 };
 
 /**  Generic provider-agnostic plugin preview for the frontend. */
@@ -454,16 +562,30 @@ export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payl
 	details: string,
 } } | { code: "TOML"; payload: {
 	details: string,
-} } | { code: "PARSE" };
+} } | { code: "PARSE" } | { code: "STATUS"; payload: {
+	status: number,
+	url: string,
+} } | { code: "TOO_LARGE"; payload: {
+	limit: string,
+} } | { code: "IO"; payload: {
+	path: string,
+	details: string,
+} };
 
 export type RuntimeConfigDto = {
 	/**  List of domains or IP addresses the plugin is allowed to connect to. */
 	allowedHosts?: string[],
-	/**  Filesystem access restrictions. Maps host paths to plugin-internal paths. */
+	/**
+	 *  Ignored by the launcher, which logs a warning: folders are given to a plugin by the
+	 *  user, in its settings. Kept so that manifests declaring it still load.
+	 */
 	allowedPaths?: PathMappingDto[],
 };
 
-export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" };
+export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
+	platform: string,
+	reason: string,
+} };
 
 export type UpdaterCapabilityMetadataDto = CapabilityMetadataDto;
 

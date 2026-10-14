@@ -1,6 +1,9 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { PluginCapabilitiesSection } from '@/entities/plugins';
+import {
+  PluginCapabilitiesSection,
+  PluginHostFunctionsSection,
+} from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 
 import type { PluginDetailsTabProps } from '../model';
@@ -11,11 +14,7 @@ export type PluginCapabilitiesTabProps = ComponentProps<'div'> &
 export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, [
-    'plugin',
-    'isSettingsDisabled',
-    'class',
-  ]);
+  const [local, others] = splitProps(props, ['plugin', 'class']);
 
   return (
     <div
@@ -24,6 +23,9 @@ export const PluginCapabilitiesTab: Component<PluginCapabilitiesTabProps> = (
     >
       <PluginCapabilitiesSection
         capabilities={local.plugin.capabilities ?? null}
+      />
+      <PluginHostFunctionsSection
+        hostFunctions={local.plugin.manifest.api.hostFunctions}
       />
     </div>
   );

@@ -55,7 +55,13 @@ impl Drop for ProgressBarId {
                 return;
             };
 
-            let removed_progress_bar = progress_bar_storage.remove(progress_bar_id).await.unwrap();
+            let removed_progress_bar = match progress_bar_storage.remove(progress_bar_id).await {
+                Ok(removed) => removed,
+                Err(e) => {
+                    error!("Failed to remove progress bar {progress_bar_id}: {e:?}");
+                    return;
+                }
+            };
 
             if let Some((_, progress_bar)) = removed_progress_bar {
                 let completion_event = ProgressEvent {

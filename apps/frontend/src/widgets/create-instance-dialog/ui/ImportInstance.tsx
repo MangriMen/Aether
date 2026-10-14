@@ -22,7 +22,7 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
   return (
     <div class={cn('flex flex-col', local.class)} {...others}>
       <Show
-        when={pluginsImporters.data?.length}
+        when={pluginsImporters.data?.length ? pluginsImporters.data : undefined}
         fallback={
           <div class='flex grow items-center justify-center'>
             <span
@@ -35,25 +35,23 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
           </div>
         }
       >
-        <Show when={pluginsImporters.data}>
-          {(importers) => (
-            <ImportInstanceView
-              importers={importers()}
-              footerButtons={
-                <DialogFooter class='mt-auto'>
-                  <Button type='submit'>{t('createInstance.import')}</Button>
-                  <Button
-                    variant='secondary'
-                    onClick={() => props.onOpenChange?.(false)}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                </DialogFooter>
-              }
-              onSubmit={() => props.onOpenChange?.(false)}
-            />
-          )}
-        </Show>
+        {(importers) => (
+          <ImportInstanceView
+            importers={importers()}
+            footerButtons={
+              <DialogFooter>
+                <Button type='submit'>{t('createInstance.import')}</Button>
+                <Button
+                  variant='secondary'
+                  onClick={() => props.onOpenChange?.(false)}
+                >
+                  {t('common.cancel')}
+                </Button>
+              </DialogFooter>
+            }
+            onSubmit={() => props.onOpenChange?.(false)}
+          />
+        )}
       </Show>
     </div>
   );

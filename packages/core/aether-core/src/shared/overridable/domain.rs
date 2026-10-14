@@ -46,21 +46,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn resolve_uses_data_when_active() {
+    fn should_use_data_when_the_override_is_active() {
         let overridable = Overridable::new(String::from("custom"), true);
         let result = overridable.resolve(&String::from("global"));
         assert_eq!(result, "custom");
     }
 
     #[test]
-    fn resolve_uses_global_when_not_active() {
+    fn should_use_global_when_the_override_is_not_active() {
         let overridable = Overridable::new(String::from("custom"), false);
         let result = overridable.resolve(&String::from("global"));
         assert_eq!(result, "global");
     }
 
     #[test]
-    fn resolve_with_integer() {
+    fn should_resolve_an_integer_when_the_override_holds_one() {
         let overridable = Overridable::new(42, true);
         assert_eq!(overridable.resolve(&0), 42);
 
@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn map_transforms_data() {
+    fn should_transform_data_when_mapped() {
         let overridable = Overridable::new(5, true);
         let mapped = overridable.map(|x| x * 2);
         assert_eq!(mapped.data, 10);
@@ -77,21 +77,21 @@ mod tests {
     }
 
     #[test]
-    fn map_preserves_is_active() {
+    fn should_preserve_is_active_when_mapped() {
         let overridable = Overridable::new("hello", false);
         let mapped = overridable.map(|s| format!("{s}!"));
         assert!(!mapped.is_active);
     }
 
     #[test]
-    fn new_disabled_default_creates_inactive_default() {
+    fn should_create_an_inactive_default_when_built_as_new_disabled_default() {
         let overridable = Overridable::<i32>::new_disabled_default();
         assert!(!overridable.is_active);
         assert_eq!(overridable.data, 0);
     }
 
     #[test]
-    fn serde_roundtrip() {
+    fn should_roundtrip_through_serde_when_serialized_and_deserialized() {
         let overridable = Overridable::new(42, true);
         let json = serde_json::to_string(&overridable).unwrap();
         assert!(json.contains(r#""is_active":true"#), "snake_case: {json}");

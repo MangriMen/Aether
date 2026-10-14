@@ -1,5 +1,7 @@
 export * from './createJavaVersionsTable';
+export * from './groupProvidersByPlatform';
 export * from './openTranslationInBrowser';
+export * from './platformsToChooseFor';
 export * from './useDefaultHooksSettingsHandler';
 export * from './useDefaultJavaAndMemorySettingsHandler';
 export * from './useDefaultWindowSettingsHandler';

@@ -3,13 +3,13 @@ use crate::{
     shared::cache::domain::{CacheId, CacheKey, CachedValue},
 };
 
-pub enum MinecraftMetadataCacheNamespaces {
+pub(super) enum MinecraftMetadataCacheNamespaces {
     VersionManifest,
     LoaderManifest,
 }
 
 impl MinecraftMetadataCacheNamespaces {
-    pub fn as_str(&self) -> &'static str {
+    pub(super) fn as_str(&self) -> &'static str {
         match *self {
             Self::VersionManifest => "minecraft:version-manifest",
             Self::LoaderManifest => "minecraft:loader-manifest",
@@ -17,14 +17,14 @@ impl MinecraftMetadataCacheNamespaces {
     }
 }
 
-pub fn version_manifest_key() -> CacheKey<CachedValue<vanilla::VersionManifest>> {
+pub(crate) fn version_manifest_key() -> CacheKey<CachedValue<vanilla::VersionManifest>> {
     CacheKey::new(
         MinecraftMetadataCacheNamespaces::VersionManifest.as_str(),
         CacheId::Static("version-manifest"),
     )
 }
 
-pub fn loader_manifest_key(loader: ModLoader) -> CacheKey<CachedValue<modded::Manifest>> {
+pub(crate) fn loader_manifest_key(loader: ModLoader) -> CacheKey<CachedValue<modded::Manifest>> {
     CacheKey::new(
         MinecraftMetadataCacheNamespaces::LoaderManifest.as_str(),
         CacheId::Named(loader.as_meta_str().to_string()),

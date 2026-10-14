@@ -80,6 +80,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes",
+ "cap-fs-ext",
+ "cap-std",
  "chrono",
  "daedalus",
  "dashmap",
@@ -87,13 +89,19 @@ dependencies = [
  "extism",
  "extism-convert",
  "futures",
+ "glob",
+ "http",
+ "hyper-util",
  "log",
  "notify",
  "notify-debouncer-mini",
  "path-slash",
+ "process-wrap",
  "regex",
  "reqwest",
  "reqwest-middleware",
+ "reqwest-retry",
+ "rmp-serde",
  "rust_arkitect",
  "semver",
  "serde",
@@ -101,6 +109,7 @@ dependencies = [
  "serde_qs",
  "serde_with",
  "sha1_smol",
+ "sha2 0.10.9",
  "sqlx",
  "sys-info",
  "sysinfo",
@@ -127,9 +136,10 @@ dependencies = [
 
 [[package]]
 name = "aether-core-plugin-api"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
+ "register-schema",
  "schemars 1.2.1",
  "serde",
  "serde_json",
@@ -4384,6 +4394,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "process-wrap"
+version = "10.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f21b97672d2dc848e7b25701ab4535618b92f4861c13cc3f7f7bed52ad3c8da"
+dependencies = [
+ "futures",
+ "indexmap 2.14.0",
+ "nix",
+ "tokio",
+ "windows 0.62.2",
 ]
 
 [[package]]

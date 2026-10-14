@@ -1,5 +1,17 @@
 import * as v from 'valibot';
 
+export const AllowedPathSchema = v.object({
+  hostPath: v.string(),
+  pluginPath: v.string(),
+  readOnly: v.optional(v.boolean(), true),
+});
+
+export type AllowedPathValue = v.InferInput<typeof AllowedPathSchema>;
+export type AllowedPathErrors = {
+  hostPath?: string;
+  pluginPath?: string;
+};
+
 export const PluginSettingsSchema = v.object({
   allowedHosts: v.pipe(
     v.optional(
@@ -14,7 +26,7 @@ export const PluginSettingsSchema = v.object({
     v.transform((value) => value ?? []),
   ),
   allowedPaths: v.pipe(
-    v.optional(v.array(v.tuple([v.string(), v.string()]))),
+    v.optional(v.array(AllowedPathSchema)),
     v.transform((value) => value ?? []),
   ),
 });

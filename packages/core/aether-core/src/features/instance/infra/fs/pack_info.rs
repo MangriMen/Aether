@@ -1,9 +1,12 @@
-use std::str::FromStr;
-
 use serde::{Deserialize, Serialize};
 
-use crate::features::instance::{PackInfo, ProviderId};
+use crate::features::instance::{
+    PackInfo, ProviderId,
+    infra::legacy_provider_id::{migrate_provider_id, parse_v1_provider_id},
+};
 
+/// The pack of a V1 instance. Its `plugin_id` was a bare id: `modrinth` for the built-in Modrinth
+/// provider, a plugin's own id for its packs.
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PackInfoV1 {
@@ -14,7 +17,8 @@ pub struct PackInfoV1 {
 
 impl From<PackInfoV1> for PackInfo {
     fn from(old: PackInfoV1) -> Self {
-        let provider_id = ProviderId::from_str(&old.plugin_id).unwrap_or_else(|_| ProviderId {
+        // A plugin's id names its provider of the same id, as V1 found it.
+        let provider_id = parse_v1_provider_id(&old.plugin_id).unwrap_or_else(|_| ProviderId {
             plugin_id: old.plugin_id.clone(),
             capability_id: old.plugin_id,
         });
@@ -45,10 +49,10 @@ pub struct PackInfoV2 {
 
 impl From<ProviderIdV1> for ProviderId {
     fn from(value: ProviderIdV1) -> Self {
-        Self {
+        migrate_provider_id(Self {
             plugin_id: value.plugin_id,
             capability_id: value.capability_id,
-        }
+        })
     }
 }
 
@@ -78,5 +82,57 @@ impl From<PackInfo> for PackInfoV2 {
             modpack_id: value.modpack_id,
             version_id: value.version_id,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_read_core_modrinth_as_aether_modrinth_when_the_pack_stores_the_old_id() {
+        let dto: PackInfoV2 = serde_json::from_str(
+            r#"{
+                "providerId": { "pluginId": "core:modrinth", "capabilityId": "modrinth-content" },
+                "modpackId": "1KVo5zza",
+                "versionId": "v1"
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            PackInfo::from(dto).provider_id,
+            "aether#modrinth".parse::<ProviderId>().unwrap()
+        );
+    }
+
+    fn v1(plugin_id: &str) -> PackInfo {
+        serde_json::from_str::<PackInfoV1>(&format!(
+            r#"{{ "pluginId": "{plugin_id}", "modpackId": "1KVo5zza", "version": "v1" }}"#
+        ))
+        .unwrap()
+        .into()
+    }
+
+    /// V1's `ModrinthContentProvider` wrote its packs as `modrinth`; read as `modrinth#modrinth`,
+    /// such a pack would find no provider to update it, or a plugin's of that id.
+    #[test]
+    fn should_read_a_v1_pack_of_bare_modrinth_as_aether_modrinth_when_it_has_no_prefix() {
+        let pack_info = v1("modrinth");
+
+        assert_eq!(
+            pack_info.provider_id,
+            "aether#modrinth".parse::<ProviderId>().unwrap()
+        );
+        assert_eq!(pack_info.modpack_id, "1KVo5zza");
+        assert_eq!(pack_info.version_id, "v1");
+    }
+
+    #[test]
+    fn should_read_a_v1_pack_of_a_plugin_as_its_provider_when_the_id_is_not_modrinth() {
+        assert_eq!(
+            v1("packwiz").provider_id,
+            "packwiz#packwiz".parse::<ProviderId>().unwrap()
+        );
     }
 }

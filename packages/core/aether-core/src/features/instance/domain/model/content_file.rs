@@ -1,6 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
-
-use path_slash::PathBufExt;
+use std::collections::HashMap;
 
 use crate::features::instance::{PackFile, ProviderId};
 
@@ -26,43 +24,7 @@ pub struct ContentFileUpdateInfo {
     pub version: String,
 }
 
-pub struct CreateContentFileParams {
-    pub name: Option<String>,
-    pub file_name: String,
-    pub size: u64,
-    pub sha1: String,
-    pub content_path: PathBuf,
-    pub content_id: String,
-    pub content_version: String,
-    pub content_type: ContentType,
-    pub provider_id: ProviderId,
-}
-
 impl ContentFile {
-    pub fn from_params(params: CreateContentFileParams) -> Self {
-        let update_info = ContentFileUpdateInfo {
-            content_id: params.content_id,
-            version: params.content_version.clone(),
-        };
-
-        let update = Some(HashMap::from([(params.provider_id.clone(), update_info)]));
-
-        let path = params.content_path.to_slash_lossy().to_string();
-
-        Self {
-            content_path: path,
-            name: params.name,
-            hash: params.sha1,
-            file_name: params.file_name,
-            size: params.size,
-            content_type: params.content_type,
-            disabled: false,
-            version: Some(params.content_version),
-            update_provider_id: Some(params.provider_id),
-            update,
-        }
-    }
-
     pub fn from_pack_file(
         pack_file: PackFile,
         content_path: String,

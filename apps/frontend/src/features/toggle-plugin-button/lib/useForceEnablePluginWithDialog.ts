@@ -1,19 +1,13 @@
-import { useEnablePlugin, useForceEnablePlugin } from '@/entities/plugins';
-import { closeDialog, isLauncherError, showDialog } from '@/shared/model';
+import {
+  isIncompatibleApiVersionError,
+  useEnablePlugin,
+  useForceEnablePlugin,
+} from '@/entities/plugins';
+import { closeDialog, showDialog } from '@/shared/model';
 
 import { ForceEnablePluginDialog } from '../ui/ForceEnablePluginDialog';
 
 const FORCE_ENABLE_DIALOG_ID = 'forceEnablePlugin';
-
-const isIncompatibleApiVersionError = (err: unknown): boolean => {
-  if (!isLauncherError(err)) {
-    return false;
-  }
-
-  return (
-    err.type === 'plugin' && err.payload.code === 'INCOMPATIBLE_API_VERSION'
-  );
-};
 
 const showForceEnableDialog = (
   pluginName: string,
@@ -41,7 +35,7 @@ const forceEnableAndResolve = (
 };
 
 export const useForceEnablePluginWithDialog = () => {
-  const enablePlugin = useEnablePlugin();
+  const enablePlugin = useEnablePlugin({ offersForceEnable: true });
   const forceEnablePlugin = useForceEnablePlugin();
 
   const tryEnable = async (plugin: {
@@ -67,6 +61,8 @@ export const useForceEnablePluginWithDialog = () => {
 
   return {
     tryEnable,
-    isPending: enablePlugin.isPending || forceEnablePlugin.isPending,
+    get isPending() {
+      return enablePlugin.isPending || forceEnablePlugin.isPending;
+    },
   };
 };

@@ -1,3 +1,4 @@
+export * from './BrowseTrailingIcon';
 export * from './CollapsibleSettingsEntry';
 export * from './CollapsibleSettingsPane';
 export * from './CombinedDialog';

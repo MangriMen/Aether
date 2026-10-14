@@ -35,11 +35,14 @@ pub struct UpdaterCapabilityMetadata {
 pub struct ContentProviderCapabilityMetadata {
     pub base: CapabilityMetadata,
 
-    /// Whether the provider supports installing individual items (e.g., a single mod or resource pack).
-    pub supports_install_atomic: bool,
-
-    /// Whether the provider supports installing complex modpacks or curated collections.
-    pub supports_install_modpacks: bool,
+    /// The platform whose content this provider serves (`modrinth`, `curseforge`), written as
+    /// `[a-z0-9][a-z0-9_-]*`. It is what a [`ContentSource::ProviderRef`] names instead of a
+    /// provider, so several providers may declare the same platform; the core picks one.
+    ///
+    /// `None` — the provider owns no content of a platform and cannot be the target of a ref.
+    ///
+    /// [`ContentSource::ProviderRef`]: super::ContentSource::ProviderRef
+    pub platform: Option<String>,
 }
 
 impl Deref for ImporterCapabilityMetadata {

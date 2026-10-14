@@ -1,25 +1,19 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
-use tokio::sync::Mutex;
 
 use crate::features::{
     instance::{InstanceError, Updater, UpdaterCapabilityMetadata},
-    plugins::{PluginInstance, PluginUpdaterCapability},
+    plugins::{PluginError, PluginHandle, PluginUpdaterCapability},
 };
 
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 
 pub struct PluginUpdaterProxy {
-    instance: Arc<Mutex<dyn PluginInstance>>,
+    instance: PluginHandle,
     capability: PluginUpdaterCapability,
 }
 
 impl PluginUpdaterProxy {
-    pub fn new(
-        instance: Arc<Mutex<dyn PluginInstance>>,
-        capability: PluginUpdaterCapability,
-    ) -> Self {
+    pub fn new(instance: PluginHandle, capability: PluginUpdaterCapability) -> Self {
         Self {
             instance,
             capability,
@@ -34,34 +28,42 @@ impl Updater for PluginUpdaterProxy {
     }
 
     async fn update(&self, instance_id: &str) -> Result<(), InstanceError> {
-        let mut plugin = self.instance.lock().await;
-        let plugin_id = plugin.get_id();
+        let plugin_id = self.instance.id();
+        let failed = || InstanceError::UpdateFailed {
+            modpack_id: self.capability.id.clone(),
+        };
 
-        if !plugin.supports(&self.capability.handler) {
-            tracing::error!(
-                "Plugin '{}' promised handler '{}' for capability '{}', but function not found",
-                plugin_id.clone(),
-                self.capability.handler,
-                self.capability.id
-            );
+        let handler = self.capability.handler.clone();
+        let instance_id = instance_id.to_owned();
 
-            return Err(InstanceError::UpdateFailed {
-                modpack_id: self.capability.id.clone(),
-            });
-        }
-
-        plugin
-            .call(&self.capability.handler, instance_id)
-            .map_err(|err| {
-                tracing::error!(
-                    "Error updating instance by plugin '{}': {:?}",
-                    plugin_id,
-                    err
-                );
-
-                InstanceError::UpdateFailed {
-                    modpack_id: self.capability.id.clone(),
-                }
+        let result = self
+            .instance
+            .run(&self.capability.handler, move |plugin| {
+                plugin
+                    .supports(&handler)
+                    .then(|| plugin.call::<_, ()>(&handler, instance_id.as_str()))
             })
+            .await
+            .and_then(Option::transpose);
+
+        match result {
+            Ok(Some(())) => Ok(()),
+            Err(PluginError::Stopped { plugin_id }) => {
+                Err(InstanceError::PluginNotRunning { plugin_id })
+            }
+            Err(err) => {
+                tracing::error!("Error updating instance by plugin '{plugin_id}': {err:?}");
+                Err(failed())
+            }
+            Ok(None) => {
+                tracing::error!(
+                    "Plugin '{}' promised handler '{}' for capability '{}', but function not found",
+                    plugin_id,
+                    self.capability.handler,
+                    self.capability.id
+                );
+                Err(failed())
+            }
+        }
     }
 }

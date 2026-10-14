@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::instance::app::ports::ImportInstanceUseCasePort;
 use crate::{
-    features::instance::{Importer, InstanceError},
+    features::instance::{
+        Importer, InstanceError, InstanceInstallStage, InstanceStorage,
+        app::extensions::InstanceStorageExt,
+    },
     shared::capability::domain::CapabilityRegistry,
 };
 
@@ -19,11 +22,18 @@ pub struct ImportInstance {
 
 pub struct ImportInstanceUseCase {
     importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
+    instance_storage: Arc<dyn InstanceStorage>,
 }
 
 impl ImportInstanceUseCase {
-    pub fn new(importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>) -> Self {
-        Self { importers_registry }
+    pub fn new(
+        importers_registry: Arc<dyn CapabilityRegistry<Arc<dyn Importer>>>,
+        instance_storage: Arc<dyn InstanceStorage>,
+    ) -> Self {
+        Self {
+            importers_registry,
+            instance_storage,
+        }
     }
 
     pub async fn execute(&self, import_instance: ImportInstance) -> Result<(), InstanceError> {
@@ -41,7 +51,21 @@ impl ImportInstanceUseCase {
                 importer_id: importer_id.clone(),
             })?;
 
-        importer.capability.import(&path).await
+        // A failed import leaves its pack instances `PackInstalling`: they are not complete.
+        let pack_instances = importer.capability.import(&path).await?;
+
+        for instance_id in pack_instances {
+            self.instance_storage
+                .upsert_with(&instance_id, |instance| {
+                    if instance.install_stage == InstanceInstallStage::PackInstalling {
+                        instance.install_stage = InstanceInstallStage::Installed;
+                    }
+                    Ok(())
+                })
+                .await?;
+        }
+
+        Ok(())
     }
 }
 

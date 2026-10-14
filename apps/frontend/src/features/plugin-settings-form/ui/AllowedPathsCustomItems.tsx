@@ -1,6 +1,6 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { Field, validate, type FormStore } from '@formisch/solid';
+import { Field, getErrors, validate, type FormStore } from '@formisch/solid';
 import { splitProps } from 'solid-js';
 import * as v from 'valibot';
 
@@ -12,6 +12,8 @@ import {
 } from '../lib';
 import {
   PluginSettingsSchema,
+  type AllowedPathErrors,
+  type AllowedPathValue,
   type PluginSettingsSchemaOutput,
 } from '../model';
 import { AddNewItem } from './AddNewItem';
@@ -74,11 +76,11 @@ export const AllowedPathsCustomItems: Component<
         <FieldArrayFor of={local.form} name={name}>
           {({ index }) => (
             <li>
-              <Field of={local.form} path={[name, index(), 0]}>
-                {(hostField) => (
-                  <Field of={local.form} path={[name, index(), 1]}>
-                    {(pluginField) => (
-                      <EditableAllowedItem<[string, string], [string, string]>
+              <Field of={local.form} path={[name, index()]}>
+                {(field) => (
+                  <Field of={local.form} path={[name, index(), 'hostPath']}>
+                    {(hostField) => (
+                      <EditableAllowedItem<AllowedPathValue, AllowedPathErrors>
                         {...getEditableAllowedItemArrayProps(
                           index,
                           setEditingIndex,
@@ -88,13 +90,17 @@ export const AllowedPathsCustomItems: Component<
                         item={AllowedPath}
                         editItem={EditAllowedPath}
                         name={String(index())}
-                        value={[hostField.input ?? '', pluginField.input ?? '']}
-                        error={
-                          [hostField.errors?.[0], pluginField.errors?.[0]] as [
-                            string,
-                            string,
-                          ]
-                        }
+                        value={{
+                          hostPath: field.input?.hostPath ?? '',
+                          pluginPath: field.input?.pluginPath ?? '',
+                          readOnly: field.input?.readOnly ?? true,
+                        }}
+                        error={{
+                          hostPath: hostField.errors?.[0],
+                          pluginPath: getErrors(local.form, {
+                            path: [name, index(), 'pluginPath'],
+                          })?.[0],
+                        }}
                         editing={editingIndex() === index()}
                       />
                     )}

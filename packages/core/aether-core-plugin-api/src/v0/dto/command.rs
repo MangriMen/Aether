@@ -1,6 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use serde::{Deserialize, Serialize};
+use serde_with::{Bytes, serde_as};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommandDto {
@@ -9,11 +10,25 @@ pub struct CommandDto {
     pub current_dir: Option<PathBuf>,
 }
 
+/// Output of a command run through `run_command`. The streams travel as msgpack `bin`.
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OutputDto {
     pub status: u32,
+    #[serde_as(as = "Bytes")]
     pub stdout: Vec<u8>,
+    #[serde_as(as = "Bytes")]
     pub stderr: Vec<u8>,
+    /// `stdout` hit the host's per-stream cap and was cut short.
+    // `default` lets a plugin built against this DTO still decode a response from a host that
+    // predates the flags. The other way round does not work: the ABI encodes DTOs as
+    // fixed-length msgpack arrays, so a plugin built before the flags rejects a response that
+    // carries them, so the core is released before the plugins.
+    #[serde(default)]
+    pub stdout_truncated: bool,
+    /// `stderr` hit the host's per-stream cap and was cut short.
+    #[serde(default)]
+    pub stderr_truncated: bool,
 }
 
 /// Parse a command string into parts, respecting single and double quotes.

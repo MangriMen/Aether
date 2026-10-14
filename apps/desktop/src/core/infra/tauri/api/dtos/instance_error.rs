@@ -41,6 +41,10 @@ pub enum InstanceErrorDto {
     ImportFailed {
         plugin_id: String,
         capability_id: String,
+        reason: String,
+    },
+    PluginNotRunning {
+        plugin_id: String,
     },
     PackInfoNotFound,
     UpdaterNotFound {
@@ -58,6 +62,21 @@ pub enum InstanceErrorDto {
     ContentFilename {
         path: String,
     },
+    InvalidRelativePath {
+        path: String,
+        reason: String,
+    },
+    PathEscapesInstance {
+        path: String,
+        instance_id: String,
+    },
+    FileTooLarge {
+        // Specta refuses to export `u64` to TypeScript, and these two only ever end up in an
+        // error message, so they cross the boundary already formatted.
+        path: String,
+        size: String,
+        limit: String,
+    },
     ContentDownloadError(String),
     ContentProviderError {
         reason: String,
@@ -67,6 +86,21 @@ pub enum InstanceErrorDto {
     },
     UnsupportedContentType {
         content_type: ContentTypeDto,
+    },
+    UnsupportedOperation {
+        provider_id: String,
+        operation: String,
+    },
+    PlatformProviderNotFound {
+        platform: String,
+    },
+    PlatformProviderNotChosen {
+        platform: String,
+    },
+    GameChangeNotAllowed {
+        instance_id: String,
+        provider_id: String,
+        content_id: String,
     },
     SettingsLoadError {
         details: String,
@@ -83,6 +117,8 @@ pub enum InstanceErrorDto {
 }
 
 impl From<&InstanceError> for InstanceErrorDto {
+    // One flat arm per variant; splitting an exhaustive mapping only hides which ones are covered.
+    #[allow(clippy::too_many_lines)]
     fn from(value: &InstanceError) -> Self {
         match value {
             InstanceError::Storage(err) => Self::Storage {
@@ -124,9 +160,14 @@ impl From<&InstanceError> for InstanceErrorDto {
             InstanceError::ImportFailed {
                 plugin_id,
                 capability_id,
+                reason,
             } => Self::ImportFailed {
                 plugin_id: plugin_id.clone(),
                 capability_id: capability_id.clone(),
+                reason: reason.clone(),
+            },
+            InstanceError::PluginNotRunning { plugin_id } => Self::PluginNotRunning {
+                plugin_id: plugin_id.clone(),
             },
             InstanceError::PackInfoNotFound => Self::PackInfoNotFound,
             InstanceError::UpdaterNotFound { modpack_id } => Self::UpdaterNotFound {
@@ -137,6 +178,19 @@ impl From<&InstanceError> for InstanceErrorDto {
             },
             InstanceError::UnmanagedInstance { instance_id } => Self::UnmanagedInstance {
                 instance_id: instance_id.clone(),
+            },
+            InstanceError::InvalidRelativePath { path, reason } => Self::InvalidRelativePath {
+                path: path.clone(),
+                reason: reason.clone(),
+            },
+            InstanceError::PathEscapesInstance { path, instance_id } => Self::PathEscapesInstance {
+                path: path.clone(),
+                instance_id: instance_id.clone(),
+            },
+            InstanceError::FileTooLarge { path, size, limit } => Self::FileTooLarge {
+                path: path.clone(),
+                size: size.to_string(),
+                limit: limit.to_string(),
             },
             InstanceError::ContentDuplication { content_path } => Self::ContentDuplication {
                 content_path: content_path.clone(),
@@ -158,6 +212,32 @@ impl From<&InstanceError> for InstanceErrorDto {
                     content_type: (*content_type).into(),
                 }
             }
+            InstanceError::UnsupportedOperation {
+                provider_id,
+                operation,
+            } => Self::UnsupportedOperation {
+                provider_id: provider_id.to_string(),
+                operation: (*operation).to_owned(),
+            },
+            InstanceError::PlatformProviderNotFound { platform } => {
+                Self::PlatformProviderNotFound {
+                    platform: platform.clone(),
+                }
+            }
+            InstanceError::PlatformProviderNotChosen { platform } => {
+                Self::PlatformProviderNotChosen {
+                    platform: platform.clone(),
+                }
+            }
+            InstanceError::GameChangeNotAllowed {
+                instance_id,
+                provider_id,
+                content_id,
+            } => Self::GameChangeNotAllowed {
+                instance_id: instance_id.clone(),
+                provider_id: provider_id.to_string(),
+                content_id: content_id.clone(),
+            },
             InstanceError::SettingsLoadError(err) => Self::SettingsLoadError {
                 details: err.to_string(),
             },

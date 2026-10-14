@@ -40,14 +40,22 @@
             "type": "string"
           }
         },
+        "hostFunctions": {
+          "description": "Host functions the plugin calls, by import name (`http_get`, `write_instance_file`, …).\nOnly these are linked into the plugin: a name the host does not know keeps the plugin\nfrom being enabled, and a function the wasm imports without declaring it here keeps it\nfrom loading. An empty list declares that the plugin calls none.\nRequired: a manifest without it is reported as incompatible.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "version": {
-          "description": "Required API version range (SemVer requirement).",
+          "description": "Required API version range (`SemVer` requirement).",
           "type": "string"
         }
       },
       "additionalProperties": false,
       "required": [
-        "version"
+        "version",
+        "hostFunctions"
       ]
     },
     "LoadConfig": {
@@ -79,29 +87,11 @@
             "type",
             "file"
           ]
-        },
-        {
-          "description": "Load a native shared library (.dll, .so, .dylib). Less secure, but faster.",
-          "type": "object",
-          "properties": {
-            "libPath": {
-              "description": "Path to the dynamic library file relative to the plugin root.",
-              "type": "string"
-            },
-            "type": {
-              "type": "string",
-              "const": "native"
-            }
-          },
-          "required": [
-            "type",
-            "libPath"
-          ]
         }
       ]
     },
     "PathMapping": {
-      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: [host_path, virtual_path]",
+      "description": "A mapping between a path on the host and a virtual path in the plugin.\nFormat: `[host_path, virtual_path]`",
       "type": "array",
       "maxItems": 2,
       "minItems": 2,
@@ -137,7 +127,7 @@
         "id": {
           "description": "Unique identifier for the plugin (lowercase, kebab-case).",
           "type": "string",
-          "pattern": "^[a-z0-9_\\-]+$"
+          "pattern": "^[a-z0-9][a-z0-9_\\-]*$"
         },
         "license": {
           "description": "License under which the plugin is distributed.",
@@ -174,7 +164,7 @@
           }
         },
         "allowedPaths": {
-          "description": "Filesystem access restrictions. Maps host paths to plugin-internal paths.",
+          "description": "Ignored by the launcher, which logs a warning: folders are given to a plugin by the\nuser, in its settings. Kept so that manifests declaring it still load.",
           "type": "array",
           "default": [],
           "items": {

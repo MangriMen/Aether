@@ -1,5 +1,7 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
+import { invalidateImporters } from '@/entities/instances';
+
 import type { PluginId } from './pluginManifest';
 
 import { pluginsCommands } from '../api';
@@ -60,10 +62,15 @@ export const pluginsCache = {
       >(pluginKeys.settings(id)),
   },
   invalidate: {
-    all: (queryClient: QueryClient) =>
-      queryClient.invalidateQueries({
+    all: async (queryClient: QueryClient) => {
+      await queryClient.invalidateQueries({
         queryKey: pluginKeys.all,
-      }),
+      });
+      await pluginsCache.invalidate.importers(queryClient);
+    },
+    // Importers are registered by the plugins that are running, so the list changes
+    // with a plugin's state.
+    importers: invalidateImporters,
     list: (queryClient: QueryClient) =>
       queryClient.invalidateQueries({
         queryKey: pluginKeys.list(),
@@ -84,12 +91,21 @@ export const pluginsCache = {
       queryClient.invalidateQueries({
         queryKey: pluginKeys.updates(id),
       }),
+    // The plugin's state and what it is computed from: its settings decide whether a running
+    // plugin needs a restart.
+    state: async (queryClient: QueryClient, id: PluginId) => {
+      await pluginsCache.invalidate.list(queryClient);
+      await pluginsCache.invalidate.get(queryClient, id);
+      await pluginsCache.invalidate.settings(queryClient, id);
+      await pluginsCache.invalidate.importers(queryClient);
+    },
     full: async (queryClient: QueryClient, id: PluginId) => {
       await pluginsCache.invalidate.list(queryClient);
       await pluginsCache.invalidate.get(queryClient, id);
       await pluginsCache.invalidate.settings(queryClient, id);
       await pluginsCache.invalidate.source(queryClient, id);
       await pluginsCache.invalidate.updates(queryClient, id);
+      await pluginsCache.invalidate.importers(queryClient);
     },
   },
   prefetch: {

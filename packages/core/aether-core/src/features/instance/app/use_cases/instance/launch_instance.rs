@@ -7,7 +7,7 @@ use crate::{
         auth::Credential,
         instance::{
             Instance, InstanceError, InstanceInstallService, InstanceInstallStage,
-            InstanceLaunchService, InstanceStorage, InstanceStorageExt,
+            InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt,
         },
         minecraft::{
             GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
@@ -30,6 +30,7 @@ pub struct LaunchInstanceUseCase {
     minecraft_health_service: Arc<dyn MinecraftHealthService>,
     minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
     process_start_service: Arc<dyn ProcessStartService>,
+    instance_locks: Arc<InstanceLocks>,
 }
 
 impl LaunchInstanceUseCase {
@@ -44,6 +45,7 @@ impl LaunchInstanceUseCase {
         minecraft_health_service: Arc<dyn MinecraftHealthService>,
         minecraft_launch_command_service: Arc<dyn MinecraftLaunchCommandService>,
         process_start_service: Arc<dyn ProcessStartService>,
+        instance_locks: Arc<InstanceLocks>,
     ) -> Self {
         Self {
             plugin_registry,
@@ -55,6 +57,7 @@ impl LaunchInstanceUseCase {
             minecraft_health_service,
             minecraft_launch_command_service,
             process_start_service,
+            instance_locks,
         }
     }
 
@@ -77,19 +80,32 @@ impl LaunchInstanceUseCase {
         event: PluginInternalEvent,
         event_name: &str,
     ) {
-        if let Some(pack_info) = &instance.pack_info
-            && let Ok(plugin) = self.plugin_registry.get(&pack_info.provider_id.plugin_id)
-            && let PluginState::Loaded(instance_arc) = &plugin.state
-        {
-            let mut plugin = instance_arc.lock().await;
-            if let Err(e) = plugin.handle_event(&event) {
-                tracing::warn!(
-                    "Plugin '{}' failed to handle {}: {}",
-                    pack_info.provider_id.plugin_id,
-                    event_name,
-                    e
-                );
+        // The handle is cloned out of the registry: holding the entry over the call would block
+        // a disable or restart of the plugin, which writes it, on the runtime thread. A plugin
+        // that is not loaded, or stops while it is called, only misses the event.
+        let handle = instance.pack_info.as_ref().and_then(|pack_info| {
+            let plugin = self
+                .plugin_registry
+                .get(&pack_info.provider_id.plugin_id)
+                .ok()?;
+            match &plugin.state {
+                PluginState::Loaded(handle) => Some(handle.clone()),
+                _ => None,
             }
+        });
+        if let Some(pack_info) = &instance.pack_info
+            && let Some(handle) = handle
+            && let Err(e) = handle
+                .run("handle_event", move |plugin| plugin.handle_event(&event))
+                .await
+                .flatten()
+        {
+            tracing::warn!(
+                "Plugin '{}' failed to handle {}: {}",
+                pack_info.provider_id.plugin_id,
+                event_name,
+                e
+            );
         }
     }
 
@@ -99,6 +115,12 @@ impl LaunchInstanceUseCase {
         instance_id: String,
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
+        // Held until the game is started: content is not installed or updated under it. The
+        // stage below does not tell an install into an `Installed` instance, nor one that starts
+        // after it was read.
+        let Some(_lock) = self.instance_locks.try_lock(&instance_id) else {
+            return Err(InstanceError::InstanceStillInstalling { instance_id });
+        };
         let settings = self.default_instance_settings_storage.get().await?;
         let instance = self.instance_storage.get(&instance_id).await?;
 

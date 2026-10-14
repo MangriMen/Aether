@@ -8,7 +8,7 @@ use crate::{
     shared::request_client::{Request, RequestClient, RequestClientExt},
 };
 
-pub const META_URL: &str = "https://launcher-meta.modrinth.com/";
+pub(super) const META_URL: &str = "https://launcher-meta.modrinth.com/";
 
 pub struct ModrinthMetadataStorage<RC: RequestClient> {
     request_client: Arc<RC>,

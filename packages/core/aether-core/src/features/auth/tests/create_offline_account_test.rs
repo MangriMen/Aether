@@ -7,7 +7,7 @@ use crate::features::auth::app::{
 use super::fixtures::MockCredentialsStorage;
 
 #[tokio::test]
-async fn test_create_offline_account_sets_active_if_none() {
+async fn should_set_the_first_account_active_when_none_is_active() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let use_case = CreateOfflineAccountUseCase::new(storage.clone());
@@ -22,7 +22,7 @@ async fn test_create_offline_account_sets_active_if_none() {
 }
 
 #[tokio::test]
-async fn test_create_offline_account_with_invalid_username() {
+async fn should_fail_to_create_offline_account_when_username_is_invalid() {
     let storage = Arc::new(MockCredentialsStorage::new());
     let use_case = CreateOfflineAccountUseCase::new(storage.clone());
 

@@ -1,22 +1,23 @@
 import IconMdiArrowRightBold from '~icons/mdi/arrow-right-bold';
 import IconMdiMonitor from '~icons/mdi/monitor';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
-import {
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { Badge } from '@/shared/ui';
 
-import type { AllowedItemProps } from '../model';
+import type {
+  AllowedItemProps,
+  AllowedPathErrors,
+  AllowedPathValue,
+} from '../model';
 
+import { AllowedItemLeadingItems } from './AllowedItemLeadingItems';
 import { AllowedPathComponent } from './AllowedPathComponent';
 
 export type AllowedPathProps = ComponentProps<'div'> &
-  AllowedItemProps<[string, string], [string, string]>;
+  AllowedItemProps<AllowedPathValue, AllowedPathErrors>;
 
 export const AllowedPath: Component<AllowedPathProps> = (props) => {
   const [local, others] = splitProps(props, [
@@ -27,6 +28,11 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
   ]);
 
   const [{ t }] = useTranslation();
+
+  const accessLabel = () =>
+    local.value?.readOnly === false
+      ? t('pluginSettings.readWrite')
+      : t('pluginSettings.readOnly');
 
   return (
     <div
@@ -40,39 +46,31 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
       )}
       {...others}
     >
-      <div class='grid w-full grid-cols-[1fr_auto_1fr] items-start'>
-        <div class='flex h-full flex-col'>
+      <div class='grid w-full min-w-0 grid-cols-[1fr_auto_1fr] items-start'>
+        <div class='flex h-full min-w-0 flex-col'>
           <AllowedPathComponent
             class='grow'
             label={t('pluginSettings.host')}
             icon={IconMdiMonitor}
-            value={local.value?.[0]}
+            value={local.value?.hostPath}
           />
-          <span class='text-destructive'>{local.error?.[0]}</span>
+          <span class='text-destructive'>{local.error?.hostPath}</span>
         </div>
-        <IconMdiArrowRightBold class='mx-2 my-auto' />
-        <div class='flex h-full grow'>
+        <IconMdiArrowRightBold class='mx-2 my-auto shrink-0' />
+        <div class='gap-2 flex h-full min-w-0 grow items-center'>
           <AllowedPathComponent
             class='grow'
             label={t('pluginSettings.plugin')}
             icon={IconMdiPuzzle}
-            value={local.value?.[1]}
+            value={local.value?.pluginPath}
           />
-          <span class='text-destructive'>{local.error?.[1]}</span>
+          <Badge variant='outline' class='shrink-0'>
+            {accessLabel()}
+          </Badge>
+          <span class='text-destructive'>{local.error?.pluginPath}</span>
         </div>
       </div>
-      <Show when={local.leadingItems}>
-        {(leadingItems) => (
-          <div
-            class='
-              flex items-center opacity-0 transition-opacity
-              group-hover:opacity-100
-            '
-          >
-            {leadingItems()}
-          </div>
-        )}
-      </Show>
+      <AllowedItemLeadingItems items={local.leadingItems} />
     </div>
   );
 };

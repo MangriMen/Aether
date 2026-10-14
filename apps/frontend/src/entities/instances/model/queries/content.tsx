@@ -1,0 +1,270 @@
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/solid-query';
+import { type Accessor } from 'solid-js';
+
+import type { PartialBy } from '@/shared/model';
+
+import { SettingsTab, useSettingsSearchParams } from '@/entities/settings';
+import { showError } from '@/shared/lib';
+import { isLauncherError, useTranslation } from '@/shared/model';
+import { useFeatureFlagsStore } from '@/shared/model/featureFlags';
+import { Button, showToast } from '@/shared/ui';
+
+import type { ContentGetParams, ContentListVersionParams, Instance } from '..';
+import type {
+  ContentInstallParamsDto,
+  ContentSearchParamsDto,
+} from '../../api';
+import type { ContentCompatibilityCheckParams } from '../compatibility';
+
+import { ContentType, contentVersionDtoToContentVersion } from '..';
+import { instanceCommands } from '../../api';
+import { contentSearchResultDtoToContentSearchResult } from '../mappers';
+import { invalidateInstanceContent } from './cache';
+import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
+
+export const useContentProviders = () => {
+  return useQuery(() => ({
+    queryKey: CONTENT_QUERY_KEYS.PROVIDERS(),
+    queryFn: instanceCommands.listContentProviders,
+  }));
+};
+
+export const useSearchContent = (
+  payload: Accessor<ContentSearchParamsDto | undefined>,
+) => {
+  return useQuery(() => {
+    const data = payload();
+
+    return {
+      queryKey: data
+        ? CONTENT_QUERY_KEYS.SEARCH(data)
+        : CONTENT_QUERY_KEYS.SEARCH_EMPTY(),
+      queryFn: () => instanceCommands.searchContent(data!),
+      enabled: Boolean(data),
+      placeholderData: keepPreviousData,
+      select: contentSearchResultDtoToContentSearchResult,
+    };
+  });
+};
+
+export const instanceContentsQuery = (id: string | undefined) => ({
+  queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id ?? ''),
+  queryFn: () => instanceCommands.listContent(id ?? ''),
+  enabled: !!id,
+});
+
+export const useInstanceContents = (id: Accessor<string | undefined>) => {
+  return useQuery(() => instanceContentsQuery(id()));
+};
+
+export const useDisableContents = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
+      instanceCommands.disableContents(id, paths),
+    onSuccess: (_, { id }) => {
+      invalidateInstanceContent(queryClient, id);
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToDisable'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useEnableContents = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
+      instanceCommands.enableContents(id, paths),
+    onSuccess: (_, { id }) => {
+      invalidateInstanceContent(queryClient, id);
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToEnable'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const useRemoveContents = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: ({ id, paths }: { id: string; paths: string[] }) =>
+      instanceCommands.removeContents(id, paths),
+    onSuccess: (_, { id }) => {
+      invalidateInstanceContent(queryClient, id);
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToRemove'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+const isProviderNotChosen = (err: unknown) =>
+  isLauncherError(err) &&
+  err.type === 'instance' &&
+  err.payload.code === 'PLATFORM_PROVIDER_NOT_CHOSEN';
+
+export const useInstallContent = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+  const [ff] = useFeatureFlagsStore();
+  const settingsParams = useSettingsSearchParams();
+
+  return useMutation(() => ({
+    mutationFn: (payload: ContentInstallParamsDto) => {
+      if (!ff.isAllowInstallModpacks && payload.type === 'modpack') {
+        throw new Error('Installing modpacks is prohibited');
+      }
+
+      return instanceCommands.installContent(payload);
+    },
+    onSuccess: (_, payload) => {
+      if (payload.type === 'atomic') {
+        invalidateInstanceContent(queryClient, payload.data.instanceId);
+      }
+
+      const contentType =
+        payload.type === 'atomic'
+          ? payload.data.contentType
+          : ContentType.Modpack;
+
+      showToast({
+        title: t('content.installed', {
+          contentType: t(`content.${contentType}`) || '',
+        }),
+        variant: 'success',
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToInstall'),
+        err,
+        t,
+        action: isProviderNotChosen(err) ? (
+          <Button
+            size='sm'
+            onClick={() => settingsParams.open(SettingsTab.ContentProviders)}
+          >
+            {t('settings.contentProviders.choose')}
+          </Button>
+        ) : undefined,
+      });
+    },
+  }));
+};
+
+export const useImportContents = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: ({
+      id,
+      paths,
+      type,
+    }: {
+      id: string;
+      paths: string[];
+      type: ContentType;
+    }) => instanceCommands.importContents(id, type, paths),
+    onSuccess: (_, { id, type }) => {
+      invalidateInstanceContent(queryClient, id);
+
+      showToast({
+        title: t('content.imported', {
+          contentType: t(`content.${type}`) || '',
+        }),
+        variant: 'success',
+      });
+    },
+    onError: (err) => {
+      showError({
+        title: t('content.failedToImport'),
+        err,
+        t,
+      });
+    },
+  }));
+};
+
+export const CHECK_COMPATIBILITY_QUERY = (
+  ids: Instance['id'][],
+  params: PartialBy<ContentCompatibilityCheckParams, 'providerId'>,
+) => {
+  const isEnabled = Boolean(params.providerId) && ids.length > 0;
+
+  return {
+    queryKey: CONTENT_QUERY_KEYS.COMPATIBILITY(
+      ids,
+      params as ContentCompatibilityCheckParams,
+    ),
+    queryFn: () =>
+      instanceCommands.checkCompatibility(
+        ids,
+        params as ContentCompatibilityCheckParams,
+      ),
+    enabled: isEnabled,
+    placeholderData: keepPreviousData,
+  };
+};
+
+export const useCheckCompatibility = (
+  instanceIds: Accessor<Instance['id'][]>,
+  checkParams: Accessor<
+    PartialBy<ContentCompatibilityCheckParams, 'providerId'>
+  >,
+) => useQuery(() => CHECK_COMPATIBILITY_QUERY(instanceIds(), checkParams()));
+
+export const useContent = (params: Accessor<ContentGetParams | undefined>) => {
+  return useQuery(() => {
+    const params_ = params();
+
+    return {
+      queryKey: params_
+        ? CONTENT_QUERY_KEYS.GET(params_)
+        : CONTENT_QUERY_KEYS.GET_EMPTY(),
+      queryFn: () => instanceCommands.getContent(params_!),
+      enabled: Boolean(params_),
+    };
+  });
+};
+
+export const useContentVersions = (
+  params: Accessor<ContentListVersionParams | undefined>,
+) => {
+  return useQuery(() => {
+    const params_ = params();
+
+    return {
+      queryKey: params_
+        ? CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION(params_)
+        : CONTENT_QUERY_KEYS.LIST_CONTENT_VERSION_EMPTY(),
+      queryFn: () => instanceCommands.listContentVersion(params_!),
+      enabled: Boolean(params_),
+      select: (data) => data.map(contentVersionDtoToContentVersion),
+    };
+  });
+};

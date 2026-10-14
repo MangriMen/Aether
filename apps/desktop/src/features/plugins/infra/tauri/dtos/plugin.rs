@@ -17,11 +17,32 @@ pub enum PluginDtoState {
     Failed,
 }
 
+/// Translated by its `code`; the payload fills in the message.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum PluginStateReasonDto {
+    IncompatibleApiVersion {
+        required: semver::VersionReq,
+        host: semver::Version,
+    },
+    InvalidManifest {
+        details: String,
+    },
+    LoadFailed {
+        details: String,
+    },
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct PluginDto {
     pub manifest: PluginManifestDto,
     pub capabilities: Option<PluginCapabilitiesDto>,
     pub state: PluginDtoState,
+    pub state_reason: Option<PluginStateReasonDto>,
+    /// The plugin runs with other folders than its settings give it now: they take effect once
+    /// it restarts.
+    pub restart_needed: bool,
+    pub verified: bool,
 }
 
 impl From<aether_core::features::plugins::PluginDto> for PluginDto {
@@ -30,6 +51,9 @@ impl From<aether_core::features::plugins::PluginDto> for PluginDto {
             manifest: value.manifest.into(),
             capabilities: value.capabilities.map(Into::into),
             state: value.state.into(),
+            state_reason: value.state_reason.map(Into::into),
+            restart_needed: value.restart_needed,
+            verified: value.verified,
         }
     }
 }
@@ -81,9 +105,6 @@ impl From<aether_core::features::plugins::LoadConfigDto> for LoadConfigDto {
             aether_core::features::plugins::LoadConfigDto::Extism { file, memory_limit } => {
                 Self::Extism { file, memory_limit }
             }
-            aether_core::features::plugins::LoadConfigDto::Native { lib_path } => {
-                Self::Native { lib_path }
-            }
         }
     }
 }
@@ -93,6 +114,7 @@ impl From<aether_core::features::plugins::ApiConfigDto> for ApiConfigDto {
         Self {
             version: dto.version,
             features: dto.features,
+            host_functions: dto.host_functions,
         }
     }
 }
@@ -146,9 +168,10 @@ impl From<aether_core::features::plugins::ProviderHandlersDto> for ProviderHandl
             search: dto.search,
             get_content: dto.get_content,
             list_version: dto.list_version,
-            install_atomic: dto.install_atomic,
-            install_modpack: dto.install_modpack,
             check_compatibility: dto.check_compatibility,
+            resolve_file: dto.resolve_file,
+            resolve_install_plan: dto.resolve_install_plan,
+            resolve_pack_metadata: dto.resolve_pack_metadata,
         }
     }
 }
@@ -163,5 +186,41 @@ impl From<aether_core::features::plugins::PluginDtoState> for PluginDtoState {
             aether_core::features::plugins::PluginDtoState::Failed => Self::Failed,
             aether_core::features::plugins::PluginDtoState::Incompatible => Self::Incompatible,
         }
+    }
+}
+
+impl From<aether_core::features::plugins::PluginStateReasonDto> for PluginStateReasonDto {
+    fn from(value: aether_core::features::plugins::PluginStateReasonDto) -> Self {
+        use aether_core::features::plugins::PluginStateReasonDto as Core;
+        match value {
+            Core::IncompatibleApiVersion { required, host } => {
+                Self::IncompatibleApiVersion { required, host }
+            }
+            Core::InvalidManifest { details } => Self::InvalidManifest { details },
+            Core::LoadFailed { details } => Self::LoadFailed { details },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_serialize_as_a_code_with_a_payload_when_the_reason_reaches_the_frontend() {
+        let reason = PluginStateReasonDto::IncompatibleApiVersion {
+            required: semver::VersionReq::parse("^2.0.0").unwrap(),
+            host: semver::Version::new(1, 4, 0),
+        };
+
+        let json = serde_json::to_value(&reason).unwrap();
+
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "code": "INCOMPATIBLE_API_VERSION",
+                "payload": { "required": "^2.0.0", "host": "1.4.0" },
+            })
+        );
     }
 }

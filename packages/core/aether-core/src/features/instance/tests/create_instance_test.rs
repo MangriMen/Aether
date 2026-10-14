@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
 use tempfile::TempDir;
@@ -12,6 +12,7 @@ use crate::features::{
     minecraft::{LoaderVersionPreference, LoaderVersionService, ModLoader},
     settings::LocationInfo,
 };
+use crate::shared::cache::domain::{AssetError, AssetsStorage};
 
 // ─── Inline mocks ──────────────────────────────────────────────
 
@@ -114,6 +115,25 @@ impl InstanceFileService for MemInstanceFileService {
         }
         Ok(())
     }
+
+    // Not exercised by these tests; the real path checks live in
+    // `instance_relative_path_test` and `fs_instance_file_service_test`.
+    async fn write_instance_file(
+        &self,
+        _instance_id: &str,
+        _relative_path: &str,
+        _bytes: &[u8],
+    ) -> Result<(), InstanceError> {
+        unimplemented!("create_instance does not write instance files")
+    }
+
+    async fn read_instance_file(
+        &self,
+        _instance_id: &str,
+        _relative_path: &str,
+    ) -> Result<Vec<u8>, InstanceError> {
+        unimplemented!("create_instance does not read instance files")
+    }
 }
 
 /// An in-memory `InstanceStorage` that keeps instances in a Vec.
@@ -190,13 +210,28 @@ fn make_use_case(
         file_service,
         emitter,
         watcher,
+        Arc::new(FakeAssets),
     )
+}
+
+/// Imports an existing file under the id `asset-<file name>`, like the real store names its copy.
+struct FakeAssets;
+
+#[async_trait]
+impl AssetsStorage for FakeAssets {
+    async fn import_file(&self, source: &Path) -> Result<String, AssetError> {
+        if !source.is_file() {
+            return Err(AssetError::ReadSource("no such file".to_owned()));
+        }
+        let name = source.file_name().unwrap().to_string_lossy();
+        Ok(format!("asset-{name}"))
+    }
 }
 
 // ─── Tests ─────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn test_create_vanilla_instance_success() {
+async fn should_create_a_vanilla_instance_when_given_valid_params() {
     let (_temp, location_info) = setup_temp_location();
     let instances_root = location_info.instances_dir();
 
@@ -251,7 +286,7 @@ async fn test_create_vanilla_instance_success() {
 }
 
 #[tokio::test]
-async fn test_create_instance_with_loader_and_explicit_version() {
+async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version() {
     let (_temp, location_info) = setup_temp_location();
     let instances_root = location_info.instances_dir();
 
@@ -297,7 +332,7 @@ async fn test_create_instance_with_loader_and_explicit_version() {
 }
 
 #[tokio::test]
-async fn test_create_instance_with_loader_auto_default_version() {
+async fn should_pick_the_default_loader_version_when_none_is_given() {
     let (_temp, location_info) = setup_temp_location();
     let instances_root = location_info.instances_dir();
 
@@ -340,7 +375,7 @@ async fn test_create_instance_with_loader_auto_default_version() {
 }
 
 #[tokio::test]
-async fn test_create_instance_runs_install_service() {
+async fn should_run_the_install_service_when_an_instance_is_created() {
     struct TrackedInstallService(Arc<std::sync::atomic::AtomicBool>);
 
     #[async_trait]
@@ -398,7 +433,7 @@ async fn test_create_instance_runs_install_service() {
 }
 
 #[tokio::test]
-async fn test_create_instance_skips_install_when_requested() {
+async fn should_skip_the_install_when_it_is_not_requested() {
     struct SkippedInstallService(Arc<std::sync::atomic::AtomicBool>);
 
     #[async_trait]
@@ -455,7 +490,7 @@ async fn test_create_instance_skips_install_when_requested() {
 }
 
 #[tokio::test]
-async fn test_create_instance_sanitizes_name() {
+async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
     let (_temp, location_info) = setup_temp_location();
     let instances_root = location_info.instances_dir();
 
@@ -502,7 +537,7 @@ async fn test_create_instance_sanitizes_name() {
 }
 
 #[tokio::test]
-async fn test_create_instance_rolls_back_on_storage_failure() {
+async fn should_roll_back_when_storage_fails() {
     // Storage that always fails on upsert
     struct FailingStorage;
 
@@ -563,5 +598,82 @@ async fn test_create_instance_rolls_back_on_storage_failure() {
     assert!(
         !dir.exists(),
         "Instance directory should be cleaned up on rollback"
+    );
+}
+
+#[tokio::test]
+async fn should_store_the_asset_id_when_the_new_instance_has_an_icon() {
+    let (temp, location_info) = setup_temp_location();
+    let icon = temp.path().join("icon.png");
+    std::fs::write(&icon, b"png").unwrap();
+
+    let storage = Arc::new(MemInstanceStorage::new());
+    let use_case = make_use_case(
+        storage.clone(),
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(NoOpInstallService),
+        Arc::new(MemInstanceFileService::new(location_info.instances_dir())),
+        Arc::new(NoOpWatcher),
+        Arc::new(NoOpEmitter),
+    );
+
+    let instance_id = use_case
+        .execute(NewInstance {
+            name: "With Icon".to_string(),
+            game_version: "1.21".to_string(),
+            mod_loader: ModLoader::Vanilla,
+            loader_version: None,
+            icon_path: Some(icon.to_string_lossy().into_owned()),
+            skip_install_instance: Some(true),
+            pack_info: None,
+        })
+        .await
+        .expect("an instance with an icon should be created");
+
+    let stored = storage.get(&instance_id).await.unwrap();
+    assert_eq!(stored.icon_path(), Some("asset-icon.png"));
+}
+
+#[tokio::test]
+async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_imported() {
+    let (temp, location_info) = setup_temp_location();
+
+    let storage = Arc::new(MemInstanceStorage::new());
+    let use_case = make_use_case(
+        storage.clone(),
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(NoOpInstallService),
+        Arc::new(MemInstanceFileService::new(location_info.instances_dir())),
+        Arc::new(NoOpWatcher),
+        Arc::new(NoOpEmitter),
+    );
+
+    let instance_id = use_case
+        .execute(NewInstance {
+            name: "Missing Icon".to_string(),
+            game_version: "1.21".to_string(),
+            mod_loader: ModLoader::Vanilla,
+            loader_version: None,
+            icon_path: Some(
+                temp.path()
+                    .join("no-such-icon.png")
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            skip_install_instance: Some(true),
+            pack_info: None,
+        })
+        .await
+        .expect("an unreadable icon must not fail the creation");
+
+    let stored = storage.get(&instance_id).await.unwrap();
+    assert_eq!(
+        stored.icon_path(),
+        None,
+        "a host path must never be kept as the icon"
     );
 }

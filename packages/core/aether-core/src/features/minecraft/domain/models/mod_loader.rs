@@ -34,7 +34,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mod_loader_as_str() {
+    fn should_return_the_name_when_a_loader_is_asked_for_its_str() {
         assert_eq!(ModLoader::Vanilla.as_str(), "vanilla");
         assert_eq!(ModLoader::Forge.as_str(), "forge");
         assert_eq!(ModLoader::Fabric.as_str(), "fabric");
@@ -43,7 +43,7 @@ mod tests {
     }
 
     #[test]
-    fn mod_loader_as_meta_str() {
+    fn should_return_the_meta_name_when_a_loader_is_asked_for_its_meta_str() {
         assert_eq!(ModLoader::Vanilla.as_meta_str(), "vanilla");
         assert_eq!(ModLoader::Forge.as_meta_str(), "forge");
         assert_eq!(ModLoader::Fabric.as_meta_str(), "fabric");

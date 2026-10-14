@@ -9,8 +9,9 @@ use crate::{
     FrontendResult,
     core::ContainerState,
     features::plugins::{
-        EditPluginSettingsDto, PluginDto, PluginEventDto, PluginSettingsDto, PluginSourceDto,
-        PluginSourceTypeDto, PluginUpdateInfoDto, ProviderPluginPreviewDto,
+        EditPluginSettingsDto, FolderAccessDto, HostAccessDto, PluginDto, PluginEventDto,
+        PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto,
+        ProviderPluginPreviewDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -169,6 +170,26 @@ async fn disable(
         .map_err(aether_core::Error::from)?)
 }
 
+/// Restarts a running plugin, so that folders changed in its settings take effect. A plugin in
+/// the middle of a call refuses with `Busy` and goes on as it was.
+#[tauri::command]
+#[specta::specta]
+async fn reload(
+    id: String,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let container = container.0.clone();
+    Ok(container
+        .reload_plugin_use_case()
+        .execute(id)
+        .await
+        .map_err(aether_core::Error::from)?)
+}
+
 #[tauri::command]
 #[specta::specta]
 async fn call(
@@ -219,6 +240,54 @@ async fn edit_settings(
         .execute(id, edit_settings.into())
         .await
         .map_err(aether_core::Error::from)?)
+}
+
+/// Gives the plugin read access to the folder of a file the user named for it, restarting the
+/// plugin if it runs. The UI asks the user first: with `dry_run` nothing changes, and the answer
+/// says whether there is anything to ask (`needed`) or the plugin can already read the file.
+#[tauri::command]
+#[specta::specta]
+async fn grant_folder_access(
+    id: String,
+    file_path: PathBuf,
+    dry_run: bool,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<FolderAccessDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let container = container.0.clone();
+    Ok(container
+        .grant_plugin_folder_access_use_case()
+        .execute(id, file_path, dry_run)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
+}
+
+/// Lets the plugin reach the host of a URL the user gave it. No restart: the plugin's requests
+/// read its hosts on every call. As with folders, the UI asks the user first, and `dry_run`
+/// tells it whether there is anything to ask.
+#[tauri::command]
+#[specta::specta]
+async fn grant_host_access(
+    id: String,
+    url: String,
+    dry_run: bool,
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<HostAccessDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    let container = container.0.clone();
+    Ok(container
+        .grant_plugin_host_access_use_case()
+        .execute(id, url, dry_run)
+        .await
+        .map_err(aether_core::Error::from)?
+        .into())
 }
 
 #[tauri::command]
@@ -396,6 +465,17 @@ async fn install_plugin_from_provider(
         .add(extracted)
         .await
         .map_err(aether_core::Error::from)?;
+
+    // Trust on first use: these bytes came straight from the release the user
+    // picked, so record their sha256 now — every later load is checked against it.
+    aether_core::features::plugins::record_plugin_verification(
+        container.plugin_storage().as_ref(),
+        container.plugin_verification_storage().as_ref(),
+        &plugin_id,
+        st.clone(),
+    )
+    .await
+    .map_err(aether_core::Error::from)?;
 
     let source = PluginSource::Remote {
         source_type: st,

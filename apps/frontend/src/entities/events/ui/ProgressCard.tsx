@@ -25,7 +25,12 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
           version: local.payload.event.version,
         });
       case 'minecraft_download':
+      case 'instance_update':
+      case 'zip_extract':
         return local.payload.event.instance_name;
+      case 'pack_download':
+      case 'pack_file_download':
+        return local.payload.event.pack_name;
       case 'plugin_download':
         return `[Plugin] ${local.payload.event.plugin_name}`;
       case 'launcher_update':

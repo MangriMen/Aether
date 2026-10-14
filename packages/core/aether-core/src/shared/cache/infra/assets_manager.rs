@@ -34,7 +34,9 @@ impl<C: FileStore> AssetsStorage for FsAssetsStorage<C> {
             .map_err(|err| AssetError::ReadSource(err.to_string()))?;
         let bytes = Bytes::from_owner(data);
 
-        let hash = sha1_async(bytes.clone()).await;
+        let hash = sha1_async(bytes.clone())
+            .await
+            .map_err(|err| AssetError::ReadSource(err.to_string()))?;
 
         let filename = format!("{hash}.{ext}");
         let key = CacheKey::new(ASSETS_CACHE_NAMESPACE, CacheId::Named(filename.clone()));

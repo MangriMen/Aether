@@ -1,4 +1,4 @@
-use std::str::Utf8Error;
+use std::{path::PathBuf, str::Utf8Error};
 
 #[derive(thiserror::Error, Debug)]
 pub enum RequestError {
@@ -22,4 +22,17 @@ pub enum RequestError {
 
     #[error("Content is not UTF-8")]
     Parse(#[from] Utf8Error),
+
+    #[error("Unexpected HTTP status {status} from `{url}`")]
+    Status { status: u16, url: String },
+
+    #[error("Response body exceeds the {limit} byte limit")]
+    TooLarge { limit: u64 },
+
+    #[error("Failed to write download to `{}`: {source}", path.display())]
+    Io {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 }

@@ -251,7 +251,7 @@ mod tests {
     // ── Hooks::update_hooks ──
 
     #[test]
-    fn should_update_all_hooks_and_return_true() {
+    fn should_update_all_hooks_and_return_true_when_they_differ() {
         let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
         assert!(hooks.update_hooks(
             Some("pre2".into()),
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn should_skip_none_fields_and_still_detect_change() {
+    fn should_skip_none_fields_and_still_detect_a_change_when_only_some_are_given() {
         let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
         assert!(hooks.update_hooks(Some("pre2".into()), None, None));
         assert_eq!(hooks.pre_launch(), "pre2");
@@ -296,7 +296,7 @@ mod tests {
     // ── DefaultInstanceSettings::update_launch_args (representative) ──
 
     #[test]
-    fn should_update_launch_args_and_return_true() {
+    fn should_update_launch_args_and_return_true_when_they_differ() {
         let mut settings = DefaultInstanceSettings::default();
         assert!(settings.update_launch_args(vec!["--arg".into()]));
         assert_eq!(settings.launch_args(), &["--arg"]);
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn should_update_hooks_on_default_instance_settings() {
+    fn should_update_hooks_when_given_default_instance_settings() {
         let mut settings = DefaultInstanceSettings::default();
         settings.update_hooks(Some("pre".into()), Some("wrap".into()), None);
         assert_eq!(settings.hooks().pre_launch(), "pre");

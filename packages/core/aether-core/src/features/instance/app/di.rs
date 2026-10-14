@@ -4,8 +4,8 @@ use crate::features::instance::app::ports::{
     ChangeContentStateUseCasePort, CheckContentCompatibilityUseCasePort, ContentFileService,
     CreateInstanceUseCasePort, EditInstanceIconUseCasePort, EditInstanceUseCasePort,
     GetContentUseCasePort, GetInstanceUseCasePort, ImportContentUseCasePort,
-    ImportInstanceUseCasePort, InstallContentUseCasePort, InstanceFileService,
-    InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
+    ImportInstanceUseCasePort, InstallContentUseCasePort, InstallPlanExecutorPort,
+    InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceWatcherService,
     LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCasePort,
     ListContentVersionsUseCasePort, ListImportersUseCasePort, ListInstancesUseCasePort,
     ListProvidersUseCasePort, RemoveContentUseCasePort, RemoveInstanceUseCasePort,
@@ -41,6 +41,7 @@ pub trait ContentProviderPort {
     fn search_content_use_case(&self) -> Arc<dyn SearchContentUseCasePort>;
     fn get_content_use_case(&self) -> Arc<dyn GetContentUseCasePort>;
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort>;
+    fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort>;
     fn check_content_compatibility_use_case(&self)
     -> Arc<dyn CheckContentCompatibilityUseCasePort>;
     fn list_content_versions_use_case(&self) -> Arc<dyn ListContentVersionsUseCasePort>;

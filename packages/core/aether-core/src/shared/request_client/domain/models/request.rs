@@ -1,11 +1,12 @@
-use crate::shared::request_client::Method;
+use crate::shared::{hash::FileHash, request_client::Method};
 
 #[derive(Debug)]
 pub struct Request {
     pub method: Method,
     pub url: String,
     pub headers: Option<reqwest::header::HeaderMap>,
-    pub sha1: Option<String>,
+    /// Expected digest of the response body. A mismatch fails the request.
+    pub hash: Option<FileHash>,
     pub body: Option<Vec<u8>>,
 }
 
@@ -15,7 +16,7 @@ impl Request {
             method,
             url,
             headers: None,
-            sha1: None,
+            hash: None,
             body: None,
         }
     }
@@ -35,8 +36,8 @@ impl Request {
     }
 
     #[must_use]
-    pub fn with_sha1(mut self, sha1: impl Into<String>) -> Self {
-        self.sha1 = Some(sha1.into());
+    pub fn with_hash(mut self, hash: FileHash) -> Self {
+        self.hash = Some(hash);
         self
     }
 

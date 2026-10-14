@@ -7,7 +7,7 @@ use crate::features::events::{Event, EventEmitter, EventError, SharedEventEmitte
 use crate::features::instance::app::ContentFileService;
 use crate::features::instance::infra::FsContentFileService;
 use crate::features::instance::{
-    ChangeContentState, ChangeContentStateUseCase, ContentStateAction,
+    ChangeContentState, ChangeContentStateUseCase, ContentStateAction, InstanceError, InstanceLocks,
 };
 use crate::features::settings::LocationInfo;
 
@@ -39,14 +39,21 @@ fn setup() -> (TempDir, Arc<LocationInfo>, Arc<FsContentFileService>) {
 }
 
 fn get_use_case(content_file_service: Arc<dyn ContentFileService>) -> ChangeContentStateUseCase {
+    get_use_case_with_locks(content_file_service, Arc::new(InstanceLocks::new()))
+}
+
+fn get_use_case_with_locks(
+    content_file_service: Arc<dyn ContentFileService>,
+    locks: Arc<InstanceLocks>,
+) -> ChangeContentStateUseCase {
     let event_emitter: SharedEventEmitter = Arc::new(MockEventEmitter);
-    ChangeContentStateUseCase::new(event_emitter, content_file_service)
+    ChangeContentStateUseCase::new(event_emitter, content_file_service, locks)
 }
 
 // ─── Tests ─────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn test_change_content_state_enable_single_file() {
+async fn should_enable_a_file_when_one_file_is_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-enable-usecase";
@@ -76,7 +83,7 @@ async fn test_change_content_state_enable_single_file() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_disable_single_file() {
+async fn should_disable_a_file_when_one_file_is_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-disable-usecase";
@@ -109,7 +116,7 @@ async fn test_change_content_state_disable_single_file() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_enable_multiple_files() {
+async fn should_enable_files_when_several_are_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-enable-multi-usecase";
@@ -139,7 +146,7 @@ async fn test_change_content_state_enable_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_disable_multiple_files() {
+async fn should_disable_files_when_several_are_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-disable-multi-usecase";
@@ -175,7 +182,7 @@ async fn test_change_content_state_disable_multiple_files() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_already_enabled_is_idempotent() {
+async fn should_stay_enabled_when_a_file_is_already_enabled() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-already-enabled";
@@ -204,7 +211,7 @@ async fn test_change_content_state_already_enabled_is_idempotent() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_already_disabled_is_idempotent() {
+async fn should_stay_disabled_when_a_file_is_already_disabled() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-already-disabled";
@@ -233,7 +240,7 @@ async fn test_change_content_state_already_disabled_is_idempotent() {
 }
 
 #[tokio::test]
-async fn test_change_content_state_nonexistent_file_is_idempotent() {
+async fn should_succeed_when_the_file_does_not_exist() {
     let (_temp, _location_info, service) = setup();
     let use_case = get_use_case(service);
     let instance_id = "test-nonexistent";
@@ -255,4 +262,58 @@ async fn test_change_content_state_nonexistent_file_is_idempotent() {
         ))
         .await
         .expect("Disable on nonexistent should not fail");
+}
+
+async fn put_enabled_file(location_info: &LocationInfo, instance_id: &str) -> std::path::PathBuf {
+    let dir = location_info.instance_dir(instance_id);
+    tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
+    tokio::fs::write(dir.join("mods/test.jar"), b"data")
+        .await
+        .unwrap();
+    dir
+}
+
+#[tokio::test]
+async fn should_refuse_the_change_when_a_plan_holds_the_lock_past_the_wait() {
+    let (_temp, location_info, service) = setup();
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = get_use_case_with_locks(service, locks.clone())
+        .with_lock_wait(std::time::Duration::from_millis(20));
+    let dir = put_enabled_file(&location_info, "busy").await;
+    let _held = locks.lock("busy").await;
+
+    let result = use_case
+        .execute(ChangeContentState::single(
+            "busy".to_string(),
+            "mods/test.jar".to_string(),
+            ContentStateAction::Disable,
+        ))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::InstanceStillInstalling { .. })
+    ));
+    assert!(dir.join("mods/test.jar").exists());
+}
+
+#[tokio::test]
+async fn should_change_the_state_when_the_lock_is_released_within_the_wait() {
+    let (_temp, location_info, service) = setup();
+    let locks = Arc::new(InstanceLocks::new());
+    let use_case = get_use_case_with_locks(service, locks.clone());
+    let dir = put_enabled_file(&location_info, "brief").await;
+    let held = locks.lock("brief").await;
+
+    let mut change = std::pin::pin!(use_case.execute(ChangeContentState::single(
+        "brief".to_string(),
+        "mods/test.jar".to_string(),
+        ContentStateAction::Disable,
+    )));
+    assert!(futures::poll!(&mut change).is_pending());
+    assert!(dir.join("mods/test.jar").exists());
+
+    drop(held);
+    change.await.unwrap();
+    assert!(dir.join("mods/test.jar.disabled").exists());
 }

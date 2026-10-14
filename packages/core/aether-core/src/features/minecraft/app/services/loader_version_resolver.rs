@@ -95,7 +95,7 @@ impl LoaderVersionResolver {
     }
 }
 
-pub async fn resolve_loader_version(
+pub(super) async fn resolve_loader_version(
     game_version: &str,
     loader: &ModLoader,
     loader_version_preference: &LoaderVersionPreference,

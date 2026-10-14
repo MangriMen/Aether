@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 
 use crate::features::instance::domain::{InstanceError, Pack, PackFile, ProviderId};
@@ -13,6 +15,22 @@ pub trait PackStorage: Send + Sync {
         instance_id: &str,
         content_path: &str,
     ) -> Result<PackFile, InstanceError>;
+
+    /// Every file recorded for the instance, by content path — what an install plan is diffed
+    /// against. The default asks for each file of [`Self::get_pack`] in turn.
+    async fn get_pack_files(
+        &self,
+        instance_id: &str,
+    ) -> Result<HashMap<String, PackFile>, InstanceError> {
+        let mut files = HashMap::new();
+
+        for entry in self.get_pack(instance_id).await?.files {
+            let pack_file = self.get_pack_file(instance_id, &entry.file).await?;
+            files.insert(entry.file, pack_file);
+        }
+
+        Ok(files)
+    }
 
     async fn find_by_provider_id(
         &self,

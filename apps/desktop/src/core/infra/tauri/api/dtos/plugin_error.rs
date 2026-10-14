@@ -1,8 +1,10 @@
-use aether_core::features::plugins::PluginError;
+use aether_core::features::plugins::{PluginError, PluginProviderError};
 use serde::Serialize;
 use specta::Type;
 
-use crate::features::plugins::{LoadConfigDto, LoadConfigTypeDto};
+use crate::features::plugins::{
+    AllowedHostRejectionDto, AllowedPathRejectionDto, LoadConfigTypeDto,
+};
 
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
@@ -21,6 +23,16 @@ pub enum PluginErrorDto {
     },
     AlreadyUnloaded {
         plugin_id: String,
+    },
+    Busy {
+        plugin_id: String,
+    },
+    Stopped {
+        plugin_id: String,
+    },
+    IdMismatch {
+        plugin_id: String,
+        archive_id: String,
     },
     LoadFailed {
         plugin_id: String,
@@ -47,9 +59,6 @@ pub enum PluginErrorDto {
     LoaderNotFound {
         config_type: LoadConfigTypeDto,
     },
-    InvalidConfig {
-        config: LoadConfigDto,
-    },
     ExtractionFailed {
         from: String,
     },
@@ -68,6 +77,16 @@ pub enum PluginErrorDto {
     AccessViolation {
         plugin_id: String,
         path: String,
+    },
+    InvalidAllowedPath {
+        plugin_id: String,
+        path: String,
+        reason: AllowedPathRejectionDto,
+    },
+    InvalidAllowedHost {
+        plugin_id: String,
+        url: String,
+        reason: AllowedHostRejectionDto,
     },
     HashComputationFailed,
     Settings {
@@ -117,6 +136,19 @@ impl From<&PluginError> for PluginErrorDto {
             PluginError::AlreadyUnloaded { plugin_id } => Self::AlreadyUnloaded {
                 plugin_id: plugin_id.clone(),
             },
+            PluginError::Busy { plugin_id } => Self::Busy {
+                plugin_id: plugin_id.clone(),
+            },
+            PluginError::Stopped { plugin_id } => Self::Stopped {
+                plugin_id: plugin_id.clone(),
+            },
+            PluginError::IdMismatch {
+                plugin_id,
+                archive_id,
+            } => Self::IdMismatch {
+                plugin_id: plugin_id.clone(),
+                archive_id: archive_id.clone(),
+            },
             PluginError::LoadFailed { plugin_id, reason } => Self::LoadFailed {
                 plugin_id: plugin_id.clone(),
                 reason: reason.clone(),
@@ -134,11 +166,7 @@ impl From<&PluginError> for PluginErrorDto {
             } => Self::FunctionCallFailed {
                 function_name: function_name.clone(),
                 plugin_id: plugin_id.clone(),
-                error: error.clone(),
-            },
-            PluginError::ManifestNotFound { path } => Self::ManifestNotFound { path: path.clone() },
-            PluginError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
-                error: error.clone(),
+                error: error.to_string(),
             },
             PluginError::Manifest(err) => Self::Manifest {
                 message: err.to_string(),
@@ -146,14 +174,6 @@ impl From<&PluginError> for PluginErrorDto {
             PluginError::LoaderNotFound { config_type } => Self::LoaderNotFound {
                 config_type: (*config_type).into(),
             },
-            PluginError::InvalidConfig { config } => Self::InvalidConfig {
-                config: config.clone().into(),
-            },
-            PluginError::ExtractionFailed { from } => Self::ExtractionFailed { from: from.clone() },
-            PluginError::InvalidExtractionFormat => Self::InvalidExtractionFormat,
-            PluginError::FileExtractionFailed { from } => {
-                Self::FileExtractionFailed { from: from.clone() }
-            }
             PluginError::CapabilityRegistrationFailed {
                 capability_type,
                 capability_id,
@@ -172,6 +192,24 @@ impl From<&PluginError> for PluginErrorDto {
                 plugin_id: plugin_id.clone(),
                 path: path.clone(),
             },
+            PluginError::InvalidAllowedPath {
+                plugin_id,
+                path,
+                reason,
+            } => Self::InvalidAllowedPath {
+                plugin_id: plugin_id.clone(),
+                path: path.clone(),
+                reason: (*reason).into(),
+            },
+            PluginError::InvalidAllowedHost {
+                plugin_id,
+                url,
+                reason,
+            } => Self::InvalidAllowedHost {
+                plugin_id: plugin_id.clone(),
+                url: url.clone(),
+                reason: (*reason).into(),
+            },
             PluginError::HashComputationFailed => Self::HashComputationFailed,
             PluginError::Settings(err) => Self::Settings {
                 details: err.to_string(),
@@ -179,29 +217,56 @@ impl From<&PluginError> for PluginErrorDto {
             PluginError::Storage(err) => Self::Storage {
                 details: err.to_string(),
             },
-            PluginError::ProviderFetchError {
+            PluginError::Provider(err) => err.into(),
+        }
+    }
+}
+
+impl From<&PluginProviderError> for PluginErrorDto {
+    fn from(value: &PluginProviderError) -> Self {
+        match value {
+            PluginProviderError::ManifestNotFound { path } => {
+                Self::ManifestNotFound { path: path.clone() }
+            }
+            PluginProviderError::InvalidManifestFormat { error } => Self::InvalidManifestFormat {
+                error: error.clone(),
+            },
+            PluginProviderError::ExtractionFailed { from } => {
+                Self::ExtractionFailed { from: from.clone() }
+            }
+            PluginProviderError::InvalidExtractionFormat => Self::InvalidExtractionFormat,
+            PluginProviderError::FileExtractionFailed { from } => {
+                Self::FileExtractionFailed { from: from.clone() }
+            }
+            PluginProviderError::ProviderFetchError {
                 source_type,
                 details,
             } => Self::ProviderFetchError {
                 source_type: source_type.to_string(),
                 details: details.clone(),
             },
-            PluginError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
+            PluginProviderError::ProviderNoAssets { source_type } => Self::ProviderNoAssets {
                 source_type: source_type.to_string(),
             },
-            PluginError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
+            PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
                 plugin_id: plugin_id.clone(),
             },
-            PluginError::DownloadFailed { url, details } => Self::DownloadFailed {
+            PluginProviderError::DownloadFailed { url, details } => Self::DownloadFailed {
                 url: url.clone(),
                 details: details.clone(),
             },
-            PluginError::ProviderRateLimited {
+            PluginProviderError::ProviderRateLimited {
                 source_type,
                 retry_after,
             } => Self::ProviderRateLimited {
                 source_type: source_type.to_string(),
                 retry_after: *retry_after,
+            },
+            PluginProviderError::Manifest(err) => Self::Manifest {
+                message: err.to_string(),
+            },
+            PluginProviderError::Storage(err) => Self::Storage {
+                details: err.to_string(),
             },
         }
     }

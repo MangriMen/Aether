@@ -1,19 +1,62 @@
-use crate::features::settings::{
-    DefaultInstanceSettings, MemorySettings, Settings, WindowSettings,
+use crate::features::{
+    instance::ProviderId,
+    settings::{DefaultInstanceSettings, MemorySettings, Settings, SettingsError, WindowSettings},
 };
 
 #[derive(Debug)]
 pub struct EditSettings {
     pub max_concurrent_downloads: usize,
+    pub platform_provider: Option<EditPlatformProvider>,
+}
+
+/// The choice of the provider serving `platform`; `None` drops the choice.
+#[derive(Debug)]
+pub struct EditPlatformProvider {
+    pub platform: String,
+    pub provider_id: Option<String>,
 }
 
 impl EditSettings {
+    /// Refuse a provider choice that no platform install could ever use: an empty platform or a
+    /// provider id that is not `plugin#capability`.
+    pub fn validate(&self) -> Result<(), SettingsError> {
+        let Some(choice) = &self.platform_provider else {
+            return Ok(());
+        };
+
+        if choice.platform.trim().is_empty() {
+            return Err(SettingsError::InvalidPlatformProvider {
+                platform: choice.platform.clone(),
+                reason: "the platform is empty".to_owned(),
+            });
+        }
+
+        if let Some(provider_id) = &choice.provider_id {
+            provider_id.parse::<ProviderId>().map_err(|reason| {
+                SettingsError::InvalidPlatformProvider {
+                    platform: choice.platform.clone(),
+                    reason,
+                }
+            })?;
+        }
+
+        Ok(())
+    }
+
     pub fn apply_to(self, settings: &mut Settings) -> bool {
+        let mut is_changed = false;
+
         if settings.max_concurrent_downloads() != self.max_concurrent_downloads {
             settings.set_max_concurrent_downloads(self.max_concurrent_downloads);
-            return true;
+            is_changed = true;
         }
-        false
+
+        if let Some(choice) = self.platform_provider {
+            is_changed |=
+                settings.set_platform_provider(&choice.platform, choice.provider_id.as_deref());
+        }
+
+        is_changed
     }
 }
 

@@ -1,7 +1,8 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
-import { CombinedTooltip } from '@/shared/ui';
+
+import { AllowedTruncatedText } from './AllowedTruncatedText';
 
 export type AllowedPathComponentProps = ComponentProps<'div'> & {
   value?: string;
@@ -12,16 +13,21 @@ export type AllowedPathComponentProps = ComponentProps<'div'> & {
 export const AllowedPathComponent: Component<AllowedPathComponentProps> = (
   props,
 ) => {
-  const [local, others] = splitProps(props, ['value', 'icon', 'class']);
+  const [local, others] = splitProps(props, [
+    'value',
+    'icon',
+    'label',
+    'class',
+  ]);
 
   return (
-    <CombinedTooltip
-      as='div'
-      class={cn('gap-2 flex items-center', local.class)}
-      {...others}
-    >
-      {local.icon?.({})}
-      <span class='grow'>{local.value}</span>
-    </CombinedTooltip>
+    <div class={cn('gap-2 flex min-w-0 items-center', local.class)} {...others}>
+      <span class='shrink-0'>{local.icon?.({})}</span>
+      <AllowedTruncatedText
+        class='grow'
+        value={local.value}
+        tooltipPrefix={local.label}
+      />
+    </div>
   );
 };

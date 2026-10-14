@@ -20,4 +20,26 @@ pub trait InstanceFileService: Send + Sync {
 
     /// Remove the instance directory for the given instance id.
     async fn remove_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError>;
+
+    /// Write `bytes` to `relative_path` inside the instance directory, replacing whatever was
+    /// there and creating the parent directories as needed.
+    ///
+    /// The single write path for plugins into an instance, so every write is resolved and
+    /// bounded in one place. Anything that could leave the instance root (an absolute path, a
+    /// `..` segment, a symlink pointing outside) is refused, as is a payload over the size limit.
+    async fn write_instance_file(
+        &self,
+        instance_id: &str,
+        relative_path: &str,
+        bytes: &[u8],
+    ) -> Result<(), InstanceError>;
+
+    /// Read `relative_path` from inside the instance directory.
+    ///
+    /// Same path rules and the same size limit as [`InstanceFileService::write_instance_file`].
+    async fn read_instance_file(
+        &self,
+        instance_id: &str,
+        relative_path: &str,
+    ) -> Result<Vec<u8>, InstanceError>;
 }

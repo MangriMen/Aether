@@ -7,7 +7,7 @@ use crate::features::{
 
 // TODO: Wrap arguments in struct
 #[allow(clippy::too_many_arguments)]
-pub fn get_minecraft_jvm_arguments(
+pub(super) fn get_minecraft_jvm_arguments(
     arguments: Option<&[vanilla::Argument]>,
     libraries_dir: &Path,
     version_info: &vanilla::VersionInfo,

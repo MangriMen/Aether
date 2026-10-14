@@ -12,6 +12,10 @@ pub enum RequestErrorDto {
     Json { details: String },
     Toml { details: String },
     Parse,
+    Status { status: u16, url: String },
+    // `String`, not `u64`: specta refuses to export `u64` to TypeScript.
+    TooLarge { limit: String },
+    Io { path: String, details: String },
 }
 
 impl From<&RequestError> for RequestErrorDto {
@@ -35,6 +39,17 @@ impl From<&RequestError> for RequestErrorDto {
                 details: err.to_string(),
             },
             RequestError::Parse(_) => Self::Parse,
+            RequestError::Status { status, url } => Self::Status {
+                status: *status,
+                url: url.clone(),
+            },
+            RequestError::TooLarge { limit } => Self::TooLarge {
+                limit: limit.to_string(),
+            },
+            RequestError::Io { path, source } => Self::Io {
+                path: path.display().to_string(),
+                details: source.to_string(),
+            },
         }
     }
 }

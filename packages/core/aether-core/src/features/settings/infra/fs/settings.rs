@@ -1,4 +1,7 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -26,11 +29,15 @@ pub struct SettingsV2 {
     pub max_concurrent_downloads: usize,
 
     pub enabled_plugins: HashSet<String>,
+
+    #[serde(default)]
+    pub platform_providers: HashMap<String, String>,
 }
 
 impl From<SettingsV2> for Settings {
     fn from(value: SettingsV2) -> Self {
         Self::new(value.max_concurrent_downloads, value.enabled_plugins)
+            .with_platform_providers(value.platform_providers)
     }
 }
 
@@ -39,6 +46,7 @@ impl From<&Settings> for SettingsV2 {
         Self {
             max_concurrent_downloads: value.max_concurrent_downloads(),
             enabled_plugins: value.enabled_plugins().clone(),
+            platform_providers: value.platform_providers().clone(),
         }
     }
 }

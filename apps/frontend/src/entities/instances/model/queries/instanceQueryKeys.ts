@@ -5,10 +5,6 @@ export const INSTANCE_QUERY_KEYS = {
   DIR: (id: string) => [...INSTANCE_QUERY_KEYS.GET(id), 'dir'],
   IMPORTER: {
     SELF: () => [...INSTANCE_QUERY_KEYS.SELF, 'importer'],
-    LIST: () => [
-      ...INSTANCE_QUERY_KEYS.SELF,
-      ...INSTANCE_QUERY_KEYS.IMPORTER.SELF(),
-      'list',
-    ],
+    LIST: () => [...INSTANCE_QUERY_KEYS.IMPORTER.SELF(), 'list'],
   },
 } as const;

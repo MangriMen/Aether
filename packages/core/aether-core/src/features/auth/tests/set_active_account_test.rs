@@ -8,7 +8,7 @@ use crate::features::auth::app::{
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
 #[tokio::test]
-async fn test_set_active_account() {
+async fn should_activate_the_account_when_it_exists() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let cred1_id = Uuid::new_v4();
@@ -39,7 +39,7 @@ async fn test_set_active_account() {
 }
 
 #[tokio::test]
-async fn test_set_active_already_active_account() {
+async fn should_keep_the_account_active_when_it_is_already_active() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let cred_id = Uuid::new_v4();
@@ -61,7 +61,7 @@ async fn test_set_active_already_active_account() {
 }
 
 #[tokio::test]
-async fn test_set_active_nonexistent_account() {
+async fn should_fail_to_activate_when_the_account_does_not_exist() {
     let storage = Arc::new(MockCredentialsStorage::new());
 
     storage
