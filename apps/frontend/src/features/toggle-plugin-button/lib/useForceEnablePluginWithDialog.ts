@@ -61,6 +61,8 @@ export const useForceEnablePluginWithDialog = () => {
 
   return {
     tryEnable,
-    isPending: enablePlugin.isPending || forceEnablePlugin.isPending,
+    get isPending() {
+      return enablePlugin.isPending || forceEnablePlugin.isPending;
+    },
   };
 };
