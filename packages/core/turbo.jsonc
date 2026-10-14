@@ -3,7 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "lintt": {
-      "inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock"],
+      "inputs": ["**/src/**/*.rs", "**/Cargo.toml", "$TURBO_ROOT$/Cargo.lock"],
     },
   },
 }
