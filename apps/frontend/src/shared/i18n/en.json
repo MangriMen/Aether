@@ -513,7 +513,7 @@
     "updaters": "Updaters",
     "contentProviders": "Content Providers",
     "hostFunctions": "Host functions",
-    "hostFunctionsDescription": "What the plugin may ask the launcher to do. It is linked with these functions only.",
+    "hostFunctionsDescription": "What the plugin may ask the launcher to do. It is linked with these functions only. Plugins that can run commands (run_command) effectively have full code execution access on your computer: install only plugins you trust.",
     "hostFunctionsNotDeclared": "Not declared. The plugin was built for an older launcher and cannot be enabled until it is rebuilt.",
     "hostFunctionsNone": "None — the plugin does not call the launcher."
   },
