@@ -9,7 +9,10 @@ import { useTranslation } from '@/shared/model';
 
 import type { Plugin } from '../model/plugin';
 
-import { getTranslatedStateReason } from '../model/pluginState';
+import {
+  getTranslatedStateLabel,
+  getTranslatedStateReason,
+} from '../model/pluginState';
 
 export type PluginInfoHeaderProps = {
   name: string;
@@ -33,18 +36,16 @@ export const PluginInfoHeader: Component<PluginInfoHeaderProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const refusal = () => {
-    const state = props.plugin?.state;
+    const title =
+      props.plugin && getTranslatedStateLabel(props.plugin.state, t);
 
-    if (state !== 'Incompatible' && state !== 'Failed') {
+    if (!props.plugin || !title) {
       return null;
     }
 
     return {
-      title:
-        state === 'Incompatible'
-          ? t('plugin.stateIncompatible')
-          : t('plugin.stateFailed'),
-      reason: getTranslatedStateReason(props.plugin?.state_reason ?? null, t),
+      title,
+      reason: getTranslatedStateReason(props.plugin.state_reason, t),
     };
   };
 

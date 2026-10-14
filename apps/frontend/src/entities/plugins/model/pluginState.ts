@@ -26,3 +26,18 @@ export const getTranslatedStateReason = (
 
   return t(`plugin.stateReason.${reason.code}`, reason.payload) ?? reason.code;
 };
+
+/** Short label for a plugin the core refused to run; `undefined` for any other state. */
+export const getTranslatedStateLabel = (
+  state: PluginState,
+  t: TFunction,
+): string | undefined => {
+  switch (state) {
+    case 'Incompatible':
+      return t('plugin.stateIncompatible');
+    case 'Failed':
+      return t('plugin.stateFailed');
+    default:
+      return undefined;
+  }
+};

@@ -11,7 +11,10 @@ import { CombinedTooltip } from '@/shared/ui';
 
 import type { Plugin } from '../model/plugin';
 
-import { getTranslatedStateReason } from '../model/pluginState';
+import {
+  getTranslatedStateLabel,
+  getTranslatedStateReason,
+} from '../model/pluginState';
 
 export type PluginStateBadgeProps = ComponentProps<'span'> & {
   plugin: Pick<Plugin, 'state' | 'state_reason'>;
@@ -26,16 +29,7 @@ export const PluginStateBadge: Component<PluginStateBadgeProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const label = () => {
-    switch (local.plugin.state) {
-      case 'Incompatible':
-        return t('plugin.stateIncompatible');
-      case 'Failed':
-        return t('plugin.stateFailed');
-      default:
-        return undefined;
-    }
-  };
+  const label = () => getTranslatedStateLabel(local.plugin.state, t);
 
   return (
     <Show when={label()}>

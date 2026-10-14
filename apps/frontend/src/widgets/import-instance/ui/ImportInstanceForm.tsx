@@ -1,6 +1,5 @@
 import { createForm, setInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import { splitProps, type Component, type JSX } from 'solid-js';
 
 import type {
@@ -11,8 +10,7 @@ import type { PluginMetadata } from '@/entities/plugins';
 
 import { useImportInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField, CombinedTooltip, IconButton } from '@/shared/ui';
+import { BrowseTrailingIcon, CombinedTextField } from '@/shared/ui';
 
 import { useEnsurePluginAccess } from '../lib';
 import {
@@ -38,8 +36,6 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     'onSubmit',
     'class',
   ]);
-
-  const [{ t }] = useTranslation();
 
   const form = createForm({
     schema: ImportInstanceSchema,
@@ -102,23 +98,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
               class: 'pr-9',
               ...field.props,
             }}
-            trailingIcons={
-              <div class='mr-1 flex h-full items-center justify-center'>
-                <CombinedTooltip
-                  label={t('common.browse')}
-                  as={IconButton}
-                  variant='ghost'
-                  class='
-                    size-7 bg-secondary/secondary
-                    enabled:hover:bg-secondary/hover
-                  '
-                  type='button'
-                  size='sm'
-                  onClick={handleBrowse}
-                  icon={IconMdiFileFindOutline}
-                />
-              </div>
-            }
+            trailingIcons={<BrowseTrailingIcon onBrowse={handleBrowse} />}
           />
         )}
       </Field>

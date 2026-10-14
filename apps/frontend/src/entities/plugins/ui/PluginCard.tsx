@@ -7,6 +7,7 @@ import { Image } from '@/shared/ui';
 
 import type { Plugin } from '..';
 
+import { isPluginDisabled } from '../model/pluginState';
 import { PluginApiCompatibilityBadge } from './PluginApiCompatibilityBadge';
 import { PluginSourceBadge } from './PluginSourceBadge';
 import { PluginStateBadge } from './PluginStateBadge';
@@ -25,14 +26,6 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
   const metadata = createMemo(() => local.plugin.manifest.metadata);
   const authors = createMemo(() => metadata().authors?.join(', '));
 
-  const isDisabled = createMemo(() => {
-    const state = local.plugin.state;
-
-    return (
-      state === 'Failed' || state === 'NotLoaded' || state === 'Incompatible'
-    );
-  });
-
   return (
     <div
       class={cn(
@@ -46,7 +39,7 @@ export const PluginCard: Component<PluginCardProps> = (props) => {
         `,
         local.class,
       )}
-      data-disabled={isDisabled() ? '' : undefined}
+      data-disabled={isPluginDisabled(local.plugin.state) ? '' : undefined}
       data-active={local.isSelected ? '' : undefined}
       {...others}
     >

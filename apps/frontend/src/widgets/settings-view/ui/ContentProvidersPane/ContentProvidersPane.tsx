@@ -1,4 +1,4 @@
-import { createMemo, For, Show, type Component } from 'solid-js';
+import { createMemo, For, Match, Switch, type Component } from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/ui';
 
@@ -31,43 +31,35 @@ export const ContentProvidersPane: Component<ContentProvidersPaneProps> = (
 
   return (
     <SettingsPane label={t('settings.tab.contentProviders')} {...props}>
-      <Show
-        when={!providers.isError && !settings.isError}
-        fallback={
+      <Switch>
+        <Match when={providers.isError || settings.isError}>
           <span role='alert' class='text-destructive'>
             {t('settings.contentProviders.loadFailed')}
           </span>
-        }
-      >
-        <Show
-          when={!providers.isLoading && !settings.isLoading}
-          fallback={
-            <span role='status' class='text-muted-foreground'>
-              {t('common.loading')}
-            </span>
-          }
-        >
-          <Show
-            when={contested().length > 0}
-            fallback={
-              <span class='text-muted-foreground'>
-                {t('settings.contentProviders.nothingToChoose')}
-              </span>
-            }
-          >
-            <For each={contested()}>
-              {(group) => (
-                <PlatformProviderEntry
-                  variant='card'
-                  platform={group.platform}
-                  providers={group.providers}
-                  selected={settings.data?.platformProviders[group.platform]}
-                />
-              )}
-            </For>
-          </Show>
-        </Show>
-      </Show>
+        </Match>
+        <Match when={providers.isLoading || settings.isLoading}>
+          <span role='status' class='text-muted-foreground'>
+            {t('common.loading')}
+          </span>
+        </Match>
+        <Match when={contested().length === 0}>
+          <span class='text-muted-foreground'>
+            {t('settings.contentProviders.nothingToChoose')}
+          </span>
+        </Match>
+        <Match when={contested().length > 0}>
+          <For each={contested()}>
+            {(group) => (
+              <PlatformProviderEntry
+                variant='card'
+                platform={group.platform}
+                providers={group.providers}
+                selected={settings.data?.platformProviders[group.platform]}
+              />
+            )}
+          </For>
+        </Match>
+      </Switch>
     </SettingsPane>
   );
 };

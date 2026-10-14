@@ -1,12 +1,7 @@
 import IconMdiArrowRightBold from '~icons/mdi/arrow-right-bold';
 import IconMdiMonitor from '~icons/mdi/monitor';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
-import {
-  Show,
-  splitProps,
-  type Component,
-  type ComponentProps,
-} from 'solid-js';
+import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
@@ -18,6 +13,7 @@ import type {
   AllowedPathValue,
 } from '../model';
 
+import { AllowedItemLeadingItems } from './AllowedItemLeadingItems';
 import { AllowedPathComponent } from './AllowedPathComponent';
 
 export type AllowedPathProps = ComponentProps<'div'> &
@@ -32,6 +28,11 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
   ]);
 
   const [{ t }] = useTranslation();
+
+  const accessLabel = () =>
+    local.value?.readOnly === false
+      ? t('pluginSettings.readWrite')
+      : t('pluginSettings.readOnly');
 
   return (
     <div
@@ -64,25 +65,12 @@ export const AllowedPath: Component<AllowedPathProps> = (props) => {
             value={local.value?.pluginPath}
           />
           <Badge variant='outline' class='shrink-0'>
-            {local.value?.readOnly === false
-              ? t('pluginSettings.readWrite')
-              : t('pluginSettings.readOnly')}
+            {accessLabel()}
           </Badge>
           <span class='text-destructive'>{local.error?.pluginPath}</span>
         </div>
       </div>
-      <Show when={local.leadingItems}>
-        {(leadingItems) => (
-          <div
-            class='
-              flex shrink-0 items-center opacity-0 transition-opacity
-              group-hover:opacity-100
-            '
-          >
-            {leadingItems()}
-          </div>
-        )}
-      </Show>
+      <AllowedItemLeadingItems items={local.leadingItems} />
     </div>
   );
 };

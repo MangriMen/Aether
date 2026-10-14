@@ -1,5 +1,4 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 import {
   untrack,
   createSignal,
@@ -11,11 +10,10 @@ import {
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
+  BrowseTrailingIcon,
   Button,
   Checkbox,
   CombinedTextField,
-  CombinedTooltip,
-  IconButton,
 } from '@/shared/ui';
 
 import type {
@@ -80,23 +78,7 @@ export const EditAllowedPath: Component<EditAllowedPathProps> = (props) => {
         value={src()}
         onChange={setSrc}
         errorMessage={local.error?.hostPath}
-        trailingIcons={
-          <div class='mr-1 flex h-full items-center justify-center'>
-            <CombinedTooltip
-              label={t('common.browse')}
-              as={IconButton}
-              variant='ghost'
-              class='
-                size-7 bg-secondary/secondary
-                enabled:hover:bg-secondary/hover
-              '
-              type='button'
-              size='sm'
-              onClick={handleBrowse}
-              icon={IconMdiFileFindOutline}
-            />
-          </div>
-        }
+        trailingIcons={<BrowseTrailingIcon onBrowse={handleBrowse} />}
       />
       <CombinedTextField
         class='w-full'
