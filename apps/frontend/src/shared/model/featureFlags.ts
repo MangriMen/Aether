@@ -17,7 +17,6 @@ export const getOrCreateFeatureFlagsStore = (): FeatureFlagsStoreTuple => {
   if (!featureFlagsStore) {
     // Correct usage of makePersisted with createStore
     const [state, setState] = makePersisted(
-      // eslint-disable-next-line solid/reactivity
       createStore<FeatureFlagsStore>({
         isAllowInstallModpacks: false,
       }),

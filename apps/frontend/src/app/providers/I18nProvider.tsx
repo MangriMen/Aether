@@ -46,7 +46,6 @@ export const I18nProvider = (
   };
 
   const [locale, setLocale_] = makePersisted(
-    // eslint-disable-next-line solid/reactivity
     createSignal<Locale>(getLocale()),
     { name: LOCALE_LS_KEY },
   );

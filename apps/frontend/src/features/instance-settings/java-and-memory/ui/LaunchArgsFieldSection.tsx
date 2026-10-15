@@ -49,8 +49,8 @@ export const LaunchArgsFieldSection: Component<Props> = (props) => {
               inputProps={{
                 ...field.props,
                 type: 'text',
-                onBlur: (e) => {
-                  field.props.onBlur?.(e);
+                onBlur: () => {
+                  field.props.onBlur?.();
                   props.onChangePartial({
                     launchArgs: getInput(props.form, { path: ['launchArgs'] }),
                   });

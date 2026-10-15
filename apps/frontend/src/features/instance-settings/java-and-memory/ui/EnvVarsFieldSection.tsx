@@ -79,8 +79,8 @@ export const EnvVarsFieldSection: Component<Props> = (props) => {
               inputProps={{
                 ...field.props,
                 type: 'text',
-                onBlur: async (e) => {
-                  field.props.onBlur?.(e);
+                onBlur: async () => {
+                  field.props.onBlur?.();
 
                   try {
                     const result = await validate(props.form);

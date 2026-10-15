@@ -135,7 +135,6 @@ export const createThemeContext = (
 
 const createContext = (themeStateKey: Accessor<string>) => {
   const [state, setState] = makePersisted(
-    // eslint-disable-next-line solid/reactivity
     createStore<ThemeContextValue>(DEFAULT_THEME_CONTEXT_VALUE),
     { name: themeStateKey() },
   );
