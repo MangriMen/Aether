@@ -1143,26 +1143,20 @@ mod tests {
         assert_eq!(errno(&mut plugin, "read"), 0, "reading the same file works");
     }
 
-    /// Extism's read-only folder refuses only opens asking for the write right, but WASI turns
-    /// `O_CREAT` into a write open of its own: a plugin can create or empty files in a read-only
-    /// mount. Pinned so that a change in Extism either way is noticed.
+    /// Older Extism let `O_CREAT` through a read-only folder (WASI turns it into a write open of
+    /// its own), so a plugin could create or empty files there. Current Extism refuses it; pinned
+    /// so that a change either way is noticed.
     #[test]
-    fn should_let_o_creat_through_when_the_mount_is_read_only() {
+    fn should_refuse_o_creat_when_the_mount_is_read_only() {
         let (dir, mut plugin) = sandbox(true);
 
         let created = errno(&mut plugin, "create");
         let truncated = errno(&mut plugin, "truncate");
 
-        assert_eq!(
-            (created, dir.path().join("new.toml").exists()),
-            (0, true),
-            "O_CREAT without the write right creates the file"
-        );
-        assert_eq!(
-            (truncated, pack(&dir)),
-            (0, Vec::new()),
-            "O_CREAT | O_TRUNC without the write right empties the file"
-        );
+        assert_ne!(created, 0, "O_CREAT without the write right is refused");
+        assert!(!dir.path().join("new.toml").exists(), "no file is created");
+        assert_ne!(truncated, 0, "O_CREAT | O_TRUNC is refused");
+        assert_eq!(pack(&dir), PACK, "the file is untouched");
     }
 
     /// The empty wasm module: magic + version, nothing else. Valid enough for
