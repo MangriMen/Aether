@@ -7,8 +7,8 @@ use crate::features::instance::app::dtos::{
 };
 use crate::features::instance::domain::{
     ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
-    ContentSearchResult, ContentVersion, InstallPlan, Instance, InstanceError, PackMetadata,
-    PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
+    ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallPlan, Instance,
+    InstanceError, PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
 };
 
 #[async_trait]
@@ -86,6 +86,22 @@ pub trait ContentProvider: Send + Sync {
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
         let _ = content_ids;
         Err(self.unsupported("get_contents_metadata"))
+    }
+
+    /// What the provider says about each of `version_ids` — the version number its authors
+    /// gave it, its title — to show installed files by, asked in one go for a whole instance.
+    ///
+    /// The ids are the provider's own ids of versions, as
+    /// [`ContentFileUpdateInfo::version`](crate::features::instance::ContentFileUpdateInfo)
+    /// records them. An id the provider does not know is left out, not an error. A provider
+    /// that cannot describe its versions keeps the default
+    /// [`InstanceError::UnsupportedOperation`], and its files are shown without a version.
+    async fn get_versions_metadata(
+        &self,
+        version_ids: &[String],
+    ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
+        let _ = version_ids;
+        Err(self.unsupported("get_versions_metadata"))
     }
 
     async fn check_compatibility(
@@ -238,6 +254,25 @@ mod tests {
         assert_unsupported(
             metadata.await.unwrap().unwrap_err(),
             "get_contents_metadata",
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_versions_metadata_as_unsupported_when_the_provider_lacks_it() {
+        let provider: Arc<dyn ContentProvider> = Arc::new(BareProvider::new());
+
+        let metadata = tokio::spawn({
+            let provider = provider.clone();
+            async move {
+                provider
+                    .get_versions_metadata(&["IZskON6d".to_owned()])
+                    .await
+            }
+        });
+
+        assert_unsupported(
+            metadata.await.unwrap().unwrap_err(),
+            "get_versions_metadata",
         );
     }
 }
