@@ -30,7 +30,7 @@ The pre-commit hooks (lefthook) run the main checks for the files you changed. P
 - Write commit messages, PR titles and PR descriptions in English.
 - Keep pull requests focused: one logical change per PR.
 - Do not reference issues or pull requests of other repositories in commits or PR descriptions.
-- We do not accept contributions that bundle game files or assets, or whose purpose is to bypass purchase or authentication requirements.
+- We do not accept contributions that bundle third-party assets we cannot redistribute, or that are intended to circumvent access controls.
 
 ## Licensing of contributions
 
