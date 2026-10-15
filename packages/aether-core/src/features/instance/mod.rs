@@ -8,7 +8,7 @@ mod tests;
 // ── Domain models (pure data containers) ──
 pub use domain::{
     AtomicInstallParams, BaseContentParams, CapabilityMetadata, ChannelVersion, ContentFile,
-    ContentFileUpdateInfo, ContentIdentity, ContentInstallParams, ContentItem,
+    ContentFileUpdateInfo, ContentIdentity, ContentInstallParams, ContentItem, ContentMetadata,
     ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult, ContentSource,
     ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
     ContentVersionStatus, ContentVersionType, FileSide, ImporterCapabilityMetadata,
@@ -23,13 +23,14 @@ pub use domain::{
 
 // ── App layer: Use Cases (Inbound Ports) ──
 pub use app::{
-    ChangeContentState, ChangeContentStateUseCase, ChangeContentStateUseCasePort,
-    ChangeInstanceGameUseCase, ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
-    CheckContentCompatibilityUseCasePort, ContentCompatibilityCheckParams,
-    ContentCompatibilityResult, ContentDownloader, ContentFileService, ContentGetParams,
-    ContentListVersionsParams, ContentManagementPort, ContentProvider, ContentProviderPort,
-    ContentStateAction, CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstance,
-    EditInstanceIcon, EditInstanceIconUseCase, EditInstanceIconUseCasePort, EditInstanceUseCase,
+    CONTENT_METADATA_TTL, CachedContentMetadata, ChangeContentState, ChangeContentStateUseCase,
+    ChangeContentStateUseCasePort, ChangeInstanceGameUseCase, ChangeInstanceGameUseCasePort,
+    CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort,
+    ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
+    ContentFileService, ContentGetParams, ContentListVersionsParams, ContentManagementPort,
+    ContentMetadataCache, ContentProvider, ContentProviderPort, ContentStateAction,
+    CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstance, EditInstanceIcon,
+    EditInstanceIconUseCase, EditInstanceIconUseCasePort, EditInstanceUseCase,
     EditInstanceUseCasePort, GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase,
     GetInstanceUseCasePort, ImportContent, ImportContentUseCase, ImportContentUseCasePort,
     ImportInstance, ImportInstanceUseCase, ImportInstanceUseCasePort, Importer,

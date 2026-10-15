@@ -5,6 +5,7 @@ mod instance_event_handler;
 mod legacy_provider_id;
 mod services;
 mod sqlite;
+mod universal_content_metadata_cache;
 
 pub use content_providers::ModrinthContentProvider;
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
@@ -18,3 +19,4 @@ pub use services::{
 pub use sqlite::{
     SqliteInstanceStorage, SqlitePackStorage, migrate_instances_to_sqlite, migrate_packs_to_sqlite,
 };
+pub use universal_content_metadata_cache::UniversalContentMetadataCache;

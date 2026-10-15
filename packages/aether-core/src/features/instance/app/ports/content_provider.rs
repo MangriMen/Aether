@@ -6,9 +6,9 @@ use crate::features::instance::app::dtos::{
     ContentCompatibilityCheckParams, ContentCompatibilityResult,
 };
 use crate::features::instance::domain::{
-    ContentItem, ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-    ContentVersion, InstallPlan, Instance, InstanceError, PackMetadata, PackSource, ProviderId,
-    ResolveInstallPlanParams, ResolvedFile,
+    ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
+    ContentSearchResult, ContentVersion, InstallPlan, Instance, InstanceError, PackMetadata,
+    PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
 };
 
 #[async_trait]
@@ -71,6 +71,21 @@ pub trait ContentProvider: Send + Sync {
     ) -> Result<PackMetadata, InstanceError> {
         let _ = source;
         Err(self.unsupported("resolve_pack_metadata"))
+    }
+
+    /// What the provider says about each of `content_ids` — name, icon, author — to show
+    /// installed content by, asked in one go for a whole instance.
+    ///
+    /// Each item is keyed by the provider's own id of the project, which may differ from the
+    /// one asked by (a slug, for one). An id the provider does not know is left out, not an
+    /// error. A provider that cannot describe its content keeps the default
+    /// [`InstanceError::UnsupportedOperation`], and its content is shown by file alone.
+    async fn get_contents_metadata(
+        &self,
+        content_ids: &[String],
+    ) -> Result<Vec<ContentMetadata>, InstanceError> {
+        let _ = content_ids;
+        Err(self.unsupported("get_contents_metadata"))
     }
 
     async fn check_compatibility(
@@ -205,5 +220,24 @@ mod tests {
         assert_unsupported(file.await.unwrap().unwrap_err(), "resolve_file");
         assert_unsupported(plan.await.unwrap().unwrap_err(), "resolve_install_plan");
         assert_unsupported(pack.await.unwrap().unwrap_err(), "resolve_pack_metadata");
+    }
+
+    #[tokio::test]
+    async fn should_report_contents_metadata_as_unsupported_when_the_provider_lacks_it() {
+        let provider: Arc<dyn ContentProvider> = Arc::new(BareProvider::new());
+
+        let metadata = tokio::spawn({
+            let provider = provider.clone();
+            async move {
+                provider
+                    .get_contents_metadata(&["AANobbMI".to_owned()])
+                    .await
+            }
+        });
+
+        assert_unsupported(
+            metadata.await.unwrap().unwrap_err(),
+            "get_contents_metadata",
+        );
     }
 }
