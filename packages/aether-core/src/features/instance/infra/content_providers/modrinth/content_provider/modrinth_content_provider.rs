@@ -20,8 +20,9 @@ use crate::{
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
                 api_client::{
-                    File, MODRINTH_API_URL, ModrinthApiClient, ProjectResponse,
-                    ProjectSearchParams, ProjectVersionResponse, ProjectVersionsRequest,
+                    File, MODRINTH_API_URL, MODRINTH_API_V3_URL, ModrinthApiClient,
+                    ProjectResponse, ProjectSearchParams, ProjectVersionResponse,
+                    ProjectVersionsRequest,
                 },
             },
             select_version,
@@ -40,11 +41,36 @@ use super::{
     },
 };
 
-/// How many projects one `GET /projects` asks for: a hundred ids keep the URL under 2 KB.
+/// How many ids one `GET /projects`, `/teams` or `/organizations` asks for: a hundred keep the
+/// URL under 2 KB.
 const METADATA_BATCH_SIZE: usize = 100;
 
 /// How many of those requests run at once, well inside the API's 300 requests a minute.
 const METADATA_CONCURRENCY: usize = 4;
+
+/// `ids` in their first order, each once.
+fn unique(ids: impl Iterator<Item = String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    ids.filter(|id| seen.insert(id.clone())).collect()
+}
+
+/// What `fetch` answers for `ids`, asked [`METADATA_BATCH_SIZE`] ids at a time, up to
+/// [`METADATA_CONCURRENCY`] requests at once. Any request that fails fails the whole call.
+async fn fetch_batched<'a, T, F, Fut>(ids: &'a [String], fetch: F) -> Result<Vec<T>, InstanceError>
+where
+    F: Fn(&'a [String]) -> Fut,
+    Fut: Future<Output = Result<Vec<T>, String>>,
+{
+    // The requests are made up front: a stream mapping borrowed batches into futures is not
+    // `Send` enough for `async_trait`.
+    let requests: Vec<_> = ids.chunks(METADATA_BATCH_SIZE).map(fetch).collect();
+    let batches: Vec<Vec<T>> = stream::iter(requests)
+        .buffer_unordered(METADATA_CONCURRENCY)
+        .try_collect()
+        .await
+        .map_err(InstanceError::ContentDownloadError)?;
+    Ok(batches.into_iter().flatten().collect())
+}
 
 pub struct ModrinthContentProvider<RC> {
     location_info: Arc<LocationInfo>,
@@ -90,7 +116,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         Self {
             request_client: request_client.clone(),
-            api: ModrinthApiClient::new(MODRINTH_API_URL.to_string(), base_headers, request_client),
+            api: ModrinthApiClient::new(
+                MODRINTH_API_URL.to_string(),
+                MODRINTH_API_V3_URL.to_string(),
+                base_headers,
+                request_client,
+            ),
             location_info,
             capability,
             max_mrpack_bytes,
@@ -572,38 +603,68 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         }
     }
 
-    /// Asked of `GET /projects` a batch of ids at a time, a few batches at once. A batch that
-    /// fails fails the whole call: a partial answer would read as projects Modrinth does not
-    /// know. A project asked both by its id and its slug is listed once.
+    /// Asked of `GET /projects` a batch of ids at a time, a few batches at once; the author of
+    /// each project then of `GET /organizations` for a project an organization owns, by the
+    /// organization's name, and of `GET /teams` for any other, by the username of the team's
+    /// owner, batched alike.
+    ///
+    /// A request that fails fails the whole call: a partial answer would read as projects
+    /// Modrinth does not know, or as projects with no author, and be cached as such for days;
+    /// failed, the call is simply made again on the next list. A team or organization Modrinth
+    /// does not list leaves its projects with no author. A project asked both by its id and its
+    /// slug is listed once.
     async fn get_contents_metadata(
         &self,
         content_ids: &[String],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
-        let mut seen = HashSet::new();
-        let content_ids: Vec<String> = content_ids
-            .iter()
-            .filter(|id| seen.insert(id.as_str()))
-            .cloned()
-            .collect();
-
-        // The requests are made up front: a stream mapping borrowed batches into futures is not
-        // `Send` enough for `async_trait`.
-        let requests: Vec<_> = content_ids
-            .chunks(METADATA_BATCH_SIZE)
-            .map(|batch| self.api.get_projects_metadata(batch))
-            .collect();
-        let batches: Vec<_> = stream::iter(requests)
-            .buffer_unordered(METADATA_CONCURRENCY)
-            .try_collect()
-            .await
-            .map_err(InstanceError::ContentDownloadError)?;
-
+        let content_ids = unique(content_ids.iter().cloned());
+        let batches =
+            fetch_batched(&content_ids, |batch| self.api.get_projects_metadata(batch)).await?;
         let mut listed = HashSet::new();
-        Ok(batches
+        let projects: Vec<_> = batches
             .into_iter()
-            .flatten()
             .filter(|project| listed.insert(project.id.clone()))
-            .map(ContentMetadata::from)
+            .collect();
+
+        let organization_ids = unique(
+            projects
+                .iter()
+                .filter_map(|project| project.organization.clone()),
+        );
+        let team_ids = unique(
+            projects
+                .iter()
+                .filter(|project| project.organization.is_none())
+                .filter_map(|project| project.team.clone()),
+        );
+        let (organizations, teams) = futures::try_join!(
+            fetch_batched(&organization_ids, |batch| self.api.get_organizations(batch)),
+            fetch_batched(&team_ids, |batch| self.api.get_teams(batch)),
+        )?;
+
+        let organization_names: HashMap<String, String> = organizations
+            .into_iter()
+            .map(|organization| (organization.id, organization.name))
+            .collect();
+        let mut owners: HashMap<String, String> = HashMap::new();
+        for member in teams.into_iter().flatten().filter(|member| member.is_owner) {
+            owners.entry(member.team_id).or_insert(member.user.username);
+        }
+
+        Ok(projects
+            .into_iter()
+            .map(|project| {
+                let author = match (&project.organization, &project.team) {
+                    (Some(organization), _) => organization_names.get(organization),
+                    (None, Some(team)) => owners.get(team),
+                    (None, None) => None,
+                }
+                .cloned();
+                ContentMetadata {
+                    author,
+                    ..ContentMetadata::from(project)
+                }
+            })
             .collect())
     }
 

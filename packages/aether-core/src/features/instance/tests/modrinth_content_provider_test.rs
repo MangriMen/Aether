@@ -35,6 +35,7 @@ use crate::{
 };
 
 const API: &str = "https://api.modrinth.com/v2";
+const API_V3: &str = "https://api.modrinth.com/v3";
 const SODIUM_URL: &str = "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar";
 const PACK_URL: &str = "https://cdn.modrinth.com/data/PACKID00/versions/PACKV002/pack.mrpack";
 
@@ -70,11 +71,16 @@ impl FakeHttp {
 
     /// The ids of each `GET /projects` asked for, in the order asked.
     fn projects_batches(&self) -> Vec<Vec<String>> {
+        self.batches(&format!("{API}/projects"))
+    }
+
+    /// The ids of each request to `route` that takes many ids at once, in the order asked.
+    fn batches(&self, route: &str) -> Vec<Vec<String>> {
         self.full_requests
             .lock()
             .unwrap()
             .iter()
-            .filter(|url| url.starts_with(&format!("{API}/projects?")))
+            .filter(|url| url.starts_with(&format!("{route}?")))
             .map(|url| {
                 let url = url::Url::parse(url).unwrap();
                 let (_, ids) = url.query_pairs().find(|(key, _)| key == "ids").unwrap();
@@ -813,6 +819,9 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
         &format!("{API}/projects"),
         &json!([fabric_api, project("AANobbMI", "sodium", "mod")]),
     );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
 
     let mut metadata = fixture
         .provider
@@ -857,6 +866,9 @@ async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() 
         &format!("{API}/projects"),
         &json!([project("AANobbMI", "sodium", "mod")]),
     );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
     let mut asked: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
     asked.extend(ids(&["id0", "id1"]));
 
@@ -890,6 +902,83 @@ async fn should_ask_nothing_when_given_no_ids() {
 #[tokio::test]
 async fn should_fail_when_a_batch_cannot_be_fetched() {
     let fixture = Fixture::new();
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+fn team_member(team_id: &str, username: &str, is_owner: bool) -> Value {
+    json!({
+        "team_id": team_id, "role": "Developer", "is_owner": is_owner, "accepted": true,
+        "ordering": 0, "user": { "id": format!("u-{username}"), "username": username, "name": null }
+    })
+}
+
+#[tokio::test]
+async fn should_name_the_owner_or_the_organization_as_author_when_asked_for_metadata() {
+    let fixture = Fixture::new();
+    let mut by_team = project("TEAMPROJ", "by-team", "mod");
+    by_team["team"] = json!("team1");
+    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
+    by_organization["team"] = json!("team2");
+    by_organization["organization"] = json!("org1");
+    let mut no_team = project("NOTEAM00", "no-team", "mod");
+    no_team["team"] = json!("gone");
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([by_team, by_organization, no_team]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/teams"),
+        &json!([[
+            team_member("team1", "helper", false),
+            team_member("team1", "owner", true),
+        ]]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/organizations"),
+        &json!([{ "id": "org1", "slug": "org", "name": "Org Name", "team_id": "orgteam" }]),
+    );
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["TEAMPROJ", "ORGPROJ0", "NOTEAM00"]))
+        .await
+        .unwrap();
+
+    let authors: HashMap<_, _> = metadata
+        .into_iter()
+        .map(|item| (item.content_id, item.author))
+        .collect();
+    assert_eq!(authors["TEAMPROJ"].as_deref(), Some("owner"));
+    assert_eq!(authors["ORGPROJ0"].as_deref(), Some("Org Name"));
+    assert_eq!(authors["NOTEAM00"], None, "a team Modrinth did not list");
+    // The team of a project an organization owns is not asked about.
+    let mut teams = fixture.http.batches(&format!("{API_V3}/teams"));
+    for batch in &mut teams {
+        batch.sort();
+    }
+    assert_eq!(teams, [ids(&["gone", "team1"])]);
+    assert_eq!(
+        fixture.http.batches(&format!("{API_V3}/organizations")),
+        [ids(&["org1"])]
+    );
+}
+
+#[tokio::test]
+async fn should_fail_when_the_owners_cannot_be_fetched() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([project("AANobbMI", "sodium", "mod")]),
+    );
 
     let result = fixture
         .provider

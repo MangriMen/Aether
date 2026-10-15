@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::{collections::HashMap, sync::LazyLock};
 
 pub(crate) const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
+/// Version 3 of the API, for what version 2 lacks: organizations, and whether a team member owns
+/// the project.
+pub(crate) const MODRINTH_API_V3_URL: &str = "https://api.modrinth.com/v3";
 pub(crate) const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
 #[allow(unused)]
@@ -152,6 +155,35 @@ pub struct ProjectMetadataResponse {
     pub title: String,
     pub description: Option<String>,
     pub icon_url: Option<String>,
+    /// The id of the project's team.
+    #[serde(default)]
+    pub team: Option<String>,
+    /// The id of the organization that owns the project, if one does.
+    pub organization: Option<String>,
+}
+
+/// A member of a team as version 3 of `GET /teams` lists it, cut to what names the owner of a
+/// project.
+#[derive(Deserialize, Debug)]
+pub struct TeamMemberResponse {
+    pub team_id: String,
+    pub user: TeamMemberUserResponse,
+    /// Whether the member owns the project. Version 2 says so only by a role named `Owner`;
+    /// version 3 lets the role be any title.
+    #[serde(default)]
+    pub is_owner: bool,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct TeamMemberUserResponse {
+    pub username: String,
+}
+
+/// An organization as version 3 of `GET /organizations` lists it, cut to its name.
+#[derive(Deserialize, Debug)]
+pub struct OrganizationResponse {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -165,7 +165,7 @@ impl TryFrom<ProjectResponse> for ContentItem {
 }
 
 impl From<ProjectMetadataResponse> for ContentMetadata {
-    /// No author: a project names only its team or organization by id, not a person.
+    /// No author: a project names only its team or organization by id, looked up apart.
     fn from(value: ProjectMetadataResponse) -> Self {
         Self {
             content_id: value.id,
