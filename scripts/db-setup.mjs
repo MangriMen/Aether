@@ -74,7 +74,7 @@ function main() {
   run("sqlx db create");
 
   // 4. Run migrations for aether-core (uses custom table _sqlx_migrations_aether_core)
-  const corePath = resolve(root, "packages/core/aether-core");
+  const corePath = resolve(root, "packages/aether-core");
   run("sqlx migrate run", { cwd: corePath, env: { DATABASE_URL: absoluteDbUrl } });
 
   // 5. Run migrations for desktop app (uses default table _sqlx_migrations)

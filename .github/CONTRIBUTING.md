@@ -6,11 +6,11 @@ Thanks for your interest in Aether! Bug reports, feature ideas and pull requests
 
 - For anything larger than a small fix, please open an issue first so we can agree on the approach.
 - Report security problems privately, see [SECURITY.md](SECURITY.md).
-- See [ARCHITECTURE.md](ARCHITECTURE.md) for an overview of the project structure.
+- See [ARCHITECTURE.md](../docs/ARCHITECTURE.md) for an overview of the project structure.
 
 ## Development setup
 
-Requirements and the basic build commands are in the [README](README.md#building-from-source).
+Requirements and the basic build commands are in the [README](../README.md#building-from-source).
 
 Before opening a pull request, make sure these pass locally:
 
@@ -34,7 +34,7 @@ The pre-commit hooks (lefthook) run the main checks for the files you changed. P
 
 ## Licensing of contributions
 
-Aether is licensed under [GPL-3.0-only](LICENSE). The plugin API crates in `packages/core` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) are licensed under `MIT OR Apache-2.0`. Your contribution is licensed under the license of the part of the project it modifies.
+Aether is licensed under [GPL-3.0-only](../LICENSE). The plugin API crates in `packages` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) are licensed under `MIT OR Apache-2.0` (each crate directory contains its own `LICENSE-MIT` and `LICENSE-APACHE`). Your contribution is licensed under the license of the part of the project it modifies.
 
 By submitting a pull request you agree to the following (this is the project's Contributor License Agreement):
 

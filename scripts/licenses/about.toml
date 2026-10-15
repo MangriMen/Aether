@@ -1,5 +1,5 @@
 # cargo-about configuration: third-party license report for the desktop app.
-# Used by scripts/generate-third-party-licenses.mjs
+# Used by scripts/licenses/generate-third-party-licenses.mjs
 
 accepted = [
   "0BSD",

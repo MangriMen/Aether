@@ -1,2 +1,0 @@
-[alias]
-update-schemas = "test -p aether-core-gen --test schema_sync"

@@ -39,6 +39,8 @@ jobs:
               - 'packages/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
+              - '.cargo/**'
+              - 'rust-toolchain.toml'
               - '.github/workflows/ci.yml'
 
   frontend:
@@ -127,7 +129,7 @@ jobs:
         run: |
           export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
           sqlx db create
-          (cd packages/core/aether-core && sqlx migrate run)
+          (cd packages/aether-core && sqlx migrate run)
           (cd apps/desktop && sqlx migrate run)
 
       - name: cargo sqlx prepare --check
@@ -135,7 +137,7 @@ jobs:
           SQLX_OFFLINE: "false"
         run: |
           export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
-          (cd packages/core/aether-core && cargo sqlx prepare --check -- --all-targets)
+          (cd packages/aether-core && cargo sqlx prepare --check -- --all-targets)
           (cd apps/desktop && cargo sqlx prepare --check -- --all-targets)
 
   # single required check for branch protection: skipped jobs count as success, failed ones do not

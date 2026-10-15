@@ -1,1 +1,1 @@
-Generated at release time by scripts/generate-third-party-licenses.mjs.
+Generated at release time by scripts/licenses/generate-third-party-licenses.mjs.

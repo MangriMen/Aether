@@ -1,6 +1,5 @@
 extends:
   - "apps/*/lefthook.yml"
-  - "packages/*/lefthook.yml"
 
 pre-commit:
   parallel: true

@@ -1,5 +1,5 @@
 # cargo-deny configuration: license and source checks only.
-# Run with: cargo deny check licenses
+# Run with: cargo deny --config scripts/licenses/deny.toml check licenses
 
 [graph]
 all-features = true

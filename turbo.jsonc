@@ -42,7 +42,7 @@
         "SystemRoot",
       ],
     },
-    // Clippy over the whole Cargo workspace (apps/desktop + packages/core/*).
+    // Clippy over the whole Cargo workspace (apps/desktop + packages/*).
     "//#lint:rust": {
       "inputs": [
         "Cargo.toml",
@@ -52,7 +52,7 @@
         // build.rs (tauri-build reads tauri.conf.json, capabilities, icons),
         // sqlx macros (.sqlx, sqlx.toml, migrations) all affect clippy.
         "apps/desktop/**",
-        "packages/core/**",
+        "packages/**",
         "!**/node_modules/**",
         "!**/.turbo/**",
         "!apps/desktop/gen/**",
