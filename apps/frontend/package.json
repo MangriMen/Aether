@@ -30,7 +30,7 @@
     "@solid-primitives/storage": "4.3.4",
     "@solidjs/router": "^0.16.1",
     "@tanstack/solid-query": "^5.104.2",
-    "@tanstack/solid-table": "^8.21.3",
+    "@tanstack/solid-table": "^9.2.8",
     "@tanstack/solid-virtual": "^3.13.42",
     "@tauri-apps/api": "^2.12.3",
     "@tauri-apps/plugin-dialog": "^2.8.2",
