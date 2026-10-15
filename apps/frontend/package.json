@@ -28,7 +28,7 @@
     "@solid-primitives/resize-observer": "^2.2.0",
     "@solid-primitives/scheduled": "^1.5.3",
     "@solid-primitives/storage": "4.3.5",
-    "@solidjs/router": "^0.16.1",
+    "@solidjs/router": "^1.0.0",
     "@tanstack/solid-query": "^5.104.2",
     "@tanstack/solid-table": "^9.2.8",
     "@tanstack/solid-virtual": "^3.13.44",
