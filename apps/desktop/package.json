@@ -4,6 +4,7 @@
     "build": "tauri build",
     "clean": "bun x rimraf .turbo",
     "dev": "tauri dev",
+    "dev:debug": "tauri dev -- --profile debugging",
     "tauri": "tauri"
   },
   "devDependencies": {

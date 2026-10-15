@@ -69,3 +69,21 @@ lto = "thin"        # Enable fast parallel Link-Time Optimization
 strip = true        # Automatically strip symbols (reduces binary size)
 panic = "abort"     # Remove stack unwinding code
 incremental = false
+
+# Full debuginfo made every link write gigabytes of PDB: line tables keep file:line in
+# backtraces at a fraction of the size, and nobody steps through dependencies in a debugger.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+# Full debuginfo, for inspecting variables in a debugger: `cargo build --profile debugging`
+# or `bun run dev:debug` in apps/desktop. It builds into target/debugging, so switching to it
+# does not invalidate the everyday dev build.
+[profile.debugging]
+inherits = "dev"
+debug = "full"
+
+[profile.debugging.package."*"]
+debug = "full"
