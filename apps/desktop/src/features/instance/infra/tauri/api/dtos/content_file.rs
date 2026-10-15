@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
 
-use crate::features::instance::infra::{ContentTypeDto, ProviderIdDto};
+use crate::{
+    core::format_asset_url,
+    features::instance::infra::{ContentTypeDto, ProviderIdDto},
+};
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -40,6 +43,9 @@ pub struct ContentMetadataDto {
     pub description: Option<String>,
     pub author: Option<String>,
     pub icon_url: Option<String>,
+    /// The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
+    /// `iconPath`. Shown in place of `iconUrl` when set; `None` until the icon has arrived.
+    pub icon_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -64,7 +70,10 @@ impl From<ContentFile> for ContentFileDto {
             update: value
                 .update
                 .map(|m| m.into_iter().map(|(k, v)| (k.into(), v.into())).collect()),
-            metadata: value.metadata.map(Into::into),
+            metadata: value.metadata.map(|metadata| ContentMetadataDto {
+                icon_path: value.icon_path.as_deref().map(format_asset_url),
+                ..metadata.into()
+            }),
         }
     }
 }
@@ -87,6 +96,53 @@ impl From<ContentMetadata> for ContentMetadataDto {
             description: value.description,
             author: value.author,
             icon_url: value.icon_url,
+            icon_path: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use aether_core::features::instance::{ContentType, PackFile};
+
+    use super::*;
+
+    fn file(icon_path: Option<&str>) -> ContentFile {
+        let mut file = ContentFile::from_pack_file(
+            PackFile::from_hash("sodium.jar".into(), "hash".into()),
+            "mods/sodium.jar".into(),
+            ContentType::Mod,
+            1,
+            false,
+        );
+        file.metadata = Some(ContentMetadata {
+            content_id: "AANobbMI".into(),
+            slug: "sodium".into(),
+            name: "Sodium".into(),
+            description: None,
+            author: None,
+            icon_url: Some("https://cdn.modrinth.com/data/AANobbMI/icon.png".into()),
+        });
+        file.icon_path = icon_path.map(Into::into);
+        file
+    }
+
+    #[test]
+    fn should_expose_the_cached_icon_as_an_asset_url_when_it_is_there() {
+        let dto = ContentFileDto::from(file(Some("content-icons/abc.png")));
+
+        let metadata = dto.metadata.unwrap();
+        assert_eq!(
+            metadata.icon_path,
+            Some(format_asset_url("content-icons/abc.png"))
+        );
+        assert!(metadata.icon_url.is_some());
+    }
+
+    #[test]
+    fn should_expose_no_icon_path_when_the_icon_has_not_arrived() {
+        let dto = ContentFileDto::from(file(None));
+
+        assert_eq!(dto.metadata.unwrap().icon_path, None);
     }
 }
