@@ -4,3 +4,8 @@ extends:
 
 pre-commit:
   parallel: true
+
+  jobs:
+    - name: rust:clippy
+      glob: ["**/*.rs", "**/Cargo.toml", "Cargo.toml", "Cargo.lock"]
+      run: bun run lint:rust

@@ -42,16 +42,27 @@
         "SystemRoot",
       ],
     },
-    "lint:all": {
-      "cache": true,
+    // Clippy over the whole Cargo workspace (apps/desktop + packages/core/*).
+    "//#lint:rust": {
+      "inputs": [
+        "Cargo.toml",
+        "Cargo.lock",
+        ".cargo/**",
+        ".env",
+        // build.rs (tauri-build reads tauri.conf.json, capabilities, icons),
+        // sqlx macros (.sqlx, sqlx.toml, migrations) all affect clippy.
+        "apps/desktop/**",
+        "packages/core/**",
+        "!**/node_modules/**",
+        "!**/.turbo/**",
+        "!apps/desktop/gen/**",
+      ],
       "env": [
-        "NODE_ENV",
         "DATABASE_URL",
         "SQLX_OFFLINE",
         "CARGO_*",
         "RUST_*",
         "RUSTFLAGS",
-        "FORCE_COLOR",
       ],
       "passThroughEnv": [
         "PATH",
