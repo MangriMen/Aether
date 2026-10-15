@@ -54,7 +54,7 @@ export const ContentTable: Component<ContentTableProps> = (props) => {
         class={cn('self-end', { hidden: table.getPageCount() < 2 })}
         siblingCount={1}
         count={table.getPageCount()}
-        page={table.getState().pagination.pageIndex + 1}
+        page={table.atoms.pagination.get().pageIndex + 1}
         onPageChange={(page) => table.setPageIndex(page - 1)}
       />
     </>

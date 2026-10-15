@@ -7,16 +7,12 @@ import type {
 } from '@tanstack/solid-table';
 import type { Accessor, Component } from 'solid-js';
 
-import {
-  createSolidTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-} from '@tanstack/solid-table';
+import { createTable } from '@tanstack/solid-table';
 import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentFile } from '@/entities/instances';
+
+import { appTableFeatures, type AppTableFeatures } from '@/shared/model';
 
 import {
   CONTENT_TABLE_COLUMNS,
@@ -28,7 +24,7 @@ export interface CreateContentTableProps {
     allRowsSelected?: boolean;
     someRowsSelected?: boolean;
     refetch?: () => void;
-    selectedRows: RowModel<ContentFile>;
+    selectedRows: RowModel<AppTableFeatures, ContentFile>;
   }>;
   contentActions: Component<{ file: ContentFile }>;
   data: Accessor<ContentFile[]>;
@@ -46,7 +42,10 @@ export const createContentTable = (props: CreateContentTableProps) => {
         <div class='flex justify-end'>
           <props.headerActions
             allRowsSelected={headerProps.table.getIsAllPageRowsSelected()}
-            someRowsSelected={headerProps.table.getIsSomePageRowsSelected()}
+            someRowsSelected={
+              headerProps.table.getIsSomePageRowsSelected() &&
+              !headerProps.table.getIsAllPageRowsSelected()
+            }
             selectedRows={headerProps.table.getSelectedRowModel()}
             refetch={props.refetch}
           />
@@ -75,17 +74,14 @@ export const createContentTable = (props: CreateContentTableProps) => {
     pageSize: 20,
   });
 
-  const table = createSolidTable({
+  const table = createTable({
+    features: appTableFeatures,
     get data() {
       return props.data();
     },
     get columns() {
       return columns();
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,

@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/solid-table';
 
 import type { TFunction } from '@/shared/model';
+import type { appTableFeatures } from '@/shared/model';
 
 import type { JavaVersion } from './javaVersion';
 
@@ -8,7 +9,10 @@ import { JavaVersionActions } from '../ui/JavaPane/JavaVersionActions';
 import { JavaVersionPath } from '../ui/JavaPane/JavaVersionPath';
 import { JavaVersionStatusButton } from '../ui/JavaPane/JavaVersionStatusButton';
 
-export const javaVersionsColumnHelper = createColumnHelper<JavaVersion>();
+export const javaVersionsColumnHelper = createColumnHelper<
+  typeof appTableFeatures,
+  JavaVersion
+>();
 
 interface CreateJavaVersionsColumnsProps {
   t: TFunction;
@@ -25,7 +29,7 @@ export const createJavaVersionsColumns = ({
   onDetect,
   onBrowse,
 }: CreateJavaVersionsColumnsProps) => {
-  return [
+  return javaVersionsColumnHelper.columns([
     javaVersionsColumnHelper.accessor('majorVersion', {
       maxSize: 80,
       header: () => t('javaVersion.version'),
@@ -87,5 +91,5 @@ export const createJavaVersionsColumns = ({
         );
       },
     }),
-  ];
+  ]);
 };

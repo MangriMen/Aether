@@ -3,13 +3,16 @@ import IconMdiCheck from '~icons/mdi/check';
 import { createMemo, Show, type Accessor } from 'solid-js';
 
 import type { TFunction } from '@/shared/model';
+import type { appTableFeatures } from '@/shared/model';
 
 import { Button, CombinedTooltip } from '@/shared/ui';
 
 import type { StrictJavaVersion } from './javaVersion';
 
-export const strictJavaVersionsColumnHelper =
-  createColumnHelper<StrictJavaVersion>();
+export const strictJavaVersionsColumnHelper = createColumnHelper<
+  typeof appTableFeatures,
+  StrictJavaVersion
+>();
 
 interface CreateDetectedJavaVersionsColumnsProps {
   t: TFunction;
@@ -22,45 +25,51 @@ export const createDetectedJavaVersionsColumns = ({
   selectedVersionPath,
   onSelect,
 }: CreateDetectedJavaVersionsColumnsProps) => {
-  const columns = createMemo(() => [
-    strictJavaVersionsColumnHelper.accessor('version', {
-      header: () => t('javaVersion.version'),
-    }),
+  const columns = createMemo(() =>
+    strictJavaVersionsColumnHelper.columns([
+      strictJavaVersionsColumnHelper.accessor('version', {
+        header: () => t('javaVersion.version'),
+      }),
 
-    strictJavaVersionsColumnHelper.accessor('path', {
-      header: () => t('javaVersion.path'),
-      cell: (cellProps) => (
-        <CombinedTooltip label={cellProps.getValue()} as='div' class='truncate'>
-          {cellProps.renderValue()}
-        </CombinedTooltip>
-      ),
-      meta: {
-        stretch: true,
-      },
-    }),
-
-    strictJavaVersionsColumnHelper.display({
-      id: 'actions',
-      minSize: 120,
-      cell: (cellProps) => {
-        const isSelected = () =>
-          selectedVersionPath?.() === cellProps.row.original.path;
-
-        return (
-          <Button
-            class='w-full'
-            onClick={() => onSelect?.(cellProps.row.original)}
-            disabled={isSelected()}
-            leadingIcon={isSelected() ? IconMdiCheck : undefined}
+      strictJavaVersionsColumnHelper.accessor('path', {
+        header: () => t('javaVersion.path'),
+        cell: (cellProps) => (
+          <CombinedTooltip
+            label={cellProps.getValue()}
+            as='div'
+            class='truncate'
           >
-            <Show when={isSelected()} fallback={t('detectJava.select')}>
-              {t('detectJava.selected')}
-            </Show>
-          </Button>
-        );
-      },
-    }),
-  ]);
+            {cellProps.renderValue()}
+          </CombinedTooltip>
+        ),
+        meta: {
+          stretch: true,
+        },
+      }),
+
+      strictJavaVersionsColumnHelper.display({
+        id: 'actions',
+        minSize: 120,
+        cell: (cellProps) => {
+          const isSelected = () =>
+            selectedVersionPath?.() === cellProps.row.original.path;
+
+          return (
+            <Button
+              class='w-full'
+              onClick={() => onSelect?.(cellProps.row.original)}
+              disabled={isSelected()}
+              leadingIcon={isSelected() ? IconMdiCheck : undefined}
+            >
+              <Show when={isSelected()} fallback={t('detectJava.select')}>
+                {t('detectJava.selected')}
+              </Show>
+            </Button>
+          );
+        },
+      }),
+    ]),
+  );
 
   return columns;
 };

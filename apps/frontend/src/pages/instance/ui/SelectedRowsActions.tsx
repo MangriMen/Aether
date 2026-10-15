@@ -11,6 +11,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
+import type { AppTableFeatures } from '@/shared/model';
+
 import {
   useDisableContents,
   useEnableContents,
@@ -24,7 +26,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui';
 
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];
-  selectedRows: RowModel<ContentFile>;
+  selectedRows: RowModel<AppTableFeatures, ContentFile>;
 };
 
 export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
