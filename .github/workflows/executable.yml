@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract version
         id: get_version
@@ -56,7 +56,7 @@ jobs:
           path: ./apps/frontend/CHANGELOG.md
 
       - name: setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -82,6 +82,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: build and publish tauri app
+        id: tauri
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,6 +95,27 @@ jobs:
           releaseBody: ${{ steps.changelog_reader.outputs.changes }}
           releaseDraft: ${{ github.ref_type == 'tag' && 'true' || 'false' }}
           prerelease: false
-          uploadWorkflowArtifacts: ${{ github.event_name == 'workflow_dispatch' }}
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+
+      # a manual run has no tag, so tauri-action publishes no release: keep the bundles as workflow artifacts
+      - name: list bundles (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        id: bundles
+        shell: bash
+        env:
+          ARTIFACT_PATHS: ${{ steps.tauri.outputs.artifactPaths }}
+        run: |
+          {
+            echo 'paths<<EOF'
+            echo "$ARTIFACT_PATHS" | jq -r '.[]'
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: upload bundles (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.platform }}
+          path: ${{ steps.bundles.outputs.paths }}
+          if-no-files-found: error
