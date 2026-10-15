@@ -2,6 +2,7 @@
   "name": "@aether/frontend",
   "version": "0.10.5",
   "description": "",
+  "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
     "build": "vite build",
