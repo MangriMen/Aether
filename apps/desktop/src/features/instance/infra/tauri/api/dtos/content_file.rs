@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use aether_core::features::instance::{ContentFile, ContentFileUpdateInfo, ContentMetadata};
+use aether_core::features::instance::{
+    ContentFile, ContentFileUpdateInfo, ContentMetadata, ContentVersionMetadata,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
@@ -31,6 +33,9 @@ pub struct ContentFileDto {
     /// The file's project as its provider describes it, when cached. Filled in later when
     /// missing: the instance's `synced` event tells when to list again.
     pub metadata: Option<ContentMetadataDto>,
+    /// The version the file was installed as, as its provider describes it, when cached: what
+    /// to show in place of `version`, the provider's id of it. Filled in later as `metadata` is.
+    pub version_metadata: Option<ContentVersionMetadataDto>,
 }
 
 /// What a provider says about the project of an installed file.
@@ -46,6 +51,18 @@ pub struct ContentMetadataDto {
     /// The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
     /// `iconPath`. Shown in place of `iconUrl` when set; `None` until the icon has arrived.
     pub icon_path: Option<String>,
+}
+
+/// What a provider says about the version of an installed file.
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentVersionMetadataDto {
+    /// The provider's id of the version, as `ContentFileDto::version` holds it.
+    pub version_id: String,
+    /// The version as its authors number it (`0.6.13+mc1.21.4`).
+    pub version_number: String,
+    /// The version's title (`Sodium 0.6.13`), if it has one.
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -74,6 +91,7 @@ impl From<ContentFile> for ContentFileDto {
                 icon_path: value.icon_path.as_deref().map(format_asset_url),
                 ..metadata.into()
             }),
+            version_metadata: value.version_metadata.map(Into::into),
         }
     }
 }
@@ -97,6 +115,16 @@ impl From<ContentMetadata> for ContentMetadataDto {
             author: value.author,
             icon_url: value.icon_url,
             icon_path: None,
+        }
+    }
+}
+
+impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
+    fn from(value: ContentVersionMetadata) -> Self {
+        Self {
+            version_id: value.version_id,
+            version_number: value.version_number,
+            name: value.name,
         }
     }
 }
@@ -144,5 +172,33 @@ mod tests {
         let dto = ContentFileDto::from(file(None));
 
         assert_eq!(dto.metadata.unwrap().icon_path, None);
+    }
+
+    #[test]
+    fn should_expose_the_version_metadata_in_camel_case_when_cached() {
+        let mut file = file(None);
+        file.version_metadata = Some(ContentVersionMetadata {
+            version_id: "IZskON6d".into(),
+            version_number: "mc1.20.6-0.5.8".into(),
+            name: Some("Sodium 0.5.8".into()),
+        });
+
+        let json = serde_json::to_value(ContentFileDto::from(file)).unwrap();
+
+        assert_eq!(
+            json["versionMetadata"],
+            serde_json::json!({
+                "versionId": "IZskON6d",
+                "versionNumber": "mc1.20.6-0.5.8",
+                "name": "Sodium 0.5.8",
+            })
+        );
+    }
+
+    #[test]
+    fn should_expose_no_version_metadata_when_none_is_cached() {
+        let json = serde_json::to_value(ContentFileDto::from(file(None))).unwrap();
+
+        assert!(json["versionMetadata"].is_null());
     }
 }
