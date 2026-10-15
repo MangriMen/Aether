@@ -1,6 +1,6 @@
-//! What an instance's content list shows a file by — its project's name, description, icon —
-//! taken from [`ContentMetadataCache`] and [`ContentIconCache`], and refreshed from the providers
-//! and the icons' servers behind the list's back.
+//! What an instance's content list shows a file by — its project's name, description, icon, and
+//! its version's number — taken from [`ContentMetadataCache`] and [`ContentIconCache`], and
+//! refreshed from the providers and the icons' servers behind the list's back.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -38,12 +38,53 @@ const ICON_FETCH_CONCURRENCY: usize = 4;
 /// The fetch of one icon, shared by every refresh that wants it: whether a new file arrived.
 type IconFetch = Shared<BoxFuture<'static, bool>>;
 
-/// Puts the cached [`ContentMetadata`] of their projects, and the cached icons of those, on an
-/// instance's content files, and fetches what is missing or stale without making the list wait.
+/// What a provider is asked about: its projects, or its versions. A provider may answer one and
+/// not the other, and an id it did not know is unknown as the one or the other.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum Lookup {
+    Projects,
+    Versions,
+}
+
+impl Lookup {
+    /// What is asked, for the logs.
+    fn what(self) -> &'static str {
+        match self {
+            Self::Projects => "content metadata",
+            Self::Versions => "version metadata",
+        }
+    }
+}
+
+/// The ids to refresh, by provider: of projects and of versions.
+#[derive(Default)]
+struct Due {
+    projects: HashMap<ProviderId, Vec<String>>,
+    versions: HashMap<ProviderId, Vec<String>>,
+}
+
+impl Due {
+    fn is_empty(&self) -> bool {
+        self.projects.is_empty() && self.versions.is_empty()
+    }
+}
+
+/// The ids a provider's files name, of projects and of versions.
+#[derive(Default)]
+struct Wanted {
+    projects: HashSet<String>,
+    versions: HashSet<String>,
+}
+
+/// Puts the cached [`ContentMetadata`] of their projects, the cached icons of those, and the
+/// cached [`ContentVersionMetadata`] of their versions on an instance's content files, and
+/// fetches what is missing or stale without making the list wait.
 ///
 /// One per process: it remembers which instances are being refreshed, which providers cannot
-/// describe their content, which ids their provider did not know, and which icons are on their
-/// way or failed to arrive.
+/// describe their projects or versions, which ids their provider did not know, and which icons
+/// are on their way or failed to arrive.
+///
+/// [`ContentVersionMetadata`]: crate::features::instance::ContentVersionMetadata
 pub struct ContentMetadataService {
     inner: Arc<Inner>,
 }
@@ -55,12 +96,12 @@ struct Inner {
     event_emitter: SharedEventEmitter,
     /// Instances with a refresh running: a list opened meanwhile starts no second one.
     refreshing: Mutex<HashSet<String>>,
-    /// Providers that answered [`InstanceError::UnsupportedOperation`]: not asked again while
-    /// the process runs.
-    unsupported: Mutex<HashSet<ProviderId>>,
+    /// Providers that answered [`InstanceError::UnsupportedOperation`] to a lookup: not asked
+    /// it again while the process runs.
+    unsupported: Mutex<HashSet<(ProviderId, Lookup)>>,
     /// Ids their provider left out of its answer, with when: nothing is cached for them, and
     /// they are not asked about again before [`UNKNOWN_CONTENT_RETRY_AFTER`].
-    unknown: Mutex<HashMap<(ProviderId, String), Instant>>,
+    unknown: Mutex<HashMap<(ProviderId, Lookup, String), Instant>>,
     /// Icons being fetched, by URL: a refresh that wants one already on its way waits for that
     /// fetch rather than starting another.
     icon_fetches: Mutex<HashMap<String, IconFetch>>,
@@ -78,6 +119,14 @@ fn content_key(file: &ContentFile) -> Option<(&ProviderId, &str)> {
     let provider_id = file.update_provider_id.as_ref()?;
     let info = file.update.as_ref()?.get(provider_id)?;
     Some((provider_id, info.content_id.as_str()))
+}
+
+/// The provider and the provider's id of the version a file was installed as, as
+/// [`content_key`] finds its project. `None` for a file of no provider or of no recorded version.
+fn version_key(file: &ContentFile) -> Option<(&ProviderId, &str)> {
+    let provider_id = file.update_provider_id.as_ref()?;
+    let info = file.update.as_ref()?.get(provider_id)?;
+    (!info.version.is_empty()).then_some((provider_id, info.version.as_str()))
 }
 
 impl ContentMetadataService {
@@ -102,22 +151,31 @@ impl ContentMetadataService {
         }
     }
 
-    /// Set each file's [`ContentFile::metadata`] to what the cache has for it, fresh or stale,
-    /// and its [`ContentFile::icon_path`] to the cached icon of that metadata, if its file is
-    /// there. Then start refreshing in the background what is missing or stale: the metadata
-    /// first, then the icons — those of the metadata just fetched too.
+    /// Set each file's [`ContentFile::metadata`] and [`ContentFile::version_metadata`] to what
+    /// the cache has for them, fresh or stale, and its [`ContentFile::icon_path`] to the cached
+    /// icon of that metadata, if its file is there. Then start refreshing in the background what
+    /// is missing or stale: the metadata of projects and versions first, then the icons — those
+    /// of the metadata just fetched too.
     ///
     /// Reads only the caches. Once a refresh has brought anything, one
     /// [`InstanceEventType::Synced`] event of the instance tells the UI to list it again; a
     /// refresh that fails changes nothing and keeps the stale items and the icons there are.
     pub async fn attach(&self, instance_id: &str, files: &DashMap<String, ContentFile>) {
-        let mut wanted: HashMap<ProviderId, HashSet<String>> = HashMap::new();
+        let mut wanted: HashMap<ProviderId, Wanted> = HashMap::new();
         for file in files {
             if let Some((provider_id, content_id)) = content_key(&file) {
                 wanted
                     .entry(provider_id.clone())
                     .or_default()
+                    .projects
                     .insert(content_id.to_owned());
+            }
+            if let Some((provider_id, version_id)) = version_key(&file) {
+                wanted
+                    .entry(provider_id.clone())
+                    .or_default()
+                    .versions
+                    .insert(version_id.to_owned());
             }
         }
         if wanted.is_empty() {
@@ -126,29 +184,56 @@ impl ContentMetadataService {
 
         let now = SystemTime::now();
         let mut found = HashMap::new();
-        let mut due = HashMap::new();
-        for (provider_id, content_ids) in wanted {
-            let content_ids: Vec<String> = content_ids.into_iter().collect();
+        let mut found_versions = HashMap::new();
+        let mut due = Due::default();
+        for (provider_id, wanted) in wanted {
+            let content_ids: Vec<String> = wanted.projects.into_iter().collect();
             let cached = self.inner.cache.get_many(&provider_id, &content_ids).await;
-
-            if !self.inner.is_unsupported(&provider_id) {
-                let stale: Vec<String> = content_ids
-                    .into_iter()
-                    .filter(|id| cached.get(id).is_none_or(|item| item.is_stale(now)))
-                    .filter(|id| !self.inner.is_known_unknown(&provider_id, id))
-                    .collect();
-                if !stale.is_empty() {
-                    due.insert(provider_id.clone(), stale);
-                }
+            let stale = self
+                .inner
+                .due_ids(&provider_id, Lookup::Projects, content_ids, |id| {
+                    cached.get(id).is_none_or(|item| item.is_stale(now))
+                });
+            if !stale.is_empty() {
+                due.projects.insert(provider_id.clone(), stale);
             }
-            found.insert(provider_id, cached);
+
+            let version_ids: Vec<String> = wanted.versions.into_iter().collect();
+            let cached_versions = self
+                .inner
+                .cache
+                .get_versions(&provider_id, &version_ids)
+                .await;
+            let stale = self
+                .inner
+                .due_ids(&provider_id, Lookup::Versions, version_ids, |id| {
+                    cached_versions
+                        .get(id)
+                        .is_none_or(|item| item.is_stale(now))
+                });
+            if !stale.is_empty() {
+                due.versions.insert(provider_id.clone(), stale);
+            }
+
+            found.insert(provider_id.clone(), cached);
+            found_versions.insert(provider_id, cached_versions);
         }
 
         for mut file in files.iter_mut() {
             let metadata = content_key(&file).and_then(|(provider_id, content_id)| {
                 Some(found.get(provider_id)?.get(content_id)?.metadata.clone())
             });
+            let version_metadata = version_key(&file).and_then(|(provider_id, version_id)| {
+                Some(
+                    found_versions
+                        .get(provider_id)?
+                        .get(version_id)?
+                        .metadata
+                        .clone(),
+                )
+            });
             file.metadata = metadata;
+            file.version_metadata = version_metadata;
         }
 
         let icon_urls: HashSet<String> = files
@@ -174,18 +259,17 @@ impl ContentMetadataService {
         }
     }
 
-    fn spawn_refresh(
-        &self,
-        instance_id: &str,
-        due: HashMap<ProviderId, Vec<String>>,
-        mut due_icons: HashSet<String>,
-    ) {
+    fn spawn_refresh(&self, instance_id: &str, due: Due, mut due_icons: HashSet<String>) {
         let Some(guard) = RefreshGuard::acquire(&self.inner, instance_id) else {
             return;
         };
 
         tokio::spawn(async move {
-            let (updated, icon_urls) = guard.inner.refresh(due).await;
+            let ((projects_updated, icon_urls), versions_updated) = futures::join!(
+                guard.inner.refresh(due.projects),
+                guard.inner.refresh_versions(due.versions),
+            );
+            let updated = projects_updated || versions_updated;
             let icons = guard.inner.lookup_icons(icon_urls).await;
             due_icons.extend(guard.inner.due_icons(icons));
             let icons_arrived = guard.inner.fetch_icons(due_icons).await;
@@ -240,30 +324,76 @@ impl Drop for RefreshGuard {
 }
 
 impl Inner {
-    fn is_unsupported(&self, provider_id: &ProviderId) -> bool {
+    fn is_unsupported(&self, provider_id: &ProviderId, lookup: Lookup) -> bool {
         self.unsupported
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .contains(provider_id)
+            .contains(&(provider_id.clone(), lookup))
     }
 
-    fn is_known_unknown(&self, provider_id: &ProviderId, content_id: &str) -> bool {
+    fn is_known_unknown(&self, provider_id: &ProviderId, lookup: Lookup, id: &str) -> bool {
         self.unknown
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .get(&(provider_id.clone(), content_id.to_owned()))
+            .get(&(provider_id.clone(), lookup, id.to_owned()))
             .is_some_and(|at| at.elapsed() < UNKNOWN_CONTENT_RETRY_AFTER)
     }
 
-    fn remember_unknown(&self, provider_id: &ProviderId, content_ids: Vec<String>) {
+    fn remember_unknown(&self, provider_id: &ProviderId, lookup: Lookup, ids: Vec<String>) {
         let now = Instant::now();
         let mut unknown = self.unknown.lock().unwrap_or_else(PoisonError::into_inner);
         unknown.retain(|_, at| at.elapsed() < UNKNOWN_CONTENT_RETRY_AFTER);
         unknown.extend(
-            content_ids
-                .into_iter()
-                .map(|content_id| ((provider_id.clone(), content_id), now)),
+            ids.into_iter()
+                .map(|id| ((provider_id.clone(), lookup, id), now)),
         );
+    }
+
+    /// Of `ids`, those to ask `provider_id` about: missing or stale by `is_due`, and not left
+    /// out of its answer lately. None when it cannot answer the lookup.
+    fn due_ids(
+        &self,
+        provider_id: &ProviderId,
+        lookup: Lookup,
+        ids: Vec<String>,
+        is_due: impl Fn(&str) -> bool,
+    ) -> Vec<String> {
+        if self.is_unsupported(provider_id, lookup) {
+            return Vec::new();
+        }
+        ids.into_iter()
+            .filter(|id| is_due(id))
+            .filter(|id| !self.is_known_unknown(provider_id, lookup, id))
+            .collect()
+    }
+
+    /// The registered provider of `provider_id`; `None` when its plugin is off or gone, and the
+    /// file is shown by what it has.
+    async fn provider(&self, provider_id: &ProviderId) -> Option<Arc<dyn ContentProvider>> {
+        let entry = self
+            .providers
+            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
+            .await;
+        if entry.is_err() {
+            tracing::debug!("No content provider {provider_id} to describe its content");
+        }
+        entry.ok().map(|entry| entry.capability)
+    }
+
+    /// Note a failed lookup: a provider that cannot answer it is not asked it again; any other
+    /// failure is only logged, and the next list asks again.
+    fn lookup_failed(&self, provider_id: &ProviderId, lookup: Lookup, err: InstanceError) {
+        let what = lookup.what();
+        match err {
+            InstanceError::UnsupportedOperation { .. } => {
+                tracing::debug!("Content provider {provider_id} does not give {what}");
+                self.unsupported
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert((provider_id.clone(), lookup));
+            }
+            err => tracing::warn!("Could not refresh {what} from {provider_id}: {err}"),
+        }
     }
 
     /// Ask each provider about its due ids, all providers at once. Whether anything was cached,
@@ -292,37 +422,61 @@ impl Inner {
         provider_id: &ProviderId,
         content_ids: &[String],
     ) -> Option<Vec<(String, ContentMetadata)>> {
-        let Ok(entry) = self
-            .providers
-            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
-            .await
-        else {
-            // Its plugin is off or gone: the file is shown by what it has.
-            tracing::debug!("No content provider {provider_id} to describe its content");
-            return None;
-        };
+        let provider = self.provider(provider_id).await?;
 
-        match entry.capability.get_contents_metadata(content_ids).await {
+        match provider.get_contents_metadata(content_ids).await {
             Ok(items) => {
                 let (keyed, unknown) = key_by_asked(content_ids, items);
-                self.remember_unknown(provider_id, unknown);
+                self.remember_unknown(provider_id, Lookup::Projects, unknown);
                 if keyed.is_empty() {
                     return None;
                 }
                 self.cache.put_keyed(provider_id, &keyed).await;
                 Some(keyed)
             }
-            Err(InstanceError::UnsupportedOperation { .. }) => {
-                tracing::debug!("Content provider {provider_id} does not describe its content");
-                self.unsupported
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .insert(provider_id.clone());
+            Err(err) => {
+                self.lookup_failed(provider_id, Lookup::Projects, err);
                 None
             }
+        }
+    }
+
+    /// Ask each provider about its due version ids, all providers at once. Whether anything was
+    /// cached.
+    async fn refresh_versions(&self, due: HashMap<ProviderId, Vec<String>>) -> bool {
+        futures::future::join_all(
+            due.iter().map(|(provider_id, version_ids)| {
+                self.refresh_versions_of(provider_id, version_ids)
+            }),
+        )
+        .await
+        .into_iter()
+        .any(|updated| updated)
+    }
+
+    /// Whether any version of `version_ids` was cached.
+    async fn refresh_versions_of(&self, provider_id: &ProviderId, version_ids: &[String]) -> bool {
+        let Some(provider) = self.provider(provider_id).await else {
+            return false;
+        };
+
+        match provider.get_versions_metadata(version_ids).await {
+            Ok(items) => {
+                let unknown = version_ids
+                    .iter()
+                    .filter(|id| !items.iter().any(|item| &item.version_id == *id))
+                    .cloned()
+                    .collect();
+                self.remember_unknown(provider_id, Lookup::Versions, unknown);
+                if items.is_empty() {
+                    return false;
+                }
+                self.cache.put_versions(provider_id, &items).await;
+                true
+            }
             Err(err) => {
-                tracing::warn!("Could not refresh content metadata from {provider_id}: {err}");
-                None
+                self.lookup_failed(provider_id, Lookup::Versions, err);
+                false
             }
         }
     }

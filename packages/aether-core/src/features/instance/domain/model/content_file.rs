@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{ContentMetadata, PackFile, ProviderId};
+use crate::features::instance::{ContentMetadata, ContentVersionMetadata, PackFile, ProviderId};
 
 use super::ContentType;
 
@@ -24,6 +24,10 @@ pub struct ContentFile {
     /// relative to the store, `/`-separated. Only when the file is there: `None` while the icon
     /// has not arrived, or there is none.
     pub icon_path: Option<String>,
+    /// What the provider of the file says about the version it was installed as, as last
+    /// cached: the version of `update[update_provider_id].version`. `None` — nothing cached
+    /// yet, or the file is of no provider.
+    pub version_metadata: Option<ContentVersionMetadata>,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +63,7 @@ impl ContentFile {
             update: pack_file.update,
             metadata: None,
             icon_path: None,
+            version_metadata: None,
         }
     }
 }

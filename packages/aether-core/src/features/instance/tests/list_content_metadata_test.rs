@@ -1,4 +1,4 @@
-//! `ListContentUseCase` putting cached project metadata on the content files, and
+//! `ListContentUseCase` putting cached project and version metadata on the content files, and
 //! `ContentMetadataService` refreshing what is missing or stale — metadata and icons — behind
 //! the list's back.
 
@@ -17,14 +17,14 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
         instance::{
-            CONTENT_METADATA_TTL, CachedContentIcon, CachedContentMetadata,
-            CachedContentVersionMetadata, CapabilityMetadata, ContentCompatibilityCheckParams,
-            ContentCompatibilityResult, ContentFile, ContentFileUpdateInfo, ContentIconCache,
-            ContentIconError, ContentItem, ContentMetadata, ContentMetadataCache,
-            ContentMetadataService, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionMetadata,
-            Instance, InstanceError, ListContentUseCase, PackFile, PackStorage, ProviderId,
-            infra::SqlitePackStorage,
+            CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentIcon,
+            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
+            ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
+            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentVersion, ContentVersionMetadata, Instance, InstanceError, ListContentUseCase,
+            PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -37,6 +37,19 @@ fn provider_id(capability_id: &str) -> ProviderId {
     ProviderId {
         plugin_id: "plugin".into(),
         capability_id: capability_id.into(),
+    }
+}
+
+/// The version id the fixture records for a file of `content_id`.
+fn version_id(content_id: &str) -> String {
+    format!("{content_id}-v1")
+}
+
+fn version(content_id: &str, version_number: &str) -> ContentVersionMetadata {
+    ContentVersionMetadata {
+        version_id: version_id(content_id),
+        version_number: version_number.into(),
+        name: None,
     }
 }
 
@@ -60,6 +73,21 @@ struct MemoryMetadataCache {
 }
 
 impl MemoryMetadataCache {
+    fn seed_version(
+        &self,
+        provider_id: &ProviderId,
+        item: ContentVersionMetadata,
+        fetched_at: SystemTime,
+    ) {
+        self.versions.lock().unwrap().insert(
+            (provider_id.clone(), item.version_id.clone()),
+            CachedContentVersionMetadata {
+                metadata: item,
+                fetched_at,
+            },
+        );
+    }
+
     fn seed(&self, provider_id: &ProviderId, item: ContentMetadata, fetched_at: SystemTime) {
         self.items.lock().unwrap().insert(
             (provider_id.clone(), item.content_id.clone()),
@@ -209,23 +237,41 @@ impl ContentIconCache for FakeIcons {
     }
 }
 
-enum Answer {
-    Items(Vec<ContentMetadata>),
+enum Answer<T> {
+    Items(Vec<T>),
     Fail,
     Unsupported,
 }
 
+impl<T: Clone> Answer<T> {
+    fn answer(
+        &self,
+        provider: &FakeProvider,
+        operation: &'static str,
+    ) -> Result<Vec<T>, InstanceError> {
+        match self {
+            Answer::Items(items) => Ok(items.clone()),
+            Answer::Fail => Err(InstanceError::ContentDownloadError("offline".into())),
+            Answer::Unsupported => Err(provider.unsupported(operation)),
+        }
+    }
+}
+
 struct FakeProvider {
     metadata: ContentProviderCapabilityMetadata,
-    answer: Answer,
+    answer: Answer<ContentMetadata>,
+    /// What it answers about versions: by default, that it cannot.
+    versions: Answer<ContentVersionMetadata>,
     /// Each call's ids, sorted.
     calls: Mutex<Vec<Vec<String>>>,
+    /// Each call's version ids, sorted.
+    version_calls: Mutex<Vec<Vec<String>>>,
     /// When set, a call waits for a permit before answering.
     gate: Option<Arc<Semaphore>>,
 }
 
 impl FakeProvider {
-    fn new(capability_id: &str, answer: Answer) -> Self {
+    fn new(capability_id: &str, answer: Answer<ContentMetadata>) -> Self {
         Self {
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
@@ -237,9 +283,20 @@ impl FakeProvider {
                 platform: None,
             },
             answer,
+            versions: Answer::Unsupported,
             calls: Mutex::new(Vec::new()),
+            version_calls: Mutex::new(Vec::new()),
             gate: None,
         }
+    }
+
+    fn with_versions(mut self, versions: Answer<ContentVersionMetadata>) -> Self {
+        self.versions = versions;
+        self
+    }
+
+    fn version_calls(&self) -> Vec<Vec<String>> {
+        self.version_calls.lock().unwrap().clone()
     }
 
     fn gated(mut self, gate: Arc<Semaphore>) -> Self {
@@ -294,11 +351,18 @@ impl ContentProvider for FakeProvider {
             gate.acquire().await.unwrap().forget();
         }
 
-        match &self.answer {
-            Answer::Items(items) => Ok(items.clone()),
-            Answer::Fail => Err(InstanceError::ContentDownloadError("offline".into())),
-            Answer::Unsupported => Err(self.unsupported("get_contents_metadata")),
-        }
+        self.answer.answer(self, "get_contents_metadata")
+    }
+
+    async fn get_versions_metadata(
+        &self,
+        version_ids: &[String],
+    ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
+        let mut asked = version_ids.to_vec();
+        asked.sort();
+        self.version_calls.lock().unwrap().push(asked);
+
+        self.versions.answer(self, "get_versions_metadata")
     }
 }
 
@@ -355,7 +419,7 @@ impl Fixture {
                 provider,
                 ContentFileUpdateInfo {
                     content_id: (*content_id).to_owned(),
-                    version: "v1".into(),
+                    version: version_id(content_id),
                 },
             )]));
             pack_storage
@@ -404,6 +468,15 @@ impl Fixture {
             .await
             .into_iter()
             .map(|(path, file)| (path, file.metadata.map(|m| m.name)))
+            .collect()
+    }
+
+    /// The version number of the version metadata on each file, if any.
+    async fn version_numbers(&self) -> HashMap<String, Option<String>> {
+        self.list()
+            .await
+            .into_iter()
+            .map(|(path, file)| (path, file.version_metadata.map(|v| v.version_number)))
             .collect()
     }
 
@@ -470,18 +543,29 @@ async fn should_list_without_waiting_for_the_provider_when_metadata_is_missing()
 
 #[tokio::test]
 async fn should_not_ask_the_provider_when_everything_is_cached_and_fresh() {
-    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![])).with_versions(Answer::Items(vec![])),
+    );
     let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
-    fixture.cache.seed(
-        &provider_id("modrinth"),
-        metadata("A", "Sodium"),
-        SystemTime::now(),
+    let now = SystemTime::now();
+    let modrinth = provider_id("modrinth");
+    fixture.cache.seed(&modrinth, metadata("A", "Sodium"), now);
+    // Fresh long after a project would be stale: a version does not change.
+    fixture.cache.seed_version(
+        &modrinth,
+        version("A", "0.6.13"),
+        now - CONTENT_METADATA_TTL * 2,
     );
 
     assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    assert_eq!(
+        fixture.version_numbers().await["mods/a.jar"],
+        Some("0.6.13".into())
+    );
     Fixture::settle().await;
 
     assert!(provider.calls().is_empty());
+    assert!(provider.version_calls().is_empty());
     fixture.assert_no_event();
 }
 
@@ -777,4 +861,163 @@ async fn should_show_a_cached_icon_while_revalidating_it_and_stay_quiet_when_unc
     fixture.icon_paths().await;
     Fixture::settle().await;
     assert_eq!(fixture.icons.fetches().len(), 1);
+}
+
+// ── Versions ──
+
+#[tokio::test]
+async fn should_ask_for_versions_once_with_the_projects_then_cache_and_tell_the_ui_once() {
+    let modrinth = Arc::new(
+        FakeProvider::new(
+            "modrinth",
+            Answer::Items(vec![metadata("A", "Sodium"), metadata("B", "Lithium")]),
+        )
+        .with_versions(Answer::Items(vec![
+            version("A", "0.6.13+mc1.21.4"),
+            version("B", "mc1.21.4-0.14.7"),
+        ])),
+    );
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![modrinth.clone()],
+    )
+    .await;
+
+    let first = fixture.version_numbers().await;
+    fixture.next_event().await;
+    Fixture::settle().await;
+    // Projects and versions refreshed together: one event for both.
+    fixture.assert_no_event();
+
+    assert!(first.values().all(Option::is_none));
+    assert_eq!(modrinth.calls(), [["A", "B"]]);
+    assert_eq!(
+        modrinth.version_calls(),
+        [[version_id("A"), version_id("B")]]
+    );
+
+    let files = fixture.list().await;
+    let file = files.get("mods/a.jar").unwrap();
+    assert_eq!(file.metadata.as_ref().unwrap().name, "Sodium");
+    assert_eq!(file.version_metadata, Some(version("A", "0.6.13+mc1.21.4")));
+    assert_eq!(
+        files.get("mods/b.jar").unwrap().version_metadata,
+        Some(version("B", "mc1.21.4-0.14.7"))
+    );
+    drop(file);
+    Fixture::settle().await;
+    assert_eq!(modrinth.version_calls().len(), 1);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_ask_only_for_the_missing_versions_when_the_projects_are_fresh() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![]))
+            .with_versions(Answer::Items(vec![version("B", "2.0")])),
+    );
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider.clone()],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, metadata("A", "Sodium"), now);
+    fixture.cache.seed(&modrinth, metadata("B", "Lithium"), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
+
+    fixture.list().await;
+    fixture.next_event().await;
+    let numbers = fixture.version_numbers().await;
+
+    assert!(provider.calls().is_empty());
+    assert_eq!(provider.version_calls(), [[version_id("B")]]);
+    assert_eq!(numbers["mods/a.jar"], Some("1.0".into()));
+    assert_eq!(numbers["mods/b.jar"], Some("2.0".into()));
+}
+
+#[tokio::test]
+async fn should_keep_the_stale_version_when_its_refresh_fails() {
+    let provider =
+        Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])).with_versions(Answer::Fail));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    let modrinth = provider_id("modrinth");
+    fixture
+        .cache
+        .seed(&modrinth, metadata("A", "Sodium"), SystemTime::now());
+    let long_ago = SystemTime::now() - CONTENT_VERSION_METADATA_TTL - Duration::from_hours(1);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), long_ago);
+
+    assert_eq!(
+        fixture.version_numbers().await["mods/a.jar"],
+        Some("1.0".into())
+    );
+    Fixture::settle().await;
+    assert_eq!(provider.version_calls().len(), 1);
+    fixture.assert_no_event();
+
+    // Still shown, and asked again: a failure is not remembered.
+    assert_eq!(
+        fixture.version_numbers().await["mods/a.jar"],
+        Some("1.0".into())
+    );
+    Fixture::settle().await;
+    assert_eq!(provider.version_calls().len(), 2);
+}
+
+#[tokio::test]
+async fn should_not_ask_again_for_versions_a_provider_cannot_describe() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("A", "Sodium")]),
+    ));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    // The projects still arrive.
+    fixture.next_event().await;
+    let names = fixture.names().await;
+    Fixture::settle().await;
+    let numbers = fixture.version_numbers().await;
+    Fixture::settle().await;
+
+    assert_eq!(names["mods/a.jar"], Some("Sodium".into()));
+    assert_eq!(numbers["mods/a.jar"], None);
+    assert_eq!(provider.version_calls().len(), 1);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_not_ask_again_soon_about_versions_the_provider_did_not_know() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![]))
+            .with_versions(Answer::Items(vec![version("A", "1.0")])),
+    );
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider.clone()],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, metadata("A", "Sodium"), now);
+    fixture.cache.seed(&modrinth, metadata("B", "Lithium"), now);
+
+    fixture.list().await;
+    fixture.next_event().await;
+    let numbers = fixture.version_numbers().await;
+    Fixture::settle().await;
+
+    assert_eq!(numbers["mods/a.jar"], Some("1.0".into()));
+    assert_eq!(numbers["mods/b.jar"], None);
+    assert_eq!(
+        provider.version_calls(),
+        [[version_id("A"), version_id("B")]]
+    );
+    fixture.assert_no_event();
 }
