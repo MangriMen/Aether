@@ -35,9 +35,19 @@ jobs:
         run: bun install --frozen-lockfile
 
       # frontend checks only; the root `bun run lint` also runs clippy, which the rust job covers
-      - name: Lint and types
+      - name: Types
         working-directory: apps/frontend
-        run: bun run lint
+        run: bun run lint:types
+
+      # the better-tailwindcss rule sometimes times out on its cold start on a slow runner (Atomics.wait),
+      # so retry once
+      - name: ESLint
+        working-directory: apps/frontend
+        run: bun run lint:code || bun run lint:code
+
+      - name: Architecture (steiger, non-blocking)
+        working-directory: apps/frontend
+        run: bun run lint:arch
 
       - name: Test
         working-directory: apps/frontend
