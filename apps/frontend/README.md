@@ -32,16 +32,7 @@ The installer is not code-signed, so Windows SmartScreen will show a warning.
 - Respect all relevant licensing agreements and support Minecraft developers.
 
 ### Building from source
-
-**Requirements:** Rust 1.95+ (edition 2024), Node.js >= 24, Bun 1.3.11.
-
-```sh
-bun install
-bun run desktop:dev
-```
-
-- The build does not need a database: the SQL query metadata is committed in the `.sqlx` directories, so `sqlx` builds offline.
-- `bun run db:setup` is only needed when you change SQL queries or migrations. It requires `sqlx-cli` (`cargo install sqlx-cli`) and a `.env` file: copy `.env.example` to `.env`.
+See the [root README](../../README.md#building-from-source).
 
 ---
 
@@ -73,13 +64,4 @@ Aether Launcher - это удобный лаунчер для управлени
 - Соблюдайте все соответствующие лицензионные соглашения и поддерживайте разработчиков Minecraft.
 
 ### Сборка из исходников
-
-**Требования:** Rust 1.95+ (edition 2024), Node.js >= 24, Bun 1.3.11.
-
-```sh
-bun install
-bun run desktop:dev
-```
-
-- Для сборки база данных не нужна: метаданные SQL-запросов закоммичены в каталогах `.sqlx`, поэтому `sqlx` собирается офлайн.
-- `bun run db:setup` нужен только при изменении SQL-запросов или миграций. Требуется `sqlx-cli` (`cargo install sqlx-cli`) и файл `.env`: скопируйте `.env.example` в `.env`.
+См. [корневой README](../../README.md#сборка-из-исходников).
