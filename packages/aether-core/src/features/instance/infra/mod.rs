@@ -1,6 +1,7 @@
 mod content_providers;
 mod event_emitting_instance_storage;
 mod fs;
+mod fs_content_icon_cache;
 mod instance_event_handler;
 mod legacy_provider_id;
 mod services;
@@ -10,6 +11,7 @@ mod universal_content_metadata_cache;
 pub use content_providers::ModrinthContentProvider;
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
 pub use fs::{FsInstanceStorage, FsPackStorage};
+pub use fs_content_icon_cache::{CONTENT_ICONS_FOLDER, FsContentIconCache};
 pub use instance_event_handler::InstanceEventHandler;
 pub use services::{
     FsContentFileService, FsInstanceFileService, InstanceWatcherServiceImpl,

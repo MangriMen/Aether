@@ -1,5 +1,6 @@
 mod content_downloader;
 mod content_file_service;
+mod content_icon_cache;
 mod content_metadata_cache;
 mod content_provider;
 mod importer;
@@ -16,6 +17,9 @@ mod use_case_ports;
 pub use content_downloader::ContentDownloader;
 pub(crate) use content_file_service::DISABLED_SUFFIX;
 pub use content_file_service::{ContentFileService, LocatedContentFile};
+pub use content_icon_cache::{
+    CONTENT_ICON_MAX_UNUSED, CachedContentIcon, ContentIconCache, ContentIconError,
+};
 pub use content_metadata_cache::{
     CONTENT_METADATA_TTL, CachedContentMetadata, ContentMetadataCache,
 };
