@@ -7,4 +7,4 @@
 - [ ] `bun run lint:rust` and the frontend `bun run lint` pass
 - [ ] `cargo test --workspace` and the frontend tests pass
 - [ ] Commit messages and this description are in English and follow Conventional Commits
-- [ ] I agree to the contribution terms in [CONTRIBUTING.md](https://github.com/MangriMen/Aether/blob/main/.github/CONTRIBUTING.md#licensing-of-contributions) (Contributor License Agreement)
+- [ ] I agree to the contribution terms in [CONTRIBUTING.md](CONTRIBUTING.md#licensing-of-contributions) (Contributor License Agreement)
