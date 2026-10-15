@@ -3,6 +3,7 @@ name = "aether"
 version = "0.10.5"
 description = "Desktop application for managing Minecraft instances and mods"
 edition.workspace = true
+license = "GPL-3.0-only"
 publish = false
 rust-version.workspace = true
 default-run = "aether"
