@@ -30,6 +30,7 @@ The pre-commit hooks (lefthook) run the main checks for the files you changed. P
 - Write commit messages, PR titles and PR descriptions in English.
 - Keep pull requests focused: one logical change per PR.
 - Do not reference issues or pull requests of other repositories in commits or PR descriptions.
+- We do not accept contributions that bundle game files or assets, or whose purpose is to bypass purchase or authentication requirements.
 
 ## Licensing of contributions
 
@@ -43,7 +44,3 @@ By submitting a pull request you agree to the following (this is the project's C
 4. You understand that your contribution and your name or username in the commit history are public.
 
 If you cannot agree to these terms, please do not submit a pull request; open an issue instead. The pull request template asks you to confirm this agreement explicitly.
-
-## Minecraft and third-party content
-
-Aether is not affiliated with Mojang or Microsoft. Do not add Minecraft game files, assets or logos to the repository, and do not add features whose purpose is to bypass Minecraft's purchase or authentication requirements.
