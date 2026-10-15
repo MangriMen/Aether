@@ -17,7 +17,7 @@ use crate::{
     features::plugins::LoadConfig,
     features::plugins::infra::{
         pack_instances::{is_deploying_packs, record_pack_instance},
-        plugin_utils::plugin_cache_path_to_host,
+        plugin_utils::{MountSet, resolve_plugin_path},
     },
     features::settings::LocationInfo,
 };
@@ -86,7 +86,7 @@ pub(crate) fn new_instance_from_plugin(
     let icon_path = dto
         .icon_path
         .as_deref()
-        .map(|icon| plugin_cache_path_to_host(location_info, plugin_id, icon))
+        .map(|icon| resolve_plugin_path(location_info, plugin_id, icon, MountSet::CACHE))
         .transpose()?
         .map(|host| host.to_string_lossy().into_owned());
 

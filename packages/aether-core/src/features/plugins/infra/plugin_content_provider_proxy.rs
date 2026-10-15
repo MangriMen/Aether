@@ -27,7 +27,7 @@ use crate::features::{
 use crate::features::plugins::infra::extism::models::PluginInstanceExt;
 use crate::features::plugins::infra::pack_instances::deploying_packs;
 use crate::features::plugins::infra::plugin_utils::{
-    host_path_to_plugin, plugin_cache_path_to_host,
+    MountSet, host_path_to_plugin, resolve_plugin_path,
 };
 
 /// A content provider implemented by a plugin, calling the functions its `capabilities.json`
@@ -111,9 +111,13 @@ impl PluginContentProviderProxy {
         if let InstallTarget::New(instance) = &mut target
             && let Some(icon_path) = instance.icon_path.take()
         {
-            let host_path =
-                plugin_cache_path_to_host(&self.location_info, &self.plugin_id, &icon_path)
-                    .map_err(|err| self.invalid_answer(handler_name, err))?;
+            let host_path = resolve_plugin_path(
+                &self.location_info,
+                &self.plugin_id,
+                &icon_path,
+                MountSet::CACHE,
+            )
+            .map_err(|err| self.invalid_answer(handler_name, err))?;
             instance.icon_path = Some(host_path.to_string_lossy().into_owned());
         }
 
@@ -139,13 +143,14 @@ impl PluginContentProviderProxy {
     }
 
     /// Override paths name files in the plugin's own `/cache` and nothing else (see
-    /// [`plugin_cache_path_to_host`]).
+    /// [`resolve_plugin_path`]).
     fn override_source_from_dto(
         &self,
         dto: OverrideSourceDto,
     ) -> Result<OverrideSource, PluginError> {
-        let to_host =
-            |path: &str| plugin_cache_path_to_host(&self.location_info, &self.plugin_id, path);
+        let to_host = |path: &str| {
+            resolve_plugin_path(&self.location_info, &self.plugin_id, path, MountSet::CACHE)
+        };
 
         let location = match dto.location {
             OverrideLocationDto::Archive {
