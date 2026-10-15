@@ -1,6 +1,6 @@
 # Single source of truth for the Rust version: local rustup and CI both read it.
 # When bumping, also bump `rust-version` (MSRV) in the root Cargo.toml.
 [toolchain]
-channel = "1.96.0"
+channel = "1.99.1"
 profile = "minimal"
 components = ["clippy", "rustfmt"]

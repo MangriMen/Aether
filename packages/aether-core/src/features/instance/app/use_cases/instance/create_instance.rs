@@ -134,8 +134,8 @@ impl CreateInstanceUseCase {
 
         info!(
             "Creating instance \"{}\" at path \"{}\"",
-            &name,
-            &instance_dir.display()
+            name,
+            instance_dir.display()
         );
 
         let loader_version = resolve_loader_version(
@@ -196,7 +196,7 @@ impl CreateInstanceUseCase {
             info!(
                 "Instance \"{}\" created successfully at path \"{}\"",
                 instance.name(),
-                &instance_dir.display()
+                instance_dir.display()
             );
         }
 
