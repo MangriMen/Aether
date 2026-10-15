@@ -15,7 +15,6 @@ use std::{
 };
 
 use async_trait::async_trait;
-use futures::future::join_all;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
@@ -138,22 +137,25 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     where
         R: DeserializeOwned + Send + Sync + Into<T>,
     {
-        let found = join_all(ids.iter().map(|id| async move {
-            let cached = self
-                .cache
-                .get(&key::<R>(namespace, provider_id, id))
-                .await?;
-            Some((
-                id.clone(),
-                CachedMetadata {
-                    metadata: cached.value.into(),
-                    fetched_at: cached.updated_at,
-                },
-            ))
-        }))
-        .await;
+        let keys: Vec<_> = ids
+            .iter()
+            .map(|id| key::<R>(namespace, provider_id, id))
+            .collect();
+        let found = self.cache.get_many(&keys).await;
 
-        found.into_iter().flatten().collect()
+        ids.iter()
+            .zip(found)
+            .filter_map(|(id, cached)| {
+                let cached = cached?;
+                Some((
+                    id.clone(),
+                    CachedMetadata {
+                        metadata: cached.value.into(),
+                        fetched_at: cached.updated_at,
+                    },
+                ))
+            })
+            .collect()
     }
 
     /// Put `records` of `provider_id` in `namespace`, each under the id it is paired with, as
@@ -168,16 +170,17 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     ) where
         R: Serialize + Send + Sync,
     {
-        join_all(records.into_iter().map(|(id, record)| async move {
-            let value = CachedValue {
-                value: record,
-                updated_at: fetched_at,
-            };
-            self.cache
-                .set(&key(namespace, provider_id, id), &value, row_ttl)
-                .await;
-        }))
-        .await;
+        let entries: Vec<_> = records
+            .into_iter()
+            .map(|(id, record)| {
+                let value = CachedValue {
+                    value: record,
+                    updated_at: fetched_at,
+                };
+                (key(namespace, provider_id, id), value)
+            })
+            .collect();
+        self.cache.set_many(&entries, row_ttl).await;
     }
 
     async fn put_at(

@@ -15,6 +15,28 @@ pub trait Cache: Send + Sync {
     async fn set<T: Serialize + Send + Sync>(&self, key: &CacheKey<T>, value: &T, ttl: Duration);
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool;
     async fn invalidate<T: Send + Sync>(&self, key: &CacheKey<T>);
+
+    /// The values of `keys`, in their order: `None` where [`Cache::get`] would give none.
+    ///
+    /// By default one [`Cache::get`] per key; a store that can read many at once does.
+    async fn get_many<T: DeserializeOwned + Send + Sync>(
+        &self,
+        keys: &[CacheKey<T>],
+    ) -> Vec<Option<T>> {
+        futures::future::join_all(keys.iter().map(|key| self.get(key))).await
+    }
+
+    /// [`Cache::set`] each value under its key, for `ttl`.
+    ///
+    /// By default one [`Cache::set`] per entry; a store that can write many at once does.
+    async fn set_many<T: Serialize + Send + Sync>(
+        &self,
+        entries: &[(CacheKey<T>, T)],
+        ttl: Duration,
+    ) {
+        futures::future::join_all(entries.iter().map(|(key, value)| self.set(key, value, ttl)))
+            .await;
+    }
 }
 
 // --- CachePathResolver ---
