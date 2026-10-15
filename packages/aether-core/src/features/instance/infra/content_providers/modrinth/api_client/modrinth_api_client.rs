@@ -2,8 +2,8 @@ use crate::shared::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
 use super::models::{
-    ProjectResponse, ProjectSearchParams, ProjectSearchResponse, ProjectVersionResponse,
-    ProjectVersionsRequest,
+    ProjectMetadataResponse, ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
+    ProjectVersionResponse, ProjectVersionsRequest,
 };
 
 pub(crate) struct ModrinthApiClient<RC> {
@@ -60,6 +60,20 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) async fn get_project(&self, id: &str) -> Result<ProjectResponse, String> {
         let path = format!("project/{id}");
         let request = self.prepare_request(&path, None);
+        self.fetch(request).await
+    }
+
+    /// The projects of `ids` (ids or slugs) in one request, in no particular order. An id
+    /// Modrinth does not know is left out.
+    pub(crate) async fn get_projects_metadata(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<ProjectMetadataResponse>, String> {
+        let ids = serde_json::to_string(ids).map_err(|e| e.to_string())?;
+        let query = url::form_urlencoded::Serializer::new(String::new())
+            .append_pair("ids", &ids)
+            .finish();
+        let request = self.prepare_request("projects", Some(query));
         self.fetch(request).await
     }
 

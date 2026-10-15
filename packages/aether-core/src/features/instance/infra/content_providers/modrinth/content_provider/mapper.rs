@@ -1,15 +1,15 @@
 use crate::features::{
     instance::{
-        ContentItem, ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
-        ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
-        ContentVersionType, ProviderId, RequestedContentVersionStatus,
+        ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult, ContentType,
+        ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
+        ContentVersionStatus, ContentVersionType, ProviderId, RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
                 Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
                 ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
-                ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
-                ProjectVersionResponse, SearchIndex,
+                ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
+                ProjectSearchResponse, ProjectVersionResponse, SearchIndex,
             },
         },
     },
@@ -161,6 +161,20 @@ impl TryFrom<ProjectResponse> for ContentItem {
             versions,
             content_type,
         })
+    }
+}
+
+impl From<ProjectMetadataResponse> for ContentMetadata {
+    /// No author: a project names only its team or organization by id, not a person.
+    fn from(value: ProjectMetadataResponse) -> Self {
+        Self {
+            content_id: value.id,
+            slug: value.slug,
+            name: value.title,
+            description: value.description.filter(|text| !text.is_empty()),
+            author: None,
+            icon_url: value.icon_url.filter(|url| !url.is_empty()),
+        }
     }
 }
 

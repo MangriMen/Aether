@@ -19,9 +19,10 @@ use crate::{
     features::{
         events::ProgressBarId,
         instance::{
-            ContentIdentity, ContentProvider, ContentSource, ContentType, FileSide, InstallTarget,
-            InstanceError, InstanceGame, OverrideLocation, OverrideSource, PackInfo, PackSource,
-            ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
+            ContentIdentity, ContentMetadata, ContentProvider, ContentSource, ContentType,
+            FileSide, InstallTarget, InstanceError, InstanceGame, OverrideLocation, OverrideSource,
+            PackInfo, PackSource, ResolveInstallPlanParams, ResolveTarget,
+            infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -42,6 +43,8 @@ const PACK_URL: &str = "https://cdn.modrinth.com/data/PACKID00/versions/PACKV002
 struct FakeHttp {
     bodies: Mutex<HashMap<String, Bytes>>,
     requests: Mutex<Vec<String>>,
+    /// The URLs asked for, query included.
+    full_requests: Mutex<Vec<String>>,
 }
 
 impl FakeHttp {
@@ -56,12 +59,28 @@ impl FakeHttp {
     fn body(&self, request: &Request) -> Result<Bytes, RequestError> {
         let url = request.url.split('?').next().unwrap().to_owned();
         self.requests.lock().unwrap().push(url.clone());
+        self.full_requests.lock().unwrap().push(request.url.clone());
         self.bodies
             .lock()
             .unwrap()
             .get(&url)
             .cloned()
             .ok_or_else(|| RequestError::Middleware(anyhow::anyhow!("404 {url}")))
+    }
+
+    /// The ids of each `GET /projects` asked for, in the order asked.
+    fn projects_batches(&self) -> Vec<Vec<String>> {
+        self.full_requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|url| url.starts_with(&format!("{API}/projects?")))
+            .map(|url| {
+                let url = url::Url::parse(url).unwrap();
+                let (_, ids) = url.query_pairs().find(|(key, _)| key == "ids").unwrap();
+                serde_json::from_str(&ids).unwrap()
+            })
+            .collect()
     }
 
     fn requests_to(&self, url: &str) -> usize {
@@ -778,4 +797,107 @@ async fn should_describe_a_pack_from_its_index_when_given_a_url() {
     assert_eq!(metadata.version_id.as_deref(), Some("PACKV002"));
     assert_eq!(metadata.loader_version.as_deref(), Some("21.4.10"));
     assert_eq!(metadata.file_count, Some(2));
+}
+
+fn ids(ids: &[&str]) -> Vec<String> {
+    ids.iter().map(|&id| id.to_owned()).collect()
+}
+
+#[tokio::test]
+async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metadata() {
+    let fixture = Fixture::new();
+    let mut fabric_api = project("P7dR8mSH", "fabric-api", "mod");
+    fabric_api["icon_url"] = Value::Null;
+    fabric_api["description"] = json!("");
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([fabric_api, project("AANobbMI", "sodium", "mod")]),
+    );
+
+    let mut metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["sodium", "P7dR8mSH", "unknown"]))
+        .await
+        .unwrap();
+    metadata.sort_by(|a, b| a.content_id.cmp(&b.content_id));
+
+    // Keyed by the project's id, even when asked by its slug.
+    assert_eq!(
+        metadata,
+        [
+            ContentMetadata {
+                content_id: "AANobbMI".into(),
+                slug: "sodium".into(),
+                name: "SODIUM".into(),
+                description: Some("desc".into()),
+                author: None,
+                icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
+            },
+            ContentMetadata {
+                content_id: "P7dR8mSH".into(),
+                slug: "fabric-api".into(),
+                name: "FABRIC-API".into(),
+                description: None,
+                author: None,
+                icon_url: None,
+            },
+        ]
+    );
+    assert_eq!(
+        fixture.http.projects_batches(),
+        [ids(&["sodium", "P7dR8mSH", "unknown"])]
+    );
+}
+
+#[tokio::test]
+async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() {
+    let fixture = Fixture::new();
+    // Every batch answers with the same project: asked by id and by slug, it comes back twice.
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([project("AANobbMI", "sodium", "mod")]),
+    );
+    let mut asked: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
+    asked.extend(ids(&["id0", "id1"]));
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&asked)
+        .await
+        .unwrap();
+
+    assert_eq!(metadata.len(), 1);
+    let batches = fixture.http.projects_batches();
+    assert_eq!(batches.len(), 3);
+    assert!(batches.iter().all(|batch| batch.len() <= 100));
+    let mut all: Vec<String> = batches.into_iter().flatten().collect();
+    all.sort();
+    let mut expected: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
+    expected.sort();
+    assert_eq!(all, expected, "each id asked exactly once");
+}
+
+#[tokio::test]
+async fn should_ask_nothing_when_given_no_ids() {
+    let fixture = Fixture::new();
+
+    let metadata = fixture.provider.get_contents_metadata(&[]).await.unwrap();
+
+    assert!(metadata.is_empty());
+    assert!(fixture.http.requests.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn should_fail_when_a_batch_cannot_be_fetched() {
+    let fixture = Fixture::new();
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
 }

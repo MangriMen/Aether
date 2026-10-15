@@ -139,6 +139,21 @@ pub struct Hit {
     pub color: Option<i64>,
 }
 
+/// A project as `GET /projects` lists it, cut to what [`ContentMetadata`] needs.
+///
+/// Not [`ProjectResponse`]: one response carries a hundred projects, and a field of one of them
+/// that the full model does not expect would fail all hundred.
+///
+/// [`ContentMetadata`]: crate::features::instance::ContentMetadata
+#[derive(Deserialize, Debug)]
+pub struct ProjectMetadataResponse {
+    pub id: String,
+    pub slug: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub icon_url: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectResponse {
     pub id: String,

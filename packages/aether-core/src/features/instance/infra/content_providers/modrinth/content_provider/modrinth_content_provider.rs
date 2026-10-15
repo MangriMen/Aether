@@ -1,16 +1,17 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use async_trait::async_trait;
+use futures::{StreamExt, TryStreamExt, stream};
 use tracing::warn;
 
 use crate::{
     features::{
         instance::{
-            CapabilityMetadata, ContentIdentity, ContentItem, ContentProvider,
+            CapabilityMetadata, ContentIdentity, ContentItem, ContentMetadata, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, InstallFileEntry, InstallPlan, Instance,
             InstanceError, PackInfo, PackMetadata, PackSource, ProviderId, ReleaseChannel,
@@ -38,6 +39,12 @@ use super::{
         find_best_version, get_first_file_from_project_version, is_version_compatible,
     },
 };
+
+/// How many projects one `GET /projects` asks for: a hundred ids keep the URL under 2 KB.
+const METADATA_BATCH_SIZE: usize = 100;
+
+/// How many of those requests run at once, well inside the API's 300 requests a minute.
+const METADATA_CONCURRENCY: usize = 4;
 
 pub struct ModrinthContentProvider<RC> {
     location_info: Arc<LocationInfo>,
@@ -563,6 +570,41 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 None,
             )),
         }
+    }
+
+    /// Asked of `GET /projects` a batch of ids at a time, a few batches at once. A batch that
+    /// fails fails the whole call: a partial answer would read as projects Modrinth does not
+    /// know. A project asked both by its id and its slug is listed once.
+    async fn get_contents_metadata(
+        &self,
+        content_ids: &[String],
+    ) -> Result<Vec<ContentMetadata>, InstanceError> {
+        let mut seen = HashSet::new();
+        let content_ids: Vec<String> = content_ids
+            .iter()
+            .filter(|id| seen.insert(id.as_str()))
+            .cloned()
+            .collect();
+
+        // The requests are made up front: a stream mapping borrowed batches into futures is not
+        // `Send` enough for `async_trait`.
+        let requests: Vec<_> = content_ids
+            .chunks(METADATA_BATCH_SIZE)
+            .map(|batch| self.api.get_projects_metadata(batch))
+            .collect();
+        let batches: Vec<_> = stream::iter(requests)
+            .buffer_unordered(METADATA_CONCURRENCY)
+            .try_collect()
+            .await
+            .map_err(InstanceError::ContentDownloadError)?;
+
+        let mut listed = HashSet::new();
+        Ok(batches
+            .into_iter()
+            .flatten()
+            .filter(|project| listed.insert(project.id.clone()))
+            .map(ContentMetadata::from)
+            .collect())
     }
 
     async fn check_compatibility(
