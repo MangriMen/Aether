@@ -22,7 +22,7 @@ pub use content_icon_cache::{
 };
 pub use content_metadata_cache::{
     CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentMetadata,
-    CachedContentVersionMetadata, ContentMetadataCache,
+    CachedContentVersionMetadata, CachedMetadata, ContentMetadataCache,
 };
 pub use content_provider::ContentProvider;
 pub use importer::Importer;

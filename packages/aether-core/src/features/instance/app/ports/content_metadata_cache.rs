@@ -11,39 +11,45 @@ use crate::features::instance::domain::{ContentMetadata, ContentVersionMetadata,
 /// offline it is all there is — but asked of the provider again.
 pub const CONTENT_METADATA_TTL: Duration = Duration::from_hours(7 * 24);
 
-/// [`ContentMetadata`] as cached, with when it was fetched.
+/// How long [`ContentVersionMetadata`] is taken as current. A version does not change once
+/// published, so this is long; past it, the item is shown as [`CONTENT_METADATA_TTL`] says.
+pub const CONTENT_VERSION_METADATA_TTL: Duration = Duration::from_hours(90 * 24);
+
+/// An item as cached, with when it was fetched.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CachedContentMetadata {
-    pub metadata: ContentMetadata,
+pub struct CachedMetadata<T> {
+    pub metadata: T,
     pub fetched_at: SystemTime,
 }
+
+impl<T> CachedMetadata<T> {
+    /// Whether the item is older than `ttl` as of `now`. Fetched "in the future" (the clock
+    /// went back), it is not.
+    fn is_older_than(&self, ttl: Duration, now: SystemTime) -> bool {
+        now.duration_since(self.fetched_at)
+            .is_ok_and(|age| age > ttl)
+    }
+}
+
+/// [`ContentMetadata`] as cached, with when it was fetched.
+pub type CachedContentMetadata = CachedMetadata<ContentMetadata>;
 
 impl CachedContentMetadata {
     /// Whether the item is older than [`CONTENT_METADATA_TTL`] as of `now`, and should be asked
     /// of the provider again. A stale item is still good to show until then.
     pub fn is_stale(&self, now: SystemTime) -> bool {
-        now.duration_since(self.fetched_at)
-            .is_ok_and(|age| age > CONTENT_METADATA_TTL)
+        self.is_older_than(CONTENT_METADATA_TTL, now)
     }
 }
 
-/// How long [`ContentVersionMetadata`] is taken as current. A version does not change once
-/// published, so this is long; past it, the item is shown as [`CONTENT_METADATA_TTL`] says.
-pub const CONTENT_VERSION_METADATA_TTL: Duration = Duration::from_hours(90 * 24);
-
 /// [`ContentVersionMetadata`] as cached, with when it was fetched.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CachedContentVersionMetadata {
-    pub metadata: ContentVersionMetadata,
-    pub fetched_at: SystemTime,
-}
+pub type CachedContentVersionMetadata = CachedMetadata<ContentVersionMetadata>;
 
 impl CachedContentVersionMetadata {
     /// Whether the item is older than [`CONTENT_VERSION_METADATA_TTL`] as of `now`, and should
     /// be asked of the provider again. A stale item is still good to show until then.
     pub fn is_stale(&self, now: SystemTime) -> bool {
-        now.duration_since(self.fetched_at)
-            .is_ok_and(|age| age > CONTENT_VERSION_METADATA_TTL)
+        self.is_older_than(CONTENT_VERSION_METADATA_TTL, now)
     }
 }
 

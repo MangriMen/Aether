@@ -16,12 +16,15 @@ use std::{
 
 use async_trait::async_trait;
 use futures::future::join_all;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
     features::instance::{
         ContentMetadata, ContentVersionMetadata, ProviderId,
-        app::{CachedContentMetadata, CachedContentVersionMetadata, ContentMetadataCache},
+        app::{
+            CachedContentMetadata, CachedContentVersionMetadata, CachedMetadata,
+            ContentMetadataCache,
+        },
     },
     shared::cache::{Cache, CacheId, CacheKey, CachedValue},
 };
@@ -70,17 +73,6 @@ impl From<ContentVersionMetadataRecord> for ContentVersionMetadata {
     }
 }
 
-/// `<provider>:<version id>`, as [`key`].
-fn version_key(
-    provider_id: &ProviderId,
-    version_id: &str,
-) -> CacheKey<CachedValue<ContentVersionMetadataRecord>> {
-    CacheKey::new(
-        VERSION_NAMESPACE,
-        CacheId::Named(format!("{provider_id}:{version_id}")),
-    )
-}
-
 /// [`ContentMetadata`] as stored: the domain stays free of serde.
 #[derive(Serialize, Deserialize)]
 struct ContentMetadataRecord {
@@ -118,15 +110,12 @@ impl From<ContentMetadataRecord> for ContentMetadata {
     }
 }
 
-/// `<provider>:<content id>`. A provider id has no `:` ([`is_valid_id`] parts joined by `#`),
-/// so no two pairs share a key.
+/// `<provider>:<id>` in `namespace`. A provider id has no `:` ([`is_valid_id`] parts joined by
+/// `#`), so no two pairs share a key.
 ///
 /// [`is_valid_id`]: crate::features::instance::is_valid_id
-fn key(provider_id: &ProviderId, content_id: &str) -> CacheKey<CachedValue<ContentMetadataRecord>> {
-    CacheKey::new(
-        NAMESPACE,
-        CacheId::Named(format!("{provider_id}:{content_id}")),
-    )
+fn key<R>(namespace: &'static str, provider_id: &ProviderId, id: &str) -> CacheKey<CachedValue<R>> {
+    CacheKey::new(namespace, CacheId::Named(format!("{provider_id}:{id}")))
 }
 
 pub struct UniversalContentMetadataCache<C> {
@@ -138,22 +127,71 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         Self { cache }
     }
 
+    /// The rows of `ids` found in `namespace` for `provider_id`, as items of type `T`, keyed by
+    /// id. An id with no row is absent.
+    async fn get_records<R, T>(
+        &self,
+        namespace: &'static str,
+        provider_id: &ProviderId,
+        ids: &[String],
+    ) -> HashMap<String, CachedMetadata<T>>
+    where
+        R: DeserializeOwned + Send + Sync + Into<T>,
+    {
+        let found = join_all(ids.iter().map(|id| async move {
+            let cached = self
+                .cache
+                .get(&key::<R>(namespace, provider_id, id))
+                .await?;
+            Some((
+                id.clone(),
+                CachedMetadata {
+                    metadata: cached.value.into(),
+                    fetched_at: cached.updated_at,
+                },
+            ))
+        }))
+        .await;
+
+        found.into_iter().flatten().collect()
+    }
+
+    /// Put `records` of `provider_id` in `namespace`, each under the id it is paired with, as
+    /// fetched at `fetched_at`, the rows to live `row_ttl`; replacing what was there.
+    async fn put_records<R>(
+        &self,
+        namespace: &'static str,
+        row_ttl: Duration,
+        provider_id: &ProviderId,
+        records: Vec<(&str, R)>,
+        fetched_at: SystemTime,
+    ) where
+        R: Serialize + Send + Sync,
+    {
+        join_all(records.into_iter().map(|(id, record)| async move {
+            let value = CachedValue {
+                value: record,
+                updated_at: fetched_at,
+            };
+            self.cache
+                .set(&key(namespace, provider_id, id), &value, row_ttl)
+                .await;
+        }))
+        .await;
+    }
+
     async fn put_at(
         &self,
         provider_id: &ProviderId,
         items: &[(String, ContentMetadata)],
         fetched_at: SystemTime,
     ) {
-        join_all(items.iter().map(|(content_id, item)| async move {
-            let value = CachedValue {
-                value: ContentMetadataRecord::from(item),
-                updated_at: fetched_at,
-            };
-            self.cache
-                .set(&key(provider_id, content_id), &value, ROW_TTL)
-                .await;
-        }))
-        .await;
+        let records = items
+            .iter()
+            .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
+            .collect();
+        self.put_records(NAMESPACE, ROW_TTL, provider_id, records, fetched_at)
+            .await;
     }
 
     async fn put_versions_at(
@@ -162,19 +200,20 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         items: &[ContentVersionMetadata],
         fetched_at: SystemTime,
     ) {
-        join_all(items.iter().map(|item| async move {
-            let value = CachedValue {
-                value: ContentVersionMetadataRecord::from(item),
-                updated_at: fetched_at,
-            };
-            self.cache
-                .set(
-                    &version_key(provider_id, &item.version_id),
-                    &value,
-                    VERSION_ROW_TTL,
-                )
-                .await;
-        }))
+        let records = items
+            .iter()
+            .map(|item| {
+                let record = ContentVersionMetadataRecord::from(item);
+                (item.version_id.as_str(), record)
+            })
+            .collect();
+        self.put_records(
+            VERSION_NAMESPACE,
+            VERSION_ROW_TTL,
+            provider_id,
+            records,
+            fetched_at,
+        )
         .await;
     }
 }
@@ -186,19 +225,8 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         content_ids: &[String],
     ) -> HashMap<String, CachedContentMetadata> {
-        let found = join_all(content_ids.iter().map(|content_id| async move {
-            let cached = self.cache.get(&key(provider_id, content_id)).await?;
-            Some((
-                content_id.clone(),
-                CachedContentMetadata {
-                    metadata: cached.value.into(),
-                    fetched_at: cached.updated_at,
-                },
-            ))
-        }))
-        .await;
-
-        found.into_iter().flatten().collect()
+        self.get_records::<ContentMetadataRecord, _>(NAMESPACE, provider_id, content_ids)
+            .await
     }
 
     async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
@@ -210,22 +238,12 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         version_ids: &[String],
     ) -> HashMap<String, CachedContentVersionMetadata> {
-        let found = join_all(version_ids.iter().map(|version_id| async move {
-            let cached = self
-                .cache
-                .get(&version_key(provider_id, version_id))
-                .await?;
-            Some((
-                version_id.clone(),
-                CachedContentVersionMetadata {
-                    metadata: cached.value.into(),
-                    fetched_at: cached.updated_at,
-                },
-            ))
-        }))
-        .await;
-
-        found.into_iter().flatten().collect()
+        self.get_records::<ContentVersionMetadataRecord, _>(
+            VERSION_NAMESPACE,
+            provider_id,
+            version_ids,
+        )
+        .await
     }
 
     async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]) {
