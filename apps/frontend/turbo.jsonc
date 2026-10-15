@@ -12,7 +12,7 @@
     "lint:arch": {
       "inputs": ["src/**/*", "steiger.config.*"],
     },
-    "lintt": {
+    "lint:all": {
       "dependsOn": ["lint:types", "lint:code", "lint:arch"],
     },
   },

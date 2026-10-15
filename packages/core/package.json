@@ -3,6 +3,6 @@
   "scripts": {
     "clean": "bun x rimraf .turbo",
     "lint": "cargo clippy -- -D warnings",
-    "lintt": "bun run lint"
+    "lint:all": "bun run lint"
   }
 }

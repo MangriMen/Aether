@@ -2,8 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "extends": ["//"],
   "tasks": {
-    "lintt": {
-      "inputs": ["src/**/*.rs", "Cargo.toml", "Cargo.lock"],
+    "lint:all": {
+      "inputs": ["**/src/**/*.rs", "**/Cargo.toml", "$TURBO_ROOT$/Cargo.lock"],
     },
   },
 }

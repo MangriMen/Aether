@@ -42,7 +42,7 @@
         "SystemRoot",
       ],
     },
-    "lintt": {
+    "lint:all": {
       "cache": true,
       "env": [
         "NODE_ENV",
