@@ -131,7 +131,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
             return Err(get_failed_to_install(version));
         }
 
-        if let Some(file) = archive.file_names().next()
+        if let Some(Ok(file)) = archive.file_names().next()
             && let Some(dir) = file.split('/').next()
         {
             Self::remove_old_jre_installation(&path.join(dir)).await?;

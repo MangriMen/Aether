@@ -51,7 +51,7 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
 sys-info = "0.9.1"
 sysinfo = "0.39.6"
 tempfile = "3.27.0"
-zip = "8.6.0"
+zip = "9.0.2"
 
 # Plugins & Extism
 aether-core-plugin-api = { path = "../aether-core-plugin-api" }

@@ -236,7 +236,7 @@ async fn should_refuse_an_archive_when_it_unpacks_to_more_than_it_declares() {
         .unwrap_err();
 
     assert!(
-        matches!(&err, InstanceError::FileTooLarge { path, limit: 150, .. } if path == "b.txt"),
+        matches!(&err, InstanceError::Storage(reason) if reason.contains("larger than its declared")),
         "{err:?}"
     );
     assert_eq!(fixture.downloaded_urls(), ["https://cdn.example/a.jar"]);
