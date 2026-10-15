@@ -1,16 +1,23 @@
 import type { Column, RowData } from '@tanstack/solid-table';
 import type { JSX } from 'solid-js';
 
+import { A, useParams } from '@solidjs/router';
 import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
-import { Show } from 'solid-js';
+import { Match, Show, Switch } from 'solid-js';
 
 import type { ContentFile } from '@/entities/instances';
 import type { AppTableFeatures } from '@/shared/model';
 
 import {
+  getContentFileAuthor,
+  getContentFileDisplayTitle,
   getContentFileIconSrc,
-  getContentFileTitle,
+  getContentFileProjectHref,
+  getContentFileVersionNumber,
+  getContentFileVersionSortValue,
+  getContentFileVersionState,
+  isLocalContentFile,
   InstanceIcon,
 } from '@/entities/instances';
 import { cn } from '@/shared/lib';
@@ -82,46 +89,96 @@ export const CONTENT_TABLE_COLUMNS = contentTableColumnHelper.columns([
     ),
   }),
 
-  contentTableColumnHelper.accessor(
-    (row) => getContentFileTitle(row) ?? row.fileName,
-    {
-      id: 'name',
-      header: (props) => {
-        const [{ t }] = useTranslation();
-        return (
-          <SortableHeader column={props.column} label={t('common.name')} />
-        );
-      },
-      cell: (props) => {
-        const original = () => props.row.original;
-
-        const title = () => getContentFileTitle(original());
-
-        return (
-          <span
-            class={cn('inline-flex items-center gap-2', {
-              'text-muted-foreground': original().disabled,
-            })}
-          >
-            <InstanceIcon
-              class='size-8'
-              src={getContentFileIconSrc(original())}
-            />
-            <span class='inline-flex flex-col'>
-              <Show when={title()}>{(name) => <span>{name()}</span>}</Show>
-              <span
-                class={cn({
-                  'text-muted-foreground': !!title(),
-                })}
-              >
-                {original().fileName}
-              </span>
-            </span>
-          </span>
-        );
-      },
+  contentTableColumnHelper.accessor(getContentFileDisplayTitle, {
+    id: 'name',
+    header: (props) => {
+      const [{ t }] = useTranslation();
+      return (
+        <SortableHeader column={props.column} label={t('common.content')} />
+      );
     },
-  ),
+    cell: (props) => {
+      const [{ t }] = useTranslation();
+      const original = () => props.row.original;
+
+      return (
+        <span
+          class={cn('inline-flex items-center gap-2', {
+            'text-muted-foreground': original().disabled,
+          })}
+        >
+          <InstanceIcon
+            class='size-8'
+            src={getContentFileIconSrc(original())}
+          />
+          <span class='inline-flex flex-col'>
+            <span>{getContentFileDisplayTitle(original())}</span>
+            <Show
+              when={!isLocalContentFile(original())}
+              fallback={
+                <span class='text-muted-foreground'>{t('common.local')}</span>
+              }
+            >
+              <Show when={getContentFileAuthor(original())}>
+                {(author) => (
+                  <span class='text-muted-foreground'>{author()}</span>
+                )}
+              </Show>
+            </Show>
+          </span>
+        </span>
+      );
+    },
+  }),
+
+  contentTableColumnHelper.accessor(getContentFileVersionSortValue, {
+    id: 'version',
+    header: (props) => {
+      const [{ t }] = useTranslation();
+      return (
+        <SortableHeader column={props.column} label={t('common.version')} />
+      );
+    },
+    cell: (props) => {
+      const [{ t }] = useTranslation();
+      const params = useParams();
+      const original = () => props.row.original;
+
+      const href = () => getContentFileProjectHref(original(), params.id);
+
+      return (
+        <span
+          class={cn('inline-flex flex-col', {
+            'text-muted-foreground': original().disabled,
+          })}
+        >
+          <Switch>
+            <Match when={getContentFileVersionState(original()) === 'known'}>
+              <Show
+                when={href()}
+                fallback={
+                  <span>{getContentFileVersionNumber(original())}</span>
+                }
+              >
+                {(link) => (
+                  <A href={link()} class='hover:underline'>
+                    {getContentFileVersionNumber(original())}
+                  </A>
+                )}
+              </Show>
+            </Match>
+            <Match when={getContentFileVersionState(original()) === 'pending'}>
+              <span class='text-muted-foreground'>{t('common.loading')}</span>
+            </Match>
+            <Match when>
+              <span>{t('common.unknown')}</span>
+            </Match>
+          </Switch>
+          <span class='text-muted-foreground'>{original().fileName}</span>
+        </span>
+      );
+    },
+  }),
 
   contentTableColumnHelper.accessor('contentType', {
     id: 'type',
