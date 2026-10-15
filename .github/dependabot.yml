@@ -26,6 +26,9 @@ updates:
       # Keep @types/node on the same major as the Node.js we run (24)
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript 7 has no JS API yet (typescript-eslint unsupported); revisit at 7.1
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
