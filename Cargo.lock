@@ -81,7 +81,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "cap-fs-ext 4.0.3",
- "cap-std 3.4.5",
+ "cap-std 4.0.3",
  "chrono",
  "daedalus",
  "dashmap",
