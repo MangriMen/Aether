@@ -6,7 +6,7 @@
  * and installed frontend dependencies (`bun install`).
  *
  * Usage:
- *   node scripts/generate-third-party-licenses.mjs
+ *   node scripts/licenses/generate-third-party-licenses.mjs
  *   bun run licenses:generate
  */
 import { execFileSync } from "node:child_process";
@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const outFile = join(
   root,
   "apps",
@@ -32,10 +32,10 @@ execFileSync(
     "about",
     "generate",
     "--config",
-    join(root, "about.toml"),
+    join(root, "scripts", "licenses", "about.toml"),
     "--output-file",
     rustFile,
-    join(root, "about.hbs"),
+    join(root, "scripts", "licenses", "about.hbs"),
   ],
   { cwd: join(root, "apps", "desktop"), stdio: "inherit" },
 );

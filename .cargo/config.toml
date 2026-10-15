@@ -3,6 +3,7 @@ linker = "rust-lld"
 rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
 
 [alias]
+update-schemas = "test -p aether-core-gen --test schema_sync"
 bindgen = "run --bin generate-bindings --release --features generate-bindings"
 
 [env]

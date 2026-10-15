@@ -41,11 +41,11 @@ The Windows installer is not code-signed, so Windows SmartScreen will show a war
 
 ### License
 
-Aether is licensed under the [GNU General Public License v3.0 only](LICENSE). The plugin API crates in `packages/core` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) are dual-licensed under [MIT](packages/core/LICENSE-MIT) or [Apache-2.0](packages/core/LICENSE-APACHE), so plugins that depend on them are not subject to the GPL because of that dependency. Licenses of bundled third-party dependencies are shipped with the application (`THIRD_PARTY_LICENSES.md`).
+Aether is licensed under the [GNU General Public License v3.0 only](LICENSE). The plugin API crates in `packages` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) are dual-licensed under [MIT](packages/aether-core-plugin-api/LICENSE-MIT) or [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (each of these crates carries its own copy of both license files), so plugins that depend on them are not subject to the GPL because of that dependency. Licenses of bundled third-party dependencies are shipped with the application (`THIRD_PARTY_LICENSES.md`).
 
 ### Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for an overview of the project structure.
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for an overview of the project structure.
 
 ### Building from source
 
@@ -97,11 +97,11 @@ Aether Launcher - это удобный лаунчер для управлени
 
 ### Лицензия
 
-Aether распространяется под лицензией [GNU General Public License v3.0 only](LICENSE). Крейты API плагинов в `packages/core` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) имеют двойную лицензию [MIT](packages/core/LICENSE-MIT) или [Apache-2.0](packages/core/LICENSE-APACHE), поэтому плагины, которые от них зависят, не подпадают под GPL из-за этой зависимости. Лицензии сторонних зависимостей поставляются вместе с приложением (`THIRD_PARTY_LICENSES.md`).
+Aether распространяется под лицензией [GNU General Public License v3.0 only](LICENSE). Крейты API плагинов в `packages` (`aether-core-plugin-api`, `register-schema`, `register-schema-derive`) имеют двойную лицензию [MIT](packages/aether-core-plugin-api/LICENSE-MIT) или [Apache-2.0](packages/aether-core-plugin-api/LICENSE-APACHE) (каждый из этих крейтов содержит собственные копии обоих файлов лицензий), поэтому плагины, которые от них зависят, не подпадают под GPL из-за этой зависимости. Лицензии сторонних зависимостей поставляются вместе с приложением (`THIRD_PARTY_LICENSES.md`).
 
 ### Архитектура
 
-Обзор структуры проекта см. в [ARCHITECTURE.md](ARCHITECTURE.md).
+Обзор структуры проекта см. в [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ### Сборка из исходников
 

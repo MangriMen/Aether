@@ -2,11 +2,11 @@
 resolver = "2"
 members = [
     "apps/desktop/",
-    "packages/core/aether-core",
-    "packages/core/aether-core-gen",
-    "packages/core/aether-core-plugin-api",
-    "packages/core/register-schema",
-    "packages/core/register-schema-derive",
+    "packages/aether-core",
+    "packages/aether-core-gen",
+    "packages/aether-core-plugin-api",
+    "packages/register-schema",
+    "packages/register-schema-derive",
 ]
 
 [workspace.package]
@@ -23,9 +23,9 @@ unused_async = "allow"
 
 [workspace.dependencies]
 # Internal Packages
-aether-core = { path = "packages/core/aether-core" }
-register-schema = { path = "packages/core/register-schema" }
-register-schema-derive = { path = "packages/core/register-schema-derive" }
+aether-core = { path = "packages/aether-core" }
+register-schema = { path = "packages/register-schema" }
+register-schema-derive = { path = "packages/register-schema-derive" }
 
 # Error Handling & Logging
 anyhow = "1.0.103"

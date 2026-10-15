@@ -87,7 +87,7 @@ jobs:
           tool: cargo-about
 
       - name: generate third-party licenses
-        run: node scripts/generate-third-party-licenses.mjs
+        run: node scripts/licenses/generate-third-party-licenses.mjs
 
       - name: build and publish tauri app
         uses: tauri-apps/tauri-action@v1

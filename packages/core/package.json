@@ -1,6 +1,0 @@
-{
-  "name": "@aether/core",
-  "scripts": {
-    "clean": "bun x rimraf .turbo"
-  }
-}
