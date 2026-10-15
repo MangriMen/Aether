@@ -19,6 +19,11 @@ accepted = [
   "Zlib",
   "bzip2-1.0.6",
 ]
+# Only the platforms we ship (see .github/workflows/executable.yml)
+targets = [
+  "x86_64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+]
 private = { ignore = true }
 ignore-dev-dependencies = true
 ignore-build-dependencies = true
