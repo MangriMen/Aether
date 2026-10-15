@@ -43,9 +43,22 @@ pub trait ContentMetadataCache: Send + Sync {
         content_ids: &[String],
     ) -> HashMap<String, CachedContentMetadata>;
 
-    /// Cache `items` of `provider_id` as fetched just now, each under its
+    /// Cache `items` of `provider_id` as fetched just now, each under the content id it is
+    /// paired with, replacing what was there.
+    ///
+    /// The id need not be the item's own [`ContentMetadata::content_id`]: an item the provider
+    /// found by another id (a slug) is put under that one too, so asking by it again hits.
+    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]);
+
+    /// Cache `items` of `provider_id` as fetched just now, each under its own
     /// [`ContentMetadata::content_id`], replacing what was there.
-    async fn put_many(&self, provider_id: &ProviderId, items: &[ContentMetadata]);
+    async fn put_many(&self, provider_id: &ProviderId, items: &[ContentMetadata]) {
+        let keyed: Vec<_> = items
+            .iter()
+            .map(|item| (item.content_id.clone(), item.clone()))
+            .collect();
+        self.put_keyed(provider_id, &keyed).await;
+    }
 }
 
 #[cfg(test)]

@@ -90,16 +90,16 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     async fn put_at(
         &self,
         provider_id: &ProviderId,
-        items: &[ContentMetadata],
+        items: &[(String, ContentMetadata)],
         fetched_at: SystemTime,
     ) {
-        join_all(items.iter().map(|item| async move {
+        join_all(items.iter().map(|(content_id, item)| async move {
             let value = CachedValue {
                 value: ContentMetadataRecord::from(item),
                 updated_at: fetched_at,
             };
             self.cache
-                .set(&key(provider_id, &item.content_id), &value, ROW_TTL)
+                .set(&key(provider_id, content_id), &value, ROW_TTL)
                 .await;
         }))
         .await;
@@ -128,7 +128,7 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         found.into_iter().flatten().collect()
     }
 
-    async fn put_many(&self, provider_id: &ProviderId, items: &[ContentMetadata]) {
+    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
         self.put_at(provider_id, items, SystemTime::now()).await;
     }
 }
@@ -176,6 +176,10 @@ mod tests {
                 "https://cdn.modrinth.com/data/{content_id}/abc.png"
             )),
         }
+    }
+
+    fn keyed(item: ContentMetadata) -> (String, ContentMetadata) {
+        (item.content_id.clone(), item)
     }
 
     fn ids(ids: &[&str]) -> Vec<String> {
@@ -231,7 +235,11 @@ mod tests {
         let modrinth = provider("modrinth");
         let fetched_at = SystemTime::now() - CONTENT_METADATA_TTL - Duration::from_hours(24);
         cache
-            .put_at(&modrinth, &[metadata("AANobbMI", "Sodium")], fetched_at)
+            .put_at(
+                &modrinth,
+                &[keyed(metadata("AANobbMI", "Sodium"))],
+                fetched_at,
+            )
             .await;
 
         let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
@@ -248,7 +256,11 @@ mod tests {
         let modrinth = provider("modrinth");
         let long_ago = SystemTime::now() - CONTENT_METADATA_TTL - Duration::from_hours(24);
         cache
-            .put_at(&modrinth, &[metadata("AANobbMI", "Old name")], long_ago)
+            .put_at(
+                &modrinth,
+                &[keyed(metadata("AANobbMI", "Old name"))],
+                long_ago,
+            )
             .await;
 
         cache
@@ -258,5 +270,22 @@ mod tests {
 
         assert_eq!(found["AANobbMI"].metadata.name, "Sodium");
         assert!(!found["AANobbMI"].is_stale(SystemTime::now()));
+    }
+
+    #[tokio::test]
+    async fn should_find_an_item_by_the_id_it_was_put_under_when_that_is_not_its_own() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let sodium = metadata("AANobbMI", "Sodium");
+
+        cache
+            .put_keyed(&modrinth, &[("sodium".to_owned(), sodium.clone())])
+            .await;
+        let found = cache
+            .get_many(&modrinth, &ids(&["sodium", "AANobbMI"]))
+            .await;
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found["sodium"].metadata, sodium);
     }
 }
