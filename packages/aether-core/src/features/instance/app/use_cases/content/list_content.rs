@@ -81,7 +81,9 @@ impl ListContentUseCase {
     ) -> Result<(), InstanceError> {
         let content_dir = instance_dir.join(content_type.get_folder());
 
-        if tokio::fs::try_exists(&content_dir).await.is_err() {
+        // A folder the instance has not made yet holds no content. `try_exists` is `Ok(false)`
+        // for it, not an error.
+        if !tokio::fs::try_exists(&content_dir).await.unwrap_or(false) {
             return Ok(());
         }
 
