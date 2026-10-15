@@ -20,6 +20,7 @@ pub fn apply_effect_to_window<R: tauri::Runtime>(
         state: Some(EffectState::FollowsWindowActiveState),
         radius: None,
         color: None,
+        interactive: false,
     });
 
     window.set_effects(config)
