@@ -5,6 +5,9 @@
 //! was fetched, kept inside the value. The row itself is given a much longer life
 //! ([`ROW_TTL`]): the cache hides expired rows, and a stale item must stay readable — offline it
 //! is the only name and icon there is. Only an item nobody refreshed for that long goes.
+//!
+//! Versions are kept the same way, in a namespace of their own and for longer
+//! ([`VERSION_ROW_TTL`]): a version does not change once published.
 
 use std::{
     collections::HashMap,
@@ -17,8 +20,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     features::instance::{
-        ContentMetadata, ProviderId,
-        app::{CachedContentMetadata, ContentMetadataCache},
+        ContentMetadata, ContentVersionMetadata, ProviderId,
+        app::{CachedContentMetadata, CachedContentVersionMetadata, ContentMetadataCache},
     },
     shared::cache::{Cache, CacheId, CacheKey, CachedValue},
 };
@@ -29,6 +32,54 @@ const NAMESPACE: &str = "content_metadata";
 
 /// How long a row outlives its last refresh before the cache drops it.
 const ROW_TTL: Duration = Duration::from_hours(90 * 24);
+
+/// The namespace of versions, the provider in the key as in [`NAMESPACE`].
+const VERSION_NAMESPACE: &str = "content_version_metadata";
+
+/// How long a version's row outlives its last refresh: longer than the version stays fresh
+/// ([`CONTENT_VERSION_METADATA_TTL`]), so a stale one stays readable.
+///
+/// [`CONTENT_VERSION_METADATA_TTL`]: crate::features::instance::app::CONTENT_VERSION_METADATA_TTL
+const VERSION_ROW_TTL: Duration = Duration::from_hours(365 * 24);
+
+/// [`ContentVersionMetadata`] as stored.
+#[derive(Serialize, Deserialize)]
+struct ContentVersionMetadataRecord {
+    version_id: String,
+    version_number: String,
+    name: Option<String>,
+}
+
+impl From<&ContentVersionMetadata> for ContentVersionMetadataRecord {
+    fn from(value: &ContentVersionMetadata) -> Self {
+        Self {
+            version_id: value.version_id.clone(),
+            version_number: value.version_number.clone(),
+            name: value.name.clone(),
+        }
+    }
+}
+
+impl From<ContentVersionMetadataRecord> for ContentVersionMetadata {
+    fn from(value: ContentVersionMetadataRecord) -> Self {
+        Self {
+            version_id: value.version_id,
+            version_number: value.version_number,
+            name: value.name,
+        }
+    }
+}
+
+/// `<provider>:<version id>`, as [`key`].
+fn version_key(
+    provider_id: &ProviderId,
+    version_id: &str,
+) -> CacheKey<CachedValue<ContentVersionMetadataRecord>> {
+    CacheKey::new(
+        VERSION_NAMESPACE,
+        CacheId::Named(format!("{provider_id}:{version_id}")),
+    )
+}
 
 /// [`ContentMetadata`] as stored: the domain stays free of serde.
 #[derive(Serialize, Deserialize)]
@@ -104,6 +155,28 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         }))
         .await;
     }
+
+    async fn put_versions_at(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+        fetched_at: SystemTime,
+    ) {
+        join_all(items.iter().map(|item| async move {
+            let value = CachedValue {
+                value: ContentVersionMetadataRecord::from(item),
+                updated_at: fetched_at,
+            };
+            self.cache
+                .set(
+                    &version_key(provider_id, &item.version_id),
+                    &value,
+                    VERSION_ROW_TTL,
+                )
+                .await;
+        }))
+        .await;
+    }
 }
 
 #[async_trait]
@@ -131,6 +204,34 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
     async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
         self.put_at(provider_id, items, SystemTime::now()).await;
     }
+
+    async fn get_versions(
+        &self,
+        provider_id: &ProviderId,
+        version_ids: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        let found = join_all(version_ids.iter().map(|version_id| async move {
+            let cached = self
+                .cache
+                .get(&version_key(provider_id, version_id))
+                .await?;
+            Some((
+                version_id.clone(),
+                CachedContentVersionMetadata {
+                    metadata: cached.value.into(),
+                    fetched_at: cached.updated_at,
+                },
+            ))
+        }))
+        .await;
+
+        found.into_iter().flatten().collect()
+    }
+
+    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]) {
+        self.put_versions_at(provider_id, items, SystemTime::now())
+            .await;
+    }
 }
 
 #[cfg(test)]
@@ -138,7 +239,8 @@ mod tests {
     use sqlx::{SqlitePool, pool::PoolOptions};
 
     use crate::{
-        core::migrations::run_migrations, features::instance::app::CONTENT_METADATA_TTL,
+        core::migrations::run_migrations,
+        features::instance::app::{CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL},
         shared::cache::infra::SqliteCache,
     };
 
@@ -287,5 +389,70 @@ mod tests {
 
         assert_eq!(found.len(), 1);
         assert_eq!(found["sodium"].metadata, sodium);
+    }
+
+    fn version(version_id: &str, version_number: &str) -> ContentVersionMetadata {
+        ContentVersionMetadata {
+            version_id: version_id.into(),
+            version_number: version_number.into(),
+            name: Some(format!("Sodium {version_number}")),
+        }
+    }
+
+    #[tokio::test]
+    async fn should_return_only_the_cached_versions_when_some_ids_are_missing() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        cache
+            .put_versions(&modrinth, &[version("IZskON6d", "0.5.8")])
+            .await;
+
+        let found = cache
+            .get_versions(&modrinth, &ids(&["IZskON6d", "unknown"]))
+            .await;
+        let other = cache
+            .get_versions(&provider("other"), &ids(&["IZskON6d"]))
+            .await;
+
+        assert_eq!(found.len(), 1);
+        assert_eq!(found["IZskON6d"].metadata, version("IZskON6d", "0.5.8"));
+        assert!(!found["IZskON6d"].is_stale(SystemTime::now()));
+        assert!(other.is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_keep_versions_apart_from_projects_when_they_share_an_id() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        cache
+            .put_many(&modrinth, &[metadata("same", "Sodium")])
+            .await;
+        cache
+            .put_versions(&modrinth, &[version("same", "0.5.8")])
+            .await;
+
+        let projects = cache.get_many(&modrinth, &ids(&["same"])).await;
+        let versions = cache.get_versions(&modrinth, &ids(&["same"])).await;
+
+        assert_eq!(projects["same"].metadata.name, "Sodium");
+        assert_eq!(versions["same"].metadata.version_number, "0.5.8");
+    }
+
+    #[tokio::test]
+    async fn should_still_return_a_version_when_it_is_stale() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let fetched_at =
+            SystemTime::now() - CONTENT_VERSION_METADATA_TTL - Duration::from_hours(24);
+        cache
+            .put_versions_at(&modrinth, &[version("IZskON6d", "0.5.8")], fetched_at)
+            .await;
+
+        let found = cache.get_versions(&modrinth, &ids(&["IZskON6d"])).await;
+
+        let item = &found["IZskON6d"];
+        assert_eq!(item.metadata.version_number, "0.5.8");
+        assert_eq!(item.fetched_at, fetched_at);
+        assert!(item.is_stale(SystemTime::now()));
     }
 }

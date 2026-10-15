@@ -5,7 +5,7 @@ use std::{
 
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{ContentMetadata, ProviderId};
+use crate::features::instance::domain::{ContentMetadata, ContentVersionMetadata, ProviderId};
 
 /// How long [`ContentMetadata`] is taken as current. Past it, the cached item is still shown —
 /// offline it is all there is — but asked of the provider again.
@@ -27,8 +27,29 @@ impl CachedContentMetadata {
     }
 }
 
+/// How long [`ContentVersionMetadata`] is taken as current. A version does not change once
+/// published, so this is long; past it, the item is shown as [`CONTENT_METADATA_TTL`] says.
+pub const CONTENT_VERSION_METADATA_TTL: Duration = Duration::from_hours(90 * 24);
+
+/// [`ContentVersionMetadata`] as cached, with when it was fetched.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CachedContentVersionMetadata {
+    pub metadata: ContentVersionMetadata,
+    pub fetched_at: SystemTime,
+}
+
+impl CachedContentVersionMetadata {
+    /// Whether the item is older than [`CONTENT_VERSION_METADATA_TTL`] as of `now`, and should
+    /// be asked of the provider again. A stale item is still good to show until then.
+    pub fn is_stale(&self, now: SystemTime) -> bool {
+        now.duration_since(self.fetched_at)
+            .is_ok_and(|age| age > CONTENT_VERSION_METADATA_TTL)
+    }
+}
+
 /// The [`ContentMetadata`] the providers gave, kept by provider and content id so an instance's
-/// content list shows names and icons without asking the provider each time, and offline.
+/// content list shows names and icons without asking the provider each time, and offline; and
+/// the [`ContentVersionMetadata`], kept by provider and version id, to show versions by.
 ///
 /// Stale items are kept and returned (see [`CachedContentMetadata::is_stale`]): a failed
 /// refresh leaves them as they were. Best effort, as any cache: a failure to read is a miss,
@@ -59,6 +80,18 @@ pub trait ContentMetadataCache: Send + Sync {
             .collect();
         self.put_keyed(provider_id, &keyed).await;
     }
+
+    /// The cached versions of `version_ids` found for `provider_id`, fresh and stale alike,
+    /// keyed by version id. An id with nothing cached is absent.
+    async fn get_versions(
+        &self,
+        provider_id: &ProviderId,
+        version_ids: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata>;
+
+    /// Cache `items` of `provider_id` as fetched just now, each under its own
+    /// [`ContentVersionMetadata::version_id`], replacing what was there.
+    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]);
 }
 
 #[cfg(test)]
@@ -77,6 +110,28 @@ mod tests {
             },
             fetched_at,
         }
+    }
+
+    fn cached_version(fetched_at: SystemTime) -> CachedContentVersionMetadata {
+        CachedContentVersionMetadata {
+            metadata: ContentVersionMetadata {
+                version_id: "IZskON6d".into(),
+                version_number: "mc1.20.6-0.5.8".into(),
+                name: None,
+            },
+            fetched_at,
+        }
+    }
+
+    #[test]
+    fn should_keep_a_version_fresh_far_longer_than_a_project() {
+        let now = SystemTime::now();
+        let ttl = CONTENT_VERSION_METADATA_TTL;
+
+        assert!(ttl > CONTENT_METADATA_TTL);
+        assert!(!cached_version(now - CONTENT_METADATA_TTL * 2).is_stale(now));
+        assert!(!cached_version(now - ttl).is_stale(now));
+        assert!(cached_version(now - ttl - Duration::from_secs(1)).is_stale(now));
     }
 
     #[test]

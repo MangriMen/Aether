@@ -17,13 +17,14 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
         instance::{
-            CONTENT_METADATA_TTL, CachedContentIcon, CachedContentMetadata, CapabilityMetadata,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
-            ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
-            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentVersion, Instance, InstanceError, ListContentUseCase, PackFile, PackStorage,
-            ProviderId, infra::SqlitePackStorage,
+            CONTENT_METADATA_TTL, CachedContentIcon, CachedContentMetadata,
+            CachedContentVersionMetadata, CapabilityMetadata, ContentCompatibilityCheckParams,
+            ContentCompatibilityResult, ContentFile, ContentFileUpdateInfo, ContentIconCache,
+            ContentIconError, ContentItem, ContentMetadata, ContentMetadataCache,
+            ContentMetadataService, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionMetadata,
+            Instance, InstanceError, ListContentUseCase, PackFile, PackStorage, ProviderId,
+            infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -55,6 +56,7 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
 #[derive(Default)]
 struct MemoryMetadataCache {
     items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
+    versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
 }
 
 impl MemoryMetadataCache {
@@ -92,6 +94,34 @@ impl ContentMetadataCache for MemoryMetadataCache {
             cached.insert(
                 (provider_id.clone(), content_id.clone()),
                 CachedContentMetadata {
+                    metadata: item.clone(),
+                    fetched_at: SystemTime::now(),
+                },
+            );
+        }
+    }
+
+    async fn get_versions(
+        &self,
+        provider_id: &ProviderId,
+        version_ids: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        let versions = self.versions.lock().unwrap();
+        version_ids
+            .iter()
+            .filter_map(|id| {
+                let item = versions.get(&(provider_id.clone(), id.clone()))?;
+                Some((id.clone(), item.clone()))
+            })
+            .collect()
+    }
+
+    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]) {
+        let mut cached = self.versions.lock().unwrap();
+        for item in items {
+            cached.insert(
+                (provider_id.clone(), item.version_id.clone()),
+                CachedContentVersionMetadata {
                     metadata: item.clone(),
                     fetched_at: SystemTime::now(),
                 },

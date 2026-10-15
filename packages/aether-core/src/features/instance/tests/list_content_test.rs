@@ -9,9 +9,10 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError},
         instance::{
-            CachedContentIcon, CachedContentMetadata, ContentIconCache, ContentIconError,
-            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
-            ListContentUseCase, ProviderId, infra::SqlitePackStorage,
+            CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
+            ContentIconCache, ContentIconError, ContentMetadata, ContentMetadataCache,
+            ContentMetadataService, ContentProvider, ContentVersionMetadata, ListContentUseCase,
+            ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -31,6 +32,16 @@ impl ContentMetadataCache for NoCache {
     }
 
     async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) {}
+
+    async fn get_versions(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) {}
 }
 
 struct NoIcons;

@@ -23,9 +23,10 @@ pub use domain::{
 
 // ── App layer: Use Cases (Inbound Ports) ──
 pub use app::{
-    CONTENT_ICON_MAX_UNUSED, CONTENT_METADATA_TTL, CachedContentIcon, CachedContentMetadata,
-    ChangeContentState, ChangeContentStateUseCase, ChangeContentStateUseCasePort,
-    ChangeInstanceGameUseCase, ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
+    CONTENT_ICON_MAX_UNUSED, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentIcon,
+    CachedContentMetadata, CachedContentVersionMetadata, ChangeContentState,
+    ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
+    ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
     CheckContentCompatibilityUseCasePort, ContentCompatibilityCheckParams,
     ContentCompatibilityResult, ContentDownloader, ContentFileService, ContentGetParams,
     ContentIconCache, ContentIconError, ContentListVersionsParams, ContentManagementPort,
