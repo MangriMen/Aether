@@ -13,7 +13,37 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      rust: ${{ steps.filter.outputs.rust }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3.0.2
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'apps/frontend/**'
+              - 'package.json'
+              - 'bun.lock'
+              - 'turbo.jsonc'
+              - '.github/workflows/ci.yml'
+            rust:
+              - 'apps/desktop/**'
+              - 'packages/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - '.github/workflows/ci.yml'
+
   frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +84,8 @@ jobs:
         run: bun x vitest run
 
   rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-22.04
     env:
       SQLX_OFFLINE: "true"
@@ -106,3 +138,14 @@ jobs:
           export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
           (cd packages/core/aether-core && cargo sqlx prepare --check -- --all-targets)
           (cd apps/desktop && cargo sqlx prepare --check -- --all-targets)
+
+  # single required check for branch protection: skipped jobs count as success, failed ones do not
+  ci-ok:
+    if: always()
+    needs: [changes, frontend, rust]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check results
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if echo '${{ join(needs.*.result, ' ') }}' | grep -Eq 'failure|cancelled'; then exit 1; fi
