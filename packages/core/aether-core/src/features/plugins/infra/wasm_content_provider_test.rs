@@ -613,8 +613,8 @@ fn errno(plugin: &mut extism::Plugin, function: &str) -> i32 {
 }
 
 /// A write into an instance goes through the checked host function only: opening a file of
-/// `/instances` for writing is refused, reading it works. Creating an empty file still gets
-/// through — a limit of Extism's read-only folder, pinned so a change either way is noticed.
+/// `/instances` for writing is refused, reading it works. Creating a file is refused too
+/// (older Extism let it through), pinned so a change either way is noticed.
 #[test]
 fn should_refuse_a_wasi_write_into_instances_but_allow_a_read_when_the_mount_is_read_only() {
     let sandbox = sandbox();
@@ -628,6 +628,10 @@ fn should_refuse_a_wasi_write_into_instances_but_allow_a_read_when_the_mount_is_
     assert_eq!(std::fs::read(instance.join("pack.toml")).unwrap(), PACK);
     assert_eq!(errno(&mut plugin, "read"), 0, "reading the same file works");
 
-    assert_eq!(errno(&mut plugin, "create"), 0);
-    assert!(instance.join("new.toml").exists());
+    assert_ne!(
+        errno(&mut plugin, "create"),
+        0,
+        "creating a file is refused"
+    );
+    assert!(!instance.join("new.toml").exists());
 }

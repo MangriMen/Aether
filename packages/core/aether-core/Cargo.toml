@@ -55,8 +55,8 @@ zip = "9.0.2"
 
 # Plugins & Extism
 aether-core-plugin-api = { path = "../aether-core-plugin-api" }
-extism = "1.30.0"
-extism-convert = "1.30.0"
+extism = "1.41.0"
+extism-convert = "1.41.0"
 
 # Observability & Logging
 tracing = "0.1.44"
