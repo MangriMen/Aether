@@ -23,7 +23,7 @@
     "frontend:build": "turbo run build --filter=@aether/frontend",
     "frontend:dev": "turbo run dev --filter=@aether/frontend",
     "lint": "turbo run lint:all lint:rust --continue",
-    "lint:rust": "cargo clippy --workspace -- -D warnings",
+    "lint:rust": "cargo clippy --workspace --all-targets -- -D warnings",
     "prepare": "lefthook install"
   },
   "devDependencies": {
