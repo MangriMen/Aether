@@ -122,7 +122,7 @@ async fn should_refuse_overrides_when_all_sources_together_pass_the_limit() {
 }
 
 /// The headers are the author's: an archive declaring 10 bytes an entry, within the limit,
-/// is refused by the 100 an entry it unpacks to.
+/// is refused by the 100 an entry it unpacks to (zip 9 itself stops a read past the declared size).
 #[tokio::test]
 async fn should_refuse_an_archive_when_it_unpacks_to_more_than_it_declares() {
     let dir = TempDir::new().unwrap();
@@ -144,7 +144,7 @@ async fn should_refuse_an_archive_when_it_unpacks_to_more_than_it_declares() {
         .err()
         .unwrap();
     assert!(
-        matches!(&err, InstanceError::FileTooLarge { path, limit: 150, .. } if path == "b.txt"),
+        matches!(&err, InstanceError::Storage(reason) if reason.contains("larger than its declared")),
         "{err:?}"
     );
 }

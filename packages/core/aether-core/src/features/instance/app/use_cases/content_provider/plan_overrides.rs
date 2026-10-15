@@ -170,7 +170,8 @@ fn list_archive(
         let entry = archive
             .by_index_raw(index)
             .map_err(|err| invalid_archive(&err))?;
-        let name = entry.name();
+        let name = entry.name().map_err(|err| invalid_archive(&err))?;
+        let name = name.as_ref();
 
         // `enclosed_name` refuses a name that climbs out of the root, but takes an absolute
         // one (`/evil`, `C:\evil`) as relative; that is no name of a pack either.
