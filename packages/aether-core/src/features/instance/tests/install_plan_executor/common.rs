@@ -3,6 +3,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use async_trait::async_trait;
@@ -12,10 +13,12 @@ use crate::{
     features::{
         events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
         instance::{
-            CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
+            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
+            ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
             ContentCompatibilityResult, ContentDownloader, ContentFileUpdateInfo, ContentIdentity,
-            ContentItem, ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
-            ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, FileSide, InstallFileEntry, InstallPlan,
             InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
             InstanceGame, InstanceStorage, NewInstance, OverrideLocation, OverrideSource, PackFile,
@@ -480,6 +483,83 @@ impl ContentFileService for FailingRestore {
     }
 }
 
+/// Keeps what is put in it, in memory, with when it was put as fetched.
+#[derive(Default)]
+pub(super) struct MemoryMetadataCache {
+    pub(super) items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
+    pub(super) versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
+}
+
+#[async_trait]
+impl ContentMetadataCache for MemoryMetadataCache {
+    async fn get_many(
+        &self,
+        provider_id: &ProviderId,
+        content_ids: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        let items = self.items.lock().unwrap();
+        content_ids
+            .iter()
+            .filter_map(|id| {
+                let item = items.get(&(provider_id.clone(), id.clone()))?;
+                Some((id.clone(), item.clone()))
+            })
+            .collect()
+    }
+
+    async fn put_keyed_at(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+        fetched_at: SystemTime,
+    ) -> bool {
+        let mut cached = self.items.lock().unwrap();
+        for (content_id, item) in items {
+            cached.insert(
+                (provider_id.clone(), content_id.clone()),
+                CachedContentMetadata {
+                    metadata: item.clone(),
+                    fetched_at,
+                },
+            );
+        }
+        true
+    }
+
+    async fn get_versions(
+        &self,
+        provider_id: &ProviderId,
+        version_ids: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        let versions = self.versions.lock().unwrap();
+        version_ids
+            .iter()
+            .filter_map(|id| {
+                let item = versions.get(&(provider_id.clone(), id.clone()))?;
+                Some((id.clone(), item.clone()))
+            })
+            .collect()
+    }
+
+    async fn put_versions(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+    ) -> bool {
+        let mut cached = self.versions.lock().unwrap();
+        for item in items {
+            cached.insert(
+                (provider_id.clone(), item.version_id.clone()),
+                CachedContentVersionMetadata {
+                    metadata: item.clone(),
+                    fetched_at: SystemTime::now(),
+                },
+            );
+        }
+        true
+    }
+}
+
 // ─── Fixture ───────────────────────────────────────────────────
 
 pub(super) struct Fixture {
@@ -495,6 +575,7 @@ pub(super) struct Fixture {
     pub(super) pack_info: Option<PackInfo>,
     pub(super) progress: Arc<RecordingProgress>,
     pub(super) remove: Arc<RecordingRemove>,
+    pub(super) metadata_cache: Arc<MemoryMetadataCache>,
     /// Limits on the overrides as `(files, bytes)`, in place of the executor's own.
     pub(super) override_limits: Option<(usize, u64)>,
     /// Limits on the planned files as `(files, bytes)`, in place of the executor's own.
@@ -532,6 +613,7 @@ impl Fixture {
             pack_info: None,
             progress: Arc::default(),
             remove: Arc::default(),
+            metadata_cache: Arc::default(),
             override_limits: None,
             plan_limits: None,
             upserted: Arc::default(),
@@ -588,6 +670,7 @@ impl Fixture {
             self.location_info.clone(),
             self.progress.clone(),
             self.remove.clone(),
+            self.metadata_cache.clone(),
             self.limits(),
         );
 

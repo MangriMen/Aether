@@ -6,7 +6,7 @@ use std::{
 
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt, stream};
-use tracing::{debug, warn};
+use tracing::warn;
 
 use crate::{
     features::{
@@ -411,11 +411,10 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         };
 
         let resolved = Self::resolved_file(&version)?;
-        let metadata = self.project_metadata(project).await;
         let entry = InstallFileEntry {
             size: resolved.size,
             name: resolved.name,
-            metadata,
+            metadata: Some(Self::project_metadata(project)),
             version_metadata: Some(ContentVersionMetadata {
                 version_id: version.id.clone(),
                 version_number: version.version_number.clone(),
@@ -448,39 +447,17 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     }
 
     /// What the project says about itself, for the cache, named as `get_contents_metadata`
-    /// names it. None when its author cannot be looked up: the install never fails on metadata,
-    /// and a project cached without author would stay so for days.
-    async fn project_metadata(&self, project: &ProjectResponse) -> Option<ContentMetadata> {
-        // An organization that is not an id counts as none.
-        let organization = project
-            .organization
-            .as_ref()
-            .and_then(|organization| organization.as_str());
-        let (organization_ids, team_ids) = match organization {
-            Some(organization) => (vec![organization.to_owned()], Vec::new()),
-            None => (Vec::new(), vec![project.team.clone()]),
-        };
-        let authors = self
-            .authors(&organization_ids, &team_ids)
-            .await
-            .inspect_err(|err| {
-                debug!(
-                    "Author of Modrinth project {} is unknown: {err}",
-                    project.id
-                );
-            })
-            .ok()?;
-
-        Some(ContentMetadata {
+    /// names it, but without an author: that is another request, and an install does not wait
+    /// for one. The core caches it as stale, so the next list asks for the author.
+    fn project_metadata(project: &ProjectResponse) -> ContentMetadata {
+        ContentMetadata {
             content_id: project.id.clone(),
             slug: project.slug.clone(),
             name: project.title.clone(),
             description: Some(project.description.clone()).filter(|text| !text.is_empty()),
-            author: authors
-                .of(organization, Some(&project.team))
-                .map(str::to_owned),
+            author: None,
             icon_url: project.icon_url.clone().filter(|url| !url.is_empty()),
-        })
+        }
     }
 
     async fn resolve_pack_plan(

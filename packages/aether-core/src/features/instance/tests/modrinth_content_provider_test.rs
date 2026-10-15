@@ -352,13 +352,6 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
 async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mod() {
     let fixture = Fixture::new();
     fixture.serve_sodium();
-    fixture.http.serve_json(
-        &format!("{API_V3}/teams"),
-        &json!([[
-            team_member("team", "helper", false),
-            team_member("team", "owner", true),
-        ]]),
-    );
 
     let plan = fixture
         .provider
@@ -369,6 +362,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
     let [entry] = &plan.files[..] else {
         panic!("one file expected: {:?}", plan.files)
     };
+    // Without an author: that is another request, which an install does not wait for.
     assert_eq!(
         entry.metadata,
         Some(ContentMetadata {
@@ -376,7 +370,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
             slug: "sodium".into(),
             name: "SODIUM".into(),
             description: Some("desc".into()),
-            author: Some("owner".into()),
+            author: None,
             icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
         })
     );
@@ -388,29 +382,12 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
             name: Some("Version IZskON6d".into()),
         })
     );
-}
-
-#[tokio::test]
-async fn should_leave_the_project_metadata_out_when_the_authors_cannot_be_fetched() {
-    let fixture = Fixture::new();
-    fixture.serve_sodium();
-
-    let plan = fixture
-        .provider
-        .resolve_install_plan(params("sodium", existing_fabric()))
-        .await
-        .unwrap();
-
-    let [entry] = &plan.files[..] else {
-        panic!("one file expected: {:?}", plan.files)
-    };
-    assert_eq!(entry.metadata, None);
-    assert_eq!(
-        entry
-            .version_metadata
-            .as_ref()
-            .map(|version| version.version_id.as_str()),
-        Some("IZskON6d")
+    assert!(fixture.http.batches(&format!("{API_V3}/teams")).is_empty());
+    assert!(
+        fixture
+            .http
+            .batches(&format!("{API_V3}/organizations"))
+            .is_empty()
     );
 }
 
@@ -986,6 +963,34 @@ async fn should_fail_when_a_team_member_is_malformed() {
     let result = fixture
         .provider
         .get_contents_metadata(&ids(&["TEAMPROJ"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+#[tokio::test]
+async fn should_fail_when_an_organization_is_malformed() {
+    let fixture = Fixture::new();
+    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
+    by_organization["organization"] = json!("org1");
+    fixture
+        .http
+        .serve_json(&format!("{API}/projects"), &json!([by_organization]));
+    // A partial answer would cache the project without author for days.
+    fixture.http.serve_json(
+        &format!("{API_V3}/organizations"),
+        &json!([
+            { "id": "org1", "slug": "org", "name": null, "team_id": "orgteam" },
+            { "id": "org2", "slug": "other", "name": "Other", "team_id": "otherteam" },
+        ]),
+    );
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["ORGPROJ0"]))
         .await;
 
     assert!(matches!(

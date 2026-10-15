@@ -80,6 +80,18 @@ pub trait ContentMetadataCache: Send + Sync {
         &self,
         provider_id: &ProviderId,
         items: &[(String, ContentMetadata)],
+    ) -> bool {
+        self.put_keyed_at(provider_id, items, SystemTime::now())
+            .await
+    }
+
+    /// [`put_keyed`](Self::put_keyed) as fetched at `fetched_at`: an item put as fetched long
+    /// ago is stale at once, and shown until its next refresh.
+    async fn put_keyed_at(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+        fetched_at: SystemTime,
     ) -> bool;
 
     /// Cache `items` of `provider_id` as fetched just now, each under its own

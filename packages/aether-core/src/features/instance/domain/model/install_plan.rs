@@ -117,8 +117,10 @@ pub struct InstallFileEntry {
     /// the name its resolution gives is taken.
     pub name: Option<String>,
     /// What the provider says about the project of the [`ContentSource::Direct`] identity, when
-    /// it already knows it: the core caches it at install time, so the content list needs no
-    /// extra round trip for a fresh install. `None` otherwise; never crosses the plugin boundary.
+    /// it already knows it: the core caches it at install time, so the content list shows a
+    /// fresh install at once. The provider may give it incomplete (without an author, say): it
+    /// is cached as stale, and the next list asks for the rest. `None` otherwise; never crosses
+    /// the plugin boundary.
     pub metadata: Option<ContentMetadata>,
     /// The same for the version of that identity.
     pub version_metadata: Option<ContentVersionMetadata>,

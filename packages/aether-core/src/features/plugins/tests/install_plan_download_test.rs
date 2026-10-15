@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     net::IpAddr,
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use async_trait::async_trait;
@@ -19,13 +20,15 @@ use crate::{
             Event, EventEmitter, EventError, ProgressBarId, ProgressEventType, ProgressService,
         },
         instance::{
-            CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
-            ContentCompatibilityResult, ContentDownloader, ContentItem, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, CreateInstanceUseCasePort,
-            InstallFileEntry, InstallPlan, InstallPlanExecutor, InstallTarget, Instance,
-            InstanceBuilder, InstanceError, InstanceGame, InstanceStorage, NewInstance, PlanOrigin,
-            ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
+            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
+            ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
+            ContentCompatibilityResult, ContentDownloader, ContentItem, ContentMetadata,
+            ContentMetadataCache, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentVersionMetadata, CreateInstanceUseCasePort, InstallFileEntry, InstallPlan,
+            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceGame, InstanceStorage, NewInstance, PlanOrigin, ProviderId,
+            RemoveInstanceUseCasePort, ResolvedFile,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
         minecraft::ModLoader,
@@ -56,6 +59,41 @@ const ALLOWED: &str = "127.0.0.1";
 const OTHER: &str = "127.0.0.2";
 
 // ─── Mocks ─────────────────────────────────────────────────────
+
+/// Does not keep anything.
+struct NoMetadataCache;
+
+#[async_trait]
+impl ContentMetadataCache for NoMetadataCache {
+    async fn get_many(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_keyed_at(
+        &self,
+        _: &ProviderId,
+        _: &[(String, ContentMetadata)],
+        _: SystemTime,
+    ) -> bool {
+        true
+    }
+
+    async fn get_versions(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
+}
 
 struct NoProgress;
 
@@ -377,6 +415,7 @@ impl Fixture {
             self.location_info.clone(),
             Arc::new(NoProgress),
             Arc::new(NoRemoveInstance),
+            Arc::new(NoMetadataCache),
             crate::shared::limits::ContentInstallLimits::default(),
         )
         .execute(

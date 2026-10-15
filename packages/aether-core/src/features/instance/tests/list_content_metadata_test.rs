@@ -126,10 +126,11 @@ impl ContentMetadataCache for MemoryMetadataCache {
             .collect()
     }
 
-    async fn put_keyed(
+    async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
         items: &[(String, ContentMetadata)],
+        fetched_at: SystemTime,
     ) -> bool {
         if self.is_read_only() {
             return false;
@@ -140,7 +141,7 @@ impl ContentMetadataCache for MemoryMetadataCache {
                 (provider_id.clone(), content_id.clone()),
                 CachedContentMetadata {
                     metadata: item.clone(),
-                    fetched_at: SystemTime::now(),
+                    fetched_at,
                 },
             );
         }

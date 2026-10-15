@@ -2,9 +2,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 use super::install_plan_executor::is_pack_of;
-use crate::features::instance::app::ports::{
-    ContentMetadataCache, InstallContentUseCasePort, InstallPlanExecutorPort,
-};
+use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPlanExecutorPort};
 use crate::{
     features::instance::{
         AtomicInstallParams, ContentInstallParams, ContentProvider, ContentSource, ContentType,
@@ -21,7 +19,6 @@ pub struct InstallContentUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
     plan_executor: Arc<dyn InstallPlanExecutorPort>,
     instance_locks: Arc<InstanceLocks>,
-    metadata_cache: Arc<dyn ContentMetadataCache>,
 }
 
 impl InstallContentUseCase {
@@ -31,7 +28,6 @@ impl InstallContentUseCase {
         instance_storage: Arc<dyn InstanceStorage>,
         plan_executor: Arc<dyn InstallPlanExecutorPort>,
         instance_locks: Arc<InstanceLocks>,
-        metadata_cache: Arc<dyn ContentMetadataCache>,
     ) -> Self {
         Self {
             pack_storage,
@@ -39,7 +35,6 @@ impl InstallContentUseCase {
             instance_storage,
             plan_executor,
             instance_locks,
-            metadata_cache,
         }
     }
 
@@ -148,9 +143,6 @@ impl InstallContentUseCase {
             }
         };
 
-        // Before the files land: the list the file watcher's event opens must already find it.
-        self.cache_metadata(provider.as_ref(), &plan).await;
-
         let origin = PlanOrigin {
             provider_id,
             content_id,
@@ -158,56 +150,6 @@ impl InstallContentUseCase {
         let instance_id = self.plan_executor.execute(plan, origin.clone()).await?;
 
         self.finish_pack_install(&instance_id, &origin).await
-    }
-
-    /// Puts what the plan's entries say about their own content into the metadata cache, so a
-    /// freshly installed file is listed without asking the provider again. Only what is about
-    /// the identity's own ids and platform is taken: the cache is keyed by the provider's ids.
-    async fn cache_metadata(&self, provider: &dyn ContentProvider, plan: &InstallPlan) {
-        let Some(platform) = provider.metadata().platform.as_deref() else {
-            return;
-        };
-
-        let mut projects = Vec::new();
-        let mut versions = Vec::new();
-        for entry in &plan.files {
-            let ContentSource::Direct {
-                identity: Some(identity),
-                ..
-            } = &entry.source
-            else {
-                continue;
-            };
-            if identity.platform != platform {
-                continue;
-            }
-
-            if let Some(metadata) = entry
-                .metadata
-                .as_ref()
-                .filter(|metadata| metadata.content_id == identity.content_id)
-            {
-                projects.push((identity.content_id.clone(), metadata.clone()));
-            }
-            if let Some(version) = entry
-                .version_metadata
-                .as_ref()
-                .filter(|version| version.version_id == identity.version)
-            {
-                versions.push(version.clone());
-            }
-        }
-
-        let provider_id = provider.provider_id();
-        if !projects.is_empty() {
-            let _ = self.metadata_cache.put_keyed(&provider_id, &projects).await;
-        }
-        if !versions.is_empty() {
-            let _ = self
-                .metadata_cache
-                .put_versions(&provider_id, &versions)
-                .await;
-        }
     }
 
     /// A pack's instance stays `PackInstalling` until a plan of that very pack has run through:

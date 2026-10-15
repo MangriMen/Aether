@@ -1,6 +1,6 @@
 //! `ListContentUseCase` reading an instance's content folders.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use async_trait::async_trait;
 use tempfile::TempDir;
@@ -31,7 +31,12 @@ impl ContentMetadataCache for NoCache {
         HashMap::new()
     }
 
-    async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) -> bool {
+    async fn put_keyed_at(
+        &self,
+        _: &ProviderId,
+        _: &[(String, ContentMetadata)],
+        _: SystemTime,
+    ) -> bool {
         true
     }
 

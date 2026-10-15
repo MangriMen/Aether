@@ -86,7 +86,7 @@ use crate::{
             app::{
                 DISABLED_SUFFIX,
                 ports::{
-                    ChangeInstanceGameUseCasePort, CreateInstanceUseCasePort,
+                    ChangeInstanceGameUseCasePort, ContentMetadataCache, CreateInstanceUseCasePort,
                     InstallPlanExecutorPort, RemoveInstanceUseCasePort,
                 },
             },
@@ -121,6 +121,7 @@ pub struct InstallPlanExecutor {
     location_info: Arc<LocationInfo>,
     progress_service: Arc<dyn ProgressService>,
     remove_instance: Arc<dyn RemoveInstanceUseCasePort>,
+    metadata_cache: Arc<dyn ContentMetadataCache>,
     limits: ContentInstallLimits,
 }
 
@@ -478,6 +479,7 @@ impl InstallPlanExecutor {
         location_info: Arc<LocationInfo>,
         progress_service: Arc<dyn ProgressService>,
         remove_instance: Arc<dyn RemoveInstanceUseCasePort>,
+        metadata_cache: Arc<dyn ContentMetadataCache>,
         limits: ContentInstallLimits,
     ) -> Self {
         Self {
@@ -492,6 +494,7 @@ impl InstallPlanExecutor {
             location_info,
             progress_service,
             remove_instance,
+            metadata_cache,
             limits,
         }
     }

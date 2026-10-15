@@ -4,15 +4,68 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
+    time::SystemTime,
 };
 
 use futures::future::try_join_all;
 
 use super::{DownloadEntry, InstallPlanExecutor, ResolvedRef, TargetGame, is_pack_of};
 use crate::features::instance::{
-    ContentProvider, ContentSource, InstallFileEntry, InstallTarget, InstanceError, PlanOrigin,
-    ProviderId,
+    ContentMetadata, ContentProvider, ContentSource, ContentVersionMetadata, InstallFileEntry,
+    InstallTarget, InstanceError, PlanOrigin, ProviderId,
 };
+
+/// What a plan's direct entries say about their own content, by the provider the content list
+/// will look it up under: the one the core picked for the identity's platform, which is not
+/// always the provider that gave the plan.
+#[derive(Default)]
+pub(super) struct PlanMetadata {
+    projects: HashMap<ProviderId, Vec<(String, ContentMetadata)>>,
+    versions: HashMap<ProviderId, Vec<ContentVersionMetadata>>,
+}
+
+impl PlanMetadata {
+    /// Take what an entry says about the content it was resolved to. Only what is about the
+    /// identity's own ids is taken: the cache is keyed by the provider's ids.
+    fn take(
+        &mut self,
+        resolved: &ResolvedRef,
+        metadata: Option<ContentMetadata>,
+        version_metadata: Option<ContentVersionMetadata>,
+    ) {
+        if let Some(metadata) =
+            metadata.filter(|metadata| metadata.content_id == resolved.content_id)
+        {
+            self.projects
+                .entry(resolved.provider_id.clone())
+                .or_default()
+                .push((resolved.content_id.clone(), metadata));
+        }
+        if let Some(version) =
+            version_metadata.filter(|version| version.version_id == resolved.version)
+        {
+            self.versions
+                .entry(resolved.provider_id.clone())
+                .or_default()
+                .push(version);
+        }
+    }
+
+    fn extend(&mut self, other: Self) {
+        for (provider_id, projects) in other.projects {
+            self.projects
+                .entry(provider_id)
+                .or_default()
+                .extend(projects);
+        }
+        for (provider_id, versions) in other.versions {
+            self.versions
+                .entry(provider_id)
+                .or_default()
+                .extend(versions);
+        }
+    }
+}
 
 impl InstallPlanExecutor {
     /// The game the target runs once the plan is applied: the existing instance's own, or the
@@ -54,6 +107,8 @@ impl InstallPlanExecutor {
     /// The provider of each platform is picked once per plan, before anything is resolved: a
     /// plan does not resolve half its refs through one provider and fail on the choice for the
     /// rest.
+    ///
+    /// What the direct entries say about their content is cached once all are resolved.
     pub(super) async fn resolve_all_refs(
         &self,
         files: Vec<InstallFileEntry>,
@@ -62,13 +117,15 @@ impl InstallPlanExecutor {
     ) -> Result<Vec<DownloadEntry>, InstanceError> {
         let providers = &self.providers_of(&files).await?;
 
-        try_join_all(files.into_iter().map(|file| async move {
+        let resolved = try_join_all(files.into_iter().map(|file| async move {
             let InstallFileEntry {
                 source,
                 relative_path,
                 size,
                 name,
                 side,
+                metadata,
+                version_metadata,
                 ..
             } = file;
 
@@ -77,15 +134,8 @@ impl InstallPlanExecutor {
                     url,
                     hash,
                     identity,
-                } => Ok(DownloadEntry {
-                    relative_path,
-                    url,
-                    hash,
-                    origin: origin.clone(),
-                    size,
-                    name,
-                    side,
-                    resolved: identity.and_then(|identity| {
+                } => {
+                    let resolved = identity.and_then(|identity| {
                         providers
                             .get(&identity.platform)
                             .map(|provider| ResolvedRef {
@@ -93,8 +143,26 @@ impl InstallPlanExecutor {
                                 content_id: identity.content_id,
                                 version: identity.version,
                             })
-                    }),
-                }),
+                    });
+                    let mut described = PlanMetadata::default();
+                    if let Some(resolved) = &resolved {
+                        described.take(resolved, metadata, version_metadata);
+                    }
+
+                    Ok::<_, InstanceError>((
+                        DownloadEntry {
+                            relative_path,
+                            url,
+                            hash,
+                            origin: origin.clone(),
+                            size,
+                            name,
+                            side,
+                            resolved,
+                        },
+                        described,
+                    ))
+                }
                 ContentSource::ProviderRef {
                     platform,
                     content_id,
@@ -110,24 +178,71 @@ impl InstallPlanExecutor {
                         )
                         .await?;
 
-                    Ok(DownloadEntry {
-                        relative_path,
-                        url: resolved.url,
-                        hash: resolved.hash,
-                        origin: provider.provider_id(),
-                        size: resolved.size.or(size),
-                        name: name.or(resolved.name),
-                        side,
-                        resolved: Some(ResolvedRef {
-                            provider_id: provider.provider_id(),
-                            content_id,
-                            version: resolved.version,
-                        }),
-                    })
+                    Ok((
+                        DownloadEntry {
+                            relative_path,
+                            url: resolved.url,
+                            hash: resolved.hash,
+                            origin: provider.provider_id(),
+                            size: resolved.size.or(size),
+                            name: name.or(resolved.name),
+                            side,
+                            resolved: Some(ResolvedRef {
+                                provider_id: provider.provider_id(),
+                                content_id,
+                                version: resolved.version,
+                            }),
+                        },
+                        PlanMetadata::default(),
+                    ))
                 }
             }
         }))
-        .await
+        .await?;
+
+        let mut entries = Vec::with_capacity(resolved.len());
+        let mut described = PlanMetadata::default();
+        for (entry, metadata) in resolved {
+            entries.push(entry);
+            described.extend(metadata);
+        }
+
+        // Before any file lands: the list the file watcher's event opens must already find it.
+        self.cache_metadata(described).await;
+
+        Ok(entries)
+    }
+
+    /// Put what the plan's entries say about their own content into the metadata cache, so a
+    /// freshly installed file is listed without asking the provider again. Best effort: a miss
+    /// is filled by the list's own lookup.
+    ///
+    /// A project is put as fetched at the epoch: a provider may give it incomplete (no author
+    /// without another request), so it is stale at once, shown until the next list refreshes
+    /// it — and only when nothing is cached for it, which may be complete. A version is
+    /// complete, and put as fetched now.
+    async fn cache_metadata(&self, metadata: PlanMetadata) {
+        for (provider_id, projects) in metadata.projects {
+            let ids: Vec<String> = projects.iter().map(|(id, _)| id.clone()).collect();
+            let cached = self.metadata_cache.get_many(&provider_id, &ids).await;
+            let missing: Vec<_> = projects
+                .into_iter()
+                .filter(|(id, _)| !cached.contains_key(id))
+                .collect();
+            if missing.is_empty() {
+                continue;
+            }
+            let _ = self
+                .metadata_cache
+                .put_keyed_at(&provider_id, &missing, SystemTime::UNIX_EPOCH)
+                .await;
+        }
+        for (provider_id, versions) in metadata.versions {
+            let _ = self
+                .metadata_cache
+                .put_versions(&provider_id, &versions)
+                .await;
+        }
     }
 
     /// The provider of every platform the plan's files name: by a ref, or by the identity of a

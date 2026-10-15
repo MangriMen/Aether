@@ -186,20 +186,6 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         self.cache.set_many(&entries, row_ttl).await
     }
 
-    async fn put_at(
-        &self,
-        provider_id: &ProviderId,
-        items: &[(String, ContentMetadata)],
-        fetched_at: SystemTime,
-    ) -> bool {
-        let records = items
-            .iter()
-            .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
-            .collect();
-        self.put_records(NAMESPACE, ROW_TTL, provider_id, records, fetched_at)
-            .await
-    }
-
     async fn put_versions_at(
         &self,
         provider_id: &ProviderId,
@@ -235,12 +221,18 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
             .await
     }
 
-    async fn put_keyed(
+    async fn put_keyed_at(
         &self,
         provider_id: &ProviderId,
         items: &[(String, ContentMetadata)],
+        fetched_at: SystemTime,
     ) -> bool {
-        self.put_at(provider_id, items, SystemTime::now()).await
+        let records = items
+            .iter()
+            .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
+            .collect();
+        self.put_records(NAMESPACE, ROW_TTL, provider_id, records, fetched_at)
+            .await
     }
 
     async fn get_versions(
@@ -369,7 +361,7 @@ mod tests {
         let modrinth = provider("modrinth");
         let fetched_at = SystemTime::now() - CONTENT_METADATA_TTL - Duration::from_hours(24);
         cache
-            .put_at(
+            .put_keyed_at(
                 &modrinth,
                 &[keyed(metadata("AANobbMI", "Sodium"))],
                 fetched_at,
@@ -390,7 +382,7 @@ mod tests {
         let modrinth = provider("modrinth");
         let long_ago = SystemTime::now() - CONTENT_METADATA_TTL - Duration::from_hours(24);
         cache
-            .put_at(
+            .put_keyed_at(
                 &modrinth,
                 &[keyed(metadata("AANobbMI", "Old name"))],
                 long_ago,
