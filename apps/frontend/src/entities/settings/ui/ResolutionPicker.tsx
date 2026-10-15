@@ -145,8 +145,8 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                   disabled={local.disabled}
                   inputProps={{
                     ...field.props,
-                    onBlur: (e) => {
-                      field.props.onBlur?.(e);
+                    onBlur: () => {
+                      field.props.onBlur?.();
                       handleResolutionSubmit();
                     },
                   }}
@@ -167,8 +167,8 @@ export const ResolutionPicker: Component<ResolutionFieldProps> = (props) => {
                   disabled={local.disabled}
                   inputProps={{
                     ...field.props,
-                    onBlur: (e) => {
-                      field.props.onBlur?.(e);
+                    onBlur: () => {
+                      field.props.onBlur?.();
                       handleResolutionSubmit();
                     },
                   }}
