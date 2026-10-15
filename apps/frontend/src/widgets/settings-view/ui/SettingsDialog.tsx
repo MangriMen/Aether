@@ -33,13 +33,9 @@ export const SettingsDialog: Component<SettingsDialogProps> = (props) => {
     setParams({ tab });
   };
 
-  const [isFullScreen, setIsFullScreen] = makePersisted(
-    // eslint-disable-next-line solid/reactivity
-    createSignal(false),
-    {
-      name: IS_SETTINGS_MODAL_FULLSCREEN_KEY,
-    },
-  );
+  const [isFullScreen, setIsFullScreen] = makePersisted(createSignal(false), {
+    name: IS_SETTINGS_MODAL_FULLSCREEN_KEY,
+  });
 
   const toggleFullscreen = () => {
     setIsFullScreen((prev) => !prev);

@@ -251,7 +251,7 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
     createIsInstalling: (contentId) => {
       // We return a standard accessor.
       // The linter complains because it's defined inside an object.
-      // eslint-disable-next-line solid/reactivity
+
       return () => {
         const contentId_ = contentId();
 
