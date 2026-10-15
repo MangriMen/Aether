@@ -181,7 +181,14 @@ impl Fixture {
 }
 
 fn sha512_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha512::digest(bytes))
+    use std::fmt::Write as _;
+
+    Sha512::digest(bytes)
+        .iter()
+        .fold(String::new(), |mut acc, byte| {
+            let _ = write!(acc, "{byte:02x}");
+            acc
+        })
 }
 
 fn project(id: &str, slug: &str, project_type: &str) -> Value {
