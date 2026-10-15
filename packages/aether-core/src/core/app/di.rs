@@ -13,15 +13,15 @@ use crate::features::{
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
         CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
-        ContentMetadataCache, ContentMetadataService, ContentProvider, CreateInstanceUseCase,
-        CreateInstanceUseCasePort, EditInstanceIconUseCase, EditInstanceIconUseCasePort,
-        EditInstanceUseCase, EditInstanceUseCasePort, GetContentUseCase, GetContentUseCasePort,
-        GetInstanceUseCase, GetInstanceUseCasePort, ImportContentUseCase, ImportContentUseCasePort,
-        ImportInstanceUseCase, ImportInstanceUseCasePort, Importer, InstallContentUseCase,
-        InstallContentUseCasePort, InstallInstanceUseCase, InstallPlanExecutor,
-        InstallPlanExecutorPort, InstanceFileService, InstanceInstallService,
-        InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceWatcherService,
-        LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
+        ContentIconCache, ContentMetadataCache, ContentMetadataService, ContentProvider,
+        CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
+        EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
+        GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
+        ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
+        ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
+        InstallInstanceUseCase, InstallPlanExecutor, InstallPlanExecutorPort, InstanceFileService,
+        InstanceInstallService, InstanceLaunchService, InstanceLocks, InstanceStorage,
+        InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
         LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
         ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
         ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort,
@@ -142,6 +142,8 @@ pub struct StorageParams {
     pub content_file_service: Arc<dyn ContentFileService>,
     /// The project metadata of installed content, shown in an instance's content list.
     pub content_metadata_cache: Arc<dyn ContentMetadataCache>,
+    /// The icons of that metadata, as local files the UI shows.
+    pub content_icon_cache: Arc<dyn ContentIconCache>,
     pub instance_file_service: Arc<dyn InstanceFileService>,
     pub java_storage: Arc<dyn crate::features::java::JavaStorage>,
     pub java_installation_service: Arc<dyn crate::features::java::JavaInstallationService>,
@@ -207,6 +209,7 @@ impl AetherContainer {
 
         let content_metadata = Arc::new(ContentMetadataService::new(
             params.storage.content_metadata_cache.clone(),
+            params.storage.content_icon_cache.clone(),
             params.content_provider_registry.clone(),
             params.event_emitter.clone(),
         ));

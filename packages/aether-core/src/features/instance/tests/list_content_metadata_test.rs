@@ -1,8 +1,9 @@
 //! `ListContentUseCase` putting cached project metadata on the content files, and
-//! `ContentMetadataService` refreshing what is missing or stale behind the list's back.
+//! `ContentMetadataService` refreshing what is missing or stale — metadata and icons — behind
+//! the list's back.
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
 };
@@ -16,12 +17,13 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
         instance::{
-            CONTENT_METADATA_TTL, CachedContentMetadata, CapabilityMetadata,
+            CONTENT_METADATA_TTL, CachedContentIcon, CachedContentMetadata, CapabilityMetadata,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
-            ContentFileUpdateInfo, ContentItem, ContentMetadata, ContentMetadataCache,
-            ContentMetadataService, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentVersion, Instance, InstanceError,
-            ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
+            ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
+            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentVersion, Instance, InstanceError, ListContentUseCase, PackFile, PackStorage,
+            ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -95,6 +97,85 @@ impl ContentMetadataCache for MemoryMetadataCache {
                 },
             );
         }
+    }
+}
+
+/// Icons by URL, as asset ids. A fetch of a missing icon brings it; of a present one, finds it
+/// unchanged.
+#[derive(Default)]
+struct FakeIcons {
+    /// URL to asset id and whether it is due to be revalidated.
+    present: Mutex<HashMap<String, (String, bool)>>,
+    failing: Mutex<HashSet<String>>,
+    /// Each fetch's URL, in the order asked.
+    fetches: Mutex<Vec<String>>,
+    /// When set, a fetch waits for a permit before answering.
+    gate: Option<Arc<Semaphore>>,
+}
+
+impl FakeIcons {
+    fn gated(gate: Arc<Semaphore>) -> Self {
+        Self {
+            gate: Some(gate),
+            ..Self::default()
+        }
+    }
+
+    fn seed(&self, url: &str, revalidate: bool) {
+        self.present
+            .lock()
+            .unwrap()
+            .insert(url.into(), (asset_id(url), revalidate));
+    }
+
+    fn fail(&self, url: &str) {
+        self.failing.lock().unwrap().insert(url.into());
+    }
+
+    /// The URLs fetched, sorted.
+    fn fetches(&self) -> Vec<String> {
+        let mut fetches = self.fetches.lock().unwrap().clone();
+        fetches.sort();
+        fetches
+    }
+}
+
+fn asset_id(url: &str) -> String {
+    format!("content-icons/{}", url.rsplit('/').next().unwrap())
+}
+
+#[async_trait]
+impl ContentIconCache for FakeIcons {
+    async fn lookup(&self, url: &str) -> CachedContentIcon {
+        match self.present.lock().unwrap().get(url) {
+            Some((asset_id, revalidate)) => CachedContentIcon::Present {
+                asset_id: asset_id.clone(),
+                revalidate: *revalidate,
+            },
+            None => CachedContentIcon::Missing,
+        }
+    }
+
+    async fn fetch(&self, url: &str) -> Result<bool, ContentIconError> {
+        self.fetches.lock().unwrap().push(url.into());
+        if let Some(gate) = &self.gate {
+            gate.acquire().await.unwrap().forget();
+        }
+        if self.failing.lock().unwrap().contains(url) {
+            return Err(ContentIconError::Request("offline".into()));
+        }
+
+        let mut present = self.present.lock().unwrap();
+        if let Some((_, revalidate)) = present.get_mut(url) {
+            *revalidate = false;
+            return Ok(false);
+        }
+        present.insert(url.into(), (asset_id(url), false));
+        Ok(true)
+    }
+
+    async fn remove_unused(&self, _: Duration) -> usize {
+        0
     }
 }
 
@@ -209,13 +290,23 @@ struct Fixture {
     _temp: TempDir,
     mods: std::path::PathBuf,
     use_case: ListContentUseCase,
+    service: Arc<ContentMetadataService>,
     cache: Arc<MemoryMetadataCache>,
+    icons: Arc<FakeIcons>,
     events: mpsc::UnboundedReceiver<Event>,
 }
 
 impl Fixture {
     /// An instance with one mod per `(file, provider, content id)`, the providers registered.
     async fn new(files: &[(&str, &str, &str)], providers: Vec<Arc<FakeProvider>>) -> Self {
+        Self::with_icons(files, providers, FakeIcons::default()).await
+    }
+
+    async fn with_icons(
+        files: &[(&str, &str, &str)],
+        providers: Vec<Arc<FakeProvider>>,
+        icons: FakeIcons,
+    ) -> Self {
         let temp = TempDir::new().unwrap();
         let location_info = Arc::new(LocationInfo::new(
             temp.path().join("settings"),
@@ -253,9 +344,11 @@ impl Fixture {
         }
 
         let cache = Arc::new(MemoryMetadataCache::default());
+        let icons = Arc::new(icons);
         let (sender, events) = mpsc::unbounded_channel();
         let service = Arc::new(ContentMetadataService::new(
             cache.clone(),
+            icons.clone(),
             registry,
             Arc::new(ChannelEvents(sender)),
         ));
@@ -263,8 +356,10 @@ impl Fixture {
         Self {
             _temp: temp,
             mods,
-            use_case: ListContentUseCase::new(pack_storage, location_info, service),
+            use_case: ListContentUseCase::new(pack_storage, location_info, service.clone()),
+            service,
             cache,
+            icons,
             events,
         }
     }
@@ -279,6 +374,15 @@ impl Fixture {
             .await
             .into_iter()
             .map(|(path, file)| (path, file.metadata.map(|m| m.name)))
+            .collect()
+    }
+
+    /// The icon path on each file.
+    async fn icon_paths(&self) -> HashMap<String, Option<String>> {
+        self.list()
+            .await
+            .into_iter()
+            .map(|(path, file)| (path, file.icon_path))
             .collect()
     }
 
@@ -484,4 +588,163 @@ async fn should_leave_a_file_of_no_provider_without_metadata() {
 
     assert_eq!(names.get("mods/manual.jar"), Some(&None));
     assert!(provider.calls().is_empty());
+}
+
+// ── Icons ──
+
+const ICON_X: &str = "https://cdn.example.com/x.webp";
+const ICON_Y: &str = "https://cdn.example.com/y.png";
+
+fn with_icon(mut item: ContentMetadata, url: &str) -> ContentMetadata {
+    item.icon_url = Some(url.into());
+    item
+}
+
+#[tokio::test]
+async fn should_fetch_an_icon_shared_by_many_files_once_and_tell_the_ui_when_it_arrives() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let mut fixture = Fixture::new(
+        &[
+            ("a.jar", "modrinth", "A"),
+            ("b.jar", "modrinth", "B"),
+            ("c.jar", "modrinth", "C"),
+        ],
+        vec![provider.clone()],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("A", "Sodium"), ICON_X), now);
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("B", "Lithium"), ICON_X), now);
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("C", "JEI"), ICON_Y), now);
+
+    let before = fixture.icon_paths().await;
+    let event = fixture.next_event().await;
+
+    assert!(before.values().all(Option::is_none), "{before:?}");
+    assert!(matches!(event.event, InstanceEventType::Synced));
+    assert_eq!(fixture.icons.fetches(), [ICON_X, ICON_Y]);
+
+    let after = fixture.icon_paths().await;
+    assert_eq!(after["mods/a.jar"], Some(asset_id(ICON_X)));
+    assert_eq!(after["mods/b.jar"], Some(asset_id(ICON_X)));
+    assert_eq!(after["mods/c.jar"], Some(asset_id(ICON_Y)));
+    Fixture::settle().await;
+    assert_eq!(fixture.icons.fetches().len(), 2);
+    assert!(provider.calls().is_empty());
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_fetch_the_icons_of_metadata_just_fetched_before_telling_the_ui_once() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![with_icon(metadata("A", "Sodium"), ICON_X)]),
+    ));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    fixture.next_event().await;
+
+    assert_eq!(fixture.icons.fetches(), [ICON_X]);
+    let files = fixture.list().await;
+    let file = files.get("mods/a.jar").unwrap();
+    assert_eq!(file.metadata.as_ref().unwrap().name, "Sodium");
+    assert_eq!(file.icon_path, Some(asset_id(ICON_X)));
+    drop(file);
+    Fixture::settle().await;
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_wait_for_an_icon_already_on_its_way_rather_than_fetch_it_again() {
+    let gate = Arc::new(Semaphore::new(0));
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let mut fixture = Fixture::with_icons(
+        &[("a.jar", "modrinth", "A")],
+        vec![provider],
+        FakeIcons::gated(gate.clone()),
+    )
+    .await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        with_icon(metadata("A", "Sodium"), ICON_X),
+        SystemTime::now(),
+    );
+
+    // The same files listed for another instance while the first fetch waits.
+    let files = fixture.list().await;
+    Fixture::settle().await;
+    fixture.service.attach("other", &files).await;
+    Fixture::settle().await;
+    assert_eq!(fixture.icons.fetches(), [ICON_X]);
+
+    gate.add_permits(1);
+    let mut told: Vec<String> = vec![
+        fixture.next_event().await.instance_id,
+        fixture.next_event().await.instance_id,
+    ];
+    told.sort();
+
+    assert_eq!(told, [INSTANCE_ID, "other"]);
+    assert_eq!(fixture.icons.fetches(), [ICON_X]);
+}
+
+#[tokio::test]
+async fn should_not_fetch_again_soon_an_icon_that_failed() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("A", "Sodium"), ICON_X), now);
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("B", "Lithium"), ICON_Y), now);
+    fixture.icons.fail(ICON_X);
+
+    fixture.list().await;
+    // Y arrived, X did not: an event for what did.
+    fixture.next_event().await;
+    let paths = fixture.icon_paths().await;
+    Fixture::settle().await;
+
+    assert_eq!(paths["mods/a.jar"], None);
+    assert_eq!(paths["mods/b.jar"], Some(asset_id(ICON_Y)));
+    assert_eq!(fixture.icons.fetches(), [ICON_X, ICON_Y]);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_show_a_cached_icon_while_revalidating_it_and_stay_quiet_when_unchanged() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider]).await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        with_icon(metadata("A", "Sodium"), ICON_Y),
+        SystemTime::now(),
+    );
+    fixture.icons.seed(ICON_Y, true);
+
+    let paths = fixture.icon_paths().await;
+    Fixture::settle().await;
+
+    assert_eq!(paths["mods/a.jar"], Some(asset_id(ICON_Y)));
+    assert_eq!(fixture.icons.fetches(), [ICON_Y]);
+    fixture.assert_no_event();
+
+    fixture.icon_paths().await;
+    Fixture::settle().await;
+    assert_eq!(fixture.icons.fetches().len(), 1);
 }

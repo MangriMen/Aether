@@ -11,7 +11,7 @@ use aether_core::features::events::infra::InMemoryProgressBarStorage;
 use aether_core::features::events::{EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
-    EventEmittingInstanceStorage, FsContentFileService, FsInstanceFileService,
+    EventEmittingInstanceStorage, FsContentFileService, FsContentIconCache, FsInstanceFileService,
     InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
     SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache,
 };
@@ -187,6 +187,21 @@ pub async fn build_container(
         Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
             pool.clone(),
         )));
+    let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> = Arc::new(
+        FsContentIconCache::new(http_client.clone(), &location_info.assets_cache_dir()),
+    );
+    // In the background, as it reads the whole icon folder: the icons no list showed lately.
+    tokio::spawn({
+        let content_icon_cache = content_icon_cache.clone();
+        async move {
+            let removed = content_icon_cache
+                .remove_unused(aether_core::features::instance::CONTENT_ICON_MAX_UNUSED)
+                .await;
+            if removed > 0 {
+                log::debug!("Removed {removed} unused content icons");
+            }
+        }
+    });
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
@@ -315,6 +330,7 @@ pub async fn build_container(
             pack_storage,
             content_file_service,
             content_metadata_cache,
+            content_icon_cache,
             instance_file_service,
             java_storage,
             java_installation_service,

@@ -1,5 +1,6 @@
 //! What an instance's content list shows a file by — its project's name, description, icon —
-//! taken from [`ContentMetadataCache`] and refreshed from the providers behind the list's back.
+//! taken from [`ContentMetadataCache`] and [`ContentIconCache`], and refreshed from the providers
+//! and the icons' servers behind the list's back.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -8,13 +9,17 @@ use std::{
 };
 
 use dashmap::DashMap;
+use futures::{
+    FutureExt, StreamExt,
+    future::{BoxFuture, Shared},
+};
 
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
         instance::{
-            ContentFile, ContentMetadata, ContentMetadataCache, ContentProvider, InstanceError,
-            ProviderId,
+            CachedContentIcon, ContentFile, ContentIconCache, ContentMetadata,
+            ContentMetadataCache, ContentProvider, InstanceError, ProviderId,
         },
     },
     shared::capability::domain::CapabilityRegistry,
@@ -23,17 +28,29 @@ use crate::{
 /// How long an id its provider did not know is left alone before it is asked about again.
 const UNKNOWN_CONTENT_RETRY_AFTER: Duration = Duration::from_mins(30);
 
-/// Puts the cached [`ContentMetadata`] of their projects on an instance's content files, and
-/// asks the providers for what is missing or stale without making the list wait.
+/// How long an icon that failed to arrive is left alone before it is fetched again, so the
+/// lists opened meanwhile do not ask for it each time.
+const ICON_RETRY_AFTER: Duration = Duration::from_mins(10);
+
+/// How many icons one refresh fetches at once.
+const ICON_FETCH_CONCURRENCY: usize = 4;
+
+/// The fetch of one icon, shared by every refresh that wants it: whether a new file arrived.
+type IconFetch = Shared<BoxFuture<'static, bool>>;
+
+/// Puts the cached [`ContentMetadata`] of their projects, and the cached icons of those, on an
+/// instance's content files, and fetches what is missing or stale without making the list wait.
 ///
 /// One per process: it remembers which instances are being refreshed, which providers cannot
-/// describe their content, and which ids their provider did not know.
+/// describe their content, which ids their provider did not know, and which icons are on their
+/// way or failed to arrive.
 pub struct ContentMetadataService {
     inner: Arc<Inner>,
 }
 
 struct Inner {
     cache: Arc<dyn ContentMetadataCache>,
+    icons: Arc<dyn ContentIconCache>,
     providers: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
     event_emitter: SharedEventEmitter,
     /// Instances with a refresh running: a list opened meanwhile starts no second one.
@@ -44,6 +61,11 @@ struct Inner {
     /// Ids their provider left out of its answer, with when: nothing is cached for them, and
     /// they are not asked about again before [`UNKNOWN_CONTENT_RETRY_AFTER`].
     unknown: Mutex<HashMap<(ProviderId, String), Instant>>,
+    /// Icons being fetched, by URL: a refresh that wants one already on its way waits for that
+    /// fetch rather than starting another.
+    icon_fetches: Mutex<HashMap<String, IconFetch>>,
+    /// Icons that failed to arrive, with when: not fetched again before [`ICON_RETRY_AFTER`].
+    icon_failures: Mutex<HashMap<String, Instant>>,
 }
 
 /// The provider and the provider's id of the project a file was installed from: the content id
@@ -61,27 +83,33 @@ fn content_key(file: &ContentFile) -> Option<(&ProviderId, &str)> {
 impl ContentMetadataService {
     pub fn new(
         cache: Arc<dyn ContentMetadataCache>,
+        icons: Arc<dyn ContentIconCache>,
         providers: Arc<dyn CapabilityRegistry<Arc<dyn ContentProvider>>>,
         event_emitter: SharedEventEmitter,
     ) -> Self {
         Self {
             inner: Arc::new(Inner {
                 cache,
+                icons,
                 providers,
                 event_emitter,
                 refreshing: Mutex::new(HashSet::new()),
                 unsupported: Mutex::new(HashSet::new()),
                 unknown: Mutex::new(HashMap::new()),
+                icon_fetches: Mutex::new(HashMap::new()),
+                icon_failures: Mutex::new(HashMap::new()),
             }),
         }
     }
 
     /// Set each file's [`ContentFile::metadata`] to what the cache has for it, fresh or stale,
-    /// and start refreshing in the background what is missing or stale.
+    /// and its [`ContentFile::icon_path`] to the cached icon of that metadata, if its file is
+    /// there. Then start refreshing in the background what is missing or stale: the metadata
+    /// first, then the icons — those of the metadata just fetched too.
     ///
-    /// Reads only the cache. Once a refresh has cached anything, an
+    /// Reads only the caches. Once a refresh has brought anything, one
     /// [`InstanceEventType::Synced`] event of the instance tells the UI to list it again; a
-    /// refresh that fails changes nothing and keeps the stale items.
+    /// refresh that fails changes nothing and keeps the stale items and the icons there are.
     pub async fn attach(&self, instance_id: &str, files: &DashMap<String, ContentFile>) {
         let mut wanted: HashMap<ProviderId, HashSet<String>> = HashMap::new();
         for file in files {
@@ -123,24 +151,51 @@ impl ContentMetadataService {
             file.metadata = metadata;
         }
 
-        if !due.is_empty() {
-            self.spawn_refresh(instance_id, due);
+        let icon_urls: HashSet<String> = files
+            .iter()
+            .filter_map(|file| file.metadata.as_ref()?.icon_url.clone())
+            .collect();
+        let icons = self.inner.lookup_icons(icon_urls).await;
+        for mut file in files.iter_mut() {
+            let icon_path = file
+                .metadata
+                .as_ref()
+                .and_then(|metadata| metadata.icon_url.as_ref())
+                .and_then(|url| match icons.get(url)? {
+                    CachedContentIcon::Present { asset_id, .. } => Some(asset_id.clone()),
+                    CachedContentIcon::Missing => None,
+                });
+            file.icon_path = icon_path;
+        }
+        let due_icons = self.inner.due_icons(icons);
+
+        if !due.is_empty() || !due_icons.is_empty() {
+            self.spawn_refresh(instance_id, due, due_icons);
         }
     }
 
-    fn spawn_refresh(&self, instance_id: &str, due: HashMap<ProviderId, Vec<String>>) {
+    fn spawn_refresh(
+        &self,
+        instance_id: &str,
+        due: HashMap<ProviderId, Vec<String>>,
+        mut due_icons: HashSet<String>,
+    ) {
         let Some(guard) = RefreshGuard::acquire(&self.inner, instance_id) else {
             return;
         };
 
         tokio::spawn(async move {
-            let updated = guard.inner.refresh(due).await;
+            let (updated, icon_urls) = guard.inner.refresh(due).await;
+            let icons = guard.inner.lookup_icons(icon_urls).await;
+            due_icons.extend(guard.inner.due_icons(icons));
+            let icons_arrived = guard.inner.fetch_icons(due_icons).await;
+
             // Released before the event: the list it brings may need a refresh of its own.
             let inner = guard.inner.clone();
             let instance_id = guard.instance_id.clone();
             drop(guard);
 
-            if updated {
+            if updated || icons_arrived {
                 inner
                     .event_emitter
                     .emit_safe(InstanceEvent {
@@ -211,18 +266,32 @@ impl Inner {
         );
     }
 
-    /// Ask each provider about its due ids, all providers at once. Whether anything was cached.
-    async fn refresh(&self, due: HashMap<ProviderId, Vec<String>>) -> bool {
+    /// Ask each provider about its due ids, all providers at once. Whether anything was cached,
+    /// and the icon URLs of what was.
+    async fn refresh(&self, due: HashMap<ProviderId, Vec<String>>) -> (bool, HashSet<String>) {
         let refreshed = futures::future::join_all(
             due.iter()
                 .map(|(provider_id, content_ids)| self.refresh_of(provider_id, content_ids)),
         )
         .await;
 
-        refreshed.into_iter().any(|updated| updated)
+        let updated = refreshed.iter().any(Option::is_some);
+        let icon_urls = refreshed
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|(_, item)| item.icon_url)
+            .collect();
+        (updated, icon_urls)
     }
 
-    async fn refresh_of(&self, provider_id: &ProviderId, content_ids: &[String]) -> bool {
+    /// The items of `content_ids` cached, paired with the ids they were cached under; `None`
+    /// when nothing was.
+    async fn refresh_of(
+        &self,
+        provider_id: &ProviderId,
+        content_ids: &[String],
+    ) -> Option<Vec<(String, ContentMetadata)>> {
         let Ok(entry) = self
             .providers
             .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
@@ -230,7 +299,7 @@ impl Inner {
         else {
             // Its plugin is off or gone: the file is shown by what it has.
             tracing::debug!("No content provider {provider_id} to describe its content");
-            return false;
+            return None;
         };
 
         match entry.capability.get_contents_metadata(content_ids).await {
@@ -238,10 +307,10 @@ impl Inner {
                 let (keyed, unknown) = key_by_asked(content_ids, items);
                 self.remember_unknown(provider_id, unknown);
                 if keyed.is_empty() {
-                    return false;
+                    return None;
                 }
                 self.cache.put_keyed(provider_id, &keyed).await;
-                true
+                Some(keyed)
             }
             Err(InstanceError::UnsupportedOperation { .. }) => {
                 tracing::debug!("Content provider {provider_id} does not describe its content");
@@ -249,13 +318,99 @@ impl Inner {
                     .lock()
                     .unwrap_or_else(PoisonError::into_inner)
                     .insert(provider_id.clone());
-                false
+                None
             }
             Err(err) => {
                 tracing::warn!("Could not refresh content metadata from {provider_id}: {err}");
-                false
+                None
             }
         }
+    }
+
+    async fn lookup_icons(&self, urls: HashSet<String>) -> HashMap<String, CachedContentIcon> {
+        futures::future::join_all(urls.into_iter().map(|url| async move {
+            let icon = self.icons.lookup(&url).await;
+            (url, icon)
+        }))
+        .await
+        .into_iter()
+        .collect()
+    }
+
+    /// Of `icons`, the URLs to fetch: missing or due to be revalidated, and not failed lately.
+    fn due_icons(&self, icons: HashMap<String, CachedContentIcon>) -> HashSet<String> {
+        let failures = self
+            .icon_failures
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        icons
+            .into_iter()
+            .filter(|(_, icon)| match icon {
+                CachedContentIcon::Missing => true,
+                CachedContentIcon::Present { revalidate, .. } => *revalidate,
+            })
+            .map(|(url, _)| url)
+            .filter(|url| {
+                failures
+                    .get(url)
+                    .is_none_or(|at| at.elapsed() >= ICON_RETRY_AFTER)
+            })
+            .collect()
+    }
+
+    /// Fetch the icons of `urls`, [`ICON_FETCH_CONCURRENCY`] at a time. Whether any new one
+    /// arrived.
+    async fn fetch_icons(self: &Arc<Self>, urls: HashSet<String>) -> bool {
+        futures::stream::iter(urls)
+            .map(|url| self.fetch_icon(url))
+            .buffer_unordered(ICON_FETCH_CONCURRENCY)
+            .fold(false, |arrived, new| async move { arrived || new })
+            .await
+    }
+
+    /// The fetch of the icon of `url`: the one on its way, or a new one. A failure is logged
+    /// and remembered, and is no new icon.
+    fn fetch_icon(self: &Arc<Self>, url: String) -> IconFetch {
+        let mut fetches = self
+            .icon_fetches
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some(fetch) = fetches.get(&url) {
+            return fetch.clone();
+        }
+
+        let inner = self.clone();
+        let key = url.clone();
+        // Not polled before it is in the map, so its removal at the end cannot come first.
+        let fetch = async move {
+            let arrived = match inner.icons.fetch(&url).await {
+                Ok(arrived) => arrived,
+                Err(err) => {
+                    tracing::debug!("Could not fetch the content icon {url}: {err}");
+                    inner.remember_icon_failure(&url);
+                    false
+                }
+            };
+            inner
+                .icon_fetches
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .remove(&url);
+            arrived
+        }
+        .boxed()
+        .shared();
+        fetches.insert(key, fetch.clone());
+        fetch
+    }
+
+    fn remember_icon_failure(&self, url: &str) {
+        let mut failures = self
+            .icon_failures
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        failures.retain(|_, at| at.elapsed() < ICON_RETRY_AFTER);
+        failures.insert(url.to_owned(), Instant::now());
     }
 }
 

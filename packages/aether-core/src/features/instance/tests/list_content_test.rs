@@ -9,8 +9,9 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError},
         instance::{
-            CachedContentMetadata, ContentMetadata, ContentMetadataCache, ContentMetadataService,
-            ContentProvider, ListContentUseCase, ProviderId, infra::SqlitePackStorage,
+            CachedContentIcon, CachedContentMetadata, ContentIconCache, ContentIconError,
+            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ListContentUseCase, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -30,6 +31,23 @@ impl ContentMetadataCache for NoCache {
     }
 
     async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) {}
+}
+
+struct NoIcons;
+
+#[async_trait]
+impl ContentIconCache for NoIcons {
+    async fn lookup(&self, _: &str) -> CachedContentIcon {
+        CachedContentIcon::Missing
+    }
+
+    async fn fetch(&self, _: &str) -> Result<bool, ContentIconError> {
+        Err(ContentIconError::NotAnImage)
+    }
+
+    async fn remove_unused(&self, _: std::time::Duration) -> usize {
+        0
+    }
 }
 
 struct NoEvents;
@@ -58,6 +76,7 @@ async fn should_list_the_content_there_is_when_some_content_folders_are_missing(
         location_info,
         Arc::new(ContentMetadataService::new(
             Arc::new(NoCache),
+            Arc::new(NoIcons),
             Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
             Arc::new(NoEvents),
         )),

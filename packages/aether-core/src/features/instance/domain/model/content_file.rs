@@ -20,6 +20,10 @@ pub struct ContentFile {
     /// `update[update_provider_id].content_id`. `None` — nothing cached yet, or the file is of
     /// no provider.
     pub metadata: Option<ContentMetadata>,
+    /// The local copy of `metadata`'s icon, as an id of the asset store: the file's path
+    /// relative to the store, `/`-separated. Only when the file is there: `None` while the icon
+    /// has not arrived, or there is none.
+    pub icon_path: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +58,7 @@ impl ContentFile {
             update_provider_id: pack_file.update_provider_id,
             update: pack_file.update,
             metadata: None,
+            icon_path: None,
         }
     }
 }
