@@ -6,7 +6,7 @@ use std::{
 
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt, stream};
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::{
     features::{
@@ -70,6 +70,26 @@ where
         .await
         .map_err(InstanceError::ContentDownloadError)?;
     Ok(batches.into_iter().flatten().collect())
+}
+
+/// Who authors projects: the name of an organization by its id, the username of a team's owner
+/// by the team's id.
+struct Authors {
+    organization_names: HashMap<String, String>,
+    owners: HashMap<String, String>,
+}
+
+impl Authors {
+    /// The organization's name if the project has an organization, else the team's owner; none
+    /// when Modrinth does not list it.
+    fn of(&self, organization: Option<&str>, team: Option<&str>) -> Option<&str> {
+        match (organization, team) {
+            (Some(organization), _) => self.organization_names.get(organization),
+            (None, Some(team)) => self.owners.get(team),
+            (None, None) => None,
+        }
+        .map(String::as_str)
+    }
 }
 
 pub struct ModrinthContentProvider<RC> {
@@ -323,6 +343,32 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         Ok(path)
     }
 
+    /// The names of the organizations and the owners of the teams, by id. Any request that
+    /// fails fails the whole call.
+    async fn authors(
+        &self,
+        organization_ids: &[String],
+        team_ids: &[String],
+    ) -> Result<Authors, InstanceError> {
+        let (organizations, teams) = futures::try_join!(
+            fetch_batched(organization_ids, |batch| self.api.get_organizations(batch)),
+            fetch_batched(team_ids, |batch| self.api.get_teams(batch)),
+        )?;
+
+        let mut owners: HashMap<String, String> = HashMap::new();
+        for member in teams.into_iter().flatten().filter(|member| member.is_owner) {
+            owners.entry(member.team_id).or_insert(member.user.username);
+        }
+
+        Ok(Authors {
+            organization_names: organizations
+                .into_iter()
+                .map(|organization| (organization.id, organization.name))
+                .collect(),
+            owners,
+        })
+    }
+
     /// Clear the cache of archives unused for long, never `current`.
     async fn prune_mrpack_cache(&self, current: &Path) {
         if let Some(dir) = current.parent() {
@@ -365,9 +411,16 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         };
 
         let resolved = Self::resolved_file(&version)?;
+        let metadata = self.project_metadata(project).await;
         let entry = InstallFileEntry {
             size: resolved.size,
             name: resolved.name,
+            metadata,
+            version_metadata: Some(ContentVersionMetadata {
+                version_id: version.id.clone(),
+                version_number: version.version_number.clone(),
+                name: Some(version.name.clone()).filter(|name| !name.is_empty()),
+            }),
             ..InstallFileEntry::new(
                 ContentSource::Direct {
                     url: resolved.url,
@@ -391,6 +444,42 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 .into_install_target(|| unreachable!("a new instance is refused above")),
             files: vec![entry],
             overrides: Vec::new(),
+        })
+    }
+
+    /// What the project says about itself, for the cache, named as `get_contents_metadata`
+    /// names it. None when its author cannot be looked up: the install never fails on metadata,
+    /// and a project cached without author would stay so for days.
+    async fn project_metadata(&self, project: &ProjectResponse) -> Option<ContentMetadata> {
+        // An organization that is not an id counts as none.
+        let organization = project
+            .organization
+            .as_ref()
+            .and_then(|organization| organization.as_str());
+        let (organization_ids, team_ids) = match organization {
+            Some(organization) => (vec![organization.to_owned()], Vec::new()),
+            None => (Vec::new(), vec![project.team.clone()]),
+        };
+        let authors = self
+            .authors(&organization_ids, &team_ids)
+            .await
+            .inspect_err(|err| {
+                debug!(
+                    "Author of Modrinth project {} is unknown: {err}",
+                    project.id
+                );
+            })
+            .ok()?;
+
+        Some(ContentMetadata {
+            content_id: project.id.clone(),
+            slug: project.slug.clone(),
+            name: project.title.clone(),
+            description: Some(project.description.clone()).filter(|text| !text.is_empty()),
+            author: authors
+                .of(organization, Some(&project.team))
+                .map(str::to_owned),
+            icon_url: project.icon_url.clone().filter(|url| !url.is_empty()),
         })
     }
 
@@ -610,9 +699,9 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
     ///
     /// A request that fails fails the whole call: a partial answer would read as projects
     /// Modrinth does not know, or as projects with no author, and be cached as such for days;
-    /// failed, the call is simply made again on the next list. A team or organization Modrinth
-    /// does not list leaves its projects with no author. A project asked both by its id and its
-    /// slug is listed once.
+    /// failed, the caller holds the lookup back for a few minutes (`LOOKUP_RETRY_AFTER`) before
+    /// asking again. A team or organization Modrinth does not list leaves its projects with no
+    /// author. A project asked both by its id and its slug is listed once.
     async fn get_contents_metadata(
         &self,
         content_ids: &[String],
@@ -637,33 +726,15 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 .filter(|project| project.organization.is_none())
                 .filter_map(|project| project.team.clone()),
         );
-        let (organizations, teams) = futures::try_join!(
-            fetch_batched(&organization_ids, |batch| self.api.get_organizations(batch)),
-            fetch_batched(&team_ids, |batch| self.api.get_teams(batch)),
-        )?;
-
-        let organization_names: HashMap<String, String> = organizations
-            .into_iter()
-            .map(|organization| (organization.id, organization.name))
-            .collect();
-        let mut owners: HashMap<String, String> = HashMap::new();
-        for member in teams.into_iter().flatten().filter(|member| member.is_owner) {
-            owners.entry(member.team_id).or_insert(member.user.username);
-        }
+        let authors = self.authors(&organization_ids, &team_ids).await?;
 
         Ok(projects
             .into_iter()
-            .map(|project| {
-                let author = match (&project.organization, &project.team) {
-                    (Some(organization), _) => organization_names.get(organization),
-                    (None, Some(team)) => owners.get(team),
-                    (None, None) => None,
-                }
-                .cloned();
-                ContentMetadata {
-                    author,
-                    ..ContentMetadata::from(project)
-                }
+            .map(|project| ContentMetadata {
+                author: authors
+                    .of(project.organization.as_deref(), project.team.as_deref())
+                    .map(str::to_owned),
+                ..ContentMetadata::from(project)
             })
             .collect())
     }

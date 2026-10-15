@@ -718,6 +718,7 @@ impl ContentProviderPort for AetherContainer {
             self.storage().instance_storage.clone(),
             self.install_plan_executor(),
             self.instance_locks.clone(),
+            self.storage().content_metadata_cache.clone(),
         ))
     }
     fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort> {

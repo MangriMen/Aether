@@ -70,9 +70,19 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
 struct MemoryMetadataCache {
     items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
     versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
+    /// When set, every write fails and keeps nothing.
+    read_only: Mutex<bool>,
 }
 
 impl MemoryMetadataCache {
+    fn fail_writes(&self) {
+        *self.read_only.lock().unwrap() = true;
+    }
+
+    fn is_read_only(&self) -> bool {
+        *self.read_only.lock().unwrap()
+    }
+
     fn seed_version(
         &self,
         provider_id: &ProviderId,
@@ -116,7 +126,14 @@ impl ContentMetadataCache for MemoryMetadataCache {
             .collect()
     }
 
-    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
+    async fn put_keyed(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+    ) -> bool {
+        if self.is_read_only() {
+            return false;
+        }
         let mut cached = self.items.lock().unwrap();
         for (content_id, item) in items {
             cached.insert(
@@ -127,6 +144,7 @@ impl ContentMetadataCache for MemoryMetadataCache {
                 },
             );
         }
+        true
     }
 
     async fn get_versions(
@@ -144,7 +162,14 @@ impl ContentMetadataCache for MemoryMetadataCache {
             .collect()
     }
 
-    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]) {
+    async fn put_versions(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+    ) -> bool {
+        if self.is_read_only() {
+            return false;
+        }
         let mut cached = self.versions.lock().unwrap();
         for item in items {
             cached.insert(
@@ -155,6 +180,7 @@ impl ContentMetadataCache for MemoryMetadataCache {
                 },
             );
         }
+        true
     }
 }
 
@@ -164,6 +190,8 @@ impl ContentMetadataCache for MemoryMetadataCache {
 struct FakeIcons {
     /// URL to asset id and whether it is due to be revalidated.
     present: Mutex<HashMap<String, (String, bool)>>,
+    /// The revision of each icon that has one.
+    revisions: Mutex<HashMap<String, u64>>,
     failing: Mutex<HashSet<String>>,
     /// Each fetch's URL, in the order asked.
     fetches: Mutex<Vec<String>>,
@@ -184,6 +212,10 @@ impl FakeIcons {
             .lock()
             .unwrap()
             .insert(url.into(), (asset_id(url), revalidate));
+    }
+
+    fn set_revision(&self, url: &str, revision: u64) {
+        self.revisions.lock().unwrap().insert(url.into(), revision);
     }
 
     fn fail(&self, url: &str) {
@@ -209,7 +241,7 @@ impl ContentIconCache for FakeIcons {
             Some((asset_id, revalidate)) => CachedContentIcon::Present {
                 asset_id: asset_id.clone(),
                 revalidate: *revalidate,
-                revision: None,
+                revision: self.revisions.lock().unwrap().get(url).copied(),
             },
             None => CachedContentIcon::Missing,
         }
@@ -788,6 +820,25 @@ async fn should_leave_a_file_without_metadata_when_it_has_no_provider() {
     assert!(provider.calls().is_empty());
 }
 
+#[tokio::test]
+async fn should_not_ask_again_soon_when_what_was_fetched_could_not_be_cached() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![metadata("A", "Sodium")]))
+            .with_versions(Answer::Items(vec![version("A", "1.0")])),
+    );
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    fixture.cache.fail_writes();
+
+    fixture.list().await;
+    fixture.next_event().await;
+
+    assert!(!fixture.versions_pending().await["mods/a.jar"]);
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(provider.version_calls().len(), 1);
+    fixture.assert_no_event();
+}
+
 // ── Icons ──
 
 const ICON_X: &str = "https://cdn.example.com/x.webp";
@@ -796,6 +847,35 @@ const ICON_Y: &str = "https://cdn.example.com/y.png";
 fn with_icon(mut item: ContentMetadata, url: &str) -> ContentMetadata {
     item.icon_url = Some(url.into());
     item
+}
+
+#[tokio::test]
+async fn should_put_the_revision_on_the_icon_path_when_the_icon_has_one() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("A", "Sodium"), ICON_X), now);
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("B", "Lithium"), ICON_Y), now);
+    fixture.icons.seed(ICON_X, false);
+    fixture.icons.seed(ICON_Y, false);
+    fixture.icons.set_revision(ICON_Y, 42);
+
+    let paths = fixture.icon_paths().await;
+
+    assert_eq!(paths["mods/a.jar"], Some(asset_id(ICON_X)));
+    assert_eq!(
+        paths["mods/b.jar"],
+        Some(format!("{}?v=42", asset_id(ICON_Y)))
+    );
 }
 
 #[tokio::test]

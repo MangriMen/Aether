@@ -14,7 +14,9 @@ use std::{fmt, path::PathBuf};
 
 use crate::{
     features::{
-        instance::{ContentType, Instance, NewInstance, ProviderId},
+        instance::{
+            ContentMetadata, ContentType, ContentVersionMetadata, Instance, NewInstance, ProviderId,
+        },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
     shared::hash::FileHash,
@@ -114,10 +116,17 @@ pub struct InstallFileEntry {
     /// Shown in the instance's content list instead of the file name. For a ref without one,
     /// the name its resolution gives is taken.
     pub name: Option<String>,
+    /// What the provider says about the project of the [`ContentSource::Direct`] identity, when
+    /// it already knows it: the core caches it at install time, so the content list needs no
+    /// extra round trip for a fresh install. `None` otherwise; never crosses the plugin boundary.
+    pub metadata: Option<ContentMetadata>,
+    /// The same for the version of that identity.
+    pub version_metadata: Option<ContentVersionMetadata>,
 }
 
 impl InstallFileEntry {
-    /// A required entry for both sides, of unknown size and without a name, its path normalised.
+    /// A required entry for both sides, of unknown size and without a name or metadata, its path
+    /// normalised.
     pub fn new(source: ContentSource, relative_path: &str, content_type: ContentType) -> Self {
         Self {
             source,
@@ -127,6 +136,8 @@ impl InstallFileEntry {
             side: FileSide::default(),
             size: None,
             name: None,
+            metadata: None,
+            version_metadata: None,
         }
     }
 

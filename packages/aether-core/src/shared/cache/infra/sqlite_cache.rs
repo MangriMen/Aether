@@ -26,21 +26,21 @@ fn expires_at(ttl: Duration) -> DateTime<Utc> {
 }
 
 /// Put `value` under `key` until `expires_at`, replacing what was there. A value that does not
-/// serialize, or a failed write, is dropped.
+/// serialize, or a failed write, is dropped. Whether it was written.
 async fn upsert<'e, T: Serialize>(
     executor: impl Executor<'e, Database = Sqlite>,
     key: &CacheKey<T>,
     value: &T,
     expires_at: DateTime<Utc>,
-) {
+) -> bool {
     let Ok(value_json) = serde_json::to_string(value) else {
-        return;
+        return false;
     };
 
     let namespace = key.namespace();
     let id = key.id().as_ref();
 
-    let _ = sqlx::query!(
+    sqlx::query!(
         "INSERT INTO universal_cache (namespace, key, value, expires_at)
              VALUES (?, ?, ?, ?)
              ON CONFLICT(namespace, key) DO UPDATE SET
@@ -52,7 +52,8 @@ async fn upsert<'e, T: Serialize>(
         expires_at
     )
     .execute(executor)
-    .await;
+    .await
+    .is_ok()
 }
 
 #[async_trait]
@@ -132,19 +133,20 @@ impl Cache for SqliteCache {
         &self,
         entries: &[(CacheKey<T>, T)],
         ttl: Duration,
-    ) {
+    ) -> bool {
         if entries.is_empty() {
-            return;
+            return true;
         }
         let expires_at = expires_at(ttl);
 
         let Ok(mut tx) = self.pool.begin().await else {
-            return;
+            return false;
         };
+        let mut written = true;
         for (key, value) in entries {
-            upsert(&mut *tx, key, value, expires_at).await;
+            written &= upsert(&mut *tx, key, value, expires_at).await;
         }
-        let _ = tx.commit().await;
+        tx.commit().await.is_ok() && written
     }
 
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool {

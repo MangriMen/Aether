@@ -168,7 +168,8 @@ impl Fetched {
         }
     }
 
-    async fn store(&self, cache: &dyn ContentMetadataCache, provider_id: &ProviderId) {
+    /// Whether it was written.
+    async fn store(&self, cache: &dyn ContentMetadataCache, provider_id: &ProviderId) -> bool {
         match self {
             Self::Projects(items) => cache.put_keyed(provider_id, items).await,
             Self::Versions(items) => cache.put_versions(provider_id, items).await,
@@ -550,7 +551,11 @@ impl Inner {
                 if fetched.is_empty() {
                     return None;
                 }
-                fetched.store(&*self.cache, provider_id).await;
+                if !fetched.store(&*self.cache, provider_id).await {
+                    // Still due once listed again: held back, or each list would fetch it anew.
+                    tracing::warn!("Could not cache {} from {provider_id}", lookup.what());
+                    self.remember_failure(provider_id, lookup);
+                }
                 Some(fetched)
             }
             Err(err) => {

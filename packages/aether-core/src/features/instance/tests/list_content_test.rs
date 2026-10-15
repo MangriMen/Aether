@@ -31,7 +31,9 @@ impl ContentMetadataCache for NoCache {
         HashMap::new()
     }
 
-    async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) {}
+    async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) -> bool {
+        true
+    }
 
     async fn get_versions(
         &self,
@@ -41,7 +43,9 @@ impl ContentMetadataCache for NoCache {
         HashMap::new()
     }
 
-    async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) {}
+    async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
 }
 
 struct NoIcons;

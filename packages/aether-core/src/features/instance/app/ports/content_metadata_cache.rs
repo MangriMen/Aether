@@ -59,7 +59,8 @@ impl CachedContentVersionMetadata {
 ///
 /// Stale items are kept and returned (see [`CachedContentMetadata::is_stale`]): a failed
 /// refresh leaves them as they were. Best effort, as any cache: a failure to read is a miss,
-/// a failure to write is dropped.
+/// a failure to write is dropped — and told, so the caller does not fetch the same items again
+/// at once, only to fail to keep them again.
 #[async_trait]
 pub trait ContentMetadataCache: Send + Sync {
     /// The cached items of `content_ids` found for `provider_id`, fresh and stale alike, keyed
@@ -71,20 +72,24 @@ pub trait ContentMetadataCache: Send + Sync {
     ) -> HashMap<String, CachedContentMetadata>;
 
     /// Cache `items` of `provider_id` as fetched just now, each under the content id it is
-    /// paired with, replacing what was there.
+    /// paired with, replacing what was there. Whether they were written.
     ///
     /// The id need not be the item's own [`ContentMetadata::content_id`]: an item the provider
     /// found by another id (a slug) is put under that one too, so asking by it again hits.
-    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]);
+    async fn put_keyed(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+    ) -> bool;
 
     /// Cache `items` of `provider_id` as fetched just now, each under its own
-    /// [`ContentMetadata::content_id`], replacing what was there.
-    async fn put_many(&self, provider_id: &ProviderId, items: &[ContentMetadata]) {
+    /// [`ContentMetadata::content_id`], replacing what was there. Whether they were written.
+    async fn put_many(&self, provider_id: &ProviderId, items: &[ContentMetadata]) -> bool {
         let keyed: Vec<_> = items
             .iter()
             .map(|item| (item.content_id.clone(), item.clone()))
             .collect();
-        self.put_keyed(provider_id, &keyed).await;
+        self.put_keyed(provider_id, &keyed).await
     }
 
     /// The cached versions of `version_ids` found for `provider_id`, fresh and stale alike,
@@ -96,8 +101,13 @@ pub trait ContentMetadataCache: Send + Sync {
     ) -> HashMap<String, CachedContentVersionMetadata>;
 
     /// Cache `items` of `provider_id` as fetched just now, each under its own
-    /// [`ContentVersionMetadata::version_id`], replacing what was there.
-    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]);
+    /// [`ContentVersionMetadata::version_id`], replacing what was there. Whether they were
+    /// written.
+    async fn put_versions(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+    ) -> bool;
 }
 
 #[cfg(test)]

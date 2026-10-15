@@ -160,7 +160,8 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     }
 
     /// Put `records` of `provider_id` in `namespace`, each under the id it is paired with, as
-    /// fetched at `fetched_at`, the rows to live `row_ttl`; replacing what was there.
+    /// fetched at `fetched_at`, the rows to live `row_ttl`; replacing what was there. Whether
+    /// they were written.
     async fn put_records<R>(
         &self,
         namespace: &'static str,
@@ -168,7 +169,8 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         records: Vec<(&str, R)>,
         fetched_at: SystemTime,
-    ) where
+    ) -> bool
+    where
         R: Serialize + Send + Sync,
     {
         let entries: Vec<_> = records
@@ -181,7 +183,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
                 (key(namespace, provider_id, id), value)
             })
             .collect();
-        self.cache.set_many(&entries, row_ttl).await;
+        self.cache.set_many(&entries, row_ttl).await
     }
 
     async fn put_at(
@@ -189,13 +191,13 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         items: &[(String, ContentMetadata)],
         fetched_at: SystemTime,
-    ) {
+    ) -> bool {
         let records = items
             .iter()
             .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
             .collect();
         self.put_records(NAMESPACE, ROW_TTL, provider_id, records, fetched_at)
-            .await;
+            .await
     }
 
     async fn put_versions_at(
@@ -203,7 +205,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         provider_id: &ProviderId,
         items: &[ContentVersionMetadata],
         fetched_at: SystemTime,
-    ) {
+    ) -> bool {
         let records = items
             .iter()
             .map(|item| {
@@ -218,7 +220,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
             records,
             fetched_at,
         )
-        .await;
+        .await
     }
 }
 
@@ -233,8 +235,12 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
             .await
     }
 
-    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
-        self.put_at(provider_id, items, SystemTime::now()).await;
+    async fn put_keyed(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+    ) -> bool {
+        self.put_at(provider_id, items, SystemTime::now()).await
     }
 
     async fn get_versions(
@@ -250,9 +256,13 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         .await
     }
 
-    async fn put_versions(&self, provider_id: &ProviderId, items: &[ContentVersionMetadata]) {
+    async fn put_versions(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+    ) -> bool {
         self.put_versions_at(provider_id, items, SystemTime::now())
-            .await;
+            .await
     }
 }
 

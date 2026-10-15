@@ -31,16 +31,19 @@ pub trait Cache: Send + Sync {
         futures::future::join_all(keys.iter().map(|key| self.get(key))).await
     }
 
-    /// [`Cache::set`] each value under its key, for `ttl`.
+    /// [`Cache::set`] each value under its key, for `ttl`. Whether they were all written, for
+    /// a caller that would otherwise ask for them again and again.
     ///
-    /// By default one [`Cache::set`] per entry; a store that can write many at once does.
+    /// By default one [`Cache::set`] per entry, which cannot tell, and says `true`; a store
+    /// that can write many at once does, and tells.
     async fn set_many<T: Serialize + Send + Sync>(
         &self,
         entries: &[(CacheKey<T>, T)],
         ttl: Duration,
-    ) {
+    ) -> bool {
         futures::future::join_all(entries.iter().map(|(key, value)| self.set(key, value, ttl)))
             .await;
+        true
     }
 }
 

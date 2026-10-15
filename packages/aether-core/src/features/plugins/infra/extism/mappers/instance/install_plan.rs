@@ -202,6 +202,9 @@ mod tests {
                 side: FileSide::Client,
                 size: Some(42),
                 name: Some("Sodium 0.6.0".into()),
+                // The plugin API has no metadata: none comes from a plugin.
+                metadata: None,
+                version_metadata: None,
             }
         );
     }

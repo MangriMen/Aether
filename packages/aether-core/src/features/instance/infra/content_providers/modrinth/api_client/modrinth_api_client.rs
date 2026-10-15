@@ -84,30 +84,27 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     }
 
     /// The members of the teams of `ids` in one request, one list per team, in no particular
-    /// order. A team Modrinth does not know is left out, and so is a member of a shape not
-    /// expected.
+    /// order. A team Modrinth does not know is left out.
+    ///
+    /// Strict: a member of a shape not expected fails the request, since an owner missing from
+    /// the answer would leave a project without author.
     pub(crate) async fn get_teams(
         &self,
         ids: &[String],
     ) -> Result<Vec<Vec<TeamMemberResponse>>, String> {
         let request = self.prepare_request_at(&self.v3_base_url, "teams", Some(ids_query(ids)?));
-        let teams: Vec<Vec<Lenient<TeamMemberResponse>>> = self.fetch(request).await?;
-        Ok(teams
-            .into_iter()
-            .map(|members| members.into_iter().filter_map(Lenient::parsed).collect())
-            .collect())
+        self.fetch(request).await
     }
 
     /// The organizations of `ids` in one request, in no particular order. An organization
-    /// Modrinth does not know is left out, and so is an entry of a shape not expected.
+    /// Modrinth does not know is left out. Strict as [`Self::get_teams`] is.
     pub(crate) async fn get_organizations(
         &self,
         ids: &[String],
     ) -> Result<Vec<OrganizationResponse>, String> {
         let request =
             self.prepare_request_at(&self.v3_base_url, "organizations", Some(ids_query(ids)?));
-        let entries: Vec<Lenient<OrganizationResponse>> = self.fetch(request).await?;
-        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
+        self.fetch(request).await
     }
 
     /// The versions of `ids` in one request, in no particular order. An id Modrinth does not

@@ -4,6 +4,7 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use async_trait::async_trait;
@@ -12,15 +13,17 @@ use tempfile::TempDir;
 use crate::{
     features::{
         instance::{
-            AtomicInstallParams, BaseContentParams, CapabilityMetadata,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFileUpdateInfo,
-            ContentIdentity, ContentInstallParams, ContentItem, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, InstallContentUseCase, InstallFileEntry,
-            InstallPlan, InstallPlanExecutorPort, InstallTarget, Instance, InstanceBuilder,
-            InstanceError, InstanceInstallStage, InstanceLocks, InstanceStorage,
-            ModpackInstallParams, NewInstance, PackFile, PackInfo, PackStorage, PlanOrigin,
-            ProviderId, ResolveInstallPlanParams, ResolveTarget, infra::SqlitePackStorage,
+            AtomicInstallParams, BaseContentParams, CachedContentMetadata,
+            CachedContentVersionMetadata, CapabilityMetadata, ContentCompatibilityCheckParams,
+            ContentCompatibilityResult, ContentFileUpdateInfo, ContentIdentity,
+            ContentInstallParams, ContentItem, ContentMetadata, ContentMetadataCache,
+            ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+            ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentVersionMetadata, InstallContentUseCase, InstallFileEntry, InstallPlan,
+            InstallPlanExecutorPort, InstallTarget, Instance, InstanceBuilder, InstanceError,
+            InstanceInstallStage, InstanceLocks, InstanceStorage, ModpackInstallParams,
+            NewInstance, PackFile, PackInfo, PackStorage, PlanOrigin, ProviderId,
+            ResolveInstallPlanParams, ResolveTarget, infra::SqlitePackStorage,
         },
         minecraft::ModLoader,
     },
@@ -160,6 +163,84 @@ impl ContentProvider for MockProvider {
     }
 }
 
+/// Keeps what is put in it, in memory.
+#[derive(Default)]
+struct MemoryMetadataCache {
+    items: Mutex<HashMap<(ProviderId, String), ContentMetadata>>,
+    versions: Mutex<HashMap<(ProviderId, String), ContentVersionMetadata>>,
+}
+
+#[async_trait]
+impl ContentMetadataCache for MemoryMetadataCache {
+    async fn get_many(
+        &self,
+        provider_id: &ProviderId,
+        content_ids: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        let items = self.items.lock().unwrap();
+        content_ids
+            .iter()
+            .filter_map(|id| {
+                let metadata = items.get(&(provider_id.clone(), id.clone()))?.clone();
+                let fetched_at = SystemTime::now();
+                Some((
+                    id.clone(),
+                    CachedContentMetadata {
+                        metadata,
+                        fetched_at,
+                    },
+                ))
+            })
+            .collect()
+    }
+
+    async fn put_keyed(
+        &self,
+        provider_id: &ProviderId,
+        items: &[(String, ContentMetadata)],
+    ) -> bool {
+        let mut cached = self.items.lock().unwrap();
+        for (content_id, item) in items {
+            cached.insert((provider_id.clone(), content_id.clone()), item.clone());
+        }
+        true
+    }
+
+    async fn get_versions(
+        &self,
+        provider_id: &ProviderId,
+        version_ids: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        let versions = self.versions.lock().unwrap();
+        version_ids
+            .iter()
+            .filter_map(|id| {
+                let metadata = versions.get(&(provider_id.clone(), id.clone()))?.clone();
+                let fetched_at = SystemTime::now();
+                Some((
+                    id.clone(),
+                    CachedContentVersionMetadata {
+                        metadata,
+                        fetched_at,
+                    },
+                ))
+            })
+            .collect()
+    }
+
+    async fn put_versions(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentVersionMetadata],
+    ) -> bool {
+        let mut cached = self.versions.lock().unwrap();
+        for item in items {
+            cached.insert((provider_id.clone(), item.version_id.clone()), item.clone());
+        }
+        true
+    }
+}
+
 /// Records the origins it was asked to run; "creates" `NEW_INSTANCE_ID` for a new target.
 #[derive(Default)]
 struct RecordingExecutor {
@@ -236,6 +317,7 @@ struct Fixture {
     storage: Arc<MemInstanceStorage>,
     pack_storage: Arc<SqlitePackStorage>,
     locks: Arc<InstanceLocks>,
+    cache: Arc<MemoryMetadataCache>,
     use_case: InstallContentUseCase,
 }
 
@@ -269,12 +351,14 @@ impl Fixture {
         let executor = Arc::new(RecordingExecutor::default());
         let pack_storage = Arc::new(SqlitePackStorage::in_memory().await);
         let locks = Arc::new(InstanceLocks::new());
+        let cache = Arc::new(MemoryMetadataCache::default());
         let use_case = InstallContentUseCase::new(
             pack_storage.clone(),
             registry,
             storage.clone(),
             executor.clone(),
             locks.clone(),
+            cache.clone(),
         );
 
         Self {
@@ -283,6 +367,7 @@ impl Fixture {
             storage,
             pack_storage,
             locks,
+            cache,
             use_case,
         }
     }
@@ -508,6 +593,92 @@ async fn should_keep_the_asked_id_when_the_file_is_of_another_platform() {
         fixture.executor.calls.lock().unwrap()[0].content_id,
         "sodium"
     );
+}
+
+/// What a provider says about the sodium file `planning_file_of` plans.
+fn sodium_metadata(entry: &mut InstallFileEntry) {
+    entry.metadata = Some(ContentMetadata {
+        content_id: "AANobbMI".into(),
+        slug: "sodium".into(),
+        name: "Sodium".into(),
+        description: None,
+        author: Some("jellysquid3".into()),
+        icon_url: None,
+    });
+    entry.version_metadata = Some(ContentVersionMetadata {
+        version_id: "v2".into(),
+        version_number: "0.6.0".into(),
+        name: Some("Sodium 0.6.0".into()),
+    });
+}
+
+/// A file installed with the metadata its provider already had needs no lookup when listed.
+#[tokio::test]
+async fn should_cache_the_metadata_of_a_file_when_the_plan_carries_it() {
+    let mut provider =
+        Arc::into_inner(MockProvider::planning_file_of("modrinth", "AANobbMI")).unwrap();
+    sodium_metadata(&mut provider.files[0]);
+    let provider = Arc::new(provider);
+    let fixture = Fixture::new(&provider).await;
+
+    fixture
+        .use_case
+        .execute(atomic(ContentType::Mod, Some("fabric")))
+        .await
+        .unwrap();
+
+    let ids = ["AANobbMI".to_owned()];
+    let projects = fixture.cache.get_many(&provider_id(), &ids).await;
+    assert_eq!(projects["AANobbMI"].metadata.name, "Sodium");
+    assert_eq!(
+        projects["AANobbMI"].metadata.author.as_deref(),
+        Some("jellysquid3")
+    );
+    let versions = fixture
+        .cache
+        .get_versions(&provider_id(), &["v2".to_owned()])
+        .await;
+    assert_eq!(versions["v2"].metadata.version_number, "0.6.0");
+}
+
+/// The cache is keyed by the provider's own ids: another platform's are not its to describe.
+#[tokio::test]
+async fn should_not_cache_metadata_when_the_file_is_of_another_platform() {
+    let mut provider =
+        Arc::into_inner(MockProvider::planning_file_of("modrinth", "AANobbMI")).unwrap();
+    sodium_metadata(&mut provider.files[0]);
+    provider.metadata.platform = Some("curseforge".into());
+    let provider = Arc::new(provider);
+    let fixture = Fixture::new(&provider).await;
+
+    fixture
+        .use_case
+        .execute(atomic(ContentType::Mod, Some("fabric")))
+        .await
+        .unwrap();
+
+    assert!(fixture.cache.items.lock().unwrap().is_empty());
+    assert!(fixture.cache.versions.lock().unwrap().is_empty());
+}
+
+/// Metadata about some other project or version than the identity's is not cached under it.
+#[tokio::test]
+async fn should_not_cache_metadata_when_it_is_of_another_content_than_the_identity() {
+    let mut provider =
+        Arc::into_inner(MockProvider::planning_file_of("modrinth", "OTHER")).unwrap();
+    sodium_metadata(&mut provider.files[0]);
+    let provider = Arc::new(provider);
+    let fixture = Fixture::new(&provider).await;
+
+    fixture
+        .use_case
+        .execute(atomic(ContentType::Mod, Some("fabric")))
+        .await
+        .unwrap();
+
+    assert!(fixture.cache.items.lock().unwrap().is_empty());
+    // The version is of the identity's version `v2`, whatever the project.
+    assert_eq!(fixture.cache.versions.lock().unwrap().len(), 1);
 }
 
 fn atomic_into(instance_id: &str, content_id: &str) -> ContentInstallParams {
