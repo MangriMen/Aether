@@ -17,6 +17,12 @@ updates:
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # Versions that break type checking (makePersisted / Tooltip typings)
+      - dependency-name: '@solid-primitives/storage'
+        versions: ['4.4.0']
+      - dependency-name: '@kobalte/core'
+        versions: ['0.13.14']
 
   - package-ecosystem: github-actions
     directory: /
