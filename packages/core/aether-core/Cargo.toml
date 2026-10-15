@@ -34,8 +34,8 @@ url = "2.5.8"
 bytes = "1.12.1"
 # Overrides are read out of a plugin's directory one component at a time, never through a
 # symlink, so a directory swapped for one after listing cannot lead out of it.
-cap-fs-ext = "3.4.5"
-cap-std = "3.4.5"
+cap-fs-ext = "4.0.3"
+cap-std = "4.0.3"
 dunce = "1.0.5"
 notify = "8.2.0"
 notify-debouncer-mini = "0.7.0"
