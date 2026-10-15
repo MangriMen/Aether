@@ -8,6 +8,11 @@ import { Show } from 'solid-js';
 import type { ContentFile } from '@/entities/instances';
 import type { AppTableFeatures } from '@/shared/model';
 
+import {
+  getContentFileIconSrc,
+  getContentFileTitle,
+  InstanceIcon,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Checkbox } from '@/shared/ui';
@@ -77,33 +82,46 @@ export const CONTENT_TABLE_COLUMNS = contentTableColumnHelper.columns([
     ),
   }),
 
-  contentTableColumnHelper.accessor((row) => row.name ?? row.fileName, {
-    id: 'name',
-    header: (props) => {
-      const [{ t }] = useTranslation();
-      return <SortableHeader column={props.column} label={t('common.name')} />;
-    },
-    cell: (props) => {
-      const original = () => props.row.original;
+  contentTableColumnHelper.accessor(
+    (row) => getContentFileTitle(row) ?? row.fileName,
+    {
+      id: 'name',
+      header: (props) => {
+        const [{ t }] = useTranslation();
+        return (
+          <SortableHeader column={props.column} label={t('common.name')} />
+        );
+      },
+      cell: (props) => {
+        const original = () => props.row.original;
 
-      return (
-        <span
-          class={cn('inline-flex flex-col', {
-            'text-muted-foreground': original().disabled,
-          })}
-        >
-          <Show when={original().name}>{(name) => <span>{name()}</span>}</Show>
+        const title = () => getContentFileTitle(original());
+
+        return (
           <span
-            class={cn({
-              'text-muted-foreground': !!original().name,
+            class={cn('inline-flex items-center gap-2', {
+              'text-muted-foreground': original().disabled,
             })}
           >
-            {original().fileName}
+            <InstanceIcon
+              class='size-8'
+              src={getContentFileIconSrc(original())}
+            />
+            <span class='inline-flex flex-col'>
+              <Show when={title()}>{(name) => <span>{name()}</span>}</Show>
+              <span
+                class={cn({
+                  'text-muted-foreground': !!title(),
+                })}
+              >
+                {original().fileName}
+              </span>
+            </span>
           </span>
-        </span>
-      );
+        );
+      },
     },
-  }),
+  ),
 
   contentTableColumnHelper.accessor('contentType', {
     id: 'type',

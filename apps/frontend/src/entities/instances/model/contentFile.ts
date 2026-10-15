@@ -9,3 +9,15 @@ export const getContentIdFromUpdateInfo = (
   providerId: ProviderId,
 ): string | undefined =>
   contentFile.update?.[providerIdToString(providerId)]?.contentId;
+
+/** Project name from the provider, then the file's own name, if any. */
+export const getContentFileTitle = (
+  contentFile: ContentFile,
+): string | undefined =>
+  contentFile.metadata?.name ?? contentFile.name ?? undefined;
+
+/** Cached icon first, then the remote one. */
+export const getContentFileIconSrc = (
+  contentFile: ContentFile,
+): string | undefined =>
+  contentFile.metadata?.iconPath ?? contentFile.metadata?.iconUrl ?? undefined;
