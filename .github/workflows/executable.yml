@@ -15,7 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Disabled macos for now.
+          # Disabled macos for now. When re-enabling, also add a step running
+          # `rustup target add aarch64-apple-darwin x86_64-apple-darwin` after the Rust install.
           # - platform: 'macos-latest' # for Arm based macs (M1 and above).
           # args: '--target aarch64-apple-darwin'
           # - platform: 'macos-latest' # for Intel based macs.
@@ -61,10 +62,9 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      # version comes from rust-toolchain.toml
+      - name: install Rust
+        run: rustup toolchain install
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'

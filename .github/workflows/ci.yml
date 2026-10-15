@@ -92,10 +92,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust (pinned to rust-version)
-        uses: dtolnay/rust-toolchain@1.95.0
-        with:
-          components: rustfmt, clippy
+      # version and components come from rust-toolchain.toml
+      - name: Install Rust
+        run: rustup toolchain install
 
       - name: Install system dependencies
         run: |
