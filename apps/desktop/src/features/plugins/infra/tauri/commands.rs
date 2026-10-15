@@ -192,24 +192,6 @@ async fn reload(
 
 #[tauri::command]
 #[specta::specta]
-async fn call(
-    id: String,
-    _data: String,
-    request_id: RequestId,
-    idempotency: State<'_, IdempotencyManager>,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<()> {
-    let _guard = idempotency.lock_cmd(request_id)?;
-
-    let container = container.0.clone();
-    let reg = container.plugin_registry();
-    let _plugin = reg.get(&id);
-    log::debug!("Calling plugin {id:?}");
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
 async fn get_settings(
     id: String,
     container: State<'_, ContainerState>,

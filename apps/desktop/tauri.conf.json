@@ -6,15 +6,7 @@
   "identifier": "aether.launcher",
   "app": {
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost aether-asset: https://asset.localhost http://* https://*",
-      "assetProtocol": {
-        "enable": true,
-        "scope": [
-          "$APPDATA/cache/assets/*",
-          "$APPCONFIG/cache/assets/*",
-          "$CONFIG/cache/assets/*"
-        ]
-      }
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' aether-asset: http://aether-asset.localhost http://* https://*; frame-src 'none'; object-src 'none'; base-uri 'self'"
     }
   },
   "build": {

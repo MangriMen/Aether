@@ -2,11 +2,5 @@
   "identifier": "tauri-plugins",
   "local": true,
   "windows": ["main"],
-  "permissions": [
-    "opener:default",
-    "log:default",
-    "dialog:default",
-    "os:default",
-    "updater:default"
-  ]
+  "permissions": ["opener:default", "dialog:default", "os:default"]
 }

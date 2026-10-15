@@ -105,7 +105,6 @@ macro_rules! plugin_commands {
             force_enable,
             disable,
             reload,
-            call,
             get_settings,
             edit_settings,
             grant_folder_access,
