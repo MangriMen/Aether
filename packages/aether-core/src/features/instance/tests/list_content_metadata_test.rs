@@ -209,6 +209,7 @@ impl ContentIconCache for FakeIcons {
             Some((asset_id, revalidate)) => CachedContentIcon::Present {
                 asset_id: asset_id.clone(),
                 revalidate: *revalidate,
+                revision: None,
             },
             None => CachedContentIcon::Missing,
         }
@@ -480,6 +481,15 @@ impl Fixture {
             .collect()
     }
 
+    /// Whether each file's version metadata is pending.
+    async fn versions_pending(&self) -> HashMap<String, bool> {
+        self.list()
+            .await
+            .into_iter()
+            .map(|(path, file)| (path, file.version_metadata_pending))
+            .collect()
+    }
+
     /// The icon path on each file.
     async fn icon_paths(&self) -> HashMap<String, Option<String>> {
         self.list()
@@ -617,28 +627,102 @@ async fn should_keep_the_stale_item_when_the_refresh_fails() {
         .seed(&provider_id("modrinth"), metadata("A", "Sodium"), long_ago);
 
     assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    // Over, though nothing came of it.
+    fixture.next_event().await;
+    assert_eq!(provider.calls().len(), 1);
+
+    // Still shown, and not asked again soon.
+    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
     Fixture::settle().await;
     assert_eq!(provider.calls().len(), 1);
     fixture.assert_no_event();
-
-    // Still shown, and asked again: a failure is not remembered.
-    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
-    Fixture::settle().await;
-    assert_eq!(provider.calls().len(), 2);
 }
 
 #[tokio::test]
-async fn should_not_ask_again_a_provider_that_cannot_describe_its_content() {
+async fn should_not_ask_again_soon_when_the_provider_is_gone() {
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![]).await;
+
+    assert!(fixture.versions_pending().await["mods/a.jar"]);
+    fixture.next_event().await;
+
+    assert!(!fixture.versions_pending().await["mods/a.jar"]);
+    Fixture::settle().await;
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_not_ask_again_when_the_provider_cannot_describe_its_content() {
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Unsupported));
     let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
 
     assert_eq!(fixture.names().await["mods/a.jar"], None);
-    Fixture::settle().await;
+    fixture.next_event().await;
     assert_eq!(fixture.names().await["mods/a.jar"], None);
     Fixture::settle().await;
 
     assert_eq!(provider.calls().len(), 1);
     fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_not_ask_about_a_file_when_its_content_id_is_empty() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let fixture = Fixture::new(&[("a.jar", "modrinth", "")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    Fixture::settle().await;
+
+    assert!(provider.calls().is_empty());
+}
+
+#[tokio::test]
+async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh() {
+    let gate = Arc::new(Semaphore::new(0));
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("B", "Lithium")]),
+    ));
+    let mut fixture = Fixture::with_icons(
+        &[("a.jar", "modrinth", "A")],
+        vec![provider.clone()],
+        FakeIcons::gated(gate.clone()),
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("A", "Sodium"), ICON_X), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
+    fixture.icons.fail(ICON_X);
+
+    // A refresh of the icon alone, which brings nothing.
+    let files = fixture.list().await;
+    Fixture::settle().await;
+    // Meanwhile a file of another project shows up.
+    files.alter("mods/a.jar", |_, mut file| {
+        file.update = Some(HashMap::from([(
+            modrinth.clone(),
+            ContentFileUpdateInfo {
+                content_id: "B".into(),
+                version: String::new(),
+            },
+        )]));
+        file
+    });
+    fixture.service.attach(INSTANCE_ID, &files).await;
+    Fixture::settle().await;
+    assert!(provider.calls().is_empty());
+
+    gate.add_permits(1);
+    fixture.next_event().await;
+
+    // The list that event brings starts the refresh that one wanted.
+    fixture.service.attach(INSTANCE_ID, &files).await;
+    fixture.next_event().await;
+    assert_eq!(provider.calls(), [["B"]]);
 }
 
 #[tokio::test]
@@ -664,7 +748,7 @@ async fn should_start_one_refresh_when_lists_overlap() {
 }
 
 #[tokio::test]
-async fn should_find_an_item_answered_by_slug_and_not_ask_again_about_unknown_ids() {
+async fn should_find_an_item_by_slug_and_not_ask_again_when_an_id_is_unknown() {
     let provider = Arc::new(FakeProvider::new(
         "modrinth",
         Answer::Items(vec![metadata("AANobbMI", "Sodium")]),
@@ -690,7 +774,7 @@ async fn should_find_an_item_answered_by_slug_and_not_ask_again_about_unknown_id
 }
 
 #[tokio::test]
-async fn should_leave_a_file_of_no_provider_without_metadata() {
+async fn should_leave_a_file_without_metadata_when_it_has_no_provider() {
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
     let fixture = Fixture::new(&[], vec![provider.clone()]).await;
     tokio::fs::write(fixture.mods.join("manual.jar"), b"jar")
@@ -756,7 +840,7 @@ async fn should_fetch_an_icon_shared_by_many_files_once_and_tell_the_ui_when_it_
 }
 
 #[tokio::test]
-async fn should_fetch_the_icons_of_metadata_just_fetched_before_telling_the_ui_once() {
+async fn should_fetch_icons_before_telling_the_ui_once_when_metadata_was_just_fetched() {
     let provider = Arc::new(FakeProvider::new(
         "modrinth",
         Answer::Items(vec![with_icon(metadata("A", "Sodium"), ICON_X)]),
@@ -777,7 +861,7 @@ async fn should_fetch_the_icons_of_metadata_just_fetched_before_telling_the_ui_o
 }
 
 #[tokio::test]
-async fn should_wait_for_an_icon_already_on_its_way_rather_than_fetch_it_again() {
+async fn should_wait_for_the_fetch_when_an_icon_is_already_on_its_way() {
     let gate = Arc::new(Semaphore::new(0));
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
     let mut fixture = Fixture::with_icons(
@@ -811,7 +895,7 @@ async fn should_wait_for_an_icon_already_on_its_way_rather_than_fetch_it_again()
 }
 
 #[tokio::test]
-async fn should_not_fetch_again_soon_an_icon_that_failed() {
+async fn should_not_fetch_an_icon_again_soon_when_it_failed() {
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
     let mut fixture = Fixture::new(
         &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
@@ -844,11 +928,14 @@ async fn should_not_fetch_again_soon_an_icon_that_failed() {
 async fn should_show_a_cached_icon_while_revalidating_it_and_stay_quiet_when_unchanged() {
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
     let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider]).await;
-    fixture.cache.seed(
-        &provider_id("modrinth"),
-        with_icon(metadata("A", "Sodium"), ICON_Y),
-        SystemTime::now(),
-    );
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture
+        .cache
+        .seed(&modrinth, with_icon(metadata("A", "Sodium"), ICON_Y), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
     fixture.icons.seed(ICON_Y, true);
 
     let paths = fixture.icon_paths().await;
@@ -866,7 +953,7 @@ async fn should_show_a_cached_icon_while_revalidating_it_and_stay_quiet_when_unc
 // ── Versions ──
 
 #[tokio::test]
-async fn should_ask_for_versions_once_with_the_projects_then_cache_and_tell_the_ui_once() {
+async fn should_ask_for_versions_with_the_projects_and_tell_the_ui_once_when_both_are_missing() {
     let modrinth = Arc::new(
         FakeProvider::new(
             "modrinth",
@@ -957,21 +1044,66 @@ async fn should_keep_the_stale_version_when_its_refresh_fails() {
         fixture.version_numbers().await["mods/a.jar"],
         Some("1.0".into())
     );
-    Fixture::settle().await;
+    fixture.next_event().await;
     assert_eq!(provider.version_calls().len(), 1);
-    fixture.assert_no_event();
 
-    // Still shown, and asked again: a failure is not remembered.
+    // Still shown, and not asked again soon.
     assert_eq!(
         fixture.version_numbers().await["mods/a.jar"],
         Some("1.0".into())
     );
     Fixture::settle().await;
-    assert_eq!(provider.version_calls().len(), 2);
+    assert_eq!(provider.version_calls().len(), 1);
+    fixture.assert_no_event();
 }
 
 #[tokio::test]
-async fn should_not_ask_again_for_versions_a_provider_cannot_describe() {
+async fn should_stop_marking_a_version_pending_when_its_fetch_is_over() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![]))
+            .with_versions(Answer::Items(vec![version("A", "1.0")])),
+    );
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider.clone()],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, metadata("A", "Sodium"), now);
+    fixture.cache.seed(&modrinth, metadata("B", "Lithium"), now);
+
+    let before = fixture.versions_pending().await;
+    fixture.next_event().await;
+    let after = fixture.versions_pending().await;
+
+    assert!(before["mods/a.jar"] && before["mods/b.jar"]);
+    // One arrived, the other the provider did not know: neither is to come.
+    assert!(!after["mods/a.jar"] && !after["mods/b.jar"]);
+}
+
+#[tokio::test]
+async fn should_not_mark_a_version_pending_when_its_lookup_failed_lately() {
+    let provider =
+        Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])).with_versions(Answer::Fail));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        metadata("A", "Sodium"),
+        SystemTime::now(),
+    );
+
+    assert!(fixture.versions_pending().await["mods/a.jar"]);
+    fixture.next_event().await;
+
+    assert!(!fixture.versions_pending().await["mods/a.jar"]);
+    Fixture::settle().await;
+    assert_eq!(provider.version_calls().len(), 1);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_not_ask_again_for_versions_when_the_provider_cannot_describe_them() {
     let provider = Arc::new(FakeProvider::new(
         "modrinth",
         Answer::Items(vec![metadata("A", "Sodium")]),
@@ -993,7 +1125,7 @@ async fn should_not_ask_again_for_versions_a_provider_cannot_describe() {
 }
 
 #[tokio::test]
-async fn should_not_ask_again_soon_about_versions_the_provider_did_not_know() {
+async fn should_not_ask_again_soon_about_versions_when_the_provider_did_not_know_them() {
     let provider = Arc::new(
         FakeProvider::new("modrinth", Answer::Items(vec![]))
             .with_versions(Answer::Items(vec![version("A", "1.0")])),

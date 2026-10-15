@@ -19,6 +19,10 @@ pub enum CachedContentIcon {
         /// Whether the server should be asked if the icon changed: a URL that does not name
         /// its content by hash may get another icon under the same name.
         revalidate: bool,
+        /// Changes whenever another icon may have been put under `asset_id`; `None` when that
+        /// never happens. What the UI shows the icon by carries it, or it would keep showing
+        /// the copy it cached of the old one.
+        revision: Option<u64>,
     },
 }
 

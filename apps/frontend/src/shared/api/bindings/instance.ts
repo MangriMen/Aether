@@ -115,6 +115,11 @@ export type ContentFileDto = {
 	 *  to show in place of `version`, the provider's id of it. Filled in later as `metadata` is.
 	 */
 	versionMetadata: ContentVersionMetadataDto | null,
+	/**
+	 *  Whether `versionMetadata` is being fetched now: the instance's `synced` event tells when
+	 *  the fetch is over. `false` when nothing is to come.
+	 */
+	versionMetadataPending: boolean,
 };
 
 export type ContentFileUpdateInfoDto = {

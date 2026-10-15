@@ -16,6 +16,11 @@ pub trait Cache: Send + Sync {
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool;
     async fn invalidate<T: Send + Sync>(&self, key: &CacheKey<T>);
 
+    /// Delete every value past its expiry, and say how many went.
+    ///
+    /// [`Cache::get`] already hides such values; this frees what they take.
+    async fn purge_expired(&self) -> u64;
+
     /// The values of `keys`, in their order: `None` where [`Cache::get`] would give none.
     ///
     /// By default one [`Cache::get`] per key; a store that can read many at once does.

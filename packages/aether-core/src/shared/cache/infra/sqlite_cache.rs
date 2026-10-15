@@ -174,6 +174,16 @@ impl Cache for SqliteCache {
         .execute(&self.pool)
         .await;
     }
+
+    async fn purge_expired(&self) -> u64 {
+        let now = Utc::now();
+
+        sqlx::query("DELETE FROM universal_cache WHERE expires_at <= ?")
+            .bind(now)
+            .execute(&self.pool)
+            .await
+            .map_or(0, |result| result.rows_affected())
+    }
 }
 
 #[cfg(test)]
@@ -285,6 +295,28 @@ mod tests {
             assert_eq!(value.as_deref(), Some(format!("value {i}").as_str()));
         }
         assert_eq!(found[count], None);
+    }
+
+    #[tokio::test]
+    async fn should_delete_only_expired_values_when_purging() {
+        let cache = create_cache().await;
+        cache
+            .set(&key("a", "old"), &"old".to_owned(), Duration::ZERO)
+            .await;
+        cache
+            .set(&key("a", "old2"), &"old2".to_owned(), Duration::ZERO)
+            .await;
+        cache.set(&key("a", "new"), &"new".to_owned(), LONG).await;
+
+        let purged = cache.purge_expired().await;
+
+        assert_eq!(purged, 2);
+        let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM universal_cache")
+            .fetch_one(&cache.pool)
+            .await
+            .unwrap();
+        assert_eq!(rows, 1);
+        assert_eq!(cache.get(&key("a", "new")).await, Some("new".to_owned()));
     }
 
     #[tokio::test]

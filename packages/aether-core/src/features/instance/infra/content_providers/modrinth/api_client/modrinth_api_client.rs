@@ -73,34 +73,41 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
     }
 
     /// The projects of `ids` (ids or slugs) in one request, in no particular order. An id
-    /// Modrinth does not know is left out.
+    /// Modrinth does not know is left out, and so is an entry of a shape not expected.
     pub(crate) async fn get_projects_metadata(
         &self,
         ids: &[String],
     ) -> Result<Vec<ProjectMetadataResponse>, String> {
         let request = self.prepare_request("projects", Some(ids_query(ids)?));
-        self.fetch(request).await
+        let entries: Vec<Lenient<ProjectMetadataResponse>> = self.fetch(request).await?;
+        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
     }
 
     /// The members of the teams of `ids` in one request, one list per team, in no particular
-    /// order. A team Modrinth does not know is left out.
+    /// order. A team Modrinth does not know is left out, and so is a member of a shape not
+    /// expected.
     pub(crate) async fn get_teams(
         &self,
         ids: &[String],
     ) -> Result<Vec<Vec<TeamMemberResponse>>, String> {
         let request = self.prepare_request_at(&self.v3_base_url, "teams", Some(ids_query(ids)?));
-        self.fetch(request).await
+        let teams: Vec<Vec<Lenient<TeamMemberResponse>>> = self.fetch(request).await?;
+        Ok(teams
+            .into_iter()
+            .map(|members| members.into_iter().filter_map(Lenient::parsed).collect())
+            .collect())
     }
 
     /// The organizations of `ids` in one request, in no particular order. An organization
-    /// Modrinth does not know is left out.
+    /// Modrinth does not know is left out, and so is an entry of a shape not expected.
     pub(crate) async fn get_organizations(
         &self,
         ids: &[String],
     ) -> Result<Vec<OrganizationResponse>, String> {
         let request =
             self.prepare_request_at(&self.v3_base_url, "organizations", Some(ids_query(ids)?));
-        self.fetch(request).await
+        let entries: Vec<Lenient<OrganizationResponse>> = self.fetch(request).await?;
+        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
     }
 
     /// The versions of `ids` in one request, in no particular order. An id Modrinth does not

@@ -236,15 +236,25 @@ impl ContentIconCache for FsContentIconCache {
             touch(&path).await;
         }
 
-        let revalidate = !names_content_by_hash(&parsed)
-            && self.read_validators(&stem).await.is_none_or(|validators| {
-                unix_secs(now).saturating_sub(validators.checked_at)
-                    > CONTENT_METADATA_TTL.as_secs()
+        // A URL that names its content by hash never brings another file. Any other one does
+        // only on a fetch that writes the validators anew, so their time tells the files apart.
+        let (revalidate, revision) = if names_content_by_hash(&parsed) {
+            (false, None)
+        } else {
+            let checked_at = self
+                .read_validators(&stem)
+                .await
+                .map(|validators| validators.checked_at);
+            let revalidate = checked_at.is_none_or(|checked_at| {
+                unix_secs(now).saturating_sub(checked_at) > CONTENT_METADATA_TTL.as_secs()
             });
+            (revalidate, Some(checked_at.unwrap_or_default()))
+        };
 
         CachedContentIcon::Present {
             asset_id: format!("{CONTENT_ICONS_FOLDER}/{stem}.{extension}"),
             revalidate,
+            revision,
         }
     }
 
@@ -579,7 +589,15 @@ mod tests {
                 CachedContentIcon::Present {
                     asset_id,
                     revalidate,
+                    ..
                 } => (asset_id, revalidate),
+                CachedContentIcon::Missing => panic!("no icon for {url}"),
+            }
+        }
+
+        async fn revision(&self, url: &str) -> Option<u64> {
+            match self.cache.lookup(url).await {
+                CachedContentIcon::Present { revision, .. } => revision,
                 CachedContentIcon::Missing => panic!("no icon for {url}"),
             }
         }
@@ -604,7 +622,7 @@ mod tests {
     }
 
     #[test]
-    fn should_take_a_url_as_naming_its_content_only_by_a_long_hex_run() {
+    fn should_take_a_url_as_naming_its_content_when_its_path_has_a_long_hex_run() {
         assert!(names_content_by_hash(&url::Url::parse(HASHED_URL).unwrap()));
         assert!(!names_content_by_hash(
             &url::Url::parse(LEGACY_URL).unwrap()
@@ -615,7 +633,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_store_the_icon_by_url_hash_with_the_format_of_its_body() {
+    async fn should_name_the_icon_by_url_hash_and_body_format_when_it_is_fetched() {
         let fixture = Fixture::new();
         // Claimed PNG, really WEBP: the body decides.
         fixture.http.reply(HASHED_URL, image(WEBP, "image/png"));
@@ -630,13 +648,14 @@ mod tests {
         let name = format!("{}.webp", stem(HASHED_URL));
         assert_eq!(asset_id, format!("{CONTENT_ICONS_FOLDER}/{name}"));
         assert!(!revalidate);
+        assert_eq!(fixture.revision(HASHED_URL).await, None);
         assert_eq!(std::fs::read(fixture.path_of(&asset_id)).unwrap(), WEBP);
         // Nothing but the icon: no partial file, no validators for an immutable URL.
         assert_eq!(fixture.files(), [name]);
     }
 
     #[tokio::test]
-    async fn should_not_ask_again_for_an_icon_whose_url_names_it_by_hash() {
+    async fn should_not_ask_again_for_an_icon_when_its_url_names_it_by_hash() {
         let fixture = Fixture::new();
         fixture.http.reply(HASHED_URL, image(WEBP, "image/webp"));
         fixture.cache.fetch(HASHED_URL).await.unwrap();
@@ -755,6 +774,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_change_the_revision_when_a_revalidation_brings_another_icon() {
+        let fixture = Fixture::new();
+        fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
+        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        fixture.age_validators(LEGACY_URL, CONTENT_METADATA_TTL + Duration::from_hours(1));
+        let before = fixture.revision(LEGACY_URL).await;
+        fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
+
+        assert!(fixture.cache.fetch(LEGACY_URL).await.unwrap());
+
+        let after = fixture.revision(LEGACY_URL).await;
+        assert!(before.is_some() && after.is_some());
+        assert_ne!(before, after);
+    }
+
+    #[tokio::test]
     async fn should_keep_the_old_icon_when_a_revalidation_fails() {
         let fixture = Fixture::new();
         fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
@@ -773,7 +808,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_remove_only_icons_unused_for_too_long_and_leftovers() {
+    async fn should_remove_icons_and_leftovers_when_unused_for_too_long() {
         let fixture = Fixture::new();
         let fresh = "https://cdn.example.com/fresh/icon.png";
         fixture.http.reply(fresh, image(PNG, "image/png"));

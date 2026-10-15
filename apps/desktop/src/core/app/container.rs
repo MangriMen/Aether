@@ -40,8 +40,8 @@ use aether_core::features::settings::infra::{
     SqliteSettingsStorage,
 };
 use aether_core::features::{auth, instance, java, minecraft, settings};
-use aether_core::shared::cache::AssetsStorage;
 use aether_core::shared::cache::infra::{FileCache, FsAssetsStorage, SqliteCache};
+use aether_core::shared::cache::{AssetsStorage, Cache};
 use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::FetchSemaphore;
@@ -187,6 +187,16 @@ pub async fn build_container(
         Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
             pool.clone(),
         )));
+    // In the background: the cached rows nobody refreshed for their whole life.
+    tokio::spawn({
+        let cache = SqliteCache::new(pool.clone());
+        async move {
+            let purged = cache.purge_expired().await;
+            if purged > 0 {
+                log::debug!("Purged {purged} expired cache rows");
+            }
+        }
+    });
     let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> = Arc::new(
         FsContentIconCache::new(http_client.clone(), &location_info.assets_cache_dir()),
     );

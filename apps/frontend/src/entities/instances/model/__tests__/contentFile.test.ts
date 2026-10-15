@@ -122,8 +122,14 @@ describe('version helpers', () => {
       'known',
     );
     expect(
-      getContentFileVersionState(makeFile({ updateProviderId: provider })),
+      getContentFileVersionState(
+        makeFile({ updateProviderId: provider, versionMetadataPending: true }),
+      ),
     ).toBe('pending');
+    // A provider that has nothing more to give.
+    expect(
+      getContentFileVersionState(makeFile({ updateProviderId: provider })),
+    ).toBe('unknown');
     expect(getContentFileVersionState(makeFile({}))).toBe('unknown');
   });
 

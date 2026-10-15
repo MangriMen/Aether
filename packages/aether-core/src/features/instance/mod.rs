@@ -23,23 +23,22 @@ pub use domain::{
 
 // ── App layer: Use Cases (Inbound Ports) ──
 pub use app::{
-    CONTENT_ICON_MAX_UNUSED, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentIcon,
-    CachedContentMetadata, CachedContentVersionMetadata, CachedMetadata, ChangeContentState,
-    ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
-    ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
-    CheckContentCompatibilityUseCasePort, ContentCompatibilityCheckParams,
-    ContentCompatibilityResult, ContentDownloader, ContentFileService, ContentGetParams,
-    ContentIconCache, ContentIconError, ContentListVersionsParams, ContentManagementPort,
-    ContentMetadataCache, ContentMetadataService, ContentProvider, ContentProviderPort,
-    ContentStateAction, CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstance,
-    EditInstanceIcon, EditInstanceIconUseCase, EditInstanceIconUseCasePort, EditInstanceUseCase,
-    EditInstanceUseCasePort, GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase,
-    GetInstanceUseCasePort, ImportContent, ImportContentUseCase, ImportContentUseCasePort,
-    ImportInstance, ImportInstanceUseCase, ImportInstanceUseCasePort, Importer,
-    InstallContentUseCase, InstallContentUseCasePort, InstallInstanceUseCase, InstallPlanExecutor,
-    InstallPlanExecutorPort, InstanceCrudPort, InstanceFeature, InstanceFileService,
-    InstanceInstallService, InstanceLaunchService, InstanceLifecyclePort, InstanceLockGuard,
-    InstanceLocks, InstanceServicesPort, InstanceStorage, InstanceStorageExt,
+    CONTENT_ICON_MAX_UNUSED, CachedContentIcon, CachedContentMetadata,
+    CachedContentVersionMetadata, ChangeContentState, ChangeContentStateUseCase,
+    ChangeContentStateUseCasePort, ChangeInstanceGameUseCase, ChangeInstanceGameUseCasePort,
+    CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort,
+    ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
+    ContentFileService, ContentGetParams, ContentIconCache, ContentIconError,
+    ContentListVersionsParams, ContentManagementPort, ContentMetadataCache, ContentProvider,
+    ContentProviderPort, ContentStateAction, CreateInstanceUseCase, CreateInstanceUseCasePort,
+    EditInstance, EditInstanceIcon, EditInstanceIconUseCase, EditInstanceIconUseCasePort,
+    EditInstanceUseCase, EditInstanceUseCasePort, GetContentUseCase, GetContentUseCasePort,
+    GetInstanceUseCase, GetInstanceUseCasePort, ImportContent, ImportContentUseCase,
+    ImportContentUseCasePort, ImportInstance, ImportInstanceUseCase, ImportInstanceUseCasePort,
+    Importer, InstallContentUseCase, InstallContentUseCasePort, InstallInstanceUseCase,
+    InstallPlanExecutor, InstallPlanExecutorPort, InstanceCrudPort, InstanceFeature,
+    InstanceFileService, InstanceInstallService, InstanceLaunchService, InstanceLifecyclePort,
+    InstanceLockGuard, InstanceLocks, InstanceServicesPort, InstanceStorage, InstanceStorageExt,
     InstanceWatcherService, LaunchInstanceUseCase, LaunchInstanceWithActiveAccountUseCase,
     LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
     ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
@@ -49,3 +48,8 @@ pub use app::{
     RemoveInstanceUseCasePort, SearchContentUseCase, SearchContentUseCasePort,
     UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater, remove_plan_leftovers,
 };
+
+// Used inside the crate only.
+pub(crate) use app::ContentMetadataService;
+#[cfg(test)]
+pub(crate) use app::{CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL};

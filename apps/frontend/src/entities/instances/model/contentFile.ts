@@ -44,7 +44,7 @@ export const getContentFileVersionNumber = (
 ): string | undefined =>
   contentFile.versionMetadata?.versionNumber ?? undefined;
 
-/** Version number is known, or can still arrive later (provider known, nothing cached). */
+/** Version number is known, is being fetched now, or is not to come. */
 export type ContentFileVersionState = 'known' | 'pending' | 'unknown';
 
 export const getContentFileVersionState = (
@@ -54,9 +54,7 @@ export const getContentFileVersionState = (
     return 'known';
   }
 
-  return contentFile.updateProviderId || contentFile.metadata
-    ? 'pending'
-    : 'unknown';
+  return contentFile.versionMetadataPending ? 'pending' : 'unknown';
 };
 
 export const getContentFileVersionSortValue = (

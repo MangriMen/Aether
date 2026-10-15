@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn should_keep_a_version_fresh_far_longer_than_a_project() {
+    fn should_keep_a_version_fresh_when_a_project_of_the_same_age_is_stale() {
         let now = SystemTime::now();
         let ttl = CONTENT_VERSION_METADATA_TTL;
 

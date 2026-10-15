@@ -20,9 +20,11 @@ pub use content_file_service::{ContentFileService, LocatedContentFile};
 pub use content_icon_cache::{
     CONTENT_ICON_MAX_UNUSED, CachedContentIcon, ContentIconCache, ContentIconError,
 };
+#[cfg(test)]
+pub use content_metadata_cache::CONTENT_VERSION_METADATA_TTL;
 pub use content_metadata_cache::{
-    CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentMetadata,
-    CachedContentVersionMetadata, CachedMetadata, ContentMetadataCache,
+    CONTENT_METADATA_TTL, CachedContentMetadata, CachedContentVersionMetadata, CachedMetadata,
+    ContentMetadataCache,
 };
 pub use content_provider::ContentProvider;
 pub use importer::Importer;

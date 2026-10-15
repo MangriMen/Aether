@@ -4,7 +4,8 @@
 //! Staleness is the app's to judge ([`CachedContentMetadata::is_stale`]), by the time an item
 //! was fetched, kept inside the value. The row itself is given a much longer life
 //! ([`ROW_TTL`]): the cache hides expired rows, and a stale item must stay readable — offline it
-//! is the only name and icon there is. Only an item nobody refreshed for that long goes.
+//! is the only name and icon there is. Only an item nobody refreshed for that long goes: hidden
+//! at once, deleted by [`Cache::purge_expired`] at the next start.
 //!
 //! Versions are kept the same way, in a namespace of their own and for longer
 //! ([`VERSION_ROW_TTL`]): a version does not change once published.

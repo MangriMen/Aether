@@ -875,6 +875,70 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
 }
 
 #[tokio::test]
+async fn should_skip_a_malformed_project_and_return_the_rest_when_asked_for_metadata() {
+    let fixture = Fixture::new();
+    let mut broken = project("BROKEN00", "broken", "mod");
+    broken["title"] = Value::Null;
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([broken, project("AANobbMI", "sodium", "mod")]),
+    );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["broken", "sodium"]))
+        .await
+        .unwrap();
+
+    let found: Vec<_> = metadata
+        .iter()
+        .map(|item| item.content_id.as_str())
+        .collect();
+    assert_eq!(found, ["AANobbMI"]);
+}
+
+#[tokio::test]
+async fn should_skip_a_malformed_member_and_organization_when_naming_authors() {
+    let fixture = Fixture::new();
+    let mut by_team = project("TEAMPROJ", "by-team", "mod");
+    by_team["team"] = json!("team1");
+    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
+    by_organization["team"] = json!("team2");
+    by_organization["organization"] = json!("org1");
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([by_team, by_organization]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/teams"),
+        &json!([[
+            { "team_id": "team1", "is_owner": null },
+            team_member("team1", "owner", true),
+        ]]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/organizations"),
+        &json!([{ "id": "org1", "slug": null }]),
+    );
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["TEAMPROJ", "ORGPROJ0"]))
+        .await
+        .unwrap();
+
+    let authors: HashMap<_, _> = metadata
+        .into_iter()
+        .map(|item| (item.content_id, item.author))
+        .collect();
+    assert_eq!(authors["TEAMPROJ"].as_deref(), Some("owner"));
+    assert_eq!(authors["ORGPROJ0"], None);
+}
+
+#[tokio::test]
 async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() {
     let fixture = Fixture::new();
     // Every batch answers with the same project: asked by id and by slug, it comes back twice.

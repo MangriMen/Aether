@@ -36,6 +36,9 @@ pub struct ContentFileDto {
     /// The version the file was installed as, as its provider describes it, when cached: what
     /// to show in place of `version`, the provider's id of it. Filled in later as `metadata` is.
     pub version_metadata: Option<ContentVersionMetadataDto>,
+    /// Whether `versionMetadata` is being fetched now: the instance's `synced` event tells when
+    /// the fetch is over. `false` when nothing is to come.
+    pub version_metadata_pending: bool,
 }
 
 /// What a provider says about the project of an installed file.
@@ -92,6 +95,7 @@ impl From<ContentFile> for ContentFileDto {
                 ..metadata.into()
             }),
             version_metadata: value.version_metadata.map(Into::into),
+            version_metadata_pending: value.version_metadata_pending,
         }
     }
 }

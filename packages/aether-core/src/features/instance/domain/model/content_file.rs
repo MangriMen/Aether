@@ -21,13 +21,18 @@ pub struct ContentFile {
     /// no provider.
     pub metadata: Option<ContentMetadata>,
     /// The local copy of `metadata`'s icon, as an id of the asset store: the file's path
-    /// relative to the store, `/`-separated. Only when the file is there: `None` while the icon
-    /// has not arrived, or there is none.
+    /// relative to the store, `/`-separated, with a `?v=` query that changes when a file under
+    /// that path may have been replaced, so the UI does not keep showing an old copy. Only when
+    /// the file is there: `None` while the icon has not arrived, or there is none.
     pub icon_path: Option<String>,
     /// What the provider of the file says about the version it was installed as, as last
     /// cached: the version of `update[update_provider_id].version`. `None` — nothing cached
     /// yet, or the file is of no provider.
     pub version_metadata: Option<ContentVersionMetadata>,
+    /// Whether `version_metadata` is being fetched now, and an instance event will tell when the
+    /// fetch is over. `false` when nothing is to come: the file is of no provider, its provider
+    /// cannot tell or does not know the version, or asking it failed lately.
+    pub version_metadata_pending: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +69,7 @@ impl ContentFile {
             metadata: None,
             icon_path: None,
             version_metadata: None,
+            version_metadata_pending: false,
         }
     }
 }
