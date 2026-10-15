@@ -105,6 +105,11 @@ export type ContentFileDto = {
 	version: string | null,
 	updateProviderId: ProviderIdDto | null,
 	update?: { [key in string]: ContentFileUpdateInfoDto } | null,
+	/**
+	 *  The file's project as its provider describes it, when cached. Filled in later when
+	 *  missing: the instance's `synced` event tells when to list again.
+	 */
+	metadata: ContentMetadataDto | null,
 };
 
 export type ContentFileUpdateInfoDto = {
@@ -135,6 +140,21 @@ export type ContentItemDto = {
 export type ContentListVersionParamsDto = {
 	contentId: string,
 	providerId: ProviderIdDto,
+};
+
+/**  What a provider says about the project of an installed file. */
+export type ContentMetadataDto = {
+	contentId: string,
+	slug: string,
+	name: string,
+	description: string | null,
+	author: string | null,
+	iconUrl: string | null,
+	/**
+	 *  The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
+	 *  `iconPath`. Shown in place of `iconUrl` when set; `None` until the icon has arrived.
+	 */
+	iconPath: string | null,
 };
 
 export type ContentProviderCapabilityMetadataDto = {
