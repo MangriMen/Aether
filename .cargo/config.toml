@@ -1,6 +1,6 @@
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld"
-rustflags = ["-C", "link-args=/STACK:16777216", "-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-args=/STACK:16777216"]
 
 [alias]
 update-schemas = "test -p aether-core-gen --test schema_sync"
