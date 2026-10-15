@@ -110,6 +110,11 @@ export type ContentFileDto = {
 	 *  missing: the instance's `synced` event tells when to list again.
 	 */
 	metadata: ContentMetadataDto | null,
+	/**
+	 *  The version the file was installed as, as its provider describes it, when cached: what
+	 *  to show in place of `version`, the provider's id of it. Filled in later as `metadata` is.
+	 */
+	versionMetadata: ContentVersionMetadataDto | null,
 };
 
 export type ContentFileUpdateInfoDto = {
@@ -211,6 +216,16 @@ export type ContentVersionDto = {
 	datePublished: string,
 	downloads: string,
 	webUrl: string,
+};
+
+/**  What a provider says about the version of an installed file. */
+export type ContentVersionMetadataDto = {
+	/**  The provider's id of the version, as `ContentFileDto::version` holds it. */
+	versionId: string,
+	/**  The version as its authors number it (`0.6.13+mc1.21.4`). */
+	versionNumber: string,
+	/**  The version's title (`Sodium 0.6.13`), if it has one. */
+	name: string | null,
 };
 
 export type ContentVersionStatusDto = "listed" | "archived" | "draft" | "unlisted" | "scheduled" | "unknown";
