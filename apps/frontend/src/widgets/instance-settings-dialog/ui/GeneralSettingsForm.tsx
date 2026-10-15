@@ -94,8 +94,8 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
                 type: 'text',
                 maxLength: 64,
                 ...field.props,
-                onBlur: (e) => {
-                  field.props.onBlur?.(e);
+                onBlur: () => {
+                  field.props.onBlur?.();
                   local.onChangePartial?.({
                     name: getInput(form, { path: ['name'] }),
                   });

@@ -47,8 +47,8 @@ export const HookTextField: Component<HookTextFieldProps> = (props) => {
               placeholder: t(
                 'instanceSettings.hookSettings.enterCommandPlaceholder',
               ),
-              onBlur: (e) => {
-                field.props.onBlur?.(e);
+              onBlur: () => {
+                field.props.onBlur?.();
                 props.onChangePartial?.({
                   [props.fieldConfig.key]: getInput(props.form, {
                     path: [props.fieldConfig.key],
