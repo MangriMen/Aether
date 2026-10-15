@@ -12,13 +12,9 @@ tokio-stream = { version = "0.1.18", features = ["fs"] }
 
 # Networking & API
 daedalus = { git = "https://github.com/modrinth/code", version = "0.2.3" }
-reqwest = { version = "0.13.4", features = [
-    "json",
-    "stream",
-    "deflate",
-    "gzip",
-    "brotli",
-] }
+reqwest.workspace = true
+# Selects `ring` as the process-wide rustls provider; see `shared::tls`.
+rustls = { version = "0.23.46", default-features = false, features = ["ring"] }
 reqwest-middleware = "0.5.2"
 # `http::Extensions` appears in the `reqwest_middleware::Middleware` signature, which the
 # plugin host functions implement to vet every redirect hop.

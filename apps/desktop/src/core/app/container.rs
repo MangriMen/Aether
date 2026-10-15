@@ -137,6 +137,7 @@ pub async fn build_container(
 
     // ── HTTP client ─────────────────────────────────────────────────
     let reqwest_client: Arc<ClientWithMiddleware> = {
+        aether_core::shared::tls::install_crypto_provider();
         let client = reqwest::Client::builder()
             .tcp_keepalive(Some(std::time::Duration::from_secs(10)))
             .build()

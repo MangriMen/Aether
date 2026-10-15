@@ -352,6 +352,7 @@ pub(super) fn vetted_client(
         reason: e.to_string(),
     };
 
+    crate::shared::tls::install_crypto_provider();
     let builder = reqwest::Client::builder()
         // Redirects are followed only by `VettedHops`, one checked hop at a time.
         .redirect(redirect::Policy::none())

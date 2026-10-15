@@ -334,6 +334,7 @@ mod tests {
     }
 
     fn client() -> ReqwestClient<NoopProgress> {
+        crate::shared::tls::install_crypto_provider();
         ReqwestClient::new(
             Arc::new(NoopProgress),
             Arc::new(

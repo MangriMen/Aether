@@ -394,6 +394,7 @@ impl Fixture {
         let progress: Arc<dyn ProgressService> = Arc::new(NoProgress);
         // The application's client, as the desktop builds it, minus the system proxy, which a
         // loopback test server must not go through.
+        crate::shared::tls::install_crypto_provider();
         let app_client = Arc::new(ReqwestClient::new(
             progress.clone(),
             Arc::new(

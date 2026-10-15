@@ -41,6 +41,22 @@ serde_with = "3.21.0"
 sqlx = { version = "0.9.0", default-features = false }
 uuid = { version = "1.23.5", features = ["serde", "v4"] }
 
+# Networking
+# rustls without a bundled provider: the default `rustls` feature builds aws-lc-sys (C, ~1 min),
+# while `ring` is compiled anyway for the updater and Extism. `aether_core::shared::tls`
+# installs it before any client is built.
+reqwest = { version = "0.13.4", default-features = false, features = [
+    "charset",
+    "http2",
+    "system-proxy",
+    "rustls-no-provider",
+    "json",
+    "stream",
+    "deflate",
+    "gzip",
+    "brotli",
+] }
+
 # Async & Runtime
 async-trait = "0.1.89"
 tokio = { version = "1.52.3", features = ["full"] }
