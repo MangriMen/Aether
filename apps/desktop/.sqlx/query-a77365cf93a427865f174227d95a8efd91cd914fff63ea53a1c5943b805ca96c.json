@@ -1,0 +1,110 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_path",
+        "ordinal": 0,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "content_path"
+          }
+        }
+      },
+      {
+        "name": "file_name",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "name": "name",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "name": "hash",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "hash"
+          }
+        }
+      },
+      {
+        "name": "side",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "side"
+          }
+        }
+      },
+      {
+        "name": "update_provider_id",
+        "ordinal": 5,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "update_provider_id"
+          }
+        }
+      },
+      {
+        "name": "installed_by_provider_id",
+        "ordinal": 6,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "installed_by_provider_id"
+          }
+        }
+      },
+      {
+        "name": "installed_by_content_id",
+        "ordinal": 7,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pack_files",
+            "name": "installed_by_content_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "a77365cf93a427865f174227d95a8efd91cd914fff63ea53a1c5943b805ca96c"
+}

@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  changes:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      rust: ${{ steps.filter.outputs.rust }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3.0.2
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'apps/frontend/**'
+              - 'package.json'
+              - 'bun.lock'
+              - 'turbo.jsonc'
+              - '.github/workflows/ci.yml'
+            rust:
+              - 'apps/desktop/**'
+              - 'packages/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - '.github/workflows/ci.yml'
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # frontend checks only; the root `bun run lint` also runs clippy, which the rust job covers
+      - name: Types
+        working-directory: apps/frontend
+        run: bun run lint:types
+
+      # the better-tailwindcss rule sometimes times out on its cold start on a slow runner (Atomics.wait),
+      # so retry once
+      - name: ESLint
+        working-directory: apps/frontend
+        run: bun run lint:code || bun run lint:code
+
+      - name: Architecture (steiger, non-blocking)
+        working-directory: apps/frontend
+        run: bun run lint:arch
+
+      - name: Test
+        working-directory: apps/frontend
+        run: bun x vitest run
+
+  rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-22.04
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (pinned to rust-version)
+        uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "aether-ci-cache"
+          workspaces: "./ -> target"
+
+      # tauri's build script only needs the frontend dist directory to exist, not a real build
+      - name: Stub frontend dist
+        run: mkdir -p apps/frontend/dist
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --workspace
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features sqlite,rustls,sqlx-toml
+
+      - name: Create database and run migrations
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          sqlx db create
+          (cd packages/core/aether-core && sqlx migrate run)
+          (cd apps/desktop && sqlx migrate run)
+
+      - name: cargo sqlx prepare --check
+        env:
+          SQLX_OFFLINE: "false"
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          (cd packages/core/aether-core && cargo sqlx prepare --check -- --all-targets)
+          (cd apps/desktop && cargo sqlx prepare --check -- --all-targets)
+
+  # single required check for branch protection: skipped jobs count as success, failed ones do not
+  ci-ok:
+    if: always()
+    needs: [changes, frontend, rust]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check results
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if echo '${{ join(needs.*.result, ' ') }}' | grep -Eq 'failure|cancelled'; then exit 1; fi

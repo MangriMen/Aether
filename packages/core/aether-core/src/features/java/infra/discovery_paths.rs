@@ -127,8 +127,7 @@ fn get_os_specific_paths() -> Vec<PathBuf> {
 
         // Respecting XDG paths: Modrinth App uses standard data directories on Linux
         let data_home = env::var("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| home.join(".local").join("share"));
+            .map_or_else(|_| home.join(".local").join("share"), PathBuf::from);
 
         paths.push(home.join(".sdkman").join("candidates").join("java"));
         paths.push(home.join(".minecraft").join("runtime"));

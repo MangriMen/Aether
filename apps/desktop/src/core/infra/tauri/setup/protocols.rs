@@ -17,7 +17,7 @@ pub fn format_asset_url(path: &str) -> String {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        format!("{}://{}", ASSET_PROTOCOL, path)
+        format!("{ASSET_PROTOCOL}://{path}")
     }
 }
 
