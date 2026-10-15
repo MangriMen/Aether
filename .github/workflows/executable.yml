@@ -81,6 +81,14 @@ jobs:
       - name: install frontend dependencies
         run: bun install --frozen-lockfile
 
+      - name: install cargo-about
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about
+
+      - name: generate third-party licenses
+        run: node scripts/generate-third-party-licenses.mjs
+
       - name: build and publish tauri app
         uses: tauri-apps/tauri-action@v1
         env:

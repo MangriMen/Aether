@@ -1,0 +1,18 @@
+# Rust dependencies
+
+Each distinct license text is listed once, followed by the crates that use it.
+{{#each licenses}}
+
+---
+
+### {{name}}
+
+Used by:
+{{#each used_by}}
+- {{crate.name}} {{crate.version}}{{#if crate.authors}} ({{#each crate.authors}}{{{this}}}{{#unless @last}}; {{/unless}}{{/each}}){{/if}}
+{{/each}}
+
+```text
+{{{text}}}
+```
+{{/each}}
