@@ -3,18 +3,17 @@ import type {
   ColumnDef,
   HeaderGroup,
   Row,
-  Table as SolidTable,
+  RowData,
+  SolidTable,
 } from '@tanstack/solid-table';
 import type { Accessor, ComponentProps, JSX } from 'solid-js';
 
-import {
-  createSolidTable,
-  flexRender,
-  getCoreRowModel,
-} from '@tanstack/solid-table';
+import { createTable, FlexRender } from '@tanstack/solid-table';
 import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import type { AppTableFeatures } from '@/shared/model';
+
+import { appTableFeatures, useTranslation } from '@/shared/model';
 
 import { cn } from '../../lib';
 import { Skeleton } from './Skeleton';
@@ -27,8 +26,11 @@ import {
   TableRow,
 } from './Table';
 
-const getSharedColumnsStyles = <TData,>(
-  column: Column<TData, unknown>,
+// Tables passed to DataTable may enable more features than this set.
+type DataTableFeatures = AppTableFeatures;
+
+const getSharedColumnsStyles = <TData extends RowData>(
+  column: Column<DataTableFeatures, TData, unknown>,
 ): JSX.CSSProperties => {
   const { stretch, center } = column.columnDef.meta ?? {};
   const { maxSize, minSize } = column.columnDef;
@@ -49,19 +51,20 @@ const getSharedColumnsStyles = <TData,>(
   };
 };
 
-const createDefaultTable = <TData,>(
+const createDefaultTable = <TData extends RowData>(
   data: Accessor<TData[] | undefined>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  columns: Accessor<ColumnDef<TData, any>[]>,
+  columns: Accessor<ColumnDef<DataTableFeatures, TData, any>[]>,
 ) => {
-  return createSolidTable({
+  return createTable({
+    features: appTableFeatures,
+    manualPagination: true,
     get data() {
       return data() ?? [];
     },
     get columns() {
       return columns();
     },
-    getCoreRowModel: getCoreRowModel(),
   });
 };
 
@@ -72,22 +75,22 @@ type BaseDataTableProps = {
   noContentPlaceholder?: string;
 };
 
-type DataTableProps<TData> = BaseDataTableProps &
+type DataTableProps<TData extends RowData> = BaseDataTableProps &
   (
     | {
         data: TData[];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        columns: ColumnDef<TData, any>[];
+        columns: ColumnDef<DataTableFeatures, TData, any>[];
         table?: never;
       }
     | {
-        table: SolidTable<TData>;
+        table: SolidTable<DataTableFeatures, TData>;
         data?: never;
         columns?: never;
       }
   );
 
-export const DataTable = <TData,>(
+export const DataTable = <TData extends RowData>(
   props: ComponentProps<'div'> & DataTableProps<TData>,
 ) => {
   const [local, others] = splitProps(props, [
@@ -184,12 +187,12 @@ export const DataTable = <TData,>(
   );
 };
 
-interface DataTableHeaderRowProps<TData> {
-  headerGroup: HeaderGroup<TData>;
+interface DataTableHeaderRowProps<TData extends RowData> {
+  headerGroup: HeaderGroup<DataTableFeatures, TData>;
   cellStyles: Record<string, JSX.CSSProperties>;
 }
 
-export const DataTableHeaderRow = <TData,>(
+export const DataTableHeaderRow = <TData extends RowData>(
   props: DataTableHeaderRowProps<TData>,
 ) => {
   return (
@@ -201,7 +204,7 @@ export const DataTableHeaderRow = <TData,>(
             style={props.cellStyles[header.column.id]}
           >
             <Show when={!header.isPlaceholder}>
-              {flexRender(header.column.columnDef.header, header.getContext())}
+              <FlexRender header={header} />
             </Show>
           </TableHead>
         )}
@@ -210,12 +213,14 @@ export const DataTableHeaderRow = <TData,>(
   );
 };
 
-interface DataTableRowProps<TData> {
-  row: Row<TData>;
+interface DataTableRowProps<TData extends RowData> {
+  row: Row<DataTableFeatures, TData>;
   cellStyles: Record<string, JSX.CSSProperties>;
 }
 
-const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
+const DataTableRow = <TData extends RowData>(
+  props: DataTableRowProps<TData>,
+) => {
   return (
     <TableRow
       class='group bg-secondary/card'
@@ -224,7 +229,7 @@ const DataTableRow = <TData,>(props: DataTableRowProps<TData>) => {
       <For each={props.row.getVisibleCells()}>
         {(cell) => (
           <TableCell style={props.cellStyles[cell.column.id]}>
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <FlexRender cell={cell} />
           </TableCell>
         )}
       </For>
@@ -250,13 +255,15 @@ const TableStatusMessage = (
   );
 };
 
-interface TableSkeletonProps<TData> {
+interface TableSkeletonProps<TData extends RowData> {
   rowsCount: number;
-  visibleColumns: Column<TData, unknown>[];
+  visibleColumns: Column<DataTableFeatures, TData, unknown>[];
   columnStyles: Record<string, JSX.CSSProperties>;
 }
 
-const TableSkeleton = <TData,>(props: TableSkeletonProps<TData>) => {
+const TableSkeleton = <TData extends RowData>(
+  props: TableSkeletonProps<TData>,
+) => {
   const rowIndices = createMemo(() => new Array(props.rowsCount).fill(0));
 
   return (

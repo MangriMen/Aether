@@ -4,6 +4,7 @@ import IconMdiReload from '~icons/mdi/reload';
 import { Show, type Component } from 'solid-js';
 
 import type { Instance, ContentFile } from '@/entities/instances';
+import type { AppTableFeatures } from '@/shared/model';
 
 import { useTranslation } from '@/shared/model';
 import { Button } from '@/shared/ui';
@@ -16,7 +17,7 @@ export type HeaderActionsProps = {
   someRowsSelected?: boolean;
   refetch?: () => void;
   isLoading?: boolean;
-  selectedRows: RowModel<ContentFile>;
+  selectedRows: RowModel<AppTableFeatures, ContentFile>;
 };
 
 export const HeaderActions: Component<HeaderActionsProps> = (props) => {

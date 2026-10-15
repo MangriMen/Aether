@@ -6,16 +6,12 @@ import type {
 } from '@tanstack/solid-table';
 import type { Accessor } from 'solid-js';
 
-import {
-  createSolidTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-} from '@tanstack/solid-table';
+import { createTable } from '@tanstack/solid-table';
 import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentType, ContentVersion } from '@/entities/instances';
+
+import { appTableFeatures } from '@/shared/model';
 
 import {
   CONTENT_VERSIONS_TABLE_COLUMNS,
@@ -59,17 +55,14 @@ export const createContentVersionsTable = (
     ];
   });
 
-  const table = createSolidTable({
+  const table = createTable({
+    features: appTableFeatures,
     get data() {
       return props.data();
     },
     get columns() {
       return columns();
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,

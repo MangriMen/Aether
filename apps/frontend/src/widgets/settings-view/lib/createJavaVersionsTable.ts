@@ -1,7 +1,7 @@
-import { createSolidTable, getCoreRowModel } from '@tanstack/solid-table';
+import { createTable } from '@tanstack/solid-table';
 import { type Accessor } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import { appTableFeatures, useTranslation } from '@/shared/model';
 
 import type { JavaVersion } from '../model';
 
@@ -25,14 +25,15 @@ export const createJavaVersionsTable = (props: JavaVersionsTableProps) => {
     onBrowse: actions.onBrowse,
   });
 
-  const table = createSolidTable({
+  const table = createTable({
+    features: appTableFeatures,
+    manualPagination: true,
     get data() {
       return props.data();
     },
     get columns() {
       return columns;
     },
-    getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => `${row.majorVersion}`,
   });
 
