@@ -13,9 +13,9 @@ use crate::{
         instance::{
             CapabilityMetadata, ContentIdentity, ContentItem, ContentMetadata, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, InstallFileEntry, InstallPlan, Instance,
-            InstanceError, PackInfo, PackMetadata, PackSource, ProviderId, ReleaseChannel,
-            ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata, InstallFileEntry,
+            InstallPlan, Instance, InstanceError, PackInfo, PackMetadata, PackSource, ProviderId,
+            ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -41,7 +41,7 @@ use super::{
     },
 };
 
-/// How many ids one `GET /projects`, `/teams` or `/organizations` asks for: a hundred keep the
+/// How many ids one `GET /projects`, `/versions`, `/teams` or `/organizations` asks for: a hundred keep the
 /// URL under 2 KB.
 const METADATA_BATCH_SIZE: usize = 100;
 
@@ -666,6 +666,16 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 }
             })
             .collect())
+    }
+
+    async fn get_versions_metadata(
+        &self,
+        version_ids: &[String],
+    ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
+        let version_ids = unique(version_ids.iter().cloned());
+        let versions =
+            fetch_batched(&version_ids, |batch| self.api.get_versions_metadata(batch)).await?;
+        Ok(versions.into_iter().map(Into::into).collect())
     }
 
     async fn check_compatibility(

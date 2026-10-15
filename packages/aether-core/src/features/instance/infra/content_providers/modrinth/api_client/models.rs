@@ -233,6 +233,36 @@ pub struct License {
     pub url: Option<String>,
 }
 
+/// A version as `GET /versions` lists it, cut to what [`ContentVersionMetadata`] needs: a
+/// hundred versions in one response, read as leniently as [`ProjectMetadataResponse`].
+///
+/// [`ContentVersionMetadata`]: crate::features::instance::ContentVersionMetadata
+#[derive(Deserialize, Debug)]
+pub struct VersionMetadataResponse {
+    pub id: String,
+    pub version_number: String,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// An entry of a list the API answers, parsed if it can be: an entry of an unexpected shape is
+/// [`Self::Odd`] rather than failing the whole list.
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Lenient<T> {
+    Parsed(T),
+    Odd(serde::de::IgnoredAny),
+}
+
+impl<T> Lenient<T> {
+    pub fn parsed(self) -> Option<T> {
+        match self {
+            Self::Parsed(value) => Some(value),
+            Self::Odd(_) => None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProjectVersionResponse {
     pub id: String,

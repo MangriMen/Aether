@@ -20,9 +20,9 @@ use crate::{
         events::ProgressBarId,
         instance::{
             ContentIdentity, ContentMetadata, ContentProvider, ContentSource, ContentType,
-            FileSide, InstallTarget, InstanceError, InstanceGame, OverrideLocation, OverrideSource,
-            PackInfo, PackSource, ResolveInstallPlanParams, ResolveTarget,
-            infra::ModrinthContentProvider,
+            ContentVersionMetadata, FileSide, InstallTarget, InstanceError, InstanceGame,
+            OverrideLocation, OverrideSource, PackInfo, PackSource, ResolveInstallPlanParams,
+            ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -1001,6 +1001,101 @@ async fn should_fail_when_the_owners_cannot_be_fetched() {
         .get_contents_metadata(&ids(&["AANobbMI"]))
         .await;
 
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+fn version_metadata(id: &str, version_number: &str, name: &str) -> Value {
+    json!({
+        "id": id, "project_id": "AANobbMI", "author_id": "DzLrfrbK", "featured": false,
+        "name": name, "version_number": version_number, "changelog": null,
+        "changelog_url": null, "date_published": "2024-04-29T15:59:42.831851Z",
+        "downloads": 1, "version_type": "release", "status": "listed",
+        "requested_status": null, "game_versions": ["1.21.1"], "loaders": ["fabric"],
+        "files": [], "dependencies": []
+    })
+}
+
+#[tokio::test]
+async fn should_describe_the_versions_modrinth_knows_when_asked_for_their_metadata() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API}/versions"),
+        &json!([
+            version_metadata("IZskON6d", "mc1.20.6-0.5.8", "Sodium 0.5.8"),
+            version_metadata("NOTITLE0", "1.0.0", ""),
+            // An entry of a shape not expected is left out, not the whole answer.
+            { "id": "ODDONE00" },
+        ]),
+    );
+
+    let mut metadata = fixture
+        .provider
+        .get_versions_metadata(&ids(&["IZskON6d", "NOTITLE0", "ODDONE00", "unknown"]))
+        .await
+        .unwrap();
+    metadata.sort_by(|a, b| a.version_id.cmp(&b.version_id));
+
+    assert_eq!(
+        metadata,
+        [
+            ContentVersionMetadata {
+                version_id: "IZskON6d".into(),
+                version_number: "mc1.20.6-0.5.8".into(),
+                name: Some("Sodium 0.5.8".into()),
+            },
+            ContentVersionMetadata {
+                version_id: "NOTITLE0".into(),
+                version_number: "1.0.0".into(),
+                name: None,
+            },
+        ]
+    );
+    assert_eq!(
+        fixture.http.batches(&format!("{API}/versions")),
+        [ids(&["IZskON6d", "NOTITLE0", "ODDONE00", "unknown"])]
+    );
+}
+
+#[tokio::test]
+async fn should_ask_for_versions_in_batches_of_each_id_once_when_given_many() {
+    let fixture = Fixture::new();
+    fixture
+        .http
+        .serve_json(&format!("{API}/versions"), &json!([]));
+    let mut asked: Vec<String> = (0..250).map(|i| format!("v{i}")).collect();
+    asked.extend(ids(&["v0", "v1"]));
+
+    let metadata = fixture
+        .provider
+        .get_versions_metadata(&asked)
+        .await
+        .unwrap();
+
+    assert!(metadata.is_empty());
+    let batches = fixture.http.batches(&format!("{API}/versions"));
+    assert_eq!(batches.len(), 3);
+    assert!(batches.iter().all(|batch| batch.len() <= 100));
+    let mut all: Vec<String> = batches.into_iter().flatten().collect();
+    all.sort();
+    let mut expected: Vec<String> = (0..250).map(|i| format!("v{i}")).collect();
+    expected.sort();
+    assert_eq!(all, expected, "each id asked exactly once");
+}
+
+#[tokio::test]
+async fn should_fail_when_a_batch_of_versions_cannot_be_fetched() {
+    let fixture = Fixture::new();
+
+    let empty = fixture.provider.get_versions_metadata(&[]).await.unwrap();
+    let result = fixture
+        .provider
+        .get_versions_metadata(&ids(&["IZskON6d"]))
+        .await;
+
+    assert!(empty.is_empty());
     assert!(matches!(
         result,
         Err(InstanceError::ContentDownloadError(_))

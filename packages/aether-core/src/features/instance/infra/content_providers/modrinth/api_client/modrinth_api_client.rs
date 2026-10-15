@@ -2,8 +2,9 @@ use crate::shared::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
 use super::models::{
-    OrganizationResponse, ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
+    Lenient, OrganizationResponse, ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
     ProjectSearchResponse, ProjectVersionResponse, ProjectVersionsRequest, TeamMemberResponse,
+    VersionMetadataResponse,
 };
 
 pub(crate) struct ModrinthApiClient<RC> {
@@ -100,6 +101,17 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         let request =
             self.prepare_request_at(&self.v3_base_url, "organizations", Some(ids_query(ids)?));
         self.fetch(request).await
+    }
+
+    /// The versions of `ids` in one request, in no particular order. An id Modrinth does not
+    /// know is left out, and so is an entry of a shape not expected.
+    pub(crate) async fn get_versions_metadata(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<VersionMetadataResponse>, String> {
+        let request = self.prepare_request("versions", Some(ids_query(ids)?));
+        let entries: Vec<Lenient<VersionMetadataResponse>> = self.fetch(request).await?;
+        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
     }
 
     pub(crate) async fn get_project_version(

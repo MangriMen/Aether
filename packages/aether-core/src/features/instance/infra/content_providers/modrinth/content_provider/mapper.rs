@@ -2,7 +2,8 @@ use crate::features::{
     instance::{
         ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult, ContentType,
         ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
-        ContentVersionStatus, ContentVersionType, ProviderId, RequestedContentVersionStatus,
+        ContentVersionMetadata, ContentVersionStatus, ContentVersionType, ProviderId,
+        RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
@@ -10,6 +11,7 @@ use crate::features::{
                 ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
                 ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
                 ProjectSearchResponse, ProjectVersionResponse, SearchIndex,
+                VersionMetadataResponse,
             },
         },
     },
@@ -174,6 +176,16 @@ impl From<ProjectMetadataResponse> for ContentMetadata {
             description: value.description.filter(|text| !text.is_empty()),
             author: None,
             icon_url: value.icon_url.filter(|url| !url.is_empty()),
+        }
+    }
+}
+
+impl From<VersionMetadataResponse> for ContentVersionMetadata {
+    fn from(value: VersionMetadataResponse) -> Self {
+        Self {
+            version_id: value.id,
+            version_number: value.version_number,
+            name: value.name.filter(|name| !name.is_empty()),
         }
     }
 }
