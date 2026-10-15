@@ -1,13 +1,47 @@
 //! `ListContentUseCase` reading an instance's content folders.
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
+use async_trait::async_trait;
 use tempfile::TempDir;
 
-use crate::features::{
-    instance::{ListContentUseCase, infra::SqlitePackStorage},
-    settings::LocationInfo,
+use crate::{
+    features::{
+        events::{Event, EventEmitter, EventError},
+        instance::{
+            CachedContentMetadata, ContentMetadata, ContentMetadataCache, ContentMetadataService,
+            ContentProvider, ListContentUseCase, ProviderId, infra::SqlitePackStorage,
+        },
+        settings::LocationInfo,
+    },
+    shared::capability::infra::MemoryCapabilityRegistry,
 };
+
+struct NoCache;
+
+#[async_trait]
+impl ContentMetadataCache for NoCache {
+    async fn get_many(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_keyed(&self, _: &ProviderId, _: &[(String, ContentMetadata)]) {}
+}
+
+struct NoEvents;
+
+#[async_trait]
+impl EventEmitter<Event> for NoEvents {
+    async fn emit(&self, _event: Event) -> Result<(), EventError> {
+        Ok(())
+    }
+
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+}
 
 #[tokio::test]
 async fn should_list_the_content_there_is_when_some_content_folders_are_missing() {
@@ -22,6 +56,11 @@ async fn should_list_the_content_there_is_when_some_content_folders_are_missing(
     let use_case = ListContentUseCase::new(
         Arc::new(SqlitePackStorage::in_memory().await),
         location_info,
+        Arc::new(ContentMetadataService::new(
+            Arc::new(NoCache),
+            Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
+            Arc::new(NoEvents),
+        )),
     );
 
     let files = use_case.execute("instance".to_owned()).await.unwrap();

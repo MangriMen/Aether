@@ -1,0 +1,487 @@
+//! `ListContentUseCase` putting cached project metadata on the content files, and
+//! `ContentMetadataService` refreshing what is missing or stale behind the list's back.
+
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime},
+};
+
+use async_trait::async_trait;
+use dashmap::DashMap;
+use tempfile::TempDir;
+use tokio::sync::{Semaphore, mpsc};
+
+use crate::{
+    features::{
+        events::{Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
+        instance::{
+            CONTENT_METADATA_TTL, CachedContentMetadata, CapabilityMetadata,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
+            ContentFileUpdateInfo, ContentItem, ContentMetadata, ContentMetadataCache,
+            ContentMetadataService, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentVersion, Instance, InstanceError,
+            ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
+        },
+        settings::LocationInfo,
+    },
+    shared::capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
+};
+
+const INSTANCE_ID: &str = "instance";
+
+fn provider_id(capability_id: &str) -> ProviderId {
+    ProviderId {
+        plugin_id: "plugin".into(),
+        capability_id: capability_id.into(),
+    }
+}
+
+fn metadata(content_id: &str, name: &str) -> ContentMetadata {
+    ContentMetadata {
+        content_id: content_id.into(),
+        slug: name.to_lowercase(),
+        name: name.into(),
+        description: None,
+        author: None,
+        icon_url: None,
+    }
+}
+
+// ── Fakes ──
+
+#[derive(Default)]
+struct MemoryMetadataCache {
+    items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
+}
+
+impl MemoryMetadataCache {
+    fn seed(&self, provider_id: &ProviderId, item: ContentMetadata, fetched_at: SystemTime) {
+        self.items.lock().unwrap().insert(
+            (provider_id.clone(), item.content_id.clone()),
+            CachedContentMetadata {
+                metadata: item,
+                fetched_at,
+            },
+        );
+    }
+}
+
+#[async_trait]
+impl ContentMetadataCache for MemoryMetadataCache {
+    async fn get_many(
+        &self,
+        provider_id: &ProviderId,
+        content_ids: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        let items = self.items.lock().unwrap();
+        content_ids
+            .iter()
+            .filter_map(|id| {
+                let item = items.get(&(provider_id.clone(), id.clone()))?;
+                Some((id.clone(), item.clone()))
+            })
+            .collect()
+    }
+
+    async fn put_keyed(&self, provider_id: &ProviderId, items: &[(String, ContentMetadata)]) {
+        let mut cached = self.items.lock().unwrap();
+        for (content_id, item) in items {
+            cached.insert(
+                (provider_id.clone(), content_id.clone()),
+                CachedContentMetadata {
+                    metadata: item.clone(),
+                    fetched_at: SystemTime::now(),
+                },
+            );
+        }
+    }
+}
+
+enum Answer {
+    Items(Vec<ContentMetadata>),
+    Fail,
+    Unsupported,
+}
+
+struct FakeProvider {
+    metadata: ContentProviderCapabilityMetadata,
+    answer: Answer,
+    /// Each call's ids, sorted.
+    calls: Mutex<Vec<Vec<String>>>,
+    /// When set, a call waits for a permit before answering.
+    gate: Option<Arc<Semaphore>>,
+}
+
+impl FakeProvider {
+    fn new(capability_id: &str, answer: Answer) -> Self {
+        Self {
+            metadata: ContentProviderCapabilityMetadata {
+                base: CapabilityMetadata {
+                    id: capability_id.into(),
+                    name: capability_id.into(),
+                    description: None,
+                    icon: None,
+                },
+                platform: None,
+            },
+            answer,
+            calls: Mutex::new(Vec::new()),
+            gate: None,
+        }
+    }
+
+    fn gated(mut self, gate: Arc<Semaphore>) -> Self {
+        self.gate = Some(gate);
+        self
+    }
+
+    fn calls(&self) -> Vec<Vec<String>> {
+        self.calls.lock().unwrap().clone()
+    }
+}
+
+#[async_trait]
+impl ContentProvider for FakeProvider {
+    fn metadata(&self) -> &ContentProviderCapabilityMetadata {
+        &self.metadata
+    }
+
+    fn provider_id(&self) -> ProviderId {
+        provider_id(&self.metadata.base.id)
+    }
+
+    async fn search(&self, _: ContentSearchParams) -> Result<ContentSearchResult, InstanceError> {
+        unimplemented!()
+    }
+
+    async fn get_content(&self, _: String) -> Result<ContentItem, InstanceError> {
+        unimplemented!()
+    }
+
+    async fn list_versions(&self, _: String) -> Result<Vec<ContentVersion>, InstanceError> {
+        unimplemented!()
+    }
+
+    async fn check_compatibility(
+        &self,
+        _: &[Instance],
+        _: &ContentCompatibilityCheckParams,
+    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        unimplemented!()
+    }
+
+    async fn get_contents_metadata(
+        &self,
+        content_ids: &[String],
+    ) -> Result<Vec<ContentMetadata>, InstanceError> {
+        let mut asked = content_ids.to_vec();
+        asked.sort();
+        self.calls.lock().unwrap().push(asked);
+
+        if let Some(gate) = &self.gate {
+            gate.acquire().await.unwrap().forget();
+        }
+
+        match &self.answer {
+            Answer::Items(items) => Ok(items.clone()),
+            Answer::Fail => Err(InstanceError::ContentDownloadError("offline".into())),
+            Answer::Unsupported => Err(self.unsupported("get_contents_metadata")),
+        }
+    }
+}
+
+struct ChannelEvents(mpsc::UnboundedSender<Event>);
+
+#[async_trait]
+impl EventEmitter<Event> for ChannelEvents {
+    async fn emit(&self, event: Event) -> Result<(), EventError> {
+        let _ = self.0.send(event);
+        Ok(())
+    }
+
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+}
+
+// ── Fixture ──
+
+struct Fixture {
+    _temp: TempDir,
+    mods: std::path::PathBuf,
+    use_case: ListContentUseCase,
+    cache: Arc<MemoryMetadataCache>,
+    events: mpsc::UnboundedReceiver<Event>,
+}
+
+impl Fixture {
+    /// An instance with one mod per `(file, provider, content id)`, the providers registered.
+    async fn new(files: &[(&str, &str, &str)], providers: Vec<Arc<FakeProvider>>) -> Self {
+        let temp = TempDir::new().unwrap();
+        let location_info = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let mods = location_info.instance_dir(INSTANCE_ID).join("mods");
+        tokio::fs::create_dir_all(&mods).await.unwrap();
+
+        let pack_storage = Arc::new(SqlitePackStorage::in_memory().await);
+        for (file, capability_id, content_id) in files {
+            tokio::fs::write(mods.join(file), b"jar").await.unwrap();
+            let provider = provider_id(capability_id);
+            let mut pack_file = PackFile::from_hash((*file).to_owned(), "hash".into());
+            pack_file.update_provider_id = Some(provider.clone());
+            pack_file.update = Some(HashMap::from([(
+                provider,
+                ContentFileUpdateInfo {
+                    content_id: (*content_id).to_owned(),
+                    version: "v1".into(),
+                },
+            )]));
+            pack_storage
+                .update_pack_file(INSTANCE_ID, &format!("mods/{file}"), &pack_file)
+                .await
+                .unwrap();
+        }
+
+        let registry = Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default());
+        for provider in providers {
+            let id = provider.provider_id();
+            registry
+                .add(id.plugin_id, id.capability_id, provider)
+                .await
+                .unwrap();
+        }
+
+        let cache = Arc::new(MemoryMetadataCache::default());
+        let (sender, events) = mpsc::unbounded_channel();
+        let service = Arc::new(ContentMetadataService::new(
+            cache.clone(),
+            registry,
+            Arc::new(ChannelEvents(sender)),
+        ));
+
+        Self {
+            _temp: temp,
+            mods,
+            use_case: ListContentUseCase::new(pack_storage, location_info, service),
+            cache,
+            events,
+        }
+    }
+
+    async fn list(&self) -> DashMap<String, ContentFile> {
+        self.use_case.execute(INSTANCE_ID.to_owned()).await.unwrap()
+    }
+
+    /// The name of the metadata on `file`, if any.
+    async fn names(&self) -> HashMap<String, Option<String>> {
+        self.list()
+            .await
+            .into_iter()
+            .map(|(path, file)| (path, file.metadata.map(|m| m.name)))
+            .collect()
+    }
+
+    async fn next_event(&mut self) -> InstanceEvent {
+        let event = tokio::time::timeout(Duration::from_secs(5), self.events.recv())
+            .await
+            .expect("no event in time")
+            .expect("the emitter is gone");
+        event.try_into().expect("not an instance event")
+    }
+
+    /// Let a refresh started by a list run to its end. The fakes never wait on anything but the
+    /// gate, so a few turns of the (current-thread) runtime are enough.
+    async fn settle() {
+        for _ in 0..20 {
+            tokio::task::yield_now().await;
+        }
+    }
+
+    fn assert_no_event(&mut self) {
+        assert!(self.events.try_recv().is_err(), "unexpected event");
+    }
+}
+
+// ── Tests ──
+
+#[tokio::test]
+async fn should_list_without_waiting_for_the_provider_when_metadata_is_missing() {
+    let gate = Arc::new(Semaphore::new(0));
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![metadata("B", "Lithium")]))
+            .gated(gate.clone()),
+    );
+    let fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider.clone()],
+    )
+    .await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        metadata("A", "Sodium"),
+        SystemTime::now(),
+    );
+
+    let names = tokio::time::timeout(Duration::from_secs(5), fixture.names())
+        .await
+        .expect("the list waited for the provider");
+
+    assert_eq!(names["mods/a.jar"], Some("Sodium".into()));
+    assert_eq!(names["mods/b.jar"], None);
+    Fixture::settle().await;
+    assert_eq!(provider.calls(), [["B"]]);
+    gate.add_permits(1);
+}
+
+#[tokio::test]
+async fn should_not_ask_the_provider_when_everything_is_cached_and_fresh() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        metadata("A", "Sodium"),
+        SystemTime::now(),
+    );
+
+    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    Fixture::settle().await;
+
+    assert!(provider.calls().is_empty());
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_ask_each_provider_once_then_cache_and_tell_the_ui_when_metadata_is_missing() {
+    let modrinth = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("A", "Sodium"), metadata("B", "Lithium")]),
+    ));
+    let curse = Arc::new(FakeProvider::new(
+        "curse",
+        Answer::Items(vec![metadata("C", "JEI")]),
+    ));
+    let mut fixture = Fixture::new(
+        &[
+            ("a.jar", "modrinth", "A"),
+            ("b.jar", "modrinth", "B"),
+            ("c.jar", "curse", "C"),
+        ],
+        vec![modrinth.clone(), curse.clone()],
+    )
+    .await;
+
+    let first = fixture.names().await;
+    let event = fixture.next_event().await;
+
+    assert!(first.values().all(Option::is_none));
+    assert_eq!(event.instance_id, INSTANCE_ID);
+    assert!(matches!(event.event, InstanceEventType::Synced));
+    assert_eq!(modrinth.calls(), [["A", "B"]]);
+    assert_eq!(curse.calls(), [["C"]]);
+
+    let second = fixture.names().await;
+    assert_eq!(second["mods/a.jar"], Some("Sodium".into()));
+    assert_eq!(second["mods/b.jar"], Some("Lithium".into()));
+    assert_eq!(second["mods/c.jar"], Some("JEI".into()));
+    Fixture::settle().await;
+    assert_eq!(modrinth.calls().len(), 1);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_keep_the_stale_item_when_the_refresh_fails() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Fail));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    let long_ago = SystemTime::now() - CONTENT_METADATA_TTL - Duration::from_hours(1);
+    fixture
+        .cache
+        .seed(&provider_id("modrinth"), metadata("A", "Sodium"), long_ago);
+
+    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), 1);
+    fixture.assert_no_event();
+
+    // Still shown, and asked again: a failure is not remembered.
+    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), 2);
+}
+
+#[tokio::test]
+async fn should_not_ask_again_a_provider_that_cannot_describe_its_content() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Unsupported));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    assert_eq!(fixture.names().await["mods/a.jar"], None);
+    Fixture::settle().await;
+    assert_eq!(fixture.names().await["mods/a.jar"], None);
+    Fixture::settle().await;
+
+    assert_eq!(provider.calls().len(), 1);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_start_one_refresh_when_lists_overlap() {
+    let gate = Arc::new(Semaphore::new(0));
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![metadata("A", "Sodium")]))
+            .gated(gate.clone()),
+    );
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    Fixture::settle().await;
+    fixture.list().await;
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), 1);
+
+    gate.add_permits(1);
+    fixture.next_event().await;
+    assert_eq!(fixture.names().await["mods/a.jar"], Some("Sodium".into()));
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), 1);
+}
+
+#[tokio::test]
+async fn should_find_an_item_answered_by_slug_and_not_ask_again_about_unknown_ids() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("AANobbMI", "Sodium")]),
+    ));
+    let mut fixture = Fixture::new(
+        &[
+            ("a.jar", "modrinth", "sodium"),
+            ("b.jar", "modrinth", "gone"),
+        ],
+        vec![provider.clone()],
+    )
+    .await;
+
+    fixture.list().await;
+    fixture.next_event().await;
+    let names = fixture.names().await;
+    Fixture::settle().await;
+
+    assert_eq!(names["mods/a.jar"], Some("Sodium".into()));
+    assert_eq!(names["mods/b.jar"], None);
+    assert_eq!(provider.calls(), [["gone", "sodium"]]);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_leave_a_file_of_no_provider_without_metadata() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
+    let fixture = Fixture::new(&[], vec![provider.clone()]).await;
+    tokio::fs::write(fixture.mods.join("manual.jar"), b"jar")
+        .await
+        .unwrap();
+
+    let names = fixture.names().await;
+    Fixture::settle().await;
+
+    assert_eq!(names.get("mods/manual.jar"), Some(&None));
+    assert!(provider.calls().is_empty());
+}

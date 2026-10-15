@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use aether_core::features::instance::{ContentFile, ContentFileUpdateInfo};
+use aether_core::features::instance::{ContentFile, ContentFileUpdateInfo, ContentMetadata};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
@@ -25,6 +25,21 @@ pub struct ContentFileDto {
     #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
     #[specta(type = Option<HashMap<String, ContentFileUpdateInfoDto>>)]
     pub update: Option<HashMap<ProviderIdDto, ContentFileUpdateInfoDto>>,
+    /// The file's project as its provider describes it, when cached. Filled in later when
+    /// missing: the instance's `synced` event tells when to list again.
+    pub metadata: Option<ContentMetadataDto>,
+}
+
+/// What a provider says about the project of an installed file.
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentMetadataDto {
+    pub content_id: String,
+    pub slug: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub author: Option<String>,
+    pub icon_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -49,6 +64,7 @@ impl From<ContentFile> for ContentFileDto {
             update: value
                 .update
                 .map(|m| m.into_iter().map(|(k, v)| (k.into(), v.into())).collect()),
+            metadata: value.metadata.map(Into::into),
         }
     }
 }
@@ -58,6 +74,19 @@ impl From<ContentFileUpdateInfo> for ContentFileUpdateInfoDto {
         Self {
             content_id: value.content_id,
             version: value.version,
+        }
+    }
+}
+
+impl From<ContentMetadata> for ContentMetadataDto {
+    fn from(value: ContentMetadata) -> Self {
+        Self {
+            content_id: value.content_id,
+            slug: value.slug,
+            name: value.name,
+            description: value.description,
+            author: value.author,
+            icon_url: value.icon_url,
         }
     }
 }

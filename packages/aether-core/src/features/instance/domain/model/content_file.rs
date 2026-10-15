@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{PackFile, ProviderId};
+use crate::features::instance::{ContentMetadata, PackFile, ProviderId};
 
 use super::ContentType;
 
@@ -16,6 +16,10 @@ pub struct ContentFile {
     pub version: Option<String>,
     pub update_provider_id: Option<ProviderId>,
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
+    /// What the provider of the file's project says about it, as last cached: the project of
+    /// `update[update_provider_id].content_id`. `None` — nothing cached yet, or the file is of
+    /// no provider.
+    pub metadata: Option<ContentMetadata>,
 }
 
 #[derive(Debug, Clone)]
@@ -49,6 +53,7 @@ impl ContentFile {
             version,
             update_provider_id: pack_file.update_provider_id,
             update: pack_file.update,
+            metadata: None,
         }
     }
 }

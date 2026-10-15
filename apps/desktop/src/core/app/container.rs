@@ -13,7 +13,7 @@ use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
     EventEmittingInstanceStorage, FsContentFileService, FsInstanceFileService,
     InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
-    SqliteInstanceStorage, SqlitePackStorage,
+    SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache,
 };
 use aether_core::features::instance::{ContentProvider, GetInstanceUseCase, Importer, Updater};
 use aether_core::features::java::infra::{
@@ -183,6 +183,10 @@ pub async fn build_container(
         ));
     let pack_storage: Arc<dyn aether_core::features::instance::PackStorage> =
         Arc::new(SqlitePackStorage::new(pool.clone()));
+    let content_metadata_cache: Arc<dyn aether_core::features::instance::ContentMetadataCache> =
+        Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
+            pool.clone(),
+        )));
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
@@ -310,6 +314,7 @@ pub async fn build_container(
             instance_storage: instance_storage.clone(),
             pack_storage,
             content_file_service,
+            content_metadata_cache,
             instance_file_service,
             java_storage,
             java_installation_service,

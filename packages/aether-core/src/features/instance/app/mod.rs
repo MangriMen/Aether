@@ -1,3 +1,4 @@
+mod content_metadata_service;
 mod di;
 mod dtos;
 mod extensions;
@@ -5,6 +6,7 @@ mod instance_locks;
 mod ports;
 mod use_cases;
 
+pub use content_metadata_service::ContentMetadataService;
 pub use di::{
     ContentManagementPort, ContentProviderPort, InstanceCrudPort, InstanceFeature,
     InstanceLifecyclePort, InstanceServicesPort,

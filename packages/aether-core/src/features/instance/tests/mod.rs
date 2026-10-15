@@ -12,6 +12,7 @@ mod install_plan_executor;
 mod instance_locks_test;
 mod instance_relative_path_test;
 mod legacy_provider_id_sqlite_test;
+mod list_content_metadata_test;
 mod list_content_test;
 mod modrinth_content_provider_test;
 mod remove_content_test;
