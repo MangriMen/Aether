@@ -7,7 +7,7 @@
     },
     "lint:code": {
       "inputs": ["src/**/*.{ts,tsx,js,jsx}", "eslint.config*", ".prettierrc*"],
-      "outputs": [".eslintcache"],
+      "outputs": ["node_modules/.cache/eslint/**"],
     },
     "lint:arch": {
       "inputs": ["src/**/*", "steiger.config.*"],

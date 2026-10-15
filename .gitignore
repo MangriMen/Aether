@@ -55,8 +55,6 @@ web_modules/
 # Optional npm cache directory
 .npm
 
-# Optional eslint cache
-.eslintcache
 
 # Optional stylelint cache
 .stylelintcache
@@ -162,6 +160,7 @@ target/
 .vscode/settings.json
 .vscode/launch.json
 !.vscode/extensions.json
+packages/**/.vscode/
 
 # Monorepo
 .turbo

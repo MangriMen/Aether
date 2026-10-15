@@ -2,7 +2,7 @@ use register_schema::get_all_schemas;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-// Paths relative to workspace
+// Paths relative to the `packages/` directory (the `spec/*` ones are currently unused by any registered category)
 const PLUGIN_API_PATH: &[&str] = &["aether-core-plugin-api", "src", "v0", "schemas"];
 const INTERNAL_PATH: &[&str] = &["spec", "internal-schemas"];
 const DEFAULT_PATH: &[&str] = &["spec", "json-schema"];
@@ -40,7 +40,7 @@ fn sync_all_schemas() {
 
 fn get_target_dir(category: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.pop(); // Workspace root
+    path.pop(); // `packages/` directory (parent of this crate)
 
     let sub_path = match category {
         "plugin_api" => PLUGIN_API_PATH,
