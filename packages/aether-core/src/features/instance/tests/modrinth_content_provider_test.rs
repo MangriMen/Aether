@@ -30,7 +30,9 @@ use crate::{
     shared::{
         hash::FileHash,
         limits::ContentInstallLimits,
-        request_client::{BytesProgress, Request, RequestClient, RequestError},
+        request_client::{
+            BytesProgress, FileDownload, Request, RequestClient, RequestError, SavedDownload,
+        },
     },
 };
 
@@ -130,6 +132,20 @@ impl RequestClient for FakeHttp {
         }
         std::fs::write(destination, &body).unwrap();
         Ok(body.len() as u64)
+    }
+    async fn download_to_file_conditional(
+        &self,
+        request: Request,
+        destination: &Path,
+        max_size: u64,
+    ) -> Result<FileDownload, RequestError> {
+        let size = self
+            .download_to_file(request, destination, max_size, None)
+            .await?;
+        Ok(FileDownload::Saved(SavedDownload {
+            size,
+            ..SavedDownload::default()
+        }))
     }
 }
 

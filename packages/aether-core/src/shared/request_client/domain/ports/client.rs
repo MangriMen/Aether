@@ -5,7 +5,7 @@ use bytes::Bytes;
 
 use crate::{
     features::events::ProgressBarId,
-    shared::request_client::{Request, RequestError},
+    shared::request_client::{FileDownload, Request, RequestError},
 };
 
 /// Called with the number of bytes that arrived since the previous call, as the body streams.
@@ -39,4 +39,15 @@ pub trait RequestClient: Send + Sync {
         max_size: u64,
         on_bytes: Option<BytesProgress<'_>>,
     ) -> Result<u64, RequestError>;
+
+    /// As [`Self::download_to_file`] (no progress), for a request that may carry its own
+    /// `If-None-Match` or `If-Modified-Since`: a `304 Not Modified` answer is
+    /// [`FileDownload::NotModified`] and leaves `destination` as it is. A saved body comes with
+    /// the response's `Content-Type` and validators.
+    async fn download_to_file_conditional(
+        &self,
+        request: Request,
+        destination: &Path,
+        max_size: u64,
+    ) -> Result<FileDownload, RequestError>;
 }

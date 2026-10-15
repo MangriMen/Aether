@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::shared::{hash::FileHash, request_client::Method};
 
 #[derive(Debug)]
@@ -8,6 +10,9 @@ pub struct Request {
     /// Expected digest of the response body. A mismatch fails the request.
     pub hash: Option<FileHash>,
     pub body: Option<Vec<u8>>,
+    /// How long the whole request may take, body included, before it fails. `None` — no
+    /// limit of its own, only what the client has.
+    pub timeout: Option<Duration>,
 }
 
 impl Request {
@@ -18,6 +23,7 @@ impl Request {
             headers: None,
             hash: None,
             body: None,
+            timeout: None,
         }
     }
 
@@ -38,6 +44,12 @@ impl Request {
     #[must_use]
     pub fn with_hash(mut self, hash: FileHash) -> Self {
         self.hash = Some(hash);
+        self
+    }
+
+    #[must_use]
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
         self
     }
 
