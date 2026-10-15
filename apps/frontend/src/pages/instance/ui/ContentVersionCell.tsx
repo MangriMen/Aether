@@ -1,5 +1,5 @@
 import { A, useParams } from '@solidjs/router';
-import { Match, Show, Switch } from 'solid-js';
+import { createMemo, Match, Show, Switch } from 'solid-js';
 
 import type { ContentFile } from '@/entities/instances';
 
@@ -21,6 +21,9 @@ export const ContentVersionCell = (props: ContentVersionCellProps) => {
 
   const href = () => getContentFileProjectHref(props.file, params.id);
 
+  const state = createMemo(() => getContentFileVersionState(props.file));
+  const versionNumber = () => getContentFileVersionNumber(props.file);
+
   return (
     <span
       class={cn('inline-flex flex-col', {
@@ -28,19 +31,16 @@ export const ContentVersionCell = (props: ContentVersionCellProps) => {
       })}
     >
       <Switch>
-        <Match when={getContentFileVersionState(props.file) === 'known'}>
-          <Show
-            when={href()}
-            fallback={<span>{getContentFileVersionNumber(props.file)}</span>}
-          >
+        <Match when={state() === 'known'}>
+          <Show when={href()} fallback={<span>{versionNumber()}</span>}>
             {(link) => (
               <A href={link()} class='hover:underline'>
-                {getContentFileVersionNumber(props.file)}
+                {versionNumber()}
               </A>
             )}
           </Show>
         </Match>
-        <Match when={getContentFileVersionState(props.file) === 'pending'}>
+        <Match when={state() === 'pending'}>
           <span class='text-muted-foreground'>{t('common.loading')}</span>
         </Match>
         <Match when>

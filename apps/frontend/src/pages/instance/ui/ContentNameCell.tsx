@@ -19,6 +19,11 @@ interface ContentNameCellProps {
 export const ContentNameCell = (props: ContentNameCellProps) => {
   const [{ t }] = useTranslation();
 
+  const subtitle = () =>
+    isLocalContentFile(props.file)
+      ? t('common.local')
+      : getContentFileAuthor(props.file);
+
   return (
     <span
       class={cn('inline-flex items-center gap-2', {
@@ -28,15 +33,8 @@ export const ContentNameCell = (props: ContentNameCellProps) => {
       <InstanceIcon class='size-8' src={getContentFileIconSrc(props.file)} />
       <span class='inline-flex flex-col'>
         <span>{getContentFileDisplayTitle(props.file)}</span>
-        <Show
-          when={!isLocalContentFile(props.file)}
-          fallback={
-            <span class='text-muted-foreground'>{t('common.local')}</span>
-          }
-        >
-          <Show when={getContentFileAuthor(props.file)}>
-            {(author) => <span class='text-muted-foreground'>{author()}</span>}
-          </Show>
+        <Show when={subtitle()}>
+          {(text) => <span class='text-muted-foreground'>{text()}</span>}
         </Show>
       </span>
     </span>
