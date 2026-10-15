@@ -2,10 +2,10 @@ name: Audit
 
 on:
   pull_request:
-    paths: ["**/Cargo.toml", "Cargo.lock"]
+    paths: ["**/Cargo.toml", "Cargo.lock", "deny.toml"]
   push:
     branches: [main]
-    paths: ["**/Cargo.toml", "Cargo.lock"]
+    paths: ["**/Cargo.toml", "Cargo.lock", "deny.toml"]
   schedule:
     - cron: "0 6 * * 1"
 
@@ -22,3 +22,16 @@ jobs:
 
       - name: cargo audit
         run: cargo audit
+
+  cargo-deny:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+
+      - name: cargo deny
+        run: cargo deny check licenses
