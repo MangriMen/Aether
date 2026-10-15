@@ -164,7 +164,7 @@ fn should_accept_colon_in_a_file_name_when_not_on_windows() {
     for path in ["mods/a:b.jar", "pack.toml:secret", "mods/C:evil.dll"] {
         assert_eq!(
             validate_relative_path(path).unwrap(),
-            PathBuf::from_iter(path.split('/')),
+            path.split('/').collect::<PathBuf>(),
             "`{path}` must be accepted"
         );
     }
