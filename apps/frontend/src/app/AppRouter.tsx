@@ -1,4 +1,4 @@
-import { Route, Router } from '@solidjs/router';
+import { Route, Router, type RouteSectionProps } from '@solidjs/router';
 import { lazy, type Component } from 'solid-js';
 
 import {
@@ -17,6 +17,10 @@ const PlaygroundPage = lazy(() =>
 
 import { AppRoot } from './AppRoot';
 
+const InstanceSettingsRoute: Component<RouteSectionProps> = (props) => (
+  <InstanceSettingsDialog instanceId={props.params.id} />
+);
+
 export const AppRouter: Component = () => {
   return (
     <Router root={AppRoot}>
@@ -24,9 +28,7 @@ export const AppRouter: Component = () => {
         <Route />
         <Route
           path={ROUTE_PATTERNS.INSTANCE_DIALOG}
-          component={(props) => (
-            <InstanceSettingsDialog instanceId={props.params.id} />
-          )}
+          component={InstanceSettingsRoute}
         />
       </Route>
 
@@ -42,9 +44,7 @@ export const AppRouter: Component = () => {
         <Route />
         <Route
           path={ROUTE_PATTERNS.INSTANCE_SETTINGS_REL}
-          component={(props) => (
-            <InstanceSettingsDialog instanceId={props.params.id} />
-          )}
+          component={InstanceSettingsRoute}
         />
       </Route>
 
