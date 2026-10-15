@@ -77,3 +77,13 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# Full debuginfo, for inspecting variables in a debugger: `cargo build --profile debugging`
+# or `bun run dev:debug` in apps/desktop. It builds into target/debugging, so switching to it
+# does not invalidate the everyday dev build.
+[profile.debugging]
+inherits = "dev"
+debug = "full"
+
+[profile.debugging.package."*"]
+debug = "full"
