@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf, Prefix},
 };
 
 use aether_core_plugin_api::v0::CommandDto;
@@ -14,7 +14,7 @@ use crate::{
         plugins::{PLUGIN_INSTANCES_MOUNT, PluginError},
         settings::LocationInfo,
     },
-    shared::{io::domain::IoError, serializable_command::domain::SerializableCommand},
+    shared::serializable_command::domain::SerializableCommand,
 };
 
 /// The hashing task of a plugin binary did not finish. The cause is logged here, the caller
@@ -94,8 +94,8 @@ pub(crate) fn is_read_only_plugin_mount(plugin_path: &Path) -> bool {
 
 /// The host-side key to hand Extism for one mount, read-only ones carrying [`READ_ONLY_MOUNT_PREFIX`].
 ///
-/// Separate from [`get_default_allowed_paths`]: the prefix in that map would break
-/// `invert_allowed_paths` and the directory creation over its keys.
+/// Separate from [`get_default_allowed_paths`]: the prefix in that map would end up in the
+/// directory creation over its keys.
 pub(crate) fn to_extism_mount_key(host: &str, read_only: bool) -> String {
     if read_only {
         format!("{READ_ONLY_MOUNT_PREFIX}{host}")
@@ -104,146 +104,107 @@ pub(crate) fn to_extism_mount_key(host: &str, read_only: bool) -> String {
     }
 }
 
+/// A directory the core mounts into every plugin's sandbox.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PluginMount {
+    /// The plugin's own scratch space, read-write.
+    Cache,
+    /// The tree of all instances, read-only to the sandbox.
+    Instances,
+}
+
+impl PluginMount {
+    const ALL: [Self; 2] = [Self::Cache, Self::Instances];
+
+    fn plugin_root(self) -> &'static str {
+        match self {
+            Self::Cache => PLUGIN_CACHE_MOUNT,
+            Self::Instances => PLUGIN_INSTANCES_MOUNT,
+        }
+    }
+
+    fn host_root(self, location_info: &LocationInfo, plugin_id: &str) -> PathBuf {
+        match self {
+            Self::Cache => location_info.plugin_cache_dir(plugin_id),
+            Self::Instances => location_info.instances_dir(),
+        }
+    }
+}
+
+/// The mounts a plugin path may resolve into. Each caller names the narrowest set it needs: a
+/// file the core will copy into the asset store has no business in `/instances`.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MountSet(&'static [PluginMount]);
+
+impl MountSet {
+    pub(crate) const CACHE: Self = Self(&[PluginMount::Cache]);
+    pub(crate) const ALL: Self = Self(&PluginMount::ALL);
+}
+
 pub(crate) fn get_default_allowed_paths(
     location_info: &LocationInfo,
     plugin_id: &str,
 ) -> HashMap<String, PathBuf> {
-    HashMap::from([
-        (
-            location_info
-                .plugin_cache_dir(plugin_id)
-                .to_string_lossy()
-                .to_string(),
-            PathBuf::from(PLUGIN_CACHE_MOUNT),
-        ),
-        (
-            location_info.instances_dir().to_string_lossy().to_string(),
-            PathBuf::from(PLUGIN_INSTANCES_MOUNT),
-        ),
-    ])
-}
-
-pub(crate) fn invert_allowed_paths(allowed: &HashMap<String, PathBuf>) -> HashMap<String, PathBuf> {
-    allowed
-        .iter()
-        .map(|(host, plugin)| {
-            // Defensive: a prefixed key would send `#`-path resolution to a directory literally
-            // named `ro:...`.
-            let host = host.strip_prefix(READ_ONLY_MOUNT_PREFIX).unwrap_or(host);
-
-            (plugin.to_string_lossy().to_string(), PathBuf::from(host))
+    PluginMount::ALL
+        .into_iter()
+        .map(|mount| {
+            (
+                mount
+                    .host_root(location_info, plugin_id)
+                    .to_string_lossy()
+                    .into_owned(),
+                PathBuf::from(mount.plugin_root()),
+            )
         })
         .collect()
 }
 
-pub(crate) fn plugin_path_to_relative<I, T>(
-    id: &str,
-    path: &str,
-    allowed_prefixes: I,
-) -> Result<PathBuf, PluginError>
-where
-    I: IntoIterator<Item = T>,
-    T: AsRef<str>,
-{
-    let prefix = allowed_prefixes
-        .into_iter()
-        .find(|prefix| path.starts_with(prefix.as_ref()))
-        .ok_or(PluginError::AccessViolation {
-            plugin_id: id.to_owned(),
-            path: path.to_owned(),
-        })?;
-
-    let stripped = path.strip_prefix(prefix.as_ref()).unwrap_or(path);
-
-    Ok(PathBuf::from(
-        stripped.strip_prefix('/').unwrap_or(stripped),
-    ))
-}
-
-pub(crate) fn get_first_segment(path: &str) -> &str {
-    let mut indices = path.match_indices('/').skip(1);
-    if let Some((idx, _)) = indices.next() {
-        &path[..idx]
-    } else {
-        path
-    }
-}
-
-pub(crate) fn plugin_path_to_host(
-    id: &str,
-    path: &str,
-    location_info: &LocationInfo,
-) -> Result<PathBuf, PluginError> {
-    // Convert WASI /mnt/<letter>/ paths back to Windows paths
-    // so the host can use them (e.g., in run_command)
-    let path = if path.starts_with("/mnt/") {
-        from_wasi_path(path)
-    } else {
-        path.to_owned()
-    };
-
-    if !path.starts_with('#') {
-        return Ok(PathBuf::from(path));
-    }
-
-    let cleaned_path_str: String = path.strip_prefix('#').unwrap_or(&path).to_owned();
-    let cleaned_path_start_segment = get_first_segment(&cleaned_path_str);
-
-    let allowed_paths = get_default_allowed_paths(location_info, id);
-    let plugin_to_host = invert_allowed_paths(&allowed_paths);
-
-    let base_dir = plugin_to_host
-        .get(cleaned_path_start_segment)
-        .ok_or_else(|| PluginError::AccessViolation {
-            plugin_id: id.to_owned(),
-            path: path.clone(),
-        })?;
-
-    if !base_dir.is_dir() {
-        std::fs::create_dir_all(base_dir).map_err(|e| IoError::with_path(e, path))?;
-    }
-
-    let stripped_path = plugin_path_to_relative(id, &cleaned_path_str, plugin_to_host.keys())?;
-    let host_path = base_dir.join(stripped_path);
-
-    let canonical_base = crate::shared::io::infra::canonicalize(base_dir)?;
-    let canonical_host = crate::shared::io::infra::canonicalize(&host_path)?;
-
-    if !canonical_host.starts_with(&canonical_base) {
-        return Err(PluginError::AccessViolation {
-            plugin_id: id.to_owned(),
-            path: canonical_host.to_string_lossy().to_string(),
-        });
-    }
-
-    Ok(host_path)
-}
-
-/// The host file behind `plugin_path`, a file in the plugin's own `/cache` for the core to read
-/// (such as the overrides of an install plan).
+/// The host file behind `plugin_path`, a plugin-side path such as `/cache/pack.zip`, held to
+/// the mounts in `mounts`.
 ///
-/// Stricter than [`plugin_path_to_host`], which takes a path without `#` as a host path and
-/// would let a plugin have the core copy any file of the user's. The file must exist and stay
-/// inside `/cache` after resolving `..` and symlinks; the canonical path is returned so a
-/// symlink swapped in later does not redirect the core.
-pub(crate) fn plugin_cache_path_to_host(
+/// The only way from a plugin's spelling of a path to one the core opens, and closed by
+/// default: anything but `<mount root>[/<relative path>]` is refused, a host path included,
+/// since one would let a plugin have the core read or copy any file of the user's. `..`, roots
+/// and drive or UNC prefixes in the relative part are refused before the filesystem is touched
+/// (a UNC path alone would make Windows connect to the named server). The file must exist and
+/// stay inside the mount after resolving symlinks and short names; the canonical path is
+/// returned, so a symlink swapped in later does not redirect the core.
+pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
     plugin_id: &str,
     plugin_path: &str,
+    mounts: MountSet,
 ) -> Result<PathBuf, PluginError> {
-    let relative = plugin_path
-        .strip_prefix(PLUGIN_CACHE_MOUNT)
-        .filter(|rest| rest.is_empty() || rest.starts_with('/'))
-        .ok_or_else(|| access_violation(plugin_id, plugin_path))?;
+    let deny = || access_violation(plugin_id, plugin_path);
 
-    let base = location_info.plugin_cache_dir(plugin_id);
-    let host = base.join(relative.trim_start_matches('/'));
+    let (mount, relative) = mounts
+        .0
+        .iter()
+        .find_map(|mount| {
+            plugin_path
+                .strip_prefix(mount.plugin_root())
+                .filter(|rest| rest.is_empty() || rest.starts_with('/'))
+                .map(|rest| (*mount, rest.trim_start_matches('/')))
+        })
+        .ok_or_else(deny)?;
 
+    let relative = Path::new(relative);
+    let is_plain = relative.components().all(|component| match component {
+        Component::CurDir => true,
+        // `file:stream` names an NTFS alternate data stream, not the file it reads as.
+        Component::Normal(name) => !(cfg!(windows) && name.to_string_lossy().contains(':')),
+        Component::Prefix(_) | Component::RootDir | Component::ParentDir => false,
+    });
+    if !is_plain {
+        return Err(deny());
+    }
+
+    let base = mount.host_root(location_info, plugin_id);
     let canonical_base = canonicalize_or_deny(plugin_id, &base)?;
-    let canonical_host = canonicalize_or_deny(plugin_id, &host)?;
+    let canonical_host = canonicalize_or_deny(plugin_id, &base.join(relative))?;
 
     if !canonical_host.starts_with(&canonical_base) {
-        return Err(access_violation(plugin_id, plugin_path));
+        return Err(deny());
     }
 
     Ok(canonical_host)
@@ -325,6 +286,54 @@ where
     dirs
 }
 
+/// How `run_command` reads a value the plugin wrote: `#<mount path>` resolves through
+/// [`resolve_plugin_path`] into either mount, `/mnt/<drive>/…` is turned back into the host path
+/// it spells, and anything else is kept as written.
+///
+/// Deliberately not a containment check, and the one place a plugin's string reaches the host
+/// unresolved: an argument is opaque to the core (a flag, a URL, a path the program reads), so
+/// there is nothing to hold it to. What fences `run_command` in is the program allowlist and the
+/// mounted working directory, both checked on the result; this must not be reused where a path
+/// is opened by the core itself.
+fn command_value_to_host(
+    id: &str,
+    value: &str,
+    location_info: &LocationInfo,
+) -> Result<String, PluginError> {
+    if let Some(mount_path) = value.strip_prefix('#') {
+        return resolve_plugin_path(location_info, id, mount_path, MountSet::ALL)
+            .map(|path| path.to_string_lossy().into_owned());
+    }
+
+    if value.starts_with("/mnt/") {
+        return Ok(from_wasi_path(value));
+    }
+
+    Ok(value.to_owned())
+}
+
+/// Refuse a network or device path before anything opens it, unless one of `trusted_roots` is
+/// such a path too: merely resolving `\\server\share\…` makes Windows connect to that server and
+/// offer it the user's credentials.
+fn refuse_untrusted_share(
+    id: &str,
+    path: &Path,
+    trusted_roots: &[PathBuf],
+) -> Result<(), PluginError> {
+    if is_share_or_device(path) && !trusted_roots.iter().any(|root| is_share_or_device(root)) {
+        return Err(access_violation(id, path));
+    }
+    Ok(())
+}
+
+fn is_share_or_device(path: &Path) -> bool {
+    matches!(
+        path.components().next(),
+        Some(Component::Prefix(prefix))
+            if matches!(prefix.kind(), Prefix::UNC(..) | Prefix::VerbatimUNC(..) | Prefix::DeviceNS(_))
+    )
+}
+
 /// Resolve `program` to an executable a plugin is allowed to start: one in a directory of
 /// [`java_bin_dirs`], judged by its canonical directory, never by its file name.
 ///
@@ -336,10 +345,11 @@ fn resolve_allowed_program(
     location_info: &LocationInfo,
     allowed_program_dirs: &[PathBuf],
 ) -> Result<String, PluginError> {
+    let resolved = PathBuf::from(command_value_to_host(id, program, location_info)?);
+    refuse_untrusted_share(id, &resolved, allowed_program_dirs)?;
+
     // No fallback to the raw string: a `program` that does not resolve is refused instead of
     // being launched as written.
-    let resolved = plugin_path_to_host(id, program, location_info)?;
-
     let canonical_program = canonicalize_or_deny(id, &resolved)?;
 
     // Fails closed: with no Java registered there is no allowed program at all.
@@ -364,11 +374,22 @@ fn resolve_required_current_dir(
 ) -> Result<PathBuf, PluginError> {
     let current_dir = current_dir.ok_or_else(|| access_violation(id, "<no current_dir>"))?;
 
-    let resolved = plugin_path_to_host(id, current_dir.to_string_lossy().as_ref(), location_info)?;
+    let resolved = PathBuf::from(command_value_to_host(
+        id,
+        &current_dir.to_string_lossy(),
+        location_info,
+    )?);
+
+    let mount_roots: Vec<PathBuf> = PluginMount::ALL
+        .into_iter()
+        .map(|mount| mount.host_root(location_info, id))
+        .collect();
+    refuse_untrusted_share(id, &resolved, &mount_roots)?;
+
     let canonical = canonicalize_or_deny(id, &resolved)?;
 
-    let is_mounted = get_default_allowed_paths(location_info, id)
-        .keys()
+    let is_mounted = mount_roots
+        .iter()
         .filter_map(|root| crate::shared::io::infra::canonicalize(root).ok())
         .any(|root| canonical.starts_with(&root));
 
@@ -391,9 +412,7 @@ pub(crate) fn plugin_command_to_host(
     let resolved_args: Vec<String> = command
         .args
         .iter()
-        .map(|arg| {
-            plugin_path_to_host(id, arg, location_info).map(|p| p.to_string_lossy().to_string())
-        })
+        .map(|arg| command_value_to_host(id, arg, location_info))
         .collect::<Result<_, PluginError>>()?;
 
     let resolved_current_dir =
@@ -554,50 +573,14 @@ mod tests {
 
     #[test]
     fn should_keep_the_read_only_prefix_out_of_the_default_mapping_when_it_is_built() {
-        // The map itself feeds `create_dir_all` and `#`-path resolution, so a `ro:`-prefixed
-        // key there would mean a directory literally named `ro:...`.
+        // The map itself feeds `create_dir_all`, so a `ro:`-prefixed key there would mean a
+        // directory literally named `ro:...`.
         let location_info = LocationInfo::new(PathBuf::from("settings"), PathBuf::from("config"));
 
         assert!(
             get_default_allowed_paths(&location_info, PLUGIN_ID)
                 .keys()
                 .all(|host| !host.starts_with(READ_ONLY_MOUNT_PREFIX))
-        );
-    }
-
-    #[test]
-    fn should_invert_a_prefixed_mapping_back_to_plain_host_paths_when_inverting() {
-        let location_info = LocationInfo::new(PathBuf::from("settings"), PathBuf::from("config"));
-        let allowed = get_default_allowed_paths(&location_info, PLUGIN_ID);
-
-        let prefixed: HashMap<String, PathBuf> = allowed
-            .iter()
-            .map(|(host, plugin)| {
-                (
-                    to_extism_mount_key(host, is_read_only_plugin_mount(plugin)),
-                    plugin.clone(),
-                )
-            })
-            .collect();
-
-        assert_eq!(
-            invert_allowed_paths(&prefixed),
-            invert_allowed_paths(&allowed),
-            "`ro:` is an Extism manifest detail and must not survive inversion"
-        );
-
-        let inverted = invert_allowed_paths(&prefixed);
-        assert!(
-            inverted.keys().all(|plugin| !plugin.contains(':')),
-            "the keys are plugin-side mount points: {:?}",
-            inverted.keys().collect::<Vec<_>>()
-        );
-        assert!(
-            inverted
-                .values()
-                .all(|host| !host.to_string_lossy().starts_with(READ_ONLY_MOUNT_PREFIX)),
-            "the values are host paths the core itself opens: {:?}",
-            inverted.values().collect::<Vec<_>>()
         );
     }
 
@@ -670,14 +653,14 @@ mod tests {
 
     #[test]
     fn should_still_resolve_hash_paths_when_the_mount_is_read_only() {
-        // `ro:` narrows WASI only. `write_instance_file` and `run_command` resolve through
-        // `plugin_path_to_host`, which has to keep working for `/instances`.
+        // `ro:` narrows WASI only: `run_command` still has to reach into `/instances`.
         let layout = layout();
 
-        let resolved = plugin_path_to_host(
-            PLUGIN_ID,
-            &format!("#/instances/{INSTANCE_ID}"),
+        let resolved = resolve_plugin_path(
             &layout.location_info,
+            PLUGIN_ID,
+            &format!("/instances/{INSTANCE_ID}"),
+            MountSet::ALL,
         )
         .expect("an instance path must still resolve");
 
@@ -1020,14 +1003,25 @@ mod tests {
         )
         .unwrap();
 
-        let host = plugin_cache_path_to_host(
+        let host = resolve_plugin_path(
             &layout.location_info,
             PLUGIN_ID,
             "/cache/packwiz-installer-bootstrap.jar",
+            MountSet::CACHE,
         )
         .expect("a file in the plugin's own cache");
 
         assert_eq!(host, expected);
+    }
+
+    fn assert_refused(layout: &Layout, path: &str, mounts: MountSet) {
+        assert!(
+            matches!(
+                resolve_plugin_path(&layout.location_info, PLUGIN_ID, path, mounts),
+                Err(PluginError::AccessViolation { .. })
+            ),
+            "{path} must be refused"
+        );
     }
 
     #[test]
@@ -1037,7 +1031,7 @@ mod tests {
         let other_mount = format!("/instances/{INSTANCE_ID}");
 
         for path in [
-            // A bare host path, which `plugin_path_to_host` would take as is.
+            // A bare host path.
             layout.java_bin.to_str().unwrap(),
             instance_dir.to_str().unwrap(),
             // The other mount, a lookalike prefix, the `#` form and an escape through `..`.
@@ -1048,14 +1042,252 @@ mod tests {
             // Not there: nothing to resolve, so nothing is trusted.
             "/cache/missing.zip",
         ] {
+            assert_refused(&layout, path, MountSet::CACHE);
+        }
+    }
+
+    #[test]
+    fn should_resolve_into_either_mount_when_both_are_allowed() {
+        let layout = layout();
+
+        for path in [
+            "/cache".to_owned(),
+            "/cache/packwiz-installer-bootstrap.jar".to_owned(),
+            "/cache/./packwiz-installer-bootstrap.jar".to_owned(),
+            "/instances".to_owned(),
+            format!("/instances/{INSTANCE_ID}"),
+            format!("/instances/{INSTANCE_ID}/"),
+        ] {
+            resolve_plugin_path(&layout.location_info, PLUGIN_ID, &path, MountSet::ALL)
+                .unwrap_or_else(|err| panic!("{path} must resolve: {err}"));
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_path_when_it_leaves_the_mount() {
+        let layout = layout();
+
+        for path in [
+            "/cache/..",
+            "/cache/../packwiz",
+            "/cache/sub/../../x",
+            "/instances/..",
+            "/instances/../plugins",
+            // Another plugin's cache sits next to this one.
+            "/cache/../another-plugin",
+            "/cache//../x",
+            "",
+            "/",
+            "cache/packwiz-installer-bootstrap.jar",
+            "/Cache/packwiz-installer-bootstrap.jar",
+            "/instancesx",
+        ] {
+            assert_refused(&layout, path, MountSet::ALL);
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_host_path_when_it_is_absolute_in_any_spelling() {
+        let layout = layout();
+        let config = layout
+            .location_info
+            .config_dir()
+            .to_string_lossy()
+            .into_owned();
+
+        for path in [
+            config.as_str(),
+            "/etc/passwd",
+            "/mnt/c/Windows/System32/cmd.exe",
+            r"C:\Windows\System32\cmd.exe",
+            "C:/Windows",
+            r"\\server\share\file",
+            r"\\?\C:\Windows",
+            r"\\?\UNC\server\share",
+            r"\\.\pipe\name",
+            r"C:\PROGRA~1",
+        ] {
+            assert_refused(&layout, path, MountSet::ALL);
+        }
+    }
+
+    #[test]
+    fn should_refuse_a_prefix_or_root_when_it_is_inside_the_relative_part() {
+        let layout = layout();
+
+        for path in [
+            r"/cache/C:\Windows",
+            "/cache/C:/Windows",
+            r"/cache/\\server\share",
+            r"/cache/\\?\C:\Windows",
+            "/cache/packwiz-installer-bootstrap.jar:stream",
+        ] {
+            let result = resolve_plugin_path(&layout.location_info, PLUGIN_ID, path, MountSet::ALL);
+            if cfg!(windows) {
+                assert!(
+                    matches!(result, Err(PluginError::AccessViolation { .. })),
+                    "{path} must be refused"
+                );
+            } else if let Ok(host) = result {
+                // Backslashes and colons are plain file name characters off Windows: whatever
+                // such a name resolves to has to stay in the mount.
+                assert!(
+                    host.starts_with(
+                        crate::shared::io::infra::canonicalize(
+                            layout.location_info.plugin_cache_dir(PLUGIN_ID)
+                        )
+                        .unwrap()
+                    )
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn should_refuse_a_traversal_when_it_is_spelled_with_backslashes() {
+        let layout = layout();
+
+        for path in [
+            r"/cache\..\..\config",
+            r"/cache/sub\..\..\x",
+            r"/instances\..",
+        ] {
+            assert_refused(&layout, path, MountSet::ALL);
+        }
+    }
+
+    #[test]
+    fn should_refuse_the_instances_mount_when_only_the_cache_is_allowed() {
+        let layout = layout();
+        std::fs::write(
+            layout
+                .location_info
+                .instance_dir(INSTANCE_ID)
+                .join("pack.toml"),
+            b"",
+        )
+        .unwrap();
+
+        for path in [
+            "/instances".to_owned(),
+            format!("/instances/{INSTANCE_ID}/pack.toml"),
+        ] {
+            assert_refused(&layout, &path, MountSet::CACHE);
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn should_refuse_a_symlink_when_it_points_out_of_the_mount() {
+        let layout = layout();
+        let cache = layout.location_info.plugin_cache_dir(PLUGIN_ID);
+        std::os::unix::fs::symlink(layout.location_info.config_dir(), cache.join("escape"))
+            .unwrap();
+
+        assert_refused(&layout, "/cache/escape", MountSet::ALL);
+    }
+
+    #[test]
+    fn should_refuse_a_hash_argument_when_it_leaves_the_mounts() {
+        let layout = layout();
+
+        for arg in [
+            "#/cache/../../config",
+            "#C:/Windows",
+            "#/etc",
+            r"#\\server\share",
+        ] {
+            let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+            command.args.push(arg.to_owned());
+
             assert!(
                 matches!(
-                    plugin_cache_path_to_host(&layout.location_info, PLUGIN_ID, path),
+                    plugin_command_to_host(
+                        PLUGIN_ID,
+                        &command,
+                        &layout.location_info,
+                        &layout.allowed()
+                    ),
                     Err(PluginError::AccessViolation { .. })
                 ),
-                "{path} must be refused"
+                "{arg} must be refused"
             );
         }
+    }
+
+    #[test]
+    fn should_pass_a_plain_argument_through_when_it_is_not_a_mount_path() {
+        let layout = layout();
+        let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+        command.args.push("/etc/hosts".to_owned());
+
+        let host_command = plugin_command_to_host(
+            PLUGIN_ID,
+            &command,
+            &layout.location_info,
+            &layout.allowed(),
+        )
+        .expect("allowed");
+
+        assert_eq!(host_command.args.last().unwrap(), "/etc/hosts");
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn should_refuse_a_program_when_it_is_on_a_network_share() {
+        let layout = layout();
+
+        for program in [r"\\server\share\java.exe", r"\\?\UNC\server\share\java.exe"] {
+            let command = packwiz_command(program);
+            assert!(
+                matches!(
+                    plugin_command_to_host(
+                        PLUGIN_ID,
+                        &command,
+                        &layout.location_info,
+                        &layout.allowed()
+                    ),
+                    Err(PluginError::AccessViolation { .. })
+                ),
+                "{program} must be refused"
+            );
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn should_refuse_a_current_dir_when_it_is_on_a_network_share() {
+        let layout = layout();
+        let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+        command.current_dir = Some(PathBuf::from(r"\\server\share\instances"));
+
+        assert!(matches!(
+            plugin_command_to_host(
+                PLUGIN_ID,
+                &command,
+                &layout.location_info,
+                &layout.allowed()
+            ),
+            Err(PluginError::AccessViolation { .. })
+        ));
+    }
+
+    #[test]
+    fn should_accept_a_current_dir_when_it_is_a_host_path_inside_a_mount() {
+        let layout = layout();
+        let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
+        command.current_dir = Some(layout.location_info.instance_dir(INSTANCE_ID));
+
+        let host_command = plugin_command_to_host(
+            PLUGIN_ID,
+            &command,
+            &layout.location_info,
+            &layout.allowed(),
+        )
+        .expect("a host path inside `/instances` is a mounted working directory");
+
+        assert!(host_command.current_dir.unwrap().ends_with(INSTANCE_ID));
     }
 
     #[test]
