@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@formisch/solid": "^1.1.0",
-    "@kobalte/core": "0.13.13",
+    "@kobalte/core": "0.13.12",
     "@solid-primitives/i18n": "^2.2.1",
     "@solid-primitives/media": "^2.3.6",
     "@solid-primitives/resize-observer": "^2.2.0",

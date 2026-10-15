@@ -22,7 +22,7 @@ updates:
       - dependency-name: '@solid-primitives/storage'
         versions: ['4.4.0']
       - dependency-name: '@kobalte/core'
-        versions: ['0.13.14']
+        versions: ['0.13.13', '0.13.14']
       # Keep @types/node on the same major as the Node.js we run (24)
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
