@@ -29,7 +29,7 @@ impl EditJavaUseCase {
 impl EditJavaUseCasePort for EditJavaUseCase {
     async fn execute(&self, edit_java: EditJava) -> Result<Java, JavaApplicationError> {
         if edit_java.path.to_string_lossy().is_empty() {
-            return Err(JavaDomainError::EmptyPath)?;
+            return Err(JavaDomainError::EmptyPath.into());
         }
 
         let java_to_upsert = match self
