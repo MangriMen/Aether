@@ -11,8 +11,8 @@ use path_slash::PathBufExt;
 use crate::{
     features::{
         instance::{
-            ContentFile, ContentType, InstanceError, PackEntry, PackFile, PackStorage,
-            app::ports::ListContentUseCasePort,
+            ContentFile, ContentMetadataService, ContentType, InstanceError, PackEntry, PackFile,
+            PackStorage, app::ports::ListContentUseCasePort,
         },
         settings::LocationInfo,
     },
@@ -22,16 +22,25 @@ use crate::{
 pub struct ListContentUseCase {
     pack_storage: Arc<dyn PackStorage>,
     location_info: Arc<LocationInfo>,
+    content_metadata: Arc<ContentMetadataService>,
 }
 
 impl ListContentUseCase {
-    pub fn new(pack_storage: Arc<dyn PackStorage>, location_info: Arc<LocationInfo>) -> Self {
+    pub fn new(
+        pack_storage: Arc<dyn PackStorage>,
+        location_info: Arc<LocationInfo>,
+        content_metadata: Arc<ContentMetadataService>,
+    ) -> Self {
         Self {
             pack_storage,
             location_info,
+            content_metadata,
         }
     }
 
+    /// The instance's content files, each with its project's metadata as cached (see
+    /// [`ContentMetadataService::attach`]): what is missing is fetched in the background, and
+    /// the instance's `Synced` event tells when to list again.
     pub async fn execute(
         &self,
         instance_id: String,
@@ -52,10 +61,13 @@ impl ListContentUseCase {
             .await?;
         }
 
-        match Arc::try_unwrap(files) {
-            Ok(map) => Ok(map),
-            Err(arc) => Ok((*arc).clone()),
-        }
+        let files = match Arc::try_unwrap(files) {
+            Ok(map) => map,
+            Err(arc) => (*arc).clone(),
+        };
+        self.content_metadata.attach(&instance_id, &files).await;
+
+        Ok(files)
     }
 
     async fn get_entries_by_path(
@@ -81,7 +93,9 @@ impl ListContentUseCase {
     ) -> Result<(), InstanceError> {
         let content_dir = instance_dir.join(content_type.get_folder());
 
-        if tokio::fs::try_exists(&content_dir).await.is_err() {
+        // A folder the instance has not made yet holds no content. `try_exists` is `Ok(false)`
+        // for it, not an error.
+        if !tokio::fs::try_exists(&content_dir).await.unwrap_or(false) {
             return Ok(());
         }
 

@@ -11,9 +11,9 @@ use aether_core::features::events::infra::InMemoryProgressBarStorage;
 use aether_core::features::events::{EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
-    EventEmittingInstanceStorage, FsContentFileService, FsInstanceFileService,
+    EventEmittingInstanceStorage, FsContentFileService, FsContentIconCache, FsInstanceFileService,
     InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
-    SqliteInstanceStorage, SqlitePackStorage,
+    SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache,
 };
 use aether_core::features::instance::{ContentProvider, GetInstanceUseCase, Importer, Updater};
 use aether_core::features::java::infra::{
@@ -40,8 +40,8 @@ use aether_core::features::settings::infra::{
     SqliteSettingsStorage,
 };
 use aether_core::features::{auth, instance, java, minecraft, settings};
-use aether_core::shared::cache::AssetsStorage;
 use aether_core::shared::cache::infra::{FileCache, FsAssetsStorage, SqliteCache};
+use aether_core::shared::cache::{AssetsStorage, Cache};
 use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::FetchSemaphore;
@@ -183,6 +183,35 @@ pub async fn build_container(
         ));
     let pack_storage: Arc<dyn aether_core::features::instance::PackStorage> =
         Arc::new(SqlitePackStorage::new(pool.clone()));
+    let content_metadata_cache: Arc<dyn aether_core::features::instance::ContentMetadataCache> =
+        Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
+            pool.clone(),
+        )));
+    // In the background: the cached rows nobody refreshed for their whole life.
+    tokio::spawn({
+        let cache = SqliteCache::new(pool.clone());
+        async move {
+            let purged = cache.purge_expired().await;
+            if purged > 0 {
+                log::debug!("Purged {purged} expired cache rows");
+            }
+        }
+    });
+    let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> = Arc::new(
+        FsContentIconCache::new(http_client.clone(), &location_info.assets_cache_dir()),
+    );
+    // In the background, as it reads the whole icon folder: the icons no list showed lately.
+    tokio::spawn({
+        let content_icon_cache = content_icon_cache.clone();
+        async move {
+            let removed = content_icon_cache
+                .remove_unused(aether_core::features::instance::CONTENT_ICON_MAX_UNUSED)
+                .await;
+            if removed > 0 {
+                log::debug!("Removed {removed} unused content icons");
+            }
+        }
+    });
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
@@ -310,6 +339,8 @@ pub async fn build_container(
             instance_storage: instance_storage.clone(),
             pack_storage,
             content_file_service,
+            content_metadata_cache,
+            content_icon_cache,
             instance_file_service,
             java_storage,
             java_installation_service,

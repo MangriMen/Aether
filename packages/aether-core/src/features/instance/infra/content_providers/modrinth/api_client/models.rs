@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::{collections::HashMap, sync::LazyLock};
 
 pub(crate) const MODRINTH_API_URL: &str = "https://api.modrinth.com/v2";
+/// Version 3 of the API, for what version 2 lacks: organizations, and whether a team member owns
+/// the project.
+pub(crate) const MODRINTH_API_V3_URL: &str = "https://api.modrinth.com/v3";
 pub(crate) const MODRINTH_WEB_URL: &str = "https://modrinth.com";
 
 #[allow(unused)]
@@ -139,6 +142,50 @@ pub struct Hit {
     pub color: Option<i64>,
 }
 
+/// A project as `GET /projects` lists it, cut to what [`ContentMetadata`] needs.
+///
+/// Not [`ProjectResponse`]: one response carries a hundred projects, and a field of one of them
+/// that the full model does not expect would fail all hundred.
+///
+/// [`ContentMetadata`]: crate::features::instance::ContentMetadata
+#[derive(Deserialize, Debug)]
+pub struct ProjectMetadataResponse {
+    pub id: String,
+    pub slug: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub icon_url: Option<String>,
+    /// The id of the project's team.
+    #[serde(default)]
+    pub team: Option<String>,
+    /// The id of the organization that owns the project, if one does.
+    pub organization: Option<String>,
+}
+
+/// A member of a team as version 3 of `GET /teams` lists it, cut to what names the owner of a
+/// project.
+#[derive(Deserialize, Debug)]
+pub struct TeamMemberResponse {
+    pub team_id: String,
+    pub user: TeamMemberUserResponse,
+    /// Whether the member owns the project. Version 2 says so only by a role named `Owner`;
+    /// version 3 lets the role be any title.
+    #[serde(default)]
+    pub is_owner: bool,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct TeamMemberUserResponse {
+    pub username: String,
+}
+
+/// An organization as version 3 of `GET /organizations` lists it, cut to its name.
+#[derive(Deserialize, Debug)]
+pub struct OrganizationResponse {
+    pub id: String,
+    pub name: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectResponse {
     pub id: String,
@@ -184,6 +231,36 @@ pub struct License {
     pub id: String,
     pub name: String,
     pub url: Option<String>,
+}
+
+/// A version as `GET /versions` lists it, cut to what [`ContentVersionMetadata`] needs: a
+/// hundred versions in one response, read as leniently as [`ProjectMetadataResponse`].
+///
+/// [`ContentVersionMetadata`]: crate::features::instance::ContentVersionMetadata
+#[derive(Deserialize, Debug)]
+pub struct VersionMetadataResponse {
+    pub id: String,
+    pub version_number: String,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// An entry of a list the API answers, parsed if it can be: an entry of an unexpected shape is
+/// [`Self::Odd`] rather than failing the whole list.
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum Lenient<T> {
+    Parsed(T),
+    Odd(serde::de::IgnoredAny),
+}
+
+impl<T> Lenient<T> {
+    pub fn parsed(self) -> Option<T> {
+        match self {
+            Self::Parsed(value) => Some(value),
+            Self::Odd(_) => None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

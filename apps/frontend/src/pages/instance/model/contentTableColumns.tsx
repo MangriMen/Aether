@@ -3,14 +3,20 @@ import type { JSX } from 'solid-js';
 
 import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
-import { Show } from 'solid-js';
 
 import type { ContentFile } from '@/entities/instances';
 import type { AppTableFeatures } from '@/shared/model';
 
+import {
+  getContentFileDisplayTitle,
+  getContentFileVersionSortValue,
+} from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, Checkbox } from '@/shared/ui';
+
+import { ContentNameCell } from '../ui/ContentNameCell';
+import { ContentVersionCell } from '../ui/ContentVersionCell';
 
 export const contentTableColumnHelper = createColumnHelper<
   AppTableFeatures,
@@ -77,32 +83,26 @@ export const CONTENT_TABLE_COLUMNS = contentTableColumnHelper.columns([
     ),
   }),
 
-  contentTableColumnHelper.accessor((row) => row.name ?? row.fileName, {
+  contentTableColumnHelper.accessor(getContentFileDisplayTitle, {
     id: 'name',
     header: (props) => {
       const [{ t }] = useTranslation();
-      return <SortableHeader column={props.column} label={t('common.name')} />;
-    },
-    cell: (props) => {
-      const original = () => props.row.original;
-
       return (
-        <span
-          class={cn('inline-flex flex-col', {
-            'text-muted-foreground': original().disabled,
-          })}
-        >
-          <Show when={original().name}>{(name) => <span>{name()}</span>}</Show>
-          <span
-            class={cn({
-              'text-muted-foreground': !!original().name,
-            })}
-          >
-            {original().fileName}
-          </span>
-        </span>
+        <SortableHeader column={props.column} label={t('common.content')} />
       );
     },
+    cell: (props) => <ContentNameCell file={props.row.original} />,
+  }),
+
+  contentTableColumnHelper.accessor(getContentFileVersionSortValue, {
+    id: 'version',
+    header: (props) => {
+      const [{ t }] = useTranslation();
+      return (
+        <SortableHeader column={props.column} label={t('common.version')} />
+      );
+    },
+    cell: (props) => <ContentVersionCell file={props.row.original} />,
   }),
 
   contentTableColumnHelper.accessor('contentType', {

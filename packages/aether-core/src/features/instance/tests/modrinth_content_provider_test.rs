@@ -19,9 +19,10 @@ use crate::{
     features::{
         events::ProgressBarId,
         instance::{
-            ContentIdentity, ContentProvider, ContentSource, ContentType, FileSide, InstallTarget,
-            InstanceError, InstanceGame, OverrideLocation, OverrideSource, PackInfo, PackSource,
-            ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
+            ContentIdentity, ContentMetadata, ContentProvider, ContentSource, ContentType,
+            ContentVersionMetadata, FileSide, InstallTarget, InstanceError, InstanceGame,
+            OverrideLocation, OverrideSource, PackInfo, PackSource, ResolveInstallPlanParams,
+            ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -29,11 +30,14 @@ use crate::{
     shared::{
         hash::FileHash,
         limits::ContentInstallLimits,
-        request_client::{BytesProgress, Request, RequestClient, RequestError},
+        request_client::{
+            BytesProgress, FileDownload, Request, RequestClient, RequestError, SavedDownload,
+        },
     },
 };
 
 const API: &str = "https://api.modrinth.com/v2";
+const API_V3: &str = "https://api.modrinth.com/v3";
 const SODIUM_URL: &str = "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar";
 const PACK_URL: &str = "https://cdn.modrinth.com/data/PACKID00/versions/PACKV002/pack.mrpack";
 
@@ -42,6 +46,8 @@ const PACK_URL: &str = "https://cdn.modrinth.com/data/PACKID00/versions/PACKV002
 struct FakeHttp {
     bodies: Mutex<HashMap<String, Bytes>>,
     requests: Mutex<Vec<String>>,
+    /// The URLs asked for, query included.
+    full_requests: Mutex<Vec<String>>,
 }
 
 impl FakeHttp {
@@ -56,12 +62,33 @@ impl FakeHttp {
     fn body(&self, request: &Request) -> Result<Bytes, RequestError> {
         let url = request.url.split('?').next().unwrap().to_owned();
         self.requests.lock().unwrap().push(url.clone());
+        self.full_requests.lock().unwrap().push(request.url.clone());
         self.bodies
             .lock()
             .unwrap()
             .get(&url)
             .cloned()
             .ok_or_else(|| RequestError::Middleware(anyhow::anyhow!("404 {url}")))
+    }
+
+    /// The ids of each `GET /projects` asked for, in the order asked.
+    fn projects_batches(&self) -> Vec<Vec<String>> {
+        self.batches(&format!("{API}/projects"))
+    }
+
+    /// The ids of each request to `route` that takes many ids at once, in the order asked.
+    fn batches(&self, route: &str) -> Vec<Vec<String>> {
+        self.full_requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|url| url.starts_with(&format!("{route}?")))
+            .map(|url| {
+                let url = url::Url::parse(url).unwrap();
+                let (_, ids) = url.query_pairs().find(|(key, _)| key == "ids").unwrap();
+                serde_json::from_str(&ids).unwrap()
+            })
+            .collect()
     }
 
     fn requests_to(&self, url: &str) -> usize {
@@ -105,6 +132,20 @@ impl RequestClient for FakeHttp {
         }
         std::fs::write(destination, &body).unwrap();
         Ok(body.len() as u64)
+    }
+    async fn download_to_file_conditional(
+        &self,
+        request: Request,
+        destination: &Path,
+        max_size: u64,
+    ) -> Result<FileDownload, RequestError> {
+        let size = self
+            .download_to_file(request, destination, max_size, None)
+            .await?;
+        Ok(FileDownload::Saved(SavedDownload {
+            size,
+            ..SavedDownload::default()
+        }))
     }
 }
 
@@ -305,6 +346,49 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
     );
     // Resolving downloads nothing: the file is the executor's to fetch.
     assert_eq!(fixture.http.requests_to(SODIUM_URL), 0);
+}
+
+#[tokio::test]
+async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mod() {
+    let fixture = Fixture::new();
+    fixture.serve_sodium();
+
+    let plan = fixture
+        .provider
+        .resolve_install_plan(params("sodium", existing_fabric()))
+        .await
+        .unwrap();
+
+    let [entry] = &plan.files[..] else {
+        panic!("one file expected: {:?}", plan.files)
+    };
+    // Without an author: that is another request, which an install does not wait for.
+    assert_eq!(
+        entry.metadata,
+        Some(ContentMetadata {
+            content_id: "AANobbMI".into(),
+            slug: "sodium".into(),
+            name: "SODIUM".into(),
+            description: Some("desc".into()),
+            author: None,
+            icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
+        })
+    );
+    assert_eq!(
+        entry.version_metadata,
+        Some(ContentVersionMetadata {
+            version_id: "IZskON6d".into(),
+            version_number: "2.0.0".into(),
+            name: Some("Version IZskON6d".into()),
+        })
+    );
+    assert!(fixture.http.batches(&format!("{API_V3}/teams")).is_empty());
+    assert!(
+        fixture
+            .http
+            .batches(&format!("{API_V3}/organizations"))
+            .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -778,4 +862,367 @@ async fn should_describe_a_pack_from_its_index_when_given_a_url() {
     assert_eq!(metadata.version_id.as_deref(), Some("PACKV002"));
     assert_eq!(metadata.loader_version.as_deref(), Some("21.4.10"));
     assert_eq!(metadata.file_count, Some(2));
+}
+
+fn ids(ids: &[&str]) -> Vec<String> {
+    ids.iter().map(|&id| id.to_owned()).collect()
+}
+
+#[tokio::test]
+async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metadata() {
+    let fixture = Fixture::new();
+    let mut fabric_api = project("P7dR8mSH", "fabric-api", "mod");
+    fabric_api["icon_url"] = Value::Null;
+    fabric_api["description"] = json!("");
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([fabric_api, project("AANobbMI", "sodium", "mod")]),
+    );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
+
+    let mut metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["sodium", "P7dR8mSH", "unknown"]))
+        .await
+        .unwrap();
+    metadata.sort_by(|a, b| a.content_id.cmp(&b.content_id));
+
+    // Keyed by the project's id, even when asked by its slug.
+    assert_eq!(
+        metadata,
+        [
+            ContentMetadata {
+                content_id: "AANobbMI".into(),
+                slug: "sodium".into(),
+                name: "SODIUM".into(),
+                description: Some("desc".into()),
+                author: None,
+                icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
+            },
+            ContentMetadata {
+                content_id: "P7dR8mSH".into(),
+                slug: "fabric-api".into(),
+                name: "FABRIC-API".into(),
+                description: None,
+                author: None,
+                icon_url: None,
+            },
+        ]
+    );
+    assert_eq!(
+        fixture.http.projects_batches(),
+        [ids(&["sodium", "P7dR8mSH", "unknown"])]
+    );
+}
+
+#[tokio::test]
+async fn should_skip_a_malformed_project_and_return_the_rest_when_asked_for_metadata() {
+    let fixture = Fixture::new();
+    let mut broken = project("BROKEN00", "broken", "mod");
+    broken["title"] = Value::Null;
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([broken, project("AANobbMI", "sodium", "mod")]),
+    );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["broken", "sodium"]))
+        .await
+        .unwrap();
+
+    let found: Vec<_> = metadata
+        .iter()
+        .map(|item| item.content_id.as_str())
+        .collect();
+    assert_eq!(found, ["AANobbMI"]);
+}
+
+#[tokio::test]
+async fn should_fail_when_a_team_member_is_malformed() {
+    let fixture = Fixture::new();
+    let mut by_team = project("TEAMPROJ", "by-team", "mod");
+    by_team["team"] = json!("team1");
+    fixture
+        .http
+        .serve_json(&format!("{API}/projects"), &json!([by_team]));
+    // A partial answer would cache the project without author for days.
+    fixture.http.serve_json(
+        &format!("{API_V3}/teams"),
+        &json!([[
+            { "team_id": "team1", "is_owner": null },
+            team_member("team1", "owner", true),
+        ]]),
+    );
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["TEAMPROJ"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+#[tokio::test]
+async fn should_fail_when_an_organization_is_malformed() {
+    let fixture = Fixture::new();
+    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
+    by_organization["organization"] = json!("org1");
+    fixture
+        .http
+        .serve_json(&format!("{API}/projects"), &json!([by_organization]));
+    // A partial answer would cache the project without author for days.
+    fixture.http.serve_json(
+        &format!("{API_V3}/organizations"),
+        &json!([
+            { "id": "org1", "slug": "org", "name": null, "team_id": "orgteam" },
+            { "id": "org2", "slug": "other", "name": "Other", "team_id": "otherteam" },
+        ]),
+    );
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["ORGPROJ0"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+#[tokio::test]
+async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() {
+    let fixture = Fixture::new();
+    // Every batch answers with the same project: asked by id and by slug, it comes back twice.
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([project("AANobbMI", "sodium", "mod")]),
+    );
+    fixture
+        .http
+        .serve_json(&format!("{API_V3}/teams"), &json!([]));
+    let mut asked: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
+    asked.extend(ids(&["id0", "id1"]));
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&asked)
+        .await
+        .unwrap();
+
+    assert_eq!(metadata.len(), 1);
+    let batches = fixture.http.projects_batches();
+    assert_eq!(batches.len(), 3);
+    assert!(batches.iter().all(|batch| batch.len() <= 100));
+    let mut all: Vec<String> = batches.into_iter().flatten().collect();
+    all.sort();
+    let mut expected: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
+    expected.sort();
+    assert_eq!(all, expected, "each id asked exactly once");
+}
+
+#[tokio::test]
+async fn should_ask_nothing_when_given_no_ids() {
+    let fixture = Fixture::new();
+
+    let metadata = fixture.provider.get_contents_metadata(&[]).await.unwrap();
+
+    assert!(metadata.is_empty());
+    assert!(fixture.http.requests.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn should_fail_when_a_batch_cannot_be_fetched() {
+    let fixture = Fixture::new();
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+fn team_member(team_id: &str, username: &str, is_owner: bool) -> Value {
+    json!({
+        "team_id": team_id, "role": "Developer", "is_owner": is_owner, "accepted": true,
+        "ordering": 0, "user": { "id": format!("u-{username}"), "username": username, "name": null }
+    })
+}
+
+#[tokio::test]
+async fn should_name_the_owner_or_the_organization_as_author_when_asked_for_metadata() {
+    let fixture = Fixture::new();
+    let mut by_team = project("TEAMPROJ", "by-team", "mod");
+    by_team["team"] = json!("team1");
+    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
+    by_organization["team"] = json!("team2");
+    by_organization["organization"] = json!("org1");
+    let mut no_team = project("NOTEAM00", "no-team", "mod");
+    no_team["team"] = json!("gone");
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([by_team, by_organization, no_team]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/teams"),
+        &json!([[
+            team_member("team1", "helper", false),
+            team_member("team1", "owner", true),
+        ]]),
+    );
+    fixture.http.serve_json(
+        &format!("{API_V3}/organizations"),
+        &json!([{ "id": "org1", "slug": "org", "name": "Org Name", "team_id": "orgteam" }]),
+    );
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["TEAMPROJ", "ORGPROJ0", "NOTEAM00"]))
+        .await
+        .unwrap();
+
+    let authors: HashMap<_, _> = metadata
+        .into_iter()
+        .map(|item| (item.content_id, item.author))
+        .collect();
+    assert_eq!(authors["TEAMPROJ"].as_deref(), Some("owner"));
+    assert_eq!(authors["ORGPROJ0"].as_deref(), Some("Org Name"));
+    assert_eq!(authors["NOTEAM00"], None, "a team Modrinth did not list");
+    // The team of a project an organization owns is not asked about.
+    let mut teams = fixture.http.batches(&format!("{API_V3}/teams"));
+    for batch in &mut teams {
+        batch.sort();
+    }
+    assert_eq!(teams, [ids(&["gone", "team1"])]);
+    assert_eq!(
+        fixture.http.batches(&format!("{API_V3}/organizations")),
+        [ids(&["org1"])]
+    );
+}
+
+#[tokio::test]
+async fn should_fail_when_the_owners_cannot_be_fetched() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API}/projects"),
+        &json!([project("AANobbMI", "sodium", "mod")]),
+    );
+
+    let result = fixture
+        .provider
+        .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
+}
+
+fn version_metadata(id: &str, version_number: &str, name: &str) -> Value {
+    json!({
+        "id": id, "project_id": "AANobbMI", "author_id": "DzLrfrbK", "featured": false,
+        "name": name, "version_number": version_number, "changelog": null,
+        "changelog_url": null, "date_published": "2024-04-29T15:59:42.831851Z",
+        "downloads": 1, "version_type": "release", "status": "listed",
+        "requested_status": null, "game_versions": ["1.21.1"], "loaders": ["fabric"],
+        "files": [], "dependencies": []
+    })
+}
+
+#[tokio::test]
+async fn should_describe_the_versions_modrinth_knows_when_asked_for_their_metadata() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API}/versions"),
+        &json!([
+            version_metadata("IZskON6d", "mc1.20.6-0.5.8", "Sodium 0.5.8"),
+            version_metadata("NOTITLE0", "1.0.0", ""),
+            // An entry of a shape not expected is left out, not the whole answer.
+            { "id": "ODDONE00" },
+        ]),
+    );
+
+    let mut metadata = fixture
+        .provider
+        .get_versions_metadata(&ids(&["IZskON6d", "NOTITLE0", "ODDONE00", "unknown"]))
+        .await
+        .unwrap();
+    metadata.sort_by(|a, b| a.version_id.cmp(&b.version_id));
+
+    assert_eq!(
+        metadata,
+        [
+            ContentVersionMetadata {
+                version_id: "IZskON6d".into(),
+                version_number: "mc1.20.6-0.5.8".into(),
+                name: Some("Sodium 0.5.8".into()),
+            },
+            ContentVersionMetadata {
+                version_id: "NOTITLE0".into(),
+                version_number: "1.0.0".into(),
+                name: None,
+            },
+        ]
+    );
+    assert_eq!(
+        fixture.http.batches(&format!("{API}/versions")),
+        [ids(&["IZskON6d", "NOTITLE0", "ODDONE00", "unknown"])]
+    );
+}
+
+#[tokio::test]
+async fn should_ask_for_versions_in_batches_of_each_id_once_when_given_many() {
+    let fixture = Fixture::new();
+    fixture
+        .http
+        .serve_json(&format!("{API}/versions"), &json!([]));
+    let mut asked: Vec<String> = (0..250).map(|i| format!("v{i}")).collect();
+    asked.extend(ids(&["v0", "v1"]));
+
+    let metadata = fixture
+        .provider
+        .get_versions_metadata(&asked)
+        .await
+        .unwrap();
+
+    assert!(metadata.is_empty());
+    let batches = fixture.http.batches(&format!("{API}/versions"));
+    assert_eq!(batches.len(), 3);
+    assert!(batches.iter().all(|batch| batch.len() <= 100));
+    let mut all: Vec<String> = batches.into_iter().flatten().collect();
+    all.sort();
+    let mut expected: Vec<String> = (0..250).map(|i| format!("v{i}")).collect();
+    expected.sort();
+    assert_eq!(all, expected, "each id asked exactly once");
+}
+
+#[tokio::test]
+async fn should_fail_when_a_batch_of_versions_cannot_be_fetched() {
+    let fixture = Fixture::new();
+
+    let empty = fixture.provider.get_versions_metadata(&[]).await.unwrap();
+    let result = fixture
+        .provider
+        .get_versions_metadata(&ids(&["IZskON6d"]))
+        .await;
+
+    assert!(empty.is_empty());
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDownloadError(_))
+    ));
 }

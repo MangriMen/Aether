@@ -1,6 +1,7 @@
 mod capabilities;
 mod content;
 mod content_file;
+mod content_metadata;
 mod content_type;
 mod content_version;
 mod error;
@@ -17,6 +18,7 @@ mod resolve;
 pub use capabilities::*;
 pub use content::*;
 pub use content_file::*;
+pub use content_metadata::*;
 pub use content_type::*;
 pub use content_version::*;
 pub use error::*;

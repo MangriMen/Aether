@@ -2,12 +2,15 @@ use crate::shared::request_client::{Request, RequestClient, RequestClientExt};
 use std::sync::Arc;
 
 use super::models::{
-    ProjectResponse, ProjectSearchParams, ProjectSearchResponse, ProjectVersionResponse,
-    ProjectVersionsRequest,
+    Lenient, OrganizationResponse, ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
+    ProjectSearchResponse, ProjectVersionResponse, ProjectVersionsRequest, TeamMemberResponse,
+    VersionMetadataResponse,
 };
 
 pub(crate) struct ModrinthApiClient<RC> {
     base_url: String,
+    /// The base of version 3 of the API, for the few routes version 2 lacks.
+    v3_base_url: String,
     base_headers: Option<reqwest::header::HeaderMap>,
     request_client: Arc<RC>,
 }
@@ -15,18 +18,24 @@ pub(crate) struct ModrinthApiClient<RC> {
 impl<RC: RequestClient> ModrinthApiClient<RC> {
     pub(crate) fn new(
         base_url: String,
+        v3_base_url: String,
         base_headers: Option<reqwest::header::HeaderMap>,
         request_client: Arc<RC>,
     ) -> Self {
         Self {
             base_url,
+            v3_base_url,
             base_headers,
             request_client,
         }
     }
 
     fn prepare_request(&self, path: &str, query: Option<String>) -> Request {
-        let base = self.base_url.trim_end_matches('/');
+        self.prepare_request_at(&self.base_url, path, query)
+    }
+
+    fn prepare_request_at(&self, base: &str, path: &str, query: Option<String>) -> Request {
+        let base = base.trim_end_matches('/');
         let path = path.trim_start_matches('/');
 
         let url = match query {
@@ -63,6 +72,52 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         self.fetch(request).await
     }
 
+    /// The projects of `ids` (ids or slugs) in one request, in no particular order. An id
+    /// Modrinth does not know is left out, and so is an entry of a shape not expected.
+    pub(crate) async fn get_projects_metadata(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<ProjectMetadataResponse>, String> {
+        let request = self.prepare_request("projects", Some(ids_query(ids)?));
+        let entries: Vec<Lenient<ProjectMetadataResponse>> = self.fetch(request).await?;
+        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
+    }
+
+    /// The members of the teams of `ids` in one request, one list per team, in no particular
+    /// order. A team Modrinth does not know is left out.
+    ///
+    /// Strict: a member of a shape not expected fails the request, since an owner missing from
+    /// the answer would leave a project without author.
+    pub(crate) async fn get_teams(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<Vec<TeamMemberResponse>>, String> {
+        let request = self.prepare_request_at(&self.v3_base_url, "teams", Some(ids_query(ids)?));
+        self.fetch(request).await
+    }
+
+    /// The organizations of `ids` in one request, in no particular order. An organization
+    /// Modrinth does not know is left out. Strict as [`Self::get_teams`] is.
+    pub(crate) async fn get_organizations(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<OrganizationResponse>, String> {
+        let request =
+            self.prepare_request_at(&self.v3_base_url, "organizations", Some(ids_query(ids)?));
+        self.fetch(request).await
+    }
+
+    /// The versions of `ids` in one request, in no particular order. An id Modrinth does not
+    /// know is left out, and so is an entry of a shape not expected.
+    pub(crate) async fn get_versions_metadata(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<VersionMetadataResponse>, String> {
+        let request = self.prepare_request("versions", Some(ids_query(ids)?));
+        let entries: Vec<Lenient<VersionMetadataResponse>> = self.fetch(request).await?;
+        Ok(entries.into_iter().filter_map(Lenient::parsed).collect())
+    }
+
     pub(crate) async fn get_project_version(
         &self,
         id: &str,
@@ -82,4 +137,12 @@ impl<RC: RequestClient> ModrinthApiClient<RC> {
         let request = self.prepare_request(&path, Some(query));
         self.fetch(request).await
     }
+}
+
+/// The `ids=[...]` query of the routes that take many ids at once.
+fn ids_query(ids: &[String]) -> Result<String, String> {
+    let ids = serde_json::to_string(ids).map_err(|e| e.to_string())?;
+    Ok(url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("ids", &ids)
+        .finish())
 }

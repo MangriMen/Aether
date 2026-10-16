@@ -13,7 +13,10 @@ use crate::{
             FileHash,
             infra::{FileHasher, hash_hex_async},
         },
-        request_client::{BytesProgress, Method, Request, RequestClient, RequestError},
+        request_client::{
+            BytesProgress, FileDownload, Method, Request, RequestClient, RequestError,
+            SavedDownload,
+        },
     },
 };
 
@@ -42,8 +45,13 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
         url: &str,
         headers: Option<reqwest::header::HeaderMap>,
         body: Option<Vec<u8>>,
+        timeout: Option<std::time::Duration>,
     ) -> Result<Response, RequestError> {
         let mut request = self.client.request(method.into(), url);
+
+        if let Some(timeout) = timeout {
+            request = request.timeout(timeout);
+        }
 
         if let Some(body) = body {
             request = request.body(body);
@@ -145,11 +153,12 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             headers,
             hash,
             body,
+            timeout,
         } = request;
 
         let _permit = self.semaphore.0.acquire().await?;
 
-        let response = self.send(method, &url, headers, body).await?;
+        let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
 
         let bytes = match progress_bar {
@@ -171,84 +180,140 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
         max_size: u64,
         on_bytes: Option<BytesProgress<'_>>,
     ) -> Result<u64, RequestError> {
-        use futures::StreamExt;
-
         let Request {
             method,
             url,
             headers,
             hash,
             body,
+            timeout,
         } = request;
-
-        let parent = destination.parent().ok_or_else(|| RequestError::Io {
-            path: destination.to_path_buf(),
-            source: std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "destination has no parent directory",
-            ),
-        })?;
 
         let _permit = self.semaphore.0.acquire().await?;
 
-        let response = self.send(method, &url, headers, body).await?;
-
+        let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
 
-        if let Some(length) = response.content_length()
-            && length > max_size
-        {
+        save_body(response, destination, max_size, hash.as_ref(), on_bytes).await
+    }
+
+    async fn download_to_file_conditional(
+        &self,
+        request: Request,
+        destination: &Path,
+        max_size: u64,
+    ) -> Result<FileDownload, RequestError> {
+        let Request {
+            method,
+            url,
+            headers,
+            hash,
+            body,
+            timeout,
+        } = request;
+
+        let _permit = self.semaphore.0.acquire().await?;
+
+        let response = self.send(method, &url, headers, body, timeout).await?;
+        if response.status() == reqwest::StatusCode::NOT_MODIFIED {
+            return Ok(FileDownload::NotModified);
+        }
+        ensure_success(&response, &url)?;
+
+        let header = |name: reqwest::header::HeaderName| {
+            response
+                .headers()
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(ToOwned::to_owned)
+        };
+        let content_type = header(reqwest::header::CONTENT_TYPE);
+        let etag = header(reqwest::header::ETAG);
+        let last_modified = header(reqwest::header::LAST_MODIFIED);
+
+        let size = save_body(response, destination, max_size, hash.as_ref(), None).await?;
+
+        Ok(FileDownload::Saved(SavedDownload {
+            size,
+            content_type,
+            etag,
+            last_modified,
+        }))
+    }
+}
+
+/// Stream the body of a successful `response` to `destination`, as
+/// [`RequestClient::download_to_file`] describes: all or nothing.
+async fn save_body(
+    response: Response,
+    destination: &Path,
+    max_size: u64,
+    hash: Option<&FileHash>,
+    on_bytes: Option<BytesProgress<'_>>,
+) -> Result<u64, RequestError> {
+    use futures::StreamExt;
+
+    let parent = destination.parent().ok_or_else(|| RequestError::Io {
+        path: destination.to_path_buf(),
+        source: std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "destination has no parent directory",
+        ),
+    })?;
+
+    if let Some(length) = response.content_length()
+        && length > max_size
+    {
+        return Err(RequestError::TooLarge { limit: max_size });
+    }
+
+    // A temporary file next to the destination, so that the last step is a rename within
+    // one directory and a partial download never shows up under the final name. Until
+    // `persist` succeeds, dropping `temp_path` — on any early return below — deletes it.
+    let (file, temp_path) = tempfile::Builder::new()
+        .prefix(".download-")
+        .suffix(".part")
+        .tempfile_in(parent)
+        .map_err(io_error(parent))?
+        .into_parts();
+    let mut file = tokio::fs::File::from_std(file);
+
+    let mut hasher = hash.map(|hash| FileHasher::new(hash.algorithm()));
+    let mut size: u64 = 0;
+    let mut stream = response.bytes_stream();
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(RequestError::RequestSend)?;
+
+        size += chunk.len() as u64;
+        if size > max_size {
             return Err(RequestError::TooLarge { limit: max_size });
         }
 
-        // A temporary file next to the destination, so that the last step is a rename within
-        // one directory and a partial download never shows up under the final name. Until
-        // `persist` succeeds, dropping `temp_path` — on any early return below — deletes it.
-        let (file, temp_path) = tempfile::Builder::new()
-            .prefix(".download-")
-            .suffix(".part")
-            .tempfile_in(parent)
-            .map_err(io_error(parent))?
-            .into_parts();
-        let mut file = tokio::fs::File::from_std(file);
-
-        let mut hasher = hash.as_ref().map(|hash| FileHasher::new(hash.algorithm()));
-        let mut size: u64 = 0;
-        let mut stream = response.bytes_stream();
-
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(RequestError::RequestSend)?;
-
-            size += chunk.len() as u64;
-            if size > max_size {
-                return Err(RequestError::TooLarge { limit: max_size });
-            }
-
-            if let Some(hasher) = hasher.as_mut() {
-                hasher.update(&chunk);
-            }
-            file.write_all(&chunk).await.map_err(io_error(&temp_path))?;
-
-            if let Some(on_bytes) = on_bytes {
-                on_bytes(chunk.len() as u64);
-            }
+        if let Some(hasher) = hasher.as_mut() {
+            hasher.update(&chunk);
         }
+        file.write_all(&chunk).await.map_err(io_error(&temp_path))?;
 
-        file.flush().await.map_err(io_error(&temp_path))?;
-        // Close the handle before renaming: Windows refuses to move a file that is still open.
-        // `into_std` waits for any write still in flight, so the drop really closes it.
-        drop(file.into_std().await);
-
-        if let (Some(expected), Some(hasher)) = (hash.as_ref(), hasher) {
-            check_hash(expected, hasher.finalize_hex())?;
+        if let Some(on_bytes) = on_bytes {
+            on_bytes(chunk.len() as u64);
         }
-
-        temp_path
-            .persist(destination)
-            .map_err(|err| io_error(destination)(err.error))?;
-
-        Ok(size)
     }
+
+    file.flush().await.map_err(io_error(&temp_path))?;
+    // Close the handle before renaming: Windows refuses to move a file that is still open.
+    // `into_std` waits for any write still in flight, so the drop really closes it.
+    drop(file.into_std().await);
+
+    if let (Some(expected), Some(hasher)) = (hash, hasher) {
+        check_hash(expected, hasher.finalize_hex())?;
+    }
+
+    temp_path
+        .persist(destination)
+        .map_err(|err| io_error(destination)(err.error))?;
+
+    Ok(size)
 }
 
 impl From<Method> for reqwest::Method {
@@ -351,12 +416,21 @@ mod tests {
 
     /// Serve every connection one raw response, then close.
     async fn serve(status_line: &str, body: &'static [u8]) -> SocketAddr {
+        serve_with_headers(status_line, "", body).await
+    }
+
+    /// As [`serve`], with `headers` (each line ending in `\r\n`) added to the response head.
+    async fn serve_with_headers(
+        status_line: &str,
+        headers: &str,
+        body: &'static [u8],
+    ) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("test server should bind");
         let addr = listener.local_addr().expect("test server should have addr");
         let head = format!(
-            "HTTP/1.1 {status_line}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            "HTTP/1.1 {status_line}\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n",
             body.len()
         );
 
@@ -570,6 +644,70 @@ Content-Length: 100000
             "the stalled download should be cancelled after its first bytes: {outcome:?}"
         );
         assert!(received.load(std::sync::atomic::Ordering::SeqCst) > 0);
+        assert!(dir_is_empty(dir.path()));
+    }
+
+    #[tokio::test]
+    async fn should_report_type_and_validators_when_a_conditional_download_saves() {
+        let addr = serve_with_headers(
+            "200 OK",
+            "Content-Type: image/png\r\nETag: \"abc\"\r\nLast-Modified: Wed, 21 Oct 2015 07:28:00 GMT\r\n",
+            b"png",
+        )
+        .await;
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("file");
+
+        let outcome = client()
+            .download_to_file_conditional(Request::get(url(addr)), &destination, 1 << 20)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            outcome,
+            FileDownload::Saved(SavedDownload {
+                size: 3,
+                content_type: Some("image/png".into()),
+                etag: Some("\"abc\"".into()),
+                last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT".into()),
+            })
+        );
+        assert_eq!(std::fs::read(&destination).unwrap(), b"png");
+    }
+
+    #[tokio::test]
+    async fn should_leave_the_file_when_a_conditional_download_is_not_modified() {
+        let addr = serve("304 Not Modified", b"").await;
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("file");
+        std::fs::write(&destination, b"old").unwrap();
+
+        let outcome = client()
+            .download_to_file_conditional(Request::get(url(addr)), &destination, 1 << 20)
+            .await
+            .unwrap();
+
+        assert_eq!(outcome, FileDownload::NotModified);
+        assert_eq!(std::fs::read(&destination).unwrap(), b"old");
+    }
+
+    #[tokio::test]
+    async fn should_reject_a_conditional_download_when_the_status_fails() {
+        let addr = serve("404 Not Found", b"missing").await;
+        let dir = tempfile::tempdir().unwrap();
+
+        let result = client()
+            .download_to_file_conditional(
+                Request::get(url(addr)),
+                &dir.path().join("file"),
+                1 << 20,
+            )
+            .await;
+
+        assert!(matches!(
+            result,
+            Err(RequestError::Status { status: 404, .. })
+        ));
         assert!(dir_is_empty(dir.path()));
     }
 }

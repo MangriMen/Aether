@@ -69,6 +69,11 @@ impl<R: CachePathResolver> Cache for FileCache<R> {
             debug!("Failed to remove cache file {:?}. {:?}", path, err);
         }
     }
+
+    /// Files carry no expiry (see [`Cache::set`]), so none goes.
+    async fn purge_expired(&self) -> u64 {
+        0
+    }
 }
 
 #[async_trait]

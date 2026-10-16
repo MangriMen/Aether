@@ -15,6 +15,36 @@ pub trait Cache: Send + Sync {
     async fn set<T: Serialize + Send + Sync>(&self, key: &CacheKey<T>, value: &T, ttl: Duration);
     async fn exists<T: Send + Sync>(&self, key: &CacheKey<T>) -> bool;
     async fn invalidate<T: Send + Sync>(&self, key: &CacheKey<T>);
+
+    /// Delete every value past its expiry, and say how many went.
+    ///
+    /// [`Cache::get`] already hides such values; this frees what they take.
+    async fn purge_expired(&self) -> u64;
+
+    /// The values of `keys`, in their order: `None` where [`Cache::get`] would give none.
+    ///
+    /// By default one [`Cache::get`] per key; a store that can read many at once does.
+    async fn get_many<T: DeserializeOwned + Send + Sync>(
+        &self,
+        keys: &[CacheKey<T>],
+    ) -> Vec<Option<T>> {
+        futures::future::join_all(keys.iter().map(|key| self.get(key))).await
+    }
+
+    /// [`Cache::set`] each value under its key, for `ttl`. Whether they were all written, for
+    /// a caller that would otherwise ask for them again and again.
+    ///
+    /// By default one [`Cache::set`] per entry, which cannot tell, and says `true`; a store
+    /// that can write many at once does, and tells.
+    async fn set_many<T: Serialize + Send + Sync>(
+        &self,
+        entries: &[(CacheKey<T>, T)],
+        ttl: Duration,
+    ) -> bool {
+        futures::future::join_all(entries.iter().map(|(key, value)| self.set(key, value, ttl)))
+            .await;
+        true
+    }
 }
 
 // --- CachePathResolver ---

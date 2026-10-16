@@ -6,6 +6,7 @@ use std::{
     collections::HashMap,
     path::Path,
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use async_trait::async_trait;
@@ -15,15 +16,16 @@ use crate::{
     features::{
         events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
         instance::{
-            CapabilityMetadata, ChangeInstanceGameUseCase, ContentCompatibilityCheckParams,
-            ContentCompatibilityResult, ContentDownloader, ContentItem, ContentProvider,
+            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
+            ChangeInstanceGameUseCase, ContentCompatibilityCheckParams, ContentCompatibilityResult,
+            ContentDownloader, ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, CreateInstanceUseCasePort,
-            InstallFileEntry, InstallPlan, InstallPlanExecutor, InstallTarget, Instance,
-            InstanceBuilder, InstanceError, InstanceGame, InstanceInstallService,
-            InstanceInstallStage, InstanceLocks, InstanceStorage, NewInstance, PackFile, PackInfo,
-            PackMetadata, PackSource, PackStorage, PlanOrigin, ProviderId,
-            RemoveInstanceUseCasePort, ResolveInstallPlanParams, ResolveTarget,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
+            CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
+            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame,
+            InstanceInstallService, InstanceInstallStage, InstanceLocks, InstanceStorage,
+            NewInstance, PackFile, PackInfo, PackMetadata, PackSource, PackStorage, PlanOrigin,
+            ProviderId, RemoveInstanceUseCasePort, ResolveInstallPlanParams, ResolveTarget,
             UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater, UpdaterCapabilityMetadata,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
@@ -38,6 +40,41 @@ use crate::{
         request_client::BytesProgress,
     },
 };
+
+/// Does not keep anything.
+struct NoMetadataCache;
+
+#[async_trait]
+impl ContentMetadataCache for NoMetadataCache {
+    async fn get_many(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_keyed_at(
+        &self,
+        _: &ProviderId,
+        _: &[(String, ContentMetadata)],
+        _: SystemTime,
+    ) -> bool {
+        true
+    }
+
+    async fn get_versions(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentVersionMetadata> {
+        HashMap::new()
+    }
+
+    async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
+}
 
 const INSTANCE_ID: &str = "instance";
 const PACK_ID: &str = "pack";
@@ -500,6 +537,7 @@ impl Fixture {
             location_info.clone(),
             Arc::new(NoProgress),
             Arc::new(NoRemoveInstance),
+            Arc::new(NoMetadataCache),
             crate::shared::limits::ContentInstallLimits::default(),
         ));
 

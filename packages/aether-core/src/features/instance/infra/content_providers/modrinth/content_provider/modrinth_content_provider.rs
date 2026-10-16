@@ -1,26 +1,28 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
 use async_trait::async_trait;
+use futures::{StreamExt, TryStreamExt, stream};
 use tracing::warn;
 
 use crate::{
     features::{
         instance::{
-            CapabilityMetadata, ContentIdentity, ContentItem, ContentProvider,
+            CapabilityMetadata, ContentIdentity, ContentItem, ContentMetadata, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, InstallFileEntry, InstallPlan, Instance,
-            InstanceError, PackInfo, PackMetadata, PackSource, ProviderId, ReleaseChannel,
-            ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata, InstallFileEntry,
+            InstallPlan, Instance, InstanceError, PackInfo, PackMetadata, PackSource, ProviderId,
+            ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
                 api_client::{
-                    File, MODRINTH_API_URL, ModrinthApiClient, ProjectResponse,
-                    ProjectSearchParams, ProjectVersionResponse, ProjectVersionsRequest,
+                    File, MODRINTH_API_URL, MODRINTH_API_V3_URL, ModrinthApiClient,
+                    ProjectResponse, ProjectSearchParams, ProjectVersionResponse,
+                    ProjectVersionsRequest,
                 },
             },
             select_version,
@@ -38,6 +40,57 @@ use super::{
         find_best_version, get_first_file_from_project_version, is_version_compatible,
     },
 };
+
+/// How many ids one `GET /projects`, `/versions`, `/teams` or `/organizations` asks for: a hundred keep the
+/// URL under 2 KB.
+const METADATA_BATCH_SIZE: usize = 100;
+
+/// How many of those requests run at once, well inside the API's 300 requests a minute.
+const METADATA_CONCURRENCY: usize = 4;
+
+/// `ids` in their first order, each once.
+fn unique(ids: impl Iterator<Item = String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    ids.filter(|id| seen.insert(id.clone())).collect()
+}
+
+/// What `fetch` answers for `ids`, asked [`METADATA_BATCH_SIZE`] ids at a time, up to
+/// [`METADATA_CONCURRENCY`] requests at once. Any request that fails fails the whole call.
+async fn fetch_batched<'a, T, F, Fut>(ids: &'a [String], fetch: F) -> Result<Vec<T>, InstanceError>
+where
+    F: Fn(&'a [String]) -> Fut,
+    Fut: Future<Output = Result<Vec<T>, String>>,
+{
+    // The requests are made up front: a stream mapping borrowed batches into futures is not
+    // `Send` enough for `async_trait`.
+    let requests: Vec<_> = ids.chunks(METADATA_BATCH_SIZE).map(fetch).collect();
+    let batches: Vec<Vec<T>> = stream::iter(requests)
+        .buffer_unordered(METADATA_CONCURRENCY)
+        .try_collect()
+        .await
+        .map_err(InstanceError::ContentDownloadError)?;
+    Ok(batches.into_iter().flatten().collect())
+}
+
+/// Who authors projects: the name of an organization by its id, the username of a team's owner
+/// by the team's id.
+struct Authors {
+    organization_names: HashMap<String, String>,
+    owners: HashMap<String, String>,
+}
+
+impl Authors {
+    /// The organization's name if the project has an organization, else the team's owner; none
+    /// when Modrinth does not list it.
+    fn of(&self, organization: Option<&str>, team: Option<&str>) -> Option<&str> {
+        match (organization, team) {
+            (Some(organization), _) => self.organization_names.get(organization),
+            (None, Some(team)) => self.owners.get(team),
+            (None, None) => None,
+        }
+        .map(String::as_str)
+    }
+}
 
 pub struct ModrinthContentProvider<RC> {
     location_info: Arc<LocationInfo>,
@@ -83,7 +136,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
 
         Self {
             request_client: request_client.clone(),
-            api: ModrinthApiClient::new(MODRINTH_API_URL.to_string(), base_headers, request_client),
+            api: ModrinthApiClient::new(
+                MODRINTH_API_URL.to_string(),
+                MODRINTH_API_V3_URL.to_string(),
+                base_headers,
+                request_client,
+            ),
             location_info,
             capability,
             max_mrpack_bytes,
@@ -285,6 +343,32 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         Ok(path)
     }
 
+    /// The names of the organizations and the owners of the teams, by id. Any request that
+    /// fails fails the whole call.
+    async fn authors(
+        &self,
+        organization_ids: &[String],
+        team_ids: &[String],
+    ) -> Result<Authors, InstanceError> {
+        let (organizations, teams) = futures::try_join!(
+            fetch_batched(organization_ids, |batch| self.api.get_organizations(batch)),
+            fetch_batched(team_ids, |batch| self.api.get_teams(batch)),
+        )?;
+
+        let mut owners: HashMap<String, String> = HashMap::new();
+        for member in teams.into_iter().flatten().filter(|member| member.is_owner) {
+            owners.entry(member.team_id).or_insert(member.user.username);
+        }
+
+        Ok(Authors {
+            organization_names: organizations
+                .into_iter()
+                .map(|organization| (organization.id, organization.name))
+                .collect(),
+            owners,
+        })
+    }
+
     /// Clear the cache of archives unused for long, never `current`.
     async fn prune_mrpack_cache(&self, current: &Path) {
         if let Some(dir) = current.parent() {
@@ -330,6 +414,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let entry = InstallFileEntry {
             size: resolved.size,
             name: resolved.name,
+            metadata: Some(Self::project_metadata(project)),
+            version_metadata: Some(ContentVersionMetadata {
+                version_id: version.id.clone(),
+                version_number: version.version_number.clone(),
+                name: Some(version.name.clone()).filter(|name| !name.is_empty()),
+            }),
             ..InstallFileEntry::new(
                 ContentSource::Direct {
                     url: resolved.url,
@@ -354,6 +444,20 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             files: vec![entry],
             overrides: Vec::new(),
         })
+    }
+
+    /// What the project says about itself, for the cache, named as `get_contents_metadata`
+    /// names it, but without an author: that is another request, and an install does not wait
+    /// for one. The core caches it as stale, so the next list asks for the author.
+    fn project_metadata(project: &ProjectResponse) -> ContentMetadata {
+        ContentMetadata {
+            content_id: project.id.clone(),
+            slug: project.slug.clone(),
+            name: project.title.clone(),
+            description: Some(project.description.clone()).filter(|text| !text.is_empty()),
+            author: None,
+            icon_url: project.icon_url.clone().filter(|url| !url.is_empty()),
+        }
     }
 
     async fn resolve_pack_plan(
@@ -563,6 +667,63 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 None,
             )),
         }
+    }
+
+    /// Asked of `GET /projects` a batch of ids at a time, a few batches at once; the author of
+    /// each project then of `GET /organizations` for a project an organization owns, by the
+    /// organization's name, and of `GET /teams` for any other, by the username of the team's
+    /// owner, batched alike.
+    ///
+    /// A request that fails fails the whole call: a partial answer would read as projects
+    /// Modrinth does not know, or as projects with no author, and be cached as such for days;
+    /// failed, the caller holds the lookup back for a few minutes (`LOOKUP_RETRY_AFTER`) before
+    /// asking again. A team or organization Modrinth does not list leaves its projects with no
+    /// author. A project asked both by its id and its slug is listed once.
+    async fn get_contents_metadata(
+        &self,
+        content_ids: &[String],
+    ) -> Result<Vec<ContentMetadata>, InstanceError> {
+        let content_ids = unique(content_ids.iter().cloned());
+        let batches =
+            fetch_batched(&content_ids, |batch| self.api.get_projects_metadata(batch)).await?;
+        let mut listed = HashSet::new();
+        let projects: Vec<_> = batches
+            .into_iter()
+            .filter(|project| listed.insert(project.id.clone()))
+            .collect();
+
+        let organization_ids = unique(
+            projects
+                .iter()
+                .filter_map(|project| project.organization.clone()),
+        );
+        let team_ids = unique(
+            projects
+                .iter()
+                .filter(|project| project.organization.is_none())
+                .filter_map(|project| project.team.clone()),
+        );
+        let authors = self.authors(&organization_ids, &team_ids).await?;
+
+        Ok(projects
+            .into_iter()
+            .map(|project| ContentMetadata {
+                author: authors
+                    .of(project.organization.as_deref(), project.team.as_deref())
+                    .map(str::to_owned),
+                ..ContentMetadata::from(project)
+            })
+            .collect())
+    }
+
+    async fn get_versions_metadata(
+        &self,
+        version_ids: &[String],
+    ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
+        let version_ids = unique(version_ids.iter().cloned());
+        let versions =
+            fetch_batched(&version_ids, |batch| self.api.get_versions_metadata(batch)).await?;
+        Ok(versions.into_iter().map(Into::into).collect())
     }
 
     async fn check_compatibility(

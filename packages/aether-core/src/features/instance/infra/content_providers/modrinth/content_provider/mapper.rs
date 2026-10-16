@@ -1,15 +1,17 @@
 use crate::features::{
     instance::{
-        ContentItem, ContentSearchParams, ContentSearchResult, ContentType, ContentVersion,
-        ContentVersionDependency, ContentVersionDependencyType, ContentVersionStatus,
-        ContentVersionType, ProviderId, RequestedContentVersionStatus,
+        ContentItem, ContentMetadata, ContentSearchParams, ContentSearchResult, ContentType,
+        ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
+        ContentVersionMetadata, ContentVersionStatus, ContentVersionType, ProviderId,
+        RequestedContentVersionStatus,
         infra::content_providers::modrinth::{
             ModrinthMapperError,
             api_client::{
                 Hit, MODRINTH_WEB_URL, ModrinthDependencyResponse, ModrinthDependencyType,
                 ModrinthRequestedStatus, ModrinthVersionStatus, ModrinthVersionType,
-                ProjectResponse, ProjectSearchParams, ProjectSearchResponse,
-                ProjectVersionResponse, SearchIndex,
+                ProjectMetadataResponse, ProjectResponse, ProjectSearchParams,
+                ProjectSearchResponse, ProjectVersionResponse, SearchIndex,
+                VersionMetadataResponse,
             },
         },
     },
@@ -161,6 +163,30 @@ impl TryFrom<ProjectResponse> for ContentItem {
             versions,
             content_type,
         })
+    }
+}
+
+impl From<ProjectMetadataResponse> for ContentMetadata {
+    /// No author: a project names only its team or organization by id, looked up apart.
+    fn from(value: ProjectMetadataResponse) -> Self {
+        Self {
+            content_id: value.id,
+            slug: value.slug,
+            name: value.title,
+            description: value.description.filter(|text| !text.is_empty()),
+            author: None,
+            icon_url: value.icon_url.filter(|url| !url.is_empty()),
+        }
+    }
+}
+
+impl From<VersionMetadataResponse> for ContentVersionMetadata {
+    fn from(value: VersionMetadataResponse) -> Self {
+        Self {
+            version_id: value.id,
+            version_number: value.version_number,
+            name: value.name.filter(|name| !name.is_empty()),
+        }
     }
 }
 

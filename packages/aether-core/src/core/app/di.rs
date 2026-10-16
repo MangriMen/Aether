@@ -13,7 +13,8 @@ use crate::features::{
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
         CheckContentCompatibilityUseCase, CheckContentCompatibilityUseCasePort, ContentFileService,
-        ContentProvider, CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
+        ContentIconCache, ContentMetadataCache, ContentMetadataService, ContentProvider,
+        CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
         ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
@@ -139,6 +140,10 @@ pub struct StorageParams {
     pub instance_storage: Arc<dyn InstanceStorage>,
     pub pack_storage: Arc<dyn PackStorage>,
     pub content_file_service: Arc<dyn ContentFileService>,
+    /// The project metadata of installed content, shown in an instance's content list.
+    pub content_metadata_cache: Arc<dyn ContentMetadataCache>,
+    /// The icons of that metadata, as local files the UI shows.
+    pub content_icon_cache: Arc<dyn ContentIconCache>,
     pub instance_file_service: Arc<dyn InstanceFileService>,
     pub java_storage: Arc<dyn crate::features::java::JavaStorage>,
     pub java_installation_service: Arc<dyn crate::features::java::JavaInstallationService>,
@@ -194,16 +199,26 @@ pub struct AetherContainer {
     params: AetherContainerParams,
     /// Shared by everything that changes an instance's content or launches it.
     instance_locks: Arc<InstanceLocks>,
+    /// One for the process: it keeps which refreshes run and what providers could not tell.
+    content_metadata: Arc<ContentMetadataService>,
 }
 
 impl AetherContainer {
     pub fn new(params: AetherContainerParams) -> Arc<Self> {
         params.sandbox_limits.assert_consistent();
 
+        let content_metadata = Arc::new(ContentMetadataService::new(
+            params.storage.content_metadata_cache.clone(),
+            params.storage.content_icon_cache.clone(),
+            params.content_provider_registry.clone(),
+            params.event_emitter.clone(),
+        ));
+
         Arc::new(Self {
             cache: UseCaseCache::new(),
             params,
             instance_locks: Arc::new(InstanceLocks::new()),
+            content_metadata,
         })
     }
 
@@ -672,6 +687,7 @@ impl ContentManagementPort for AetherContainer {
         Arc::new(ListContentUseCase::new(
             self.storage().pack_storage.clone(),
             self.location_info().clone(),
+            self.content_metadata.clone(),
         ))
     }
     fn remove_content_use_case(&self) -> Arc<dyn RemoveContentUseCasePort> {
@@ -731,6 +747,7 @@ impl ContentProviderPort for AetherContainer {
             self.location_info(),
             self.progress_service(),
             self.remove_instance_use_case(),
+            self.storage().content_metadata_cache.clone(),
             self.content_limits(),
         ))
     }

@@ -105,6 +105,21 @@ export type ContentFileDto = {
 	version: string | null,
 	updateProviderId: ProviderIdDto | null,
 	update?: { [key in string]: ContentFileUpdateInfoDto } | null,
+	/**
+	 *  The file's project as its provider describes it, when cached. Filled in later when
+	 *  missing: the instance's `synced` event tells when to list again.
+	 */
+	metadata: ContentMetadataDto | null,
+	/**
+	 *  The version the file was installed as, as its provider describes it, when cached: what
+	 *  to show in place of `version`, the provider's id of it. Filled in later as `metadata` is.
+	 */
+	versionMetadata: ContentVersionMetadataDto | null,
+	/**
+	 *  Whether `versionMetadata` is being fetched now: the instance's `synced` event tells when
+	 *  the fetch is over. `false` when nothing is to come.
+	 */
+	versionMetadataPending: boolean,
 };
 
 export type ContentFileUpdateInfoDto = {
@@ -135,6 +150,21 @@ export type ContentItemDto = {
 export type ContentListVersionParamsDto = {
 	contentId: string,
 	providerId: ProviderIdDto,
+};
+
+/**  What a provider says about the project of an installed file. */
+export type ContentMetadataDto = {
+	contentId: string,
+	slug: string,
+	name: string,
+	description: string | null,
+	author: string | null,
+	iconUrl: string | null,
+	/**
+	 *  The icon as cached on disk, as a URL of the app's asset protocol, as the instance's
+	 *  `iconPath`. Shown in place of `iconUrl` when set; `None` until the icon has arrived.
+	 */
+	iconPath: string | null,
 };
 
 export type ContentProviderCapabilityMetadataDto = {
@@ -191,6 +221,16 @@ export type ContentVersionDto = {
 	datePublished: string,
 	downloads: string,
 	webUrl: string,
+};
+
+/**  What a provider says about the version of an installed file. */
+export type ContentVersionMetadataDto = {
+	/**  The provider's id of the version, as `ContentFileDto::version` holds it. */
+	versionId: string,
+	/**  The version as its authors number it (`0.6.13+mc1.21.4`). */
+	versionNumber: string,
+	/**  The version's title (`Sodium 0.6.13`), if it has one. */
+	name: string | null,
 };
 
 export type ContentVersionStatusDto = "listed" | "archived" | "draft" | "unlisted" | "scheduled" | "unknown";
