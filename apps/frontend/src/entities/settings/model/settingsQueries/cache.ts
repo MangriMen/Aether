@@ -17,8 +17,9 @@ export const settingsQueries = {
   cacheUsage: () => ({
     queryKey: settingsKeys.cacheUsage(),
     queryFn: settingsCommands.getCacheUsage,
-    // Whether clearing is allowed changes by itself, as downloads start and end.
-    refetchInterval: 2000,
+    // Whether clearing is allowed changes by itself, as downloads start and end. Sizes are
+    // measured on each poll, so it is slow; to be replaced by launcher events or the file watcher.
+    refetchInterval: 10_000,
   }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),

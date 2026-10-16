@@ -68,14 +68,19 @@ pub(super) async fn prune(dir: &Path, keep: &Path, now: SystemTime) {
     }
 }
 
+/// Whether `path` is named like an archive.
+pub(super) fn is_mrpack(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
+}
+
 /// An archive, or the partial file of a download that never finished.
 fn is_cache_file(path: &Path) -> bool {
     let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
         return false;
     };
 
-    path.extension()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
+    is_mrpack(path)
         || (name.starts_with(".download-")
             && path
                 .extension()
@@ -107,29 +112,13 @@ impl CacheCleaner for MrpackCacheCleaner {
     }
 
     async fn size(&self) -> u64 {
-        crate::shared::housekeeping::files_size(&self.dir).await
+        crate::shared::housekeeping::dir_size(&self.dir).await
     }
 
     async fn clear(&self) -> u64 {
-        let Ok(mut entries) = tokio::fs::read_dir(&self.dir).await else {
-            return 0;
-        };
-
-        let mut removed = 0;
-        while let Ok(Some(entry)) = entries.next_entry().await {
-            let path = entry.path();
-            let is_archive = path
-                .extension()
-                .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"));
-            if !is_archive || !entry.metadata().await.is_ok_and(|m| m.is_file()) {
-                continue;
-            }
-            match tokio::fs::remove_file(&path).await {
-                Ok(()) => removed += 1,
-                Err(err) => tracing::debug!("Failed to remove {}: {err}", path.display()),
-            }
-        }
-        removed
+        crate::shared::housekeeping::remove_files(&self.dir, is_mrpack)
+            .await
+            .len() as u64
     }
 }
 

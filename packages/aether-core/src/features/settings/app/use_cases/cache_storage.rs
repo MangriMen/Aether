@@ -1,7 +1,4 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -18,20 +15,11 @@ use crate::{
 pub struct CacheStorageUseCase {
     cleaners: Vec<Arc<dyn CacheCleaner>>,
     activity: Arc<dyn StorageActivity>,
-    clearing: AtomicBool,
 }
 
 impl CacheStorageUseCase {
     pub fn new(cleaners: Vec<Arc<dyn CacheCleaner>>, activity: Arc<dyn StorageActivity>) -> Self {
-        Self {
-            cleaners,
-            activity,
-            clearing: AtomicBool::new(false),
-        }
-    }
-
-    async fn is_busy(&self) -> bool {
-        self.clearing.load(Ordering::SeqCst) || self.activity.is_busy().await
+        Self { cleaners, activity }
     }
 }
 
@@ -48,7 +36,7 @@ impl GetCacheUsageUseCasePort for CacheStorageUseCase {
 
         CacheUsage {
             entries,
-            busy: self.is_busy().await,
+            busy: self.activity.try_pause().await.is_none(),
         }
     }
 }
@@ -56,25 +44,21 @@ impl GetCacheUsageUseCasePort for CacheStorageUseCase {
 #[async_trait]
 impl ClearCacheUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> ClearCacheOutcome {
-        if self.clearing.swap(true, Ordering::SeqCst) {
+        // Held until the caches are empty: nothing starts using them meanwhile, and a second
+        // clearing finds the app paused, so busy.
+        let Some(_pause) = self.activity.try_pause().await else {
             return ClearCacheOutcome::Busy;
-        }
-        let outcome = if self.activity.is_busy().await {
-            ClearCacheOutcome::Busy
-        } else {
-            clear_caches(&self.cleaners).await;
-            ClearCacheOutcome::Cleared
         };
-        self.clearing.store(false, Ordering::SeqCst);
-        outcome
+        clear_caches(&self.cleaners).await;
+        ClearCacheOutcome::Cleared
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::AtomicU64;
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
-    use crate::shared::housekeeping::CacheKind;
+    use crate::shared::housekeeping::{ActivityPause, CacheKind};
 
     use super::*;
 
@@ -103,8 +87,8 @@ mod tests {
 
     #[async_trait]
     impl StorageActivity for Activity {
-        async fn is_busy(&self) -> bool {
-            self.0.load(Ordering::SeqCst)
+        async fn try_pause(&self) -> Option<ActivityPause> {
+            (!self.0.load(Ordering::SeqCst)).then(|| Box::new(()) as ActivityPause)
         }
     }
 

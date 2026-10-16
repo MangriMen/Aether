@@ -20,3 +20,7 @@ export const formatBytes = (bytes: number, locale?: string): string => {
     maximumFractionDigits: unit === 0 || value >= 100 ? 0 : 1,
   }).format(value);
 };
+
+/** The total of sizes that may be missing: specta exports `f64` as `number | null`. */
+export const sumBytes = (entries: { bytes: number | null }[]): number =>
+  entries.reduce((sum, entry) => sum + (entry.bytes ?? 0), 0);

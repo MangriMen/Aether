@@ -299,10 +299,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         version: &ProjectVersionResponse,
     ) -> Result<PathBuf, InstanceError> {
         let file = Self::primary_file(version)?;
-        if !Path::new(&file.filename)
-            .extension()
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
-        {
+        if !super::mrpack_cache::is_mrpack(Path::new(&file.filename)) {
             return Err(InstanceError::ContentDownloadError(format!(
                 "File {} is not a modpack",
                 file.filename

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{events::ProgressBarStorage, instance::InstanceLocks},
-    shared::housekeeping::StorageActivity,
+    shared::housekeeping::{ActivityPause, StorageActivity},
 };
 
 /// The app is busy while content is being changed in some instance or anything is in progress
@@ -16,7 +16,12 @@ pub(super) struct AppStorageActivity {
 
 #[async_trait]
 impl StorageActivity for AppStorageActivity {
-    async fn is_busy(&self) -> bool {
-        self.instance_locks.is_any_locked() || !self.progress_bars.list().await.is_empty()
+    async fn try_pause(&self) -> Option<ActivityPause> {
+        let pause = self.instance_locks.try_pause()?;
+        if self.progress_bars.list().await.is_empty() {
+            Some(Box::new(pause))
+        } else {
+            None
+        }
     }
 }

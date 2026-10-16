@@ -30,11 +30,16 @@ pub enum CacheKind {
     ModpackArchives,
 }
 
+/// Holds the app idle, as far as the caches go, until dropped.
+pub type ActivityPause = Box<dyn std::any::Any + Send>;
+
 /// Whether the app is busy with something that uses the caches, so emptying them now would
 /// pull files out from under it.
 #[async_trait]
 pub trait StorageActivity: Send + Sync {
-    async fn is_busy(&self) -> bool;
+    /// Stop such work from starting, or `None` when it is under way already. Checking and
+    /// stopping are one step, so nothing slips in between.
+    async fn try_pause(&self) -> Option<ActivityPause>;
 }
 
 /// A cache the user may empty whole. What the app needs of it is fetched again afterwards.
@@ -51,23 +56,6 @@ pub trait CacheCleaner: Send + Sync {
 
     /// Empty the cache. How many items went.
     async fn clear(&self) -> u64;
-}
-
-/// The bytes of the files directly in `dir`; a missing or unreadable one counts for nothing.
-pub async fn files_size(dir: &std::path::Path) -> u64 {
-    let Ok(mut entries) = tokio::fs::read_dir(dir).await else {
-        return 0;
-    };
-
-    let mut total = 0;
-    while let Ok(Some(entry)) = entries.next_entry().await {
-        if let Ok(metadata) = entry.metadata().await
-            && metadata.is_file()
-        {
-            total += metadata.len();
-        }
-    }
-    total
 }
 
 /// The bytes of every file under `dir`, at any depth. Links are not followed; a missing or
@@ -100,16 +88,46 @@ pub async fn dir_size(dir: &std::path::Path) -> u64 {
     .unwrap_or_default()
 }
 
-/// Run `tasks` one after another in the background, logging what each removed.
+/// Remove the files directly in `dir` that `should_remove` accepts; folders and links are left
+/// alone, a missing folder counts for nothing. Which went.
+pub async fn remove_files(
+    dir: &std::path::Path,
+    should_remove: impl Fn(&std::path::Path) -> bool + Send + 'static,
+) -> Vec<std::path::PathBuf> {
+    let dir = dir.to_owned();
+    tokio::task::spawn_blocking(move || {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            return Vec::new();
+        };
+        let mut removed = Vec::new();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !entry.file_type().is_ok_and(|file_type| file_type.is_file())
+                || !should_remove(&path)
+            {
+                continue;
+            }
+            match std::fs::remove_file(&path) {
+                Ok(()) => removed.push(path),
+                Err(err) => tracing::debug!("Failed to remove {}: {err}", path.display()),
+            }
+        }
+        removed
+    })
+    .await
+    .unwrap_or_default()
+}
+
+/// Run each of `tasks` in the background, side by side, logging what each removed.
 pub fn spawn_housekeeping(tasks: Vec<Arc<dyn Housekeeping>>) {
-    tokio::spawn(async move {
-        for task in tasks {
+    for task in tasks {
+        tokio::spawn(async move {
             let removed = task.run().await;
             if removed > 0 {
                 log::debug!("Housekeeping: removed {removed} of {}", task.what());
             }
-        }
-    });
+        });
+    }
 }
 
 /// Empty every cache of `cleaners`, one after another. What each removed, by what it is.

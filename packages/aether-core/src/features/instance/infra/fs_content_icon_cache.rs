@@ -420,47 +420,30 @@ impl CacheCleaner for FsContentIconCache {
     }
 
     async fn size(&self) -> u64 {
-        crate::shared::housekeeping::files_size(&self.dir).await
+        crate::shared::housekeeping::dir_size(&self.dir).await
     }
 
     async fn clear(&self) -> u64 {
-        let Ok(mut entries) = tokio::fs::read_dir(&self.dir).await else {
-            return 0;
-        };
-
-        let mut removed = 0;
-        while let Ok(Some(entry)) = entries.next_entry().await {
-            let path = entry.path();
-            if !entry
-                .metadata()
-                .await
-                .is_ok_and(|metadata| metadata.is_file())
-            {
-                continue;
-            }
-            // A partial file may be a fetch in progress, which removes its own on failure.
-            let is_partial = path
+        // A partial file may be a fetch in progress, which removes its own on failure.
+        let removed = crate::shared::housekeeping::remove_files(&self.dir, |path| {
+            !path
                 .file_name()
                 .and_then(|name| name.to_str())
                 .is_some_and(|name| {
                     PARTIAL_PREFIXES
                         .iter()
                         .any(|prefix| name.starts_with(prefix))
-                });
-            if is_partial {
-                continue;
-            }
-            let is_icon = path
-                .extension()
-                .and_then(|extension| extension.to_str())
-                .is_some_and(|extension| EXTENSIONS.contains(&extension));
-            match tokio::fs::remove_file(&path).await {
-                Ok(()) if is_icon => removed += 1,
-                Ok(()) => {}
-                Err(err) => tracing::debug!("Failed to remove {}: {err}", path.display()),
-            }
-        }
+                })
+        })
+        .await;
         removed
+            .iter()
+            .filter(|path| {
+                path.extension()
+                    .and_then(|extension| extension.to_str())
+                    .is_some_and(|extension| EXTENSIONS.contains(&extension))
+            })
+            .count() as u64
     }
 }
 

@@ -2,10 +2,8 @@ import { For, Show, type Component } from 'solid-js';
 
 import type { StorageKindDto, StorageUsageDto } from '@/entities/settings';
 
-import { cn, formatBytes } from '@/shared/lib';
+import { cn, formatBytes, sumBytes } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
-
-type Entry = StorageUsageDto['entries'][number];
 
 const KIND_STYLE = {
   minecraft: {
@@ -40,13 +38,10 @@ const GROUPS = [
   kinds: StorageKindDto[];
 }[];
 
-const sum = (entries: Entry[]) =>
-  entries.reduce((total, entry) => total + (entry.bytes ?? 0), 0);
-
 export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
   const [{ t, locale }] = useTranslation();
 
-  const total = () => sum(props.usage.entries);
+  const total = () => sumBytes(props.usage.entries);
   const entriesOf = (kinds: readonly StorageKindDto[]) =>
     props.usage.entries.filter((entry) => kinds.includes(entry.kind));
 
@@ -82,7 +77,7 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
                 <div class='gap-2 font-medium flex justify-between'>
                   <span>{t(group.title)}</span>
                   <span class='tabular-nums'>
-                    {formatBytes(sum(entriesOf(group.kinds)), locale())}
+                    {formatBytes(sumBytes(entriesOf(group.kinds)), locale())}
                   </span>
                 </div>
                 <p class='text-sm text-muted-foreground'>
