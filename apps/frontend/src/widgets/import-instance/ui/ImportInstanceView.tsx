@@ -2,7 +2,7 @@ import type { JSX } from 'solid-js';
 
 import { createMemo, For, splitProps, type Component } from 'solid-js';
 
-import type { ImporterCapabilityEntry } from '@/entities/plugins';
+import type { ImporterCapabilityEntry } from '@/features/plugins';
 import type { TabsProps } from '@/shared/ui';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';

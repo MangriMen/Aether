@@ -9,7 +9,7 @@ import {
 } from '@/entities/events';
 import { useInstanceEventsListener } from '@/entities/instances';
 import { useJavaInstallationListener } from '@/entities/java';
-import { usePluginEventListener } from '@/entities/plugins';
+import { usePluginEventListener } from '@/features/plugins';
 
 export const useSetupListeners = () => {
   useInstanceEventsListener();

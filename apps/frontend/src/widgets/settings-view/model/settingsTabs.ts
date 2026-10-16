@@ -11,13 +11,13 @@ import type { TabConfig } from '@/shared/model';
 import type { SettingsPaneProps } from '@/shared/ui';
 
 import { SettingsTab } from '@/entities/settings';
+import { PluginsPane } from '@/features/plugins-manager';
 
 import { AppearancePane } from '../ui/AppearancePane/AppearancePane';
 import { ContentProvidersPane } from '../ui/ContentProvidersPane/ContentProvidersPane';
 import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/DefaultInstanceSettingsPane';
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import { JavaPane } from '../ui/JavaPane/JavaPane';
-import { PluginsPane } from '../ui/PluginsPane/PluginsPane';
 import { StoragePane } from '../ui/StoragePane/StoragePane';
 import { UpdatePane } from '../ui/UpdatePane/UpdatePane';
 

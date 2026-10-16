@@ -6,7 +6,7 @@ import type { ImportInstance } from '@/entities/instances';
 import type {
   ImporterCapabilityMetadata,
   PluginMetadata,
-} from '@/entities/plugins';
+} from '@/features/plugins';
 
 import { useImportInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';
