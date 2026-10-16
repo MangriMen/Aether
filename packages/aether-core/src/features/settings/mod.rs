@@ -10,9 +10,10 @@ pub use domain::{
 };
 
 pub use app::{
-    DefaultInstanceSettingsStorage, EditDefaultInstanceSettings,
-    EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort, EditHooks,
-    EditPlatformProvider, EditSettings, EditSettingsUseCase, EditSettingsUseCasePort,
-    GetDefaultInstanceSettingsUseCase, GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCase,
-    GetSettingsUseCasePort, SettingsFeature, SettingsStorage,
+    ClearCacheUseCase, ClearCacheUseCasePort, DefaultInstanceSettingsStorage,
+    EditDefaultInstanceSettings, EditDefaultInstanceSettingsUseCase,
+    EditDefaultInstanceSettingsUseCasePort, EditHooks, EditPlatformProvider, EditSettings,
+    EditSettingsUseCase, EditSettingsUseCasePort, GetDefaultInstanceSettingsUseCase,
+    GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCase, GetSettingsUseCasePort,
+    SettingsFeature, SettingsStorage,
 };

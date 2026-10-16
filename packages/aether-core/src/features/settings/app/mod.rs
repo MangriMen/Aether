@@ -6,11 +6,11 @@ mod use_cases;
 pub use di::SettingsFeature;
 pub use dtos::{EditDefaultInstanceSettings, EditHooks, EditPlatformProvider, EditSettings};
 pub use ports::{
-    DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCasePort,
+    ClearCacheUseCasePort, DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCasePort,
     EditSettingsUseCasePort, GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCasePort,
     SettingsStorage,
 };
 pub use use_cases::{
-    EditDefaultInstanceSettingsUseCase, EditSettingsUseCase, GetDefaultInstanceSettingsUseCase,
-    GetSettingsUseCase,
+    ClearCacheUseCase, EditDefaultInstanceSettingsUseCase, EditSettingsUseCase,
+    GetDefaultInstanceSettingsUseCase, GetSettingsUseCase,
 };

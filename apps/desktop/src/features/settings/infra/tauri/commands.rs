@@ -64,6 +64,19 @@ async fn edit(
 
 #[tauri::command]
 #[specta::specta]
+async fn clear_cache(
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<()> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    container.0.clone().clear_cache_use_case().execute().await;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
     Ok(RamSettingsDto {
         total_memory: aether_core::shared::system::infra::get_total_memory(),

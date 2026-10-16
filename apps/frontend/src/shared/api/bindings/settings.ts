@@ -7,6 +7,7 @@ export const commands = {
 	get: () => __TAURI_INVOKE<SettingsDto>("plugin:settings|get"),
 	edit: (editSettings: EditSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<SettingsDto>("plugin:settings|edit", { editSettings, requestId }),
 	getMaxRam: () => __TAURI_INVOKE<RamSettingsDto>("plugin:settings|get_max_ram"),
+	clearCache: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:settings|clear_cache", { requestId }),
 	getDefaultInstanceSettings: () => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|get_default_instance_settings"),
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings, requestId }),
 	getAppSettings: () => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|get_app_settings"),

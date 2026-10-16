@@ -136,6 +136,7 @@ macro_rules! settings_commands {
             get,
             edit,
             get_max_ram,
+            clear_cache,
             get_default_instance_settings,
             edit_default_instance_settings,
             get_app_settings,

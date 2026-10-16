@@ -8,7 +8,7 @@ mod services;
 mod sqlite;
 mod universal_content_metadata_cache;
 
-pub use content_providers::ModrinthContentProvider;
+pub use content_providers::{ModrinthContentProvider, MrpackCacheCleaner, mrpack_dir};
 pub use event_emitting_instance_storage::EventEmittingInstanceStorage;
 pub use fs::{FsInstanceStorage, FsPackStorage};
 pub use fs_content_icon_cache::{CONTENT_ICONS_FOLDER, FsContentIconCache};

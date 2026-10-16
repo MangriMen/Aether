@@ -266,7 +266,7 @@ impl ContentIconCache for FakeIcons {
         Ok(true)
     }
 
-    async fn remove_unused(&self, _: Duration) -> usize {
+    async fn retain(&self, _: &std::collections::HashSet<String>) -> usize {
         0
     }
 }

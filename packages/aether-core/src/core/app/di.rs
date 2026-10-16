@@ -151,6 +151,8 @@ pub struct StorageParams {
     pub jre_provider: Arc<dyn crate::features::java::JreProvider>,
     pub metadata_storage: Arc<dyn crate::features::minecraft::MetadataStorage>,
     pub assets_storage: Arc<dyn AssetsStorage>,
+    /// The caches the user may empty by hand.
+    pub cache_cleaners: Vec<Arc<dyn crate::shared::housekeeping::CacheCleaner>>,
 }
 
 pub struct MinecraftParams {
@@ -450,6 +452,11 @@ impl AetherContainer {
 // Feature trait implementations
 
 impl SettingsFeature for AetherContainer {
+    fn clear_cache_use_case(&self) -> Arc<dyn crate::features::settings::ClearCacheUseCasePort> {
+        Arc::new(crate::features::settings::ClearCacheUseCase::new(
+            self.storage().cache_cleaners.clone(),
+        ))
+    }
     fn get_settings_use_case(&self) -> Arc<dyn GetSettingsUseCasePort> {
         Arc::new(GetSettingsUseCase::new(
             self.storage().settings_storage.clone(),

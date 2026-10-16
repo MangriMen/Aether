@@ -8,9 +8,11 @@
 //! [`CONTENT_METADATA_TTL`], with the `ETag` and `Last-Modified` kept beside it in
 //! `<name>.json`.
 //!
-//! The file's mtime is when it was last used, renewed as lists show it, and cleanup goes by it.
+//! Cleanup goes by the URLs still wanted (`retain`), not by time; a file's mtime is only when it
+//! was last written, which spares a fresh icon from a cleanup that cannot know its owner yet.
 
 use std::{
+    collections::HashSet,
     fmt::Write as _,
     io::Read,
     path::{Path, PathBuf},
@@ -26,7 +28,10 @@ use crate::{
     features::instance::app::{
         CONTENT_METADATA_TTL, CachedContentIcon, ContentIconCache, ContentIconError,
     },
-    shared::request_client::{FileDownload, Request, RequestClient},
+    shared::{
+        housekeeping::CacheCleaner,
+        request_client::{FileDownload, Request, RequestClient},
+    },
 };
 
 /// The folder of the asset store the icons are kept in.
@@ -38,9 +43,9 @@ const MAX_ICON_SIZE: u64 = 1 << 20;
 /// How long fetching one icon may take.
 const FETCH_TIMEOUT: Duration = Duration::from_secs(20);
 
-/// How old the mark of the last use may get before a lookup renews it: one write a day, not one
-/// per list.
-const TOUCH_INTERVAL: Duration = Duration::from_hours(24);
+/// How old an icon must be to be dropped for being unwanted: a younger one may belong to
+/// content whose metadata the cleanup did not see yet.
+const FRESH_AGE: Duration = Duration::from_hours(1);
 
 /// How old a partial file must be to be taken for the leftover of an interrupted fetch rather
 /// than one in progress.
@@ -191,22 +196,6 @@ async fn write_atomic(dir: &Path, path: &Path, bytes: Vec<u8>) -> std::io::Resul
     .map_err(std::io::Error::other)?
 }
 
-/// Mark the file at `path` as used just now.
-async fn touch(path: &Path) {
-    let path = path.to_owned();
-    let renewed = tokio::task::spawn_blocking(move || {
-        std::fs::File::options()
-            .write(true)
-            .open(&path)?
-            .set_modified(SystemTime::now())
-    })
-    .await;
-
-    if !matches!(renewed, Ok(Ok(()))) {
-        tracing::debug!("Failed to renew a cached content icon: {renewed:?}");
-    }
-}
-
 fn unix_secs(time: SystemTime) -> u64 {
     time.duration_since(UNIX_EPOCH)
         .map_or(0, |since| since.as_secs())
@@ -223,18 +212,11 @@ impl ContentIconCache for FsContentIconCache {
             return CachedContentIcon::Missing;
         };
         let stem = stem(url);
-        let Some((path, extension, metadata)) = self.find(&stem).await else {
+        let Some((_, extension, _)) = self.find(&stem).await else {
             return CachedContentIcon::Missing;
         };
 
         let now = SystemTime::now();
-        let unused_for = metadata
-            .modified()
-            .ok()
-            .and_then(|modified| now.duration_since(modified).ok());
-        if unused_for.is_none_or(|age| age >= TOUCH_INTERVAL) {
-            touch(&path).await;
-        }
 
         // A URL that names its content by hash never brings another file. Any other one does
         // only on a fetch that writes the validators anew, so their time tells the files apart.
@@ -357,12 +339,13 @@ impl ContentIconCache for FsContentIconCache {
         Ok(true)
     }
 
-    async fn remove_unused(&self, max_unused: Duration) -> usize {
+    async fn retain(&self, keep: &HashSet<String>) -> usize {
         let Ok(mut entries) = tokio::fs::read_dir(&self.dir).await else {
             return 0;
         };
 
         let now = SystemTime::now();
+        let kept: HashSet<String> = keep.iter().map(|url| stem(url)).collect();
         let mut removed = 0;
         let mut validators = Vec::new();
         while let Ok(Some(entry)) = entries.next_entry().await {
@@ -392,7 +375,12 @@ impl ContentIconCache for FsContentIconCache {
                 validators.push(path);
                 continue;
             }
-            let expired = (is_partial && age >= LEFTOVER_AGE) || (is_icon && age >= max_unused);
+            let unwanted = path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .is_some_and(|stem| !kept.contains(stem));
+            let expired =
+                (is_partial && age >= LEFTOVER_AGE) || (is_icon && unwanted && age >= FRESH_AGE);
             if !expired {
                 continue;
             }
@@ -415,6 +403,55 @@ impl ContentIconCache for FsContentIconCache {
             }
         }
 
+        removed
+    }
+}
+
+/// Every icon and its validators, and the leftovers of fetches. The lists fetch again what they
+/// show.
+#[async_trait]
+impl CacheCleaner for FsContentIconCache {
+    fn what(&self) -> &'static str {
+        "content icons"
+    }
+
+    async fn clear(&self) -> u64 {
+        let Ok(mut entries) = tokio::fs::read_dir(&self.dir).await else {
+            return 0;
+        };
+
+        let mut removed = 0;
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+            if !entry
+                .metadata()
+                .await
+                .is_ok_and(|metadata| metadata.is_file())
+            {
+                continue;
+            }
+            // A partial file may be a fetch in progress, which removes its own on failure.
+            let is_partial = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| {
+                    PARTIAL_PREFIXES
+                        .iter()
+                        .any(|prefix| name.starts_with(prefix))
+                });
+            if is_partial {
+                continue;
+            }
+            let is_icon = path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .is_some_and(|extension| EXTENSIONS.contains(&extension));
+            match tokio::fs::remove_file(&path).await {
+                Ok(()) if is_icon => removed += 1,
+                Ok(()) => {}
+                Err(err) => tracing::debug!("Failed to remove {}: {err}", path.display()),
+            }
+        }
         removed
     }
 }
@@ -808,19 +845,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_remove_icons_and_leftovers_when_unused_for_too_long() {
+    async fn should_keep_wanted_and_fresh_icons_and_remove_the_rest_when_retaining() {
         let fixture = Fixture::new();
+        let wanted = "https://cdn.example.com/wanted/icon.png";
         let fresh = "https://cdn.example.com/fresh/icon.png";
-        fixture.http.reply(fresh, image(PNG, "image/png"));
-        fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
-        fixture.cache.fetch(fresh).await.unwrap();
-        fixture.cache.fetch(LEGACY_URL).await.unwrap();
-
-        let max_unused = Duration::from_hours(30 * 24);
-        let (old_icon, _) = fixture.present(LEGACY_URL).await;
+        for url in [wanted, fresh, LEGACY_URL] {
+            fixture.http.reply(url, image(PNG, "image/png"));
+            fixture.cache.fetch(url).await.unwrap();
+        }
+        let (old_icon, _) = fixture.present(wanted).await;
         set_age(
             &fixture.path_of(&old_icon),
-            max_unused + Duration::from_hours(1),
+            FRESH_AGE + Duration::from_secs(60),
+        );
+        let (unwanted_icon, _) = fixture.present(LEGACY_URL).await;
+        set_age(
+            &fixture.path_of(&unwanted_icon),
+            FRESH_AGE + Duration::from_secs(60),
         );
         let leftover = fixture.dir.join(".icon-abc.part");
         std::fs::write(&leftover, b"partial").unwrap();
@@ -828,34 +869,38 @@ mod tests {
         let in_progress = fixture.dir.join(".download-def.part");
         std::fs::write(&in_progress, b"partial").unwrap();
 
-        assert_eq!(fixture.cache.remove_unused(max_unused).await, 1);
+        let keep = HashSet::from([wanted.to_owned()]);
+        assert_eq!(fixture.cache.retain(&keep).await, 1);
 
-        let fresh_stem = stem(fresh);
+        let (wanted_stem, fresh_stem) = (stem(wanted), stem(fresh));
         assert_eq!(
             fixture.files(),
             [
                 ".download-def.part".to_owned(),
                 format!("{fresh_stem}.json"),
                 format!("{fresh_stem}.png"),
+                format!("{wanted_stem}.json"),
+                format!("{wanted_stem}.png"),
             ]
         );
     }
 
     #[tokio::test]
-    async fn should_mark_an_icon_used_when_looked_up() {
+    async fn should_remove_every_icon_when_cleared() {
         let fixture = Fixture::new();
         fixture.http.reply(HASHED_URL, image(WEBP, "image/webp"));
+        fixture.http.reply(LEGACY_URL, image(PNG, "image/png"));
         fixture.cache.fetch(HASHED_URL).await.unwrap();
-        let (asset_id, _) = fixture.present(HASHED_URL).await;
-        let max_unused = Duration::from_hours(30 * 24);
-        set_age(
-            &fixture.path_of(&asset_id),
-            max_unused + Duration::from_hours(1),
+        fixture.cache.fetch(LEGACY_URL).await.unwrap();
+        let in_progress = fixture.dir.join(".download-def.part");
+        std::fs::write(&in_progress, b"partial").unwrap();
+
+        assert_eq!(fixture.cache.clear().await, 2);
+
+        assert_eq!(fixture.files(), [".download-def.part".to_owned()]);
+        assert_eq!(
+            fixture.cache.lookup(HASHED_URL).await,
+            CachedContentIcon::Missing
         );
-
-        fixture.present(HASHED_URL).await;
-
-        assert_eq!(fixture.cache.remove_unused(max_unused).await, 0);
-        assert_eq!(fixture.files().len(), 1);
     }
 }

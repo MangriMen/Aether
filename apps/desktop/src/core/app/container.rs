@@ -12,10 +12,12 @@ use aether_core::features::events::{EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
     EventEmittingInstanceStorage, FsContentFileService, FsContentIconCache, FsInstanceFileService,
-    InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider,
-    SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache,
+    InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider, MrpackCacheCleaner,
+    SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache, mrpack_dir,
 };
-use aether_core::features::instance::{ContentProvider, GetInstanceUseCase, Importer, Updater};
+use aether_core::features::instance::{
+    ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, Updater,
+};
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
 };
@@ -40,11 +42,12 @@ use aether_core::features::settings::infra::{
     SqliteSettingsStorage,
 };
 use aether_core::features::{auth, instance, java, minecraft, settings};
+use aether_core::shared::cache::AssetsStorage;
 use aether_core::shared::cache::infra::{FileCache, FsAssetsStorage, SqliteCache};
-use aether_core::shared::cache::{AssetsStorage, Cache};
 use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::FetchSemaphore;
+use aether_core::shared::housekeeping::{CacheCleaner, Housekeeping, spawn_housekeeping};
 use aether_core::shared::limits::{ContentInstallLimits, PluginSandboxLimits};
 use aether_core::shared::request_client::infra::ReqwestClient;
 use log::info;
@@ -187,31 +190,32 @@ pub async fn build_container(
         Arc::new(UniversalContentMetadataCache::new(SqliteCache::new(
             pool.clone(),
         )));
-    // In the background: the cached rows nobody refreshed for their whole life.
-    tokio::spawn({
-        let cache = SqliteCache::new(pool.clone());
-        async move {
-            let purged = cache.purge_expired().await;
-            if purged > 0 {
-                log::debug!("Purged {purged} expired cache rows");
-            }
-        }
-    });
-    let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> = Arc::new(
-        FsContentIconCache::new(http_client.clone(), &location_info.assets_cache_dir()),
-    );
-    // In the background, as it reads the whole icon folder: the icons no list showed lately.
-    tokio::spawn({
-        let content_icon_cache = content_icon_cache.clone();
-        async move {
-            let removed = content_icon_cache
-                .remove_unused(aether_core::features::instance::CONTENT_ICON_MAX_UNUSED)
-                .await;
-            if removed > 0 {
-                log::debug!("Removed {removed} unused content icons");
-            }
-        }
-    });
+    let fs_content_icon_cache = Arc::new(FsContentIconCache::new(
+        http_client.clone(),
+        &location_info.assets_cache_dir(),
+    ));
+    let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> =
+        fs_content_icon_cache.clone();
+    let sqlite_cache = Arc::new(SqliteCache::new(pool.clone()));
+    // In the background, as they read whole folders and tables. Their thresholds are their own.
+    let housekeeping: Vec<Arc<dyn Housekeeping>> = vec![
+        sqlite_cache.clone(),
+        Arc::new(ContentIconHousekeeping::new(
+            instance_storage.clone(),
+            pack_storage.clone(),
+            content_metadata_cache.clone(),
+            content_icon_cache.clone(),
+        )),
+    ];
+    spawn_housekeeping(housekeeping);
+    // What the user may empty by hand: everything the app can fetch again.
+    let cache_cleaners: Vec<Arc<dyn CacheCleaner>> = vec![
+        sqlite_cache,
+        fs_content_icon_cache,
+        Arc::new(MrpackCacheCleaner::new(mrpack_dir(
+            &location_info.cache_dir(),
+        ))),
+    ];
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
@@ -348,6 +352,7 @@ pub async fn build_container(
             jre_provider,
             metadata_storage,
             assets_storage,
+            cache_cleaners,
         },
         minecraft: MinecraftParams {
             minecraft_downloader,

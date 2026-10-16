@@ -443,6 +443,9 @@
       "off": "Off"
     },
     "changeError": "Failed to change settings",
+    "clearCache": "Clear cache",
+    "clearCacheDescription": "Removes the saved names, icons and downloaded modpack archives of content, and the cached game version lists. They are downloaded again when needed.",
+    "clearCacheError": "Failed to clear the cache",
     "animationsDisabled": "Animations are disabled in the system",
     "animationsDisabledDescription": "You can enable them in the app, but this may impact the smoothness of the interface and battery life",
     "updateAvailable": "New version is available!",

@@ -40,6 +40,12 @@ pub trait DefaultInstanceSettingsStorage: Send + Sync {
 // ── Use case ports ──
 
 #[async_trait]
+pub trait ClearCacheUseCasePort: Send + Sync {
+    /// Empty the caches; the app fetches again what it needs.
+    async fn execute(&self);
+}
+
+#[async_trait]
 pub trait GetSettingsUseCasePort: Send + Sync {
     async fn execute(&self) -> Result<Settings, SettingsError>;
 }

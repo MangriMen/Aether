@@ -33,6 +33,23 @@ export const useSetPlatformProvider = () => {
   }));
 };
 
+/** Empty the caches the app can fetch again (content metadata, icons, modpack archives). */
+export const useClearCache = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: settingsCommands.clearCache,
+    onSuccess: () => {
+      // What the lists showed from the cache is fetched again.
+      void queryClient.invalidateQueries();
+    },
+    onError: (err) => {
+      showError({ title: t('settings.clearCacheError'), err, t });
+    },
+  }));
+};
+
 export const useEditSettings = () => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();

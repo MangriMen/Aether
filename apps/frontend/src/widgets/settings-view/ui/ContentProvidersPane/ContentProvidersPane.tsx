@@ -8,6 +8,7 @@ import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
 import { groupProvidersByPlatform, platformsToChooseFor } from '../../lib';
+import { ClearCacheEntry } from './ClearCacheEntry';
 import { PlatformProviderEntry } from './PlatformProviderEntry';
 
 export type ContentProvidersPaneProps = SettingsPaneProps;
@@ -60,6 +61,7 @@ export const ContentProvidersPane: Component<ContentProvidersPaneProps> = (
           </For>
         </Match>
       </Switch>
+      <ClearCacheEntry variant='card' />
     </SettingsPane>
   );
 };
