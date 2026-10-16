@@ -1,7 +1,6 @@
 # Frontend architecture
 
-The frontend is organised by domain, like the backend (`aether-core/src/features/*`).
-The layout is close to the one the Modrinth App adopted (`app / platform / features / shared`).
+The frontend is organised by domain: each feature keeps its UI, state and API calls together.
 
 ```
 src/
