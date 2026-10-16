@@ -1,10 +1,9 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import { invalidateImporters } from '@/entities/instances/@x/plugins';
-
 import type { PluginId } from './pluginManifest';
 
 import { pluginsCommands } from '../api';
+import { invalidateImporters } from './importerQueries';
 import { pluginKeys } from './queryKeys';
 
 export const pluginsQueries = {
@@ -66,7 +65,6 @@ export const pluginsCache = {
       await queryClient.invalidateQueries({
         queryKey: pluginKeys.all,
       });
-      await pluginsCache.invalidate.importers(queryClient);
     },
     // Importers are registered by the plugins that are running, so the list changes
     // with a plugin's state.

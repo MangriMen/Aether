@@ -1,6 +1,7 @@
 export * from './cache';
 export * from './capabilities';
 export * from './checkIsApiCompatible';
+export * from './importerQueries';
 export * from './plugin';
 export * from './pluginCapabilities';
 export * from './pluginEvent';

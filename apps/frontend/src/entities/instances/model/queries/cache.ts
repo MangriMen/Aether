@@ -29,8 +29,3 @@ export const invalidateInstanceContent = (
     queryKey: CONTENT_QUERY_KEYS.BY_INSTANCE(id),
   });
 };
-
-export const invalidateImporters = (queryClient: QueryClient) =>
-  queryClient.invalidateQueries({
-    queryKey: INSTANCE_QUERY_KEYS.IMPORTER.SELF(),
-  });

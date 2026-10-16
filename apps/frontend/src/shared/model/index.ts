@@ -1,4 +1,3 @@
-export * from './capability_entry';
 export * from './error';
 export * from './featureFlags';
 export * from './globalDialog';
