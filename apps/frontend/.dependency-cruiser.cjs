@@ -83,12 +83,13 @@ module.exports = {
       to: { path: FEATURE, pathNot: ['^src/features/$1/', FEATURE_INDEX] },
     },
     {
-      name: 'feature-flat',
+      name: 'feature-shape',
       comment:
-        'A feature is flat: files at its root plus api/, model/, ui/, page/, pane/, none of them nested (__tests__/ aside). Split a big domain into <domain>-<part> features instead.',
+        'A feature holds index.ts at its root and everything else in api/, model/, ui/, page/ or pane/, none of them nested (__tests__/ aside). Split a big domain into <domain>-<part> features instead.',
       severity: 'error',
       from: {
         path: [
+          `${FEATURE}(?!index\.tsx?$)[^/]+$`,
           `${FEATURE}(?!(?:api|model|ui|page|pane|__tests__)/)[^/]+/`,
           `${FEATURE}(?:api|model|ui|page|pane)/(?!__tests__/)[^/]+/`,
         ],

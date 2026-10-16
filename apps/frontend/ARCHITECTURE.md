@@ -37,7 +37,8 @@ src/
 
 ## Inside a feature
 
-A feature is flat. Files lie at its root, next to a few optional folders with fixed names:
+A feature has the same shape everywhere: `index.ts` at the root, every other file in one of
+the folders below. The folder tells what kind of file it is.
 
 | Folder | Holds |
 |---|---|
@@ -48,15 +49,17 @@ A feature is flat. Files lie at its root, next to a few optional folders with fi
 | `page/` | the domain's page and the parts only it uses |
 | `pane/` | the domain's settings pane |
 
-- No other folders and no nesting: the deepest path is `features/<name>/<folder>/<file>`.
-  The only exception is `__tests__/` next to the files it covers.
-- A component, its hook and its helpers may also sit side by side at the feature root;
-  the folders are there for when a kind of file gets numerous.
-- Create a folder only when there is something to put in it.
+- No other folders, no files at the root besides `index.ts`, no nesting: the path is always
+  `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
+  covers.
+- A hook goes with what it serves: a query hook to `api/`, a component's hook to `ui/` next
+  to the component, a store hook to `model/`.
+- Create a folder only when there is something to put in it; a small feature may have
+  just `api/` and `ui/`.
 
 ## Splitting a domain
 
-When a feature grows past ~15–20 files at its root, or a topic inside it collects ~8 files,
+When one folder of a feature grows past ~15 files, or a topic inside it collects ~8 files,
 that topic becomes a feature of its own, named `<domain>-<part>`:
 
 ```
@@ -93,19 +96,24 @@ features/instance/
     InstanceHeaderInfo.tsx
 
 features/instance-settings/
-  index.ts                      export { InstanceSettingsDialog } from './InstanceSettingsDialog';
-  InstanceSettingsDialog.tsx
-  GeneralTab.tsx
-  JavaAndMemoryTab.tsx
-  useJavaAndMemorySettingsHandler.ts
-  defaultInstanceSettingsQueries.ts
-  instanceSettingsSchemas.ts
+  index.ts                      export { InstanceSettingsDialog } from './ui/InstanceSettingsDialog';
+  api/
+    defaultInstanceSettingsQueries.ts
+  model/
+    instanceSettingsSchemas.ts
+  ui/
+    InstanceSettingsDialog.tsx
+    GeneralTab.tsx
+    JavaAndMemoryTab.tsx
+    useJavaAndMemorySettingsHandler.ts
 
-features/java/                  a small feature: no folders at all
+features/java/                  a small feature: only the folders it needs
   index.ts
-  javaQueries.ts
-  JavaPane.tsx
-  useJavaInstallationListener.ts
+  api/
+    javaQueries.ts
+    useJavaInstallationListener.ts
+  pane/
+    JavaPane.tsx
 ```
 
 ## Migration
