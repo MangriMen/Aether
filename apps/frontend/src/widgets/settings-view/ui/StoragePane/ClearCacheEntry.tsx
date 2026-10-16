@@ -14,7 +14,7 @@ export type ClearCacheEntryProps = SettingsEntryProps & {
 };
 
 export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
-  const [{ t }] = useTranslation();
+  const [{ t, locale }] = useTranslation();
 
   const clearCache = useClearCache();
 
@@ -36,6 +36,7 @@ export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
                         (sum, entry) => sum + (entry.bytes ?? 0),
                         0,
                       ),
+                      locale(),
                     ),
                   })}
                 </span>

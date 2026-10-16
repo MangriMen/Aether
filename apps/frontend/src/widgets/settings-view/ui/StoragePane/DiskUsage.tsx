@@ -44,7 +44,7 @@ const sum = (entries: Entry[]) =>
   entries.reduce((total, entry) => total + (entry.bytes ?? 0), 0);
 
 export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
-  const [{ t }] = useTranslation();
+  const [{ t, locale }] = useTranslation();
 
   const total = () => sum(props.usage.entries);
   const entriesOf = (kinds: readonly StorageKindDto[]) =>
@@ -55,19 +55,18 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
       <div class='gap-4 flex items-baseline justify-between'>
         <span class='text-lg font-medium'>{t('settings.storage.disk')}</span>
         <span class='font-medium tabular-nums'>
-          {t('settings.storage.diskTotal', { size: formatBytes(total()) })}
+          {t('settings.storage.diskTotal', {
+            size: formatBytes(total(), locale()),
+          })}
         </span>
       </div>
 
-      <div class='h-3 gap-0.5 flex w-full'>
+      <div class='h-3 gap-0.5 flex w-full overflow-hidden rounded-full'>
         <For each={props.usage.entries}>
           {(entry) => (
             <Show when={(entry.bytes ?? 0) > 0}>
               <div
-                class={cn(
-                  'h-full min-w-1 rounded-full',
-                  KIND_STYLE[entry.kind].color,
-                )}
+                class={cn('h-full min-w-1', KIND_STYLE[entry.kind].color)}
                 style={{ 'flex-grow': entry.bytes ?? 0 }}
               />
             </Show>
@@ -83,7 +82,7 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
                 <div class='gap-2 font-medium flex justify-between'>
                   <span>{t(group.title)}</span>
                   <span class='tabular-nums'>
-                    {formatBytes(sum(entriesOf(group.kinds)))}
+                    {formatBytes(sum(entriesOf(group.kinds)), locale())}
                   </span>
                 </div>
                 <p class='text-sm text-muted-foreground'>
@@ -104,7 +103,7 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
                         {t(KIND_STYLE[entry.kind].label)}
                       </span>
                       <span class='tabular-nums'>
-                        {formatBytes(entry.bytes ?? 0)}
+                        {formatBytes(entry.bytes ?? 0, locale())}
                       </span>
                     </li>
                   )}

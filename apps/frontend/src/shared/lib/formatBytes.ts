@@ -1,7 +1,10 @@
-const UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
+const UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'] as const;
 
-/** A size in bytes as people read it: `0 B`, `1.5 MB`, `120 KB`. */
-export const formatBytes = (bytes: number): string => {
+/**
+ * A size in bytes as people read it, in the language of the interface:
+ * `0 B`, `1.5 MB` — `1,5 МБ` in Russian. Steps of 1024, as file managers do.
+ */
+export const formatBytes = (bytes: number, locale?: string): string => {
   let value = Math.max(0, bytes);
   let unit = 0;
 
@@ -10,6 +13,10 @@ export const formatBytes = (bytes: number): string => {
     unit += 1;
   }
 
-  const digits = unit === 0 || value >= 100 ? 0 : 1;
-  return `${value.toFixed(digits)} ${UNITS[unit]}`;
+  return new Intl.NumberFormat(locale, {
+    style: 'unit',
+    unit: UNITS[unit],
+    unitDisplay: 'short',
+    maximumFractionDigits: unit === 0 || value >= 100 ? 0 : 1,
+  }).format(value);
 };
