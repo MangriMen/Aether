@@ -10,15 +10,15 @@ type Entry = StorageUsageDto['entries'][number];
 const KIND_STYLE = {
   minecraft: {
     label: 'settings.storage.disk_kind.minecraft',
-    color: 'bg-info',
+    color: 'bg-[oklch(0.72_0.14_165)]',
   },
   java: {
     label: 'settings.storage.disk_kind.java',
-    color: 'bg-primary',
+    color: 'bg-[oklch(0.78_0.15_70)]',
   },
   instances: {
     label: 'settings.storage.disk_kind.instances',
-    color: 'bg-foreground/50',
+    color: 'bg-[oklch(0.68_0.15_285)]',
   },
 } as const satisfies Record<StorageKindDto, { label: string; color: string }>;
 
@@ -59,7 +59,7 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
         </span>
       </div>
 
-      <div class='h-3 bg-muted flex w-full overflow-hidden rounded-full'>
+      <div class='h-3 bg-border-dynamic/10 ring-border flex w-full overflow-hidden rounded-full ring-1 ring-inset'>
         <For each={props.usage.entries}>
           {(entry) => (
             <Show when={(entry.bytes ?? 0) > 0}>
