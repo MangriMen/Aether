@@ -637,7 +637,7 @@ async fn should_ask_each_provider_once_then_cache_and_tell_the_ui_when_metadata_
 
     assert!(first.values().all(Option::is_none));
     assert_eq!(event.instance_id, INSTANCE_ID);
-    assert!(matches!(event.event, InstanceEventType::Synced));
+    assert!(matches!(event.event, InstanceEventType::ContentSynced));
     assert_eq!(modrinth.calls(), [["A", "B"]]);
     assert_eq!(curse.calls(), [["C"]]);
 
@@ -902,12 +902,17 @@ async fn should_fetch_an_icon_shared_by_many_files_once_and_tell_the_ui_when_it_
     fixture
         .cache
         .seed(&modrinth, with_icon(metadata("C", "JEI"), ICON_Y), now);
+    for id in ["A", "B", "C"] {
+        fixture
+            .cache
+            .seed_version(&modrinth, version(id, "1.0"), now);
+    }
 
     let before = fixture.icon_paths().await;
     let event = fixture.next_event().await;
 
     assert!(before.values().all(Option::is_none), "{before:?}");
-    assert!(matches!(event.event, InstanceEventType::Synced));
+    assert!(matches!(event.event, InstanceEventType::ContentSynced));
     assert_eq!(fixture.icons.fetches(), [ICON_X, ICON_Y]);
 
     let after = fixture.icon_paths().await;
@@ -921,7 +926,7 @@ async fn should_fetch_an_icon_shared_by_many_files_once_and_tell_the_ui_when_it_
 }
 
 #[tokio::test]
-async fn should_fetch_icons_before_telling_the_ui_once_when_metadata_was_just_fetched() {
+async fn should_tell_the_ui_after_the_metadata_and_again_after_the_icons() {
     let provider = Arc::new(FakeProvider::new(
         "modrinth",
         Answer::Items(vec![with_icon(metadata("A", "Sodium"), ICON_X)]),
@@ -929,6 +934,7 @@ async fn should_fetch_icons_before_telling_the_ui_once_when_metadata_was_just_fe
     let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
 
     fixture.list().await;
+    fixture.next_event().await;
     fixture.next_event().await;
 
     assert_eq!(fixture.icons.fetches(), [ICON_X]);
@@ -939,6 +945,61 @@ async fn should_fetch_icons_before_telling_the_ui_once_when_metadata_was_just_fe
     drop(file);
     Fixture::settle().await;
     fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_tell_the_ui_once_when_metadata_arrived_and_no_icon_did() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("A", "Sodium")]),
+    ));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider]).await;
+
+    fixture.list().await;
+    fixture.next_event().await;
+    Fixture::settle().await;
+
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_mark_metadata_pending_when_the_author_is_missing_and_being_fetched() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![ContentMetadata {
+            author: Some("jellysquid3".into()),
+            ..metadata("A", "Sodium")
+        }]),
+    ));
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider],
+    )
+    .await;
+    fixture.cache.seed(
+        &provider_id("modrinth"),
+        metadata("B", "Lithium"),
+        SystemTime::UNIX_EPOCH,
+    );
+
+    let before: HashMap<String, bool> = fixture
+        .list()
+        .await
+        .into_iter()
+        .map(|(path, file)| (path, file.metadata_pending))
+        .collect();
+    fixture.next_event().await;
+    let after: HashMap<String, bool> = fixture
+        .list()
+        .await
+        .into_iter()
+        .map(|(path, file)| (path, file.metadata_pending))
+        .collect();
+
+    // A has nothing cached, B an old copy with no author: both are being fetched.
+    assert!(before["mods/a.jar"] && before["mods/b.jar"]);
+    // A was answered with an author; B is not one the provider knew, so nothing is to come.
+    assert!(!after["mods/a.jar"] && !after["mods/b.jar"]);
 }
 
 #[tokio::test]
@@ -954,6 +1015,11 @@ async fn should_wait_for_the_fetch_when_an_icon_is_already_on_its_way() {
     fixture.cache.seed(
         &provider_id("modrinth"),
         with_icon(metadata("A", "Sodium"), ICON_X),
+        SystemTime::now(),
+    );
+    fixture.cache.seed_version(
+        &provider_id("modrinth"),
+        version("A", "1.0"),
         SystemTime::now(),
     );
 
@@ -991,6 +1057,11 @@ async fn should_not_fetch_an_icon_again_soon_when_it_failed() {
     fixture
         .cache
         .seed(&modrinth, with_icon(metadata("B", "Lithium"), ICON_Y), now);
+    for id in ["A", "B"] {
+        fixture
+            .cache
+            .seed_version(&modrinth, version(id, "1.0"), now);
+    }
     fixture.icons.fail(ICON_X);
 
     fixture.list().await;

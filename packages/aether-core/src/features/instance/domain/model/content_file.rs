@@ -33,6 +33,10 @@ pub struct ContentFile {
     /// fetch is over. `false` when nothing is to come: the file is of no provider, its provider
     /// cannot tell or does not know the version, or asking it failed lately.
     pub version_metadata_pending: bool,
+    /// Whether `metadata` is missing its author and is being fetched now, and an instance event
+    /// will tell when the fetch is over. `false` when nothing is to come, as with
+    /// `version_metadata_pending`, or when the author is known.
+    pub metadata_pending: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -70,6 +74,7 @@ impl ContentFile {
             icon_path: None,
             version_metadata: None,
             version_metadata_pending: false,
+            metadata_pending: false,
         }
     }
 }

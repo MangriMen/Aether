@@ -8,6 +8,8 @@ pub struct InstanceEvent {
 pub enum InstanceEventType {
     Created,
     Synced,
+    /// Only the metadata or icons of the instance's content were refreshed.
+    ContentSynced,
     Edited,
     Removed,
 }

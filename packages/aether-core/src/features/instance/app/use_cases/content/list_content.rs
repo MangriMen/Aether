@@ -40,7 +40,7 @@ impl ListContentUseCase {
 
     /// The instance's content files, each with its project's metadata as cached (see
     /// [`ContentMetadataService::attach`]): what is missing is fetched in the background, and
-    /// the instance's `Synced` event tells when to list again.
+    /// the instance's `ContentSynced` event tells when to list again.
     pub async fn execute(
         &self,
         instance_id: String,

@@ -107,7 +107,7 @@ export type ContentFileDto = {
 	update?: { [key in string]: ContentFileUpdateInfoDto } | null,
 	/**
 	 *  The file's project as its provider describes it, when cached. Filled in later when
-	 *  missing: the instance's `synced` event tells when to list again.
+	 *  missing: the instance's `contentSynced` event tells when to list again.
 	 */
 	metadata: ContentMetadataDto | null,
 	/**
@@ -116,10 +116,16 @@ export type ContentFileDto = {
 	 */
 	versionMetadata: ContentVersionMetadataDto | null,
 	/**
-	 *  Whether `versionMetadata` is being fetched now: the instance's `synced` event tells when
-	 *  the fetch is over. `false` when nothing is to come.
+	 *  Whether `versionMetadata` is being fetched now: the instance's `contentSynced` event tells
+	 *  when the fetch is over. `false` when nothing is to come.
 	 */
 	versionMetadataPending: boolean,
+	/**
+	 *  Whether `metadata` lacks its author and is being fetched now: the instance's
+	 *  `contentSynced` event tells when the fetch is over. `false` when nothing is to come, or
+	 *  the author is known.
+	 */
+	metadataPending: boolean,
 };
 
 export type ContentFileUpdateInfoDto = {
@@ -406,7 +412,7 @@ export type InstanceEventDto = {
 	instanceId: string,
 };
 
-export type InstanceEventTypeDto = "created" | "synced" | "edited" | "removed";
+export type InstanceEventTypeDto = "created" | "synced" | "content_synced" | "edited" | "removed";
 
 export type InstanceFieldDto = "name";
 

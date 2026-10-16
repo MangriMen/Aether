@@ -39,6 +39,10 @@ export const getContentFileAuthor = (
   contentFile: ContentFile,
 ): string | undefined => contentFile.metadata?.author ?? undefined;
 
+/** The author is not known yet, but is being fetched now. */
+export const isContentFileAuthorPending = (contentFile: ContentFile): boolean =>
+  contentFile.metadataPending && !getContentFileAuthor(contentFile);
+
 export const getContentFileVersionNumber = (
   contentFile: ContentFile,
 ): string | undefined =>
