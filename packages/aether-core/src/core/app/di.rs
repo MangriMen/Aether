@@ -467,6 +467,13 @@ impl SettingsFeature for AetherContainer {
     fn clear_cache_use_case(&self) -> Arc<dyn crate::features::settings::ClearCacheUseCasePort> {
         self.cache_storage.clone()
     }
+    fn get_storage_usage_use_case(
+        &self,
+    ) -> Arc<dyn crate::features::settings::GetStorageUsageUseCasePort> {
+        Arc::new(crate::features::settings::GetStorageUsageUseCase::new(
+            self.params.location_info.clone(),
+        ))
+    }
     fn get_cache_usage_use_case(
         &self,
     ) -> Arc<dyn crate::features::settings::GetCacheUsageUseCasePort> {

@@ -70,6 +70,36 @@ pub async fn files_size(dir: &std::path::Path) -> u64 {
     total
 }
 
+/// The bytes of every file under `dir`, at any depth. Links are not followed; a missing or
+/// unreadable folder counts for nothing.
+pub async fn dir_size(dir: &std::path::Path) -> u64 {
+    let dir = dir.to_owned();
+    tokio::task::spawn_blocking(move || {
+        let mut total = 0;
+        let mut pending = vec![dir];
+        while let Some(dir) = pending.pop() {
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let Ok(file_type) = entry.file_type() else {
+                    continue;
+                };
+                if file_type.is_dir() {
+                    pending.push(entry.path());
+                } else if file_type.is_file()
+                    && let Ok(metadata) = entry.metadata()
+                {
+                    total += metadata.len();
+                }
+            }
+        }
+        total
+    })
+    .await
+    .unwrap_or_default()
+}
+
 /// Run `tasks` one after another in the background, logging what each removed.
 pub fn spawn_housekeeping(tasks: Vec<Arc<dyn Housekeeping>>) {
     tokio::spawn(async move {
@@ -118,6 +148,18 @@ mod tests {
         async fn clear(&self) -> u64 {
             self.0.fetch_add(1, Ordering::SeqCst) + 1
         }
+    }
+
+    #[tokio::test]
+    async fn should_sum_the_files_at_any_depth_when_measuring_a_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a"), [0; 10]).unwrap();
+        std::fs::create_dir_all(dir.path().join("x/y")).unwrap();
+        std::fs::write(dir.path().join("x/b"), [0; 5]).unwrap();
+        std::fs::write(dir.path().join("x/y/c"), [0; 1]).unwrap();
+
+        assert_eq!(dir_size(dir.path()).await, 16);
+        assert_eq!(dir_size(&dir.path().join("missing")).await, 0);
     }
 
     #[tokio::test]

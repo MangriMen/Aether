@@ -16,5 +16,6 @@ pub use app::{
     EditPlatformProvider, EditSettings, EditSettingsUseCase, EditSettingsUseCasePort,
     GetCacheUsageUseCasePort, GetDefaultInstanceSettingsUseCase,
     GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCase, GetSettingsUseCasePort,
-    SettingsFeature, SettingsStorage,
+    GetStorageUsageUseCase, GetStorageUsageUseCasePort, SettingsFeature, SettingsStorage,
+    StorageKind, StorageUsage, StorageUsageEntry,
 };

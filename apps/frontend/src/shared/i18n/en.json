@@ -445,6 +445,22 @@
     },
     "changeError": "Failed to change settings",
     "storage": {
+      "disk": "Disk usage",
+      "diskTotal": "Used: {{size}}",
+      "diskLoadFailed": "Could not measure the folders.",
+      "group": {
+        "shared": "Shared by all instances",
+        "sharedDescription": "Downloaded once, used by every instance",
+        "own": "Belongs to instances",
+        "ownDescription": "Mods, worlds and settings of each instance"
+      },
+      "disk_kind": {
+        "minecraft_assets": "Game assets",
+        "minecraft_libraries": "Game libraries",
+        "minecraft_versions": "Game versions",
+        "java": "Java",
+        "instances": "Instances"
+      },
       "cache": "Cache",
       "cacheDescription": "Saved to work faster and offline. Everything here is downloaded again when needed.",
       "total": "Total",

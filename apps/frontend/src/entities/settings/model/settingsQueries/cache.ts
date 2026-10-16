@@ -8,6 +8,12 @@ export const settingsQueries = {
     queryKey: settingsKeys.get(),
     queryFn: settingsCommands.get,
   }),
+  // Measuring walks the folders, so it is asked on opening, not on a timer.
+  storageUsage: () => ({
+    queryKey: settingsKeys.storageUsage(),
+    queryFn: settingsCommands.getStorageUsage,
+    staleTime: 30_000,
+  }),
   cacheUsage: () => ({
     queryKey: settingsKeys.cacheUsage(),
     queryFn: settingsCommands.getCacheUsage,

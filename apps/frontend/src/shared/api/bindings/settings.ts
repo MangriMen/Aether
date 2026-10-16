@@ -9,6 +9,7 @@ export const commands = {
 	getMaxRam: () => __TAURI_INVOKE<RamSettingsDto>("plugin:settings|get_max_ram"),
 	clearCache: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<ClearCacheOutcomeDto>("plugin:settings|clear_cache", { requestId }),
 	getCacheUsage: () => __TAURI_INVOKE<CacheUsageDto>("plugin:settings|get_cache_usage"),
+	getStorageUsage: () => __TAURI_INVOKE<StorageUsageDto>("plugin:settings|get_storage_usage"),
 	getDefaultInstanceSettings: () => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|get_default_instance_settings"),
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings, requestId }),
 	getAppSettings: () => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|get_app_settings"),
@@ -387,6 +388,18 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	platform: string,
 	reason: string,
 } };
+
+export type StorageKindDto = "minecraft_assets" | "minecraft_libraries" | "minecraft_versions" | "java" | "instances";
+
+export type StorageUsageDto = {
+	entries: StorageUsageEntryDto[],
+};
+
+export type StorageUsageEntryDto = {
+	kind: StorageKindDto,
+	/**  A number, not `u64`: see [`CacheUsageEntryDto::bytes`]. */
+	bytes: number | null,
+};
 
 export type WindowEffectDto = "off" | "mica_light" | "mica_dark" | "mica" | "acrylic";
 

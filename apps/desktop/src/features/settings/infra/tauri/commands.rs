@@ -15,6 +15,7 @@ use crate::{
 use super::dtos::{
     AppSettingsDto, CacheUsageDto, ClearCacheOutcomeDto, DefaultInstanceSettingsDto,
     EditAppSettingsDto, EditDefaultInstanceSettingsDto, EditSettingsDto, SettingsDto,
+    StorageUsageDto,
 };
 
 use crate::features::settings::infra::dtos::RamSettingsDto;
@@ -75,6 +76,20 @@ async fn clear_cache(
         .0
         .clone()
         .clear_cache_use_case()
+        .execute()
+        .await
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_storage_usage(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<StorageUsageDto> {
+    Ok(container
+        .0
+        .clone()
+        .get_storage_usage_use_case()
         .execute()
         .await
         .into())

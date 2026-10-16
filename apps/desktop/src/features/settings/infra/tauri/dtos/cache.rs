@@ -1,5 +1,5 @@
 use aether_core::{
-    features::settings::{CacheUsage, ClearCacheOutcome},
+    features::settings::{CacheUsage, ClearCacheOutcome, StorageKind, StorageUsage},
     shared::housekeeping::CacheKind,
 };
 use serde::Serialize;
@@ -68,6 +68,58 @@ impl From<ClearCacheOutcome> for ClearCacheOutcomeDto {
         match value {
             ClearCacheOutcome::Cleared => Self::Cleared,
             ClearCacheOutcome::Busy => Self::Busy,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum StorageKindDto {
+    MinecraftAssets,
+    MinecraftLibraries,
+    MinecraftVersions,
+    Java,
+    Instances,
+}
+
+impl From<StorageKind> for StorageKindDto {
+    fn from(value: StorageKind) -> Self {
+        match value {
+            StorageKind::MinecraftAssets => Self::MinecraftAssets,
+            StorageKind::MinecraftLibraries => Self::MinecraftLibraries,
+            StorageKind::MinecraftVersions => Self::MinecraftVersions,
+            StorageKind::Java => Self::Java,
+            StorageKind::Instances => Self::Instances,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageUsageEntryDto {
+    pub kind: StorageKindDto,
+    /// A number, not `u64`: see [`CacheUsageEntryDto::bytes`].
+    pub bytes: f64,
+}
+
+#[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageUsageDto {
+    pub entries: Vec<StorageUsageEntryDto>,
+}
+
+impl From<StorageUsage> for StorageUsageDto {
+    #[allow(clippy::cast_precision_loss)]
+    fn from(value: StorageUsage) -> Self {
+        Self {
+            entries: value
+                .entries
+                .into_iter()
+                .map(|entry| StorageUsageEntryDto {
+                    kind: entry.kind.into(),
+                    bytes: entry.bytes as f64,
+                })
+                .collect(),
         }
     }
 }

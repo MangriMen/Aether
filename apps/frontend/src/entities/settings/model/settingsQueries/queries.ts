@@ -9,6 +9,9 @@ import { settingsCache, settingsQueries } from './cache';
 
 export const useSettings = () => useQuery(settingsQueries.get);
 
+/** How much disk the launcher folders take, by what they hold. */
+export const useStorageUsage = () => useQuery(settingsQueries.storageUsage);
+
 /** How much each cache takes, and whether clearing it is refused now. */
 export const useCacheUsage = () => useQuery(settingsQueries.cacheUsage);
 

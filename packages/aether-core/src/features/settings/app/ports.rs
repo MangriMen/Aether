@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::features::settings::{
-    CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError,
+    CacheUsage, ClearCacheOutcome, DefaultInstanceSettings, Settings, SettingsError, StorageUsage,
     app::{EditDefaultInstanceSettings, EditSettings},
 };
 
@@ -44,6 +44,11 @@ pub trait ClearCacheUseCasePort: Send + Sync {
     /// Empty the caches; the app fetches again what it needs. Refused while the app is busy
     /// with something that uses them.
     async fn execute(&self) -> ClearCacheOutcome;
+}
+
+#[async_trait]
+pub trait GetStorageUsageUseCasePort: Send + Sync {
+    async fn execute(&self) -> StorageUsage;
 }
 
 #[async_trait]
