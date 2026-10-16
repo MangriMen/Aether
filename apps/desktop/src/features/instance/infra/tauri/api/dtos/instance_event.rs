@@ -15,6 +15,7 @@ pub struct InstanceEventDto {
 pub enum InstanceEventTypeDto {
     Created,
     Synced,
+    ContentSynced,
     Edited,
     Removed,
 }
@@ -33,6 +34,7 @@ impl From<InstanceEventType> for InstanceEventTypeDto {
         match value {
             InstanceEventType::Created => Self::Created,
             InstanceEventType::Synced => Self::Synced,
+            InstanceEventType::ContentSynced => Self::ContentSynced,
             InstanceEventType::Edited => Self::Edited,
             InstanceEventType::Removed => Self::Removed,
         }

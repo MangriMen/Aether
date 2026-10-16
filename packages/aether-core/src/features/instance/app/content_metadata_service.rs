@@ -123,6 +123,12 @@ impl Lookup {
     }
 }
 
+/// Whether `id` is among the ids `due` has to ask for under `key`.
+fn is_due_id(due: &HashMap<LookupKey, Vec<String>>, key: &LookupKey, id: &str) -> bool {
+    due.get(key)
+        .is_some_and(|ids| ids.iter().any(|due| due == id))
+}
+
 /// What the cache has of one provider's ids of one lookup, by id.
 enum Cached {
     Projects(HashMap<String, CachedContentMetadata>),
@@ -255,8 +261,9 @@ impl ContentMetadataService {
     /// [`ContentFile::version_metadata_pending`].
     ///
     /// Reads only the caches. Once a refresh of metadata is over, whatever came of it, or one of
-    /// icons has brought any, one [`InstanceEventType::Synced`] event of the instance tells the
-    /// UI to list it again; a refresh that fails keeps the stale items and the icons there are.
+    /// icons has brought any, an [`InstanceEventType::ContentSynced`] event of the instance
+    /// tells the UI to list it again — the one after the metadata comes before the icons are
+    /// fetched; a refresh that fails keeps the stale items and the icons there are.
     pub async fn attach(&self, instance_id: &str, files: &DashMap<String, ContentFile>) {
         let mut wanted: HashMap<LookupKey, HashSet<String>> = HashMap::new();
         for file in files {
@@ -301,11 +308,17 @@ impl ContentMetadataService {
                 .as_ref()
                 .and_then(|(key, id)| found.get(key)?.version(id));
             let version_metadata_pending = version_metadata.is_none()
-                && version_key.is_some_and(|(key, id)| {
-                    due.get(&key)
-                        .is_some_and(|ids| ids.iter().any(|due| due == id))
-                });
+                && version_key.is_some_and(|(key, id)| is_due_id(&due, &key, id));
+            let metadata_pending = metadata
+                .as_ref()
+                .is_none_or(|metadata| metadata.author.is_none())
+                && Lookup::Projects
+                    .key(&file)
+                    .is_some_and(|(provider_id, id)| {
+                        is_due_id(&due, &(provider_id.clone(), Lookup::Projects), id)
+                    });
             file.metadata = metadata;
+            file.metadata_pending = metadata_pending;
             file.version_metadata = version_metadata;
             file.version_metadata_pending = version_metadata_pending;
         }
@@ -351,8 +364,12 @@ impl ContentMetadataService {
         tokio::spawn(async move {
             // Over whatever came of it: the list it brings shows no file as pending any more,
             // as each asked id is now cached, unknown, or of a provider that failed lately.
+            // Told before the icons are looked for and fetched, which may take longer.
             let metadata_asked = !due.is_empty();
             let icon_urls = guard.inner.refresh(due).await;
+            if metadata_asked {
+                guard.inner.emit_synced(&guard.instance_id).await;
+            }
             let icons = guard.inner.lookup_icons(icon_urls).await;
             due_icons.extend(guard.inner.due_icons(icons));
             let icons_arrived = guard.inner.fetch_icons(due_icons).await;
@@ -362,14 +379,8 @@ impl ContentMetadataService {
             let instance_id = guard.instance_id.clone();
             let asked_again = guard.release();
 
-            if metadata_asked || icons_arrived || asked_again {
-                inner
-                    .event_emitter
-                    .emit_safe(InstanceEvent {
-                        event: InstanceEventType::Synced,
-                        instance_id,
-                    })
-                    .await;
+            if icons_arrived || asked_again {
+                inner.emit_synced(&instance_id).await;
             }
         });
     }
@@ -430,6 +441,15 @@ impl Drop for RefreshGuard {
 }
 
 impl Inner {
+    async fn emit_synced(&self, instance_id: &str) {
+        self.event_emitter
+            .emit_safe(InstanceEvent {
+                event: InstanceEventType::ContentSynced,
+                instance_id: instance_id.to_owned(),
+            })
+            .await;
+    }
+
     fn is_unsupported(&self, provider_id: &ProviderId, lookup: Lookup) -> bool {
         self.unsupported
             .lock()

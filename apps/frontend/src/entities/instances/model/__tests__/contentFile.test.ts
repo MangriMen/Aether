@@ -8,6 +8,7 @@ import {
   getContentFileIconSrc,
   getContentFileProjectHref,
   getContentFileTitle,
+  isContentFileAuthorPending,
   getContentFileVersionSortValue,
   getContentFileVersionState,
   isLocalContentFile,
@@ -32,6 +33,25 @@ const makeMetadata = (
   iconUrl: null,
   iconPath: null,
   ...overrides,
+});
+
+describe('isContentFileAuthorPending', () => {
+  it('is pending only while the author is being fetched', () => {
+    expect(
+      isContentFileAuthorPending(makeFile({ metadataPending: true })),
+    ).toBe(true);
+    expect(
+      isContentFileAuthorPending(makeFile({ metadataPending: false })),
+    ).toBe(false);
+    expect(
+      isContentFileAuthorPending(
+        makeFile({
+          metadataPending: true,
+          metadata: makeMetadata({ author: 'jellysquid3' }),
+        }),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe('getContentFileTitle', () => {
