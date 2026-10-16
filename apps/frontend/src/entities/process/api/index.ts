@@ -1,2 +1,2 @@
-export { processCommands, processEvents } from '@/shared/api';
-export type * from '@/shared/api/bindings/process';
+export type * from '@/platform/bindings/process';
+export { processCommands, processEvents } from '@/platform/ipc';

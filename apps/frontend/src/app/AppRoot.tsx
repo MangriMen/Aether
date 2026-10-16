@@ -4,8 +4,8 @@ import { QueryClientProvider } from '@tanstack/solid-query';
 import { type Component } from 'solid-js';
 
 import { RunningInstancesProvider } from '@/entities/instances';
-import { createQueryClient } from '@/shared/api';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
+import { createQueryClient } from '@/shared/query';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
 import { AppTitleBar } from '@/widgets/app-titlebar';
 

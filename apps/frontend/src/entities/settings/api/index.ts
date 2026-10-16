@@ -1,2 +1,2 @@
-export { settingsCommands } from '@/shared/api';
-export type * from '@/shared/api/bindings/settings';
+export type * from '@/platform/bindings/settings';
+export { settingsCommands } from '@/platform/ipc';

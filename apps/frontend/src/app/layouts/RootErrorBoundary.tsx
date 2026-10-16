@@ -2,12 +2,12 @@ import type { ParentProps } from 'solid-js';
 
 import { ErrorBoundary, type Component } from 'solid-js';
 
+import { showWindow } from '@/platform/window';
 import { logError } from '@/shared/lib';
 import { isLauncherError } from '@/shared/model';
 import { BaseTitleBar } from '@/widgets/app-titlebar';
 
 import { setFallbackAttributes } from '../lib';
-import { showWindow } from '../model';
 import { AppInitializeError } from '../providers';
 import { AppLayout } from './AppLayout';
 

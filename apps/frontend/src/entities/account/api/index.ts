@@ -1,2 +1,2 @@
-export { authCommands } from '@/shared/api';
-export type { AccountDto, AccountTypeDto } from '@/shared/api/bindings/auth';
+export type { AccountDto, AccountTypeDto } from '@/platform/bindings/auth';
+export { authCommands } from '@/platform/ipc';

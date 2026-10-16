@@ -1,8 +1,8 @@
 import { applicationCommands } from '@/entities/application';
+import { showWindow } from '@/platform/window';
 import { logError } from '@/shared/lib';
 
 import { exposeWindowMethods } from '../lib';
-import { showWindow } from './windowUtils';
 
 export const setupApp = async () => {
   try {

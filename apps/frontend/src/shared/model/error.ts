@@ -1,4 +1,5 @@
-import type { FrontendError } from '../api';
+import type { FrontendError } from '@/platform/bindings/application';
+
 import type { TFunction } from './i18nContext';
 
 export type LauncherError = FrontendError;

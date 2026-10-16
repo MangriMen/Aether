@@ -109,7 +109,7 @@ pub fn get_export_path() -> std::path::PathBuf {
 
     path.pop();
 
-    path.push("ui/src/shared/api/bindings");
+    path.push("frontend/src/platform/bindings");
 
     path
 }

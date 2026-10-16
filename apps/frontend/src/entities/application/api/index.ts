@@ -1,2 +1,2 @@
-export { applicationCommands } from '@/shared/api';
-export type * from '@/shared/api/bindings/application';
+export type * from '@/platform/bindings/application';
+export { applicationCommands } from '@/platform/ipc';

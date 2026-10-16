@@ -7,8 +7,8 @@ import IconMdiSquareRounded from '~icons/mdi/square-rounded';
 import IconMdiSquareRoundedOutline from '~icons/mdi/square-rounded-outline';
 import { Show, splitProps } from 'solid-js';
 
+import { isMaximized, toggleMaximize } from '@/platform/window';
 import { cn } from '@/shared/lib';
-import { isMaximized, toggleMaximize } from '@/shared/model';
 import { TitleBarButton } from '@/shared/ui';
 
 export type WindowControlsProps = ComponentProps<'div'>;

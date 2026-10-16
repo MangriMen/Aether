@@ -1,25 +1,26 @@
-import { commands as applicationRawCommands } from './bindings/application';
-import { commands as authRawCommands } from './bindings/auth';
+import { commands as applicationRawCommands } from '@/platform/bindings/application';
+import { commands as authRawCommands } from '@/platform/bindings/auth';
 import {
   commands as eventsRawCommands,
   events as eventsRawEvents,
-} from './bindings/events';
+} from '@/platform/bindings/events';
 import {
   commands as instanceRawCommands,
   events as instanceRawEvents,
-} from './bindings/instance';
-import { commands as javaRawCommands } from './bindings/java';
-import { commands as minecraftRawCommands } from './bindings/minecraft';
+} from '@/platform/bindings/instance';
+import { commands as javaRawCommands } from '@/platform/bindings/java';
+import { commands as minecraftRawCommands } from '@/platform/bindings/minecraft';
 import {
   commands as pluginsRawCommands,
   events as pluginsRawEvents,
-} from './bindings/plugin';
+} from '@/platform/bindings/plugin';
 import {
   commands as processRawCommands,
   events as processRawEvents,
-} from './bindings/process';
-import { commands as settingsRawCommands } from './bindings/settings';
-import { commands as updateRawCommands } from './bindings/update';
+} from '@/platform/bindings/process';
+import { commands as settingsRawCommands } from '@/platform/bindings/settings';
+import { commands as updateRawCommands } from '@/platform/bindings/update';
+
 import { withIdempotency } from './tauri';
 
 export const authCommands = {

@@ -13,7 +13,7 @@ fn main() {
         |_| {
             let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             let workspace_root = manifest_dir.parent().unwrap();
-            let default_path = workspace_root.join("frontend/src/shared/api/bindings");
+            let default_path = workspace_root.join("frontend/src/platform/bindings");
 
             // SAFETY: single-threaded binary, no concurrent access to env
             unsafe { std::env::set_var("BINDINGS_EXPORT_PATH", &default_path) };

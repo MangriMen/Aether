@@ -1,4 +1,4 @@
-import { useMaximizeObserver } from '@/shared/lib';
+import { useMaximizeObserver } from '@/platform/window';
 
 import { usePreventRightClick } from './usePreventRightClick';
 
