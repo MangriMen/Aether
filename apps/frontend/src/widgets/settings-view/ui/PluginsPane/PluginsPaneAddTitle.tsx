@@ -6,7 +6,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/shared/api/bindings/plugin';
+import type { PluginSourceTypeDto } from '@/shared/api';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

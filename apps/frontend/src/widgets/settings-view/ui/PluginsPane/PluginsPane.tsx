@@ -1,6 +1,6 @@
 import { createMemo, createSignal, Show, type Component } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/shared/api/bindings/plugin';
+import type { PluginSourceTypeDto } from '@/shared/api';
 import type { SettingsPaneProps } from '@/shared/ui';
 
 import { usePlugins } from '@/entities/plugins';

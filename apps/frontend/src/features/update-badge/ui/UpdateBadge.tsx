@@ -8,13 +8,9 @@ import {
 
 import type { BadgeProps } from '@/shared/ui';
 
+import { checkIsUpdateAvailable, useCheckUpdate } from '@/entities/updates';
 import { cn } from '@/shared/lib';
 import { Badge } from '@/shared/ui';
-
-import {
-  checkIsUpdateAvailable,
-  useCheckUpdate,
-} from '../../../entities/updates/model';
 
 export type UpdateBadgeProps = BadgeProps & {
   isAbleToShow?: boolean;
