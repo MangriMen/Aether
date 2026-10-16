@@ -4,8 +4,9 @@ import { Match, splitProps, Switch } from 'solid-js';
 
 import type { PluginSourceTypeDto } from '@/shared/api';
 
-import { InstallFromGithubView } from '@/features/install-plugin-from-github';
 import { cn } from '@/shared/lib';
+
+import { InstallFromGithubView } from './install-from-github';
 
 export type AddPluginViewProps = ComponentProps<'div'> & {
   provider?: PluginSourceTypeDto | null;

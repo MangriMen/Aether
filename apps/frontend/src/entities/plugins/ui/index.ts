@@ -5,7 +5,6 @@ export * from './PluginCard';
 export * from './PluginCardContextMenu';
 export * from './PluginHostFunctionsSection';
 export * from './PluginInfoHeader';
-export * from './PluginsList';
 export * from './PluginSourceBadge';
 export * from './PluginStateBadge';
 export * from './PluginUpdateBadge';

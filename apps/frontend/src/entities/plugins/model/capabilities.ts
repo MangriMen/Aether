@@ -1,5 +1,5 @@
-import type { CapabilityEntryDto } from '@/entities/instances';
-import type { ImporterCapabilityMetadataDto } from '@/entities/instances';
+import type { CapabilityEntryDto } from '@/entities/instances/@x/plugins';
+import type { ImporterCapabilityMetadataDto } from '@/entities/instances/@x/plugins';
 
 import type { UpdaterCapability } from './pluginCapabilities';
 

@@ -6,9 +6,10 @@ import { useImporters } from '@/entities/instances';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, DialogFooter } from '@/shared/ui';
-import { ImportInstanceView } from '@/widgets/import-instance';
 
 import type { TabContentProps } from '../model';
+
+import { ImportInstanceView } from './import-instance';
 
 export type ImportInstanceProps = TabContentProps & ComponentProps<'div'>;
 

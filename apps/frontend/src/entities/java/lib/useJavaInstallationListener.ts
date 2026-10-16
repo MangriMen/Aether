@@ -3,7 +3,10 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 import { useQueryClient } from '@tanstack/solid-query';
 import { onCleanup, onMount } from 'solid-js';
 
-import { eventsEvents, PROGRESS_EVENT_REMOVE_DELAY } from '@/entities/events';
+import {
+  eventsEvents,
+  PROGRESS_EVENT_REMOVE_DELAY,
+} from '@/entities/events/@x/java';
 
 import { javaCache, useActiveJavaInstallations } from '../model';
 

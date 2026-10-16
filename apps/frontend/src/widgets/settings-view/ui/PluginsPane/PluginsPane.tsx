@@ -6,12 +6,12 @@ import type { SettingsPaneProps } from '@/shared/ui';
 import { usePlugins } from '@/entities/plugins';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
-import { PluginDetails } from '@/widgets/plugin-details';
-import { PluginsView } from '@/widgets/plugins-view';
 
 import { AddPluginView } from './AddPluginView';
+import { PluginDetails } from './details';
 import { PluginsPaneAddTitle } from './PluginsPaneAddTitle';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
+import { PluginsView } from './view';
 
 export type PluginsPaneProps = SettingsPaneProps;
 

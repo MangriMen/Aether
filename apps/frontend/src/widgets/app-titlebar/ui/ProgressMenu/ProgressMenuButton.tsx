@@ -5,6 +5,7 @@ import { createMemo, createSignal, splitProps } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
 
+import { useProgressStore } from '@/entities/events';
 import { cn } from '@/shared/lib';
 import {
   IconButton,
@@ -16,7 +17,6 @@ import {
 import type { ProgressPopover } from './ProgressPopover';
 
 import { useProgressMenuShowActions } from '../../lib';
-import { useProgressStore } from '../../model';
 import { ProgressBadge } from './ProgressBadge';
 
 export type ProgressMenuButtonProps<T extends ValidComponent = 'button'> =

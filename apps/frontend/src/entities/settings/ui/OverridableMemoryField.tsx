@@ -2,10 +2,10 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { MIN_JRE_MEMORY } from '@/features/instance-settings/java-and-memory';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
+import { MIN_JRE_MEMORY } from '../model';
 import { useMaxRam } from '../model';
 import { bytesToMegabytes } from '../model';
 import { InheritanceLabel } from './InheritanceLabel';

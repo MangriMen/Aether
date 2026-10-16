@@ -1,21 +1,14 @@
-import type {
-  HooksSettingsSchemaInput,
-  HooksSettingsSchemaOutput,
-} from '@/features/instance-settings/hooks';
-import type {
-  JavaAndMemorySettingsSchemaInput,
-  JavaAndMemorySettingsSchemaOutput,
-} from '@/features/instance-settings/java-and-memory';
-import type {
-  WindowSettingsSchemaInput,
-  WindowSettingsSchemaOutput,
-} from '@/features/instance-settings/window';
-
 import {
   envVarsToString,
   launchArgsToString,
   stringToLaunchArgs,
   type DefaultInstanceSettings,
+  type HooksSettingsSchemaInput,
+  type HooksSettingsSchemaOutput,
+  type JavaAndMemorySettingsSchemaInput,
+  type JavaAndMemorySettingsSchemaOutput,
+  type WindowSettingsSchemaInput,
+  type WindowSettingsSchemaOutput,
   type EditDefaultInstanceSettings,
 } from '@/entities/settings';
 
