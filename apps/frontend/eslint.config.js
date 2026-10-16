@@ -17,9 +17,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Architecture boundaries (see ARCHITECTURE.md); dependency-cruiser checks the rest.
-// instance-settings is an old FSD slice with sub-entries, it goes away when instance moves.
 const deepFeatureImport = {
-  regex: '^@/features/(?!instance-settings/)[^/]+/.+',
+  regex: '^@/features/[^/]+/.+',
   message: 'Import a feature through its index: @/features/<name>.',
 };
 const deepModuleImport = {

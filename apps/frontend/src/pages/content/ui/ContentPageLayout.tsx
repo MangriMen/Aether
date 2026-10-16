@@ -9,7 +9,7 @@ import {
 
 import type { ContentFilters } from '@/entities/instances';
 
-import { useInstance } from '@/entities/instances';
+import { useInstance } from '@/features/instance';
 import { Separator } from '@/shared/ui';
 
 import {

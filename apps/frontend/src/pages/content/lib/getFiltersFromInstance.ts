@@ -1,4 +1,5 @@
-import type { ContentFilters, Instance } from '@/entities/instances';
+import type { ContentFilters } from '@/entities/instances';
+import type { Instance } from '@/features/instance';
 
 import type { ContentFiltersLock } from '../model';
 

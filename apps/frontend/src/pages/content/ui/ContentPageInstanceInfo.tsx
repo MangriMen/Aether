@@ -2,9 +2,9 @@ import { useNavigate } from '@solidjs/router';
 import IconMdiArrowLeft from '~icons/mdi/arrow-left';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { Instance } from '@/entities/instances';
+import type { Instance } from '@/features/instance';
 
-import { InstanceHeaderInfo, InstanceIcon } from '@/entities/instances';
+import { InstanceHeaderInfo, InstanceIcon } from '@/features/instance';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { InstanceCardProps } from '@/entities/instances';
+import type { InstanceCardProps } from '@/features/instance';
 
 import {
   InstanceCard,
@@ -12,7 +12,7 @@ import {
   useInstanceDir,
   useRevealInExplorer,
   useRunningInstancesContext,
-} from '@/entities/instances';
+} from '@/features/instance';
 import { ROUTES } from '@/shared/config';
 import { preventAll } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

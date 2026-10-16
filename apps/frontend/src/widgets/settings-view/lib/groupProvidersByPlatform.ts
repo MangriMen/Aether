@@ -1,7 +1,5 @@
-import type {
-  CapabilityEntryDto,
-  ContentProviderCapabilityMetadata,
-} from '@/entities/instances';
+import type { ContentProviderCapabilityMetadata } from '@/features/instance';
+import type { CapabilityEntryDto } from '@/platform/bindings/instance';
 
 export interface PlatformProvider {
   /** `pluginId#capabilityId`, the form the settings store. */

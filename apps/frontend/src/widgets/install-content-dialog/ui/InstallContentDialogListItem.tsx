@@ -5,12 +5,8 @@ import { createMemo, Show, splitProps } from 'solid-js';
 
 import type { ContentCompatibilityResult } from '@/entities/instances';
 
-import {
-  ContentInstallButton,
-  type ContentItem,
-  InstanceIcon,
-  type Instance,
-} from '@/entities/instances';
+import { ContentInstallButton, type ContentItem } from '@/entities/instances';
+import { InstanceIcon, type Instance } from '@/features/instance';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

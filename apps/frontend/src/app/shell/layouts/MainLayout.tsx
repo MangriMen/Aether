@@ -3,8 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import { useLocation } from '@solidjs/router';
 import { Show, splitProps } from 'solid-js';
 
+import { CreateInstanceDialog } from '@/features/instance-create';
 import { ROUTES } from '@/shared/config';
-import { CreateInstanceDialog } from '@/widgets/create-instance-dialog';
 import { CreateOfflineAccountDialog } from '@/widgets/create-offline-account-dialog';
 
 import { AppSidebar } from '../sidebar/AppSidebar';

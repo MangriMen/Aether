@@ -2,7 +2,8 @@ import type {
   ContentSearchParamsDto,
   ContentSearchResultDto,
   ContentVersionDto,
-} from '../../api';
+} from '@/platform/bindings/instance';
+
 import type {
   ContentSearchParams,
   ContentSearchResponse,

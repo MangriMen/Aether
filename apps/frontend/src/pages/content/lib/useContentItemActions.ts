@@ -5,8 +5,8 @@ import {
   CHECK_COMPATIBILITY_QUERY,
   ContentType,
   type ContentItem,
-  useInstances,
 } from '@/entities/instances';
+import { useInstances } from '@/features/instance';
 import { showDialog } from '@/shared/model';
 import { InstallContentDialog } from '@/widgets/install-content-dialog';
 

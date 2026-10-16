@@ -1,4 +1,7 @@
-import type { EditSettingsDto, SettingsDto } from '../api';
+import type {
+  EditSettingsDto,
+  SettingsDto,
+} from '@/platform/bindings/settings';
 
 export type Settings = SettingsDto;
 export type EditSettings = EditSettingsDto;

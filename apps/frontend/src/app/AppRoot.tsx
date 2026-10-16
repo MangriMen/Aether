@@ -14,7 +14,7 @@ import {
   MainLayout,
   RootErrorBoundary,
 } from '@/app/shell';
-import { RunningInstancesProvider } from '@/entities/instances';
+import { RunningInstancesProvider } from '@/features/instance';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { createQueryClient } from '@/shared/query';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';

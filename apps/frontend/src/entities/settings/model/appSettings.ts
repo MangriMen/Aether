@@ -3,7 +3,7 @@ import type {
   AppSettingsDto,
   EditAppSettingsDto,
   WindowEffectDto,
-} from '../api';
+} from '@/platform/bindings/settings';
 
 export type AppSettings = AppSettingsDto;
 

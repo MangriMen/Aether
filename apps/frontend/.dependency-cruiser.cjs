@@ -3,7 +3,7 @@
 // entities/, widgets/, pages/ and the old slices in features/ are skipped.
 // Drop a slice from LEGACY_FEATURES once it has moved.
 
-const LEGACY_FEATURES = ['instance-action-button', 'instance-settings', 'update-badge'];
+const LEGACY_FEATURES = ['update-badge'];
 
 const FEATURE = `^src/features/(?!(?:${LEGACY_FEATURES.join('|')})/)([^/]+)/`;
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;

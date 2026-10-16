@@ -1,15 +1,18 @@
+import type { Instance } from '@/features/instance';
+import type { ContentSearchParamsDto } from '@/platform/bindings/instance';
+
+import { INSTANCE_QUERY_KEYS } from '@/features/instance';
+
 import type {
   ContentGetParams,
   ContentListVersionParams,
-  Instance,
   ProviderId,
 } from '..';
-import type { ContentSearchParamsDto } from '../../api';
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 export const CONTENT_QUERY_KEYS = {
   SELF: ['content'],
-  BY_INSTANCE: (id: string) => [...CONTENT_QUERY_KEYS.SELF, 'instance', id],
+  BY_INSTANCE: (id: string) => INSTANCE_QUERY_KEYS.CONTENT(id),
   PROVIDERS: () => [...CONTENT_QUERY_KEYS.SELF, 'providers'],
   BY_PROVIDER: (provider: ProviderId) => [
     ...CONTENT_QUERY_KEYS.PROVIDERS(),
