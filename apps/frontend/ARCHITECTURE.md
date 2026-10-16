@@ -146,6 +146,8 @@ Known exceptions, to be removed when `shared/` is split into modules:
   no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`.
 - dependency-cruiser (`bun lint:arch`): cycles, layer direction, relative imports across
   features, public API of features and modules, a domain base importing its parts, feature
-  folders and file names. Config: `.dependency-cruiser.cjs`.
+  folders and file names. Config: `.dependency-cruiser.cjs`. Its cycle check works on files,
+  so `scripts/check-feature-cycles.ts` (part of `lint:arch`) also checks the graph of features,
+  type-only imports included.
 - `bun arch:graph` writes a module-level dependency graph to `arch-graph.mmd` (Mermaid;
   paste it into any Mermaid viewer).

@@ -11,7 +11,7 @@
     "clean": "bun x rimraf .turbo",
     "dev": "vite",
     "lint": "bun lint:types && bun lint:code && bun lint:arch",
-    "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs && bun scripts/check-feature-cycles.ts",
     "lint:code": "eslint . --cache --cache-location node_modules/.cache/eslint/.eslintcache --max-warnings 0",
     "lint:code:fix": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/.eslintcache",
     "lint:types": "tsgo --project tsconfig.json --noEmit",
