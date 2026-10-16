@@ -46,16 +46,8 @@ impl GetStorageUsageUseCasePort for GetStorageUsageUseCase {
         StorageUsage {
             entries: vec![
                 StorageUsageEntry {
-                    kind: StorageKind::MinecraftAssets,
-                    bytes: assets,
-                },
-                StorageUsageEntry {
-                    kind: StorageKind::MinecraftLibraries,
-                    bytes: libraries,
-                },
-                StorageUsageEntry {
-                    kind: StorageKind::MinecraftVersions,
-                    bytes: versions + natives,
+                    kind: StorageKind::Minecraft,
+                    bytes: assets + libraries + versions + natives,
                 },
                 StorageUsageEntry {
                     kind: StorageKind::Java,
@@ -96,6 +88,6 @@ mod tests {
         let usage = GetStorageUsageUseCase::new(info).execute().await;
 
         let bytes: Vec<_> = usage.entries.iter().map(|entry| entry.bytes).collect();
-        assert_eq!(bytes, [4, 3, 3, 7, 9]);
+        assert_eq!(bytes, [10, 7, 9]);
     }
 }

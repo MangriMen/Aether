@@ -75,9 +75,7 @@ impl From<ClearCacheOutcome> for ClearCacheOutcomeDto {
 #[derive(Debug, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum StorageKindDto {
-    MinecraftAssets,
-    MinecraftLibraries,
-    MinecraftVersions,
+    Minecraft,
     Java,
     Instances,
 }
@@ -85,9 +83,7 @@ pub enum StorageKindDto {
 impl From<StorageKind> for StorageKindDto {
     fn from(value: StorageKind) -> Self {
         match value {
-            StorageKind::MinecraftAssets => Self::MinecraftAssets,
-            StorageKind::MinecraftLibraries => Self::MinecraftLibraries,
-            StorageKind::MinecraftVersions => Self::MinecraftVersions,
+            StorageKind::Minecraft => Self::Minecraft,
             StorageKind::Java => Self::Java,
             StorageKind::Instances => Self::Instances,
         }

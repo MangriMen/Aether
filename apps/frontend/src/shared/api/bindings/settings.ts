@@ -389,7 +389,7 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	reason: string,
 } };
 
-export type StorageKindDto = "minecraft_assets" | "minecraft_libraries" | "minecraft_versions" | "java" | "instances";
+export type StorageKindDto = "minecraft" | "java" | "instances";
 
 export type StorageUsageDto = {
 	entries: StorageUsageEntryDto[],

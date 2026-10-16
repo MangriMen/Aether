@@ -4,10 +4,9 @@ import type { CacheUsageDto } from '@/entities/settings';
 import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useClearCache } from '@/entities/settings';
+import { formatBytes } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, SettingsEntry } from '@/shared/ui';
-
-import { CacheUsageList } from './CacheUsageList';
 
 export type ClearCacheEntryProps = SettingsEntryProps & {
   usage?: CacheUsageDto;
@@ -28,6 +27,20 @@ export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
         description={
           <>
             <span>{t('settings.storage.cacheDescription')}</span>
+            <Show when={props.usage}>
+              {(usage) => (
+                <span class='font-medium block'>
+                  {t('settings.storage.size', {
+                    size: formatBytes(
+                      usage().entries.reduce(
+                        (sum, entry) => sum + (entry.bytes ?? 0),
+                        0,
+                      ),
+                    ),
+                  })}
+                </span>
+              )}
+            </Show>
             <Show when={props.usage?.busy}>
               <span class='text-warning block'>
                 {t('settings.storage.busy')}
@@ -50,9 +63,6 @@ export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
           {t('settings.storage.clear')}
         </Button>
       </SettingsEntry>
-      <Show when={props.usage}>
-        {(usage) => <CacheUsageList entries={usage().entries} />}
-      </Show>
     </div>
   );
 };

@@ -19,12 +19,9 @@ pub struct CacheUsageEntry {
 /// What takes the disk, as the user tells it apart.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StorageKind {
-    /// Game assets (sounds, textures, languages), shared by all instances.
-    MinecraftAssets,
-    /// Game libraries, shared by all instances.
-    MinecraftLibraries,
-    /// Game versions and their natives, shared by the instances of a version.
-    MinecraftVersions,
+    /// The game files the launcher keeps for all instances: assets, libraries, versions,
+    /// natives.
+    Minecraft,
     /// The Java runtimes the launcher downloaded, shared by all instances.
     Java,
     /// The instances' own files: mods, worlds, settings.

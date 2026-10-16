@@ -455,20 +455,13 @@
         "ownDescription": "Mods, worlds and settings of each instance"
       },
       "disk_kind": {
-        "minecraft_assets": "Game assets",
-        "minecraft_libraries": "Game libraries",
-        "minecraft_versions": "Game versions",
+        "minecraft": "Minecraft",
         "java": "Java",
         "instances": "Instances"
       },
       "cache": "Cache",
       "cacheDescription": "Saved to work faster and offline. Everything here is downloaded again when needed.",
-      "total": "Total",
-      "kind": {
-        "metadata": "Names, versions and game version lists",
-        "icons": "Content icons",
-        "modpack_archives": "Modpack archives"
-      },
+      "size": "Takes {{size}}",
       "clear": "Clear cache",
       "busy": "Unavailable while something is being installed or downloaded",
       "busyToast": "Something is being installed or downloaded right now. Try again when it is done.",

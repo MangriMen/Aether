@@ -8,17 +8,9 @@ import { useTranslation } from '@/shared/model';
 type Entry = StorageUsageDto['entries'][number];
 
 const KIND_STYLE = {
-  minecraft_assets: {
-    label: 'settings.storage.disk_kind.minecraft_assets',
+  minecraft: {
+    label: 'settings.storage.disk_kind.minecraft',
     color: 'bg-info',
-  },
-  minecraft_libraries: {
-    label: 'settings.storage.disk_kind.minecraft_libraries',
-    color: 'bg-success',
-  },
-  minecraft_versions: {
-    label: 'settings.storage.disk_kind.minecraft_versions',
-    color: 'bg-warning',
   },
   java: {
     label: 'settings.storage.disk_kind.java',
@@ -35,12 +27,7 @@ const GROUPS = [
   {
     title: 'settings.storage.group.shared',
     description: 'settings.storage.group.sharedDescription',
-    kinds: [
-      'minecraft_assets',
-      'minecraft_libraries',
-      'minecraft_versions',
-      'java',
-    ],
+    kinds: ['minecraft', 'java'],
   },
   {
     title: 'settings.storage.group.own',
@@ -72,7 +59,7 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
         </span>
       </div>
 
-      <div class='h-3 bg-muted flex w-full gap-px overflow-hidden rounded-full'>
+      <div class='h-3 bg-muted flex w-full overflow-hidden rounded-full'>
         <For each={props.usage.entries}>
           {(entry) => (
             <Show when={(entry.bytes ?? 0) > 0}>
