@@ -2,11 +2,11 @@ import { createForm, setInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
 import { splitProps, type Component, type JSX } from 'solid-js';
 
+import type { ImportInstance } from '@/entities/instances';
 import type {
-  ImportInstance,
   ImporterCapabilityMetadata,
-} from '@/entities/instances';
-import type { PluginMetadata } from '@/entities/plugins';
+  PluginMetadata,
+} from '@/features/plugins';
 
 import { useImportInstance } from '@/entities/instances';
 import { cn } from '@/shared/lib';

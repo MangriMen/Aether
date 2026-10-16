@@ -3,16 +3,7 @@
 // entities/, widgets/, pages/ and the old slices in features/ are skipped.
 // Drop a slice from LEGACY_FEATURES once it has moved.
 
-const LEGACY_FEATURES = [
-  'install-plugin-from-github',
-  'instance-action-button',
-  'instance-settings',
-  'plugin-controlled-card',
-  'plugin-settings-form',
-  'restart-plugin-button',
-  'toggle-plugin-button',
-  'update-badge',
-];
+const LEGACY_FEATURES = ['instance-action-button', 'instance-settings', 'update-badge'];
 
 const FEATURE = `^src/features/(?!(?:${LEGACY_FEATURES.join('|')})/)([^/]+)/`;
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
@@ -81,6 +72,14 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/features/([^/]+)/' },
       to: { path: FEATURE, pathNot: ['^src/features/$1/', FEATURE_INDEX] },
+    },
+    {
+      name: 'feature-base-not-parts',
+      comment:
+        'A domain split into features (plugins, plugins-settings, ...) depends one way: the base never imports its parts. Parts may import each other without cycles.',
+      severity: 'error',
+      from: { path: '^src/features/([^/-]+)/' },
+      to: { path: '^src/features/$1-[^/]+/', pathNot: `^src/features/(?:${LEGACY_FEATURES.join('|')})/` },
     },
     {
       name: 'feature-shape',

@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/solid-query';
 
-import type { PluginId } from '@/entities/plugins';
+import type { PluginId } from '@/features/plugins';
 
 import {
   pluginsCache,
   useGrantPluginFolderAccess,
   useGrantPluginHostAccess,
-} from '@/entities/plugins';
+} from '@/features/plugins';
 import { closeDialog, showDialog, useTranslation } from '@/shared/model';
 import { CombinedDialog } from '@/shared/ui';
 

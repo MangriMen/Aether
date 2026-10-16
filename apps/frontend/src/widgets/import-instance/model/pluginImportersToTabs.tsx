@@ -1,4 +1,4 @@
-import type { ImporterCapabilityEntry } from '@/entities/plugins';
+import type { ImporterCapabilityEntry } from '@/features/plugins';
 
 import { Image } from '@/shared/ui';
 

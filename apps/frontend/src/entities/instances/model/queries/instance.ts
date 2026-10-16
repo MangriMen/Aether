@@ -142,13 +142,6 @@ export const useInstanceDir = (id: Accessor<string | undefined>) => {
   }));
 };
 
-export const useImporters = () => {
-  return useQuery(() => ({
-    queryKey: INSTANCE_QUERY_KEYS.IMPORTER.LIST(),
-    queryFn: instanceCommands.listImporters,
-  }));
-};
-
 export const useEditInstanceIcon = () => {
   const [{ t }] = useTranslation();
   const queryClient = useQueryClient();

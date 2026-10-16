@@ -76,8 +76,13 @@ features/instance-settings/
 ```
 
 - Parts depend on the base; the base never imports its parts.
-- Parts do not import each other. `app` puts their entry points together.
+- Parts may import each other, one way only: no cycles. `app` places their entry points.
 - If two parts need the same thing, it moves into the base.
+- The size limits are a guide: split when it makes the code easier to follow.
+
+In the code: `plugins` is the base (queries, models, cards, actions), `plugins-settings` is
+the settings tab of one plugin, `plugins-manager` is the settings pane with the list,
+details and install views; it shows the tab from `plugins-settings`.
 
 Example:
 
@@ -140,6 +145,9 @@ Known exceptions, to be removed when `shared/` is split into modules:
 - ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
   no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`.
 - dependency-cruiser (`bun lint:arch`): cycles, layer direction, relative imports across
-  features, public API of features and modules, feature folders and file names. Config: `.dependency-cruiser.cjs`.
+  features, public API of features and modules, a domain base importing its parts, feature
+  folders and file names. Config: `.dependency-cruiser.cjs`. Its cycle check works on files,
+  so `scripts/check-feature-cycles.ts` (part of `lint:arch`) also checks the graph of features,
+  type-only imports included.
 - `bun arch:graph` writes a module-level dependency graph to `arch-graph.mmd` (Mermaid;
   paste it into any Mermaid viewer).
