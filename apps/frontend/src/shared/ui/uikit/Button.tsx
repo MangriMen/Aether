@@ -11,7 +11,7 @@ import { cn } from '../../lib';
 
 const buttonVariants = cva(
   `
-    gap-1 rounded-md text-sm font-medium ring-offset-background
+    gap-1 rounded-md text-sm font-medium whitespace-nowrap ring-offset-background
     focus-visible:ring-ring
     inline-flex items-center justify-center
     transition-[color,background-color,border-color,text-decoration-color,fill,stroke,filter,opacity,padding]

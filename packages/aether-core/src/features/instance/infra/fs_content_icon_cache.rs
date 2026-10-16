@@ -29,7 +29,7 @@ use crate::{
         CONTENT_METADATA_TTL, CachedContentIcon, ContentIconCache, ContentIconError,
     },
     shared::{
-        housekeeping::CacheCleaner,
+        housekeeping::{CacheCleaner, CacheKind},
         request_client::{FileDownload, Request, RequestClient},
     },
 };
@@ -413,6 +413,14 @@ impl ContentIconCache for FsContentIconCache {
 impl CacheCleaner for FsContentIconCache {
     fn what(&self) -> &'static str {
         "content icons"
+    }
+
+    fn kind(&self) -> CacheKind {
+        CacheKind::Icons
+    }
+
+    async fn size(&self) -> u64 {
+        crate::shared::housekeeping::files_size(&self.dir).await
     }
 
     async fn clear(&self) -> u64 {

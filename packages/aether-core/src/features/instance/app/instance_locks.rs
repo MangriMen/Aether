@@ -62,6 +62,15 @@ impl InstanceLocks {
             .map(|guard| InstanceLockGuard { _guard: guard })
     }
 
+    /// Whether any instance's lock is held, or waited for.
+    pub fn is_any_locked(&self) -> bool {
+        let locks = self
+            .locks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        locks.values().any(|lock| lock.strong_count() > 0)
+    }
+
     fn lock_of(&self, instance_id: &str) -> Arc<tokio::sync::Mutex<()>> {
         // Poisoning cannot leave the map inconsistent: every change to it is one call.
         let mut locks = self

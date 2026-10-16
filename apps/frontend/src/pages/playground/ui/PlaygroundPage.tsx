@@ -8,6 +8,7 @@ import { BadgeLab } from './BadgeLab';
 import { ButtonsLab } from './ButtonsLab';
 import { CheckboxLab } from './CheckboxLab';
 import { CollapsibleLab } from './CollapsibleLab';
+import { ContentProvidersLab } from './ContentProvidersLab';
 import { ContextMenuLab } from './ContextMenuLab';
 import { DialogLab } from './DialogLab';
 import { DropdownMenuLab } from './DropdownMenuLab';
@@ -49,6 +50,7 @@ export const PlaygroundPage: Component<PlaygroundPageProps> = (props) => {
         <ButtonsLab />
         <CheckboxLab />
         <CollapsibleLab />
+        <ContentProvidersLab />
         <ContextMenuLab />
         <DialogLab />
         <DropdownMenuLab />

@@ -203,6 +203,8 @@ pub struct AetherContainer {
     instance_locks: Arc<InstanceLocks>,
     /// One for the process: it keeps which refreshes run and what providers could not tell.
     content_metadata: Arc<ContentMetadataService>,
+    /// One for the process: it knows whether the caches are being emptied.
+    cache_storage: Arc<crate::features::settings::CacheStorageUseCase>,
 }
 
 impl AetherContainer {
@@ -216,11 +218,21 @@ impl AetherContainer {
             params.event_emitter.clone(),
         ));
 
+        let instance_locks = Arc::new(InstanceLocks::new());
+        let cache_storage = Arc::new(crate::features::settings::CacheStorageUseCase::new(
+            params.storage.cache_cleaners.clone(),
+            Arc::new(super::storage_activity::AppStorageActivity {
+                instance_locks: instance_locks.clone(),
+                progress_bars: params.progress_bar_storage.clone(),
+            }),
+        ));
+
         Arc::new(Self {
             cache: UseCaseCache::new(),
             params,
-            instance_locks: Arc::new(InstanceLocks::new()),
+            instance_locks,
             content_metadata,
+            cache_storage,
         })
     }
 
@@ -453,9 +465,12 @@ impl AetherContainer {
 
 impl SettingsFeature for AetherContainer {
     fn clear_cache_use_case(&self) -> Arc<dyn crate::features::settings::ClearCacheUseCasePort> {
-        Arc::new(crate::features::settings::ClearCacheUseCase::new(
-            self.storage().cache_cleaners.clone(),
-        ))
+        self.cache_storage.clone()
+    }
+    fn get_cache_usage_use_case(
+        &self,
+    ) -> Arc<dyn crate::features::settings::GetCacheUsageUseCasePort> {
+        self.cache_storage.clone()
     }
     fn get_settings_use_case(&self) -> Arc<dyn GetSettingsUseCasePort> {
         Arc::new(GetSettingsUseCase::new(

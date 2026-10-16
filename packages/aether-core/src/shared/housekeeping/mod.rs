@@ -19,14 +19,55 @@ pub trait Housekeeping: Send + Sync {
     async fn run(&self) -> u64;
 }
 
+/// What a cache holds, as the user tells them apart.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CacheKind {
+    /// Names, authors, versions and the like: the rows of `universal_cache`.
+    Metadata,
+    /// Icons of content.
+    Icons,
+    /// Downloaded modpack archives.
+    ModpackArchives,
+}
+
+/// Whether the app is busy with something that uses the caches, so emptying them now would
+/// pull files out from under it.
+#[async_trait]
+pub trait StorageActivity: Send + Sync {
+    async fn is_busy(&self) -> bool;
+}
+
 /// A cache the user may empty whole. What the app needs of it is fetched again afterwards.
 #[async_trait]
 pub trait CacheCleaner: Send + Sync {
     /// What is emptied, for the logs.
     fn what(&self) -> &'static str;
 
+    /// What the cache is, for the user.
+    fn kind(&self) -> CacheKind;
+
+    /// How many bytes the cache takes.
+    async fn size(&self) -> u64;
+
     /// Empty the cache. How many items went.
     async fn clear(&self) -> u64;
+}
+
+/// The bytes of the files directly in `dir`; a missing or unreadable one counts for nothing.
+pub async fn files_size(dir: &std::path::Path) -> u64 {
+    let Ok(mut entries) = tokio::fs::read_dir(dir).await else {
+        return 0;
+    };
+
+    let mut total = 0;
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        if let Ok(metadata) = entry.metadata().await
+            && metadata.is_file()
+        {
+            total += metadata.len();
+        }
+    }
+    total
 }
 
 /// Run `tasks` one after another in the background, logging what each removed.
@@ -64,6 +105,14 @@ mod tests {
     impl CacheCleaner for Counting {
         fn what(&self) -> &'static str {
             "counting"
+        }
+
+        fn kind(&self) -> CacheKind {
+            CacheKind::Icons
+        }
+
+        async fn size(&self) -> u64 {
+            0
         }
 
         async fn clear(&self) -> u64 {

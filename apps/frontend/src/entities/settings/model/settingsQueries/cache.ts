@@ -8,6 +8,12 @@ export const settingsQueries = {
     queryKey: settingsKeys.get(),
     queryFn: settingsCommands.get,
   }),
+  cacheUsage: () => ({
+    queryKey: settingsKeys.cacheUsage(),
+    queryFn: settingsCommands.getCacheUsage,
+    // Whether clearing is allowed changes by itself, as downloads start and end.
+    refetchInterval: 2000,
+  }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
     queryFn: settingsCommands.getMaxRam,

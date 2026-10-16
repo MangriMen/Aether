@@ -400,13 +400,14 @@
       "update": "Update",
       "plugins": "Plugins",
       "contentProviders": "Content sources",
+      "storage": "Storage",
       "experimental": "Experimental"
     },
     "contentProviders": {
       "automatic": "Automatic",
       "unavailable": "{{id}} (unavailable)",
       "entryDescription": "Several plugins serve {{platform}}. Choose which one is asked for its content. \"Automatic\" uses the built-in provider, or asks you to choose when there is none.",
-      "nothingToChoose": "Every platform has a single content provider, so there is nothing to choose.",
+      "nothingToChoose": "Each platform is served by a single content source, so there is nothing to choose. A choice appears here once a plugin adds another source for a platform.",
       "loadFailed": "Could not load the content providers.",
       "choose": "Choose provider"
     },
@@ -443,9 +444,21 @@
       "off": "Off"
     },
     "changeError": "Failed to change settings",
-    "clearCache": "Clear cache",
-    "clearCacheDescription": "Removes the saved names, icons and downloaded modpack archives of content, and the cached game version lists. They are downloaded again when needed.",
-    "clearCacheError": "Failed to clear the cache",
+    "storage": {
+      "cache": "Cache",
+      "cacheDescription": "Saved to work faster and offline. Everything here is downloaded again when needed.",
+      "total": "Total",
+      "kind": {
+        "metadata": "Names, versions and game version lists",
+        "icons": "Content icons",
+        "modpack_archives": "Modpack archives"
+      },
+      "clear": "Clear cache",
+      "busy": "Unavailable while something is being installed or downloaded",
+      "busyToast": "Something is being installed or downloaded right now. Try again when it is done.",
+      "clearError": "Failed to clear the cache",
+      "loadFailed": "Could not read the cache size."
+    },
     "animationsDisabled": "Animations are disabled in the system",
     "animationsDisabledDescription": "You can enable them in the app, but this may impact the smoothness of the interface and battery life",
     "updateAvailable": "New version is available!",

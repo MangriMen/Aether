@@ -2,11 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
 
 import { settingsCommands } from '../../api';
 import { settingsCache, settingsQueries } from './cache';
 
 export const useSettings = () => useQuery(settingsQueries.get);
+
+/** How much each cache takes, and whether clearing it is refused now. */
+export const useCacheUsage = () => useQuery(settingsQueries.cacheUsage);
 
 export const useMaxRam = () => useQuery(settingsQueries.maxRam);
 
@@ -40,12 +44,16 @@ export const useClearCache = () => {
 
   return useMutation(() => ({
     mutationFn: settingsCommands.clearCache,
-    onSuccess: () => {
+    onSuccess: (outcome) => {
+      if (outcome === 'busy') {
+        showToast({ title: t('settings.storage.busyToast') });
+      }
+
       // What the lists showed from the cache is fetched again.
       void queryClient.invalidateQueries();
     },
     onError: (err) => {
-      showError({ title: t('settings.clearCacheError'), err, t });
+      showError({ title: t('settings.storage.clearError'), err, t });
     },
   }));
 };

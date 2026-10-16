@@ -6,7 +6,7 @@ use std::{collections::HashMap, time::Duration};
 
 use crate::shared::{
     cache::domain::{Cache, CacheKey},
-    housekeeping::{CacheCleaner, Housekeeping},
+    housekeeping::{CacheCleaner, CacheKind, Housekeeping},
 };
 
 /// How many keys one [`Cache::get_many`] query names: well under SQLite's limit of bound
@@ -208,6 +208,20 @@ impl Housekeeping for SqliteCache {
 impl CacheCleaner for SqliteCache {
     fn what(&self) -> &'static str {
         "cache rows"
+    }
+
+    fn kind(&self) -> CacheKind {
+        CacheKind::Metadata
+    }
+
+    async fn size(&self) -> u64 {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COALESCE(SUM(LENGTH(namespace) + LENGTH(key) + LENGTH(value)), 0)
+             FROM universal_cache",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_or(0, |bytes| u64::try_from(bytes).unwrap_or_default())
     }
 
     async fn clear(&self) -> u64 {
