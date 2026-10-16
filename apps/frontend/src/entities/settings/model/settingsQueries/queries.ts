@@ -2,11 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
+import { showToast } from '@/shared/ui';
 
 import { settingsCommands } from '../../api';
 import { settingsCache, settingsQueries } from './cache';
 
 export const useSettings = () => useQuery(settingsQueries.get);
+
+/** How much disk the launcher folders take, by what they hold. */
+export const useStorageUsage = () => useQuery(settingsQueries.storageUsage);
+
+/** How much each cache takes, and whether clearing it is refused now. */
+export const useCacheUsage = () => useQuery(settingsQueries.cacheUsage);
 
 export const useMaxRam = () => useQuery(settingsQueries.maxRam);
 
@@ -29,6 +36,27 @@ export const useSetPlatformProvider = () => {
         maxConcurrentDownloads: current.maxConcurrentDownloads,
         platformProvider,
       });
+    },
+  }));
+};
+
+/** Empty the caches the app can fetch again (content metadata, icons, modpack archives). */
+export const useClearCache = () => {
+  const queryClient = useQueryClient();
+  const [{ t }] = useTranslation();
+
+  return useMutation(() => ({
+    mutationFn: settingsCommands.clearCache,
+    onSuccess: (outcome) => {
+      if (outcome === 'busy') {
+        showToast({ title: t('settings.storage.busyToast') });
+      }
+
+      // What the lists showed from the cache is fetched again.
+      void queryClient.invalidateQueries();
+    },
+    onError: (err) => {
+      showError({ title: t('settings.storage.clearError'), err, t });
     },
   }));
 };

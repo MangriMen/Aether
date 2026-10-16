@@ -7,9 +7,13 @@
 //! [`MAX_AGE`] go — long after any plan that named them has ended.
 
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
+
+use async_trait::async_trait;
+
+use crate::shared::housekeeping::{CacheCleaner, CacheKind};
 
 /// How long an archive may sit unused. An update of a pack reads the archive of the installed
 /// version only as a convenience; after this long it is simply downloaded again.
@@ -64,18 +68,63 @@ pub(super) async fn prune(dir: &Path, keep: &Path, now: SystemTime) {
     }
 }
 
+/// Whether `path` is named like an archive.
+pub(super) fn is_mrpack(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
+}
+
 /// An archive, or the partial file of a download that never finished.
 fn is_cache_file(path: &Path) -> bool {
     let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
         return false;
     };
 
-    path.extension()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
+    is_mrpack(path)
         || (name.starts_with(".download-")
             && path
                 .extension()
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("part")))
+}
+
+/// Empties the folder of archives by the user's wish. An archive is downloaded again when a
+/// plan needs it; the partial file of a download that may be running is left to it.
+pub struct MrpackCacheCleaner {
+    dir: PathBuf,
+}
+
+impl MrpackCacheCleaner {
+    /// The archives in `dir`: [`ModrinthContentProvider`](super::ModrinthContentProvider) keeps
+    /// them in [`mrpack_dir`].
+    pub fn new(dir: PathBuf) -> Self {
+        Self { dir }
+    }
+}
+
+#[async_trait]
+impl CacheCleaner for MrpackCacheCleaner {
+    fn what(&self) -> &'static str {
+        "modpack archives"
+    }
+
+    fn kind(&self) -> CacheKind {
+        CacheKind::ModpackArchives
+    }
+
+    async fn size(&self) -> u64 {
+        crate::shared::housekeeping::dir_size(&self.dir).await
+    }
+
+    async fn clear(&self) -> u64 {
+        crate::shared::housekeeping::remove_files(&self.dir, is_mrpack)
+            .await
+            .len() as u64
+    }
+}
+
+/// Where the archives are kept, under the cache folder of the app.
+pub fn mrpack_dir(cache_dir: &Path) -> PathBuf {
+    cache_dir.join("modrinth").join("mrpack")
 }
 
 #[cfg(test)]
@@ -156,5 +205,22 @@ mod tests {
             SystemTime::now(),
         )
         .await;
+    }
+
+    #[tokio::test]
+    async fn should_remove_every_archive_but_not_other_files_when_cleared() {
+        let dir = tempfile::tempdir().unwrap();
+        let fresh = write(dir.path(), "fresh.mrpack", FRESH);
+        let old = write(dir.path(), "old.mrpack", OLD);
+        let partial = write(dir.path(), ".download-abc.part", FRESH);
+        let notes = write(dir.path(), "notes.txt", OLD);
+
+        let removed = MrpackCacheCleaner::new(dir.path().to_owned()).clear().await;
+
+        assert_eq!(removed, 2);
+        assert!(!fresh.exists());
+        assert!(!old.exists());
+        assert!(partial.exists());
+        assert!(notes.exists());
     }
 }

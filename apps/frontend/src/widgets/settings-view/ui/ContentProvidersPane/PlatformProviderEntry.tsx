@@ -21,6 +21,8 @@ export type PlatformProviderEntryProps = SettingsEntryProps & {
   providers: PlatformProvider[];
   /** The provider id stored in the settings, if the user chose one. */
   selected?: string;
+  /** Replaces saving the choice. */
+  onChoose?: (platform: string, providerId: string | null) => void;
 };
 
 // Select values cannot be null, and an empty id never names a provider.
@@ -72,10 +74,14 @@ export const PlatformProviderEntry: Component<PlatformProviderEntryProps> = (
       return;
     }
 
-    setPlatformProvider.mutate({
-      platform: props.platform,
-      providerId: option.value === AUTOMATIC ? null : option.value,
-    });
+    const providerId = option.value === AUTOMATIC ? null : option.value;
+
+    if (props.onChoose) {
+      props.onChoose(props.platform, providerId);
+      return;
+    }
+
+    setPlatformProvider.mutate({ platform: props.platform, providerId });
   };
 
   return (

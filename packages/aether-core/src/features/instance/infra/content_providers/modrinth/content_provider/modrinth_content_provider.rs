@@ -299,10 +299,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         version: &ProjectVersionResponse,
     ) -> Result<PathBuf, InstanceError> {
         let file = Self::primary_file(version)?;
-        if !Path::new(&file.filename)
-            .extension()
-            .is_some_and(|extension| extension.eq_ignore_ascii_case("mrpack"))
-        {
+        if !super::mrpack_cache::is_mrpack(Path::new(&file.filename)) {
             return Err(InstanceError::ContentDownloadError(format!(
                 "File {} is not a modpack",
                 file.filename
@@ -312,11 +309,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         let hash = mrpack::sha512_of(&file.hashes)?;
         // Named by the hash: the same archive is downloaded once whoever asks for it, and a file
         // gets this name only once verified against it.
-        let path = self
-            .location_info
-            .cache_dir()
-            .join("modrinth")
-            .join("mrpack")
+        let path = mrpack_cache::mrpack_dir(&self.location_info.cache_dir())
             .join(format!("{}.mrpack", hash.hex()));
         if tokio::fs::try_exists(&path).await.unwrap_or(false) {
             mrpack_cache::touch(&path).await;

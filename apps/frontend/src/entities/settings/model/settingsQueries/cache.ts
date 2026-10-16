@@ -8,6 +8,19 @@ export const settingsQueries = {
     queryKey: settingsKeys.get(),
     queryFn: settingsCommands.get,
   }),
+  // Measuring walks the folders, so it is asked on opening, not on a timer.
+  storageUsage: () => ({
+    queryKey: settingsKeys.storageUsage(),
+    queryFn: settingsCommands.getStorageUsage,
+    staleTime: 30_000,
+  }),
+  cacheUsage: () => ({
+    queryKey: settingsKeys.cacheUsage(),
+    queryFn: settingsCommands.getCacheUsage,
+    // Whether clearing is allowed changes by itself, as downloads start and end. Sizes are
+    // measured on each poll, so it is slow; to be replaced by launcher events or the file watcher.
+    refetchInterval: 10_000,
+  }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
     queryFn: settingsCommands.getMaxRam,

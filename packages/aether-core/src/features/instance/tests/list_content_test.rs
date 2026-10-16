@@ -65,7 +65,7 @@ impl ContentIconCache for NoIcons {
         Err(ContentIconError::NotAnImage)
     }
 
-    async fn remove_unused(&self, _: std::time::Duration) -> usize {
+    async fn retain(&self, _: &std::collections::HashSet<String>) -> usize {
         0
     }
 }

@@ -1,5 +1,6 @@
 import IconMdiBrush from '~icons/mdi/brush-variant';
 import IconMdiCoffeeOutline from '~icons/mdi/coffee-outline';
+import IconMdiDatabase from '~icons/mdi/database';
 import IconMdiGamepadSquare from '~icons/mdi/gamepad-square';
 import IconMdiPackageVariant from '~icons/mdi/package-variant';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
@@ -17,6 +18,7 @@ import { DefaultInstanceSettingsPane } from '../ui/DefaultInstanceSettingsPane/D
 import { ExperimentalPane } from '../ui/ExperimentalPane/ExperimentalPane';
 import { JavaPane } from '../ui/JavaPane/JavaPane';
 import { PluginsPane } from '../ui/PluginsPane/PluginsPane';
+import { StoragePane } from '../ui/StoragePane/StoragePane';
 import { UpdatePane } from '../ui/UpdatePane/UpdatePane';
 
 export const SETTINGS_TABS_DEFINITION = [
@@ -49,6 +51,12 @@ export const SETTINGS_TABS_DEFINITION = [
     label: 'contentProviders',
     icon: IconMdiPackageVariant,
     component: ContentProvidersPane,
+  },
+  {
+    value: SettingsTab.Storage,
+    label: 'storage',
+    icon: IconMdiDatabase,
+    component: StoragePane,
   },
   {
     value: SettingsTab.Update,

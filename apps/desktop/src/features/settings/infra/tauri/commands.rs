@@ -13,8 +13,9 @@ use crate::{
 };
 
 use super::dtos::{
-    AppSettingsDto, DefaultInstanceSettingsDto, EditAppSettingsDto, EditDefaultInstanceSettingsDto,
-    EditSettingsDto, SettingsDto,
+    AppSettingsDto, CacheUsageDto, ClearCacheOutcomeDto, DefaultInstanceSettingsDto,
+    EditAppSettingsDto, EditDefaultInstanceSettingsDto, EditSettingsDto, SettingsDto,
+    StorageUsageDto,
 };
 
 use crate::features::settings::infra::dtos::RamSettingsDto;
@@ -59,6 +60,50 @@ async fn edit(
         .execute(edit_settings.into())
         .await
         .map_err(aether_core::Error::from)?
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn clear_cache(
+    request_id: RequestId,
+    idempotency: State<'_, IdempotencyManager>,
+    container: State<'_, ContainerState>,
+) -> FrontendResult<ClearCacheOutcomeDto> {
+    let _guard = idempotency.lock_cmd(request_id)?;
+
+    Ok(container
+        .0
+        .clone()
+        .clear_cache_use_case()
+        .execute()
+        .await
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_storage_usage(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<StorageUsageDto> {
+    Ok(container
+        .0
+        .clone()
+        .get_storage_usage_use_case()
+        .execute()
+        .await
+        .into())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_cache_usage(container: State<'_, ContainerState>) -> FrontendResult<CacheUsageDto> {
+    Ok(container
+        .0
+        .clone()
+        .get_cache_usage_use_case()
+        .execute()
+        .await
         .into())
 }
 

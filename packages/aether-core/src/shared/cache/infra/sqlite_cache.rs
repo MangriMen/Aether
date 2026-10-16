@@ -4,7 +4,10 @@ use serde::{Serialize, de::DeserializeOwned};
 use sqlx::{Executor, QueryBuilder, Row, Sqlite, SqlitePool};
 use std::{collections::HashMap, time::Duration};
 
-use crate::shared::cache::domain::{Cache, CacheKey};
+use crate::shared::{
+    cache::domain::{Cache, CacheKey},
+    housekeeping::{CacheCleaner, CacheKind, Housekeeping},
+};
 
 /// How many keys one [`Cache::get_many`] query names: well under SQLite's limit of bound
 /// variables (999 before 3.32).
@@ -188,6 +191,47 @@ impl Cache for SqliteCache {
     }
 }
 
+/// The rows nobody refreshed for their whole life.
+#[async_trait]
+impl Housekeeping for SqliteCache {
+    fn what(&self) -> &'static str {
+        "expired cache rows"
+    }
+
+    async fn run(&self) -> u64 {
+        self.purge_expired().await
+    }
+}
+
+/// Every row, whatever it holds: all of `universal_cache` is fetched again when needed.
+#[async_trait]
+impl CacheCleaner for SqliteCache {
+    fn what(&self) -> &'static str {
+        "cache rows"
+    }
+
+    fn kind(&self) -> CacheKind {
+        CacheKind::Metadata
+    }
+
+    async fn size(&self) -> u64 {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COALESCE(SUM(LENGTH(namespace) + LENGTH(key) + LENGTH(value)), 0)
+             FROM universal_cache",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_or(0, |bytes| u64::try_from(bytes).unwrap_or_default())
+    }
+
+    async fn clear(&self) -> u64 {
+        sqlx::query("DELETE FROM universal_cache")
+            .execute(&self.pool)
+            .await
+            .map_or(0, |result| result.rows_affected())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use sqlx::{pool::PoolOptions, sqlite::SqliteConnectOptions};
@@ -319,6 +363,19 @@ mod tests {
             .unwrap();
         assert_eq!(rows, 1);
         assert_eq!(cache.get(&key("a", "new")).await, Some("new".to_owned()));
+    }
+
+    #[tokio::test]
+    async fn should_remove_every_row_when_cleared() {
+        let cache = create_cache().await;
+        cache
+            .set_many(&[entry("a", "1", "one"), entry("b", "2", "two")], LONG)
+            .await;
+
+        assert_eq!(CacheCleaner::clear(&cache).await, 2);
+
+        assert_eq!(cache.get(&key("a", "1")).await, None);
+        assert_eq!(cache.get(&key("b", "2")).await, None);
     }
 
     #[tokio::test]

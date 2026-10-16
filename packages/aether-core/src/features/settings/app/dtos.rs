@@ -3,6 +3,49 @@ use crate::features::{
     settings::{DefaultInstanceSettings, MemorySettings, Settings, SettingsError, WindowSettings},
 };
 
+/// How much each cache takes, and whether emptying them is refused now.
+#[derive(Debug, PartialEq, Eq)]
+pub struct CacheUsage {
+    pub entries: Vec<CacheUsageEntry>,
+    pub busy: bool,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct CacheUsageEntry {
+    pub kind: crate::shared::housekeeping::CacheKind,
+    pub bytes: u64,
+}
+
+/// What takes the disk, as the user tells it apart.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StorageKind {
+    /// The game files the launcher keeps for all instances: assets, libraries, versions,
+    /// natives.
+    Minecraft,
+    /// The Java runtimes the launcher downloaded, shared by all instances.
+    Java,
+    /// The instances' own files: mods, worlds, settings.
+    Instances,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct StorageUsageEntry {
+    pub kind: StorageKind,
+    pub bytes: u64,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct StorageUsage {
+    pub entries: Vec<StorageUsageEntry>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ClearCacheOutcome {
+    Cleared,
+    /// Nothing was removed: the app is busy with something that uses the caches.
+    Busy,
+}
+
 #[derive(Debug)]
 pub struct EditSettings {
     pub max_concurrent_downloads: usize,

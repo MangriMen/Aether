@@ -64,6 +64,9 @@ export const settingsCommands = {
   get: settingsRawCommands.get,
   edit: withIdempotency(settingsRawCommands.edit),
   getMaxRam: settingsRawCommands.getMaxRam,
+  clearCache: withIdempotency(settingsRawCommands.clearCache),
+  getCacheUsage: settingsRawCommands.getCacheUsage,
+  getStorageUsage: settingsRawCommands.getStorageUsage,
   getDefaultInstanceSettings: settingsRawCommands.getDefaultInstanceSettings,
   editDefaultInstanceSettings: withIdempotency(
     settingsRawCommands.editDefaultInstanceSettings,

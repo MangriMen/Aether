@@ -1,3 +1,4 @@
+mod content_icon_housekeeping;
 mod content_metadata_service;
 mod di;
 mod dtos;
@@ -6,6 +7,7 @@ mod instance_locks;
 mod ports;
 mod use_cases;
 
+pub use content_icon_housekeeping::ContentIconHousekeeping;
 pub use content_metadata_service::ContentMetadataService;
 pub use di::{
     ContentManagementPort, ContentProviderPort, InstanceCrudPort, InstanceFeature,

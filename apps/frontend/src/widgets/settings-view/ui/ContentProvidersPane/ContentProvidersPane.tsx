@@ -1,4 +1,4 @@
-import { createMemo, For, Match, Switch, type Component } from 'solid-js';
+import { createMemo, Match, Switch, type Component } from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/ui';
 
@@ -8,7 +8,7 @@ import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';
 
 import { groupProvidersByPlatform, platformsToChooseFor } from '../../lib';
-import { PlatformProviderEntry } from './PlatformProviderEntry';
+import { ContentProvidersView } from './ContentProvidersView';
 
 export type ContentProvidersPaneProps = SettingsPaneProps;
 
@@ -42,22 +42,11 @@ export const ContentProvidersPane: Component<ContentProvidersPaneProps> = (
             {t('common.loading')}
           </span>
         </Match>
-        <Match when={contested().length === 0}>
-          <span class='text-muted-foreground'>
-            {t('settings.contentProviders.nothingToChoose')}
-          </span>
-        </Match>
-        <Match when={contested().length > 0}>
-          <For each={contested()}>
-            {(group) => (
-              <PlatformProviderEntry
-                variant='card'
-                platform={group.platform}
-                providers={group.providers}
-                selected={settings.data?.platformProviders[group.platform]}
-              />
-            )}
-          </For>
+        <Match when>
+          <ContentProvidersView
+            groups={contested()}
+            selected={settings.data?.platformProviders}
+          />
         </Match>
       </Switch>
     </SettingsPane>

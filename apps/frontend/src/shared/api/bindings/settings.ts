@@ -7,6 +7,9 @@ export const commands = {
 	get: () => __TAURI_INVOKE<SettingsDto>("plugin:settings|get"),
 	edit: (editSettings: EditSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<SettingsDto>("plugin:settings|edit", { editSettings, requestId }),
 	getMaxRam: () => __TAURI_INVOKE<RamSettingsDto>("plugin:settings|get_max_ram"),
+	clearCache: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<ClearCacheOutcomeDto>("plugin:settings|clear_cache", { requestId }),
+	getCacheUsage: () => __TAURI_INVOKE<CacheUsageDto>("plugin:settings|get_cache_usage"),
+	getStorageUsage: () => __TAURI_INVOKE<StorageUsageDto>("plugin:settings|get_storage_usage"),
 	getDefaultInstanceSettings: () => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|get_default_instance_settings"),
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings, requestId }),
 	getAppSettings: () => __TAURI_INVOKE<AppSettingsDto>("plugin:settings|get_app_settings"),
@@ -41,6 +44,22 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	min: number,
 	max: number,
 } } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
+
+export type CacheKindDto = "metadata" | "icons" | "modpack_archives";
+
+export type CacheUsageDto = {
+	entries: CacheUsageEntryDto[],
+	/**  Whether clearing is refused now: the app is busy with something that uses the caches. */
+	busy: boolean,
+};
+
+export type CacheUsageEntryDto = {
+	kind: CacheKindDto,
+	/**  A number, not `u64`: specta refuses to export `u64`, and a cache never nears 2^53 bytes. */
+	bytes: number | null,
+};
+
+export type ClearCacheOutcomeDto = "cleared" | "busy";
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
@@ -369,6 +388,18 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	platform: string,
 	reason: string,
 } };
+
+export type StorageKindDto = "minecraft" | "java" | "instances";
+
+export type StorageUsageDto = {
+	entries: StorageUsageEntryDto[],
+};
+
+export type StorageUsageEntryDto = {
+	kind: StorageKindDto,
+	/**  A number, not `u64`: see [`CacheUsageEntryDto::bytes`]. */
+	bytes: number | null,
+};
 
 export type WindowEffectDto = "off" | "mica_light" | "mica_dark" | "mica" | "acrylic";
 
