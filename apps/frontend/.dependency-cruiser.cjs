@@ -85,13 +85,27 @@ module.exports = {
     {
       name: 'feature-shape',
       comment:
-        'A feature holds index.ts at its root and everything else in api/, model/ or ui/, none of them nested (__tests__/ aside). Split a big domain into <domain>-<part> features instead.',
+        'A feature holds index.ts at its root and everything else in api/, model/, lib/ or ui/, none of them nested (__tests__/ aside). Split a big domain into <domain>-<part> features instead.',
       severity: 'error',
       from: {
         path: [
           `${FEATURE}(?!index\\.tsx?$)[^/]+$`,
-          `${FEATURE}(?!(?:api|model|ui|__tests__)/)[^/]+/`,
-          `${FEATURE}(?:api|model|ui)/(?!__tests__/)[^/]+/`,
+          `${FEATURE}(?!(?:api|model|lib|ui|__tests__)/)[^/]+/`,
+          `${FEATURE}(?:api|model|lib|ui)/(?!__tests__/)[^/]+/`,
+        ],
+      },
+      to: {},
+    },
+    {
+      name: 'feature-file-names',
+      comment:
+        'ui/ holds PascalCase .tsx components, model/ holds no .tsx, lib/ holds only use*/create* primitives.',
+      severity: 'error',
+      from: {
+        path: [
+          `${FEATURE}ui/(?:[^A-Z][^/]*|[^/]+\\.ts)$`,
+          `${FEATURE}model/[^/]+\\.tsx$`,
+          `${FEATURE}lib/(?!(?:use|create)[A-Z])[^/]+$`,
         ],
       },
       to: {},
