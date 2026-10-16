@@ -83,6 +83,19 @@ module.exports = {
       to: { path: FEATURE, pathNot: ['^src/features/$1/', FEATURE_INDEX] },
     },
     {
+      name: 'feature-flat',
+      comment:
+        'A feature is flat: files at its root plus api/, model/, ui/, page/, pane/, none of them nested (__tests__/ aside). Split a big domain into <domain>-<part> features instead.',
+      severity: 'error',
+      from: {
+        path: [
+          `${FEATURE}(?!(?:api|model|ui|page|pane|__tests__)/)[^/]+/`,
+          `${FEATURE}(?:api|model|ui|page|pane)/(?!__tests__/)[^/]+/`,
+        ],
+      },
+      to: {},
+    },
+    {
       name: 'module-public-api',
       comment: 'Other modules are reached only through their index.ts; inside a module, imports are relative.',
       severity: 'error',

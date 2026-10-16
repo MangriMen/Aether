@@ -15,10 +15,8 @@ src/
 
 - **Module**: a folder with a public `index.ts`. Every `features/<name>` is a module, and so
   are `platform/<name>`, `shared/<name>`, `app/shell` and `app/runtime`.
-- **Sub-feature**: a folder inside a feature named after a part of the domain (`settings/`,
-  `create/`, `versions/`).
-- **Reserved folders**: `api/`, `model/`, `ui/`, `page/`, `pane/`. Inside a feature these
-  names mean only what is listed below. Any other folder is a sub-feature.
+- **Folders with fixed names** inside a feature: `api/`, `model/`, `ui/`, `page/`, `pane/`
+  (see below). A feature has no other folders.
 
 ## Rules
 
@@ -39,29 +37,45 @@ src/
 
 ## Inside a feature
 
+A feature is flat. Files lie at its root, next to a few optional folders with fixed names:
+
 | Folder | Holds |
 |---|---|
 | `index.ts` | the public API: what other modules may use, nothing more |
 | `api/` | queries, mutations, query keys, event listeners on top of `platform/ipc` |
-| `model/` | types, mappers, stores and helpers used by more than one sub-feature |
-| `ui/` | components used by more than one sub-feature |
+| `model/` | types, mappers, stores, helpers |
+| `ui/` | components |
 | `page/` | the domain's page and the parts only it uses |
 | `pane/` | the domain's settings pane |
-| anything else | a sub-feature |
 
-- Files inside a sub-feature are flat: a component, its hook and its helpers sit side by
-  side. Do not split them into `ui/model/lib`.
-- A sub-feature with its own requests or types uses the same reserved names inside it
-  (`settings/api/`, `settings/model/`).
-- When a sub-feature grows past 10–12 files, split it into smaller sub-features.
-- Tests live in `__tests__/` next to the files they cover.
-- Create a reserved folder only when there is something to put in it.
+- No other folders and no nesting: the deepest path is `features/<name>/<folder>/<file>`.
+  The only exception is `__tests__/` next to the files it covers.
+- A component, its hook and its helpers may also sit side by side at the feature root;
+  the folders are there for when a kind of file gets numerous.
+- Create a folder only when there is something to put in it.
+
+## Splitting a domain
+
+When a feature grows past ~15–20 files at its root, or a topic inside it collects ~8 files,
+that topic becomes a feature of its own, named `<domain>-<part>`:
+
+```
+features/instance/            the base: what the parts share
+features/instance-create/
+features/instance-import/
+features/instance-settings/
+```
+
+- Parts depend on the base; the base never imports its parts.
+- Parts do not import each other. `app` puts them together: the router registers a part's
+  page or dialog, `app/shell` places its buttons and panes.
+- If two parts need the same thing, it moves into the base.
 
 Example:
 
 ```
 features/instance/
-  index.ts                      export { InstanceCard } from './ui/InstanceCard'; ...
+  index.ts                      export * from './api/instanceQueries'; export { InstanceCard } ...
   api/
     instanceQueries.ts          useInstances, useInstance, instanceKeys
     instanceMutations.ts        useLaunchInstance, useRemoveInstance
@@ -71,24 +85,27 @@ features/instance/
     mappers.ts                  dto → Instance
     __tests__/mappers.test.ts
   ui/
-    InstanceCard.tsx            used by page/ and by app/pages/home through index.ts
+    InstanceCard.tsx            used by page/ and, through index.ts, by app/pages/home
     InstanceIcon.tsx
     InstancePlayButton.tsx
   page/
     InstancePage.tsx
     InstanceHeaderInfo.tsx
-  settings/
-    InstanceSettingsDialog.tsx
-    GeneralTab.tsx
-    JavaAndMemoryTab.tsx
-    useJavaAndMemorySettingsHandler.ts
-    api/
-      defaultInstanceSettingsQueries.ts
-    model/
-      instanceSettingsSchemas.ts
-  create/
-    CreateInstanceDialog.tsx
-    useCreateInstanceForm.ts
+
+features/instance-settings/
+  index.ts                      export { InstanceSettingsDialog } from './InstanceSettingsDialog';
+  InstanceSettingsDialog.tsx
+  GeneralTab.tsx
+  JavaAndMemoryTab.tsx
+  useJavaAndMemorySettingsHandler.ts
+  defaultInstanceSettingsQueries.ts
+  instanceSettingsSchemas.ts
+
+features/java/                  a small feature: no folders at all
+  index.ts
+  javaQueries.ts
+  JavaPane.tsx
+  useJavaInstallationListener.ts
 ```
 
 ## Migration
