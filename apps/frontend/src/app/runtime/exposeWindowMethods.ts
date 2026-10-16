@@ -1,4 +1,4 @@
-import { AetherNamespace, AetherNamespaceMethods } from '../model';
+import { AetherNamespace, AetherNamespaceMethods } from './aether';
 
 export const exposeWindowMethods = () => {
   window[AetherNamespace] = AetherNamespaceMethods;

@@ -2,7 +2,7 @@ import { onMount, type JSX } from 'solid-js';
 
 import { getOrCreateFeatureFlagsStore } from '@/shared/model';
 
-import { useSetupListeners } from '../lib';
+import { useSetupListeners } from './useSetupListeners';
 
 export type AppGlobalsProviderProps = { children?: JSX.Element };
 

@@ -1,8 +1,8 @@
 import { createEffect, onCleanup } from 'solid-js';
 
-import { createPreventRightClick } from '@/shared/lib';
+import { ALLOWED_CONTEXT_MENU_TAGS } from '@/app/config';
 
-import { ALLOWED_CONTEXT_MENU_TAGS } from '../config';
+import { createPreventRightClick } from './createPreventRightClick';
 
 /**
  * Hook to prevent right click context menu

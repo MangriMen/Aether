@@ -2,16 +2,16 @@ import type { Component, JSX } from 'solid-js';
 
 import { createSignal, onMount, Show } from 'solid-js';
 
-import { AppLayout } from '@/app/layouts/AppLayout';
-import { setupApp } from '@/app/model';
+import { AppInitializeError } from '@/app/shell/layouts/AppInitializeError';
+import { AppLayout } from '@/app/shell/layouts/AppLayout';
+import { BaseTitleBar } from '@/app/shell/titlebar/BaseTitleBar';
 import {
   getTranslatedError,
   isLauncherError,
   useTranslation,
 } from '@/shared/model';
-import { BaseTitleBar } from '@/widgets/app-titlebar';
 
-import { AppInitializeError } from './AppInitializeError';
+import { setupApp } from './initialize';
 
 export type AppInitializeGuardProps = { children?: JSX.Element };
 

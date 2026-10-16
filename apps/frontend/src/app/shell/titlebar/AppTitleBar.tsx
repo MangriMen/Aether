@@ -1,16 +1,16 @@
 import { createMemo, Show, type Component } from 'solid-js';
 
-import type { TitleBarProps } from '@/shared/ui';
-
 import {
   UpdateNotificationStyle,
   updateNotificationStyle,
 } from '@/shared/model';
+import { ProgressMenuButton, ProgressPopover } from '@/widgets/app-titlebar';
+import { UpdateBanner } from '@/widgets/app-titlebar';
+
+import type { TitleBarProps } from './TitleBar';
 
 import { BackForwardButtons } from './BackForwardButtons';
 import { BaseTitleBar } from './BaseTitleBar';
-import { ProgressMenuButton, ProgressPopover } from './ProgressMenu';
-import { UpdateBanner } from './UpdateBanner';
 
 export type AppTitleBarProps = TitleBarProps;
 

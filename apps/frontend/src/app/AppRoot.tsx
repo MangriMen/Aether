@@ -3,11 +3,17 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { QueryClientProvider } from '@tanstack/solid-query';
 import { type Component } from 'solid-js';
 
+import { AppGlobalsProvider } from '@/app/runtime/AppGlobalsProvider';
+import { AppInitializeGuard } from '@/app/runtime/AppInitializeGuard';
+import { useSetup } from '@/app/runtime/useSetup';
+import { AppLayout } from '@/app/shell/layouts/AppLayout';
+import { MainLayout } from '@/app/shell/layouts/MainLayout';
+import { RootErrorBoundary } from '@/app/shell/layouts/RootErrorBoundary';
+import { AppTitleBar } from '@/app/shell/titlebar/AppTitleBar';
 import { RunningInstancesProvider } from '@/entities/instances';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { createQueryClient } from '@/shared/query';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
-import { AppTitleBar } from '@/widgets/app-titlebar';
 
 import {
   THEME_STATE_LS_KEY,
@@ -15,13 +21,7 @@ import {
   TRANSPARENCY_PROPERTY,
   DISABLE_ANIMATIONS_ATTRIBUTE,
 } from './config';
-import { AppLayout } from './layouts/AppLayout';
-import { MainLayout } from './layouts/MainLayout';
-import { RootErrorBoundary } from './layouts/RootErrorBoundary';
-import { useSetup } from './lib/useSetup';
 import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import { AppGlobalsProvider } from './providers/AppGlobalsProvider';
-import { AppInitializeGuard } from './providers/AppInitializeGuard';
 import { DialogUrlBridge } from './providers/DialogUrlBridge';
 
 const queryClient = createQueryClient();

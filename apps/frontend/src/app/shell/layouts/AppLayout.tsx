@@ -1,9 +1,9 @@
 import { ErrorBoundary, type Component, type JSX } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import type { TitleBarProps } from '@/shared/ui';
-
 import { logError } from '@/shared/lib';
+
+import type { TitleBarProps } from '../titlebar/TitleBar';
 
 import { AppErrorBoundary } from './AppErrorBoundary';
 

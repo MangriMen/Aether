@@ -2,13 +2,13 @@ import type { ParentProps } from 'solid-js';
 
 import { ErrorBoundary, type Component } from 'solid-js';
 
+import { setFallbackAttributes } from '@/app/lib';
 import { showWindow } from '@/platform/window';
 import { logError } from '@/shared/lib';
 import { isLauncherError } from '@/shared/model';
-import { BaseTitleBar } from '@/widgets/app-titlebar';
 
-import { setFallbackAttributes } from '../lib';
-import { AppInitializeError } from '../providers';
+import { BaseTitleBar } from '../titlebar/BaseTitleBar';
+import { AppInitializeError } from './AppInitializeError';
 import { AppLayout } from './AppLayout';
 
 export type RootErrorBoundaryProps = ParentProps;

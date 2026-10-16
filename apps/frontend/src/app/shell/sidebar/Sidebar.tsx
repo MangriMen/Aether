@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { cn } from '../../lib';
+import { cn } from '@/shared/lib';
 
 export type SidebarProps = ComponentProps<'div'>;
 

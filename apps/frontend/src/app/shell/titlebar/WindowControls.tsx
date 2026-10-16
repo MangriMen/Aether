@@ -9,7 +9,8 @@ import { Show, splitProps } from 'solid-js';
 
 import { isMaximized, toggleMaximize } from '@/platform/window';
 import { cn } from '@/shared/lib';
-import { TitleBarButton } from '@/shared/ui';
+
+import { TitleBarButton } from './TitleBarButton';
 
 export type WindowControlsProps = ComponentProps<'div'>;
 

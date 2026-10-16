@@ -2,8 +2,8 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { cn } from '../../lib';
-import { IconButton } from './IconButton';
+import { cn } from '@/shared/lib';
+import { IconButton } from '@/shared/ui';
 
 export type TitleBarButtonProps = ComponentProps<'div'>;
 
