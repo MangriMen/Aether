@@ -2,13 +2,12 @@
 //! production).
 //!
 //! Staleness is the app's to judge ([`CachedContentMetadata::is_stale`]), by the time an item
-//! was fetched, kept inside the value. The row itself is given a much longer life
-//! ([`ROW_TTL`]): the cache hides expired rows, and a stale item must stay readable — offline it
-//! is the only name and icon there is. Only an item nobody refreshed for that long goes: hidden
-//! at once, deleted by [`Cache::purge_expired`] at the next start.
+//! was fetched, kept inside the value. The row itself does not expire ([`ROW_TTL`]): the cache
+//! hides expired rows, and a stale item must stay readable however long the app was offline —
+//! then it is the only name and icon there is. A row is a few hundred bytes; what is no longer
+//! installed is left for the user to clear.
 //!
-//! Versions are kept the same way, in a namespace of their own and for longer
-//! ([`VERSION_ROW_TTL`]): a version does not change once published.
+//! Versions are kept the same way, in a namespace of their own.
 
 use std::{
     collections::HashMap,
@@ -33,17 +32,12 @@ use crate::{
 /// ids are not.
 const NAMESPACE: &str = "content_metadata";
 
-/// How long a row outlives its last refresh before the cache drops it.
-const ROW_TTL: Duration = Duration::from_hours(90 * 24);
+/// The life of a row, of projects and of versions alike: in effect for ever. Not
+/// [`Duration::MAX`]: the cache turns a life it cannot add to the clock into none.
+const ROW_TTL: Duration = Duration::from_hours(100 * 365 * 24);
 
 /// The namespace of versions, the provider in the key as in [`NAMESPACE`].
 const VERSION_NAMESPACE: &str = "content_version_metadata";
-
-/// How long a version's row outlives its last refresh: longer than the version stays fresh
-/// ([`CONTENT_VERSION_METADATA_TTL`]), so a stale one stays readable.
-///
-/// [`CONTENT_VERSION_METADATA_TTL`]: crate::features::instance::app::CONTENT_VERSION_METADATA_TTL
-const VERSION_ROW_TTL: Duration = Duration::from_hours(365 * 24);
 
 /// [`ContentVersionMetadata`] as stored.
 #[derive(Serialize, Deserialize)]
@@ -160,12 +154,10 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
     }
 
     /// Put `records` of `provider_id` in `namespace`, each under the id it is paired with, as
-    /// fetched at `fetched_at`, the rows to live `row_ttl`; replacing what was there. Whether
-    /// they were written.
+    /// fetched at `fetched_at`; replacing what was there. Whether they were written.
     async fn put_records<R>(
         &self,
         namespace: &'static str,
-        row_ttl: Duration,
         provider_id: &ProviderId,
         records: Vec<(&str, R)>,
         fetched_at: SystemTime,
@@ -183,7 +175,7 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
                 (key(namespace, provider_id, id), value)
             })
             .collect();
-        self.cache.set_many(&entries, row_ttl).await
+        self.cache.set_many(&entries, ROW_TTL).await
     }
 
     async fn put_versions_at(
@@ -199,14 +191,8 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
                 (item.version_id.as_str(), record)
             })
             .collect();
-        self.put_records(
-            VERSION_NAMESPACE,
-            VERSION_ROW_TTL,
-            provider_id,
-            records,
-            fetched_at,
-        )
-        .await
+        self.put_records(VERSION_NAMESPACE, provider_id, records, fetched_at)
+            .await
     }
 }
 
@@ -231,7 +217,7 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
             .iter()
             .map(|(content_id, item)| (content_id.as_str(), ContentMetadataRecord::from(item)))
             .collect();
-        self.put_records(NAMESPACE, ROW_TTL, provider_id, records, fetched_at)
+        self.put_records(NAMESPACE, provider_id, records, fetched_at)
             .await
     }
 

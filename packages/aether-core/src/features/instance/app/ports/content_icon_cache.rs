@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 /// How long a cached icon nobody listed is kept. Only cleanup goes by it: a kept icon is
 /// shown however old, as offline it is the only one there is.
-pub const CONTENT_ICON_MAX_UNUSED: Duration = Duration::from_hours(30 * 24);
+pub const CONTENT_ICON_MAX_UNUSED: Duration = Duration::from_hours(90 * 24);
 
 /// What the icon cache holds for an icon URL.
 #[derive(Clone, Debug, PartialEq, Eq)]
