@@ -18,8 +18,5 @@ export * from './ResponsiveIcon';
 export * from './SettingsEntry';
 export * from './SettingsPane';
 export * from './SettingsTabs';
-export * from './Sidebar';
 export * from './SkeletonList';
-export * from './TitleBar';
-export * from './TitleBarButton';
 export * from './TitledBlock';

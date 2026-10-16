@@ -1,2 +1,2 @@
-export { eventsCommands, eventsEvents } from '@/shared/api';
-export type * from '@/shared/api/bindings/events';
+export type * from '@/platform/bindings/events';
+export { eventsCommands, eventsEvents } from '@/platform/ipc';

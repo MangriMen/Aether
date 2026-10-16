@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import bindings from '@/platform/bindings/application.ts?raw';
+import pluginBindings from '@/platform/bindings/plugin.ts?raw';
+
 import { enDictionary, ruDictionary } from '..';
-import bindings from '../../api/bindings/application.ts?raw';
-import pluginBindings from '../../api/bindings/plugin.ts?raw';
 
 /**
  * Error codes are only types in the generated bindings, so a new Rust error

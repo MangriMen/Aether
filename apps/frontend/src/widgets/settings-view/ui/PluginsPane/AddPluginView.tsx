@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { Match, splitProps, Switch } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/shared/api';
+import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
 
 import { InstallFromGithubView } from '@/features/install-plugin-from-github';
 import { cn } from '@/shared/lib';

@@ -77,7 +77,7 @@ jobs:
         working-directory: apps/frontend
         run: bun run lint:code || bun run lint:code
 
-      - name: Architecture (steiger, non-blocking)
+      - name: Architecture (dependency-cruiser)
         working-directory: apps/frontend
         run: bun run lint:arch
 

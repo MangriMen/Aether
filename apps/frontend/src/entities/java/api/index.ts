@@ -1,2 +1,2 @@
-export { javaCommands } from '@/shared/api';
-export type * from '@/shared/api/bindings/java';
+export type * from '@/platform/bindings/java';
+export { javaCommands } from '@/platform/ipc';

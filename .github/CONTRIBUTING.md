@@ -18,7 +18,7 @@ Before opening a pull request, make sure these pass locally:
 bun run lint:rust                 # clippy (warnings are errors)
 cargo test --workspace            # Rust tests
 cd apps/frontend
-bun run lint                      # types and eslint must pass (architecture report is informational)
+bun run lint                      # types, eslint and architecture boundaries must pass
 bun run test --run                # frontend tests
 ```
 

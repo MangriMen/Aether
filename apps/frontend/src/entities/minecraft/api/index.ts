@@ -1,2 +1,2 @@
-export { minecraftCommands } from '@/shared/api';
-export type * from '@/shared/api/bindings/minecraft';
+export type * from '@/platform/bindings/minecraft';
+export { minecraftCommands } from '@/platform/ipc';

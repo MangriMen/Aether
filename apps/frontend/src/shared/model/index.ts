@@ -11,4 +11,3 @@ export * from './tableFeatures';
 export * from './theme';
 export * from './themeContext';
 export * from './typescript';
-export * from './window';
