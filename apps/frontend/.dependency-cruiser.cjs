@@ -89,7 +89,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: [
-          `${FEATURE}(?!index\.tsx?$)[^/]+$`,
+          `${FEATURE}(?!index\\.tsx?$)[^/]+$`,
           `${FEATURE}(?!(?:api|model|ui|page|pane|__tests__)/)[^/]+/`,
           `${FEATURE}(?:api|model|ui|page|pane)/(?!__tests__/)[^/]+/`,
         ],
