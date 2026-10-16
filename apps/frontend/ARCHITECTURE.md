@@ -15,8 +15,8 @@ src/
 
 - **Module**: a folder with a public `index.ts`. Every `features/<name>` is a module, and so
   are `platform/<name>`, `shared/<name>`, `app/shell` and `app/runtime`.
-- **Folders with fixed names** inside a feature: `api/`, `model/`, `ui/`, `page/`, `pane/`
-  (see below). A feature has no other folders.
+- **Folders with fixed names** inside a feature: `api/`, `model/`, `ui/` (see below). A
+  feature has no other folders.
 
 ## Rules
 
@@ -30,9 +30,9 @@ src/
 3. Features form no cycles. If two features need each other, move the shared part down
    or let `app/runtime` coordinate them.
 4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`.
-5. A page that belongs to one domain lives in that feature's `page/`; `app/router`
-   registers routes. A domain's settings pane lives in its `pane/`; `app/shell` only puts
-   the panes together.
+5. A feature exports its entry points (a page, a dialog, a settings pane) through
+   `index.ts`; `app` decides where they appear (routes in `app/router`, screens in
+   `app/shell`). A page that combines several domains lives in `app/pages`.
 6. No ports or interfaces until something has a second implementation.
 
 ## Inside a feature
@@ -45,15 +45,15 @@ the folders below. The folder tells what kind of file it is.
 | `index.ts` | the public API: what other modules may use, nothing more |
 | `api/` | queries, mutations, query keys, event listeners on top of `platform/ipc` |
 | `model/` | types, mappers, stores, helpers |
-| `ui/` | components |
-| `page/` | the domain's page and the parts only it uses |
-| `pane/` | the domain's settings pane |
+| `ui/` | components, including the feature's pages, dialogs and panes |
 
 - No other folders, no files at the root besides `index.ts`, no nesting: the path is always
   `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
   covers.
 - A hook goes with what it serves: a query hook to `api/`, a component's hook to `ui/` next
   to the component, a store hook to `model/`.
+- The role of a component shows in its name, not in a folder: `InstancePage.tsx`,
+  `InstanceSettingsDialog.tsx`, `JavaPane.tsx`.
 - Create a folder only when there is something to put in it; a small feature may have
   just `api/` and `ui/`.
 
@@ -70,8 +70,7 @@ features/instance-settings/
 ```
 
 - Parts depend on the base; the base never imports its parts.
-- Parts do not import each other. `app` puts them together: the router registers a part's
-  page or dialog, `app/shell` places its buttons and panes.
+- Parts do not import each other. `app` puts their entry points together.
 - If two parts need the same thing, it moves into the base.
 
 Example:
@@ -88,12 +87,11 @@ features/instance/
     mappers.ts                  dto → Instance
     __tests__/mappers.test.ts
   ui/
-    InstanceCard.tsx            used by page/ and, through index.ts, by app/pages/home
-    InstanceIcon.tsx
-    InstancePlayButton.tsx
-  page/
-    InstancePage.tsx
+    InstanceCard.tsx            used by InstancePage and, through index.ts, by app/pages/home
     InstanceHeaderInfo.tsx
+    InstanceIcon.tsx
+    InstancePage.tsx            exported through index.ts, the route is in app/router
+    InstancePlayButton.tsx
 
 features/instance-settings/
   index.ts                      export { InstanceSettingsDialog } from './ui/InstanceSettingsDialog';
@@ -112,8 +110,8 @@ features/java/                  a small feature: only the folders it needs
   api/
     javaQueries.ts
     useJavaInstallationListener.ts
-  pane/
-    JavaPane.tsx
+  ui/
+    JavaPane.tsx                exported through index.ts, placed on the settings screen by app/shell
 ```
 
 ## Migration
