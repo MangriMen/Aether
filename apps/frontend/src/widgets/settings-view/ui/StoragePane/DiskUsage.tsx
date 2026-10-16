@@ -59,12 +59,15 @@ export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
         </span>
       </div>
 
-      <div class='h-3 bg-border-dynamic/10 ring-border flex w-full overflow-hidden rounded-full ring-1 ring-inset'>
+      <div class='h-3 gap-0.5 flex w-full'>
         <For each={props.usage.entries}>
           {(entry) => (
             <Show when={(entry.bytes ?? 0) > 0}>
               <div
-                class={cn('h-full min-w-1', KIND_STYLE[entry.kind].color)}
+                class={cn(
+                  'h-full min-w-1 rounded-full',
+                  KIND_STYLE[entry.kind].color,
+                )}
                 style={{ 'flex-grow': entry.bytes ?? 0 }}
               />
             </Show>
