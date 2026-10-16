@@ -18,7 +18,6 @@ pre-commit:
       root: 'apps/frontend'
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:arch
-      stage_fixed: true
 
     - name: frontend:i18n
       root: 'apps/frontend'

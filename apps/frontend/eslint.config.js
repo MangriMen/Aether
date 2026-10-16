@@ -16,6 +16,21 @@ import path from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Architecture boundaries (see ARCHITECTURE.md); dependency-cruiser checks the rest.
+// instance-settings is an old FSD slice with sub-entries, it goes away when instance moves.
+const deepFeatureImport = {
+  regex: '^@/features/(?!instance-settings/)[^/]+/.+',
+  message: 'Import a feature through its index: @/features/<name>.',
+};
+const appImport = {
+  regex: '^@/app(/|$)',
+  message: 'Only app/ imports app/.',
+};
+const upperLayerImport = {
+  regex: '^@/(features|entities|widgets|pages)(/|$)',
+  message: 'shared/ and platform/ do not import features.',
+};
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { files: ['**/*.{js,jsx,ts,tsx}'] },
@@ -135,5 +150,29 @@ export default [
       ],
       'react/jsx-boolean-value': ['error', 'never'],
     },
-  }
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [deepFeatureImport] }],
+    },
+  },
+  {
+    files: ['src/{features,entities,widgets,pages}/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [deepFeatureImport, appImport] },
+      ],
+    },
+  },
+  {
+    files: ['src/{shared,platform}/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [deepFeatureImport, appImport, upperLayerImport] },
+      ],
+    },
+  },
 ];

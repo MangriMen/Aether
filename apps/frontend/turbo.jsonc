@@ -10,7 +10,7 @@
       "outputs": ["node_modules/.cache/eslint/**"],
     },
     "lint:arch": {
-      "inputs": ["src/**/*", "steiger.config.*"],
+      "inputs": ["src/**/*", ".dependency-cruiser.cjs"],
     },
     "lint:all": {
       "dependsOn": ["lint:types", "lint:code", "lint:arch"],
