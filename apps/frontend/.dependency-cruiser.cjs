@@ -16,6 +16,10 @@ const LEGACY_FEATURES = [
 
 const FEATURE = `^src/features/(?!(?:${LEGACY_FEATURES.join('|')})/)([^/]+)/`;
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
+// Modules outside features/. platform/bindings is generated and has no index:
+// every file exports `commands` and `events`, so it is imported per domain.
+const MODULE = '^src/(app/(shell|runtime)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
+const MODULE_INDEX = '^src/(app/(shell|runtime)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
 const OLD_LAYERS = '^src/(entities|widgets|pages)/';
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -77,6 +81,14 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/features/([^/]+)/' },
       to: { path: FEATURE, pathNot: ['^src/features/$1/', FEATURE_INDEX] },
+    },
+    {
+      name: 'module-public-api',
+      comment: 'Other modules are reached only through their index.ts; inside a module, imports are relative.',
+      severity: 'error',
+      // $1 is the importing module (first two path segments)
+      from: { path: '^src/([^/]+/[^/]+)' },
+      to: { path: MODULE, pathNot: ['^src/$1/', MODULE_INDEX] },
     },
   ],
   options: {

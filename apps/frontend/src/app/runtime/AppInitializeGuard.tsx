@@ -2,9 +2,7 @@ import type { Component, JSX } from 'solid-js';
 
 import { createSignal, onMount, Show } from 'solid-js';
 
-import { AppInitializeError } from '@/app/shell/layouts/AppInitializeError';
-import { AppLayout } from '@/app/shell/layouts/AppLayout';
-import { BaseTitleBar } from '@/app/shell/titlebar/BaseTitleBar';
+import { AppInitializeError, AppLayout, BaseTitleBar } from '@/app/shell';
 import {
   getTranslatedError,
   isLauncherError,

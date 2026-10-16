@@ -3,13 +3,17 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { QueryClientProvider } from '@tanstack/solid-query';
 import { type Component } from 'solid-js';
 
-import { AppGlobalsProvider } from '@/app/runtime/AppGlobalsProvider';
-import { AppInitializeGuard } from '@/app/runtime/AppInitializeGuard';
-import { useSetup } from '@/app/runtime/useSetup';
-import { AppLayout } from '@/app/shell/layouts/AppLayout';
-import { MainLayout } from '@/app/shell/layouts/MainLayout';
-import { RootErrorBoundary } from '@/app/shell/layouts/RootErrorBoundary';
-import { AppTitleBar } from '@/app/shell/titlebar/AppTitleBar';
+import {
+  AppGlobalsProvider,
+  AppInitializeGuard,
+  useSetup,
+} from '@/app/runtime';
+import {
+  AppLayout,
+  AppTitleBar,
+  MainLayout,
+  RootErrorBoundary,
+} from '@/app/shell';
 import { RunningInstancesProvider } from '@/entities/instances';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { createQueryClient } from '@/shared/query';

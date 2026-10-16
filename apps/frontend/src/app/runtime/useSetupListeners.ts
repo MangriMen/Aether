@@ -1,6 +1,8 @@
-import { useMicaUpdateListener } from '@/app/lib/useMicaUpdateListener';
-import { useTransparencyUpdateListener } from '@/app/lib/useTransparencyUpdateListener';
-import { useUpdateSync } from '@/app/lib/useUpdateSync';
+import {
+  useMicaUpdateListener,
+  useTransparencyUpdateListener,
+  useUpdateSync,
+} from '@/app/lib';
 import {
   useWarningEventsListener,
   useProgressEventsListener,

@@ -22,6 +22,10 @@ const deepFeatureImport = {
   regex: '^@/features/(?!instance-settings/)[^/]+/.+',
   message: 'Import a feature through its index: @/features/<name>.',
 };
+const deepModuleImport = {
+  regex: '^@/(app/(shell|runtime)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
+  message: 'Import a module through its index; inside a module, use relative imports.',
+};
 const appImport = {
   regex: '^@/app(/|$)',
   message: 'Only app/ imports app/.',
@@ -154,7 +158,7 @@ export default [
   {
     files: ['src/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [deepFeatureImport] }],
+      'no-restricted-imports': ['error', { patterns: [deepFeatureImport, deepModuleImport] }],
     },
   },
   {
@@ -162,7 +166,7 @@ export default [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [deepFeatureImport, appImport] },
+        { patterns: [deepFeatureImport, deepModuleImport, appImport] },
       ],
     },
   },
@@ -171,7 +175,14 @@ export default [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [deepFeatureImport, appImport, upperLayerImport] },
+        {
+          patterns: [
+            deepFeatureImport,
+            deepModuleImport,
+            appImport,
+            upperLayerImport,
+          ],
+        },
       ],
     },
   },
