@@ -3,11 +3,11 @@ import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
 import { logDebug } from '@/shared/lib';
-import { useProgressStore } from '@/widgets/app-titlebar';
 
 import type { ProgressEvent } from '../model';
 
 import { eventsCommands, eventsEvents } from '../api';
+import { useProgressStore } from '../model';
 
 export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
 

@@ -24,4 +24,15 @@ export default defineConfig([
       'fsd/inconsistent-naming': 'off',
     },
   },
+  {
+    // disabled globally: heuristic rules that do not fit this codebase
+    rules: {
+      // a slice does not need two consumers to deserve its own folder
+      'fsd/insignificant-slice': 'off',
+      // app/providers is the conventional name for provider composition
+      'fsd/segments-by-purpose': 'off',
+      // shared/lib holds flat utilities; grouping them adds no value
+      'fsd/shared-lib-grouping': 'off',
+    },
+  },
 ]);

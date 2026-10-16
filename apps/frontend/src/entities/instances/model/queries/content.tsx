@@ -8,10 +8,13 @@ import { type Accessor } from 'solid-js';
 
 import type { PartialBy } from '@/shared/model';
 
-import { SettingsTab, useSettingsSearchParams } from '@/entities/settings';
+import {
+  SettingsTab,
+  useSettingsSearchParams,
+} from '@/entities/settings/@x/instances';
 import { showError } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
-import { useFeatureFlagsStore } from '@/shared/model/featureFlags';
+import { useFeatureFlagsStore } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
 
 import type { ContentGetParams, ContentListVersionParams, Instance } from '..';

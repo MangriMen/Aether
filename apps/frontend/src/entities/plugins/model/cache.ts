@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import { invalidateImporters } from '@/entities/instances';
+import { invalidateImporters } from '@/entities/instances/@x/plugins';
 
 import type { PluginId } from './pluginManifest';
 

@@ -4,9 +4,9 @@ import { splitProps } from 'solid-js';
 
 import { type Instance } from '@/entities/instances';
 import { InstanceIcon } from '@/entities/instances';
+import { InstanceHeaderInfo } from '@/entities/instances';
 import { InstanceActionButton } from '@/features/instance-action-button';
 
-import { InstanceHeaderInfo } from './InstanceHeaderInfo';
 import { OpenFolderButton } from './OpenFolderButton';
 import { SettingsButton } from './SettingsButton';
 

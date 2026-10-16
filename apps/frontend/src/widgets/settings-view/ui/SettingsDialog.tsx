@@ -8,6 +8,7 @@ import { createSignal, type Component } from 'solid-js';
 
 import type { SettingsTab } from '@/entities/settings';
 
+import { useSettingsSearchParams } from '@/entities/settings';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {
@@ -18,7 +19,6 @@ import {
   IconButton,
 } from '@/shared/ui';
 
-import { useSettingsSearchParams } from '../../../entities/settings/lib/useSettingsSearchParams';
 import { IS_SETTINGS_MODAL_FULLSCREEN_KEY } from '../model';
 import { SettingsView } from './SettingsView';
 

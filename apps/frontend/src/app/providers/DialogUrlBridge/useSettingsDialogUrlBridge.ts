@@ -3,7 +3,7 @@ import { createEffect } from 'solid-js';
 
 import { useSettingsSearchParams } from '@/entities/settings';
 import { closeDialog, showDialog } from '@/shared/model';
-import { SettingsDialog } from '@/widgets/settings-view/ui/SettingsDialog';
+import { SettingsDialog } from '@/widgets/settings-view';
 
 const modalId = 'global-settings';
 

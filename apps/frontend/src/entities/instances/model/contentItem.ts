@@ -1,5 +1,3 @@
-import type { ContentSearchOutputValues } from '@/pages/content';
-
 import type {
   AtomicInstallParamsDto,
   ContentGetParamsDto,
@@ -16,6 +14,7 @@ import type {
   ModpackInstallParamsDto,
   ProviderIdDto,
 } from '../api';
+import type { ContentType } from './contentType';
 
 export type ProviderId = ProviderIdDto;
 
@@ -44,7 +43,15 @@ export type ModpackInstallParams = ModpackInstallParamsDto;
 
 export type InstallContentParams = ContentInstallParamsDto;
 
-export type ContentFilters = Partial<ContentSearchOutputValues>;
+export interface ContentFilters {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  providerId?: ProviderId;
+  contentType?: ContentType;
+  gameVersions?: string[];
+  loaders?: string[];
+}
 
 export const PROVIDER_ID_SEPARATOR = '#' as const;
 

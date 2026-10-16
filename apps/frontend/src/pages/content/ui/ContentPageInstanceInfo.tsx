@@ -4,8 +4,7 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { Instance } from '@/entities/instances';
 
-import { InstanceIcon } from '@/entities/instances';
-import { InstanceHeaderInfo } from '@/pages/instance';
+import { InstanceHeaderInfo, InstanceIcon } from '@/entities/instances';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

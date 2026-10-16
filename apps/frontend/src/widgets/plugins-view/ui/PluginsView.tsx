@@ -2,14 +2,15 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { Show, splitProps } from 'solid-js';
 
+import type { Plugin } from '@/entities/plugins';
 import type { PluginDetails } from '@/widgets/plugin-details';
 
-import { PluginsList, type Plugin } from '@/entities/plugins';
 import { cn } from '@/shared/lib';
 import { useThemeContext } from '@/shared/model';
 import { Separator } from '@/shared/ui';
 
 import { usePluginSelection } from '../lib';
+import { PluginsList } from './PluginsList';
 
 export type PluginsViewProps = ComponentProps<'div'> & {
   pluginDetails: Component<ComponentProps<typeof PluginDetails>>;

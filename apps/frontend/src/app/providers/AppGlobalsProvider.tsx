@@ -1,6 +1,6 @@
 import { onMount, type JSX } from 'solid-js';
 
-import { getOrCreateFeatureFlagsStore } from '@/shared/model/featureFlags';
+import { getOrCreateFeatureFlagsStore } from '@/shared/model';
 
 import { useSetupListeners } from '../lib';
 

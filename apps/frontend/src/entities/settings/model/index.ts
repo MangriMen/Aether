@@ -3,6 +3,7 @@ export * from './appSettingsQueries';
 export * from './converters';
 export * from './defaultInstanceSettings';
 export * from './defaultInstanceSettingsQueries';
+export * from './instanceSettingsSchemas';
 export * from './memory';
 export * from './resolution';
 export * from './settings';
