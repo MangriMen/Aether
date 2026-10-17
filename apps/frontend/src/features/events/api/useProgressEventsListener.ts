@@ -14,8 +14,9 @@ export const useProgressEventsListener = () => {
   const [, setProgressStore] = useProgressStore();
 
   const activeTimers = new Map<string, number>();
-  // Bars updated by live events; the initial snapshot must not overwrite them.
-  const liveBarIds = new Set<string>();
+  // Bars updated by live events while the initial snapshot is loading;
+  // the snapshot must not overwrite them. Not needed once it is applied.
+  let liveBarIds: Set<string> | undefined = new Set<string>();
 
   const addEvent = (payload: ProgressEvent) => {
     if (activeTimers.has(payload.progressBarId)) {
@@ -47,7 +48,7 @@ export const useProgressEventsListener = () => {
       const bars = await eventsCommands.listProgressBars();
 
       for (const bar of bars) {
-        if (liveBarIds.has(bar.id)) {
+        if (liveBarIds?.has(bar.id)) {
           continue;
         }
 
@@ -63,6 +64,8 @@ export const useProgressEventsListener = () => {
       }
     } catch {
       /* empty */
+    } finally {
+      liveBarIds = undefined;
     }
   };
 
@@ -70,7 +73,7 @@ export const useProgressEventsListener = () => {
 
   useEventListener(eventsEvents.progressEventDto, (e) => {
     logDebug('[EVENT][DEBUG]', e);
-    liveBarIds.add(e.payload.progressBarId);
+    liveBarIds?.add(e.payload.progressBarId);
     addEvent(e.payload);
 
     if (e.payload.fraction === null) {
