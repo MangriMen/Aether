@@ -7,8 +7,9 @@ use crate::features::{
         LogoutUseCasePort, SetActiveAccountUseCase, SetActiveAccountUseCasePort,
     },
     events::{
-        Event, EventEmitter, EventsFeature, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
-        ProgressBarStorage, ProgressService, SharedEventEmitter,
+        Event, EventEmitter, EventEmitterExt, EventsFeature, ListProgressBarsUseCase,
+        ListProgressBarsUseCasePort, PluginEvent, ProgressBarStorage, ProgressService,
+        SharedEventEmitter,
     },
     instance::{
         ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
@@ -217,6 +218,15 @@ impl AetherContainer {
             params.content_provider_registry.clone(),
             params.event_emitter.clone(),
         ));
+        params.event_emitter.on::<PluginEvent, _>({
+            let content_metadata = content_metadata.clone();
+            move |event| match event {
+                PluginEvent::Add { plugin_id } | PluginEvent::Edit { plugin_id } => {
+                    content_metadata.forget_unsupported(&plugin_id);
+                }
+                PluginEvent::Remove { .. } | PluginEvent::Sync => {}
+            }
+        });
 
         let instance_locks = Arc::new(InstanceLocks::new());
         let cache_storage = Arc::new(crate::features::settings::CacheStorageUseCase::new(

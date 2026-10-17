@@ -698,6 +698,26 @@ async fn should_not_ask_again_when_the_provider_cannot_describe_its_content() {
 }
 
 #[tokio::test]
+async fn should_ask_again_when_the_plugin_of_the_provider_changed() {
+    let provider = Arc::new(FakeProvider::new("modrinth", Answer::Unsupported));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    fixture.next_event().await;
+    let asked = provider.calls().len();
+
+    fixture.service.forget_unsupported("other");
+    fixture.list().await;
+    Fixture::settle().await;
+    assert_eq!(provider.calls().len(), asked);
+
+    fixture.service.forget_unsupported("plugin");
+    fixture.list().await;
+    Fixture::settle().await;
+    assert!(provider.calls().len() > asked);
+}
+
+#[tokio::test]
 async fn should_not_ask_about_a_file_when_its_content_id_is_empty() {
     let provider = Arc::new(FakeProvider::new("modrinth", Answer::Items(vec![])));
     let fixture = Fixture::new(&[("a.jar", "modrinth", "")], vec![provider.clone()]).await;
