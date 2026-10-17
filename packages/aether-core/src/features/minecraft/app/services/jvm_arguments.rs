@@ -172,3 +172,554 @@ impl From<daedalus::Error> for MinecraftDomainError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::minecraft::vanilla::{
+        Argument, ArgumentValue, Library, Os, OsRule, Rule, RuleAction,
+    };
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    const SEP: &str = if cfg!(windows) { ";" } else { ":" };
+
+    struct Env {
+        _tmp: tempfile::TempDir,
+        root: PathBuf,
+        libs: PathBuf,
+        natives: PathBuf,
+        client: PathBuf,
+    }
+
+    fn env() -> Env {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_path_buf();
+        let libs = root.join("libraries");
+        let natives = root.join("natives");
+        std::fs::create_dir_all(&libs).unwrap();
+        std::fs::create_dir_all(&natives).unwrap();
+        let client = root.join("client.jar");
+        std::fs::write(&client, b"jar").unwrap();
+        Env {
+            _tmp: tmp,
+            root,
+            libs,
+            natives,
+            client,
+        }
+    }
+
+    fn canon(p: &Path) -> String {
+        canonicalize(p).unwrap().to_string_lossy().to_string()
+    }
+
+    /// Creates the file of a library with the given maven coordinates (plain jar) and
+    /// returns its canonical path.
+    fn make_lib(e: &Env, rel: &str) -> String {
+        let p = e.libs.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(&p, b"jar").unwrap();
+        canon(&p)
+    }
+
+    fn lib(name: &str) -> Library {
+        Library {
+            downloads: None,
+            extract: None,
+            name: name.to_string(),
+            url: None,
+            natives: None,
+            rules: None,
+            checksums: None,
+            include_in_classpath: true,
+            downloadable: true,
+        }
+    }
+
+    fn allow_os(name: Os) -> Vec<Rule> {
+        vec![Rule {
+            action: RuleAction::Allow,
+            os: Some(OsRule {
+                name: Some(name),
+                version: None,
+                arch: None,
+            }),
+            features: None,
+        }]
+    }
+
+    fn split_set(cp: &str) -> HashSet<String> {
+        cp.split(SEP).map(str::to_string).collect()
+    }
+
+    fn jvm(
+        e: &Env,
+        args: Option<&[vanilla::Argument]>,
+        cp: &str,
+        mem: u32,
+        custom: &[String],
+    ) -> Result<Vec<String>, MinecraftDomainError> {
+        get_jvm_arguments(args, &e.natives, &e.libs, cp, "1.20.1", mem, custom, "x64")
+    }
+
+    // ---- get_lib_path ----
+
+    #[test]
+    fn lib_path_existing_is_canonical_maven_layout() {
+        let e = env();
+        let expected = make_lib(&e, "com/example/foo/1.0/foo-1.0.jar");
+        assert_eq!(
+            get_lib_path(&e.libs, "com.example:foo:1.0", false).unwrap(),
+            expected
+        );
+        assert_eq!(
+            get_lib_path(&e.libs, "com.example:foo:1.0", true).unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    fn lib_path_supports_extension_and_classifier() {
+        let e = env();
+        let zip = make_lib(&e, "g/a/1/a-1.zip");
+        let natives = make_lib(&e, "g/a/1/a-1-natives-linux.jar");
+        let classified_zip = make_lib(&e, "g/a/1/a-1-data.zip");
+        assert_eq!(get_lib_path(&e.libs, "g:a:1@zip", false).unwrap(), zip);
+        assert_eq!(
+            get_lib_path(&e.libs, "g:a:1:natives-linux", false).unwrap(),
+            natives
+        );
+        assert_eq!(
+            get_lib_path(&e.libs, "g:a:1:data@zip", false).unwrap(),
+            classified_zip
+        );
+    }
+
+    #[test]
+    fn lib_path_missing_fails_with_library_not_found() {
+        let e = env();
+        let err = get_lib_path(&e.libs, "g:a:1", false).unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+        ));
+    }
+
+    #[test]
+    fn lib_path_missing_with_allow_not_exist_returns_uncanonicalized_path() {
+        let e = env();
+        let mut expected = e.libs.clone();
+        expected.push("g/a/1/a-1.jar");
+        assert_eq!(
+            get_lib_path(&e.libs, "g:a:1", true).unwrap(),
+            expected.to_string_lossy()
+        );
+    }
+
+    #[test]
+    fn lib_path_invalid_coordinate_is_parse_error() {
+        let e = env();
+        for allow in [true, false] {
+            let err = get_lib_path(&e.libs, "justname", allow).unwrap_err();
+            assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
+        }
+    }
+
+    // ---- get_class_paths_jar ----
+
+    #[test]
+    fn class_paths_jar_keeps_order_and_joins_with_separator() {
+        let e = env();
+        let b = make_lib(&e, "g/b/2/b-2.jar");
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let cp = get_class_paths_jar(&e.libs, &["g:b:2", "g:a:1"], "x64").unwrap();
+        assert_eq!(cp, format!("{b}{SEP}{a}"));
+    }
+
+    #[test]
+    fn class_paths_jar_does_not_deduplicate() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let cp = get_class_paths_jar(&e.libs, &["g:a:1", "g:a:1"], "x64").unwrap();
+        assert_eq!(cp, format!("{a}{SEP}{a}"));
+    }
+
+    #[test]
+    fn class_paths_jar_empty_is_empty_string() {
+        let e = env();
+        let none: [&str; 0] = [];
+        assert_eq!(get_class_paths_jar(&e.libs, &none, "x64").unwrap(), "");
+    }
+
+    #[test]
+    fn class_paths_jar_accepts_owned_strings() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let cp = get_class_paths_jar(&e.libs, &["g:a:1".to_string()], "x64").unwrap();
+        assert_eq!(cp, a);
+    }
+
+    #[test]
+    fn class_paths_jar_missing_library_fails() {
+        let e = env();
+        make_lib(&e, "g/a/1/a-1.jar");
+        let err = get_class_paths_jar(&e.libs, &["g:a:1", "g:missing:1"], "x64").unwrap_err();
+        assert!(matches!(err, MinecraftDomainError::PathNotFound { .. }));
+    }
+
+    // ---- get_class_paths ----
+
+    #[test]
+    fn class_paths_with_no_libraries_is_just_client() {
+        let e = env();
+        let cp = get_class_paths(&e.libs, &[], &e.client, "x64", true).unwrap();
+        assert_eq!(cp, canon(&e.client));
+    }
+
+    #[test]
+    fn class_paths_contains_libraries_and_client_joined_by_separator() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let b = make_lib(&e, "g/b/2/b-2.jar");
+        let cp = get_class_paths(
+            &e.libs,
+            &[lib("g:a:1"), lib("g:b:2")],
+            &e.client,
+            "x64",
+            true,
+        )
+        .unwrap();
+        assert_eq!(cp.matches(SEP).count(), 2);
+        assert_eq!(split_set(&cp), HashSet::from([a, b, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_deduplicates_libraries() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let cp = get_class_paths(
+            &e.libs,
+            &[lib("g:a:1"), lib("g:a:1")],
+            &e.client,
+            "x64",
+            true,
+        )
+        .unwrap();
+        assert_eq!(split_set(&cp), HashSet::from([a, canon(&e.client)]));
+        assert_eq!(cp.matches(SEP).count(), 1);
+    }
+
+    #[test]
+    fn class_paths_deduplicates_client_that_is_also_a_library() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let client = e.libs.join("g/a/1/a-1.jar");
+        let cp = get_class_paths(&e.libs, &[lib("g:a:1")], &client, "x64", true).unwrap();
+        assert_eq!(cp, a);
+    }
+
+    #[test]
+    fn class_paths_skips_libraries_not_included_in_classpath() {
+        let e = env();
+        make_lib(&e, "g/a/1/a-1.jar");
+        let b = make_lib(&e, "g/b/2/b-2.jar");
+        let mut hidden = lib("g:a:1");
+        hidden.include_in_classpath = false;
+        let cp = get_class_paths(&e.libs, &[hidden, lib("g:b:2")], &e.client, "x64", true).unwrap();
+        assert_eq!(split_set(&cp), HashSet::from([b, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_not_included_library_need_not_exist() {
+        let e = env();
+        let mut hidden = lib("g:missing:1");
+        hidden.include_in_classpath = false;
+        let cp = get_class_paths(&e.libs, &[hidden], &e.client, "x64", true).unwrap();
+        assert_eq!(cp, canon(&e.client));
+    }
+
+    #[test]
+    fn class_paths_applies_library_rules() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        make_lib(&e, "g/b/2/b-2.jar");
+        let mut allowed = lib("g:a:1");
+        allowed.rules = Some(allow_os(Os::native()));
+        let mut denied = lib("g:b:2");
+        denied.rules = Some(allow_os(Os::Unknown));
+        let cp = get_class_paths(&e.libs, &[allowed, denied], &e.client, "x64", true).unwrap();
+        assert_eq!(split_set(&cp), HashSet::from([a, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_skipped_by_rules_library_need_not_exist() {
+        let e = env();
+        let mut denied = lib("g:missing:2");
+        denied.rules = Some(allow_os(Os::Unknown));
+        let cp = get_class_paths(&e.libs, &[denied], &e.client, "x64", true).unwrap();
+        assert_eq!(cp, canon(&e.client));
+    }
+
+    #[test]
+    fn class_paths_rules_depend_on_minecraft_updated() {
+        let e = env();
+        make_lib(&e, "g/a/1/a-1.jar");
+        let mut l = lib("g:a:1");
+        // Native OS name with an aarch64 Java: matches only for updated Minecraft
+        l.rules = Some(allow_os(Os::native()));
+        let updated = get_class_paths(
+            &e.libs,
+            std::slice::from_ref(&l),
+            &e.client,
+            "aarch64",
+            true,
+        )
+        .unwrap();
+        let old = get_class_paths(&e.libs, &[l], &e.client, "aarch64", false).unwrap();
+        assert_eq!(updated.matches(SEP).count(), 1);
+        assert_eq!(old, canon(&e.client));
+    }
+
+    #[test]
+    fn class_paths_ignores_natives_field_and_uses_library_name() {
+        let e = env();
+        let a = make_lib(&e, "g/a/1/a-1.jar");
+        let mut l = lib("g:a:1");
+        l.natives = Some(HashMap::from([(Os::native(), "natives-x".to_string())]));
+        let cp = get_class_paths(&e.libs, &[l], &e.client, "x64", true).unwrap();
+        assert_eq!(split_set(&cp), HashSet::from([a, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_library_with_classifier_in_name_is_resolved() {
+        let e = env();
+        let n = make_lib(&e, "g/a/1/a-1-natives-x.jar");
+        let cp =
+            get_class_paths(&e.libs, &[lib("g:a:1:natives-x")], &e.client, "x64", true).unwrap();
+        assert_eq!(split_set(&cp), HashSet::from([n, canon(&e.client)]));
+    }
+
+    #[test]
+    fn class_paths_missing_library_fails() {
+        let e = env();
+        let err = get_class_paths(&e.libs, &[lib("g:a:1")], &e.client, "x64", true).unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+        ));
+    }
+
+    #[test]
+    fn class_paths_missing_client_fails_with_classpath_entity() {
+        let e = env();
+        let missing = e.root.join("nope.jar");
+        let err = get_class_paths(&e.libs, &[], &missing, "x64", true).unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, ref path }
+                if entity_type == "classpath" && path == &missing
+        ));
+    }
+
+    #[test]
+    fn class_paths_invalid_library_name_fails_with_parse_error() {
+        let e = env();
+        let err = get_class_paths(&e.libs, &[lib("broken")], &e.client, "x64", true).unwrap_err();
+        assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
+    }
+
+    // ---- get_jvm_arguments ----
+
+    #[test]
+    fn jvm_without_arguments_uses_legacy_defaults() {
+        let e = env();
+        let out = jvm(&e, None, "a.jar:b.jar", 2048, &[]).unwrap();
+        assert_eq!(
+            out,
+            vec![
+                format!("-Djava.library.path={}", canon(&e.natives)),
+                "-cp".to_string(),
+                "a.jar:b.jar".to_string(),
+                "-Xmx2048M".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn jvm_without_arguments_requires_natives_dir() {
+        let e = env();
+        let err = get_jvm_arguments(
+            None,
+            &e.root.join("missing"),
+            &e.libs,
+            "cp",
+            "v",
+            1,
+            &[],
+            "x64",
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. }
+                if entity_type == "native_library"
+        ));
+    }
+
+    #[test]
+    fn jvm_with_empty_arguments_has_only_memory_and_custom() {
+        let e = env();
+        let custom = vec!["-Dfoo=bar".to_string(), String::new(), "-Dbaz".to_string()];
+        let out = jvm(&e, Some(&[]), "cp", 512, &custom).unwrap();
+        assert_eq!(out, vec!["-Xmx512M", "-Dfoo=bar", "-Dbaz"]);
+    }
+
+    #[test]
+    fn jvm_custom_arguments_are_not_split_or_trimmed() {
+        let e = env();
+        let custom = vec!["-Dx=a b".to_string()];
+        let out = jvm(&e, None, "cp", 1, &custom).unwrap();
+        assert_eq!(out.last().unwrap(), "-Dx=a b");
+        assert_eq!(out[3], "-Xmx1M");
+    }
+
+    #[test]
+    fn jvm_placeholders_are_replaced() {
+        let e = env();
+        let args = vec![
+            Argument::Normal("-Djava.library.path=${natives_directory}".to_string()),
+            Argument::Normal("-Dminecraft.launcher.brand=${launcher_name}".to_string()),
+            Argument::Normal("-Dminecraft.launcher.version=${launcher_version}".to_string()),
+            Argument::Normal("-Dlib=${library_directory}".to_string()),
+            Argument::Normal("-Dver=${version_name}".to_string()),
+            Argument::Normal("-Dsep=${classpath_separator}".to_string()),
+            Argument::Normal("${classpath}".to_string()),
+        ];
+        let out = jvm(&e, Some(&args), "A.jar", 4096, &["-Dc=1".to_string()]).unwrap();
+        assert_eq!(
+            out,
+            vec![
+                format!("-Djava.library.path={}", canon(&e.natives)),
+                "-Dminecraft.launcher.brand=theseus".to_string(),
+                format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION")),
+                format!("-Dlib={}", canon(&e.libs)),
+                "-Dver=1.20.1".to_string(),
+                format!("-Dsep={SEP}"),
+                "A.jar".to_string(),
+                "-Xmx4096M".to_string(),
+                "-Dc=1".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn jvm_placeholder_value_with_spaces_stays_one_argument() {
+        let e = env();
+        let args = vec![Argument::Normal("${classpath}".to_string())];
+        let out = jvm(&e, Some(&args), "C:/My Libs/a.jar", 1, &[]).unwrap();
+        assert_eq!(out[0], "C:/My Libs/a.jar");
+    }
+
+    #[test]
+    fn jvm_whitespace_in_template_is_removed_not_split() {
+        // Whitespace (including the temporary separator) is stripped from the template,
+        // so a template with a space yields one glued argument.
+        let e = env();
+        let args = vec![Argument::Normal("-cp ${classpath}".to_string())];
+        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
+        assert_eq!(out, vec!["-cpA.jar", "-Xmx1M"]);
+    }
+
+    #[test]
+    fn jvm_unknown_placeholders_are_left_untouched() {
+        let e = env();
+        let args = vec![Argument::Normal("-Dx=${unknown}".to_string())];
+        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
+        assert_eq!(out[0], "-Dx=${unknown}");
+    }
+
+    #[test]
+    fn jvm_ruled_arguments_follow_rules() {
+        let e = env();
+        let args = vec![
+            Argument::Ruled {
+                rules: allow_os(Os::native()),
+                value: ArgumentValue::Many(vec![
+                    "-Da".to_string(),
+                    "-Db=${version_name}".to_string(),
+                ]),
+            },
+            Argument::Ruled {
+                rules: allow_os(Os::Unknown),
+                value: ArgumentValue::Single("-Dskipped".to_string()),
+            },
+            Argument::Ruled {
+                rules: allow_os(Os::native()),
+                value: ArgumentValue::Single("-Dsingle".to_string()),
+            },
+        ];
+        let out = jvm(&e, Some(&args), "cp", 1, &[]).unwrap();
+        assert_eq!(out, vec!["-Da", "-Db=1.20.1", "-Dsingle", "-Xmx1M"]);
+    }
+
+    #[test]
+    fn jvm_with_arguments_fails_when_natives_dir_missing_even_if_unused() {
+        let e = env();
+        let args = vec![Argument::Normal("-Dx=1".to_string())];
+        let err = get_jvm_arguments(
+            Some(&args),
+            &e.root.join("missing"),
+            &e.libs,
+            "cp",
+            "v",
+            1,
+            &[],
+            "x64",
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. }
+                if entity_type == "native_library"
+        ));
+    }
+
+    #[test]
+    fn jvm_with_arguments_fails_when_libraries_dir_missing() {
+        let e = env();
+        let args = vec![Argument::Normal("-Dx=1".to_string())];
+        let err = get_jvm_arguments(
+            Some(&args),
+            &e.natives,
+            &e.root.join("missing"),
+            "cp",
+            "v",
+            1,
+            &[],
+            "x64",
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "library"
+        ));
+    }
+
+    #[test]
+    fn jvm_without_arguments_does_not_need_libraries_dir() {
+        let e = env();
+        let out = get_jvm_arguments(
+            None,
+            &e.natives,
+            &e.root.join("missing"),
+            "cp",
+            "v",
+            1,
+            &[],
+            "x64",
+        )
+        .unwrap();
+        assert_eq!(out.len(), 4);
+    }
+}

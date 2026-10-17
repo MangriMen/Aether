@@ -249,3 +249,377 @@ pub(super) async fn get_processor_main_class(
         reason: err.to_string(),
     })?
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn entry(client: &str) -> modded::SidedDataEntry {
+        modded::SidedDataEntry {
+            client: client.to_string(),
+            server: "server-value".to_string(),
+        }
+    }
+
+    fn data(entries: &[(&str, &str)]) -> HashMap<String, modded::SidedDataEntry> {
+        entries
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), entry(v)))
+            .collect()
+    }
+
+    fn libs_dir() -> (tempfile::TempDir, std::path::PathBuf) {
+        let tmp = tempfile::tempdir().unwrap();
+        let libs = tmp.path().join("libraries");
+        std::fs::create_dir_all(&libs).unwrap();
+        (tmp, libs)
+    }
+
+    fn canon(p: &Path) -> String {
+        crate::shared::io::infra::canonicalize(p)
+            .unwrap()
+            .to_string_lossy()
+            .to_string()
+    }
+
+    fn make_lib(libs: &Path, rel: &str) -> String {
+        let p = libs.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(&p, b"jar").unwrap();
+        canon(&p)
+    }
+
+    fn unresolved(err: &MinecraftDomainError) -> bool {
+        matches!(
+            err,
+            MinecraftDomainError::ProcessorFailed { reason }
+                if reason.contains("unresolved placeholders")
+        )
+    }
+
+    // ---- get_processor_arguments ----
+
+    #[test]
+    fn processor_arguments_empty_list_gives_empty_vec() {
+        let (_t, libs) = libs_dir();
+        let none: [&str; 0] = [];
+        assert!(
+            get_processor_arguments(&libs, &none, &data(&[]))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn processor_arguments_plain_values_pass_through_in_order() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(
+            &libs,
+            &["--task", "MERGE_MAPPING", "--debug", ""],
+            &data(&[("SIDE", "client")]),
+        )
+        .unwrap();
+        assert_eq!(out, vec!["--task", "MERGE_MAPPING", "--debug", ""]);
+    }
+
+    #[test]
+    fn processor_arguments_accept_owned_strings() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["--x".to_string()], &data(&[])).unwrap();
+        assert_eq!(out, vec!["--x"]);
+    }
+
+    #[test]
+    fn processor_arguments_bracket_form_resolves_existing_library() {
+        let (_t, libs) = libs_dir();
+        let path = make_lib(
+            &libs,
+            "net/minecraftforge/forge/1.20-47/forge-1.20-47-client.jar",
+        );
+        let out = get_processor_arguments(
+            &libs,
+            &["[net.minecraftforge:forge:1.20-47:client]"],
+            &data(&[]),
+        )
+        .unwrap();
+        assert_eq!(out, vec![path]);
+    }
+
+    #[test]
+    fn processor_arguments_bracket_form_supports_extension() {
+        let (_t, libs) = libs_dir();
+        let path = make_lib(
+            &libs,
+            "de/oceanlabs/mcp/mcp_config/1.20/mcp_config-1.20.zip",
+        );
+        let out = get_processor_arguments(
+            &libs,
+            &["[de.oceanlabs.mcp:mcp_config:1.20@zip]"],
+            &data(&[]),
+        )
+        .unwrap();
+        assert_eq!(out, vec![path]);
+    }
+
+    #[test]
+    fn processor_arguments_bracket_form_missing_library_gives_uncanonicalized_path() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["[g:a:1]"], &data(&[])).unwrap();
+        let mut expected = libs.clone();
+        expected.push("g/a/1/a-1.jar");
+        assert_eq!(out, vec![expected.to_string_lossy().to_string()]);
+    }
+
+    #[test]
+    fn processor_arguments_bracket_form_invalid_coordinate_fails() {
+        let (_t, libs) = libs_dir();
+        let err = get_processor_arguments(&libs, &["[broken]"], &data(&[])).unwrap_err();
+        assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
+    }
+
+    #[test]
+    fn processor_arguments_unbalanced_bracket_is_plain_text() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["[g:a:1", "g:a:1]"], &data(&[])).unwrap();
+        assert_eq!(out, vec!["[g:a:1", "g:a:1]"]);
+    }
+
+    #[test]
+    fn processor_arguments_key_placeholder_uses_client_value() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(
+            &libs,
+            &["{SIDE}", "{MINECRAFT_VERSION}"],
+            &data(&[("SIDE", "client"), ("MINECRAFT_VERSION", "1.20.1")]),
+        )
+        .unwrap();
+        assert_eq!(out, vec!["client", "1.20.1"]);
+    }
+
+    #[test]
+    fn processor_arguments_key_placeholder_inside_composite_value() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(
+            &libs,
+            &["{ROOT}/libraries/", "--in={ROOT}/a/{NAME}.txt"],
+            &data(&[("ROOT", "/game"), ("NAME", "x")]),
+        )
+        .unwrap();
+        assert_eq!(out, vec!["/game/libraries/", "--in=/game/a/x.txt"]);
+    }
+
+    #[test]
+    fn processor_arguments_repeated_placeholder_is_replaced_everywhere() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["{A}-{A}"], &data(&[("A", "z")])).unwrap();
+        assert_eq!(out, vec!["z-z"]);
+    }
+
+    #[test]
+    fn processor_arguments_data_value_in_brackets_resolves_library() {
+        let (_t, libs) = libs_dir();
+        let path = make_lib(&libs, "g/a/1/a-1.jar");
+        let out = get_processor_arguments(
+            &libs,
+            &["{MAPPINGS}", "--out={MAPPINGS}"],
+            &data(&[("MAPPINGS", "[g:a:1]")]),
+        )
+        .unwrap();
+        assert_eq!(out, vec![path.clone(), format!("--out={path}")]);
+    }
+
+    #[test]
+    fn processor_arguments_data_value_in_brackets_missing_library_is_uncanonicalized() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[g:a:1]")])).unwrap();
+        let mut expected = libs.clone();
+        expected.push("g/a/1/a-1.jar");
+        assert_eq!(out, vec![expected.to_string_lossy().to_string()]);
+    }
+
+    #[test]
+    fn processor_arguments_data_value_with_unbalanced_bracket_is_literal() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[not-closed")])).unwrap();
+        assert_eq!(out, vec!["[not-closed"]);
+    }
+
+    #[test]
+    fn processor_arguments_data_value_invalid_library_fails() {
+        let (_t, libs) = libs_dir();
+        let err =
+            get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[broken]")])).unwrap_err();
+        assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
+    }
+
+    #[test]
+    fn processor_arguments_unused_data_entries_are_not_resolved() {
+        // An invalid library reference in an unused entry must not matter
+        let (_t, libs) = libs_dir();
+        let out =
+            get_processor_arguments(&libs, &["--plain"], &data(&[("BAD", "[broken]")])).unwrap();
+        assert_eq!(out, vec!["--plain"]);
+    }
+
+    #[test]
+    fn processor_arguments_unknown_placeholder_fails() {
+        let (_t, libs) = libs_dir();
+        let err = get_processor_arguments(&libs, &["{UNKNOWN}"], &data(&[("SIDE", "client")]))
+            .unwrap_err();
+        assert!(unresolved(&err));
+    }
+
+    #[test]
+    fn processor_arguments_message_contains_partially_resolved_argument() {
+        let (_t, libs) = libs_dir();
+        let err = get_processor_arguments(&libs, &["{A}/{B}"], &data(&[("A", "x")])).unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::ProcessorFailed { ref reason } if reason.ends_with("x/{B}")
+        ));
+    }
+
+    #[test]
+    fn processor_arguments_any_brace_pair_after_substitution_fails() {
+        let (_t, libs) = libs_dir();
+        for arg in ["{}", "a{b", "a}b{c", "json={\"k\":1}"] {
+            let res = get_processor_arguments(&libs, &[arg], &data(&[]));
+            if arg == "a{b" {
+                // only an opening brace: nothing to complain about
+                assert_eq!(res.unwrap(), vec!["a{b"]);
+            } else {
+                assert!(unresolved(&res.unwrap_err()), "arg {arg}");
+            }
+        }
+    }
+
+    #[test]
+    fn processor_arguments_braces_coming_from_data_values_fail() {
+        let (_t, libs) = libs_dir();
+        let err = get_processor_arguments(&libs, &["{A}"], &data(&[("A", "{B}")])).unwrap_err();
+        assert!(unresolved(&err));
+    }
+
+    #[test]
+    fn processor_arguments_error_in_any_argument_fails_whole_call() {
+        let (_t, libs) = libs_dir();
+        let err = get_processor_arguments(&libs, &["ok", "{NOPE}", "ok2"], &data(&[])).unwrap_err();
+        assert!(unresolved(&err));
+    }
+
+    #[test]
+    fn processor_arguments_use_client_side_only() {
+        let (_t, libs) = libs_dir();
+        let out = get_processor_arguments(&libs, &["{K}"], &data(&[("K", "c")])).unwrap();
+        assert_eq!(out, vec!["c"]);
+    }
+
+    // ---- get_processor_main_class ----
+
+    fn write_jar(dir: &Path, name: &str, manifest: Option<&str>) -> String {
+        let path = dir.join(name);
+        let file = std::fs::File::create(&path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let opts = zip::write::SimpleFileOptions::default();
+        if let Some(m) = manifest {
+            zip.start_file("META-INF/MANIFEST.MF", opts).unwrap();
+            zip.write_all(m.as_bytes()).unwrap();
+        } else {
+            zip.start_file("other.txt", opts).unwrap();
+            zip.write_all(b"x").unwrap();
+        }
+        zip.finish().unwrap();
+        path.to_string_lossy().to_string()
+    }
+
+    #[tokio::test]
+    async fn main_class_is_read_from_manifest() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(
+            tmp.path(),
+            "a.jar",
+            Some("Manifest-Version: 1.0\r\nMain-Class: net.example.Main\r\nCreated-By: x\r\n"),
+        );
+        assert_eq!(
+            get_processor_main_class(jar).await.unwrap(),
+            Some("net.example.Main".to_string())
+        );
+    }
+
+    #[tokio::test]
+    async fn main_class_value_is_trimmed() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(tmp.path(), "a.jar", Some("Main-Class:    a.B   \n"));
+        assert_eq!(
+            get_processor_main_class(jar).await.unwrap(),
+            Some("a.B".to_string())
+        );
+    }
+
+    #[tokio::test]
+    async fn main_class_first_occurrence_wins() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(
+            tmp.path(),
+            "a.jar",
+            Some("Main-Class: first\nMain-Class: second\n"),
+        );
+        assert_eq!(
+            get_processor_main_class(jar).await.unwrap(),
+            Some("first".to_string())
+        );
+    }
+
+    #[tokio::test]
+    async fn main_class_absent_gives_none() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(tmp.path(), "a.jar", Some("Manifest-Version: 1.0\n"));
+        assert_eq!(get_processor_main_class(jar).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn main_class_key_is_case_sensitive() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(tmp.path(), "a.jar", Some("main-class: a.B\n"));
+        assert_eq!(get_processor_main_class(jar).await.unwrap(), None);
+    }
+
+    #[tokio::test]
+    async fn main_class_missing_manifest_is_processor_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let jar = write_jar(tmp.path(), "a.jar", None);
+        let err = get_processor_main_class(jar).await.unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::ProcessorFailed { ref reason }
+                if reason.contains("Cannot read processor manifest")
+        ));
+    }
+
+    #[tokio::test]
+    async fn main_class_not_a_zip_is_processor_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("bad.jar");
+        std::fs::write(&path, b"not a zip").unwrap();
+        let err = get_processor_main_class(path.to_string_lossy().to_string())
+            .await
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            MinecraftDomainError::ProcessorFailed { ref reason }
+                if reason.contains("Cannot read processor at")
+        ));
+    }
+
+    #[tokio::test]
+    async fn main_class_missing_file_is_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("missing.jar");
+        assert!(
+            get_processor_main_class(path.to_string_lossy().to_string())
+                .await
+                .is_err()
+        );
+    }
+}
