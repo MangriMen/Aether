@@ -6,7 +6,8 @@ use uuid::Uuid;
 pub struct ProgressEvent {
     pub event: ProgressEventType,
     pub progress_bar_id: Uuid,
-    pub fraction: Option<f64>, // None means the loading is done
+    /// Completion fraction; `None` means the loading is done.
+    pub fraction: Option<f64>,
     pub message: String,
 }
 
@@ -18,12 +19,14 @@ pub enum ProgressEventType {
     PackFileDownload {
         instance_path: String,
         pack_name: String,
+        /// Icon as a string (not a local path), if any.
         icon: Option<String>,
         pack_version: String,
     },
     PackDownload {
         instance_path: String,
         pack_name: String,
+        /// Local path of the icon, if any.
         icon: Option<PathBuf>,
         pack_id: Option<String>,
         pack_version: Option<String>,

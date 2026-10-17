@@ -5,6 +5,7 @@ use crate::{
     shared::request_client,
 };
 
+/// Failure categories of the core; most variants transparently wrap a feature error.
 #[derive(thiserror::Error, Debug)]
 pub enum ErrorKind {
     #[error(transparent)]
@@ -41,6 +42,7 @@ pub enum ErrorKind {
     CoreError(String),
 }
 
+/// Core error: the [`ErrorKind`] plus a span trace for diagnostics.
 #[derive(Debug)]
 pub struct Error {
     pub raw: std::sync::Arc<ErrorKind>,
