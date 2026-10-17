@@ -4,7 +4,7 @@ import { useColorMode } from '@kobalte/core';
 import { createEffect, on } from 'solid-js';
 
 import { useAppSettings, useEditAppSettings } from '@/features/settings';
-import { debounce } from '@/shared/lib';
+import { debounce, logError } from '@/shared/lib';
 
 import { isSystemTheme } from '../model/theme';
 import { useThemeContext } from '../model/themeContext';
@@ -25,11 +25,14 @@ export const useMicaUpdateListener = () => {
         case 'mica':
         case 'mica_dark':
         case 'mica_light':
-          updateAppSettings.mutateAsync({
-            windowEffect: isSystemTheme(rawTheme)
-              ? 'mica'
-              : `mica_${colorMode}`,
-          });
+          updateAppSettings.mutate(
+            {
+              windowEffect: isSystemTheme(rawTheme)
+                ? 'mica'
+                : `mica_${colorMode}`,
+            },
+            { onError: (err) => logError('Failed to update mica', err) },
+          );
           break;
 
         default:

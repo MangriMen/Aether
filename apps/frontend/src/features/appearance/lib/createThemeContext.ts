@@ -2,7 +2,7 @@ import type { ColorMode, ConfigColorMode } from '@kobalte/core';
 import type { Accessor } from 'solid-js';
 
 import { makePersisted } from '@solid-primitives/storage';
-import { batch, createEffect, on, onMount } from 'solid-js';
+import { batch, createEffect, on, onCleanup, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import { logError } from '@/shared/lib';
@@ -87,29 +87,44 @@ export const createThemeContext = (
   );
 
   let prevThemeSet = 0;
+  let trailingTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  const setThemeLeadingEdge = (theme: Theme) => {
-    const currentTime = performance.now();
+  onCleanup(() => clearTimeout(trailingTimeout));
 
-    const setWithTime = () => {
-      setTheme(theme);
+  const setSystemTheme = () => {
+    const rawTheme = state.rawTheme;
+
+    if (isSystemTheme(rawTheme)) {
+      setTheme(resolveTheme(rawTheme));
       prevThemeSet = performance.now();
-    };
-
-    if (currentTime - prevThemeSet > COLOR_MODE_CHANGE_DEBOUNCE_DELAY) {
-      setWithTime();
     }
+  };
+
+  // Applies the first change at once and the last one of a burst after the delay,
+  // so a quick back-and-forth of the system color mode still ends on the right theme.
+  const setSystemThemeThrottled = () => {
+    clearTimeout(trailingTimeout);
+
+    const elapsed = performance.now() - prevThemeSet;
+
+    if (elapsed > COLOR_MODE_CHANGE_DEBOUNCE_DELAY) {
+      setSystemTheme();
+      return;
+    }
+
+    trailingTimeout = setTimeout(
+      setSystemTheme,
+      COLOR_MODE_CHANGE_DEBOUNCE_DELAY - elapsed,
+    );
   };
 
   createEffect(
     on([colorMode], () => {
-      const rawTheme = state.rawTheme;
-
-      if (!isSystemTheme(rawTheme)) {
+      if (!isSystemTheme(state.rawTheme)) {
         return;
       }
 
-      setThemeLeadingEdge(resolveTheme(rawTheme));
+      setSystemThemeThrottled();
     }),
   );
 
