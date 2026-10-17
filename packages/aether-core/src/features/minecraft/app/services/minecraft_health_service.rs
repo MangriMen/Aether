@@ -9,6 +9,7 @@ use crate::features::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
         MinecraftDownloader, MinecraftHealthService, ModLoader, VersionManifestService,
         get_compatible_java_version, parse_rules, resolve_minecraft_version, vanilla,
+        version_jar_name,
     },
     settings::LocationInfo,
 };
@@ -72,9 +73,10 @@ impl MinecraftHealthService for MinecraftFileHealthService {
             .resolve(&game_version, &loader, loader_version.as_ref())
             .await?;
 
-        let version_jar = loader_version.as_ref().map_or(version.id.clone(), |it| {
-            format!("{}-{}", version.id.clone(), it.id.clone())
-        });
+        let version_jar = version_jar_name(
+            &version.id,
+            loader_version.as_ref().map(|it| it.id.as_str()),
+        );
 
         // --- Step 3: Fetch version info (from cache or network) ---
         // If offline, return Ok(true) to skip check rather than crash

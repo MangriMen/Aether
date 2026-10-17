@@ -7,7 +7,7 @@ use tracing::info;
 use crate::{
     features::{
         events::{ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt},
-        minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla},
+        minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
     },
     shared::request_client::{Request, RequestClient, RequestClientExt},
     shared::{
@@ -157,8 +157,5 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
 }
 
 fn get_version_id(version: &vanilla::Version, loader: Option<&modded::LoaderVersion>) -> String {
-    loader.map_or_else(
-        || version.id.clone(),
-        |l| format!("{}-{}", version.id, l.id),
-    )
+    version_jar_name(&version.id, loader.map(|l| l.id.as_str()))
 }
