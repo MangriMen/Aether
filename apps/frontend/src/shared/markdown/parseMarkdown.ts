@@ -1,6 +1,27 @@
 import type { Config as DOMPurifyConfig } from 'dompurify';
 import type { Renderer, Tokens } from 'marked';
 
+/** Hosts whose images are embedded directly; every other host goes through the wsrv.nl proxy. */
+const TRUSTED_IMAGE_HOSTS: readonly string[] = [
+  'cdn.modrinth.com',
+  'media.forgecdn.net',
+  'cdn.curseforge.com',
+  'cf.way2muchnoise.eu',
+  'bstats.org',
+  'cdn-raw.modrinth.com',
+  'raw.githubusercontent.com',
+  'user-images.githubusercontent.com',
+  'github.com',
+  'img.shields.io',
+  'i.imgur.com',
+  'imgur.com',
+  'i.postimg.cc',
+  'wsrv.nl',
+];
+
+/** Hostname suffixes that are trusted as a whole (e.g. project pages on GitHub Pages). */
+const TRUSTED_IMAGE_HOST_SUFFIXES: readonly string[] = ['.github.io'];
+
 export const lazyParseMarkdown = async (text: string): Promise<string> => {
   const { marked } = await import('marked');
   const renderer = await createDefaultRenderer();
@@ -36,28 +57,11 @@ const createDefaultRenderer = async (): Promise<Renderer<string, string>> => {
 
     try {
       const url = new URL(href);
-      const allowedHostnames = [
-        'imgur.com',
-        'i.imgur.com',
-        'cdn-raw.modrinth.com',
-        'cdn.modrinth.com',
-        'staging-cdn-raw.modrinth.com',
-        'staging-cdn.modrinth.com',
-        'github.com',
-        'raw.githubusercontent.com',
-        'user-images.githubusercontent.com',
-        'img.shields.io',
-        'i.postimg.cc',
-        'wsrv.nl',
-        'cf.way2muchnoise.eu',
-        'bstats.org',
-      ];
-      const allowedSuffixes = ['.github.io'];
 
-      // Proxy images via wsrv.nl if the hostname is not allowed (avoids CORS/broken assets)
+      // Proxy images via wsrv.nl if the hostname is not trusted (avoids CORS/broken assets)
       if (
-        !allowedHostnames.includes(url.hostname) &&
-        !allowedSuffixes.some((s) => url.hostname.endsWith(s))
+        !TRUSTED_IMAGE_HOSTS.includes(url.hostname) &&
+        !TRUSTED_IMAGE_HOST_SUFFIXES.some((s) => url.hostname.endsWith(s))
       ) {
         finalSrc = `https://wsrv.nl/?url=${encodeURIComponent(href)}&n=-1`;
       }
