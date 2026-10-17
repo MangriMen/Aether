@@ -83,3 +83,72 @@ impl Drop for ProgressBarId {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use tokio::sync::mpsc;
+
+    use crate::features::events::infra::InMemoryProgressBarStorage;
+    use crate::features::events::{
+        Event, EventEmitter, EventError, ProgressBarStorage, ProgressService, ProgressServiceImpl,
+    };
+
+    use super::*;
+
+    struct ChannelEmitter(mpsc::UnboundedSender<Event>);
+
+    #[async_trait::async_trait]
+    impl EventEmitter<Event> for ChannelEmitter {
+        async fn emit(&self, event: Event) -> Result<(), EventError> {
+            let _ = self.0.send(event);
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    fn jar_event() -> ProgressEventType {
+        ProgressEventType::JavaDownload { version: 21 }
+    }
+
+    #[tokio::test]
+    async fn dropping_progress_bar_id_removes_bar_and_emits_completion() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let storage = Arc::new(InMemoryProgressBarStorage::default());
+        let service = ProgressServiceImpl::new(Arc::new(ChannelEmitter(tx)), storage.clone());
+
+        let bar_id = service
+            .init_progress(jar_event(), 10.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        let id = bar_id.id;
+        assert_eq!(storage.list().await.len(), 1);
+
+        drop(bar_id);
+
+        let Some(Event::Progress(done)) = tokio::time::timeout(Duration::from_secs(2), rx.recv())
+            .await
+            .unwrap()
+        else {
+            panic!("expected completion event");
+        };
+        assert_eq!(done.progress_bar_id, id);
+        assert_eq!(done.fraction, None);
+        assert_eq!(done.message, "Completed");
+        assert_eq!(done.event, jar_event());
+        assert!(storage.list().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn dropping_detached_progress_bar_id_does_nothing() {
+        let id = ProgressBarId {
+            id: Uuid::new_v4(),
+            progress_storage: None,
+            event_emitter: None,
+        };
+        drop(id);
+        tokio::task::yield_now().await;
+    }
+}

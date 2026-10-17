@@ -143,3 +143,62 @@ impl<'de> Deserialize<'de> for IoError {
         Ok(repr.into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn not_found() -> std::io::Error {
+        std::io::Error::new(std::io::ErrorKind::NotFound, "gone")
+    }
+
+    #[test]
+    fn plain_error_displays_source_transparently() {
+        let err = IoError::from(not_found());
+        assert!(matches!(err, IoError::IoError(_)));
+        assert_eq!(err.to_string(), "gone");
+    }
+
+    #[test]
+    fn path_error_displays_source_and_path() {
+        let err = IoError::with_path(not_found(), "/tmp/x");
+        assert!(matches!(err, IoError::IoPathError { .. }));
+        assert_eq!(err.to_string(), "gone, path: /tmp/x");
+    }
+
+    #[test]
+    fn serialization_variants_display() {
+        assert_eq!(
+            IoError::SerializationError("a".into()).to_string(),
+            "Serialization error: a"
+        );
+        assert_eq!(
+            IoError::DeserializationError("b".into()).to_string(),
+            "Deserialization error: b"
+        );
+    }
+
+    #[test]
+    fn serde_round_trip_keeps_kind_path_and_message() {
+        let err = IoError::with_path(not_found(), "/tmp/x");
+        let json = serde_json::to_string(&err).unwrap();
+        let back: IoError = serde_json::from_str(&json).unwrap();
+
+        let IoError::IoPathError { source, path } = back else {
+            panic!("variant changed");
+        };
+        assert_eq!(path, "/tmp/x");
+        assert_eq!(source.kind(), std::io::ErrorKind::NotFound);
+        assert_eq!(source.to_string(), "gone");
+    }
+
+    #[test]
+    fn unknown_kinds_collapse_to_other() {
+        let err = IoError::from(std::io::Error::new(std::io::ErrorKind::TimedOut, "slow"));
+        let json = serde_json::to_string(&err).unwrap();
+        let IoError::IoError(source) = serde_json::from_str::<IoError>(&json).unwrap() else {
+            panic!("variant changed");
+        };
+        assert_eq!(source.kind(), std::io::ErrorKind::Other);
+    }
+}

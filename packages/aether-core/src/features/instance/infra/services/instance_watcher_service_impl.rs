@@ -82,3 +82,111 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+    use std::sync::Mutex;
+
+    use tempfile::TempDir;
+
+    use crate::features::file_watcher::FileWatcherError;
+
+    use super::*;
+
+    #[derive(Default)]
+    struct RecordingWatcher {
+        watched: Mutex<Vec<PathBuf>>,
+        unwatched: Mutex<Vec<PathBuf>>,
+    }
+
+    #[async_trait]
+    impl FileWatcher for RecordingWatcher {
+        async fn watch(&self, path: &Path) -> Result<(), FileWatcherError> {
+            self.watched.lock().unwrap().push(path.to_path_buf());
+            Ok(())
+        }
+
+        async fn unwatch(&self, path: &Path) -> Result<(), FileWatcherError> {
+            self.unwatched.lock().unwrap().push(path.to_path_buf());
+            Ok(())
+        }
+    }
+
+    fn setup() -> (
+        TempDir,
+        Arc<RecordingWatcher>,
+        Arc<LocationInfo>,
+        InstanceWatcherServiceImpl<RecordingWatcher>,
+    ) {
+        let temp = TempDir::new().unwrap();
+        let location = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let watcher = Arc::new(RecordingWatcher::default());
+        let service = InstanceWatcherServiceImpl::new(watcher.clone(), location.clone());
+        (temp, watcher, location, service)
+    }
+
+    #[tokio::test]
+    async fn watch_instance_creates_and_watches_content_and_crash_folders() {
+        let (_temp, watcher, location, service) = setup();
+        let dir = location.instance_dir("inst");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        service.watch_instance("inst").await.unwrap();
+
+        let expected: Vec<PathBuf> = [
+            "mods",
+            "datapacks",
+            "resourcepacks",
+            "shaderpacks",
+            "crash-reports",
+        ]
+        .iter()
+        .map(|f| dir.join(f))
+        .collect();
+        assert_eq!(*watcher.watched.lock().unwrap(), expected);
+        assert!(expected.iter().all(|p| p.is_dir()));
+    }
+
+    #[tokio::test]
+    async fn watch_instance_ignores_missing_instance_dir() {
+        let (_temp, watcher, location, service) = setup();
+
+        service.watch_instance("absent").await.unwrap();
+
+        assert!(watcher.watched.lock().unwrap().is_empty());
+        assert!(!location.instance_dir("absent").exists());
+    }
+
+    #[tokio::test]
+    async fn watch_instances_skips_ds_store_entries() {
+        let (_temp, recorder, location, service) = setup();
+        std::fs::create_dir_all(location.instance_dir("a")).unwrap();
+        std::fs::create_dir_all(location.instance_dir(".DS_Store")).unwrap();
+
+        service.watch_instances().await.unwrap();
+
+        let seen = recorder.watched.lock().unwrap();
+        assert_eq!(seen.len(), 5);
+        assert!(
+            seen
+                .iter()
+                .all(|p| p.starts_with(location.instance_dir("a")))
+        );
+    }
+
+    #[tokio::test]
+    async fn unwatch_instance_unwatches_instance_root() {
+        let (_temp, watcher, location, service) = setup();
+
+        service.unwatch_instance("inst").await.unwrap();
+
+        assert_eq!(
+            *watcher.unwatched.lock().unwrap(),
+            vec![location.instance_dir("inst")]
+        );
+    }
+}
