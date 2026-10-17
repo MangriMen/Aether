@@ -10,7 +10,7 @@ import type { Accessor, Component } from 'solid-js';
 import { createTable } from '@tanstack/solid-table';
 import { createMemo, createSignal } from 'solid-js';
 
-import type { ContentFile } from '@/entities/instances';
+import type { ContentFile } from '@/features/content';
 
 import { appTableFeatures, type AppTableFeatures } from '@/shared/model';
 

@@ -11,7 +11,7 @@ import {
   instanceToContentGetParams,
   useContent,
   useContentVersions,
-} from '@/entities/instances';
+} from '@/features/content';
 import { useInstallInstance, useUpdateInstance } from '@/features/instance';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

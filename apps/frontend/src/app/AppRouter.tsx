@@ -1,13 +1,11 @@
 import { Route, Router, type RouteSectionProps } from '@solidjs/router';
 import { lazy, type Component } from 'solid-js';
 
+import { ContentBrowserWrapper } from '@/features/content-browser';
+import { ContentItemPage } from '@/features/content-item';
+import { ContentPageLayout } from '@/features/content-page';
 import { InstanceSettingsDialog } from '@/features/instance-edit';
 import { InstancePage } from '@/features/instance-page';
-import {
-  ContentBrowserWrapper,
-  ContentItemPage,
-  ContentPageLayout,
-} from '@/pages/content';
 import { HomePage } from '@/pages/home';
 import { ROUTE_PATTERNS } from '@/shared/config';
 

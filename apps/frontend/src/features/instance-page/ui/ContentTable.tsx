@@ -2,7 +2,7 @@ import type { Component } from 'solid-js';
 
 import { createEffect } from 'solid-js';
 
-import { type ContentFile } from '@/entities/instances';
+import { type ContentFile } from '@/features/content';
 import { cn } from '@/shared/lib';
 import { CombinedPagination, DataTable } from '@/shared/ui';
 

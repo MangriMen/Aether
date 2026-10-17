@@ -2,7 +2,7 @@ import { createMemo, Match, Switch, type Component } from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/ui';
 
-import { useContentProviders } from '@/entities/instances';
+import { useContentProviders } from '@/features/content';
 import { useSettings } from '@/features/settings';
 import { useTranslation } from '@/shared/model';
 import { SettingsPane } from '@/shared/ui';

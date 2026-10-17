@@ -3,7 +3,7 @@ import type { RowModel } from '@tanstack/solid-table';
 import IconMdiReload from '~icons/mdi/reload';
 import { Show, type Component } from 'solid-js';
 
-import type { ContentFile } from '@/entities/instances';
+import type { ContentFile } from '@/features/content';
 import type { Instance } from '@/features/instance';
 import type { AppTableFeatures } from '@/shared/model';
 

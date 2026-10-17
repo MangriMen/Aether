@@ -1,8 +1,8 @@
 import type { DialogFilter } from '@tauri-apps/plugin-dialog';
 
-import type { AtomicContentType } from '@/entities/instances';
+import type { AtomicContentType } from '@/features/content';
 
-import { ContentType } from '@/entities/instances';
+import { ContentType } from '@/features/content';
 
 const ALL_FILTER: DialogFilter = {
   name: 'All',

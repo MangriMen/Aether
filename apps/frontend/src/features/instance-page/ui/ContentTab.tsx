@@ -7,7 +7,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { ContentType, useInstanceContents } from '@/entities/instances';
+import { ContentType, useInstanceContents } from '@/features/content';
 import { type Instance } from '@/features/instance';
 import { ROUTES } from '@/shared/config';
 import { cn } from '@/shared/lib';

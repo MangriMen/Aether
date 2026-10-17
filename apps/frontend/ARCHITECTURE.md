@@ -46,18 +46,23 @@ the folders below. The folder tells what kind of file it is.
 | `api/` | everything that talks to the backend: queries, mutations, query keys, event listeners on top of `platform/ipc`, even when named `use*` |
 | `model/` | plain TypeScript without JSX: types, constants, pure functions, mappers, stores and contexts |
 | `lib/` | Solid primitives that serve components (`use*`, `create*`): form handlers, table data, actions; nothing that talks to the backend |
-| `ui/` | components only, including the feature's pages, dialogs and panes |
+| `ui/` | components, including the feature's pages, dialogs and panes, and anything else that renders JSX: table columns, a function that shows a toast, tab builders |
 
 - No other folders, no files at the root besides `index.ts`, no nesting: the path is always
   `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
   covers.
 - Which folder, by file:
   - calls `platform/ipc` → `api/`;
-  - `.tsx` with a component, file name in PascalCase → `ui/`;
+  - `.tsx` that renders JSX (a component, table columns, a toast), file name in PascalCase
+    after what it renders (`InstancePage`, `ContentTableColumns`, `UpdateAvailableToast`) → `ui/`;
   - starts with `use` or `create` and is neither of the above → `lib/`;
   - anything else (types, pure functions, mappers, stores) → `model/`.
 - `lib/` holds nothing else: a helper without reactivity goes to `model/`, a component to
   `ui/`. The check enforces the file names (see below).
+- The folders tell what kind of file it is, they are not layers: they may import each other
+  without cycles (`lib/createContentTable.tsx` takes its columns from `ui/`, a tab list in
+  `model/` names the tab components). JSX inside a hook stays in the hook
+  (`lib/useInstanceActions.tsx`, `api/contentQueries.tsx`).
 - The role of a component shows in its name, not in a folder: `InstancePage.tsx`,
   `InstanceSettingsDialog.tsx`, `JavaPane.tsx`.
 - Create a folder only when there is something to put in it; a small feature may have
@@ -135,7 +140,7 @@ features/java/                  a small feature: only the folders it needs
 ## Migration
 
 The code is moving off Feature-Sliced Design one domain per PR. Until it is done,
-`entities/`, `widgets/` and `pages/` still exist. The checks skip them.
+`pages/` (home, playground) still exists. The checks skip it.
 
 Known exceptions, to be removed when `shared/` is split into modules:
 - `shared/` has import cycles through its barrels, so `no-circular` does not cover it yet;

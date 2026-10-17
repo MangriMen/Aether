@@ -1,0 +1,82 @@
+import { type RouteSectionProps } from '@solidjs/router';
+import {
+  createMemo,
+  Show,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
+
+import type { ContentFilters } from '@/features/content';
+
+import { useInstance } from '@/features/instance';
+import { Separator } from '@/shared/ui';
+
+import { useContentPageSearchParams } from '../lib/useContentPageSearchParams';
+import { getFiltersFromInstance } from '../model/getFiltersFromInstance';
+import { getFiltersFromSearchParams } from '../model/getFiltersFromSearchParams';
+import { mergeContentFilters } from '../model/mergeContentFilters';
+import { ContentContextProvider } from './ContentContextProvider';
+import { ContentPageInstanceInfo } from './ContentPageInstanceInfo';
+
+export type ContentPageProps = ComponentProps<'div'> & RouteSectionProps;
+
+export const ContentPageLayout: Component<ContentPageProps> = (props) => {
+  const [local, others] = splitProps(props, [
+    'params',
+    'location',
+    'data',
+    'children',
+  ]);
+
+  const [params, setParams] = useContentPageSearchParams();
+
+  const instance = useInstance(() => params().instanceId);
+
+  const isInstancePage = createMemo(() => Boolean(params().instanceId));
+
+  const contentPageState = createMemo(() => {
+    const instanceData = instance.data;
+    const paramsData = params();
+
+    const { filters, filtersLock } = mergeContentFilters(
+      getFiltersFromInstance(instanceData),
+      getFiltersFromSearchParams(paramsData),
+    );
+
+    return {
+      filters,
+      filtersLock,
+    };
+  });
+
+  const handleFiltersChange = (filters: ContentFilters) => {
+    setParams({
+      ...filters,
+      instanceId: params().instanceId,
+    });
+  };
+
+  return (
+    <ContentContextProvider
+      instanceId={params().instanceId}
+      providerId={params().providerId}
+      filters={contentPageState().filters}
+      filtersLock={contentPageState().filtersLock}
+      onFiltersChange={handleFiltersChange}
+    >
+      <div
+        class='gap-4 p-page flex size-full flex-col overflow-hidden'
+        {...others}
+      >
+        <Show when={isInstancePage()}>
+          <>
+            <ContentPageInstanceInfo instance={instance.data} />
+            <Separator />
+          </>
+        </Show>
+        {local.children}
+      </div>
+    </ContentContextProvider>
+  );
+};

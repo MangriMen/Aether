@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 
-import type { ContentFile } from '@/entities/instances';
+import type { ContentFile } from '@/features/content';
 
 import {
   getContentFileAuthor,
@@ -8,7 +8,7 @@ import {
   getContentFileDisplayTitle,
   getContentFileIconSrc,
   isLocalContentFile,
-} from '@/entities/instances';
+} from '@/features/content';
 import { InstanceIcon } from '@/features/instance';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
