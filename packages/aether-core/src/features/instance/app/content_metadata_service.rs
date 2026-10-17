@@ -33,6 +33,10 @@ const UNKNOWN_CONTENT_RETRY_AFTER: Duration = Duration::from_mins(30);
 /// before it is asked again, so the lists opened meanwhile do not ask it each time.
 const LOOKUP_RETRY_AFTER: Duration = Duration::from_mins(5);
 
+/// How long a provider that answered a lookup with "unsupported" is left alone, so a plugin
+/// reloaded with support for it is asked again without a restart of the app.
+const UNSUPPORTED_RETRY_AFTER: Duration = Duration::from_hours(1);
+
 /// How long an icon that failed to arrive is left alone before it is fetched again, so the
 /// lists opened meanwhile do not ask for it each time.
 const ICON_RETRY_AFTER: Duration = Duration::from_mins(10);
@@ -214,9 +218,9 @@ struct Inner {
     /// own: it starts no second refresh, and the running one tells the UI to list again once
     /// over, which starts it.
     refreshing: Mutex<HashMap<String, bool>>,
-    /// Providers that answered [`InstanceError::UnsupportedOperation`] to a lookup: not asked
-    /// it again while the process runs.
-    unsupported: Mutex<HashSet<(ProviderId, Lookup)>>,
+    /// Providers that answered [`InstanceError::UnsupportedOperation`] to a lookup, with when:
+    /// not asked it again before [`UNSUPPORTED_RETRY_AFTER`].
+    unsupported: Mutex<HashMap<LookupKey, Instant>>,
     /// Lookups that failed otherwise, with when: not asked again before
     /// [`LOOKUP_RETRY_AFTER`].
     failed: Mutex<HashMap<LookupKey, Instant>>,
@@ -244,7 +248,7 @@ impl ContentMetadataService {
                 providers,
                 event_emitter,
                 refreshing: Mutex::new(HashMap::new()),
-                unsupported: Mutex::new(HashSet::new()),
+                unsupported: Mutex::new(HashMap::new()),
                 failed: Mutex::new(HashMap::new()),
                 unknown: Mutex::new(HashMap::new()),
                 icon_fetches: Mutex::new(HashMap::new()),
@@ -454,7 +458,8 @@ impl Inner {
         self.unsupported
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .contains(&(provider_id.clone(), lookup))
+            .get(&(provider_id.clone(), lookup))
+            .is_some_and(|at| at.elapsed() < UNSUPPORTED_RETRY_AFTER)
     }
 
     fn is_known_unknown(&self, provider_id: &ProviderId, lookup: Lookup, id: &str) -> bool {
@@ -530,7 +535,7 @@ impl Inner {
                 self.unsupported
                     .lock()
                     .unwrap_or_else(PoisonError::into_inner)
-                    .insert((provider_id.clone(), lookup));
+                    .insert((provider_id.clone(), lookup), Instant::now());
             }
             err => {
                 tracing::warn!("Could not refresh {what} from {provider_id}: {err}");
