@@ -1,3 +1,6 @@
+// Derived from the `daedalus` crate (https://github.com/modrinth/code, packages/daedalus).
+// Copyright © 2024 Rinth, Inc. Licensed under the MIT License; see the NOTICE file in the repository root.
+
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
