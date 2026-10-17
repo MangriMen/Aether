@@ -15,7 +15,7 @@ import {
   resolveSettingsTab,
   SettingsTab,
 } from '@/entities/settings';
-import { UpdateBadge } from '@/features/update-badge';
+import { UpdateBadge } from '@/features/update';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {

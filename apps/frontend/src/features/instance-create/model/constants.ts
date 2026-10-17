@@ -1,4 +1,4 @@
-import type { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/features/minecraft';
 import type { Option } from '@/shared/model';
 
 export const LOADERS = [

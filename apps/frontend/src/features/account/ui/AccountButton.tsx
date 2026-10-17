@@ -1,0 +1,50 @@
+import type { ComponentProps } from 'solid-js';
+
+import { splitProps } from 'solid-js';
+
+import type { ButtonProps } from '@/shared/ui';
+
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { Button, CombinedTooltip } from '@/shared/ui';
+
+import type { AccountType } from '../model/account';
+
+export type AccountButtonProps = ButtonProps & {
+  username: string;
+  active: boolean;
+  accountType: AccountType;
+};
+
+export const AccountButton = (
+  props: ComponentProps<'button'> & AccountButtonProps,
+) => {
+  const [local, others] = splitProps(props, [
+    'username',
+    'accountType',
+    'active',
+    'class',
+  ]);
+
+  const [{ t }] = useTranslation();
+
+  return (
+    <CombinedTooltip
+      label={t('account.activate')}
+      disableTooltip={local.active}
+      as={Button}
+      class={cn('px-2 size-full justify-start rounded-r-none', local.class, {
+        'bg-secondary/secondary pointer-events-none': local.active,
+      })}
+      variant='ghost'
+      {...others}
+    >
+      <div class='flex flex-col items-start'>
+        <span class='font-bold'>{local.username}</span>
+        <span class='text-muted-foreground capitalize'>
+          {t(`account.${local.accountType}`)}
+        </span>
+      </div>
+    </CombinedTooltip>
+  );
+};

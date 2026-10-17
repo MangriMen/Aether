@@ -1,11 +1,8 @@
 import { useQueryClient } from '@tanstack/solid-query';
 import { onCleanup } from 'solid-js';
 
-import {
-  eventsEvents,
-  PROGRESS_EVENT_REMOVE_DELAY,
-} from '@/entities/events/@x/java';
-import { useEventListener } from '@/platform/ipc';
+import { PROGRESS_EVENT_REMOVE_DELAY } from '@/features/events';
+import { eventsEvents, useEventListener } from '@/platform/ipc';
 
 import { javaCache, useActiveJavaInstallations } from '../model';
 

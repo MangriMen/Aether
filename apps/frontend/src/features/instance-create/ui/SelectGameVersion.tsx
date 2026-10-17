@@ -1,6 +1,6 @@
 import { splitProps } from 'solid-js';
 
-import type { Version } from '@/entities/minecraft';
+import type { Version } from '@/features/minecraft';
 import type { SelectRootProps } from '@/shared/ui';
 
 import { cn } from '@/shared/lib';

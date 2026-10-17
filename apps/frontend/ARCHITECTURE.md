@@ -135,9 +135,7 @@ features/java/                  a small feature: only the folders it needs
 ## Migration
 
 The code is moving off Feature-Sliced Design one domain per PR. Until it is done,
-`entities/`, `widgets/`, `pages/` and the old slices in `features/` (listed in
-`LEGACY_FEATURES` in `.dependency-cruiser.cjs`) still exist. The checks skip them. When a
-slice moves, remove it from that list.
+`entities/`, `widgets/` and `pages/` still exist. The checks skip them.
 
 Known exceptions, to be removed when `shared/` is split into modules:
 - `shared/` has import cycles through its barrels, so `no-circular` does not cover it yet;

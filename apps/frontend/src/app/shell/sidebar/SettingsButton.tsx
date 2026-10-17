@@ -7,9 +7,11 @@ import { createMemo } from 'solid-js';
 import type { IconButtonProps } from '@/shared/ui';
 
 import { useSettingsSearchParams } from '@/entities/settings';
-import { useCheckUpdate } from '@/entities/updates';
-import { checkIsUpdateAvailable } from '@/entities/updates';
-import { UpdateBadge } from '@/features/update-badge';
+import {
+  useCheckUpdate,
+  checkIsUpdateAvailable,
+  UpdateBadge,
+} from '@/features/update';
 import { useTranslation } from '@/shared/model';
 import { CombinedTooltip, IconButton } from '@/shared/ui';
 

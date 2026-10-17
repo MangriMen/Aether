@@ -1,15 +1,15 @@
 import {
   useMicaUpdateListener,
   useTransparencyUpdateListener,
-  useUpdateSync,
 } from '@/app/lib';
+import { useJavaInstallationListener } from '@/entities/java';
 import {
   useWarningEventsListener,
   useProgressEventsListener,
-} from '@/entities/events';
-import { useJavaInstallationListener } from '@/entities/java';
+} from '@/features/events';
 import { useInstanceEventsListener } from '@/features/instance';
 import { usePluginEventListener } from '@/features/plugins';
+import { useUpdateSync } from '@/features/update';
 
 export const useSetupListeners = () => {
   useInstanceEventsListener();

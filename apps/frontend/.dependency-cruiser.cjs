@@ -1,11 +1,8 @@
 // Architecture boundaries, see ARCHITECTURE.md.
 // While the code moves off the old FSD layers, the rules only cover the new layout:
-// entities/, widgets/, pages/ and the old slices in features/ are skipped.
-// Drop a slice from LEGACY_FEATURES once it has moved.
+// entities/, widgets/ and pages/ are skipped.
 
-const LEGACY_FEATURES = ['update-badge'];
-
-const FEATURE = `^src/features/(?!(?:${LEGACY_FEATURES.join('|')})/)([^/]+)/`;
+const FEATURE = '^src/features/([^/]+)/';
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
 // Modules outside features/. platform/bindings is generated and has no index:
 // every file exports `commands` and `events`, so it is imported per domain.
@@ -79,7 +76,7 @@ module.exports = {
         'A domain split into features (plugins, plugins-settings, ...) depends one way: the base never imports its parts. Parts may import each other without cycles.',
       severity: 'error',
       from: { path: '^src/features/([^/-]+)/' },
-      to: { path: '^src/features/$1-[^/]+/', pathNot: `^src/features/(?:${LEGACY_FEATURES.join('|')})/` },
+      to: { path: '^src/features/$1-[^/]+/' },
     },
     {
       name: 'feature-shape',

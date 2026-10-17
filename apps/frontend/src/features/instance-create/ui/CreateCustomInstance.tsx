@@ -11,14 +11,14 @@ import {
   Switch,
 } from 'solid-js';
 
-import type { ModdedLoaderVersion, ModLoader } from '@/entities/minecraft';
 import type { NewInstance } from '@/features/instance';
+import type { ModdedLoaderVersion, ModLoader } from '@/features/minecraft';
 
+import { useCreateInstance } from '@/features/instance';
 import {
   useLoaderVersionManifest,
   useMinecraftVersionManifest,
-} from '@/entities/minecraft';
-import { useCreateInstance } from '@/features/instance';
+} from '@/features/minecraft';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import {

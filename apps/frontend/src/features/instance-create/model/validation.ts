@@ -1,8 +1,8 @@
 import * as v from 'valibot';
 
-import type { VersionType, ModLoader } from '@/entities/minecraft';
+import type { VersionType, ModLoader } from '@/features/minecraft';
 
-import { MOD_LOADERS, VERSION_TYPES } from '@/entities/minecraft';
+import { MOD_LOADERS, VERSION_TYPES } from '@/features/minecraft';
 
 export const ModLoaderSchema = v.picklist(
   MOD_LOADERS as [ModLoader, ...ModLoader[]],

@@ -1,11 +1,11 @@
 import { createMemo, Show, type Component } from 'solid-js';
 
+import { ProgressMenuButton, ProgressPopover } from '@/features/events';
+import { UpdateBanner } from '@/features/update';
 import {
   UpdateNotificationStyle,
   updateNotificationStyle,
 } from '@/shared/model';
-import { ProgressMenuButton, ProgressPopover } from '@/widgets/app-titlebar';
-import { UpdateBanner } from '@/widgets/app-titlebar';
 
 import type { TitleBarProps } from './TitleBar';
 
