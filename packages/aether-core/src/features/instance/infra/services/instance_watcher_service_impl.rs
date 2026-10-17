@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -11,6 +11,8 @@ use crate::features::{
     settings::LocationInfo,
 };
 
+const CRASH_REPORTS_FOLDER: &str = "crash-reports";
+
 pub struct InstanceWatcherServiceImpl<FW: FileWatcher> {
     file_watcher: Arc<FW>,
     location_info: Arc<LocationInfo>,
@@ -22,6 +24,31 @@ impl<FW: FileWatcher> InstanceWatcherServiceImpl<FW> {
             file_watcher,
             location_info,
         }
+    }
+}
+
+/// Folders inside an instance whose changes are reported: every content folder plus the
+/// directory where the game writes its crash reports.
+fn watched_subfolders() -> impl Iterator<Item = &'static str> {
+    ContentType::iterator()
+        .map(|content| content.get_folder())
+        .chain(std::iter::once(CRASH_REPORTS_FOLDER))
+}
+
+impl<FW: FileWatcher> InstanceWatcherServiceImpl<FW> {
+    /// Creates the folder when nothing (not even a dangling symlink) occupies the path,
+    /// then starts observing it.
+    async fn ensure_and_watch(&self, path: &Path) -> Result<(), String> {
+        if tokio::fs::symlink_metadata(path).await.is_err() {
+            tokio::fs::create_dir_all(path)
+                .await
+                .map_err(|e| format!("cannot create it: {e}"))?;
+        }
+
+        self.file_watcher
+            .watch(path)
+            .await
+            .map_err(|e| format!("watcher refused it: {e}"))
     }
 }
 
@@ -47,27 +74,15 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
 
     async fn watch_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
+        if !instance_dir.is_dir() {
+            return Ok(());
+        }
 
-        if instance_dir.exists() && instance_dir.is_dir() {
-            let folders = ContentType::iterator()
-                .map(|x| x.get_folder())
-                .chain(["crash-reports"]);
-
-            for folder in folders {
-                let path = instance_dir.join(folder);
-
-                if !path.exists()
-                    && !path.is_symlink()
-                    && let Err(e) = tokio::fs::create_dir_all(&path).await
-                {
-                    tracing::error!("Failed to create directory for watcher {path:?}: {e}");
-                    return Ok(());
-                }
-
-                if let Err(e) = self.file_watcher.watch(&path).await {
-                    tracing::error!("Failed to watch directory for watcher {path:?}: {e}");
-                    return Ok(());
-                }
+        // A failure on one folder must not leave the remaining ones unobserved.
+        for folder in watched_subfolders() {
+            let folder_path = instance_dir.join(folder);
+            if let Err(reason) = self.ensure_and_watch(&folder_path).await {
+                tracing::error!("Instance folder {folder_path:?} is not being watched: {reason}");
             }
         }
 
@@ -76,8 +91,8 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
 
     async fn unwatch_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
         let path = self.location_info.instance_dir(instance_id);
-        if let Err(e) = self.file_watcher.unwatch(&path).await {
-            tracing::error!("Failed to unwatch directory for watcher {path:?}: {e}");
+        if let Err(reason) = self.file_watcher.unwatch(&path).await {
+            tracing::error!("Could not stop watching {path:?}: {reason}");
         }
         Ok(())
     }
@@ -172,8 +187,7 @@ mod tests {
         let seen = recorder.watched.lock().unwrap();
         assert_eq!(seen.len(), 5);
         assert!(
-            seen
-                .iter()
+            seen.iter()
                 .all(|p| p.starts_with(location.instance_dir("a")))
         );
     }
