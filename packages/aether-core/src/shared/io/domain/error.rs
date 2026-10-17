@@ -79,7 +79,7 @@ impl IoError {
     pub fn with_path(source: std::io::Error, path: impl AsRef<Path>) -> Self {
         Self::IoPathError {
             source,
-            path: path.as_ref().display().to_string(),
+            path: path.as_ref().to_string_lossy().to_string(),
         }
     }
 }

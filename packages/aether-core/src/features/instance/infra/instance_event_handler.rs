@@ -175,11 +175,19 @@ mod tests {
         }
     }
 
-    async fn next_event(rx: &mut mpsc::UnboundedReceiver<Event>) -> Option<Event> {
-        tokio::time::timeout(Duration::from_millis(300), rx.recv())
+    async fn next_event(rx: &mut mpsc::UnboundedReceiver<Event>) -> Event {
+        tokio::time::timeout(Duration::from_secs(2), rx.recv())
             .await
-            .ok()
-            .flatten()
+            .expect("timed out waiting for an event")
+            .expect("event channel closed")
+    }
+
+    /// Lets every spawned task run to completion, then checks that nothing was emitted.
+    async fn assert_silent(rx: &mut mpsc::UnboundedReceiver<Event>) {
+        for _ in 0..10 {
+            tokio::task::yield_now().await;
+        }
+        assert!(rx.try_recv().is_err(), "unexpected event");
     }
 
     #[tokio::test]
@@ -196,12 +204,16 @@ mod tests {
             .unwrap();
 
         let mut ids = Vec::new();
-        while let Some(Event::Instance(event)) = next_event(&mut rx).await {
+        for _ in 0..2 {
+            let Event::Instance(event) = next_event(&mut rx).await else {
+                panic!("expected instance event");
+            };
             assert!(matches!(event.event, InstanceEventType::Synced));
             ids.push(event.instance_id);
         }
         ids.sort();
         assert_eq!(ids, vec!["abc".to_string(), "xyz".to_string()]);
+        assert_silent(&mut rx).await;
     }
 
     #[tokio::test]
@@ -213,7 +225,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(next_event(&mut rx).await.is_none());
+        assert_silent(&mut rx).await;
     }
 
     #[tokio::test]
@@ -227,14 +239,14 @@ mod tests {
             .await
             .unwrap();
 
-        let Some(Event::Warning(warning)) = next_event(&mut rx).await else {
+        let Event::Warning(warning) = next_event(&mut rx).await else {
             panic!("expected warning");
         };
         assert_eq!(
             warning.message,
             "Instance My Pack has crashed! Visit the logs page to see a crash report."
         );
-        assert!(next_event(&mut rx).await.is_none());
+        assert_silent(&mut rx).await;
     }
 
     #[tokio::test]
@@ -248,7 +260,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(next_event(&mut rx).await.is_none());
+        assert_silent(&mut rx).await;
     }
 
     #[tokio::test]
@@ -262,10 +274,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(matches!(
-            next_event(&mut rx).await,
-            Some(Event::Instance(_))
-        ));
+        assert!(matches!(next_event(&mut rx).await, Event::Instance(_)));
     }
 
     #[tokio::test]
@@ -277,6 +286,6 @@ mod tests {
             .await;
 
         assert!(result.is_ok());
-        assert!(next_event(&mut rx).await.is_none());
+        assert_silent(&mut rx).await;
     }
 }

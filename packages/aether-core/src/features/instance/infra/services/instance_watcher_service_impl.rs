@@ -113,11 +113,15 @@ mod tests {
     struct RecordingWatcher {
         watched: Mutex<Vec<PathBuf>>,
         unwatched: Mutex<Vec<PathBuf>>,
+        fail_on: Option<PathBuf>,
     }
 
     #[async_trait]
     impl FileWatcher for RecordingWatcher {
         async fn watch(&self, path: &Path) -> Result<(), FileWatcherError> {
+            if self.fail_on.as_deref() == Some(path) {
+                return Err(FileWatcherError::WatchNotFound);
+            }
             self.watched.lock().unwrap().push(path.to_path_buf());
             Ok(())
         }
@@ -164,6 +168,46 @@ mod tests {
         .collect();
         assert_eq!(*watcher.watched.lock().unwrap(), expected);
         assert!(expected.iter().all(|p| p.is_dir()));
+    }
+
+    #[tokio::test]
+    async fn watch_instance_keeps_watching_other_folders_after_a_failure() {
+        let temp = TempDir::new().unwrap();
+        let location = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let dir = location.instance_dir("inst");
+        std::fs::create_dir_all(&dir).unwrap();
+        let watcher = Arc::new(RecordingWatcher {
+            fail_on: Some(dir.join("datapacks")),
+            ..Default::default()
+        });
+        let service = InstanceWatcherServiceImpl::new(watcher.clone(), location);
+
+        service.watch_instance("inst").await.unwrap();
+
+        let expected: Vec<PathBuf> = ["mods", "resourcepacks", "shaderpacks", "crash-reports"]
+            .iter()
+            .map(|f| dir.join(f))
+            .collect();
+        assert_eq!(*watcher.watched.lock().unwrap(), expected);
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn watch_instance_does_not_replace_dangling_symlink() {
+        let (temp, watcher, location, service) = setup();
+        let dir = location.instance_dir("inst");
+        std::fs::create_dir_all(&dir).unwrap();
+        let link = dir.join("mods");
+        std::os::unix::fs::symlink(temp.path().join("missing-target"), &link).unwrap();
+
+        service.watch_instance("inst").await.unwrap();
+
+        assert!(std::fs::symlink_metadata(&link).unwrap().is_symlink());
+        assert!(!link.exists());
+        assert!(watcher.watched.lock().unwrap().contains(&link));
     }
 
     #[tokio::test]

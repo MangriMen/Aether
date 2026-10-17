@@ -98,11 +98,12 @@ impl Drop for ProgressBarId {
 mod tests {
     use std::time::Duration;
 
+    use dashmap::DashMap;
+    use dashmap::mapref::one::Ref as DashMapRef;
     use tokio::sync::mpsc;
 
-    use crate::features::events::infra::InMemoryProgressBarStorage;
     use crate::features::events::{
-        Event, EventEmitter, EventError, ProgressBarStorage, ProgressService, ProgressServiceImpl,
+        Event, EventEmitter, EventError, ProgressBarStorage, ProgressBarStorageError,
     };
 
     use super::*;
@@ -119,21 +120,83 @@ mod tests {
         fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
     }
 
+    /// Minimal storage double: the domain layer must not depend on the real implementation.
+    #[derive(Default)]
+    struct MapStorage(DashMap<Uuid, ProgressBar>);
+
+    #[async_trait::async_trait]
+    impl ProgressBarStorage for MapStorage {
+        async fn insert(
+            &self,
+            progress_bar_id: Uuid,
+            progress_bar: ProgressBar,
+        ) -> Result<(), ProgressBarStorageError> {
+            self.0.insert(progress_bar_id, progress_bar);
+            Ok(())
+        }
+
+        async fn list(&self) -> Vec<ProgressBar> {
+            self.0.iter().map(|r| r.value().clone()).collect()
+        }
+
+        async fn get(
+            &self,
+            progress_bar_id: Uuid,
+        ) -> Result<DashMapRef<'_, Uuid, ProgressBar>, ProgressBarStorageError> {
+            self.0
+                .get(&progress_bar_id)
+                .ok_or(ProgressBarStorageError::NotFound { progress_bar_id })
+        }
+
+        async fn upsert(
+            &self,
+            progress_bar_id: Uuid,
+            progress_bar: ProgressBar,
+        ) -> Result<(), ProgressBarStorageError> {
+            self.0.insert(progress_bar_id, progress_bar);
+            Ok(())
+        }
+
+        async fn remove(
+            &self,
+            progress_bar_id: Uuid,
+        ) -> Result<Option<(Uuid, ProgressBar)>, ProgressBarStorageError> {
+            Ok(self.0.remove(&progress_bar_id))
+        }
+    }
+
     fn jar_event() -> ProgressEventType {
         ProgressEventType::JavaDownload { version: 21 }
+    }
+
+    fn bar(id: Uuid) -> ProgressBar {
+        ProgressBar {
+            id,
+            message: "Downloading".to_string(),
+            total: 10.0,
+            current: 4.0,
+            last_sent: 0.0,
+            progress_type: jar_event(),
+        }
+    }
+
+    async fn settle() {
+        for _ in 0..10 {
+            tokio::task::yield_now().await;
+        }
     }
 
     #[tokio::test]
     async fn dropping_progress_bar_id_removes_bar_and_emits_completion() {
         let (tx, mut rx) = mpsc::unbounded_channel();
-        let storage = Arc::new(InMemoryProgressBarStorage::default());
-        let service = ProgressServiceImpl::new(Arc::new(ChannelEmitter(tx)), storage.clone());
-
-        let bar_id = service
-            .init_progress(jar_event(), 10.0, "Downloading".to_string())
-            .await
-            .unwrap();
-        let id = bar_id.id;
+        let storage = Arc::new(MapStorage::default());
+        let id = Uuid::new_v4();
+        storage.insert(id, bar(id)).await.unwrap();
+        let bar_id = ProgressBarId {
+            id,
+            progress_storage: Some(storage.clone()),
+            event_emitter: Some(Arc::new(ChannelEmitter(tx))),
+        };
         assert_eq!(storage.list().await.len(), 1);
 
         drop(bar_id);
@@ -152,13 +215,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn dropping_detached_progress_bar_id_does_nothing() {
+    async fn dropping_id_of_already_removed_bar_emits_nothing() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let bar_id = ProgressBarId {
+            id: Uuid::new_v4(),
+            progress_storage: Some(Arc::new(MapStorage::default())),
+            event_emitter: Some(Arc::new(ChannelEmitter(tx))),
+        };
+
+        drop(bar_id);
+        settle().await;
+
+        assert!(rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn dropping_detached_progress_bar_id_emits_nothing() {
         let id = ProgressBarId {
             id: Uuid::new_v4(),
             progress_storage: None,
             event_emitter: None,
         };
         drop(id);
-        tokio::task::yield_now().await;
+        settle().await;
     }
 }
