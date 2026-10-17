@@ -50,11 +50,11 @@ fn features_hold(features: &vanilla::FeatureRule) -> bool {
         || features.is_quick_play_singleplayer == Some(false)
 }
 
-// Platform rule resolving
+/// Whether an `os` condition of a rule holds for the given Java architecture.
 pub(super) fn parse_os_rule(
     rule: &vanilla::OsRule,
     java_arch: &str,
-    // Minecraft updated over 1.18.2 (supports MacOS Natively)
+    // `true` for game versions that run natively on every desktop OS the launcher supports
     minecraft_updated: bool,
 ) -> bool {
     let arch_ok = rule
