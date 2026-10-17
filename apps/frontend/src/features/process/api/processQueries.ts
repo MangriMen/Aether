@@ -17,6 +17,6 @@ export const useInstanceProcess = (id: Accessor<string>) => {
   return useQuery(() => ({
     queryKey: processKeys.byInstance(id()),
     queryFn: () => processCommands.getByInstanceId(id()),
-    enabled: !!id,
+    enabled: !!id(),
   }));
 };
