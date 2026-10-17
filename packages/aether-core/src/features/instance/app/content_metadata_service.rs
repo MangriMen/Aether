@@ -215,8 +215,8 @@ struct Inner {
     /// over, which starts it.
     refreshing: Mutex<HashMap<String, bool>>,
     /// Providers that answered [`InstanceError::UnsupportedOperation`] to a lookup: not asked
-    /// it again while the process runs.
-    unsupported: Mutex<HashSet<(ProviderId, Lookup)>>,
+    /// it again until [`ContentMetadataService::forget_unsupported`] clears its plugin.
+    unsupported: Mutex<HashSet<LookupKey>>,
     /// Lookups that failed otherwise, with when: not asked again before
     /// [`LOOKUP_RETRY_AFTER`].
     failed: Mutex<HashMap<LookupKey, Instant>>,
@@ -251,6 +251,16 @@ impl ContentMetadataService {
                 icon_failures: Mutex::new(HashMap::new()),
             }),
         }
+    }
+
+    /// Ask the providers of `plugin_id` again about the lookups they called unsupported: the
+    /// plugin changed, and may answer them now.
+    pub fn forget_unsupported(&self, plugin_id: &str) {
+        self.inner
+            .unsupported
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .retain(|(provider_id, _)| provider_id.plugin_id != plugin_id);
     }
 
     /// Set each file's [`ContentFile::metadata`] and [`ContentFile::version_metadata`] to what
