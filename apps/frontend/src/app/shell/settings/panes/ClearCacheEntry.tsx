@@ -1,12 +1,13 @@
 import { Show, type Component } from 'solid-js';
 
 import type { CacheUsageDto } from '@/platform/bindings/settings';
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { useClearCache } from '@/features/settings';
-import { formatBytes, sumBytes } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, SettingsEntry } from '@/shared/ui';
+import { formatBytes, sumBytes } from '@/shared/format';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { Button } from '@/shared/ui-kit';
 
 export type ClearCacheEntryProps = SettingsEntryProps & {
   usage?: CacheUsageDto;

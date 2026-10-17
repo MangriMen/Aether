@@ -8,7 +8,7 @@ import IconMdiSquareRoundedOutline from '~icons/mdi/square-rounded-outline';
 import { Show, splitProps } from 'solid-js';
 
 import { isMaximized, toggleMaximize } from '@/platform/window';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { TitleBarButton } from './TitleBarButton';
 

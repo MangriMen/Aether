@@ -6,13 +6,10 @@ import {
   type Component,
 } from 'solid-js';
 
+import { getTranslatedError, isLauncherError } from '@/features/errors';
 import { useLastPluginReload, type Plugin } from '@/features/plugins';
-import { cn } from '@/shared/lib';
-import {
-  getTranslatedError,
-  isLauncherError,
-  useTranslation,
-} from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn } from '@/shared/utils';
 
 import { RestartPluginButton } from './RestartPluginButton';
 

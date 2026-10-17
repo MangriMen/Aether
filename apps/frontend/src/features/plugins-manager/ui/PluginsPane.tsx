@@ -1,11 +1,11 @@
 import { createMemo, createSignal, Show, type Component } from 'solid-js';
 
 import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
-import type { SettingsPaneProps } from '@/shared/ui';
+import type { SettingsPaneProps } from '@/shared/settings-layout';
 
 import { usePlugins } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsPane } from '@/shared/settings-layout';
 
 import { AddPluginView } from './AddPluginView';
 import { PluginDetails } from './PluginDetails';

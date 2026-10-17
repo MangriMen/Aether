@@ -9,7 +9,7 @@ import {
 } from 'solid-js';
 
 import type { ContentSearchParams, ContentType } from '@/features/content';
-import type { Option } from '@/shared/model';
+import type { Option } from '@/shared/ui-kit';
 
 import {
   CONTENT_TYPES,
@@ -17,7 +17,8 @@ import {
   isModLoader,
   useSearchContent,
 } from '@/features/content';
-import { cn, debounce, logError } from '@/shared/lib';
+import { logError } from '@/shared/log';
+import { cn, debounce } from '@/shared/utils';
 
 import type { ContentProviderEntry } from '../model/contentProviderMapper';
 

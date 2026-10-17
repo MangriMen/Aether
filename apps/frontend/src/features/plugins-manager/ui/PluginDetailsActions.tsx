@@ -17,9 +17,9 @@ import {
   useUpdatesData,
   type Plugin,
 } from '@/features/plugins';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, Separator } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, Separator } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { PluginVersionDropdown } from './PluginVersionDropdown';
 

@@ -9,15 +9,15 @@ import { createSignal, type Component } from 'solid-js';
 import type { SettingsTab } from '@/features/settings';
 
 import { useSettingsSearchParams } from '@/features/settings';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   IconButton,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { IS_SETTINGS_MODAL_FULLSCREEN_KEY } from './settingsDialogConstants';
 import { SettingsView } from './SettingsView';

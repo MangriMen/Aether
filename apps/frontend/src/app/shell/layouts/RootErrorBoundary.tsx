@@ -3,9 +3,9 @@ import type { ParentProps } from 'solid-js';
 import { ErrorBoundary, type Component } from 'solid-js';
 
 import { setFallbackAttributes } from '@/features/appearance';
+import { isLauncherError } from '@/features/errors';
 import { showWindow } from '@/platform/window';
-import { logError } from '@/shared/lib';
-import { isLauncherError } from '@/shared/model';
+import { logError } from '@/shared/log';
 
 import { BaseTitleBar } from '../titlebar/BaseTitleBar';
 import { AppInitializeError } from './AppInitializeError';

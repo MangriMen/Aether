@@ -10,11 +10,11 @@ import {
   type Component,
 } from 'solid-js';
 
-import type { ButtonProps } from '@/shared/ui';
+import type { ButtonProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, CombinedTooltip } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { JavaTestStatus } from '../model/javaVersion';
 

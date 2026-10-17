@@ -2,10 +2,10 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import { type ValidComponent } from 'solid-js';
 
-import type { CombinedDialogProps } from '@/shared/ui';
+import type { CombinedDialogProps } from '@/shared/ui-kit';
 
-import { useTranslation } from '@/shared/model';
-import { CombinedDialog } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedDialog } from '@/shared/ui-kit';
 
 export type UpdateAndRestartWarningDialogProps = Omit<
   CombinedDialogProps,

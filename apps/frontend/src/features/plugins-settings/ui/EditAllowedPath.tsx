@@ -7,14 +7,14 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   BrowseTrailingIcon,
   Button,
   Checkbox,
   CombinedTextField,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { EditAllowedItemProps } from '../model/allowedItem';
 import type {

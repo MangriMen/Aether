@@ -1,6 +1,7 @@
-import type { Locale, Option } from '@/shared/model';
+import type { Locale } from '@/shared/i18n';
+import type { Option } from '@/shared/ui-kit';
 
-import { LOCALES } from '@/shared/model';
+import { LOCALES } from '@/shared/i18n';
 
 export const LOCALE_OPTIONS: Option<Locale>[] = [
   { name: 'English', value: LOCALES.En },

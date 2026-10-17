@@ -1,8 +1,6 @@
-import type { GlobalSearchParams } from '@/shared/config';
-
 import type { SettingsTab } from './settingsTabs';
 
-export interface SettingsSearchParams extends GlobalSearchParams {
+export interface SettingsSearchParams {
   modal?: 'settings';
   tab?: SettingsTab;
 }

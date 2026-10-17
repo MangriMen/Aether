@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/solid-table';
 
-import type { appTableFeatures, TFunction } from '@/shared/model';
+import type { TFunction } from '@/shared/i18n';
+import type { appTableFeatures } from '@/shared/ui-kit';
 
 import type { JavaVersion } from '../model/javaVersion';
 

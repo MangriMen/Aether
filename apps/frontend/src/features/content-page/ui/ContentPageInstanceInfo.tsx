@@ -4,11 +4,14 @@ import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import type { Instance } from '@/features/instance';
 
-import { InstanceHeaderInfo, InstanceIcon } from '@/features/instance';
-import { ROUTES } from '@/shared/config';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import {
+  InstanceHeaderInfo,
+  InstanceIcon,
+  INSTANCE_ROUTES,
+} from '@/features/instance';
+import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentPageInstanceInfoProps = ComponentProps<'div'> & {
   instance?: Instance;
@@ -28,7 +31,7 @@ export const ContentPageInstanceInfo: Component<
       return;
     }
 
-    navigate(ROUTES.INSTANCE(local.instance.id));
+    navigate(INSTANCE_ROUTES.INSTANCE(local.instance.id));
   };
 
   return (

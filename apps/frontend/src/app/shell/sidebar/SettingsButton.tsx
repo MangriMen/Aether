@@ -4,7 +4,7 @@ import type { Component, ValidComponent } from 'solid-js';
 import IconMdiCog from '~icons/mdi/cog';
 import { createMemo } from 'solid-js';
 
-import type { IconButtonProps } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui-kit';
 
 import { useSettingsSearchParams } from '@/features/settings';
 import {
@@ -12,8 +12,8 @@ import {
   checkIsUpdateAvailable,
   UpdateBadge,
 } from '@/features/update';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

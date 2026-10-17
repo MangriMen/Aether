@@ -8,9 +8,9 @@ import {
 
 import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedSelect, CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedSelect, CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 type ProviderOption = {
   value: PluginSourceTypeDto;

@@ -12,7 +12,7 @@ import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentFile } from '@/features/content';
 
-import { appTableFeatures, type AppTableFeatures } from '@/shared/model';
+import { appTableFeatures, type AppTableFeatures } from '@/shared/ui-kit';
 
 import {
   CONTENT_TABLE_COLUMNS,

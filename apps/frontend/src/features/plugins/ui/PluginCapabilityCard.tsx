@@ -3,13 +3,13 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 import { createSignal, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
   Image,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type {
   ContentProviderCapability,

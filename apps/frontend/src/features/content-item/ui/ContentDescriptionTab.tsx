@@ -5,8 +5,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { MarkdownRenderer } from '@/shared/ui';
+import { MarkdownRenderer } from '@/shared/markdown';
+import { cn } from '@/shared/utils';
 
 import type { ContentItemPageTabProps } from '../model/contentItemPageTabs';
 

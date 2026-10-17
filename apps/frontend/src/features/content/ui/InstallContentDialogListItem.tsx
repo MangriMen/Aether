@@ -3,11 +3,14 @@ import type { Component, ComponentProps } from 'solid-js';
 import { A } from '@solidjs/router';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { InstanceIcon, type Instance } from '@/features/instance';
-import { ROUTES } from '@/shared/config';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip } from '@/shared/ui';
+import {
+  InstanceIcon,
+  type Instance,
+  INSTANCE_ROUTES,
+} from '@/features/instance';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { ContentCompatibilityResult } from '../model/compatibility';
 import type { ContentManager } from '../model/contentManager';
@@ -76,7 +79,7 @@ export const InstallContentDialogListItem: Component<
       {...others}
     >
       <A
-        href={ROUTES.INSTANCE(local.instance.id)}
+        href={INSTANCE_ROUTES.INSTANCE(local.instance.id)}
         onClick={local.onCloseDialog}
       >
         <div

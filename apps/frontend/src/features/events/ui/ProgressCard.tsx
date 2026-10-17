@@ -2,8 +2,8 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, Progress } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, Progress } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
 

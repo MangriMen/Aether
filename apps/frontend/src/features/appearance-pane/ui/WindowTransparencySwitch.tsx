@@ -1,13 +1,13 @@
 import { createSignal, type ComponentProps } from 'solid-js';
 
 import { useAppSettings, useEditAppSettings } from '@/features/settings';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   CombinedDialog,
   Switch,
   SwitchControl,
   SwitchThumb,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import { useRecreateWindow } from '../api/useRecreateWindow';
 

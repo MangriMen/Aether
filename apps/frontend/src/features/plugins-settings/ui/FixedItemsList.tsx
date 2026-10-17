@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import type { AllowedItemProps } from '../model/allowedItem';
 

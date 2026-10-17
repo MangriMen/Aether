@@ -1,4 +1,4 @@
-import { mergeDefined } from '@/shared/lib';
+import { mergeDefined } from '@/shared/utils';
 
 /**
  * High-level merge for content state.

@@ -13,8 +13,8 @@ import {
 import type { ContentType, ContentVersion } from '@/features/content';
 
 import { useContentContext } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { IconButton } from '@/shared/ui';
+import { IconButton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentVersionActionsProps = ComponentProps<'div'> & {
   version: ContentVersion;

@@ -1,5 +1,5 @@
 import type { ModLoader } from '@/features/minecraft';
-import type { Option } from '@/shared/model';
+import type { Option } from '@/shared/ui-kit';
 
 export const LOADERS = [
   { name: 'Vanilla', value: 'vanilla' },

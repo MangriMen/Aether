@@ -1,16 +1,17 @@
 import { Route, Router, type RouteSectionProps } from '@solidjs/router';
 import { lazy, type Component } from 'solid-js';
 
+import { HomePage } from '@/app/pages/home';
 import { ContentBrowserWrapper } from '@/features/content-browser';
 import { ContentItemPage } from '@/features/content-item';
 import { ContentPageLayout } from '@/features/content-page';
 import { InstanceSettingsDialog } from '@/features/instance-edit';
 import { InstancePage } from '@/features/instance-page';
-import { HomePage } from '@/pages/home';
-import { ROUTE_PATTERNS } from '@/shared/config';
+
+import { ROUTE_PATTERNS } from './routePatterns';
 
 const PlaygroundPage = lazy(() =>
-  import('@/pages/playground').then((m) => ({ default: m.PlaygroundPage })),
+  import('@/app/pages/playground').then((m) => ({ default: m.PlaygroundPage })),
 );
 
 import { AppRoot } from './AppRoot';

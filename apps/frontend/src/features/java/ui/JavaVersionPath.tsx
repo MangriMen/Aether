@@ -9,9 +9,9 @@ import {
   type JSX,
 } from 'solid-js';
 
-import type { CombinedTextFieldProps } from '@/shared/ui';
+import type { CombinedTextFieldProps } from '@/shared/ui-kit';
 
-import { CombinedTextField } from '@/shared/ui';
+import { CombinedTextField } from '@/shared/ui-kit';
 
 import { useEditJava, useRemoveJava } from '../api/javaQueries';
 

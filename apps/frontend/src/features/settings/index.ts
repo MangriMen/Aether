@@ -13,4 +13,3 @@ export * from './model/settings';
 export * from './model/settingsSearchParams';
 export * from './model/settingsSearchParamsCodec';
 export * from './model/settingsTabs';
-export * from './ui/DiskUsage';

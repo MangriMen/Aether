@@ -9,7 +9,7 @@ import {
 } from 'solid-js';
 
 import { InstanceIcon } from '@/features/instance';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   CombinedTooltip,
@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 export type InstanceIconDropdownButtonProps = ComponentProps<'div'> & {
   src?: string | undefined;

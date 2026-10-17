@@ -3,8 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, Show, splitProps } from 'solid-js';
 
 import { useMaxRam } from '@/features/settings';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn } from '@/shared/utils';
 
 import { bytesToMegabytes, MIN_JRE_MEMORY } from '../model/memory';
 import { InheritanceLabel } from './InheritanceLabel';

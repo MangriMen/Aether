@@ -4,7 +4,7 @@ import {
   PluginCapabilitiesSection,
   PluginHostFunctionsSection,
 } from '@/features/plugins';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import type { PluginDetailsTabProps } from '../model/pluginDetailsTabs';
 

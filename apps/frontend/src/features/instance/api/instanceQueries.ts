@@ -3,9 +3,9 @@ import { createMemo, type Accessor } from 'solid-js';
 
 import type { EditInstanceDto } from '@/platform/bindings/instance';
 
+import { showError } from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 
 import { instanceDtoToInstance } from '../model/instanceMappers';
 import { invalidateInstanceData } from './instanceCache';

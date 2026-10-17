@@ -10,17 +10,17 @@ import {
   type Component,
 } from 'solid-js';
 
-import type { PartialBy } from '@/shared/model';
+import type { PartialBy } from '@/shared/utils';
 
 import { useInstances } from '@/features/instance';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   CombinedTextField,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type { ContentItem } from '../model/contentItem';

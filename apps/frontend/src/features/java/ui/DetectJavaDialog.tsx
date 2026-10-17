@@ -3,14 +3,14 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo, splitProps, type Component } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   DataTable,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import type { Java } from '../model/java';
 import type { StrictJavaVersion } from '../model/javaVersion';

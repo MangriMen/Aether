@@ -1,4 +1,4 @@
-import { closeDialog, showDialog } from '@/shared/model';
+import { closeDialog, showDialog } from '@/shared/dialogs';
 
 import {
   isIncompatibleApiVersionError,

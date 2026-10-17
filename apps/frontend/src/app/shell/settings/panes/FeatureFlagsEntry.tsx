@@ -1,10 +1,11 @@
 import { For, type Component, type ComponentProps, splitProps } from 'solid-js';
 
 import type { FeatureFlagsStore } from '@/features/settings';
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { featureFlagsActions, useFeatureFlagsStore } from '@/features/settings';
-import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { Switch, SwitchControl, SwitchThumb } from '@/shared/ui-kit';
 
 export type FeatureFlagsEntryProps = ComponentProps<'div'> & SettingsEntryProps;
 

@@ -4,8 +4,8 @@ import { type RouteSectionProps } from '@solidjs/router';
 import { createMemo, Match, splitProps, Switch } from 'solid-js';
 
 import { useInstance, useInstanceDir } from '@/features/instance';
-import { useTranslation } from '@/shared/model';
-import { DelayedShow, Separator, Skeleton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { DelayedShow, Separator, Skeleton } from '@/shared/ui-kit';
 
 import { Body } from './Body';
 import { Header } from './Header';

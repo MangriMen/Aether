@@ -5,8 +5,8 @@ import { splitProps, type Component } from 'solid-js';
 
 import type { RuntimeConfig } from '@/features/plugins';
 
-import { cn, noop } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn, noop } from '@/shared/utils';
 
 import type { PluginSettingsSchemaInput } from '../model/pluginSettingsValidation';
 

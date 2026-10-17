@@ -6,7 +6,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { type ProgressEvent } from '../model/progressEvent';
 import { ProgressCard } from './ProgressCard';

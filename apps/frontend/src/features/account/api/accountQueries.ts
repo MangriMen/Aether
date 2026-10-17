@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { showError, isLauncherError } from '@/features/errors';
 import { authCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { isLauncherError, useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 
 import { isAuthValidationError } from '../model/accountError';
 import { accountCache, accountQueries } from './accountCache';

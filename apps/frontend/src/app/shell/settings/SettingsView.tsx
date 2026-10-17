@@ -8,7 +8,7 @@ import {
   createMemo,
 } from 'solid-js';
 
-import type { TabsProps } from '@/shared/ui';
+import type { TabsProps } from '@/shared/ui-kit';
 
 import {
   DEFAULT_SETTINGS_TAB,
@@ -16,15 +16,14 @@ import {
   SettingsTab,
 } from '@/features/settings';
 import { UpdateBadge } from '@/features/update';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
-  Button,
   SettingsTabsContent,
   SettingsTabsList,
   SettingsTabsTrigger,
-  Tabs,
-} from '@/shared/ui';
+} from '@/shared/settings-layout';
+import { Button, Tabs } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useOnMountSettingsPage } from './useOnMountSettingsPage';
 import { useSettingsPageTabs } from './useSettingsPageTabs';

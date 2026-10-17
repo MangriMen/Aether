@@ -13,9 +13,9 @@ import {
   useContentVersions,
 } from '@/features/content';
 import { useInstallInstance, useUpdateInstance } from '@/features/instance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, Image, LabeledField, Skeleton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, Image, LabeledField, Skeleton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { InstanceSettingsTabProps } from '../model/instanceSettingsTabs';
 

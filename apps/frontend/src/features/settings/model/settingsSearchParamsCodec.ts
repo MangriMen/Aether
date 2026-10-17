@@ -1,6 +1,6 @@
 import type { SearchParams } from '@solidjs/router';
 
-import { parseSearchParamToString } from '@/shared/lib';
+import { parseSearchParamToString } from '@/shared/search-params';
 
 import type { SettingsSearchParams } from './settingsSearchParams';
 

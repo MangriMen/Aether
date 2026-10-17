@@ -22,7 +22,7 @@ const deepFeatureImport = {
   message: 'Import a feature through its index: @/features/<name>.',
 };
 const deepModuleImport = {
-  regex: '^@/(app/(shell|runtime)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
+  regex: '^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
   message: 'Import a module through its index; inside a module, use relative imports.',
 };
 const appImport = {
@@ -30,9 +30,21 @@ const appImport = {
   message: 'Only app/ imports app/.',
 };
 const upperLayerImport = {
-  regex: '^@/(features|entities|widgets|pages)(/|$)',
+  regex: '^@/features(/|$)',
   message: 'shared/ and platform/ do not import features.',
 };
+const platformImport = {
+  regex: '^@/platform(/|$)',
+  message: 'shared/ is not tied to Aether, so it does not import platform/.',
+};
+const uiKitSharedImport = {
+  regex: '^@/shared/(?!utils$)',
+  message: 'shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider.',
+};
+const featurePatterns = [deepFeatureImport, deepModuleImport, appImport];
+const platformPatterns = [...featurePatterns, upperLayerImport];
+const sharedPatterns = [...platformPatterns, platformImport];
+const uiKitPatterns = [...sharedPatterns, uiKitSharedImport];
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -160,29 +172,14 @@ export default [
       'no-restricted-imports': ['error', { patterns: [deepFeatureImport, deepModuleImport] }],
     },
   },
-  {
-    files: ['src/{features,entities,widgets,pages}/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [deepFeatureImport, deepModuleImport, appImport] },
-      ],
-    },
-  },
-  {
-    files: ['src/{shared,platform}/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            deepFeatureImport,
-            deepModuleImport,
-            appImport,
-            upperLayerImport,
-          ],
-        },
-      ],
-    },
-  },
+  // Flat config replaces a rule instead of merging it, so each block lists every pattern.
+  ...[
+    ['src/features/**/*.{ts,tsx}', featurePatterns],
+    ['src/platform/**/*.{ts,tsx}', platformPatterns],
+    ['src/shared/**/*.{ts,tsx}', sharedPatterns],
+    ['src/shared/ui-kit/**/*.{ts,tsx}', uiKitPatterns],
+  ].map(([glob, patterns]) => ({
+    files: [glob],
+    rules: { 'no-restricted-imports': ['error', { patterns }] },
+  })),
 ];

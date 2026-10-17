@@ -4,9 +4,9 @@ import { Show, splitProps } from 'solid-js';
 
 import { ImportInstanceView } from '@/features/instance-import';
 import { useImporters } from '@/features/plugins';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, DialogFooter } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, DialogFooter } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { TabContentProps } from '../model/tabs';
 

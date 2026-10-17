@@ -6,11 +6,11 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { CombinedTextFieldProps } from '@/shared/ui';
+import type { CombinedTextFieldProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { InheritanceLabel } from './InheritanceLabel';
 import { OverrideCheckbox } from './OverrideCheckbox';

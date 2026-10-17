@@ -7,8 +7,8 @@ import {
 } from 'solid-js';
 
 import { pluginsCache, type Plugin } from '@/features/plugins';
-import { cn } from '@/shared/lib';
-import { Image, Separator } from '@/shared/ui';
+import { Image, Separator } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { PluginDetailsActions } from './PluginDetailsActions';
 import { PluginDetailsBody } from './PluginDetailsBody';

@@ -8,8 +8,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn, noop } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn, noop } from '@/shared/utils';
 
 import {
   useHooksSettingsForm,

@@ -1,8 +1,8 @@
 import { Field, getInput, type FormStore } from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField, LabeledField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField, LabeledField } from '@/shared/ui-kit';
 
 import type { HookFieldConfig } from '../model/hooksFields';
 import type {

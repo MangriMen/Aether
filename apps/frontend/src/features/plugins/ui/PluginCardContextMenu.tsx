@@ -3,14 +3,14 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps, Switch, Match } from 'solid-js';
 
-import { stopPropagation } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { stopPropagation } from '@/shared/utils';
 
 export type PluginContextMenuProps = ContextMenuRootProps & {
   onToggleEnabled?: ComponentProps<'button'>['onClick'];

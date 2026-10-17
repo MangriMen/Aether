@@ -3,8 +3,8 @@ import type { Component } from 'solid-js';
 import { createEffect } from 'solid-js';
 
 import { type ContentFile } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { CombinedPagination, DataTable } from '@/shared/ui';
+import { CombinedPagination, DataTable } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { createContentTable } from '../lib/createContentTable';
 import { ContentActions } from './ContentActions';

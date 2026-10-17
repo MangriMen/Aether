@@ -1,8 +1,8 @@
 import { openUrl } from '@tauri-apps/plugin-opener';
 
-import type { TFunction } from '@/shared/model';
+import type { TFunction } from '@/shared/i18n';
 
-import { showToast } from '@/shared/ui';
+import { showToast } from '@/shared/ui-kit';
 
 const maxTextLengthForTranslatorUrl = 5000;
 

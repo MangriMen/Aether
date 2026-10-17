@@ -7,8 +7,8 @@ import {
   useEditAppSettings,
   type WindowEffect,
 } from '@/features/settings';
-import { useTranslation, type Option } from '@/shared/model';
-import { CombinedSelect } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedSelect, type Option } from '@/shared/ui-kit';
 
 export type WindowEffectEntryProps = {
   class?: string;

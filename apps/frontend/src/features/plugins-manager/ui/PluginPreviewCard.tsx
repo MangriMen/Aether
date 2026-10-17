@@ -6,14 +6,14 @@ import {
   PluginCapabilitiesSection,
   PluginInfoHeader,
 } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   CombinedSelect,
   FieldLabel,
   Image,
   Separator,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 export interface ReleaseOption {
   value: string;

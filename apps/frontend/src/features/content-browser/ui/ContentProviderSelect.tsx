@@ -2,12 +2,11 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import { Show, splitProps } from 'solid-js';
 
-import type { Option } from '@/shared/model';
-import type { CombinedSelectProps } from '@/shared/ui';
+import type { CombinedSelectProps, Option } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedSelect, Skeleton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedSelect, Skeleton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { ContentProviderEntry } from '../model/contentProviderMapper';
 

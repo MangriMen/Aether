@@ -7,7 +7,7 @@ import {
 
 import type { ContentVersion } from '@/features/content';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 export interface ContentVersionTypeBadgeProps {
   type: ContentVersion['versionType'];

@@ -3,11 +3,11 @@ import type { FormStore } from '@formisch/solid';
 import { Field, setInput, getInput } from '@formisch/solid';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import type { TFunction } from '@/shared/model';
+import type { TFunction } from '@/shared/i18n';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { LabeledField, StandaloneTextFieldErrorMessage } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { LabeledField, StandaloneTextFieldErrorMessage } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { WindowSettingsSchema } from '../model/windowSettingsSchema';
 

@@ -5,17 +5,17 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { Option } from '@/shared/model';
+import type { Option } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import {
   setUpdateNotificationStyle,

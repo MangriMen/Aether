@@ -9,7 +9,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   DropdownMenu,
@@ -17,7 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   IconButton,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 export type JavaVersionActionsProps = ComponentProps<'div'> & {
   isInstalling?: boolean;
   onInstallRecommended?: () => void;

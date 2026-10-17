@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-import { createI18nError } from '@/shared/lib';
+import { createI18nError } from '@/shared/i18n';
 
 const EnvVarsTransformation = v.pipe(
   v.string(),

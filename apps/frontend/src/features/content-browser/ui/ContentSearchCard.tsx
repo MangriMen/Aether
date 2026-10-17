@@ -8,8 +8,8 @@ import {
 } from 'solid-js';
 
 import { type ContentType } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { CombinedPagination, Skeleton } from '@/shared/ui';
+import { CombinedPagination, Skeleton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { ContentSearch } from './ContentSearch';
 import { ItemsPerPageSelect } from './ItemsPerPageSelect';

@@ -8,8 +8,8 @@ import {
   getContentFileVersionNumber,
   getContentFileVersionState,
 } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn } from '@/shared/utils';
 
 interface ContentVersionCellProps {
   file: ContentFile;

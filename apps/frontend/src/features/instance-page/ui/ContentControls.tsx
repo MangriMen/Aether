@@ -7,9 +7,9 @@ import {
 
 import type { Instance } from '@/features/instance';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { InstallContentButtonProps } from './InstallContentButton';
 

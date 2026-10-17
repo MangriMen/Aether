@@ -4,7 +4,7 @@ import { Match, splitProps, Switch } from 'solid-js';
 
 import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { InstallFromGithubView } from './InstallFromGithubView';
 

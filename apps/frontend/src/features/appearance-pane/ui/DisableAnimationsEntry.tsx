@@ -1,10 +1,11 @@
 import { Show, type Component } from 'solid-js';
 
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { useThemeContext } from '@/features/appearance';
-import { useTranslation } from '@/shared/model';
-import { SettingsEntry, Switch, SwitchControl, SwitchThumb } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { Switch, SwitchControl, SwitchThumb } from '@/shared/ui-kit';
 
 export type DisableAnimationsEntryProps = SettingsEntryProps;
 

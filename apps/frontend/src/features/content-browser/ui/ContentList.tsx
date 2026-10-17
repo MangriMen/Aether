@@ -9,8 +9,8 @@ import {
 
 import type { ContentItem } from '@/features/content';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn } from '@/shared/utils';
 
 import { ContentListItem } from './ContentListItem';
 import { ContentListSkeleton } from './ContentListSkeleton';

@@ -2,11 +2,11 @@ import { splitProps, type Component, For, createMemo } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 import type { Plugin } from '@/features/plugins';
-import type { TabsProps } from '@/shared/ui';
+import type { TabsProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import {
   PLUGIN_DETAILS_TABS,

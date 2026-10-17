@@ -3,16 +3,16 @@ import type { ValidComponent } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { SelectRootProps } from '@/shared/ui';
+import type { SelectRootProps } from '@/shared/ui-kit';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import { DEFAULT_PER_PAGE_OPTIONS } from '../model/contentBrowserConstants';
 

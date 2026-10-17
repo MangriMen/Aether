@@ -6,9 +6,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { EditAllowedItemProps } from '../model/allowedItem';
 

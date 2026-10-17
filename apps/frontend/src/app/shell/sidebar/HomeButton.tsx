@@ -3,11 +3,12 @@ import type { Component } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import IconMdiHomeVariant from '~icons/mdi/home-variant';
 
-import type { IconButtonProps } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui-kit';
 
-import { ROUTES } from '@/shared/config';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
+
+import { APP_ROUTES } from '../appRoutes';
 
 export type HomeButtonProps = IconButtonProps;
 
@@ -15,7 +16,7 @@ const HomeButton: Component<HomeButtonProps> = (props) => {
   const navigate = useNavigate();
   const [{ t }] = useTranslation();
 
-  const handleClick = () => navigate(ROUTES.HOME);
+  const handleClick = () => navigate(APP_ROUTES.HOME);
 
   return (
     <CombinedTooltip

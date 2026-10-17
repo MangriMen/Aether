@@ -1,6 +1,6 @@
 import { useEventListener, eventsEvents } from '@/platform/ipc';
-import { logDebug } from '@/shared/lib';
-import { showToast } from '@/shared/ui';
+import { logDebug } from '@/shared/log';
+import { showToast } from '@/shared/ui-kit';
 
 export const useWarningEventsListener = () => {
   useEventListener(eventsEvents.warningEventDto, (e) => {

@@ -11,7 +11,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { AppTableFeatures } from '@/shared/model';
+import type { AppTableFeatures } from '@/shared/ui-kit';
 
 import {
   useDisableContents,
@@ -20,9 +20,9 @@ import {
   type ContentFile,
 } from '@/features/content';
 import { type Instance } from '@/features/instance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type SelectedRowsActionsProps = ComponentProps<'div'> & {
   instanceId: Instance['id'];

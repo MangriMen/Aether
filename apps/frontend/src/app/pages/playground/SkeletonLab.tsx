@@ -1,0 +1,17 @@
+import { Skeleton } from '@/shared/ui-kit';
+
+import { ComponentShelf } from './ComponentShelf';
+
+export const SkeletonLab = () => {
+  return (
+    <ComponentShelf title='Skeleton'>
+      <div class='space-x-4 flex items-center'>
+        <Skeleton height={48} circle animate={false} />
+        <div class='space-y-2'>
+          <Skeleton height={16} width={250} radius={10} />
+          <Skeleton height={16} width={200} radius={10} />
+        </div>
+      </div>
+    </ComponentShelf>
+  );
+};

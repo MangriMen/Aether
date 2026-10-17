@@ -1,15 +1,15 @@
 import type { SearchParams } from '@solidjs/router';
 
-import { ROUTES } from '@/shared/config';
 import {
   parseSearchParamToNumber,
   parseSearchParamToString,
   parseSearchParamToStringArray,
   searchParamsToQueryString,
-} from '@/shared/lib';
+} from '@/shared/search-params';
 
 import type { ContentPageSearchParams } from './contentPageSearchParams';
 
+import { CONTENT_ROUTES } from './contentRoutes';
 import { isContentType } from './contentType';
 
 export const decodeContentSearchParams = (
@@ -81,7 +81,7 @@ export const createContentPageHref = (
   });
   const queryString = searchParamsToQueryString(encodedFilters);
 
-  const baseUrl = ROUTES.CONTENT_ITEM(contentId);
+  const baseUrl = CONTENT_ROUTES.CONTENT_ITEM(contentId);
 
   if (!queryString) {
     return baseUrl;

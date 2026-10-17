@@ -1,12 +1,13 @@
 import { Show, type Component } from 'solid-js';
 
-import type { SettingsPaneProps } from '@/shared/ui';
+import type { SettingsPaneProps } from '@/shared/settings-layout';
 
-import { DiskUsage, useCacheUsage, useStorageUsage } from '@/features/settings';
-import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
+import { useCacheUsage, useStorageUsage } from '@/features/settings';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsPane } from '@/shared/settings-layout';
 
 import { ClearCacheEntry } from './ClearCacheEntry';
+import { DiskUsage } from './DiskUsage';
 
 export type StoragePaneProps = SettingsPaneProps;
 

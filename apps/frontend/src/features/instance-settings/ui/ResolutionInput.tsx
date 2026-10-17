@@ -1,7 +1,10 @@
 import { splitProps, type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { CombinedTextField, type CombinedTextFieldProps } from '@/shared/ui';
+import {
+  CombinedTextField,
+  type CombinedTextFieldProps,
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ResolutionInputProps = CombinedTextFieldProps;
 

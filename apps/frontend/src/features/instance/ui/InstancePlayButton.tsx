@@ -3,10 +3,10 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import IconMdiPlay from '~icons/mdi/play';
 
-import type { IconButtonProps } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui-kit';
 
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type InstancePlayButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;

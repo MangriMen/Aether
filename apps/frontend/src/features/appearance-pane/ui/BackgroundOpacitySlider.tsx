@@ -6,8 +6,8 @@ import {
 } from 'solid-js';
 
 import { useThemeContext } from '@/features/appearance';
-import { cn } from '@/shared/lib';
-import { CombinedSlider, CombinedTextField } from '@/shared/ui';
+import { CombinedSlider, CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type BackgroundOpacitySliderProps = ComponentProps<'div'>;
 

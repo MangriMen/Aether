@@ -14,6 +14,7 @@ export * from './model/installStage';
 export * from './model/instance';
 export * from './model/instanceEvent';
 export * from './model/instanceMappers';
+export * from './model/instanceRoutes';
 export * from './model/loaderVersionPreference';
 export * from './model/packInfo';
 export * from './model/runningInstancesContext';

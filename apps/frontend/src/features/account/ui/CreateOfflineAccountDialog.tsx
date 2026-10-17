@@ -2,12 +2,9 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 
 import { createEffect, createSignal, type Component } from 'solid-js';
 
-import {
-  getTranslatedError,
-  isLauncherError,
-  useTranslation,
-} from '@/shared/model';
-import { Dialog, DialogContent, DialogHeader } from '@/shared/ui';
+import { getTranslatedError, isLauncherError } from '@/features/errors';
+import { useTranslation } from '@/shared/i18n';
+import { Dialog, DialogContent, DialogHeader } from '@/shared/ui-kit';
 
 import { useCreateOfflineAccount } from '../api/accountQueries';
 import { isAuthValidationError } from '../model/accountError';

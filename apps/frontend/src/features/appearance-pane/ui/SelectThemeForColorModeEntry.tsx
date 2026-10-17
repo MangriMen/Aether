@@ -2,12 +2,12 @@ import type { Component } from 'solid-js';
 
 import { createMemo, splitProps } from 'solid-js';
 
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { useThemeContext } from '@/features/appearance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { SettingsEntry } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { cn } from '@/shared/utils';
 
 import SelectThemeForColorMode from './SelectThemeForColorMode';
 

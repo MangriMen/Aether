@@ -2,11 +2,11 @@ import { createColumnHelper } from '@tanstack/solid-table';
 import { createMemo } from 'solid-js';
 
 import type { ContentVersion } from '@/features/content';
-import type { AppTableFeatures } from '@/shared/model';
+import type { AppTableFeatures } from '@/shared/ui-kit';
 
-import { dayjs, formatRelativeTime, formatTime } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip } from '@/shared/ui';
+import { dayjs, formatRelativeTime, formatTime } from '@/shared/format';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip } from '@/shared/ui-kit';
 
 import { formatDownloads } from '../model/formatDownloads';
 import { ContentVersionBadgeList } from './ContentVersionBadgeList';

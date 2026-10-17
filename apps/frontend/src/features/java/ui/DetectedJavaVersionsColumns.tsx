@@ -2,9 +2,10 @@ import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiCheck from '~icons/mdi/check';
 import { createMemo, Show, type Accessor } from 'solid-js';
 
-import type { appTableFeatures, TFunction } from '@/shared/model';
+import type { TFunction } from '@/shared/i18n';
+import type { appTableFeatures } from '@/shared/ui-kit';
 
-import { Button, CombinedTooltip } from '@/shared/ui';
+import { Button, CombinedTooltip } from '@/shared/ui-kit';
 
 import type { StrictJavaVersion } from '../model/javaVersion';
 

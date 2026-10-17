@@ -4,8 +4,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import IconMdiFileImport from '~icons/mdi/file-import';
 
 import { useImportPlugins } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type InstallFromPluginPackageButtonProps = ComponentProps<'div'>;
 

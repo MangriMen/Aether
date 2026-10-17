@@ -4,7 +4,7 @@ import type { Component, ComponentProps, ValidComponent } from 'solid-js';
 import { Polymorphic } from '@kobalte/core';
 import { Match, mergeProps, splitProps, Switch } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { type Instance } from '../model/instance';
 import { InstanceIcon } from './InstanceIcon';

@@ -7,8 +7,9 @@ import {
   useGrantPluginFolderAccess,
   useGrantPluginHostAccess,
 } from '@/features/plugins';
-import { closeDialog, showDialog, useTranslation } from '@/shared/model';
-import { CombinedDialog } from '@/shared/ui';
+import { closeDialog, showDialog } from '@/shared/dialogs';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedDialog } from '@/shared/ui-kit';
 
 import { pluginAccessTargetOf } from '../model/accessTarget';
 

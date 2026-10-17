@@ -1,10 +1,9 @@
 import { splitProps } from 'solid-js';
 
 import type { ModdedLoaderVersion } from '@/features/minecraft';
-import type { SelectRootProps } from '@/shared/ui';
+import type { SelectRootProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Badge,
   Select,
@@ -13,7 +12,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type SelectSpecificLoaderVersionProps<
   Option extends ModdedLoaderVersion = ModdedLoaderVersion,

@@ -5,7 +5,7 @@ import {
   usePluginSettings,
   type Plugin,
 } from '@/features/plugins';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { usePluginSettingsHandler } from '../lib/usePluginSettingsHandler';
 import { PluginRestartNotice } from './PluginRestartNotice';

@@ -3,11 +3,11 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import type { CheckboxRootProps } from '@/shared/ui';
+import type { CheckboxRootProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Checkbox } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Checkbox } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type IncludeSnapshotsCheckboxProps<
   T extends ValidComponent = 'checkbox',

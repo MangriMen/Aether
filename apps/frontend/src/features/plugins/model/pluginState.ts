@@ -2,7 +2,7 @@ import type {
   PluginDtoState,
   PluginStateReasonDto,
 } from '@/platform/bindings/plugin';
-import type { TFunction } from '@/shared/model';
+import type { TFunction } from '@/shared/i18n';
 
 export type PluginState = PluginDtoState;
 

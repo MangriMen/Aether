@@ -3,8 +3,7 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createEffect, createMemo, createSignal, Show } from 'solid-js';
 
 import type { ThemeConfig } from '@/features/appearance';
-import type { Option } from '@/shared/model';
-import type { SelectRootProps } from '@/shared/ui';
+import type { SelectRootProps, Option } from '@/shared/ui-kit';
 
 import { THEMES, useThemeContext } from '@/features/appearance';
 import {
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 const THEME_OPTIONS: Option<ThemeConfig>[] = [
   ...THEMES.map((theme) => ({

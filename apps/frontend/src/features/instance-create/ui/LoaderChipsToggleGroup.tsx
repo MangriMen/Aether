@@ -3,11 +3,10 @@ import type { Component } from 'solid-js';
 import { For, splitProps } from 'solid-js';
 
 import type { ModLoader } from '@/features/minecraft';
-import type { Option } from '@/shared/model';
-import type { ToggleGroupRootProps } from '@/shared/ui';
+import type { ToggleGroupRootProps, Option } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { ToggleGroup, ToggleGroupItem } from '@/shared/ui';
+import { ToggleGroup, ToggleGroupItem } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type LoaderChipsToggleGroupProps = ToggleGroupRootProps & {
   loaders: Option<ModLoader>[];

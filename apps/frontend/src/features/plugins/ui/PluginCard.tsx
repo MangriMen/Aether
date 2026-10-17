@@ -2,8 +2,8 @@ import type { Component } from 'solid-js';
 
 import { createMemo, splitProps, type ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { Image } from '@/shared/ui';
+import { Image } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { Plugin } from '../model/plugin';
 

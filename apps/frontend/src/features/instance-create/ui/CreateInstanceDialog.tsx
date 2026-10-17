@@ -3,7 +3,7 @@ import type { DialogRootProps } from '@kobalte/core/dialog';
 import { For, type Component } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import type { TabContentProps, TabKey } from '../model/tabs';
 

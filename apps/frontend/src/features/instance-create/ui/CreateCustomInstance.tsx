@@ -19,8 +19,7 @@ import {
   useLoaderVersionManifest,
   useMinecraftVersionManifest,
 } from '@/features/minecraft';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   Collapsible,
@@ -28,7 +27,8 @@ import {
   CombinedTextField,
   DialogFooter,
   LabeledField,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { LOADERS, LOADER_VERSION_TYPES } from '../model/constants';
 import { loaderManifestToMapped } from '../model/loaderManifestToMapped';

@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   IconButton,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import { RESOLUTION_OPTIONS } from '../model/resolution';
 

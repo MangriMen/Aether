@@ -13,7 +13,7 @@ import {
   useContentContext,
   useContentItemActions,
 } from '@/features/content';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { ContentItemInfo } from './ContentItemInfo';
 

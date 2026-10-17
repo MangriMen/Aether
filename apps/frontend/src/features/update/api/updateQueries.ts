@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/solid-query';
 
 import { updateCommands } from '@/platform/ipc';
-import { useTranslation } from '@/shared/model';
-import { showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { showToast } from '@/shared/ui-kit';
 
 import { updateKeys } from './updateQueryKeys';
 

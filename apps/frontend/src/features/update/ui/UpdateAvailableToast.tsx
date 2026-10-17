@@ -1,8 +1,8 @@
 import { createRoot, createSignal } from 'solid-js';
 
 import { SettingsTab, useSettingsSearchParams } from '@/features/settings';
-import { useTranslation } from '@/shared/model';
-import { Button, closeToast, showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, closeToast, showToast } from '@/shared/ui-kit';
 
 import type { UpdateStatus } from '../model/update';
 

@@ -6,10 +6,10 @@ import {
   mergeProps,
 } from 'solid-js';
 
-import type { BadgeProps } from '@/shared/ui';
+import type { BadgeProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { Badge } from '@/shared/ui';
+import { Badge } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useCheckUpdate } from '../api/updateQueries';
 import { checkIsUpdateAvailable } from '../model/checkIsUpdateAvailable';

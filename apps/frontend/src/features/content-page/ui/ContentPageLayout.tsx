@@ -10,7 +10,7 @@ import {
 import type { ContentFilters } from '@/features/content';
 
 import { useInstance } from '@/features/instance';
-import { Separator } from '@/shared/ui';
+import { Separator } from '@/shared/ui-kit';
 
 import { useContentPageSearchParams } from '../lib/useContentPageSearchParams';
 import { getFiltersFromInstance } from '../model/getFiltersFromInstance';

@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 export type ForceEnablePluginDialogProps = DialogRootProps & {
   pluginName: string;

@@ -1,7 +1,8 @@
 import { createTable } from '@tanstack/solid-table';
 import { type Accessor } from 'solid-js';
 
-import { appTableFeatures, useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { appTableFeatures } from '@/shared/ui-kit';
 
 import type { JavaVersion } from '../model/javaVersion';
 
