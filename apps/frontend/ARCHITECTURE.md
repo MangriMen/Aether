@@ -11,11 +11,12 @@ src/
   platform/   the Tauri side: bindings/ (generated), ipc/ (commands, events), window/
   features/   one folder per domain: instance, content, plugins, settings, java, errors, ...
   shared/     code that knows nothing about Aether, one module per folder:
-              ui-kit/  components (primitives, composite, hooks, table)
-              i18n/    dictionaries, I18nProvider, useTranslation
-              utils/   cn, log, debounce and other small helpers
+              ui-kit/  components, their hooks and types (see "Inside shared")
+              i18n/    dictionaries, I18nProvider, useTranslation, i18n error messages
+              log/     logError, logDebug and the debug flag
               format/  dayjs, bytes, time
               dialogs/ the global dialog store and its renderer
+              utils/   stateless helpers: cn, debounce, noop, isNil, PartialBy, ...
               markdown/ search-params/ settings-layout/ query/
 ```
 
@@ -151,6 +152,24 @@ features/java/                  a small feature: only the folders it needs
     JavaPane.tsx                exported through index.ts, placed on the settings screen by app/shell
 ```
 
+## Inside shared
+
+A shared module covers one topic and stays small, so it is flat: `index.ts` and its files
+next to it, `__tests__/` aside. File names follow the kind of file: a `.tsx` is a component
+in PascalCase (`MarkdownRenderer.tsx`), a `.ts` is camelCase (`parseMarkdown.ts`).
+
+- A new helper goes to the module of its topic. `utils/` takes only stateless helpers that
+  know no other module (`cn`, `debounce`, `isNil`); anything with state (`log/` and its
+  debug flag) or a topic of its own gets its own module.
+- `ui-kit/` is the one big module, so it has fixed folders, like a feature:
+
+| Folder | Holds |
+|---|---|
+| `primitives/` | components that wrap Kobalte (`Button`, `Dialog`, `Select`), plus `UiKitLabels` |
+| `composite/` | components built from primitives (`CombinedSelect`, `IconButton`, `SkeletonList`) |
+| `lib/` | `use*`/`create*` primitives (`useIsOverflow`) |
+| `model/` | types and plain code without JSX (`Option`, `TabConfig`, `appTableFeatures`) |
+
 ## Checks
 
 The checks cover every file under `src/`.
@@ -160,7 +179,8 @@ The checks cover every file under `src/`.
   in `shared/`, nothing but `shared/utils` in `shared/ui-kit`.
 - dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
   imports across features, public API of features and modules, a domain base importing its
-  parts, feature folders and file names, `app` modules importing the composition root.
+  parts, feature and shared folders and file names, `app` modules importing the
+  composition root.
   Config: `.dependency-cruiser.cjs`. Its cycle check works on files, so
   `scripts/check-module-cycles.ts` (part of `lint:arch`) also checks the graph of modules,
   type-only imports included.

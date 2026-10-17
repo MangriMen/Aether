@@ -2,7 +2,7 @@ import { createMemo, type Component } from 'solid-js';
 
 import type { Locale } from '@/shared/i18n';
 import type { SettingsEntryProps } from '@/shared/settings-layout';
-import type { Option } from '@/shared/utils';
+import type { Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
 import { SettingsEntry } from '@/shared/settings-layout';

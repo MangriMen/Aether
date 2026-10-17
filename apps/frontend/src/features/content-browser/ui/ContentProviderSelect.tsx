@@ -2,8 +2,7 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import { Show, splitProps } from 'solid-js';
 
-import type { CombinedSelectProps } from '@/shared/ui-kit';
-import type { Option } from '@/shared/utils';
+import type { CombinedSelectProps, Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
 import { CombinedSelect, Skeleton } from '@/shared/ui-kit';

@@ -1,5 +1,5 @@
 import type { Plugin } from '@/features/plugins';
-import type { TabConfig } from '@/shared/utils';
+import type { TabConfig } from '@/shared/ui-kit';
 
 import { PluginSettingsTab } from '@/features/plugins-settings';
 

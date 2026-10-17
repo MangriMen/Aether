@@ -1,8 +1,7 @@
 import { splitProps } from 'solid-js';
 
 import type { Locale } from '@/shared/i18n';
-import type { SelectRootProps } from '@/shared/ui-kit';
-import type { Option } from '@/shared/utils';
+import type { SelectRootProps, Option } from '@/shared/ui-kit';
 
 import {
   Select,

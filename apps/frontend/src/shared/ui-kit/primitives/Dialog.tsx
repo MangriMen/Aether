@@ -10,7 +10,7 @@ import { Show, splitProps } from 'solid-js';
 import { cn } from '@/shared/utils';
 
 import { IconButton } from '../composite/IconButton';
-import { useUiKitLabels } from '../UiKitLabels';
+import { useUiKitLabels } from './UiKitLabels';
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;

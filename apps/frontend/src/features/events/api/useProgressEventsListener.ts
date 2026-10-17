@@ -2,7 +2,7 @@ import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
-import { logDebug } from '@/shared/utils';
+import { logDebug } from '@/shared/log';
 
 import type { ProgressEvent } from '../model/progressEvent';
 

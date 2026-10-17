@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/solid-query';
 
 import { instanceEvents, useEventListener } from '@/platform/ipc';
-import { logDebug } from '@/shared/utils';
+import { logDebug } from '@/shared/log';
 
 import {
   invalidateInstanceContent,

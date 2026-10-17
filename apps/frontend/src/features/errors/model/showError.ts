@@ -1,8 +1,8 @@
 import type { TFunction } from '@/shared/i18n';
 import type { ShowToastParams } from '@/shared/ui-kit';
 
+import { logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
-import { logError } from '@/shared/utils';
 
 import { getTranslatedError, isLauncherError } from './launcherError';
 

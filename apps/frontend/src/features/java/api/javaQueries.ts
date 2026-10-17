@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 import { showError, isLauncherError } from '@/features/errors';
 import { javaCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
-import { logDebug } from '@/shared/utils';
+import { logDebug } from '@/shared/log';
 
 import { javaCache } from './javaCache';
 import { javaKeys } from './javaQueryKeys';

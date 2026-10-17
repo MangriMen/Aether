@@ -1,6 +1,6 @@
 import IconMdiFileFindOutline from '~icons/mdi/file-find-outline';
 
-import { useUiKitLabels } from '../UiKitLabels';
+import { useUiKitLabels } from '../primitives/UiKitLabels';
 import { CombinedTooltip } from './CombinedTooltip';
 import { IconButton } from './IconButton';
 

@@ -1,4 +1,4 @@
-import { isDebug, setIsDebug } from '@/shared/utils';
+import { isDebug, setIsDebug } from '@/shared/log';
 
 export const AetherNamespace = '_AETHER_';
 

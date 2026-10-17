@@ -1,7 +1,7 @@
 import { createMemo, type Component } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/settings-layout';
-import type { Option } from '@/shared/utils';
+import type { Option } from '@/shared/ui-kit';
 
 import { useSetPlatformProvider } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';

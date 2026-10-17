@@ -5,7 +5,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { Option } from '@/shared/utils';
+import type { Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
 import {

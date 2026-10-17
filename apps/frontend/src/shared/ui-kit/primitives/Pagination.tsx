@@ -6,8 +6,8 @@ import { splitProps } from 'solid-js';
 
 import { cn } from '@/shared/utils';
 
-import { useUiKitLabels } from '../UiKitLabels';
 import { buttonVariants } from './Button';
+import { useUiKitLabels } from './UiKitLabels';
 
 const PaginationItems = PaginationPrimitive.Items;
 

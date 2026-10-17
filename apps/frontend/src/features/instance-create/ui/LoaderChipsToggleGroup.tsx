@@ -3,8 +3,7 @@ import type { Component } from 'solid-js';
 import { For, splitProps } from 'solid-js';
 
 import type { ModLoader } from '@/features/minecraft';
-import type { ToggleGroupRootProps } from '@/shared/ui-kit';
-import type { Option } from '@/shared/utils';
+import type { ToggleGroupRootProps, Option } from '@/shared/ui-kit';
 
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';

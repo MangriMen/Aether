@@ -1,5 +1,5 @@
 import { processEvents, useEventListener } from '@/platform/ipc';
-import { logDebug } from '@/shared/utils';
+import { logDebug } from '@/shared/log';
 
 import type { ProcessEvent } from '../model/processEvent';
 

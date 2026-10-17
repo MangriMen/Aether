@@ -1,6 +1,6 @@
 import type { JSX } from 'solid-js';
 
-import type { TabConfig } from '@/shared/utils';
+import type { TabConfig } from '@/shared/ui-kit';
 
 export type ImporterTabProps = {
   footerButtons: JSX.Element;

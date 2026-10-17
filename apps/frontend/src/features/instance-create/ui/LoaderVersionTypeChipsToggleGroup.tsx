@@ -2,8 +2,7 @@ import type { Component } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import type { ToggleGroupRootProps } from '@/shared/ui-kit';
-import type { Option } from '@/shared/utils';
+import type { ToggleGroupRootProps, Option } from '@/shared/ui-kit';
 
 import { useTranslation } from '@/shared/i18n';
 import { ToggleGroup, ToggleGroupItem } from '@/shared/ui-kit';

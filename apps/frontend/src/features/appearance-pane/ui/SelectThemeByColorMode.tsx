@@ -8,7 +8,7 @@ import type { Component, ValidComponent } from 'solid-js';
 import { createEffect, createMemo, createSignal } from 'solid-js';
 
 import type { ThemeConfig } from '@/features/appearance';
-import type { Option } from '@/shared/utils';
+import type { Option } from '@/shared/ui-kit';
 
 import { THEME_BY_MODE, useThemeContext } from '@/features/appearance';
 import {

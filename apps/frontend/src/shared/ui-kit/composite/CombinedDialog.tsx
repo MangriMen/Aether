@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
 } from '../primitives/Dialog';
-import { useUiKitLabels } from '../UiKitLabels';
+import { useUiKitLabels } from '../primitives/UiKitLabels';
 
 export type CombinedDialogProps = DialogRootProps &
   Pick<DialogContentProps, 'variant'> & {

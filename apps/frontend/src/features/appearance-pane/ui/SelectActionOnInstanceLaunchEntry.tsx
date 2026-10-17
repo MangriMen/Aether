@@ -17,8 +17,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  type Option,
 } from '@/shared/ui-kit';
-import { type Option } from '@/shared/utils';
 
 export type SelectActionOnInstanceLaunchEntryProps = SettingsEntryProps;
 

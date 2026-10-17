@@ -1,5 +1,5 @@
 import type { Locale } from '@/shared/i18n';
-import type { Option } from '@/shared/utils';
+import type { Option } from '@/shared/ui-kit';
 
 import { LOCALES } from '@/shared/i18n';
 

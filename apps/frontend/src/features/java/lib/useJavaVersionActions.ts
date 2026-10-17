@@ -1,7 +1,7 @@
 import { type Accessor } from 'solid-js';
 
 import { closeDialog, showDialog } from '@/shared/dialogs';
-import { logError } from '@/shared/utils';
+import { logError } from '@/shared/log';
 
 import type { JavaVersion, StrictJavaVersion } from '../model/javaVersion';
 

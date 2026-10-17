@@ -8,7 +8,7 @@ import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
 
 import type { SettingsPaneProps } from '@/shared/settings-layout';
-import type { TabConfig } from '@/shared/utils';
+import type { TabConfig } from '@/shared/ui-kit';
 
 import { AppearancePane } from '@/features/appearance-pane';
 import { ContentProvidersPane } from '@/features/content-providers';

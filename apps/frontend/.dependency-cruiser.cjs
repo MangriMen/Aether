@@ -142,6 +142,39 @@ module.exports = {
       to: {},
     },
     {
+      name: 'shared-shape',
+      comment:
+        'A shared module is flat: index.ts and its files (__tests__/ aside). ui-kit alone has folders: primitives/, composite/, lib/, model/, nothing at its root but index.ts.',
+      severity: 'error',
+      from: {
+        path: [
+          '^src/shared/(?!ui-kit/)[^/]+/(?!__tests__/)[^/]+/',
+          '^src/shared/ui-kit/(?!index\\.tsx?$)[^/]+$',
+          '^src/shared/ui-kit/(?!(?:primitives|composite|lib|model|__tests__)/)[^/]+/',
+          '^src/shared/ui-kit/(?:primitives|composite|lib|model)/(?!__tests__/)[^/]+/',
+        ],
+      },
+      to: {},
+    },
+    {
+      name: 'shared-file-names',
+      comment:
+        'In shared/, .tsx files are PascalCase components and .ts files are camelCase. In ui-kit, primitives/ and composite/ hold components, lib/ only use*/create*, model/ no .tsx.',
+      severity: 'error',
+      from: {
+        path: [
+          '^src/shared/[^/]+/[^A-Z/][^/]*\\.tsx$',
+          '^src/shared/ui-kit/[^/]+/[^A-Z/][^/]*\\.tsx$',
+          '^src/shared/[^/]+/[A-Z][^/]*\\.ts$',
+          '^src/shared/ui-kit/[^/]+/[A-Z][^/]*\\.ts$',
+          '^src/shared/ui-kit/(?:primitives|composite)/[^/]+\\.ts$',
+          '^src/shared/ui-kit/lib/(?!(?:use|create)[A-Z])[^/]+$',
+          '^src/shared/ui-kit/model/[^/]+\\.tsx$',
+        ],
+      },
+      to: {},
+    },
+    {
       name: 'module-public-api',
       comment: 'Other modules are reached only through their index.ts; inside a module, imports are relative.',
       severity: 'error',

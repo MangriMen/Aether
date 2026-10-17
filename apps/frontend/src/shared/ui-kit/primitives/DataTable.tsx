@@ -13,10 +13,9 @@ import { createMemo, For, Show, Switch, Match, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/utils';
 
-import type { AppTableFeatures } from '../table/tableFeatures';
+import type { AppTableFeatures } from '../model/tableFeatures';
 
-import { appTableFeatures } from '../table/tableFeatures';
-import { useUiKitLabels } from '../UiKitLabels';
+import { appTableFeatures } from '../model/tableFeatures';
 import { Skeleton } from './Skeleton';
 import {
   Table,
@@ -26,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from './Table';
+import { useUiKitLabels } from './UiKitLabels';
 
 // Tables passed to DataTable may enable more features than this set.
 type DataTableFeatures = AppTableFeatures;

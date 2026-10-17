@@ -8,8 +8,7 @@ import {
   type WindowEffect,
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
-import { CombinedSelect } from '@/shared/ui-kit';
-import { type Option } from '@/shared/utils';
+import { CombinedSelect, type Option } from '@/shared/ui-kit';
 
 export type WindowEffectEntryProps = {
   class?: string;
