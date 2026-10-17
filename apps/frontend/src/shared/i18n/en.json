@@ -487,7 +487,8 @@
     "usedFromDefaultSettings": "Used from default settings",
     "environmentVariablesError": {
       "invalidFormat": "Invalid format {{part}}. Must be in \"key=value\" format",
-      "emptyKey": "Empty key {{part}}. Must be in \"key=value\" format"
+      "emptyKey": "Empty key {{part}}. Must be in \"key=value\" format",
+      "invalidKey": "Invalid key {{part}}. A key may contain only Latin letters, digits and _ and must not start with a digit"
     }
   },
   "update": {

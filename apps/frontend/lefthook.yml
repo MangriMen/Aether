@@ -26,5 +26,5 @@ pre-commit:
 
     - name: frontend:i18n
       root: 'apps/frontend'
-      glob: '{src/shared/i18n/*.json,src/platform/bindings/*.ts}'
+      glob: ['apps/frontend/src/shared/i18n/*.json', 'apps/frontend/src/platform/bindings/*.ts']
       run: bun x vitest run src/shared/i18n

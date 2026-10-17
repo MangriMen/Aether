@@ -1,10 +1,4 @@
-import {
-  setInput,
-  validate,
-  setErrors,
-  Field,
-  type FormStore,
-} from '@formisch/solid';
+import { setInput, validate, Field, type FormStore } from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
 import { useTranslation, parseI18nError } from '@/shared/i18n';
@@ -81,21 +75,12 @@ export const EnvVarsFieldSection: Component<Props> = (props) => {
                 onBlur: async () => {
                   field.props.onBlur?.();
 
-                  try {
-                    const result = await validate(props.form);
+                  const result = await validate(props.form);
 
-                    if (result.success) {
-                      props.onChangePartial({
-                        envVars: result.output.envVars,
-                      });
-                    }
-                  } catch (err) {
-                    if (err instanceof Error && err.message) {
-                      setErrors(props.form, {
-                        path: ['envVars'],
-                        errors: [err.message],
-                      });
-                    }
+                  if (result.success) {
+                    props.onChangePartial({
+                      envVars: result.output.envVars,
+                    });
                   }
                 },
               }}

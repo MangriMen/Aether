@@ -6,20 +6,15 @@ import { stringToEnvVars } from './parseEnvVars';
 
 const EnvVarsTransformation = v.pipe(
   v.string(),
-  v.transform((val) => {
-    const result = stringToEnvVars(val);
+  v.rawTransform(({ dataset, addIssue, NEVER }) => {
+    const result = stringToEnvVars(dataset.value);
 
     if ('error' in result) {
-      throw new v.ValiError([
-        {
-          kind: 'validation',
-          type: 'custom',
-          input: val,
-          expected: null,
-          received: 'string',
-          message: createI18nError(result.error, { part: result.part }),
-        },
-      ]);
+      addIssue({
+        message: createI18nError(result.error, { part: result.part }),
+      });
+
+      return NEVER;
     }
 
     return result.vars;
