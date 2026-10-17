@@ -1,7 +1,10 @@
 use std::path::{Component, Path, PathBuf};
 
+/// Game files shared by all instances (versions, libraries, assets), under the config directory.
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
+/// Downloaded and generated files that can be recreated, under the config directory.
 pub const CACHE_FOLDER_NAME: &str = "cache";
+/// One subdirectory per instance, under the config directory.
 pub const INSTANCES_FOLDER_NAME: &str = "instances";
 /// Subdirectory of an instance that holds state owned by the core, not by the pack:
 /// `instance.json` and, under `plugins/<plugin_id>/`, each plugin's own per-instance state.
@@ -9,11 +12,22 @@ pub const INSTANCE_METADATA_FOLDER_NAME: &str = ".metadata";
 pub const PLUGINS_FOLDER_NAME: &str = "plugins";
 pub const PLUGIN_SETTINGS_FILE_NAME: &str = "settings.toml";
 
+const INSTANCE_FILE_NAME: &str = "instance.json";
+
+/// Appends every segment of `parts` to `base`.
+fn extend<const N: usize>(base: impl AsRef<Path>, parts: [&str; N]) -> PathBuf {
+    let mut path = base.as_ref().to_path_buf();
+    path.extend(parts);
+    path
+}
+
+/// Resolves every location the launcher uses on disk.
 #[derive(Debug)]
 pub struct LocationInfo {
-    settings_dir: PathBuf, // Base settings directory - app database
-    /// Changeable through settings
-    config_dir: PathBuf, // Config directory - instances, minecraft files, etc.
+    /// Where the application keeps its own settings.
+    settings_dir: PathBuf,
+    /// Root of everything else (instances, game files, caches); the user can move it.
+    config_dir: PathBuf,
 }
 
 impl LocationInfo {
@@ -24,96 +38,83 @@ impl LocationInfo {
         }
     }
 
-    #[inline]
+    // --- roots and application data ---
+
     pub fn settings_dir(&self) -> &Path {
         &self.settings_dir
     }
 
-    #[inline]
     pub fn config_dir(&self) -> &Path {
         &self.config_dir
     }
 
-    /// Get the Minecraft instance metadata directory
-    #[inline]
-    pub fn metadata_dir(&self) -> PathBuf {
-        self.config_dir.join(METADATA_FOLDER_NAME)
-    }
-
-    #[inline]
     pub fn data_dir(&self) -> PathBuf {
-        self.config_dir.join("data")
+        extend(&self.config_dir, ["data"])
     }
 
-    #[inline]
     pub fn db_path(&self) -> PathBuf {
-        self.data_dir().join("app.db")
+        extend(self.data_dir(), ["app.db"])
     }
 
-    /// Get the Minecraft versions metadata directory
-    #[inline]
+    // --- shared game files ---
+
+    /// Root of the shared game files.
+    pub fn metadata_dir(&self) -> PathBuf {
+        extend(&self.config_dir, [METADATA_FOLDER_NAME])
+    }
+
+    /// Every installed game version lives in its own folder here.
     pub fn versions_dir(&self) -> PathBuf {
-        self.metadata_dir().join("versions")
+        extend(self.metadata_dir(), ["versions"])
     }
 
-    /// Get the metadata directory for a given version
-    #[inline]
+    /// Files of one game version.
     pub fn version_dir(&self, version: &str) -> PathBuf {
-        self.versions_dir().join(version)
+        extend(self.versions_dir(), [version])
     }
 
-    /// Get the Minecraft libraries metadata directory
-    #[inline]
     pub fn libraries_dir(&self) -> PathBuf {
-        self.metadata_dir().join("libraries")
+        extend(self.metadata_dir(), ["libraries"])
     }
 
-    /// Get the Minecraft assets metadata directory
-    #[inline]
     pub fn assets_dir(&self) -> PathBuf {
-        self.metadata_dir().join("assets")
+        extend(self.metadata_dir(), ["assets"])
     }
 
-    /// Get the assets index directory
-    #[inline]
+    /// Asset index files.
     pub fn assets_index_dir(&self) -> PathBuf {
-        self.assets_dir().join("indexes")
+        extend(self.assets_dir(), ["indexes"])
     }
 
-    /// Get the assets objects directory
-    #[inline]
+    /// Content-addressed asset files.
     pub fn objects_dir(&self) -> PathBuf {
-        self.assets_dir().join("objects")
+        extend(self.assets_dir(), ["objects"])
     }
 
-    /// Get the directory for a specific object
-    #[inline]
+    /// Location of the asset with the given hash; objects are sharded by the first two
+    /// characters of the hash.
     pub fn object_dir(&self, hash: &str) -> PathBuf {
-        self.objects_dir().join(&hash[..2]).join(hash)
+        extend(self.objects_dir(), [&hash[..2], hash])
     }
 
-    /// Get the Minecraft legacy assets metadata directory
-    #[inline]
+    /// Assets of old game versions that are not stored by hash.
     pub fn legacy_assets_dir(&self) -> PathBuf {
-        self.metadata_dir().join("resources")
+        extend(self.metadata_dir(), ["resources"])
     }
 
-    /// Get the Minecraft legacy assets metadata directory
-    #[inline]
+    /// Extracted native libraries, one folder per game version.
     pub fn natives_dir(&self) -> PathBuf {
-        self.metadata_dir().join("natives")
+        extend(self.metadata_dir(), ["natives"])
     }
 
-    /// Get the natives directory for a version of Minecraft
-    #[inline]
     pub fn version_natives_dir(&self, version: &str) -> PathBuf {
-        self.natives_dir().join(version)
+        extend(self.natives_dir(), [version])
     }
 
-    /// Get the instances directory for created instances
-    #[inline]
+    // --- instances ---
+
     pub fn instances_dir(&self) -> PathBuf {
-        self.config_dir.join(INSTANCES_FOLDER_NAME)
+        extend(&self.config_dir, [INSTANCES_FOLDER_NAME])
     }
 
     /// Whether `id` can only name a directory directly under `instances/`.
@@ -136,114 +137,95 @@ impl LocationInfo {
         matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none()
     }
 
-    /// Get the directory for a specific instance
-    #[inline]
     pub fn instance_dir(&self, id: &str) -> PathBuf {
-        self.instances_dir().join(id)
+        extend(self.instances_dir(), [id])
     }
 
-    /// Get the metadata directory for a specific instance
-    #[inline]
+    /// Core-owned state of an instance.
     pub fn instance_metadata_dir(&self, id: &str) -> PathBuf {
-        self.instance_dir(id).join(INSTANCE_METADATA_FOLDER_NAME)
+        self.instance_metadata_dir_with_instance_dir(&self.instance_dir(id))
     }
 
-    /// Get the metadata directory for a specific instance folder
-    #[inline]
+    /// Same as [`Self::instance_metadata_dir`] for an already known instance directory.
     pub fn instance_metadata_dir_with_instance_dir(&self, instance_dir: &Path) -> PathBuf {
-        instance_dir.join(INSTANCE_METADATA_FOLDER_NAME)
+        extend(instance_dir, [INSTANCE_METADATA_FOLDER_NAME])
     }
 
-    /// Get the metadata file for a specific instance
-    #[inline]
     pub fn instance_metadata_file(&self, id: &str) -> PathBuf {
-        self.instance_metadata_dir(id).join("instance.json")
+        extend(self.instance_metadata_dir(id), [INSTANCE_FILE_NAME])
     }
 
-    /// Get the metadata file for a specific instance folder
-    #[inline]
+    /// Same as [`Self::instance_metadata_file`] for an already known instance directory.
     pub fn instance_metadata_file_with_instance_dir(&self, instance_dir: &Path) -> PathBuf {
-        self.instance_metadata_dir_with_instance_dir(instance_dir)
-            .join("instance.json")
+        extend(
+            self.instance_metadata_dir_with_instance_dir(instance_dir),
+            [INSTANCE_FILE_NAME],
+        )
     }
 
-    /// Get the pack dir for a specific instance
-    #[inline]
     pub fn instance_pack_dir(&self, id: &str) -> PathBuf {
-        self.instance_metadata_dir(id).join("pack")
+        extend(self.instance_metadata_dir(id), ["pack"])
     }
 
-    #[inline]
     pub fn instance_pack(&self, id: &str) -> PathBuf {
-        self.instance_pack_dir(id).join("content.toml")
+        extend(self.instance_pack_dir(id), ["content.toml"])
     }
 
-    /// Get the cache directory
-    #[inline]
-    pub fn cache_dir(&self) -> PathBuf {
-        self.config_dir.join(CACHE_FOLDER_NAME)
-    }
-
-    /// Get the cache directory
-    #[inline]
-    pub fn assets_cache_dir(&self) -> PathBuf {
-        self.cache_dir().join("assets")
-    }
-
-    /// Get the Minecraft java versions metadata directory
-    #[inline]
-    pub fn java_dir(&self) -> PathBuf {
-        self.cache_dir().join("java")
-    }
-
-    /// Get the plugins directory
-    #[inline]
-    pub fn plugins_dir(&self) -> PathBuf {
-        self.config_dir.join(PLUGINS_FOLDER_NAME)
-    }
-
-    /// Get the directory for a specific plugin
-    #[inline]
-    pub fn plugin_dir(&self, id: &str) -> PathBuf {
-        self.plugins_dir().join(id)
-    }
-
-    #[inline]
-    pub fn plugin_settings(&self, id: &str) -> PathBuf {
-        self.plugin_dir(id).join(PLUGIN_SETTINGS_FILE_NAME)
-    }
-
-    #[inline]
-    pub fn plugin_cache_dir(&self, id: &str) -> PathBuf {
-        self.cache_dir().join("plugins").join(id)
-    }
-
-    /// Get the directory for a specific plugin inside an instance
-    #[inline]
-    pub fn instance_plugin_dir(&self, id: &str, plugin_id: &str) -> PathBuf {
-        self.instance_metadata_dir(id)
-            .join(PLUGINS_FOLDER_NAME)
-            .join(plugin_id)
-    }
-
-    #[inline]
     pub fn crash_reports_dir(&self, id: &str) -> PathBuf {
-        self.instance_dir(id).join("crash-reports")
+        extend(self.instance_dir(id), ["crash-reports"])
     }
 
-    #[inline]
+    // --- plugins ---
+
+    pub fn plugins_dir(&self) -> PathBuf {
+        extend(&self.config_dir, [PLUGINS_FOLDER_NAME])
+    }
+
+    pub fn plugin_dir(&self, id: &str) -> PathBuf {
+        extend(self.plugins_dir(), [id])
+    }
+
+    pub fn plugin_settings(&self, id: &str) -> PathBuf {
+        extend(self.plugin_dir(id), [PLUGIN_SETTINGS_FILE_NAME])
+    }
+
+    /// State a plugin keeps inside one instance.
+    pub fn instance_plugin_dir(&self, id: &str, plugin_id: &str) -> PathBuf {
+        extend(
+            self.instance_metadata_dir(id),
+            [PLUGINS_FOLDER_NAME, plugin_id],
+        )
+    }
+
+    // --- cache ---
+
+    pub fn cache_dir(&self) -> PathBuf {
+        extend(&self.config_dir, [CACHE_FOLDER_NAME])
+    }
+
+    pub fn assets_cache_dir(&self) -> PathBuf {
+        extend(self.cache_dir(), ["assets"])
+    }
+
+    /// Downloaded Java runtimes.
+    pub fn java_dir(&self) -> PathBuf {
+        extend(self.cache_dir(), ["java"])
+    }
+
+    pub fn plugin_cache_dir(&self, id: &str) -> PathBuf {
+        extend(self.cache_dir(), ["plugins", id])
+    }
+
     pub fn wasm_cache_config(&self) -> PathBuf {
-        self.cache_dir().join("wasm.toml")
+        extend(self.cache_dir(), ["wasm.toml"])
     }
 
-    #[inline]
     pub fn wasm_cache_dir(&self) -> PathBuf {
-        self.cache_dir().join("wasm")
+        extend(self.cache_dir(), ["wasm"])
     }
 
-    #[inline]
     pub fn temp_dir(&self) -> PathBuf {
-        self.cache_dir().join("temp")
+        extend(self.cache_dir(), ["temp"])
     }
 }
 
