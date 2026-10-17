@@ -72,14 +72,14 @@ pub enum IoError {
 }
 
 impl IoError {
-    pub fn from(source: std::io::Error) -> Self {
-        Self::IoError(source)
-    }
-
+    /// Wraps an OS error together with the path it happened on.
+    ///
+    /// For an error without a meaningful path use `IoError::from` (the derived
+    /// `From<std::io::Error>` conversion).
     pub fn with_path(source: std::io::Error, path: impl AsRef<Path>) -> Self {
         Self::IoPathError {
             source,
-            path: path.as_ref().to_string_lossy().to_string(),
+            path: path.as_ref().display().to_string(),
         }
     }
 }
