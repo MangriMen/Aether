@@ -241,10 +241,7 @@ mod tests {
             rules: allow_all(),
             value: ArgumentValue::Single("a b".to_string()),
         };
-        assert_eq!(
-            run(&[arg], identity).unwrap(),
-            vec!["a b"]
-        );
+        assert_eq!(run(&[arg], identity).unwrap(), vec!["a b"]);
     }
 
     #[test]

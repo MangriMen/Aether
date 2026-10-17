@@ -366,10 +366,7 @@ mod tests {
             rules: allow(),
             value: ArgumentValue::Single("--width ${resolution_width}".to_string()),
         }];
-        assert_eq!(
-            call(&e, Some(&args), None).unwrap(),
-            vec!["--width 1280"]
-        );
+        assert_eq!(call(&e, Some(&args), None).unwrap(), vec!["--width 1280"]);
     }
 
     #[test]
