@@ -3,6 +3,7 @@ export const MEMORY_SLIDER_HANDLE_DEBOUNCE = 300;
 export const EnvVarsError = {
   InvalidFormat: 'invalidFormat',
   EmptyKey: 'emptyKey',
+  InvalidKey: 'invalidKey',
 } as const;
 
 export type EnvVarsError = (typeof EnvVarsError)[keyof typeof EnvVarsError];
