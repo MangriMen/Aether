@@ -1,4 +1,4 @@
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
 pub const CACHE_FOLDER_NAME: &str = "cache";
@@ -118,26 +118,6 @@ impl LocationInfo {
         self.config_dir.join(INSTANCES_FOLDER_NAME)
     }
 
-    /// Whether `id` can only name a directory directly under `instances/`.
-    ///
-    /// Instance ids also come from plugins. `..`, a separator or an absolute path would make
-    /// [`Self::instance_dir`] point anywhere in the config directory, e.g. at another plugin's
-    /// `verification.json`, so whatever takes an id from outside checks it here first.
-    pub fn is_plain_instance_id(id: &str) -> bool {
-        // `:` makes a drive-relative `C:x` or an alternate data stream on Windows.
-        let forbidden: &[char] = if cfg!(windows) {
-            &['/', '\\', '\0', ':']
-        } else {
-            &['/', '\\', '\0']
-        };
-        if id.is_empty() || id.contains(forbidden) {
-            return false;
-        }
-
-        let mut components = Path::new(id).components();
-        matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none()
-    }
-
     /// Get the directory for a specific instance
     #[inline]
     pub fn instance_dir(&self, id: &str) -> PathBuf {
@@ -254,40 +234,6 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::LocationInfo;
-
-    #[test]
-    fn should_accept_an_instance_id_when_it_is_a_single_name() {
-        for id in ["inst-1", "My Pack", "pack.v2", ".hidden", "Сборка"] {
-            assert!(LocationInfo::is_plain_instance_id(id), "{id}");
-        }
-    }
-
-    #[test]
-    fn should_reject_an_instance_id_when_it_leaves_the_instances_directory() {
-        for id in [
-            "",
-            ".",
-            "..",
-            "../plugins/x",
-            "..\\plugins\\x",
-            "a/b",
-            "a\\b",
-            "/etc",
-            "C:\\Windows",
-            "\\\\server\\share",
-            "a\0b",
-        ] {
-            assert!(!LocationInfo::is_plain_instance_id(id), "{id:?}");
-        }
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn should_reject_an_instance_id_when_it_has_a_drive_or_stream_on_windows() {
-        for id in ["C:", "C:x", "pack:stream"] {
-            assert!(!LocationInfo::is_plain_instance_id(id), "{id:?}");
-        }
-    }
 
     #[test]
     fn should_pin_every_path_accessor() {

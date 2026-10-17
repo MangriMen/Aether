@@ -1,7 +1,7 @@
 use aether_core::features::{
     instance::{
         ChangeContentState, ContentManagementPort, ContentProviderPort, ContentStateAction,
-        ImportContent, InstanceCrudPort, InstanceLifecyclePort, InstanceServicesPort,
+        ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort, InstanceServicesPort,
         RemoveContent,
     },
     process::ProcessFeature,
@@ -131,6 +131,7 @@ async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult
 #[tauri::command]
 #[specta::specta]
 async fn get_dir(id: String, container: State<'_, ContainerState>) -> FrontendResult<PathBuf> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container.location_info().instance_dir(&id))
 }
