@@ -10,7 +10,7 @@ use super::{ProgressEvent, ProgressEventType};
 
 #[derive(Debug, Clone)]
 pub struct ProgressBar {
-    // id not be used directly by external functions as it may not reflect the current state
+    // Identifies the bar; the live values are in the storage, not in copies of this struct.
     pub id: Uuid,
     pub message: String,
     pub total: f64,
@@ -40,47 +40,57 @@ pub struct ProgressConfig<'a> {
     pub total_progress: f64,
 }
 
-// When Loading bar id is dropped, we should remove it from the state
+const COMPLETED_MESSAGE: &str = "Completed";
+
+impl ProgressBarId {
+    /// Unregisters the bar and tells listeners that it is finished.
+    ///
+    /// Does nothing for an id that was never attached to a storage and an emitter.
+    async fn finish(
+        self_id: Uuid,
+        storage: Arc<dyn ProgressBarStorage>,
+        emitter: SharedEventEmitter,
+    ) {
+        let removed = match storage.remove(self_id).await {
+            Ok(removed) => removed,
+            Err(e) => {
+                error!("Could not unregister progress bar {self_id}: {e:?}");
+                return;
+            }
+        };
+        let Some((_, bar)) = removed else {
+            return;
+        };
+
+        let reached_percent = bar.current / bar.total * 100.0;
+        let done = ProgressEvent {
+            fraction: None,
+            message: COMPLETED_MESSAGE.to_string(),
+            event: bar.progress_type,
+            progress_bar_id: bar.id,
+        };
+
+        if let Err(e) = emitter.emit(done.into()).await {
+            error!(
+                "Completion of progress bar {} (at {reached_percent:.2}%) was not delivered: {e:?}",
+                bar.id
+            );
+        }
+    }
+}
+
+/// Dropping the handle ends the bar's life: it is removed from storage and a final event
+/// with no fraction is sent.
 impl Drop for ProgressBarId {
     fn drop(&mut self) {
-        let progress_bar_id = self.id;
-        let progress_storage = self.progress_storage.take();
-        let event_emitter = self.event_emitter.take();
+        let (Some(storage), Some(emitter)) =
+            (self.progress_storage.take(), self.event_emitter.take())
+        else {
+            return;
+        };
+        let id = self.id;
 
-        tokio::spawn(async move {
-            let Some(progress_bar_storage) = progress_storage else {
-                return;
-            };
-            let Some(event_emitter) = event_emitter else {
-                return;
-            };
-
-            let removed_progress_bar = match progress_bar_storage.remove(progress_bar_id).await {
-                Ok(removed) => removed,
-                Err(e) => {
-                    error!("Failed to remove progress bar {progress_bar_id}: {e:?}");
-                    return;
-                }
-            };
-
-            if let Some((_, progress_bar)) = removed_progress_bar {
-                let completion_event = ProgressEvent {
-                    fraction: None,
-                    message: "Completed".to_string(),
-                    event: progress_bar.progress_type,
-                    progress_bar_id: progress_bar.id,
-                };
-
-                if let Err(e) = event_emitter.emit(completion_event.into()).await {
-                    error!(
-                        "Exited at {:.2}% for progress bar: {}: {:?}",
-                        (progress_bar.current / progress_bar.total) * 100.0,
-                        progress_bar.id,
-                        e
-                    );
-                }
-            }
-        });
+        tokio::spawn(Self::finish(id, storage, emitter));
     }
 }
 
