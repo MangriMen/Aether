@@ -1,3 +1,4 @@
+#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use std::{collections::HashSet, path::Path};
 
 use crate::features::minecraft::{MinecraftDomainError, parse_arguments, parse_rules, vanilla};
@@ -15,45 +16,7 @@ pub fn get_jvm_arguments(
     custom_args: &[String],
     java_arch: &str,
 ) -> Result<Vec<String>, MinecraftDomainError> {
-    let mut parsed_arguments = Vec::new();
-
-    if let Some(args) = arguments {
-        parse_arguments(
-            args,
-            &mut parsed_arguments,
-            |arg| {
-                parse_jvm_argument(
-                    arg.to_string(),
-                    natives_path,
-                    libraries_path,
-                    class_paths,
-                    version_name,
-                    java_arch,
-                )
-            },
-            java_arch,
-        )?;
-    } else {
-        parsed_arguments.push(format!(
-            "-Djava.library.path={}",
-            canonicalize(natives_path)
-                .map_err(|_| MinecraftDomainError::PathNotFound {
-                    path: natives_path.to_path_buf(),
-                    entity_type: "native_library".to_owned()
-                })?
-                .to_string_lossy()
-        ));
-        parsed_arguments.push("-cp".to_string());
-        parsed_arguments.push(class_paths.to_string());
-    }
-    parsed_arguments.push(format!("-Xmx{max_memory}M"));
-    for arg in custom_args {
-        if !arg.is_empty() {
-            parsed_arguments.push(arg.clone());
-        }
-    }
-
-    Ok(parsed_arguments)
+    todo!()
 }
 
 fn parse_jvm_argument(
@@ -64,31 +27,7 @@ fn parse_jvm_argument(
     version_name: &str,
     java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
-    argument.retain(|c| !c.is_whitespace());
-    Ok(argument
-        .replace(
-            "${natives_directory}",
-            &canonicalize(natives_path)
-                .map_err(|_| MinecraftDomainError::PathNotFound {
-                    path: natives_path.to_path_buf(),
-                    entity_type: "native_library".to_owned(),
-                })?
-                .to_string_lossy(),
-        )
-        .replace(
-            "${library_directory}",
-            &canonicalize(libraries_path)
-                .map_err(|_| MinecraftDomainError::PathNotFound {
-                    path: libraries_path.to_path_buf(),
-                    entity_type: "library".to_owned(),
-                })?
-                .to_string_lossy(),
-        )
-        .replace("${classpath_separator}", get_classpath_separator(java_arch))
-        .replace("${launcher_name}", "theseus")
-        .replace("${launcher_version}", env!("CARGO_PKG_VERSION"))
-        .replace("${version_name}", version_name)
-        .replace("${classpath}", class_paths))
+    todo!()
 }
 
 pub fn get_class_paths(
@@ -98,37 +37,7 @@ pub fn get_class_paths(
     java_arch: &str,
     minecraft_updated: bool,
 ) -> Result<String, MinecraftDomainError> {
-    let mut cps = libraries
-        .iter()
-        .filter_map(|library| {
-            if let Some(rules) = &library.rules
-                && !parse_rules(rules, java_arch, minecraft_updated)
-            {
-                return None;
-            }
-
-            if !library.include_in_classpath {
-                return None;
-            }
-
-            Some(get_lib_path(libraries_path, &library.name, false))
-        })
-        .collect::<Result<HashSet<_>, _>>()?;
-
-    cps.insert(
-        canonicalize(client_path)
-            .map_err(|_| MinecraftDomainError::PathNotFound {
-                path: client_path.to_path_buf(),
-                entity_type: "classpath".to_owned(),
-            })?
-            .to_string_lossy()
-            .to_string(),
-    );
-
-    Ok(cps
-        .into_iter()
-        .collect::<Vec<_>>()
-        .join(get_classpath_separator(java_arch)))
+    todo!()
 }
 
 pub fn get_class_paths_jar<T: AsRef<str>>(
@@ -136,12 +45,7 @@ pub fn get_class_paths_jar<T: AsRef<str>>(
     libraries: &[T],
     java_arch: &str,
 ) -> Result<String, MinecraftDomainError> {
-    let cps = libraries
-        .iter()
-        .map(|library| get_lib_path(libraries_path, library.as_ref(), false))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(cps.join(get_classpath_separator(java_arch)))
+    todo!()
 }
 
 pub fn get_lib_path(
@@ -149,20 +53,7 @@ pub fn get_lib_path(
     lib: &str,
     allow_not_exist: bool,
 ) -> Result<String, MinecraftDomainError> {
-    let mut path = libraries_path.to_path_buf();
-
-    path.push(daedalus::get_path_from_artifact(lib)?);
-
-    if !path.exists() && allow_not_exist {
-        return Ok(path.to_string_lossy().to_string());
-    }
-
-    let path = &canonicalize(&path).map_err(|_| MinecraftDomainError::PathNotFound {
-        path,
-        entity_type: "library".to_owned(),
-    })?;
-
-    Ok(path.to_string_lossy().to_string())
+    todo!()
 }
 
 impl From<daedalus::Error> for MinecraftDomainError {

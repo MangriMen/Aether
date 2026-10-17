@@ -1,3 +1,4 @@
+#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -165,89 +166,21 @@ fn process_argument(
     argument: &str,
     data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<String, MinecraftDomainError> {
-    // Arguments in [] are resolved to the path of a previously downloaded library
-    // Check if the argument is a direct library reference [group:artifact:version]
-    if let Some(stripped) = argument.strip_prefix('[')
-        && let Some(lib_key) = stripped.strip_suffix(']')
-    {
-        return get_lib_path(libraries_path, lib_key, true);
-    }
-
-    let mut result = argument.to_string();
-
-    // Arguments may contain {KEY} placeholders. We use a naive find-and-replace
-    // to support composite values like "{ROOT}/libraries/".
-    for (key, entry) in data {
-        let placeholder = format!("{{{key}}}");
-
-        if result.contains(&placeholder) {
-            let replacement = if let Some(inner) = entry.client.strip_prefix('[') {
-                if let Some(lib_key) = inner.strip_suffix(']') {
-                    // Resolve library path if the data value itself is a lib key
-                    get_lib_path(libraries_path, lib_key, true)?
-                } else {
-                    entry.client.clone()
-                }
-            } else {
-                entry.client.clone()
-            };
-
-            result = result.replace(&placeholder, &replacement);
-        }
-    }
-
-    if result.contains('{') && result.contains('}') {
-        return Err(MinecraftDomainError::ProcessorFailed {
-            reason: format!("Argument contains unresolved placeholders: {result}"),
-        });
-    }
-
-    Ok(result)
+    todo!()
 }
+
 pub(super) fn get_processor_arguments<T: AsRef<str>>(
     libraries_path: &Path,
     arguments: &[T],
     data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<Vec<String>, MinecraftDomainError> {
-    arguments
-        .iter()
-        .map(|arg| process_argument(libraries_path, arg.as_ref(), data))
-        .collect()
+    todo!()
 }
 
 pub(super) async fn get_processor_main_class(
     path: String,
 ) -> Result<Option<String>, MinecraftDomainError> {
-    tokio::task::spawn_blocking(move || {
-        let file = std::fs::File::open(&path).map_err(|e| IoError::with_path(e, &path))?;
-        let mut archive =
-            zip::ZipArchive::new(file).map_err(|_| MinecraftDomainError::ProcessorFailed {
-                reason: format!("Cannot read processor at {path}"),
-            })?;
-
-        let manifest = archive.by_name("META-INF/MANIFEST.MF").map_err(|_| {
-            MinecraftDomainError::ProcessorFailed {
-                reason: format!("Cannot read processor manifest at {path}"),
-            }
-        })?;
-
-        let reader = BufReader::new(manifest);
-
-        for line in reader.lines() {
-            let line = line.map_err(IoError::from)?;
-            let trimmed_line = line.trim();
-
-            if let Some(class) = trimmed_line.strip_prefix("Main-Class:") {
-                return Ok(Some(class.trim().to_string()));
-            }
-        }
-
-        Ok(None)
-    })
-    .await
-    .map_err(|err| MinecraftDomainError::ProcessorFailed {
-        reason: err.to_string(),
-    })?
+    todo!()
 }
 
 #[cfg(test)]
