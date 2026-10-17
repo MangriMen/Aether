@@ -5,8 +5,10 @@ use crate::{
     shared::request_client,
 };
 
+/// Failure categories of the core; most variants transparently wrap a feature's own error.
 #[derive(thiserror::Error, Debug)]
 pub enum ErrorKind {
+    // Feature errors
     #[error(transparent)]
     AuthError(#[from] auth::AuthApplicationError),
 
@@ -34,16 +36,34 @@ pub enum ErrorKind {
     #[error(transparent)]
     SettingsError(#[from] settings::SettingsError),
 
+    // Shared infrastructure errors
     #[error(transparent)]
     RequestError(#[from] request_client::RequestError),
 
+    // Generic errors
     #[error("Core error: {0}")]
     CoreError(String),
 }
 
+impl ErrorKind {
+    /// Wraps this kind into an [`Error`], capturing the current tracing span.
+    pub fn as_error(self) -> Error {
+        self.into()
+    }
+}
+
+impl From<plugins::PluginProviderError> for ErrorKind {
+    fn from(value: plugins::PluginProviderError) -> Self {
+        Self::PluginError(value.into())
+    }
+}
+
+/// Core error: the [`ErrorKind`] plus a span trace for diagnostics.
 #[derive(Debug)]
 pub struct Error {
+    /// The underlying error kind.
     pub raw: std::sync::Arc<ErrorKind>,
+    /// The same error instrumented with the current tracing span.
     pub source: tracing_error::TracedError<std::sync::Arc<ErrorKind>>,
 }
 
@@ -71,16 +91,4 @@ impl<E: Into<ErrorKind>> From<E> for Error {
     }
 }
 
-impl ErrorKind {
-    pub fn as_error(self) -> Error {
-        self.into()
-    }
-}
-
 pub type Result<T> = core::result::Result<T, Error>;
-
-impl From<plugins::PluginProviderError> for ErrorKind {
-    fn from(value: plugins::PluginProviderError) -> Self {
-        Self::PluginError(value.into())
-    }
-}
