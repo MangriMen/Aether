@@ -1,7 +1,7 @@
-import { type UnlistenFn } from '@tauri-apps/api/event';
 import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
+import { useEventListener } from '@/platform/ipc';
 import { logDebug } from '@/shared/lib';
 
 import type { ProgressEvent } from '../model';
@@ -12,8 +12,6 @@ import { useProgressStore } from '../model';
 export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
 
 export const useProgressEventsListener = () => {
-  let unlistenFn: UnlistenFn | undefined = undefined;
-
   const [, setProgressStore] = useProgressStore();
 
   const activeTimers = new Map<string, number>();
@@ -63,27 +61,20 @@ export const useProgressEventsListener = () => {
     }
   };
 
-  const startListen = async () => {
-    fetchEvents();
+  onMount(fetchEvents);
 
-    unlistenFn = await eventsEvents.progressEventDto.listen((e) => {
-      logDebug('[EVENT][DEBUG]', e);
-      addEvent(e.payload);
+  useEventListener(eventsEvents.progressEventDto, (e) => {
+    logDebug('[EVENT][DEBUG]', e);
+    addEvent(e.payload);
 
-      if (e.payload.fraction === null) {
-        removeEventDelayed(e.payload);
-      }
-    });
-  };
+    if (e.payload.fraction === null) {
+      removeEventDelayed(e.payload);
+    }
+  });
 
-  const cleanUp = () => {
+  onCleanup(() => {
     if (activeTimers.size !== 0) {
       activeTimers.forEach(clearTimeout);
     }
-
-    unlistenFn?.();
-  };
-
-  onMount(startListen);
-  onCleanup(cleanUp);
+  });
 };

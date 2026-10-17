@@ -1,10 +1,9 @@
-import type { UnlistenFn } from '@tauri-apps/api/event';
 import type { Component, JSX } from 'solid-js';
 
-import { createEffect, onCleanup } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import { processEvents } from '@/entities/process';
+import { useEventListener } from '@/platform/ipc';
 import { logDebug } from '@/shared/lib';
 
 import type { Instance } from '../model/instance';
@@ -44,32 +43,17 @@ export const RunningInstancesProvider: Component<
     },
   ];
 
-  let processListenerUnlistenFn: UnlistenFn | undefined;
+  useEventListener(processEvents.processEventDto, (e) => {
+    logDebug('[EVENT][DEBUG]', e);
 
-  const stopProcessListener = () => processListenerUnlistenFn?.();
-
-  const startProcessListener = () =>
-    processEvents.processEventDto.listen((e) => {
-      logDebug('[EVENT][DEBUG]', e);
-
-      setContextValue('instances', (instances) => ({
-        ...instances,
-        [e.payload.instanceId]: {
-          payload: e.payload,
-          isLoading: false,
-          isRunning: e.payload.event === 'launched',
-        },
-      }));
-    });
-
-  createEffect(() => {
-    startProcessListener().then((unlistenFn) => {
-      processListenerUnlistenFn = unlistenFn;
-    });
-  });
-
-  onCleanup(() => {
-    stopProcessListener();
+    setContextValue('instances', (instances) => ({
+      ...instances,
+      [e.payload.instanceId]: {
+        payload: e.payload,
+        isLoading: false,
+        isRunning: e.payload.event === 'launched',
+      },
+    }));
   });
 
   return (
