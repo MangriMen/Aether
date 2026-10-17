@@ -2,7 +2,7 @@ import type { Component } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import type { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/features/minecraft';
 import type { Option } from '@/shared/model';
 import type { ToggleGroupRootProps } from '@/shared/ui';
 

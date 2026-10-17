@@ -2,9 +2,7 @@ import type { Component, JSX } from 'solid-js';
 
 import { createStore } from 'solid-js/store';
 
-import { processEvents } from '@/entities/process';
-import { useEventListener } from '@/platform/ipc';
-import { logDebug } from '@/shared/lib';
+import { useProcessEventListener } from '@/features/process';
 
 import type { Instance } from '../model/instance';
 import type { RunningInstancesContextValue } from '../model/runningInstancesContext';
@@ -43,15 +41,13 @@ export const RunningInstancesProvider: Component<
     },
   ];
 
-  useEventListener(processEvents.processEventDto, (e) => {
-    logDebug('[EVENT][DEBUG]', e);
-
+  useProcessEventListener((event) => {
     setContextValue('instances', (instances) => ({
       ...instances,
-      [e.payload.instanceId]: {
-        payload: e.payload,
+      [event.instanceId]: {
+        payload: event,
         isLoading: false,
-        isRunning: e.payload.event === 'launched',
+        isRunning: event.event === 'launched',
       },
     }));
   });

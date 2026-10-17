@@ -4,8 +4,11 @@ import { createMemo, Show } from 'solid-js';
 
 import type { SettingsEntryProps } from '@/shared/ui';
 
-import { useCheckUpdate, useUpdate } from '@/entities/updates';
-import { checkIsUpdateAvailable } from '@/entities/updates';
+import {
+  useCheckUpdate,
+  useUpdate,
+  checkIsUpdateAvailable,
+} from '@/features/update';
 import { useTranslation } from '@/shared/model';
 import { Button, SettingsEntry, showToast } from '@/shared/ui';
 

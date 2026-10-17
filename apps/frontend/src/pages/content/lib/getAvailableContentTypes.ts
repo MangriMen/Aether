@@ -1,4 +1,4 @@
-import type { ModLoader } from '@/entities/minecraft';
+import type { ModLoader } from '@/features/minecraft';
 
 import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
 import { getOrCreateFeatureFlagsStore } from '@/shared/model';
