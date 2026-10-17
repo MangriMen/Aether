@@ -10,10 +10,10 @@ enum Vote {
     Abstain,
 }
 
-pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_updated: bool) -> bool {
+pub fn parse_rules(rules: &[vanilla::Rule], java_arch: &str, minecraft_updated: bool) -> bool {
     let mut votes: Vec<Vote> = rules
         .iter()
-        .map(|rule| vote(rule, java_version, minecraft_updated))
+        .map(|rule| vote(rule, java_arch, minecraft_updated))
         .collect();
 
     if rules
@@ -27,12 +27,12 @@ pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_update
 }
 
 fn vote(rule: &vanilla::Rule, java_arch: &str, minecraft_updated: bool) -> Vote {
-    let condition = match (&rule.os, &rule.features) {
-        (Some(os), _) => parse_os_rule(os, java_arch, minecraft_updated),
-        (None, Some(features)) => features_hold(features),
-        // Unconditional rules always vote positively, whatever their action.
-        (None, None) => return Vote::Allow,
-    };
+    // A rule without conditions always holds; with several, all of them must hold.
+    let condition = rule
+        .os
+        .as_ref()
+        .is_none_or(|os| parse_os_rule(os, java_arch, minecraft_updated))
+        && rule.features.as_ref().is_none_or(features_hold);
 
     match (&rule.action, condition) {
         (vanilla::RuleAction::Allow, true) => Vote::Allow,
@@ -41,13 +41,30 @@ fn vote(rule: &vanilla::Rule, java_arch: &str, minecraft_updated: bool) -> Vote 
     }
 }
 
+/// Whether at least one known feature flag is specified and every specified flag
+/// matches the launcher's configuration. Flags the rule leaves unset are ignored.
+/// A condition with no known flags (e.g. only flags unknown to us, dropped by serde)
+/// does not hold.
 fn features_hold(features: &vanilla::FeatureRule) -> bool {
-    features.is_demo_user == Some(false)
-        || features.has_custom_resolution == Some(true)
-        || features.has_quick_plays_support == Some(false)
-        || features.is_quick_play_multiplayer == Some(false)
-        || features.is_quick_play_realms == Some(false)
-        || features.is_quick_play_singleplayer == Some(false)
+    let any_specified = [
+        features.is_demo_user,
+        features.has_custom_resolution,
+        features.has_quick_plays_support,
+        features.is_quick_play_singleplayer,
+        features.is_quick_play_multiplayer,
+        features.is_quick_play_realms,
+    ]
+    .iter()
+    .any(Option::is_some);
+    let matches = |wanted: Option<bool>, actual: bool| wanted.is_none_or(|wanted| wanted == actual);
+
+    any_specified
+        && matches(features.is_demo_user, false)
+        && matches(features.has_custom_resolution, true)
+        && matches(features.has_quick_plays_support, false)
+        && matches(features.is_quick_play_singleplayer, false)
+        && matches(features.is_quick_play_multiplayer, false)
+        && matches(features.is_quick_play_realms, false)
 }
 
 /// Whether an `os` condition of a rule holds for the given Java architecture.
@@ -163,9 +180,15 @@ mod tests {
     }
 
     #[test]
-    fn disallow_without_conditions_is_currently_allowed() {
-        // An unconditional rule resolves to Some(true) regardless of its action
-        assert!(parse_rules(&[plain(RuleAction::Disallow)], "x64", true));
+    fn disallow_without_conditions_is_denied() {
+        assert!(!parse_rules(&[plain(RuleAction::Disallow)], "x64", true));
+        assert!(!parse_rules(&[plain(RuleAction::Disallow)], "x64", false));
+    }
+
+    #[test]
+    fn unconditional_disallow_denies_alongside_allow() {
+        let rules = [plain(RuleAction::Allow), plain(RuleAction::Disallow)];
+        assert!(!parse_rules(&rules, "x64", true));
     }
 
     #[test]
@@ -257,8 +280,21 @@ mod tests {
     }
 
     #[test]
-    fn features_all_unset_are_denied() {
+    fn rule_with_only_unknown_features_does_not_apply() {
+        // Unknown feature keys are dropped by serde, leaving every known flag unset.
+        // Allow-rule is excluded.
         assert!(!allow_features(no_features()));
+
+        // Disallow-rule abstains: it neither denies an allow-rule nor allows by itself.
+        let rules = [
+            Rule {
+                action: RuleAction::Allow,
+                os: None,
+                features: None,
+            },
+            feature_rule(RuleAction::Disallow, no_features()),
+        ];
+        assert!(parse_rules(&rules, "x64", true));
     }
 
     #[test]
@@ -305,10 +341,22 @@ mod tests {
     }
 
     #[test]
-    fn features_any_single_truthy_condition_is_enough() {
-        assert!(allow_features(FeatureRule {
+    fn features_all_specified_flags_must_match() {
+        // Custom resolution matches, but the demo flag does not
+        assert!(!allow_features(FeatureRule {
             is_demo_user: Some(true),
             has_custom_resolution: Some(true),
+            ..no_features()
+        }));
+        assert!(allow_features(FeatureRule {
+            is_demo_user: Some(false),
+            has_custom_resolution: Some(true),
+            ..no_features()
+        }));
+        assert!(!allow_features(FeatureRule {
+            is_demo_user: Some(false),
+            has_custom_resolution: Some(true),
+            is_quick_play_realms: Some(true),
             ..no_features()
         }));
     }
@@ -325,29 +373,43 @@ mod tests {
         )];
         assert!(!parse_rules(&holds, "x64", true));
 
-        // Condition does not hold (nothing set) -> allowed
-        let not_holds = [feature_rule(RuleAction::Disallow, no_features())];
+        // Condition does not hold (demo user wanted) -> allowed
+        let not_holds = [feature_rule(
+            RuleAction::Disallow,
+            FeatureRule {
+                is_demo_user: Some(true),
+                ..no_features()
+            },
+        )];
         assert!(parse_rules(&not_holds, "x64", true));
     }
 
     #[test]
-    fn rule_with_os_ignores_features() {
-        let rule = Rule {
-            action: RuleAction::Allow,
-            os: Some(matching()),
-            features: Some(no_features()),
+    fn rule_with_os_and_features_needs_both_to_hold() {
+        let holding = FeatureRule {
+            has_custom_resolution: Some(true),
+            ..no_features()
         };
-        assert!(parse_rules(&[rule], "x64", true));
+        let failing = FeatureRule {
+            is_demo_user: Some(true),
+            ..no_features()
+        };
+        let allowed = |os: OsRule, features: FeatureRule| {
+            parse_rules(
+                &[Rule {
+                    action: RuleAction::Allow,
+                    os: Some(os),
+                    features: Some(features),
+                }],
+                "x64",
+                true,
+            )
+        };
 
-        let rule = Rule {
-            action: RuleAction::Allow,
-            os: Some(not_matching()),
-            features: Some(FeatureRule {
-                has_custom_resolution: Some(true),
-                ..no_features()
-            }),
-        };
-        assert!(!parse_rules(&[rule], "x64", true));
+        assert!(allowed(matching(), holding.clone()));
+        assert!(!allowed(matching(), failing.clone()));
+        assert!(!allowed(not_matching(), holding));
+        assert!(!allowed(not_matching(), failing));
     }
 
     #[test]

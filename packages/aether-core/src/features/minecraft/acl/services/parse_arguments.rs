@@ -32,12 +32,13 @@ where
                     continue;
                 }
                 match value {
+                    // Ruled values are single arguments already: pass them through verbatim
                     vanilla::ArgumentValue::Single(template) => {
-                        parsed_arguments.push(transform_template(template, &parse_function)?);
+                        parsed_arguments.push(parse_function(template)?);
                     }
                     vanilla::ArgumentValue::Many(templates) => {
                         for template in templates {
-                            parsed_arguments.push(transform_template(template, &parse_function)?);
+                            parsed_arguments.push(parse_function(template)?);
                         }
                     }
                 }
@@ -235,27 +236,40 @@ mod tests {
     }
 
     #[test]
-    fn ruled_single_with_spaces_is_not_split_and_keeps_temporary_char() {
+    fn ruled_single_with_spaces_is_passed_verbatim() {
         let arg = Argument::Ruled {
             rules: allow_all(),
             value: ArgumentValue::Single("a b".to_string()),
         };
-        assert_eq!(
-            run(&[arg], identity).unwrap(),
-            vec![format!("a{TEMPORARY_REPLACE_CHAR}b")]
-        );
+        assert_eq!(run(&[arg], identity).unwrap(), vec!["a b"]);
     }
 
     #[test]
-    fn ruled_many_with_spaces_keeps_temporary_char_per_value() {
+    fn ruled_many_with_spaces_is_passed_verbatim_per_value() {
         let arg = Argument::Ruled {
             rules: allow_all(),
             value: ArgumentValue::Many(vec!["-x".to_string(), "a b".to_string()]),
         };
         assert_eq!(
             run(&[arg], identity).unwrap(),
-            vec!["-x".to_string(), format!("a{TEMPORARY_REPLACE_CHAR}b")]
+            vec!["-x".to_string(), "a b".to_string()]
         );
+    }
+
+    #[test]
+    fn ruled_parse_function_sees_value_unchanged() {
+        let seen = std::cell::RefCell::new(Vec::new());
+        let arg = Argument::Ruled {
+            rules: allow_all(),
+            value: ArgumentValue::Many(vec!["-Dos.name=Windows 10".to_string()]),
+        };
+        let out = run(&[arg], |s| {
+            seen.borrow_mut().push(s.to_string());
+            Ok(s.to_string())
+        })
+        .unwrap();
+        assert_eq!(out, vec!["-Dos.name=Windows 10"]);
+        assert_eq!(seen.into_inner(), vec!["-Dos.name=Windows 10"]);
     }
 
     #[test]

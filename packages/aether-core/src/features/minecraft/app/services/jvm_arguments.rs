@@ -1,6 +1,8 @@
 use std::{collections::HashSet, path::Path};
 
-use crate::features::minecraft::{MinecraftDomainError, parse_arguments, parse_rules, vanilla};
+use crate::features::minecraft::{
+    MinecraftDomainError, TEMPORARY_REPLACE_CHAR, parse_arguments, parse_rules, vanilla,
+};
 use crate::shared::{io::infra::canonicalize, java::domain::get_classpath_separator};
 
 /// Canonicalizes `path` as a string, reporting a missing path as `entity_type`.
@@ -73,16 +75,18 @@ fn parse_jvm_argument(
         ("${natives_directory}", natives.as_str()),
         ("${library_directory}", libraries.as_str()),
         ("${classpath_separator}", get_classpath_separator(java_arch)),
-        ("${launcher_name}", "theseus"),
+        ("${launcher_name}", "aether"),
         ("${launcher_version}", env!("CARGO_PKG_VERSION")),
         ("${version_name}", version_name),
         ("${classpath}", class_paths),
     ];
 
-    let stripped: String = argument.chars().filter(|c| !c.is_whitespace()).collect();
+    // Normal templates arrive with spaces swapped for the temporary char; restore them
+    // so the template stays one argument with its spaces intact.
+    let template = argument.replace(TEMPORARY_REPLACE_CHAR, " ");
     Ok(placeholders
         .iter()
-        .fold(stripped, |acc, (name, value)| acc.replace(name, value)))
+        .fold(template, |acc, (name, value)| acc.replace(name, value)))
 }
 
 pub fn get_class_paths(
@@ -581,7 +585,7 @@ mod tests {
             out,
             vec![
                 format!("-Djava.library.path={}", canon(&e.natives)),
-                "-Dminecraft.launcher.brand=theseus".to_string(),
+                "-Dminecraft.launcher.brand=aether".to_string(),
                 format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION")),
                 format!("-Dlib={}", canon(&e.libs)),
                 "-Dver=1.20.1".to_string(),
@@ -602,13 +606,26 @@ mod tests {
     }
 
     #[test]
-    fn jvm_whitespace_in_template_is_removed_not_split() {
-        // Whitespace (including the temporary separator) is stripped from the template,
-        // so a template with a space yields one glued argument.
+    fn jvm_whitespace_in_template_is_kept_not_split() {
+        // JVM templates are never split on spaces and keep their whitespace verbatim.
         let e = env();
         let args = vec![Argument::Normal("-cp ${classpath}".to_string())];
         let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
-        assert_eq!(out, vec!["-cpA.jar", "-Xmx1M"]);
+        assert_eq!(out, vec!["-cp A.jar", "-Xmx1M"]);
+    }
+
+    #[test]
+    fn jvm_ruled_value_with_space_stays_one_argument_with_placeholders() {
+        let e = env();
+        let args = vec![Argument::Ruled {
+            rules: vec![],
+            value: ArgumentValue::Many(vec![
+                "-Dos.name=Windows 10".to_string(),
+                "-Dv=${version_name} x".to_string(),
+            ]),
+        }];
+        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
+        assert_eq!(out, vec!["-Dos.name=Windows 10", "-Dv=1.20.1 x", "-Xmx1M"]);
     }
 
     #[test]

@@ -11,10 +11,6 @@ use crate::{
     shared::io::infra::canonicalize,
 };
 
-// Replaces the space separator with a newline character, as to not split the arguments
-#[cfg(test)]
-const TEMPORARY_REPLACE_CHAR: &str = "\n";
-
 #[allow(clippy::too_many_arguments)]
 pub(super) fn get_minecraft_arguments(
     arguments: Option<&[vanilla::Argument]>,
@@ -364,16 +360,13 @@ mod tests {
     }
 
     #[test]
-    fn ruled_single_with_space_keeps_temporary_char_instead_of_splitting() {
+    fn ruled_single_with_space_is_passed_verbatim_not_split() {
         let e = env();
         let args = vec![Argument::Ruled {
             rules: allow(),
             value: ArgumentValue::Single("--width ${resolution_width}".to_string()),
         }];
-        assert_eq!(
-            call(&e, Some(&args), None).unwrap(),
-            vec![format!("--width{TEMPORARY_REPLACE_CHAR}1280")]
-        );
+        assert_eq!(call(&e, Some(&args), None).unwrap(), vec!["--width 1280"]);
     }
 
     #[test]
