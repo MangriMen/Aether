@@ -39,7 +39,7 @@ src/
    move the shared part down or let `app/runtime` coordinate them.
 4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`.
 5. A feature exports its entry points (a page, a dialog, a settings pane) through
-   `index.ts`; `app` decides where they appear (routes in `app/router`, screens in
+   `index.ts`; `app` decides where they appear (routes in `app/AppRouter.tsx`, screens in
    `app/shell`). A page that combines several domains lives in `app/pages`.
 6. No ports or interfaces until something has a second implementation.
 7. `shared/` knows nothing about Aether: no `platform/`, no domain types. What describes the
@@ -138,7 +138,7 @@ features/instance-edit/
   lib/
     useJavaAndMemorySettingsHandler.ts
   ui/
-    InstanceSettingsDialog.tsx  exported through index.ts, the route is in app/router
+    InstanceSettingsDialog.tsx  exported through index.ts, the route is in app/AppRouter.tsx
     GeneralTab.tsx
     JavaAndMemoryTab.tsx        renders JavaAndMemorySettingsForm from instance-settings
 

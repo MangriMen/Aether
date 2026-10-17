@@ -41,6 +41,10 @@ const uiKitSharedImport = {
   regex: '^@/shared/(?!utils$)',
   message: 'shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider.',
 };
+const featurePatterns = [deepFeatureImport, deepModuleImport, appImport];
+const platformPatterns = [...featurePatterns, upperLayerImport];
+const sharedPatterns = [...platformPatterns, platformImport];
+const uiKitPatterns = [...sharedPatterns, uiKitSharedImport];
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -168,64 +172,14 @@ export default [
       'no-restricted-imports': ['error', { patterns: [deepFeatureImport, deepModuleImport] }],
     },
   },
-  {
-    files: ['src/features/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [deepFeatureImport, deepModuleImport, appImport] },
-      ],
-    },
-  },
-  {
-    files: ['src/platform/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            deepFeatureImport,
-            deepModuleImport,
-            appImport,
-            upperLayerImport,
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ['src/shared/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            deepFeatureImport,
-            deepModuleImport,
-            appImport,
-            upperLayerImport,
-            platformImport,
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: ['src/shared/ui-kit/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            deepFeatureImport,
-            deepModuleImport,
-            appImport,
-            upperLayerImport,
-            platformImport,
-            uiKitSharedImport,
-          ],
-        },
-      ],
-    },
-  },
+  // Flat config replaces a rule instead of merging it, so each block lists every pattern.
+  ...[
+    ['src/features/**/*.{ts,tsx}', featurePatterns],
+    ['src/platform/**/*.{ts,tsx}', platformPatterns],
+    ['src/shared/**/*.{ts,tsx}', sharedPatterns],
+    ['src/shared/ui-kit/**/*.{ts,tsx}', uiKitPatterns],
+  ].map(([glob, patterns]) => ({
+    files: [glob],
+    rules: { 'no-restricted-imports': ['error', { patterns }] },
+  })),
 ];

@@ -1,18 +1,18 @@
-import { createContext, useContext, type JSX } from 'solid-js';
+import { createContext, mergeProps, useContext, type JSX } from 'solid-js';
 
 /**
  * Texts that ui-kit components render on their own (close buttons, empty
  * tables, pagination). ui-kit does not depend on i18n: the app provides them.
  */
 export type UiKitLabels = {
-  close: string | undefined;
-  noData: string | undefined;
-  morePages: string | undefined;
-  previous: string | undefined;
-  next: string | undefined;
-  ok: string | undefined;
-  cancel: string | undefined;
-  browse: string | undefined;
+  close: string;
+  noData: string;
+  morePages: string;
+  previous: string;
+  next: string;
+  ok: string;
+  cancel: string;
+  browse: string;
 };
 
 const DEFAULT_UI_KIT_LABELS: UiKitLabels = {
@@ -29,16 +29,24 @@ const DEFAULT_UI_KIT_LABELS: UiKitLabels = {
 const UiKitLabelsContext = createContext<UiKitLabels>(DEFAULT_UI_KIT_LABELS);
 
 export type UiKitLabelsProviderProps = {
-  /** Pass getters to keep the labels reactive (e.g. to the current locale). */
-  labels: UiKitLabels;
+  /** A missing (undefined) label falls back to the English default. */
+  labels: { [K in keyof UiKitLabels]?: string | undefined };
   children?: JSX.Element;
 };
 
-export const UiKitLabelsProvider = (props: UiKitLabelsProviderProps) => (
-  // eslint-disable-next-line solid/reactivity
-  <UiKitLabelsContext.Provider value={props.labels}>
-    {props.children}
-  </UiKitLabelsContext.Provider>
-);
+export const UiKitLabelsProvider = (props: UiKitLabelsProviderProps) => {
+  // mergeProps reads its sources on access, so the labels follow the locale
+  // whether they come as getters or as a new object.
+  const value = mergeProps(
+    DEFAULT_UI_KIT_LABELS,
+    () => props.labels,
+  ) as UiKitLabels;
+
+  return (
+    <UiKitLabelsContext.Provider value={value}>
+      {props.children}
+    </UiKitLabelsContext.Provider>
+  );
+};
 
 export const useUiKitLabels = () => useContext(UiKitLabelsContext);

@@ -32,8 +32,8 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
 
   const mergedProps = mergeProps(
     {
-      buttonOkText: labels.ok || 'Ok',
-      buttonCancelText: labels.cancel || 'Cancel',
+      buttonOkText: labels.ok,
+      buttonCancelText: labels.cancel,
     },
     props,
   );

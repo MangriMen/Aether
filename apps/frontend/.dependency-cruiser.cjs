@@ -8,6 +8,11 @@ const MODULE = '^src/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]
 const MODULE_INDEX = '^src/(app/(shell|runtime|pages/[^/]+)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
 // The composition root: files at the top of app/ (App, AppRoot, AppRouter, route patterns).
 const APP_ROOT = '^src/app/[^/]+$';
+// Anything in src/ that is not part of the layout (see src-layout).
+const OUTSIDE_LAYOUT = [
+  '^src/(?!index\\.tsx$|app/|platform/[^/]+/|features/[^/]+/|shared/[^/]+/)',
+  '^src/app/(?![^/]+$|shell/|runtime/|pages/[^/]+/)',
+];
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -25,13 +30,16 @@ module.exports = {
       comment:
         'src/ holds index.tsx, app/ (shell/, runtime/, pages/<page>/ and the composition root), platform/<module>/, features/<feature>/ and shared/<module>/; nothing else.',
       severity: 'error',
-      from: {
-        path: [
-          '^src/(?!index\\.tsx$|app/|platform/[^/]+/|features/[^/]+/|shared/[^/]+/)',
-          '^src/app/(?![^/]+$|shell/|runtime/|pages/[^/]+/)',
-        ],
-      },
+      from: { path: OUTSIDE_LAYOUT },
       to: {},
+    },
+    {
+      name: 'src-layout-target',
+      comment:
+        'The same layout, seen from the importing side: catches a misplaced file that imports nothing. A file that imports nothing and is imported by nothing is left to knip.',
+      severity: 'error',
+      from: {},
+      to: { path: OUTSIDE_LAYOUT },
     },
     {
       name: 'app-modules-not-root',

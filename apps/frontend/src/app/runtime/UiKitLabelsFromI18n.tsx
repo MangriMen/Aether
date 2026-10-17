@@ -1,7 +1,10 @@
 import type { JSX } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
-import { type UiKitLabels, UiKitLabelsProvider } from '@/shared/ui-kit';
+import {
+  UiKitLabelsProvider,
+  type UiKitLabelsProviderProps,
+} from '@/shared/ui-kit';
 
 export type UiKitLabelsFromI18nProps = { children?: JSX.Element };
 
@@ -9,7 +12,7 @@ export type UiKitLabelsFromI18nProps = { children?: JSX.Element };
 export const UiKitLabelsFromI18n = (props: UiKitLabelsFromI18nProps) => {
   const [{ t }] = useTranslation();
 
-  const labels: UiKitLabels = {
+  const labels: UiKitLabelsProviderProps['labels'] = {
     get close() {
       return t('common.close');
     },
