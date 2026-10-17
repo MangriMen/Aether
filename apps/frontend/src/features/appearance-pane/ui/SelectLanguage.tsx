@@ -13,7 +13,7 @@ import {
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-export type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =
+type SelectLanguageProps<Opt extends Option<Locale> = Option<Locale>> =
   SelectRootProps<Opt, never, 'div'> & {
     multiple?: false;
     errorMessage?: string;

@@ -5,7 +5,7 @@ import { createStore, produce } from 'solid-js/store';
 
 export type DialogComponentProps = DialogRootProps;
 
-export type NonNullableDialogItem<
+type NonNullableDialogItem<
   T extends DialogComponentProps = DialogComponentProps,
 > = {
   dialog: Component<T>;
@@ -14,9 +14,7 @@ export type NonNullableDialogItem<
   preventRemove: boolean;
 };
 
-export type GlobalDialogType<
-  T extends DialogComponentProps = DialogComponentProps,
-> = {
+type GlobalDialogType<T extends DialogComponentProps = DialogComponentProps> = {
   dialogs: Record<string, NonNullableDialogItem<T>>;
   activeTimeouts: Record<string, number>;
 };
@@ -85,11 +83,6 @@ export const showDialog = <T extends DialogComponentProps>(
   });
 };
 
-export const isDialogOpen = (id: string) => {
-  const [store] = getOrCreateDialogStore();
-  return id in store.dialogs && store.dialogs[id]?.open;
-};
-
 export const closeDialog = (
   id: string,
   preventRemove: boolean = false,
@@ -120,7 +113,7 @@ export const closeDialog = (
   saveTimeoutRef(id, timeoutId);
 };
 
-export const removeDialog = (id: string) => {
+const removeDialog = (id: string) => {
   deleteDialogFromStore(id);
 };
 

@@ -25,7 +25,7 @@ export type CreateOfflineAccountFormSchemaError =
 
 type EnsureAllKeys = { [K in CreateOfflineAccountFormSchemaError]: K };
 
-export const CreateOfflineAccountFormSchemaErrors = Object.values({
+const CreateOfflineAccountFormSchemaErrors = Object.values({
   INVALID_USERNAME_LENGTH: 'INVALID_USERNAME_LENGTH',
   INVALID_USERNAME_CHARS: 'INVALID_USERNAME_CHARS',
 } satisfies EnsureAllKeys);

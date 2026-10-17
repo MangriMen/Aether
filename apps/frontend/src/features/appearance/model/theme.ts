@@ -12,22 +12,6 @@ export const THEMES: ThemeObject[] = [
   { value: 'aether-dark', name: 'Aether Dark', mode: 'dark' },
 ];
 
-export const THEMES_MAP = THEMES.reduce<Record<Theme, ThemeObject>>(
-  (acc, theme) => {
-    acc[theme.value] = theme;
-    return acc;
-  },
-  {},
-);
-
-export const THEME_TO_MODE: Record<ThemeConfig, ConfigColorMode> = {
-  light: 'light',
-  'aether-light': 'light',
-  dark: 'dark',
-  'aether-dark': 'dark',
-  system: 'system',
-};
-
 const THEME_TO_COLOR_MODE_MAP = THEMES.reduce<
   Record<ThemeConfig, ConfigColorMode>
 >((acc, theme) => {

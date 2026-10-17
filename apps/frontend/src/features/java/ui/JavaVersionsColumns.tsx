@@ -9,7 +9,7 @@ import { JavaVersionActions } from './JavaVersionActions';
 import { JavaVersionPath } from './JavaVersionPath';
 import { JavaVersionStatusButton } from './JavaVersionStatusButton';
 
-export const javaVersionsColumnHelper = createColumnHelper<
+const javaVersionsColumnHelper = createColumnHelper<
   typeof appTableFeatures,
   JavaVersion
 >();

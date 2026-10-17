@@ -8,7 +8,7 @@ import { isAuthValidationError } from '../model/accountError';
 import { accountCache } from './accountCache';
 import { accountKeys } from './accountQueryKeys';
 
-export const accountQueries = {
+const accountQueries = {
   list: () => ({
     queryKey: accountKeys.list(),
     queryFn: authCommands.listAccounts,

@@ -2,56 +2,33 @@ import * as v from 'valibot';
 
 import { createI18nError } from '@/shared/i18n';
 
+import { stringToEnvVars } from './parseEnvVars';
+
 const EnvVarsTransformation = v.pipe(
   v.string(),
   v.transform((val) => {
-    const parts = val
-      .split(';')
-      .map((p) => p.trim())
-      .filter(Boolean);
+    const result = stringToEnvVars(val);
 
-    const result: [string, string][] = [];
-
-    for (const part of parts) {
-      if (!part.includes('=')) {
-        throw new v.ValiError([
-          {
-            kind: 'validation',
-            type: 'custom',
-            input: val,
-            expected: null,
-            received: 'string',
-            message: createI18nError('invalidFormat', { part }),
-          },
-        ]);
-      }
-
-      const [key, ...valueParts] = part.split('=');
-      const value = valueParts.join('=');
-
-      if (!key?.trim()) {
-        throw new v.ValiError([
-          {
-            kind: 'validation',
-            type: 'custom',
-            input: val,
-            expected: null,
-            received: 'string',
-            message: createI18nError('emptyKey', { part }),
-          },
-        ]);
-      }
-
-      result.push([key.trim(), value.trim()]);
+    if ('error' in result) {
+      throw new v.ValiError([
+        {
+          kind: 'validation',
+          type: 'custom',
+          input: val,
+          expected: null,
+          received: 'string',
+          message: createI18nError(result.error, { part: result.part }),
+        },
+      ]);
     }
 
-    return result;
+    return result.vars;
   }),
 );
 
-export const MemoryMaximumSchema = v.number();
+const MemoryMaximumSchema = v.number();
 
-export const MemorySchema = v.object({
+const MemorySchema = v.object({
   maximum: MemoryMaximumSchema,
 });
 

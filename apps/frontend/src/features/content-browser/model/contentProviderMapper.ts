@@ -5,7 +5,7 @@ import type { Option } from '@/shared/ui-kit';
 export type ContentProviderEntry =
   CapabilityEntry<ContentProviderCapabilityMetadata>;
 
-export const contentProviderToOption = <T extends ContentProviderEntry>(
+const contentProviderToOption = <T extends ContentProviderEntry>(
   value: T,
 ): Option<T> => ({
   name: value.capability.name,

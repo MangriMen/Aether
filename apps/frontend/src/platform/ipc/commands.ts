@@ -14,10 +14,7 @@ import {
   commands as pluginsRawCommands,
   events as pluginsRawEvents,
 } from '@/platform/bindings/plugin';
-import {
-  commands as processRawCommands,
-  events as processRawEvents,
-} from '@/platform/bindings/process';
+import { events as processRawEvents } from '@/platform/bindings/process';
 import { commands as settingsRawCommands } from '@/platform/bindings/settings';
 import { commands as updateRawCommands } from '@/platform/bindings/update';
 
@@ -39,7 +36,6 @@ export const pluginsCommands = {
   import: withIdempotency(pluginsRawCommands.import),
   sync: withIdempotency(pluginsRawCommands.sync),
   list: pluginsRawCommands.list,
-  get: pluginsRawCommands.get,
   remove: withIdempotency(pluginsRawCommands.remove),
   enable: withIdempotency(pluginsRawCommands.enable),
   forceEnable: withIdempotency(pluginsRawCommands.forceEnable),
@@ -116,11 +112,6 @@ export const javaCommands = {
 export const minecraftCommands = {
   getMinecraftVersionManifest: minecraftRawCommands.getMinecraftVersionManifest,
   getLoaderVersionManifest: minecraftRawCommands.getLoaderVersionManifest,
-};
-
-export const processCommands = {
-  list: processRawCommands.list,
-  getByInstanceId: processRawCommands.getByInstanceId,
 };
 
 export const eventsCommands = {

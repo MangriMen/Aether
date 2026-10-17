@@ -61,7 +61,7 @@ export const useClearCache = () => {
   }));
 };
 
-export const useEditSettings = () => {
+const useEditSettings = () => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
 

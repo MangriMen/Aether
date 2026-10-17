@@ -11,9 +11,9 @@ export const SettingsTab = {
 
 export type SettingsTab = (typeof SettingsTab)[keyof typeof SettingsTab];
 
-export const SettingsTabs = new Set(Object.values(SettingsTab));
+const SettingsTabs = new Set(Object.values(SettingsTab));
 
-export const isSettingsTab = (value: string): value is SettingsTab =>
+const isSettingsTab = (value: string): value is SettingsTab =>
   SettingsTabs.has(value as SettingsTab);
 
 export const DEFAULT_SETTINGS_TAB = SettingsTab.Appearance;

@@ -9,7 +9,7 @@ import { cn } from '@/shared/utils';
 
 import SelectThemeByColorMode from './SelectThemeByColorMode';
 
-export type SelectThemeForColorModeProps = ComponentProps<'div'>;
+type SelectThemeForColorModeProps = ComponentProps<'div'>;
 
 const SelectThemeForColorMode: Component<SelectThemeForColorModeProps> = (
   props,

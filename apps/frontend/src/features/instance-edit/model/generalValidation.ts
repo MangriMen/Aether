@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const NameSchema = v.pipe(
+const NameSchema = v.pipe(
   v.string(),
   v.trim(),
   v.minLength(1, 'generalSettingsError.name.minLength'),

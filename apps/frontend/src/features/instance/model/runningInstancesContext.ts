@@ -4,7 +4,7 @@ import type { ProcessEvent } from '@/features/process';
 
 import type { Instance } from './instance';
 
-export type RunningInstancesInstanceData = {
+type RunningInstancesInstanceData = {
   payload?: ProcessEvent;
   isLoading: boolean;
   isRunning: boolean;

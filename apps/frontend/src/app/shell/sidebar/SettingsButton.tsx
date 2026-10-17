@@ -15,7 +15,7 @@ import {
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
-export type SettingsButtonProps<T extends ValidComponent = 'button'> =
+type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>>;
 
 const SettingsButton: Component<SettingsButtonProps> = (props) => {

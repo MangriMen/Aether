@@ -7,9 +7,9 @@ interface JavaVersionStatusUiProps {
   onTest: () => Promise<void>;
 }
 
-export const LOADER_DELAY = 250;
+const LOADER_DELAY = 250;
 export const SPIN_DURATION = 500;
-export const COOL_DOWN_DURATION = 3000;
+const COOL_DOWN_DURATION = 3000;
 
 export const useJavaVersionStatusUi = (props: JavaVersionStatusUiProps) => {
   const [uiStatus, setUiStatus] = createSignal<JavaTestStatus>('idle');

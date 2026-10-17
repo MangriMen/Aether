@@ -1,6 +1,6 @@
-import { ContentType } from '@/features/content';
+import type { ContentSearchParams } from '@/features/content';
 
-import type { ContentSearchInputValues } from './contentSearchValidation';
+import { ContentType } from '@/features/content';
 
 export const DEFAULT_PER_PAGE_OPTIONS = [5, 10, 20, 30, 40, 50];
 
@@ -9,6 +9,6 @@ export const DEFAULT_FORM_VALUES = {
   pageSize: 20,
   query: '',
   contentType: ContentType.Mod,
-} as const satisfies Partial<ContentSearchInputValues>;
+} as const satisfies Partial<ContentSearchParams>;
 
 export const SEARCH_QUERY_DEBOUNCE_DELAY = 500;

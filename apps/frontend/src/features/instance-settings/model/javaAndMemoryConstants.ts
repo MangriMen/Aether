@@ -7,7 +7,7 @@ export const EnvVarsError = {
 
 export type EnvVarsError = (typeof EnvVarsError)[keyof typeof EnvVarsError];
 
-export const ENV_VAR_ERRORS = Object.values(EnvVarsError);
+const ENV_VAR_ERRORS = Object.values(EnvVarsError);
 
 export const isEnvVarsError = (error: unknown): error is EnvVarsError =>
   typeof error === 'string' && ENV_VAR_ERRORS.includes(error as EnvVarsError);

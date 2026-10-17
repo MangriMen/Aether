@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const AllowedPathSchema = v.object({
+const AllowedPathSchema = v.object({
   hostPath: v.string(),
   pluginPath: v.string(),
   readOnly: v.optional(v.boolean(), true),

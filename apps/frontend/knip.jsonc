@@ -1,7 +1,22 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  // ui-kit is a library: its index is its public API, used or not
+  "entry": ["src/shared/ui-kit/index.ts"],
   "project": ["src/**/*.{ts,tsx,css}"],
   "ignore": ["src/platform/bindings/**"],
+  // files of Dto aliases that nothing uses yet; the aliases are kept on purpose and marked
+  // `@public` (ARCHITECTURE.md, Checks)
+  "ignoreFiles": [
+    "src/features/events/model/progressBar.ts",
+    "src/features/events/model/warningEvent.ts",
+    "src/features/instance/model/installStage.ts",
+    "src/features/instance/model/instanceEvent.ts",
+    "src/features/instance/model/loaderVersionPreference.ts",
+    "src/features/instance/model/packInfo.ts",
+    "src/features/plugins/model/pluginEvent.ts",
+    "src/features/process/model/process.ts",
+    "src/features/settings/model/settings.ts"
+  ],
   // tsgo comes from the root @typescript/native-preview
   "ignoreBinaries": ["tsgo"],
   // pinned so `bun update` keeps browserslist data fresh (no "outdated" warnings)

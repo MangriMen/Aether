@@ -10,9 +10,6 @@ export const PluginDetailsTabs = {
   Settings: 'settings',
 } as const;
 
-export type PluginDetailsTab =
-  (typeof PluginDetailsTabs)[keyof typeof PluginDetailsTabs];
-
 export interface PluginDetailsTabProps {
   plugin: Plugin;
 }

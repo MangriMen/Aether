@@ -1,12 +1,12 @@
 import { createStore } from 'solid-js/store';
 
-export interface UpdateStore {
+interface UpdateStore {
   isUpdating: boolean;
 }
 
 let updateStore: ReturnType<typeof createStore<UpdateStore>> | undefined;
 
-export const getOrCreateUpdateStore = () => {
+const getOrCreateUpdateStore = () => {
   if (!updateStore) {
     // eslint-disable-next-line solid/reactivity
     updateStore = createStore<UpdateStore>(
