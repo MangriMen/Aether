@@ -214,13 +214,16 @@ where
     K: AsRef<std::ffi::OsStr>,
     V: AsRef<std::ffi::OsStr>,
 {
-    // CARGO-set DYLD_LIBRARY_PATH breaks Minecraft on macOS during testing on playground
+    // When the launcher itself runs under cargo, the inherited DYLD_FALLBACK_LIBRARY_PATH
+    // makes the dynamic loader of a macOS child process look up libraries in cargo's
+    // directories, which breaks the game. Drop it for the child only.
     #[cfg(target_os = "macos")]
     if std::env::var("CARGO").is_ok() {
         command.env_remove("DYLD_FALLBACK_LIBRARY_PATH");
     }
 
-    // Java options should be set in instance options (the existence of _JAVA_OPTIONS overwrites them)
+    // A set _JAVA_OPTIONS is applied by the JVM on top of the command line and would
+    // override the per-instance settings, so the inherited value never reaches the game.
     command.env_remove("_JAVA_OPTIONS");
 
     command.envs(instance_env);

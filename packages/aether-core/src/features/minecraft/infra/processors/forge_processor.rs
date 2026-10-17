@@ -20,7 +20,6 @@ use crate::{
     },
     processor_rules,
     shared::io::domain::IoError,
-    with_mut_ref,
 };
 
 pub struct ForgeProcessor<PS: ProgressService> {
@@ -36,52 +35,13 @@ impl<PS: ProgressService> ForgeProcessor<PS> {
         }
     }
 
-    async fn run_single_processor(
-        processor: &modded::Processor,
-        data: &HashMap<String, modded::SidedDataEntry>,
-        libraries_dir: &Path,
-        java_version: &Java,
-    ) -> Result<(), MinecraftDomainError> {
-        log::debug!("Running forge processor {}", processor.jar);
-
-        let class_path: Vec<String> = with_mut_ref!(cp = processor.classpath.clone() => {
-            cp.push(processor.jar.clone());
-        });
-
-        let class_path_arg =
-            get_class_paths_jar(libraries_dir, &class_path, java_version.architecture())?;
-
-        let processor_jar_path = get_lib_path(libraries_dir, &processor.jar, false)?;
-        let processor_main_class = get_processor_main_class(processor_jar_path).await?.ok_or({
-            MinecraftDomainError::ProcessorFailed {
-                reason: format!("Could not find processor main class for {}", processor.jar),
-            }
-        })?;
-
-        let processor_args = get_processor_arguments(libraries_dir, &processor.args, data)?;
-
-        let output = Command::new(java_version.path())
-            .arg("-cp")
-            .arg(class_path_arg)
-            .arg(processor_main_class)
-            .args(processor_args)
-            .output()
-            .await
-            .map_err(|e| IoError::with_path(e, java_version.path()))
-            .map_err(|err| MinecraftDomainError::ProcessorFailed {
-                reason: format!("Error running processor: {err}"),
-            })?;
-
-        if !output.status.success() {
-            return Err(MinecraftDomainError::ProcessorFailed {
-                reason: format!(
-                    "Processor error: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ),
-            });
+    /// Emits a progress step when the caller supplied a progress bar.
+    async fn report(&self, bar: Option<&ProgressBarId>, delta: f64, text: &str) {
+        if let Some(bar) = bar {
+            self.progress_service
+                .emit_progress_safe(bar, delta, Some(text))
+                .await;
         }
-
-        Ok(())
     }
 }
 
@@ -96,65 +56,142 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
         java_version: &Java,
         loading_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
-        let Some(processors) = &version_info.processors else {
+        let (Some(processors), Some(data)) =
+            (version_info.processors.as_ref(), version_info.data.as_mut())
+        else {
             return Ok(());
         };
 
-        let client_path = self
+        let libraries_dir = self.location_info.libraries_dir();
+        let client_jar = self
             .location_info
             .version_dir(&version_jar)
             .join(format!("{version_jar}.jar"));
 
-        let libraries_dir = self.location_info.libraries_dir();
+        fill_client_data(
+            data,
+            &ClientPaths {
+                client_jar: &client_jar,
+                minecraft_dir,
+                libraries_dir: &libraries_dir,
+            },
+            &game_version,
+        );
 
-        let Some(ref mut data) = version_info.data else {
-            return Ok(());
-        };
+        self.report(loading_bar, 0.0, "Starting Forge post-install processors")
+            .await;
 
-        processor_rules! {
-            data;
-            "SIDE":
-                client => "client",
-                server => "";
-            "MINECRAFT_JAR":
-                client => client_path.to_string_lossy(),
-                server => "";
-            "MINECRAFT_VERSION":
-                client => game_version.clone(),
-                server => "";
-            "ROOT":
-                client => minecraft_dir.to_string_lossy(),
-                server => "";
-            "LIBRARY_DIR":
-                client => libraries_dir.to_string_lossy(),
-                server => "";
-        }
-
-        if let Some(loading_bar) = loading_bar {
-            self.progress_service
-                .emit_progress_safe(loading_bar, 0.0, Some("Running forge processors"))
-                .await;
-        }
-
-        let total_processors = processors.len();
-        for (index, processor) in processors.iter().enumerate() {
+        let total = processors.len();
+        let step = progress_step(total);
+        for (position, processor) in processors.iter().enumerate() {
             if !runs_on_client(processor) {
                 continue;
             }
 
-            Self::run_single_processor(processor, data, &libraries_dir, java_version).await?;
+            execute_processor(processor, data, &libraries_dir, java_version).await?;
 
-            if let Some(loading_bar) = loading_bar {
-                let progress = progress_step(total_processors);
-                let message = format!("Running forge processor {}/{}", index + 1, total_processors);
-                self.progress_service
-                    .emit_progress_safe(loading_bar, progress, Some(&message))
-                    .await;
-            }
+            let text = format!("Forge processor {} of {total} finished", position + 1);
+            self.report(loading_bar, step, &text).await;
         }
 
         Ok(())
     }
+}
+
+/// Locations the Forge data table points at for the client side.
+struct ClientPaths<'a> {
+    client_jar: &'a Path,
+    minecraft_dir: &'a Path,
+    libraries_dir: &'a Path,
+}
+
+/// Fills the well-known Forge data keys; the server side stays empty.
+fn fill_client_data(
+    data: &mut HashMap<String, modded::SidedDataEntry>,
+    paths: &ClientPaths<'_>,
+    game_version: &str,
+) {
+    processor_rules! {
+        data;
+        "SIDE":
+            client => "client",
+            server => "";
+        "MINECRAFT_JAR":
+            client => paths.client_jar.to_string_lossy(),
+            server => "";
+        "MINECRAFT_VERSION":
+            client => game_version,
+            server => "";
+        "ROOT":
+            client => paths.minecraft_dir.to_string_lossy(),
+            server => "";
+        "LIBRARY_DIR":
+            client => paths.libraries_dir.to_string_lossy(),
+            server => "";
+    }
+}
+
+/// Resolves classpath, entry point and arguments of one processor and runs it with java.
+async fn execute_processor(
+    processor: &modded::Processor,
+    data: &HashMap<String, modded::SidedDataEntry>,
+    libraries_dir: &Path,
+    java_version: &Java,
+) -> Result<(), MinecraftDomainError> {
+    log::debug!("Launching forge processor {}", processor.jar);
+
+    let class_path_entries: Vec<String> = processor
+        .classpath
+        .iter()
+        .chain(std::iter::once(&processor.jar))
+        .cloned()
+        .collect();
+    let class_path = get_class_paths_jar(
+        libraries_dir,
+        &class_path_entries,
+        java_version.architecture(),
+    )?;
+
+    let jar_path = get_lib_path(libraries_dir, &processor.jar, false)?;
+    let Some(main_class) = get_processor_main_class(jar_path).await? else {
+        return Err(MinecraftDomainError::ProcessorFailed {
+            reason: format!("No main class declared in processor jar {}", processor.jar),
+        });
+    };
+
+    let args = get_processor_arguments(libraries_dir, &processor.args, data)?;
+
+    let output = build_processor_command(java_version.path(), &class_path, &main_class, &args)
+        .output()
+        .await
+        .map_err(|err| MinecraftDomainError::ProcessorFailed {
+            reason: format!(
+                "Failed to start processor: {}",
+                IoError::with_path(err, java_version.path())
+            ),
+        })?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+    Err(MinecraftDomainError::ProcessorFailed {
+        reason: format!(
+            "Processor exited with failure: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ),
+    })
+}
+
+/// `java -cp <class_path> <main_class> <args...>`
+fn build_processor_command(
+    java_path: &str,
+    class_path: &str,
+    main_class: &str,
+    args: &[String],
+) -> Command {
+    let mut command = Command::new(java_path);
+    command.args(["-cp", class_path, main_class]).args(args);
+    command
 }
 
 /// A processor without `sides` runs everywhere; otherwise `client` must be listed.
@@ -165,11 +202,14 @@ fn runs_on_client(processor: &modded::Processor) -> bool {
         .is_none_or(|sides| sides.contains(&String::from("client")))
 }
 
+/// Share of the overall progress (in percent) that all processors together may fill.
+const PROCESSORS_PROGRESS_SPAN: f64 = 30.0;
+
 /// Progress increment reported after each processor run.
 fn progress_step(total_processors: usize) -> f64 {
     #[allow(clippy::cast_precision_loss)]
     let total = total_processors as f64;
-    30.0 / total
+    PROCESSORS_PROGRESS_SPAN / total
 }
 
 /// Resolves `[group:artifact:version]` to a library path; any other text is returned as is.
@@ -313,6 +353,43 @@ mod tests {
     }
 
     // ---- get_processor_arguments ----
+
+    #[test]
+    fn client_data_gets_all_known_keys_with_empty_server_side() {
+        let mut data = HashMap::new();
+        fill_client_data(
+            &mut data,
+            &ClientPaths {
+                client_jar: Path::new("/v/1.20/1.20.jar"),
+                minecraft_dir: Path::new("/mc"),
+                libraries_dir: Path::new("/libs"),
+            },
+            "1.20",
+        );
+        assert_eq!(data.len(), 5);
+        assert_eq!(data["SIDE"].client, "client");
+        assert_eq!(data["MINECRAFT_VERSION"].client, "1.20");
+        assert_eq!(
+            data["MINECRAFT_JAR"].client,
+            Path::new("/v/1.20/1.20.jar").to_string_lossy()
+        );
+        assert_eq!(data["ROOT"].client, Path::new("/mc").to_string_lossy());
+        assert_eq!(
+            data["LIBRARY_DIR"].client,
+            Path::new("/libs").to_string_lossy()
+        );
+        assert!(data.values().all(|entry| entry.server.is_empty()));
+    }
+
+    #[test]
+    fn processor_command_is_java_cp_main_then_args() {
+        let args = vec!["--a".to_string(), "b".to_string()];
+        let command = build_processor_command("java", "x.jar;y.jar", "Main", &args);
+        let std_command = command.as_std();
+        assert_eq!(std_command.get_program(), "java");
+        let got: Vec<_> = std_command.get_args().collect();
+        assert_eq!(got, ["-cp", "x.jar;y.jar", "Main", "--a", "b"]);
+    }
 
     fn processor_with_sides(sides: Option<&[&str]>) -> modded::Processor {
         modded::Processor {
