@@ -27,6 +27,8 @@ pub(crate) fn version_manifest_key() -> CacheKey<CachedValue<vanilla::VersionMan
 pub(crate) fn loader_manifest_key(loader: ModLoader) -> CacheKey<CachedValue<modded::Manifest>> {
     CacheKey::new(
         MinecraftMetadataCacheNamespaces::LoaderManifest.as_str(),
-        CacheId::Named(loader.as_meta_str().to_string()),
+        // The manifest format version is part of the key, so a cached manifest of an older format is
+        // never read as the current one.
+        CacheId::Named(daedalus::modded::loader_manifest_metadata(loader.as_meta_str()).cache_key),
     )
 }

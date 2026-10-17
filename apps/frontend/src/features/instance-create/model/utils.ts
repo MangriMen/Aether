@@ -40,6 +40,21 @@ export const filterGameVersionsForLoader = (
   });
 };
 
+const getVersionLoaders = (
+  manifest: MappedLoaderManifest | undefined,
+  gameVersion: string,
+) => {
+  const version = manifest?.gameVersions[gameVersion];
+
+  if (!version) {
+    return [];
+  }
+
+  return version.versionGroup
+    ? (manifest?.versionGroups[version.versionGroup]?.loaders ?? [])
+    : version.loaders;
+};
+
 export const getLoaderVersionsForGameVersion = (
   loader: ModLoader | undefined,
   gameVersion: string | undefined,
@@ -58,17 +73,13 @@ export const getLoaderVersionsForGameVersion = (
 
   switch (loader) {
     case 'forge':
-      return loaderVersions.forge?.gameVersions[gameVersion]?.loaders ?? [];
+      return getVersionLoaders(loaderVersions.forge, gameVersion);
     case 'fabric':
-      return (
-        loaderVersions.fabric?.gameVersions[dummyReplaceString]?.loaders ?? []
-      );
+      return getVersionLoaders(loaderVersions.fabric, dummyReplaceString);
     case 'quilt':
-      return (
-        loaderVersions.quilt?.gameVersions[dummyReplaceString]?.loaders ?? []
-      );
+      return getVersionLoaders(loaderVersions.quilt, gameVersion);
     case 'neoforge':
-      return loaderVersions.neoforge?.gameVersions[gameVersion]?.loaders ?? [];
+      return getVersionLoaders(loaderVersions.neoforge, gameVersion);
     default:
       return [];
   }
