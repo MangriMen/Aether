@@ -1,5 +1,6 @@
 import type {
   EditInstanceDto,
+  EditInstanceIconDto,
   ImportInstanceDto,
   NewInstanceDto,
 } from '@/platform/bindings/instance';
@@ -7,6 +8,8 @@ import type {
 export type NewInstance = NewInstanceDto;
 
 export type EditInstance = EditInstanceDto;
+
+export type EditInstanceIcon = EditInstanceIconDto;
 
 export type EditInstanceSettings = Omit<EditInstance, 'name'>;
 

@@ -3,10 +3,9 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
+import { InstancesPanel } from '@/features/instance-list';
 import { useTranslation } from '@/shared/i18n';
 import { TitledBlock } from '@/shared/ui-kit';
-
-import { InstancesPanel } from './InstancesPanel';
 
 export type HomePageProps = ComponentProps<'div'> & RouteSectionProps;
 

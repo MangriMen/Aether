@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
-import { InstanceActionButton, useInstances } from '@/features/instance';
+import { useInstances } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { useArrowNavigation } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
@@ -43,12 +43,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
             }
           >
             <For each={instances.data}>
-              {(instance) => (
-                <InstanceControlledCard
-                  instance={instance}
-                  instanceActionButton={InstanceActionButton}
-                />
-              )}
+              {(instance) => <InstanceControlledCard instance={instance} />}
             </For>
           </Show>
         </Match>

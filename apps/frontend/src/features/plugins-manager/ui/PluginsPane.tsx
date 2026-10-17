@@ -1,11 +1,12 @@
 import { createMemo, createSignal, Show, type Component } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
 import type { SettingsPaneProps } from '@/shared/settings-layout';
 
 import { usePlugins } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsPane } from '@/shared/settings-layout';
+
+import type { PluginSourceType } from '../model/pluginProvider';
 
 import { AddPluginView } from './AddPluginView';
 import { PluginDetails } from './PluginDetails';
@@ -37,7 +38,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
   };
 
   const [pluginAddProvider, setPluginAddProvider] =
-    createSignal<PluginSourceTypeDto | null>('git_hub');
+    createSignal<PluginSourceType | null>('git_hub');
 
   return (
     <SettingsPane

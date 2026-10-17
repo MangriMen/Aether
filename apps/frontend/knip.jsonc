@@ -15,7 +15,6 @@
     "src/features/instance/model/packInfo.ts",
     "src/features/plugins/model/pluginEvent.ts",
     "src/features/process/model/process.ts",
-    "src/features/settings/model/settings.ts"
   ],
   // tsgo comes from the root @typescript/native-preview
   "ignoreBinaries": ["tsgo"],

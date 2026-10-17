@@ -6,8 +6,6 @@ import {
   type Component,
 } from 'solid-js';
 
-import type { ProviderPluginPreviewDto } from '@/platform/bindings/plugin';
-
 import {
   useInstallPluginFromProvider,
   usePluginPreview,
@@ -16,6 +14,7 @@ import { useTranslation } from '@/shared/i18n';
 import { CombinedTextField } from '@/shared/ui-kit';
 import { debounce } from '@/shared/utils';
 
+import type { ProviderPluginPreview } from '../model/pluginProvider';
 import type { ReleaseOption } from './PluginPreviewCard';
 
 import { PluginPreviewCard } from './PluginPreviewCard';
@@ -52,7 +51,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const previewQuery = usePluginPreview(debouncedUrl);
   const installMutation = useInstallPluginFromProvider();
 
-  const previewData = createMemo<ProviderPluginPreviewDto | null | undefined>(
+  const previewData = createMemo<ProviderPluginPreview | null | undefined>(
     () => previewQuery.data,
   );
 

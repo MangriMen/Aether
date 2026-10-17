@@ -1,7 +1,5 @@
 import { Show, type Component } from 'solid-js';
 
-import type { ProviderPluginPreviewDto } from '@/platform/bindings/plugin';
-
 import {
   PluginCapabilitiesSection,
   PluginInfoHeader,
@@ -15,13 +13,15 @@ import {
   Separator,
 } from '@/shared/ui-kit';
 
+import type { ProviderPluginPreview } from '../model/pluginProvider';
+
 export interface ReleaseOption {
   value: string;
   label: string;
 }
 
 export type PluginPreviewCardProps = {
-  preview: ProviderPluginPreviewDto;
+  preview: ProviderPluginPreview;
   releaseOptions: ReleaseOption[];
   selectedTag: string;
   onReleaseChange: (option: ReleaseOption | null) => void;

@@ -1,9 +1,6 @@
 import { For, Show, type Component } from 'solid-js';
 
-import type {
-  StorageKindDto,
-  StorageUsageDto,
-} from '@/platform/bindings/settings';
+import type { StorageKind, StorageUsage } from '@/features/settings';
 
 import { formatBytes, sumBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
@@ -22,7 +19,7 @@ const KIND_STYLE = {
     label: 'settings.storage.disk_kind.instances',
     color: 'bg-[oklch(0.68_0.15_285)]',
   },
-} as const satisfies Record<StorageKindDto, { label: string; color: string }>;
+} as const satisfies Record<StorageKind, { label: string; color: string }>;
 
 /** What several instances use together, and what is each instance's own. */
 const GROUPS = [
@@ -39,14 +36,14 @@ const GROUPS = [
 ] as const satisfies {
   title: string;
   description: string;
-  kinds: StorageKindDto[];
+  kinds: StorageKind[];
 }[];
 
-export const DiskUsage: Component<{ usage: StorageUsageDto }> = (props) => {
+export const DiskUsage: Component<{ usage: StorageUsage }> = (props) => {
   const [{ t, locale }] = useTranslation();
 
   const total = () => sumBytes(props.usage.entries);
-  const entriesOf = (kinds: readonly StorageKindDto[]) =>
+  const entriesOf = (kinds: readonly StorageKind[]) =>
     props.usage.entries.filter((entry) => kinds.includes(entry.kind));
 
   return (

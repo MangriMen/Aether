@@ -2,8 +2,11 @@ import type { Accessor } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { Instance, EditInstance } from '@/features/instance';
-import type { EditInstanceIconDto } from '@/platform/bindings/instance';
+import type {
+  Instance,
+  EditInstance,
+  EditInstanceIcon,
+} from '@/features/instance';
 
 import { isEditInstanceEmpty } from '@/features/instance';
 
@@ -20,7 +23,7 @@ export interface UseGeneralSettingsHandler {
     (args: { id: string; edit: EditInstance }) => Promise<unknown>
   >;
   editInstanceIcon: Accessor<
-    (editInstanceIcon: EditInstanceIconDto) => Promise<unknown>
+    (editInstanceIcon: EditInstanceIcon) => Promise<unknown>
   >;
 }
 

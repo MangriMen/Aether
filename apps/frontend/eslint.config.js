@@ -47,6 +47,11 @@ const tauriInModel = {
   allowTypeImports: true,
   message: 'model/ is plain code: call Tauri from api/ (or from the component or primitive that needs it).',
 };
+// Dto types stay on the backend side: components and primitives use the aliases from model/.
+const bindingsInView = {
+  group: ['@/platform/bindings/**'],
+  message: 'Use the alias from the feature model/ instead of a *Dto from platform/bindings.',
+};
 const featurePatterns = [deepFeatureImport, deepModuleImport, appImport];
 const platformPatterns = [...featurePatterns, upperLayerImport];
 const sharedPatterns = [...platformPatterns, platformImport];
@@ -203,6 +208,13 @@ export default [
           message: tauriInModel.message,
         },
       ],
+    },
+  },
+  {
+    files: ['src/features/*/ui/**/*.{ts,tsx}', 'src/features/*/lib/**/*.{ts,tsx}', 'src/app/**/*.{ts,tsx}'],
+    ignores: ['**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', { patterns: [bindingsInView] }],
     },
   },
 ];
