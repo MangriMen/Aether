@@ -7,4 +7,4 @@ update-schemas = "test -p aether-core-gen --test schema_sync"
 bindgen = "run --bin generate-bindings --release --features generate-bindings"
 
 [env]
-BINDINGS_EXPORT_PATH = { value = "apps/frontend/src/shared/api/bindings", relative = true }
+BINDINGS_EXPORT_PATH = { value = "apps/frontend/src/platform/bindings", relative = true }

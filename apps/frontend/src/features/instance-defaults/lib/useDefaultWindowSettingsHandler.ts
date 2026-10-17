@@ -21,7 +21,14 @@ export const useDefaultWindowSettingsHandler = () => {
   );
 
   const onChange = (values: Partial<WindowSettingsSchemaOutput>) => {
-    const dto = windowSettingsValuesToEditDefaultInstanceSettings(values);
+    if (!settings.data) {
+      return;
+    }
+
+    const dto = windowSettingsValuesToEditDefaultInstanceSettings(
+      settings.data,
+      values,
+    );
 
     if (isEditDefaultInstanceSettingsEmpty(dto)) {
       return;

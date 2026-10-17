@@ -72,14 +72,23 @@ export const defaultInstanceSettingsToHooksSettingsValues = (
 };
 
 export const windowSettingsValuesToEditDefaultInstanceSettings = (
+  settings: DefaultInstanceSettings,
   values: Partial<WindowSettingsSchemaOutput>,
 ): EditDefaultInstanceSettings => {
   const dto: EditDefaultInstanceSettings = {};
 
-  if (values.resolution) {
+  if (values.forceFullscreen !== undefined || values.resolution !== undefined) {
+    const forceFullscreen =
+      values.forceFullscreen ?? settings.window.forceFullscreen;
+
+    const gameResolution: [number, number] =
+      values.resolution !== undefined
+        ? [values.resolution.width, values.resolution.height]
+        : settings.window.gameResolution;
+
     dto.window = {
-      forceFullscreen: false,
-      gameResolution: [values.resolution.width, values.resolution.height],
+      forceFullscreen,
+      gameResolution,
     };
   }
 
