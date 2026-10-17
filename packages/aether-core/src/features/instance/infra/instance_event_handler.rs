@@ -117,7 +117,7 @@ mod tests {
 
     use crate::features::events::{Event, EventEmitter, EventError};
     use crate::features::file_watcher::FileEventKind;
-    use crate::features::instance::{Instance, InstanceBuilder, InstanceError};
+    use crate::features::instance::{Instance, InstanceBuilder, InstanceError, InstanceId};
     use crate::features::minecraft::ModLoader;
 
     use super::*;
@@ -147,7 +147,7 @@ mod tests {
 
     fn instance(stage: InstanceInstallStage) -> Instance {
         let mut instance = InstanceBuilder::new(
-            "abc".to_string(),
+            InstanceId::try_from("abc").unwrap(),
             "My Pack".to_string(),
             "1.20.1".to_string(),
             ModLoader::Vanilla,

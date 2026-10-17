@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     features::{
         instance::{
-            Instance, InstanceInstallStage, InstanceSnapshot,
+            Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceSnapshot,
             infra::fs::pack_info::{PackInfoV1, PackInfoV2},
         },
         minecraft::{LoaderVersionPreference, ModLoader},
@@ -159,10 +159,12 @@ pub struct HooksV1 {
     pub post_exit: Option<String>,
 }
 
-impl From<InstanceV1> for Instance {
-    fn from(v1: InstanceV1) -> Self {
+impl TryFrom<InstanceV1> for Instance {
+    type Error = InstanceError;
+
+    fn try_from(v1: InstanceV1) -> Result<Self, Self::Error> {
         let snapshot = InstanceSnapshot {
-            id: v1.id,
+            id: InstanceId::try_from(v1.id)?,
 
             name: v1.name,
 
@@ -221,7 +223,7 @@ impl From<InstanceV1> for Instance {
             pack_info: v1.pack_info.map(Into::into),
         };
 
-        Instance::from_snapshot(snapshot)
+        Ok(Instance::from_snapshot(snapshot))
     }
 }
 
@@ -275,10 +277,12 @@ pub struct InstanceV2 {
     pub pack_info: Option<PackInfoV2>,
 }
 
-impl From<InstanceV2> for Instance {
-    fn from(v2: InstanceV2) -> Self {
+impl TryFrom<InstanceV2> for Instance {
+    type Error = InstanceError;
+
+    fn try_from(v2: InstanceV2) -> Result<Self, Self::Error> {
         let snapshot = InstanceSnapshot {
-            id: v2.id,
+            id: InstanceId::try_from(v2.id)?,
 
             name: v2.name,
 
@@ -317,14 +321,14 @@ impl From<InstanceV2> for Instance {
             pack_info: v2.pack_info.map(Into::into),
         };
 
-        Instance::from_snapshot(snapshot)
+        Ok(Instance::from_snapshot(snapshot))
     }
 }
 
 impl From<&Instance> for InstanceV2 {
     fn from(value: &Instance) -> Self {
         Self {
-            id: value.id().to_owned(),
+            id: value.id().to_string(),
 
             name: value.name().to_owned(),
             icon_path: value.icon_path().map(ToString::to_string),

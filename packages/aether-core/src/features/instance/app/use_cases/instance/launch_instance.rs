@@ -6,7 +6,7 @@ use crate::{
     features::{
         auth::Credential,
         instance::{
-            Instance, InstanceError, InstanceInstallService, InstanceInstallStage,
+            Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
             InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt,
         },
         minecraft::{
@@ -122,7 +122,10 @@ impl LaunchInstanceUseCase {
             return Err(InstanceError::InstanceStillInstalling { instance_id });
         };
         let settings = self.default_instance_settings_storage.get().await?;
-        let instance = self.instance_storage.get(&instance_id).await?;
+        let instance = self
+            .instance_storage
+            .get(&InstanceId::try_from(instance_id.as_str())?)
+            .await?;
 
         let launch_settings = Self::resolve_launch_settings(&instance, &settings);
 

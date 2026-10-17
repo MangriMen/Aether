@@ -6,9 +6,10 @@ use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPl
 use crate::{
     features::instance::{
         AtomicInstallParams, ContentInstallParams, ContentProvider, ContentSource, ContentType,
-        InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceInstallStage,
-        InstanceLocks, InstanceStorage, ModpackInstallParams, PackStorage, PlanOrigin, ProviderId,
-        ResolveInstallPlanParams, ResolveTarget, app::extensions::InstanceStorageExt,
+        InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
+        InstanceInstallStage, InstanceLocks, InstanceStorage, ModpackInstallParams, PackStorage,
+        PlanOrigin, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+        app::extensions::InstanceStorageExt,
     },
     shared::capability::domain::CapabilityRegistry,
 };
@@ -71,7 +72,11 @@ impl InstallContentUseCase {
         let (mut resolve_params, content_id) = resolve_params_of(&install_params);
         if let ResolveTarget::Existing { instance_id, .. } = &resolve_params.target {
             resolve_params.installed_version = self
-                .installed_version(instance_id, &provider_id, &content_id)
+                .installed_version(
+                    &InstanceId::try_from(instance_id.as_str())?,
+                    &provider_id,
+                    &content_id,
+                )
                 .await?;
         }
         let requested = resolve_params.target.clone();
@@ -86,7 +91,7 @@ impl InstallContentUseCase {
     /// instead of rolling a beta back to an older release.
     async fn installed_version(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         provider_id: &ProviderId,
         content_id: &str,
     ) -> Result<Option<String>, InstanceError> {
@@ -149,6 +154,7 @@ impl InstallContentUseCase {
         };
         let instance_id = self.plan_executor.execute(plan, origin.clone()).await?;
 
+        let instance_id = InstanceId::try_from(instance_id)?;
         self.finish_pack_install(&instance_id, &origin).await
     }
 
@@ -156,7 +162,7 @@ impl InstallContentUseCase {
     /// then it is ready. A plan of anything else leaves the stage alone.
     async fn finish_pack_install(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         origin: &PlanOrigin,
     ) -> Result<(), InstanceError> {
         let instance = self.instance_storage.get(instance_id).await?;

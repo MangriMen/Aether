@@ -27,7 +27,7 @@ use crate::{
             ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
             ContentVersionMetadata, CreateInstanceUseCasePort, InstallFileEntry, InstallPlan,
             InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
-            InstanceGame, InstanceStorage, NewInstance, PlanOrigin, ProviderId,
+            InstanceGame, InstanceId, InstanceStorage, NewInstance, PlanOrigin, ProviderId,
             RemoveInstanceUseCasePort, ResolvedFile,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
@@ -225,12 +225,12 @@ impl InstanceStorage for OneInstanceStorage {
         Ok(vec![self.0.clone()])
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         if id == self.0.id() {
             Ok(self.0.clone())
         } else {
             Err(InstanceError::NotFound {
-                instance_id: id.into(),
+                instance_id: id.to_string(),
             })
         }
     }
@@ -239,7 +239,7 @@ impl InstanceStorage for OneInstanceStorage {
         unimplemented!()
     }
 
-    async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
         unimplemented!()
     }
 }
@@ -396,7 +396,7 @@ impl Fixture {
     ) -> Result<String, InstanceError> {
         let downloader = self.downloader();
         let instance = InstanceBuilder::new(
-            INSTANCE_ID.into(),
+            InstanceId::try_from(INSTANCE_ID).unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Fabric,

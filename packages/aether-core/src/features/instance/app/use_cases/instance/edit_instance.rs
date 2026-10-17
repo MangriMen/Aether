@@ -5,7 +5,7 @@ use chrono::Utc;
 
 use crate::features::instance::app::ports::EditInstanceUseCasePort;
 use crate::features::instance::{
-    EditInstance, Instance, InstanceError, InstanceStorage,
+    EditInstance, Instance, InstanceError, InstanceId, InstanceStorage,
     domain::{InstanceField, InstanceValidationErrorReason},
 };
 
@@ -28,6 +28,7 @@ impl EditInstanceUseCasePort for EditInstanceUseCase {
     ) -> Result<Instance, InstanceError> {
         validate_edit(&edit_instance)?;
 
+        let instance_id = InstanceId::try_from(instance_id)?;
         let mut instance = self.instance_storage.get(&instance_id).await?;
 
         if edit_instance.apply_to(&mut instance)? {

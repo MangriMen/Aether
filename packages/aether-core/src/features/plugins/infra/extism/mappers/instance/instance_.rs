@@ -5,7 +5,7 @@ use crate::features::instance::Instance;
 impl From<Instance> for InstanceDto {
     fn from(value: Instance) -> Self {
         Self {
-            id: value.id().to_owned(),
+            id: value.id().to_string(),
 
             name: value.name().to_owned(),
 

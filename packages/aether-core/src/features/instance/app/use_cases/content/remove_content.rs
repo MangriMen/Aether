@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::RemoveContentUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, InstanceLocks, PackStorage, app::ContentFileService},
+    instance::{InstanceError, InstanceId, InstanceLocks, PackStorage, app::ContentFileService},
 };
 
 pub struct RemoveContent {
@@ -52,7 +52,8 @@ impl RemoveContentUseCase {
             content_paths,
         } = input;
 
-        let _lock = self.instance_locks.lock(&instance_id).await;
+        let id = InstanceId::try_from(instance_id.as_str())?;
+        let _lock = self.instance_locks.lock(&id).await;
 
         // A record goes only with its file: one dropped while its file stays would leave the
         // file in the instance, untracked.
@@ -61,7 +62,7 @@ impl RemoveContentUseCase {
         for content_path in content_paths {
             match self
                 .content_file_service
-                .remove_content_files(&instance_id, std::slice::from_ref(&content_path))
+                .remove_content_files(&id, std::slice::from_ref(&content_path))
                 .await
             {
                 Ok(()) => removed.push(content_path),
@@ -73,7 +74,7 @@ impl RemoveContentUseCase {
 
         if !removed.is_empty() {
             self.pack_storage
-                .remove_pack_file_many(&instance_id, &removed)
+                .remove_pack_file_many(&id, &removed)
                 .await?;
         }
 

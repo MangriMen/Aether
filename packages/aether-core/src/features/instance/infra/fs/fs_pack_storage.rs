@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
-        instance::{InstanceError, Pack, PackEntry, PackFile, PackStorage, ProviderId},
+        instance::{InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage, ProviderId},
         settings::LocationInfo,
     },
     shared::io::infra::{
@@ -23,11 +23,11 @@ impl FsPackStorage {
         Self { location_info }
     }
 
-    fn get_pack_path(&self, instance_id: &str) -> PathBuf {
+    fn get_pack_path(&self, instance_id: &InstanceId) -> PathBuf {
         self.location_info.instance_pack(instance_id)
     }
 
-    fn get_pack_file_path(&self, instance_id: &str, content_path: &str) -> PathBuf {
+    fn get_pack_file_path(&self, instance_id: &InstanceId, content_path: &str) -> PathBuf {
         self.location_info
             .instance_pack_dir(instance_id)
             .join(content_path)
@@ -37,7 +37,7 @@ impl FsPackStorage {
 
 #[async_trait]
 impl PackStorage for FsPackStorage {
-    async fn get_pack(&self, instance_id: &str) -> Result<Pack, InstanceError> {
+    async fn get_pack(&self, instance_id: &InstanceId) -> Result<Pack, InstanceError> {
         let dto: PackV2 = ensure_read_toml_async(&self.get_pack_path(instance_id))
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
@@ -51,7 +51,11 @@ impl PackStorage for FsPackStorage {
         })
     }
 
-    async fn update_pack(&self, instance_id: &str, pack: &Pack) -> Result<(), InstanceError> {
+    async fn update_pack(
+        &self,
+        instance_id: &InstanceId,
+        pack: &Pack,
+    ) -> Result<(), InstanceError> {
         let dto = PackV2 {
             files: pack
                 .files
@@ -69,7 +73,7 @@ impl PackStorage for FsPackStorage {
 
     async fn get_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<PackFile, InstanceError> {
         let path = self.get_pack_file_path(instance_id, content_path);
@@ -98,7 +102,7 @@ impl PackStorage for FsPackStorage {
 
     async fn find_by_provider_id(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         provider_id: &ProviderId,
         content_id: &str,
     ) -> Result<Option<PackFile>, InstanceError> {
@@ -119,7 +123,7 @@ impl PackStorage for FsPackStorage {
 
     async fn update_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
@@ -133,7 +137,7 @@ impl PackStorage for FsPackStorage {
 
     async fn update_pack_file_many(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
@@ -167,7 +171,7 @@ impl PackStorage for FsPackStorage {
 
     async fn remove_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<(), InstanceError> {
         self.remove_pack_file_many(instance_id, &[content_path.to_string()])
@@ -176,7 +180,7 @@ impl PackStorage for FsPackStorage {
 
     async fn remove_pack_file_many(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
@@ -205,7 +209,7 @@ impl PackStorage for FsPackStorage {
         self.update_pack(instance_id, &pack).await
     }
 
-    async fn remove_all_for_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn remove_all_for_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let pack_dir = self.location_info.instance_pack_dir(instance_id);
 
         if pack_dir.exists() {

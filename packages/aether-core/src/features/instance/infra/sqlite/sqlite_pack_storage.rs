@@ -1,6 +1,6 @@
 use crate::features::instance::{
-    ContentFileUpdateInfo, InstanceError, Pack, PackEntry, PackFile, PackStorage, PlanOrigin,
-    ProviderId,
+    ContentFileUpdateInfo, InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage,
+    PlanOrigin, ProviderId,
     infra::legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
 };
 use async_trait::async_trait;
@@ -123,9 +123,9 @@ impl SqlitePackStorage {
 
     /// Whether the instance has a pack row. The row is created with the first file and stays
     /// when the last one is removed, so it tells a pack that was emptied from one never stored.
-    pub async fn has_pack(&self, instance_id: &str) -> Result<bool, InstanceError> {
+    pub async fn has_pack(&self, instance_id: &InstanceId) -> Result<bool, InstanceError> {
         sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM packs WHERE instance_id = ?")
-            .bind(instance_id)
+            .bind(instance_id.as_str())
             .fetch_one(&self.pool)
             .await
             .map(|count| count > 0)
@@ -135,14 +135,14 @@ impl SqlitePackStorage {
     // Helper to internalize update logic for reuse in transactions
     async fn upsert_file_internal(
         tx: &mut Transaction<'_, Sqlite>,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
         // Ensure pack exists
         sqlx::query!(
             "INSERT OR IGNORE INTO packs (instance_id) VALUES (?)",
-            instance_id
+            instance_id.as_str()
         )
         .execute(&mut **tx)
         .await
@@ -175,7 +175,7 @@ impl SqlitePackStorage {
                 installed_by_provider_id = excluded.installed_by_provider_id,
                 installed_by_content_id = excluded.installed_by_content_id
             "#,
-            instance_id,
+            instance_id.as_str(),
             content_path,
             pack_file.file_name,
             pack_file.name,
@@ -192,7 +192,7 @@ impl SqlitePackStorage {
         // Cleanup old updates
         sqlx::query!(
             "DELETE FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
-            instance_id,
+            instance_id.as_str(),
             content_path
         )
         .execute(&mut **tx)
@@ -205,7 +205,7 @@ impl SqlitePackStorage {
                 let pid_str = pid.to_string();
                 sqlx::query!(
                     "INSERT INTO pack_file_updates (instance_id, content_path, provider_id, content_id, version_id) VALUES (?, ?, ?, ?, ?)",
-                    instance_id,
+                    instance_id.as_str(),
                     content_path,
                     pid_str,
                     info.content_id,
@@ -222,10 +222,10 @@ impl SqlitePackStorage {
 
 #[async_trait]
 impl PackStorage for SqlitePackStorage {
-    async fn get_pack(&self, instance_id: &str) -> Result<Pack, InstanceError> {
+    async fn get_pack(&self, instance_id: &InstanceId) -> Result<Pack, InstanceError> {
         let files = sqlx::query!(
             "SELECT content_path FROM pack_files WHERE instance_id = ? ORDER BY content_path ASC",
-            instance_id
+            instance_id.as_str()
         )
         .fetch_all(&self.pool)
         .await
@@ -241,7 +241,11 @@ impl PackStorage for SqlitePackStorage {
         })
     }
 
-    async fn update_pack(&self, _instance_id: &str, _pack: &Pack) -> Result<(), InstanceError> {
+    async fn update_pack(
+        &self,
+        _instance_id: &InstanceId,
+        _pack: &Pack,
+    ) -> Result<(), InstanceError> {
         // In SQL, the "pack" is just a collection of files.
         // Individual file updates manage this state.
         Ok(())
@@ -249,13 +253,13 @@ impl PackStorage for SqlitePackStorage {
 
     async fn get_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<PackFile, InstanceError> {
         let row = sqlx::query_as!(
             PackFileRow,
             "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ? AND content_path = ?",
-            instance_id,
+            instance_id.as_str(),
             content_path
         )
         .fetch_optional(&self.pool)
@@ -266,7 +270,7 @@ impl PackStorage for SqlitePackStorage {
         let updates = sqlx::query_as!(
             PackFileUpdateRow,
             "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ? AND content_path = ?",
-            instance_id,
+            instance_id.as_str(),
             content_path
         )
         .fetch_all(&self.pool)
@@ -278,12 +282,12 @@ impl PackStorage for SqlitePackStorage {
 
     async fn get_pack_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
     ) -> Result<HashMap<String, PackFile>, InstanceError> {
         let rows = sqlx::query_as!(
             PackFileRow,
             "SELECT content_path, file_name, name, hash, side, update_provider_id, installed_by_provider_id, installed_by_content_id FROM pack_files WHERE instance_id = ?",
-            instance_id
+            instance_id.as_str()
         )
         .fetch_all(&self.pool)
         .await
@@ -292,7 +296,7 @@ impl PackStorage for SqlitePackStorage {
         let all_updates = sqlx::query_as!(
             PackFileUpdateRow,
             "SELECT content_path, provider_id, content_id, version_id FROM pack_file_updates WHERE instance_id = ?",
-            instance_id
+            instance_id.as_str()
         )
         .fetch_all(&self.pool)
         .await
@@ -317,7 +321,7 @@ impl PackStorage for SqlitePackStorage {
 
     async fn find_by_provider_id(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         provider_id: &ProviderId,
         content_id: &str,
     ) -> Result<Option<PackFile>, InstanceError> {
@@ -327,7 +331,7 @@ impl PackStorage for SqlitePackStorage {
         let legacy_pid = legacy_provider_id_string(provider_id).unwrap_or_else(|| pid.clone());
         let row = sqlx::query!(
             "SELECT content_path FROM pack_file_updates WHERE instance_id = ? AND provider_id IN (?, ?) AND content_id = ? LIMIT 1",
-            instance_id,
+            instance_id.as_str(),
             pid,
             legacy_pid,
             content_id
@@ -347,7 +351,7 @@ impl PackStorage for SqlitePackStorage {
 
     async fn update_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
@@ -364,7 +368,7 @@ impl PackStorage for SqlitePackStorage {
 
     async fn update_pack_file_many(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
@@ -385,12 +389,12 @@ impl PackStorage for SqlitePackStorage {
 
     async fn remove_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<(), InstanceError> {
         sqlx::query!(
             "DELETE FROM pack_files WHERE instance_id = ? AND content_path = ?",
-            instance_id,
+            instance_id.as_str(),
             content_path
         )
         .execute(&self.pool)
@@ -401,7 +405,7 @@ impl PackStorage for SqlitePackStorage {
 
     async fn remove_pack_file_many(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let mut tx = self
@@ -413,7 +417,7 @@ impl PackStorage for SqlitePackStorage {
         for path in content_paths {
             sqlx::query!(
                 "DELETE FROM pack_files WHERE instance_id = ? AND content_path = ?",
-                instance_id,
+                instance_id.as_str(),
                 path
             )
             .execute(&mut *tx)
@@ -426,7 +430,7 @@ impl PackStorage for SqlitePackStorage {
             .map_err(|e| InstanceError::Storage(e.to_string()))
     }
 
-    async fn remove_all_for_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn remove_all_for_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let mut tx = self
             .pool
             .begin()
@@ -435,21 +439,27 @@ impl PackStorage for SqlitePackStorage {
 
         sqlx::query!(
             "DELETE FROM pack_file_updates WHERE instance_id = ?",
-            instance_id
+            instance_id.as_str()
         )
         .execute(&mut *tx)
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        sqlx::query!("DELETE FROM pack_files WHERE instance_id = ?", instance_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        sqlx::query!(
+            "DELETE FROM pack_files WHERE instance_id = ?",
+            instance_id.as_str()
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        sqlx::query!("DELETE FROM packs WHERE instance_id = ?", instance_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        sqlx::query!(
+            "DELETE FROM packs WHERE instance_id = ?",
+            instance_id.as_str()
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
         tx.commit()
             .await
@@ -464,6 +474,7 @@ mod tests {
     #[tokio::test]
     async fn should_skip_update_when_its_provider_id_is_malformed() {
         let storage = SqlitePackStorage::in_memory().await;
+        let id = InstanceId::try_from("inst").unwrap();
         let good: ProviderId = "plugin#cap".parse().unwrap();
         let file = PackFile {
             update: Some(HashMap::from([(
@@ -476,7 +487,7 @@ mod tests {
             ..PackFile::from_hash("a.jar".into(), "h".into())
         };
         storage
-            .update_pack_file("inst", "mods/a.jar", &file)
+            .update_pack_file(&id, "mods/a.jar", &file)
             .await
             .unwrap();
         sqlx::query(
@@ -486,8 +497,8 @@ mod tests {
         .await
         .unwrap();
 
-        let single = storage.get_pack_file("inst", "mods/a.jar").await.unwrap();
-        let all = storage.get_pack_files("inst").await.unwrap();
+        let single = storage.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        let all = storage.get_pack_files(&id).await.unwrap();
 
         for read in [&single, &all["mods/a.jar"]] {
             let updates = read.update.as_ref().unwrap();

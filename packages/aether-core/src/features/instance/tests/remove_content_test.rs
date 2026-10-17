@@ -12,8 +12,8 @@ use crate::features::instance::infra::{
     FsContentFileService, SqliteInstanceStorage, SqlitePackStorage,
 };
 use crate::features::instance::{
-    Instance, InstanceBuilder, InstanceLocks, InstanceStorage, PackStorage, RemoveContent,
-    RemoveContentUseCase,
+    Instance, InstanceBuilder, InstanceId, InstanceLocks, InstanceStorage, PackStorage,
+    RemoveContent, RemoveContentUseCase,
 };
 use crate::features::minecraft::ModLoader;
 use crate::features::settings::LocationInfo;
@@ -135,7 +135,7 @@ async fn create_test_infrastructure() -> (TempDir, Arc<LocationInfo>, SqlitePool
 
 fn create_instance(id: &str) -> Instance {
     InstanceBuilder::new(
-        id.to_string(),
+        InstanceId::try_from(id).unwrap(),
         "Integration Test".to_string(),
         "1.21".to_string(),
         ModLoader::Fabric,
@@ -205,7 +205,10 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
     create_content_files(&location_info, &instance_id).await;
 
     // Verify initial state
-    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let pack = pack_storage
+        .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(pack.files.len(), 2, "Two pack files initially");
 
     let disk_dir = location_info.instance_dir(&instance_id);
@@ -229,7 +232,10 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
         .expect("RemoveContentUseCase should succeed");
 
     // Assert — DB record removed
-    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let pack = pack_storage
+        .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(pack.files.len(), 1, "One pack file should remain");
     assert_eq!(pack.files[0].file, "mods/b.jar", "Only b.jar should remain");
 
@@ -277,7 +283,10 @@ async fn should_remove_every_file_when_several_are_given() {
         .expect("RemoveContentUseCase should succeed");
 
     // Assert — DB empty
-    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let pack = pack_storage
+        .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert!(pack.files.is_empty(), "No pack files should remain");
 
     // Assert — disk clean
@@ -352,7 +361,10 @@ async fn should_keep_the_record_of_a_file_when_it_cannot_be_removed() {
     assert!(result.is_err());
     assert!(dir.join("mods/a.jar").exists());
     assert!(!dir.join("mods/b.jar").exists());
-    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let pack = pack_storage
+        .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     let remaining: Vec<_> = pack.files.iter().map(|e| e.file.as_str()).collect();
     assert_eq!(remaining, ["mods/a.jar"]);
 }
@@ -414,7 +426,10 @@ async fn should_remove_only_the_selected_files_when_others_exist() {
         "example.toml should remain"
     );
 
-    let pack = pack_storage.get_pack(&instance_id).await.unwrap();
+    let pack = pack_storage
+        .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     let remaining: Vec<_> = pack.files.iter().map(|e| e.file.as_str()).collect();
     assert!(remaining.contains(&"mods/b.jar"), "b.jar still in pack DB");
     assert!(
@@ -466,7 +481,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     remove.await.unwrap();
     assert_eq!(
         pack_storage
-            .get_pack(&instance_id)
+            .get_pack(&InstanceId::try_from(instance_id.as_str()).unwrap())
             .await
             .unwrap()
             .files

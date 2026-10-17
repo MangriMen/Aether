@@ -51,7 +51,7 @@ impl CheckContentCompatibilityUseCase {
             .list()
             .await?
             .into_iter()
-            .filter(|instance| instance_ids.contains(instance.id()))
+            .filter(|instance| instance_ids.contains(instance.id().as_str()))
             .collect();
 
         provider

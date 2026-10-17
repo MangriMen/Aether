@@ -6,7 +6,7 @@ use tempfile::TempDir;
 use crate::features::{
     events::{Event, EventEmitter, EventError, SharedEventEmitter},
     instance::{
-        CreateInstanceUseCase, Instance, InstanceError, InstanceFileService,
+        CreateInstanceUseCase, Instance, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceStorage, InstanceWatcherService, NewInstance,
     },
     minecraft::{LoaderVersionPreference, LoaderVersionService, ModLoader},
@@ -23,10 +23,10 @@ impl InstanceWatcherService for NoOpWatcher {
     async fn watch_instances(&self) -> Result<(), InstanceError> {
         Ok(())
     }
-    async fn watch_instance(&self, _instance_id: &str) -> Result<(), InstanceError> {
+    async fn watch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
-    async fn unwatch_instance(&self, _instance_id: &str) -> Result<(), InstanceError> {
+    async fn unwatch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
 }
@@ -91,7 +91,7 @@ impl MemInstanceFileService {
 
 #[async_trait]
 impl InstanceFileService for MemInstanceFileService {
-    async fn create_instance_dir(&self, _instance_id: &str) -> Result<(), InstanceError> {
+    async fn create_instance_dir(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
 
@@ -106,8 +106,8 @@ impl InstanceFileService for MemInstanceFileService {
         Ok((base_name.to_owned(), dir))
     }
 
-    async fn remove_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {
-        let dir = self.instances_root.join(instance_id);
+    async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
+        let dir = self.instances_root.join(instance_id.as_str());
         if dir.exists() {
             tokio::fs::remove_dir_all(&dir)
                 .await
@@ -120,7 +120,7 @@ impl InstanceFileService for MemInstanceFileService {
     // `instance_relative_path_test` and `fs_instance_file_service_test`.
     async fn write_instance_file(
         &self,
-        _instance_id: &str,
+        _instance_id: &InstanceId,
         _relative_path: &str,
         _bytes: &[u8],
     ) -> Result<(), InstanceError> {
@@ -129,7 +129,7 @@ impl InstanceFileService for MemInstanceFileService {
 
     async fn read_instance_file(
         &self,
-        _instance_id: &str,
+        _instance_id: &InstanceId,
         _relative_path: &str,
     ) -> Result<Vec<u8>, InstanceError> {
         unimplemented!("create_instance does not read instance files")
@@ -156,14 +156,14 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(guard.clone())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         let guard = self.instances.lock().unwrap();
         guard
             .iter()
             .find(|i| i.id() == id)
             .cloned()
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.to_owned(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -177,7 +177,7 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(())
     }
 
-    async fn remove(&self, id: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         let mut guard = self.instances.lock().unwrap();
         guard.retain(|i| i.id() != id);
         Ok(())
@@ -270,7 +270,7 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
 
     // Verify instance was stored
     let stored = storage
-        .get(&instance_id)
+        .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .expect("Instance should exist");
     assert_eq!(stored.name(), "Test Instance");
@@ -323,7 +323,10 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
         .await
         .expect("Create Fabric instance should succeed");
 
-    let stored = storage.get(&instance_id).await.unwrap();
+    let stored = storage
+        .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(stored.loader, ModLoader::Fabric);
     assert_eq!(
         stored.loader_version,
@@ -369,7 +372,10 @@ async fn should_pick_the_default_loader_version_when_none_is_given() {
         .await
         .expect("Create Forge instance should succeed");
 
-    let stored = storage.get(&instance_id).await.unwrap();
+    let stored = storage
+        .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(stored.loader, ModLoader::Forge);
     assert_eq!(stored.loader_version, Some(LoaderVersionPreference::Stable));
 }
@@ -546,7 +552,7 @@ async fn should_roll_back_when_storage_fails() {
         async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
             Ok(vec![])
         }
-        async fn get(&self, _id: &str) -> Result<Instance, InstanceError> {
+        async fn get(&self, _id: &InstanceId) -> Result<Instance, InstanceError> {
             Err(InstanceError::NotFound {
                 instance_id: "x".to_string(),
             })
@@ -554,7 +560,7 @@ async fn should_roll_back_when_storage_fails() {
         async fn upsert(&self, _instance: &Instance) -> Result<(), InstanceError> {
             Err(InstanceError::Storage("disk full".to_string()))
         }
-        async fn remove(&self, _id: &str) -> Result<(), InstanceError> {
+        async fn remove(&self, _id: &InstanceId) -> Result<(), InstanceError> {
             Ok(())
         }
     }
@@ -632,7 +638,10 @@ async fn should_store_the_asset_id_when_the_new_instance_has_an_icon() {
         .await
         .expect("an instance with an icon should be created");
 
-    let stored = storage.get(&instance_id).await.unwrap();
+    let stored = storage
+        .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(stored.icon_path(), Some("asset-icon.png"));
 }
 
@@ -670,7 +679,10 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
         .await
         .expect("an unreadable icon must not fail the creation");
 
-    let stored = storage.get(&instance_id).await.unwrap();
+    let stored = storage
+        .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
     assert_eq!(
         stored.icon_path(),
         None,

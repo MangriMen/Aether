@@ -3,7 +3,7 @@
 use std::{collections::HashMap, path::Path};
 
 use super::{FileChange, InstallPlanExecutor, Undo};
-use crate::features::instance::{InstanceError, InstanceStorageExt, PackFile};
+use crate::features::instance::{InstanceError, InstanceId, InstanceStorageExt, PackFile};
 
 impl InstallPlanExecutor {
     /// Put an existing instance back as it was before the run: the files moved aside back in
@@ -11,7 +11,7 @@ impl InstallPlanExecutor {
     /// step that fails, so as much as possible is put back; `false` when something was not.
     pub(super) async fn roll_back(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         records_before: &HashMap<String, PackFile>,
         undo: &Undo,
         err: &InstanceError,
@@ -101,7 +101,7 @@ impl InstallPlanExecutor {
     /// nothing was there.
     pub(super) async fn move_aside(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         install_path: &str,
         undo: &mut Undo,
     ) -> Result<bool, InstanceError> {
@@ -122,7 +122,7 @@ impl InstallPlanExecutor {
     /// Move a staged file to `install_path`, what was there moved aside first.
     pub(super) async fn put_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         install_path: &str,
         staged: &Path,
         undo: &mut Undo,

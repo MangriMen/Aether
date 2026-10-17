@@ -11,8 +11,8 @@ use path_slash::PathBufExt;
 use crate::{
     features::{
         instance::{
-            ContentFile, ContentMetadataService, ContentType, InstanceError, PackEntry, PackFile,
-            PackStorage, app::ports::ListContentUseCasePort,
+            ContentFile, ContentMetadataService, ContentType, InstanceError, InstanceId, PackEntry,
+            PackFile, PackStorage, app::ports::ListContentUseCasePort,
         },
         settings::LocationInfo,
     },
@@ -45,6 +45,7 @@ impl ListContentUseCase {
         &self,
         instance_id: String,
     ) -> Result<DashMap<String, ContentFile>, InstanceError> {
+        let instance_id = InstanceId::try_from(instance_id)?;
         let instance_dir = self.location_info.instance_dir(&instance_id);
 
         let entries_by_path = Arc::new(self.get_entries_by_path(&instance_id).await?);
@@ -72,7 +73,7 @@ impl ListContentUseCase {
 
     async fn get_entries_by_path(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
     ) -> Result<DashMap<String, PackEntry>, InstanceError> {
         let metadata = self.pack_storage.get_pack(instance_id).await?;
 
@@ -85,7 +86,7 @@ impl ListContentUseCase {
 
     async fn process_content_directory(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         instance_dir: &Path,
         content_type: ContentType,
         entries_by_path: Arc<DashMap<String, PackEntry>>,
@@ -133,7 +134,7 @@ impl ListContentUseCase {
 
     async fn process_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         file_path: &Path,
         content_type: ContentType,
         entries_by_path: &DashMap<String, PackEntry>,
@@ -181,7 +182,7 @@ impl ListContentUseCase {
 
     async fn get_or_create_pack_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         file_path: &Path,
         file_name: &str,
         content_path: &str,

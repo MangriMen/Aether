@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::instance::app::ports::GetInstanceUseCasePort;
-use crate::features::instance::{Instance, InstanceError, InstanceStorage};
+use crate::features::instance::{Instance, InstanceError, InstanceId, InstanceStorage};
 
 pub struct GetInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
@@ -18,6 +18,7 @@ impl GetInstanceUseCase {
 #[async_trait]
 impl GetInstanceUseCasePort for GetInstanceUseCase {
     async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
+        let instance_id = InstanceId::try_from(instance_id)?;
         self.instance_storage.get(&instance_id).await
     }
 }

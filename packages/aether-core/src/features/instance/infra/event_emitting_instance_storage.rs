@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{Instance, InstanceError, InstanceStorage},
+    instance::{Instance, InstanceError, InstanceId, InstanceStorage},
 };
 
 pub struct EventEmittingInstanceStorage<IS> {
@@ -25,7 +25,7 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         Ok(self.instance_storage.list().await?)
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         Ok(self.instance_storage.get(id).await?)
     }
 
@@ -35,14 +35,14 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::Edited,
-                instance_id: instance.id().to_owned(),
+                instance_id: instance.id().to_string(),
             })
             .await;
 
         Ok(())
     }
 
-    async fn remove(&self, id: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         self.instance_storage.remove(id).await?;
 
         self.event_emitter

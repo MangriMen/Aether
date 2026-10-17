@@ -23,8 +23,8 @@ use crate::{
             ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
             ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentVersion, ContentVersionMetadata, Instance, InstanceError, ListContentUseCase,
-            PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
+            ContentVersion, ContentVersionMetadata, Instance, InstanceError, InstanceId,
+            ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -457,7 +457,11 @@ impl Fixture {
                 },
             )]));
             pack_storage
-                .update_pack_file(INSTANCE_ID, &format!("mods/{file}"), &pack_file)
+                .update_pack_file(
+                    &InstanceId::try_from(INSTANCE_ID).unwrap(),
+                    &format!("mods/{file}"),
+                    &pack_file,
+                )
                 .await
                 .unwrap();
         }

@@ -12,11 +12,11 @@ use crate::{
     shared::overridable::domain::Overridable,
 };
 
-use super::{InstanceInstallStage, PackInfo};
+use super::{InstanceId, InstanceInstallStage, PackInfo};
 
 #[derive(Debug, Clone)]
 pub struct Instance {
-    id: String,
+    id: InstanceId,
 
     name: String,
     icon_path: Option<String>,
@@ -55,7 +55,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &InstanceId {
         &self.id
     }
 
@@ -267,7 +267,7 @@ impl Instance {
 }
 
 pub struct InstanceBuilder {
-    id: String,
+    id: InstanceId,
     name: String,
 
     game_version: String,
@@ -280,7 +280,7 @@ pub struct InstanceBuilder {
 }
 
 impl InstanceBuilder {
-    pub fn new(id: String, name: String, game_version: String, loader: ModLoader) -> Self {
+    pub fn new(id: InstanceId, name: String, game_version: String, loader: ModLoader) -> Self {
         Self {
             name,
             id,
@@ -355,11 +355,10 @@ mod tests {
     use super::*;
     use crate::features::instance::InstanceInstallStage;
     use crate::features::settings::{WindowSettings, WindowSize};
-    use uuid::Uuid;
 
     fn make_built_instance(name: &str) -> Instance {
         InstanceBuilder::new(
-            Uuid::new_v4().to_string(),
+            InstanceId::generate(),
             name.to_string(),
             "1.20.1".to_string(),
             ModLoader::Fabric,
@@ -368,7 +367,7 @@ mod tests {
     }
 
     fn make_full_instance(name: &str) -> Instance {
-        let id = Uuid::new_v4().to_string();
+        let id = InstanceId::generate();
         let now = Utc::now();
         Instance {
             id: id.clone(),
@@ -526,11 +525,15 @@ mod tests {
 
     #[test]
     fn should_build_instance_when_optional_fields_are_given() {
-        let instance =
-            InstanceBuilder::new("id".into(), "name".into(), "1.20".into(), ModLoader::Forge)
-                .with_loader_version(Some(LoaderVersionPreference::Latest))
-                .with_icon(Some("icon.png".into()))
-                .build();
+        let instance = InstanceBuilder::new(
+            InstanceId::try_from("id").unwrap(),
+            "name".into(),
+            "1.20".into(),
+            ModLoader::Forge,
+        )
+        .with_loader_version(Some(LoaderVersionPreference::Latest))
+        .with_icon(Some("icon.png".into()))
+        .build();
 
         assert_eq!(
             instance.loader_version,
@@ -544,7 +547,7 @@ mod tests {
     #[test]
     fn should_not_panic_when_timestamps_are_default() {
         let snapshot = InstanceSnapshot {
-            id: "id".into(),
+            id: InstanceId::try_from("id").unwrap(),
             name: "name".into(),
             icon_path: None,
             install_stage: InstanceInstallStage::NotInstalled,
@@ -565,6 +568,6 @@ mod tests {
             pack_info: None,
         };
         let instance = Instance::from_snapshot(snapshot);
-        assert_eq!(instance.id(), "id");
+        assert_eq!(instance.id().as_str(), "id");
     }
 }

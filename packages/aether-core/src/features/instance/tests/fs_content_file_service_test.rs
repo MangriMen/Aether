@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tempfile::TempDir;
 
 use crate::features::instance::{
-    InstanceError, app::ContentFileService, infra::FsContentFileService,
+    InstanceError, InstanceId, app::ContentFileService, infra::FsContentFileService,
 };
 use crate::features::settings::LocationInfo;
 use crate::test_support::link_dir;
@@ -17,7 +17,7 @@ fn setup_temp_location() -> (TempDir, Arc<LocationInfo>) {
     (temp_dir, location_info)
 }
 
-async fn create_instance_dir(location_info: &LocationInfo, instance_id: &str) {
+async fn create_instance_dir(location_info: &LocationInfo, instance_id: &InstanceId) {
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
@@ -41,7 +41,7 @@ async fn create_instance_dir(location_info: &LocationInfo, instance_id: &str) {
 async fn should_remove_a_file_when_one_file_is_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-1";
+    let instance_id = &InstanceId::try_from("test-instance-1").unwrap();
 
     create_instance_dir(&location_info, instance_id).await;
 
@@ -71,7 +71,7 @@ async fn should_remove_a_file_when_one_file_is_given() {
 async fn should_remove_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-2";
+    let instance_id = &InstanceId::try_from("test-instance-2").unwrap();
 
     create_instance_dir(&location_info, instance_id).await;
 
@@ -101,7 +101,7 @@ async fn should_remove_files_when_several_are_given() {
 async fn should_remove_a_disabled_file_when_the_file_is_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-3";
+    let instance_id = &InstanceId::try_from("test-instance-3").unwrap();
 
     let instance_dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(instance_dir.join("mods"))
@@ -130,7 +130,7 @@ async fn should_remove_a_disabled_file_when_the_file_is_disabled() {
 async fn should_succeed_when_the_file_to_remove_does_not_exist() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-4";
+    let instance_id = &InstanceId::try_from("test-instance-4").unwrap();
 
     // No files created at all — should not fail
     service
@@ -145,7 +145,7 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
 async fn should_fail_with_the_file_kept_when_it_cannot_be_removed() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-held";
+    let instance_id = &InstanceId::try_from("test-instance-held").unwrap();
     let instance_dir = location_info.instance_dir(instance_id);
     std::fs::create_dir_all(instance_dir.join("mods/held.jar")).unwrap();
 
@@ -164,7 +164,7 @@ async fn should_fail_with_the_file_kept_when_it_cannot_be_removed() {
 async fn should_move_a_file_out_and_back_when_it_is_there() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-move";
+    let instance_id = &InstanceId::try_from("test-instance-move").unwrap();
     create_instance_dir(&location_info, instance_id).await;
     let backup = temp_dir.path().join("backup");
 
@@ -192,7 +192,7 @@ async fn should_move_a_file_out_and_back_when_it_is_there() {
 async fn should_move_nothing_out_when_the_exact_path_is_empty() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-move-none";
+    let instance_id = &InstanceId::try_from("test-instance-move-none").unwrap();
     let dir = location_info.instance_dir(instance_id);
     std::fs::create_dir_all(dir.join("mods")).unwrap();
     std::fs::write(dir.join("mods/a.jar.disabled"), b"data").unwrap();
@@ -210,7 +210,7 @@ async fn should_move_nothing_out_when_the_exact_path_is_empty() {
 async fn should_refuse_to_move_out_a_directory_when_it_sits_at_a_content_path() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-move-dir";
+    let instance_id = &InstanceId::try_from("test-instance-move-dir").unwrap();
     let dir = location_info.instance_dir(instance_id);
     std::fs::create_dir_all(dir.join("mods/a.jar")).unwrap();
 
@@ -227,7 +227,7 @@ async fn should_refuse_to_move_out_a_directory_when_it_sits_at_a_content_path() 
 async fn should_refuse_to_move_out_a_path_when_it_leads_out_of_the_instance() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-instance-move-escape";
+    let instance_id = &InstanceId::try_from("test-instance-move-escape").unwrap();
     create_instance_dir(&location_info, instance_id).await;
     std::fs::write(temp_dir.path().join("escaped.jar"), b"outside").unwrap();
 
@@ -249,7 +249,7 @@ async fn should_refuse_to_move_out_a_path_when_it_leads_out_of_the_instance() {
 async fn should_enable_a_file_when_it_is_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-enable-1";
+    let instance_id = &InstanceId::try_from("test-enable-1").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -288,7 +288,7 @@ async fn should_enable_a_file_when_it_is_disabled() {
 async fn should_disable_a_file_when_it_is_enabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-disable-1";
+    let instance_id = &InstanceId::try_from("test-disable-1").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -325,7 +325,7 @@ async fn should_disable_a_file_when_it_is_enabled() {
 async fn should_stay_enabled_when_a_file_is_already_enabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-enable-idempotent";
+    let instance_id = &InstanceId::try_from("test-enable-idempotent").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -352,7 +352,7 @@ async fn should_stay_enabled_when_a_file_is_already_enabled() {
 async fn should_stay_disabled_when_a_file_is_already_disabled() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-disable-idempotent";
+    let instance_id = &InstanceId::try_from("test-disable-idempotent").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -379,7 +379,7 @@ async fn should_stay_disabled_when_a_file_is_already_disabled() {
 async fn should_enable_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-enable-multi";
+    let instance_id = &InstanceId::try_from("test-enable-multi").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -418,7 +418,7 @@ async fn should_enable_files_when_several_are_given() {
 async fn should_disable_files_when_several_are_given() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-disable-multi";
+    let instance_id = &InstanceId::try_from("test-disable-multi").unwrap();
 
     let dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
@@ -457,7 +457,7 @@ async fn should_disable_files_when_several_are_given() {
 async fn should_succeed_when_the_file_to_enable_or_disable_does_not_exist() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-nonexistent-toggle";
+    let instance_id = &InstanceId::try_from("test-nonexistent-toggle").unwrap();
 
     // No files at all — should not fail
     service
@@ -485,7 +485,7 @@ async fn temp_file(location_info: &LocationInfo, body: &[u8]) -> std::path::Path
 async fn should_install_into_a_new_subdirectory_when_it_does_not_exist_yet() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-install";
+    let instance_id = &InstanceId::try_from("test-install").unwrap();
     tokio::fs::create_dir_all(location_info.instance_dir(instance_id))
         .await
         .unwrap();
@@ -514,7 +514,7 @@ async fn should_install_into_a_new_subdirectory_when_it_does_not_exist_yet() {
 async fn should_refuse_a_path_when_it_leads_out_of_the_content_area() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-install-refused";
+    let instance_id = &InstanceId::try_from("test-install-refused").unwrap();
     tokio::fs::create_dir_all(location_info.instance_dir(instance_id))
         .await
         .unwrap();
@@ -554,7 +554,7 @@ async fn should_refuse_a_path_when_it_leads_out_of_the_content_area() {
 async fn should_refuse_an_install_when_a_symlink_leads_out_of_the_instance() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-install-symlink";
+    let instance_id = &InstanceId::try_from("test-install-symlink").unwrap();
     let instance_dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(&instance_dir).await.unwrap();
     let outside = temp_dir.path().join("outside");
@@ -580,7 +580,7 @@ async fn should_refuse_an_install_when_a_symlink_leads_out_of_the_instance() {
 /// Each operation over `paths`, as a name and its result.
 async fn change_all(
     service: &FsContentFileService,
-    instance_id: &str,
+    instance_id: &InstanceId,
     paths: &[String],
 ) -> Vec<(&'static str, Result<(), InstanceError>)> {
     vec![
@@ -606,7 +606,7 @@ async fn change_all(
 async fn should_skip_a_path_out_of_the_content_area_when_changing_a_list() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-change-refused";
+    let instance_id = &InstanceId::try_from("test-change-refused").unwrap();
     create_instance_dir(&location_info, instance_id).await;
     let instance_dir = location_info.instance_dir(instance_id);
 
@@ -665,7 +665,7 @@ async fn should_skip_a_path_out_of_the_content_area_when_changing_a_list() {
 async fn should_refuse_to_change_a_file_when_a_symlink_leads_out_of_the_instance() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
-    let instance_id = "test-change-symlink";
+    let instance_id = &InstanceId::try_from("test-change-symlink").unwrap();
     let instance_dir = location_info.instance_dir(instance_id);
     tokio::fs::create_dir_all(&instance_dir).await.unwrap();
     let outside = temp_dir.path().join("outside");

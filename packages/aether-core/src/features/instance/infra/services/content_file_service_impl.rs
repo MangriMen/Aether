@@ -7,7 +7,7 @@ use crate::{
     features::{
         instance::{
             app::{ContentFileService, DISABLED_SUFFIX, LocatedContentFile},
-            domain::InstanceError,
+            domain::{InstanceError, InstanceId},
         },
         settings::LocationInfo,
     },
@@ -30,7 +30,7 @@ impl FsContentFileService {
 
     /// The directory of `instance_id`, or `None` when it has none: then no file of it can be
     /// removed, enabled or disabled.
-    async fn existing_instance_dir(&self, instance_id: &str) -> Option<PathBuf> {
+    async fn existing_instance_dir(&self, instance_id: &InstanceId) -> Option<PathBuf> {
         let instance_dir = self.location_info.instance_dir(instance_id);
 
         tokio::fs::metadata(&instance_dir)
@@ -45,7 +45,7 @@ impl FsContentFileService {
 /// — nothing is done to it — rather than failing the rest: a stale record or a name this platform
 /// refuses must not keep the user from changing the other files. A symlink out of the instance is
 /// only found as each file is reached.
-fn valid_content_paths<'a>(instance_id: &str, content_paths: &'a [String]) -> Vec<&'a str> {
+fn valid_content_paths<'a>(instance_id: &InstanceId, content_paths: &'a [String]) -> Vec<&'a str> {
     content_paths
         .iter()
         .filter_map(|content_path| match check_content_path(content_path) {
@@ -62,7 +62,7 @@ fn valid_content_paths<'a>(instance_id: &str, content_paths: &'a [String]) -> Ve
 impl ContentFileService for FsContentFileService {
     async fn remove_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let content_paths = valid_content_paths(instance_id, content_paths);
@@ -97,7 +97,7 @@ impl ContentFileService for FsContentFileService {
 
     async fn enable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let content_paths = valid_content_paths(instance_id, content_paths);
@@ -133,7 +133,7 @@ impl ContentFileService for FsContentFileService {
 
     async fn disable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let content_paths = valid_content_paths(instance_id, content_paths);
@@ -169,7 +169,7 @@ impl ContentFileService for FsContentFileService {
 
     async fn locate_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<Option<LocatedContentFile>, InstanceError> {
         check_content_path(content_path)?;
@@ -199,7 +199,7 @@ impl ContentFileService for FsContentFileService {
 
     async fn move_content_file_out(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         destination: &Path,
     ) -> Result<bool, InstanceError> {
@@ -235,7 +235,7 @@ impl ContentFileService for FsContentFileService {
 
     async fn install_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         temp_path: &Path,
     ) -> Result<(), InstanceError> {

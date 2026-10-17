@@ -71,7 +71,9 @@ mod tests {
 
     use super::*;
     use crate::features::{
-        instance::{Instance, InstanceBuilder, InstanceError, Pack, PackEntry, PackFile},
+        instance::{
+            Instance, InstanceBuilder, InstanceError, InstanceId, Pack, PackEntry, PackFile,
+        },
         minecraft::ModLoader,
         settings::LocationInfo,
     };
@@ -83,18 +85,18 @@ mod tests {
         async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
             Ok(self.0.lock().unwrap().clone())
         }
-        async fn get(&self, _: &str) -> Result<Instance, InstanceError> {
+        async fn get(&self, _: &InstanceId) -> Result<Instance, InstanceError> {
             unimplemented!()
         }
         async fn upsert(&self, _: &Instance) -> Result<(), InstanceError> {
             unimplemented!()
         }
-        async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+        async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
             unimplemented!()
         }
     }
 
-    async fn legacy_pack(fs: &FsPackStorage, instance_id: &str, path: &str, hash: &str) {
+    async fn legacy_pack(fs: &FsPackStorage, instance_id: &InstanceId, path: &str, hash: &str) {
         fs.update_pack(
             instance_id,
             &Pack {
@@ -112,14 +114,15 @@ mod tests {
         .unwrap();
     }
 
-    fn setup() -> (TempDir, MemInstanceStorage, FsPackStorage, String) {
+    fn setup() -> (TempDir, MemInstanceStorage, FsPackStorage, InstanceId) {
         let temp = TempDir::new().unwrap();
         let location = Arc::new(LocationInfo::new(
             temp.path().join("settings"),
             temp.path().to_path_buf(),
         ));
+        let id = InstanceId::try_from("inst").unwrap();
         let instance = InstanceBuilder::new(
-            "inst".into(),
+            id.clone(),
             "Inst".into(),
             "1.21.1".into(),
             ModLoader::Fabric,
@@ -129,7 +132,7 @@ mod tests {
             temp,
             MemInstanceStorage(Mutex::new(vec![instance])),
             FsPackStorage::new(location),
-            "inst".into(),
+            id,
         )
     }
 

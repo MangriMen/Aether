@@ -5,7 +5,10 @@ use tokio::fs;
 
 use crate::{
     features::{
-        instance::{app::InstanceFileService, domain::InstanceError},
+        instance::{
+            app::InstanceFileService,
+            domain::{InstanceError, InstanceId},
+        },
         settings::LocationInfo,
     },
     shared::io::infra::{create_dir_all, remove_dir_all},
@@ -31,7 +34,7 @@ impl FsInstanceFileService {
 
 #[async_trait]
 impl InstanceFileService for FsInstanceFileService {
-    async fn create_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn create_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
 
         create_dir_all(&instance_dir)
@@ -73,7 +76,7 @@ impl InstanceFileService for FsInstanceFileService {
         }
     }
 
-    async fn remove_instance_dir(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
 
         if !instance_dir.exists() {
@@ -87,7 +90,7 @@ impl InstanceFileService for FsInstanceFileService {
 
     async fn write_instance_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         relative_path: &str,
         bytes: &[u8],
     ) -> Result<(), InstanceError> {
@@ -114,7 +117,7 @@ impl InstanceFileService for FsInstanceFileService {
 
     async fn read_instance_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         relative_path: &str,
     ) -> Result<Vec<u8>, InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);

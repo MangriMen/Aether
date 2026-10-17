@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::features::{
-    instance::{InstanceError, Updater, UpdaterCapabilityMetadata},
+    instance::{InstanceError, InstanceId, Updater, UpdaterCapabilityMetadata},
     plugins::{PluginError, PluginHandle, PluginUpdaterCapability},
 };
 
@@ -27,14 +27,14 @@ impl Updater for PluginUpdaterProxy {
         &self.capability
     }
 
-    async fn update(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn update(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let plugin_id = self.instance.id();
         let failed = || InstanceError::UpdateFailed {
             modpack_id: self.capability.id.clone(),
         };
 
         let handler = self.capability.handler.clone();
-        let instance_id = instance_id.to_owned();
+        let instance_id = instance_id.clone();
 
         let result = self
             .instance
