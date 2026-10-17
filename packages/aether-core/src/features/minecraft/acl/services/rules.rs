@@ -69,7 +69,7 @@ pub(super) fn parse_os_rule(
 
     let version_ok = rule.version.as_deref().is_none_or(|pattern| {
         Regex::new(pattern).map_or(true, |re| {
-            re.is_match(&sysinfo::System::os_version().unwrap_or_default())
+            re.is_match(&sys_info::os_release().unwrap_or_default())
         })
     });
 
