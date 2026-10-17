@@ -21,7 +21,7 @@ pre-commit:
 
     - name: frontend:unused
       root: 'apps/frontend'
-      glob: ['**/*.{js,ts,jsx,tsx,css}', 'package.json', 'knip.jsonc']
+      glob: ['**/*.{js,ts,jsx,tsx,css}', 'apps/frontend/package.json', 'apps/frontend/knip.jsonc']
       run: bun run lint:unused
 
     - name: frontend:i18n

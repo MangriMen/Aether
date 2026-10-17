@@ -198,6 +198,10 @@ export default [
       'no-restricted-syntax': [
         'error',
         { selector: 'ImportExpression[source.value=/^@tauri-apps/]', message: tauriInModel.message },
+        {
+          selector: 'ImportExpression[source.quasis.0.value.raw=/^@tauri-apps/]',
+          message: tauriInModel.message,
+        },
       ],
     },
   },
