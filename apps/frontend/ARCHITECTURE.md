@@ -40,8 +40,9 @@ src/
    move the shared part down or let `app/runtime` coordinate them.
 4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`. Other
    Tauri calls (plugins such as the file dialog or the opener, the window API) go to `api/`
-   or stay in the component that uses them (a file picker in `ui/`), never in `model/`:
-   `model/` is plain code. Type imports from `@tauri-apps/*` are fine anywhere.
+   or stay in the code that uses them (a file picker in `ui/`, the window theme in
+   `lib/useGlobalColorMode`), never in `model/`: `model/` is plain code. Type imports from
+   `@tauri-apps/*` are fine anywhere, and so is anything in tests.
 5. A feature exports its entry points (a page, a dialog, a settings pane) through
    `index.ts`; `app` decides where they appear (routes in `app/AppRouter.tsx`, screens in
    `app/shell`). A page that combines several domains lives in `app/pages`.
@@ -70,7 +71,8 @@ the folders below. The folder tells what kind of file it is.
   `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
   covers.
 - Which folder, by file:
-  - calls `platform/ipc` or a Tauri plugin → `api/` (a component may call a plugin itself);
+  - calls `platform/ipc` or a Tauri plugin → `api/` (a component or a `lib/` primitive may
+    call a plugin itself);
   - `.tsx` that renders JSX (a component, table columns, a toast), file name in PascalCase
     after what it renders (`InstancePage`, `ContentTableColumns`, `UpdateAvailableToast`) → `ui/`;
   - starts with `use` or `create` and is neither of the above → `lib/`;
