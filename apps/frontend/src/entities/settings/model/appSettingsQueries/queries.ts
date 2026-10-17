@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
-import { settingsCommands } from '../../api';
+import { settingsCommands } from '@/platform/ipc';
+
 import { appSettingsCache, appSettingsQueries } from './cache';
 
 export const useAppSettings = () => useQuery(appSettingsQueries.get);

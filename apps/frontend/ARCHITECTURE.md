@@ -70,9 +70,12 @@ that topic becomes a feature of its own, named `<domain>-<part>`:
 
 ```
 features/instance/            the base: what the parts share
+features/instance-settings/   launch settings: schemas, fields, forms
+features/instance-defaults/   default launch settings and their pane
+features/instance-edit/       the settings dialog of one instance
 features/instance-create/
 features/instance-import/
-features/instance-settings/
+features/instance-page/
 ```
 
 - Parts depend on the base; the base never imports its parts.
@@ -82,43 +85,43 @@ features/instance-settings/
 
 In the code: `plugins` is the base (queries, models, cards, actions), `plugins-settings` is
 the settings tab of one plugin, `plugins-manager` is the settings pane with the list,
-details and install views; it shows the tab from `plugins-settings`.
+details and install views; it shows the tab from `plugins-settings`. The settings dialog
+in `instance-edit` and the pane in `instance-defaults` both use the forms from
+`instance-settings`. `InstancePage` is a part of its own because it shows the content of
+an instance, and content depends on the base.
 
 Example:
 
 ```
 features/instance/
-  index.ts                      export * from './api/instanceQueries'; export { InstanceCard } ...
+  index.ts                      export * from './api/instanceQueries'; ...
   api/
-    instanceQueries.ts          useInstances, useInstance, instanceKeys
-    instanceMutations.ts        useLaunchInstance, useRemoveInstance
+    instanceQueries.ts          useInstances, useInstance, useEditInstance
+    instanceLaunch.ts           useLaunchInstance, useStopInstance
+    instanceQueryKeys.ts
     useInstanceEventsListener.ts
   model/
-    instance.ts                 Instance type, InstanceState
-    mappers.ts                  dto → Instance
+    instance.ts                 Instance type
+    instanceMappers.ts          dto → Instance
     formatTimePlayed.ts
-    __tests__/mappers.test.ts
   lib/
     useInstanceActions.tsx      launch/stop/remove with confirmations, used by several components
   ui/
-    InstanceCard.tsx            used by InstancePage and, through index.ts, by app/pages/home
+    InstanceCard.tsx            used through index.ts by app/pages/home
     InstanceHeaderInfo.tsx
     InstanceIcon.tsx
-    InstancePage.tsx            exported through index.ts, the route is in app/router
     InstancePlayButton.tsx
 
-features/instance-settings/
-  index.ts                      export { InstanceSettingsDialog } from './ui/InstanceSettingsDialog';
-  api/
-    defaultInstanceSettingsQueries.ts
+features/instance-edit/
+  index.ts                      export * from './ui/InstanceSettingsDialog';
   model/
-    instanceSettingsSchemas.ts
+    instanceSettingsConverter.ts
   lib/
     useJavaAndMemorySettingsHandler.ts
   ui/
-    InstanceSettingsDialog.tsx
+    InstanceSettingsDialog.tsx  exported through index.ts, the route is in app/router
     GeneralTab.tsx
-    JavaAndMemoryTab.tsx
+    JavaAndMemoryTab.tsx        renders JavaAndMemorySettingsForm from instance-settings
 
 features/java/                  a small feature: only the folders it needs
   index.ts

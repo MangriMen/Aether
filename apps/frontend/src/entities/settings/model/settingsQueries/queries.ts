@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { settingsCommands } from '@/platform/ipc';
 import { showError } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { showToast } from '@/shared/ui';
 
-import { settingsCommands } from '../../api';
 import { settingsCache, settingsQueries } from './cache';
 
 export const useSettings = () => useQuery(settingsQueries.get);

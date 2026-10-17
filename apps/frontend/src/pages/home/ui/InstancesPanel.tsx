@@ -2,8 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
-import { useInstances } from '@/entities/instances';
-import { InstanceActionButton } from '@/features/instance-action-button';
+import { InstanceActionButton, useInstances } from '@/features/instance';
 import { cn, useArrowNavigation } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 

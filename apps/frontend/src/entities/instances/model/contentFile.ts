@@ -1,7 +1,7 @@
+import type { ContentFileDto } from '@/platform/bindings/instance';
+
 import { ROUTES } from '@/shared/config';
 import { searchParamsToQueryString } from '@/shared/lib';
-
-import type { ContentFileDto } from '../api';
 
 import { providerIdToString, type ProviderId } from './contentItem';
 

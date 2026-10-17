@@ -7,8 +7,8 @@ import {
   useWarningEventsListener,
   useProgressEventsListener,
 } from '@/entities/events';
-import { useInstanceEventsListener } from '@/entities/instances';
 import { useJavaInstallationListener } from '@/entities/java';
+import { useInstanceEventsListener } from '@/features/instance';
 import { usePluginEventListener } from '@/features/plugins';
 
 export const useSetupListeners = () => {

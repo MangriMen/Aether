@@ -1,5 +1,6 @@
+import type { Instance } from '@/features/instance';
+
 import type { ContentGetParams } from '../contentItem';
-import type { Instance } from '../instance';
 
 export const instanceToContentGetParams = (
   instance: Instance,

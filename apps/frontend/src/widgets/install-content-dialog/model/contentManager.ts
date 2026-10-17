@@ -1,6 +1,7 @@
 import type { Accessor } from 'solid-js';
 
-import type { ContentItem, Instance, ProviderId } from '@/entities/instances';
+import type { ContentItem, ProviderId } from '@/entities/instances';
+import type { Instance } from '@/features/instance';
 
 export interface ContentManager {
   // Getters

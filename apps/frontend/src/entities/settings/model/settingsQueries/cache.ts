@@ -1,6 +1,8 @@
 import type { QueryClient, Updater } from '@tanstack/solid-query';
 
-import { settingsCommands, type SettingsDto } from '../../api';
+import { type SettingsDto } from '@/platform/bindings/settings';
+import { settingsCommands } from '@/platform/ipc';
+
 import { settingsKeys } from './queryKeys';
 
 export const settingsQueries = {

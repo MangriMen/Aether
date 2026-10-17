@@ -6,9 +6,9 @@ import { createContext, useContext } from 'solid-js';
 import type {
   ContentFilters,
   ContentItem,
-  Instance,
   ProviderId,
 } from '@/entities/instances';
+import type { Instance } from '@/features/instance';
 
 import type { ContentFiltersLock } from './contentFiltersLock';
 import type { InstalledContentIndexStore } from './installedContentIndexStore';

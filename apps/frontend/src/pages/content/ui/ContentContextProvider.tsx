@@ -8,17 +8,17 @@ import type {
   ContentFilters,
   ContentItem,
   InstallContentParams,
-  Instance,
   ProviderId,
 } from '@/entities/instances';
+import type { Instance } from '@/features/instance';
 
 import {
   getContentIdFromUpdateInfo,
   instanceContentsQuery,
   isAtomicContentType,
   useInstallContent,
-  useInstances,
 } from '@/entities/instances';
+import { useInstances } from '@/features/instance';
 
 import type {
   ContentContextActions,

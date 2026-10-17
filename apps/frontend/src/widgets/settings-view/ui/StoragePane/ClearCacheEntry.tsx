@@ -1,6 +1,6 @@
 import { Show, type Component } from 'solid-js';
 
-import type { CacheUsageDto } from '@/entities/settings';
+import type { CacheUsageDto } from '@/platform/bindings/settings';
 import type { SettingsEntryProps } from '@/shared/ui';
 
 import { useClearCache } from '@/entities/settings';

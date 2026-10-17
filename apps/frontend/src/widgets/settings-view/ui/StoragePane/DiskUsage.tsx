@@ -1,6 +1,9 @@
 import { For, Show, type Component } from 'solid-js';
 
-import type { StorageKindDto, StorageUsageDto } from '@/entities/settings';
+import type {
+  StorageKindDto,
+  StorageUsageDto,
+} from '@/platform/bindings/settings';
 
 import { cn, formatBytes, sumBytes } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

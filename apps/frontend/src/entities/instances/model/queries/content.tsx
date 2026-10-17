@@ -6,28 +6,29 @@ import {
 } from '@tanstack/solid-query';
 import { type Accessor } from 'solid-js';
 
+import type { Instance } from '@/features/instance';
+import type {
+  ContentInstallParamsDto,
+  ContentSearchParamsDto,
+} from '@/platform/bindings/instance';
 import type { PartialBy } from '@/shared/model';
 
 import {
   SettingsTab,
   useSettingsSearchParams,
 } from '@/entities/settings/@x/instances';
+import { invalidateInstanceContent } from '@/features/instance';
+import { instanceCommands } from '@/platform/ipc';
 import { showError } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
 import { useFeatureFlagsStore } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
 
-import type { ContentGetParams, ContentListVersionParams, Instance } from '..';
-import type {
-  ContentInstallParamsDto,
-  ContentSearchParamsDto,
-} from '../../api';
+import type { ContentGetParams, ContentListVersionParams } from '..';
 import type { ContentCompatibilityCheckParams } from '../compatibility';
 
 import { ContentType, contentVersionDtoToContentVersion } from '..';
-import { instanceCommands } from '../../api';
 import { contentSearchResultDtoToContentSearchResult } from '../mappers';
-import { invalidateInstanceContent } from './cache';
 import { CONTENT_QUERY_KEYS } from './contentQueryKeys';
 
 export const useContentProviders = () => {

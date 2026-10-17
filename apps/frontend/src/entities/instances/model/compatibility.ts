@@ -1,7 +1,7 @@
 import type {
   ContentCompatibilityCheckParamsDto,
   ContentCompatibilityResultDto,
-} from '../api';
+} from '@/platform/bindings/instance';
 
 export type ContentCompatibilityCheckParams =
   ContentCompatibilityCheckParamsDto;

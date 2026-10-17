@@ -13,7 +13,8 @@ import type {
   ModLoaderDto,
   ModpackInstallParamsDto,
   ProviderIdDto,
-} from '../api';
+} from '@/platform/bindings/instance';
+
 import type { ContentType } from './contentType';
 
 export type ProviderId = ProviderIdDto;

@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/solid-query';
 
-import { settingsCommands } from '../../api';
+import { settingsCommands } from '@/platform/ipc';
+
 import { appSettingsKeys } from './queryKeys';
 
 export const appSettingsQueries = {

@@ -14,7 +14,8 @@ import type { ContentItem } from '@/entities/instances';
 import type { ContentCompatibilityCheckParams } from '@/entities/instances';
 import type { PartialBy } from '@/shared/model';
 
-import { useCheckCompatibility, useInstances } from '@/entities/instances';
+import { useCheckCompatibility } from '@/entities/instances';
+import { useInstances } from '@/features/instance';
 import { useTranslation } from '@/shared/model';
 import {
   CombinedTextField,

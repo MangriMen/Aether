@@ -1,6 +1,7 @@
 import { createMemo, type Component, type ComponentProps } from 'solid-js';
 
-import { useContentProviders, useInstance } from '@/entities/instances';
+import { useContentProviders } from '@/entities/instances';
+import { useInstance } from '@/features/instance';
 
 import { getAvailableContentTypes } from '../lib';
 import { contentProvidersToOptions, useContentContext } from '../model';
