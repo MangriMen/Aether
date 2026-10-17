@@ -5,7 +5,17 @@ import { authCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 
 import { isAuthValidationError } from '../model/accountError';
-import { accountCache, accountQueries } from './accountCache';
+import { accountCache } from './accountCache';
+import { accountKeys } from './accountQueryKeys';
+
+export const accountQueries = {
+  list: () => ({
+    queryKey: accountKeys.list(),
+    queryFn: authCommands.listAccounts,
+    reconcile: 'id',
+    staleTime: Infinity,
+  }),
+} as const;
 
 export const useAccounts = () => useQuery(accountQueries.list);
 

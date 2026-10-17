@@ -5,13 +5,13 @@ import { logError } from '@/shared/log';
 
 import type { JavaVersion, StrictJavaVersion } from '../model/javaVersion';
 
+import { browseJavaInstallation } from '../api/browseJavaInstallation';
 import {
   useActiveJavaInstallations,
   useDiscoverJava,
   useEditJava,
   useInstallJava,
 } from '../api/javaQueries';
-import { browseJavaInstallation } from '../model/browseJavaInstallation';
 import { DetectJavaDialog } from '../ui/DetectJavaDialog';
 
 const DETECT_JAVA_DIALOG_ID = 'detect-java';

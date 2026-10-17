@@ -38,7 +38,11 @@ src/
    (`@/platform/bindings/instance`).
 3. Modules form no cycles, type-only imports included. If two features need each other,
    move the shared part down or let `app/runtime` coordinate them.
-4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`.
+4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`. Other
+   Tauri calls (plugins such as the file dialog or the opener, the window API) go to `api/`
+   or stay in the code that uses them (a file picker in `ui/`, the window theme in
+   `lib/useGlobalColorMode`), never in `model/`: `model/` is plain code. Type imports from
+   `@tauri-apps/*` are fine anywhere, and so is anything in tests.
 5. A feature exports its entry points (a page, a dialog, a settings pane) through
    `index.ts`; `app` decides where they appear (routes in `app/AppRouter.tsx`, screens in
    `app/shell`). A page that combines several domains lives in `app/pages`.
@@ -58,8 +62,8 @@ the folders below. The folder tells what kind of file it is.
 | Folder | Holds |
 |---|---|
 | `index.ts` | the public API: what other modules may use, nothing more |
-| `api/` | everything that talks to the backend: queries, mutations, query keys, event listeners on top of `platform/ipc`, even when named `use*` |
-| `model/` | plain TypeScript without JSX: types, constants, pure functions, mappers, stores and contexts |
+| `api/` | everything that talks to the backend: queries, mutations, query keys, event listeners on top of `platform/ipc`, even when named `use*`; also functions that call Tauri plugins (`browseJavaInstallation`, `openTranslationInBrowser`) |
+| `model/` | plain TypeScript without JSX and without Tauri calls: types, constants, pure functions, mappers, stores and contexts |
 | `lib/` | Solid primitives that serve components (`use*`, `create*`): form handlers, table data, actions; nothing that talks to the backend |
 | `ui/` | components, including the feature's pages, dialogs and panes, and anything else that renders JSX: table columns, a function that shows a toast, tab builders |
 
@@ -67,7 +71,8 @@ the folders below. The folder tells what kind of file it is.
   `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
   covers.
 - Which folder, by file:
-  - calls `platform/ipc` → `api/`;
+  - calls `platform/ipc` or a Tauri plugin → `api/` (a component or a `lib/` primitive may
+    call a plugin itself);
   - `.tsx` that renders JSX (a component, table columns, a toast), file name in PascalCase
     after what it renders (`InstancePage`, `ContentTableColumns`, `UpdateAvailableToast`) → `ui/`;
   - starts with `use` or `create` and is neither of the above → `lib/`;
@@ -176,7 +181,8 @@ The checks cover every file under `src/`.
 
 - ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
   no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/`
-  in `shared/`, nothing but `shared/utils` in `shared/ui-kit`.
+  in `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except
+  types) in a feature's `model/`.
 - dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
   imports across features, public API of features and modules, a domain base importing its
   parts, feature and shared folders and file names, `app` modules importing the

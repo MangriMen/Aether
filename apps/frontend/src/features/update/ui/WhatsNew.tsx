@@ -7,7 +7,7 @@ import { MarkdownRenderer } from '@/shared/markdown';
 import { CombinedTooltip, IconButton, showToast } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
-import { openTranslationInBrowser } from '../model/openTranslationInBrowser';
+import { openTranslationInBrowser } from '../api/openTranslationInBrowser';
 
 export type WhatsNewProps = ComponentProps<'div'> & {
   changelogBody: string;
