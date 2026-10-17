@@ -1,19 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-/// Mod loader an instance can run on. Serialized as a lowercase string.
+/// Mod loader an instance can run on. Serialized as a lowercase string
+/// (`vanilla`, `forge`, `fabric`, `quilt`, `neoforge`).
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ModLoaderDto {
-    /// Fabric loader.
-    Fabric,
-    /// Minecraft Forge loader.
-    Forge,
-    /// `NeoForge` loader (successor of Forge).
-    NeoForge,
-    /// Quilt loader.
-    Quilt,
-    /// No mod loader.
     Vanilla,
+    Forge,
+    Fabric,
+    Quilt,
+    NeoForge,
 }
 
 #[cfg(test)]
