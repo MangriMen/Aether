@@ -11,10 +11,6 @@ use crate::{
     shared::io::infra::canonicalize,
 };
 
-// Replaces the space separator with a newline character, as to not split the arguments
-#[cfg(test)]
-const TEMPORARY_REPLACE_CHAR: &str = "\n";
-
 #[allow(clippy::too_many_arguments)]
 pub(super) fn get_minecraft_arguments(
     arguments: Option<&[vanilla::Argument]>,
@@ -113,6 +109,7 @@ fn replace_placeholders_in_argument_string(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::minecraft::TEMPORARY_REPLACE_CHAR;
     use crate::features::{
         auth::{AccountType, Username},
         minecraft::vanilla::{
