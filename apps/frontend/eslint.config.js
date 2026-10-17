@@ -41,6 +41,12 @@ const uiKitSharedImport = {
   regex: '^@/shared/(?!utils$)',
   message: 'shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider.',
 };
+// model/ is plain code: Tauri calls (plugins, window, ...) go to api/ or to the component.
+const tauriInModel = {
+  group: ['@tauri-apps/**'],
+  allowTypeImports: true,
+  message: 'model/ is plain code: call Tauri from api/ (or from a component in ui/).',
+};
 const featurePatterns = [deepFeatureImport, deepModuleImport, appImport];
 const platformPatterns = [...featurePatterns, upperLayerImport];
 const sharedPatterns = [...platformPatterns, platformImport];
@@ -182,4 +188,11 @@ export default [
     files: [glob],
     rules: { 'no-restricted-imports': ['error', { patterns }] },
   })),
+  // A separate rule name, so it adds to the block above instead of replacing it.
+  {
+    files: ['src/features/*/model/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', { patterns: [tauriInModel] }],
+    },
+  },
 ];
