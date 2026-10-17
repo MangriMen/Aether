@@ -363,3 +363,105 @@ impl From<daedalus::minecraft::LibraryExtract> for vanilla::LibraryExtract {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const VANILLA: &str = r#"{
+        "id": "1.20.1",
+        "type": "release",
+        "mainClass": "net.minecraft.client.main.Main",
+        "assets": "5",
+        "assetIndex": {"id": "5", "sha1": "a", "size": 1, "totalSize": 2, "url": "u"},
+        "downloads": {"client": {"sha1": "c", "size": 3, "url": "cu"}},
+        "javaVersion": {"component": "java-runtime-gamma", "majorVersion": 17},
+        "minimumLauncherVersion": 21,
+        "releaseTime": "2023-06-12T00:00:00+00:00",
+        "time": "2023-06-12T00:00:00+00:00",
+        "arguments": {
+            "game": ["--username", {"rules": [{"action": "allow", "features": {"is_demo_user": true}}], "value": "--demo"}],
+            "jvm": ["-Xss1M"]
+        },
+        "libraries": [
+            {"name": "org.ow2.asm:asm:9.3", "downloads": {"artifact": {"path": "p", "sha1": "s", "size": 4, "url": "au"}}},
+            {"name": "com.mojang:logging:1.1.1", "rules": [{"action": "allow", "os": {"name": "osx", "arch": "x86"}}]}
+        ]
+    }"#;
+
+    const PARTIAL: &str = r#"{
+        "id": "fabric-loader-0.15.0-${modrinth.gameVersion}",
+        "inheritsFrom": "${modrinth.gameVersion}",
+        "type": "release",
+        "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+        "releaseTime": "2023-06-12T00:00:00+00:00",
+        "time": "2023-06-12T00:00:00+00:00",
+        "arguments": {"jvm": ["-DFabricMcEmu=net.minecraft.client.main.Main"]},
+        "libraries": [
+            {"name": "org.ow2.asm:asm:9.6", "url": "https://maven.fabricmc.net/"},
+            {"name": "net.fabricmc:intermediary:${modrinth.gameVersion}", "url": "https://maven.fabricmc.net/"}
+        ]
+    }"#;
+
+    #[test]
+    fn maps_vanilla_version_info_fields() {
+        let info: vanilla::VersionInfo =
+            serde_json::from_str::<daedalus::minecraft::VersionInfo>(VANILLA)
+                .unwrap()
+                .into();
+
+        assert_eq!(info.main_class, "net.minecraft.client.main.Main");
+        assert_eq!(info.asset_index.total_size, 2);
+        assert_eq!(info.java_version.unwrap().major_version, 17);
+        assert_eq!(info.libraries.len(), 2);
+        assert!(
+            info.libraries[0]
+                .downloads
+                .as_ref()
+                .unwrap()
+                .artifact
+                .is_some()
+        );
+        assert_eq!(
+            info.libraries[1].rules.as_ref().unwrap()[0]
+                .os
+                .as_ref()
+                .unwrap()
+                .arch
+                .as_deref(),
+            Some("x86")
+        );
+        let game = &info.arguments.unwrap()[&vanilla::ArgumentType::Game];
+        assert!(matches!(game[0], vanilla::Argument::Normal(_)));
+        assert!(matches!(game[1], vanilla::Argument::Ruled { .. }));
+    }
+
+    #[test]
+    fn merging_loader_profile_keeps_vanilla_and_loader_data() {
+        let merged = daedalus::modded::merge_partial_version(
+            serde_json::from_str(PARTIAL).unwrap(),
+            serde_json::from_str(VANILLA).unwrap(),
+        );
+        let info: vanilla::VersionInfo = merged.into();
+
+        assert_eq!(info.id, "fabric-loader-0.15.0-1.20.1");
+        assert_eq!(
+            info.main_class,
+            "net.fabricmc.loader.impl.launch.knot.KnotClient"
+        );
+        assert_eq!(info.asset_index.id, "5");
+
+        let names: Vec<_> = info.libraries.iter().map(|l| l.name.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                "com.mojang:logging:1.1.1",
+                "org.ow2.asm:asm:9.6",
+                "net.fabricmc:intermediary:1.20.1",
+            ]
+        );
+        // The loader's asm supersedes the vanilla one.
+        let jvm = &info.arguments.unwrap()[&vanilla::ArgumentType::Jvm];
+        assert_eq!(jvm.len(), 2);
+    }
+}

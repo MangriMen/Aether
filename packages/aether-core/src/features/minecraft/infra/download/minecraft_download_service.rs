@@ -68,16 +68,18 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
         version: &vanilla::Version,
         loader: Option<&modded::LoaderVersion>,
     ) -> Result<vanilla::VersionInfo, MinecraftDomainError> {
-        let mut version_info = self.fetch_json(&version.url).await?;
+        let mut version_info: daedalus::minecraft::VersionInfo =
+            self.fetch_json(&version.url).await?;
 
         if let Some(loader) = loader {
-            let modded_info = self.fetch_json(&loader.url).await?;
-            version_info = modded::merge_partial_version(modded_info, version_info);
+            let modded_info: daedalus::modded::PartialVersionInfo =
+                self.fetch_json(&loader.url).await?;
+            version_info = daedalus::modded::merge_partial_version(modded_info, version_info);
         }
 
         version_info.id.clone_from(version_id);
 
-        Ok(version_info)
+        Ok(version_info.into())
     }
 }
 
