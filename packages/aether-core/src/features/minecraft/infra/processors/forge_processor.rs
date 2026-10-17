@@ -138,17 +138,14 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
         let total_processors = processors.len();
         for (index, processor) in processors.iter().enumerate() {
-            if let Some(sides) = &processor.sides
-                && !sides.contains(&String::from("client"))
-            {
+            if !runs_on_client(processor) {
                 continue;
             }
 
             Self::run_single_processor(processor, data, &libraries_dir, java_version).await?;
 
             if let Some(loading_bar) = loading_bar {
-                #[allow(clippy::cast_precision_loss)]
-                let progress = 30.0 / total_processors as f64;
+                let progress = progress_step(total_processors);
                 let message = format!("Running forge processor {}/{}", index + 1, total_processors);
                 self.progress_service
                     .emit_progress_safe(loading_bar, progress, Some(&message))
@@ -158,6 +155,21 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
         Ok(())
     }
+}
+
+/// A processor without `sides` runs everywhere; otherwise `client` must be listed.
+fn runs_on_client(processor: &modded::Processor) -> bool {
+    processor
+        .sides
+        .as_ref()
+        .is_none_or(|sides| sides.contains(&String::from("client")))
+}
+
+/// Progress increment reported after each processor run.
+fn progress_step(total_processors: usize) -> f64 {
+    #[allow(clippy::cast_precision_loss)]
+    let total = total_processors as f64;
+    30.0 / total
 }
 
 /// Resolves `[group:artifact:version]` to a library path; any other text is returned as is.
@@ -301,6 +313,42 @@ mod tests {
     }
 
     // ---- get_processor_arguments ----
+
+    fn processor_with_sides(sides: Option<&[&str]>) -> modded::Processor {
+        modded::Processor {
+            jar: "a:b:1".into(),
+            classpath: vec![],
+            args: vec![],
+            outputs: None,
+            sides: sides.map(|s| s.iter().map(ToString::to_string).collect()),
+        }
+    }
+
+    #[test]
+    fn processor_without_sides_runs_on_client() {
+        assert!(runs_on_client(&processor_with_sides(None)));
+    }
+
+    #[test]
+    fn processor_with_client_side_runs() {
+        assert!(runs_on_client(&processor_with_sides(Some(&[
+            "server", "client"
+        ]))));
+    }
+
+    #[test]
+    fn processor_without_client_side_is_skipped() {
+        assert!(!runs_on_client(&processor_with_sides(Some(&["server"]))));
+        assert!(!runs_on_client(&processor_with_sides(Some(&[]))));
+        assert!(!runs_on_client(&processor_with_sides(Some(&["extract"]))));
+    }
+
+    #[test]
+    fn progress_step_splits_thirty_percent_evenly() {
+        assert_eq!(progress_step(1), 30.0);
+        assert_eq!(progress_step(3), 10.0);
+        assert!((progress_step(7) * 7.0 - 30.0).abs() < 1e-9);
+    }
 
     #[test]
     fn processor_arguments_empty_list_gives_empty_vec() {

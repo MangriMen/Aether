@@ -13,6 +13,7 @@ use crate::{
             InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
             JavaQueryService,
         },
+        minecraft::app::services::version_jar_name,
         minecraft::{
             LaunchSettings, LoaderVersionPreference, LoaderVersionService,
             MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
@@ -94,9 +95,10 @@ impl GetMinecraftLaunchCommandUseCase {
             .resolve(&game_version, &loader, loader_version.as_ref())
             .await?;
 
-        let version_jar = loader_version.as_ref().map_or(version.id.clone(), |it| {
-            format!("{}-{}", version.id.clone(), it.id.clone())
-        });
+        let version_jar = version_jar_name(
+            &version.id,
+            loader_version.as_ref().map(|it| it.id.as_str()),
+        );
 
         let version_info = self
             .minecraft_downloader
@@ -185,16 +187,7 @@ impl GetMinecraftLaunchCommandUseCase {
             .args(minecraft_arguments)
             .current_dir(launch_dir.clone());
 
-        // CARGO-set DYLD_LIBRARY_PATH breaks Minecraft on macOS during testing on playground
-        #[cfg(target_os = "macos")]
-        if std::env::var("CARGO").is_ok() {
-            command.env_remove("DYLD_FALLBACK_LIBRARY_PATH");
-        }
-
-        // Java options should be set in instance options (the existence of _JAVA_OPTIONS overwrites them)
-        command.env_remove("_JAVA_OPTIONS");
-
-        command.envs(env_args_vec);
+        apply_launch_environment(&mut command, env_args_vec);
 
         // options.txt override
 
@@ -211,5 +204,74 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
         credentials: Credential,
     ) -> Result<Command, MinecraftApplicationError> {
         self.execute(params, launch_settings, credentials).await
+    }
+}
+
+/// Environment of the game process: scrub inherited variables, then apply the instance's own.
+fn apply_launch_environment<I, K, V>(command: &mut Command, instance_env: I)
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: AsRef<std::ffi::OsStr>,
+    V: AsRef<std::ffi::OsStr>,
+{
+    // CARGO-set DYLD_LIBRARY_PATH breaks Minecraft on macOS during testing on playground
+    #[cfg(target_os = "macos")]
+    if std::env::var("CARGO").is_ok() {
+        command.env_remove("DYLD_FALLBACK_LIBRARY_PATH");
+    }
+
+    // Java options should be set in instance options (the existence of _JAVA_OPTIONS overwrites them)
+    command.env_remove("_JAVA_OPTIONS");
+
+    command.envs(instance_env);
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsStr;
+
+    use super::*;
+
+    #[derive(Debug, PartialEq)]
+    enum EnvChange {
+        Untouched,
+        Removed,
+        Set(String),
+    }
+
+    fn env_of(command: &Command, key: &str) -> EnvChange {
+        match command
+            .as_std()
+            .get_envs()
+            .find(|(k, _)| *k == OsStr::new(key))
+        {
+            None => EnvChange::Untouched,
+            Some((_, None)) => EnvChange::Removed,
+            Some((_, Some(v))) => EnvChange::Set(v.to_string_lossy().into_owned()),
+        }
+    }
+
+    #[test]
+    fn java_options_variable_is_removed_from_child_environment() {
+        let mut command = Command::new("java");
+        apply_launch_environment(&mut command, Vec::<(String, String)>::new());
+        assert_eq!(env_of(&command, "_JAVA_OPTIONS"), EnvChange::Removed);
+    }
+
+    #[test]
+    fn instance_variables_are_applied() {
+        let mut command = Command::new("java");
+        apply_launch_environment(&mut command, [("FOO", "bar")]);
+        assert_eq!(env_of(&command, "FOO"), EnvChange::Set("bar".to_string()));
+    }
+
+    #[test]
+    fn instance_may_set_java_options_explicitly() {
+        let mut command = Command::new("java");
+        apply_launch_environment(&mut command, [("_JAVA_OPTIONS", "-Xmx1G")]);
+        assert_eq!(
+            env_of(&command, "_JAVA_OPTIONS"),
+            EnvChange::Set("-Xmx1G".to_string())
+        );
     }
 }
