@@ -1,4 +1,4 @@
-import { applicationCommands } from '@/entities/application';
+import { applicationCommands } from '@/platform/ipc';
 import { showWindow } from '@/platform/window';
 import { logError } from '@/shared/lib';
 

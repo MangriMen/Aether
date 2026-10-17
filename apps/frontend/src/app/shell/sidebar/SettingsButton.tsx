@@ -6,7 +6,7 @@ import { createMemo } from 'solid-js';
 
 import type { IconButtonProps } from '@/shared/ui';
 
-import { useSettingsSearchParams } from '@/entities/settings';
+import { useSettingsSearchParams } from '@/features/settings';
 import {
   useCheckUpdate,
   checkIsUpdateAvailable,

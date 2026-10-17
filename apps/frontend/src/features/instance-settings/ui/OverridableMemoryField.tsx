@@ -2,7 +2,7 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { useMaxRam } from '@/entities/settings';
+import { useMaxRam } from '@/features/settings';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 

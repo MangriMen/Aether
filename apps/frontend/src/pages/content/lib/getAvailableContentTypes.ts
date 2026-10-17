@@ -1,7 +1,7 @@
 import type { ModLoader } from '@/features/minecraft';
 
 import { ATOMIC_CONTENT_TYPES, ContentType } from '@/entities/instances';
-import { getOrCreateFeatureFlagsStore } from '@/shared/model';
+import { getOrCreateFeatureFlagsStore } from '@/features/settings';
 
 export const getAvailableContentTypes = (
   instanceLoader: ModLoader | undefined,
