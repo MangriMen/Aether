@@ -1,0 +1,107 @@
+import type { Component, ComponentProps } from 'solid-js';
+
+import { A } from '@solidjs/router';
+import { createMemo, Show, splitProps } from 'solid-js';
+
+import { InstanceIcon, type Instance } from '@/features/instance';
+import { ROUTES } from '@/shared/config';
+import { cn } from '@/shared/lib';
+import { useTranslation } from '@/shared/model';
+import { CombinedTooltip } from '@/shared/ui';
+
+import type { ContentCompatibilityResult } from '../model/compatibility';
+import type { ContentManager } from '../model/contentManager';
+
+import { type ContentItem } from '../model/contentItem';
+import { ContentInstallButton } from './ContentInstallButton';
+
+export interface InstallContentDialogListItemProps {
+  item: ContentItem;
+  instance: Instance;
+  manager: ContentManager;
+  checkCompatibilityData:
+    Record<Instance['id'], ContentCompatibilityResult> | undefined;
+  isLoadingCheckCompatibilityData?: boolean;
+  onCloseDialog?: () => void;
+}
+
+export const InstallContentDialogListItem: Component<
+  ComponentProps<'div'> & InstallContentDialogListItemProps
+> = (props) => {
+  const [local, others] = splitProps(props, [
+    'manager',
+    'item',
+    'instance',
+    'checkCompatibilityData',
+    'isLoadingCheckCompatibilityData',
+    'onCloseDialog',
+    'class',
+  ]);
+
+  const [{ t }] = useTranslation();
+
+  const isInstalledMemo = createMemo(() =>
+    local.manager.createIsInstalled(
+      () => local.item.id,
+      () => local.instance.id,
+    ),
+  );
+  const isInstalled = () => isInstalledMemo()();
+
+  const isInstallingMemo = createMemo(() =>
+    local.manager.createIsInstalling(
+      () => local.item.id,
+      () => local.instance.id,
+    ),
+  );
+  const isInstalling = () => isInstallingMemo()();
+
+  const isCompatible = () =>
+    local.checkCompatibilityData?.[local.instance.id]?.isCompatible;
+
+  const isFulfilledCompatible = () =>
+    local.isLoadingCheckCompatibilityData || isCompatible();
+
+  const handleInstall = () =>
+    local.manager.installContent(local.item, local.instance.id);
+
+  return (
+    <CombinedTooltip
+      as='div'
+      label={t('instance.notCompatibleWithContent')}
+      disableTooltip={isFulfilledCompatible()}
+      class={cn('rounded-sm py-1.5 flex items-center justify-between', {
+        'text-muted-foreground': !isFulfilledCompatible(),
+      })}
+      {...others}
+    >
+      <A
+        href={ROUTES.INSTANCE(local.instance.id)}
+        onClick={local.onCloseDialog}
+      >
+        <div
+          class='
+            gap-2 flex items-center
+            hover:underline
+          '
+        >
+          <InstanceIcon
+            class='size-8'
+            src={local.instance.iconPath ?? undefined}
+          />
+          {local.instance.name}
+        </div>
+      </A>
+
+      <Show when={isFulfilledCompatible()}>
+        <ContentInstallButton
+          isInstalled={isInstalled()}
+          isInstalling={isInstalling()}
+          isLoading={local.isLoadingCheckCompatibilityData}
+          onClick={handleInstall}
+          size='sm'
+        />
+      </Show>
+    </CombinedTooltip>
+  );
+};

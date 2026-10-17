@@ -9,7 +9,7 @@ import {
   useEnableContents,
   useRemoveContents,
   type ContentFile,
-} from '@/entities/instances';
+} from '@/features/content';
 import { useRevealInExplorer } from '@/features/instance';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';

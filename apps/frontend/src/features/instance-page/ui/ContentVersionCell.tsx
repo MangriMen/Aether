@@ -1,13 +1,13 @@
 import { A, useParams } from '@solidjs/router';
 import { createMemo, Match, Show, Switch } from 'solid-js';
 
-import type { ContentFile } from '@/entities/instances';
+import type { ContentFile } from '@/features/content';
 
 import {
   getContentFileProjectHref,
   getContentFileVersionNumber,
   getContentFileVersionState,
-} from '@/entities/instances';
+} from '@/features/content';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 
