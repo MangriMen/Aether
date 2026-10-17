@@ -109,7 +109,6 @@ fn replace_placeholders_in_argument_string(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::minecraft::TEMPORARY_REPLACE_CHAR;
     use crate::features::{
         auth::{AccountType, Username},
         minecraft::vanilla::{
@@ -361,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn ruled_single_with_space_keeps_temporary_char_instead_of_splitting() {
+    fn ruled_single_with_space_is_passed_verbatim_not_split() {
         let e = env();
         let args = vec![Argument::Ruled {
             rules: allow(),
@@ -369,7 +368,7 @@ mod tests {
         }];
         assert_eq!(
             call(&e, Some(&args), None).unwrap(),
-            vec![format!("--width{TEMPORARY_REPLACE_CHAR}1280")]
+            vec!["--width 1280"]
         );
     }
 
