@@ -1,4 +1,3 @@
-#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use std::path::Path;
 
 use uuid::Uuid;
@@ -13,6 +12,7 @@ use crate::{
 };
 
 // Replaces the space separator with a newline character, as to not split the arguments
+#[cfg(test)]
 const TEMPORARY_REPLACE_CHAR: &str = "\n";
 
 #[allow(clippy::too_many_arguments)]
@@ -28,7 +28,39 @@ pub(super) fn get_minecraft_arguments(
     resolution: WindowSize,
     java_arch: &str,
 ) -> Result<Vec<String>, MinecraftDomainError> {
-    todo!()
+    let substitute = |template: &str| {
+        replace_placeholders_in_argument_string(
+            template,
+            credentials.access_token(),
+            credentials.username().as_str(),
+            credentials.id(),
+            version,
+            asset_index_name,
+            game_directory,
+            assets_directory,
+            version_type,
+            resolution,
+        )
+    };
+
+    if let Some(arguments) = arguments {
+        let mut result = Vec::new();
+        parse_arguments(arguments, &mut result, substitute, java_arch)?;
+        Ok(result)
+    } else if let Some(legacy) = legacy_arguments {
+        legacy.split(' ').map(substitute).collect()
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+fn canonical_dir(path: &Path, entity_type: &str) -> Result<String, MinecraftDomainError> {
+    canonicalize(path)
+        .map(|canonical| canonical.to_string_lossy().into_owned())
+        .map_err(|_| MinecraftDomainError::PathNotFound {
+            path: path.to_path_buf(),
+            entity_type: entity_type.to_owned(),
+        })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -44,7 +76,38 @@ fn replace_placeholders_in_argument_string(
     version_type: &vanilla::VersionType,
     resolution: WindowSize,
 ) -> Result<String, MinecraftDomainError> {
-    todo!()
+    let game = canonical_dir(game_directory, "game")?;
+    let assets = canonical_dir(assets_directory, "assets")?;
+    let uuid = uuid.simple().to_string();
+    let width = resolution.width().to_string();
+    let height = resolution.height().to_string();
+
+    let table = [
+        ("${accessToken}", access_token),
+        ("${auth_access_token}", access_token),
+        ("${auth_session}", access_token),
+        ("${auth_player_name}", username),
+        ("${auth_xuid}", "0"),
+        ("${auth_uuid}", uuid.as_str()),
+        ("${uuid}", uuid.as_str()),
+        ("${clientid}", "c4502edb-87c6-40cb-b595-64a280cf8906"),
+        ("${user_properties}", "{}"),
+        ("${user_type}", "msa"),
+        ("${version_name}", version),
+        ("${assets_index_name}", asset_index_name),
+        ("${game_directory}", game.as_str()),
+        ("${assets_root}", assets.as_str()),
+        ("${game_assets}", assets.as_str()),
+        ("${version_type}", version_type.as_str()),
+        ("${resolution_width}", width.as_str()),
+        ("${resolution_height}", height.as_str()),
+    ];
+
+    Ok(table
+        .iter()
+        .fold(argument.to_owned(), |acc, (name, value)| {
+            acc.replace(name, value)
+        }))
 }
 
 #[cfg(test)]

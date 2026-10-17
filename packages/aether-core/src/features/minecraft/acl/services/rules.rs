@@ -1,10 +1,53 @@
-#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use regex::Regex;
 
 use crate::features::minecraft::acl::models::vanilla;
 
+/// Result of evaluating a single rule.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Vote {
+    Allow,
+    Deny,
+    Abstain,
+}
+
 pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_updated: bool) -> bool {
-    todo!()
+    let mut votes: Vec<Vote> = rules
+        .iter()
+        .map(|rule| vote(rule, java_version, minecraft_updated))
+        .collect();
+
+    if rules
+        .iter()
+        .all(|rule| matches!(rule.action, vanilla::RuleAction::Disallow))
+    {
+        votes.push(Vote::Allow);
+    }
+
+    !votes.contains(&Vote::Deny) && votes.contains(&Vote::Allow)
+}
+
+fn vote(rule: &vanilla::Rule, java_arch: &str, minecraft_updated: bool) -> Vote {
+    let condition = match (&rule.os, &rule.features) {
+        (Some(os), _) => parse_os_rule(os, java_arch, minecraft_updated),
+        (None, Some(features)) => features_hold(features),
+        // Unconditional rules always vote positively, whatever their action.
+        (None, None) => return Vote::Allow,
+    };
+
+    match (&rule.action, condition) {
+        (vanilla::RuleAction::Allow, true) => Vote::Allow,
+        (vanilla::RuleAction::Allow, false) | (vanilla::RuleAction::Disallow, true) => Vote::Deny,
+        (vanilla::RuleAction::Disallow, false) => Vote::Abstain,
+    }
+}
+
+fn features_hold(features: &vanilla::FeatureRule) -> bool {
+    features.is_demo_user == Some(false)
+        || features.has_custom_resolution == Some(true)
+        || features.has_quick_plays_support == Some(false)
+        || features.is_quick_play_multiplayer == Some(false)
+        || features.is_quick_play_realms == Some(false)
+        || features.is_quick_play_singleplayer == Some(false)
 }
 
 // Platform rule resolving
@@ -14,7 +57,23 @@ pub(super) fn parse_os_rule(
     // Minecraft updated over 1.18.2 (supports MacOS Natively)
     minecraft_updated: bool,
 ) -> bool {
-    todo!()
+    let arch_ok = rule
+        .arch
+        .as_deref()
+        .is_none_or(|arch| arch != "x86" && arch != "arm");
+
+    let name_ok = rule.name.as_ref().is_none_or(|name| {
+        *name == vanilla::Os::native_arch(java_arch)
+            || (minecraft_updated && *name == vanilla::Os::native())
+    });
+
+    let version_ok = rule.version.as_deref().is_none_or(|pattern| {
+        Regex::new(pattern).map_or(true, |re| {
+            re.is_match(&sysinfo::System::os_version().unwrap_or_default())
+        })
+    });
+
+    arch_ok && name_ok && version_ok
 }
 
 #[macro_export]

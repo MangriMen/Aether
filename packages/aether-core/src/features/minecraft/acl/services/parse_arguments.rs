@@ -1,9 +1,16 @@
-#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use crate::features::minecraft::{
     MinecraftDomainError, TEMPORARY_REPLACE_CHAR, acl::models::vanilla,
 };
 
 use crate::features::minecraft::acl::services::rules::parse_rules;
+
+/// Runs `transform` on a template with its spaces swapped for the temporary char.
+fn transform_template<F>(template: &str, transform: &F) -> Result<String, MinecraftDomainError>
+where
+    F: Fn(&str) -> Result<String, MinecraftDomainError>,
+{
+    transform(&template.replace(' ', TEMPORARY_REPLACE_CHAR))
+}
 
 pub fn parse_arguments<F>(
     arguments: &[vanilla::Argument],
@@ -14,7 +21,30 @@ pub fn parse_arguments<F>(
 where
     F: Fn(&str) -> Result<String, MinecraftDomainError>,
 {
-    todo!()
+    for argument in arguments {
+        match argument {
+            vanilla::Argument::Normal(template) => {
+                let result = transform_template(template, &parse_function)?;
+                parsed_arguments.extend(result.split(TEMPORARY_REPLACE_CHAR).map(str::to_owned));
+            }
+            vanilla::Argument::Ruled { rules, value } => {
+                if !parse_rules(rules, java_arch, true) {
+                    continue;
+                }
+                match value {
+                    vanilla::ArgumentValue::Single(template) => {
+                        parsed_arguments.push(transform_template(template, &parse_function)?);
+                    }
+                    vanilla::ArgumentValue::Many(templates) => {
+                        for template in templates {
+                            parsed_arguments.push(transform_template(template, &parse_function)?);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

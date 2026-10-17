@@ -1,4 +1,3 @@
-#![allow(unused, dead_code, clippy::all, clippy::pedantic)]
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader},
@@ -161,12 +160,54 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
     }
 }
 
+/// Resolves `[group:artifact:version]` to a library path; any other text is returned as is.
+fn resolve_library_reference(
+    libraries_path: &Path,
+    text: &str,
+) -> Result<String, MinecraftDomainError> {
+    match text
+        .strip_prefix('[')
+        .and_then(|rest| rest.strip_suffix(']'))
+    {
+        Some(coordinate) => get_lib_path(libraries_path, coordinate, true),
+        None => Ok(text.to_owned()),
+    }
+}
+
 fn process_argument(
     libraries_path: &Path,
     argument: &str,
     data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<String, MinecraftDomainError> {
-    todo!()
+    if argument.starts_with('[') && argument.ends_with(']') {
+        return resolve_library_reference(libraries_path, argument);
+    }
+
+    let mut result = String::with_capacity(argument.len());
+    let mut rest = argument;
+    while let Some(open) = rest.find('{') {
+        result.push_str(&rest[..open]);
+        let after_open = &rest[open + 1..];
+        let entry = after_open
+            .find('}')
+            .and_then(|close| data.get(&after_open[..close]).map(|entry| (close, entry)));
+        if let Some((close, entry)) = entry {
+            result.push_str(&resolve_library_reference(libraries_path, &entry.client)?);
+            rest = &after_open[close + 1..];
+        } else {
+            result.push('{');
+            rest = after_open;
+        }
+    }
+    result.push_str(rest);
+
+    if result.contains('{') && result.contains('}') {
+        return Err(MinecraftDomainError::ProcessorFailed {
+            reason: format!("Argument contains unresolved placeholders: {result}"),
+        });
+    }
+
+    Ok(result)
 }
 
 pub(super) fn get_processor_arguments<T: AsRef<str>>(
@@ -174,13 +215,41 @@ pub(super) fn get_processor_arguments<T: AsRef<str>>(
     arguments: &[T],
     data: &HashMap<String, modded::SidedDataEntry>,
 ) -> Result<Vec<String>, MinecraftDomainError> {
-    todo!()
+    arguments
+        .iter()
+        .map(|argument| process_argument(libraries_path, argument.as_ref(), data))
+        .collect()
 }
 
 pub(super) async fn get_processor_main_class(
     path: String,
 ) -> Result<Option<String>, MinecraftDomainError> {
-    todo!()
+    tokio::task::spawn_blocking(move || read_main_class(&path))
+        .await
+        .map_err(|err| MinecraftDomainError::ProcessorFailed {
+            reason: err.to_string(),
+        })?
+}
+
+fn read_main_class(path: &str) -> Result<Option<String>, MinecraftDomainError> {
+    let file = std::fs::File::open(path).map_err(|err| IoError::with_path(err, path))?;
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|_| MinecraftDomainError::ProcessorFailed {
+            reason: format!("Cannot read processor at {path}"),
+        })?;
+    let manifest = archive.by_name("META-INF/MANIFEST.MF").map_err(|_| {
+        MinecraftDomainError::ProcessorFailed {
+            reason: format!("Cannot read processor manifest at {path}"),
+        }
+    })?;
+
+    for line in BufReader::new(manifest).lines() {
+        let line = line.map_err(|err| IoError::with_path(err, path))?;
+        if let Some(value) = line.trim().strip_prefix("Main-Class:") {
+            return Ok(Some(value.trim().to_owned()));
+        }
+    }
+    Ok(None)
 }
 
 #[cfg(test)]
