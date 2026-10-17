@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 
-/// Kind of content an instance can hold.
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub enum ContentType {
     Modpack,
@@ -9,50 +8,6 @@ pub enum ContentType {
     ResourcePack,
     ShaderPack,
 }
-
-/// Static facts about one content type.
-struct Traits {
-    kind: ContentType,
-    /// Identifier used in provider APIs and in the frontend.
-    id: &'static str,
-    /// Directory inside an instance; empty when the content has no directory of its own.
-    folder: &'static str,
-    /// Provider-side loader tags that mark a project as this type.
-    loaders: &'static [&'static str],
-}
-
-const TRAITS: [Traits; 5] = [
-    Traits {
-        kind: ContentType::Modpack,
-        id: "modpack",
-        folder: "",
-        loaders: &[],
-    },
-    Traits {
-        kind: ContentType::Mod,
-        id: "mod",
-        folder: "mods",
-        loaders: &["fabric", "forge", "quilt", "neoforge"],
-    },
-    Traits {
-        kind: ContentType::DataPack,
-        id: "datapack",
-        folder: "datapacks",
-        loaders: &["datapack"],
-    },
-    Traits {
-        kind: ContentType::ResourcePack,
-        id: "resourcepack",
-        folder: "resourcepacks",
-        loaders: &["vanilla", "canvas", "minecraft"],
-    },
-    Traits {
-        kind: ContentType::ShaderPack,
-        id: "shader",
-        folder: "shaderpacks",
-        loaders: &["iris", "optifine"],
-    },
-];
 
 /// Order in which loader tags are matched when a project lists tags of several types.
 const LOADER_PRIORITY: [ContentType; 4] = [
@@ -63,57 +18,80 @@ const LOADER_PRIORITY: [ContentType; 4] = [
 ];
 
 impl ContentType {
-    fn traits(self) -> &'static Traits {
-        TRAITS
-            .iter()
-            .find(|t| t.kind == self)
-            .expect("every content type has a row in TRAITS")
-    }
-
-    /// Picks the type for a project from its loader tags; `None` if no tag is recognised.
     pub fn get_from_loaders(loaders: &[String]) -> Option<Self> {
         LOADER_PRIORITY.into_iter().find(|kind| {
-            let known = kind.traits().loaders;
-            loaders.iter().any(|tag| known.contains(&tag.as_str()))
+            let known = kind.get_loaders();
+            loaders.iter().any(|x| known.contains(&x.as_str()))
         })
     }
 
-    /// Guesses the type of a file from the name of the directory it sits in.
     pub fn get_from_parent_folder(path: &Path) -> Option<Self> {
-        let dir_name = path.parent()?.file_name()?.to_str()?;
-        Self::iterator().find(|kind| kind.traits().folder == dir_name)
+        let parent_folder = path.parent()?.file_name()?;
+        match parent_folder.to_str()? {
+            "mods" => Some(ContentType::Mod),
+            "datapacks" => Some(ContentType::DataPack),
+            "resourcepacks" => Some(ContentType::ResourcePack),
+            "shaderpacks" => Some(ContentType::ShaderPack),
+            _ => None,
+        }
     }
 
     pub fn get_name(&self) -> &'static str {
-        self.traits().id
+        match self {
+            ContentType::Modpack => "modpack",
+            ContentType::Mod => "mod",
+            ContentType::DataPack => "datapack",
+            ContentType::ResourcePack => "resourcepack",
+            ContentType::ShaderPack => "shader",
+        }
     }
 
     pub fn get_folder(&self) -> &'static str {
-        self.traits().folder
+        match self {
+            ContentType::Modpack => "",
+            ContentType::Mod => "mods",
+            ContentType::DataPack => "datapacks",
+            ContentType::ResourcePack => "resourcepacks",
+            ContentType::ShaderPack => "shaderpacks",
+        }
     }
 
     pub fn get_loaders(&self) -> &'static [&'static str] {
-        self.traits().loaders
+        match self {
+            ContentType::Modpack => &[],
+            ContentType::Mod => &["fabric", "forge", "quilt", "neoforge"],
+            ContentType::DataPack => &["datapack"],
+            ContentType::ResourcePack => &["vanilla", "canvas", "minecraft"],
+            ContentType::ShaderPack => &["iris", "optifine"],
+        }
     }
 
-    /// All types that live in a folder of their own (everything except [`Self::Modpack`]).
     pub fn iterator() -> impl Iterator<Item = ContentType> {
-        TRAITS
-            .iter()
-            .map(|t| t.kind)
-            .filter(|kind| *kind != ContentType::Modpack)
+        [
+            ContentType::Mod,
+            ContentType::DataPack,
+            ContentType::ResourcePack,
+            ContentType::ShaderPack,
+        ]
+        .iter()
+        .copied()
     }
 
     pub fn from_string(s: &str) -> Option<ContentType> {
-        TRAITS.iter().find(|t| t.id == s).map(|t| t.kind)
+        match s {
+            "modpack" => Some(ContentType::Modpack),
+            "mod" => Some(ContentType::Mod),
+            "datapack" => Some(ContentType::DataPack),
+            "resourcepack" => Some(ContentType::ResourcePack),
+            "shader" => Some(ContentType::ShaderPack),
+            _ => None,
+        }
     }
 
-    /// Same value as [`Self::get_name`].
     pub fn to_str(&self) -> &str {
         self.get_name()
     }
 
-    /// Path of `filename` relative to the instance directory.
     pub fn get_relative_path(&self, filename: &str) -> PathBuf {
         Path::new(self.get_folder()).join(filename)
     }
