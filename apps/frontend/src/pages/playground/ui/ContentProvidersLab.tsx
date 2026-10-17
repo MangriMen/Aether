@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-import { ContentProvidersView } from '@/widgets/settings-view';
+import { ContentProvidersView } from '@/features/content-providers';
 
 import { ComponentShelf } from './ComponentShelf';
 

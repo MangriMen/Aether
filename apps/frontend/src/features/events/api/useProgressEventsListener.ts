@@ -6,9 +6,8 @@ import { logDebug } from '@/shared/lib';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
+import { PROGRESS_EVENT_REMOVE_DELAY } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
-
-export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
 
 export const useProgressEventsListener = () => {
   const [, setProgressStore] = useProgressStore();

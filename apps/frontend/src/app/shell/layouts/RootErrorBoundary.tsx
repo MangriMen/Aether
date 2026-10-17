@@ -2,7 +2,7 @@ import type { ParentProps } from 'solid-js';
 
 import { ErrorBoundary, type Component } from 'solid-js';
 
-import { setFallbackAttributes } from '@/app/lib';
+import { setFallbackAttributes } from '@/features/appearance';
 import { showWindow } from '@/platform/window';
 import { logError } from '@/shared/lib';
 import { isLauncherError } from '@/shared/model';

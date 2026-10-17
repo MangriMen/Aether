@@ -1,12 +1,11 @@
 import { createEffect, createMemo, on } from 'solid-js';
 
+import { useCheckUpdate } from '../api/updateQueries';
+import { checkIsUpdateAvailable } from '../model/checkIsUpdateAvailable';
 import {
   UpdateNotificationStyle,
   updateNotificationStyle,
-} from '@/shared/model';
-
-import { useCheckUpdate } from '../api/updateQueries';
-import { checkIsUpdateAvailable } from '../model/checkIsUpdateAvailable';
+} from '../model/updateNotificationStyle';
 import { showUpdateAvailable } from '../ui/UpdateAvailableToast';
 
 export const useUpdateSync = () => {

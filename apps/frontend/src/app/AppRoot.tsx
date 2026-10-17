@@ -11,22 +11,24 @@ import {
 import {
   AppLayout,
   AppTitleBar,
+  DialogUrlBridge,
   MainLayout,
   RootErrorBoundary,
 } from '@/app/shell';
+import {
+  ColorModeProvider,
+  DISABLE_ANIMATIONS_ATTRIBUTE,
+  THEME_ATTRIBUTE,
+  THEME_STATE_LS_KEY,
+  ThemeProvider,
+  TRANSPARENCY_PROPERTY,
+} from '@/features/appearance';
 import { RunningInstancesProvider } from '@/features/instance';
 import { LOCALE_RESOURCES, LOCALES } from '@/shared/model';
 import { createQueryClient } from '@/shared/query';
 import { GlobalDialogRenderer, Toaster } from '@/shared/ui';
 
-import {
-  THEME_STATE_LS_KEY,
-  THEME_ATTRIBUTE,
-  TRANSPARENCY_PROPERTY,
-  DISABLE_ANIMATIONS_ATTRIBUTE,
-} from './config';
-import { ColorModeProvider, I18nProvider, ThemeProvider } from './providers';
-import { DialogUrlBridge } from './providers/DialogUrlBridge';
+import { I18nProvider } from './providers';
 
 const queryClient = createQueryClient();
 

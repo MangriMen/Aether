@@ -13,15 +13,15 @@ import type {
 } from '@/platform/bindings/instance';
 import type { PartialBy } from '@/shared/model';
 
+import { invalidateInstanceContent } from '@/features/instance';
 import {
   SettingsTab,
+  useFeatureFlagsStore,
   useSettingsSearchParams,
-} from '@/entities/settings/@x/instances';
-import { invalidateInstanceContent } from '@/features/instance';
+} from '@/features/settings';
 import { instanceCommands } from '@/platform/ipc';
 import { showError } from '@/shared/lib';
 import { isLauncherError, useTranslation } from '@/shared/model';
-import { useFeatureFlagsStore } from '@/shared/model';
 import { Button, showToast } from '@/shared/ui';
 
 import type { ContentGetParams, ContentListVersionParams } from '..';

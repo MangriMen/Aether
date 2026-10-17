@@ -1,13 +1,13 @@
 import {
   useMicaUpdateListener,
   useTransparencyUpdateListener,
-} from '@/app/lib';
-import { useJavaInstallationListener } from '@/entities/java';
+} from '@/features/appearance';
 import {
   useWarningEventsListener,
   useProgressEventsListener,
 } from '@/features/events';
 import { useInstanceEventsListener } from '@/features/instance';
+import { useJavaInstallationListener } from '@/features/java';
 import { usePluginEventListener } from '@/features/plugins';
 import { useUpdateSync } from '@/features/update';
 

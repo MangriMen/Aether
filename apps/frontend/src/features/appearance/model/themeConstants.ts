@@ -1,0 +1,27 @@
+import { type ThemeConfig } from './theme';
+import { type ThemeContextValue } from './themeContext';
+
+export const THEME_ATTRIBUTE = 'data-theme';
+export const TRANSPARENCY_PROPERTY = '--transparency';
+export const DISABLE_ANIMATIONS_ATTRIBUTE = 'data-disable-animations';
+export const KB_THEME_ATTRIBUTE = 'data-kb-theme';
+
+export const THEME_STATE_LS_KEY = 'theme-state';
+
+export const COLOR_MODE_CHANGE_DEBOUNCE_DELAY = 200;
+
+export const DEFAULT_THEME: ThemeConfig = 'aether-dark';
+export const DEFAULT_LIGHT_THEME = 'light';
+export const DEFAULT_DARK_THEME = 'dark';
+
+export const DEFAULT_THEME_CONTEXT_VALUE: ThemeContextValue = {
+  theme: DEFAULT_THEME,
+  rawTheme: DEFAULT_THEME,
+  lightTheme: DEFAULT_LIGHT_THEME,
+  darkTheme: DEFAULT_DARK_THEME,
+  isActualTransparent: false,
+  transparencyEnabled: false,
+  transparency: 1,
+  disableAnimations: false,
+  prefersReducedMotion: false,
+};

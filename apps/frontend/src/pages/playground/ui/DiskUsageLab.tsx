@@ -1,4 +1,4 @@
-import { DiskUsage } from '@/widgets/settings-view';
+import { DiskUsage } from '@/features/settings';
 
 import { ComponentShelf } from './ComponentShelf';
 

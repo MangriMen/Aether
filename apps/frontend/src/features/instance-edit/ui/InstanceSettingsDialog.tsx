@@ -7,8 +7,8 @@ import { createMemo, createSignal, onMount, Show, splitProps } from 'solid-js';
 
 import type { Instance } from '@/features/instance';
 
-import { settingsCache } from '@/entities/settings';
 import { useInstance } from '@/features/instance';
+import { settingsCache } from '@/features/settings';
 import { useTranslation } from '@/shared/model';
 import { Dialog, DialogContent } from '@/shared/ui';
 

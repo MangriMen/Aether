@@ -6,7 +6,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { SettingsTab, useSettingsSearchParams } from '@/entities/settings';
+import { SettingsTab, useSettingsSearchParams } from '@/features/settings';
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { Button, CombinedTooltip } from '@/shared/ui';
