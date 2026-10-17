@@ -53,7 +53,7 @@ export const useInstanceActions = () => {
       return;
     }
 
-    const uuid = runningInstance.payload?.processId;
+    const uuid = runningInstance.processId;
 
     if (uuid === undefined) {
       return;

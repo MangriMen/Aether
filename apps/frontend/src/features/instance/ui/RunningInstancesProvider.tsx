@@ -2,7 +2,7 @@ import type { Component, JSX } from 'solid-js';
 
 import { createStore } from 'solid-js/store';
 
-import { useProcessEventListener } from '@/features/process';
+import { useRunningProcessesListener } from '@/features/process';
 
 import type { Instance } from '../model/instance';
 import type { RunningInstancesContextValue } from '../model/runningInstancesContext';
@@ -29,7 +29,7 @@ export const RunningInstancesProvider: Component<
       setIsLoading: (id, value) => {
         if (!context[1].get(contextValue, id)) {
           setContextValue('instances', id, () => ({
-            payload: undefined,
+            processId: undefined,
             isLoading: value,
             isRunning: false,
           }));
@@ -41,14 +41,10 @@ export const RunningInstancesProvider: Component<
     },
   ];
 
-  useProcessEventListener((event) => {
+  useRunningProcessesListener(({ instanceId, processId, isRunning }) => {
     setContextValue('instances', (instances) => ({
       ...instances,
-      [event.instanceId]: {
-        payload: event,
-        isLoading: false,
-        isRunning: event.event === 'launched',
-      },
+      [instanceId]: { processId, isLoading: false, isRunning },
     }));
   });
 

@@ -14,7 +14,10 @@ import {
   commands as pluginsRawCommands,
   events as pluginsRawEvents,
 } from '@/platform/bindings/plugin';
-import { events as processRawEvents } from '@/platform/bindings/process';
+import {
+  commands as processRawCommands,
+  events as processRawEvents,
+} from '@/platform/bindings/process';
 import { commands as settingsRawCommands } from '@/platform/bindings/settings';
 import { commands as updateRawCommands } from '@/platform/bindings/update';
 
@@ -112,6 +115,10 @@ export const javaCommands = {
 export const minecraftCommands = {
   getMinecraftVersionManifest: minecraftRawCommands.getMinecraftVersionManifest,
   getLoaderVersionManifest: minecraftRawCommands.getLoaderVersionManifest,
+};
+
+export const processCommands = {
+  list: processRawCommands.list,
 };
 
 export const eventsCommands = {
