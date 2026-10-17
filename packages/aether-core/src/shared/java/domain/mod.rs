@@ -6,8 +6,10 @@ pub fn get_classpath_separator(java_arch: &str) -> &'static str {
 }
 
 fn classpath_separator_for(os: &Os) -> &'static str {
-    let is_windows_family = matches!(os, Os::Windows | Os::WindowsArm64);
-    if is_windows_family { ";" } else { ":" }
+    match os {
+        Os::Osx | Os::OsxArm64 | Os::Linux | Os::LinuxArm32 | Os::LinuxArm64 | Os::Unknown => ":",
+        Os::Windows | Os::WindowsArm64 => ";",
+    }
 }
 
 #[cfg(test)]
