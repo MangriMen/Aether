@@ -1,3 +1,6 @@
+// Derived from the `daedalus` crate (https://github.com/modrinth/code, packages/daedalus).
+// Copyright © 2024 Rinth, Inc. Licensed under the MIT License; see the NOTICE file in the repository root.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -344,84 +347,6 @@ impl Library {
                     .map(|classifiers| (natives.as_str(), classifiers))
             })
     }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-/// A partial library which should be merged with a full library
-pub struct PartialLibrary {
-    /// The files the library has
-    pub downloads: Option<LibraryDownloads>,
-    /// Rules of the extraction of the file
-    pub extract: Option<LibraryExtract>,
-    /// The maven name of the library. The format is `groupId:artifactId:version`
-    pub name: Option<String>,
-    /// The URL to the repository where the library can be downloaded
-    pub url: Option<String>,
-    /// Native files that the library relies on
-    pub natives: Option<HashMap<Os, String>>,
-    /// Rules deciding whether the library should be downloaded or not
-    pub rules: Option<Vec<Rule>>,
-    /// SHA1 Checksums for validating the library's integrity. Only present for forge libraries
-    pub checksums: Option<Vec<String>>,
-    /// Whether the library should be included in the classpath at the game's launch
-    pub include_in_classpath: Option<bool>,
-}
-
-/// Merges a partial library to make a complete library
-pub fn merge_partial_library(partial: PartialLibrary, mut merge: Library) -> Library {
-    if let Some(downloads) = partial.downloads {
-        if let Some(merge_downloads) = &mut merge.downloads {
-            if let Some(artifact) = downloads.artifact {
-                merge_downloads.artifact = Some(artifact);
-            }
-            if let Some(classifiers) = downloads.classifiers {
-                if let Some(merge_classifiers) = &mut merge_downloads.classifiers {
-                    for classifier in classifiers {
-                        merge_classifiers.insert(classifier.0, classifier.1);
-                    }
-                } else {
-                    merge_downloads.classifiers = Some(classifiers);
-                }
-            }
-        } else {
-            merge.downloads = Some(downloads);
-        }
-    }
-    if let Some(extract) = partial.extract {
-        merge.extract = Some(extract);
-    }
-    if let Some(name) = partial.name {
-        merge.name = name;
-    }
-    if let Some(url) = partial.url {
-        merge.url = Some(url);
-    }
-    if let Some(natives) = partial.natives {
-        if let Some(merge_natives) = &mut merge.natives {
-            for native in natives {
-                merge_natives.insert(native.0, native.1);
-            }
-        } else {
-            merge.natives = Some(natives);
-        }
-    }
-    if let Some(rules) = partial.rules {
-        if let Some(merge_rules) = &mut merge.rules {
-            for rule in rules {
-                merge_rules.push(rule);
-            }
-        } else {
-            merge.rules = Some(rules);
-        }
-    }
-    if let Some(checksums) = partial.checksums {
-        merge.checksums = Some(checksums);
-    }
-    if let Some(include_in_classpath) = partial.include_in_classpath {
-        merge.include_in_classpath = include_in_classpath;
-    }
-
-    merge
 }
 
 fn default_include_in_classpath() -> bool {
