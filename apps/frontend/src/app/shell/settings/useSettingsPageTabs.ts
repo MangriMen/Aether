@@ -6,7 +6,7 @@ import { SETTINGS_TABS_DEFINITION } from './settingsTabs';
 
 export const useSettingsPageTabs = () => {
   const availableTabs = createMemo(() => {
-    if (!isDeveloperMode()) {
+    if (isDeveloperMode()) {
       return SETTINGS_TABS_DEFINITION;
     }
 
