@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use crate::features::minecraft::ModLoader;
-
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub enum ContentType {
     Modpack,
@@ -11,42 +9,20 @@ pub enum ContentType {
     ShaderPack,
 }
 
-use std::sync::LazyLock;
-
-static MOD_LOADER_NAMES: LazyLock<[&'static str; 4]> = LazyLock::new(|| {
-    [
-        ModLoader::Fabric.as_str(),
-        ModLoader::Forge.as_str(),
-        ModLoader::Quilt.as_str(),
-        ModLoader::NeoForge.as_str(),
-    ]
-});
+/// Order in which loader tags are matched when a project lists tags of several types.
+const LOADER_PRIORITY: [ContentType; 4] = [
+    ContentType::Mod,
+    ContentType::DataPack,
+    ContentType::ShaderPack,
+    ContentType::ResourcePack,
+];
 
 impl ContentType {
     pub fn get_from_loaders(loaders: &[String]) -> Option<Self> {
-        if loaders
-            .iter()
-            .any(|x| ContentType::Mod.get_loaders().contains(&&**x))
-        {
-            Some(ContentType::Mod)
-        } else if loaders
-            .iter()
-            .any(|x| ContentType::DataPack.get_loaders().contains(&&**x))
-        {
-            Some(ContentType::DataPack)
-        } else if loaders
-            .iter()
-            .any(|x| ContentType::ShaderPack.get_loaders().contains(&&**x))
-        {
-            Some(ContentType::ShaderPack)
-        } else if loaders
-            .iter()
-            .any(|x| ContentType::ResourcePack.get_loaders().contains(&&**x))
-        {
-            Some(ContentType::ResourcePack)
-        } else {
-            None
-        }
+        LOADER_PRIORITY.into_iter().find(|kind| {
+            let known = kind.get_loaders();
+            loaders.iter().any(|x| known.contains(&x.as_str()))
+        })
     }
 
     pub fn get_from_parent_folder(path: &Path) -> Option<Self> {
@@ -83,7 +59,7 @@ impl ContentType {
     pub fn get_loaders(&self) -> &'static [&'static str] {
         match self {
             ContentType::Modpack => &[],
-            ContentType::Mod => &*MOD_LOADER_NAMES,
+            ContentType::Mod => &["fabric", "forge", "quilt", "neoforge"],
             ContentType::DataPack => &["datapack"],
             ContentType::ResourcePack => &["vanilla", "canvas", "minecraft"],
             ContentType::ShaderPack => &["iris", "optifine"],
@@ -113,13 +89,7 @@ impl ContentType {
     }
 
     pub fn to_str(&self) -> &str {
-        match self {
-            ContentType::Modpack => "modpack",
-            ContentType::Mod => "mod",
-            ContentType::DataPack => "datapack",
-            ContentType::ResourcePack => "resourcepack",
-            ContentType::ShaderPack => "shader",
-        }
+        self.get_name()
     }
 
     pub fn get_relative_path(&self, filename: &str) -> PathBuf {
@@ -306,5 +276,97 @@ mod tests {
         let variants: Vec<ContentType> = ContentType::iterator().collect();
         assert_eq!(variants.len(), 4);
         assert!(!variants.contains(&ContentType::Modpack));
+    }
+
+    #[test]
+    fn should_match_mod_loader_enum_when_listing_mod_loaders() {
+        use crate::features::minecraft::ModLoader;
+
+        let expected = [
+            ModLoader::Fabric.as_str(),
+            ModLoader::Forge.as_str(),
+            ModLoader::Quilt.as_str(),
+            ModLoader::NeoForge.as_str(),
+        ];
+        let mut actual = ContentType::Mod.get_loaders().to_vec();
+        let mut expected = expected.to_vec();
+        actual.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn should_pin_string_forms_when_given_each_variant() {
+        let all = [
+            (ContentType::Modpack, "modpack"),
+            (ContentType::Mod, "mod"),
+            (ContentType::DataPack, "datapack"),
+            (ContentType::ResourcePack, "resourcepack"),
+            (ContentType::ShaderPack, "shader"),
+        ];
+        for (variant, text) in all {
+            assert_eq!(variant.to_str(), text);
+            assert_eq!(variant.get_name(), text);
+            assert_eq!(ContentType::from_string(text), Some(variant));
+        }
+        assert_eq!(ContentType::from_string(""), None);
+        assert_eq!(ContentType::from_string("shaderpack"), None);
+        assert_eq!(ContentType::from_string("Mod"), None);
+    }
+
+    #[test]
+    fn should_pin_loaders_when_given_each_variant() {
+        assert_eq!(ContentType::DataPack.get_loaders(), &["datapack"]);
+        assert_eq!(
+            ContentType::ResourcePack.get_loaders(),
+            &["vanilla", "canvas", "minecraft"]
+        );
+        assert_eq!(ContentType::ShaderPack.get_loaders(), &["iris", "optifine"]);
+    }
+
+    #[test]
+    fn should_pin_iteration_order() {
+        let variants: Vec<ContentType> = ContentType::iterator().collect();
+        assert_eq!(
+            variants,
+            vec![
+                ContentType::Mod,
+                ContentType::DataPack,
+                ContentType::ResourcePack,
+                ContentType::ShaderPack,
+            ]
+        );
+    }
+
+    #[test]
+    fn should_prefer_by_priority_when_loaders_of_several_types_match() {
+        let pick = |names: &[&str]| {
+            let loaders: Vec<String> = names.iter().map(ToString::to_string).collect();
+            ContentType::get_from_loaders(&loaders)
+        };
+        assert_eq!(pick(&["minecraft", "iris"]), Some(ContentType::ShaderPack));
+        assert_eq!(
+            pick(&["minecraft", "datapack"]),
+            Some(ContentType::DataPack)
+        );
+        assert_eq!(pick(&["iris", "datapack"]), Some(ContentType::DataPack));
+        assert_eq!(pick(&["canvas", "forge"]), Some(ContentType::Mod));
+        assert_eq!(pick(&["neoforge"]), Some(ContentType::Mod));
+        assert_eq!(pick(&["canvas"]), Some(ContentType::ResourcePack));
+        assert_eq!(pick(&["Fabric"]), None);
+    }
+
+    #[test]
+    fn should_return_none_when_path_has_no_parent_folder_name() {
+        assert_eq!(ContentType::get_from_parent_folder(Path::new("")), None);
+        assert_eq!(ContentType::get_from_parent_folder(Path::new("mods")), None);
+        assert_eq!(
+            ContentType::get_from_parent_folder(Path::new("mods/sub/a.jar")),
+            None
+        );
+        assert_eq!(
+            ContentType::get_from_parent_folder(Path::new("mods/a.jar")),
+            Some(ContentType::Mod)
+        );
     }
 }
