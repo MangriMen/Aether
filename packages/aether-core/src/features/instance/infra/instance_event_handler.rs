@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashSet, path::Path, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -43,37 +43,26 @@ impl InstanceEventHandler {
             && path.extension().is_some_and(|x| x == "txt")
     }
 
+    /// Looks the instance up in the background and, when it is fully installed, tells the
+    /// frontend that a new crash report appeared. Half-installed instances stay silent,
+    /// because a failed install is reported through its own channel.
     fn crash_task(&self, id: String) {
         let get_instance_uc = self.get_instance_uc.clone();
-        tokio::task::spawn({
-            let event_emitter = self.event_emitter.clone();
-            async move {
-                let res = async {
-                    let instance = get_instance_uc.execute(id).await;
+        let event_emitter = self.event_emitter.clone();
 
-                    if let Ok(instance) = instance {
-                        // Don't show warning if profile is not yet installed
-                        if instance.install_stage == InstanceInstallStage::Installed {
-                            let message = format!(
-                            "Profile {} has crashed! Visit the logs page to see a crash report.",
-                                instance.name().to_owned()
-                            );
-
-                            event_emitter.emit_safe(WarningEvent { message }).await;
-                        }
-                    }
-
-                    Ok::<(), crate::Error>(())
-                }
-                .await;
-
-                match res {
-                    Ok(()) => {}
-                    Err(err) => {
-                        tracing::warn!("Unable to send crash report to frontend: {err}");
-                    }
-                }
+        tokio::spawn(async move {
+            let Ok(instance) = get_instance_uc.execute(id).await else {
+                return;
+            };
+            if instance.install_stage != InstanceInstallStage::Installed {
+                return;
             }
+
+            let message = format!(
+                "Instance {} has crashed! Visit the logs page to see a crash report.",
+                instance.name()
+            );
+            event_emitter.emit_safe(WarningEvent { message }).await;
         });
     }
 }
@@ -84,36 +73,219 @@ impl FileEventHandler for InstanceEventHandler {
         &self,
         events: Result<Vec<FileEvent>, FileWatcherError>,
     ) -> Result<(), FileWatcherError> {
-        match events {
-            Ok(events) => {
-                let mut visited_profiles = Vec::new();
-
-                for event in &events {
-                    if let Some(instance_path) = Self::extract_instance_path(&event.path) {
-                        if Self::is_crash_report(&event.path) {
-                            self.crash_task(instance_path.clone());
-                        } else if !visited_profiles.contains(&instance_path) {
-                            let path = instance_path.clone();
-
-                            tokio::spawn({
-                                let event_emitter = self.event_emitter.clone();
-                                async move {
-                                    let () = event_emitter
-                                        .emit_safe(InstanceEvent {
-                                            event: InstanceEventType::Synced,
-                                            instance_id: path,
-                                        })
-                                        .await;
-                                }
-                            });
-                            visited_profiles.push(instance_path);
-                        }
-                    }
-                }
+        let events = match events {
+            Ok(events) => events,
+            Err(error) => {
+                tracing::warn!("File watcher reported an error: {error}");
+                return Ok(());
             }
-            Err(error) => tracing::warn!("Unable to watch file: {error}"),
+        };
+
+        // One `Synced` event per instance per batch, however many files changed.
+        let mut synced: HashSet<String> = HashSet::new();
+
+        for event in &events {
+            let Some(instance_id) = Self::extract_instance_path(&event.path) else {
+                continue;
+            };
+
+            if Self::is_crash_report(&event.path) {
+                self.crash_task(instance_id);
+            } else if synced.insert(instance_id.clone()) {
+                let event_emitter = self.event_emitter.clone();
+                tokio::spawn(async move {
+                    event_emitter
+                        .emit_safe(InstanceEvent {
+                            event: InstanceEventType::Synced,
+                            instance_id,
+                        })
+                        .await;
+                });
+            }
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+    use std::time::Duration;
+
+    use tokio::sync::mpsc;
+
+    use crate::features::events::{Event, EventEmitter, EventError};
+    use crate::features::file_watcher::FileEventKind;
+    use crate::features::instance::{Instance, InstanceBuilder, InstanceError};
+    use crate::features::minecraft::ModLoader;
+
+    use super::*;
+
+    struct ChannelEmitter(mpsc::UnboundedSender<Event>);
+
+    #[async_trait]
+    impl EventEmitter<Event> for ChannelEmitter {
+        async fn emit(&self, event: Event) -> Result<(), EventError> {
+            let _ = self.0.send(event);
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    struct FixedInstance(Option<Instance>);
+
+    #[async_trait]
+    impl GetInstanceUseCasePort for FixedInstance {
+        async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
+            self.0
+                .clone()
+                .ok_or(InstanceError::NotFound { instance_id })
+        }
+    }
+
+    fn instance(stage: InstanceInstallStage) -> Instance {
+        let mut instance = InstanceBuilder::new(
+            "abc".to_string(),
+            "My Pack".to_string(),
+            "1.20.1".to_string(),
+            ModLoader::Vanilla,
+        )
+        .build();
+        instance.install_stage = stage;
+        instance
+    }
+
+    fn handler(
+        instance: Option<Instance>,
+    ) -> (InstanceEventHandler, mpsc::UnboundedReceiver<Event>) {
+        let (tx, rx) = mpsc::unbounded_channel();
+        let handler = InstanceEventHandler::new(
+            Arc::new(ChannelEmitter(tx)),
+            Arc::new(FixedInstance(instance)),
+        );
+        (handler, rx)
+    }
+
+    fn modified(path: &str) -> FileEvent {
+        FileEvent {
+            kind: FileEventKind::Modify,
+            path: PathBuf::from(path),
+        }
+    }
+
+    async fn next_event(rx: &mut mpsc::UnboundedReceiver<Event>) -> Event {
+        tokio::time::timeout(Duration::from_secs(2), rx.recv())
+            .await
+            .expect("timed out waiting for an event")
+            .expect("event channel closed")
+    }
+
+    /// Lets every spawned task run to completion, then checks that nothing was emitted.
+    async fn assert_silent(rx: &mut mpsc::UnboundedReceiver<Event>) {
+        for _ in 0..10 {
+            tokio::task::yield_now().await;
+        }
+        assert!(rx.try_recv().is_err(), "unexpected event");
+    }
+
+    #[tokio::test]
+    async fn emits_one_synced_event_per_instance_in_a_batch() {
+        let (handler, mut rx) = handler(None);
+
+        handler
+            .handle_events(Ok(vec![
+                modified("/data/instances/abc/mods/a.jar"),
+                modified("/data/instances/abc/mods/b.jar"),
+                modified("/data/instances/xyz/mods/c.jar"),
+            ]))
+            .await
+            .unwrap();
+
+        let mut ids = Vec::new();
+        for _ in 0..2 {
+            let Event::Instance(event) = next_event(&mut rx).await else {
+                panic!("expected instance event");
+            };
+            assert!(matches!(event.event, InstanceEventType::Synced));
+            ids.push(event.instance_id);
+        }
+        ids.sort();
+        assert_eq!(ids, vec!["abc".to_string(), "xyz".to_string()]);
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn ignores_paths_outside_instances_folder() {
+        let (handler, mut rx) = handler(None);
+
+        handler
+            .handle_events(Ok(vec![modified("/data/other/abc/file.txt")]))
+            .await
+            .unwrap();
+
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn crash_report_of_installed_instance_emits_warning() {
+        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::Installed)));
+
+        handler
+            .handle_events(Ok(vec![modified(
+                "/data/instances/abc/crash-reports/crash-1.txt",
+            )]))
+            .await
+            .unwrap();
+
+        let Event::Warning(warning) = next_event(&mut rx).await else {
+            panic!("expected warning");
+        };
+        assert_eq!(
+            warning.message,
+            "Instance My Pack has crashed! Visit the logs page to see a crash report."
+        );
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn crash_report_of_not_installed_instance_is_silent() {
+        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::NotInstalled)));
+
+        handler
+            .handle_events(Ok(vec![modified(
+                "/data/instances/abc/crash-reports/crash-1.txt",
+            )]))
+            .await
+            .unwrap();
+
+        assert_silent(&mut rx).await;
+    }
+
+    #[tokio::test]
+    async fn non_txt_file_in_crash_reports_is_a_regular_sync() {
+        let (handler, mut rx) = handler(Some(instance(InstanceInstallStage::Installed)));
+
+        handler
+            .handle_events(Ok(vec![modified(
+                "/data/instances/abc/crash-reports/readme.md",
+            )]))
+            .await
+            .unwrap();
+
+        assert!(matches!(next_event(&mut rx).await, Event::Instance(_)));
+    }
+
+    #[tokio::test]
+    async fn watcher_error_is_swallowed() {
+        let (handler, mut rx) = handler(None);
+
+        let result = handler
+            .handle_events(Err(FileWatcherError::WatchNotFound))
+            .await;
+
+        assert!(result.is_ok());
+        assert_silent(&mut rx).await;
     }
 }
