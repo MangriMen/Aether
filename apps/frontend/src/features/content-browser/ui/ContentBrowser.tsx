@@ -8,11 +8,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type {
-  ContentProviderEntry,
-  ContentSearchParams,
-  ContentType,
-} from '@/features/content';
+import type { ContentSearchParams, ContentType } from '@/features/content';
 import type { Option } from '@/shared/model';
 
 import {
@@ -22,6 +18,8 @@ import {
   useSearchContent,
 } from '@/features/content';
 import { cn, debounce, logError } from '@/shared/lib';
+
+import type { ContentProviderEntry } from '../model/contentProviderMapper';
 
 import { useContentBrowserFilters } from '../lib/useContentBrowserFilters';
 import { SEARCH_QUERY_DEBOUNCE_DELAY } from '../model/contentBrowserConstants';

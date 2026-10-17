@@ -2,13 +2,14 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import { Show, splitProps } from 'solid-js';
 
-import type { ContentProviderEntry } from '@/features/content';
 import type { Option } from '@/shared/model';
 import type { CombinedSelectProps } from '@/shared/ui';
 
 import { cn } from '@/shared/lib';
 import { useTranslation } from '@/shared/model';
 import { CombinedSelect, Skeleton } from '@/shared/ui';
+
+import type { ContentProviderEntry } from '../model/contentProviderMapper';
 
 export interface ContentProviderSelectProps {
   isLoading?: boolean;

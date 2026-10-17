@@ -5,10 +5,9 @@ import { createEffect, createMemo } from 'solid-js';
 import type { ContentFilters, ContentType } from '@/features/content';
 import type { Option } from '@/shared/model';
 
-import {
-  useContentContext,
-  type ContentProviderEntry,
-} from '@/features/content';
+import { useContentContext } from '@/features/content';
+
+import type { ContentProviderEntry } from '../model/contentProviderMapper';
 
 import { DEFAULT_FORM_VALUES } from '../model/contentBrowserConstants';
 import { isFiltersEqual } from '../model/isFilterEqual';
