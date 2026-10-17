@@ -14,9 +14,9 @@ import type { Option } from '@/shared/ui-kit';
 import {
   CONTENT_TYPES,
   contentSearchParamsToContentSearchParamsDto,
-  isModLoader,
   useSearchContent,
 } from '@/features/content';
+import { isModLoader } from '@/features/minecraft';
 import { logError } from '@/shared/log';
 import { cn, debounce } from '@/shared/utils';
 

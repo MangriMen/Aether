@@ -1,5 +1,3 @@
-export const DEFAULT_RESOLUTION = [1280, 720] as const;
-
 export const RESOLUTION_OPTIONS: { name: string; value: [number, number] }[] = [
   { name: '7680x4320', value: [7680, 4320] },
   { name: '5120x2880', value: [5120, 2880] },

@@ -10,7 +10,6 @@ import type {
   ContentVersionDependencyTypeDto,
   ContentVersionDto,
   ContentVersionTypeDto,
-  ModLoaderDto,
   ModpackInstallParamsDto,
   ProviderIdDto,
 } from '@/platform/bindings/instance';
@@ -38,8 +37,10 @@ export interface ContentSearchResponse extends Omit<
   pageCount: number;
 }
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type AtomicInstallParams = AtomicInstallParamsDto;
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ModpackInstallParams = ModpackInstallParamsDto;
 
 export type InstallContentParams = ContentInstallParamsDto;
@@ -54,7 +55,7 @@ export interface ContentFilters {
   loaders?: string[];
 }
 
-export const PROVIDER_ID_SEPARATOR = '#' as const;
+const PROVIDER_ID_SEPARATOR = '#' as const;
 
 export type ProviderIdString =
   `${string}${typeof PROVIDER_ID_SEPARATOR}${string}`;
@@ -65,10 +66,13 @@ export const providerIdToString = (
   return `${providerId.pluginId}${PROVIDER_ID_SEPARATOR}${providerId.capabilityId}`;
 };
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ContentVersionDependencyType = ContentVersionDependencyTypeDto;
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ContentVersionDependency = ContentVersionDependencyDto;
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ContentVersionType = ContentVersionTypeDto;
 
 export interface ContentVersion extends Omit<ContentVersionDto, 'downloads'> {
@@ -78,26 +82,3 @@ export interface ContentVersion extends Omit<ContentVersionDto, 'downloads'> {
 export type ContentGetParams = ContentGetParamsDto;
 
 export type ContentListVersionParams = ContentListVersionParamsDto;
-
-export type ModLoader = ModLoaderDto;
-
-export const MOD_LOADERS: ModLoader[] = [
-  'vanilla',
-  'forge',
-  'fabric',
-  'quilt',
-  'neoforge',
-];
-
-//@ts-expect-error Used for strict type checking
-const _TYPE_CHECK: Record<ModLoader, boolean> = {
-  vanilla: true,
-  forge: true,
-  fabric: true,
-  quilt: true,
-  neoforge: true,
-};
-
-export function isModLoader(value: unknown): value is ModLoader {
-  return typeof value === 'string' && MOD_LOADERS.includes(value as ModLoader);
-}

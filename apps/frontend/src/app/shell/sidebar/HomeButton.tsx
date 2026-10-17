@@ -10,7 +10,7 @@ import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 import { APP_ROUTES } from '../appRoutes';
 
-export type HomeButtonProps = IconButtonProps;
+type HomeButtonProps = IconButtonProps;
 
 const HomeButton: Component<HomeButtonProps> = (props) => {
   const navigate = useNavigate();

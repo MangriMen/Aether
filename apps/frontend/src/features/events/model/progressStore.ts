@@ -2,13 +2,13 @@ import { createStore } from 'solid-js/store';
 
 import { type ProgressEvent } from './progressEvent';
 
-export interface ProgressStore {
+interface ProgressStore {
   payloads: Record<string, ProgressEvent>;
 }
 
 let progressStore: ReturnType<typeof createStore<ProgressStore>> | undefined;
 
-export const getOrCreateProgressStore = () => {
+const getOrCreateProgressStore = () => {
   if (!progressStore) {
     // eslint-disable-next-line solid/reactivity
     progressStore = createStore<ProgressStore>(

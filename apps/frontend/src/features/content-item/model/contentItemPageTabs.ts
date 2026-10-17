@@ -33,11 +33,3 @@ export const CONTENT_ITEM_PAGE_TABS_DEFINITION = [
   ContentItemPageTab,
   ComponentProps<'div'> & ContentItemPageTabProps
 >[];
-
-export const ContentItemPageTabs = new Set<string>(
-  Object.values(ContentItemPageTab),
-);
-
-export const isContentItemPageTab = (
-  value: string,
-): value is ContentItemPageTab => ContentItemPageTabs.has(value);

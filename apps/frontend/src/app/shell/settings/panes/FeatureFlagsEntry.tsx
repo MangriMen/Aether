@@ -21,11 +21,11 @@ export const FeatureFlagsEntry: Component<FeatureFlagsEntryProps> = (props) => {
   );
 };
 
-export type BooleanFlagSwitchProps = {
+type BooleanFlagSwitchProps = {
   name: keyof FeatureFlagsStore;
 };
 
-export const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {
+const BooleanFlagSwitch: Component<BooleanFlagSwitchProps> = (props) => {
   const [local, others] = splitProps(props, ['name']);
 
   const [ff, setFf] = useFeatureFlagsStore();

@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/shared/ui-kit';
 
-export type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =
+type SelectThemeByColorModeProps<T extends ValidComponent = 'div'> =
   PolymorphicProps<T, { disabled?: boolean; onChange?: never }> & {
     colorMode: ColorMode;
   };

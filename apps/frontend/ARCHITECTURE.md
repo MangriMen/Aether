@@ -182,7 +182,7 @@ The checks cover every file under `src/`.
 - ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
   no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/`
   in `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except
-  types) in a feature's `model/`.
+  types, static or `import()`) in a feature's `model/`.
 - dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
   imports across features, public API of features and modules, a domain base importing its
   parts, feature and shared folders and file names, `app` modules importing the
@@ -191,6 +191,13 @@ The checks cover every file under `src/`.
   `scripts/check-module-cycles.ts` (part of `lint:arch`) also checks the graph of modules,
   type-only imports included.
 - knip (`bun lint:unused`): unused files, exports and dependencies; it also finds a file
-  that imports nothing and that nothing imports, which the layout check cannot see.
+  that imports nothing and that nothing imports, which the layout check cannot see. An export
+  used only in its own file loses `export`. Exceptions, config in `knip.jsonc`:
+  - `shared/ui-kit/index.ts` is an entry: ui-kit is a library, its index is its API whether
+    the app uses all of it or not;
+  - an alias over a `*Dto` is where the Dto will become a domain type, so it stays while
+    unused: it is marked `/** @public */`, and a file of such aliases that nothing imports yet
+    is listed in `ignoreFiles`. The same tag keeps a debug helper (`jsonify`).
+- All checks run in pre-commit (lefthook) and in CI.
 - `bun arch:graph` writes a module-level dependency graph to `arch-graph.mmd` (Mermaid;
   paste it into any Mermaid viewer).

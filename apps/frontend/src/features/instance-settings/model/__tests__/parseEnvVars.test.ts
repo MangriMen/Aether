@@ -4,14 +4,23 @@ import { envVarsToString, stringToEnvVars } from '../parseEnvVars';
 
 describe('stringToEnvVars', () => {
   it('splits variables on the first =', () => {
-    expect(stringToEnvVars('A=1; JAVA_TOOL_OPTIONS=-Dfoo=bar')).toEqual([
-      ['A', '1'],
-      ['JAVA_TOOL_OPTIONS', '-Dfoo=bar'],
-    ]);
+    expect(stringToEnvVars('A=1; JAVA_TOOL_OPTIONS=-Dfoo=bar;')).toEqual({
+      vars: [
+        ['A', '1'],
+        ['JAVA_TOOL_OPTIONS', '-Dfoo=bar'],
+      ],
+    });
   });
 
-  it('skips parts without a value', () => {
-    expect(stringToEnvVars('A=1;B; = ;')).toEqual([['A', '1']]);
+  it('reports a part without = or without a key', () => {
+    expect(stringToEnvVars('A=1;B')).toEqual({
+      error: 'invalidFormat',
+      part: 'B',
+    });
+    expect(stringToEnvVars('A=1; = ')).toEqual({
+      error: 'emptyKey',
+      part: '=',
+    });
   });
 
   it('reads back what envVarsToString writes', () => {
@@ -20,6 +29,6 @@ describe('stringToEnvVars', () => {
       ['B', ''],
     ];
 
-    expect(stringToEnvVars(envVarsToString(vars) ?? '')).toEqual(vars);
+    expect(stringToEnvVars(envVarsToString(vars) ?? '')).toEqual({ vars });
   });
 });

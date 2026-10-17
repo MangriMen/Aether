@@ -81,6 +81,10 @@ jobs:
         working-directory: apps/frontend
         run: bun run lint:arch
 
+      - name: Unused code (knip)
+        working-directory: apps/frontend
+        run: bun run lint:unused
+
       - name: Test
         working-directory: apps/frontend
         run: bun x vitest run

@@ -10,13 +10,9 @@ import {
 import { useTranslation } from '@/shared/i18n';
 import { CombinedSelect, type Option } from '@/shared/ui-kit';
 
-export type WindowEffectEntryProps = {
-  class?: string;
-};
-
 type GeneralizedWindowEffect = 'off' | 'mica' | 'acrylic';
 
-export const SELECT_WINDOW_EFFECT_OPTIONS: Option<
+const SELECT_WINDOW_EFFECT_OPTIONS: Option<
   GeneralizedWindowEffect,
   GeneralizedWindowEffect
 >[] = [

@@ -18,7 +18,7 @@ export type Locale = (typeof LOCALES)[keyof typeof LOCALES];
 export type RawDictionary = (typeof LOCALE_RESOURCES)[Locale];
 export type Dictionary = Flatten<RawDictionary>;
 
-export const getLocaleFromBrowser = () => {
+const getLocaleFromBrowser = () => {
   return navigator.language.split('-')[0];
 };
 

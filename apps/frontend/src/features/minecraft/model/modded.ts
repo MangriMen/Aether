@@ -6,6 +6,7 @@ import type {
 
 export type ModdedManifest = ModdedManifestDto;
 
+/** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ModdedVersion = ModdedVersionDto;
 
 export type ModdedLoaderVersion = ModdedLoaderVersionDto;

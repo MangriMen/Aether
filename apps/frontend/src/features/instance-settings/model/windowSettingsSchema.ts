@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const ResolutionPartSchema = v.pipe(
+const ResolutionPartSchema = v.pipe(
   v.string(),
   v.trim(),
   v.minLength(1, 'instanceSettings.windowError.resolution.emptyValue'),
@@ -11,7 +11,7 @@ export const ResolutionPartSchema = v.pipe(
   v.maxValue(65535, 'instanceSettings.windowError.resolution.invalidRange'),
 );
 
-export const ResolutionSchema = v.object({
+const ResolutionSchema = v.object({
   width: ResolutionPartSchema,
   height: ResolutionPartSchema,
 });

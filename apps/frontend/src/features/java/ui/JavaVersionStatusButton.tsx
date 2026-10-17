@@ -124,12 +124,12 @@ export const JavaVersionStatusButton: Component<
   );
 };
 
-export type StatusIconProps = {
+type StatusIconProps = {
   status: JavaTestStatus;
   isSuccessSpinning: Accessor<boolean>;
 };
 
-export const StatusIcon: Component<StatusIconProps> = (props) => {
+const StatusIcon: Component<StatusIconProps> = (props) => {
   return (
     <Show
       when={props.status === 'idle'}

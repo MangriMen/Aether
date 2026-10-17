@@ -22,7 +22,7 @@ import {
   InstanceSettingsDialogTabs,
 } from '../model/instanceSettingsTabs';
 
-export type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
+type InstanceSettingsDialogBodyProps<T extends ValidComponent = 'div'> =
   TabsProps<T> & {
     instance: Instance;
   };

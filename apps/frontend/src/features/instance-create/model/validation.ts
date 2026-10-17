@@ -1,30 +1,13 @@
 import * as v from 'valibot';
 
-import type { VersionType, ModLoader } from '@/features/minecraft';
+import type { ModLoader } from '@/features/minecraft';
 
-import { MOD_LOADERS, VERSION_TYPES } from '@/features/minecraft';
+import { MOD_LOADERS } from '@/features/minecraft';
 
-export const ModLoaderSchema = v.picklist(
+const ModLoaderSchema = v.picklist(
   MOD_LOADERS as [ModLoader, ...ModLoader[]],
   'Mod loader is required',
 );
-
-export const VersionSchema = v.object({
-  id: v.pipe(v.string(), v.minLength(1)),
-  type: v.picklist(VERSION_TYPES as [VersionType, ...VersionType[]]),
-  url: v.pipe(v.string(), v.minLength(1)),
-  time: v.pipe(v.string(), v.minLength(1)),
-  releaseTime: v.pipe(v.string(), v.minLength(1)),
-  sha1: v.pipe(v.string(), v.minLength(1)),
-  complianceLevel: v.number(),
-  originalSha1: v.optional(v.pipe(v.string(), v.minLength(1))),
-});
-
-export const LoaderVersionSchema = v.object({
-  id: v.pipe(v.string(), v.minLength(0)),
-  url: v.pipe(v.string(), v.minLength(0)),
-  stable: v.boolean(),
-});
 
 export const CreateCustomInstanceSchema = v.pipe(
   v.object({
@@ -50,13 +33,6 @@ export const CreateCustomInstanceSchema = v.pipe(
   ),
 );
 
-export const ImportInstanceSchema = v.object({
-  pluginId: v.pipe(v.string(), v.minLength(1)),
-  pathOrUrl: v.pipe(v.string(), v.minLength(1, 'Path is required')),
-});
-
 export type CreateCustomInstanceSchemaOutput = v.InferOutput<
   typeof CreateCustomInstanceSchema
 >;
-
-export type ImportInstanceValues = v.InferOutput<typeof ImportInstanceSchema>;

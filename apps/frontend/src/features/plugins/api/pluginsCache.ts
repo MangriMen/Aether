@@ -13,13 +13,6 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.list,
     staleTime: 60 * 1000,
   }),
-  get: (queryClient: QueryClient, id: PluginId) => ({
-    queryKey: pluginKeys.get(id),
-    queryFn: () => pluginsCommands.get(id),
-    enabled: !!id,
-    initialData: () => pluginsCache.getData.fromList(queryClient, id),
-    staleTime: 60 * 1000,
-  }),
   settings: (id: PluginId) => ({
     queryKey: pluginKeys.settings(id),
     queryFn: () => pluginsCommands.getSettings(id),
@@ -74,10 +67,6 @@ export const pluginsCache = {
       queryClient.invalidateQueries({
         queryKey: pluginKeys.list(),
       }),
-    get: (queryClient: QueryClient, id: PluginId) =>
-      queryClient.invalidateQueries({
-        queryKey: pluginKeys.get(id),
-      }),
     settings: (queryClient: QueryClient, id: PluginId) =>
       queryClient.invalidateQueries({
         queryKey: pluginKeys.settings(id),
@@ -94,13 +83,11 @@ export const pluginsCache = {
     // plugin needs a restart.
     state: async (queryClient: QueryClient, id: PluginId) => {
       await pluginsCache.invalidate.list(queryClient);
-      await pluginsCache.invalidate.get(queryClient, id);
       await pluginsCache.invalidate.settings(queryClient, id);
       await pluginsCache.invalidate.importers(queryClient);
     },
     full: async (queryClient: QueryClient, id: PluginId) => {
       await pluginsCache.invalidate.list(queryClient);
-      await pluginsCache.invalidate.get(queryClient, id);
       await pluginsCache.invalidate.settings(queryClient, id);
       await pluginsCache.invalidate.source(queryClient, id);
       await pluginsCache.invalidate.updates(queryClient, id);

@@ -5,7 +5,7 @@ export type ScheduleCallback = <Args extends unknown[]>(
   callback: (...args: Args) => void,
   wait?: number,
 ) => Scheduled<Args>;
-export interface Scheduled<Args extends unknown[]> {
+interface Scheduled<Args extends unknown[]> {
   (...args: Args): void;
   clear: VoidFunction;
   callAndClear: VoidFunction;

@@ -8,13 +8,13 @@ import { createContext, useContext } from 'solid-js';
 
 import type { Dictionary, Locale } from './locales';
 
-export type I18nContextValue<Locale, Dictionary extends BaseRecordDict> = {
+type I18nContextValue<Locale, Dictionary extends BaseRecordDict> = {
   locale: Accessor<Locale>;
   dict: Resource<Dictionary>;
   t: NullableTranslator<Dictionary>;
 };
 
-export type I18nContextActions<Locale> = {
+type I18nContextActions<Locale> = {
   setLocale: (locale: Locale) => void;
 };
 

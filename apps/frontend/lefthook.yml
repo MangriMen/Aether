@@ -19,6 +19,11 @@ pre-commit:
       glob: '**/*.{js,ts,jsx,tsx}'
       run: bun run lint:arch
 
+    - name: frontend:unused
+      root: 'apps/frontend'
+      glob: ['**/*.{js,ts,jsx,tsx,css}', 'apps/frontend/package.json', 'apps/frontend/knip.jsonc']
+      run: bun run lint:unused
+
     - name: frontend:i18n
       root: 'apps/frontend'
       glob: '{src/shared/i18n/*.json,src/platform/bindings/*.ts}'

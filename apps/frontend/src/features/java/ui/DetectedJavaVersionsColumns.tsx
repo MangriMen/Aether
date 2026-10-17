@@ -9,7 +9,7 @@ import { Button, CombinedTooltip } from '@/shared/ui-kit';
 
 import type { StrictJavaVersion } from '../model/javaVersion';
 
-export const strictJavaVersionsColumnHelper = createColumnHelper<
+const strictJavaVersionsColumnHelper = createColumnHelper<
   typeof appTableFeatures,
   StrictJavaVersion
 >();
