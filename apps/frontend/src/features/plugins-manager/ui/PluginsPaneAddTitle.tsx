@@ -6,14 +6,14 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
-
 import { useTranslation } from '@/shared/i18n';
 import { CombinedSelect, CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
+import type { PluginSourceType } from '../model/pluginProvider';
+
 type ProviderOption = {
-  value: PluginSourceTypeDto;
+  value: PluginSourceType;
   label: string;
 };
 
@@ -22,8 +22,8 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
 ];
 
 export type PluginsPaneAddTitleProps = ComponentProps<'div'> & {
-  provider?: PluginSourceTypeDto | null;
-  onProviderChange: (provider: PluginSourceTypeDto) => void;
+  provider?: PluginSourceType | null;
+  onProviderChange: (provider: PluginSourceType) => void;
   onBackClick: () => void;
 };
 

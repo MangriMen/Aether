@@ -2,14 +2,14 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { Match, splitProps, Switch } from 'solid-js';
 
-import type { PluginSourceTypeDto } from '@/platform/bindings/plugin';
-
 import { cn } from '@/shared/utils';
+
+import type { PluginSourceType } from '../model/pluginProvider';
 
 import { InstallFromGithubView } from './InstallFromGithubView';
 
 export type AddPluginViewProps = ComponentProps<'div'> & {
-  provider?: PluginSourceTypeDto | null;
+  provider?: PluginSourceType | null;
   onInstalled?: () => void;
 };
 

@@ -6,6 +6,7 @@ import { createMemo, createSignal } from 'solid-js';
 import type { InstanceCardProps } from '@/features/instance';
 
 import {
+  InstanceActionButton,
   InstanceCard,
   InstanceContextMenu,
   useInstanceActions,
@@ -22,10 +23,7 @@ import {
 } from '@/shared/ui-kit';
 import { preventAll } from '@/shared/utils';
 
-export type InstanceControlledCardProps = Pick<
-  InstanceCardProps,
-  'instance' | 'instanceActionButton'
->;
+export type InstanceControlledCardProps = Pick<InstanceCardProps, 'instance'>;
 
 export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   props,
@@ -87,7 +85,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
           onOpenFolder={handleOpenFolder}
           onOpenSettings={handleOpenSettings}
           onRemove={openRemoveModal}
-          disableOpenFolder={!instancePath}
+          disableOpenFolder={!instancePath.data}
         >
           <ContextMenuTrigger
             as={InstanceCard}
@@ -100,7 +98,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
           />
         </InstanceContextMenu>
 
-        <props.instanceActionButton
+        <InstanceActionButton
           class='
             top-18 right-4 p-0 absolute z-50 opacity-0
             transition-[bottom,opacity]

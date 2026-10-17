@@ -1,6 +1,6 @@
 import { Show, type Component } from 'solid-js';
 
-import type { CacheUsageDto } from '@/platform/bindings/settings';
+import type { CacheUsage } from '@/features/settings';
 import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import { useClearCache } from '@/features/settings';
@@ -10,7 +10,7 @@ import { SettingsEntry } from '@/shared/settings-layout';
 import { Button } from '@/shared/ui-kit';
 
 export type ClearCacheEntryProps = SettingsEntryProps & {
-  usage?: CacheUsageDto;
+  usage?: CacheUsage;
   isError?: boolean;
 };
 

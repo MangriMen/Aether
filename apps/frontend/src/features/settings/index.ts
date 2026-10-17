@@ -7,4 +7,5 @@ export * from './lib/useSettingsSearchParams';
 export * from './model/appSettings';
 export * from './model/developerMode';
 export * from './model/featureFlags';
+export * from './model/settings';
 export * from './model/settingsTabs';

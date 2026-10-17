@@ -45,7 +45,9 @@ src/
    `@tauri-apps/*` are fine anywhere, and so is anything in tests.
 5. A feature exports its entry points (a page, a dialog, a settings pane) through
    `index.ts`; `app` decides where they appear (routes in `app/AppRouter.tsx`, screens in
-   `app/shell`). A page that combines several domains lives in `app/pages`.
+   `app/shell`). `app/pages` assembles a page from several domains, even if there is one for
+   now (the home page); a domain with a page of its own exports it from the feature
+   (`instance-page`, `content-page`).
 6. No ports or interfaces until something has a second implementation.
 7. `shared/` knows nothing about Aether: no `platform/`, no domain types. What describes the
    launcher (backend errors, routes of a domain) lives in a feature, even when every feature
@@ -101,6 +103,7 @@ features/instance-edit/       the settings dialog of one instance
 features/instance-create/
 features/instance-import/
 features/instance-page/
+features/instance-list/       the instances panel of the home page
 ```
 
 - Parts depend on the base; the base never imports its parts.
@@ -132,7 +135,7 @@ features/instance/
   lib/
     useInstanceActions.tsx      launch/stop/remove with confirmations, used by several components
   ui/
-    InstanceCard.tsx            used through index.ts by app/pages/home
+    InstanceCard.tsx            used by features/instance-list
     InstanceHeaderInfo.tsx
     InstanceIcon.tsx
     InstancePlayButton.tsx
@@ -182,7 +185,9 @@ The checks cover every file under `src/`.
 - ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
   no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/`
   in `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except
-  types, static or `import()`) in a feature's `model/`.
+  types, static or `import()`) in a feature's `model/`, no `platform/bindings` (the generated
+  `*Dto`) in a feature's `ui/` and `lib/` or in `app/`: they use the aliases from `model/`;
+  `api/`, `model/` and `platform/ipc` import the Dto.
 - dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
   imports across features, public API of features and modules, a domain base importing its
   parts, feature and shared folders and file names, `app` modules importing the

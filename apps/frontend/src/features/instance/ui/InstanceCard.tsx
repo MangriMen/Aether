@@ -1,5 +1,5 @@
 import type { PolymorphicProps } from '@kobalte/core';
-import type { Component, ComponentProps, ValidComponent } from 'solid-js';
+import type { ValidComponent } from 'solid-js';
 
 import { Polymorphic } from '@kobalte/core';
 import { Match, mergeProps, splitProps, Switch } from 'solid-js';
@@ -12,9 +12,6 @@ import { InstanceTitle } from './InstanceTitle';
 
 export type InstanceCardProps = {
   instance: Instance;
-  instanceActionButton: Component<
-    ComponentProps<'button'> & { instance: Instance }
-  >;
   isLoading?: boolean;
   isRunning?: boolean;
   overrideIcon?: string;
@@ -28,7 +25,6 @@ export const InstanceCard = <T extends ValidComponent = 'button'>(
 
   const [local, others] = splitProps(merged, [
     'instance',
-    'instanceActionButton',
     'isLoading',
     'isRunning',
     'overrideIcon',
