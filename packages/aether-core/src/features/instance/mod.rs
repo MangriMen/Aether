@@ -13,7 +13,7 @@ pub use domain::{
     ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
     ContentVersionMetadata, ContentVersionStatus, ContentVersionType, FileSide,
     ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
-    InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceInstallStage,
+    InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceId, InstanceInstallStage,
     InstanceSnapshot, InstanceValidationErrorReason, ModpackInstallParams, NewInstance,
     OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload,
     PackFileOption, PackInfo, PackMetadata, PackSource, PlanOrigin, ProviderId, ReleaseChannel,

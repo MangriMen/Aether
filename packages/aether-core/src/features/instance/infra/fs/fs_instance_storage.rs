@@ -5,22 +5,13 @@ use tracing::warn;
 
 use crate::{
     features::{
-        instance::{Instance, InstanceError, InstanceStorage, infra::fs::instance::InstanceV2},
+        instance::{
+            Instance, InstanceError, InstanceId, InstanceStorage, infra::fs::instance::InstanceV2,
+        },
         settings::LocationInfo,
     },
     shared::io::infra::{read_json_async, remove_dir_all, write_json_async},
 };
-
-/// An id that cannot name a directory directly under `instances/` is no instance at all.
-fn check_plain_id(id: &str) -> Result<(), InstanceError> {
-    if LocationInfo::is_plain_instance_id(id) {
-        Ok(())
-    } else {
-        Err(InstanceError::NotFound {
-            instance_id: id.to_owned(),
-        })
-    }
-}
 
 pub struct FsInstanceStorage {
     location_info: Arc<LocationInfo>,
@@ -89,8 +80,8 @@ impl InstanceStorage for FsInstanceStorage {
     async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
         // Otherwise an `instance.json` planted anywhere in the config directory, e.g. under
         // `plugins/<id>/`, would pass as an instance and let its id be used for writes.
-        check_plain_id(id)?;
-        let path = self.location_info.instance_metadata_file(id);
+        let id = InstanceId::try_from(id)?;
+        let path = self.location_info.instance_metadata_file(&id);
         self.load_instance_internal(&path).await
     }
 
@@ -103,8 +94,8 @@ impl InstanceStorage for FsInstanceStorage {
     }
 
     async fn remove(&self, id: &str) -> Result<(), InstanceError> {
-        check_plain_id(id)?;
-        let path = self.location_info.instance_dir(id);
+        let id = InstanceId::try_from(id)?;
+        let path = self.location_info.instance_dir(&id);
         remove_dir_all(&path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;

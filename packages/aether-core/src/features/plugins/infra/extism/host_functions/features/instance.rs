@@ -10,8 +10,8 @@ use crate::{
     core::app::AetherContainer,
     features::instance::{
         ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
-        ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
-        InstanceFileService, InstanceServicesPort, ListContentUseCasePort, NewInstance,
+        ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceFileService,
+        InstanceId, InstanceServicesPort, ListContentUseCasePort, NewInstance,
         infra::{check_plugin_write_allowed, check_size},
     },
     features::plugins::LoadConfig,
@@ -30,8 +30,8 @@ pub(crate) async fn handle_instance_get_dir(
     id: &str,
     location_info: &LocationInfo,
 ) -> crate::Result<String> {
-    check_plain_instance_id(id)?;
-    let dir = location_info.instance_dir(id);
+    let id = InstanceId::try_from(id)?;
+    let dir = location_info.instance_dir(&id);
     let relative_path = dir
         .strip_prefix(location_info.config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
@@ -133,17 +133,6 @@ pub(crate) async fn handle_change_contents(
         .map_err(Into::into)
 }
 
-fn check_plain_instance_id(instance_id: &str) -> crate::Result<()> {
-    if LocationInfo::is_plain_instance_id(instance_id) {
-        Ok(())
-    } else {
-        Err(InstanceError::NotFound {
-            instance_id: instance_id.to_owned(),
-        }
-        .into())
-    }
-}
-
 /// Refuse an instance the core does not know: otherwise a plugin could name any id and have
 /// the file service create a directory under `instances/` the launcher never listed.
 ///
@@ -153,10 +142,10 @@ async fn require_instance(
     instance_id: &str,
     get_instance: &dyn GetInstanceUseCasePort,
 ) -> crate::Result<()> {
-    check_plain_instance_id(instance_id)?;
+    let instance_id = InstanceId::try_from(instance_id)?;
 
     get_instance
-        .execute(instance_id.to_owned())
+        .execute(instance_id.into())
         .await
         .map(|_| ())
         .map_err(Into::into)
@@ -432,7 +421,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::features::instance::{
-        ContentFile, Instance, InstanceBuilder, infra::FsInstanceFileService,
+        ContentFile, Instance, InstanceBuilder, InstanceError, infra::FsInstanceFileService,
     };
     use crate::features::minecraft::ModLoader;
     use crate::features::settings::LocationInfo;
