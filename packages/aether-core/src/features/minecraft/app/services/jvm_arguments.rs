@@ -75,7 +75,7 @@ fn parse_jvm_argument(
         ("${natives_directory}", natives.as_str()),
         ("${library_directory}", libraries.as_str()),
         ("${classpath_separator}", get_classpath_separator(java_arch)),
-        ("${launcher_name}", "theseus"),
+        ("${launcher_name}", "Aether"),
         ("${launcher_version}", env!("CARGO_PKG_VERSION")),
         ("${version_name}", version_name),
         ("${classpath}", class_paths),
@@ -585,7 +585,7 @@ mod tests {
             out,
             vec![
                 format!("-Djava.library.path={}", canon(&e.natives)),
-                "-Dminecraft.launcher.brand=theseus".to_string(),
+                "-Dminecraft.launcher.brand=Aether".to_string(),
                 format!("-Dminecraft.launcher.version={}", env!("CARGO_PKG_VERSION")),
                 format!("-Dlib={}", canon(&e.libs)),
                 "-Dver=1.20.1".to_string(),
