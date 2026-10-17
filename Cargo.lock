@@ -122,6 +122,7 @@ dependencies = [
  "tracing-error",
  "url",
  "uuid",
+ "windows-sys 0.61.2",
  "zip 9.0.3",
 ]
 
