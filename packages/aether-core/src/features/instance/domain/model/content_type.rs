@@ -307,4 +307,79 @@ mod tests {
         assert_eq!(variants.len(), 4);
         assert!(!variants.contains(&ContentType::Modpack));
     }
+
+    #[test]
+    fn should_pin_string_forms_when_given_each_variant() {
+        let all = [
+            (ContentType::Modpack, "modpack"),
+            (ContentType::Mod, "mod"),
+            (ContentType::DataPack, "datapack"),
+            (ContentType::ResourcePack, "resourcepack"),
+            (ContentType::ShaderPack, "shader"),
+        ];
+        for (variant, text) in all {
+            assert_eq!(variant.to_str(), text);
+            assert_eq!(variant.get_name(), text);
+            assert_eq!(ContentType::from_string(text), Some(variant));
+        }
+        assert_eq!(ContentType::from_string(""), None);
+        assert_eq!(ContentType::from_string("shaderpack"), None);
+        assert_eq!(ContentType::from_string("Mod"), None);
+    }
+
+    #[test]
+    fn should_pin_loaders_when_given_each_variant() {
+        assert_eq!(ContentType::DataPack.get_loaders(), &["datapack"]);
+        assert_eq!(
+            ContentType::ResourcePack.get_loaders(),
+            &["vanilla", "canvas", "minecraft"]
+        );
+        assert_eq!(ContentType::ShaderPack.get_loaders(), &["iris", "optifine"]);
+    }
+
+    #[test]
+    fn should_pin_iteration_order() {
+        let variants: Vec<ContentType> = ContentType::iterator().collect();
+        assert_eq!(
+            variants,
+            vec![
+                ContentType::Mod,
+                ContentType::DataPack,
+                ContentType::ResourcePack,
+                ContentType::ShaderPack,
+            ]
+        );
+    }
+
+    #[test]
+    fn should_prefer_by_priority_when_loaders_of_several_types_match() {
+        let pick = |names: &[&str]| {
+            let loaders: Vec<String> = names.iter().map(ToString::to_string).collect();
+            ContentType::get_from_loaders(&loaders)
+        };
+        assert_eq!(pick(&["minecraft", "iris"]), Some(ContentType::ShaderPack));
+        assert_eq!(
+            pick(&["minecraft", "datapack"]),
+            Some(ContentType::DataPack)
+        );
+        assert_eq!(pick(&["iris", "datapack"]), Some(ContentType::DataPack));
+        assert_eq!(pick(&["canvas", "forge"]), Some(ContentType::Mod));
+        assert_eq!(pick(&["neoforge"]), Some(ContentType::Mod));
+        assert_eq!(pick(&["canvas"]), Some(ContentType::ResourcePack));
+        assert_eq!(pick(&["Fabric"]), None);
+    }
+
+    #[test]
+    fn should_return_none_when_path_has_no_parent_folder_name() {
+        assert_eq!(ContentType::get_from_parent_folder(Path::new("")), None);
+        assert_eq!(ContentType::get_from_parent_folder(Path::new("mods")), None);
+        assert_eq!(
+            ContentType::get_from_parent_folder(Path::new("mods/sub/a.jar")),
+            None
+        );
+        assert_eq!(
+            ContentType::get_from_parent_folder(Path::new("mods/a.jar")),
+            Some(ContentType::Mod)
+        );
+    }
 }

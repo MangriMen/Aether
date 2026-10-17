@@ -249,6 +249,8 @@ impl LocationInfo {
 
 #[cfg(test)]
 mod tests {
+    use std::path::{Path, PathBuf};
+
     use super::LocationInfo;
 
     #[test]
@@ -283,5 +285,74 @@ mod tests {
         for id in ["C:", "C:x", "pack:stream"] {
             assert!(!LocationInfo::is_plain_instance_id(id), "{id:?}");
         }
+    }
+
+    #[test]
+    fn should_pin_every_path_accessor() {
+        let li = LocationInfo::new(PathBuf::from("s"), PathBuf::from("c"));
+        let p = |s: &str| PathBuf::from("c").join(s);
+        assert_eq!(li.settings_dir(), Path::new("s"));
+        assert_eq!(li.config_dir(), Path::new("c"));
+        assert_eq!(li.metadata_dir(), p(".minecraft"));
+        assert_eq!(li.data_dir(), p("data"));
+        assert_eq!(li.db_path(), p("data").join("app.db"));
+        let meta = p(".minecraft");
+        assert_eq!(li.versions_dir(), meta.join("versions"));
+        assert_eq!(li.version_dir("1.20"), meta.join("versions").join("1.20"));
+        assert_eq!(li.libraries_dir(), meta.join("libraries"));
+        assert_eq!(li.assets_dir(), meta.join("assets"));
+        assert_eq!(li.assets_index_dir(), meta.join("assets").join("indexes"));
+        assert_eq!(li.objects_dir(), meta.join("assets").join("objects"));
+        assert_eq!(
+            li.object_dir("abcdef"),
+            meta.join("assets")
+                .join("objects")
+                .join("ab")
+                .join("abcdef")
+        );
+        assert_eq!(li.legacy_assets_dir(), meta.join("resources"));
+        assert_eq!(li.natives_dir(), meta.join("natives"));
+        assert_eq!(
+            li.version_natives_dir("1.20"),
+            meta.join("natives").join("1.20")
+        );
+        let inst = p("instances");
+        assert_eq!(li.instances_dir(), inst);
+        assert_eq!(li.instance_dir("i"), inst.join("i"));
+        let im = inst.join("i").join(".metadata");
+        assert_eq!(li.instance_metadata_dir("i"), im);
+        assert_eq!(
+            li.instance_metadata_dir_with_instance_dir(Path::new("x")),
+            Path::new("x").join(".metadata")
+        );
+        assert_eq!(li.instance_metadata_file("i"), im.join("instance.json"));
+        assert_eq!(
+            li.instance_metadata_file_with_instance_dir(Path::new("x")),
+            Path::new("x").join(".metadata").join("instance.json")
+        );
+        assert_eq!(li.instance_pack_dir("i"), im.join("pack"));
+        assert_eq!(li.instance_pack("i"), im.join("pack").join("content.toml"));
+        let cache = p("cache");
+        assert_eq!(li.cache_dir(), cache);
+        assert_eq!(li.assets_cache_dir(), cache.join("assets"));
+        assert_eq!(li.java_dir(), cache.join("java"));
+        assert_eq!(li.plugins_dir(), p("plugins"));
+        assert_eq!(li.plugin_dir("pl"), p("plugins").join("pl"));
+        assert_eq!(
+            li.plugin_settings("pl"),
+            p("plugins").join("pl").join("settings.toml")
+        );
+        assert_eq!(li.plugin_cache_dir("pl"), cache.join("plugins").join("pl"));
+        assert_eq!(
+            li.instance_plugin_dir("i", "pl"),
+            im.join("plugins").join("pl")
+        );
+        assert_eq!(
+            li.crash_reports_dir("i"),
+            inst.join("i").join("crash-reports")
+        );
+        assert_eq!(li.wasm_cache_config(), cache.join("wasm.toml"));
+        assert_eq!(li.wasm_cache_dir(), cache.join("wasm"));
+        assert_eq!(li.temp_dir(), cache.join("temp"));
     }
 }
