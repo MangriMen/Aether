@@ -10,10 +10,10 @@ enum Vote {
     Abstain,
 }
 
-pub fn parse_rules(rules: &[vanilla::Rule], java_version: &str, minecraft_updated: bool) -> bool {
+pub fn parse_rules(rules: &[vanilla::Rule], java_arch: &str, minecraft_updated: bool) -> bool {
     let mut votes: Vec<Vote> = rules
         .iter()
-        .map(|rule| vote(rule, java_version, minecraft_updated))
+        .map(|rule| vote(rule, java_arch, minecraft_updated))
         .collect();
 
     if rules
@@ -41,12 +41,25 @@ fn vote(rule: &vanilla::Rule, java_arch: &str, minecraft_updated: bool) -> Vote 
     }
 }
 
-/// Whether every feature flag a rule specifies matches the launcher's configuration.
-/// Flags the rule leaves unset are ignored.
+/// Whether at least one known feature flag is specified and every specified flag
+/// matches the launcher's configuration. Flags the rule leaves unset are ignored.
+/// A condition with no known flags (e.g. only flags unknown to us, dropped by serde)
+/// does not hold.
 fn features_hold(features: &vanilla::FeatureRule) -> bool {
+    let any_specified = [
+        features.is_demo_user,
+        features.has_custom_resolution,
+        features.has_quick_plays_support,
+        features.is_quick_play_singleplayer,
+        features.is_quick_play_multiplayer,
+        features.is_quick_play_realms,
+    ]
+    .iter()
+    .any(Option::is_some);
     let matches = |wanted: Option<bool>, actual: bool| wanted.is_none_or(|wanted| wanted == actual);
 
-    matches(features.is_demo_user, false)
+    any_specified
+        && matches(features.is_demo_user, false)
         && matches(features.has_custom_resolution, true)
         && matches(features.has_quick_plays_support, false)
         && matches(features.is_quick_play_singleplayer, false)
@@ -267,8 +280,21 @@ mod tests {
     }
 
     #[test]
-    fn features_all_unset_hold_vacuously() {
-        assert!(allow_features(no_features()));
+    fn rule_with_only_unknown_features_does_not_apply() {
+        // Unknown feature keys are dropped by serde, leaving every known flag unset.
+        // Allow-rule is excluded.
+        assert!(!allow_features(no_features()));
+
+        // Disallow-rule abstains: it neither denies an allow-rule nor allows by itself.
+        let rules = [
+            Rule {
+                action: RuleAction::Allow,
+                os: None,
+                features: None,
+            },
+            feature_rule(RuleAction::Disallow, no_features()),
+        ];
+        assert!(parse_rules(&rules, "x64", true));
     }
 
     #[test]
