@@ -3,13 +3,13 @@ use std::{path::Path, sync::Arc};
 use async_trait::async_trait;
 use daedalus::get_path_from_artifact;
 
-use super::version_jar_name;
 use crate::features::{
     java::JavaQueryService,
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError,
         MinecraftDownloader, MinecraftHealthService, ModLoader, VersionManifestService,
         get_compatible_java_version, parse_rules, resolve_minecraft_version, vanilla,
+        version_jar_name,
     },
     settings::LocationInfo,
 };

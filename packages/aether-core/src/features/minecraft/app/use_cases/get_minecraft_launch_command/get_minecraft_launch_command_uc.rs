@@ -13,12 +13,11 @@ use crate::{
             InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
             JavaQueryService,
         },
-        minecraft::app::services::version_jar_name,
         minecraft::{
             LaunchSettings, LoaderVersionPreference, LoaderVersionService,
             MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
             ModLoader, VersionManifestService, get_compatible_java_version,
-            resolve_minecraft_version, vanilla,
+            resolve_minecraft_version, vanilla, version_jar_name,
         },
         settings::LocationInfo,
     },

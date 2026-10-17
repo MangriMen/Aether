@@ -70,15 +70,13 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
         fill_client_data(
             data,
-            &ClientPaths {
-                client_jar: &client_jar,
-                minecraft_dir,
-                libraries_dir: &libraries_dir,
-            },
+            &client_jar,
+            minecraft_dir,
+            &libraries_dir,
             &game_version,
         );
 
-        self.report(loading_bar, 0.0, "Starting Forge post-install processors")
+        self.report(loading_bar, 0.0, "Running forge processors")
             .await;
 
         let total = processors.len();
@@ -90,7 +88,7 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
 
             execute_processor(processor, data, &libraries_dir, java_version).await?;
 
-            let text = format!("Forge processor {} of {total} finished", position + 1);
+            let text = format!("Running forge processor {}/{total}", position + 1);
             self.report(loading_bar, step, &text).await;
         }
 
@@ -98,17 +96,12 @@ impl<PS: ProgressService> ModLoaderProcessor for ForgeProcessor<PS> {
     }
 }
 
-/// Locations the Forge data table points at for the client side.
-struct ClientPaths<'a> {
-    client_jar: &'a Path,
-    minecraft_dir: &'a Path,
-    libraries_dir: &'a Path,
-}
-
 /// Fills the well-known Forge data keys; the server side stays empty.
 fn fill_client_data(
     data: &mut HashMap<String, modded::SidedDataEntry>,
-    paths: &ClientPaths<'_>,
+    client_jar: &Path,
+    minecraft_dir: &Path,
+    libraries_dir: &Path,
     game_version: &str,
 ) {
     processor_rules! {
@@ -117,16 +110,16 @@ fn fill_client_data(
             client => "client",
             server => "";
         "MINECRAFT_JAR":
-            client => paths.client_jar.to_string_lossy(),
+            client => client_jar.to_string_lossy(),
             server => "";
         "MINECRAFT_VERSION":
             client => game_version,
             server => "";
         "ROOT":
-            client => paths.minecraft_dir.to_string_lossy(),
+            client => minecraft_dir.to_string_lossy(),
             server => "";
         "LIBRARY_DIR":
-            client => paths.libraries_dir.to_string_lossy(),
+            client => libraries_dir.to_string_lossy(),
             server => "";
     }
 }
@@ -138,7 +131,7 @@ async fn execute_processor(
     libraries_dir: &Path,
     java_version: &Java,
 ) -> Result<(), MinecraftDomainError> {
-    log::debug!("Launching forge processor {}", processor.jar);
+    log::debug!("Running forge processor {}", processor.jar);
 
     let class_path_entries: Vec<String> = processor
         .classpath
@@ -155,7 +148,7 @@ async fn execute_processor(
     let jar_path = get_lib_path(libraries_dir, &processor.jar, false)?;
     let Some(main_class) = get_processor_main_class(jar_path).await? else {
         return Err(MinecraftDomainError::ProcessorFailed {
-            reason: format!("No main class declared in processor jar {}", processor.jar),
+            reason: format!("Could not find processor main class for {}", processor.jar),
         });
     };
 
@@ -166,7 +159,7 @@ async fn execute_processor(
         .await
         .map_err(|err| MinecraftDomainError::ProcessorFailed {
             reason: format!(
-                "Failed to start processor: {}",
+                "Error running processor: {}",
                 IoError::with_path(err, java_version.path())
             ),
         })?;
@@ -176,7 +169,7 @@ async fn execute_processor(
     }
     Err(MinecraftDomainError::ProcessorFailed {
         reason: format!(
-            "Processor exited with failure: {}",
+            "Processor error: {}",
             String::from_utf8_lossy(&output.stderr)
         ),
     })
@@ -199,7 +192,7 @@ fn runs_on_client(processor: &modded::Processor) -> bool {
     processor
         .sides
         .as_ref()
-        .is_none_or(|sides| sides.contains(&String::from("client")))
+        .is_none_or(|sides| sides.iter().any(|s| s == "client"))
 }
 
 /// Share of the overall progress (in percent) that all processors together may fill.
@@ -359,11 +352,9 @@ mod tests {
         let mut data = HashMap::new();
         fill_client_data(
             &mut data,
-            &ClientPaths {
-                client_jar: Path::new("/v/1.20/1.20.jar"),
-                minecraft_dir: Path::new("/mc"),
-                libraries_dir: Path::new("/libs"),
-            },
+            Path::new("/v/1.20/1.20.jar"),
+            Path::new("/mc"),
+            Path::new("/libs"),
             "1.20",
         );
         assert_eq!(data.len(), 5);

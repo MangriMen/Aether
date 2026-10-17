@@ -1,6 +1,6 @@
 /// Name of the installed client jar (also its directory name) for a game version,
 /// optionally combined with a mod loader version. Installed instances depend on this format.
-pub(crate) fn version_jar_name(game_version_id: &str, loader_version_id: Option<&str>) -> String {
+pub fn version_jar_name(game_version_id: &str, loader_version_id: Option<&str>) -> String {
     match loader_version_id {
         Some(loader) => format!("{game_version_id}-{loader}"),
         None => game_version_id.to_owned(),

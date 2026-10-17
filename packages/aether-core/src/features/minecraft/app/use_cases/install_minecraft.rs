@@ -13,7 +13,7 @@ use crate::features::{
         InstallMinecraftParams, LoaderVersionService, MinecraftApplicationError,
         MinecraftDomainError, MinecraftDownloader, MinecraftInstallService, ModLoader,
         ModLoaderProcessor, VersionManifestService, get_compatible_java_version,
-        resolve_minecraft_version, vanilla,
+        resolve_minecraft_version, vanilla, version_jar_name,
     },
 };
 
@@ -103,9 +103,9 @@ impl InstallMinecraftUseCase {
             .resolve(&game_version, &loader, loader_version.as_ref())
             .await?;
 
-        let version_jar = loader_version.as_ref().map_or(
-            version.id.clone(), // For Vanilla take pure version
-            |it| format!("{}-{}", version.id.clone(), it.id.clone()),
+        let version_jar = version_jar_name(
+            &version.id,
+            loader_version.as_ref().map(|it| it.id.as_str()),
         );
 
         debug!("Java path: {java_path:#?}");
