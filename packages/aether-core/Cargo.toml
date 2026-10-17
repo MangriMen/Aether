@@ -100,6 +100,10 @@ thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+# `sys-info` reads the Windows version with `GetVersionEx`, which is capped at 6.2 without a manifest
+windows-sys = { version = "0.61.2", features = ["Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
+
 [dev-dependencies]
 rust_arkitect = "0.3.7"
 

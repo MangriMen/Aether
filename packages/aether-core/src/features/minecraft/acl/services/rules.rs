@@ -1,6 +1,7 @@
 use regex::Regex;
 
 use crate::features::minecraft::acl::models::vanilla;
+use crate::shared::system::infra::get_os_version;
 
 /// Result of evaluating a single rule.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -84,13 +85,17 @@ pub(super) fn parse_os_rule(
             || (minecraft_updated && *name == vanilla::Os::native())
     });
 
-    let version_ok = rule.version.as_deref().is_none_or(|pattern| {
-        Regex::new(pattern).map_or(true, |re| {
-            re.is_match(&sys_info::os_release().unwrap_or_default())
-        })
-    });
+    let version_ok = rule
+        .version
+        .as_deref()
+        .is_none_or(|pattern| version_matches(pattern, &get_os_version().unwrap_or_default()));
 
     arch_ok && name_ok && version_ok
+}
+
+/// Whether `version` matches the `os.version` pattern of a rule; an invalid pattern is ignored.
+fn version_matches(pattern: &str, version: &str) -> bool {
+    Regex::new(pattern).map_or(true, |re| re.is_match(version))
 }
 
 #[macro_export]
@@ -532,6 +537,12 @@ mod tests {
             arch: None,
         };
         assert!(!parse_os_rule(&rule, "x64", true));
+    }
+
+    #[test]
+    fn version_pattern_for_windows_10_matches_java_style_version() {
+        assert!(version_matches(r"^10\.", "10.0"));
+        assert!(!version_matches(r"^10\.", "6.2"));
     }
 
     #[test]
