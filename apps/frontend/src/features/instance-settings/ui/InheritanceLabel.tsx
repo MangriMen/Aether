@@ -7,7 +7,7 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 export type InheritanceLabelProps = ComponentProps<'span'> & {
   label?: string;

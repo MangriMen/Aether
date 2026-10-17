@@ -3,19 +3,18 @@ import type { ValidComponent } from 'solid-js';
 
 import { For, splitProps } from 'solid-js';
 
-import type { TabsProps } from '@/shared/ui';
+import type { TabsProps } from '@/shared/ui-kit';
 
 import { useEditInstance, type Instance } from '@/features/instance';
 import { useDefaultInstanceSettings } from '@/features/instance-defaults';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
-  Button,
   SettingsTabsContent,
   SettingsTabsList,
   SettingsTabsTrigger,
-  Tabs,
-} from '@/shared/ui';
+} from '@/shared/settings-layout';
+import { Button, Tabs } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import {
   INSTANCE_SETTINGS_TABS_CONTENT,

@@ -11,7 +11,7 @@ import { createMemo, createSignal } from 'solid-js';
 
 import type { ContentType, ContentVersion } from '@/features/content';
 
-import { appTableFeatures } from '@/shared/model';
+import { appTableFeatures } from '@/shared/ui-kit';
 
 import { ContentVersionActions } from '../ui/ContentVersionActions';
 import {

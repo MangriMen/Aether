@@ -1,5 +1,5 @@
 import type { Plugin } from '@/features/plugins';
-import type { TabConfig } from '@/shared/model';
+import type { TabConfig } from '@/shared/utils';
 
 import { PluginSettingsTab } from '@/features/plugins-settings';
 

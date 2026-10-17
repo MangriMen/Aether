@@ -1,9 +1,9 @@
 import { type Component } from 'solid-js';
 
-import type { SettingsPaneProps } from '@/shared/ui';
+import type { SettingsPaneProps } from '@/shared/settings-layout';
 
-import { useTranslation } from '@/shared/model';
-import { SettingsPane } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsPane } from '@/shared/settings-layout';
 
 import { UpdateAppEntry } from './UpdateAppEntry';
 import { UpdateNotificationStyleEntry } from './UpdateNotificationStyleEntry';

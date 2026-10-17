@@ -7,9 +7,9 @@ import {
 } from 'solid-js';
 
 import { SettingsTab, useSettingsSearchParams } from '@/features/settings';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, CombinedTooltip } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useCheckUpdate } from '../api/updateQueries';
 import { checkIsUpdateAvailable } from '../model/checkIsUpdateAvailable';

@@ -1,6 +1,6 @@
 import { applicationCommands } from '@/platform/ipc';
 import { showWindow } from '@/platform/window';
-import { logError } from '@/shared/lib';
+import { logError } from '@/shared/utils';
 
 import { exposeWindowMethods } from './exposeWindowMethods';
 

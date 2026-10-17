@@ -3,7 +3,7 @@ import type { Accessor, Component, ComponentProps } from 'solid-js';
 import { Form } from '@formisch/solid';
 import { splitProps } from 'solid-js';
 
-import { cn, noop } from '@/shared/lib';
+import { cn, noop } from '@/shared/utils';
 
 import type {
   JavaAndMemorySettingsSchemaInput,

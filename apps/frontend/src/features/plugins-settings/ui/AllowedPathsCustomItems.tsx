@@ -4,7 +4,7 @@ import { Field, getErrors, validate, type FormStore } from '@formisch/solid';
 import { splitProps } from 'solid-js';
 import * as v from 'valibot';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { useCustomItemsEditing } from '../lib/useCustomItemsEditing';
 import { getEditableAllowedItemArrayProps } from '../model/getEditableAllowedItemArrayProps';

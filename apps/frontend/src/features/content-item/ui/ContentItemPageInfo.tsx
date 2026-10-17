@@ -7,8 +7,7 @@ import { createMemo, splitProps } from 'solid-js';
 import type { ContentItem } from '@/features/content';
 
 import { useContentItemActions } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   CombinedTooltip,
@@ -16,7 +15,8 @@ import {
   IconButton,
   Image,
   Skeleton,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentItemPageInfoProps = {
   item: ContentItem | undefined;

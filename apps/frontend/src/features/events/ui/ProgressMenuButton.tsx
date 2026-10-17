@@ -3,15 +3,15 @@ import type { Component, ValidComponent } from 'solid-js';
 
 import { createMemo, createSignal, splitProps } from 'solid-js';
 
-import type { IconButtonProps } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
 import {
   IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { ProgressPopover } from './ProgressPopover';
 

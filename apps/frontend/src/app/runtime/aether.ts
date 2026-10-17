@@ -1,4 +1,4 @@
-import { isDebug, setIsDebug } from '@/shared/model';
+import { isDebug, setIsDebug } from '@/shared/utils';
 
 export const AetherNamespace = '_AETHER_';
 

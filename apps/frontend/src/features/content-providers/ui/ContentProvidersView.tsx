@@ -1,6 +1,6 @@
 import { For, Show, type Component } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 
 import type { PlatformProviders } from '../model/groupProvidersByPlatform';
 

@@ -2,8 +2,8 @@ import { splitProps, type Component, type ComponentProps, For } from 'solid-js';
 
 import type { Plugin, PluginMetadata } from '@/features/plugins';
 
-import { cn } from '@/shared/lib';
-import { DelayedShow, SkeletonList } from '@/shared/ui';
+import { DelayedShow, SkeletonList } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { PluginControlledCard } from './PluginControlledCard';
 

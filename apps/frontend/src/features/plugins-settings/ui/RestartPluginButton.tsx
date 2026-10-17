@@ -2,8 +2,8 @@ import IconMdiRestart from '~icons/mdi/restart';
 import { type Component } from 'solid-js';
 
 import { useReloadPlugin, type PluginId } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
 
 export type RestartPluginButtonProps = {
   pluginId: PluginId;

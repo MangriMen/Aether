@@ -3,7 +3,7 @@ import type { Accessor } from 'solid-js';
 import { createEffect, createMemo } from 'solid-js';
 
 import type { ContentFilters, ContentType } from '@/features/content';
-import type { Option } from '@/shared/model';
+import type { Option } from '@/shared/utils';
 
 import { useContentContext } from '@/features/content';
 

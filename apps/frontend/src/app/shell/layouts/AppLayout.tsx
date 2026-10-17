@@ -1,7 +1,7 @@
 import { ErrorBoundary, type Component, type JSX } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
-import { logError } from '@/shared/lib';
+import { logError } from '@/shared/utils';
 
 import type { TitleBarProps } from '../titlebar/TitleBar';
 

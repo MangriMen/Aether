@@ -3,9 +3,9 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createMemo, splitProps } from 'solid-js';
 
 import { useThemeContext } from '@/features/appearance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { FieldLabel } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { FieldLabel } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import SelectThemeByColorMode from './SelectThemeByColorMode';
 

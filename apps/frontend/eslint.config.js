@@ -22,7 +22,7 @@ const deepFeatureImport = {
   message: 'Import a feature through its index: @/features/<name>.',
 };
 const deepModuleImport = {
-  regex: '^@/(app/(shell|runtime)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
+  regex: '^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
   message: 'Import a module through its index; inside a module, use relative imports.',
 };
 const appImport = {
@@ -30,8 +30,16 @@ const appImport = {
   message: 'Only app/ imports app/.',
 };
 const upperLayerImport = {
-  regex: '^@/(features|entities|widgets|pages)(/|$)',
+  regex: '^@/features(/|$)',
   message: 'shared/ and platform/ do not import features.',
+};
+const platformImport = {
+  regex: '^@/platform(/|$)',
+  message: 'shared/ is not tied to Aether, so it does not import platform/.',
+};
+const uiKitSharedImport = {
+  regex: '^@/shared/(?!utils$)',
+  message: 'shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider.',
 };
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -161,7 +169,7 @@ export default [
     },
   },
   {
-    files: ['src/{features,entities,widgets,pages}/**/*.{ts,tsx}'],
+    files: ['src/features/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -170,7 +178,7 @@ export default [
     },
   },
   {
-    files: ['src/{shared,platform}/**/*.{ts,tsx}'],
+    files: ['src/platform/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -180,6 +188,41 @@ export default [
             deepModuleImport,
             appImport,
             upperLayerImport,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            deepFeatureImport,
+            deepModuleImport,
+            appImport,
+            upperLayerImport,
+            platformImport,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/ui-kit/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            deepFeatureImport,
+            deepModuleImport,
+            appImport,
+            upperLayerImport,
+            platformImport,
+            uiKitSharedImport,
           ],
         },
       ],

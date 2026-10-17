@@ -1,9 +1,8 @@
 import { splitProps } from 'solid-js';
 
 import type { Version } from '@/features/minecraft';
-import type { SelectRootProps } from '@/shared/ui';
+import type { SelectRootProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
 import {
   Select,
   SelectContent,
@@ -11,7 +10,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type SelectGameVersionProps<Option extends Version = Version> =
   SelectRootProps<Option, never, 'div'> & {

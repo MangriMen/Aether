@@ -3,8 +3,8 @@ import type { Component } from 'solid-js';
 import { splitProps } from 'solid-js';
 
 import { AccountsMenu, useAccounts } from '@/features/account';
-import { cn } from '@/shared/lib';
-import { Separator } from '@/shared/ui';
+import { Separator } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { AccountSelectButtonProps } from './AccountSelectButton';
 import type { CreateInstanceButtonProps } from './CreateInstanceButton';

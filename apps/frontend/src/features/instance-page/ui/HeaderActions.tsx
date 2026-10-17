@@ -5,10 +5,10 @@ import { Show, type Component } from 'solid-js';
 
 import type { ContentFile } from '@/features/content';
 import type { Instance } from '@/features/instance';
-import type { AppTableFeatures } from '@/shared/model';
+import type { AppTableFeatures } from '@/shared/ui-kit';
 
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
 
 import { SelectedRowsActions } from './SelectedRowsActions';
 

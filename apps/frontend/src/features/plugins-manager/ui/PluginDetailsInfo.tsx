@@ -6,7 +6,7 @@ import {
 } from 'solid-js';
 
 import { PluginInfoHeader, type Plugin } from '@/features/plugins';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 export type PluginDetailsInfoProps = ComponentProps<'div'> & {
   plugin: Plugin;

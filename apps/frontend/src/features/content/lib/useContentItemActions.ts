@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/solid-query';
 import { createMemo, createSignal, type Accessor } from 'solid-js';
 
 import { useInstances } from '@/features/instance';
-import { showDialog } from '@/shared/model';
+import { showDialog } from '@/shared/dialogs';
 
 import { CHECK_COMPATIBILITY_QUERY } from '../api/contentQueries';
 import { useContentContext } from '../model/contentContext';

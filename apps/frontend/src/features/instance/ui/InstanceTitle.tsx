@@ -2,8 +2,8 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { splitProps } from 'solid-js';
 
-import { cn, useIsOverflow } from '@/shared/lib';
-import { CombinedTooltip } from '@/shared/ui';
+import { useIsOverflow, CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type InstanceTitleProps = ComponentProps<'div'> & {
   name?: string;

@@ -1,8 +1,8 @@
 import { createEffect, onCleanup } from 'solid-js';
 
-import { ALLOWED_CONTEXT_MENU_TAGS } from '@/app/config';
-
 import { createPreventRightClick } from './createPreventRightClick';
+
+const ALLOWED_CONTEXT_MENU_TAGS = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
 
 /**
  * Hook to prevent right click context menu

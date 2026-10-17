@@ -3,15 +3,15 @@ import { For, splitProps, type Component, type ComponentProps } from 'solid-js';
 import { Dynamic } from 'solid-js/web';
 
 import { useContent, useContentContext } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Separator,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { CONTENT_ITEM_PAGE_TABS_DEFINITION } from '../model/contentItemPageTabs';
 import { ContentItemPageInfo } from './ContentItemPageInfo';

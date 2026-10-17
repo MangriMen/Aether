@@ -6,9 +6,13 @@ import { splitProps, type Component, type ValidComponent } from 'solid-js';
 
 import type { Instance } from '@/features/instance';
 
-import { ROUTES } from '@/shared/config';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton, type IconButtonProps } from '@/shared/ui';
+import { INSTANCE_ROUTES } from '@/features/instance';
+import { useTranslation } from '@/shared/i18n';
+import {
+  CombinedTooltip,
+  IconButton,
+  type IconButtonProps,
+} from '@/shared/ui-kit';
 
 export type SettingsButtonProps<T extends ValidComponent = 'button'> =
   PolymorphicProps<T, IconButtonProps<T>> & {
@@ -22,7 +26,7 @@ export const SettingsButton: Component<SettingsButtonProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const handleClick = () =>
-    navigate(ROUTES.INSTANCE_SETTINGS(local.instanceId));
+    navigate(INSTANCE_ROUTES.INSTANCE_SETTINGS(local.instanceId));
 
   return (
     <CombinedTooltip

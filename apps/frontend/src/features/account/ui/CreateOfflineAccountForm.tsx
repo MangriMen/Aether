@@ -3,8 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import { createForm, reset, setErrors, Form, Field } from '@formisch/solid';
 import { createEffect, splitProps, untrack } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { Button, CombinedTextField, DialogFooter } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, CombinedTextField, DialogFooter } from '@/shared/ui-kit';
 
 import type { CreateOfflineAccountFormValues } from '../model/createOfflineAccountValidation';
 

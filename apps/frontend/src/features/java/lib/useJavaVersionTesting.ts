@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-import { isLauncherError } from '@/shared/model';
+import { isLauncherError } from '@/features/errors';
 
 import type { JavaTestStatus } from '../model/javaVersion';
 

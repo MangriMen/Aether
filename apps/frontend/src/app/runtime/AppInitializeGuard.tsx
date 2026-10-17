@@ -3,11 +3,8 @@ import type { Component, JSX } from 'solid-js';
 import { createSignal, onMount, Show } from 'solid-js';
 
 import { AppInitializeError, AppLayout, BaseTitleBar } from '@/app/shell';
-import {
-  getTranslatedError,
-  isLauncherError,
-  useTranslation,
-} from '@/shared/model';
+import { getTranslatedError, isLauncherError } from '@/features/errors';
+import { useTranslation } from '@/shared/i18n';
 
 import { setupApp } from './initialize';
 

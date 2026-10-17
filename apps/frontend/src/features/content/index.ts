@@ -9,6 +9,7 @@ export * from './model/contentItem';
 export * from './model/contentItemMappers';
 export * from './model/contentManager';
 export * from './model/contentPageSearchParams';
+export * from './model/contentRoutes';
 export * from './model/contentSearchParams';
 export * from './model/contentType';
 export * from './model/installedContentIndexStore';

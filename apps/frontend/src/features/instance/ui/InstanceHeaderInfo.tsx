@@ -2,8 +2,8 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { mergeProps, Show, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { CombinedTooltip, DelayedShow, Skeleton } from '@/shared/ui';
+import { CombinedTooltip, DelayedShow, Skeleton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { Instance } from '../model/instance';
 

@@ -1,11 +1,11 @@
 import { splitProps, type Component } from 'solid-js';
 
 import type { Instance } from '@/features/instance';
-import type { TabsProps } from '@/shared/ui';
+import type { TabsProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { InstanceContentTabs } from '../model/content';
 import { ContentTab } from './ContentTab';

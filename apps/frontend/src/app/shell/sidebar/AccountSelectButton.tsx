@@ -5,17 +5,17 @@ import IconMdiAccount from '~icons/mdi/account';
 import { createSignal, splitProps } from 'solid-js';
 
 import type { Account, AccountType } from '@/features/account';
-import type { CombinedTooltipProps, IconButtonProps } from '@/shared/ui';
+import type { CombinedTooltipProps, IconButtonProps } from '@/shared/ui-kit';
 
 import { useChangeAccount, useLogout } from '@/features/account';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   CombinedTooltip,
   IconButton,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 export type AccountSelectButtonProps = IconButtonProps & {
   accounts: Account[];

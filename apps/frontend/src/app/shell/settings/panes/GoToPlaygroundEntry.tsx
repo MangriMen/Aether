@@ -2,11 +2,13 @@ import type { Component } from 'solid-js';
 
 import { useNavigate } from '@solidjs/router';
 
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
-import { ROUTES } from '@/shared/config';
-import { useTranslation } from '@/shared/model';
-import { Button, SettingsEntry } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { Button } from '@/shared/ui-kit';
+
+import { APP_ROUTES } from '../../appRoutes';
 
 export type GoToPlaygroundEntryProps = SettingsEntryProps;
 
@@ -18,7 +20,7 @@ export const GoToPlaygroundEntry: Component<GoToPlaygroundEntryProps> = (
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(ROUTES.PLAYGROUND);
+    navigate(APP_ROUTES.PLAYGROUND);
   };
 
   return (

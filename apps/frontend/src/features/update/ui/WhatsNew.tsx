@@ -2,14 +2,10 @@ import IconMdiContentCopy from '~icons/mdi/content-copy';
 import IconMdiTranslate from '~icons/mdi/translate';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import {
-  CombinedTooltip,
-  IconButton,
-  MarkdownRenderer,
-  showToast,
-} from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { MarkdownRenderer } from '@/shared/markdown';
+import { CombinedTooltip, IconButton, showToast } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { openTranslationInBrowser } from '../model/openTranslationInBrowser';
 

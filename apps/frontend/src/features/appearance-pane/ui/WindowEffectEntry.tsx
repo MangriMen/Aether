@@ -1,7 +1,7 @@
 import { type Component } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { SettingsEntry } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
 
 import { SelectWindowEffect } from './SelectWindowEffect';
 

@@ -4,9 +4,9 @@ import { setInput, getInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn, noop } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { cn, noop } from '@/shared/utils';
 
 import type { GeneralSettingsSchemaInput } from '../model/generalValidation';
 

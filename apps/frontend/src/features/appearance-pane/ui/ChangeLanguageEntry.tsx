@@ -1,10 +1,11 @@
 import { createMemo, type Component } from 'solid-js';
 
-import type { Locale, Option } from '@/shared/model';
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { Locale } from '@/shared/i18n';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
+import type { Option } from '@/shared/utils';
 
-import { useTranslation } from '@/shared/model';
-import { SettingsEntry } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
 
 import { LOCALE_OPTIONS } from '../model/localeOptions';
 import SelectLanguage from './SelectLanguage';

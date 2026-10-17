@@ -7,12 +7,15 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { ContentType, useInstanceContents } from '@/features/content';
+import {
+  ContentType,
+  useInstanceContents,
+  CONTENT_ROUTES,
+} from '@/features/content';
 import { type Instance } from '@/features/instance';
-import { ROUTES } from '@/shared/config';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { DelayedShow } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { DelayedShow } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { ContentControls } from './ContentControls';
 import { ContentTable } from './ContentTable';
@@ -50,7 +53,7 @@ export const ContentTab: Component<ContentTabProps> = (props) => {
       instance: local.instance.id,
     });
 
-    return navigate(`${ROUTES.CONTENT}?${searchParams.toString()}`);
+    return navigate(`${CONTENT_ROUTES.CONTENT}?${searchParams.toString()}`);
   };
 
   const availableContent = createMemo(() => {

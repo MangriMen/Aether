@@ -3,8 +3,8 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiReload from '~icons/mdi/reload';
 
 import { useSyncPlugins } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type SyncPluginsButtonProps = ComponentProps<'button'>;
 

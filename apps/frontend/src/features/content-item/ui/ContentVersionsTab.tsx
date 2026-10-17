@@ -6,7 +6,7 @@ import {
 } from 'solid-js';
 
 import { useContentContext, useContentVersions } from '@/features/content';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import type { ContentItemPageTabProps } from '../model/contentItemPageTabs';
 

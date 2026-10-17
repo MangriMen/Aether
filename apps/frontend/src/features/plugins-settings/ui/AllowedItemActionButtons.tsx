@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 import IconMdiClose from '~icons/mdi/close';
 import IconMdiPencil from '~icons/mdi/pencil';
 
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type AllowedItemActionButtonsProps = {
   onEdit?: () => void;

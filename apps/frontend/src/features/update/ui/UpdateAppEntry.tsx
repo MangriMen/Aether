@@ -2,10 +2,11 @@ import type { Component } from 'solid-js';
 
 import { createMemo, Show } from 'solid-js';
 
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
-import { useTranslation } from '@/shared/model';
-import { Button, SettingsEntry, showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
+import { Button, showToast } from '@/shared/ui-kit';
 
 import { useCheckUpdate } from '../api/updateQueries';
 import { useUpdate } from '../lib/useUpdate';

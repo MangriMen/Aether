@@ -1,46 +1,73 @@
-// Architecture boundaries, see ARCHITECTURE.md.
-// While the code moves off the old FSD layers, the rules only cover the new layout:
-// entities/, widgets/ and pages/ are skipped.
+// Architecture boundaries, see ARCHITECTURE.md. The rules cover every file under src/.
 
 const FEATURE = '^src/features/([^/]+)/';
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
 // Modules outside features/. platform/bindings is generated and has no index:
 // every file exports `commands` and `events`, so it is imported per domain.
-const MODULE = '^src/(app/(shell|runtime)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
-const MODULE_INDEX = '^src/(app/(shell|runtime)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
-const OLD_LAYERS = '^src/(entities|widgets|pages)/';
+const MODULE = '^src/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
+const MODULE_INDEX = '^src/(app/(shell|runtime|pages/[^/]+)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
+// The composition root: files at the top of app/ (App, AppRoot, AppRouter, route patterns).
+const APP_ROOT = '^src/app/[^/]+$';
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
     {
       name: 'no-circular',
-      comment: 'New code takes no part in import cycles (type-only imports do not count).',
+      comment:
+        'No import cycles between files (type-only imports do not count; scripts/check-module-cycles.ts sees them between modules).',
       severity: 'error',
-      from: { path: ['^src/platform/', '^src/app/(shell|runtime)/', FEATURE] },
+      from: { path: '^src/' },
       to: { circular: true, viaOnly: { dependencyTypesNot: ['type-only'] } },
+    },
+    {
+      name: 'src-layout',
+      comment:
+        'src/ holds index.tsx, app/ (shell/, runtime/, pages/<page>/ and the composition root), platform/<module>/, features/<feature>/ and shared/<module>/; nothing else.',
+      severity: 'error',
+      from: {
+        path: [
+          '^src/(?!index\\.tsx$|app/|platform/[^/]+/|features/[^/]+/|shared/[^/]+/)',
+          '^src/app/(?![^/]+$|shell/|runtime/|pages/[^/]+/)',
+        ],
+      },
+      to: {},
+    },
+    {
+      name: 'app-modules-not-root',
+      comment: 'app/shell, app/runtime and app/pages do not import the composition root at the top of app/.',
+      severity: 'error',
+      from: { path: '^src/app/[^/]+/' },
+      to: { path: APP_ROOT },
     },
     {
       name: 'platform-is-low-level',
       comment: 'platform/ does not import app or features.',
       severity: 'error',
       from: { path: '^src/platform/' },
-      to: { path: ['^src/(app|features)/', OLD_LAYERS] },
+      to: { path: '^src/(app|features)/' },
     },
     {
       name: 'shared-is-low-level',
       comment: 'shared/ does not import app or features.',
       severity: 'error',
       from: { path: '^src/shared/' },
-      to: { path: ['^src/(app|features)/', OLD_LAYERS] },
+      to: { path: '^src/(app|features)/' },
     },
     {
       name: 'shared-knows-no-platform',
-      comment:
-        'shared/ is not tied to Aether. Exceptions: the error types and the test that checks error translations against the bindings.',
+      comment: 'shared/ is not tied to Aether, so it does not import platform/.',
       severity: 'error',
-      from: { path: '^src/shared/', pathNot: ['^src/shared/model/error\\.ts$', '^src/shared/i18n/__tests__/'] },
+      from: { path: '^src/shared/' },
       to: { path: '^src/platform/' },
+    },
+    {
+      name: 'ui-kit-only-utils',
+      comment:
+        'shared/ui-kit imports no shared module but shared/utils; its texts come from the app through UiKitLabelsProvider.',
+      severity: 'error',
+      from: { path: '^src/shared/ui-kit/' },
+      to: { path: '^src/shared/(?!ui-kit/|utils/)' },
     },
     {
       name: 'feature-not-app',

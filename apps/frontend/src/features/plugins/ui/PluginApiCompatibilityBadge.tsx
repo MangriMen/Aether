@@ -3,9 +3,9 @@ import type { ComponentProps } from 'solid-js';
 import IconMdiAlertOutline from '~icons/mdi/alert-outline';
 import { createMemo, Show, splitProps, type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useApiVersion } from '../api/pluginQueries';
 import { checkIsApiCompatible } from '../model/checkIsApiCompatible';

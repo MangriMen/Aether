@@ -3,9 +3,9 @@ import IconMdiMonitor from '~icons/mdi/monitor';
 import IconMdiPuzzle from '~icons/mdi/puzzle';
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Badge } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Badge } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { AllowedItemProps } from '../model/allowedItem';
 import type {

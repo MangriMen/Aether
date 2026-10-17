@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/solid-query';
 
+import { showError } from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 
 export const useInstallInstance = () => {
   const [{ t }] = useTranslation();

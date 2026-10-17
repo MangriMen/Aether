@@ -3,9 +3,10 @@ import type { Component, ComponentProps } from 'solid-js';
 import IconMdiClock from '~icons/mdi/clock';
 import { createMemo, Show, splitProps } from 'solid-js';
 
-import { cn, dayjs, formatTime } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip } from '@/shared/ui';
+import { dayjs, formatTime } from '@/shared/format';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { formatTimePlayedHumanized } from '../model/formatTimePlayed';
 

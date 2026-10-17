@@ -1,0 +1,54 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  TextField,
+  TextFieldInput,
+  TextFieldLabel,
+  Button,
+} from '@/shared/ui-kit';
+
+import { ComponentShelf } from './ComponentShelf';
+
+export const DialogLab = () => {
+  return (
+    <ComponentShelf title='Dialog'>
+      <Dialog>
+        <DialogTrigger as={Button<'button'>}>Edit Profile</DialogTrigger>
+        <DialogContent class='sm:max-w-106.25'>
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>
+              Make changes to your profile here. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div class='gap-4 py-4 grid'>
+            <TextField class='gap-4 grid grid-cols-4 items-center'>
+              <TextFieldLabel class='text-right'>Name</TextFieldLabel>
+              <TextFieldInput
+                value='Pedro Duarte'
+                class='col-span-3'
+                type='text'
+              />
+            </TextField>
+            <TextField class='gap-4 grid grid-cols-4 items-center'>
+              <TextFieldLabel class='text-right'>Username</TextFieldLabel>
+              <TextFieldInput
+                value='@peduarte'
+                class='col-span-3'
+                type='text'
+              />
+            </TextField>
+          </div>
+          <DialogFooter>
+            <Button type='submit'>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </ComponentShelf>
+  );
+};

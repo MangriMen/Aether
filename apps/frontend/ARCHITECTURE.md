@@ -4,17 +4,25 @@ The frontend is organised by domain: each feature keeps its UI, state and API ca
 
 ```
 src/
-  app/        composition: shell/ (titlebar, sidebar, layouts), runtime/ (bootstrap, init guard,
-              global listeners), router, providers, pages that span several domains
+  index.tsx   entry point
+  app/        composition: shell/ (titlebar, sidebar, layouts, settings screen), runtime/
+              (bootstrap, init guard, global listeners), pages/ (pages that span several
+              domains: home, playground), and at the top App, AppRoot, AppRouter
   platform/   the Tauri side: bindings/ (generated), ipc/ (commands, events), window/
-  features/   one folder per domain: instance, content, plugins, settings, java, ...
-  shared/     code that knows nothing about Aether: ui-kit, i18n, formatting, utils
+  features/   one folder per domain: instance, content, plugins, settings, java, errors, ...
+  shared/     code that knows nothing about Aether, one module per folder:
+              ui-kit/  components (primitives, composite, hooks, table)
+              i18n/    dictionaries, I18nProvider, useTranslation
+              utils/   cn, log, debounce and other small helpers
+              format/  dayjs, bytes, time
+              dialogs/ the global dialog store and its renderer
+              markdown/ search-params/ settings-layout/ query/
 ```
 
 ## Terms
 
 - **Module**: a folder with a public `index.ts`. Every `features/<name>` is a module, and so
-  are `platform/<name>`, `shared/<name>`, `app/shell` and `app/runtime`.
+  are `platform/<name>`, `shared/<name>`, `app/shell`, `app/runtime` and `app/pages/<name>`.
 - **Folders with fixed names** inside a feature: `api/`, `model/`, `lib/`, `ui/` (see
   below). A feature has no other folders.
 
@@ -27,13 +35,19 @@ src/
    files, not at the module's own index. The one exception is `platform/bindings`: it is
    generated, every file exports `commands` and `events`, so it is imported per domain
    (`@/platform/bindings/instance`).
-3. Features form no cycles. If two features need each other, move the shared part down
-   or let `app/runtime` coordinate them.
+3. Modules form no cycles, type-only imports included. If two features need each other,
+   move the shared part down or let `app/runtime` coordinate them.
 4. `invoke` and `listen` are called only in `platform/` and in a feature's `api/`.
 5. A feature exports its entry points (a page, a dialog, a settings pane) through
    `index.ts`; `app` decides where they appear (routes in `app/router`, screens in
    `app/shell`). A page that combines several domains lives in `app/pages`.
 6. No ports or interfaces until something has a second implementation.
+7. `shared/` knows nothing about Aether: no `platform/`, no domain types. What describes the
+   launcher (backend errors, routes of a domain) lives in a feature, even when every feature
+   uses it (`features/errors`, `INSTANCE_ROUTES` in `features/instance`).
+8. `shared/ui-kit` imports only `shared/utils`. The few texts it renders itself (close,
+   pagination, empty table) come from `UiKitLabelsProvider`, which `app/runtime` fills from
+   i18n.
 
 ## Inside a feature
 
@@ -137,23 +151,20 @@ features/java/                  a small feature: only the folders it needs
     JavaPane.tsx                exported through index.ts, placed on the settings screen by app/shell
 ```
 
-## Migration
-
-The code is moving off Feature-Sliced Design one domain per PR. Until it is done,
-`pages/` (home, playground) still exists. The checks skip it.
-
-Known exceptions, to be removed when `shared/` is split into modules:
-- `shared/` has import cycles through its barrels, so `no-circular` does not cover it yet;
-- `shared/model/error.ts` imports error types from `platform/bindings`.
-
 ## Checks
 
+The checks cover every file under `src/`.
+
 - ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
-  no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`.
-- dependency-cruiser (`bun lint:arch`): cycles, layer direction, relative imports across
-  features, public API of features and modules, a domain base importing its parts, feature
-  folders and file names. Config: `.dependency-cruiser.cjs`. Its cycle check works on files,
-  so `scripts/check-feature-cycles.ts` (part of `lint:arch`) also checks the graph of features,
+  no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/`
+  in `shared/`, nothing but `shared/utils` in `shared/ui-kit`.
+- dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
+  imports across features, public API of features and modules, a domain base importing its
+  parts, feature folders and file names, `app` modules importing the composition root.
+  Config: `.dependency-cruiser.cjs`. Its cycle check works on files, so
+  `scripts/check-module-cycles.ts` (part of `lint:arch`) also checks the graph of modules,
   type-only imports included.
+- knip (`bun lint:unused`): unused files, exports and dependencies; it also finds a file
+  that imports nothing and that nothing imports, which the layout check cannot see.
 - `bun arch:graph` writes a module-level dependency graph to `arch-graph.mmd` (Mermaid;
   paste it into any Mermaid viewer).

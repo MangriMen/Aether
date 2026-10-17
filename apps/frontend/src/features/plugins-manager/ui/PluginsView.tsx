@@ -5,8 +5,8 @@ import { Show, splitProps } from 'solid-js';
 import type { Plugin } from '@/features/plugins';
 
 import { useThemeContext } from '@/features/appearance';
-import { cn } from '@/shared/lib';
-import { Separator } from '@/shared/ui';
+import { Separator } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { PluginDetails } from './PluginDetails';
 

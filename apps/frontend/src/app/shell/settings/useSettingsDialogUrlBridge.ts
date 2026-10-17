@@ -2,7 +2,7 @@ import { useSearchParams } from '@solidjs/router';
 import { createEffect } from 'solid-js';
 
 import { useSettingsSearchParams } from '@/features/settings';
-import { closeDialog, showDialog } from '@/shared/model';
+import { closeDialog, showDialog } from '@/shared/dialogs';
 
 import { SettingsDialog } from './SettingsDialog';
 

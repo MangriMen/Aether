@@ -4,7 +4,7 @@ import { useColorMode } from '@kobalte/core';
 import { createEffect, on } from 'solid-js';
 
 import { useAppSettings, useEditAppSettings } from '@/features/settings';
-import { debounce, logError } from '@/shared/lib';
+import { debounce, logError } from '@/shared/utils';
 
 import { isSystemTheme } from '../model/theme';
 import { useThemeContext } from '../model/themeContext';

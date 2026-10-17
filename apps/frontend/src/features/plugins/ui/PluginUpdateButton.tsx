@@ -6,8 +6,8 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
 
 import type { Plugin } from '../model/plugin';
 

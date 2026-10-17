@@ -4,9 +4,9 @@ import IconMdiCloudOffOutline from '~icons/mdi/cloud-off-outline';
 import IconMdiLoginVariant from '~icons/mdi/login-variant';
 import { splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, CombinedTooltip } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { AccountType } from '../model/account';
 

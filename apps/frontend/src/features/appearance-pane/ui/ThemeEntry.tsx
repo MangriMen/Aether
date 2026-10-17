@@ -1,9 +1,10 @@
 import { type Component } from 'solid-js';
 
-import type { CollapsibleSettingsEntryProps } from '@/shared/ui';
+import type { CollapsibleSettingsEntryProps } from '@/shared/settings-layout';
 
-import { useTranslation } from '@/shared/model';
-import { CollapsibleSettingsEntry, Separator } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CollapsibleSettingsEntry } from '@/shared/settings-layout';
+import { Separator } from '@/shared/ui-kit';
 
 import { SelectTheme } from './SelectTheme';
 import { SelectThemeForColorModeEntry } from './SelectThemeForColorModeEntry';

@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/solid-query';
 
+import { showError } from '@/features/errors';
 import { settingsCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { showToast } from '@/shared/ui-kit';
 
 import { settingsCache, settingsQueries } from './settingsCache';
 

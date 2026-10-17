@@ -1,18 +1,18 @@
 import { createMemo, type Component } from 'solid-js';
 
-import type { Option } from '@/shared/model';
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
+import type { Option } from '@/shared/utils';
 
 import { useSetPlatformProvider } from '@/features/settings';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SettingsEntry,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 import type { PlatformProvider } from '../model/groupProvidersByPlatform';
 

@@ -7,8 +7,8 @@ import IconMdiPuzzle from '~icons/mdi/puzzle';
 import IconMdiTestTube from '~icons/mdi/test-tube';
 import IconMdiUpdate from '~icons/mdi/update';
 
-import type { TabConfig } from '@/shared/model';
-import type { SettingsPaneProps } from '@/shared/ui';
+import type { SettingsPaneProps } from '@/shared/settings-layout';
+import type { TabConfig } from '@/shared/utils';
 
 import { AppearancePane } from '@/features/appearance-pane';
 import { ContentProvidersPane } from '@/features/content-providers';

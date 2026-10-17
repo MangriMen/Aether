@@ -2,8 +2,8 @@ import { setInput, Form, Field } from '@formisch/solid';
 import { createMemo, Show, splitProps } from 'solid-js';
 import { type Accessor, type Component, type ComponentProps } from 'solid-js';
 
-import { cn, noop } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { cn, noop } from '@/shared/utils';
 
 import type {
   WindowSettingsSchemaInput,

@@ -10,7 +10,7 @@ import {
   usePluginStates,
   useRemovePlugin,
 } from '@/features/plugins';
-import { ContextMenuTrigger } from '@/shared/ui';
+import { ContextMenuTrigger } from '@/shared/ui-kit';
 
 export type PluginControlledCardProps = {
   class?: string;

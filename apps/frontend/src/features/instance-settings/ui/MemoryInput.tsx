@@ -8,8 +8,8 @@ import {
   splitProps,
 } from 'solid-js';
 
-import { cn, isNil } from '@/shared/lib';
-import { CombinedTextField } from '@/shared/ui';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { cn, isNil } from '@/shared/utils';
 
 import type { MemorySliderProps } from './MemorySlider';
 

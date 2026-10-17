@@ -2,8 +2,9 @@ import type { Component, ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps, Show } from 'solid-js';
 
-import { cn, dayjs, formatTime } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { dayjs, formatTime } from '@/shared/format';
+import { useTranslation } from '@/shared/i18n';
+import { cn } from '@/shared/utils';
 
 import type { UpdateStatus } from '../model/update';
 

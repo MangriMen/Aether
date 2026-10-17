@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/solid-query';
 
 import { pluginsEvents, useEventListener } from '@/platform/ipc';
-import { logDebug } from '@/shared/lib';
+import { logDebug } from '@/shared/utils';
 
 import { pluginsCache } from './pluginsCache';
 

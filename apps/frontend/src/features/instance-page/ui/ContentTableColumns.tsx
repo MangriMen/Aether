@@ -5,15 +5,15 @@ import { createColumnHelper } from '@tanstack/solid-table';
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
 
 import type { ContentFile } from '@/features/content';
-import type { AppTableFeatures } from '@/shared/model';
+import type { AppTableFeatures } from '@/shared/ui-kit';
 
 import {
   getContentFileDisplayTitle,
   getContentFileVersionSortValue,
 } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button, Checkbox } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, Checkbox } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { ContentNameCell } from './ContentNameCell';
 import { ContentVersionCell } from './ContentVersionCell';

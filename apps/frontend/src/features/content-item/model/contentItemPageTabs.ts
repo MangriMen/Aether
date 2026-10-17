@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'solid-js';
 
 import type { ContentItem } from '@/features/content';
-import type { TabConfig } from '@/shared/model';
+import type { TabConfig } from '@/shared/utils';
 
 import { ContentDescriptionTab } from '../ui/ContentDescriptionTab';
 import { ContentVersionsTab } from '../ui/ContentVersionsTab';

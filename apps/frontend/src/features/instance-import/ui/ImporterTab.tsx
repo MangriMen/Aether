@@ -1,6 +1,6 @@
 import type { ImporterCapabilityEntry } from '@/features/plugins';
 
-import { Image } from '@/shared/ui';
+import { Image } from '@/shared/ui-kit';
 
 import type { ImporterTabConfig } from '../model/importerTabConfig';
 

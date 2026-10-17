@@ -2,7 +2,7 @@ import type { Component } from 'solid-js';
 
 import { splitProps, createMemo, Show } from 'solid-js';
 
-import type { IconButtonProps } from '@/shared/ui';
+import type { IconButtonProps } from '@/shared/ui-kit';
 
 import type { Instance } from '../model/instance';
 

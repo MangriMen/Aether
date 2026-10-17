@@ -12,9 +12,9 @@ import {
   useInstallPluginFromProvider,
   usePluginPreview,
 } from '@/features/plugins';
-import { debounce } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { debounce } from '@/shared/utils';
 
 import type { ReleaseOption } from './PluginPreviewCard';
 

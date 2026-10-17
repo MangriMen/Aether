@@ -11,8 +11,9 @@ import type {
   ContentInstallParamsDto,
   ContentSearchParamsDto,
 } from '@/platform/bindings/instance';
-import type { PartialBy } from '@/shared/model';
+import type { PartialBy } from '@/shared/utils';
 
+import { showError, isLauncherError } from '@/features/errors';
 import { invalidateInstanceContent } from '@/features/instance';
 import {
   SettingsTab,
@@ -20,9 +21,8 @@ import {
   useSettingsSearchParams,
 } from '@/features/settings';
 import { instanceCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { isLauncherError, useTranslation } from '@/shared/model';
-import { Button, showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button, showToast } from '@/shared/ui-kit';
 
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type {

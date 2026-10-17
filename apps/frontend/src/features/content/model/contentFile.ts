@@ -1,9 +1,9 @@
 import type { ContentFileDto } from '@/platform/bindings/instance';
 
-import { ROUTES } from '@/shared/config';
-import { searchParamsToQueryString } from '@/shared/lib';
+import { searchParamsToQueryString } from '@/shared/search-params';
 
 import { providerIdToString, type ProviderId } from './contentItem';
+import { CONTENT_ROUTES } from './contentRoutes';
 
 export type ContentFile = ContentFileDto;
 
@@ -93,6 +93,6 @@ export const getContentFileProjectHref = (
     capability: providerId.capabilityId,
   });
 
-  const base = ROUTES.CONTENT_ITEM(contentId);
+  const base = CONTENT_ROUTES.CONTENT_ITEM(contentId);
   return query ? `${base}?${query}` : base;
 };

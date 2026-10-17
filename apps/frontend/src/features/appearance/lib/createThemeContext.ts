@@ -5,7 +5,7 @@ import { makePersisted } from '@solid-primitives/storage';
 import { batch, createEffect, on, onCleanup, onMount } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
-import { logError } from '@/shared/lib';
+import { logError } from '@/shared/utils';
 
 import type { Theme, ThemeConfig } from '../model/theme';
 import type {

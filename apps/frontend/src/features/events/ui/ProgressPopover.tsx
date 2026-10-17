@@ -3,9 +3,10 @@ import type { Accessor, Component, ComponentProps } from 'solid-js';
 import IconOpenInNew from '~icons/mdi/open-in-new';
 import { For, splitProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { showDialog, useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { showDialog } from '@/shared/dialogs';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
 

@@ -1,8 +1,8 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Button } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Button } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type AppErrorBoundaryProps = ComponentProps<'div'> & {
   reset: () => void;

@@ -4,8 +4,8 @@ import { Show, splitProps, type Component } from 'solid-js';
 
 import type { ContentItem } from '@/features/content';
 
-import { cn } from '@/shared/lib';
-import { Image } from '@/shared/ui';
+import { Image } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentItemInfoProps = {
   item: ContentItem;

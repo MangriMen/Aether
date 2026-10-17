@@ -9,10 +9,10 @@ import {
 
 import type { EditPluginSettingsDto } from '@/platform/bindings/plugin';
 
+import { showError, isLauncherError } from '@/features/errors';
 import { pluginsCommands } from '@/platform/ipc';
-import { showError } from '@/shared/lib';
-import { isLauncherError, useTranslation } from '@/shared/model';
-import { showToast } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { showToast } from '@/shared/ui-kit';
 
 import type { PluginId } from '../model/pluginManifest';
 

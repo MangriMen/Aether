@@ -7,9 +7,9 @@ import {
   type ComponentProps,
 } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Badge, FieldLabel } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Badge, FieldLabel } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type PluginHostFunctionsSectionProps = ComponentProps<'div'> & {
   /** `null`/`undefined`: the manifest does not declare `api.hostFunctions`. */

@@ -2,8 +2,8 @@ import type { ComponentProps } from 'solid-js';
 
 import { splitProps, type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
-import { DataTable } from '@/shared/ui';
+import { DataTable } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useJavaList } from '../api/javaQueries';
 import { createJavaVersionsTable } from '../lib/createJavaVersionsTable';

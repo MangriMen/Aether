@@ -15,7 +15,7 @@ import {
   useUpdatePlugin,
   type Plugin,
 } from '@/features/plugins';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   CombinedTextField,
@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
 
 export type PluginVersionDropdownProps = ComponentProps<'div'> & {
   plugin: Plugin;

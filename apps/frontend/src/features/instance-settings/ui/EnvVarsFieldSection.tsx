@@ -7,8 +7,8 @@ import {
 } from '@formisch/solid';
 import { type Accessor, type Component } from 'solid-js';
 
-import { parseI18nError } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { parseI18nError } from '@/shared/utils';
 
 import { isEnvVarsError } from '../model/javaAndMemoryConstants';
 import { getDisplayValue } from '../model/javaAndMemoryDisplay';

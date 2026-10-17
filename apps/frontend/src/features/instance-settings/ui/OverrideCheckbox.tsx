@@ -2,8 +2,8 @@ import type { PolymorphicProps } from '@kobalte/core';
 
 import { type Accessor, Show, splitProps, type ValidComponent } from 'solid-js';
 
-import { createOverrideHandler } from '@/shared/lib';
-import { Checkbox, type CheckboxRootProps } from '@/shared/ui';
+import { Checkbox, type CheckboxRootProps } from '@/shared/ui-kit';
+import { createOverrideHandler } from '@/shared/utils';
 
 export type OverrideCheckboxProps<
   T extends ValidComponent = 'div',

@@ -13,8 +13,7 @@ import {
   CONTENT_TYPE_TO_TITLE,
   useImportContents,
 } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   Button,
   DropdownMenu,
@@ -23,7 +22,8 @@ import {
   DropdownMenuTrigger,
   IconButton,
   Separator,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { OPEN_FILTERS_BY_CONTENT_TYPE } from '../model/constants';
 

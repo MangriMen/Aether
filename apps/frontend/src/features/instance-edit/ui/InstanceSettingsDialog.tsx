@@ -9,8 +9,8 @@ import type { Instance } from '@/features/instance';
 
 import { useInstance } from '@/features/instance';
 import { settingsCache } from '@/features/settings';
-import { useTranslation } from '@/shared/model';
-import { Dialog, DialogContent } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Dialog, DialogContent } from '@/shared/ui-kit';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';

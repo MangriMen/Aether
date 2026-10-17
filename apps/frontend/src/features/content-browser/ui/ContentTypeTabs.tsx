@@ -7,8 +7,8 @@ import {
   isContentType,
   type ContentType,
 } from '@/features/content';
-import { useTranslation } from '@/shared/model';
-import { Skeleton, Tabs, TabsList, TabsTrigger } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Skeleton, Tabs, TabsList, TabsTrigger } from '@/shared/ui-kit';
 
 export type ContentTypeTabsProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   items: readonly ContentType[];

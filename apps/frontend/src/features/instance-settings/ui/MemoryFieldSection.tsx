@@ -3,7 +3,7 @@ import type { FormStore } from '@formisch/solid';
 import { setInput, Field } from '@formisch/solid';
 import { type Accessor, type Component, createMemo, onCleanup } from 'solid-js';
 
-import { debounce } from '@/shared/lib';
+import { debounce } from '@/shared/utils';
 
 import type {
   JavaAndMemorySettingsSchemaInput,

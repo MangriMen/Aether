@@ -2,12 +2,12 @@ import type { ComponentProps } from 'solid-js';
 
 import { createMemo, splitProps, type Component } from 'solid-js';
 
-import type { CombinedTextFieldProps } from '@/shared/ui';
+import type { CombinedTextFieldProps } from '@/shared/ui-kit';
 
 import { CONTENT_TYPE_TO_TITLE, type ContentType } from '@/features/content';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTextField } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentSearchProps = CombinedTextFieldProps &
   ComponentProps<'div'> & {

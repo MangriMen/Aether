@@ -1,7 +1,7 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
-import { cn, useIsOverflow } from '@/shared/lib';
-import { CombinedTooltip } from '@/shared/ui';
+import { useIsOverflow, CombinedTooltip } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type AllowedTruncatedTextProps = ComponentProps<'span'> & {
   value?: string;

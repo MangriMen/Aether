@@ -1,7 +1,7 @@
 import { splitProps, type Component, type ComponentProps } from 'solid-js';
 
 import { useDeveloperModeCounter } from '@/features/settings';
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { AppVersion } from './AppVersion';
 import { OsVersion } from './OsVersion';

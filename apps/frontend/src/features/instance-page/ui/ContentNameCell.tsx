@@ -10,9 +10,9 @@ import {
   isLocalContentFile,
 } from '@/features/content';
 import { InstanceIcon } from '@/features/instance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { Skeleton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { Skeleton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 interface ContentNameCellProps {
   file: ContentFile;

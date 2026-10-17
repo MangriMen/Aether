@@ -36,11 +36,8 @@ const plugins = [
 
 const srcAliases = {
   '@/app': path.resolve(import.meta.dirname, './src/app'),
-  '@/pages': path.resolve(import.meta.dirname, './src/pages'),
-  '@/widgets': path.resolve(import.meta.dirname, './src/widgets'),
   '@/features': path.resolve(import.meta.dirname, './src/features'),
   '@/platform': path.resolve(import.meta.dirname, './src/platform'),
-  '@/entities': path.resolve(import.meta.dirname, './src/entities'),
   '@/shared': path.resolve(import.meta.dirname, './src/shared'),
 };
 

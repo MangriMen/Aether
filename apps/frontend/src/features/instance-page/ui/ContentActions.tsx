@@ -11,8 +11,7 @@ import {
   type ContentFile,
 } from '@/features/content';
 import { useRevealInExplorer } from '@/features/instance';
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
 import {
   CombinedTooltip,
   DropdownMenu,
@@ -23,7 +22,8 @@ import {
   Switch,
   SwitchControl,
   SwitchThumb,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 export type ContentActionsProps = ComponentProps<'div'> & {
   instanceId: string;

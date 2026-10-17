@@ -2,22 +2,23 @@ import type { Component } from 'solid-js';
 
 import { createMemo } from 'solid-js';
 
-import type { SettingsEntryProps } from '@/shared/ui';
+import type { SettingsEntryProps } from '@/shared/settings-layout';
 
 import {
   useAppSettings,
   useEditAppSettings,
   type ActionOnInstanceLaunchType,
 } from '@/features/settings';
-import { useTranslation, type Option } from '@/shared/model';
+import { useTranslation } from '@/shared/i18n';
+import { SettingsEntry } from '@/shared/settings-layout';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SettingsEntry,
-} from '@/shared/ui';
+} from '@/shared/ui-kit';
+import { type Option } from '@/shared/utils';
 
 export type SelectActionOnInstanceLaunchEntryProps = SettingsEntryProps;
 

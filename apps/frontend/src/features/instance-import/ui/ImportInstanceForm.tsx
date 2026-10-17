@@ -9,8 +9,8 @@ import type {
 } from '@/features/plugins';
 
 import { useImportInstance } from '@/features/instance';
-import { cn } from '@/shared/lib';
-import { BrowseTrailingIcon, CombinedTextField } from '@/shared/ui';
+import { BrowseTrailingIcon, CombinedTextField } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import { useEnsurePluginAccess } from '../lib/useEnsurePluginAccess';
 import {

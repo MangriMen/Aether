@@ -1,6 +1,6 @@
 import { splitProps, type Component } from 'solid-js';
 
-import { cn } from '@/shared/lib';
+import { cn } from '@/shared/utils';
 
 import { TitleBar, type TitleBarProps } from './TitleBar';
 import { WindowControls } from './WindowControls';

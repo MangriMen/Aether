@@ -4,11 +4,11 @@ import { Polymorphic, type PolymorphicProps } from '@kobalte/core';
 import IconMdiDelete from '~icons/mdi/delete';
 import { splitProps } from 'solid-js';
 
-import type { ButtonProps } from '@/shared/ui';
+import type { ButtonProps } from '@/shared/ui-kit';
 
-import { cn } from '@/shared/lib';
-import { useTranslation } from '@/shared/model';
-import { CombinedTooltip, IconButton } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { AccountType } from '../model/account';
 
