@@ -13,5 +13,8 @@ export const loaderManifestToMapped = (
       acc[version.id] = version;
       return acc;
     }, {}),
+    versionGroups: Object.fromEntries(
+      manifest.versionGroups.map((group) => [group.id, group]),
+    ),
   };
 };

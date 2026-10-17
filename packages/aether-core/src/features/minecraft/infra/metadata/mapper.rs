@@ -287,6 +287,7 @@ impl From<daedalus::modded::Manifest> for modded::Manifest {
     fn from(value: daedalus::modded::Manifest) -> Self {
         Self {
             game_versions: value.game_versions.into_iter().map(Into::into).collect(),
+            version_groups: value.version_groups.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -296,6 +297,16 @@ impl From<daedalus::modded::Version> for modded::Version {
         Self {
             id: value.id,
             stable: value.stable,
+            loaders: value.loaders.into_iter().map(Into::into).collect(),
+            version_group: value.version_group,
+        }
+    }
+}
+
+impl From<daedalus::modded::VersionGroup> for modded::VersionGroup {
+    fn from(value: daedalus::modded::VersionGroup) -> Self {
+        Self {
+            id: value.id,
             loaders: value.loaders.into_iter().map(Into::into).collect(),
         }
     }

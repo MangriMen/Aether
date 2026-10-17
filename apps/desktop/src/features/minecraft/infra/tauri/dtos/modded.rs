@@ -7,6 +7,8 @@ use specta::Type;
 pub struct ModdedManifestDto {
     /// The game versions the mod loader supports
     pub game_versions: Vec<ModdedVersionDto>,
+    /// Groups of game versions that share the same loader versions
+    pub version_groups: Vec<ModdedVersionGroupDto>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -17,6 +19,18 @@ pub struct ModdedVersionDto {
     /// Whether the release is stable or not
     pub stable: bool,
     /// A map that contains loader versions for the game version
+    pub loaders: Vec<ModdedLoaderVersionDto>,
+    /// The group whose loader versions apply to this game version, instead of `loaders`
+    #[serde(rename = "versionGroup")]
+    pub version_group: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+/// A group of game versions that share the same loader versions
+pub struct ModdedVersionGroupDto {
+    /// The version group ID
+    pub id: String,
+    /// The loader versions of the group
     pub loaders: Vec<ModdedLoaderVersionDto>,
 }
 
@@ -35,6 +49,7 @@ impl From<aether_core::features::minecraft::modded::Manifest> for ModdedManifest
     fn from(value: aether_core::features::minecraft::modded::Manifest) -> Self {
         Self {
             game_versions: value.game_versions.into_iter().map(Into::into).collect(),
+            version_groups: value.version_groups.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -44,6 +59,16 @@ impl From<aether_core::features::minecraft::modded::Version> for ModdedVersionDt
         Self {
             id: value.id,
             stable: value.stable,
+            loaders: value.loaders.into_iter().map(Into::into).collect(),
+            version_group: value.version_group,
+        }
+    }
+}
+
+impl From<aether_core::features::minecraft::modded::VersionGroup> for ModdedVersionGroupDto {
+    fn from(value: aether_core::features::minecraft::modded::VersionGroup) -> Self {
+        Self {
+            id: value.id,
             loaders: value.loaders.into_iter().map(Into::into).collect(),
         }
     }

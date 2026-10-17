@@ -14,13 +14,14 @@ pub struct ModrinthMetadataStorage<RC: RequestClient> {
     request_client: Arc<RC>,
 }
 
+fn get_loader_manifest_url(loader: ModLoader) -> String {
+    let metadata = daedalus::modded::loader_manifest_metadata(loader.as_meta_str());
+    format!("{META_URL}{}", metadata.path)
+}
+
 impl<RC: RequestClient> ModrinthMetadataStorage<RC> {
     pub fn new(request_client: Arc<RC>) -> Self {
         Self { request_client }
-    }
-
-    fn get_loader_manifest_url(loader: ModLoader) -> String {
-        format!("{META_URL}{}/v0/manifest.json", loader.as_meta_str())
     }
 }
 
@@ -48,9 +49,7 @@ impl<RC: RequestClient> MetadataStorage for ModrinthMetadataStorage<RC> {
     ) -> Result<modded::Manifest, MinecraftDomainError> {
         Ok(self
             .request_client
-            .fetch_json::<daedalus::modded::Manifest>(Request::get(Self::get_loader_manifest_url(
-                loader,
-            )))
+            .fetch_json::<daedalus::modded::Manifest>(Request::get(get_loader_manifest_url(loader)))
             .await
             .map_err(|err| {
                 IoError::IoError(std::io::Error::new(
@@ -59,5 +58,26 @@ impl<RC: RequestClient> MetadataStorage for ModrinthMetadataStorage<RC> {
                 ))
             })?
             .into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_request_the_current_manifest_format_of_each_loader() {
+        assert_eq!(
+            get_loader_manifest_url(ModLoader::Fabric),
+            format!("{META_URL}fabric/v0/manifest.json")
+        );
+        assert_eq!(
+            get_loader_manifest_url(ModLoader::Quilt),
+            format!("{META_URL}quilt/v1/manifest.json")
+        );
+        assert_eq!(
+            get_loader_manifest_url(ModLoader::NeoForge),
+            format!("{META_URL}neo/v0/manifest.json")
+        );
     }
 }

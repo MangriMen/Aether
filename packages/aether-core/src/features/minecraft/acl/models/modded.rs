@@ -49,6 +49,9 @@ pub struct Processor {
 pub struct Manifest {
     /// The game versions the mod loader supports
     pub game_versions: Vec<Version>,
+    /// Groups of game versions that share the same loader versions
+    #[serde(default)]
+    pub version_groups: Vec<VersionGroup>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -60,6 +63,32 @@ pub struct Version {
     pub stable: bool,
     /// A map that contains loader versions for the game version
     pub loaders: Vec<LoaderVersion>,
+    /// The group whose loader versions apply to this game version, instead of `loaders`
+    #[serde(default)]
+    pub version_group: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+/// A group of game versions that share the same loader versions
+pub struct VersionGroup {
+    /// The version group ID
+    pub id: String,
+    /// The loader versions of the group
+    pub loaders: Vec<LoaderVersion>,
+}
+
+impl Manifest {
+    /// The loader versions of a game version, taken from its group when it has one.
+    pub fn loaders_of<'a>(&'a self, version: &'a Version) -> Option<&'a [LoaderVersion]> {
+        match &version.version_group {
+            Some(group) => self
+                .version_groups
+                .iter()
+                .find(|candidate| candidate.id == *group)
+                .map(|candidate| candidate.loaders.as_slice()),
+            None => Some(version.loaders.as_slice()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

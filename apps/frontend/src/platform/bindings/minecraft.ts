@@ -211,6 +211,8 @@ export type ModdedLoaderVersionDto = {
 export type ModdedManifestDto = {
 	/**  The game versions the mod loader supports */
 	gameVersions: ModdedVersionDto[],
+	/**  Groups of game versions that share the same loader versions */
+	versionGroups: ModdedVersionGroupDto[],
 };
 
 /**   A game version of Minecraft */
@@ -220,6 +222,16 @@ export type ModdedVersionDto = {
 	/**  Whether the release is stable or not */
 	stable: boolean,
 	/**  A map that contains loader versions for the game version */
+	loaders: ModdedLoaderVersionDto[],
+	/**  The group whose loader versions apply to this game version, instead of `loaders` */
+	versionGroup: string | null,
+};
+
+/**  A group of game versions that share the same loader versions */
+export type ModdedVersionGroupDto = {
+	/**  The version group ID */
+	id: string,
+	/**  The loader versions of the group */
 	loaders: ModdedLoaderVersionDto[],
 };
 

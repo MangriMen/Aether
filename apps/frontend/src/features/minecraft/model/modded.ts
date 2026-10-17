@@ -2,6 +2,7 @@ import type {
   ModdedLoaderVersionDto,
   ModdedManifestDto,
   ModdedVersionDto,
+  ModdedVersionGroupDto,
 } from '@/platform/bindings/minecraft';
 
 export type ModdedManifest = ModdedManifestDto;
@@ -13,4 +14,5 @@ export type ModdedLoaderVersion = ModdedLoaderVersionDto;
 
 export interface MappedLoaderManifest {
   gameVersions: Record<string, ModdedVersion>;
+  versionGroups: Record<string, ModdedVersionGroupDto>;
 }
