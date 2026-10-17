@@ -1,44 +1,45 @@
+import { quote, readQuoted } from './quoting';
+
 const WHITESPACE = /\s/;
 const NEEDS_QUOTES = /[\s"]/;
 
 /**
  * Splits on whitespace like a shell. Text inside `"..."` keeps its spaces and the quotes are
- * dropped (`-Dx="a b"` is `-Dx=a b`); `""` inside quotes is a literal quote. Backslashes are
- * plain characters, so Windows paths need no escaping.
+ * dropped (`-Dx="a b"` is `-Dx=a b`); `""` inside quotes is a literal quote. A quote that is
+ * never closed is a plain character, so it does not swallow the following arguments.
+ * Backslashes are plain characters, so Windows paths need no escaping.
  */
 export const stringToLaunchArgs = (value: string): string[] => {
   const args: string[] = [];
   let current = '';
   let hasArg = false;
-  let inQuotes = false;
 
-  for (let i = 0; i < value.length; i++) {
-    const char = value[i]!;
+  let index = 0;
 
-    if (char === '"') {
-      if (inQuotes && value[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+  while (index < value.length) {
+    const char = value[index]!;
+    const quoted = char === '"' ? readQuoted(value, index) : undefined;
 
+    if (quoted) {
+      current += quoted.value;
       hasArg = true;
+      index = quoted.end;
       continue;
     }
 
-    if (!inQuotes && WHITESPACE.test(char)) {
+    if (WHITESPACE.test(char)) {
       if (hasArg) {
         args.push(current);
       }
 
       current = '';
       hasArg = false;
-      continue;
+    } else {
+      current += char;
+      hasArg = true;
     }
 
-    current += char;
-    hasArg = true;
+    index++;
   }
 
   if (hasArg) {
@@ -49,7 +50,7 @@ export const stringToLaunchArgs = (value: string): string[] => {
 };
 
 const launchArgToString = (arg: string) =>
-  arg && !NEEDS_QUOTES.test(arg) ? arg : `"${arg.replaceAll('"', '""')}"`;
+  arg && !NEEDS_QUOTES.test(arg) ? arg : quote(arg);
 
 export const launchArgsToString = (
   value: string[] | undefined,

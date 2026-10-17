@@ -18,6 +18,15 @@ describe('stringToLaunchArgs', () => {
     expect(stringToLaunchArgs('"say ""hi"""')).toEqual(['say "hi"']);
   });
 
+  it('reads an unclosed quote as a plain character', () => {
+    expect(stringToLaunchArgs('-Dx="a b -Xmx2G')).toEqual([
+      '-Dx="a',
+      'b',
+      '-Xmx2G',
+    ]);
+    expect(stringToLaunchArgs('"a b" -Dy="c')).toEqual(['a b', '-Dy="c']);
+  });
+
   it('reads back what launchArgsToString writes', () => {
     const args = ['-Xss1M', '-Dx=a b', '', '-Dq="v"', 'C:\\dir\\'];
 

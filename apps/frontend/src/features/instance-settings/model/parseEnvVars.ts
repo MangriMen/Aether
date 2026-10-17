@@ -1,12 +1,12 @@
 import { EnvVarsError } from './javaAndMemoryConstants';
+import { quote, readQuoted } from './quoting';
 
 export type EnvVarsParseResult =
   { vars: [string, string][] } | { error: EnvVarsError; part: string };
 
 const SEPARATOR = /[\s;]/;
-const LEADING_SEPARATORS = /^[\s;]+/;
 const ONLY_SEPARATORS = /^[\s;]*$/;
-const ASSIGNMENT = /^[A-Za-z_]\w*=/;
+const ASSIGNMENT = /[A-Za-z_]\w*=/y;
 
 const trimSeparatorsEnd = (value: string) => {
   let end = value.length;
@@ -18,8 +18,11 @@ const trimSeparatorsEnd = (value: string) => {
   return value.slice(0, end);
 };
 
-const isAssignmentAt = (value: string, index: number) =>
-  ASSIGNMENT.test(value.slice(index));
+const isAssignmentAt = (value: string, index: number) => {
+  ASSIGNMENT.lastIndex = index;
+
+  return ASSIGNMENT.test(value);
+};
 
 /** Index of the next `NAME=` that follows whitespace or `;`, or the string length. */
 const findNextAssignment = (value: string, from: number) => {
@@ -30,32 +33,6 @@ const findNextAssignment = (value: string, from: number) => {
   }
 
   return value.length;
-};
-
-/** Reads `"..."` at `start`, where `""` is a literal quote. Undefined unless a separator or the end follows the closing quote. */
-const readQuoted = (value: string, start: number) => {
-  let result = '';
-
-  for (let i = start + 1; i < value.length; i++) {
-    if (value[i] !== '"') {
-      result += value[i];
-      continue;
-    }
-
-    if (value[i + 1] === '"') {
-      result += '"';
-      i++;
-      continue;
-    }
-
-    const next = value[i + 1];
-
-    return next === undefined || SEPARATOR.test(next)
-      ? { value: result, end: i + 1 }
-      : undefined;
-  }
-
-  return undefined;
 };
 
 const describeInvalidPart = (part: string): EnvVarsError => {
@@ -78,7 +55,9 @@ export const stringToEnvVars = (value: string): EnvVarsParseResult => {
   let index = 0;
 
   while (index < value.length) {
-    index += LEADING_SEPARATORS.exec(value.slice(index))?.[0].length ?? 0;
+    while (index < value.length && SEPARATOR.test(value[index]!)) {
+      index++;
+    }
 
     if (index >= value.length) {
       break;
@@ -97,29 +76,19 @@ export const stringToEnvVars = (value: string): EnvVarsParseResult => {
     const quoted =
       value[valueStart] === '"' ? readQuoted(value, valueStart) : undefined;
 
-    if (quoted) {
-      const quotedEnd = findNextAssignment(value, quoted.end);
-
-      if (ONLY_SEPARATORS.test(value.slice(quoted.end, quotedEnd))) {
-        vars.push([key, quoted.value]);
-        index = quotedEnd;
-        continue;
-      }
-    }
-
     const valueEnd = findNextAssignment(value, quoted?.end ?? valueStart);
 
     vars.push([
       key,
-      trimSeparatorsEnd(value.slice(valueStart, valueEnd).trimStart()),
+      quoted && ONLY_SEPARATORS.test(value.slice(quoted.end, valueEnd))
+        ? quoted.value
+        : trimSeparatorsEnd(value.slice(valueStart, valueEnd).trimStart()),
     ]);
     index = valueEnd;
   }
 
   return { vars };
 };
-
-const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 const envVarToString = ([key, value]: [string, string]) => {
   const plain = `${key}=${value}`;
