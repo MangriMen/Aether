@@ -48,10 +48,9 @@ const preview: Preview = {
       const root = document.documentElement;
       root.setAttribute(KB_THEME_ATTRIBUTE, theme.mode);
       root.style.colorScheme = theme.mode;
-      root.style.setProperty(
-        '--sb-scrollbar-thumb',
-        getBackground(context.globals).scrollbarThumb,
-      );
+      const background = getBackground(context.globals);
+      root.style.setProperty('--sb-background', background.value);
+      root.style.setProperty('--sb-scrollbar-thumb', background.scrollbarThumb);
       return (
         <div class='p-8 text-foreground'>
           <div class='rounded-xl bg-background'>

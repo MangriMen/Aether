@@ -2,11 +2,13 @@
 html {
   max-height: none;
   overflow: auto;
+  /* what shows through the transparent scrollbar track */
+  background-color: var(--sb-background, #1b1c1d);
 }
 
 /* The scrollbar belongs to the page, so it follows the background and not the app theme */
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background-color: var(--sb-background, #1b1c1d);
 }
 
 ::-webkit-scrollbar-thumb {
