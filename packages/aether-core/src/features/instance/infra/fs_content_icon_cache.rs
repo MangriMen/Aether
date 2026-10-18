@@ -131,13 +131,42 @@ fn names_content_by_hash(url: &url::Url) -> bool {
         .any(|run| run.len() >= 32)
 }
 
+/// An icon is fetched with the application's own client, from a URL a provider (a plugin,
+/// possibly) gave, so it has to name a public host over `https`: not a machine of the user's
+/// own network, which a request from here would reach. Only an address written out in the URL
+/// is told apart; a name that resolves to a private one is not.
 fn parse(url: &str) -> Result<url::Url, ContentIconError> {
-    let parsed = url::Url::parse(url).map_err(|_| ContentIconError::InvalidUrl(url.to_owned()))?;
-    if matches!(parsed.scheme(), "https" | "http") {
-        Ok(parsed)
-    } else {
-        Err(ContentIconError::InvalidUrl(url.to_owned()))
-    }
+    let invalid = || ContentIconError::InvalidUrl(url.to_owned());
+    let parsed = url::Url::parse(url).map_err(|_| invalid())?;
+    let public = parsed.scheme() == "https"
+        && match parsed.host() {
+            Some(url::Host::Domain(domain)) => {
+                let domain = domain.trim_end_matches('.').to_ascii_lowercase();
+                domain != "localhost" && !domain.ends_with(".localhost")
+            }
+            Some(url::Host::Ipv4(ip)) => is_public_ipv4(ip),
+            Some(url::Host::Ipv6(ip)) => ip.to_ipv4_mapped().map_or_else(
+                || {
+                    !(ip.is_loopback()
+                        || ip.is_unspecified()
+                        || ip.is_unique_local()
+                        || ip.is_unicast_link_local())
+                },
+                is_public_ipv4,
+            ),
+            None => false,
+        };
+    if public { Ok(parsed) } else { Err(invalid()) }
+}
+
+fn is_public_ipv4(ip: std::net::Ipv4Addr) -> bool {
+    !(ip.is_loopback()
+        || ip.is_private()
+        || ip.is_link_local()
+        || ip.is_unspecified()
+        || ip.is_broadcast()
+        // Carrier-grade NAT, 100.64.0.0/10.
+        || (ip.octets()[0] == 100 && ip.octets()[1] & 0xc0 == 64))
 }
 
 /// The extension of the image format `head` (the first bytes of a file) starts, if taken.
@@ -735,10 +764,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_reject_a_url_when_it_is_not_http() {
+    async fn should_reject_a_url_when_it_is_not_a_public_https_one() {
         let fixture = Fixture::new();
 
-        for url in ["file:///etc/passwd", "not a url", "../../icon.png"] {
+        for url in [
+            "file:///etc/passwd",
+            "not a url",
+            "../../icon.png",
+            "http://cdn.example.com/icon.png",
+            "https://localhost/icon.png",
+            "https://app.localhost./icon.png",
+            "https://127.0.0.1/icon.png",
+            "https://192.168.1.1/admin/reboot",
+            "https://10.0.0.5/icon.png",
+            "https://169.254.169.254/latest/meta-data",
+            "https://100.64.0.1/icon.png",
+            "https://[::1]/icon.png",
+            "https://[fd00::1]/icon.png",
+            "https://[fe80::1]/icon.png",
+            "https://[::ffff:192.168.1.1]/icon.png",
+        ] {
             assert!(matches!(
                 fixture.cache.fetch(url).await,
                 Err(ContentIconError::InvalidUrl(_))

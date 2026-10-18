@@ -5,9 +5,10 @@ use std::{
 
 use aether_core_plugin_api::v0::{
     ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
-    ContentVersionMetadataDto, InstallPlanDto, OverrideLocationDto, OverrideSourceDto,
-    PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolvedFileDto,
+    ContentVersionMetadataDto, GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto,
+    InstallPlanDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
+    PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
+    ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::Msgpack;
@@ -449,7 +450,13 @@ impl ContentProvider for PluginContentProviderProxy {
         )?;
 
         let result_dto: Vec<ContentMetadataDto> = self
-            .call_plugin("get_contents_metadata", handler, content_ids.to_vec())
+            .call_plugin(
+                "get_contents_metadata",
+                handler,
+                GetContentsMetadataParamsDto {
+                    content_ids: content_ids.to_vec(),
+                },
+            )
             .await?;
         // An item answers an id by its own id or by its slug, as a provider may be asked by
         // either. A slug match is kept under the item's own id, which the host cannot check
@@ -485,7 +492,13 @@ impl ContentProvider for PluginContentProviderProxy {
         )?;
 
         let result_dto: Vec<ContentVersionMetadataDto> = self
-            .call_plugin("get_versions_metadata", handler, version_ids.to_vec())
+            .call_plugin(
+                "get_versions_metadata",
+                handler,
+                GetVersionsMetadataParamsDto {
+                    version_ids: version_ids.to_vec(),
+                },
+            )
             .await?;
         Ok(self
             .keep_answered(
@@ -546,12 +559,13 @@ fn describe_resolve_target(target: &ResolveTarget) -> String {
     }
 }
 
-/// An icon is taken only as a web address, which the host fetches itself (a file path or any
-/// other scheme is dropped, so the plugin cannot point the host at a file of the user's).
+/// An icon is taken only as an `https` address, which the host fetches itself (a file path or
+/// any other scheme is dropped, so the plugin cannot point the host at a file of the user's;
+/// the icon cache refuses private hosts).
 fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
-    let icon_url = dto.icon_url.filter(|icon_url| {
-        url::Url::parse(icon_url).is_ok_and(|url| matches!(url.scheme(), "https" | "http"))
-    });
+    let icon_url = dto
+        .icon_url
+        .filter(|icon_url| url::Url::parse(icon_url).is_ok_and(|url| url.scheme() == "https"));
 
     ContentMetadata {
         content_id: dto.content_id,

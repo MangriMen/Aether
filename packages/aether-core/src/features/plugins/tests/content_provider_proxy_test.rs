@@ -6,10 +6,11 @@ use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
     ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto, ContentTypeDto,
-    ContentVersionMetadataDto, FileHashDto, FileSideDto, InstallFileEntryDto, InstallPlanDto,
-    InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto,
-    OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    ContentVersionMetadataDto, FileHashDto, FileSideDto, GetContentsMetadataParamsDto,
+    GetVersionsMetadataParamsDto, InstallFileEntryDto, InstallPlanDto, InstallTargetDto,
+    InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
+    PackMetadataDto, PackSourceDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
+    ResolveTargetDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -513,7 +514,12 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
         .get_contents_metadata(&["238222".to_owned()])
         .await
         .unwrap();
-    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["238222"]);
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetContentsMetadataParamsDto>(),
+        GetContentsMetadataParamsDto {
+            content_ids: vec!["238222".into()]
+        }
+    );
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author.as_deref(), Some("mezz"));
     assert_eq!(
@@ -526,7 +532,12 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
         .get_versions_metadata(&["5000000".to_owned()])
         .await
         .unwrap();
-    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["5000000"]);
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetVersionsMetadataParamsDto>(),
+        GetVersionsMetadataParamsDto {
+            version_ids: vec!["5000000".into()]
+        }
+    );
     assert_eq!(versions[0].version_number, "19.21.0");
     assert_eq!(versions[0].name, None, "an empty title is no title");
     assert_eq!(
@@ -544,14 +555,15 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
             encode(vec![
                 project_metadata("1", Some("file:///C:/Users/me/secret.png")),
                 project_metadata("2", Some("/cache/icon.png")),
-                project_metadata("3", Some("http://example.com/icon.png")),
+                project_metadata("3", Some("https://example.com/icon.png")),
+                project_metadata("4", Some("http://example.com/icon.png")),
             ]),
         )],
     );
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1".to_owned(), "2".to_owned(), "3".to_owned()])
+        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
         .await
         .unwrap();
 
@@ -559,8 +571,9 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
     assert_eq!(projects[1].icon_url, None);
     assert_eq!(
         projects[2].icon_url.as_deref(),
-        Some("http://example.com/icon.png")
+        Some("https://example.com/icon.png")
     );
+    assert_eq!(projects[3].icon_url, None, "cleartext http is not fetched");
 }
 
 #[tokio::test]

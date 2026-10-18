@@ -181,14 +181,14 @@
           "type": "string"
         },
         "getContentsMetadata": {
-          "description": "Optional function describing projects to show installed content by (name, icon, author).\nTakes a list of project ids, returns a list of `ContentMetadataDto`. Without it the\nprovider's content is shown by file alone.",
+          "description": "Optional function describing projects to show installed content by (name, icon, author).\nTakes `GetContentsMetadataParamsDto`, returns a list of `ContentMetadataDto`. Without it the\nprovider's content is shown by file alone.",
           "type": [
             "string",
             "null"
           ]
         },
         "getVersionsMetadata": {
-          "description": "Optional function giving the version number of installed files. Takes a list of version\nids, returns a list of `ContentVersionMetadataDto`. Without it the files are shown\nwithout a version.",
+          "description": "Optional function giving the version number of installed files. Takes\n`GetVersionsMetadataParamsDto`, returns a list of `ContentVersionMetadataDto`. Without it the files are shown\nwithout a version.",
           "type": [
             "string",
             "null"
