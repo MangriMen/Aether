@@ -13,16 +13,18 @@ import { CombinedDialog } from '@/shared/ui-kit';
 
 import { pluginAccessTargetOf } from '../model/accessTarget';
 
-const CONFIRM_DIALOG_ID = 'confirmPluginAccess';
+// Every dialog gets its own id, so several can be open at once without replacing each other.
+let dialogCounter = 0;
 
 /** Resolves with the user's answer; closing the dialog any other way is a "no". */
-const askNow = (texts: {
+const askUser = (texts: {
   header?: string;
   description?: string;
   allow?: string;
   deny?: string;
 }) =>
   new Promise<boolean>((resolve) => {
+    const dialogId = `confirmPluginAccess-${++dialogCounter}`;
     let answered = false;
 
     const answer = (allowed: boolean) => {
@@ -31,11 +33,11 @@ const askNow = (texts: {
       }
 
       answered = true;
-      closeDialog(CONFIRM_DIALOG_ID);
+      closeDialog(dialogId);
       resolve(allowed);
     };
 
-    showDialog(CONFIRM_DIALOG_ID, CombinedDialog, {
+    showDialog(dialogId, CombinedDialog, {
       header: texts.header,
       description: texts.description,
       buttonOkText: texts.allow,
@@ -49,18 +51,6 @@ const askNow = (texts: {
       },
     });
   });
-
-type ConfirmTexts = Parameters<typeof askNow>[0];
-
-// The dialogs share one id, so a second one would replace the first and leave its promise
-// unanswered: they are shown one after another.
-let dialogQueue: Promise<unknown> = Promise.resolve();
-
-const askUser = (texts: ConfirmTexts) => {
-  const answer = dialogQueue.then(() => askNow(texts));
-  dialogQueue = answer;
-  return answer;
-};
 
 // One check per (plugin, value) at a time: the pick and the submit of the same value wait for
 // the same answer instead of asking twice.
