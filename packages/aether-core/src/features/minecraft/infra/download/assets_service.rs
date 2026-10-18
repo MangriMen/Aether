@@ -7,7 +7,7 @@ use tracing::trace;
 
 use crate::{
     features::{
-        events::{ProgressEventType, ProgressService, ProgressServiceExt},
+        events::{ProgressEventType, ProgressService},
         minecraft::{MinecraftDomainError, vanilla},
         settings::LocationInfo,
     },
@@ -110,33 +110,48 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
             .await
     }
 
-    /// Whether `asset` is to be downloaded: always when `force`d, else when it is missing as an
-    /// object or, for a legacy version, under its name.
-    fn is_missing(
-        &self,
-        name: &str,
-        asset: &vanilla::Asset,
-        with_legacy: bool,
-        force: bool,
-    ) -> bool {
-        force
-            || !self.get_asset_path(&asset.hash).exists()
-            || (with_legacy && !self.get_legacy_asset_path(name).exists())
-    }
-
-    /// The assets of `index` to download.
-    pub(crate) fn pending<'a>(
+    /// The assets of `index` to download: all when `force`d, else those missing as an object
+    /// or, for a legacy version, under their name. The thousands of paths are looked at on a
+    /// blocking thread.
+    pub(crate) async fn pending<'a>(
         &self,
         index: &'a vanilla::AssetsIndex,
         with_legacy: bool,
         force: bool,
-    ) -> Vec<PendingAsset<'a>> {
-        index
+    ) -> Result<Vec<PendingAsset<'a>>, MinecraftDomainError> {
+        let assets = index
             .objects
             .iter()
-            .filter(|(name, asset)| self.is_missing(name, asset, with_legacy, force))
-            .map(|(name, asset)| PendingAsset { name, asset })
-            .collect()
+            .map(|(name, asset)| PendingAsset { name, asset });
+        if force {
+            return Ok(assets.collect());
+        }
+
+        let paths: Vec<_> = index
+            .objects
+            .iter()
+            .map(|(name, asset)| {
+                (
+                    self.get_asset_path(&asset.hash),
+                    with_legacy.then(|| self.get_legacy_asset_path(name)),
+                )
+            })
+            .collect();
+        let missing = tokio::task::spawn_blocking(move || {
+            paths
+                .iter()
+                .map(|(object, legacy)| {
+                    !object.exists() || legacy.as_ref().is_some_and(|legacy| !legacy.exists())
+                })
+                .collect::<Vec<_>>()
+        })
+        .await
+        .map_err(|err| IoError::from(std::io::Error::other(err)))?;
+
+        Ok(assets
+            .zip(missing)
+            .filter_map(|(asset, missing)| missing.then_some(asset))
+            .collect())
     }
 
     /// Download `assets` under one bar in `progress`, counted in files and bytes: there are
@@ -153,7 +168,6 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
             return Ok(());
         }
         let file_count = u32::try_from(assets.len()).unwrap_or(u32::MAX);
-        let service = progress.service();
         let bar = progress
             .start(
                 ProgressEventType::MinecraftAssetsDownload {
@@ -163,25 +177,20 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
                 f64::from(file_count),
             )
             .await;
-        if let Some(bar) = bar.bar() {
-            let size = assets.iter().map(PendingAsset::size).sum();
-            service.add_progress_bytes_total_safe(bar, size).await;
-        }
+        progress
+            .add_bytes_total(&bar, assets.iter().map(PendingAsset::size).sum())
+            .await;
 
         let result = futures::stream::iter(assets.iter().map(Ok))
             .try_for_each_concurrent(None, |pending| async {
                 let bytes = self
                     .download_asset(pending.name, pending.asset, with_legacy, force)
                     .await?;
-                if let Some(bar) = bar.bar() {
-                    service.add_progress_bytes_safe(bar, bytes).await;
-                    service.emit_progress_safe(bar, 1.0, None).await;
-                }
-                progress.add_done(pending.size()).await;
+                progress.add_step(&bar, bytes, pending.size()).await;
                 Ok::<(), MinecraftDomainError>(())
             })
             .await;
-        bar.end(&result).await;
+        bar.settle(&result).await;
         result
     }
 
@@ -224,14 +233,14 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         tokio::try_join!(
             async {
                 if need_download_asset {
-                    write_replacing_async(&asset_path, asset_data.to_vec()).await?;
+                    write_replacing_async(&asset_path, asset_data.clone()).await?;
                 }
 
                 Ok::<(), MinecraftDomainError>(())
             },
             async {
                 if need_download_legacy {
-                    write_replacing_async(&legacy_path, asset_data.to_vec()).await?;
+                    write_replacing_async(&legacy_path, asset_data.clone()).await?;
                 }
 
                 Ok::<(), MinecraftDomainError>(())

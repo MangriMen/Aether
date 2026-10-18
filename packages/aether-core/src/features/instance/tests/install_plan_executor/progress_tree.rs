@@ -3,32 +3,19 @@
 
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use async_trait::async_trait;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::features::{
     events::{
-        Event, EventEmitter, EventError, ProgressBarStorage, ProgressEvent, ProgressEventType,
-        ProgressServiceImpl, ProgressStatus, infra::InMemoryProgressBarStorage,
+        Event, ProgressBarStorage, ProgressEvent, ProgressEventType, ProgressServiceImpl,
+        ProgressStatus, infra::InMemoryProgressBarStorage, test_support::ChannelEmitter,
     },
     instance::{InstallPlan, InstallTarget, NewInstance},
     minecraft::ModLoader,
 };
 
 use super::common::*;
-
-struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-#[async_trait]
-impl EventEmitter<Event> for ChannelEmitter {
-    async fn emit(&self, event: Event) -> Result<(), EventError> {
-        let _ = self.0.send(event);
-        Ok(())
-    }
-
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 /// The real progress service, put into `fixture`, and what it stores and sends.
 struct Bars {

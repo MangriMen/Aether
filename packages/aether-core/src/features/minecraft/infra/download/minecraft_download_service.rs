@@ -6,7 +6,10 @@ use tracing::info;
 
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
+        events::{
+            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
+            ProgressServiceExt,
+        },
         minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
     },
     shared::request_client::{Request, RequestClient, RequestClientExt},
@@ -105,12 +108,14 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             .await?;
 
         let client = self.client_service.pending(version_info, force).await?;
-        let libraries =
-            self.libraries_service
-                .pending(version_info, java_arch, force, minecraft_updated)?;
+        let libraries = self
+            .libraries_service
+            .pending(version_info, java_arch, force, minecraft_updated)
+            .await?;
         let assets = self
             .assets_service
-            .pending(&assets_index, with_legacy, force);
+            .pending(&assets_index, with_legacy, force)
+            .await?;
         // Nothing to wait on: no bar, so no install gets a mirror.
         if client.is_none() && libraries.is_empty() && assets.is_empty() {
             info!("Minecraft {} is downloaded already", version_info.id);
@@ -147,9 +152,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             self.libraries_service.download_libraries(&libraries, version_info, java_arch, force, &progress)
         };
 
-        if let (Err(err), Some(bar)) = (&result, &bar) {
-            bar.fail(err.to_string()).await;
-        }
+        bar.fail_on_err(&result).await;
         result?;
 
         info!("Minecraft {} downloaded", version_info.id);
@@ -172,7 +175,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
         // Before the lock: a download another install runs under it is mirrored too.
         let _wait = self
             .progress_service
-            .wait_on_shared_if_any(
+            .wait_on_shared(
                 waiting_bar,
                 ProgressEventType::MinecraftVersionDownload {
                     version: version_info.id.clone(),

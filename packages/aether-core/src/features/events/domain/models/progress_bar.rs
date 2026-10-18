@@ -88,21 +88,36 @@ impl ProgressBar {
             Some(parent_id),
         );
         mirror.mirror_of = Some(shared.id);
-        mirror.show(shared);
+        mirror.show(&shared.shown());
         mirror
     }
 
-    /// Take on what the shared bar `shared` shows: how far it is, its bytes, speed and stage.
-    pub(crate) fn show(&mut self, shared: &ProgressBar) {
-        self.message.clone_from(&shared.message);
-        self.total = shared.total;
-        self.current = shared.current;
-        self.last_sent = shared.last_sent;
-        self.stage = shared.stage;
-        self.bytes_done = shared.bytes_done;
-        self.bytes_total = shared.bytes_total;
-        self.speed = shared.speed;
-        self.last_sent_at = shared.last_sent_at;
+    /// What this bar shows, for its mirrors to take on.
+    pub(crate) fn shown(&self) -> Shown {
+        Shown {
+            message: self.message.clone(),
+            total: self.total,
+            current: self.current,
+            last_sent: self.last_sent,
+            stage: self.stage,
+            bytes_done: self.bytes_done,
+            bytes_total: self.bytes_total,
+            speed: self.speed,
+            last_sent_at: self.last_sent_at,
+        }
+    }
+
+    /// Take on what a shared bar shows: how far it is, its bytes, speed and stage.
+    pub(crate) fn show(&mut self, shown: &Shown) {
+        self.message.clone_from(&shown.message);
+        self.total = shown.total;
+        self.current = shown.current;
+        self.last_sent = shown.last_sent;
+        self.stage = shown.stage;
+        self.bytes_done = shown.bytes_done;
+        self.bytes_total = shown.bytes_total;
+        self.speed = shown.speed;
+        self.last_sent_at = shown.last_sent_at;
     }
 
     /// Measure `speed` up to `now`. There is none once all the expected bytes are in.
@@ -138,6 +153,33 @@ impl ProgressBar {
             speed: self.speed,
         }
     }
+
+    /// A running event of this bar with `message`; the fraction is left out once the bar is
+    /// full.
+    pub(crate) fn running_event(&self, message: String) -> ProgressEvent {
+        let fraction = self.current / self.total;
+        let fraction = if fraction >= 1.0 {
+            None
+        } else {
+            Some(fraction)
+        };
+        self.event(fraction, message, ProgressStatus::Running)
+    }
+}
+
+/// What a shared bar shows ([`ProgressBar::shown`]), taken without copying the whole bar, for
+/// its mirrors to take on ([`ProgressBar::show`]).
+#[derive(Debug, Clone)]
+pub(crate) struct Shown {
+    message: String,
+    total: f64,
+    current: f64,
+    last_sent: f64,
+    stage: Option<ProgressStage>,
+    bytes_done: Option<u64>,
+    bytes_total: Option<u64>,
+    speed: Option<f64>,
+    last_sent_at: Option<Instant>,
 }
 
 #[derive(Clone)]
@@ -218,12 +260,16 @@ impl ProgressBarId {
         storage: &dyn ProgressBarStorage,
         emitter: &SharedEventEmitter,
     ) {
+        if shared.mirrors.is_empty() {
+            return;
+        }
+        let shown = shared.shown();
         for &mirror_id in &shared.mirrors {
             // Gone already when its own parent ended first.
             let Some(mut mirror) = Self::unregister(mirror_id, storage).await else {
                 continue;
             };
-            mirror.show(shared);
+            mirror.show(&shown);
             mirror.status = shared.status.clone();
             Self::emit_finished(&mirror, emitter).await;
         }
@@ -325,23 +371,11 @@ mod tests {
     use tokio::sync::mpsc;
 
     use crate::features::events::{
-        Event, EventEmitter, EventError, ProgressBarChange, ProgressBarStorage,
-        ProgressBarStorageError,
+        Event, ProgressBarChange, ProgressBarStorage, ProgressBarStorageError,
+        test_support::ChannelEmitter,
     };
 
     use super::*;
-
-    struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-    #[async_trait::async_trait]
-    impl EventEmitter<Event> for ChannelEmitter {
-        async fn emit(&self, event: Event) -> Result<(), EventError> {
-            let _ = self.0.send(event);
-            Ok(())
-        }
-
-        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-    }
 
     /// Minimal storage double: the domain layer must not depend on the real implementation.
     #[derive(Default)]

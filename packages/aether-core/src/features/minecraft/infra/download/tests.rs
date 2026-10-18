@@ -11,14 +11,14 @@ use std::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use tokio::sync::{mpsc, watch};
-use uuid::Uuid;
 
 use crate::{
     features::{
         events::{
-            Event, EventEmitter, EventError, ProgressBarId, ProgressBarStorage, ProgressEvent,
-            ProgressEventType, ProgressService, ProgressServiceImpl, ProgressStatus,
+            Event, ProgressBarId, ProgressBarStorage, ProgressEventType, ProgressService,
+            ProgressServiceImpl, ProgressStatus,
             infra::InMemoryProgressBarStorage,
+            test_support::{ChannelEmitter, mirrors, pack, sent},
         },
         minecraft::{MinecraftDownloader, vanilla},
         settings::LocationInfo,
@@ -37,18 +37,6 @@ use super::{
 const LIBRARY: &str = "com.example:lib:1.0";
 const LIBRARY_URL: &str = "https://libraries.example/lib-1.0.jar";
 const ASSET_HASH: &str = "ab0123456789";
-
-struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-#[async_trait]
-impl EventEmitter<Event> for ChannelEmitter {
-    async fn emit(&self, event: Event) -> Result<(), EventError> {
-        let _ = self.0.send(event);
-        Ok(())
-    }
-
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 /// Serves fixed bodies by URL and records every fetch; a gated URL answers only once the gate
 /// is opened.
@@ -251,12 +239,6 @@ fn version(client: &FakeClient, id: &str, asset_hash: &str) -> Arc<vanilla::Vers
     )
 }
 
-fn pack(name: &str) -> ProgressEventType {
-    ProgressEventType::PluginDownload {
-        plugin_name: name.into(),
-    }
-}
-
 fn library_path(location_info: &LocationInfo) -> std::path::PathBuf {
     location_info
         .libraries_dir()
@@ -282,27 +264,6 @@ fn download(
     })
 }
 
-/// The mirrors in `storage`, as `(parent, mirrored bar)`, once there are `count` of them.
-async fn mirrors(storage: &InMemoryProgressBarStorage, count: usize) -> Vec<(Uuid, Uuid)> {
-    tokio::time::timeout(Duration::from_secs(5), async {
-        loop {
-            let mut mirrors: Vec<_> = storage
-                .list()
-                .await
-                .into_iter()
-                .filter_map(|bar| Some((bar.parent_id?, bar.mirror_of?)))
-                .collect();
-            if mirrors.len() >= count {
-                mirrors.sort_unstable();
-                return mirrors;
-            }
-            tokio::task::yield_now().await;
-        }
-    })
-    .await
-    .expect("the mirrors never came")
-}
-
 async fn until_no_bars(storage: &InMemoryProgressBarStorage) {
     tokio::time::timeout(Duration::from_secs(5), async {
         while !storage.list().await.is_empty() {
@@ -311,15 +272,6 @@ async fn until_no_bars(storage: &InMemoryProgressBarStorage) {
     })
     .await
     .expect("bars were left behind");
-}
-
-fn sent(events: &mut mpsc::UnboundedReceiver<Event>) -> Vec<ProgressEvent> {
-    std::iter::from_fn(|| events.try_recv().ok())
-        .filter_map(|event| match event {
-            Event::Progress(event) => Some(event),
-            _ => None,
-        })
-        .collect()
 }
 
 #[tokio::test]

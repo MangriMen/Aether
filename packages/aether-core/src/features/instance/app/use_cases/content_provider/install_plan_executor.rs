@@ -205,9 +205,9 @@ impl PlanProgress<'_> {
     }
 }
 
-/// The bar of one file to download, under the plan's bar. Settled by [`done`](Self::done) or
-/// [`fail`](Self::fail); dropped before that — cut short by another file's failure — it ends
-/// cancelled.
+/// The bar of one file to download, under the plan's bar. Settled by the result of the file
+/// ([`CancellableBar::settle`]); dropped before that — cut short by another file's failure — it
+/// ends cancelled.
 struct FileProgress<'p, 's> {
     plan: &'p PlanProgress<'s>,
     /// Without a bar (it could not be created) the bytes go to the plan's bar directly.
@@ -253,16 +253,6 @@ impl FileProgress<'_, '_> {
                 .set_progress_stage_safe(bar, Some(stage))
                 .await;
         }
-    }
-
-    /// End the file's bar as done, once its download and hashing are over.
-    fn done(self) {
-        self.bar.done();
-    }
-
-    /// End the file's bar as failed with `error`, once its download and hashing are over.
-    async fn fail(self, error: &InstanceError) {
-        self.bar.fail(error.to_string()).await;
     }
 
     /// Download one file, spreading its *Downloading* step over the bytes as they arrive, so the
@@ -959,14 +949,9 @@ impl InstallPlanExecutor {
                     sha1_of(&path, entry.hash.as_ref()).await
                 }
                 .await;
-                let sha1 = match staged {
-                    Ok(sha1) => sha1,
-                    Err(err) => {
-                        file_progress.fail(&err).await;
-                        return Err(err);
-                    }
-                };
-                file_progress.done();
+                // Once its download and hashing are over.
+                file_progress.bar.settle(&staged).await;
+                let sha1 = staged?;
                 progress.step("Verifying").await;
 
                 Ok(StagedFile { file, path, sha1 })

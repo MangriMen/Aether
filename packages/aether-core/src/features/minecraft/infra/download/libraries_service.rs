@@ -90,21 +90,38 @@ impl<RC: RequestClient> LibrariesService<RC> {
     }
 
     /// The libraries of `version_info` with something to download for this machine: a jar not
-    /// there yet (any, when `force`), or natives, which are extracted on every install.
-    pub(crate) fn pending<'a>(
+    /// there yet (any, when `force`), or natives, which are extracted on every install. The jars
+    /// are looked for on a blocking thread.
+    pub(crate) async fn pending<'a>(
         &self,
         version_info: &'a vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
     ) -> Result<Vec<PendingLibrary<'a>>, MinecraftDomainError> {
-        let mut pending = Vec::new();
+        let mut candidates = Vec::new();
         for library in &version_info.libraries {
-            if !Self::should_download_library(library, java_arch, minecraft_updated) {
-                continue;
+            if Self::should_download_library(library, java_arch, minecraft_updated) {
+                candidates.push((library, daedalus::get_path_from_artifact(&library.name)?));
             }
-            let path_part = daedalus::get_path_from_artifact(&library.name)?;
-            let jar = force || !self.location_info.libraries_dir().join(&path_part).exists();
+        }
+        let missing = if force {
+            vec![true; candidates.len()]
+        } else {
+            let libraries_dir = self.location_info.libraries_dir();
+            let paths: Vec<_> = candidates
+                .iter()
+                .map(|(_, path_part)| libraries_dir.join(path_part))
+                .collect();
+            tokio::task::spawn_blocking(move || {
+                paths.iter().map(|path| !path.exists()).collect::<Vec<_>>()
+            })
+            .await
+            .map_err(|err| IoError::from(std::io::Error::other(err)))?
+        };
+
+        let mut pending = Vec::new();
+        for ((library, path_part), jar) in candidates.into_iter().zip(missing) {
             let native = Self::native_download(library, java_arch);
             if !jar && native.is_none() {
                 continue;
@@ -220,7 +237,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
             }
         }
         .await;
-        file.end(&result).await;
+        file.settle(&result).await;
         result?;
 
         progress.add_done(pending.size).await;
@@ -240,7 +257,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
             let bytes = self
                 .fetch_bytes(&artifact.url, bar.map(|bar| (bar, 1.0)))
                 .await?;
-            write_replacing_async(library_path, Vec::from(bytes)).await?;
+            write_replacing_async(library_path, bytes).await?;
             return Ok(());
         }
 
@@ -264,7 +281,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         let url = format!("{base_url}{path_part}");
 
         let bytes = self.fetch_bytes(&url, bar.map(|bar| (bar, 1.0))).await?;
-        write_replacing_async(library_path, Vec::from(bytes)).await?;
+        write_replacing_async(library_path, bytes).await?;
 
         Ok(())
     }

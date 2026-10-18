@@ -98,7 +98,7 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
         };
 
         // Whole or not at all: `exists` must never take a file cut short for one that is there.
-        if let Err(err) = write_replacing_async(&path, Vec::from(data)).await {
+        if let Err(err) = write_replacing_async(&path, data).await {
             debug!("Failed to write cache file {:?}. {:?}", path, err);
         }
     }

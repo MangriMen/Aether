@@ -96,7 +96,7 @@ impl<RC: RequestClient, FS: FileStore> ClientService<RC, FS> {
                 force,
             )
             .await;
-        file.end(&result).await;
+        file.settle(&result).await;
         result?;
 
         if let Ok(download) = Self::get_client_download(version_id, version_info) {

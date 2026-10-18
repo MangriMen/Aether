@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
+        events::{
+            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
+            ProgressServiceExt,
+        },
         java::{JavaDomainError, JreProvider},
     },
     shared::io::infra::remove_dir_all,
@@ -179,6 +182,17 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
 
         Ok((package, file))
     }
+
+    async fn download_and_unpack(
+        &self,
+        version: u32,
+        install_dir: &Path,
+        progress_bar_id: Option<&ProgressBarId>,
+    ) -> Result<PathBuf, JavaDomainError> {
+        let (package, file) = self.download_jre(version, progress_bar_id).await?;
+        self.unpack_jre(install_dir, file, &package, version, progress_bar_id)
+            .await
+    }
 }
 
 #[async_trait]
@@ -194,23 +208,10 @@ impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS,
             )
             .await;
 
-        let result = async {
-            let (package, file) = self.download_jre(version, progress_bar_id.as_ref()).await?;
-
-            self.unpack_jre(
-                install_dir,
-                file,
-                &package,
-                version,
-                progress_bar_id.as_ref(),
-            )
-            .await
-        }
-        .await;
-
-        if let (Err(err), Some(bar)) = (&result, &progress_bar_id) {
-            bar.fail(err.to_string()).await;
-        }
+        let result = self
+            .download_and_unpack(version, install_dir, progress_bar_id.as_ref())
+            .await;
+        progress_bar_id.fail_on_err(&result).await;
         result
     }
 }

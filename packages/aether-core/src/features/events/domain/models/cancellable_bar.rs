@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::ProgressBarId;
 
 /// The bar of a part of some work that the failure of another part may cut short: the parts
@@ -32,6 +34,14 @@ impl CancellableBar {
             bar.fail(message).await;
         }
         self.settled = true;
+    }
+
+    /// End the bar by `result`: done, or failed with its error.
+    pub async fn settle<T, E: Display>(self, result: &Result<T, E>) {
+        match result {
+            Ok(_) => self.done(),
+            Err(err) => self.fail(err.to_string()).await,
+        }
     }
 }
 

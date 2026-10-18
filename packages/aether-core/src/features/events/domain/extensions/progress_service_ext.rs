@@ -2,9 +2,7 @@ use async_trait::async_trait;
 use log::debug;
 use uuid::Uuid;
 
-use crate::features::events::{
-    ProgressBarId, ProgressEventType, ProgressService, ProgressStage, SharedProgressWait,
-};
+use crate::features::events::{ProgressBarId, ProgressEventType, ProgressService, ProgressStage};
 
 #[async_trait]
 pub trait ProgressServiceExt: ProgressService {
@@ -60,19 +58,6 @@ pub trait ProgressServiceExt: ProgressService {
             .await
             .map_err(|error| debug!("Failed to send progress: {error}"))
             .ok()
-    }
-
-    /// [`wait_on_shared`](ProgressService::wait_on_shared) for `waiting` when there is a bar to
-    /// wait with.
-    async fn wait_on_shared_if_any(
-        &self,
-        waiting: Option<&ProgressBarId>,
-        event_type: ProgressEventType,
-    ) -> Option<SharedProgressWait> {
-        match waiting {
-            Some(waiting) => Some(self.wait_on_shared(waiting, event_type).await),
-            None => None,
-        }
     }
 
     async fn emit_progress_safe(&self, id: &ProgressBarId, progress: f64, message: Option<&str>) {

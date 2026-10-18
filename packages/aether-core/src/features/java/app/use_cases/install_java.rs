@@ -1,8 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::features::events::{
-    ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt,
-};
+use crate::features::events::{ProgressBarId, ProgressEventType, ProgressService};
 use crate::features::java::{
     Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
     JavaInstallationTracker, JavaStorage, JreProvider, app::InstallJava,
@@ -31,7 +29,7 @@ impl JavaInstallService for InstallJavaUseCase {
         // provider starts the shared bar of the download.
         let _wait = self
             .progress_service
-            .wait_on_shared_if_any(waiting_bar, ProgressEventType::JavaDownload { version })
+            .wait_on_shared(waiting_bar, ProgressEventType::JavaDownload { version })
             .await;
         let _guard = self.java_installation_tracker.lock(version).await;
 
@@ -90,27 +88,15 @@ mod tests {
 
     use async_trait::async_trait;
     use tokio::sync::{Notify, mpsc};
-    use uuid::Uuid;
 
     use crate::features::events::{
-        Event, EventEmitter, EventError, ProgressBarStorage, ProgressEvent, ProgressServiceImpl,
-        ProgressStatus, infra::InMemoryProgressBarStorage,
+        Event, ProgressBarStorage, ProgressServiceExt, ProgressServiceImpl, ProgressStatus,
+        infra::InMemoryProgressBarStorage,
+        test_support::{ChannelEmitter, mirrors, pack, sent},
     };
     use crate::features::java::{JavaDomainError, infra::MemoryJavaInstallationTracker};
 
     use super::*;
-
-    struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-    #[async_trait]
-    impl EventEmitter<Event> for ChannelEmitter {
-        async fn emit(&self, event: Event) -> Result<(), EventError> {
-            let _ = self.0.send(event);
-            Ok(())
-        }
-
-        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-    }
 
     #[derive(Default)]
     struct MemStorage(Mutex<HashMap<u32, Java>>);
@@ -239,42 +225,6 @@ mod tests {
             events,
             _temp: temp,
         }
-    }
-
-    fn pack(name: &str) -> ProgressEventType {
-        ProgressEventType::PluginDownload {
-            plugin_name: name.into(),
-        }
-    }
-
-    /// The mirrors in `storage`, as `(parent, mirrored bar)`, once there are `count` of them.
-    async fn mirrors(storage: &InMemoryProgressBarStorage, count: usize) -> Vec<(Uuid, Uuid)> {
-        tokio::time::timeout(Duration::from_secs(5), async {
-            loop {
-                let mut mirrors: Vec<_> = storage
-                    .list()
-                    .await
-                    .into_iter()
-                    .filter_map(|bar| Some((bar.parent_id?, bar.mirror_of?)))
-                    .collect();
-                if mirrors.len() >= count {
-                    mirrors.sort_unstable();
-                    return mirrors;
-                }
-                tokio::task::yield_now().await;
-            }
-        })
-        .await
-        .expect("the mirrors never came")
-    }
-
-    fn sent(events: &mut mpsc::UnboundedReceiver<Event>) -> Vec<ProgressEvent> {
-        std::iter::from_fn(|| events.try_recv().ok())
-            .filter_map(|event| match event {
-                Event::Progress(event) => Some(event),
-                _ => None,
-            })
-            .collect()
     }
 
     #[tokio::test]

@@ -48,12 +48,13 @@ pub trait ProgressService: Send + Sync {
     /// is dropped. Meanwhile, `waiting` gets a mirror of the shared bar of `event_type` running
     /// now, if any, and of every one started later: a bar under it that shows what the shared
     /// bar shows, is not counted in its bytes, and ends with the shared bar. A mirror whose
-    /// parent ends first ends with it, cancelled; the shared bar goes on.
+    /// parent ends first ends with it, cancelled; the shared bar goes on. Without a bar to wait
+    /// with, the wait tracks nothing.
     ///
     /// Sharing is extra detail, so by default nothing is mirrored.
     async fn wait_on_shared(
         &self,
-        _waiting: &ProgressBarId,
+        _waiting: Option<&ProgressBarId>,
         _event_type: ProgressEventType,
     ) -> SharedProgressWait {
         SharedProgressWait::none()
