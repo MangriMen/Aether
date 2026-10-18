@@ -212,7 +212,7 @@ impl ContentProvider for PluginProvider {
         &self,
         _: &[Instance],
         _: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         unimplemented!()
     }
 }

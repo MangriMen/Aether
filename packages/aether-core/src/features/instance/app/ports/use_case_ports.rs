@@ -168,7 +168,7 @@ pub trait CheckContentCompatibilityUseCasePort: Send + Sync {
         &self,
         instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError>;
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError>;
 }
 
 #[async_trait]

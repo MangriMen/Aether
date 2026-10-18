@@ -142,7 +142,7 @@ impl ContentProvider for MockProvider {
         &self,
         _: &[Instance],
         _: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         unimplemented!()
     }
 }

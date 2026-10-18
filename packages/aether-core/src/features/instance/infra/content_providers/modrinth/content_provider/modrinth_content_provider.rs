@@ -14,8 +14,8 @@ use crate::{
             CapabilityMetadata, ContentIdentity, ContentItem, ContentMetadata, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata, InstallFileEntry,
-            InstallPlan, Instance, InstanceError, PackInfo, PackMetadata, PackSource, ProviderId,
-            ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+            InstallPlan, Instance, InstanceError, InstanceId, PackInfo, PackMetadata, PackSource,
+            ProviderId, ReleaseChannel, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
                 ModrinthMapperError,
@@ -723,7 +723,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
         &self,
         instances: &[Instance],
         check_params: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         let project = self
             .api
             .get_project(&check_params.content_item.slug)
@@ -744,7 +744,7 @@ impl<RC: RequestClient> ContentProvider for ModrinthContentProvider<RC> {
                 .any(|version| is_version_compatible(version, &project, instance));
 
             compatibility_map.insert(
-                instance.id().to_string(),
+                instance.id().clone(),
                 ContentCompatibilityResult { is_compatible },
             );
         }

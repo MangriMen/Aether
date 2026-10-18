@@ -34,7 +34,7 @@ impl CheckContentCompatibilityUseCase {
         &self,
         instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         let provider_id = &check_params.provider_id;
 
         let provider = self
@@ -67,7 +67,7 @@ impl CheckContentCompatibilityUseCasePort for CheckContentCompatibilityUseCase {
         &self,
         instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         self.execute(instance_ids, check_params).await
     }
 }

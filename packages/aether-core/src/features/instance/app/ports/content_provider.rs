@@ -8,7 +8,8 @@ use crate::features::instance::app::dtos::{
 use crate::features::instance::domain::{
     ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
     ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallPlan, Instance,
-    InstanceError, PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams, ResolvedFile,
+    InstanceError, InstanceId, PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams,
+    ResolvedFile,
 };
 
 #[async_trait]
@@ -108,7 +109,7 @@ pub trait ContentProvider: Send + Sync {
         &self,
         instance_ids: &[Instance],
         content_item: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError>;
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError>;
 
     /// The error of a method this provider does not implement; `operation` is the method's name.
     fn unsupported(&self, operation: &'static str) -> InstanceError {
@@ -180,7 +181,7 @@ mod tests {
             &self,
             _: &[Instance],
             _: &ContentCompatibilityCheckParams,
-        ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+        ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
             unimplemented!()
         }
     }
