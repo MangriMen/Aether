@@ -6,16 +6,18 @@ pub mod infra;
 pub use app::EventsFeature;
 pub use app::list_progress_bars::ListProgressBarsUseCase;
 pub use app::ports::{
-    EventEmitter, ListProgressBarsUseCasePort, ProgressBarStorage, ProgressService,
-    SharedEventEmitter,
+    EventEmitter, ListProgressBarsUseCasePort, ProgressBarChange, ProgressBarStorage,
+    ProgressService, SharedEventEmitter,
 };
 pub use app::services::ProgressServiceImpl;
-pub use app::stream_utils::{ProgressConfigWithMessage, try_for_each_concurrent_with_progress};
 
 // Domain models — explicitly re-exported for cross-feature use
 pub use domain::{
-    CacheEvent, Event, EventEmitterExt, EventError, InstanceEvent, InstanceEventType, PluginEvent,
-    ProcessEvent, ProcessEventType, ProgressBar, ProgressBarId, ProgressBarStorageError,
-    ProgressBarStorageExt, ProgressConfig, ProgressEvent, ProgressEventType, ProgressServiceExt,
-    ProgressStage, ProgressStatus, WarningEvent, with_progress_parent,
+    CacheEvent, CancellableBar, Event, EventEmitterExt, EventError, InstanceEvent,
+    InstanceEventType, OptionalProgressBarExt, PluginEvent, ProcessEvent, ProcessEventType,
+    ProgressBar, ProgressBarId, ProgressBarStorageError, ProgressEvent, ProgressEventType,
+    ProgressServiceExt, ProgressStage, ProgressStatus, SharedProgressWait, WarningEvent,
 };
+
+#[cfg(test)]
+pub(crate) mod test_support;

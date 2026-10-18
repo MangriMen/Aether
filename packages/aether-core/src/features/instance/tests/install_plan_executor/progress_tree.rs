@@ -3,32 +3,19 @@
 
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use async_trait::async_trait;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::features::{
     events::{
-        Event, EventEmitter, EventError, ProgressBarStorage, ProgressEvent, ProgressEventType,
-        ProgressServiceImpl, ProgressStatus, infra::InMemoryProgressBarStorage,
+        Event, ProgressBarStorage, ProgressEvent, ProgressEventType, ProgressServiceImpl,
+        ProgressStatus, infra::InMemoryProgressBarStorage, test_support::ChannelEmitter,
     },
     instance::{InstallPlan, InstallTarget, NewInstance},
     minecraft::ModLoader,
 };
 
 use super::common::*;
-
-struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-#[async_trait]
-impl EventEmitter<Event> for ChannelEmitter {
-    async fn emit(&self, event: Event) -> Result<(), EventError> {
-        let _ = self.0.send(event);
-        Ok(())
-    }
-
-    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-}
 
 /// The real progress service, put into `fixture`, and what it stores and sends.
 struct Bars {
@@ -151,6 +138,11 @@ async fn should_report_one_tree_when_a_pack_is_installed_into_a_new_instance() {
         ]
     );
     assert_eq!(games, 1, "the game goes under the pack too");
+    assert_eq!(
+        *fixture.create_instance.parent_bars.lock().unwrap(),
+        [Some(pack_id)],
+        "the instance is created under the pack's bar"
+    );
 
     // The pack's bytes are those of its files.
     let last = pack.last().unwrap();
@@ -169,7 +161,8 @@ async fn should_leave_no_bars_and_fail_the_packs_when_a_download_fails() {
     let result = fixture
         .execute(
             existing(vec![
-                direct("https://cdn.example/pack/a.jar", "mods/a.jar"),
+                // Never ends by itself: the failure of the other cuts it short.
+                direct("https://cdn.example/hang/a.jar", "mods/a.jar"),
                 direct("https://cdn.example/fail/b.jar", "mods/b.jar"),
             ]),
             &plugin("packwiz"),
@@ -195,6 +188,18 @@ async fn should_leave_no_bars_and_fail_the_packs_when_a_download_fails() {
     assert!(
         matches!(failed_file.status, ProgressStatus::Failed { .. }),
         "{failed_file:?}"
+    );
+    let cut_short = bars
+        .values()
+        .map(|events| events.last().unwrap())
+        .find(|last| {
+            matches!(&last.event, ProgressEventType::PackFileDownload { pack_name, .. } if pack_name == "a.jar")
+        })
+        .expect("the file cut short had a bar");
+    assert_eq!(
+        cut_short.status,
+        ProgressStatus::Cancelled,
+        "a file cut short by another's failure is cancelled, not completed"
     );
     // Every bar ended, whether it finished, failed or was cut short.
     assert!(

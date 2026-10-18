@@ -1,49 +1,69 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use bytes::Bytes;
-use futures::StreamExt;
+use futures::TryStreamExt;
 use tracing::{debug, error, info, trace, warn};
 
 use crate::{
     features::{
-        events::{
-            ProgressConfig, ProgressConfigWithMessage, ProgressService,
-            try_for_each_concurrent_with_progress,
-        },
+        events::{ProgressBarId, ProgressService},
         minecraft::{MinecraftDomainError, parse_rules, vanilla},
         settings::LocationInfo,
     },
-    shared::request_client::{Request, RequestClient},
     shared::{
-        io::domain::IoError,
-        io::infra::{create_dir_all, write_async},
+        io::{
+            domain::IoError,
+            infra::{create_dir_all, write_replacing_async},
+        },
+        keyed_locks::KeyedLocks,
+        request_client::{Request, RequestClient},
     },
 };
 
+use super::VersionProgress;
+
 const MINECRAFT_LIBRARIES_BASE_URL: &str = "https://libraries.minecraft.net/";
 
-pub struct LibrariesService<RC: RequestClient, PS: ProgressService> {
-    progress_service: Arc<PS>,
+/// Libraries are shared by every game version that lists them; one of them is written by one
+/// install at a time ([`KeyedLocks`] by path), and whole or not at all, so another never takes
+/// a file still being written for one that is there.
+pub struct LibrariesService<RC: RequestClient> {
     request_client: Arc<RC>,
     location_info: Arc<LocationInfo>,
+    path_locks: KeyedLocks<PathBuf>,
 }
 
-impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
-    pub fn new(
-        progress_service: Arc<PS>,
-        request_client: Arc<RC>,
-        location_info: Arc<LocationInfo>,
-    ) -> Self {
+/// A library with something to download: its jar, when it is not there yet, or its natives.
+pub(crate) struct PendingLibrary<'a> {
+    library: &'a vanilla::Library,
+    /// Where its jar goes, under the libraries directory.
+    path_part: String,
+    jar: bool,
+    natives: bool,
+    /// What is to be downloaded, as far as the metadata says.
+    pub(super) size: u64,
+}
+
+impl<RC: RequestClient> LibrariesService<RC> {
+    pub fn new(request_client: Arc<RC>, location_info: Arc<LocationInfo>) -> Self {
         Self {
-            progress_service,
             request_client,
             location_info,
+            path_locks: KeyedLocks::default(),
         }
     }
 
-    async fn fetch_bytes(&self, url: &str) -> Result<Bytes, IoError> {
+    async fn fetch_bytes(
+        &self,
+        url: &str,
+        bar: Option<(&ProgressBarId, f64)>,
+    ) -> Result<Bytes, IoError> {
         self.request_client
-            .fetch_bytes(Request::get(url))
+            .fetch_bytes_with_progress(Request::get(url), bar)
             .await
             .map_err(get_network_error)
     }
@@ -69,42 +89,80 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         Ok(())
     }
 
-    pub async fn download_libraries(
+    /// The libraries of `version_info` with something to download for this machine: a jar not
+    /// there yet (any, when `force`), or natives, which are extracted on every install. The jars
+    /// are looked for on a blocking thread.
+    pub(crate) async fn pending<'a>(
         &self,
-        libraries: &[vanilla::Library],
-        version_info: &vanilla::VersionInfo,
+        version_info: &'a vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
-        progress_config: Option<&ProgressConfig<'_>>,
+    ) -> Result<Vec<PendingLibrary<'a>>, MinecraftDomainError> {
+        let mut candidates = Vec::new();
+        for library in &version_info.libraries {
+            if Self::should_download_library(library, java_arch, minecraft_updated) {
+                candidates.push((library, daedalus::get_path_from_artifact(&library.name)?));
+            }
+        }
+        let missing = if force {
+            vec![true; candidates.len()]
+        } else {
+            let libraries_dir = self.location_info.libraries_dir();
+            let paths: Vec<_> = candidates
+                .iter()
+                .map(|(_, path_part)| libraries_dir.join(path_part))
+                .collect();
+            tokio::task::spawn_blocking(move || {
+                paths.iter().map(|path| !path.exists()).collect::<Vec<_>>()
+            })
+            .await
+            .map_err(|err| IoError::from(std::io::Error::other(err)))?
+        };
+
+        let mut pending = Vec::new();
+        for ((library, path_part), jar) in candidates.into_iter().zip(missing) {
+            let native = Self::native_download(library, java_arch);
+            if !jar && native.is_none() {
+                continue;
+            }
+
+            let jar_size = library
+                .downloads
+                .as_ref()
+                .and_then(|downloads| downloads.artifact.as_ref())
+                .filter(|_| jar)
+                .map_or(0, |artifact| u64::from(artifact.size));
+            let native_size = native.map_or(0, |native| u64::from(native.size));
+            pending.push(PendingLibrary {
+                library,
+                path_part,
+                jar,
+                natives: native.is_some(),
+                size: jar_size + native_size,
+            });
+        }
+        Ok(pending)
+    }
+
+    /// Download `libraries`, each under a bar of its own in `progress`.
+    pub(crate) async fn download_libraries<PS: ProgressService>(
+        &self,
+        libraries: &[PendingLibrary<'_>],
+        version_info: &vanilla::VersionInfo,
+        java_arch: &str,
+        force: bool,
+        progress: &VersionProgress<'_, PS>,
     ) -> Result<(), MinecraftDomainError> {
         info!("Downloading libraries for version: {}", version_info.id);
 
         self.create_libraries_directories(&version_info.id).await?;
 
-        let progress_config = progress_config
-            .as_ref()
-            .map(|config| ProgressConfigWithMessage {
-                progress_bar_id: config.progress_bar_id,
-                total_progress: config.total_progress,
-                progress_message: None,
-            });
-
-        let libraries_stream = futures::stream::iter(libraries.iter())
-            .map(Ok::<&vanilla::Library, MinecraftDomainError>);
-
-        try_for_each_concurrent_with_progress(
-            self.progress_service.clone(),
-            libraries_stream,
-            None,
-            libraries.len(),
-            progress_config.as_ref(),
-            |library| async move {
-                self.download_library(library, version_info, java_arch, force, minecraft_updated)
-                    .await
-            },
-        )
-        .await?;
+        futures::stream::iter(libraries.iter().map(Ok))
+            .try_for_each_concurrent(None, |library| {
+                self.download_library(library, version_info, java_arch, force, progress)
+            })
+            .await?;
 
         info!(
             "Successfully downloaded libraries for version: {}",
@@ -134,50 +192,72 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         true
     }
 
-    pub async fn download_library(
+    async fn download_library<PS: ProgressService>(
         &self,
-        library: &vanilla::Library,
+        pending: &PendingLibrary<'_>,
         version_info: &vanilla::VersionInfo,
         java_arch: &str,
         force: bool,
-        minecraft_updated: bool,
+        progress: &VersionProgress<'_, PS>,
     ) -> Result<(), MinecraftDomainError> {
+        let library = pending.library;
         trace!(
             library=%library.name,
             library_data=?library,
             "Processing library"
         );
 
-        if !Self::should_download_library(library, java_arch, minecraft_updated) {
-            return Ok(());
-        }
+        let file_name = pending
+            .path_part
+            .rsplit('/')
+            .next()
+            .unwrap_or(&pending.path_part);
+        let file = progress.start_file(file_name).await;
 
-        tokio::try_join! {
-            self.download_java_library(library, force),
-            async {
+        let result = async {
+            tokio::try_join! {
+                async {
+                    if pending.jar {
+                        self.download_java_library(library, &pending.path_part, force, file.bar())
+                            .await?;
+                    }
+                    Ok::<(), MinecraftDomainError>(())
+                },
+                async {
+                    if pending.natives
+                        && let Err(err) = self
+                            .download_native_library_files(library, version_info, java_arch, file.bar())
+                            .await
+                    {
+                        warn!("Failed to download native library {}: {:?}", library.name, err);
+                    }
 
-                if let Err(err) = self.download_native_library_files(library, version_info, java_arch, force).await {
-                    warn!("Failed to download native library {}: {:?}", library.name, err);
+                    Ok(())
                 }
-
-                Ok(())
             }
-        }?;
+        }
+        .await;
+        file.settle(&result).await;
+        result?;
 
+        progress.add_done(pending.size).await;
         Ok(())
     }
 
     async fn try_download_from_artifact(
         &self,
         library: &vanilla::Library,
-        library_path: &PathBuf,
+        library_path: &Path,
+        bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         if let Some(downloads) = &library.downloads
             && let Some(artifact) = &downloads.artifact
             && !artifact.url.is_empty()
         {
-            let bytes = self.fetch_bytes(&artifact.url).await?;
-            write_async(library_path, &bytes).await?;
+            let bytes = self
+                .fetch_bytes(&artifact.url, bar.map(|bar| (bar, 1.0)))
+                .await?;
+            write_replacing_async(library_path, bytes).await?;
             return Ok(());
         }
 
@@ -189,8 +269,9 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
     async fn download_from_fallback_url(
         &self,
         library: &vanilla::Library,
-        library_path: &PathBuf,
+        library_path: &Path,
         path_part: &str,
+        bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
         let base_url = library
             .url
@@ -199,20 +280,24 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
         let url = format!("{base_url}{path_part}");
 
-        let bytes = self.fetch_bytes(&url).await?;
-        write_async(library_path, &bytes).await?;
+        let bytes = self.fetch_bytes(&url, bar.map(|bar| (bar, 1.0))).await?;
+        write_replacing_async(library_path, bytes).await?;
 
         Ok(())
     }
 
-    pub async fn download_java_library(
+    /// Download the jar of `library` to `path_part` under the libraries directory, unless it is
+    /// there (and not `force`d): checked under the lock of the path, as another install may have
+    /// put it there meanwhile.
+    async fn download_java_library(
         &self,
         library: &vanilla::Library,
+        path_part: &str,
         force: bool,
+        bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
-        let library_path_part = daedalus::get_path_from_artifact(&library.name)?;
-
-        let library_path = self.location_info.libraries_dir().join(&library_path_part);
+        let library_path = self.location_info.libraries_dir().join(path_part);
+        let _lock = self.path_locks.lock(&library_path).await;
 
         if library_path.exists() && !force {
             trace!(
@@ -226,7 +311,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
 
         // Get library by artifact url
         match self
-            .try_download_from_artifact(library, &library_path)
+            .try_download_from_artifact(library, &library_path, bar)
             .await
         {
             Ok(()) => return Ok(()),
@@ -236,7 +321,7 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
             ),
         }
 
-        self.download_from_fallback_url(library, &library_path, &library_path_part)
+        self.download_from_fallback_url(library, &library_path, path_part, bar)
             .await
             .map_err(|e| {
                 error!(
@@ -261,6 +346,25 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         let classifiers = library.downloads.as_ref()?.classifiers.as_ref()?;
 
         Some((os_key, classifiers))
+    }
+
+    /// The natives of `library` for this machine, if it has any.
+    fn native_download<'a>(
+        library: &'a vanilla::Library,
+        java_arch: &str,
+    ) -> Option<&'a vanilla::LibraryDownload> {
+        let Some((os_key, classifiers)) = Self::get_native_classifiers(library, java_arch) else {
+            trace!("No native classifiers found for library: {}", library.name);
+            return None;
+        };
+
+        let parsed_key = os_key.replace("${arch}", crate::core::domain::extensions::ARCH_WIDTH);
+
+        let native = classifiers.get(&parsed_key);
+        if native.is_none() {
+            trace!("No native found for key: {}", parsed_key);
+        }
+        native
     }
 
     async fn extract_native_library(
@@ -288,31 +392,28 @@ impl<RC: RequestClient, PS: ProgressService> LibrariesService<RC, PS> {
         Ok(())
     }
 
-    pub async fn download_native_library_files(
+    /// Download the natives of `library` and extract them for the version. Their bytes count
+    /// on `bar`; its fraction follows the jar.
+    async fn download_native_library_files(
         &self,
         library: &vanilla::Library,
         version_info: &vanilla::VersionInfo,
         java_arch: &str,
-        _force: bool,
+        bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
-        let Some((os_key, classifiers)) = Self::get_native_classifiers(library, java_arch) else {
-            trace!("No native classifiers found for library: {}", library.name);
-            return Ok(());
-        };
-
-        let parsed_key = os_key.replace("${arch}", crate::core::domain::extensions::ARCH_WIDTH);
-
-        let Some(native) = classifiers.get(&parsed_key) else {
-            trace!("No native found for key: {}", parsed_key);
+        let Some(native) = Self::native_download(library, java_arch) else {
             return Ok(());
         };
 
         debug!("Downloading native library \"{}\"", &library.name);
 
-        let bytes = self.fetch_bytes(&native.url).await.map_err(|e| {
-            error!("Failed to fetch native library {}: {:?}", library.name, e);
-            e
-        })?;
+        let bytes = self
+            .fetch_bytes(&native.url, bar.map(|bar| (bar, 0.0)))
+            .await
+            .map_err(|e| {
+                error!("Failed to fetch native library {}: {:?}", library.name, e);
+                e
+            })?;
 
         self.extract_native_library(bytes, version_info)
             .await

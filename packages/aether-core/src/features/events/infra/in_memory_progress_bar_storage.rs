@@ -4,7 +4,9 @@ use uuid::Uuid;
 
 use dashmap::mapref::one::Ref as DashMapRef;
 
-use crate::features::events::{ProgressBar, ProgressBarStorage, ProgressBarStorageError};
+use crate::features::events::{
+    ProgressBar, ProgressBarChange, ProgressBarStorage, ProgressBarStorageError,
+};
 
 #[derive(Debug, Default)]
 pub struct InMemoryProgressBarStorage {
@@ -42,12 +44,16 @@ impl ProgressBarStorage for InMemoryProgressBarStorage {
             .ok_or(ProgressBarStorageError::NotFound { progress_bar_id })
     }
 
-    async fn upsert(
+    async fn update(
         &self,
         progress_bar_id: Uuid,
-        progress_bar: ProgressBar,
+        change: ProgressBarChange<'_>,
     ) -> Result<(), ProgressBarStorageError> {
-        self.progress_bars.insert(progress_bar_id, progress_bar);
+        let mut progress_bar = self
+            .progress_bars
+            .get_mut(&progress_bar_id)
+            .ok_or(ProgressBarStorageError::NotFound { progress_bar_id })?;
+        change(progress_bar.value_mut());
 
         Ok(())
     }

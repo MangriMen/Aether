@@ -32,9 +32,13 @@ impl<T: ?Sized> Leased<T> {
 
 #[async_trait]
 impl JavaInstallService for Leased<dyn JavaInstallService> {
-    async fn execute(&self, install_java: InstallJava) -> Result<Java, JavaApplicationError> {
+    async fn execute(
+        &self,
+        install_java: InstallJava,
+        waiting_bar: Option<&ProgressBarId>,
+    ) -> Result<Java, JavaApplicationError> {
         let _lease = self.gate.lease().await;
-        self.inner.execute(install_java).await
+        self.inner.execute(install_java, waiting_bar).await
     }
 }
 

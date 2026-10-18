@@ -20,6 +20,9 @@ pub struct ProgressEventDto {
     pub stage: Option<ProgressStageDto>,
     pub status: ProgressStatusDto,
     pub parent_id: Option<Uuid>,
+    /// The shared bar this one mirrors (a download it waits on), if it is a mirror: it shows
+    /// what that bar shows and its bytes are not its parent's.
+    pub mirror_of: Option<Uuid>,
     /// A number, not `u64`: specta refuses to export `u64`, and a download never nears 2^53 bytes.
     pub bytes_done: Option<f64>,
     /// A number, not `u64`, like `bytes_done`.
@@ -50,6 +53,7 @@ pub enum ProgressStatusDto {
     Running,
     Done,
     Failed { message: String },
+    Cancelled,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, Type, Event)]
@@ -74,6 +78,16 @@ pub enum ProgressEventTypeDto {
     MinecraftDownload {
         instance_id: String,
         instance_name: String,
+    },
+    MinecraftVersionDownload {
+        version: String,
+    },
+    MinecraftAssetsDownload {
+        version: String,
+        file_count: u32,
+    },
+    FileDownload {
+        file_name: String,
     },
     InstanceUpdate {
         instance_id: String,
@@ -112,6 +126,7 @@ impl From<ProgressEvent> for ProgressEventDto {
             stage: value.stage.map(Into::into),
             status: value.status.into(),
             parent_id: value.parent_id,
+            mirror_of: value.mirror_of,
             bytes_done: bytes_to_number(value.bytes_done),
             bytes_total: bytes_to_number(value.bytes_total),
             speed: value.speed,
@@ -137,6 +152,7 @@ impl From<ProgressStatus> for ProgressStatusDto {
             ProgressStatus::Running => Self::Running,
             ProgressStatus::Done => Self::Done,
             ProgressStatus::Failed { message } => Self::Failed { message },
+            ProgressStatus::Cancelled => Self::Cancelled,
         }
     }
 }
@@ -176,6 +192,17 @@ impl From<ProgressEventType> for ProgressEventTypeDto {
                 instance_id: instance_id.to_string(),
                 instance_name,
             },
+            ProgressEventType::MinecraftVersionDownload { version } => {
+                Self::MinecraftVersionDownload { version }
+            }
+            ProgressEventType::MinecraftAssetsDownload {
+                version,
+                file_count,
+            } => Self::MinecraftAssetsDownload {
+                version,
+                file_count,
+            },
+            ProgressEventType::FileDownload { file_name } => Self::FileDownload { file_name },
             ProgressEventType::InstanceUpdate {
                 instance_id,
                 instance_name,
@@ -220,6 +247,7 @@ impl From<UpdateProgress> for ProgressEventDto {
             stage: None,
             status,
             parent_id: None,
+            mirror_of: None,
             bytes_done: None,
             bytes_total: None,
             speed: None,

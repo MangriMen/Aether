@@ -71,6 +71,7 @@ export const useProgressEventsListener = () => {
           stage: bar.stage,
           status: bar.status,
           parentId: bar.parentId,
+          mirrorOf: bar.mirrorOf,
           bytesDone: bar.bytesDone,
           bytesTotal: bar.bytesTotal,
           speed: bar.speed,
@@ -90,8 +91,10 @@ export const useProgressEventsListener = () => {
     liveBarIds?.add(e.payload.progressBarId);
     addEvent(e.payload);
 
+    // A mirror fails with the shared download it shows, which reports it once.
     if (
       e.payload.status.type === 'failed' &&
+      e.payload.mirrorOf === null &&
       !notifiedFailures.has(e.payload.progressBarId)
     ) {
       notifiedFailures.add(e.payload.progressBarId);

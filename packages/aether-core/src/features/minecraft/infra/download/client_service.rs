@@ -4,25 +4,23 @@ use bytes::Bytes;
 
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressService, ProgressServiceExt},
+        events::{ProgressBarId, ProgressService},
         minecraft::{MinecraftDomainError, vanilla},
     },
     shared::request_client::{Request, RequestClient},
     shared::{cache::domain::FileStore, cache::infra::InfinityCachedResource, io::domain::IoError},
 };
 
-use super::version_jar_key;
+use super::{VersionProgress, version_jar_key};
 
-pub struct ClientService<RC: RequestClient, PS: ProgressService, FS: FileStore> {
-    progress_service: Arc<PS>,
+pub struct ClientService<RC: RequestClient, FS: FileStore> {
     request_client: Arc<RC>,
     cached_resource: InfinityCachedResource<FS>,
 }
 
-impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS, FS> {
-    pub fn new(progress_service: Arc<PS>, request_client: Arc<RC>, file_store: Arc<FS>) -> Self {
+impl<RC: RequestClient, FS: FileStore> ClientService<RC, FS> {
+    pub fn new(request_client: Arc<RC>, file_store: Arc<FS>) -> Self {
         Self {
-            progress_service,
             request_client,
             cached_resource: InfinityCachedResource { cache: file_store },
         }
@@ -40,46 +38,70 @@ impl<RC: RequestClient, PS: ProgressService, FS: FileStore> ClientService<RC, PS
             })
     }
 
-    async fn fetch_bytes(&self, url: &str) -> Result<Bytes, IoError> {
-        self.request_client
-            .fetch_bytes(Request::get(url))
-            .await
-            .map_err(get_network_error)
-    }
-
     async fn fetch_client(
         &self,
         version_id: &str,
         version_info: &vanilla::VersionInfo,
+        bar: Option<&ProgressBarId>,
     ) -> Result<Bytes, MinecraftDomainError> {
-        let client_download_url = Self::get_client_download(version_id, version_info)?;
+        let client_download = Self::get_client_download(version_id, version_info)?;
 
-        Ok(self.fetch_bytes(&client_download_url.url).await?)
+        Ok(self
+            .request_client
+            .fetch_bytes_with_progress(
+                Request::get(&client_download.url),
+                bar.map(|bar| (bar, 1.0)),
+            )
+            .await
+            .map_err(get_network_error)?)
     }
 
-    pub async fn download_client(
+    /// The size of the client of `version_info` when it is to be downloaded; `None` when it is
+    /// there already.
+    pub(crate) async fn pending(
         &self,
         version_info: &vanilla::VersionInfo,
         force: bool,
-        loading_bar: Option<&ProgressBarId>,
+    ) -> Result<Option<u64>, MinecraftDomainError> {
+        if !force
+            && self
+                .cached_resource
+                .cache
+                .exists(&version_jar_key(version_info.id.clone()))
+                .await
+        {
+            return Ok(None);
+        }
+        let download = Self::get_client_download(&version_info.id, version_info)?;
+        Ok(Some(download.size.into()))
+    }
+
+    /// Download the client under a bar of its own in `progress`. The jar appears whole or not
+    /// at all ([`FileStore::write`]).
+    pub(crate) async fn download_client<PS: ProgressService>(
+        &self,
+        version_info: &vanilla::VersionInfo,
+        force: bool,
+        progress: &VersionProgress<'_, PS>,
     ) -> Result<(), MinecraftDomainError> {
         let version_id = &version_info.id;
+        let file = progress.start_file(&format!("{version_id}.jar")).await;
 
-        self.cached_resource
+        let result = self
+            .cached_resource
             .ensure(
                 || version_jar_key(version_id.clone()),
-                self.fetch_client(version_id, version_info),
+                self.fetch_client(version_id, version_info, file.bar()),
                 || format!("Client {version_id}"),
                 force,
             )
-            .await?;
+            .await;
+        file.settle(&result).await;
+        result?;
 
-        if let Some(loading_bar) = loading_bar {
-            self.progress_service
-                .emit_progress_safe(loading_bar, 9.0, None)
-                .await;
+        if let Ok(download) = Self::get_client_download(version_id, version_info) {
+            progress.add_done(download.size.into()).await;
         }
-
         Ok(())
     }
 }

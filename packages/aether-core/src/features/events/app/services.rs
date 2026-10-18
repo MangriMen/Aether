@@ -1,13 +1,16 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
+use tokio::sync::MutexGuard;
 use uuid::Uuid;
 
 use crate::features::events::{
-    EventError, ProgressBar, ProgressBarId, ProgressBarStorage, ProgressBarStorageExt,
-    ProgressEventType, ProgressStage, ProgressStatus, SharedEventEmitter,
-    app::ports::ProgressService, domain::TransferWindow,
+    EventError, ProgressBar, ProgressBarId, ProgressBarStorage, ProgressBarStorageError,
+    ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus, SharedEventEmitter,
+    SharedProgressWait,
+    app::ports::ProgressService,
+    domain::{Shown, TransferWindow},
 };
 
 /// The least time between an event of a bar and one sent for its bytes alone: four a second
@@ -28,18 +31,63 @@ impl Clock for SystemClock {
     }
 }
 
+/// A bar waiting on a shared download ([`ProgressService::wait_on_shared`]).
+struct Wait {
+    token: u64,
+    event_type: ProgressEventType,
+    waiting: Uuid,
+}
+
+#[derive(Default)]
+struct Waits {
+    next_token: u64,
+    entries: Vec<Wait>,
+}
+
+/// A bar due to be sent, taken in the change that made it so rather than copied whole: its
+/// event, and for a shared bar what its mirrors are to show and which they are.
+struct Due {
+    event: ProgressEvent,
+    mirrored: Option<(Shown, Vec<Uuid>)>,
+}
+
+impl Due {
+    /// `bar` as it is now, with `message` or, without one, its own.
+    fn of(bar: &ProgressBar, message: Option<&str>) -> Self {
+        let message = message.map_or_else(|| bar.message.clone(), ToOwned::to_owned);
+        Self {
+            event: bar.running_event(message),
+            mirrored: (!bar.mirrors.is_empty()).then(|| (bar.shown(), bar.mirrors.clone())),
+        }
+    }
+}
+
 /// Bars form a tree through [`init_child_progress`](ProgressService::init_child_progress). A
 /// parent counts the bytes of its children as its own: every byte, and every byte expected, a
 /// bar is told of is added to each bar above it too, so a parent's bytes and speed are those of
 /// all its children together, the ones already done included. A parent ends no later than its
 /// children ([`ProgressBarId`] takes them with it).
+///
+/// A shared bar ([`init_shared_progress`](ProgressService::init_shared_progress)) stands at the
+/// top, and each bar waiting on it has a mirror of it among its children. Every event of the
+/// shared bar goes to its mirrors too, as their own; a mirror is never told of bytes itself, so
+/// they never reach its parent.
 pub struct ProgressServiceImpl<PS: ProgressBarStorage + 'static> {
     pub event_emitter: SharedEventEmitter,
     progress_storage: Arc<PS>,
     clock: Arc<dyn Clock>,
-    /// Every change of a bar reads it from the storage and writes it back; this keeps two of them
-    /// (the bytes of two children reaching their parent) from writing over each other.
+    /// Keeps the changes that span bars (the bytes of a child reaching its parents, a shared
+    /// bar's event reaching its mirrors, a mirror joining its shared bar) whole and in order.
+    /// Each change to one bar is atomic in the storage by itself. Never held while events are
+    /// sent ([`emit_after`](Self::emit_after)).
     update_lock: tokio::sync::Mutex<()>,
+    /// Sends the events of the changes in the order the changes were made: taken before the
+    /// update lock is let go, so no event of a bar overtakes an earlier one of it.
+    emit_lock: tokio::sync::Mutex<()>,
+    waits: Arc<Mutex<Waits>>,
+    /// The shared bars started, some of them gone by now: where a bar starting to wait looks
+    /// for one running. Changed under the update lock.
+    shared_bars: Mutex<Vec<Uuid>>,
 }
 
 impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
@@ -57,168 +105,274 @@ impl<PS: ProgressBarStorage + 'static> ProgressServiceImpl<PS> {
             progress_storage,
             clock,
             update_lock: tokio::sync::Mutex::new(()),
+            emit_lock: tokio::sync::Mutex::new(()),
+            waits: Arc::default(),
+            shared_bars: Mutex::default(),
         }
     }
 
-    /// Register a bar, under `parent_id` when there is one, and send its first event.
+    /// Send `events`, made under the update lock `guard`, after those of every change made
+    /// before them, without holding up the changes made after them.
+    async fn emit_after(
+        &self,
+        guard: MutexGuard<'_, ()>,
+        events: Vec<ProgressEvent>,
+    ) -> Result<(), EventError> {
+        if events.is_empty() {
+            return Ok(());
+        }
+        let _emitting = self.emit_lock.lock().await;
+        drop(guard);
+        for event in events {
+            self.event_emitter.emit(event.into()).await?;
+        }
+        Ok(())
+    }
+
+    /// Change the bar `id` in place with `change`, and hand back what it returns: `NotFound`
+    /// for a bar that is gone.
+    async fn change<R: Send>(
+        &self,
+        id: Uuid,
+        change: impl FnOnce(&mut ProgressBar) -> R + Send,
+    ) -> Result<R, ProgressBarStorageError> {
+        let mut result = None;
+        self.progress_storage
+            .update(id, Box::new(|bar| result = Some(change(bar))))
+            .await?;
+        Ok(result.expect("the storage applies the change to a bar it has"))
+    }
+
+    /// Register a bar, under `parent_id` when there is one. A shared bar gets a mirror under
+    /// every bar waiting on its `event_type`.
     async fn start(
         &self,
         parent_id: Option<Uuid>,
         event_type: ProgressEventType,
         total: f64,
         message: String,
+        shared: bool,
     ) -> Result<ProgressBarId, EventError> {
-        let _guard = self.update_lock.lock().await;
+        let guard = self.update_lock.lock().await;
 
         if let Some(parent_id) = parent_id {
             // Fails for a parent that is gone: a child of nothing would never be taken away.
-            let mut parent = self.progress_storage.get(parent_id).await?.clone();
-            parent.has_children = true;
-            self.progress_storage.upsert(parent_id, parent).await?;
+            self.change(parent_id, |parent| parent.has_children = true)
+                .await?;
         }
 
         let id = Uuid::new_v4();
-        let progress_bar_id = ProgressBarId {
+        let mut bar = ProgressBar::new(id, event_type, total, message, parent_id);
+        bar.shared = shared;
+        let waiting = shared.then(|| self.waiting_on(&bar.progress_type));
+        self.progress_storage.insert(id, bar).await?;
+        if shared {
+            self.shared_bars
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push(id);
+        }
+
+        let mut events = Vec::new();
+        for waiting in waiting.into_iter().flatten() {
+            events.extend(self.attach_mirror(id, waiting).await?);
+        }
+        self.emit_after(guard, events).await?;
+
+        Ok(ProgressBarId {
             id,
             progress_storage: Some(self.progress_storage.clone()),
             event_emitter: Some(self.event_emitter.clone()),
-        };
-
-        self.progress_storage
-            .insert(
-                id,
-                ProgressBar {
-                    id,
-                    message,
-                    total,
-                    current: 0.0,
-                    last_sent: 0.0,
-                    progress_type: event_type,
-                    stage: None,
-                    status: ProgressStatus::Running,
-                    parent_id,
-                    has_children: false,
-                    bytes_done: None,
-                    bytes_total: None,
-                    speed: None,
-                    transfer: TransferWindow::default(),
-                    last_sent_at: None,
-                },
-            )
-            .await?;
-
-        self.advance(&progress_bar_id, 0.0, None).await?;
-
-        Ok(progress_bar_id)
+        })
     }
 
-    /// [`emit_progress`](ProgressService::emit_progress), under the update lock.
+    /// The bars waiting on the shared download `event_type`, each once.
+    fn waiting_on(&self, event_type: &ProgressEventType) -> Vec<Uuid> {
+        let waits = self.waits.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut waiting: Vec<_> = waits
+            .entries
+            .iter()
+            .filter(|wait| wait.event_type == *event_type)
+            .map(|wait| wait.waiting)
+            .collect();
+        waiting.sort_unstable();
+        waiting.dedup();
+        waiting
+    }
+
+    /// The running shared bar of `event_type`, if any. The shared bars that are gone are
+    /// forgotten. Called under the update lock.
+    async fn running_shared(&self, event_type: &ProgressEventType) -> Option<Uuid> {
+        let known = self
+            .shared_bars
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        let mut running = None;
+        let mut gone = Vec::new();
+        for id in known {
+            match self.progress_storage.get(id).await {
+                Ok(bar) => {
+                    if running.is_none()
+                        && bar.status == ProgressStatus::Running
+                        && bar.progress_type == *event_type
+                    {
+                        running = Some(id);
+                    }
+                }
+                Err(_) => gone.push(id),
+            }
+        }
+        if !gone.is_empty() {
+            self.shared_bars
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .retain(|id| !gone.contains(id));
+        }
+        running
+    }
+
+    /// Put a mirror of the shared bar `shared_id` under the bar `parent_id`, unless one is
+    /// there already; nothing when either is gone. Hands back the mirror's first event, to
+    /// send, when the shared bar has been shown already. Called under the update lock.
+    async fn attach_mirror(
+        &self,
+        shared_id: Uuid,
+        parent_id: Uuid,
+    ) -> Result<Option<ProgressEvent>, EventError> {
+        let Ok(known) = self
+            .progress_storage
+            .get(shared_id)
+            .await
+            .map(|shared| shared.mirrors.clone())
+        else {
+            return Ok(None);
+        };
+        for mirror_id in known {
+            let mirrored = self
+                .progress_storage
+                .get(mirror_id)
+                .await
+                .is_ok_and(|mirror| mirror.parent_id == Some(parent_id));
+            if mirrored {
+                return Ok(None);
+            }
+        }
+        if self
+            .change(parent_id, |parent| parent.has_children = true)
+            .await
+            .is_err()
+        {
+            return Ok(None);
+        }
+
+        // From here on the end of the shared bar takes the mirror along.
+        let mirror_id = Uuid::new_v4();
+        let Ok((mirror, shown)) = self
+            .change(shared_id, |shared| {
+                shared.mirrors.push(mirror_id);
+                (
+                    ProgressBar::mirror(mirror_id, shared, parent_id),
+                    shared.last_sent_at.is_some(),
+                )
+            })
+            .await
+        else {
+            return Ok(None);
+        };
+        // Shown at once when the shared bar has been, so a bar starting to wait on a running
+        // download is not left blank until its next event.
+        let event = shown.then(|| mirror.running_event(mirror.message.clone()));
+        self.progress_storage.insert(mirror_id, mirror).await?;
+
+        // A shared bar that ended before the mirror was in passed over it.
+        if self.progress_storage.get(shared_id).await.is_err() {
+            self.progress_storage.remove(mirror_id).await?;
+            return Ok(None);
+        }
+        Ok(event)
+    }
+
+    /// [`emit_progress`](ProgressService::emit_progress), under the update lock: the events to
+    /// send go to `events`.
     async fn advance(
         &self,
         progress_bar_id: &ProgressBarId,
         increment_frac: f64,
         message: Option<&str>,
+        events: &mut Vec<ProgressEvent>,
     ) -> Result<(), EventError> {
-        let mut progress_bar = self.progress_storage.get(progress_bar_id.id).await?.clone();
+        let now = self.clock.now();
+        let due = self
+            .change(progress_bar_id.id, |bar| {
+                // Tick up loading bar
+                bar.current += increment_frac;
+                let display_frac = bar.current / bar.total;
 
-        // Tick up loading bar
-        progress_bar.current += increment_frac;
-
-        let display_frac = progress_bar.current / progress_bar.total;
-
-        if f64::abs(display_frac - progress_bar.last_sent) > 0.005 {
-            let message = message.unwrap_or(progress_bar.message.as_ref()).to_string();
-            self.emit_progress_inner(&mut progress_bar, message, self.clock.now())
-                .await?;
-        }
-
-        self.progress_storage
-            .upsert(progress_bar_id.id, progress_bar)
+                (f64::abs(display_frac - bar.last_sent) > 0.005).then(|| {
+                    mark_sent(bar, now);
+                    Due::of(bar, message)
+                })
+            })
             .await?;
 
-        Ok(())
-    }
-
-    /// The bar `bar_id`, on the way up the tree from the bar `own`: an error for `own` itself,
-    /// `None` for a parent that is gone already (it took its children along, so only an update
-    /// racing its end gets here).
-    async fn bar_on_the_way_up(
-        &self,
-        bar_id: Uuid,
-        own: Uuid,
-    ) -> Result<Option<ProgressBar>, EventError> {
-        match self.progress_storage.get(bar_id).await {
-            Ok(progress_bar) => Ok(Some(progress_bar.clone())),
-            Err(_) if bar_id != own => Ok(None),
-            Err(err) => Err(err.into()),
-        }
-    }
-
-    /// Count `bytes` more as transferred for `progress_bar` at `now`, and tell listeners when it
-    /// is time to.
-    async fn record_bytes(
-        &self,
-        progress_bar: &mut ProgressBar,
-        bytes: u64,
-        now: Instant,
-    ) -> Result<(), EventError> {
-        let before = progress_bar.bytes_done.unwrap_or(0);
-        let done = before.saturating_add(bytes);
-        progress_bar.bytes_done = Some(done);
-        progress_bar.transfer.record(now, done);
-
-        let first = before == 0;
-        let completes = progress_bar
-            .bytes_total
-            .is_some_and(|total| before < total && done >= total);
-        let due = progress_bar
-            .last_sent_at
-            .is_none_or(|sent_at| now.saturating_duration_since(sent_at) >= BYTES_EVENT_INTERVAL);
-
-        if first || completes || due {
-            let message = progress_bar.message.clone();
-            self.emit_progress_inner(progress_bar, message, now).await?;
-        } else {
-            // Kept fresh for the snapshot of the bars between events.
-            progress_bar.refresh_speed(now);
+        if let Some(due) = due {
+            self.collect(due, events).await;
         }
         Ok(())
     }
 
-    /// Send the bar as it is at `now` with `message`, and note what was sent.
-    async fn emit_progress_inner(
-        &self,
-        progress_bar: &mut ProgressBar,
-        message: String,
-        now: Instant,
-    ) -> Result<(), EventError> {
-        progress_bar.refresh_speed(now);
-        let display_frac = progress_bar.current / progress_bar.total;
-
-        self.event_emitter
-            .emit(
-                progress_bar
-                    .event(
-                        shown_fraction(display_frac),
-                        message,
-                        ProgressStatus::Running,
-                    )
-                    .into(),
-            )
-            .await?;
-
-        progress_bar.last_sent = display_frac;
-        progress_bar.last_sent_at = Some(now);
-        Ok(())
+    /// Put the events of a bar `due` to be sent into `events`: those of its mirrors first, each
+    /// made to show it, then its own. Called under the update lock.
+    async fn collect(&self, due: Due, events: &mut Vec<ProgressEvent>) {
+        if let Some((shown, mirrors)) = &due.mirrored {
+            for &mirror_id in mirrors {
+                // A mirror whose parent ended is gone; the shared bar's end passes over it.
+                let mirrored = self
+                    .change(mirror_id, |mirror| {
+                        mirror.show(shown);
+                        mirror.running_event(due.event.message.clone())
+                    })
+                    .await;
+                if let Ok(event) = mirrored {
+                    events.push(event);
+                }
+            }
+        }
+        events.push(due.event);
     }
 }
 
-/// The fraction shown for `display_frac`: `None` once the bar is full.
-fn shown_fraction(display_frac: f64) -> Option<f64> {
-    if display_frac >= 1.0 {
-        None
+/// Note that `bar` is sent as it is at `now`.
+fn mark_sent(bar: &mut ProgressBar, now: Instant) {
+    bar.refresh_speed(now);
+    bar.last_sent = bar.current / bar.total;
+    bar.last_sent_at = Some(now);
+}
+
+/// Count `bytes` more as transferred for `bar` at `now`: the bar as it is to be sent, when it is
+/// time to tell listeners.
+fn record_bytes(bar: &mut ProgressBar, bytes: u64, now: Instant) -> Option<Due> {
+    let before = bar.bytes_done.unwrap_or(0);
+    let done = before.saturating_add(bytes);
+    bar.bytes_done = Some(done);
+    bar.transfer.record(now, done);
+
+    let first = before == 0;
+    let completes = bar
+        .bytes_total
+        .is_some_and(|total| before < total && done >= total);
+    let due = bar
+        .last_sent_at
+        .is_none_or(|sent_at| now.saturating_duration_since(sent_at) >= BYTES_EVENT_INTERVAL);
+
+    if first || completes || due {
+        mark_sent(bar, now);
+        Some(Due::of(bar, None))
     } else {
-        Some(display_frac)
+        // Kept fresh for the snapshot of the bars between events.
+        bar.refresh_speed(now);
+        None
     }
 }
 
@@ -230,7 +384,7 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(None, event_type, total, message).await
+        self.start(None, event_type, total, message, false).await
     }
 
     async fn init_child_progress(
@@ -240,8 +394,62 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(Some(parent_id), event_type, total, message)
+        self.start(Some(parent_id), event_type, total, message, false)
             .await
+    }
+
+    async fn init_shared_progress(
+        &self,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> Result<ProgressBarId, EventError> {
+        self.start(None, event_type, total, message, true).await
+    }
+
+    async fn wait_on_shared(
+        &self,
+        waiting: Option<&ProgressBarId>,
+        event_type: ProgressEventType,
+    ) -> SharedProgressWait {
+        let Some(waiting) = waiting else {
+            return SharedProgressWait::none();
+        };
+        let guard = self.update_lock.lock().await;
+
+        let running = self.running_shared(&event_type).await;
+
+        let token = {
+            let mut waits = self.waits.lock().unwrap_or_else(PoisonError::into_inner);
+            let token = waits.next_token;
+            waits.next_token += 1;
+            waits.entries.push(Wait {
+                token,
+                event_type,
+                waiting: waiting.id,
+            });
+            token
+        };
+
+        let mut events = Vec::new();
+        if let Some(shared_id) = running {
+            match self.attach_mirror(shared_id, waiting.id).await {
+                Ok(event) => events.extend(event),
+                Err(error) => log::debug!("Failed to send progress: {error}"),
+            }
+        }
+        if let Err(error) = self.emit_after(guard, events).await {
+            log::debug!("Failed to send progress: {error}");
+        }
+
+        let waits = self.waits.clone();
+        SharedProgressWait::new(move || {
+            waits
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .entries
+                .retain(|wait| wait.token != token);
+        })
     }
 
     async fn init_or_edit_progress(
@@ -267,8 +475,11 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         increment_frac: f64,
         message: Option<&str>,
     ) -> Result<(), EventError> {
-        let _guard = self.update_lock.lock().await;
-        self.advance(progress_bar_id, increment_frac, message).await
+        let guard = self.update_lock.lock().await;
+        let mut events = Vec::new();
+        self.advance(progress_bar_id, increment_frac, message, &mut events)
+            .await?;
+        self.emit_after(guard, events).await
     }
 
     async fn edit_progress(
@@ -278,28 +489,26 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         total: f64,
         message: String,
     ) -> Result<(), EventError> {
-        let _guard = self.update_lock.lock().await;
+        let guard = self.update_lock.lock().await;
         // The bytes it had stay counted in its parent, if any: they were transferred.
-        self.progress_storage
-            .upsert_with(progress_bar_id, |progress_bar| {
-                progress_bar.progress_type = event_type;
-                progress_bar.total = total;
-                progress_bar.message = message;
-                progress_bar.current = 0.0;
-                progress_bar.last_sent = 0.0;
-                // A bar put to other work starts its transfer over too.
-                progress_bar.bytes_done = None;
-                progress_bar.bytes_total = None;
-                progress_bar.speed = None;
-                progress_bar.transfer = TransferWindow::default();
+        self.change(progress_bar_id.id, |progress_bar| {
+            progress_bar.progress_type = event_type;
+            progress_bar.total = total;
+            progress_bar.message = message;
+            progress_bar.current = 0.0;
+            progress_bar.last_sent = 0.0;
+            // A bar put to other work starts its transfer over too.
+            progress_bar.bytes_done = None;
+            progress_bar.bytes_total = None;
+            progress_bar.speed = None;
+            progress_bar.transfer = TransferWindow::default();
+        })
+        .await?;
 
-                Ok(())
-            })
+        let mut events = Vec::new();
+        self.advance(progress_bar_id, 0.0, None, &mut events)
             .await?;
-
-        self.advance(progress_bar_id, 0.0, None).await?;
-
-        Ok(())
+        self.emit_after(guard, events).await
     }
 
     async fn set_progress_stage(
@@ -307,20 +516,20 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         progress_bar_id: &ProgressBarId,
         stage: Option<ProgressStage>,
     ) -> Result<(), EventError> {
-        let _guard = self.update_lock.lock().await;
-        let mut progress_bar = self.progress_storage.get(progress_bar_id.id).await?.clone();
-        progress_bar.stage = stage;
-
+        let guard = self.update_lock.lock().await;
+        let now = self.clock.now();
         // A new stage is shown at once, however little the fraction has moved.
-        let message = progress_bar.message.clone();
-        self.emit_progress_inner(&mut progress_bar, message, self.clock.now())
+        let due = self
+            .change(progress_bar_id.id, |bar| {
+                bar.stage = stage;
+                mark_sent(bar, now);
+                Due::of(bar, None)
+            })
             .await?;
 
-        self.progress_storage
-            .upsert(progress_bar_id.id, progress_bar)
-            .await?;
-
-        Ok(())
+        let mut events = Vec::new();
+        self.collect(due, &mut events).await;
+        self.emit_after(guard, events).await
     }
 
     async fn add_progress_bytes(
@@ -331,22 +540,31 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         if bytes == 0 {
             return Ok(());
         }
-        let _guard = self.update_lock.lock().await;
+        let guard = self.update_lock.lock().await;
         let now = self.clock.now();
 
         let own = progress_bar_id.id;
         let mut next = Some(own);
+        let mut events = Vec::new();
         while let Some(bar_id) = next {
-            let Some(mut progress_bar) = self.bar_on_the_way_up(bar_id, own).await? else {
-                break;
+            let changed = self
+                .change(bar_id, |bar| (bar.parent_id, record_bytes(bar, bytes, now)))
+                .await;
+            let (parent_id, due) = match changed {
+                Ok(changed) => changed,
+                // A parent that is gone already took its children along, so only an update
+                // racing its end gets here.
+                Err(_) if bar_id != own => break,
+                Err(err) => return Err(err.into()),
             };
-            next = progress_bar.parent_id;
+            next = parent_id;
 
-            self.record_bytes(&mut progress_bar, bytes, now).await?;
-            self.progress_storage.upsert(bar_id, progress_bar).await?;
+            if let Some(due) = due {
+                self.collect(due, &mut events).await;
+            }
         }
 
-        Ok(())
+        self.emit_after(guard, events).await
     }
 
     async fn add_progress_bytes_total(
@@ -359,15 +577,18 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
         let own = progress_bar_id.id;
         let mut next = Some(own);
         while let Some(bar_id) = next {
-            let Some(mut progress_bar) = self.bar_on_the_way_up(bar_id, own).await? else {
-                break;
+            let changed = self
+                .change(bar_id, |bar| {
+                    bar.bytes_total = Some(bar.bytes_total.unwrap_or(0).saturating_add(bytes));
+                    bar.bytes_done.get_or_insert(0);
+                    bar.parent_id
+                })
+                .await;
+            next = match changed {
+                Ok(parent_id) => parent_id,
+                Err(_) if bar_id != own => break,
+                Err(err) => return Err(err.into()),
             };
-            next = progress_bar.parent_id;
-
-            progress_bar.bytes_total =
-                Some(progress_bar.bytes_total.unwrap_or(0).saturating_add(bytes));
-            progress_bar.bytes_done.get_or_insert(0);
-            self.progress_storage.upsert(bar_id, progress_bar).await?;
         }
 
         Ok(())
@@ -381,23 +602,12 @@ mod tests {
     use tokio::sync::mpsc;
 
     use crate::features::events::{
-        Event, EventEmitter, ListProgressBarsUseCase, ListProgressBarsUseCasePort, ProgressEvent,
+        Event, EventEmitter, ListProgressBarsUseCase, ListProgressBarsUseCasePort,
         infra::InMemoryProgressBarStorage,
+        test_support::{ChannelEmitter, mirrors_now as mirrors, pack, sent},
     };
 
     use super::*;
-
-    struct ChannelEmitter(mpsc::UnboundedSender<Event>);
-
-    #[async_trait]
-    impl EventEmitter<Event> for ChannelEmitter {
-        async fn emit(&self, event: Event) -> Result<(), EventError> {
-            let _ = self.0.send(event);
-            Ok(())
-        }
-
-        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
-    }
 
     fn service() -> (
         ProgressServiceImpl<InMemoryProgressBarStorage>,
@@ -556,18 +766,6 @@ mod tests {
                 message: "No space left".to_string()
             }
         );
-    }
-
-    /// Every event waiting in `rx`.
-    fn sent(rx: &mut mpsc::UnboundedReceiver<Event>) -> Vec<ProgressEvent> {
-        std::iter::from_fn(|| rx.try_recv().ok())
-            .map(|event| {
-                let Event::Progress(event) = event else {
-                    panic!("expected a progress event");
-                };
-                event
-            })
-            .collect()
     }
 
     async fn snapshot(storage: &Arc<InMemoryProgressBarStorage>) -> ProgressBar {
@@ -899,8 +1097,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn a_bar_started_in_a_scope_goes_under_its_parent() {
-        use crate::features::events::{ProgressServiceExt, with_progress_parent};
+    async fn a_bar_started_under_a_parent_or_none_goes_where_it_is_told() {
+        use crate::features::events::ProgressServiceExt;
 
         let (service, storage, _rx) = service();
         let parent = service
@@ -908,26 +1106,300 @@ mod tests {
             .await
             .unwrap();
 
-        let inside = with_progress_parent(
-            Some(&parent),
-            service.init_progress_in_scope_safe(java(), 1.0, String::new()),
-        )
-        .await
-        .unwrap();
-        let outside = service
-            .init_progress_in_scope_safe(java(), 1.0, String::new())
+        let under = service
+            .init_progress_under_safe(Some(&parent), java(), 1.0, String::new())
             .await
             .unwrap();
-        let no_parent = with_progress_parent(
-            None,
-            service.init_progress_in_scope_safe(java(), 1.0, String::new()),
-        )
-        .await
-        .unwrap();
+        let alone = service
+            .init_progress_under_safe(None, java(), 1.0, String::new())
+            .await
+            .unwrap();
 
-        assert_eq!(bar(&storage, &inside).await.parent_id, Some(parent.id));
-        assert_eq!(bar(&storage, &outside).await.parent_id, None);
-        assert_eq!(bar(&storage, &no_parent).await.parent_id, None);
+        assert_eq!(bar(&storage, &under).await.parent_id, Some(parent.id));
+        assert_eq!(bar(&storage, &alone).await.parent_id, None);
+    }
+
+    #[tokio::test]
+    async fn a_shared_bar_is_mirrored_under_every_bar_waiting_on_it() {
+        let (service, storage, _rx) = service();
+        let a = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        let b = service
+            .init_progress(pack("b"), 1.0, String::new())
+            .await
+            .unwrap();
+        let unrelated = service
+            .init_progress(pack("c"), 1.0, String::new())
+            .await
+            .unwrap();
+
+        // `a` waits before the download starts, `b` once it runs.
+        let _a_waits = service.wait_on_shared(Some(&a), java()).await;
+        let _other = service
+            .wait_on_shared(
+                Some(&unrelated),
+                ProgressEventType::JavaDownload { version: 8 },
+            )
+            .await;
+        assert!(mirrors(&storage).await.is_empty(), "nothing to wait on yet");
+        let shared = service
+            .init_shared_progress(java(), 1.0, String::new())
+            .await
+            .unwrap();
+        let _b_waits = service.wait_on_shared(Some(&b), java()).await;
+
+        let mut expected = vec![(a.id, shared.id), (b.id, shared.id)];
+        expected.sort_unstable();
+        assert_eq!(mirrors(&storage).await, expected);
+        assert_eq!(bar(&storage, &shared).await.parent_id, None);
+        // Waiting again adds no second mirror.
+        let _again = service.wait_on_shared(Some(&a), java()).await;
+        assert_eq!(mirrors(&storage).await.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn a_wait_that_ended_gets_no_mirror() {
+        let (service, storage, _rx) = service();
+        let pack_bar = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+
+        drop(service.wait_on_shared(Some(&pack_bar), java()).await);
+        let _shared = service
+            .init_shared_progress(java(), 1.0, String::new())
+            .await
+            .unwrap();
+
+        assert!(mirrors(&storage).await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_mirror_shows_the_shared_bar_and_its_bytes_stay_out_of_its_parent() {
+        let (service, storage, mut rx, clock) = clocked_service();
+        let pack_bar = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        let file_bar = service
+            .init_child_progress(pack_bar.id, file("a.jar"), 1.0, String::new())
+            .await
+            .unwrap();
+        service
+            .add_progress_bytes_total(&file_bar, 10)
+            .await
+            .unwrap();
+        service.add_progress_bytes(&file_bar, 4).await.unwrap();
+        let _waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let shared = service
+            .init_shared_progress(java(), 10.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        let library = service
+            .init_child_progress(shared.id, file("lib.jar"), 1.0, String::new())
+            .await
+            .unwrap();
+        sent(&mut rx);
+
+        service
+            .add_progress_bytes_total(&library, 1000)
+            .await
+            .unwrap();
+        service.add_progress_bytes(&library, 100).await.unwrap();
+        clock.advance(ms(500));
+        service.add_progress_bytes(&library, 300).await.unwrap();
+        service.emit_progress(&shared, 5.0, None).await.unwrap();
+        service
+            .set_progress_stage(&shared, Some(ProgressStage::Extracting))
+            .await
+            .unwrap();
+
+        let events = sent(&mut rx);
+        let shared_events: Vec<_> = events
+            .iter()
+            .filter(|event| event.progress_bar_id == shared.id)
+            .collect();
+        let mirror_events: Vec<_> = events
+            .iter()
+            .filter(|event| event.mirror_of == Some(shared.id))
+            .collect();
+        assert_eq!(mirror_events.len(), shared_events.len(), "{events:?}");
+        for (mirror, shared_event) in mirror_events.iter().zip(&shared_events) {
+            assert_eq!(mirror.parent_id, Some(pack_bar.id));
+            assert_eq!(mirror.event, java());
+            assert_eq!(
+                (
+                    mirror.fraction,
+                    mirror.bytes_done,
+                    mirror.bytes_total,
+                    mirror.speed,
+                    mirror.stage
+                ),
+                (
+                    shared_event.fraction,
+                    shared_event.bytes_done,
+                    shared_event.bytes_total,
+                    shared_event.speed,
+                    shared_event.stage
+                )
+            );
+        }
+        let last = mirror_events.last().unwrap();
+        assert_eq!(
+            (last.fraction, last.bytes_done, last.stage),
+            (Some(0.5), Some(400), Some(ProgressStage::Extracting))
+        );
+        assert_eq!(last.speed, Some(600.0));
+
+        let pack_bar = bar(&storage, &pack_bar).await;
+        assert_eq!(
+            (pack_bar.bytes_done, pack_bar.bytes_total),
+            (Some(4), Some(10)),
+            "the shared bytes are not the pack's"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_parent_that_stops_waiting_takes_its_mirror_not_the_shared_bar() {
+        let (service, storage, mut rx) = service();
+        let pack_bar = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        let waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let shared = service
+            .init_shared_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        let [(_, _)] = mirrors(&storage).await[..] else {
+            panic!("one mirror expected");
+        };
+        sent(&mut rx);
+
+        pack_bar.fail("A mod is missing").await;
+        drop(waits);
+        drop(pack_bar);
+        settle().await;
+
+        let ended: Vec<_> = sent(&mut rx)
+            .into_iter()
+            .map(|event| (event.mirror_of, event.status))
+            .collect();
+        assert_eq!(
+            ended,
+            [
+                (Some(shared.id), ProgressStatus::Cancelled),
+                (
+                    None,
+                    ProgressStatus::Failed {
+                        message: "A mod is missing".to_string()
+                    }
+                ),
+            ]
+        );
+        assert_eq!(bar(&storage, &shared).await.status, ProgressStatus::Running);
+
+        // The shared bar goes on, its gone mirror left out.
+        service.emit_progress(&shared, 5.0, None).await.unwrap();
+        let events = sent(&mut rx);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].progress_bar_id, shared.id);
+        drop(shared);
+        settle().await;
+        assert!(storage.list().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn mirrors_end_with_the_status_of_their_shared_bar() {
+        let (service, storage, mut rx) = service();
+        let pack_bar = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        let _waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let shared = service
+            .init_shared_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        sent(&mut rx);
+
+        shared.fail("Not available").await;
+        drop(shared);
+        settle().await;
+
+        let failed = ProgressStatus::Failed {
+            message: "Not available".to_string(),
+        };
+        let ended: Vec<_> = sent(&mut rx)
+            .into_iter()
+            .map(|event| (event.mirror_of.is_some(), event.fraction, event.status))
+            .collect();
+        assert_eq!(ended, [(true, None, failed.clone()), (false, None, failed)]);
+        let left: Vec<_> = storage.list().await.into_iter().map(|bar| bar.id).collect();
+        assert_eq!(left, [pack_bar.id], "the waiting bar goes on");
+    }
+
+    /// How a [`CancellableBar`](crate::features::events::CancellableBar) settled by `settle`
+    /// ends.
+    async fn cancellable_ended_as(
+        settle: impl AsyncFnOnce(crate::features::events::CancellableBar),
+    ) -> ProgressStatus {
+        let (service, _storage, mut rx) = service();
+        let bar = service
+            .init_progress(java(), 1.0, String::new())
+            .await
+            .unwrap();
+
+        settle(crate::features::events::CancellableBar::new(Some(bar))).await;
+
+        loop {
+            let event = next_progress(&mut rx).await;
+            if event.fraction.is_none() {
+                return event.status;
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn a_cancellable_bar_ends_by_how_it_was_settled_and_cancelled_when_dropped() {
+        assert_eq!(
+            cancellable_ended_as(async |bar| bar.done()).await,
+            ProgressStatus::Done
+        );
+        assert_eq!(
+            cancellable_ended_as(async |bar| bar.fail("Broken").await).await,
+            ProgressStatus::Failed {
+                message: "Broken".to_string()
+            }
+        );
+        assert_eq!(
+            cancellable_ended_as(async |bar| drop(bar)).await,
+            ProgressStatus::Cancelled
+        );
+    }
+
+    #[tokio::test]
+    async fn an_update_racing_the_end_of_a_bar_does_not_bring_it_back() {
+        let (service, storage, _rx) = service();
+        let parent = service
+            .init_progress(java(), 1.0, String::new())
+            .await
+            .unwrap();
+        let child = service
+            .init_child_progress(parent.id, file("a.jar"), 1.0, String::new())
+            .await
+            .unwrap();
+        // The parent's end, as its handle's drop does it, between the child's updates.
+        storage.remove(parent.id).await.unwrap();
+
+        service.add_progress_bytes(&child, 10).await.unwrap();
+        service.add_progress_bytes_total(&child, 10).await.unwrap();
+
+        let left: Vec<_> = storage.list().await.into_iter().map(|bar| bar.id).collect();
+        assert_eq!(left, [child.id]);
+        std::mem::forget(parent);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -964,8 +1436,129 @@ mod tests {
         assert_eq!(bar(&storage, &parent).await.bytes_done, Some(16 * 100 * 10));
     }
 
-    /// What one report of bytes costs, and what the storage's read-modify-write loses without the
-    /// update lock. Run by hand:
+    /// Sends every event into a channel, each once a permit of `gate` is there for it.
+    struct GatedEmitter {
+        gate: Arc<tokio::sync::Semaphore>,
+        tx: mpsc::UnboundedSender<Event>,
+    }
+
+    #[async_trait]
+    impl EventEmitter<Event> for GatedEmitter {
+        async fn emit(&self, event: Event) -> Result<(), EventError> {
+            self.gate.acquire().await.unwrap().forget();
+            let _ = self.tx.send(event);
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    #[tokio::test]
+    async fn a_slow_listener_holds_up_no_change_and_the_events_of_a_bar_keep_their_order() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let gate = Arc::new(tokio::sync::Semaphore::new(0));
+        let storage = Arc::new(InMemoryProgressBarStorage::default());
+        let clock = Arc::new(ManualClock(std::sync::Mutex::new(Instant::now())));
+        let service = Arc::new(ProgressServiceImpl::with_clock(
+            Arc::new(GatedEmitter {
+                gate: gate.clone(),
+                tx,
+            }),
+            storage.clone(),
+            clock.clone(),
+        ));
+        let id = Arc::new(
+            service
+                .init_progress(java(), 10.0, String::new())
+                .await
+                .unwrap(),
+        );
+        let report = |bytes| {
+            let (service, id) = (service.clone(), id.clone());
+            tokio::spawn(async move { service.add_progress_bytes(&id, bytes).await.unwrap() })
+        };
+
+        // The first bytes go out at once: their event waits on the listener.
+        let first = report(100);
+        settle().await;
+        assert!(!first.is_finished());
+
+        // Bytes too soon for an event of their own are counted meanwhile.
+        clock.advance(ms(10));
+        tokio::time::timeout(Duration::from_secs(1), service.add_progress_bytes(&id, 100))
+            .await
+            .expect("the change waited on the listener")
+            .unwrap();
+        assert_eq!(bar(&storage, &id).await.bytes_done, Some(200));
+
+        // A later event of the bar goes out after the earlier one.
+        clock.advance(ms(300));
+        let later = report(100);
+        settle().await;
+        gate.add_permits(2);
+        first.await.unwrap();
+        later.await.unwrap();
+
+        let bytes: Vec<_> = sent(&mut rx)
+            .into_iter()
+            .map(|event| event.bytes_done)
+            .collect();
+        assert_eq!(bytes, [Some(100), Some(300)]);
+    }
+
+    #[tokio::test]
+    async fn a_bar_starting_to_wait_on_a_running_download_is_shown_it_at_once() {
+        let (service, _storage, mut rx) = service();
+        let pack_bar = service
+            .init_progress(pack("a"), 1.0, String::new())
+            .await
+            .unwrap();
+        let shared = service
+            .init_shared_progress(java(), 10.0, "Downloading".to_string())
+            .await
+            .unwrap();
+        service.emit_progress(&shared, 4.0, None).await.unwrap();
+        sent(&mut rx);
+
+        let _wait = service.wait_on_shared(Some(&pack_bar), java()).await;
+
+        let shown: Vec<_> = sent(&mut rx)
+            .into_iter()
+            .map(|event| {
+                (
+                    event.mirror_of,
+                    event.parent_id,
+                    event.fraction,
+                    event.message,
+                )
+            })
+            .collect();
+        assert_eq!(
+            shown,
+            [(
+                Some(shared.id),
+                Some(pack_bar.id),
+                Some(0.4),
+                "Downloading".to_string()
+            )]
+        );
+    }
+
+    #[tokio::test]
+    async fn a_wait_without_a_bar_mirrors_nothing() {
+        let (service, storage, _rx) = service();
+        let _shared = service
+            .init_shared_progress(java(), 1.0, String::new())
+            .await
+            .unwrap();
+
+        let _wait = service.wait_on_shared(None, java()).await;
+
+        assert!(mirrors(&storage).await.is_empty());
+    }
+
+    /// What one report of bytes costs, and that a change in place of the storage loses nothing
+    /// even without the update lock. Run by hand:
     /// `cargo test -p aether-core measure_bar_updates -- --ignored --nocapture`.
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
     #[ignore = "a measurement, not a test"]
@@ -1025,26 +1618,14 @@ mod tests {
             drop(children_left);
         }
 
-        // The bare read-modify-write of the storage, from many tasks at once without the lock.
+        // The bare change in place of the storage, from many tasks at once without the lock.
         for tasks in [1_usize, 8, 64] {
             let storage = Arc::new(InMemoryProgressBarStorage::default());
             let id = Uuid::new_v4();
             let mut bar = ProgressBar {
-                id,
-                message: "Downloading".to_string(),
-                total: 1.0,
-                current: 0.0,
-                last_sent: 0.0,
-                progress_type: java(),
-                stage: None,
-                status: ProgressStatus::Running,
-                parent_id: None,
                 has_children: true,
                 bytes_done: Some(0),
-                bytes_total: None,
-                speed: None,
-                transfer: TransferWindow::default(),
-                last_sent_at: None,
+                ..ProgressBar::new(id, java(), 1.0, "Downloading".to_string(), None)
             };
             // A full window: one sample per 50 ms over two seconds.
             let start = Instant::now();
@@ -1059,9 +1640,15 @@ mod tests {
                 let storage = storage.clone();
                 tokio::spawn(async move {
                     for _ in 0..CHUNKS {
-                        let mut bar = storage.get(id).await.unwrap().clone();
-                        bar.bytes_done = bar.bytes_done.map(|done| done + 1);
-                        storage.upsert(id, bar).await.unwrap();
+                        storage
+                            .update(
+                                id,
+                                Box::new(|bar| {
+                                    bar.bytes_done = bar.bytes_done.map(|done| done + 1);
+                                }),
+                            )
+                            .await
+                            .unwrap();
                         tokio::task::yield_now().await;
                     }
                 })
@@ -1071,7 +1658,7 @@ mod tests {
             let updates = tasks * CHUNKS;
             let counted = storage.get(id).await.unwrap().bytes_done.unwrap();
             println!(
-                "bare get/clone/upsert, {tasks:>2} tasks: {:.2} us per update, \
+                "bare change in place, {tasks:>2} tasks: {:.2} us per update, \
                  {} of {updates} updates lost",
                 elapsed.as_secs_f64() * 1e6 / updates as f64,
                 updates as u64 - counted

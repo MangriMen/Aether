@@ -6,7 +6,10 @@ use tracing::info;
 
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressConfig, ProgressService, ProgressServiceExt},
+        events::{
+            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
+            ProgressServiceExt,
+        },
         minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
     },
     shared::request_client::{Request, RequestClient, RequestClientExt},
@@ -14,28 +17,35 @@ use crate::{
         cache::domain::{Cache, FileStore},
         cache::infra::InfinityCachedResource,
         io::domain::IoError,
+        keyed_locks::KeyedLocks,
     },
 };
 
-use super::{AssetsService, ClientService, LibrariesService, version_info_key};
+use super::{
+    AssetsService, ClientService, LibrariesService, VersionProgress, assets_service::PendingAsset,
+    version_info_key,
+};
 
+/// The files of a game version are one shared download: one install of a version downloads
+/// them at a time (a lock per version), under a shared bar, and the others wait on it.
 pub struct MinecraftDownloadService<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
 {
-    client_service: ClientService<RC, PS, FS>,
-    assets_service: AssetsService<RC, PS, C>,
-    libraries_service: LibrariesService<RC, PS>,
+    client_service: ClientService<RC, FS>,
+    assets_service: AssetsService<RC, C>,
+    libraries_service: LibrariesService<RC>,
     request_client: Arc<RC>,
     progress_service: Arc<PS>,
     cached_resource: InfinityCachedResource<C>,
+    version_locks: KeyedLocks<String>,
 }
 
 impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
     MinecraftDownloadService<RC, PS, C, FS>
 {
     pub fn new(
-        client_service: ClientService<RC, PS, FS>,
-        assets_service: AssetsService<RC, PS, C>,
-        libraries_service: LibrariesService<RC, PS>,
+        client_service: ClientService<RC, FS>,
+        assets_service: AssetsService<RC, C>,
+        libraries_service: LibrariesService<RC>,
         request_client: Arc<RC>,
         progress_service: Arc<PS>,
         cache: Arc<C>,
@@ -47,6 +57,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             request_client,
             progress_service,
             cached_resource: InfinityCachedResource::new(cache),
+            version_locks: KeyedLocks::default(),
         }
     }
 
@@ -81,6 +92,72 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
 
         Ok(version_info.into())
     }
+
+    /// Download what is missing of the version, under the version's lock.
+    async fn download_missing(
+        &self,
+        version_info: &vanilla::VersionInfo,
+        java_arch: &str,
+        force: bool,
+        minecraft_updated: bool,
+    ) -> Result<(), MinecraftDomainError> {
+        let with_legacy = version_info.assets == "legacy";
+        let assets_index = self
+            .assets_service
+            .get_assets_index(version_info, force)
+            .await?;
+
+        let client = self.client_service.pending(version_info, force).await?;
+        let libraries = self
+            .libraries_service
+            .pending(version_info, java_arch, force, minecraft_updated)
+            .await?;
+        let assets = self
+            .assets_service
+            .pending(&assets_index, with_legacy, force)
+            .await?;
+        // Nothing to wait on: no bar, so no install gets a mirror.
+        if client.is_none() && libraries.is_empty() && assets.is_empty() {
+            info!("Minecraft {} is downloaded already", version_info.id);
+            return Ok(());
+        }
+
+        info!("Downloading minecraft {}", version_info.id);
+        let size = client.unwrap_or(0)
+            + libraries.iter().map(|library| library.size).sum::<u64>()
+            + assets.iter().map(PendingAsset::size).sum::<u64>();
+        #[allow(clippy::cast_precision_loss)] // a progress total
+        let bar = self
+            .progress_service
+            .init_shared_progress_safe(
+                ProgressEventType::MinecraftVersionDownload {
+                    version: version_info.id.clone(),
+                },
+                size.max(1) as f64,
+                "Downloading Minecraft".to_owned(),
+            )
+            .await;
+        let progress = VersionProgress::new(self.progress_service.as_ref(), bar.as_ref());
+
+        let result = tokio::try_join! {
+            async {
+                if client.is_some() {
+                    self.client_service
+                        .download_client(version_info, force, &progress)
+                        .await?;
+                }
+                Ok(())
+            },
+            self.assets_service.download_assets(&assets, &version_info.id, with_legacy, force, &progress),
+            self.libraries_service.download_libraries(&libraries, version_info, java_arch, force, &progress)
+        };
+
+        bar.fail_on_err(&result).await;
+        result?;
+
+        info!("Minecraft {} downloaded", version_info.id);
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -93,38 +170,22 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
         java_arch: &str,
         force: bool,
         minecraft_updated: bool,
-        progress_bar_id: Option<&ProgressBarId>,
+        waiting_bar: Option<&ProgressBarId>,
     ) -> Result<(), MinecraftDomainError> {
-        info!("Downloading minecraft {}", version_info.id);
+        // Before the lock: a download another install runs under it is mirrored too.
+        let _wait = self
+            .progress_service
+            .wait_on_shared(
+                waiting_bar,
+                ProgressEventType::MinecraftVersionDownload {
+                    version: version_info.id.clone(),
+                },
+            )
+            .await;
+        let _lock = self.version_locks.lock(&version_info.id).await;
 
-        let assets_index = self
-            .assets_service
-            .get_assets_index(version_info, force, progress_bar_id)
-            .await?;
-
-        let start_progress = if version_info
-            .processors
-            .as_ref()
-            .is_some_and(|p| !p.is_empty())
-        {
-            25.0
-        } else {
-            40.0
-        };
-        let progress_config = progress_bar_id.map(|progress_bar_id| ProgressConfig {
-            progress_bar_id,
-            total_progress: start_progress,
-        });
-
-        tokio::try_join! {
-            self.client_service.download_client(version_info, force, progress_bar_id),
-            self.assets_service.download_assets(&assets_index, version_info.assets == "legacy", force, progress_config.as_ref()),
-            self.libraries_service.download_libraries( version_info.libraries.as_slice(), version_info, java_arch, force, minecraft_updated, progress_config.as_ref())
-        }?;
-
-        info!("Minecraft {} downloaded", version_info.id);
-
-        Ok(())
+        self.download_missing(version_info, java_arch, force, minecraft_updated)
+            .await
     }
 
     async fn get_version_info(

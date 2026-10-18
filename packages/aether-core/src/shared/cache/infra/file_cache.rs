@@ -7,7 +7,10 @@ use tracing::debug;
 
 use crate::shared::{
     cache::domain::{Cache, CacheKey, CachePathResolver, FileStore},
-    io::infra::{create_dir_all, read_async, read_json_async, remove_file, write_json_async},
+    io::infra::{
+        create_dir_all, read_async, read_json_async, remove_file, write_json_async,
+        write_replacing_async,
+    },
 };
 
 pub struct FileCache<R> {
@@ -94,11 +97,10 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
             return;
         };
 
-        if let Some(parent) = path.parent() {
-            let _ = create_dir_all(parent).await;
+        // Whole or not at all: `exists` must never take a file cut short for one that is there.
+        if let Err(err) = write_replacing_async(&path, data).await {
+            debug!("Failed to write cache file {:?}. {:?}", path, err);
         }
-
-        let _ = tokio::fs::write(path, data).await;
     }
 
     async fn invalidate(&self, key: &CacheKey<()>) {

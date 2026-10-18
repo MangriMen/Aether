@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use log::{error, info};
 
 use crate::features::{
-    events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
+    events::{EventEmitterExt, ProgressBarId, SharedEventEmitter, WarningEvent},
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
@@ -76,6 +76,7 @@ impl CreateInstanceUseCase {
         &self,
         instance: &Instance,
         skip_install_instance: Option<bool>,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
         self.instance_storage.upsert(instance).await?;
 
@@ -85,15 +86,19 @@ impl CreateInstanceUseCase {
 
         if !skip_install_instance.unwrap_or(false) {
             self.instance_install_service
-                .execute(instance.id().clone(), false)
+                .execute(instance.id().clone(), false, parent_bar)
                 .await?;
         }
 
         Ok(instance.id().clone())
     }
 
-    pub async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
-        self.create(new_instance, InstanceInstallStage::NotInstalled)
+    pub async fn execute(
+        &self,
+        new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
+        self.create(new_instance, InstanceInstallStage::NotInstalled, parent_bar)
             .await
     }
 
@@ -101,9 +106,14 @@ impl CreateInstanceUseCase {
     pub async fn execute_for_pack(
         &self,
         new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
-        self.create(new_instance, InstanceInstallStage::PackInstalling)
-            .await
+        self.create(
+            new_instance,
+            InstanceInstallStage::PackInstalling,
+            parent_bar,
+        )
+        .await
     }
 
     /// `initial_stage` — `PackInstalling` keeps the instance unlaunchable through the install of
@@ -112,6 +122,7 @@ impl CreateInstanceUseCase {
         &self,
         new_instance: NewInstance,
         initial_stage: InstanceInstallStage,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
         let NewInstance {
             name,
@@ -158,7 +169,9 @@ impl CreateInstanceUseCase {
         .build();
         instance.install_stage = initial_stage;
 
-        let result = self.setup_instance(&instance, skip_install_instance).await;
+        let result = self
+            .setup_instance(&instance, skip_install_instance, parent_bar)
+            .await;
 
         // Full rollback on any failure: unwatch, remove from storage, delete directory
         if let Err(err) = &result {
@@ -241,14 +254,19 @@ pub(crate) fn sanitize_instance_name(name: &str) -> String {
 
 #[async_trait]
 impl CreateInstanceUseCasePort for CreateInstanceUseCase {
-    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
-        self.execute(new_instance).await
+    async fn execute(
+        &self,
+        new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
+        self.execute(new_instance, parent_bar).await
     }
 
     async fn execute_for_pack(
         &self,
         new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
-        self.execute_for_pack(new_instance).await
+        self.execute_for_pack(new_instance, parent_bar).await
     }
 }

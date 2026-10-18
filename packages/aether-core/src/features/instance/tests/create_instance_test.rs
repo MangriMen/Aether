@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 
 use crate::features::{
-    events::{Event, EventEmitter, EventError, SharedEventEmitter},
+    events::{Event, EventEmitter, EventError, ProgressBarId, SharedEventEmitter},
     instance::{
         CreateInstanceUseCase, Instance, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceStorage, InstanceWatcherService, NewInstance,
@@ -45,7 +45,12 @@ struct NoOpInstallService;
 
 #[async_trait]
 impl InstanceInstallService for NoOpInstallService {
-    async fn execute(&self, _instance_id: InstanceId, _force: bool) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        _instance_id: InstanceId,
+        _force: bool,
+        _parent_bar: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
         Ok(())
     }
 }
@@ -264,7 +269,7 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
     };
 
     let instance_id = use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create vanilla instance should succeed");
 
@@ -320,7 +325,7 @@ async fn should_create_an_instance_when_given_a_loader_and_an_explicit_version()
     };
 
     let instance_id = use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create Fabric instance should succeed");
 
@@ -369,7 +374,7 @@ async fn should_pick_the_default_loader_version_when_none_is_given() {
     };
 
     let instance_id = use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create Forge instance should succeed");
 
@@ -391,6 +396,7 @@ async fn should_run_the_install_service_when_an_instance_is_created() {
             &self,
             _instance_id: InstanceId,
             _force: bool,
+            _parent_bar: Option<&ProgressBarId>,
         ) -> Result<(), InstanceError> {
             self.0.store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
@@ -433,7 +439,7 @@ async fn should_run_the_install_service_when_an_instance_is_created() {
     };
 
     use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create instance should succeed");
 
@@ -453,6 +459,7 @@ async fn should_skip_the_install_when_it_is_not_requested() {
             &self,
             _instance_id: InstanceId,
             _force: bool,
+            _parent_bar: Option<&ProgressBarId>,
         ) -> Result<(), InstanceError> {
             self.0.store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
@@ -494,7 +501,7 @@ async fn should_skip_the_install_when_it_is_not_requested() {
     };
 
     use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create instance should succeed");
 
@@ -538,7 +545,7 @@ async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
     };
 
     let instance_id = use_case
-        .execute(new_instance)
+        .execute(new_instance, None)
         .await
         .expect("Create instance with special chars should succeed");
 
@@ -605,7 +612,7 @@ async fn should_roll_back_when_storage_fails() {
         pack_info: None,
     };
 
-    let result = use_case.execute(new_instance).await;
+    let result = use_case.execute(new_instance, None).await;
     assert!(result.is_err(), "Should fail when storage upsert fails");
 
     // Verify the instance directory was cleaned up during rollback
@@ -635,15 +642,18 @@ async fn should_store_the_asset_id_when_the_new_instance_has_an_icon() {
     );
 
     let instance_id = use_case
-        .execute(NewInstance {
-            name: "With Icon".to_string(),
-            game_version: "1.21".to_string(),
-            mod_loader: ModLoader::Vanilla,
-            loader_version: None,
-            icon_path: Some(icon.to_string_lossy().into_owned()),
-            skip_install_instance: Some(true),
-            pack_info: None,
-        })
+        .execute(
+            NewInstance {
+                name: "With Icon".to_string(),
+                game_version: "1.21".to_string(),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: Some(icon.to_string_lossy().into_owned()),
+                skip_install_instance: Some(true),
+                pack_info: None,
+            },
+            None,
+        )
         .await
         .expect("an instance with an icon should be created");
 
@@ -671,20 +681,23 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
     );
 
     let instance_id = use_case
-        .execute(NewInstance {
-            name: "Missing Icon".to_string(),
-            game_version: "1.21".to_string(),
-            mod_loader: ModLoader::Vanilla,
-            loader_version: None,
-            icon_path: Some(
-                temp.path()
-                    .join("no-such-icon.png")
-                    .to_string_lossy()
-                    .into_owned(),
-            ),
-            skip_install_instance: Some(true),
-            pack_info: None,
-        })
+        .execute(
+            NewInstance {
+                name: "Missing Icon".to_string(),
+                game_version: "1.21".to_string(),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: Some(
+                    temp.path()
+                        .join("no-such-icon.png")
+                        .to_string_lossy()
+                        .into_owned(),
+                ),
+                skip_install_instance: Some(true),
+                pack_info: None,
+            },
+            None,
+        )
         .await
         .expect("an unreadable icon must not fail the creation");
 

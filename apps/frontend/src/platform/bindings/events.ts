@@ -290,6 +290,8 @@ export type ProgressBarDto = {
 	stage: ProgressStageDto | null,
 	status: ProgressStatusDto,
 	parentId: string | null,
+	/**  As in `ProgressEventDto`. */
+	mirrorOf: string | null,
 	/**  A number, not `u64`, as in `ProgressEventDto`. */
 	bytesDone: number | null,
 	bytesTotal: number | null,
@@ -305,6 +307,11 @@ export type ProgressEventDto = {
 	stage: ProgressStageDto | null,
 	status: ProgressStatusDto,
 	parentId: string | null,
+	/**
+	 *  The shared bar this one mirrors (a download it waits on), if it is a mirror: it shows
+	 *  what that bar shows and its bytes are not its parent's.
+	 */
+	mirrorOf: string | null,
 	/**  A number, not `u64`: specta refuses to export `u64`, and a download never nears 2^53 bytes. */
 	bytesDone: number | null,
 	/**  A number, not `u64`, like `bytes_done`. */
@@ -313,11 +320,11 @@ export type ProgressEventDto = {
 	speed: number | null,
 };
 
-export type ProgressEventTypeDto = { type: "java_download"; version: number } | { type: "pack_file_download"; instance_path: string; pack_name: string; icon: string | null; pack_version: string } | { type: "pack_download"; instance_path: string; pack_name: string; icon: string | null; pack_id: string | null; pack_version: string | null } | { type: "minecraft_download"; instance_id: string; instance_name: string } | { type: "instance_update"; instance_id: string; instance_name: string } | { type: "zip_extract"; instance_path: string; instance_name: string } | { type: "launcher_update"; version: string; current_version: string; phase: LauncherUpdatePhaseDto } | { type: "plugin_download"; plugin_name: string };
+export type ProgressEventTypeDto = { type: "java_download"; version: number } | { type: "pack_file_download"; instance_path: string; pack_name: string; icon: string | null; pack_version: string } | { type: "pack_download"; instance_path: string; pack_name: string; icon: string | null; pack_id: string | null; pack_version: string | null } | { type: "minecraft_download"; instance_id: string; instance_name: string } | { type: "minecraft_version_download"; version: string } | { type: "minecraft_assets_download"; version: string; file_count: number } | { type: "file_download"; file_name: string } | { type: "instance_update"; instance_id: string; instance_name: string } | { type: "zip_extract"; instance_path: string; instance_name: string } | { type: "launcher_update"; version: string; current_version: string; phase: LauncherUpdatePhaseDto } | { type: "plugin_download"; plugin_name: string };
 
 export type ProgressStageDto = "downloading" | "verifying" | "installing" | "extracting" | "finishing";
 
-export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string };
+export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string } | { type: "cancelled" };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {
 	details: string,

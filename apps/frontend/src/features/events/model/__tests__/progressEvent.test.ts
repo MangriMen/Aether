@@ -22,8 +22,15 @@ describe('progress event helpers', () => {
     );
   });
 
+  it('removes cancelled bars like finished ones', () => {
+    expect(getProgressRemoveDelay(make({ type: 'cancelled' }))).toBe(
+      PROGRESS_EVENT_REMOVE_DELAY,
+    );
+  });
+
   it('detects failure by status only', () => {
     expect(isProgressFailed(make({ type: 'failed', message: 'x' }))).toBe(true);
     expect(isProgressFailed(make({ type: 'running' }))).toBe(false);
+    expect(isProgressFailed(make({ type: 'cancelled' }))).toBe(false);
   });
 });

@@ -218,16 +218,23 @@ pub(super) struct RecordingCreateInstance {
     pub(super) location_info: Arc<LocationInfo>,
     pub(super) created: Mutex<Vec<NewInstance>>,
     pub(super) created_for_pack: Mutex<Vec<NewInstance>>,
+    /// The bar each instance was created under.
+    pub(super) parent_bars: Mutex<Vec<Option<uuid::Uuid>>>,
     /// When set, a bar is started on it the way installing the game does.
     pub(super) game_progress: Mutex<Option<Arc<dyn ProgressService>>>,
 }
 
 impl RecordingCreateInstance {
-    pub(super) async fn create_dir(&self) {
+    pub(super) async fn create_dir(&self, parent_bar: Option<&ProgressBarId>) {
+        self.parent_bars
+            .lock()
+            .unwrap()
+            .push(parent_bar.map(|bar| bar.id));
         let game_progress = self.game_progress.lock().unwrap().clone();
         if let Some(progress) = game_progress {
             let bar = progress
-                .init_progress_in_scope_safe(
+                .init_progress_under_safe(
+                    parent_bar,
                     ProgressEventType::MinecraftDownload {
                         instance_id: InstanceId::try_from(NEW_INSTANCE_ID).unwrap(),
                         instance_name: NEW_INSTANCE_ID.into(),
@@ -250,8 +257,12 @@ impl RecordingCreateInstance {
 
 #[async_trait]
 impl CreateInstanceUseCasePort for RecordingCreateInstance {
-    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
-        self.create_dir().await;
+    async fn execute(
+        &self,
+        new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
+        self.create_dir(parent_bar).await;
         self.created.lock().unwrap().push(new_instance);
         Ok(InstanceId::try_from(NEW_INSTANCE_ID).unwrap())
     }
@@ -259,8 +270,9 @@ impl CreateInstanceUseCasePort for RecordingCreateInstance {
     async fn execute_for_pack(
         &self,
         new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
-        self.create_dir().await;
+        self.create_dir(parent_bar).await;
         self.created_for_pack.lock().unwrap().push(new_instance);
         Ok(InstanceId::try_from(NEW_INSTANCE_ID).unwrap())
     }
@@ -270,6 +282,8 @@ impl CreateInstanceUseCasePort for RecordingCreateInstance {
 #[derive(Default)]
 pub(super) struct RecordingChangeGame {
     pub(super) changes: Mutex<Vec<(String, InstanceGame)>>,
+    /// The bar each move was made under.
+    pub(super) parent_bars: Mutex<Vec<Option<uuid::Uuid>>>,
 }
 
 impl RecordingChangeGame {
@@ -284,7 +298,12 @@ impl ChangeInstanceGameUseCasePort for RecordingChangeGame {
         &self,
         instance_id: InstanceId,
         game: InstanceGame,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
+        self.parent_bars
+            .lock()
+            .unwrap()
+            .push(parent_bar.map(|bar| bar.id));
         let fail = game.game_version.contains("fail");
         self.changes
             .lock()
@@ -696,6 +715,7 @@ impl Fixture {
                 location_info: location_info.clone(),
                 created: Mutex::default(),
                 created_for_pack: Mutex::default(),
+                parent_bars: Mutex::default(),
                 game_progress: Mutex::default(),
             }),
             location_info,

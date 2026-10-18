@@ -327,6 +327,7 @@ impl AetherContainer {
             self.storage().jre_provider.clone(),
             self.location_info().clone(),
             self.storage().java_installation_tracker.clone(),
+            self.progress_service(),
         ));
         Arc::new(Leased::new(inner, self.activity_gate.clone()))
     }
@@ -344,6 +345,7 @@ impl AetherContainer {
                         self.storage().java_installation_service.clone(),
                         self.get_java_use_case(),
                         self.install_java_use_case(),
+                        self.progress_service(),
                     ));
                 Arc::new(Leased::new(inner, self.activity_gate.clone()))
             })

@@ -7,7 +7,6 @@ use crate::features::{
     events::{
         Event, EventEmitter, EventError, ProgressBarId, ProgressBarStorage, ProgressEventType,
         ProgressService, ProgressServiceImpl, infra::InMemoryProgressBarStorage,
-        with_progress_parent,
     },
     instance::{
         InstallInstanceUseCase, Instance, InstanceBuilder, InstanceError, InstanceId,
@@ -162,7 +161,7 @@ async fn run_install(
         location_info,
     );
 
-    let result = use_case.execute(id.clone(), false).await;
+    let result = use_case.execute(id.clone(), false, None).await;
     (storage.get(&id).await.unwrap(), result.is_ok())
 }
 
@@ -241,7 +240,7 @@ impl MinecraftInstallService for ParentOfBar {
 /// Installing the game of a pack's new instance reports under the pack's bar; on its own, at
 /// the top.
 #[tokio::test]
-async fn should_put_the_bar_of_the_game_under_the_bar_in_scope_when_there_is_one() {
+async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one() {
     let temp = TempDir::new().unwrap();
     let location_info = Arc::new(LocationInfo::new(
         temp.path().join("settings"),
@@ -277,10 +276,11 @@ async fn should_put_the_bar_of_the_game_under_the_bar_in_scope_when_there_is_one
         .await
         .unwrap();
 
-    with_progress_parent(Some(&pack), use_case.execute(id.clone(), false))
+    use_case
+        .execute(id.clone(), false, Some(&pack))
         .await
         .unwrap();
-    use_case.execute(id, false).await.unwrap();
+    use_case.execute(id, false, None).await.unwrap();
 
     assert_eq!(*minecraft.1.lock().unwrap(), [Some(pack.id), None]);
 }

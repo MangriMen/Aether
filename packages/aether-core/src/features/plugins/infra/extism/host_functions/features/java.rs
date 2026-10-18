@@ -28,7 +28,7 @@ pub(crate) async fn handle_install_java(
 ) -> crate::Result<JavaDto> {
     container
         .install_java_use_case()
-        .execute(InstallJava::new(version))
+        .execute(InstallJava::new(version), None)
         .await
         .map_err(Into::into)
         .map(Into::into)

@@ -18,12 +18,22 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   const clampedValue = createMemo(() => local.payload.fraction ?? 1);
 
-  const title = createMemo(() => {
+  const ownTitle = createMemo(() => {
     switch (local.payload.event.type) {
       case 'java_download':
         return t('events.javaDownloading', {
           version: local.payload.event.version,
         });
+      case 'minecraft_version_download':
+        return t('events.minecraftDownloading', {
+          version: local.payload.event.version,
+        });
+      case 'minecraft_assets_download':
+        return t('events.minecraftAssets', {
+          count: local.payload.event.file_count,
+        });
+      case 'file_download':
+        return local.payload.event.file_name;
       case 'minecraft_download':
       case 'instance_update':
       case 'zip_extract':
@@ -44,11 +54,22 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
     }
   });
 
+  // A mirror shows a shared download its install waits on.
+  const title = createMemo(() =>
+    local.payload.mirrorOf === null
+      ? ownTitle()
+      : t('events.waitingFor', { name: ownTitle() ?? '' }),
+  );
+
   const message = createMemo(() => {
     const { status, stage, event } = local.payload;
 
     if (status.type === 'failed') {
       return status.message;
+    }
+
+    if (status.type === 'cancelled') {
+      return t('events.cancelled');
     }
 
     if (event.type === 'launcher_update') {

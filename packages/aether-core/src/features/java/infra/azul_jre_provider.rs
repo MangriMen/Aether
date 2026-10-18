@@ -10,7 +10,10 @@ use serde::Deserialize;
 
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
+        events::{
+            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
+            ProgressServiceExt,
+        },
         java::{JavaDomainError, JreProvider},
     },
     shared::io::infra::remove_dir_all,
@@ -179,31 +182,37 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
 
         Ok((package, file))
     }
+
+    async fn download_and_unpack(
+        &self,
+        version: u32,
+        install_dir: &Path,
+        progress_bar_id: Option<&ProgressBarId>,
+    ) -> Result<PathBuf, JavaDomainError> {
+        let (package, file) = self.download_jre(version, progress_bar_id).await?;
+        self.unpack_jre(install_dir, file, &package, version, progress_bar_id)
+            .await
+    }
 }
 
 #[async_trait]
 impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS, RC> {
     async fn install(&self, version: u32, install_dir: &Path) -> Result<PathBuf, JavaDomainError> {
-        // Under the bar of what needs Java, when that is an install of a pack.
+        // Shared: every install needing this Java waits on this one download.
         let progress_bar_id = self
             .progress_service
-            .init_progress_in_scope_safe(
+            .init_shared_progress_safe(
                 ProgressEventType::JavaDownload { version },
                 100.0,
                 "Downloading java version".to_string(),
             )
             .await;
 
-        let (package, file) = self.download_jre(version, progress_bar_id.as_ref()).await?;
-
-        self.unpack_jre(
-            install_dir,
-            file,
-            &package,
-            version,
-            progress_bar_id.as_ref(),
-        )
-        .await
+        let result = self
+            .download_and_unpack(version, install_dir, progress_bar_id.as_ref())
+            .await;
+        progress_bar_id.fail_on_err(&result).await;
+        result
     }
 }
 

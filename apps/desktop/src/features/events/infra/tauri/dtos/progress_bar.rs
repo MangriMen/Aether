@@ -17,6 +17,8 @@ pub struct ProgressBarDto {
     pub stage: Option<ProgressStageDto>,
     pub status: ProgressStatusDto,
     pub parent_id: Option<Uuid>,
+    /// As in `ProgressEventDto`.
+    pub mirror_of: Option<Uuid>,
     /// A number, not `u64`, as in `ProgressEventDto`.
     pub bytes_done: Option<f64>,
     pub bytes_total: Option<f64>,
@@ -35,6 +37,7 @@ impl From<ProgressBar> for ProgressBarDto {
             stage: value.stage.map(Into::into),
             status: value.status.into(),
             parent_id: value.parent_id,
+            mirror_of: value.mirror_of,
             bytes_done: bytes_to_number(value.bytes_done),
             bytes_total: bytes_to_number(value.bytes_total),
             speed: value.speed,

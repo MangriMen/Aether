@@ -261,9 +261,13 @@
     "title": "Создать оффлайн аккаунт"
   },
   "events": {
+    "cancelled": "Отменено",
     "installFailed": "Не удалось выполнить установку",
     "installing": "Установка {{name}}",
     "javaDownloading": "Загрузка Java {{version}}",
+    "minecraftAssets": "Ресурсы (файлов: {{count}})",
+    "minecraftDownloading": "Загрузка Minecraft {{version}}",
+    "waitingFor": "Ждёт: {{name}}",
     "stage": {
       "downloading": "Загрузка",
       "extracting": "Распаковка",

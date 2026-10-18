@@ -1,4 +1,5 @@
 pub(crate) mod cache_event;
+pub(crate) mod cancellable_bar;
 mod event;
 pub(crate) mod event_error;
 pub(crate) mod instance;
@@ -7,11 +8,12 @@ pub(crate) mod process;
 pub(crate) mod progress;
 pub(crate) mod progress_bar;
 pub(crate) mod progress_bar_error;
-pub(crate) mod progress_parent;
+pub(crate) mod shared_progress_wait;
 pub(crate) mod transfer_window;
 pub(crate) mod warning;
 
 pub use cache_event::*;
+pub use cancellable_bar::CancellableBar;
 pub use event::*;
 pub use event_error::*;
 pub use instance::*;
@@ -20,5 +22,5 @@ pub use process::*;
 pub use progress::*;
 pub use progress_bar::*;
 pub use progress_bar_error::*;
-pub use progress_parent::with_progress_parent;
+pub use shared_progress_wait::SharedProgressWait;
 pub use warning::*;

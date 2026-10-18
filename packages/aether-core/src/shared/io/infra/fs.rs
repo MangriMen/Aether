@@ -36,7 +36,12 @@ pub(crate) const REPLACING_TEMP_PREFIX: &str = ".write-";
 ///
 /// The temporary file sits in the same directory, so the final step is a rename within one
 /// file system, which the OS performs atomically.
-pub(crate) async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<(), IoError> {
+///
+/// `data` is taken as it is (a `Vec`, or shared `Bytes`), not copied.
+pub(crate) async fn write_replacing_async(
+    path: &Path,
+    data: impl AsRef<[u8]> + Send + 'static,
+) -> Result<(), IoError> {
     let parent = match path.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
         _ => PathBuf::from("."),
@@ -55,7 +60,7 @@ pub(crate) async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<
             .tempfile_in(&parent)
             .map_err(|err| IoError::with_path(err, &parent))?;
 
-        std::io::Write::write_all(&mut temp_file, &data)
+        std::io::Write::write_all(&mut temp_file, data.as_ref())
             .and_then(|()| temp_file.as_file().sync_all())
             .map_err(|err| IoError::with_path(err, temp_file.path()))?;
 

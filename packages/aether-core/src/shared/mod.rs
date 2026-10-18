@@ -7,6 +7,7 @@ pub mod housekeeping;
 pub mod io;
 pub mod java;
 pub mod json_store;
+pub mod keyed_locks;
 pub mod limits;
 pub mod overridable;
 pub mod request_client;

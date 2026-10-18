@@ -269,22 +269,13 @@ pub async fn build_container(
         location_info.clone(),
     )));
 
-    let client_svc = ClientService::new(
-        progress_service.clone(),
-        http_client.clone(),
-        minecraft_cache.clone(),
-    );
+    let client_svc = ClientService::new(http_client.clone(), minecraft_cache.clone());
     let assets_svc = AssetsService::new(
-        progress_service.clone(),
         http_client.clone(),
         location_info.clone(),
         minecraft_cache.clone(),
     );
-    let libraries_svc = LibrariesService::new(
-        progress_service.clone(),
-        http_client.clone(),
-        location_info.clone(),
-    );
+    let libraries_svc = LibrariesService::new(http_client.clone(), location_info.clone());
     let minecraft_downloader: Arc<dyn aether_core::features::minecraft::MinecraftDownloader> =
         Arc::new(MinecraftDownloadService::new(
             client_svc,
