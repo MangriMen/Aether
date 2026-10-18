@@ -20,7 +20,7 @@ use super::{
 
 fn migration_error_message(error: &MigrateError) -> String {
     match error {
-        MigrateError::VersionMissing(_) => "The database was created by a newer version of Aether and cannot be opened by this one. 
+        MigrateError::VersionMissing(_) => "The database was created by a newer version of Aether and cannot be opened by this one. \
              Update Aether and try again."
             .to_owned(),
         other => format!("Failed to update the database: {other}"),
@@ -125,4 +125,17 @@ fn post_initialize<R: tauri::Runtime>(
 
         run_window_is_visible_watch_dog(main_window).await;
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_explain_a_database_from_a_newer_version_on_one_line() {
+        let message = migration_error_message(&MigrateError::VersionMissing(1));
+
+        assert!(message.contains("newer version of Aether"));
+        assert!(!message.contains("  ") && !message.contains('\n'));
+    }
 }
