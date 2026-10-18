@@ -112,27 +112,28 @@ impl LaunchInstanceUseCase {
     #[allow(clippy::too_many_lines)]
     pub async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         // Held until the game is started: content is not installed or updated under it. The
         // stage below does not tell an install into an `Installed` instance, nor one that starts
         // after it was read.
         let Some(_lock) = self.instance_locks.try_lock(&instance_id) else {
-            return Err(InstanceError::InstanceStillInstalling { instance_id });
+            return Err(InstanceError::InstanceStillInstalling {
+                instance_id: instance_id.into(),
+            });
         };
         let settings = self.default_instance_settings_storage.get().await?;
-        let instance = self
-            .instance_storage
-            .get(&InstanceId::try_from(instance_id.as_str())?)
-            .await?;
+        let instance = self.instance_storage.get(&instance_id).await?;
 
         let launch_settings = Self::resolve_launch_settings(&instance, &settings);
 
         if instance.install_stage == InstanceInstallStage::PackInstalling
             || instance.install_stage == InstanceInstallStage::Installing
         {
-            return Err(InstanceError::InstanceStillInstalling { instance_id });
+            return Err(InstanceError::InstanceStillInstalling {
+                instance_id: instance_id.into(),
+            });
         }
 
         // Check if profile has a running profile, and reject running the command if it does
@@ -142,10 +143,10 @@ impl LaunchInstanceUseCase {
             .list_metadata()
             .await?
             .into_iter()
-            .find(|p| p.instance_id() == instance_id)
+            .find(|p| *p.instance_id() == instance_id)
         {
             return Err(InstanceError::InstanceAlreadyRunning {
-                instance_id: instance_id.clone(),
+                instance_id: instance_id.to_string(),
                 process_id: process.uuid(),
             });
         }
@@ -201,7 +202,7 @@ impl LaunchInstanceUseCase {
         self.notify_plugin_event(
             &instance,
             PluginInternalEvent::BeforeInstanceLaunch {
-                instance_id: instance.id().to_string(),
+                instance_id: instance.id().clone(),
             },
             "BeforeInstanceLaunch",
         )
@@ -245,7 +246,7 @@ impl LaunchInstanceUseCase {
         self.notify_plugin_event(
             &instance,
             PluginInternalEvent::AfterInstanceLaunch {
-                instance_id: instance.id().to_string(),
+                instance_id: instance.id().clone(),
             },
             "AfterInstanceLaunch",
         )
@@ -259,7 +260,7 @@ impl LaunchInstanceUseCase {
 impl InstanceLaunchService for LaunchInstanceUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         self.execute(instance_id, credentials).await

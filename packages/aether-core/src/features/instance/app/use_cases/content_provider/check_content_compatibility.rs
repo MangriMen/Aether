@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::CheckContentCompatibilityUseCasePort;
 use crate::{
     features::instance::{
-        ContentProvider, Instance, InstanceError, InstanceStorage,
+        ContentProvider, Instance, InstanceError, InstanceId, InstanceStorage,
         app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
     },
     shared::capability::domain::CapabilityRegistry,
@@ -32,7 +32,7 @@ impl CheckContentCompatibilityUseCase {
 
     pub async fn execute(
         &self,
-        instance_ids: HashSet<String>,
+        instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
         let provider_id = &check_params.provider_id;
@@ -51,7 +51,7 @@ impl CheckContentCompatibilityUseCase {
             .list()
             .await?
             .into_iter()
-            .filter(|instance| instance_ids.contains(instance.id().as_str()))
+            .filter(|instance| instance_ids.contains(instance.id()))
             .collect();
 
         provider
@@ -65,7 +65,7 @@ impl CheckContentCompatibilityUseCase {
 impl CheckContentCompatibilityUseCasePort for CheckContentCompatibilityUseCase {
     async fn execute(
         &self,
-        instance_ids: HashSet<String>,
+        instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
         self.execute(instance_ids, check_params).await

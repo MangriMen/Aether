@@ -100,12 +100,13 @@ impl TryFrom<Event> for ProgressEvent {
 mod tests {
     use super::*;
     use crate::features::events::{InstanceEventType, ProcessEventType, ProgressEventType};
+    use crate::features::instance::InstanceId;
     use uuid::Uuid;
 
     fn make_instance_event() -> InstanceEvent {
         InstanceEvent {
             event: InstanceEventType::Created,
-            instance_id: "test-id".into(),
+            instance_id: InstanceId::try_from("test-id").unwrap(),
         }
     }
 
@@ -117,7 +118,7 @@ mod tests {
 
     fn make_process_event() -> ProcessEvent {
         ProcessEvent {
-            instance_id: "test-id".into(),
+            instance_id: InstanceId::try_from("test-id").unwrap(),
             process_id: Uuid::new_v4(),
             event: ProcessEventType::Launched,
             message: "started".into(),

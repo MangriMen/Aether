@@ -24,7 +24,7 @@ impl From<InstanceEvent> for InstanceEventDto {
     fn from(value: InstanceEvent) -> Self {
         Self {
             event: value.event.into(),
-            instance_id: value.instance_id,
+            instance_id: value.instance_id.to_string(),
         }
     }
 }

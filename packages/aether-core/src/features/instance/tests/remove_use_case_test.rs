@@ -212,7 +212,10 @@ async fn should_clean_everything_when_an_instance_is_removed() {
     );
 
     // ── Act ──
-    use_case.execute(instance_id.clone()).await.unwrap();
+    use_case
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
+        .await
+        .unwrap();
 
     // ── Assert: DB completely clean ──
     for table in &[
@@ -260,7 +263,10 @@ async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
     );
 
     // Deleting something that never existed should be fine
-    use_case.execute(instance_id).await.unwrap();
+    use_case
+        .execute(InstanceId::try_from(instance_id).unwrap())
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -289,7 +295,10 @@ async fn should_reuse_the_pool_when_an_instance_is_removed() {
         Arc::new(InstanceLocks::new()),
     );
 
-    use_case.execute(instance_id.clone()).await.unwrap();
+    use_case
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
+        .await
+        .unwrap();
 
     // Verify: the same pool sees no data
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
@@ -324,7 +333,8 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
     );
     let held = locks.lock(&instance_id).await;
 
-    let mut remove = std::pin::pin!(use_case.execute(instance_id.clone()));
+    let mut remove =
+        std::pin::pin!(use_case.execute(InstanceId::try_from(instance_id.clone()).unwrap()));
     assert!(futures::poll!(&mut remove).is_pending());
     assert!(location_info.instance_dir(&instance_id).exists());
 

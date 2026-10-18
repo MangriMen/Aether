@@ -851,9 +851,7 @@ impl InstallPlanExecutor {
                 let mut before = None;
                 if let Some(game) = game {
                     before = Some(self.instance_storage.get(&id).await?);
-                    self.change_instance_game
-                        .execute(instance_id.clone(), game)
-                        .await?;
+                    self.change_instance_game.execute(id.clone(), game).await?;
                 }
                 Ok((id, before))
             }
@@ -873,10 +871,10 @@ impl InstallPlanExecutor {
     /// Remove an instance the plan created and could not fill. Half of a new instance is worth
     /// nothing to keep, and a pack's would stay `PackInstalling`, unlaunchable, for good; the
     /// user installs the plan again instead.
-    async fn discard_created(&self, instance_id: &str, err: &InstanceError) {
+    async fn discard_created(&self, instance_id: &InstanceId, err: &InstanceError) {
         tracing::info!("Failed to fill the new instance \"{instance_id}\": {err}. Rolling back");
 
-        if let Err(remove_err) = self.remove_instance.execute(instance_id.to_owned()).await {
+        if let Err(remove_err) = self.remove_instance.execute(instance_id.clone()).await {
             tracing::error!(
                 "Failed to remove instance \"{instance_id}\" during rollback: {remove_err}"
             );

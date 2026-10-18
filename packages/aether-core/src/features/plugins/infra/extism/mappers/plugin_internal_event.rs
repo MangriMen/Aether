@@ -9,11 +9,11 @@ impl From<&PluginInternalEvent> for PluginInternalEventDto {
             PluginInternalEvent::Unloaded => Self::Unloaded,
             PluginInternalEvent::BeforeInstanceLaunch { instance_id } => {
                 Self::BeforeInstanceLaunch {
-                    instance_id: instance_id.clone(),
+                    instance_id: instance_id.to_string(),
                 }
             }
             PluginInternalEvent::AfterInstanceLaunch { instance_id } => Self::AfterInstanceLaunch {
-                instance_id: instance_id.clone(),
+                instance_id: instance_id.to_string(),
             },
         }
     }

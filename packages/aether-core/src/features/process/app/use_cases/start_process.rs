@@ -6,6 +6,7 @@ use tokio::process::Command;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+        instance::InstanceId,
         process::{
             ManageProcessService, MinecraftProcessMetadata, ProcessError, ProcessStartService,
             ProcessStorage,
@@ -37,7 +38,7 @@ impl StartProcessUseCase {
 
     pub async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         mut command: Command,
         post_exit_command: String,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {
@@ -79,7 +80,7 @@ impl StartProcessUseCase {
 impl ProcessStartService for StartProcessUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         command: Command,
         post_exit_command: String,
     ) -> Result<MinecraftProcessMetadata, ProcessError> {

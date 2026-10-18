@@ -46,9 +46,9 @@ pub(crate) async fn handle_instance_plugin_get_dir(
     location_info: &LocationInfo,
     get_instance: &dyn GetInstanceUseCasePort,
 ) -> crate::Result<String> {
-    require_instance(instance_id, get_instance).await?;
+    let instance_id = require_instance(instance_id, get_instance).await?;
 
-    let dir = location_info.instance_plugin_dir(instance_id, plugin_id);
+    let dir = location_info.instance_plugin_dir(&instance_id, plugin_id);
     let relative_path = dir
         .strip_prefix(location_info.config_dir())
         .map_err(|_| crate::ErrorKind::CoreError("Strip prefix error".to_owned()))?
@@ -100,7 +100,7 @@ pub(crate) async fn handle_list_content(
     get_instance: &dyn GetInstanceUseCasePort,
     list_content: &dyn ListContentUseCasePort,
 ) -> crate::Result<DashMap<String, ContentFileDto>> {
-    require_instance(&id, get_instance).await?;
+    let id = require_instance(&id, get_instance).await?;
 
     list_content
         .execute(id)
@@ -121,7 +121,7 @@ pub(crate) async fn handle_change_contents(
     get_instance: &dyn GetInstanceUseCasePort,
     change_state: &dyn ChangeContentStateUseCasePort,
 ) -> crate::Result<()> {
-    require_instance(&instance_id, get_instance).await?;
+    let instance_id = require_instance(&instance_id, get_instance).await?;
 
     change_state
         .execute(ChangeContentState::multiple(
@@ -145,7 +145,7 @@ async fn require_instance(
 ) -> crate::Result<InstanceId> {
     let instance_id = InstanceId::try_from(instance_id)?;
 
-    get_instance.execute(instance_id.to_string()).await?;
+    get_instance.execute(instance_id.clone()).await?;
 
     Ok(instance_id)
 }
@@ -436,8 +436,8 @@ mod tests {
 
     #[async_trait]
     impl GetInstanceUseCasePort for OneInstance {
-        async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
-            if instance_id == INSTANCE_ID {
+        async fn execute(&self, instance_id: InstanceId) -> Result<Instance, InstanceError> {
+            if instance_id.as_str() == INSTANCE_ID {
                 Ok(InstanceBuilder::new(
                     InstanceId::try_from(INSTANCE_ID).unwrap(),
                     "Test".to_owned(),
@@ -446,7 +446,9 @@ mod tests {
                 )
                 .build())
             } else {
-                Err(InstanceError::NotFound { instance_id })
+                Err(InstanceError::NotFound {
+                    instance_id: instance_id.into(),
+                })
             }
         }
     }
@@ -809,7 +811,7 @@ mod tests {
 
     #[async_trait]
     impl GetInstanceUseCasePort for AnyInstance {
-        async fn execute(&self, _instance_id: String) -> Result<Instance, InstanceError> {
+        async fn execute(&self, _instance_id: InstanceId) -> Result<Instance, InstanceError> {
             Ok(InstanceBuilder::new(
                 InstanceId::generate(),
                 "Test".to_owned(),
@@ -829,7 +831,7 @@ mod tests {
     impl ListContentUseCasePort for RecordingContent {
         async fn execute(
             &self,
-            _instance_id: String,
+            _instance_id: InstanceId,
         ) -> Result<DashMap<String, ContentFile>, InstanceError> {
             self.called.store(true, Ordering::SeqCst);
             Ok(DashMap::new())

@@ -9,12 +9,12 @@ use crate::features::{
 };
 
 pub struct RemoveContent {
-    instance_id: String,
+    instance_id: InstanceId,
     content_paths: Vec<String>,
 }
 
 impl RemoveContent {
-    pub fn multiple(instance_id: String, content_paths: Vec<String>) -> Self {
+    pub fn multiple(instance_id: InstanceId, content_paths: Vec<String>) -> Self {
         Self {
             instance_id,
             content_paths,
@@ -52,8 +52,7 @@ impl RemoveContentUseCase {
             content_paths,
         } = input;
 
-        let id = InstanceId::try_from(instance_id.as_str())?;
-        let _lock = self.instance_locks.lock(&id).await;
+        let _lock = self.instance_locks.lock(&instance_id).await;
 
         // A record goes only with its file: one dropped while its file stays would leave the
         // file in the instance, untracked.
@@ -62,7 +61,7 @@ impl RemoveContentUseCase {
         for content_path in content_paths {
             match self
                 .content_file_service
-                .remove_content_files(&id, std::slice::from_ref(&content_path))
+                .remove_content_files(&instance_id, std::slice::from_ref(&content_path))
                 .await
             {
                 Ok(()) => removed.push(content_path),
@@ -74,7 +73,7 @@ impl RemoveContentUseCase {
 
         if !removed.is_empty() {
             self.pack_storage
-                .remove_pack_file_many(&id, &removed)
+                .remove_pack_file_many(&instance_id, &removed)
                 .await?;
         }
 

@@ -38,8 +38,7 @@ impl RemoveInstanceUseCase {
 
 #[async_trait]
 impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
-        let instance_id = InstanceId::try_from(instance_id)?;
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
         let _lock = self.instance_locks.lock(&instance_id).await;
 
         self.watcher_service.unwatch_instance(&instance_id).await?;

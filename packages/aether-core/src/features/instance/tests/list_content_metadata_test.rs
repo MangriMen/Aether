@@ -497,7 +497,10 @@ impl Fixture {
     }
 
     async fn list(&self) -> DashMap<String, ContentFile> {
-        self.use_case.execute(INSTANCE_ID.to_owned()).await.unwrap()
+        self.use_case
+            .execute(InstanceId::try_from(INSTANCE_ID).unwrap())
+            .await
+            .unwrap()
     }
 
     /// The name of the metadata on `file`, if any.
@@ -640,7 +643,7 @@ async fn should_ask_each_provider_once_then_cache_and_tell_the_ui_when_metadata_
     let event = fixture.next_event().await;
 
     assert!(first.values().all(Option::is_none));
-    assert_eq!(event.instance_id, INSTANCE_ID);
+    assert_eq!(event.instance_id.as_str(), INSTANCE_ID);
     assert!(matches!(event.event, InstanceEventType::ContentSynced));
     assert_eq!(modrinth.calls(), [["A", "B"]]);
     assert_eq!(curse.calls(), [["C"]]);
@@ -769,7 +772,10 @@ async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh()
         )]));
         file
     });
-    fixture.service.attach(INSTANCE_ID, &files).await;
+    fixture
+        .service
+        .attach(&InstanceId::try_from(INSTANCE_ID).unwrap(), &files)
+        .await;
     Fixture::settle().await;
     assert!(provider.calls().is_empty());
 
@@ -777,7 +783,10 @@ async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh()
     fixture.next_event().await;
 
     // The list that event brings starts the refresh that one wanted.
-    fixture.service.attach(INSTANCE_ID, &files).await;
+    fixture
+        .service
+        .attach(&InstanceId::try_from(INSTANCE_ID).unwrap(), &files)
+        .await;
     fixture.next_event().await;
     assert_eq!(provider.calls(), [["B"]]);
 }
@@ -1050,18 +1059,27 @@ async fn should_wait_for_the_fetch_when_an_icon_is_already_on_its_way() {
     // The same files listed for another instance while the first fetch waits.
     let files = fixture.list().await;
     Fixture::settle().await;
-    fixture.service.attach("other", &files).await;
+    fixture
+        .service
+        .attach(&InstanceId::try_from("other").unwrap(), &files)
+        .await;
     Fixture::settle().await;
     assert_eq!(fixture.icons.fetches(), [ICON_X]);
 
     gate.add_permits(1);
-    let mut told: Vec<String> = vec![
+    let mut told: Vec<InstanceId> = vec![
         fixture.next_event().await.instance_id,
         fixture.next_event().await.instance_id,
     ];
     told.sort();
 
-    assert_eq!(told, [INSTANCE_ID, "other"]);
+    assert_eq!(
+        told,
+        [
+            InstanceId::try_from(INSTANCE_ID).unwrap(),
+            InstanceId::try_from("other").unwrap(),
+        ]
+    );
     assert_eq!(fixture.icons.fetches(), [ICON_X]);
 }
 

@@ -158,7 +158,7 @@ async fn run_install(
         location_info,
     );
 
-    let result = use_case.execute(id.to_string(), false).await;
+    let result = use_case.execute(id.clone(), false).await;
     (storage.get(&id).await.unwrap(), result.is_ok())
 }
 

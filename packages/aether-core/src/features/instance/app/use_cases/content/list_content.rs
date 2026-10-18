@@ -43,9 +43,8 @@ impl ListContentUseCase {
     /// the instance's `ContentSynced` event tells when to list again.
     pub async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<DashMap<String, ContentFile>, InstanceError> {
-        let instance_id = InstanceId::try_from(instance_id)?;
         let instance_dir = self.location_info.instance_dir(&instance_id);
 
         let entries_by_path = Arc::new(self.get_entries_by_path(&instance_id).await?);
@@ -215,7 +214,7 @@ impl ListContentUseCase {
 impl ListContentUseCasePort for ListContentUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<DashMap<String, ContentFile>, InstanceError> {
         self.execute(instance_id).await
     }

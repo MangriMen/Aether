@@ -1,8 +1,8 @@
 use aether_core::features::{
     instance::{
         ChangeContentState, ContentManagementPort, ContentProviderPort, ContentStateAction,
-        ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort, InstanceServicesPort,
-        RemoveContent,
+        EditInstanceIcon, ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort,
+        InstanceServicesPort, RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -119,6 +119,7 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Instan
 #[tauri::command]
 #[specta::specta]
 async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<InstanceDto> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .get_instance_use_case()
@@ -147,6 +148,7 @@ async fn install(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .instance_install_service()
@@ -165,6 +167,7 @@ async fn update(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .update_instance_use_case()
@@ -190,6 +193,7 @@ async fn edit(
 ) -> FrontendResult<InstanceDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .edit_instance_use_case()
@@ -209,6 +213,7 @@ async fn remove(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .remove_instance_use_case()
@@ -227,6 +232,7 @@ async fn launch(
 ) -> FrontendResult<MinecraftProcessMetadataDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .launch_instance_with_active_account_use_case()
@@ -266,6 +272,7 @@ async fn import_contents(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let instance_id = InstanceId::try_from(instance_id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .import_content_use_case()
@@ -284,6 +291,7 @@ async fn list_content(
     id: String,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<HashMap<String, ContentFileDto>> {
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .list_content_use_case()
@@ -324,6 +332,7 @@ async fn enable_contents(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
@@ -347,6 +356,7 @@ async fn disable_contents(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .change_content_state_use_case()
@@ -370,6 +380,7 @@ async fn remove_contents(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .remove_content_use_case()
@@ -416,6 +427,11 @@ async fn check_compatibility(
     check_params: ContentCompatibilityCheckParamsDto,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<HashMap<String, ContentCompatibilityResultDto>> {
+    let instance_ids = instance_ids
+        .into_iter()
+        .map(InstanceId::try_from)
+        .collect::<Result<HashSet<_>, _>>()
+        .map_err(aether_core::Error::from)?;
     let container = container.0.clone();
     Ok(container
         .check_content_compatibility_use_case()
@@ -473,7 +489,7 @@ async fn edit_icon(
 
     container
         .edit_instance_icon_use_case()
-        .execute(edit_instance_icon.into())
+        .execute(EditInstanceIcon::try_from(edit_instance_icon).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?;
 

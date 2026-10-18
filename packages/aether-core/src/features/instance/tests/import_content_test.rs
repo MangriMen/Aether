@@ -52,7 +52,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     let held = locks.lock(INSTANCE_ID).await;
 
     let mut import = std::pin::pin!(use_case.execute(ImportContent::new(
-        INSTANCE_ID.to_owned(),
+        InstanceId::try_from(INSTANCE_ID).unwrap(),
         ContentType::Mod,
         vec![source],
     )));

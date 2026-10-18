@@ -261,7 +261,7 @@ struct NoChangeInstanceGame;
 
 #[async_trait]
 impl ChangeInstanceGameUseCasePort for NoChangeInstanceGame {
-    async fn execute(&self, _: String, _: InstanceGame) -> Result<(), InstanceError> {
+    async fn execute(&self, _: InstanceId, _: InstanceGame) -> Result<(), InstanceError> {
         unimplemented!("these plans keep the game of the instance")
     }
 }
@@ -270,7 +270,7 @@ struct NoRemoveInstance;
 
 #[async_trait]
 impl RemoveInstanceUseCasePort for NoRemoveInstance {
-    async fn execute(&self, _: String) -> Result<(), InstanceError> {
+    async fn execute(&self, _: InstanceId) -> Result<(), InstanceError> {
         unimplemented!("these plans create no instance")
     }
 }

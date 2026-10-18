@@ -13,7 +13,7 @@ const UPDATE_PLAYTIME_INTERVAL: Duration = Duration::seconds(60);
 
 pub struct TrackProcessParams {
     pub process_id: Uuid,
-    pub instance_id: String,
+    pub instance_id: InstanceId,
 }
 
 pub struct TrackProcessUseCase {
@@ -66,14 +66,18 @@ impl TrackProcessUseCase {
         }
     }
 
-    async fn update_playtime(&self, last_updated: &mut DateTime<Utc>, id: &str, force: bool) {
+    async fn update_playtime(
+        &self,
+        last_updated: &mut DateTime<Utc>,
+        id: &InstanceId,
+        force: bool,
+    ) {
         let elapsed_seconds = Utc::now().signed_duration_since(*last_updated);
 
         if elapsed_seconds >= UPDATE_PLAYTIME_INTERVAL || force {
             let result = async {
-                let id = InstanceId::try_from(id)?;
                 self.instance_storage
-                    .upsert_with(&id, |instance| {
+                    .upsert_with(id, |instance| {
                         instance.time_played +=
                             elapsed_seconds.num_seconds().max(0).cast_unsigned();
                         Ok(())

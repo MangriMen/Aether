@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter, WarningEvent},
     file_watcher::{FileEvent, FileEventHandler, FileWatcherError},
-    instance::{GetInstanceUseCasePort, InstanceInstallStage},
+    instance::{GetInstanceUseCasePort, InstanceId, InstanceInstallStage},
     settings::INSTANCES_FOLDER_NAME,
 };
 
@@ -25,11 +25,12 @@ impl InstanceEventHandler {
         }
     }
 
-    fn extract_instance_path(path: &Path) -> Option<String> {
+    fn extract_instance_path(path: &Path) -> Option<InstanceId> {
         let mut found = false;
         for component in path.components() {
             if found {
-                return Some(component.as_os_str().to_string_lossy().to_string());
+                return InstanceId::try_from(component.as_os_str().to_string_lossy().to_string())
+                    .ok();
             }
             if component.as_os_str() == INSTANCES_FOLDER_NAME {
                 found = true;
@@ -46,7 +47,7 @@ impl InstanceEventHandler {
     /// Looks the instance up in the background and, when it is fully installed, tells the
     /// frontend that a new crash report appeared. Half-installed instances stay silent,
     /// because a failed install is reported through its own channel.
-    fn crash_task(&self, id: String) {
+    fn crash_task(&self, id: InstanceId) {
         let get_instance_uc = self.get_instance_uc.clone();
         let event_emitter = self.event_emitter.clone();
 
@@ -82,7 +83,7 @@ impl FileEventHandler for InstanceEventHandler {
         };
 
         // One `Synced` event per instance per batch, however many files changed.
-        let mut synced: HashSet<String> = HashSet::new();
+        let mut synced: HashSet<InstanceId> = HashSet::new();
 
         for event in &events {
             let Some(instance_id) = Self::extract_instance_path(&event.path) else {
@@ -138,10 +139,10 @@ mod tests {
 
     #[async_trait]
     impl GetInstanceUseCasePort for FixedInstance {
-        async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
-            self.0
-                .clone()
-                .ok_or(InstanceError::NotFound { instance_id })
+        async fn execute(&self, instance_id: InstanceId) -> Result<Instance, InstanceError> {
+            self.0.clone().ok_or(InstanceError::NotFound {
+                instance_id: instance_id.into(),
+            })
         }
     }
 
@@ -212,7 +213,13 @@ mod tests {
             ids.push(event.instance_id);
         }
         ids.sort();
-        assert_eq!(ids, vec!["abc".to_string(), "xyz".to_string()]);
+        assert_eq!(
+            ids,
+            vec![
+                InstanceId::try_from("abc").unwrap(),
+                InstanceId::try_from("xyz").unwrap()
+            ]
+        );
         assert_silent(&mut rx).await;
     }
 

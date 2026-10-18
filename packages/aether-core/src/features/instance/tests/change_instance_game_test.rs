@@ -87,11 +87,8 @@ struct RecordingInstall {
 
 #[async_trait]
 impl InstanceInstallService for RecordingInstall {
-    async fn execute(&self, instance_id: String, _force: bool) -> Result<(), InstanceError> {
-        let mut instance = self
-            .storage
-            .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
-            .await?;
+    async fn execute(&self, instance_id: InstanceId, _force: bool) -> Result<(), InstanceError> {
+        let mut instance = self.storage.get(&instance_id).await?;
         self.installed.lock().unwrap().push((
             instance.game_version.clone(),
             instance.loader,
@@ -154,7 +151,9 @@ impl Fixture {
     }
 
     async fn change(&self, game: InstanceGame) -> Result<(), InstanceError> {
-        self.use_case.execute(INSTANCE_ID.into(), game).await
+        self.use_case
+            .execute(InstanceId::try_from(INSTANCE_ID).unwrap(), game)
+            .await
     }
 
     fn installed(&self) -> Vec<(String, ModLoader, Option<LoaderVersionPreference>)> {

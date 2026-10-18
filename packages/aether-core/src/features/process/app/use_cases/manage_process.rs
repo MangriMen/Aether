@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     features::{
         events::{EventEmitterExt, ProcessEvent, ProcessEventType, SharedEventEmitter},
+        instance::InstanceId,
         process::{ManageProcessService, ProcessError, ProcessStorage, TrackProcessService},
         settings::LocationInfo,
     },
@@ -15,7 +16,7 @@ use super::TrackProcessParams;
 
 pub struct ManageProcessParams {
     pub process_id: Uuid,
-    pub instance_id: String,
+    pub instance_id: InstanceId,
     pub post_exit_command: String,
 }
 

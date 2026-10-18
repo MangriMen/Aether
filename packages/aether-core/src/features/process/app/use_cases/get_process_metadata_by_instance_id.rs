@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::InstanceId;
+
 use super::super::super::domain::{MinecraftProcessMetadata, ProcessError};
 use super::super::ports::{GetProcessMetadataByInstanceIdUseCasePort, ProcessStorage};
 
@@ -19,14 +21,14 @@ impl GetProcessMetadataByInstanceIdUseCase {
 impl GetProcessMetadataByInstanceIdUseCasePort for GetProcessMetadataByInstanceIdUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<Vec<MinecraftProcessMetadata>, ProcessError> {
         Ok(self
             .process_storage
             .list_metadata()
             .await?
             .into_iter()
-            .filter(|x| x.instance_id() == instance_id)
+            .filter(|x| *x.instance_id() == instance_id)
             .collect())
     }
 }

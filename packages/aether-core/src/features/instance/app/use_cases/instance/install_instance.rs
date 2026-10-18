@@ -71,9 +71,8 @@ impl InstallInstanceUseCase {
         Ok(())
     }
 
-    pub async fn execute(&self, instance_id: String, force: bool) -> Result<(), InstanceError> {
-        let id = InstanceId::try_from(instance_id.as_str())?;
-        let mut instance = self.instance_storage.get(&id).await?;
+    pub async fn execute(&self, instance_id: InstanceId, force: bool) -> Result<(), InstanceError> {
+        let mut instance = self.instance_storage.get(&instance_id).await?;
         let pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
 
         instance.install_stage = InstanceInstallStage::Installing;
@@ -140,7 +139,7 @@ impl InstallInstanceUseCase {
 
 #[async_trait]
 impl InstanceInstallService for InstallInstanceUseCase {
-    async fn execute(&self, instance_id: String, force: bool) -> Result<(), InstanceError> {
+    async fn execute(&self, instance_id: InstanceId, force: bool) -> Result<(), InstanceError> {
         self.execute(instance_id, force).await
     }
 }

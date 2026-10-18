@@ -1,14 +1,16 @@
 use async_trait::async_trait;
 
 use crate::features::{
-    auth::Credential, instance::InstanceError, process::MinecraftProcessMetadata,
+    auth::Credential,
+    instance::{InstanceError, InstanceId},
+    process::MinecraftProcessMetadata,
 };
 
 #[async_trait]
 pub trait InstanceLaunchService: Send + Sync {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         credentials: Credential,
     ) -> Result<MinecraftProcessMetadata, InstanceError>;
 }
