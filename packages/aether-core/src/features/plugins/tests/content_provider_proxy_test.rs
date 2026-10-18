@@ -5,10 +5,10 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
-    ContentSourceDto, ContentTypeDto, FileHashDto, FileSideDto, InstallFileEntryDto,
-    InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto,
-    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    ContentCompatibilityResultDto, ContentSourceDto, ContentTypeDto, FileHashDto, FileSideDto,
+    InstallFileEntryDto, InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto,
+    NewInstanceDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
+    ResolveFileParamsDto, ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -18,9 +18,10 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
-            ContentProvider, ContentSource, ContentType, FileSide, Importer, InstallTarget,
-            InstanceError, InstanceGame, InstanceId, NewInstance, OverrideLocation, OverrideSource,
-            PackSource, ResolveInstallPlanParams, ResolveTarget, Updater,
+            ContentCompatibilityCheckParams, ContentItem, ContentProvider, ContentSource,
+            ContentType, FileSide, Importer, InstallTarget, InstanceError, InstanceGame,
+            InstanceId, NewInstance, OverrideLocation, OverrideSource, PackSource, ProviderId,
+            ResolveInstallPlanParams, ResolveTarget, Updater,
         },
         minecraft::ModLoader,
         plugins::{
@@ -700,6 +701,62 @@ async fn should_refuse_a_plan_when_its_instance_id_is_not_a_plain_name() {
     let err = fixture
         .proxy
         .resolve_install_plan(plan_params(existing_target()))
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(&err, InstanceError::NotFound { instance_id } if instance_id == "../x"),
+        "{err}"
+    );
+}
+
+/// The keys of the answer name instances; one that is not a plain name is refused.
+#[tokio::test]
+async fn should_refuse_a_compatibility_answer_when_a_key_is_not_a_plain_name() {
+    let fixture = Fixture::new(
+        r#"{
+            "contentProviders": [{
+                "id": "curseforge",
+                "name": "CurseForge",
+                "handlers": {
+                    "search": "cf_search",
+                    "getContent": "cf_get_content",
+                    "checkCompatibility": "cf_check_compatibility"
+                }
+            }]
+        }"#,
+        vec![(
+            "cf_check_compatibility",
+            encode(HashMap::from([(
+                "../x".to_owned(),
+                ContentCompatibilityResultDto {
+                    is_compatible: true,
+                },
+            )])),
+        )],
+    );
+    let check_params = ContentCompatibilityCheckParams {
+        provider_id: ProviderId {
+            plugin_id: PLUGIN_ID.to_owned(),
+            capability_id: "curseforge".to_owned(),
+        },
+        content_item: ContentItem {
+            id: "238222".to_owned(),
+            slug: "jei".to_owned(),
+            name: "JEI".to_owned(),
+            description: None,
+            long_description: None,
+            author: "mezz".to_owned(),
+            url: String::new(),
+            icon_url: String::new(),
+            versions: Vec::new(),
+            content_type: ContentType::Mod,
+        },
+    };
+
+    let err = fixture
+        .proxy
+        .check_compatibility(&[], &check_params)
         .await
         .unwrap_err();
 

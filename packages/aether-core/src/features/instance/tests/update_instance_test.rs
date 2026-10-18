@@ -272,7 +272,7 @@ impl ContentProvider for PackProvider {
         &self,
         _: &[Instance],
         _: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         unimplemented!()
     }
 }

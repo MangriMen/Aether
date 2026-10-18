@@ -15,7 +15,7 @@ use crate::features::{
         ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentProvider,
         ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
         ContentVersion, InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceError,
-        OverrideLocation, OverrideSource, PackMetadata, PackSource, ProviderId,
+        InstanceId, OverrideLocation, OverrideSource, PackMetadata, PackSource, ProviderId,
         ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
     },
     plugins::{
@@ -410,7 +410,7 @@ impl ContentProvider for PluginContentProviderProxy {
         &self,
         instances: &[Instance],
         check_params: &ContentCompatibilityCheckParams,
-    ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError> {
+    ) -> Result<HashMap<InstanceId, ContentCompatibilityResult>, InstanceError> {
         let handler = self.handler(
             self.capability.handlers.check_compatibility.as_ref(),
             "check_compatibility",
@@ -424,17 +424,17 @@ impl ContentProvider for PluginContentProviderProxy {
         let result_dto: HashMap<String, aether_core_plugin_api::v0::ContentCompatibilityResultDto> =
             self.call_plugin("check_compatibility", handler, params)
                 .await?;
-        Ok(result_dto
+        result_dto
             .into_iter()
             .map(|(k, v)| {
-                (
-                    k,
+                Ok((
+                    InstanceId::try_from(k)?,
                     ContentCompatibilityResult {
                         is_compatible: v.is_compatible,
                     },
-                )
+                ))
             })
-            .collect())
+            .collect()
     }
 }
 

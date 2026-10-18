@@ -440,7 +440,7 @@ async fn check_compatibility(
         .await
         .map_err(aether_core::Error::from)?
         .into_iter()
-        .map(|(k, v)| (k, v.into()))
+        .map(|(k, v)| (k.to_string(), v.into()))
         .collect())
 }
 
