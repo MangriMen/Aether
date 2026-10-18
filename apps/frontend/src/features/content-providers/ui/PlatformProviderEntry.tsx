@@ -74,6 +74,12 @@ export const PlatformProviderEntry: Component<PlatformProviderEntryProps> = (
       return;
     }
 
+    // Kobalte also reports the value it is given back as a change; saving it
+    // again would change the stored choice and loop.
+    if (option.value === current()?.value) {
+      return;
+    }
+
     const providerId = option.value === AUTOMATIC ? null : option.value;
 
     if (props.onChoose) {
