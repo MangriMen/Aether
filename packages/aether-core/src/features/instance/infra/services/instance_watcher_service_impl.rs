@@ -206,7 +206,7 @@ mod tests {
     #[tokio::test]
     async fn watch_instance_does_not_replace_dangling_symlink() {
         let (temp, watcher, location, service) = setup();
-        let dir = location.instance_dir("inst");
+        let dir = location.instance_dir(&InstanceId::try_from("inst").unwrap());
         std::fs::create_dir_all(&dir).unwrap();
         let link = dir.join("mods");
         std::os::unix::fs::symlink(temp.path().join("missing-target"), &link).unwrap();
