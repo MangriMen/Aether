@@ -209,3 +209,21 @@ The checks cover every file under `src/`.
 - All checks run in pre-commit (lefthook) and in CI.
 - `bun arch:graph` writes a module-level dependency graph to `arch-graph.mmd` (Mermaid;
   paste it into any Mermaid viewer).
+
+## Storybook
+
+Components of `shared/ui-kit` are shown in Storybook.
+
+- A story sits beside its component as `<Name>.stories.tsx` (`primitives/Button.stories.tsx`),
+  CSF3, `Meta`/`StoryObj` from `storybook-solidjs-vite`, `title: 'ui-kit/<Name>'`, one story
+  per state. State a story needs goes into `render`. The file-name checks accept
+  `*.stories.tsx` wherever a component of that kind may be. A story imports like the
+  component it sits next to (inside `ui-kit` only `shared/utils`, relative imports for its
+  own module).
+- `.storybook/` in `apps/frontend` holds the config (`main.ts`) and `preview.tsx`, which
+  loads `app.css` and wraps every story in the app theme (the toolbar switches dark and
+  light). It is type-checked by `lint:types` and linted by `lint:code`, but is not part of
+  `src/`, so the layout checks do not see it.
+- `bun storybook` runs it on port 6006, `bun build-storybook` builds `storybook-static/`
+  (ignored by git).
+- knip takes `.storybook/main.ts` and the stories as entries (its Storybook plugin).

@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 
 # Generated
 arch-graph.mmd
+
+# Storybook
+storybook-static
