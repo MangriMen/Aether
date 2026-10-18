@@ -7,12 +7,12 @@ mod tests;
 
 // ── Domain models (pure data containers) ──
 pub use domain::{
-    AtomicInstallParams, BaseContentParams, CapabilityMetadata, ChannelVersion, ContentFile,
-    ContentFileUpdateInfo, ContentIdentity, ContentInstallParams, ContentItem, ContentMetadata,
-    ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult, ContentSource,
-    ContentType, ContentVersion, ContentVersionDependency, ContentVersionDependencyType,
-    ContentVersionMetadata, ContentVersionStatus, ContentVersionType, FileSide,
-    ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
+    AtomicInstallParams, BaseContentParams, CapabilityMetadata, ChannelVersion, ContentAuthor,
+    ContentFile, ContentFileUpdateInfo, ContentIdentity, ContentInstallParams, ContentItem,
+    ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+    ContentSource, ContentType, ContentVersion, ContentVersionDependency,
+    ContentVersionDependencyType, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
+    FileSide, ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
     InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceId, InstanceInstallStage,
     InstanceSnapshot, InstanceValidationErrorReason, ModpackInstallParams, NewInstance,
     OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload,
@@ -23,9 +23,9 @@ pub use domain::{
 
 // ── App layer: Use Cases (Inbound Ports) ──
 pub use app::{
-    CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata, ChangeContentState,
-    ChangeContentStateUseCase, ChangeContentStateUseCasePort, ChangeInstanceGameUseCase,
-    ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
+    CachedContentAuthor, CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
+    ChangeContentState, ChangeContentStateUseCase, ChangeContentStateUseCasePort,
+    ChangeInstanceGameUseCase, ChangeInstanceGameUseCasePort, CheckContentCompatibilityUseCase,
     CheckContentCompatibilityUseCasePort, ContentCompatibilityCheckParams,
     ContentCompatibilityResult, ContentDownloader, ContentFileService, ContentGetParams,
     ContentIconCache, ContentIconError, ContentListVersionsParams, ContentManagementPort,
@@ -53,4 +53,4 @@ pub use app::{
 pub use app::ContentIconHousekeeping;
 pub(crate) use app::ContentMetadataService;
 #[cfg(test)]
-pub(crate) use app::{CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL};
+pub(crate) use app::{CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL};

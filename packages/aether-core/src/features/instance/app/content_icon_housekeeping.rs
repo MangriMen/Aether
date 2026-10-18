@@ -112,9 +112,10 @@ mod tests {
     use super::*;
     use crate::features::{
         instance::{
-            CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
-            ContentFileUpdateInfo, ContentIconError, ContentMetadata, ContentVersionMetadata,
-            Instance, InstanceBuilder, InstanceId, Pack, PackFile,
+            CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
+            CachedContentVersionMetadata, ContentAuthor, ContentFileUpdateInfo, ContentIconError,
+            ContentMetadata, ContentVersionMetadata, Instance, InstanceBuilder, InstanceId, Pack,
+            PackFile,
         },
         minecraft::ModLoader,
     };
@@ -165,6 +166,7 @@ mod tests {
             name: content_id.into(),
             description: None,
             author: None,
+            author_ref: None,
             icon_url: icon_url.map(Into::into),
         }
     }
@@ -313,6 +315,18 @@ mod tests {
         }
 
         async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+            unimplemented!()
+        }
+
+        async fn get_authors(
+            &self,
+            _: &ProviderId,
+            _: &[String],
+        ) -> HashMap<String, CachedContentAuthor> {
+            unimplemented!()
+        }
+
+        async fn put_authors(&self, _: &ProviderId, _: &[ContentAuthor]) -> bool {
             unimplemented!()
         }
     }

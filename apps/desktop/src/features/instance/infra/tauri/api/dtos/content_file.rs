@@ -176,6 +176,7 @@ mod tests {
             name: "Sodium".into(),
             description: None,
             author: None,
+            author_ref: None,
             icon_url: Some("https://cdn.modrinth.com/data/AANobbMI/icon.png".into()),
         });
         file.icon_path = icon_path.map(Into::into);

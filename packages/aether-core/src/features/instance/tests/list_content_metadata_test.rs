@@ -17,8 +17,9 @@ use crate::{
     features::{
         events::{CacheEvent, Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
         instance::{
-            CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentIcon,
-            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
+            CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL,
+            CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
+            CachedContentVersionMetadata, CapabilityMetadata, ContentAuthor,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
             ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
             ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
@@ -60,6 +61,7 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
         name: name.into(),
         description: None,
         author: None,
+        author_ref: None,
         icon_url: None,
     }
 }
@@ -70,6 +72,7 @@ fn metadata(content_id: &str, name: &str) -> ContentMetadata {
 struct MemoryMetadataCache {
     items: Mutex<HashMap<(ProviderId, String), CachedContentMetadata>>,
     versions: Mutex<HashMap<(ProviderId, String), CachedContentVersionMetadata>>,
+    authors: Mutex<HashMap<(ProviderId, String), CachedContentAuthor>>,
     /// When set, every write fails and keeps nothing.
     read_only: Mutex<bool>,
 }
@@ -106,6 +109,26 @@ impl MemoryMetadataCache {
                 fetched_at,
             },
         );
+    }
+
+    fn seed_author(&self, provider_id: &ProviderId, item: ContentAuthor, fetched_at: SystemTime) {
+        self.authors.lock().unwrap().insert(
+            (provider_id.clone(), item.author_ref.clone()),
+            CachedContentAuthor {
+                metadata: item,
+                fetched_at,
+            },
+        );
+    }
+
+    /// When the project of `content_id` of `provider_id` was put as fetched.
+    fn fetched_at(&self, provider_id: &ProviderId, content_id: &str) -> Option<SystemTime> {
+        let items = self.items.lock().unwrap();
+        Some(
+            items
+                .get(&(provider_id.clone(), content_id.to_owned()))?
+                .fetched_at,
+        )
     }
 }
 
@@ -176,6 +199,38 @@ impl ContentMetadataCache for MemoryMetadataCache {
             cached.insert(
                 (provider_id.clone(), item.version_id.clone()),
                 CachedContentVersionMetadata {
+                    metadata: item.clone(),
+                    fetched_at: SystemTime::now(),
+                },
+            );
+        }
+        true
+    }
+
+    async fn get_authors(
+        &self,
+        provider_id: &ProviderId,
+        author_refs: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        let authors = self.authors.lock().unwrap();
+        author_refs
+            .iter()
+            .filter_map(|id| {
+                let item = authors.get(&(provider_id.clone(), id.clone()))?;
+                Some((id.clone(), item.clone()))
+            })
+            .collect()
+    }
+
+    async fn put_authors(&self, provider_id: &ProviderId, items: &[ContentAuthor]) -> bool {
+        if self.is_read_only() {
+            return false;
+        }
+        let mut cached = self.authors.lock().unwrap();
+        for item in items {
+            cached.insert(
+                (provider_id.clone(), item.author_ref.clone()),
+                CachedContentAuthor {
                     metadata: item.clone(),
                     fetched_at: SystemTime::now(),
                 },
@@ -296,10 +351,14 @@ struct FakeProvider {
     answer: Answer<ContentMetadata>,
     /// What it answers about versions: by default, that it cannot.
     versions: Answer<ContentVersionMetadata>,
+    /// What it answers about authors: by default, that it cannot. A test may change it.
+    authors: Mutex<Answer<ContentAuthor>>,
     /// Each call's ids, sorted.
     calls: Mutex<Vec<Vec<String>>>,
     /// Each call's version ids, sorted.
     version_calls: Mutex<Vec<Vec<String>>>,
+    /// Each call's author refs, sorted.
+    author_calls: Mutex<Vec<Vec<String>>>,
     /// When set, a call waits for a permit before answering.
     gate: Option<Arc<Semaphore>>,
 }
@@ -318,8 +377,10 @@ impl FakeProvider {
             },
             answer,
             versions: Answer::Unsupported,
+            authors: Mutex::new(Answer::Unsupported),
             calls: Mutex::new(Vec::new()),
             version_calls: Mutex::new(Vec::new()),
+            author_calls: Mutex::new(Vec::new()),
             gate: None,
         }
     }
@@ -327,6 +388,19 @@ impl FakeProvider {
     fn with_versions(mut self, versions: Answer<ContentVersionMetadata>) -> Self {
         self.versions = versions;
         self
+    }
+
+    fn with_authors(self, authors: Answer<ContentAuthor>) -> Self {
+        self.answer_authors(authors);
+        self
+    }
+
+    fn answer_authors(&self, authors: Answer<ContentAuthor>) {
+        *self.authors.lock().unwrap() = authors;
+    }
+
+    fn author_calls(&self) -> Vec<Vec<String>> {
+        self.author_calls.lock().unwrap().clone()
     }
 
     fn version_calls(&self) -> Vec<Vec<String>> {
@@ -397,6 +471,17 @@ impl ContentProvider for FakeProvider {
         self.version_calls.lock().unwrap().push(asked);
 
         self.versions.answer(self, "get_versions_metadata")
+    }
+
+    async fn get_authors(
+        &self,
+        author_refs: &[String],
+    ) -> Result<Vec<ContentAuthor>, InstanceError> {
+        let mut asked = author_refs.to_vec();
+        asked.sort();
+        self.author_calls.lock().unwrap().push(asked);
+
+        self.authors.lock().unwrap().answer(self, "get_authors")
     }
 }
 
@@ -529,6 +614,18 @@ impl Fixture {
             .await
             .into_iter()
             .map(|(path, file)| (path, file.version_metadata_pending))
+            .collect()
+    }
+
+    /// The author on each file, and whether its metadata is pending.
+    async fn authors(&self) -> HashMap<String, (Option<String>, bool)> {
+        self.list()
+            .await
+            .into_iter()
+            .map(|(path, file)| {
+                let author = file.metadata.and_then(|m| m.author);
+                (path, (author, file.metadata_pending))
+            })
             .collect()
     }
 
@@ -1372,4 +1469,189 @@ async fn should_not_ask_again_soon_about_versions_when_the_provider_did_not_know
         [[version_id("A"), version_id("B")]]
     );
     fixture.assert_no_event();
+}
+
+// ── Authors ──
+
+const SODIUM_AUTHOR: &str = "team:sodium";
+
+/// Sodium as a provider that names authors apart gives it: by ref, with an icon.
+fn sodium_without_author() -> ContentMetadata {
+    ContentMetadata {
+        author_ref: Some(SODIUM_AUTHOR.into()),
+        ..with_icon(metadata("A", "Sodium"), ICON_X)
+    }
+}
+
+fn sodium_author() -> ContentAuthor {
+    ContentAuthor {
+        author_ref: SODIUM_AUTHOR.into(),
+        name: "jellysquid3".into(),
+    }
+}
+
+/// A list of sodium whose project arrives and whose author fails to.
+async fn listed_with_failed_author() -> (Fixture, Arc<FakeProvider>) {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![sodium_without_author()]))
+            .with_authors(Answer::Fail),
+    );
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+
+    fixture.list().await;
+    // Once the project arrived; once the author failed to; once its icon arrived.
+    fixture.next_event().await;
+    fixture.next_event().await;
+    fixture.next_event().await;
+    Fixture::settle().await;
+    fixture.assert_no_event();
+
+    (fixture, provider)
+}
+
+#[tokio::test]
+async fn should_cache_and_list_the_project_without_author_when_its_author_fails() {
+    let (fixture, provider) = listed_with_failed_author().await;
+
+    let files = fixture.list().await;
+    let file = files.get("mods/a.jar").unwrap();
+    let metadata = file.metadata.as_ref().unwrap();
+    assert_eq!(metadata.name, "Sodium");
+    assert_eq!(metadata.author, None);
+    assert_eq!(file.icon_path, Some(asset_id(ICON_X)));
+    // Nothing more to come soon: the author is held back, the project is fresh.
+    assert!(!file.metadata_pending);
+    let fetched_at = fixture.cache.fetched_at(&provider_id("modrinth"), "A");
+    assert!(fetched_at.is_some_and(|at| at > SystemTime::now() - Duration::from_mins(1)));
+    drop(file);
+    Fixture::settle().await;
+
+    assert_eq!(provider.calls(), [["A"]]);
+    assert_eq!(provider.author_calls(), [[SODIUM_AUTHOR]]);
+}
+
+#[tokio::test]
+async fn should_ask_for_the_author_alone_and_tell_the_ui_when_its_lookup_may_be_asked_again() {
+    let (mut fixture, provider) = listed_with_failed_author().await;
+    provider.answer_authors(Answer::Items(vec![sodium_author()]));
+    fixture.service.forget_failures();
+
+    let before = fixture.authors().await;
+    let event = fixture.next_event().await;
+    let after = fixture.authors().await;
+    Fixture::settle().await;
+
+    assert_eq!(before["mods/a.jar"], (None, true));
+    assert!(matches!(event.event, InstanceEventType::ContentSynced));
+    assert_eq!(after["mods/a.jar"], (Some("jellysquid3".into()), false));
+    // The project was fresh: not asked again.
+    assert_eq!(provider.calls().len(), 1);
+    assert_eq!(provider.author_calls().len(), 2);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_ask_for_the_author_alone_when_a_fresh_project_names_none() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![]))
+            .with_authors(Answer::Items(vec![sodium_author()])),
+    );
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, sodium_without_author(), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
+    fixture.icons.seed(ICON_X, false);
+
+    let before = fixture.authors().await;
+    fixture.next_event().await;
+    let after = fixture.authors().await;
+    Fixture::settle().await;
+
+    assert_eq!(before["mods/a.jar"], (None, true));
+    assert_eq!(after["mods/a.jar"], (Some("jellysquid3".into()), false));
+    assert!(provider.calls().is_empty());
+    assert_eq!(provider.author_calls(), [[SODIUM_AUTHOR]]);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_not_ask_again_soon_for_an_author_when_the_provider_left_it_out() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![]))
+            .with_authors(Answer::Items(vec![sodium_author()])),
+    );
+    let mut fixture = Fixture::new(
+        &[("a.jar", "modrinth", "A"), ("b.jar", "modrinth", "B")],
+        vec![provider.clone()],
+    )
+    .await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, sodium_without_author(), now);
+    fixture.cache.seed(
+        &modrinth,
+        ContentMetadata {
+            author_ref: Some("team:gone".into()),
+            ..metadata("B", "Lithium")
+        },
+        now,
+    );
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("B", "1.0"), now);
+    fixture.icons.seed(ICON_X, false);
+
+    fixture.list().await;
+    fixture.next_event().await;
+    let first = fixture.authors().await;
+    Fixture::settle().await;
+    let second = fixture.authors().await;
+    Fixture::settle().await;
+
+    assert_eq!(first["mods/a.jar"], (Some("jellysquid3".into()), false));
+    assert_eq!(second["mods/a.jar"], (Some("jellysquid3".into()), false));
+    assert_eq!(second["mods/b.jar"].0, None);
+    // The ref left out of the answer is remembered unknown, not asked again at the next list.
+    assert_eq!(provider.author_calls().len(), 1);
+    assert_eq!(provider.author_calls()[0].len(), 2);
+    fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_show_a_stale_author_while_asking_for_it_again() {
+    let provider = Arc::new(
+        FakeProvider::new("modrinth", Answer::Items(vec![])).with_authors(Answer::Items(vec![
+            ContentAuthor {
+                name: "CaffeineMC".into(),
+                ..sodium_author()
+            },
+        ])),
+    );
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider.clone()]).await;
+    let modrinth = provider_id("modrinth");
+    let now = SystemTime::now();
+    fixture.cache.seed(&modrinth, sodium_without_author(), now);
+    fixture
+        .cache
+        .seed_version(&modrinth, version("A", "1.0"), now);
+    fixture.icons.seed(ICON_X, false);
+    let long_ago = now - CONTENT_AUTHOR_TTL - Duration::from_hours(1);
+    fixture
+        .cache
+        .seed_author(&modrinth, sodium_author(), long_ago);
+
+    let before = fixture.authors().await;
+    fixture.next_event().await;
+    let after = fixture.authors().await;
+
+    // Shown meanwhile, so not waited for.
+    assert_eq!(before["mods/a.jar"], (Some("jellysquid3".into()), false));
+    assert_eq!(after["mods/a.jar"], (Some("CaffeineMC".into()), false));
+    assert_eq!(provider.author_calls(), [[SODIUM_AUTHOR]]);
 }

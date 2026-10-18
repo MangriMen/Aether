@@ -5,11 +5,17 @@ use std::{
 
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{ContentMetadata, ContentVersionMetadata, ProviderId};
+use crate::features::instance::domain::{
+    ContentAuthor, ContentMetadata, ContentVersionMetadata, ProviderId,
+};
 
 /// How long [`ContentMetadata`] is taken as current. Past it, the cached item is still shown —
 /// offline it is all there is — but asked of the provider again.
 pub const CONTENT_METADATA_TTL: Duration = Duration::from_hours(7 * 24);
+
+/// How long a [`ContentAuthor`] is taken as current: a name changes about as rarely as a
+/// project's, and is shown as [`CONTENT_METADATA_TTL`] says past it.
+pub const CONTENT_AUTHOR_TTL: Duration = Duration::from_hours(7 * 24);
 
 /// How long [`ContentVersionMetadata`] is taken as current. A version does not change once
 /// published, so this is long; past it, the item is shown as [`CONTENT_METADATA_TTL`] says.
@@ -53,9 +59,22 @@ impl CachedContentVersionMetadata {
     }
 }
 
+/// [`ContentAuthor`] as cached, with when it was fetched.
+pub type CachedContentAuthor = CachedMetadata<ContentAuthor>;
+
+impl CachedContentAuthor {
+    /// Whether the author is older than [`CONTENT_AUTHOR_TTL`] as of `now`, and should be asked
+    /// of the provider again. A stale author is still good to show until then.
+    pub fn is_stale(&self, now: SystemTime) -> bool {
+        self.is_older_than(CONTENT_AUTHOR_TTL, now)
+    }
+}
+
 /// The [`ContentMetadata`] the providers gave, kept by provider and content id so an instance's
-/// content list shows names and icons without asking the provider each time, and offline; and
-/// the [`ContentVersionMetadata`], kept by provider and version id, to show versions by.
+/// content list shows names and icons without asking the provider each time, and offline; the
+/// [`ContentVersionMetadata`], kept by provider and version id, to show versions by; and the
+/// [`ContentAuthor`]s, kept by provider and [`ContentMetadata::author_ref`], to name the authors
+/// of projects the provider described without one.
 ///
 /// Stale items are kept and returned (see [`CachedContentMetadata::is_stale`]): a failed
 /// refresh leaves them as they were. Best effort, as any cache: a failure to read is a miss,
@@ -120,6 +139,18 @@ pub trait ContentMetadataCache: Send + Sync {
         provider_id: &ProviderId,
         items: &[ContentVersionMetadata],
     ) -> bool;
+
+    /// The cached authors of `author_refs` found for `provider_id`, fresh and stale alike,
+    /// keyed by ref. A ref with nothing cached is absent.
+    async fn get_authors(
+        &self,
+        provider_id: &ProviderId,
+        author_refs: &[String],
+    ) -> HashMap<String, CachedContentAuthor>;
+
+    /// Cache `items` of `provider_id` as fetched just now, each under its own
+    /// [`ContentAuthor::author_ref`], replacing what was there. Whether they were written.
+    async fn put_authors(&self, provider_id: &ProviderId, items: &[ContentAuthor]) -> bool;
 }
 
 #[cfg(test)]
@@ -134,10 +165,29 @@ mod tests {
                 name: "Sodium".into(),
                 description: None,
                 author: None,
+                author_ref: None,
                 icon_url: None,
             },
             fetched_at,
         }
+    }
+
+    fn cached_author(fetched_at: SystemTime) -> CachedContentAuthor {
+        CachedContentAuthor {
+            metadata: ContentAuthor {
+                author_ref: "team:abc".into(),
+                name: "jellysquid3".into(),
+            },
+            fetched_at,
+        }
+    }
+
+    #[test]
+    fn should_be_stale_only_when_an_author_is_older_than_its_ttl() {
+        let now = SystemTime::now();
+
+        assert!(!cached_author(now - CONTENT_AUTHOR_TTL).is_stale(now));
+        assert!(cached_author(now - CONTENT_AUTHOR_TTL - Duration::from_secs(1)).is_stale(now));
     }
 
     fn cached_version(fetched_at: SystemTime) -> CachedContentVersionMetadata {

@@ -19,10 +19,10 @@ pub(crate) use content_file_service::DISABLED_SUFFIX;
 pub use content_file_service::{ContentFileService, LocatedContentFile};
 pub use content_icon_cache::{CachedContentIcon, ContentIconCache, ContentIconError};
 #[cfg(test)]
-pub use content_metadata_cache::CONTENT_VERSION_METADATA_TTL;
+pub use content_metadata_cache::{CONTENT_AUTHOR_TTL, CONTENT_VERSION_METADATA_TTL};
 pub use content_metadata_cache::{
-    CONTENT_METADATA_TTL, CachedContentMetadata, CachedContentVersionMetadata, CachedMetadata,
-    ContentMetadataCache,
+    CONTENT_METADATA_TTL, CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+    CachedMetadata, ContentMetadataCache,
 };
 pub use content_provider::ContentProvider;
 pub use importer::Importer;

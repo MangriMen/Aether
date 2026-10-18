@@ -7,7 +7,7 @@
 //! then it is the only name and icon there is. A row is a few hundred bytes; what is no longer
 //! installed is left for the user to clear.
 //!
-//! Versions are kept the same way, in a namespace of their own.
+//! Versions are kept the same way, in a namespace of their own; and so are authors.
 
 use std::{
     collections::HashMap,
@@ -19,10 +19,10 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
     features::instance::{
-        ContentMetadata, ContentVersionMetadata, ProviderId,
+        ContentAuthor, ContentMetadata, ContentVersionMetadata, ProviderId,
         app::{
-            CachedContentMetadata, CachedContentVersionMetadata, CachedMetadata,
-            ContentMetadataCache,
+            CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+            CachedMetadata, ContentMetadataCache,
         },
     },
     shared::cache::{Cache, CacheId, CacheKey, CachedValue},
@@ -39,8 +39,36 @@ const ROW_TTL: Duration = Duration::from_hours(100 * 365 * 24);
 /// The namespace of versions, the provider in the key as in [`NAMESPACE`].
 const VERSION_NAMESPACE: &str = "content_version_metadata";
 
+/// The namespace of authors, the provider in the key as in [`NAMESPACE`].
+const AUTHOR_NAMESPACE: &str = "content_author_metadata";
+
 /// Every namespace this cache stores in, for the app to let the user clear them.
-pub const NAMESPACES: [&str; 2] = [NAMESPACE, VERSION_NAMESPACE];
+pub const NAMESPACES: [&str; 3] = [NAMESPACE, VERSION_NAMESPACE, AUTHOR_NAMESPACE];
+
+/// [`ContentAuthor`] as stored.
+#[derive(Serialize, Deserialize)]
+struct ContentAuthorRecord {
+    author_ref: String,
+    name: String,
+}
+
+impl From<&ContentAuthor> for ContentAuthorRecord {
+    fn from(value: &ContentAuthor) -> Self {
+        Self {
+            author_ref: value.author_ref.clone(),
+            name: value.name.clone(),
+        }
+    }
+}
+
+impl From<ContentAuthorRecord> for ContentAuthor {
+    fn from(value: ContentAuthorRecord) -> Self {
+        Self {
+            author_ref: value.author_ref,
+            name: value.name,
+        }
+    }
+}
 
 /// [`ContentVersionMetadata`] as stored.
 #[derive(Serialize, Deserialize)]
@@ -78,6 +106,9 @@ struct ContentMetadataRecord {
     name: String,
     description: Option<String>,
     author: Option<String>,
+    /// Absent from the rows cached before authors were looked up apart.
+    #[serde(default)]
+    author_ref: Option<String>,
     icon_url: Option<String>,
 }
 
@@ -89,6 +120,7 @@ impl From<&ContentMetadata> for ContentMetadataRecord {
             name: value.name.clone(),
             description: value.description.clone(),
             author: value.author.clone(),
+            author_ref: value.author_ref.clone(),
             icon_url: value.icon_url.clone(),
         }
     }
@@ -102,6 +134,7 @@ impl From<ContentMetadataRecord> for ContentMetadata {
             name: value.name,
             description: value.description,
             author: value.author,
+            author_ref: value.author_ref,
             icon_url: value.icon_url,
         }
     }
@@ -197,6 +230,20 @@ impl<C: Cache> UniversalContentMetadataCache<C> {
         self.put_records(VERSION_NAMESPACE, provider_id, records, fetched_at)
             .await
     }
+
+    async fn put_authors_at(
+        &self,
+        provider_id: &ProviderId,
+        items: &[ContentAuthor],
+        fetched_at: SystemTime,
+    ) -> bool {
+        let records = items
+            .iter()
+            .map(|item| (item.author_ref.as_str(), ContentAuthorRecord::from(item)))
+            .collect();
+        self.put_records(AUTHOR_NAMESPACE, provider_id, records, fetched_at)
+            .await
+    }
 }
 
 #[async_trait]
@@ -245,6 +292,20 @@ impl<C: Cache> ContentMetadataCache for UniversalContentMetadataCache<C> {
         self.put_versions_at(provider_id, items, SystemTime::now())
             .await
     }
+
+    async fn get_authors(
+        &self,
+        provider_id: &ProviderId,
+        author_refs: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        self.get_records::<ContentAuthorRecord, _>(AUTHOR_NAMESPACE, provider_id, author_refs)
+            .await
+    }
+
+    async fn put_authors(&self, provider_id: &ProviderId, items: &[ContentAuthor]) -> bool {
+        self.put_authors_at(provider_id, items, SystemTime::now())
+            .await
+    }
 }
 
 #[cfg(test)]
@@ -253,7 +314,9 @@ mod tests {
 
     use crate::{
         core::migrations::run_migrations,
-        features::instance::app::{CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL},
+        features::instance::app::{
+            CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL,
+        },
         shared::cache::infra::SqliteCache,
     };
 
@@ -287,6 +350,7 @@ mod tests {
             name: name.into(),
             description: Some("desc".into()),
             author: None,
+            author_ref: Some(format!("team:{content_id}")),
             icon_url: Some(format!(
                 "https://cdn.modrinth.com/data/{content_id}/abc.png"
             )),
@@ -465,6 +529,124 @@ mod tests {
 
         let item = &found["IZskON6d"];
         assert_eq!(item.metadata.version_number, "0.5.8");
+        assert_eq!(item.fetched_at, fetched_at);
+        assert!(item.is_stale(SystemTime::now()));
+    }
+
+    /// A row cached before authors were looked up apart has no `author_ref`.
+    #[tokio::test]
+    async fn should_still_load_a_project_when_it_was_cached_without_an_author_ref() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let old_row = serde_json::json!({
+            "content_id": "AANobbMI", "slug": "sodium", "name": "Sodium",
+            "description": null, "author": "jellysquid3", "icon_url": null
+        });
+        cache
+            .put_records(
+                NAMESPACE,
+                &modrinth,
+                vec![("AANobbMI", old_row)],
+                SystemTime::now(),
+            )
+            .await;
+
+        let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
+
+        let item = &found["AANobbMI"].metadata;
+        assert_eq!(item.name, "Sodium");
+        assert_eq!(item.author.as_deref(), Some("jellysquid3"));
+        assert_eq!(item.author_ref, None);
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_author_ref_of_a_project_when_put_and_read_back() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        cache
+            .put_many(&modrinth, &[metadata("AANobbMI", "Sodium")])
+            .await;
+
+        let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
+
+        assert_eq!(
+            found["AANobbMI"].metadata.author_ref.as_deref(),
+            Some("team:AANobbMI")
+        );
+    }
+
+    fn author(author_ref: &str, name: &str) -> ContentAuthor {
+        ContentAuthor {
+            author_ref: author_ref.into(),
+            name: name.into(),
+        }
+    }
+
+    #[tokio::test]
+    async fn should_return_only_the_cached_authors_when_some_refs_are_missing() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        cache
+            .put_authors(
+                &modrinth,
+                &[
+                    author("team:abc", "jellysquid3"),
+                    author("organization:xyz", "CaffeineMC"),
+                ],
+            )
+            .await;
+
+        let found = cache
+            .get_authors(
+                &modrinth,
+                &ids(&["team:abc", "team:gone", "organization:xyz"]),
+            )
+            .await;
+        let other = cache
+            .get_authors(&provider("other"), &ids(&["team:abc"]))
+            .await;
+
+        assert_eq!(found.len(), 2);
+        assert_eq!(
+            found["team:abc"].metadata,
+            author("team:abc", "jellysquid3")
+        );
+        assert_eq!(found["organization:xyz"].metadata.name, "CaffeineMC");
+        assert!(!found["team:abc"].is_stale(SystemTime::now()));
+        assert!(other.is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_keep_authors_apart_from_projects_when_they_share_an_id() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        cache
+            .put_many(&modrinth, &[metadata("same", "Sodium")])
+            .await;
+        cache
+            .put_authors(&modrinth, &[author("same", "jellysquid3")])
+            .await;
+
+        let projects = cache.get_many(&modrinth, &ids(&["same"])).await;
+        let authors = cache.get_authors(&modrinth, &ids(&["same"])).await;
+
+        assert_eq!(projects["same"].metadata.name, "Sodium");
+        assert_eq!(authors["same"].metadata.name, "jellysquid3");
+    }
+
+    #[tokio::test]
+    async fn should_still_return_an_author_when_it_is_stale() {
+        let cache = create_cache().await;
+        let modrinth = provider("modrinth");
+        let fetched_at = SystemTime::now() - CONTENT_AUTHOR_TTL - Duration::from_hours(24);
+        cache
+            .put_authors_at(&modrinth, &[author("team:abc", "jellysquid3")], fetched_at)
+            .await;
+
+        let found = cache.get_authors(&modrinth, &ids(&["team:abc"])).await;
+
+        let item = &found["team:abc"];
+        assert_eq!(item.metadata.name, "jellysquid3");
         assert_eq!(item.fetched_at, fetched_at);
         assert!(item.is_stale(SystemTime::now()));
     }

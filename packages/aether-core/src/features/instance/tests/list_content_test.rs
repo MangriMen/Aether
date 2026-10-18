@@ -9,10 +9,11 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError},
         instance::{
-            CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
-            ContentIconCache, ContentIconError, ContentMetadata, ContentMetadataCache,
-            ContentMetadataService, ContentProvider, ContentVersionMetadata, InstanceId,
-            ListContentUseCase, ProviderId, infra::SqlitePackStorage,
+            CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
+            CachedContentVersionMetadata, ContentAuthor, ContentIconCache, ContentIconError,
+            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ContentVersionMetadata, InstanceId, ListContentUseCase, ProviderId,
+            infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -49,6 +50,18 @@ impl ContentMetadataCache for NoCache {
     }
 
     async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
+
+    async fn get_authors(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        HashMap::new()
+    }
+
+    async fn put_authors(&self, _: &ProviderId, _: &[ContentAuthor]) -> bool {
         true
     }
 }

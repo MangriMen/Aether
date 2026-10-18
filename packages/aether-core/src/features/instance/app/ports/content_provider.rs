@@ -6,10 +6,10 @@ use crate::features::instance::app::dtos::{
     ContentCompatibilityCheckParams, ContentCompatibilityResult,
 };
 use crate::features::instance::domain::{
-    ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
-    ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallPlan, Instance,
-    InstanceError, InstanceId, PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams,
-    ResolvedFile,
+    ContentAuthor, ContentItem, ContentMetadata, ContentProviderCapabilityMetadata,
+    ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallPlan,
+    Instance, InstanceError, InstanceId, PackMetadata, PackSource, ProviderId,
+    ResolveInstallPlanParams, ResolvedFile,
 };
 
 #[async_trait]
@@ -81,12 +81,30 @@ pub trait ContentProvider: Send + Sync {
     /// one asked by (a slug, for one). An id the provider does not know is left out, not an
     /// error. A provider that cannot describe its content keeps the default
     /// [`InstanceError::UnsupportedOperation`], and its content is shown by file alone.
+    ///
+    /// A provider that names authors only by another request may leave
+    /// [`ContentMetadata::author`] out and give [`ContentMetadata::author_ref`] instead: the
+    /// core asks [`Self::get_authors`] for it apart, so that request failing does not fail
+    /// this one.
     async fn get_contents_metadata(
         &self,
         content_ids: &[String],
     ) -> Result<Vec<ContentMetadata>, InstanceError> {
         let _ = content_ids;
         Err(self.unsupported("get_contents_metadata"))
+    }
+
+    /// Who authors projects, by the [`ContentMetadata::author_ref`]s this provider gave them,
+    /// asked in one go for a whole instance.
+    ///
+    /// A ref the provider does not know is left out, not an error. A provider that gives no
+    /// refs keeps the default [`InstanceError::UnsupportedOperation`].
+    async fn get_authors(
+        &self,
+        author_refs: &[String],
+    ) -> Result<Vec<ContentAuthor>, InstanceError> {
+        let _ = author_refs;
+        Err(self.unsupported("get_authors"))
     }
 
     /// What the provider says about each of `version_ids` — the version number its authors
@@ -275,5 +293,17 @@ mod tests {
             metadata.await.unwrap().unwrap_err(),
             "get_versions_metadata",
         );
+    }
+
+    #[tokio::test]
+    async fn should_report_authors_as_unsupported_when_the_provider_lacks_them() {
+        let provider: Arc<dyn ContentProvider> = Arc::new(BareProvider::new());
+
+        let authors = tokio::spawn({
+            let provider = provider.clone();
+            async move { provider.get_authors(&["team:abc".to_owned()]).await }
+        });
+
+        assert_unsupported(authors.await.unwrap().unwrap_err(), "get_authors");
     }
 }

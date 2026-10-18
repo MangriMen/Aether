@@ -20,15 +20,16 @@ use crate::{
             Event, EventEmitter, EventError, ProgressBarId, ProgressEventType, ProgressService,
         },
         instance::{
-            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
-            ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
-            ContentCompatibilityResult, ContentDownloader, ContentItem, ContentMetadata,
-            ContentMetadataCache, ContentProvider, ContentProviderCapabilityMetadata,
-            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
-            ContentVersionMetadata, CreateInstanceUseCasePort, InstallFileEntry, InstallPlan,
-            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
-            InstanceGame, InstanceId, InstanceStorage, NewInstance, PlanOrigin, ProviderId,
-            RemoveInstanceUseCasePort, ResolvedFile,
+            CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+            CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
+            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
+            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
+            CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
+            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame, InstanceId,
+            InstanceStorage, NewInstance, PlanOrigin, ProviderId, RemoveInstanceUseCasePort,
+            ResolvedFile,
             infra::{FsContentFileService, NoPlatformProviderSelection, SqlitePackStorage},
         },
         minecraft::ModLoader,
@@ -91,6 +92,18 @@ impl ContentMetadataCache for NoMetadataCache {
     }
 
     async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
+
+    async fn get_authors(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        HashMap::new()
+    }
+
+    async fn put_authors(&self, _: &ProviderId, _: &[ContentAuthor]) -> bool {
         true
     }
 }
