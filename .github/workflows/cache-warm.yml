@@ -1,0 +1,82 @@
+name: Cache warm
+
+# PRs can only restore caches saved on their own ref or on main, so main has to keep the shared caches
+# warm. CI no longer runs on push to main; this only rebuilds when the cached inputs change
+# (or weekly, or by hand) and runs no tests or lints.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - ".cargo/**"
+      - "bun.lock"
+      - ".github/workflows/cache-warm.yml"
+  schedule:
+    # caches unused for 7 days are evicted
+    - cron: "0 5 * * 1,4"
+  workflow_dispatch:
+
+concurrency:
+  group: cache-warm
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ubuntu-22.04
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # same key and workspaces as the rust job in ci.yml
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "aether-ci-cache"
+          workspaces: "./ -> target"
+
+      - name: Stub frontend dist
+        run: mkdir -p apps/frontend/dist
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets
+
+      - name: cargo test (build only)
+        run: cargo test --workspace --no-run
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features sqlite,rustls,sqlx-toml
+
+  bun:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+
+      # same key as the frontend job in ci.yml
+      - name: Cache bun packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
