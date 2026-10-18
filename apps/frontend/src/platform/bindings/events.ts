@@ -10,6 +10,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	cacheEventDto: makeEvent<CacheEventDto>("plugin:events:cache-event-dto"),
 	progressEventDto: makeEvent<ProgressEventDto>("plugin:events:progress-event-dto"),
 	warningEventDto: makeEvent<WarningEventDto>("plugin:events:warning-event-dto"),
 };
@@ -33,6 +34,8 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	min: number,
 	max: number,
 } } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
+
+export type CacheEventDto = { type: "changed" };
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 

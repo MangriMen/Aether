@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui-kit';
 
 export type ClearCacheEntryProps = SettingsEntryProps & {
   usage?: CacheUsage;
+  busy?: boolean;
   isError?: boolean;
 };
 
@@ -19,7 +20,7 @@ export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
 
   const clearCache = useClearCache();
 
-  const isBlocked = () => clearCache.isPending || (props.usage?.busy ?? true);
+  const isBlocked = () => clearCache.isPending || (props.busy ?? true);
 
   return (
     <SettingsEntry
@@ -36,7 +37,7 @@ export const ClearCacheEntry: Component<ClearCacheEntryProps> = (props) => {
               </span>
             )}
           </Show>
-          <Show when={props.usage?.busy}>
+          <Show when={props.busy}>
             <span class='text-warning block'>{t('settings.storage.busy')}</span>
           </Show>
           <Show when={props.isError}>

@@ -1,6 +1,5 @@
-use aether_core::{
-    features::settings::{CacheUsage, ClearCacheOutcome, StorageKind, StorageUsage},
-    shared::housekeeping::CacheKind,
+use aether_core::features::settings::{
+    CacheKind, CacheUsage, ClearCacheOutcome, StorageKind, StorageUsage,
 };
 use serde::Serialize;
 use specta::Type;
@@ -31,16 +30,19 @@ pub struct CacheUsageEntryDto {
     pub bytes: f64,
 }
 
+/// The bytes as a number the frontend reads: see [`CacheUsageEntryDto::bytes`].
+#[allow(clippy::cast_precision_loss)]
+fn bytes_to_number(bytes: u64) -> f64 {
+    bytes as f64
+}
+
 #[derive(Debug, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CacheUsageDto {
     pub entries: Vec<CacheUsageEntryDto>,
-    /// Whether clearing is refused now: the app is busy with something that uses the caches.
-    pub busy: bool,
 }
 
 impl From<CacheUsage> for CacheUsageDto {
-    #[allow(clippy::cast_precision_loss)]
     fn from(value: CacheUsage) -> Self {
         Self {
             entries: value
@@ -48,10 +50,9 @@ impl From<CacheUsage> for CacheUsageDto {
                 .into_iter()
                 .map(|entry| CacheUsageEntryDto {
                     kind: entry.kind.into(),
-                    bytes: entry.bytes as f64,
+                    bytes: bytes_to_number(entry.bytes),
                 })
                 .collect(),
-            busy: value.busy,
         }
     }
 }
@@ -105,7 +106,6 @@ pub struct StorageUsageDto {
 }
 
 impl From<StorageUsage> for StorageUsageDto {
-    #[allow(clippy::cast_precision_loss)]
     fn from(value: StorageUsage) -> Self {
         Self {
             entries: value
@@ -113,7 +113,7 @@ impl From<StorageUsage> for StorageUsageDto {
                 .into_iter()
                 .map(|entry| StorageUsageEntryDto {
                     kind: entry.kind.into(),
-                    bytes: entry.bytes as f64,
+                    bytes: bytes_to_number(entry.bytes),
                 })
                 .collect(),
         }

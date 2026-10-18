@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::features::settings::app::ports::{
     ClearCacheUseCasePort, EditDefaultInstanceSettingsUseCasePort, EditSettingsUseCasePort,
     GetCacheUsageUseCasePort, GetDefaultInstanceSettingsUseCasePort, GetSettingsUseCasePort,
-    GetStorageUsageUseCasePort,
+    GetStorageUsageUseCasePort, IsCacheBusyUseCasePort,
 };
 use crate::features::settings::domain::LocationInfo;
 
@@ -19,6 +19,7 @@ pub trait SettingsFeature {
     ) -> Arc<dyn GetDefaultInstanceSettingsUseCasePort>;
     fn clear_cache_use_case(&self) -> Arc<dyn ClearCacheUseCasePort>;
     fn get_cache_usage_use_case(&self) -> Arc<dyn GetCacheUsageUseCasePort>;
+    fn is_cache_busy_use_case(&self) -> Arc<dyn IsCacheBusyUseCasePort>;
     fn get_storage_usage_use_case(&self) -> Arc<dyn GetStorageUsageUseCasePort>;
     fn edit_settings_use_case(&self) -> Arc<dyn EditSettingsUseCasePort>;
     fn edit_default_instance_settings_use_case(

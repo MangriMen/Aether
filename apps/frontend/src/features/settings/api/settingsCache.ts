@@ -19,9 +19,14 @@ export const settingsQueries = {
   cacheUsage: () => ({
     queryKey: settingsKeys.cacheUsage(),
     queryFn: settingsCommands.getCacheUsage,
-    // Whether clearing is allowed changes by itself, as downloads start and end. Sizes are
-    // measured on each poll, so it is slow; to be replaced by launcher events or the file watcher.
-    refetchInterval: 10_000,
+    // Measuring walks the caches. What changes them is told by the cache event.
+    staleTime: 30_000,
+  }),
+  // Whether clearing is allowed changes by itself, as downloads start and end. It is cheap,
+  // so it is asked again whenever the window gets focus or the pane is opened.
+  cacheBusy: () => ({
+    queryKey: settingsKeys.cacheBusy(),
+    queryFn: settingsCommands.isCacheBusy,
   }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
@@ -40,6 +45,15 @@ export const settingsCache = {
       queryClient.invalidateQueries({
         queryKey: settingsKeys.get(),
       }),
+    cacheUsage: (queryClient: QueryClient) =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: settingsKeys.cacheUsage(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: settingsKeys.cacheBusy(),
+        }),
+      ]),
   },
   set: (
     queryClient: QueryClient,

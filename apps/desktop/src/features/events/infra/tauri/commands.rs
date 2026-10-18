@@ -4,7 +4,7 @@ use tauri::State;
 use crate::{
     FrontendResult,
     core::ContainerState,
-    features::events::infra::{ProgressBarDto, ProgressEventDto, WarningEventDto},
+    features::events::infra::{CacheEventDto, ProgressBarDto, ProgressEventDto, WarningEventDto},
     shared::commands::{EVENTS_PLUGIN_NAME, events_commands},
 };
 
@@ -22,7 +22,7 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 
 #[must_use]
 pub fn get_specta_events() -> tauri_specta::Events {
-    tauri_specta::collect_events![ProgressEventDto, WarningEventDto]
+    tauri_specta::collect_events![ProgressEventDto, WarningEventDto, CacheEventDto]
 }
 
 #[tauri::command]

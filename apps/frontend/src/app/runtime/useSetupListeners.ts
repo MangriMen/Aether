@@ -9,6 +9,7 @@ import {
 import { useInstanceEventsListener } from '@/features/instance';
 import { useJavaInstallationListener } from '@/features/java';
 import { usePluginEventListener } from '@/features/plugins';
+import { useCacheEventListener } from '@/features/settings';
 import { useUpdateSync } from '@/features/update';
 
 export const useSetupListeners = () => {
@@ -17,6 +18,7 @@ export const useSetupListeners = () => {
   useProgressEventsListener();
   usePluginEventListener();
   useJavaInstallationListener();
+  useCacheEventListener();
 
   useMicaUpdateListener();
   useTransparencyUpdateListener();

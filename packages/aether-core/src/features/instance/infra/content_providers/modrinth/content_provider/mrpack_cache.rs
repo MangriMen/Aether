@@ -13,7 +13,7 @@ use std::{
 
 use async_trait::async_trait;
 
-use crate::shared::housekeeping::{CacheCleaner, CacheKind};
+use crate::shared::housekeeping::CacheCleaner;
 
 /// How long an archive may sit unused. An update of a pack reads the archive of the installed
 /// version only as a convenience; after this long it is simply downloaded again.
@@ -105,10 +105,6 @@ impl MrpackCacheCleaner {
 impl CacheCleaner for MrpackCacheCleaner {
     fn what(&self) -> &'static str {
         "modpack archives"
-    }
-
-    fn kind(&self) -> CacheKind {
-        CacheKind::ModpackArchives
     }
 
     async fn size(&self) -> u64 {

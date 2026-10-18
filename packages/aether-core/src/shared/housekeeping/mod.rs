@@ -19,17 +19,6 @@ pub trait Housekeeping: Send + Sync {
     async fn run(&self) -> u64;
 }
 
-/// What a cache holds, as the user tells them apart.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CacheKind {
-    /// Names, authors, versions and the like: the rows of `universal_cache`.
-    Metadata,
-    /// Icons of content.
-    Icons,
-    /// Downloaded modpack archives.
-    ModpackArchives,
-}
-
 /// Holds the app idle, as far as the caches go, until dropped.
 pub type ActivityPause = Box<dyn std::any::Any + Send>;
 
@@ -47,9 +36,6 @@ pub trait StorageActivity: Send + Sync {
 pub trait CacheCleaner: Send + Sync {
     /// What is emptied, for the logs.
     fn what(&self) -> &'static str;
-
-    /// What the cache is, for the user.
-    fn kind(&self) -> CacheKind;
 
     /// How many bytes the cache takes.
     async fn size(&self) -> u64;
@@ -118,27 +104,35 @@ pub async fn remove_files(
     .unwrap_or_default()
 }
 
-/// Run each of `tasks` in the background, side by side, logging what each removed.
-pub fn spawn_housekeeping(tasks: Vec<Arc<dyn Housekeeping>>) {
+/// Run each of `tasks` in the background, side by side, logging what each removed. `on_removed`
+/// is told each time something went.
+pub fn spawn_housekeeping(
+    tasks: Vec<Arc<dyn Housekeeping>>,
+    on_removed: &Arc<dyn Fn() + Send + Sync>,
+) {
     for task in tasks {
+        let on_removed = on_removed.clone();
         tokio::spawn(async move {
             let removed = task.run().await;
             if removed > 0 {
                 log::debug!("Housekeeping: removed {removed} of {}", task.what());
+                on_removed();
             }
         });
     }
 }
 
-/// Empty every cache of `cleaners`, one after another. What each removed, by what it is.
-pub async fn clear_caches(cleaners: &[Arc<dyn CacheCleaner>]) -> Vec<(&'static str, u64)> {
-    let mut cleared = Vec::with_capacity(cleaners.len());
-    for cleaner in cleaners {
+/// Empty every cache of `cleaners` side by side, as they are independent. What each removed, by
+/// what it is, in the order given.
+pub async fn clear_caches<'a>(
+    cleaners: impl IntoIterator<Item = &'a Arc<dyn CacheCleaner>>,
+) -> Vec<(&'static str, u64)> {
+    futures::future::join_all(cleaners.into_iter().map(|cleaner| async move {
         let removed = cleaner.clear().await;
         log::info!("Cleared {removed} of {}", cleaner.what());
-        cleared.push((cleaner.what(), removed));
-    }
-    cleared
+        (cleaner.what(), removed)
+    }))
+    .await
 }
 
 #[cfg(test)]
@@ -153,10 +147,6 @@ mod tests {
     impl CacheCleaner for Counting {
         fn what(&self) -> &'static str {
             "counting"
-        }
-
-        fn kind(&self) -> CacheKind {
-            CacheKind::Icons
         }
 
         async fn size(&self) -> u64 {
@@ -185,7 +175,7 @@ mod tests {
         let first = Arc::new(Counting(AtomicU64::new(0)));
         let second = Arc::new(Counting(AtomicU64::new(4)));
 
-        let cleared = clear_caches(&[first.clone(), second.clone()]).await;
+        let cleared = clear_caches(&[first.clone() as _, second.clone() as _]).await;
 
         assert_eq!(cleared, [("counting", 1), ("counting", 5)]);
     }

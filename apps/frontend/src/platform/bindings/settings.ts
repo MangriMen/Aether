@@ -9,6 +9,7 @@ export const commands = {
 	getMaxRam: () => __TAURI_INVOKE<RamSettingsDto>("plugin:settings|get_max_ram"),
 	clearCache: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<ClearCacheOutcomeDto>("plugin:settings|clear_cache", { requestId }),
 	getCacheUsage: () => __TAURI_INVOKE<CacheUsageDto>("plugin:settings|get_cache_usage"),
+	isCacheBusy: () => __TAURI_INVOKE<boolean>("plugin:settings|is_cache_busy"),
 	getStorageUsage: () => __TAURI_INVOKE<StorageUsageDto>("plugin:settings|get_storage_usage"),
 	getDefaultInstanceSettings: () => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|get_default_instance_settings"),
 	editDefaultInstanceSettings: (editSettings: EditDefaultInstanceSettingsDto, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<DefaultInstanceSettingsDto>("plugin:settings|edit_default_instance_settings", { editSettings, requestId }),
@@ -49,8 +50,6 @@ export type CacheKindDto = "metadata" | "icons" | "modpack_archives";
 
 export type CacheUsageDto = {
 	entries: CacheUsageEntryDto[],
-	/**  Whether clearing is refused now: the app is busy with something that uses the caches. */
-	busy: boolean,
 };
 
 export type CacheUsageEntryDto = {

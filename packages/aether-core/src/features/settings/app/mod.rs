@@ -5,13 +5,13 @@ mod use_cases;
 
 pub use di::SettingsFeature;
 pub use dtos::{
-    CacheUsage, CacheUsageEntry, ClearCacheOutcome, EditDefaultInstanceSettings, EditHooks,
-    EditPlatformProvider, EditSettings, StorageKind, StorageUsage, StorageUsageEntry,
+    CacheKind, CacheUsage, CacheUsageEntry, ClearCacheOutcome, EditDefaultInstanceSettings,
+    EditHooks, EditPlatformProvider, EditSettings, StorageKind, StorageUsage, StorageUsageEntry,
 };
 pub use ports::{
     ClearCacheUseCasePort, DefaultInstanceSettingsStorage, EditDefaultInstanceSettingsUseCasePort,
     EditSettingsUseCasePort, GetCacheUsageUseCasePort, GetDefaultInstanceSettingsUseCasePort,
-    GetSettingsUseCasePort, GetStorageUsageUseCasePort, SettingsStorage,
+    GetSettingsUseCasePort, GetStorageUsageUseCasePort, IsCacheBusyUseCasePort, SettingsStorage,
 };
 pub use use_cases::{
     CacheStorageUseCase, EditDefaultInstanceSettingsUseCase, EditSettingsUseCase,

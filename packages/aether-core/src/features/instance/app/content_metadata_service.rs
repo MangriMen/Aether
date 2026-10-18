@@ -16,7 +16,9 @@ use futures::{
 
 use crate::{
     features::{
-        events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
+        events::{
+            CacheEvent, EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter,
+        },
         instance::{
             CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata, ContentFile,
             ContentIconCache, ContentMetadata, ContentMetadataCache, ContentProvider,
@@ -458,6 +460,8 @@ impl Inner {
                 instance_id: instance_id.clone(),
             })
             .await;
+        // What the refresh wrote is part of what the caches take.
+        self.event_emitter.emit_safe(CacheEvent::Changed).await;
     }
 
     fn is_unsupported(&self, provider_id: &ProviderId, lookup: Lookup) -> bool {

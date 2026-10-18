@@ -1,5 +1,5 @@
 use crate::features::events::{
-    InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
+    CacheEvent, InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
 };
 
 #[derive(Debug, Clone)]
@@ -9,6 +9,24 @@ pub enum Event {
     Progress(ProgressEvent),
     Plugin(PluginEvent),
     Warning(WarningEvent),
+    Cache(CacheEvent),
+}
+
+impl From<CacheEvent> for Event {
+    fn from(value: CacheEvent) -> Self {
+        Self::Cache(value)
+    }
+}
+
+impl TryFrom<Event> for CacheEvent {
+    type Error = ();
+
+    fn try_from(value: Event) -> Result<Self, Self::Error> {
+        match value {
+            Event::Cache(p) => Ok(p),
+            _ => Err(()),
+        }
+    }
 }
 
 impl From<InstanceEvent> for Event {
