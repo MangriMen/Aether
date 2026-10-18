@@ -33,9 +33,8 @@ pub enum ProgressStage {
 }
 
 /// Where a progress bar is in its life.
-#[derive(Debug, Clone, Default, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum ProgressStatus {
-    #[default]
     Running,
     Done,
     Failed {
