@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ContentFile } from '../contentFile';
 
 import {
+  getContentIdFromUpdateInfo,
   getContentFileAuthor,
   getContentFileDisplayTitle,
   getContentFileIconSrc,
@@ -161,11 +162,39 @@ describe('version helpers', () => {
   });
 });
 
+describe('getContentIdFromUpdateInfo', () => {
+  const file = makeFile({
+    update: [
+      {
+        providerId: { pluginId: 'curseforge', capabilityId: 'content' },
+        info: { contentId: 'cf', version: 'v' },
+      },
+      { providerId: provider, info: { contentId: 'mr', version: 'v' } },
+    ],
+  });
+
+  it('finds the entry of the provider', () => {
+    expect(getContentIdFromUpdateInfo(file, provider)).toBe('mr');
+  });
+
+  it('has nothing for another provider or without updates', () => {
+    expect(
+      getContentIdFromUpdateInfo(file, {
+        pluginId: 'modrinth',
+        capabilityId: 'other',
+      }),
+    ).toBeUndefined();
+    expect(getContentIdFromUpdateInfo(makeFile({}), provider)).toBeUndefined();
+  });
+});
+
 describe('getContentFileProjectHref', () => {
   it('links to the project with provider and instance', () => {
     const file = makeFile({
       updateProviderId: provider,
-      update: { 'modrinth#content': { contentId: 'abc', version: 'v' } },
+      update: [
+        { providerId: provider, info: { contentId: 'abc', version: 'v' } },
+      ],
     });
     expect(getContentFileProjectHref(file, 'inst')).toBe(
       '/content/abc?instance=inst&plugin=modrinth&capability=content',

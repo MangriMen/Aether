@@ -104,7 +104,8 @@ export type ContentFileDto = {
 	size: string,
 	version: string | null,
 	updateProviderId: ProviderIdDto | null,
-	update?: { [key in string]: ContentFileUpdateInfoDto } | null,
+	/**  The update each provider offers for the file, ordered by provider. */
+	update: ContentFileUpdateDto[] | null,
 	/**
 	 *  The file's project as its provider describes it, when cached. Filled in later when
 	 *  missing: the instance's `contentSynced` event tells when to list again.
@@ -126,6 +127,12 @@ export type ContentFileDto = {
 	 *  the author is known.
 	 */
 	metadataPending: boolean,
+};
+
+/**  The update one provider offers for an installed file. */
+export type ContentFileUpdateDto = {
+	providerId: ProviderIdDto,
+	info: ContentFileUpdateInfoDto,
 };
 
 export type ContentFileUpdateInfoDto = {

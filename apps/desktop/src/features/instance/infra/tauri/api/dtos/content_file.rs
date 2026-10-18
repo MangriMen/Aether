@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use aether_core::features::instance::{
     ContentFile, ContentFileUpdateInfo, ContentMetadata, ContentVersionMetadata,
 };
@@ -27,9 +25,8 @@ pub struct ContentFileDto {
     pub size: u64,
     pub version: Option<String>,
     pub update_provider_id: Option<ProviderIdDto>,
-    #[serde_as(as = "Option<HashMap<DisplayFromStr, _>>")]
-    #[specta(type = Option<HashMap<String, ContentFileUpdateInfoDto>>)]
-    pub update: Option<HashMap<ProviderIdDto, ContentFileUpdateInfoDto>>,
+    /// The update each provider offers for the file, ordered by provider.
+    pub update: Option<Vec<ContentFileUpdateDto>>,
     /// The file's project as its provider describes it, when cached. Filled in later when
     /// missing: the instance's `contentSynced` event tells when to list again.
     pub metadata: Option<ContentMetadataDto>,
@@ -79,6 +76,14 @@ pub struct ContentFileUpdateInfoDto {
     pub version: String,
 }
 
+/// The update one provider offers for an installed file.
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentFileUpdateDto {
+    pub provider_id: ProviderIdDto,
+    pub info: ContentFileUpdateInfoDto,
+}
+
 impl From<ContentFile> for ContentFileDto {
     fn from(value: ContentFile) -> Self {
         Self {
@@ -91,9 +96,20 @@ impl From<ContentFile> for ContentFileDto {
             size: value.size,
             version: value.version,
             update_provider_id: value.update_provider_id.map(Into::into),
-            update: value
-                .update
-                .map(|m| m.into_iter().map(|(k, v)| (k.into(), v.into())).collect()),
+            update: value.update.map(|updates| {
+                let mut updates: Vec<ContentFileUpdateDto> = updates
+                    .into_iter()
+                    .map(|(provider_id, info)| ContentFileUpdateDto {
+                        provider_id: provider_id.into(),
+                        info: info.into(),
+                    })
+                    .collect();
+                updates.sort_by(|a, b| {
+                    (&a.provider_id.plugin_id, &a.provider_id.capability_id)
+                        .cmp(&(&b.provider_id.plugin_id, &b.provider_id.capability_id))
+                });
+                updates
+            }),
             metadata: value.metadata.map(|metadata| ContentMetadataDto {
                 icon_path: value.icon_path.as_deref().map(format_asset_url),
                 ..metadata.into()
@@ -140,7 +156,9 @@ impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
 
 #[cfg(test)]
 mod tests {
-    use aether_core::features::instance::{ContentType, PackFile};
+    use std::collections::HashMap;
+
+    use aether_core::features::instance::{ContentType, PackFile, ProviderId};
 
     use super::*;
 
@@ -201,6 +219,39 @@ mod tests {
                 "versionNumber": "mc1.20.6-0.5.8",
                 "name": "Sodium 0.5.8",
             })
+        );
+    }
+
+    #[test]
+    fn should_expose_the_updates_as_entries_ordered_by_provider() {
+        let provider = |plugin: &str, capability: &str| ProviderId {
+            plugin_id: plugin.into(),
+            capability_id: capability.into(),
+        };
+        let info = |content_id: &str| ContentFileUpdateInfo {
+            content_id: content_id.into(),
+            version: "1".into(),
+        };
+        let mut file = file(None);
+        file.update = Some(HashMap::from([
+            (provider("modrinth", "content"), info("b")),
+            (provider("curseforge", "content"), info("a")),
+        ]));
+
+        let json = serde_json::to_value(ContentFileDto::from(file)).unwrap();
+
+        assert_eq!(
+            json["update"],
+            serde_json::json!([
+                {
+                    "providerId": { "pluginId": "curseforge", "capabilityId": "content" },
+                    "info": { "contentId": "a", "version": "1" },
+                },
+                {
+                    "providerId": { "pluginId": "modrinth", "capabilityId": "content" },
+                    "info": { "contentId": "b", "version": "1" },
+                },
+            ])
         );
     }
 
