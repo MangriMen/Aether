@@ -1,7 +1,10 @@
 use async_trait::async_trait;
+use uuid::Uuid;
 
 use crate::features::events::{EventError, ProgressBarId, ProgressEventType, ProgressStage};
 
+/// Updates of one bar may come from many tasks at once: a parent hears of the bytes of all its
+/// children.
 #[async_trait]
 pub trait ProgressService: Send + Sync {
     async fn init_progress(
@@ -10,6 +13,20 @@ pub trait ProgressService: Send + Sync {
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError>;
+
+    /// Starts a bar as a part of the bar `parent_id`: its events name the parent, the parent
+    /// counts its bytes as its own, and it ends with the parent at the latest.
+    ///
+    /// The tree is extra detail, so by default the bar is started on its own.
+    async fn init_child_progress(
+        &self,
+        _parent_id: Uuid,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> Result<ProgressBarId, EventError> {
+        self.init_progress(event_type, total, message).await
+    }
 
     async fn init_or_edit_progress(
         &self,

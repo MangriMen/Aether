@@ -80,9 +80,10 @@ impl InstallInstanceUseCase {
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 
+        // Under the bar of a pack being installed into the instance, if any.
         let loading_bar = self
             .progress_service
-            .init_progress_safe(
+            .init_progress_in_scope_safe(
                 ProgressEventType::MinecraftDownload {
                     instance_id,
                     instance_name: instance.name().to_owned(),

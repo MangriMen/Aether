@@ -22,7 +22,12 @@ pub struct ProgressBar {
     pub stage: Option<ProgressStage>,
     /// `Failed` once [`ProgressBarId::fail`] is called; the bar is gone when it is done.
     pub status: ProgressStatus,
+    /// The bar this one is a part of. A parent counts the bytes of its children as its own, and
+    /// takes the children still there with it when it is done.
     pub parent_id: Option<Uuid>,
+    /// Whether a bar was ever started under this one: only then does finishing it look for
+    /// children left behind.
+    pub(crate) has_children: bool,
     pub bytes_done: Option<u64>,
     pub bytes_total: Option<u64>,
     /// Transfer speed in bytes per second.
@@ -115,7 +120,8 @@ impl ProgressBarId {
         }
     }
 
-    /// Unregisters the bar and tells listeners that it is finished.
+    /// Unregisters the bar, and the bars still under it, and tells listeners that they are
+    /// finished: the children first, so that none is heard of after its parent is over.
     ///
     /// Does nothing for an id that was never attached to a storage and an emitter.
     async fn finish(
@@ -123,17 +129,57 @@ impl ProgressBarId {
         storage: Arc<dyn ProgressBarStorage>,
         emitter: SharedEventEmitter,
     ) {
-        let removed = match storage.remove(self_id).await {
-            Ok(removed) => removed,
-            Err(e) => {
-                error!("Could not unregister progress bar {self_id}: {e:?}");
-                return;
-            }
-        };
-        let Some((_, bar)) = removed else {
+        let Some(bar) = Self::unregister(self_id, storage.as_ref()).await else {
             return;
         };
 
+        if bar.has_children {
+            Self::finish_children(self_id, storage.as_ref(), &emitter).await;
+        }
+        Self::emit_finished(&bar, &emitter).await;
+    }
+
+    /// Finish every bar left under `parent_id`, however deep. A child normally ends before its
+    /// parent; one still there when the parent ends would otherwise stay in the storage, and in
+    /// the UI, for good.
+    async fn finish_children(
+        parent_id: Uuid,
+        storage: &dyn ProgressBarStorage,
+        emitter: &SharedEventEmitter,
+    ) {
+        let mut parents = vec![parent_id];
+        while let Some(parent_id) = parents.pop() {
+            let children = storage
+                .list()
+                .await
+                .into_iter()
+                .filter(|bar| bar.parent_id == Some(parent_id));
+            for child in children {
+                // Its own handle may have finished it in the meantime.
+                let Some(child) = Self::unregister(child.id, storage).await else {
+                    continue;
+                };
+                if child.has_children {
+                    parents.push(child.id);
+                }
+                Self::emit_finished(&child, emitter).await;
+            }
+        }
+    }
+
+    /// Remove the bar from `storage`; `None` when it is not there.
+    async fn unregister(id: Uuid, storage: &dyn ProgressBarStorage) -> Option<ProgressBar> {
+        match storage.remove(id).await {
+            Ok(removed) => removed.map(|(_, bar)| bar),
+            Err(e) => {
+                error!("Could not unregister progress bar {id}: {e:?}");
+                None
+            }
+        }
+    }
+
+    /// Send the last event of a bar: done or, after [`fail`](Self::fail), failed.
+    async fn emit_finished(bar: &ProgressBar, emitter: &SharedEventEmitter) {
         let reached_percent = bar.current / bar.total * 100.0;
         let done = match &bar.status {
             ProgressStatus::Failed { message } => {
@@ -154,7 +200,8 @@ impl ProgressBarId {
 }
 
 /// Dropping the handle ends the bar's life: it is removed from storage and a final event
-/// with no fraction is sent, done or, after [`ProgressBarId::fail`], failed.
+/// with no fraction is sent, done or, after [`ProgressBarId::fail`], failed. The bars still under
+/// it end with it.
 impl Drop for ProgressBarId {
     fn drop(&mut self) {
         let (Some(storage), Some(emitter)) =
@@ -254,6 +301,7 @@ mod tests {
             stage: None,
             status: ProgressStatus::Running,
             parent_id: None,
+            has_children: false,
             bytes_done: None,
             bytes_total: None,
             speed: None,
@@ -386,6 +434,43 @@ mod tests {
             (done.bytes_done, done.bytes_total, done.speed),
             (Some(4), Some(10), Some(2.5))
         );
+    }
+
+    #[tokio::test]
+    async fn dropping_a_parent_finishes_the_bars_left_under_it_before_itself() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let storage = Arc::new(MapStorage::default());
+        let [parent, child, grandchild, unrelated] = [(); 4].map(|()| Uuid::new_v4());
+        for bar in [
+            ProgressBar {
+                has_children: true,
+                ..bar(parent)
+            },
+            ProgressBar {
+                parent_id: Some(parent),
+                has_children: true,
+                ..bar(child)
+            },
+            ProgressBar {
+                parent_id: Some(child),
+                ..bar(grandchild)
+            },
+            bar(unrelated),
+        ] {
+            storage.insert(bar.id, bar).await.unwrap();
+        }
+
+        drop(attached(parent, &storage, tx));
+
+        let mut finished = Vec::new();
+        for _ in 0..3 {
+            let event = next_progress(&mut rx).await;
+            assert_eq!(event.fraction, None);
+            finished.push(event.progress_bar_id);
+        }
+        assert_eq!(finished, [child, grandchild, parent]);
+        let left: Vec<_> = storage.list().await.into_iter().map(|bar| bar.id).collect();
+        assert_eq!(left, [unrelated]);
     }
 
     #[tokio::test]

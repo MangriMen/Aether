@@ -12,5 +12,6 @@ mod install;
 mod metadata_cache;
 mod one_version;
 mod overrides;
+mod progress_tree;
 mod resolve;
 mod rollback;

@@ -2,6 +2,7 @@
 
 use crate::{
     features::{
+        events::ProgressEventType,
         instance::{ContentSource, InstallPlan, InstallTarget, InstanceError, NewInstance},
         minecraft::ModLoader,
     },
@@ -167,8 +168,10 @@ async fn should_report_the_bytes_of_the_pack_when_every_size_is_known() {
     assert_eq!(bytes.iter().sum::<u64>(), expected);
 }
 
+/// A file of unknown size is expected once it is in, so the pack does not end with more bytes
+/// done than expected.
 #[tokio::test]
-async fn should_leave_the_pack_total_unknown_when_a_size_is_unknown() {
+async fn should_expect_the_bytes_of_a_file_of_unknown_size_when_it_is_downloaded() {
     let fixture = Fixture::new().await;
     let known_url = "https://cdn.example/chunks/known.jar";
     let unknown_url = "https://cdn.example/pack/unknown.jar";
@@ -183,11 +186,60 @@ async fn should_leave_the_pack_total_unknown_when_a_size_is_unknown() {
         .await
         .unwrap();
 
-    assert_eq!(*fixture.progress.bytes_total.lock().unwrap(), None);
+    let expected = (known_url.len() + unknown_url.len()) as u64;
+    assert_eq!(
+        *fixture.progress.bytes_total.lock().unwrap(),
+        Some(expected)
+    );
     assert_eq!(
         fixture.progress.bytes.lock().unwrap().iter().sum::<u64>(),
-        (known_url.len() + unknown_url.len()) as u64
+        expected
     );
+}
+
+#[tokio::test]
+async fn should_start_a_bar_under_the_packs_for_each_file_when_downloading() {
+    let fixture = Fixture::new().await;
+    let kept = "https://cdn.example/kept.jar";
+    fixture.put_installed("mods/kept.jar", kept, None).await;
+
+    fixture
+        .execute(
+            existing(vec![
+                direct("https://cdn.example/pack/a.jar", "mods/a.jar"),
+                direct("https://cdn.example/pack/b.jar", "mods/b.jar"),
+                hashed(kept, "mods/kept.jar"),
+            ]),
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    let bar_id = fixture.progress.bar_id.lock().unwrap().unwrap();
+    let mut children: Vec<_> = fixture
+        .progress
+        .children
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(parent, event)| {
+            let ProgressEventType::PackFileDownload {
+                instance_path,
+                pack_name,
+                ..
+            } = event
+            else {
+                panic!("expected the bar of a file: {event:?}");
+            };
+            assert_eq!(*parent, bar_id);
+            assert_eq!(instance_path, INSTANCE_ID);
+            pack_name.clone()
+        })
+        .collect();
+    children.sort();
+
+    // Captioned with their file names; the file already in place downloads nothing.
+    assert_eq!(children, ["a.jar", "b.jar"]);
 }
 
 #[tokio::test]

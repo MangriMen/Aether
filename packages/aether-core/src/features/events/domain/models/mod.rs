@@ -7,6 +7,7 @@ pub(crate) mod process;
 pub(crate) mod progress;
 pub(crate) mod progress_bar;
 pub(crate) mod progress_bar_error;
+pub(crate) mod progress_parent;
 pub(crate) mod transfer_window;
 pub(crate) mod warning;
 
@@ -19,4 +20,5 @@ pub use process::*;
 pub use progress::*;
 pub use progress_bar::*;
 pub use progress_bar_error::*;
+pub use progress_parent::with_progress_parent;
 pub use warning::*;

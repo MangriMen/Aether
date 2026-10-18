@@ -77,7 +77,10 @@ use super::plan_overrides::{self, OverrideFile, StagedOverride};
 use crate::shared::limits::ContentInstallLimits;
 use crate::{
     features::{
-        events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
+        events::{
+            ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt, ProgressStage,
+            with_progress_parent,
+        },
         instance::{
             ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentProvider,
             FileSide, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
@@ -125,13 +128,14 @@ pub struct InstallPlanExecutor {
     limits: ContentInstallLimits,
 }
 
-/// The progress bar of one run, counted in steps. Dropping it completes the bar.
+/// The progress bar of one run, counted in steps, with a bar under it for each file downloaded
+/// (the game and Java a new instance needs go under it too). Dropping it completes the bar.
 struct PlanProgress<'a> {
     service: &'a dyn ProgressService,
     /// `None` when the bar could not be created: the plan runs without progress.
     bar: Option<ProgressBarId>,
-    /// Updates read and write the bar's state in two steps; downloads run concurrently.
-    lock: tokio::sync::Mutex<()>,
+    /// Shared by the bars of the files.
+    instance_path: String,
 }
 
 impl PlanProgress<'_> {
@@ -142,18 +146,115 @@ impl PlanProgress<'_> {
     /// Move the bar by part of a step.
     async fn advance(&self, steps: f64, message: &str) {
         if let Some(bar) = &self.bar {
-            let _guard = self.lock.lock().await;
             self.service
                 .emit_progress_safe(bar, steps, Some(message))
                 .await;
         }
     }
 
-    /// Count `bytes` more as downloaded, for the bar's bytes and speed.
+    /// Take the last step, or mark the bar as failed, by the run's `result`. Called once the run
+    /// is over (every download stopped, every file's bar gone), so that no update writes over
+    /// the failure.
+    async fn end(&self, result: &Result<InstanceId, InstanceError>) {
+        match (result, &self.bar) {
+            (Ok(_), _) => self.step("Complete").await,
+            (Err(err), Some(bar)) => bar.fail(err.to_string()).await,
+            (Err(_), None) => {}
+        }
+    }
+
+    /// Start the bar of a file to download, captioned with its file name and expecting its size
+    /// when that is known. The plan's bar counts the file's bytes through it.
+    async fn start_file(&self, entry: &DownloadEntry) -> FileProgress<'_, '_> {
+        let bar = match &self.bar {
+            Some(parent) => {
+                self.service
+                    .init_child_progress_safe(
+                        parent.id,
+                        ProgressEventType::PackFileDownload {
+                            instance_path: self.instance_path.clone(),
+                            pack_name: file_name_of(&entry.relative_path).to_owned(),
+                            icon: None,
+                            pack_version: entry
+                                .resolved
+                                .as_ref()
+                                .map(|resolved| resolved.version.clone())
+                                .unwrap_or_default(),
+                        },
+                        1.0,
+                        "Downloading".to_owned(),
+                    )
+                    .await
+            }
+            None => None,
+        };
+
+        let mut file = FileProgress {
+            plan: self,
+            bar,
+            announced: 0,
+        };
+        if let Some(size) = entry.size.filter(|size| *size > 0) {
+            file.add_bytes_total(size).await;
+            file.announced = size;
+        }
+        file.set_stage(ProgressStage::Downloading).await;
+        file
+    }
+}
+
+/// The bar of one file to download, under the plan's bar. Dropping it completes the bar.
+struct FileProgress<'p, 's> {
+    plan: &'p PlanProgress<'s>,
+    /// `None` when the bar could not be created: the bytes then go to the plan's bar directly.
+    bar: Option<ProgressBarId>,
+    /// The bytes the file was expected to have.
+    announced: u64,
+}
+
+impl FileProgress<'_, '_> {
+    /// Where the bytes of the file are counted: its own bar, which passes them on to the plan's.
+    fn bytes_bar(&self) -> Option<&ProgressBarId> {
+        self.bar.as_ref().or(self.plan.bar.as_ref())
+    }
+
+    /// Count `bytes` more as downloaded, for the bytes and speed of the file and the plan.
     async fn add_bytes(&self, bytes: u64) {
+        if let Some(bar) = self.bytes_bar() {
+            self.plan.service.add_progress_bytes_safe(bar, bytes).await;
+        }
+    }
+
+    async fn add_bytes_total(&self, bytes: u64) {
+        if let Some(bar) = self.bytes_bar() {
+            self.plan
+                .service
+                .add_progress_bytes_total_safe(bar, bytes)
+                .await;
+        }
+    }
+
+    /// Move the file's bar by `share` of the file, and the plan's by as much of its step.
+    async fn advance(&self, share: f64) {
         if let Some(bar) = &self.bar {
-            let _guard = self.lock.lock().await;
-            self.service.add_progress_bytes_safe(bar, bytes).await;
+            self.plan.service.emit_progress_safe(bar, share, None).await;
+        }
+        self.plan.advance(share, "Downloading").await;
+    }
+
+    async fn set_stage(&self, stage: ProgressStage) {
+        if let Some(bar) = &self.bar {
+            self.plan
+                .service
+                .set_progress_stage_safe(bar, Some(stage))
+                .await;
+        }
+    }
+
+    /// Mark the file's bar as failed with `error`, once its download and hashing are over.
+    async fn fail(&self, error: &InstanceError) {
+        if let Some(bar) = &self.bar {
+            bar.fail(error.to_string()).await;
         }
     }
 
@@ -161,6 +262,10 @@ impl PlanProgress<'_> {
     /// bar moves inside a large file. The step adds up to exactly 1 once the file is done:
     /// bytes beyond the expected size move nothing, and a file of unknown size moves the bar
     /// only at its end.
+    ///
+    /// The bytes expected grow to the bytes downloaded once the file is in, when it had more
+    /// than it was expected to (or no known size at all), so that the plan's bar does not end
+    /// with more bytes done than expected.
     ///
     /// Every byte is spent from the plan's `budget` as it arrives; the download is dropped the
     /// moment the plan goes over it.
@@ -213,7 +318,7 @@ impl PlanProgress<'_> {
                     let share = fraction.min(1.0 - reported);
                     pending = 0;
                     reported += share;
-                    self.advance(share, "Downloading").await;
+                    self.advance(share).await;
                 }
             }
 
@@ -228,11 +333,15 @@ impl PlanProgress<'_> {
         if uncounted > 0 {
             self.add_bytes(uncounted).await;
         }
+        let transferred = size.max(counted);
+        if transferred > self.announced {
+            self.add_bytes_total(transferred - self.announced).await;
+        }
 
         // What the stream did not account for — all of it when the size was unknown.
         let rest = 1.0 - reported;
         if rest > 1e-9 {
-            self.advance(rest, "Downloading").await;
+            self.advance(rest).await;
         }
 
         Ok(size)
@@ -566,7 +675,7 @@ impl InstallPlanExecutor {
             )
             .await?;
             let created = matches!(target, InstallTarget::New(_));
-            let (instance_id, game_before) = self.prepare_target(target).await?;
+            let (instance_id, game_before) = self.prepare_target(target, &progress).await?;
             undo.game_before = game_before;
 
             let filled = async {
@@ -610,11 +719,11 @@ impl InstallPlanExecutor {
                 }
                 return Err(err);
             }
-            progress.step("Complete").await;
 
             Ok(instance_id)
         }
         .await;
+        progress.end(&result).await;
 
         // Removed here, retried, rather than by the guard.
         dirs.disarm();
@@ -634,8 +743,8 @@ impl InstallPlanExecutor {
     }
 
     /// Start the bar: three steps per file to download (download, hash, install), one per
-    /// override, one to finish. The bytes it expects are those of the files to download, when
-    /// every one of them has a known size.
+    /// override, one to finish. Its bytes are those of the bars under it
+    /// ([`PlanProgress::start_file`]).
     async fn start_progress<'a>(
         &'a self,
         target: &InstallTarget,
@@ -665,7 +774,7 @@ impl InstallPlanExecutor {
             .progress_service
             .init_progress_safe(
                 ProgressEventType::PackDownload {
-                    instance_path,
+                    instance_path: instance_path.clone(),
                     pack_name,
                     icon: None,
                     pack_id: Some(origin.content_id.clone()),
@@ -676,20 +785,10 @@ impl InstallPlanExecutor {
             )
             .await;
 
-        // Unknown when any size is: the bar then shows its fraction alone.
-        let bytes_total = to_download.iter().try_fold(0_u64, |sum, file| {
-            file.entry.size.map(|size| sum.saturating_add(size))
-        });
-        if let (Some(bar), Some(bytes_total)) = (&bar, bytes_total.filter(|total| *total > 0)) {
-            self.progress_service
-                .add_progress_bytes_total_safe(bar, bytes_total)
-                .await;
-        }
-
         PlanProgress {
             service: self.progress_service.as_ref(),
             bar,
-            lock: tokio::sync::Mutex::new(()),
+            instance_path,
         }
     }
 
@@ -844,11 +943,23 @@ impl InstallPlanExecutor {
 
             async move {
                 let entry = &file.entry;
-                progress
-                    .download(self.content_downloader.as_ref(), entry, &path, budget)
-                    .await?;
-
-                let sha1 = sha1_of(&path, entry.hash.as_ref()).await?;
+                let file_progress = progress.start_file(entry).await;
+                let staged = async {
+                    file_progress
+                        .download(self.content_downloader.as_ref(), entry, &path, budget)
+                        .await?;
+                    file_progress.set_stage(ProgressStage::Verifying).await;
+                    sha1_of(&path, entry.hash.as_ref()).await
+                }
+                .await;
+                let sha1 = match staged {
+                    Ok(sha1) => sha1,
+                    Err(err) => {
+                        file_progress.fail(&err).await;
+                        return Err(err);
+                    }
+                };
+                drop(file_progress);
                 progress.step("Verifying").await;
 
                 Ok(StagedFile { file, path, sha1 })
@@ -860,32 +971,38 @@ impl InstallPlanExecutor {
     /// The instance to install into: the new one created, or the existing one moved to the game
     /// the plan names (a no-op when it already runs it) — with the instance as it was before
     /// that move, to move it back.
+    ///
+    /// The game, and the Java it needs, are installed under the plan's bar.
     async fn prepare_target(
         &self,
         target: InstallTarget,
+        progress: &PlanProgress<'_>,
     ) -> Result<(InstanceId, Option<Instance>), InstanceError> {
-        match target {
-            InstallTarget::Existing { instance_id, game } => {
-                let mut before = None;
-                if let Some(game) = game {
-                    before = Some(self.instance_storage.get(&instance_id).await?);
-                    self.change_instance_game
-                        .execute(instance_id.clone(), game)
-                        .await?;
+        let prepare = async {
+            match target {
+                InstallTarget::Existing { instance_id, game } => {
+                    let mut before = None;
+                    if let Some(game) = game {
+                        before = Some(self.instance_storage.get(&instance_id).await?);
+                        self.change_instance_game
+                            .execute(instance_id.clone(), game)
+                            .await?;
+                    }
+                    Ok((instance_id, before))
                 }
-                Ok((instance_id, before))
+                // A pack's instance is not launchable until the pack is in: the caller moves it
+                // to `Installed` after the plan, and a failure removes it (`discard_created`).
+                InstallTarget::New(spec) if spec.pack_info.is_some() => {
+                    let instance_id = self.create_instance.execute_for_pack(spec).await?;
+                    Ok((instance_id, None))
+                }
+                InstallTarget::New(spec) => {
+                    let instance_id = self.create_instance.execute(spec).await?;
+                    Ok((instance_id, None))
+                }
             }
-            // A pack's instance is not launchable until the pack is in: the caller moves it to
-            // `Installed` after the plan, and a failure removes it (`discard_created`).
-            InstallTarget::New(spec) if spec.pack_info.is_some() => {
-                let instance_id = self.create_instance.execute_for_pack(spec).await?;
-                Ok((instance_id, None))
-            }
-            InstallTarget::New(spec) => {
-                let instance_id = self.create_instance.execute(spec).await?;
-                Ok((instance_id, None))
-            }
-        }
+        };
+        with_progress_parent(progress.bar.as_ref(), prepare).await
     }
 
     /// Remove an instance the plan created and could not fill. Half of a new instance is worth

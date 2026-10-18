@@ -17,5 +17,5 @@ pub use domain::{
     CacheEvent, Event, EventEmitterExt, EventError, InstanceEvent, InstanceEventType, PluginEvent,
     ProcessEvent, ProcessEventType, ProgressBar, ProgressBarId, ProgressBarStorageError,
     ProgressBarStorageExt, ProgressConfig, ProgressEvent, ProgressEventType, ProgressServiceExt,
-    ProgressStage, ProgressStatus, WarningEvent,
+    ProgressStage, ProgressStatus, WarningEvent, with_progress_parent,
 };
