@@ -7,7 +7,7 @@ src/
   index.tsx   entry point
   app/        composition: shell/ (titlebar, sidebar, layouts, settings screen), runtime/
               (bootstrap, init guard, global listeners), pages/ (pages that span several
-              domains: home, playground), and at the top App, AppRoot, AppRouter
+              domains: home), and at the top App, AppRoot, AppRouter
   platform/   the Tauri side: bindings/ (generated), ipc/ (commands, events), window/
   features/   one folder per domain: instance, content, plugins, settings, java, errors, ...
   shared/     code that knows nothing about Aether, one module per folder:
@@ -212,7 +212,10 @@ The checks cover every file under `src/`.
 
 ## Storybook
 
-Components of `shared/ui-kit` are shown in Storybook.
+Components of `shared/ui-kit` are shown in Storybook, and so are app-level components that
+are worth looking at on their own (`ContentProvidersView`, `DiskUsage`), with
+`title: '<module>/<Name>'`. `preview.tsx` also provides i18n and a query client, so such a
+component needs no mocks of its own.
 
 - A story sits beside its component as `<Name>.stories.tsx` (`primitives/Button.stories.tsx`),
   CSF3, `Meta`/`StoryObj` from `storybook-solidjs-vite`, `title: 'ui-kit/<Name>'`, one story

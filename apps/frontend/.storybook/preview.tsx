@@ -1,5 +1,7 @@
 import type { Preview } from 'storybook-solidjs-vite';
 
+import { QueryClientProvider } from '@tanstack/solid-query';
+
 import '../src/app/app.css';
 import { THEMES } from '../src/features/appearance/model/theme';
 import {
@@ -7,6 +9,10 @@ import {
   THEME_ATTRIBUTE,
 } from '../src/features/appearance/model/themeConstants';
 import { setThemeToDocument } from '../src/features/appearance/model/themeDom';
+import { I18nProvider, LOCALE_RESOURCES, LOCALES } from '../src/shared/i18n';
+import { createQueryClient } from '../src/shared/query';
+
+const queryClient = createQueryClient();
 
 const preview: Preview = {
   globalTypes: {
@@ -42,7 +48,14 @@ const preview: Preview = {
               flex-wrap items-start border
             '
           >
-            <Story />
+            <I18nProvider
+              resources={LOCALE_RESOURCES}
+              fallbackLocale={LOCALES.En}
+            >
+              <QueryClientProvider client={queryClient}>
+                <Story />
+              </QueryClientProvider>
+            </I18nProvider>
           </div>
         </div>
       );

@@ -4,6 +4,5 @@ export * from './layouts/AppLayout';
 export * from './layouts/MainLayout';
 export * from './layouts/RootErrorBoundary';
 export * from './settings/DialogUrlBridge';
-export * from './settings/panes/DiskUsage';
 export * from './titlebar/AppTitleBar';
 export * from './titlebar/BaseTitleBar';

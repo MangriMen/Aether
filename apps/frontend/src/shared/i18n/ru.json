@@ -477,8 +477,6 @@
     "updateNotificationStyle": "Стиль уведомлений об обновлении",
     "whatsNew": "Что нового",
     "update": "Обновить",
-    "playground": "Playground",
-    "playgroundDescription": "UI Kit playground",
     "windowTransparencyDialog": {
       "description": "Изменения режима прозрачности требуют пересоздания окна. \nПрименить изменения сейчас или отложить их до следующего запуска?",
       "header": "Пересоздание окна",
