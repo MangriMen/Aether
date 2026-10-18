@@ -8,9 +8,9 @@ mod tests;
 // ── Domain models (pure data containers) ──
 pub use domain::{
     AtomicInstallParams, BaseContentParams, CapabilityMetadata, ChannelVersion, ContentAuthor,
-    ContentFile, ContentFileUpdateInfo, ContentIdentity, ContentInstallParams, ContentItem,
-    ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-    ContentSource, ContentType, ContentVersion, ContentVersionDependency,
+    ContentFile, ContentFileUpdateInfo, ContentFileView, ContentIdentity, ContentInstallParams,
+    ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
+    ContentSearchResult, ContentSource, ContentType, ContentVersion, ContentVersionDependency,
     ContentVersionDependencyType, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
     FileSide, ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
     InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceId, InstanceInstallStage,

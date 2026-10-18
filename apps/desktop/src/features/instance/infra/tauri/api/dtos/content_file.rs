@@ -1,5 +1,5 @@
 use aether_core::features::instance::{
-    ContentFile, ContentFileUpdateInfo, ContentMetadata, ContentVersionMetadata,
+    ContentFileUpdateInfo, ContentFileView, ContentMetadata, ContentVersionMetadata,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -84,8 +84,17 @@ pub struct ContentFileUpdateDto {
     pub info: ContentFileUpdateInfoDto,
 }
 
-impl From<ContentFile> for ContentFileDto {
-    fn from(value: ContentFile) -> Self {
+impl From<ContentFileView> for ContentFileDto {
+    fn from(view: ContentFileView) -> Self {
+        let ContentFileView {
+            file: value,
+            metadata,
+            icon_path,
+            version_metadata,
+            version_metadata_pending,
+            metadata_pending,
+        } = view;
+
         Self {
             content_path: value.content_path,
             content_type: value.content_type.into(),
@@ -110,13 +119,13 @@ impl From<ContentFile> for ContentFileDto {
                 });
                 updates
             }),
-            metadata: value.metadata.map(|metadata| ContentMetadataDto {
-                icon_path: value.icon_path.as_deref().map(format_asset_url),
+            metadata: metadata.map(|metadata| ContentMetadataDto {
+                icon_path: icon_path.as_deref().map(format_asset_url),
                 ..metadata.into()
             }),
-            version_metadata: value.version_metadata.map(Into::into),
-            version_metadata_pending: value.version_metadata_pending,
-            metadata_pending: value.metadata_pending,
+            version_metadata: version_metadata.map(Into::into),
+            version_metadata_pending,
+            metadata_pending,
         }
     }
 }
@@ -158,18 +167,18 @@ impl From<ContentVersionMetadata> for ContentVersionMetadataDto {
 mod tests {
     use std::collections::HashMap;
 
-    use aether_core::features::instance::{ContentType, PackFile, ProviderId};
+    use aether_core::features::instance::{ContentFile, ContentType, PackFile, ProviderId};
 
     use super::*;
 
-    fn file(icon_path: Option<&str>) -> ContentFile {
-        let mut file = ContentFile::from_pack_file(
+    fn file(icon_path: Option<&str>) -> ContentFileView {
+        let mut file = ContentFileView::from(ContentFile::from_pack_file(
             PackFile::from_hash("sodium.jar".into(), "hash".into()),
             "mods/sodium.jar".into(),
             ContentType::Mod,
             1,
             false,
-        );
+        ));
         file.metadata = Some(ContentMetadata {
             content_id: "AANobbMI".into(),
             slug: "sodium".into(),
@@ -234,7 +243,7 @@ mod tests {
             version: "1".into(),
         };
         let mut file = file(None);
-        file.update = Some(HashMap::from([
+        file.file.update = Some(HashMap::from([
             (provider("modrinth", "content"), info("b")),
             (provider("curseforge", "content"), info("a")),
         ]));

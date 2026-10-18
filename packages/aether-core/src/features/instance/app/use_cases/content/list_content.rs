@@ -11,8 +11,8 @@ use path_slash::PathBufExt;
 use crate::{
     features::{
         instance::{
-            ContentFile, ContentMetadataService, ContentType, InstanceError, InstanceId, PackEntry,
-            PackFile, PackStorage, app::ports::ListContentUseCasePort,
+            ContentFile, ContentFileView, ContentMetadataService, ContentType, InstanceError,
+            InstanceId, PackEntry, PackFile, PackStorage, app::ports::ListContentUseCasePort,
         },
         settings::LocationInfo,
     },
@@ -44,7 +44,7 @@ impl ListContentUseCase {
     pub async fn execute(
         &self,
         instance_id: InstanceId,
-    ) -> Result<DashMap<String, ContentFile>, InstanceError> {
+    ) -> Result<DashMap<String, ContentFileView>, InstanceError> {
         let instance_dir = self.location_info.instance_dir(&instance_id);
 
         let entries_by_path = Arc::new(self.get_entries_by_path(&instance_id).await?);
@@ -65,9 +65,13 @@ impl ListContentUseCase {
             Ok(map) => map,
             Err(arc) => (*arc).clone(),
         };
-        self.content_metadata.attach(&instance_id, &files).await;
+        let views: DashMap<String, ContentFileView> = files
+            .into_iter()
+            .map(|(path, file)| (path, file.into()))
+            .collect();
+        self.content_metadata.attach(&instance_id, &views).await;
 
-        Ok(files)
+        Ok(views)
     }
 
     async fn get_entries_by_path(
@@ -215,7 +219,7 @@ impl ListContentUseCasePort for ListContentUseCase {
     async fn execute(
         &self,
         instance_id: InstanceId,
-    ) -> Result<DashMap<String, ContentFile>, InstanceError> {
+    ) -> Result<DashMap<String, ContentFileView>, InstanceError> {
         self.execute(instance_id).await
     }
 }

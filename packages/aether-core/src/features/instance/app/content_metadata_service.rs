@@ -21,9 +21,9 @@ use crate::{
         },
         instance::{
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
-            CachedContentVersionMetadata, ContentAuthor, ContentFile, ContentIconCache,
-            ContentMetadata, ContentMetadataCache, ContentProvider, ContentVersionMetadata,
-            InstanceError, InstanceId, ProviderId,
+            CachedContentVersionMetadata, ContentAuthor, ContentFile, ContentFileView,
+            ContentIconCache, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
         },
     },
     shared::capability::domain::CapabilityRegistry,
@@ -153,7 +153,7 @@ fn unnamed_author_ref(metadata: &ContentMetadata) -> Option<&String> {
 
 /// The cached metadata of the project of `file`, with its author from the cached authors when
 /// it names none itself; and whether it has no author yet and its project or author is `due`
-/// ([`ContentFile::metadata_pending`]).
+/// ([`ContentFileView::metadata_pending`]).
 fn project_of(
     file: &ContentFile,
     found: &HashMap<LookupKey, Cached>,
@@ -373,15 +373,15 @@ impl ContentMetadataService {
             .clear();
     }
 
-    /// Set each file's [`ContentFile::metadata`] and [`ContentFile::version_metadata`] to what
+    /// Set each file's [`ContentFileView::metadata`] and [`ContentFileView::version_metadata`] to what
     /// the cache has for them, fresh or stale — the author of a project that leaves it to a
-    /// lookup of its own taken from the cached authors — and its [`ContentFile::icon_path`] to
+    /// lookup of its own taken from the cached authors — and its [`ContentFileView::icon_path`] to
     /// the cached icon of that metadata, if its file is there. Then start refreshing in the
     /// background what is missing or stale: the metadata of projects and versions first, then
     /// the authors — those the projects just fetched name too — then the icons — those of the
     /// metadata just fetched too. A file whose version is among what is refreshed is
-    /// [`ContentFile::version_metadata_pending`]; one with no author yet, whose project or author
-    /// is, [`ContentFile::metadata_pending`].
+    /// [`ContentFileView::version_metadata_pending`]; one with no author yet, whose project or
+    /// author is, [`ContentFileView::metadata_pending`].
     ///
     /// The author does not make a project stale: a project fetched without it is as fresh as
     /// any, and only its author is asked for again.
@@ -391,11 +391,11 @@ impl ContentMetadataService {
     /// instance tells the UI to list it again — the one after the metadata comes before the
     /// authors are fetched, and that after the authors before the icons are; a refresh that
     /// fails keeps the stale items and the icons there are.
-    pub async fn attach(&self, instance_id: &InstanceId, files: &DashMap<String, ContentFile>) {
+    pub async fn attach(&self, instance_id: &InstanceId, files: &DashMap<String, ContentFileView>) {
         let mut wanted: HashMap<LookupKey, HashSet<String>> = HashMap::new();
         for file in files {
             for lookup in Lookup::OF_FILES {
-                if let Some((provider_id, id)) = lookup.key(&file) {
+                if let Some((provider_id, id)) = lookup.key(&file.file) {
                     wanted
                         .entry((provider_id.clone(), lookup))
                         .or_default()
@@ -432,9 +432,9 @@ impl ContentMetadataService {
         due.extend(authors_due);
 
         for mut file in files.iter_mut() {
-            let (metadata, metadata_pending) = project_of(&file, &found, &due);
+            let (metadata, metadata_pending) = project_of(&file.file, &found, &due);
             let version_key = Lookup::Versions
-                .key(&file)
+                .key(&file.file)
                 .map(|(provider_id, id)| ((provider_id.clone(), Lookup::Versions), id));
             let version_metadata = version_key
                 .as_ref()

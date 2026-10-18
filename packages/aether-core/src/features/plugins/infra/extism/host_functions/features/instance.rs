@@ -108,7 +108,7 @@ pub(crate) async fn handle_list_content(
         .map_err(Into::into)
         .map(|map| {
             map.into_iter()
-                .map(|(key, content)| (key, content.into()))
+                .map(|(key, content)| (key, content.file.into()))
                 .collect()
         })
 }
@@ -420,7 +420,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::features::instance::{
-        ContentFile, Instance, InstanceBuilder, InstanceError, infra::FsInstanceFileService,
+        ContentFileView, Instance, InstanceBuilder, InstanceError, infra::FsInstanceFileService,
     };
     use crate::features::minecraft::ModLoader;
     use crate::features::settings::LocationInfo;
@@ -834,7 +834,7 @@ mod tests {
         async fn execute(
             &self,
             _instance_id: InstanceId,
-        ) -> Result<DashMap<String, ContentFile>, InstanceError> {
+        ) -> Result<DashMap<String, ContentFileView>, InstanceError> {
             self.called.store(true, Ordering::SeqCst);
             Ok(DashMap::new())
         }

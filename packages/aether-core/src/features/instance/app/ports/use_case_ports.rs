@@ -9,7 +9,7 @@ use crate::features::instance::app::{
     ImportInstance, RemoveContent,
 };
 use crate::features::instance::domain::{
-    ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
+    ContentFileView, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
     ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame, InstanceId,
     NewInstance, PlanOrigin,
 };
@@ -116,7 +116,7 @@ pub trait ListContentUseCasePort: Send + Sync {
     async fn execute(
         &self,
         instance_id: InstanceId,
-    ) -> Result<DashMap<String, ContentFile>, InstanceError>;
+    ) -> Result<DashMap<String, ContentFileView>, InstanceError>;
 }
 
 #[async_trait]
