@@ -20,9 +20,9 @@ use crate::{
             CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL,
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
             CachedContentVersionMetadata, CapabilityMetadata, ContentAuthor,
-            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFile,
-            ContentFileUpdateInfo, ContentIconCache, ContentIconError, ContentItem,
-            ContentMetadata, ContentMetadataCache, ContentMetadataService, ContentProvider,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFileUpdateInfo,
+            ContentFileView, ContentIconCache, ContentIconError, ContentItem, ContentMetadata,
+            ContentMetadataCache, ContentMetadataService, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentVersion, ContentVersionMetadata, Instance, InstanceError, InstanceId,
             ListContentUseCase, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
@@ -583,7 +583,7 @@ impl Fixture {
         }
     }
 
-    async fn list(&self) -> DashMap<String, ContentFile> {
+    async fn list(&self) -> DashMap<String, ContentFileView> {
         self.use_case
             .execute(InstanceId::try_from(INSTANCE_ID).unwrap())
             .await
@@ -886,7 +886,7 @@ async fn should_tell_the_ui_once_over_when_a_list_wanted_more_during_a_refresh()
     Fixture::settle().await;
     // Meanwhile a file of another project shows up.
     files.alter("mods/a.jar", |_, mut file| {
-        file.update = Some(HashMap::from([(
+        file.file.update = Some(HashMap::from([(
             modrinth.clone(),
             ContentFileUpdateInfo {
                 content_id: "B".into(),

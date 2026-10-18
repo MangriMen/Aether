@@ -16,9 +16,15 @@ pub struct ContentFile {
     pub version: Option<String>,
     pub update_provider_id: Option<ProviderId>,
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
+}
+
+/// A [`ContentFile`] with what the providers said about it, as last cached.
+#[derive(Debug, Clone)]
+pub struct ContentFileView {
+    pub file: ContentFile,
     /// What the provider of the file's project says about it, as last cached: the project of
-    /// `update[update_provider_id].content_id`. `None` — nothing cached yet, or the file is of
-    /// no provider.
+    /// `file.update[file.update_provider_id].content_id`. `None` — nothing cached yet, or the
+    /// file is of no provider.
     pub metadata: Option<ContentMetadata>,
     /// The local copy of `metadata`'s icon, as an id of the asset store: the file's path
     /// relative to the store, `/`-separated, with a `?v=` query that changes when a file under
@@ -26,8 +32,8 @@ pub struct ContentFile {
     /// the file is there: `None` while the icon has not arrived, or there is none.
     pub icon_path: Option<String>,
     /// What the provider of the file says about the version it was installed as, as last
-    /// cached: the version of `update[update_provider_id].version`. `None` — nothing cached
-    /// yet, or the file is of no provider.
+    /// cached: the version of `file.update[file.update_provider_id].version`. `None` — nothing
+    /// cached yet, or the file is of no provider.
     pub version_metadata: Option<ContentVersionMetadata>,
     /// Whether `version_metadata` is being fetched now, and an instance event will tell when the
     /// fetch is over. `false` when nothing is to come: the file is of no provider, its provider
@@ -37,6 +43,19 @@ pub struct ContentFile {
     /// will tell when the fetch is over. `false` when nothing is to come, as with
     /// `version_metadata_pending`, or when the author is known.
     pub metadata_pending: bool,
+}
+
+impl From<ContentFile> for ContentFileView {
+    fn from(file: ContentFile) -> Self {
+        Self {
+            file,
+            metadata: None,
+            icon_path: None,
+            version_metadata: None,
+            version_metadata_pending: false,
+            metadata_pending: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -70,11 +89,6 @@ impl ContentFile {
             version,
             update_provider_id: pack_file.update_provider_id,
             update: pack_file.update,
-            metadata: None,
-            icon_path: None,
-            version_metadata: None,
-            version_metadata_pending: false,
-            metadata_pending: false,
         }
     }
 }

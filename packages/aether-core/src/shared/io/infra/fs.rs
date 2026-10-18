@@ -27,12 +27,16 @@ pub async fn write_async(path: impl AsRef<Path>, data: impl AsRef<[u8]>) -> Resu
         .map_err(|err| IoError::with_path(err, path_ref))
 }
 
+/// How the temporary files of [`write_replacing_async`] start, for a cleanup to recognise the
+/// leftovers of an interrupted write.
+pub(crate) const REPLACING_TEMP_PREFIX: &str = ".write-";
+
 /// Replaces the file as a whole or not at all: a crash or a full disk mid-write leaves the
 /// previous content, never a truncated file that no longer parses.
 ///
 /// The temporary file sits in the same directory, so the final step is a rename within one
 /// file system, which the OS performs atomically.
-async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<(), IoError> {
+pub(crate) async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<(), IoError> {
     let parent = match path.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
         _ => PathBuf::from("."),
@@ -46,7 +50,7 @@ async fn write_replacing_async(path: &Path, data: Vec<u8>) -> Result<(), IoError
     tokio::task::spawn_blocking(move || {
         // Dropping `temp_file` on any early return removes it.
         let mut temp_file = tempfile::Builder::new()
-            .prefix(".write-")
+            .prefix(REPLACING_TEMP_PREFIX)
             .suffix(".tmp")
             .tempfile_in(&parent)
             .map_err(|err| IoError::with_path(err, &parent))?;

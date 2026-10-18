@@ -13,7 +13,6 @@
 
 use std::{
     collections::HashSet,
-    fmt::Write as _,
     io::Read,
     path::{Path, PathBuf},
     sync::Arc,
@@ -22,14 +21,15 @@ use std::{
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 
 use crate::{
     features::instance::app::{
         CONTENT_METADATA_TTL, CachedContentIcon, ContentIconCache, ContentIconError,
     },
     shared::{
+        hash::infra::sha256_hex,
         housekeeping::CacheCleaner,
+        io::infra::{REPLACING_TEMP_PREFIX, write_replacing_async},
         request_client::{FileDownload, Request, RequestClient},
     },
 };
@@ -55,7 +55,7 @@ const LEFTOVER_AGE: Duration = Duration::from_hours(1);
 /// them in turn.
 const EXTENSIONS: [&str; 4] = ["webp", "png", "jpg", "gif"];
 
-const PARTIAL_PREFIXES: [&str; 2] = [".icon-", ".download-"];
+const PARTIAL_PREFIXES: [&str; 3] = [".icon-", ".download-", REPLACING_TEMP_PREFIX];
 
 /// What to ask the server with whether an icon changed, kept as `<name>.json`.
 #[derive(Serialize, Deserialize, Default)]
@@ -106,7 +106,7 @@ impl FsContentIconCache {
         let Ok(bytes) = serde_json::to_vec(validators) else {
             return;
         };
-        if let Err(err) = write_atomic(&self.dir, &self.validators_path(stem), bytes).await {
+        if let Err(err) = write_replacing_async(&self.validators_path(stem), bytes).await {
             tracing::debug!("Failed to keep the validators of a content icon: {err}");
         }
     }
@@ -114,13 +114,9 @@ impl FsContentIconCache {
 
 /// The name of the icon of `url`, without extension.
 fn stem(url: &str) -> String {
-    let digest = Sha256::digest(url.as_bytes());
-    digest[..16]
-        .iter()
-        .fold(String::with_capacity(32), |mut hex, byte| {
-            let _ = write!(hex, "{byte:02x}");
-            hex
-        })
+    let mut hex = sha256_hex(url.as_bytes());
+    hex.truncate(32);
+    hex
 }
 
 /// Whether `url` names its content by hash, so the same URL never brings another icon: a run
@@ -203,23 +199,6 @@ async fn read_head(path: &Path) -> std::io::Result<Vec<u8>> {
         let mut head = Vec::with_capacity(16);
         std::fs::File::open(path)?.take(16).read_to_end(&mut head)?;
         Ok(head)
-    })
-    .await
-    .map_err(std::io::Error::other)?
-}
-
-/// Write `bytes` to `path` all at once: through a partial file in `dir`, renamed over it.
-async fn write_atomic(dir: &Path, path: &Path, bytes: Vec<u8>) -> std::io::Result<()> {
-    let dir = dir.to_owned();
-    let path = path.to_owned();
-    tokio::task::spawn_blocking(move || {
-        let mut file = tempfile::Builder::new()
-            .prefix(PARTIAL_PREFIXES[0])
-            .suffix(".part")
-            .tempfile_in(&dir)?;
-        std::io::Write::write_all(&mut file, &bytes)?;
-        file.persist(&path).map_err(|err| err.error)?;
-        Ok(())
     })
     .await
     .map_err(std::io::Error::other)?

@@ -39,11 +39,6 @@ impl From<ContentFileDto> for ContentFile {
             size: value.size,
             version: None,
             update_provider_id: value.update_provider_id.map(Into::into),
-            metadata: None,
-            icon_path: None,
-            version_metadata: None,
-            version_metadata_pending: false,
-            metadata_pending: false,
             update: value.update.map(|update| {
                 update
                     .into_iter()
@@ -111,11 +106,6 @@ mod tests {
                     version: "IZskON6d".into(),
                 },
             )])),
-            metadata: None,
-            icon_path: None,
-            version_metadata: None,
-            version_metadata_pending: false,
-            metadata_pending: false,
         };
 
         let bytes = Msgpack(ContentFileDto::from(file))
