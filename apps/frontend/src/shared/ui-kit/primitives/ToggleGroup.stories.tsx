@@ -6,11 +6,11 @@ import IconMdiUnderline from '~icons/mdi/format-underline';
 import { For } from 'solid-js';
 import { fn } from 'storybook/test';
 
+import { orientationArgType } from '../model/storyArgs';
 import { ToggleGroup, ToggleGroupItem } from './ToggleGroup';
 
 const VARIANTS = ['default', 'outline'] as const;
 const SIZES = ['sm', 'default', 'lg'] as const;
-import { orientationArgType } from '../model/storyArgs';
 
 const meta: Meta = {
   title: 'ui-kit/ToggleGroup',
