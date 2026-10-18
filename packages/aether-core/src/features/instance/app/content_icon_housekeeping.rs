@@ -6,7 +6,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use futures::future::join_all;
+use futures::{StreamExt, future::join_all, stream};
 
 use crate::{
     features::instance::{
@@ -53,17 +53,14 @@ impl ContentIconHousekeeping {
         let instances = self.instance_storage.list().await?;
         // Concurrent but bounded, in the order of the instances: the first failure in it is the
         // one returned.
-        let mut packs = Vec::with_capacity(instances.len());
-        for batch in instances.chunks(MAX_CONCURRENT_PACK_READS) {
-            packs.extend(
-                join_all(
-                    batch
-                        .iter()
-                        .map(|instance| self.pack_storage.get_pack_files(instance.id())),
-                )
-                .await,
-            );
-        }
+        let reads: Vec<_> = instances
+            .iter()
+            .map(|instance| self.pack_storage.get_pack_files(instance.id()))
+            .collect();
+        let packs: Vec<_> = stream::iter(reads)
+            .buffered(MAX_CONCURRENT_PACK_READS)
+            .collect()
+            .await;
         for pack in packs {
             for pack_file in pack?.into_values() {
                 let Some(provider_id) = pack_file.update_provider_id else {
