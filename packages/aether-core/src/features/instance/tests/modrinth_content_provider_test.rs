@@ -19,9 +19,9 @@ use crate::{
     features::{
         events::ProgressBarId,
         instance::{
-            ContentIdentity, ContentMetadata, ContentProvider, ContentSource, ContentType,
-            ContentVersionMetadata, FileSide, InstallTarget, InstanceError, InstanceGame,
-            InstanceId, OverrideLocation, OverrideSource, PackInfo, PackSource,
+            ContentAuthor, ContentIdentity, ContentMetadata, ContentProvider, ContentSource,
+            ContentType, ContentVersionMetadata, FileSide, InstallTarget, InstanceError,
+            InstanceGame, InstanceId, OverrideLocation, OverrideSource, PackInfo, PackSource,
             ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
@@ -365,7 +365,8 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
     let [entry] = &plan.files[..] else {
         panic!("one file expected: {:?}", plan.files)
     };
-    // Without an author: that is another request, which an install does not wait for.
+    // Without an author: that is another request, which an install does not wait for; the ref
+    // to ask for it by is there.
     assert_eq!(
         entry.metadata,
         Some(ContentMetadata {
@@ -374,6 +375,7 @@ async fn should_fill_the_metadata_of_the_project_and_version_when_resolving_a_mo
             name: "SODIUM".into(),
             description: Some("desc".into()),
             author: None,
+            author_ref: Some("team:team".into()),
             icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
         })
     );
@@ -881,9 +883,6 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
         &format!("{API}/projects"),
         &json!([fabric_api, project("AANobbMI", "sodium", "mod")]),
     );
-    fixture
-        .http
-        .serve_json(&format!("{API_V3}/teams"), &json!([]));
 
     let mut metadata = fixture
         .provider
@@ -902,6 +901,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
                 name: "SODIUM".into(),
                 description: Some("desc".into()),
                 author: None,
+                author_ref: Some("team:team".into()),
                 icon_url: Some("https://cdn.modrinth.com/icon.png".into()),
             },
             ContentMetadata {
@@ -910,6 +910,7 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
                 name: "FABRIC-API".into(),
                 description: None,
                 author: None,
+                author_ref: Some("team:team".into()),
                 icon_url: None,
             },
         ]
@@ -918,6 +919,8 @@ async fn should_describe_the_projects_modrinth_knows_when_asked_for_their_metada
         fixture.http.projects_batches(),
         [ids(&["sodium", "P7dR8mSH", "unknown"])]
     );
+    // The authors are asked apart.
+    assert!(fixture.http.batches(&format!("{API_V3}/teams")).is_empty());
 }
 
 #[tokio::test]
@@ -929,9 +932,6 @@ async fn should_skip_a_malformed_project_and_return_the_rest_when_asked_for_meta
         &format!("{API}/projects"),
         &json!([broken, project("AANobbMI", "sodium", "mod")]),
     );
-    fixture
-        .http
-        .serve_json(&format!("{API_V3}/teams"), &json!([]));
 
     let metadata = fixture
         .provider
@@ -947,14 +947,9 @@ async fn should_skip_a_malformed_project_and_return_the_rest_when_asked_for_meta
 }
 
 #[tokio::test]
-async fn should_fail_when_a_team_member_is_malformed() {
+async fn should_fail_the_authors_when_a_team_member_is_malformed() {
     let fixture = Fixture::new();
-    let mut by_team = project("TEAMPROJ", "by-team", "mod");
-    by_team["team"] = json!("team1");
-    fixture
-        .http
-        .serve_json(&format!("{API}/projects"), &json!([by_team]));
-    // A partial answer would cache the project without author for days.
+    // A partial answer would leave the project without author for days.
     fixture.http.serve_json(
         &format!("{API_V3}/teams"),
         &json!([[
@@ -963,10 +958,7 @@ async fn should_fail_when_a_team_member_is_malformed() {
         ]]),
     );
 
-    let result = fixture
-        .provider
-        .get_contents_metadata(&ids(&["TEAMPROJ"]))
-        .await;
+    let result = fixture.provider.get_authors(&ids(&["team:team1"])).await;
 
     assert!(matches!(
         result,
@@ -975,14 +967,9 @@ async fn should_fail_when_a_team_member_is_malformed() {
 }
 
 #[tokio::test]
-async fn should_fail_when_an_organization_is_malformed() {
+async fn should_fail_the_authors_when_an_organization_is_malformed() {
     let fixture = Fixture::new();
-    let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
-    by_organization["organization"] = json!("org1");
-    fixture
-        .http
-        .serve_json(&format!("{API}/projects"), &json!([by_organization]));
-    // A partial answer would cache the project without author for days.
+    // A partial answer would leave the project without author for days.
     fixture.http.serve_json(
         &format!("{API_V3}/organizations"),
         &json!([
@@ -993,7 +980,7 @@ async fn should_fail_when_an_organization_is_malformed() {
 
     let result = fixture
         .provider
-        .get_contents_metadata(&ids(&["ORGPROJ0"]))
+        .get_authors(&ids(&["organization:org1"]))
         .await;
 
     assert!(matches!(
@@ -1010,9 +997,6 @@ async fn should_ask_in_batches_and_list_each_project_once_when_given_many_ids() 
         &format!("{API}/projects"),
         &json!([project("AANobbMI", "sodium", "mod")]),
     );
-    fixture
-        .http
-        .serve_json(&format!("{API_V3}/teams"), &json!([]));
     let mut asked: Vec<String> = (0..250).map(|i| format!("id{i}")).collect();
     asked.extend(ids(&["id0", "id1"]));
 
@@ -1066,19 +1050,36 @@ fn team_member(team_id: &str, username: &str, is_owner: bool) -> Value {
 }
 
 #[tokio::test]
-async fn should_name_the_owner_or_the_organization_as_author_when_asked_for_metadata() {
+async fn should_ref_the_organization_or_else_the_team_as_author_when_asked_for_metadata() {
     let fixture = Fixture::new();
     let mut by_team = project("TEAMPROJ", "by-team", "mod");
     by_team["team"] = json!("team1");
     let mut by_organization = project("ORGPROJ0", "by-organization", "mod");
     by_organization["team"] = json!("team2");
     by_organization["organization"] = json!("org1");
-    let mut no_team = project("NOTEAM00", "no-team", "mod");
-    no_team["team"] = json!("gone");
     fixture.http.serve_json(
         &format!("{API}/projects"),
-        &json!([by_team, by_organization, no_team]),
+        &json!([by_team, by_organization]),
     );
+
+    let metadata = fixture
+        .provider
+        .get_contents_metadata(&ids(&["TEAMPROJ", "ORGPROJ0"]))
+        .await
+        .unwrap();
+
+    let refs: HashMap<_, _> = metadata
+        .into_iter()
+        .map(|item| (item.content_id, (item.author, item.author_ref)))
+        .collect();
+    assert_eq!(refs["TEAMPROJ"], (None, Some("team:team1".into())));
+    // The team of a project an organization owns is not its author.
+    assert_eq!(refs["ORGPROJ0"], (None, Some("organization:org1".into())));
+}
+
+#[tokio::test]
+async fn should_name_the_owner_or_the_organization_when_asked_for_authors() {
+    let fixture = Fixture::new();
     fixture.http.serve_json(
         &format!("{API_V3}/teams"),
         &json!([[
@@ -1091,20 +1092,33 @@ async fn should_name_the_owner_or_the_organization_as_author_when_asked_for_meta
         &json!([{ "id": "org1", "slug": "org", "name": "Org Name", "team_id": "orgteam" }]),
     );
 
-    let metadata = fixture
+    let mut authors = fixture
         .provider
-        .get_contents_metadata(&ids(&["TEAMPROJ", "ORGPROJ0", "NOTEAM00"]))
+        .get_authors(&ids(&[
+            "team:team1",
+            "organization:org1",
+            "team:gone",
+            "team:team1",
+            "bogus",
+        ]))
         .await
         .unwrap();
+    authors.sort_by(|a, b| a.author_ref.cmp(&b.author_ref));
 
-    let authors: HashMap<_, _> = metadata
-        .into_iter()
-        .map(|item| (item.content_id, item.author))
-        .collect();
-    assert_eq!(authors["TEAMPROJ"].as_deref(), Some("owner"));
-    assert_eq!(authors["ORGPROJ0"].as_deref(), Some("Org Name"));
-    assert_eq!(authors["NOTEAM00"], None, "a team Modrinth did not list");
-    // The team of a project an organization owns is not asked about.
+    // A team Modrinth did not list and a ref of no known kind are left out.
+    assert_eq!(
+        authors,
+        [
+            ContentAuthor {
+                author_ref: "organization:org1".into(),
+                name: "Org Name".into(),
+            },
+            ContentAuthor {
+                author_ref: "team:team1".into(),
+                name: "owner".into(),
+            },
+        ]
+    );
     let mut teams = fixture.http.batches(&format!("{API_V3}/teams"));
     for batch in &mut teams {
         batch.sort();
@@ -1117,22 +1131,65 @@ async fn should_name_the_owner_or_the_organization_as_author_when_asked_for_meta
 }
 
 #[tokio::test]
-async fn should_fail_when_the_owners_cannot_be_fetched() {
+async fn should_answer_only_the_refs_with_an_owner_when_a_team_has_none() {
+    let fixture = Fixture::new();
+    fixture.http.serve_json(
+        &format!("{API_V3}/teams"),
+        &json!([
+            [team_member("team1", "owner", true)],
+            [team_member("team2", "helper", false)],
+        ]),
+    );
+
+    let authors = fixture
+        .provider
+        .get_authors(&ids(&["team:team1", "team:team2", "team:gone"]))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        authors,
+        [ContentAuthor {
+            author_ref: "team:team1".into(),
+            name: "owner".into(),
+        }]
+    );
+}
+
+/// The authors are another request: one that fails costs the projects nothing.
+#[tokio::test]
+async fn should_describe_the_projects_when_their_owners_cannot_be_fetched() {
     let fixture = Fixture::new();
     fixture.http.serve_json(
         &format!("{API}/projects"),
         &json!([project("AANobbMI", "sodium", "mod")]),
     );
 
-    let result = fixture
+    let metadata = fixture
         .provider
         .get_contents_metadata(&ids(&["AANobbMI"]))
+        .await
+        .unwrap();
+    let authors = fixture
+        .provider
+        .get_authors(&ids(&[metadata[0].author_ref.as_deref().unwrap()]))
         .await;
 
+    assert_eq!(metadata[0].name, "SODIUM");
     assert!(matches!(
-        result,
+        authors,
         Err(InstanceError::ContentDownloadError(_))
     ));
+}
+
+#[tokio::test]
+async fn should_ask_nothing_when_given_no_author_refs() {
+    let fixture = Fixture::new();
+
+    let authors = fixture.provider.get_authors(&[]).await.unwrap();
+
+    assert!(authors.is_empty());
+    assert!(fixture.http.requests.lock().unwrap().is_empty());
 }
 
 fn version_metadata(id: &str, version_number: &str, name: &str) -> Value {

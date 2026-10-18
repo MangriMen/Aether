@@ -13,17 +13,17 @@ use crate::{
     features::{
         events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
         instance::{
-            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
-            ChangeInstanceGameUseCasePort, ContentCompatibilityCheckParams,
-            ContentCompatibilityResult, ContentDownloader, ContentFileUpdateInfo, ContentIdentity,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
-            ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-            ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
-            CreateInstanceUseCasePort, FileSide, InstallFileEntry, InstallPlan,
-            InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
-            InstanceGame, InstanceId, InstanceStorage, NewInstance, OverrideLocation,
-            OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin, PlatformProviderSelection,
-            ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
+            CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+            CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
+            ContentFileUpdateInfo, ContentIdentity, ContentItem, ContentMetadata,
+            ContentMetadataCache, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            ContentVersionMetadata, CreateInstanceUseCasePort, FileSide, InstallFileEntry,
+            InstallPlan, InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder,
+            InstanceError, InstanceGame, InstanceId, InstanceStorage, NewInstance,
+            OverrideLocation, OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin,
+            PlatformProviderSelection, ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
             app::{ContentFileService, LocatedContentFile},
             infra::{FsContentFileService, SqlitePackStorage},
         },
@@ -569,6 +569,18 @@ impl ContentMetadataCache for MemoryMetadataCache {
                 },
             );
         }
+        true
+    }
+
+    async fn get_authors(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        HashMap::new()
+    }
+
+    async fn put_authors(&self, _: &ProviderId, _: &[ContentAuthor]) -> bool {
         true
     }
 }

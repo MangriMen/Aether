@@ -20,6 +20,7 @@ fn described(platform: &str, content_id: &str, version: &str) -> InstallFileEntr
             name: "Sodium".into(),
             description: None,
             author: None,
+            author_ref: None,
             icon_url: None,
         }),
         version_metadata: Some(ContentVersionMetadata {

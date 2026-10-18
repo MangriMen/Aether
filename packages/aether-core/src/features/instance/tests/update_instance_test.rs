@@ -16,9 +16,10 @@ use crate::{
     features::{
         events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
         instance::{
-            CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
-            ChangeInstanceGameUseCase, ContentCompatibilityCheckParams, ContentCompatibilityResult,
-            ContentDownloader, ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
+            CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
+            CapabilityMetadata, ChangeInstanceGameUseCase, ContentAuthor,
+            ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
+            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
@@ -72,6 +73,18 @@ impl ContentMetadataCache for NoMetadataCache {
     }
 
     async fn put_versions(&self, _: &ProviderId, _: &[ContentVersionMetadata]) -> bool {
+        true
+    }
+
+    async fn get_authors(
+        &self,
+        _: &ProviderId,
+        _: &[String],
+    ) -> HashMap<String, CachedContentAuthor> {
+        HashMap::new()
+    }
+
+    async fn put_authors(&self, _: &ProviderId, _: &[ContentAuthor]) -> bool {
         true
     }
 }

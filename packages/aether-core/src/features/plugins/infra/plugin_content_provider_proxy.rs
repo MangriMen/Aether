@@ -573,6 +573,8 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
         name: dto.name,
         description: dto.description,
         author: dto.author,
+        // A plugin names its authors itself: the contract has no lookup of them apart.
+        author_ref: None,
         icon_url,
     }
 }

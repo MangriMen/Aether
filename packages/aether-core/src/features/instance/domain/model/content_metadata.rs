@@ -9,7 +9,23 @@ pub struct ContentMetadata {
     pub name: String,
     pub description: Option<String>,
     pub author: Option<String>,
+    /// What the provider can name [`Self::author`] by later, when it leaves the author out: its
+    /// own token for whoever authors the project (a team, an organization), asked of
+    /// [`ContentProvider::get_authors`] and cached apart, so a failed request for authors costs
+    /// the project neither its name nor its icon. Opaque to the core.
+    ///
+    /// [`ContentProvider::get_authors`]: crate::features::instance::ContentProvider::get_authors
+    pub author_ref: Option<String>,
     pub icon_url: Option<String>,
+}
+
+/// Who authors projects of a provider, as [`ContentMetadata::author_ref`] names them.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ContentAuthor {
+    /// The [`ContentMetadata::author_ref`] this answers.
+    pub author_ref: String,
+    /// The name to show as the author.
+    pub name: String,
 }
 
 /// What a provider says about one version of a project of its own, to show an installed file

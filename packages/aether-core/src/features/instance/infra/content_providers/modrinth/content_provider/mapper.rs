@@ -18,6 +18,51 @@ use crate::features::{
     minecraft::ModLoader,
 };
 
+/// How a Modrinth [`ContentMetadata::author_ref`] naming an organization by its id starts.
+const ORGANIZATION_REF: &str = "organization:";
+
+/// How a Modrinth [`ContentMetadata::author_ref`] naming a team by its id starts.
+const TEAM_REF: &str = "team:";
+
+/// The [`ContentMetadata::author_ref`] naming the organization `id`.
+pub(super) fn organization_ref(id: &str) -> String {
+    format!("{ORGANIZATION_REF}{id}")
+}
+
+/// The [`ContentMetadata::author_ref`] naming the team `id`.
+pub(super) fn team_ref(id: &str) -> String {
+    format!("{TEAM_REF}{id}")
+}
+
+/// What an [`ContentMetadata::author_ref`] of Modrinth names, by id.
+pub(super) enum AuthorRef<'a> {
+    Organization(&'a str),
+    Team(&'a str),
+}
+
+impl<'a> AuthorRef<'a> {
+    /// `None` for a ref of neither kind, or naming no id.
+    pub(super) fn parse(author_ref: &'a str) -> Option<Self> {
+        let (id, kind): (_, fn(&'a str) -> Self) =
+            if let Some(id) = author_ref.strip_prefix(ORGANIZATION_REF) {
+                (id, Self::Organization)
+            } else {
+                (author_ref.strip_prefix(TEAM_REF)?, Self::Team)
+            };
+        (!id.is_empty()).then(|| kind(id))
+    }
+}
+
+/// Who authors a project, as its [`ContentMetadata::author_ref`]: the organization that owns it
+/// if one does, else its team, whose owner Modrinth shows as the author then.
+pub(super) fn author_ref(organization: Option<&str>, team: Option<&str>) -> Option<String> {
+    let named = |id: &&str| !id.is_empty();
+    organization
+        .filter(named)
+        .map(organization_ref)
+        .or_else(|| team.filter(named).map(team_ref))
+}
+
 fn get_facet_vector<T: AsRef<str>>(facet: &str, values: &[T]) -> Vec<String> {
     values
         .iter()
@@ -166,10 +211,32 @@ impl TryFrom<ProjectResponse> for ContentItem {
     }
 }
 
+impl From<&ProjectResponse> for ProjectMetadataResponse {
+    /// What a full project says of itself, in the shape `ContentMetadata` is mapped from, so both
+    /// answers choose the [`ContentMetadata::author_ref`] the same way.
+    fn from(value: &ProjectResponse) -> Self {
+        Self {
+            id: value.id.clone(),
+            slug: value.slug.clone(),
+            title: value.title.clone(),
+            description: Some(value.description.clone()),
+            icon_url: value.icon_url.clone(),
+            team: Some(value.team.clone()),
+            organization: value
+                .organization
+                .as_ref()
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned),
+        }
+    }
+}
+
 impl From<ProjectMetadataResponse> for ContentMetadata {
-    /// No author: a project names only its team or organization by id, looked up apart.
+    /// No author: a project names only its team or organization by id, which its
+    /// [`ContentMetadata::author_ref`] carries for the core to look up apart.
     fn from(value: ProjectMetadataResponse) -> Self {
         Self {
+            author_ref: author_ref(value.organization.as_deref(), value.team.as_deref()),
             content_id: value.id,
             slug: value.slug,
             name: value.title,

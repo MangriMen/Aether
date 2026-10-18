@@ -1,6 +1,6 @@
-//! What an instance's content list shows a file by — its project's name, description, icon, and
-//! its version's number — taken from [`ContentMetadataCache`] and [`ContentIconCache`], and
-//! refreshed from the providers and the icons' servers behind the list's back.
+//! What an instance's content list shows a file by — its project's name, description, author,
+//! icon, and its version's number — taken from [`ContentMetadataCache`] and [`ContentIconCache`],
+//! and refreshed from the providers and the icons' servers behind the list's back.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -20,9 +20,10 @@ use crate::{
             CacheEvent, EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter,
         },
         instance::{
-            CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata, ContentFile,
-            ContentIconCache, ContentMetadata, ContentMetadataCache, ContentProvider,
-            ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
+            CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
+            CachedContentVersionMetadata, ContentAuthor, ContentFile, ContentIconCache,
+            ContentMetadata, ContentMetadataCache, ContentProvider, ContentVersionMetadata,
+            InstanceError, InstanceId, ProviderId,
         },
     },
     shared::capability::domain::CapabilityRegistry,
@@ -48,32 +49,38 @@ const ICON_LOOKUP_CONCURRENCY: usize = 16;
 /// The fetch of one icon, shared by every refresh that wants it: whether a new file arrived.
 type IconFetch = Shared<BoxFuture<'static, bool>>;
 
-/// What a provider is asked about: its projects, or its versions. A provider may answer one and
-/// not the other, and an id it did not know is unknown as the one or the other.
+/// What a provider is asked about: its projects, their versions, or the authors of its projects
+/// by [`ContentMetadata::author_ref`]. A provider may answer one and not another, and an id it
+/// did not know is unknown as the one or the other; a failure of one costs the others nothing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Lookup {
     Projects,
     Versions,
+    Authors,
 }
 
 /// Ids of one provider and one lookup, as their key in the maps below.
 type LookupKey = (ProviderId, Lookup);
 
 impl Lookup {
-    const ALL: [Self; 2] = [Self::Projects, Self::Versions];
+    /// The lookups a file is described by. Not [`Self::Authors`]: a file names its project, and
+    /// only the project its author.
+    const OF_FILES: [Self; 2] = [Self::Projects, Self::Versions];
 
     /// What is asked, for the logs.
     fn what(self) -> &'static str {
         match self {
             Self::Projects => "content metadata",
             Self::Versions => "version metadata",
+            Self::Authors => "content authors",
         }
     }
 
     /// The provider and the provider's id that `file` is described by: the content id of the
     /// project it was installed from, or the id of the version it was installed as — that
     /// recorded for the provider that updates the file. `None` for a file of no provider (added
-    /// by hand and not recognised), or of no recorded id (an empty one, as old records have).
+    /// by hand and not recognised), or of no recorded id (an empty one, as old records have),
+    /// and for [`Self::Authors`], which a file does not record.
     ///
     /// Not `PackFile::installed_by`: that is the plan that installed the file, a modpack's own
     /// id for every file of the pack.
@@ -83,6 +90,7 @@ impl Lookup {
         let id = match self {
             Self::Projects => info.content_id.as_str(),
             Self::Versions => info.version.as_str(),
+            Self::Authors => return None,
         };
         (!id.is_empty()).then_some((provider_id, id))
     }
@@ -97,6 +105,7 @@ impl Lookup {
         match self {
             Self::Projects => Cached::Projects(cache.get_many(provider_id, ids).await),
             Self::Versions => Cached::Versions(cache.get_versions(provider_id, ids).await),
+            Self::Authors => Cached::Authors(cache.get_authors(provider_id, ids).await),
         }
     }
 
@@ -121,8 +130,60 @@ impl Lookup {
                     .collect();
                 Ok((Fetched::Versions(items), unknown))
             }
+            Self::Authors => {
+                let items = provider.get_authors(ids).await?;
+                let unknown = ids
+                    .iter()
+                    .filter(|id| !items.iter().any(|item| &item.author_ref == *id))
+                    .cloned()
+                    .collect();
+                Ok((Fetched::Authors(items), unknown))
+            }
         }
     }
+}
+
+/// The ref to look the author of `metadata` up by, when it names none itself.
+fn unnamed_author_ref(metadata: &ContentMetadata) -> Option<&String> {
+    if metadata.author.is_some() {
+        return None;
+    }
+    metadata.author_ref.as_ref()
+}
+
+/// The cached metadata of the project of `file`, with its author from the cached authors when
+/// it names none itself; and whether it has no author yet and its project or author is `due`
+/// ([`ContentFile::metadata_pending`]).
+fn project_of(
+    file: &ContentFile,
+    found: &HashMap<LookupKey, Cached>,
+    due: &HashMap<LookupKey, Vec<String>>,
+) -> (Option<ContentMetadata>, bool) {
+    let Some((provider_id, id)) = Lookup::Projects.key(file) else {
+        return (None, false);
+    };
+    let project_key = (provider_id.clone(), Lookup::Projects);
+    let mut metadata = found
+        .get(&project_key)
+        .and_then(|cached| cached.project(id));
+    let project_due = is_due_id(due, &project_key, id);
+
+    let mut author_due = false;
+    if let Some(metadata) = &mut metadata
+        && let Some(author_ref) = unnamed_author_ref(metadata).cloned()
+    {
+        let author_key = (provider_id.clone(), Lookup::Authors);
+        metadata.author = found
+            .get(&author_key)
+            .and_then(|cached| cached.author(&author_ref));
+        author_due = is_due_id(due, &author_key, &author_ref);
+    }
+
+    let pending = metadata
+        .as_ref()
+        .is_none_or(|metadata| metadata.author.is_none())
+        && (project_due || author_due);
+    (metadata, pending)
 }
 
 /// Whether `id` is among the ids `due` has to ask for under `key`.
@@ -135,6 +196,7 @@ fn is_due_id(due: &HashMap<LookupKey, Vec<String>>, key: &LookupKey, id: &str) -
 enum Cached {
     Projects(HashMap<String, CachedContentMetadata>),
     Versions(HashMap<String, CachedContentVersionMetadata>),
+    Authors(HashMap<String, CachedContentAuthor>),
 }
 
 impl Cached {
@@ -143,29 +205,50 @@ impl Cached {
         match self {
             Self::Projects(items) => items.get(id).is_none_or(|item| item.is_stale(now)),
             Self::Versions(items) => items.get(id).is_none_or(|item| item.is_stale(now)),
+            Self::Authors(items) => items.get(id).is_none_or(|item| item.is_stale(now)),
         }
     }
 
     fn project(&self, id: &str) -> Option<ContentMetadata> {
         match self {
             Self::Projects(items) => Some(items.get(id)?.metadata.clone()),
-            Self::Versions(_) => None,
+            Self::Versions(_) | Self::Authors(_) => None,
         }
     }
 
     fn version(&self, id: &str) -> Option<ContentVersionMetadata> {
         match self {
             Self::Versions(items) => Some(items.get(id)?.metadata.clone()),
-            Self::Projects(_) => None,
+            Self::Projects(_) | Self::Authors(_) => None,
+        }
+    }
+
+    /// The name of the author of `author_ref`.
+    fn author(&self, author_ref: &str) -> Option<String> {
+        match self {
+            Self::Authors(items) => Some(items.get(author_ref)?.metadata.name.clone()),
+            Self::Projects(_) | Self::Versions(_) => None,
+        }
+    }
+
+    /// The refs of the authors the cached projects do not name themselves.
+    fn unnamed_author_refs(&self) -> Vec<String> {
+        match self {
+            Self::Projects(items) => items
+                .values()
+                .filter_map(|item| unnamed_author_ref(&item.metadata).cloned())
+                .collect(),
+            Self::Versions(_) | Self::Authors(_) => Vec::new(),
         }
     }
 }
 
 /// What a provider answered about one lookup, keyed for the cache: projects under the ids they
-/// were asked by, versions under their own.
+/// were asked by, versions and authors under their own.
 enum Fetched {
     Projects(Vec<(String, ContentMetadata)>),
     Versions(Vec<ContentVersionMetadata>),
+    Authors(Vec<ContentAuthor>),
 }
 
 impl Fetched {
@@ -173,6 +256,7 @@ impl Fetched {
         match self {
             Self::Projects(items) => items.is_empty(),
             Self::Versions(items) => items.is_empty(),
+            Self::Authors(items) => items.is_empty(),
         }
     }
 
@@ -181,28 +265,41 @@ impl Fetched {
         match self {
             Self::Projects(items) => cache.put_keyed(provider_id, items).await,
             Self::Versions(items) => cache.put_versions(provider_id, items).await,
+            Self::Authors(items) => cache.put_authors(provider_id, items).await,
         }
     }
 
-    /// The icon URLs of what was fetched: of projects; versions have none.
+    /// The refs of the authors the fetched projects do not name themselves.
+    fn unnamed_author_refs(&self) -> Vec<String> {
+        match self {
+            Self::Projects(items) => items
+                .iter()
+                .filter_map(|(_, item)| unnamed_author_ref(item).cloned())
+                .collect(),
+            Self::Versions(_) | Self::Authors(_) => Vec::new(),
+        }
+    }
+
+    /// The icon URLs of what was fetched: of projects; versions and authors have none.
     fn into_icon_urls(self) -> Vec<String> {
         match self {
             Self::Projects(items) => items
                 .into_iter()
                 .filter_map(|(_, item)| item.icon_url)
                 .collect(),
-            Self::Versions(_) => Vec::new(),
+            Self::Versions(_) | Self::Authors(_) => Vec::new(),
         }
     }
 }
 
-/// Puts the cached [`ContentMetadata`] of their projects, the cached icons of those, and the
-/// cached [`ContentVersionMetadata`] of their versions on an instance's content files, and
-/// fetches what is missing or stale without making the list wait.
+/// Puts the cached [`ContentMetadata`] of their projects, with the cached [`ContentAuthor`] of
+/// those that leave the author to a lookup of its own, the cached icons of those, and the cached
+/// [`ContentVersionMetadata`] of their versions on an instance's content files, and fetches what
+/// is missing or stale without making the list wait.
 ///
 /// One per process: it remembers which instances are being refreshed, which providers cannot
-/// describe their projects or versions or failed to lately, which ids their provider did not
-/// know, and which icons are on their way or failed to arrive.
+/// describe their projects, versions or authors or failed to lately, which ids their provider
+/// did not know, and which icons are on their way or failed to arrive.
 pub struct ContentMetadataService {
     inner: Arc<Inner>,
 }
@@ -265,21 +362,39 @@ impl ContentMetadataService {
             .retain(|(provider_id, _)| provider_id.plugin_id != plugin_id);
     }
 
+    /// Forget the lookups that failed, as once [`LOOKUP_RETRY_AFTER`] has passed: the failures
+    /// are kept by [`Instant`], which a test cannot move.
+    #[cfg(test)]
+    pub(crate) fn forget_failures(&self) {
+        self.inner
+            .failed
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clear();
+    }
+
     /// Set each file's [`ContentFile::metadata`] and [`ContentFile::version_metadata`] to what
-    /// the cache has for them, fresh or stale, and its [`ContentFile::icon_path`] to the cached
-    /// icon of that metadata, if its file is there. Then start refreshing in the background what
-    /// is missing or stale: the metadata of projects and versions first, then the icons — those
-    /// of the metadata just fetched too. A file whose version is among what is refreshed is
-    /// [`ContentFile::version_metadata_pending`].
+    /// the cache has for them, fresh or stale — the author of a project that leaves it to a
+    /// lookup of its own taken from the cached authors — and its [`ContentFile::icon_path`] to
+    /// the cached icon of that metadata, if its file is there. Then start refreshing in the
+    /// background what is missing or stale: the metadata of projects and versions first, then
+    /// the authors — those the projects just fetched name too — then the icons — those of the
+    /// metadata just fetched too. A file whose version is among what is refreshed is
+    /// [`ContentFile::version_metadata_pending`]; one with no author yet, whose project or author
+    /// is, [`ContentFile::metadata_pending`].
+    ///
+    /// The author does not make a project stale: a project fetched without it is as fresh as
+    /// any, and only its author is asked for again.
     ///
     /// Reads only the caches. Once a refresh of metadata is over, whatever came of it, or one of
-    /// icons has brought any, an [`InstanceEventType::ContentSynced`] event of the instance
-    /// tells the UI to list it again — the one after the metadata comes before the icons are
-    /// fetched; a refresh that fails keeps the stale items and the icons there are.
+    /// authors or icons has brought any, an [`InstanceEventType::ContentSynced`] event of the
+    /// instance tells the UI to list it again — the one after the metadata comes before the
+    /// authors are fetched, and that after the authors before the icons are; a refresh that
+    /// fails keeps the stale items and the icons there are.
     pub async fn attach(&self, instance_id: &InstanceId, files: &DashMap<String, ContentFile>) {
         let mut wanted: HashMap<LookupKey, HashSet<String>> = HashMap::new();
         for file in files {
-            for lookup in Lookup::ALL {
+            for lookup in Lookup::OF_FILES {
                 if let Some((provider_id, id)) = lookup.key(&file) {
                     wanted
                         .entry((provider_id.clone(), lookup))
@@ -297,22 +412,27 @@ impl ContentMetadataService {
         let mut due: HashMap<LookupKey, Vec<String>> = HashMap::new();
         for ((provider_id, lookup), ids) in wanted {
             let ids: Vec<String> = ids.into_iter().collect();
-            let cached = lookup.read(&*self.inner.cache, &provider_id, &ids).await;
-            let stale = self
-                .inner
-                .due_ids(&provider_id, lookup, ids, |id| cached.is_due(id, now));
+            let (cached, stale) = self.inner.read(&provider_id, lookup, ids, now).await;
             if !stale.is_empty() {
                 due.insert((provider_id.clone(), lookup), stale);
             }
             found.insert((provider_id, lookup), cached);
         }
 
+        // The authors of the cached projects, read once those are.
+        let mut author_refs: HashMap<ProviderId, HashSet<String>> = HashMap::new();
+        for ((provider_id, _), cached) in &found {
+            author_refs
+                .entry(provider_id.clone())
+                .or_default()
+                .extend(cached.unnamed_author_refs());
+        }
+        let (authors_found, authors_due) = self.inner.read_authors(author_refs, now).await;
+        found.extend(authors_found);
+        due.extend(authors_due);
+
         for mut file in files.iter_mut() {
-            let metadata = Lookup::Projects.key(&file).and_then(|(provider_id, id)| {
-                found
-                    .get(&(provider_id.clone(), Lookup::Projects))?
-                    .project(id)
-            });
+            let (metadata, metadata_pending) = project_of(&file, &found, &due);
             let version_key = Lookup::Versions
                 .key(&file)
                 .map(|(provider_id, id)| ((provider_id.clone(), Lookup::Versions), id));
@@ -321,14 +441,6 @@ impl ContentMetadataService {
                 .and_then(|(key, id)| found.get(key)?.version(id));
             let version_metadata_pending = version_metadata.is_none()
                 && version_key.is_some_and(|(key, id)| is_due_id(&due, &key, id));
-            let metadata_pending = metadata
-                .as_ref()
-                .is_none_or(|metadata| metadata.author.is_none())
-                && Lookup::Projects
-                    .key(&file)
-                    .is_some_and(|(provider_id, id)| {
-                        is_due_id(&due, &(provider_id.clone(), Lookup::Projects), id)
-                    });
             file.metadata = metadata;
             file.metadata_pending = metadata_pending;
             file.version_metadata = version_metadata;
@@ -374,14 +486,41 @@ impl ContentMetadataService {
         };
 
         tokio::spawn(async move {
+            // Authors after the projects: those just fetched may leave theirs to be looked up.
+            let (authors_due, metadata_due): (HashMap<_, _>, HashMap<_, _>) = due
+                .into_iter()
+                .partition(|((_, lookup), _)| *lookup == Lookup::Authors);
+
             // Over whatever came of it: the list it brings shows no file as pending any more,
-            // as each asked id is now cached, unknown, or of a provider that failed lately.
-            // Told before the icons are looked for and fetched, which may take longer.
-            let metadata_asked = !due.is_empty();
-            let icon_urls = guard.inner.refresh(due).await;
+            // as each asked id is now cached, unknown, or of a provider that failed lately — but
+            // for the authors, which that list finds on their way and asks to be told about.
+            // Told before the authors and the icons are fetched, which may take longer.
+            let metadata_asked = !metadata_due.is_empty();
+            let fetched = guard.inner.refresh(metadata_due).await;
             if metadata_asked {
                 guard.inner.emit_synced(&guard.instance_id).await;
             }
+
+            let mut author_refs: HashMap<ProviderId, HashSet<String>> = HashMap::new();
+            let mut icon_urls = HashSet::new();
+            for (provider_id, fetched) in fetched {
+                author_refs
+                    .entry(provider_id)
+                    .or_default()
+                    .extend(fetched.unnamed_author_refs());
+                icon_urls.extend(fetched.into_icon_urls());
+            }
+            // Told whether any arrived or not, so the files marked as waiting for one stop
+            // waiting; the list told above may have been made before this one failed.
+            if guard
+                .inner
+                .refresh_authors(authors_due, author_refs)
+                .await
+                .is_some()
+            {
+                guard.inner.emit_synced(&guard.instance_id).await;
+            }
+
             let icons = guard.inner.lookup_icons(icon_urls).await;
             due_icons.extend(guard.inner.due_icons(icons));
             let icons_arrived = guard.inner.fetch_icons(due_icons).await;
@@ -503,6 +642,20 @@ impl Inner {
         failed.insert((provider_id.clone(), lookup), Instant::now());
     }
 
+    /// What the cache has of `ids` of `provider_id` by `lookup`, and those of them to ask for
+    /// ([`Self::due_ids`]) as of `now`.
+    async fn read(
+        &self,
+        provider_id: &ProviderId,
+        lookup: Lookup,
+        ids: Vec<String>,
+        now: SystemTime,
+    ) -> (Cached, Vec<String>) {
+        let cached = lookup.read(&*self.cache, provider_id, &ids).await;
+        let due = self.due_ids(provider_id, lookup, ids, |id| cached.is_due(id, now));
+        (cached, due)
+    }
+
     /// Of `ids`, those to ask `provider_id` about: missing or stale by `is_due`, and not left
     /// out of its answer lately. None when it cannot answer the lookup, or failed to lately.
     fn due_ids(
@@ -553,18 +706,69 @@ impl Inner {
         }
     }
 
-    /// Ask each provider about its due ids, all providers and lookups at once. The icon URLs
-    /// of what was cached.
-    async fn refresh(&self, due: HashMap<LookupKey, Vec<String>>) -> HashSet<String> {
-        futures::future::join_all(
-            due.iter()
-                .map(|((provider_id, lookup), ids)| self.refresh_of(provider_id, *lookup, ids)),
-        )
+    /// Ask each provider about its due ids, all providers and lookups at once. What was cached,
+    /// by provider.
+    async fn refresh(&self, due: HashMap<LookupKey, Vec<String>>) -> Vec<(ProviderId, Fetched)> {
+        futures::future::join_all(due.iter().map(|((provider_id, lookup), ids)| async move {
+            let fetched = self.refresh_of(provider_id, *lookup, ids).await?;
+            Some((provider_id.clone(), fetched))
+        }))
         .await
         .into_iter()
         .flatten()
-        .flat_map(Fetched::into_icon_urls)
         .collect()
+    }
+
+    /// Ask each provider about the authors `due` from the list, and those of `named` — the refs
+    /// of the projects just fetched — missing or stale in the cache, all providers at once.
+    /// `None` when none was to ask; else whether any arrived.
+    ///
+    /// A failure is the authors' alone: the projects stay cached, without their author.
+    async fn refresh_authors(
+        &self,
+        mut asked: HashMap<LookupKey, Vec<String>>,
+        mut named: HashMap<ProviderId, HashSet<String>>,
+    ) -> Option<bool> {
+        // Those already due are not read again.
+        for (provider_id, refs) in &mut named {
+            if let Some(due) = asked.get(&(provider_id.clone(), Lookup::Authors)) {
+                refs.retain(|author_ref| !due.contains(author_ref));
+            }
+        }
+        let (_, stale) = self.read_authors(named, SystemTime::now()).await;
+        for (key, refs) in stale {
+            asked.entry(key).or_default().extend(refs);
+        }
+        asked.retain(|_, refs| !refs.is_empty());
+        if asked.is_empty() {
+            return None;
+        }
+
+        Some(!self.refresh(asked).await.is_empty())
+    }
+
+    /// What the cache has of the authors `refs_by_provider` names, and which of them are due as
+    /// of `now`, by provider; none for a provider that names none.
+    async fn read_authors(
+        &self,
+        refs_by_provider: HashMap<ProviderId, HashSet<String>>,
+        now: SystemTime,
+    ) -> (HashMap<LookupKey, Cached>, HashMap<LookupKey, Vec<String>>) {
+        let mut found = HashMap::new();
+        let mut due = HashMap::new();
+        for (provider_id, refs) in refs_by_provider {
+            if refs.is_empty() {
+                continue;
+            }
+            let refs: Vec<String> = refs.into_iter().collect();
+            let (cached, stale) = self.read(&provider_id, Lookup::Authors, refs, now).await;
+            let key = (provider_id, Lookup::Authors);
+            if !stale.is_empty() {
+                due.insert(key.clone(), stale);
+            }
+            found.insert(key, cached);
+        }
+        (found, due)
     }
 
     /// What was cached of `ids` by `lookup`; `None` when nothing was.
@@ -731,6 +935,7 @@ mod tests {
             name: slug.into(),
             description: None,
             author: None,
+            author_ref: None,
             icon_url: None,
         }
     }
