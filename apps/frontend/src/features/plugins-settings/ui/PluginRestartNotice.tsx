@@ -1,11 +1,4 @@
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  Show,
-  untrack,
-  type Component,
-} from 'solid-js';
+import { Show, untrack, type Component } from 'solid-js';
 
 import { getTranslatedError, isLauncherError } from '@/features/errors';
 import { useLastPluginReload, type Plugin } from '@/features/plugins';
@@ -26,23 +19,22 @@ export type PluginRestartNoticeProps = {
  */
 export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
   props,
-) => {
+) => (
+  <Show when={props.plugin.restart_needed}>
+    <RestartNotice plugin={props.plugin} class={props.class} />
+  </Show>
+);
+
+// Mounted each time the need arises, so what it sets aside at creation is what happened before.
+const RestartNotice: Component<PluginRestartNoticeProps> = (props) => {
   const [{ t }] = useTranslation();
 
   const pluginId = () => props.plugin.manifest.metadata.id;
   const lastReload = useLastPluginReload(pluginId);
 
-  // A refusal from before the notice appeared is about an earlier need, not this one: when the
-  // need arises, the attempt made so far is set aside and only a later one is shown.
-  const [dismissedId, setDismissedId] = createSignal(
-    untrack(lastReload)?.mutationId,
-  );
-  const restartNeeded = createMemo(() => props.plugin.restart_needed);
-  createEffect(() => {
-    if (restartNeeded()) {
-      setDismissedId(untrack(lastReload)?.mutationId);
-    }
-  });
+  // A refusal from before the notice appeared is about an earlier need, not this one: the
+  // attempt made so far is set aside and only a later one is shown.
+  const dismissedId = untrack(lastReload)?.mutationId;
 
   const refusal = () => {
     const reload = lastReload();
@@ -50,7 +42,7 @@ export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
     if (
       reload?.status !== 'error' ||
       !reload.error ||
-      reload.mutationId === dismissedId()
+      reload.mutationId === dismissedId
     ) {
       return null;
     }
@@ -61,26 +53,24 @@ export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
   };
 
   return (
-    <Show when={props.plugin.restart_needed}>
-      <div
-        role='status'
-        class={cn(
-          'gap-2 rounded-md px-3 py-2 bg-secondary/secondary flex flex-col',
-          props.class,
-        )}
-      >
-        <div class='gap-4 flex items-center justify-between'>
-          <span class='text-sm font-medium'>{t('plugin.restartNeeded')}</span>
-          <RestartPluginButton pluginId={pluginId()} />
-        </div>
-        <Show when={refusal()}>
-          {(text) => (
-            <span role='alert' class='text-sm text-destructive'>
-              {text()}
-            </span>
-          )}
-        </Show>
+    <div
+      role='status'
+      class={cn(
+        'gap-2 rounded-md px-3 py-2 bg-secondary/secondary flex flex-col',
+        props.class,
+      )}
+    >
+      <div class='gap-4 flex items-center justify-between'>
+        <span class='text-sm font-medium'>{t('plugin.restartNeeded')}</span>
+        <RestartPluginButton pluginId={pluginId()} />
       </div>
-    </Show>
+      <Show when={refusal()}>
+        {(text) => (
+          <span role='alert' class='text-sm text-destructive'>
+            {text()}
+          </span>
+        )}
+      </Show>
+    </div>
   );
 };
