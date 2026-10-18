@@ -32,6 +32,13 @@ where
     hash_hex_async(HashAlgorithm::Sha256, input).await
 }
 
+/// Lowercase hex sha256 of `input`, for a small input hashed in place.
+pub(crate) fn sha256_hex(input: &[u8]) -> String {
+    let mut hasher = FileHasher::new(HashAlgorithm::Sha256);
+    hasher.update(input);
+    hasher.finalize_hex()
+}
+
 /// Lowercase hex digest of `input` with `algorithm`.
 pub(crate) async fn hash_hex_async<T>(algorithm: HashAlgorithm, input: T) -> std::io::Result<String>
 where
