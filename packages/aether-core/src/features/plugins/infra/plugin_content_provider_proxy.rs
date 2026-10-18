@@ -1,10 +1,14 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use aether_core_plugin_api::v0::{
     ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
-    ContentVersionMetadataDto, InstallPlanDto, OverrideLocationDto, OverrideSourceDto,
-    PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolvedFileDto,
+    ContentVersionMetadataDto, GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto,
+    InstallPlanDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
+    PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
+    ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::Msgpack;
@@ -89,30 +93,33 @@ impl PluginContentProviderProxy {
         }
     }
 
-    /// A project needs an id and a name to be shown by; an icon is taken only as a web address,
-    /// which the host fetches itself (a file path or any other scheme is dropped, so the plugin
-    /// cannot point the host at a file of the user's).
-    fn content_metadata_from_dto(
+    /// An answer's items without what was not asked for, what is described too poorly to show
+    /// (`usable`), and what repeats an earlier item (`id`): dropped and told, not an error.
+    /// One bad item must not cost the others, and a plugin cannot fill the cache with what
+    /// nobody asked about. `asked` tells whether an item answers one of the ids asked.
+    fn keep_answered<T>(
         &self,
         handler_name: &str,
-        dto: ContentMetadataDto,
-    ) -> Result<ContentMetadata, InstanceError> {
-        if dto.content_id.is_empty() || dto.name.is_empty() {
-            return Err(self.invalid_answer(handler_name, "a project without an id or name"));
+        items: Vec<T>,
+        asked: impl Fn(&T) -> bool,
+        usable: impl Fn(&T) -> bool,
+        id: impl Fn(&T) -> &str,
+    ) -> Vec<T> {
+        let total = items.len();
+        let mut seen = HashSet::new();
+        let kept: Vec<T> = items
+            .into_iter()
+            .filter(|item| asked(item) && usable(item) && seen.insert(id(item).to_owned()))
+            .collect();
+        if kept.len() != total {
+            tracing::warn!(
+                "Plugin '{}' answered '{}' with {total} items, dropped {} of them as unasked,                  repeated or too poorly described",
+                self.plugin_id,
+                handler_name,
+                total - kept.len()
+            );
         }
-
-        let icon_url = dto.icon_url.filter(|icon_url| {
-            url::Url::parse(icon_url).is_ok_and(|url| matches!(url.scheme(), "https" | "http"))
-        });
-
-        Ok(ContentMetadata {
-            content_id: dto.content_id,
-            slug: dto.slug,
-            name: dto.name,
-            description: dto.description,
-            author: dto.author,
-            icon_url,
-        })
+        kept
     }
 
     fn install_plan_from_dto(
@@ -443,12 +450,36 @@ impl ContentProvider for PluginContentProviderProxy {
         )?;
 
         let result_dto: Vec<ContentMetadataDto> = self
-            .call_plugin("get_contents_metadata", handler, content_ids.to_vec())
+            .call_plugin(
+                "get_contents_metadata",
+                handler,
+                GetContentsMetadataParamsDto {
+                    content_ids: content_ids.to_vec(),
+                },
+            )
             .await?;
-        result_dto
+        // An item answers an id by its own id or by its slug, as a provider may be asked by
+        // either. A slug match is kept under the item's own id, which the host cannot check
+        // against what was asked; it stays within the plugin's own provider, and no more than
+        // one item per asked id is kept.
+        let asked = |dto: &ContentMetadataDto| {
+            content_ids.contains(&dto.content_id)
+                || content_ids
+                    .iter()
+                    .any(|id| id.eq_ignore_ascii_case(&dto.slug))
+        };
+        Ok(self
+            .keep_answered(
+                handler,
+                result_dto,
+                asked,
+                |dto| !dto.content_id.trim().is_empty() && !dto.name.trim().is_empty(),
+                |dto| &dto.content_id,
+            )
             .into_iter()
-            .map(|dto| self.content_metadata_from_dto(handler, dto))
-            .collect()
+            .take(content_ids.len())
+            .map(content_metadata_from_dto)
+            .collect())
     }
 
     async fn get_versions_metadata(
@@ -461,21 +492,25 @@ impl ContentProvider for PluginContentProviderProxy {
         )?;
 
         let result_dto: Vec<ContentVersionMetadataDto> = self
-            .call_plugin("get_versions_metadata", handler, version_ids.to_vec())
+            .call_plugin(
+                "get_versions_metadata",
+                handler,
+                GetVersionsMetadataParamsDto {
+                    version_ids: version_ids.to_vec(),
+                },
+            )
             .await?;
-        result_dto
+        Ok(self
+            .keep_answered(
+                handler,
+                result_dto,
+                |dto| version_ids.contains(&dto.version_id),
+                |dto| !dto.version_number.trim().is_empty(),
+                |dto| &dto.version_id,
+            )
             .into_iter()
-            .map(|dto| {
-                if dto.version_id.is_empty() || dto.version_number.is_empty() {
-                    return Err(self.invalid_answer(handler, "a version without an id or number"));
-                }
-                Ok(ContentVersionMetadata {
-                    version_id: dto.version_id,
-                    version_number: dto.version_number,
-                    name: dto.name.filter(|name| !name.is_empty()),
-                })
-            })
-            .collect()
+            .map(version_metadata_from_dto)
+            .collect())
     }
 
     async fn check_compatibility(
@@ -521,5 +556,32 @@ fn describe_resolve_target(target: &ResolveTarget) -> String {
     match target {
         ResolveTarget::Existing { instance_id, .. } => format!("instance '{instance_id}'"),
         ResolveTarget::New => "a new instance".to_owned(),
+    }
+}
+
+/// An icon is taken only as an `https` address, which the host fetches itself (a file path or
+/// any other scheme is dropped, so the plugin cannot point the host at a file of the user's;
+/// the icon cache refuses private hosts).
+fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
+    let icon_url = dto
+        .icon_url
+        .filter(|icon_url| url::Url::parse(icon_url).is_ok_and(|url| url.scheme() == "https"));
+
+    ContentMetadata {
+        content_id: dto.content_id,
+        slug: dto.slug,
+        name: dto.name,
+        description: dto.description,
+        author: dto.author,
+        icon_url,
+    }
+}
+
+/// An empty title is no title.
+fn version_metadata_from_dto(dto: ContentVersionMetadataDto) -> ContentVersionMetadata {
+    ContentVersionMetadata {
+        version_id: dto.version_id,
+        version_number: dto.version_number,
+        name: dto.name.filter(|name| !name.trim().is_empty()),
     }
 }

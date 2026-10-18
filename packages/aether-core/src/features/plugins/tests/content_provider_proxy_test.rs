@@ -6,10 +6,11 @@ use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
     ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto, ContentTypeDto,
-    ContentVersionMetadataDto, FileHashDto, FileSideDto, InstallFileEntryDto, InstallPlanDto,
-    InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto,
-    OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
-    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    ContentVersionMetadataDto, FileHashDto, FileSideDto, GetContentsMetadataParamsDto,
+    GetVersionsMetadataParamsDto, InstallFileEntryDto, InstallPlanDto, InstallTargetDto,
+    InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
+    PackMetadataDto, PackSourceDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
+    ResolveTargetDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -477,7 +478,7 @@ async fn should_call_the_pack_metadata_handler_the_file_names_when_resolving_pac
 fn project_metadata(content_id: &str, icon_url: Option<&str>) -> ContentMetadataDto {
     ContentMetadataDto {
         content_id: content_id.into(),
-        slug: "jei".into(),
+        slug: format!("slug-{content_id}"),
         name: "Just Enough Items".into(),
         description: None,
         author: Some("mezz".into()),
@@ -513,7 +514,12 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
         .get_contents_metadata(&["238222".to_owned()])
         .await
         .unwrap();
-    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["238222"]);
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetContentsMetadataParamsDto>(),
+        GetContentsMetadataParamsDto {
+            content_ids: vec!["238222".into()]
+        }
+    );
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author.as_deref(), Some("mezz"));
     assert_eq!(
@@ -526,7 +532,12 @@ async fn should_call_the_metadata_handlers_the_file_names_when_describing_conten
         .get_versions_metadata(&["5000000".to_owned()])
         .await
         .unwrap();
-    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["5000000"]);
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetVersionsMetadataParamsDto>(),
+        GetVersionsMetadataParamsDto {
+            version_ids: vec!["5000000".into()]
+        }
+    );
     assert_eq!(versions[0].version_number, "19.21.0");
     assert_eq!(versions[0].name, None, "an empty title is no title");
     assert_eq!(
@@ -544,31 +555,125 @@ async fn should_drop_an_icon_when_it_is_not_a_web_address() {
             encode(vec![
                 project_metadata("1", Some("file:///C:/Users/me/secret.png")),
                 project_metadata("2", Some("/cache/icon.png")),
-                project_metadata("3", Some("http://example.com/icon.png")),
+                project_metadata("3", Some("https://example.com/icon.png")),
+                project_metadata("4", Some("http://example.com/icon.png")),
             ]),
         )],
     );
 
-    let projects = fixture.proxy.get_contents_metadata(&[]).await.unwrap();
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
+        .await
+        .unwrap();
 
     assert_eq!(projects[0].icon_url, None);
     assert_eq!(projects[1].icon_url, None);
     assert_eq!(
         projects[2].icon_url.as_deref(),
-        Some("http://example.com/icon.png")
+        Some("https://example.com/icon.png")
+    );
+    assert_eq!(projects[3].icon_url, None, "cleartext http is not fetched");
+}
+
+#[tokio::test]
+async fn should_keep_the_other_projects_when_one_described_project_has_no_name() {
+    let mut nameless = project_metadata("1", None);
+    nameless.name = "  ".into();
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_contents_metadata",
+            encode(vec![nameless, project_metadata("2", None)]),
+        )],
+    );
+
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["1".to_owned(), "2".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        projects
+            .iter()
+            .map(|p| p.content_id.as_str())
+            .collect::<Vec<_>>(),
+        ["2"]
     );
 }
 
 #[tokio::test]
-async fn should_refuse_an_answer_when_a_described_project_has_no_name() {
-    let mut nameless = project_metadata("1", None);
-    nameless.name.clear();
+async fn should_drop_projects_nobody_asked_about_and_repeated_ones() {
     let fixture = Fixture::new(
         RESOLVE_ONLY_CAPABILITIES,
-        vec![("cf_get_contents_metadata", encode(vec![nameless]))],
+        vec![(
+            "cf_get_contents_metadata",
+            encode(vec![
+                project_metadata("1", None),
+                project_metadata("1", None),
+                project_metadata("stranger", None),
+            ]),
+        )],
     );
 
-    assert_invalid_answer(fixture.proxy.get_contents_metadata(&["1".to_owned()]).await);
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["1".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].content_id, "1");
+}
+
+#[tokio::test]
+async fn should_keep_a_project_when_it_answers_an_id_asked_by_its_slug() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_contents_metadata",
+            encode(vec![project_metadata("238222", None)]),
+        )],
+    );
+
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["Slug-238222".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(projects[0].content_id, "238222");
+}
+
+#[tokio::test]
+async fn should_drop_versions_nobody_asked_about_and_numberless_ones() {
+    let version = |id: &str, number: &str| ContentVersionMetadataDto {
+        version_id: id.into(),
+        version_number: number.into(),
+        name: None,
+    };
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_versions_metadata",
+            encode(vec![
+                version("1", "1.0"),
+                version("1", "1.0"),
+                version("2", ""),
+                version("stranger", "9.9"),
+            ]),
+        )],
+    );
+
+    let versions = fixture
+        .proxy
+        .get_versions_metadata(&["1".to_owned(), "2".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(versions.len(), 1);
+    assert_eq!(versions[0].version_id, "1");
 }
 
 #[tokio::test]
