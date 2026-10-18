@@ -261,7 +261,16 @@
     "title": "Создать оффлайн аккаунт"
   },
   "events": {
+    "installFailed": "Не удалось выполнить установку",
+    "installing": "Установка {{name}}",
     "javaDownloading": "Загрузка Java {{version}}",
+    "stage": {
+      "downloading": "Загрузка",
+      "extracting": "Распаковка",
+      "finishing": "Завершение",
+      "installing": "Установка",
+      "verifying": "Проверка"
+    },
     "launcherUpdating": "Обновление лаунчера до {{version}}"
   },
   "home": {
