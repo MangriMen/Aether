@@ -115,6 +115,23 @@ impl PluginContentProviderProxy {
         })
     }
 
+    /// A version needs an id and a number to be shown by; an empty title is no title.
+    fn version_metadata_from_dto(
+        &self,
+        handler_name: &str,
+        dto: ContentVersionMetadataDto,
+    ) -> Result<ContentVersionMetadata, InstanceError> {
+        if dto.version_id.is_empty() || dto.version_number.is_empty() {
+            return Err(self.invalid_answer(handler_name, "a version without an id or number"));
+        }
+
+        Ok(ContentVersionMetadata {
+            version_id: dto.version_id,
+            version_number: dto.version_number,
+            name: dto.name.filter(|name| !name.is_empty()),
+        })
+    }
+
     fn install_plan_from_dto(
         &self,
         handler_name: &str,
@@ -465,16 +482,7 @@ impl ContentProvider for PluginContentProviderProxy {
             .await?;
         result_dto
             .into_iter()
-            .map(|dto| {
-                if dto.version_id.is_empty() || dto.version_number.is_empty() {
-                    return Err(self.invalid_answer(handler, "a version without an id or number"));
-                }
-                Ok(ContentVersionMetadata {
-                    version_id: dto.version_id,
-                    version_number: dto.version_number,
-                    name: dto.name.filter(|name| !name.is_empty()),
-                })
-            })
+            .map(|dto| self.version_metadata_from_dto(handler, dto))
             .collect()
     }
 
