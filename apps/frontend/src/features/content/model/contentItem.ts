@@ -55,17 +55,6 @@ export interface ContentFilters {
   loaders?: string[];
 }
 
-const PROVIDER_ID_SEPARATOR = '#' as const;
-
-export type ProviderIdString =
-  `${string}${typeof PROVIDER_ID_SEPARATOR}${string}`;
-
-export const providerIdToString = (
-  providerId: ProviderId,
-): ProviderIdString => {
-  return `${providerId.pluginId}${PROVIDER_ID_SEPARATOR}${providerId.capabilityId}`;
-};
-
 /** @public Dto alias, kept while unused (ARCHITECTURE.md, Checks). */
 export type ContentVersionDependencyType = ContentVersionDependencyTypeDto;
 

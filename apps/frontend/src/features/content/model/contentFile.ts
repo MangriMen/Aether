@@ -2,7 +2,8 @@ import type { ContentFileDto } from '@/platform/bindings/instance';
 
 import { searchParamsToQueryString } from '@/shared/search-params';
 
-import { providerIdToString, type ProviderId } from './contentItem';
+import type { ProviderId } from './contentItem';
+
 import { CONTENT_ROUTES } from './contentRoutes';
 
 export type ContentFile = ContentFileDto;
@@ -11,7 +12,11 @@ export const getContentIdFromUpdateInfo = (
   contentFile: ContentFile,
   providerId: ProviderId,
 ): string | undefined =>
-  contentFile.update?.[providerIdToString(providerId)]?.contentId;
+  contentFile.update?.find(
+    ({ providerId: id }) =>
+      id.pluginId === providerId.pluginId &&
+      id.capabilityId === providerId.capabilityId,
+  )?.info.contentId;
 
 /** Project name from the provider, then the file's own name, if any. */
 export const getContentFileTitle = (
