@@ -262,6 +262,7 @@
   },
   "events": {
     "cancelled": "Cancelled",
+    "completed": "Completed",
     "clearFinished": "Clear finished",
     "completedChildren": "Completed: {{count}}",
     "gameInstalling": "Installing game files",

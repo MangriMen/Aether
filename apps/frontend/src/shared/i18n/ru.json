@@ -262,6 +262,7 @@
   },
   "events": {
     "cancelled": "Отменено",
+    "completed": "Завершено",
     "clearFinished": "Очистить завершённые",
     "completedChildren": "Завершено: {{count}}",
     "gameInstalling": "Установка файлов игры",

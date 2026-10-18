@@ -1,11 +1,12 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
+import IconDeleteSweep from '~icons/mdi/delete-sweep';
 import IconOpenInNew from '~icons/mdi/open-in-new';
 import { createMemo, For, Show, splitProps } from 'solid-js';
 
 import { showDialog } from '@/shared/dialogs';
 import { useTranslation } from '@/shared/i18n';
-import { Button, CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
@@ -35,9 +36,14 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
         <span class='text-lg font-medium'>{t('progress.ongoingTasks')}</span>
         <div class='gap-1 flex items-center'>
           <Show when={hasFinished()}>
-            <Button variant='ghost' size='sm' onClick={clearFinishedProgress}>
-              {t('events.clearFinished')}
-            </Button>
+            <CombinedTooltip
+              label={t('events.clearFinished')}
+              as={IconButton}
+              variant='ghost'
+              size='sm'
+              icon={IconDeleteSweep}
+              onClick={clearFinishedProgress}
+            />
           </Show>
           <CombinedTooltip
             label={t('progress.seeDetails')}

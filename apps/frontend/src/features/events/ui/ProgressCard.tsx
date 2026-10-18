@@ -76,6 +76,10 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
       return status.message;
     }
 
+    if (status.type === 'done') {
+      return t('events.completed');
+    }
+
     if (status.type === 'cancelled') {
       return t('events.cancelled');
     }

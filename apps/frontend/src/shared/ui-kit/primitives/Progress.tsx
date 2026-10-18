@@ -45,7 +45,7 @@ const Progress = <T extends ValidComponent = 'div'>(
         <ProgressPrimitive.Fill
           class={cn(
             progressVariants({ variant: local.variant }),
-            'h-full w-(--kb-progress-fill-width) flex-1 transition-all',
+            'h-full w-(--kb-progress-fill-width) flex-1 rounded-full transition-all',
           )}
         />
       </ProgressPrimitive.Track>
