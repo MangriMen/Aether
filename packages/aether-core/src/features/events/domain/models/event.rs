@@ -2,6 +2,8 @@ use crate::features::events::{
     CacheEvent, InstanceEvent, PluginEvent, ProcessEvent, ProgressEvent, WarningEvent,
 };
 
+// Progress events are throttled and short-lived, so their size is not worth a box on every match.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum Event {
     Instance(InstanceEvent),
@@ -117,7 +119,9 @@ impl TryFrom<Event> for ProgressEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::events::{InstanceEventType, ProcessEventType, ProgressEventType};
+    use crate::features::events::{
+        InstanceEventType, ProcessEventType, ProgressEventType, ProgressStatus,
+    };
     use crate::features::instance::InstanceId;
     use uuid::Uuid;
 
@@ -154,6 +158,12 @@ mod tests {
                 icon: None,
                 pack_version: "1.0".into(),
             },
+            stage: None,
+            status: ProgressStatus::Running,
+            parent_id: None,
+            bytes_done: None,
+            bytes_total: None,
+            speed: None,
         }
     }
 
