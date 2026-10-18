@@ -30,7 +30,7 @@ use crate::{
     shared::{
         fetch::FetchSemaphore,
         hash::{FileHash, HashAlgorithm, InvalidFileHash, infra::hash_file_hex_async},
-        limits::PluginSandboxLimits,
+        limits::{DOWNLOAD_BUDGET, DOWNLOAD_MAX_RETRIES, DOWNLOAD_TIMEOUT, PluginSandboxLimits},
         request_client::{
             BytesProgress, Request, RequestClient, RequestError, infra::ReqwestClient,
         },
@@ -38,33 +38,12 @@ use crate::{
 };
 
 use super::{
-    super::{
-        super::{extism_limits::DEFAULT_TIMEOUT, mappers::to_extism_res},
-        PluginContext, block_on,
-    },
+    super::{super::mappers::to_extism_res, PluginContext, block_on},
     http::{
         AddressFilter, PluginHttpError, ProxySource, check_target, is_blocked_ip, policy_error,
         system_lookup, vetted_client,
     },
 };
-
-/// Total time budget for one attempt, every redirect hop and the body included. A stalled
-/// transfer is cut much earlier by the client's read timeout.
-pub(crate) const DOWNLOAD_TIMEOUT: Duration = Duration::from_mins(30);
-
-/// Time budget for one whole `download_to_cache`: every attempt, the waits between them and the
-/// wait for a download slot. Never more than a plugin call may take: Extism cannot stop a call
-/// while the host holds it, so a longer download would keep the call running past its timeout.
-pub(crate) const DOWNLOAD_BUDGET: Duration = DEFAULT_TIMEOUT;
-
-const _: () = assert!(
-    DOWNLOAD_BUDGET.as_nanos() <= DEFAULT_TIMEOUT.as_nanos(),
-    "a download must not outlast the plugin call it runs in"
-);
-
-/// Retries of transient failures (connection errors, 5xx, 429). Fewer than the application
-/// client's five: the plugin waits on this call for the whole time.
-const DOWNLOAD_MAX_RETRIES: u32 = 3;
 
 /// Subdirectory of the plugin cache the host downloads into.
 const DOWNLOADS_DIR: &str = "downloads";

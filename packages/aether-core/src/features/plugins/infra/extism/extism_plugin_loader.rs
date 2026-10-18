@@ -20,12 +20,12 @@ use crate::{
     shared::{
         hash::infra::sha256_async,
         io::infra::{create_dir_all, read_async, write_toml_async},
-        limits::PluginSandboxLimits,
+        limits::{DEFAULT_TIMEOUT, PluginSandboxLimits},
     },
 };
 
 use super::{
-    extism_limits::{DEFAULT_TIMEOUT, bytes_to_pages},
+    extism_limits::bytes_to_pages,
     host_functions::{get_host_functions, host_function_names},
     models::{ExtismPluginInstance, get_default_cache_config},
 };
