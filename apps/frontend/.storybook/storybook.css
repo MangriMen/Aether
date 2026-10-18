@@ -4,6 +4,11 @@ html {
   overflow: auto;
 }
 
+/* The app only styles the scrollbar thumb; the default track is white */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* Storybook paints its own background on the canvas; use the theme of the app instead */
 body,
 .sb-show-main {

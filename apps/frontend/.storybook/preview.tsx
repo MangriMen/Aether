@@ -1,11 +1,10 @@
 import type { Preview } from 'storybook-solidjs-vite';
 
 import { QueryClientProvider } from '@tanstack/solid-query';
-import { themes } from 'storybook/theming';
 
 import '../src/app/app.css';
-import './storybook.css';
 import { THEMES } from '../src/features/appearance/model/theme';
+import './storybook.css';
 import {
   KB_THEME_ATTRIBUTE,
   THEME_ATTRIBUTE,
@@ -13,6 +12,7 @@ import {
 import { setThemeToDocument } from '../src/features/appearance/model/themeDom';
 import { I18nProvider, LOCALE_RESOURCES, LOCALES } from '../src/shared/i18n';
 import { createQueryClient } from '../src/shared/query';
+import { ThemedDocsContainer } from './DocsContainer';
 
 const queryClient = createQueryClient();
 
@@ -32,7 +32,7 @@ const preview: Preview = {
   parameters: {
     layout: 'fullscreen',
     controls: { expanded: true },
-    docs: { theme: themes.dark },
+    docs: { container: ThemedDocsContainer },
   },
   decorators: [
     (Story, context) => {
