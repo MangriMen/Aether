@@ -63,10 +63,13 @@ impl ClearCacheUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> ClearCacheOutcome {
         // Held until the caches are empty: nothing starts using them meanwhile, and a second
         // clearing finds the app paused, so busy.
-        let Some(_pause) = self.activity.try_pause().await else {
+        let Some(pause) = self.activity.try_pause().await else {
             return ClearCacheOutcome::Busy;
         };
         clear_caches(self.caches.iter().map(|(_, cleaner)| cleaner)).await;
+        // Released before the event: whoever asks again whether the app is busy must not find
+        // this clearing in the way.
+        drop(pause);
         self.event_emitter.emit_safe(CacheEvent::Changed).await;
         ClearCacheOutcome::Cleared
     }

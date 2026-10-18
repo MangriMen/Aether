@@ -170,6 +170,34 @@ mod tests {
         assert_eq!(dir_size(&dir.path().join("missing")).await, 0);
     }
 
+    struct Removing(u64);
+
+    #[async_trait]
+    impl Housekeeping for Removing {
+        fn what(&self) -> &'static str {
+            "removing"
+        }
+
+        async fn run(&self) -> u64 {
+            self.0
+        }
+    }
+
+    #[tokio::test]
+    async fn should_tell_only_when_something_went_when_housekeeping_ran() {
+        let (sender, mut told) = tokio::sync::mpsc::unbounded_channel();
+        let on_removed: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+            sender.send(()).unwrap();
+        });
+
+        spawn_housekeeping(vec![Arc::new(Removing(0))], &on_removed);
+        spawn_housekeeping(vec![Arc::new(Removing(3))], &on_removed);
+
+        assert!(told.recv().await.is_some());
+        drop(on_removed);
+        assert!(told.recv().await.is_none());
+    }
+
     #[tokio::test]
     async fn should_clear_every_cache_and_report_each() {
         let first = Arc::new(Counting(AtomicU64::new(0)));

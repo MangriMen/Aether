@@ -16,6 +16,9 @@ use crate::{
     shared::housekeeping::Housekeeping,
 };
 
+/// How many instances' pack files are read at once at startup.
+const MAX_CONCURRENT_PACK_READS: usize = 8;
+
 /// Keeps the icons of the content installed in any instance, as its cached metadata names them,
 /// and removes the others.
 ///
@@ -48,13 +51,19 @@ impl ContentIconHousekeeping {
     async fn installed_icon_urls(&self) -> Result<HashSet<String>, InstanceError> {
         let mut ids: HashMap<ProviderId, Vec<String>> = HashMap::new();
         let instances = self.instance_storage.list().await?;
-        // Concurrent, in the order of the instances: the first failure in it is the one returned.
-        let packs = join_all(
-            instances
-                .iter()
-                .map(|instance| self.pack_storage.get_pack_files(instance.id())),
-        )
-        .await;
+        // Concurrent but bounded, in the order of the instances: the first failure in it is the
+        // one returned.
+        let mut packs = Vec::with_capacity(instances.len());
+        for batch in instances.chunks(MAX_CONCURRENT_PACK_READS) {
+            packs.extend(
+                join_all(
+                    batch
+                        .iter()
+                        .map(|instance| self.pack_storage.get_pack_files(instance.id())),
+                )
+                .await,
+            );
+        }
         for pack in packs {
             for pack_file in pack?.into_values() {
                 let Some(provider_id) = pack_file.update_provider_id else {

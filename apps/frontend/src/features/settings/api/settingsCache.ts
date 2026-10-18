@@ -23,10 +23,13 @@ export const settingsQueries = {
     staleTime: 30_000,
   }),
   // Whether clearing is allowed changes by itself, as downloads start and end. It is cheap,
-  // so it is asked again whenever the window gets focus or the pane is opened.
+  // so it is asked again whenever the pane is opened or the window gets focus.
   cacheBusy: () => ({
     queryKey: settingsKeys.cacheBusy(),
     queryFn: settingsCommands.isCacheBusy,
+    staleTime: 0,
+    refetchOnMount: 'always' as const,
+    refetchOnWindowFocus: true,
   }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
