@@ -59,6 +59,12 @@ export const useProgressEventsListener = () => {
             bar.current === null || bar.total === null
               ? 0
               : bar.current / bar.total,
+          stage: bar.stage,
+          status: bar.status,
+          parentId: bar.parentId,
+          bytesDone: bar.bytesDone,
+          bytesTotal: bar.bytesTotal,
+          speed: bar.speed,
         });
       }
     } catch {

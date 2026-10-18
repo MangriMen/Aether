@@ -287,6 +287,14 @@ export type ProgressBarDto = {
 	total: number | null,
 	current: number | null,
 	progressType: ProgressEventTypeDto,
+	stage: ProgressStageDto | null,
+	status: ProgressStatusDto,
+	parentId: string | null,
+	/**  A number, not `u64`, as in `ProgressEventDto`. */
+	bytesDone: number | null,
+	bytesTotal: number | null,
+	/**  Bytes per second. */
+	speed: number | null,
 };
 
 export type ProgressEventDto = {
@@ -294,9 +302,22 @@ export type ProgressEventDto = {
 	progressBarId: string,
 	fraction: number | null,
 	message: string,
+	stage: ProgressStageDto | null,
+	status: ProgressStatusDto,
+	parentId: string | null,
+	/**  A number, not `u64`: specta refuses to export `u64`, and a download never nears 2^53 bytes. */
+	bytesDone: number | null,
+	/**  A number, not `u64`, like `bytes_done`. */
+	bytesTotal: number | null,
+	/**  Bytes per second. */
+	speed: number | null,
 };
 
 export type ProgressEventTypeDto = { type: "java_download"; version: number } | { type: "pack_file_download"; instance_path: string; pack_name: string; icon: string | null; pack_version: string } | { type: "pack_download"; instance_path: string; pack_name: string; icon: string | null; pack_id: string | null; pack_version: string | null } | { type: "minecraft_download"; instance_id: string; instance_name: string } | { type: "instance_update"; instance_id: string; instance_name: string } | { type: "zip_extract"; instance_path: string; instance_name: string } | { type: "launcher_update"; version: string; current_version: string; phase: LauncherUpdatePhaseDto } | { type: "plugin_download"; plugin_name: string };
+
+export type ProgressStageDto = "downloading" | "verifying" | "installing" | "extracting" | "finishing";
+
+export type ProgressStatusDto = { type: "running" } | { type: "done" } | { type: "failed"; message: string };
 
 export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payload: {
 	details: string,
