@@ -37,7 +37,8 @@ type ProgressNodeProps = {
 };
 
 /** The column of the chevron; leaves keep it empty so siblings line up. */
-const TOGGLE_COLUMN = 'flex h-6 w-5 shrink-0 items-center justify-center';
+const toggleColumn = (isSmall: boolean) =>
+  cn('flex w-4 shrink-0 items-center justify-center', isSmall ? 'h-5' : 'h-6');
 
 const Chevron: Component<{ isOpen: boolean }> = (props) => (
   <IconChevronDown
@@ -80,8 +81,8 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
     <Show
       when={children().length > 0}
       fallback={
-        <div class='gap-1 flex items-start'>
-          <span class={cn(TOGGLE_COLUMN, 'text-success')}>
+        <div class='gap-0.5 flex items-start'>
+          <span class={cn(toggleColumn(props.size === 'sm'), 'text-success')}>
             <Show when={props.finished}>
               <IconCheckCircle class='size-4' />
             </Show>
@@ -95,19 +96,19 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
         open={isOpen()}
         onOpenChange={setIsOpen}
       >
-        <div class='gap-1 flex items-start'>
-          <CollapsibleTrigger class={TOGGLE_COLUMN}>
+        <div class='gap-0.5 flex items-start'>
+          <CollapsibleTrigger class={toggleColumn(props.size === 'sm')}>
             <Chevron isOpen={isOpen()} />
           </CollapsibleTrigger>
           {card()}
         </div>
         <Show when={!isOpen() && failedMessage()}>
-          <span class='text-sm text-destructive pl-6 truncate'>
+          <span class='text-sm text-destructive pl-4.5 truncate'>
             {failedMessage()}
           </span>
         </Show>
         <CollapsibleContent>
-          <div class='gap-2 pl-6 flex flex-col'>
+          <div class='gap-2 pl-4.5 flex flex-col'>
             <For each={split().active}>
               {(child) => (
                 <ProgressNode
@@ -147,14 +148,14 @@ const FinishedGroup: Component<FinishedGroupProps> = (props) => {
       open={isOpen()}
       onOpenChange={setIsOpen}
     >
-      <CollapsibleTrigger class='gap-1 text-sm text-muted-foreground flex items-center'>
-        <span class={TOGGLE_COLUMN}>
+      <CollapsibleTrigger class='gap-0.5 text-sm text-muted-foreground flex items-center'>
+        <span class={toggleColumn(true)}>
           <Chevron isOpen={isOpen()} />
         </span>
         {t('events.completedChildren', { count: props.finished.length })}
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div class='gap-2 pl-6 flex flex-col opacity-70'>
+        <div class='gap-2 pl-4.5 flex flex-col opacity-70'>
           <For each={props.finished}>
             {(child) => (
               <ProgressNode
