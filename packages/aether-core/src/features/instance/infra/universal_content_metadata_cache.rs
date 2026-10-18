@@ -265,7 +265,7 @@ mod tests {
             .connect_with(options)
             .await
             .expect("Failed to create in-memory SQLite pool");
-        run_migrations(&pool).await;
+        run_migrations(&pool).await.unwrap();
 
         UniversalContentMetadataCache::new(SqliteCache::new(pool))
     }

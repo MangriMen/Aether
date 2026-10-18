@@ -116,7 +116,9 @@ impl SqlitePackStorage {
             .await
             .expect("Failed to create in-memory SQLite pool");
 
-        crate::core::migrations::run_migrations(&pool).await;
+        crate::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
 
         Self::new(pool)
     }

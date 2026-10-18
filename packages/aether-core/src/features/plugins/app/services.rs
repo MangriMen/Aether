@@ -108,8 +108,12 @@ impl PluginRegistry {
     where
         F: FnOnce(&mut Plugin) -> Result<(), PluginError> + Send,
     {
-        let mut plugin = self.get_mut(plugin_id)?;
-        update_fn(&mut plugin)?;
+        // The entry guard is released before the `await`: a handler that touches the same entry
+        // would otherwise block on the guard we hold across the suspension point.
+        {
+            let mut plugin = self.get_mut(plugin_id)?;
+            update_fn(&mut plugin)?;
+        }
 
         self.event_emitter
             .emit_safe(PluginEvent::Edit {

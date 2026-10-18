@@ -1,5 +1,5 @@
 use aether_core::core::migrations;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, migrate::MigrateError};
 use tauri::AppHandle;
 
 use super::state;
@@ -118,20 +118,22 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
     log::info!("Successfully split legacy migration table");
 }
 
-pub async fn run_migrations<R: tauri::Runtime>(app_handle: AppHandle<R>, pool: SqlitePool) {
+pub async fn run_migrations<R: tauri::Runtime>(
+    app_handle: AppHandle<R>,
+    pool: SqlitePool,
+) -> Result<(), MigrateError> {
     // ── Legacy migration split (one-time for existing databases) ──
     migrate_legacy_migrations_table(&pool).await;
 
     // Run aether-core (library) migrations with custom table `_sqlx_migrations_aether_core`
-    migrations::run_migrations(&pool).await;
+    migrations::run_migrations(&pool).await?;
 
     // Run desktop (application) migrations in the default `_sqlx_migrations` table
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .expect("Desktop migration failed");
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
     state::migrate(app_handle, pool)
         .await
         .expect("State migration failed");
+
+    Ok(())
 }

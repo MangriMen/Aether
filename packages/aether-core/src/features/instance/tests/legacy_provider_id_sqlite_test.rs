@@ -24,7 +24,7 @@ async fn create_pool() -> SqlitePool {
         .await
         .expect("Failed to create in-memory SQLite pool");
 
-    run_migrations(&pool).await;
+    run_migrations(&pool).await.unwrap();
 
     pool
 }

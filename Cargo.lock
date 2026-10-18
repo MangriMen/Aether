@@ -50,6 +50,7 @@ dependencies = [
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
+ "rfd",
  "semver",
  "serde",
  "serde_json",

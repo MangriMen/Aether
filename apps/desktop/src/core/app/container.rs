@@ -55,6 +55,8 @@ use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
 use sqlx::SqlitePool;
 
+use super::ordered_events::ordered_sink;
+
 type PBarStorage = InMemoryProgressBarStorage;
 type ProgressServiceType = ProgressServiceImpl<PBarStorage>;
 
@@ -417,13 +419,13 @@ pub async fn build_container(
         content_provider_registry,
         location_info.clone(),
     ));
-    event_emitter.on::<PluginEvent, _>({
+    event_emitter.on::<PluginEvent, _>(ordered_sink({
         let listener = plugin_infra_listener.clone();
         move |event| {
-            let task = listener.clone();
-            tokio::spawn(async move { task.on_plugin_event(event).await });
+            let listener = listener.clone();
+            async move { listener.on_plugin_event(event).await }
         }
-    });
+    }));
 
     info!("AetherContainer initialized via Composition Root");
     Ok(container)
