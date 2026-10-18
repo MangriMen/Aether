@@ -3,6 +3,7 @@ import {
   createMemo,
   createSignal,
   Show,
+  untrack,
   type Component,
 } from 'solid-js';
 
@@ -31,12 +32,13 @@ export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
   const pluginId = () => props.plugin.manifest.metadata.id;
   const lastReload = useLastPluginReload(pluginId);
 
-  // A refusal from before the notice appeared is about an earlier need, not this one.
-  const [shownAt, setShownAt] = createSignal(Date.now());
+  // A refusal from before the notice appeared is about an earlier need, not this one: when the
+  // need arises, the attempt made so far is set aside and only a later one is shown.
+  const [dismissedId, setDismissedId] = createSignal<number>();
   const restartNeeded = createMemo(() => props.plugin.restart_needed);
   createEffect(() => {
     if (restartNeeded()) {
-      setShownAt(Date.now());
+      setDismissedId(untrack(lastReload)?.mutationId);
     }
   });
 
@@ -46,7 +48,7 @@ export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
     if (
       reload?.status !== 'error' ||
       !reload.error ||
-      reload.submittedAt < shownAt()
+      reload.mutationId === dismissedId()
     ) {
       return null;
     }

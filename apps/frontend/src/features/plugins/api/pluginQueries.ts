@@ -113,7 +113,7 @@ export const useReloadPlugin = () => {
 
 /**
  * The last restart of the plugin, from whichever button asked for it: `undefined` before any.
- * `submittedAt` lets the caller ignore an attempt that predates what it is showing.
+ * `mutationId` tells attempts apart, so the caller can ignore one it has already dismissed.
  */
 export const useLastPluginReload = (id: Accessor<PluginId>) => {
   const states = useMutationState(() => ({
@@ -122,7 +122,7 @@ export const useLastPluginReload = (id: Accessor<PluginId>) => {
       id: mutation.state.variables,
       status: mutation.state.status,
       error: mutation.state.error,
-      submittedAt: mutation.state.submittedAt,
+      mutationId: mutation.mutationId,
     }),
   }));
 
