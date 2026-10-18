@@ -37,9 +37,7 @@ pub enum ProgressStage {
 pub enum ProgressStatus {
     Running,
     Done,
-    Failed {
-        message: String,
-    },
+    Failed { message: String },
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
