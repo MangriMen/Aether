@@ -34,7 +34,9 @@ export const PluginRestartNotice: Component<PluginRestartNoticeProps> = (
 
   // A refusal from before the notice appeared is about an earlier need, not this one: when the
   // need arises, the attempt made so far is set aside and only a later one is shown.
-  const [dismissedId, setDismissedId] = createSignal<number>();
+  const [dismissedId, setDismissedId] = createSignal(
+    untrack(lastReload)?.mutationId,
+  );
   const restartNeeded = createMemo(() => props.plugin.restart_needed);
   createEffect(() => {
     if (restartNeeded()) {
