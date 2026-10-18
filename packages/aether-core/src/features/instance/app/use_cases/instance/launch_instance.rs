@@ -7,7 +7,7 @@ use crate::{
         auth::Credential,
         instance::{
             Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
-            InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt,
+            InstanceLaunchService, InstanceLocks, InstanceStorage, InstanceStorageExt, LockRefused,
         },
         minecraft::{
             GetMinecraftLaunchCommandParams, LaunchSettings, MinecraftHealthParams,
@@ -118,10 +118,14 @@ impl LaunchInstanceUseCase {
         // Held until the game is started: content is not installed or updated under it. The
         // stage below does not tell an install into an `Installed` instance, nor one that starts
         // after it was read.
-        let Some(_lock) = self.instance_locks.try_lock(&instance_id) else {
-            return Err(InstanceError::InstanceStillInstalling {
-                instance_id: instance_id.into(),
-            });
+        let _lock = match self.instance_locks.try_lock(&instance_id) {
+            Ok(lock) => lock,
+            Err(LockRefused::Held) => {
+                return Err(InstanceError::InstanceStillInstalling {
+                    instance_id: instance_id.into(),
+                });
+            }
+            Err(LockRefused::Paused) => return Err(InstanceError::CachesBeingCleared),
         };
         let settings = self.default_instance_settings_storage.get().await?;
         let instance = self.instance_storage.get(&instance_id).await?;

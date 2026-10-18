@@ -45,6 +45,7 @@
       "CAPABILITY_OPERATION_ERROR": "Failed to execute component function",
       "INSTANCE_STILL_INSTALLING": "Instance is still installing",
       "INSTANCE_ALREADY_RUNNING": "Instance is already running",
+      "CACHES_BEING_CLEARED": "Caches are being cleared, try again in a moment",
       "PRELAUNCH_COMMAND_ERROR": "Pre-launch command error",
       "VALIDATION_ERROR": "Instance validation failed",
       "UNMANAGED_INSTANCE": "Action unavailable for unmanaged instance",

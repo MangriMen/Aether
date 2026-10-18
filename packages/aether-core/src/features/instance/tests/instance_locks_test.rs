@@ -11,10 +11,10 @@ async fn should_refuse_a_launch_lock_when_a_plan_holds_the_instance() {
     let locks = InstanceLocks::new();
     let held = locks.lock(&id("instance")).await;
 
-    assert!(locks.try_lock(&id("instance")).is_none());
+    assert!(locks.try_lock(&id("instance")).is_err());
 
     drop(held);
-    assert!(locks.try_lock(&id("instance")).is_some());
+    assert!(locks.try_lock(&id("instance")).is_ok());
 }
 
 #[tokio::test]
@@ -22,7 +22,7 @@ async fn should_not_block_another_instance_when_one_is_locked() {
     let locks = InstanceLocks::new();
     let _held = locks.lock(&id("instance")).await;
 
-    assert!(locks.try_lock(&id("other")).is_some());
+    assert!(locks.try_lock(&id("other")).is_ok());
 }
 
 #[tokio::test]
@@ -36,7 +36,7 @@ async fn should_let_the_second_plan_through_when_the_first_is_done() {
 
     drop(first);
     let _second = second.await;
-    assert!(locks.try_lock(&id("instance")).is_none());
+    assert!(locks.try_lock(&id("instance")).is_err());
 }
 
 #[tokio::test]

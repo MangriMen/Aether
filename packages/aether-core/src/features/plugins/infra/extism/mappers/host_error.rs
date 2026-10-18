@@ -172,9 +172,11 @@ fn instance_dto(value: &InstanceError) -> InstanceErrorDto {
             reason: reason.clone(),
         },
         // No kind of its own, so as not to break decoding in plugins built without it.
-        InstanceError::PluginNotRunning { .. } => Dto::ContentProviderError {
-            reason: value.to_string(),
-        },
+        InstanceError::PluginNotRunning { .. } | InstanceError::CachesBeingCleared => {
+            Dto::ContentProviderError {
+                reason: value.to_string(),
+            }
+        }
         InstanceError::PackInfoNotFound => Dto::PackInfoNotFound,
         InstanceError::UpdaterNotFound { modpack_id } => Dto::UpdaterNotFound {
             modpack_id: modpack_id.clone(),

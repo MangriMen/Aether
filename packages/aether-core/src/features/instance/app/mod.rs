@@ -15,6 +15,6 @@ pub use di::{
 };
 pub use dtos::*;
 pub use extensions::*;
-pub use instance_locks::{InstanceLockGuard, InstanceLocks};
+pub use instance_locks::{InstanceLockGuard, InstanceLocks, LockRefused};
 pub use ports::*;
 pub use use_cases::*;

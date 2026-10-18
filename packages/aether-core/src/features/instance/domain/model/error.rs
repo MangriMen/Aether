@@ -64,6 +64,9 @@ pub enum InstanceError {
     )]
     PluginNotRunning { plugin_id: String },
 
+    #[error("The caches are being cleared; try again in a moment")]
+    CachesBeingCleared,
+
     // Update errors
     #[error("Not found pack info in instance")]
     PackInfoNotFound,

@@ -43,7 +43,7 @@ pub use app::{
     LaunchInstanceWithActiveAccountUseCasePort, ListContentUseCase, ListContentUseCasePort,
     ListContentVersionsUseCase, ListContentVersionsUseCasePort, ListImportersUseCase,
     ListImportersUseCasePort, ListInstancesUseCase, ListInstancesUseCasePort, ListProvidersUseCase,
-    ListProvidersUseCasePort, PackStorage, PlatformProviderSelection, RemoveContent,
+    ListProvidersUseCasePort, LockRefused, PackStorage, PlatformProviderSelection, RemoveContent,
     RemoveContentUseCase, RemoveContentUseCasePort, RemoveInstanceUseCase,
     RemoveInstanceUseCasePort, SearchContentUseCase, SearchContentUseCasePort,
     UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater, remove_plan_leftovers,

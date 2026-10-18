@@ -695,7 +695,7 @@ async fn should_wait_for_the_instance_lock_when_another_plan_holds_it() {
         fixture
             .locks
             .try_lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
-            .is_some()
+            .is_ok()
     );
 }
 

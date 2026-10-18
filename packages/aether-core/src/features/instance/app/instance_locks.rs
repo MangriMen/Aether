@@ -41,6 +41,15 @@ pub struct InstanceLockGuard {
     _gate: ActivityLease,
 }
 
+/// Why [`InstanceLocks::try_lock`] did not hand out the lock.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LockRefused {
+    /// The shared [`ActivityGate`] is paused (the caches are being cleared).
+    Paused,
+    /// Another holder has the instance's lock.
+    Held,
+}
+
 impl Default for InstanceLocks {
     fn default() -> Self {
         Self::new()
@@ -80,11 +89,14 @@ impl InstanceLocks {
             .ok()
     }
 
-    /// The instance's lock, or `None` while another holds it.
-    pub fn try_lock(&self, instance_id: &InstanceId) -> Option<InstanceLockGuard> {
-        let gate = self.gate.try_lease()?;
-        let guard = self.lock_of(instance_id).try_lock_owned().ok()?;
-        Some(InstanceLockGuard {
+    /// The instance's lock, or why it is not available right now.
+    pub fn try_lock(&self, instance_id: &InstanceId) -> Result<InstanceLockGuard, LockRefused> {
+        let gate = self.gate.try_lease().ok_or(LockRefused::Paused)?;
+        let guard = self
+            .lock_of(instance_id)
+            .try_lock_owned()
+            .map_err(|_| LockRefused::Held)?;
+        Ok(InstanceLockGuard {
             _guard: guard,
             _gate: gate,
         })
@@ -128,12 +140,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_tell_a_held_instance_from_a_pause() {
+        let locks = InstanceLocks::new();
+        let _held = locks.lock(&id("a")).await;
+
+        assert_eq!(locks.try_lock(&id("a")).err(), Some(LockRefused::Held));
+    }
+
+    #[tokio::test]
     async fn should_refuse_to_lock_when_paused() {
         let gate = Arc::new(ActivityGate::new());
         let locks = InstanceLocks::with_gate(gate.clone());
         let pause = gate.try_pause().unwrap();
 
-        assert!(locks.try_lock(&id("a")).is_none());
+        assert_eq!(locks.try_lock(&id("a")).err(), Some(LockRefused::Paused));
         assert!(
             locks
                 .lock_within(&id("a"), std::time::Duration::from_millis(20))
@@ -142,6 +162,6 @@ mod tests {
         );
 
         drop(pause);
-        assert!(locks.try_lock(&id("a")).is_some());
+        assert!(locks.try_lock(&id("a")).is_ok());
     }
 }
