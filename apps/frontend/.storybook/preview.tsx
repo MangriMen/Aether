@@ -44,7 +44,7 @@ const preview: Preview = {
       root.setAttribute(KB_THEME_ATTRIBUTE, theme.mode);
       root.style.colorScheme = theme.mode;
       return (
-        <div class='bg-background p-8 text-foreground'>
+        <div class='p-8 text-foreground'>
           <div
             class='
               min-h-96 gap-6 rounded-xl bg-card/card p-8 shadow-sm flex
