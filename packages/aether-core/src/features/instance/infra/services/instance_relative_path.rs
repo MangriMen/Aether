@@ -22,7 +22,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use crate::features::instance::domain::InstanceError;
+use crate::features::instance::domain::{InstanceError, InstanceId};
 use crate::features::settings::{INSTANCE_METADATA_FOLDER_NAME, PLUGINS_FOLDER_NAME};
 
 fn invalid(path: &str, reason: &str) -> InstanceError {
@@ -32,10 +32,10 @@ fn invalid(path: &str, reason: &str) -> InstanceError {
     }
 }
 
-fn escapes(path: &str, instance_id: &str) -> InstanceError {
+fn escapes(path: &str, instance_id: &InstanceId) -> InstanceError {
     InstanceError::PathEscapesInstance {
         path: path.to_owned(),
-        instance_id: instance_id.to_owned(),
+        instance_id: instance_id.to_string(),
     }
 }
 
@@ -147,7 +147,7 @@ fn deepest_existing(path: &Path) -> Option<&Path> {
 /// creates it — but every part of it that *does* exist is canonicalised, so neither an
 /// intermediate directory symlink nor a symlinked target can point out of the instance.
 pub fn resolve_instance_file_path(
-    instance_id: &str,
+    instance_id: &InstanceId,
     instance_dir: &Path,
     relative_path: &str,
 ) -> Result<PathBuf, InstanceError> {

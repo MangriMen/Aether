@@ -39,7 +39,9 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
         .await
         .unwrap();
     tokio::fs::write(&source, b"jar").await.unwrap();
-    let instance_mods = location_info.instance_dir(INSTANCE_ID).join("mods");
+    let instance_mods = location_info
+        .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .join("mods");
     tokio::fs::create_dir_all(&instance_mods).await.unwrap();
     let pack_storage = Arc::new(SqlitePackStorage::in_memory().await);
     let locks = Arc::new(InstanceLocks::new());
@@ -49,7 +51,9 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
         location_info,
         locks.clone(),
     );
-    let held = locks.lock(INSTANCE_ID).await;
+    let held = locks
+        .lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .await;
 
     let mut import = std::pin::pin!(use_case.execute(ImportContent::new(
         InstanceId::try_from(INSTANCE_ID).unwrap(),

@@ -362,7 +362,10 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
 async fn should_wait_for_the_instance_lock_when_another_plan_holds_it() {
     let provider = MockProvider::new(Some(answer_as_asked()));
     let fixture = Fixture::new(&provider).await;
-    let held = fixture.locks.lock(INSTANCE_ID).await;
+    let held = fixture
+        .locks
+        .lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .await;
 
     let mut install = std::pin::pin!(
         fixture
@@ -382,7 +385,10 @@ async fn should_wait_for_the_instance_lock_when_another_plan_holds_it() {
 async fn should_not_wait_for_an_instance_lock_when_installing_a_modpack() {
     let provider = MockProvider::new(Some(answer_as_asked()));
     let fixture = Fixture::new(&provider).await;
-    let _held = fixture.locks.lock(INSTANCE_ID).await;
+    let _held = fixture
+        .locks
+        .lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .await;
 
     fixture
         .use_case

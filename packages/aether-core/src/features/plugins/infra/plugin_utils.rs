@@ -430,6 +430,7 @@ pub(crate) fn plugin_command_to_host(
 mod tests {
     use super::*;
     use super::{from_wasi_path, to_wasi_path};
+    use crate::features::instance::InstanceId;
 
     #[test]
     fn should_convert_to_wasi_path_when_windows_drive_has_a_backslash() {
@@ -620,7 +621,10 @@ mod tests {
         )
         .expect("bootstrap jar");
 
-        std::fs::create_dir_all(location_info.instance_dir(INSTANCE_ID)).expect("instance dir");
+        std::fs::create_dir_all(
+            location_info.instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        )
+        .expect("instance dir");
 
         Layout {
             _root: root,
@@ -666,8 +670,12 @@ mod tests {
 
         assert_eq!(
             crate::shared::io::infra::canonicalize(&resolved).unwrap(),
-            crate::shared::io::infra::canonicalize(layout.location_info.instance_dir(INSTANCE_ID))
-                .unwrap()
+            crate::shared::io::infra::canonicalize(
+                layout
+                    .location_info
+                    .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+            )
+            .unwrap()
         );
     }
 
@@ -1027,7 +1035,9 @@ mod tests {
     #[test]
     fn should_refuse_a_path_when_it_is_outside_the_plugin_cache() {
         let layout = layout();
-        let instance_dir = layout.location_info.instance_dir(INSTANCE_ID);
+        let instance_dir = layout
+            .location_info
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap());
         let other_mount = format!("/instances/{INSTANCE_ID}");
 
         for path in [
@@ -1163,7 +1173,7 @@ mod tests {
         std::fs::write(
             layout
                 .location_info
-                .instance_dir(INSTANCE_ID)
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
                 .join("pack.toml"),
             b"",
         )
@@ -1277,7 +1287,11 @@ mod tests {
     fn should_accept_a_current_dir_when_it_is_a_host_path_inside_a_mount() {
         let layout = layout();
         let mut command = packwiz_command(&layout.java_bin.to_string_lossy());
-        command.current_dir = Some(layout.location_info.instance_dir(INSTANCE_ID));
+        command.current_dir = Some(
+            layout
+                .location_info
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        );
 
         let host_command = plugin_command_to_host(
             PLUGIN_ID,
@@ -1295,7 +1309,7 @@ mod tests {
         let layout = layout();
         let pack = layout
             .location_info
-            .instance_dir(INSTANCE_ID)
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .join("pack.toml");
         std::fs::write(&pack, b"").unwrap();
 

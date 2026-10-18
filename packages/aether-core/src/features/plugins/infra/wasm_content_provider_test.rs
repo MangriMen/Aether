@@ -26,8 +26,8 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
-            ContentProvider, ContentSearchParams, ContentType, Importer, InstanceError, PackSource,
-            ProviderId, Updater,
+            ContentProvider, ContentSearchParams, ContentType, Importer, InstanceError, InstanceId,
+            PackSource, ProviderId, Updater,
         },
         plugins::{
             ApiConfig, LoadConfig, Plugin, PluginCapabilities, PluginContentProviderCapability,
@@ -569,7 +569,9 @@ const PACK: &[u8] = b"original";
 /// The plugin with the core's `/instances` mount — the default mount, keyed as the loader keys
 /// it — and an instance holding `pack.toml`.
 fn instances_plugin(sandbox: &Sandbox) -> (PathBuf, extism::Plugin) {
-    let instance = sandbox.location_info.instance_dir("inst");
+    let instance = sandbox
+        .location_info
+        .instance_dir(&InstanceId::try_from("inst").unwrap());
     std::fs::create_dir_all(&instance).unwrap();
     std::fs::write(instance.join("pack.toml"), PACK).unwrap();
 

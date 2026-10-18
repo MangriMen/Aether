@@ -78,7 +78,7 @@ impl ManageProcessUseCase {
         }
     }
 
-    fn run_post_exit(&self, command: &str, instance_id: &str) -> Result<(), ProcessError> {
+    fn run_post_exit(&self, command: &str, instance_id: &InstanceId) -> Result<(), ProcessError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
 
         if let Ok(cmd) = SerializableCommand::from_string(command, Some(&instance_dir)) {

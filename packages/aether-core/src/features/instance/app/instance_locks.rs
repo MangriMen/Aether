@@ -5,6 +5,8 @@ use std::{
 
 use tokio::sync::{OwnedMutexGuard, OwnedRwLockReadGuard, OwnedRwLockWriteGuard, RwLock};
 
+use crate::features::instance::InstanceId;
+
 /// One change to an instance's content at a time.
 ///
 /// Installing or updating content takes the instance's lock for the whole run, so two plans
@@ -26,7 +28,7 @@ pub struct InstanceLocks {
     gate: Arc<RwLock<()>>,
     /// Dropped once nobody holds or waits for the lock, so the map does not keep every instance
     /// ever touched.
-    locks: Mutex<HashMap<String, Weak<tokio::sync::Mutex<()>>>>,
+    locks: Mutex<HashMap<InstanceId, Weak<tokio::sync::Mutex<()>>>>,
 }
 
 /// The lock of one instance, held until dropped.
@@ -48,7 +50,7 @@ impl InstanceLocks {
     }
 
     /// Wait for the instance's lock.
-    pub async fn lock(&self, instance_id: &str) -> InstanceLockGuard {
+    pub async fn lock(&self, instance_id: &InstanceId) -> InstanceLockGuard {
         let gate = self.gate.clone().read_owned().await;
         InstanceLockGuard {
             _guard: self.lock_of(instance_id).lock_owned().await,
@@ -59,7 +61,7 @@ impl InstanceLocks {
     /// Wait for the instance's lock for at most `wait`: `None` if another still holds it then.
     pub async fn lock_within(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         wait: std::time::Duration,
     ) -> Option<InstanceLockGuard> {
         tokio::time::timeout(wait, self.lock(instance_id))
@@ -68,7 +70,7 @@ impl InstanceLocks {
     }
 
     /// The instance's lock, or `None` while another holds it.
-    pub fn try_lock(&self, instance_id: &str) -> Option<InstanceLockGuard> {
+    pub fn try_lock(&self, instance_id: &InstanceId) -> Option<InstanceLockGuard> {
         let gate = self.gate.clone().try_read_owned().ok()?;
         let guard = self.lock_of(instance_id).try_lock_owned().ok()?;
         Some(InstanceLockGuard {
@@ -86,7 +88,7 @@ impl InstanceLocks {
             .map(|gate| InstanceLocksPause { _gate: gate })
     }
 
-    fn lock_of(&self, instance_id: &str) -> Arc<tokio::sync::Mutex<()>> {
+    fn lock_of(&self, instance_id: &InstanceId) -> Arc<tokio::sync::Mutex<()>> {
         // Poisoning cannot leave the map inconsistent: every change to it is one call.
         let mut locks = self
             .locks
@@ -98,7 +100,7 @@ impl InstanceLocks {
             return lock;
         }
         let lock = Arc::new(tokio::sync::Mutex::new(()));
-        locks.insert(instance_id.to_owned(), Arc::downgrade(&lock));
+        locks.insert(instance_id.clone(), Arc::downgrade(&lock));
         lock
     }
 }
@@ -107,10 +109,14 @@ impl InstanceLocks {
 mod tests {
     use super::*;
 
+    fn id(id: &str) -> InstanceId {
+        InstanceId::try_from(id).unwrap()
+    }
+
     #[tokio::test]
     async fn should_refuse_a_pause_while_an_instance_is_locked() {
         let locks = InstanceLocks::new();
-        let guard = locks.lock("a").await;
+        let guard = locks.lock(&id("a")).await;
 
         assert!(locks.try_pause().is_none());
 
@@ -123,15 +129,15 @@ mod tests {
         let locks = InstanceLocks::new();
         let pause = locks.try_pause().unwrap();
 
-        assert!(locks.try_lock("a").is_none());
+        assert!(locks.try_lock(&id("a")).is_none());
         assert!(
             locks
-                .lock_within("a", std::time::Duration::from_millis(20))
+                .lock_within(&id("a"), std::time::Duration::from_millis(20))
                 .await
                 .is_none()
         );
 
         drop(pause);
-        assert!(locks.try_lock("a").is_some());
+        assert!(locks.try_lock(&id("a")).is_some());
     }
 }

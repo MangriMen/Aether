@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use crate::features::{
-    instance::{InstallPlan, InstanceError, PackFile},
+    instance::{InstallPlan, InstanceError, InstanceId, PackFile},
     minecraft::ModLoader,
 };
 
@@ -78,7 +78,7 @@ async fn should_roll_back_an_update_when_installing_a_file_fails() {
     std::fs::remove_file(
         fixture
             .location_info
-            .instance_dir(INSTANCE_ID)
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .join("resourcepacks"),
     )
     .unwrap();
@@ -93,7 +93,7 @@ async fn should_roll_back_an_update_when_removing_a_dropped_file_fails() {
     let fixture = Fixture::new().await;
     let held = fixture
         .location_info
-        .instance_dir(INSTANCE_ID)
+        .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
         .join("mods/held.jar");
     std::fs::create_dir_all(held.join("inner")).unwrap();
     fixture
@@ -151,7 +151,7 @@ async fn should_roll_back_an_update_when_applying_an_override_fails() {
     std::fs::remove_file(
         fixture
             .location_info
-            .instance_dir(INSTANCE_ID)
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .join("blocked"),
     )
     .unwrap();
@@ -165,7 +165,9 @@ async fn should_restore_a_disabled_file_when_an_update_fails() {
     fixture
         .put_installed("mods/a.jar", "a 1", Some(pack_of(&plugin("packwiz"))))
         .await;
-    let dir = fixture.location_info.instance_dir(INSTANCE_ID);
+    let dir = fixture
+        .location_info
+        .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap());
     std::fs::rename(dir.join("mods/a.jar"), dir.join("mods/a.jar.disabled")).unwrap();
     fixture.put("resourcepacks", "not a directory");
 
