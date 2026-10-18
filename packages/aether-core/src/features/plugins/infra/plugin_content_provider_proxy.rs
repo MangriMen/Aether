@@ -540,11 +540,12 @@ impl ContentProvider for PluginContentProviderProxy {
                 },
             )
             .await?;
+        let asked: HashSet<&str> = version_ids.iter().map(String::as_str).collect();
         Ok(self
             .keep_answered(
                 handler,
                 result_dto,
-                |dto| version_ids.contains(&dto.version_id),
+                |dto| asked.contains(dto.version_id.as_str()),
                 |dto| !dto.version_number.trim().is_empty(),
                 |dto| &dto.version_id,
             )
