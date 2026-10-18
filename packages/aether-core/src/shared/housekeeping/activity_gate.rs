@@ -320,6 +320,7 @@ mod tests {
         // Taking a pause, even for a moment, would wake the watcher.
         let woken = tokio::time::timeout(Duration::from_millis(50), watch.changed()).await;
         assert!(woken.is_err());
-        assert!(gate.try_lease().is_some());
+        let _lease = gate.try_lease().unwrap();
+        assert!(StorageActivity::is_busy(&gate));
     }
 }

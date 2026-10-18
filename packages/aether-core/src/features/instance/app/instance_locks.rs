@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_a_pause_while_an_instance_is_locked() {
+    async fn should_refuse_a_pause_when_an_instance_is_locked() {
         let gate = Arc::new(ActivityGate::new());
         let locks = InstanceLocks::with_gate(gate.clone());
         let guard = locks.lock(&id("a")).await;
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_to_lock_while_paused() {
+    async fn should_refuse_to_lock_when_paused() {
         let gate = Arc::new(ActivityGate::new());
         let locks = InstanceLocks::with_gate(gate.clone());
         let pause = gate.try_pause().unwrap();
