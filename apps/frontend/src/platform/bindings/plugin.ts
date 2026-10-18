@@ -530,6 +530,10 @@ export type ProviderHandlersDto = {
 	resolveInstallPlan: string | null,
 	/**  Optional function describing a pack without resolving its files. */
 	resolvePackMetadata: string | null,
+	/**  Optional function describing projects to show installed content by. */
+	getContentsMetadata: string | null,
+	/**  Optional function giving the version numbers of installed files. */
+	getVersionsMetadata: string | null,
 };
 
 /**  Generic provider-agnostic plugin preview for the frontend. */

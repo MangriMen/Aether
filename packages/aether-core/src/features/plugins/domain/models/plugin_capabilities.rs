@@ -99,6 +99,8 @@ pub struct ProviderHandlers {
     pub resolve_file: Option<String>,
     pub resolve_install_plan: Option<String>,
     pub resolve_pack_metadata: Option<String>,
+    pub get_contents_metadata: Option<String>,
+    pub get_versions_metadata: Option<String>,
 }
 
 impl Deref for PluginImporterCapability {
@@ -185,6 +187,8 @@ mod tests {
                 resolve_file: Some("resolve_file".to_owned()),
                 resolve_install_plan: None,
                 resolve_pack_metadata: None,
+                get_contents_metadata: None,
+                get_versions_metadata: None,
             },
         }
     }

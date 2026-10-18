@@ -1,5 +1,6 @@
 pub mod content_file;
 pub mod content_item;
+pub mod content_metadata;
 pub mod content_search_params;
 pub mod content_search_result;
 pub mod content_type;
@@ -16,6 +17,7 @@ pub mod resolve;
 
 pub use content_file::*;
 pub use content_item::*;
+pub use content_metadata::*;
 pub use content_search_params::*;
 pub use content_search_result::*;
 pub use content_type::*;

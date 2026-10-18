@@ -122,6 +122,8 @@ pub struct ProviderHandlersDto {
     pub resolve_file: Option<String>,
     pub resolve_install_plan: Option<String>,
     pub resolve_pack_metadata: Option<String>,
+    pub get_contents_metadata: Option<String>,
+    pub get_versions_metadata: Option<String>,
 }
 
 // ── PluginDto ──
@@ -273,6 +275,8 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             resolve_file: v.resolve_file,
             resolve_install_plan: v.resolve_install_plan,
             resolve_pack_metadata: v.resolve_pack_metadata,
+            get_contents_metadata: v.get_contents_metadata,
+            get_versions_metadata: v.get_versions_metadata,
         }
     }
 }

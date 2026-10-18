@@ -66,6 +66,10 @@ pub struct ProviderHandlersV1 {
     pub resolve_install_plan: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolve_pack_metadata: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub get_contents_metadata: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub get_versions_metadata: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +194,8 @@ impl From<PluginCapabilitiesV1> for PluginCapabilities {
                         resolve_file: cp.handlers.resolve_file,
                         resolve_install_plan: cp.handlers.resolve_install_plan,
                         resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
+                        get_contents_metadata: cp.handlers.get_contents_metadata,
+                        get_versions_metadata: cp.handlers.get_versions_metadata,
                     },
                 })
                 .collect(),
@@ -255,6 +261,8 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                             resolve_file: cp.handlers.resolve_file,
                             resolve_install_plan: cp.handlers.resolve_install_plan,
                             resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
+                            get_contents_metadata: cp.handlers.get_contents_metadata,
+                            get_versions_metadata: cp.handlers.get_versions_metadata,
                         },
                     })
                     .collect(),
