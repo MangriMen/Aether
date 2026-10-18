@@ -22,8 +22,8 @@ pub(crate) use allowed_host::{
 };
 pub use allowed_path::{AllowedPath, AllowedPathRejection, FolderMounts};
 pub(crate) use allowed_path::{
-    PLUGIN_CACHE_MOUNT, PLUGIN_INSTANCES_MOUNT, core_folders, is_filesystem_root,
-    partition_mountable, to_wasi_path,
+    CoreMount, PLUGIN_CACHE_MOUNT, core_folders, is_filesystem_root, partition_mountable,
+    to_wasi_path,
 };
 pub(crate) use constants::PLUGIN_API_VERSION;
 pub use extracted_plugin::{ExtractedPlugin, PluginContent};

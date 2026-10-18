@@ -36,9 +36,7 @@ use crate::{
             infra::{
                 PluginCapabilitiesV1, PluginContentProviderProxy, PluginInfrastructureListener,
                 extism::models::ExtismPluginInstance,
-                plugin_utils::{
-                    get_default_allowed_paths, is_read_only_plugin_mount, to_extism_mount_key,
-                },
+                plugin_utils::{get_default_allowed_paths, to_extism_mount_key},
             },
         },
         settings::LocationInfo,
@@ -577,11 +575,11 @@ fn instances_plugin(sandbox: &Sandbox) -> (PathBuf, extism::Plugin) {
 
     let mounts = get_default_allowed_paths(&sandbox.location_info, PLUGIN_ID)
         .into_iter()
-        .filter(|(_, plugin)| plugin == &PathBuf::from("/instances"))
-        .map(|(host, plugin)| {
+        .filter(|(_, mount)| mount.plugin_root() == "/instances")
+        .map(|(host, mount)| {
             (
-                to_extism_mount_key(&host, is_read_only_plugin_mount(&plugin)),
-                plugin,
+                to_extism_mount_key(&host, mount.is_read_only()),
+                PathBuf::from(mount.plugin_root()),
             )
         })
         .collect::<Vec<_>>();
