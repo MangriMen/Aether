@@ -58,6 +58,7 @@ use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
 use sqlx::SqlitePool;
 
+use super::busy_events::spawn_busy_events;
 use super::ordered_events::ordered_sink;
 
 type PBarStorage = InMemoryProgressBarStorage;
@@ -408,6 +409,7 @@ pub async fn build_container(
 
     // ── Post-construction wiring ────────────────────────────────────
     extism_loader.set_container(&container);
+    spawn_busy_events(&container.activity_gate(), event_emitter.clone());
 
     instance_watcher_service
         .watch_instances()

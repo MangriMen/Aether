@@ -7,12 +7,14 @@ use tauri_specta::Event;
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum CacheEventDto {
     Changed,
+    BusyChanged { busy: bool },
 }
 
 impl From<CacheEvent> for CacheEventDto {
     fn from(value: CacheEvent) -> Self {
         match value {
             CacheEvent::Changed => Self::Changed,
+            CacheEvent::BusyChanged { busy } => Self::BusyChanged { busy },
         }
     }
 }

@@ -8,9 +8,16 @@ import { settingsCache } from './settingsCache';
 export const useCacheEventListener = () => {
   const queryClient = useQueryClient();
 
-  useEventListener(eventsEvents.cacheEventDto, (e) => {
+  useEventListener(eventsEvents.cacheEventDto, async (e) => {
     logDebug('[EVENT][DEBUG]', e);
 
-    settingsCache.invalidate.cacheUsage(queryClient);
+    switch (e.payload.type) {
+      case 'changed':
+        await settingsCache.invalidate.cacheUsage(queryClient);
+        break;
+      case 'busyChanged':
+        await settingsCache.setCacheBusy(queryClient, e.payload.busy);
+        break;
+    }
   });
 };
