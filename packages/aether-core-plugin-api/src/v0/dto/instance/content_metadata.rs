@@ -37,7 +37,7 @@ pub struct GetAuthorsParamsDto {
 /// is kept under its `contentId`, so do not give an item the `slug` of one asked project and the
 /// `contentId` of another. An item
 /// without a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentMetadataDto {
     /// The provider's own id of the project, which may differ from the one asked by (a slug, for
@@ -55,7 +55,8 @@ pub struct ContentMetadataDto {
     /// The provider's own token for whoever authors the project (a team, an organization), when
     /// naming them is a request apart: the host asks `getAuthors` for it later, so the project is
     /// shown even when that request fails. Opaque to the host; used instead of `author` or
-    /// besides it. A blank ref is no ref.
+    /// besides it. A blank ref, or one over 256 bytes, is no ref. The host also drops it when the
+    /// provider declares no `getAuthors`.
     #[serde(default)]
     pub author_ref: Option<String>,
     /// An `https` URL of the icon. The host downloads it itself, so the plugin needs no network
@@ -92,7 +93,8 @@ pub struct ContentVersionMetadataDto {
 /// not know is left out of the answer, not an error.
 ///
 /// The host keeps only items whose `authorRef` was asked, once each, and with a non-blank
-/// `name`; the rest of the answer is kept when one item is dropped.
+/// `name`; the rest of the answer is kept when one item is dropped. The name is trimmed and cut
+/// to 128 characters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentAuthorDto {

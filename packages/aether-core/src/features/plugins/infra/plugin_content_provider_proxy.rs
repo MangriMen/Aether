@@ -505,18 +505,19 @@ impl ContentProvider for PluginContentProviderProxy {
                 },
             )
             .await?;
+        let asked: HashSet<&str> = author_refs.iter().map(String::as_str).collect();
         Ok(self
             .keep_answered(
                 handler,
                 result_dto,
-                |dto| author_refs.contains(&dto.author_ref),
-                |dto| !dto.author_ref.trim().is_empty() && !dto.name.trim().is_empty(),
+                |dto| asked.contains(dto.author_ref.as_str()),
+                |dto| !dto.name.trim().is_empty(),
                 |dto| &dto.author_ref,
             )
             .into_iter()
             .map(|dto| ContentAuthor {
                 author_ref: dto.author_ref,
-                name: dto.name,
+                name: author_name(&dto.name),
             })
             .collect())
     }
@@ -612,11 +613,21 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
         name: dto.name,
         description: dto.description,
         author: dto.author,
-        author_ref: dto
-            .author_ref
-            .filter(|author_ref| !author_ref.trim().is_empty()),
+        author_ref: dto.author_ref.filter(|author_ref| {
+            !author_ref.trim().is_empty() && author_ref.len() <= MAX_AUTHOR_REF_LEN
+        }),
         icon_url,
     }
+}
+
+/// The longest ref the host keeps and sends back to a plugin; it is an opaque token (a team or
+/// organization id), so a longer one is a plugin's mistake, not an author.
+const MAX_AUTHOR_REF_LEN: usize = 256;
+const MAX_AUTHOR_NAME_CHARS: usize = 128;
+
+/// An author's name is shown as one line, so it is trimmed and cut to a length that fits.
+fn author_name(name: &str) -> String {
+    name.trim().chars().take(MAX_AUTHOR_NAME_CHARS).collect()
 }
 
 /// An empty title is no title.

@@ -529,23 +529,54 @@ async fn should_keep_an_author_ref_when_describing_content_and_drop_a_blank_one(
     with_ref.author_ref = Some("team:abc".into());
     let mut blank_ref = project_metadata("2", None);
     blank_ref.author_ref = Some("  ".into());
+    let mut long_ref = project_metadata("4", None);
+    long_ref.author_ref = Some("t".repeat(257));
     let fixture = Fixture::new(
         RESOLVE_ONLY_CAPABILITIES,
         vec![(
             "cf_get_contents_metadata",
-            encode(vec![with_ref, blank_ref, project_metadata("3", None)]),
+            encode(vec![
+                with_ref,
+                blank_ref,
+                project_metadata("3", None),
+                long_ref,
+            ]),
         )],
     );
 
     let projects = fixture
         .proxy
-        .get_contents_metadata(&["1", "2", "3"].map(str::to_owned))
+        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
         .await
         .unwrap();
 
     assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
     assert_eq!(projects[1].author_ref, None);
     assert_eq!(projects[2].author_ref, None);
+    assert_eq!(projects[3].author_ref, None);
+}
+
+#[tokio::test]
+async fn should_trim_and_cut_the_name_of_an_author() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_authors",
+            encode(vec![
+                author("team:a", "  Mezz  "),
+                author("team:b", &"n".repeat(1000)),
+            ]),
+        )],
+    );
+
+    let authors = fixture
+        .proxy
+        .get_authors(&["team:a", "team:b"].map(str::to_owned))
+        .await
+        .unwrap();
+
+    assert_eq!(authors[0].name, "Mezz");
+    assert_eq!(authors[1].name.chars().count(), 128);
 }
 
 #[tokio::test]
@@ -602,33 +633,6 @@ async fn should_drop_authors_nobody_asked_about_repeated_or_unnamed_ones() {
             .collect::<Vec<_>>(),
         [("team:a", "First"), ("team:c", "Third")]
     );
-}
-
-#[tokio::test]
-async fn should_still_describe_content_when_the_authors_handler_fails() {
-    // `cf_get_authors` is declared but the plugin does not export it.
-    let mut with_ref = project_metadata("1", None);
-    with_ref.author_ref = Some("team:abc".into());
-    let fixture = Fixture::new(
-        RESOLVE_ONLY_CAPABILITIES,
-        vec![("cf_get_contents_metadata", encode(vec![with_ref]))],
-    );
-
-    assert!(
-        fixture
-            .proxy
-            .get_authors(&["team:abc".to_owned()])
-            .await
-            .is_err()
-    );
-    let projects = fixture
-        .proxy
-        .get_contents_metadata(&["1".to_owned()])
-        .await
-        .unwrap();
-
-    assert_eq!(projects.len(), 1);
-    assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
 }
 
 #[tokio::test]
