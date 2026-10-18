@@ -225,7 +225,7 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
 
     use_case
         .execute(RemoveContent::multiple(
-            instance_id.clone(),
+            InstanceId::try_from(instance_id.clone()).unwrap(),
             vec!["mods/a.jar".to_string()],
         ))
         .await
@@ -276,7 +276,7 @@ async fn should_remove_every_file_when_several_are_given() {
 
     use_case
         .execute(RemoveContent::multiple(
-            instance_id.clone(),
+            InstanceId::try_from(instance_id.clone()).unwrap(),
             vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
         ))
         .await
@@ -320,7 +320,7 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
     // Removing a path not in the pack should not fail
     use_case
         .execute(RemoveContent::multiple(
-            instance_id.clone(),
+            InstanceId::try_from(instance_id.clone()).unwrap(),
             vec!["mods/nonexistent.jar".to_string()],
         ))
         .await
@@ -353,7 +353,7 @@ async fn should_keep_the_record_of_a_file_when_it_cannot_be_removed() {
     );
     let result = use_case
         .execute(RemoveContent::multiple(
-            instance_id.clone(),
+            InstanceId::try_from(instance_id.clone()).unwrap(),
             vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
         ))
         .await;
@@ -412,7 +412,7 @@ async fn should_remove_only_the_selected_files_when_others_exist() {
 
     use_case
         .execute(RemoveContent::multiple(
-            instance_id.clone(),
+            InstanceId::try_from(instance_id.clone()).unwrap(),
             vec!["mods/a.jar".to_string()],
         ))
         .await
@@ -466,7 +466,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     let held = locks.lock(&instance_id).await;
 
     let mut remove = std::pin::pin!(use_case.execute(RemoveContent::multiple(
-        instance_id.clone(),
+        InstanceId::try_from(instance_id.clone()).unwrap(),
         vec!["mods/a.jar".to_string()],
     )));
     assert!(futures::poll!(&mut remove).is_pending());

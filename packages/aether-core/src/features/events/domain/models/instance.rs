@@ -1,7 +1,9 @@
+use crate::features::instance::InstanceId;
+
 #[derive(Debug, Clone)]
 pub struct InstanceEvent {
     pub event: InstanceEventType,
-    pub instance_id: String,
+    pub instance_id: InstanceId,
 }
 
 #[derive(Debug, Clone)]

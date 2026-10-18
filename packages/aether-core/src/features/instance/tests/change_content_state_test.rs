@@ -7,7 +7,8 @@ use crate::features::events::{Event, EventEmitter, EventError, SharedEventEmitte
 use crate::features::instance::app::ContentFileService;
 use crate::features::instance::infra::FsContentFileService;
 use crate::features::instance::{
-    ChangeContentState, ChangeContentStateUseCase, ContentStateAction, InstanceError, InstanceLocks,
+    ChangeContentState, ChangeContentStateUseCase, ContentStateAction, InstanceError, InstanceId,
+    InstanceLocks,
 };
 use crate::features::settings::LocationInfo;
 
@@ -56,9 +57,9 @@ fn get_use_case_with_locks(
 async fn should_enable_a_file_when_one_file_is_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-enable-usecase";
+    let instance_id = InstanceId::try_from("test-enable-usecase").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -68,7 +69,7 @@ async fn should_enable_a_file_when_one_file_is_given() {
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/test.jar".to_string(),
             ContentStateAction::Enable,
         ))
@@ -86,9 +87,9 @@ async fn should_enable_a_file_when_one_file_is_given() {
 async fn should_disable_a_file_when_one_file_is_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-disable-usecase";
+    let instance_id = InstanceId::try_from("test-disable-usecase").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -98,7 +99,7 @@ async fn should_disable_a_file_when_one_file_is_given() {
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/test.jar".to_string(),
             ContentStateAction::Disable,
         ))
@@ -119,9 +120,9 @@ async fn should_disable_a_file_when_one_file_is_given() {
 async fn should_enable_files_when_several_are_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-enable-multi-usecase";
+    let instance_id = InstanceId::try_from("test-enable-multi-usecase").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -134,7 +135,7 @@ async fn should_enable_files_when_several_are_given() {
 
     use_case
         .execute(ChangeContentState::multiple(
-            instance_id.to_string(),
+            instance_id.clone(),
             vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
             ContentStateAction::Enable,
         ))
@@ -149,9 +150,9 @@ async fn should_enable_files_when_several_are_given() {
 async fn should_disable_files_when_several_are_given() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-disable-multi-usecase";
+    let instance_id = InstanceId::try_from("test-disable-multi-usecase").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -164,7 +165,7 @@ async fn should_disable_files_when_several_are_given() {
 
     use_case
         .execute(ChangeContentState::multiple(
-            instance_id.to_string(),
+            instance_id.clone(),
             vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
             ContentStateAction::Disable,
         ))
@@ -185,9 +186,9 @@ async fn should_disable_files_when_several_are_given() {
 async fn should_stay_enabled_when_a_file_is_already_enabled() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-already-enabled";
+    let instance_id = InstanceId::try_from("test-already-enabled").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -197,7 +198,7 @@ async fn should_stay_enabled_when_a_file_is_already_enabled() {
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/test.jar".to_string(),
             ContentStateAction::Enable,
         ))
@@ -214,9 +215,9 @@ async fn should_stay_enabled_when_a_file_is_already_enabled() {
 async fn should_stay_disabled_when_a_file_is_already_disabled() {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-already-disabled";
+    let instance_id = InstanceId::try_from("test-already-disabled").unwrap();
 
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&instance_id);
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -226,7 +227,7 @@ async fn should_stay_disabled_when_a_file_is_already_disabled() {
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/test.jar".to_string(),
             ContentStateAction::Disable,
         ))
@@ -243,11 +244,11 @@ async fn should_stay_disabled_when_a_file_is_already_disabled() {
 async fn should_succeed_when_the_file_does_not_exist() {
     let (_temp, _location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = "test-nonexistent";
+    let instance_id = InstanceId::try_from("test-nonexistent").unwrap();
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/nonexistent.jar".to_string(),
             ContentStateAction::Enable,
         ))
@@ -256,7 +257,7 @@ async fn should_succeed_when_the_file_does_not_exist() {
 
     use_case
         .execute(ChangeContentState::single(
-            instance_id.to_string(),
+            instance_id.clone(),
             "mods/nonexistent.jar".to_string(),
             ContentStateAction::Disable,
         ))
@@ -284,7 +285,7 @@ async fn should_refuse_the_change_when_a_plan_holds_the_lock_past_the_wait() {
 
     let result = use_case
         .execute(ChangeContentState::single(
-            "busy".to_string(),
+            InstanceId::try_from("busy").unwrap(),
             "mods/test.jar".to_string(),
             ContentStateAction::Disable,
         ))
@@ -306,7 +307,7 @@ async fn should_change_the_state_when_the_lock_is_released_within_the_wait() {
     let held = locks.lock("brief").await;
 
     let mut change = std::pin::pin!(use_case.execute(ChangeContentState::single(
-        "brief".to_string(),
+        InstanceId::try_from("brief").unwrap(),
         "mods/test.jar".to_string(),
         ContentStateAction::Disable,
     )));

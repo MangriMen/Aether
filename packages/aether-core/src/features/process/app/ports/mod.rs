@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use tokio::process::Child;
 use uuid::Uuid;
 
+use crate::features::instance::InstanceId;
 use crate::features::process::domain::{MinecraftProcessMetadata, ProcessError};
 
 pub use manage_process_service::ManageProcessService;
@@ -55,6 +56,6 @@ pub trait ListProcessMetadataUseCasePort: Send + Sync {
 pub trait GetProcessMetadataByInstanceIdUseCasePort: Send + Sync {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<Vec<MinecraftProcessMetadata>, ProcessError>;
 }

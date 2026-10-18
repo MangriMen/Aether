@@ -17,8 +17,7 @@ impl GetInstanceUseCase {
 
 #[async_trait]
 impl GetInstanceUseCasePort for GetInstanceUseCase {
-    async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
-        let instance_id = InstanceId::try_from(instance_id)?;
+    async fn execute(&self, instance_id: InstanceId) -> Result<Instance, InstanceError> {
         self.instance_storage.get(&instance_id).await
     }
 }

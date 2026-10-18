@@ -23,7 +23,7 @@ pub enum ProcessEventTypeDto {
 impl From<ProcessEvent> for ProcessEventDto {
     fn from(value: ProcessEvent) -> Self {
         Self {
-            instance_id: value.instance_id,
+            instance_id: value.instance_id.to_string(),
             process_id: value.process_id,
             event: value.event.into(),
             message: value.message,

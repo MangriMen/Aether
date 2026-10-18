@@ -10,8 +10,8 @@ use crate::features::instance::app::{
 };
 use crate::features::instance::domain::{
     ContentFile, ContentItem, ContentProviderCapabilityMetadata, ContentVersion,
-    ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame, NewInstance,
-    PlanOrigin,
+    ImporterCapabilityMetadata, InstallPlan, Instance, InstanceError, InstanceGame, InstanceId,
+    NewInstance, PlanOrigin,
 };
 use crate::features::instance::{ContentInstallParams, ContentSearchParams, ContentSearchResult};
 use crate::features::process::MinecraftProcessMetadata;
@@ -30,12 +30,16 @@ pub trait CreateInstanceUseCasePort: Send + Sync {
 /// Moves an existing instance to another game. Nothing happens when it already runs it.
 #[async_trait]
 pub trait ChangeInstanceGameUseCasePort: Send + Sync {
-    async fn execute(&self, instance_id: String, game: InstanceGame) -> Result<(), InstanceError>;
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        game: InstanceGame,
+    ) -> Result<(), InstanceError>;
 }
 
 #[async_trait]
 pub trait GetInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError>;
+    async fn execute(&self, instance_id: InstanceId) -> Result<Instance, InstanceError>;
 }
 
 #[async_trait]
@@ -47,7 +51,7 @@ pub trait ListInstancesUseCasePort: Send + Sync {
 pub trait EditInstanceUseCasePort: Send + Sync {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         edit_instance: EditInstance,
     ) -> Result<Instance, InstanceError>;
 }
@@ -62,12 +66,12 @@ pub trait EditInstanceIconUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait RemoveInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError>;
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError>;
 }
 
 #[async_trait]
 pub trait UpdateInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError>;
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError>;
 }
 
 // ── Instance lifecycle ──
@@ -86,8 +90,10 @@ pub trait ListImportersUseCasePort: Send + Sync {
 
 #[async_trait]
 pub trait LaunchInstanceWithActiveAccountUseCasePort: Send + Sync {
-    async fn execute(&self, instance_id: String)
-    -> Result<MinecraftProcessMetadata, InstanceError>;
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+    ) -> Result<MinecraftProcessMetadata, InstanceError>;
 }
 
 // ── Content management ──
@@ -106,7 +112,7 @@ pub trait ImportContentUseCasePort: Send + Sync {
 pub trait ListContentUseCasePort: Send + Sync {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<DashMap<String, ContentFile>, InstanceError>;
 }
 
@@ -154,7 +160,7 @@ pub trait InstallPlanExecutorPort: Send + Sync {
 pub trait CheckContentCompatibilityUseCasePort: Send + Sync {
     async fn execute(
         &self,
-        instance_ids: HashSet<String>,
+        instance_ids: HashSet<InstanceId>,
         check_params: ContentCompatibilityCheckParams,
     ) -> Result<HashMap<String, ContentCompatibilityResult>, InstanceError>;
 }

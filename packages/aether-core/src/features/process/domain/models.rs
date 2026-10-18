@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 
 use uuid::Uuid;
 
+use crate::features::instance::InstanceId;
 use crate::shared::io::domain::IoError;
 
 #[derive(Debug, thiserror::Error)]
@@ -19,12 +20,12 @@ pub enum ProcessError {
 #[derive(Debug, Clone)]
 pub struct MinecraftProcessMetadata {
     uuid: Uuid,
-    instance_id: String,
+    instance_id: InstanceId,
     start_time: DateTime<Utc>,
 }
 
 impl MinecraftProcessMetadata {
-    pub fn new(instance_id: String) -> Self {
+    pub fn new(instance_id: InstanceId) -> Self {
         MinecraftProcessMetadata {
             uuid: Uuid::new_v4(),
             instance_id,
@@ -35,7 +36,7 @@ impl MinecraftProcessMetadata {
     pub fn uuid(&self) -> Uuid {
         self.uuid
     }
-    pub fn instance_id(&self) -> &str {
+    pub fn instance_id(&self) -> &InstanceId {
         &self.instance_id
     }
     pub fn start_time(&self) -> &DateTime<Utc> {

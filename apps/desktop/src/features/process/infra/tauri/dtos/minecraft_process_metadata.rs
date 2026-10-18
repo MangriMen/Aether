@@ -15,7 +15,7 @@ impl From<MinecraftProcessMetadata> for MinecraftProcessMetadataDto {
     fn from(value: MinecraftProcessMetadata) -> Self {
         MinecraftProcessMetadataDto {
             uuid: value.uuid(),
-            instance_id: value.instance_id().to_owned(),
+            instance_id: value.instance_id().to_string(),
             start_time: *value.start_time(),
         }
     }

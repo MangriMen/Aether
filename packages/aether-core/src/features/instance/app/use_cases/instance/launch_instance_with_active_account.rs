@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::LaunchInstanceWithActiveAccountUseCasePort;
 use crate::features::{
     auth::{ActiveAccountHelper, CredentialsStorage},
-    instance::{InstanceError, InstanceLaunchService},
+    instance::{InstanceError, InstanceId, InstanceLaunchService},
     process::MinecraftProcessMetadata,
 };
 
@@ -27,7 +27,7 @@ impl LaunchInstanceWithActiveAccountUseCase {
 
     pub async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         let default_account =
             ActiveAccountHelper::ensure_active(self.credentials_storage.as_ref()).await?;
@@ -42,7 +42,7 @@ impl LaunchInstanceWithActiveAccountUseCase {
 impl LaunchInstanceWithActiveAccountUseCasePort for LaunchInstanceWithActiveAccountUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
     ) -> Result<MinecraftProcessMetadata, InstanceError> {
         self.execute(instance_id).await
     }

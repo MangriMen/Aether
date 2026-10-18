@@ -255,9 +255,16 @@ impl RecordingChangeGame {
 
 #[async_trait]
 impl ChangeInstanceGameUseCasePort for RecordingChangeGame {
-    async fn execute(&self, instance_id: String, game: InstanceGame) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        game: InstanceGame,
+    ) -> Result<(), InstanceError> {
         let fail = game.game_version.contains("fail");
-        self.changes.lock().unwrap().push((instance_id, game));
+        self.changes
+            .lock()
+            .unwrap()
+            .push((instance_id.into(), game));
 
         if fail {
             Err(InstanceError::Storage("install failed".into()))
@@ -275,8 +282,8 @@ pub(super) struct RecordingRemove {
 
 #[async_trait]
 impl RemoveInstanceUseCasePort for RecordingRemove {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
-        self.removed.lock().unwrap().push(instance_id);
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
+        self.removed.lock().unwrap().push(instance_id.into());
         Ok(())
     }
 }

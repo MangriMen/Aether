@@ -17,13 +17,17 @@ pub enum ContentStateAction {
 }
 
 pub struct ChangeContentState {
-    pub instance_id: String,
+    pub instance_id: InstanceId,
     pub content_paths: Vec<String>,
     pub action: ContentStateAction,
 }
 
 impl ChangeContentState {
-    pub fn single(instance_id: String, content_path: String, action: ContentStateAction) -> Self {
+    pub fn single(
+        instance_id: InstanceId,
+        content_path: String,
+        action: ContentStateAction,
+    ) -> Self {
         Self {
             instance_id,
             content_paths: vec![content_path],
@@ -32,7 +36,7 @@ impl ChangeContentState {
     }
 
     pub fn multiple(
-        instance_id: String,
+        instance_id: InstanceId,
         content_paths: Vec<String>,
         action: ContentStateAction,
     ) -> Self {
@@ -86,21 +90,25 @@ impl ChangeContentStateUseCase {
             action,
         } = input;
 
-        let id = InstanceId::try_from(instance_id.as_str())?;
-
-        let Some(_lock) = self.instance_locks.lock_within(&id, self.lock_wait).await else {
-            return Err(InstanceError::InstanceStillInstalling { instance_id });
+        let Some(_lock) = self
+            .instance_locks
+            .lock_within(&instance_id, self.lock_wait)
+            .await
+        else {
+            return Err(InstanceError::InstanceStillInstalling {
+                instance_id: instance_id.into(),
+            });
         };
 
         match action {
             ContentStateAction::Enable => {
                 self.content_file_service
-                    .enable_content_files(&id, content_paths.as_slice())
+                    .enable_content_files(&instance_id, content_paths.as_slice())
                     .await?;
             }
             ContentStateAction::Disable => {
                 self.content_file_service
-                    .disable_content_files(&id, content_paths.as_slice())
+                    .disable_content_files(&instance_id, content_paths.as_slice())
                     .await?;
             }
         }

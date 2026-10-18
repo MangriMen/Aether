@@ -320,9 +320,8 @@ fn ownerless_pack_files_by(
 
 #[async_trait]
 impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
-    async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+    async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
         // Taken before the instance is read: a plan that ran meanwhile changes its stage.
-        let instance_id = InstanceId::try_from(instance_id)?;
         let _lock = self.instance_locks.lock(&instance_id).await;
         let instance = self.instance_storage.get(&instance_id).await?;
 

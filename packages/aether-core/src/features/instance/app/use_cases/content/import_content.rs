@@ -16,13 +16,17 @@ use crate::{
 };
 
 pub struct ImportContent {
-    instance_id: String,
+    instance_id: InstanceId,
     content_type: ContentType,
     source_paths: Vec<PathBuf>,
 }
 
 impl ImportContent {
-    pub fn new(instance_id: String, content_type: ContentType, source_paths: Vec<PathBuf>) -> Self {
+    pub fn new(
+        instance_id: InstanceId,
+        content_type: ContentType,
+        source_paths: Vec<PathBuf>,
+    ) -> Self {
         Self {
             instance_id,
             content_type,
@@ -161,18 +165,17 @@ impl ImportContentUseCase {
             return Err(InstanceError::UnsupportedContentType { content_type });
         }
 
-        let id = InstanceId::try_from(instance_id.as_str())?;
-        let _lock = self.instance_locks.lock(&id).await;
+        let _lock = self.instance_locks.lock(&instance_id).await;
 
         let (content_paths, pack_files) = self
-            .prepare_import_data(&id, content_type, source_paths.as_slice())
+            .prepare_import_data(&instance_id, content_type, source_paths.as_slice())
             .await?;
 
-        self.copy_import_files(&id, source_paths.as_slice(), &content_paths)
+        self.copy_import_files(&instance_id, source_paths.as_slice(), &content_paths)
             .await?;
 
         self.pack_storage
-            .update_pack_file_many(&id, &content_paths, &pack_files)
+            .update_pack_file_many(&instance_id, &content_paths, &pack_files)
             .await?;
 
         self.event_emitter

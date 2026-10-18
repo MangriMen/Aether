@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use uuid::Uuid;
 
+use crate::features::instance::InstanceId;
+
 #[derive(Clone, Debug)]
 pub struct ProgressEvent {
     pub event: ProgressEventType,
@@ -32,11 +34,11 @@ pub enum ProgressEventType {
         pack_version: Option<String>,
     },
     MinecraftDownload {
-        instance_id: String,
+        instance_id: InstanceId,
         instance_name: String,
     },
     InstanceUpdate {
-        instance_id: String,
+        instance_id: InstanceId,
         instance_name: String,
     },
     ZipExtract {

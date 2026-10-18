@@ -85,7 +85,7 @@ impl CreateInstanceUseCase {
 
         if !skip_install_instance.unwrap_or(false) {
             self.instance_install_service
-                .execute(instance.id().to_string(), false)
+                .execute(instance.id().clone(), false)
                 .await?;
         }
 

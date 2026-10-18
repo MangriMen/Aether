@@ -20,7 +20,7 @@ use crate::{
         instance::{
             CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata, ContentFile,
             ContentIconCache, ContentMetadata, ContentMetadataCache, ContentProvider,
-            ContentVersionMetadata, InstanceError, ProviderId,
+            ContentVersionMetadata, InstanceError, InstanceId, ProviderId,
         },
     },
     shared::capability::domain::CapabilityRegistry,
@@ -213,7 +213,7 @@ struct Inner {
     /// Instances with a refresh running, and whether a list opened meanwhile had work of its
     /// own: it starts no second refresh, and the running one tells the UI to list again once
     /// over, which starts it.
-    refreshing: Mutex<HashMap<String, bool>>,
+    refreshing: Mutex<HashMap<InstanceId, bool>>,
     /// Providers that answered [`InstanceError::UnsupportedOperation`] to a lookup: not asked
     /// it again until [`ContentMetadataService::forget_unsupported`] clears its plugin.
     unsupported: Mutex<HashSet<LookupKey>>,
@@ -274,7 +274,7 @@ impl ContentMetadataService {
     /// icons has brought any, an [`InstanceEventType::ContentSynced`] event of the instance
     /// tells the UI to list it again — the one after the metadata comes before the icons are
     /// fetched; a refresh that fails keeps the stale items and the icons there are.
-    pub async fn attach(&self, instance_id: &str, files: &DashMap<String, ContentFile>) {
+    pub async fn attach(&self, instance_id: &InstanceId, files: &DashMap<String, ContentFile>) {
         let mut wanted: HashMap<LookupKey, HashSet<String>> = HashMap::new();
         for file in files {
             for lookup in Lookup::ALL {
@@ -363,7 +363,7 @@ impl ContentMetadataService {
 
     fn spawn_refresh(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         due: HashMap<LookupKey, Vec<String>>,
         mut due_icons: HashSet<String>,
     ) {
@@ -400,14 +400,14 @@ impl ContentMetadataService {
 /// panics.
 struct RefreshGuard {
     inner: Arc<Inner>,
-    instance_id: String,
+    instance_id: InstanceId,
     released: bool,
 }
 
 impl RefreshGuard {
     /// `None` when a refresh of the instance is running: that one is then marked as asked
     /// again.
-    fn acquire(inner: &Arc<Inner>, instance_id: &str) -> Option<Self> {
+    fn acquire(inner: &Arc<Inner>, instance_id: &InstanceId) -> Option<Self> {
         let mut refreshing = inner
             .refreshing
             .lock()
@@ -416,11 +416,11 @@ impl RefreshGuard {
             *asked_again = true;
             return None;
         }
-        refreshing.insert(instance_id.to_owned(), false);
+        refreshing.insert(instance_id.clone(), false);
 
         Some(Self {
             inner: inner.clone(),
-            instance_id: instance_id.to_owned(),
+            instance_id: instance_id.clone(),
             released: false,
         })
     }
@@ -451,11 +451,11 @@ impl Drop for RefreshGuard {
 }
 
 impl Inner {
-    async fn emit_synced(&self, instance_id: &str) {
+    async fn emit_synced(&self, instance_id: &InstanceId) {
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::ContentSynced,
-                instance_id: instance_id.to_owned(),
+                instance_id: instance_id.clone(),
             })
             .await;
     }

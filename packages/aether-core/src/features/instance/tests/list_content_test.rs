@@ -11,8 +11,8 @@ use crate::{
         instance::{
             CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
             ContentIconCache, ContentIconError, ContentMetadata, ContentMetadataCache,
-            ContentMetadataService, ContentProvider, ContentVersionMetadata, ListContentUseCase,
-            ProviderId, infra::SqlitePackStorage,
+            ContentMetadataService, ContentProvider, ContentVersionMetadata, InstanceId,
+            ListContentUseCase, ProviderId, infra::SqlitePackStorage,
         },
         settings::LocationInfo,
     },
@@ -102,7 +102,10 @@ async fn should_list_the_content_there_is_when_some_content_folders_are_missing(
         )),
     );
 
-    let files = use_case.execute("instance".to_owned()).await.unwrap();
+    let files = use_case
+        .execute(InstanceId::try_from("instance").unwrap())
+        .await
+        .unwrap();
 
     assert_eq!(files.len(), 1);
     assert!(files.contains_key("mods/a.jar"));

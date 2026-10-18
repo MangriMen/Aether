@@ -366,11 +366,8 @@ struct StageKeepingInstall {
 
 #[async_trait]
 impl InstanceInstallService for StageKeepingInstall {
-    async fn execute(&self, instance_id: String, _: bool) -> Result<(), InstanceError> {
-        let mut instance = self
-            .storage
-            .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
-            .await?;
+    async fn execute(&self, instance_id: InstanceId, _: bool) -> Result<(), InstanceError> {
+        let mut instance = self.storage.get(&instance_id).await?;
         self.stages.lock().unwrap().push(instance.install_stage);
         if instance.install_stage != InstanceInstallStage::PackInstalling {
             instance.install_stage = InstanceInstallStage::Installed;
@@ -418,7 +415,7 @@ struct NoRemoveInstance;
 
 #[async_trait]
 impl RemoveInstanceUseCasePort for NoRemoveInstance {
-    async fn execute(&self, _: String) -> Result<(), InstanceError> {
+    async fn execute(&self, _: InstanceId) -> Result<(), InstanceError> {
         unimplemented!("updates remove no instance")
     }
 }
@@ -592,7 +589,9 @@ impl Fixture {
     }
 
     async fn update(&self) -> Result<(), InstanceError> {
-        self.use_case.execute(INSTANCE_ID.into()).await
+        self.use_case
+            .execute(InstanceId::try_from(INSTANCE_ID).unwrap())
+            .await
     }
 
     fn mods(&self) -> Vec<String> {

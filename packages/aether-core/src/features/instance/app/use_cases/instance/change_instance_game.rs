@@ -41,11 +41,10 @@ impl ChangeInstanceGameUseCase {
 
     pub async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         game: InstanceGame,
     ) -> Result<(), InstanceError> {
-        let id = InstanceId::try_from(instance_id.as_str())?;
-        let mut instance = self.instance_storage.get(&id).await?;
+        let mut instance = self.instance_storage.get(&instance_id).await?;
         if game.is_run_by(&instance) {
             return Ok(());
         }
@@ -85,7 +84,7 @@ impl ChangeInstanceGameUseCase {
 
             let restored = self
                 .instance_storage
-                .upsert_with(&id, move |instance| {
+                .upsert_with(&instance_id, move |instance| {
                     instance.game_version = previous.game_version;
                     instance.loader = previous.loader;
                     instance.loader_version = previous.loader_version;
@@ -105,7 +104,11 @@ impl ChangeInstanceGameUseCase {
 
 #[async_trait]
 impl ChangeInstanceGameUseCasePort for ChangeInstanceGameUseCase {
-    async fn execute(&self, instance_id: String, game: InstanceGame) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        game: InstanceGame,
+    ) -> Result<(), InstanceError> {
         self.execute(instance_id, game).await
     }
 }

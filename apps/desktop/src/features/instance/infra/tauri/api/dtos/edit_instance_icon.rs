@@ -1,4 +1,4 @@
-use aether_core::features::instance::EditInstanceIcon;
+use aether_core::features::instance::{EditInstanceIcon, InstanceError, InstanceId};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -13,11 +13,13 @@ pub struct EditInstanceIconDto {
     pub icon_path: Option<Option<String>>,
 }
 
-impl From<EditInstanceIconDto> for EditInstanceIcon {
-    fn from(value: EditInstanceIconDto) -> Self {
-        Self {
-            instance_id: value.instance_id,
+impl TryFrom<EditInstanceIconDto> for EditInstanceIcon {
+    type Error = InstanceError;
+
+    fn try_from(value: EditInstanceIconDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            instance_id: InstanceId::try_from(value.instance_id)?,
             icon_path: value.icon_path,
-        }
+        })
     }
 }

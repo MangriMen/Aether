@@ -45,7 +45,7 @@ struct NoOpInstallService;
 
 #[async_trait]
 impl InstanceInstallService for NoOpInstallService {
-    async fn execute(&self, _instance_id: String, _force: bool) -> Result<(), InstanceError> {
+    async fn execute(&self, _instance_id: InstanceId, _force: bool) -> Result<(), InstanceError> {
         Ok(())
     }
 }
@@ -386,7 +386,11 @@ async fn should_run_the_install_service_when_an_instance_is_created() {
 
     #[async_trait]
     impl InstanceInstallService for TrackedInstallService {
-        async fn execute(&self, _instance_id: String, _force: bool) -> Result<(), InstanceError> {
+        async fn execute(
+            &self,
+            _instance_id: InstanceId,
+            _force: bool,
+        ) -> Result<(), InstanceError> {
             self.0.store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
         }
@@ -444,7 +448,11 @@ async fn should_skip_the_install_when_it_is_not_requested() {
 
     #[async_trait]
     impl InstanceInstallService for SkippedInstallService {
-        async fn execute(&self, _instance_id: String, _force: bool) -> Result<(), InstanceError> {
+        async fn execute(
+            &self,
+            _instance_id: InstanceId,
+            _force: bool,
+        ) -> Result<(), InstanceError> {
             self.0.store(true, std::sync::atomic::Ordering::SeqCst);
             Ok(())
         }

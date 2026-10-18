@@ -110,14 +110,14 @@ impl From<ProgressEventType> for ProgressEventTypeDto {
                 instance_id,
                 instance_name,
             } => Self::MinecraftDownload {
-                instance_id,
+                instance_id: instance_id.to_string(),
                 instance_name,
             },
             ProgressEventType::InstanceUpdate {
                 instance_id,
                 instance_name,
             } => Self::InstanceUpdate {
-                instance_id,
+                instance_id: instance_id.to_string(),
                 instance_name,
             },
             ProgressEventType::ZipExtract {

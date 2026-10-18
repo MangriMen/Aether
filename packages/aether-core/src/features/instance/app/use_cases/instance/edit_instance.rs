@@ -23,12 +23,11 @@ impl EditInstanceUseCase {
 impl EditInstanceUseCasePort for EditInstanceUseCase {
     async fn execute(
         &self,
-        instance_id: String,
+        instance_id: InstanceId,
         edit_instance: EditInstance,
     ) -> Result<Instance, InstanceError> {
         validate_edit(&edit_instance)?;
 
-        let instance_id = InstanceId::try_from(instance_id)?;
         let mut instance = self.instance_storage.get(&instance_id).await?;
 
         if edit_instance.apply_to(&mut instance)? {

@@ -35,7 +35,7 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::Edited,
-                instance_id: instance.id().to_string(),
+                instance_id: instance.id().clone(),
             })
             .await;
 
@@ -48,7 +48,7 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         self.event_emitter
             .emit_safe(InstanceEvent {
                 event: InstanceEventType::Removed,
-                instance_id: id.to_string(),
+                instance_id: id.clone(),
             })
             .await;
 
