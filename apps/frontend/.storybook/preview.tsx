@@ -1,8 +1,10 @@
 import type { Preview } from 'storybook-solidjs-vite';
 
 import { QueryClientProvider } from '@tanstack/solid-query';
+import { themes } from 'storybook/theming';
 
 import '../src/app/app.css';
+import './storybook.css';
 import { THEMES } from '../src/features/appearance/model/theme';
 import {
   KB_THEME_ATTRIBUTE,
@@ -30,6 +32,7 @@ const preview: Preview = {
   parameters: {
     layout: 'fullscreen',
     controls: { expanded: true },
+    docs: { theme: themes.dark },
   },
   decorators: [
     (Story, context) => {

@@ -1,0 +1,12 @@
+/* The app locks the page to the viewport (html { overflow: hidden }); stories and docs need to scroll */
+html {
+  max-height: none;
+  overflow: auto;
+}
+
+/* Storybook paints its own background on the canvas; use the theme of the app instead */
+body,
+.sb-show-main {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
