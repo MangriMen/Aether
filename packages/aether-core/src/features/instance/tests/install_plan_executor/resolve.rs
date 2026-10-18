@@ -30,7 +30,7 @@ async fn should_resolve_a_provider_ref_to_a_direct_download_when_installing() {
         .await
         .unwrap();
 
-    assert_eq!(instance_id, INSTANCE_ID);
+    assert_eq!(instance_id.as_str(), INSTANCE_ID);
     // One `resolve_file` per ref: its answer is a URL, so nothing is left to resolve.
     assert_eq!(
         modrinth.calls(),

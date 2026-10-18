@@ -106,7 +106,7 @@ impl UpdateInstanceUseCase {
             .await?;
 
         let requested = ResolveTarget::Existing {
-            instance_id: instance.id().to_string(),
+            instance_id: instance.id().clone(),
             game_version: instance.game_version.clone(),
             loader: (instance.loader != ModLoader::Vanilla)
                 .then(|| instance.loader.as_str().to_owned()),
@@ -384,7 +384,9 @@ mod tests {
 
     fn plan_of(path: &str) -> InstallPlan {
         InstallPlan {
-            target: crate::features::instance::InstallTarget::existing("instance"),
+            target: crate::features::instance::InstallTarget::existing(
+                InstanceId::try_from("instance").unwrap(),
+            ),
             files: vec![InstallFileEntry::new(
                 ContentSource::direct("https://example.com/a.jar".into(), None),
                 path,

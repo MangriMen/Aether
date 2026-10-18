@@ -19,12 +19,15 @@ use crate::shared::capability::domain::CapabilityEntry;
 
 #[async_trait]
 pub trait CreateInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError>;
+    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError>;
 
     /// Create an instance whose pack the caller is about to deploy: it stays `PackInstalling`
     /// (not launchable) once the game is installed, and the caller moves it to `Installed` when
     /// the pack's content is in.
-    async fn execute_for_pack(&self, new_instance: NewInstance) -> Result<String, InstanceError>;
+    async fn execute_for_pack(
+        &self,
+        new_instance: NewInstance,
+    ) -> Result<InstanceId, InstanceError>;
 }
 
 /// Moves an existing instance to another game. Nothing happens when it already runs it.
@@ -152,8 +155,11 @@ pub trait InstallPlanExecutorPort: Send + Sync {
     /// its network policy (see [`ContentDownloader`](crate::features::instance::ContentDownloader)).
     /// The whole `origin` is what the installed files are recorded under: in an existing
     /// instance only the files of the same origin are replaced or removed (see [`PlanOrigin`]).
-    async fn execute(&self, plan: InstallPlan, origin: PlanOrigin)
-    -> Result<String, InstanceError>;
+    async fn execute(
+        &self,
+        plan: InstallPlan,
+        origin: PlanOrigin,
+    ) -> Result<InstanceId, InstanceError>;
 }
 
 #[async_trait]

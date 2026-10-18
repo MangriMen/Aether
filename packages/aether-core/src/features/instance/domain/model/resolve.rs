@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use crate::{
     features::{
-        instance::{NewInstance, PackInfo},
+        instance::{InstanceId, NewInstance, PackInfo},
         minecraft::{LoaderVersionPreference, ModLoader},
     },
     shared::hash::FileHash,
@@ -44,7 +44,7 @@ pub enum ResolveTarget {
     /// the instance's own pack they are a requirement and the plan keeps the game; for an update
     /// of that pack they are only the current state, and the plan may name a new game.
     Existing {
-        instance_id: String,
+        instance_id: InstanceId,
         game_version: String,
         /// The loader as the provider's `resolve_file` takes it (`fabric`, `neoforge`, …);
         /// `None` for a vanilla instance.
@@ -240,7 +240,7 @@ mod tests {
             version: None,
             installed_version: None,
             target: ResolveTarget::Existing {
-                instance_id: "instance".into(),
+                instance_id: InstanceId::try_from("instance").unwrap(),
                 game_version: "1.21.1".into(),
                 loader: Some("fabric".into()),
             },
@@ -258,7 +258,10 @@ mod tests {
             )],
             overrides: Vec::new(),
         };
-        assert_eq!(plan.target, InstallTarget::existing("instance"));
+        assert_eq!(
+            plan.target,
+            InstallTarget::existing(InstanceId::try_from("instance").unwrap())
+        );
 
         let resolved = ResolvedFile {
             version: "IZskON6d".into(),
@@ -375,7 +378,7 @@ mod tests {
             icon_url: None,
         };
         let existing = ResolveTarget::Existing {
-            instance_id: "instance".into(),
+            instance_id: InstanceId::try_from("instance").unwrap(),
             game_version: "1.21.1".into(),
             loader: Some("fabric".into()),
         };
@@ -383,7 +386,7 @@ mod tests {
         assert_eq!(
             existing.into_pack_install_target(&metadata, || unreachable!()),
             InstallTarget::Existing {
-                instance_id: "instance".into(),
+                instance_id: InstanceId::try_from("instance").unwrap(),
                 game: Some(InstanceGame {
                     game_version: "1.21.4".into(),
                     mod_loader: ModLoader::Fabric,
@@ -437,21 +440,21 @@ mod tests {
     #[test]
     fn should_accept_only_a_plan_for_the_requested_target_when_resolving() {
         let existing = ResolveTarget::Existing {
-            instance_id: "instance".into(),
+            instance_id: InstanceId::try_from("instance").unwrap(),
             game_version: "1.21.1".into(),
             loader: None,
         };
-        let same = InstallTarget::existing("instance");
+        let same = InstallTarget::existing(InstanceId::try_from("instance").unwrap());
         // The game a plan names is the executor's to check, against the instance's pack.
         let same_with_game = InstallTarget::Existing {
-            instance_id: "instance".into(),
+            instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
                 game_version: "1.21.4".into(),
                 mod_loader: ModLoader::Fabric,
                 loader_version: None,
             }),
         };
-        let other = InstallTarget::existing("other");
+        let other = InstallTarget::existing(InstanceId::try_from("other").unwrap());
         let new = InstallTarget::New(NewInstance {
             name: "Pack".into(),
             game_version: "1.21.1".into(),

@@ -248,11 +248,11 @@ struct NoCreateInstance;
 
 #[async_trait]
 impl CreateInstanceUseCasePort for NoCreateInstance {
-    async fn execute(&self, _: NewInstance) -> Result<String, InstanceError> {
+    async fn execute(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
         unimplemented!("these plans install into an existing instance")
     }
 
-    async fn execute_for_pack(&self, _: NewInstance) -> Result<String, InstanceError> {
+    async fn execute_for_pack(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
         unimplemented!("these plans install into an existing instance")
     }
 }
@@ -395,7 +395,7 @@ impl Fixture {
         &self,
         plan: InstallPlan,
         origin: ProviderId,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         let downloader = self.downloader();
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
@@ -484,7 +484,7 @@ impl Fixture {
 
 fn direct_plan(url: String, hash: Option<FileHash>) -> InstallPlan {
     InstallPlan {
-        target: InstallTarget::existing(INSTANCE_ID),
+        target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
         files: vec![InstallFileEntry::new(
             ContentSource::direct(url, hash),
             "mods/jei.jar",

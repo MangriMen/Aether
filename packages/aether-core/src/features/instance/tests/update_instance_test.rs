@@ -402,11 +402,11 @@ struct NoCreateInstance;
 
 #[async_trait]
 impl CreateInstanceUseCasePort for NoCreateInstance {
-    async fn execute(&self, _: NewInstance) -> Result<String, InstanceError> {
+    async fn execute(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
         unimplemented!("updates create no instance")
     }
 
-    async fn execute_for_pack(&self, _: NewInstance) -> Result<String, InstanceError> {
+    async fn execute_for_pack(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
         unimplemented!("updates create no instance")
     }
 }
@@ -653,7 +653,7 @@ async fn should_update_the_pack_through_a_plan_and_record_its_version_when_a_new
             version: Some("v2".into()),
             installed_version: Some("v1".into()),
             target: ResolveTarget::Existing {
-                instance_id: INSTANCE_ID.into(),
+                instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
                 game_version: "1.21.1".into(),
                 loader: Some("fabric".into()),
             },

@@ -3,7 +3,7 @@
 use std::sync::{Arc, atomic::Ordering};
 
 use crate::features::{
-    instance::InstanceError,
+    instance::{InstanceError, InstanceId},
     plugins::{EnablePluginUseCase, PluginError, PluginState, PluginStateReason},
 };
 
@@ -132,7 +132,7 @@ async fn should_give_an_explicit_error_to_a_call_when_it_comes_during_a_restart(
     let importer = harness.importer().await.expect("registered again");
     assert_eq!(
         importer.import("pack.toml").await.unwrap(),
-        Vec::<String>::new()
+        Vec::<InstanceId>::new()
     );
 }
 

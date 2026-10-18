@@ -45,7 +45,7 @@ async fn should_create_a_new_instance_and_install_into_it_when_the_target_is_new
         .await
         .unwrap();
 
-    assert_eq!(instance_id, NEW_INSTANCE_ID);
+    assert_eq!(instance_id.as_str(), NEW_INSTANCE_ID);
     assert_eq!(*fixture.create_instance.created.lock().unwrap(), [spec]);
     assert_eq!(
         modrinth.calls(),
@@ -351,7 +351,7 @@ async fn should_refuse_a_plan_when_the_instance_is_unknown() {
     let err = fixture
         .execute(
             InstallPlan {
-                target: InstallTarget::existing("missing"),
+                target: InstallTarget::existing(InstanceId::try_from("missing").unwrap()),
                 files: vec![direct("https://cdn.example/a.jar", "mods/a.jar")],
                 overrides: Vec::new(),
             },

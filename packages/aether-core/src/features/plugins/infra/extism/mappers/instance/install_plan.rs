@@ -9,21 +9,25 @@ use aether_core_plugin_api::v0::{
 
 use crate::{
     features::instance::{
-        ContentIdentity, ContentSource, FileSide, InstallFileEntry, InstallTarget, InstanceGame,
-        OptionalFile,
+        ContentIdentity, ContentSource, FileSide, InstallFileEntry, InstallTarget, InstanceError,
+        InstanceGame, InstanceId, OptionalFile,
     },
     shared::hash::{FileHash, InvalidFileHash},
 };
 
-impl From<InstallTargetDto> for InstallTarget {
-    fn from(value: InstallTargetDto) -> Self {
-        match value {
+/// The id a plugin names is parsed here: one that is not a plain directory name names no
+/// instance ([`InstanceError::NotFound`]).
+impl TryFrom<InstallTargetDto> for InstallTarget {
+    type Error = InstanceError;
+
+    fn try_from(value: InstallTargetDto) -> Result<Self, Self::Error> {
+        Ok(match value {
             InstallTargetDto::Existing { instance_id, game } => Self::Existing {
-                instance_id,
+                instance_id: InstanceId::try_from(instance_id)?,
                 game: game.map(Into::into),
             },
             InstallTargetDto::New(new_instance) => Self::New(new_instance.into()),
-        }
+        })
     }
 }
 
@@ -146,19 +150,20 @@ mod tests {
 
         use crate::features::minecraft::{LoaderVersionPreference, ModLoader};
 
-        let target = InstallTarget::from(InstallTargetDto::Existing {
+        let target = InstallTarget::try_from(InstallTargetDto::Existing {
             instance_id: "instance".into(),
             game: Some(InstanceGameDto {
                 game_version: "1.21.4".into(),
                 mod_loader: ModLoaderDto::NeoForge,
                 loader_version: Some(LoaderVersionPreferenceDto::Exact("21.4.1".into())),
             }),
-        });
+        })
+        .unwrap();
 
         assert_eq!(
             target,
             InstallTarget::Existing {
-                instance_id: "instance".into(),
+                instance_id: InstanceId::try_from("instance").unwrap(),
                 game: Some(InstanceGame {
                     game_version: "1.21.4".into(),
                     mod_loader: ModLoader::NeoForge,
@@ -167,11 +172,27 @@ mod tests {
             }
         );
         assert_eq!(
-            InstallTarget::from(InstallTargetDto::Existing {
+            InstallTarget::try_from(InstallTargetDto::Existing {
                 instance_id: "instance".into(),
                 game: None,
-            }),
-            InstallTarget::existing("instance")
+            })
+            .unwrap(),
+            InstallTarget::existing(InstanceId::try_from("instance").unwrap())
+        );
+    }
+
+    /// A plugin's plan for `../x` would install next to the instances; it names no instance.
+    #[test]
+    fn should_refuse_the_target_when_its_instance_id_is_not_a_plain_name() {
+        let err = InstallTarget::try_from(InstallTargetDto::Existing {
+            instance_id: "../x".into(),
+            game: None,
+        })
+        .unwrap_err();
+
+        assert!(
+            matches!(&err, InstanceError::NotFound { instance_id } if instance_id == "../x"),
+            "{err}"
         );
     }
 

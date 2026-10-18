@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use extism_convert::Msgpack;
 
 use crate::features::{
-    instance::{Importer, ImporterCapabilityMetadata, InstanceError},
+    instance::{Importer, ImporterCapabilityMetadata, InstanceError, InstanceId},
     plugins::{PluginError, PluginHandle, PluginImportInstance, PluginImporterCapability},
 };
 
@@ -38,7 +38,7 @@ impl Importer for PluginImporterProxy {
         &self.capability
     }
 
-    async fn import(&self, path: &str) -> Result<Vec<String>, InstanceError> {
+    async fn import(&self, path: &str) -> Result<Vec<InstanceId>, InstanceError> {
         let plugin_id = self.instance.id();
         let failed = |reason: String| InstanceError::ImportFailed {
             plugin_id: plugin_id.to_owned(),
@@ -130,7 +130,7 @@ mod tests {
             UserData::new(()),
             |_, _, outputs, _| {
                 if is_deploying_packs("packwiz") {
-                    record_pack_instance("packwiz", "pack");
+                    record_pack_instance("packwiz", &InstanceId::try_from("pack").unwrap());
                 }
                 outputs[0] = extism::Val::I64(0);
                 Ok(())
@@ -178,7 +178,7 @@ mod tests {
     async fn should_give_back_the_pack_instances_when_they_were_created_during_the_import() {
         let instances = importer().import("pack.toml").await.unwrap();
 
-        assert_eq!(instances, ["pack"]);
+        assert_eq!(instances, [InstanceId::try_from("pack").unwrap()]);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

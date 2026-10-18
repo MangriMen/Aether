@@ -2,7 +2,7 @@ use std::{ops::Deref, str::FromStr};
 
 use crate::features::minecraft::ModLoader;
 
-use super::ContentType;
+use super::{ContentType, InstanceId};
 
 #[derive(Clone, Debug)]
 pub struct ContentSearchParams {
@@ -182,7 +182,7 @@ pub struct BaseContentParams {
 #[derive(Clone, Debug)]
 pub struct AtomicInstallParams {
     pub base: BaseContentParams,
-    pub instance_id: String,
+    pub instance_id: InstanceId,
     pub game_version: String,
     pub loader: Option<String>,
     pub content_type: ContentType,

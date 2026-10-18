@@ -64,7 +64,7 @@ pub(crate) async fn handle_instance_create(
     dto: NewInstanceDto,
     container: &AetherContainer,
     for_pack: bool,
-) -> crate::Result<String> {
+) -> crate::Result<InstanceId> {
     let create = container.create_instance_use_case();
     let new_instance = new_instance_from_plugin(plugin_id, dto, &container.location_info())?;
 
@@ -326,7 +326,7 @@ host_fn!(
             record_pack_instance(&plugin_id, instance_id);
         }
 
-        to_extism_res::<String>(result)
+        to_extism_res::<String>(result.map(String::from))
     }
 );
 

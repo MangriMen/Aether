@@ -21,8 +21,8 @@ use crate::{
         instance::{
             ContentIdentity, ContentMetadata, ContentProvider, ContentSource, ContentType,
             ContentVersionMetadata, FileSide, InstallTarget, InstanceError, InstanceGame,
-            OverrideLocation, OverrideSource, PackInfo, PackSource, ResolveInstallPlanParams,
-            ResolveTarget, infra::ModrinthContentProvider,
+            InstanceId, OverrideLocation, OverrideSource, PackInfo, PackSource,
+            ResolveInstallPlanParams, ResolveTarget, infra::ModrinthContentProvider,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::LocationInfo,
@@ -296,7 +296,7 @@ fn mrpack() -> Vec<u8> {
 
 fn existing_fabric() -> ResolveTarget {
     ResolveTarget::Existing {
-        instance_id: "instance".into(),
+        instance_id: InstanceId::try_from("instance").unwrap(),
         game_version: "1.21.1".into(),
         loader: Some("fabric".into()),
     }
@@ -322,7 +322,10 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
         .await
         .unwrap();
 
-    assert_eq!(plan.target, InstallTarget::existing("instance"));
+    assert_eq!(
+        plan.target,
+        InstallTarget::existing(InstanceId::try_from("instance").unwrap())
+    );
     assert!(plan.overrides.is_empty());
     let [entry] = &plan.files[..] else {
         panic!("one file expected: {:?}", plan.files)
@@ -729,7 +732,7 @@ async fn should_move_the_instance_to_the_game_of_the_pack_when_the_pack_is_updat
     assert_eq!(
         plan.target,
         InstallTarget::Existing {
-            instance_id: "instance".into(),
+            instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
                 game_version: "1.21.4".into(),
                 mod_loader: ModLoader::NeoForge,

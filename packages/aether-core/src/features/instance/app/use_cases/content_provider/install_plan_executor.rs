@@ -503,7 +503,7 @@ impl InstallPlanExecutor {
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         let InstallPlan {
             target,
             files,
@@ -599,7 +599,7 @@ impl InstallPlanExecutor {
             }
             progress.step("Complete").await;
 
-            Ok(instance_id.to_string())
+            Ok(instance_id)
         }
         .await;
 
@@ -633,21 +633,17 @@ impl InstallPlanExecutor {
         #[allow(clippy::cast_precision_loss)] // a count of files
         let total = (3 * to_download + override_count + 1) as f64;
         let instance_path = match target {
-            InstallTarget::Existing { instance_id, .. } => instance_id.clone(),
+            InstallTarget::Existing { instance_id, .. } => instance_id.to_string(),
             InstallTarget::New(_) => String::new(),
         };
         // What the bar is captioned with: the instance the plan fills.
         let pack_name = match target {
-            InstallTarget::Existing { instance_id, .. } => async {
-                self.instance_storage
-                    .get(&InstanceId::try_from(instance_id.as_str())?)
-                    .await
+            InstallTarget::Existing { instance_id, .. } => {
+                self.instance_storage.get(instance_id).await.map_or_else(
+                    |_: InstanceError| origin.content_id.clone(),
+                    |instance| instance.name().to_owned(),
+                )
             }
-            .await
-            .map_or_else(
-                |_: InstanceError| origin.content_id.clone(),
-                |instance| instance.name().to_owned(),
-            ),
             InstallTarget::New(new_instance) => new_instance.name.clone(),
         };
 
@@ -678,9 +674,7 @@ impl InstallPlanExecutor {
     ) -> Result<HashMap<String, PackFile>, InstanceError> {
         match target {
             InstallTarget::Existing { instance_id, .. } => {
-                self.pack_storage
-                    .get_pack_files(&InstanceId::try_from(instance_id.as_str())?)
-                    .await
+                self.pack_storage.get_pack_files(instance_id).await
             }
             InstallTarget::New(_) => Ok(HashMap::new()),
         }
@@ -699,7 +693,6 @@ impl InstallPlanExecutor {
         let InstallTarget::Existing { instance_id, .. } = target else {
             return Ok(InstalledState::default());
         };
-        let instance_id = &InstanceId::try_from(instance_id.as_str())?;
 
         // The futures are collected first: a closure kept inside the stream would make the whole
         // `execute` future fail to be `Send` (rust-lang/rust#102211).
@@ -847,23 +840,24 @@ impl InstallPlanExecutor {
     ) -> Result<(InstanceId, Option<Instance>), InstanceError> {
         match target {
             InstallTarget::Existing { instance_id, game } => {
-                let id = InstanceId::try_from(instance_id.as_str())?;
                 let mut before = None;
                 if let Some(game) = game {
-                    before = Some(self.instance_storage.get(&id).await?);
-                    self.change_instance_game.execute(id.clone(), game).await?;
+                    before = Some(self.instance_storage.get(&instance_id).await?);
+                    self.change_instance_game
+                        .execute(instance_id.clone(), game)
+                        .await?;
                 }
-                Ok((id, before))
+                Ok((instance_id, before))
             }
             // A pack's instance is not launchable until the pack is in: the caller moves it to
             // `Installed` after the plan, and a failure removes it (`discard_created`).
             InstallTarget::New(spec) if spec.pack_info.is_some() => {
                 let instance_id = self.create_instance.execute_for_pack(spec).await?;
-                Ok((InstanceId::try_from(instance_id)?, None))
+                Ok((instance_id, None))
             }
             InstallTarget::New(spec) => {
                 let instance_id = self.create_instance.execute(spec).await?;
-                Ok((InstanceId::try_from(instance_id)?, None))
+                Ok((instance_id, None))
             }
         }
     }
@@ -1058,7 +1052,7 @@ impl InstallPlanExecutorPort for InstallPlanExecutor {
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         self.execute(plan, origin).await
     }
 }
