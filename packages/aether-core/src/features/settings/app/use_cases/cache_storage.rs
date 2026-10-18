@@ -54,7 +54,7 @@ impl GetCacheUsageUseCasePort for CacheStorageUseCase {
 #[async_trait]
 impl IsCacheBusyUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> bool {
-        self.activity.try_pause().await.is_none()
+        self.activity.is_busy()
     }
 }
 
@@ -87,6 +87,7 @@ mod tests {
     use crate::shared::housekeeping::ActivityPause;
 
     use super::*;
+    use crate::shared::housekeeping::ActivityGate;
 
     struct Cleaner(AtomicU64);
 
@@ -109,6 +110,10 @@ mod tests {
 
     #[async_trait]
     impl StorageActivity for Activity {
+        fn is_busy(&self) -> bool {
+            self.0.load(Ordering::SeqCst)
+        }
+
         async fn try_pause(&self) -> Option<ActivityPause> {
             (!self.0.load(Ordering::SeqCst)).then(|| Box::new(()) as ActivityPause)
         }
@@ -182,5 +187,19 @@ mod tests {
     async fn should_report_whether_clearing_is_refused_when_asked_if_busy() {
         assert!(IsCacheBusyUseCasePort::execute(&fixture(true).2).await);
         assert!(!IsCacheBusyUseCasePort::execute(&fixture(false).2).await);
+    }
+
+    #[tokio::test]
+    async fn should_not_stop_the_next_clearing_when_asked_if_busy() {
+        let gate = Arc::new(ActivityGate::new());
+        let use_case = CacheStorageUseCase::new(
+            Vec::new(),
+            Arc::new(gate.clone()),
+            Arc::new(Emitted::default()),
+        );
+
+        assert!(!IsCacheBusyUseCasePort::execute(&use_case).await);
+
+        assert!(gate.try_pause().is_some());
     }
 }

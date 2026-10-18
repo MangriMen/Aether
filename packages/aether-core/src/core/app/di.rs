@@ -1,5 +1,6 @@
 use std::sync::{Arc, OnceLock};
 
+use super::activity_leases::Leased;
 use crate::features::{
     auth::{
         ActiveAccountHelper, AuthFeature, CreateOfflineAccountUseCase,
@@ -86,6 +87,7 @@ use crate::{
         cache::domain::AssetsStorage,
         capability::domain::CapabilityRegistry,
         fetch::FetchSemaphore,
+        housekeeping::ActivityGate,
         limits::{ContentInstallLimits, PluginSandboxLimits},
         request_client::RequestClient,
     },
@@ -205,6 +207,8 @@ pub struct AetherContainer {
     params: AetherContainerParams,
     /// Shared by everything that changes an instance's content or launches it.
     instance_locks: Arc<InstanceLocks>,
+    /// Held busy by installs and instance locks, paused while the caches are emptied.
+    activity_gate: Arc<ActivityGate>,
     /// One for the process: it keeps which refreshes run and what providers could not tell.
     content_metadata: Arc<ContentMetadataService>,
     /// One for the process: it knows whether the caches are being emptied.
@@ -231,13 +235,11 @@ impl AetherContainer {
             }
         });
 
-        let instance_locks = Arc::new(InstanceLocks::new());
+        let activity_gate = Arc::new(ActivityGate::new());
+        let instance_locks = Arc::new(InstanceLocks::with_gate(activity_gate.clone()));
         let cache_storage = Arc::new(crate::features::settings::CacheStorageUseCase::new(
             params.storage.cache_cleaners.clone(),
-            Arc::new(super::storage_activity::AppStorageActivity {
-                instance_locks: instance_locks.clone(),
-                progress_bars: params.progress_bar_storage.clone(),
-            }),
+            Arc::new(activity_gate.clone()),
             params.event_emitter.clone(),
         ));
 
@@ -245,11 +247,15 @@ impl AetherContainer {
             cache: UseCaseCache::new(),
             params,
             instance_locks,
+            activity_gate,
             content_metadata,
             cache_storage,
         })
     }
 
+    pub fn activity_gate(&self) -> Arc<ActivityGate> {
+        self.activity_gate.clone()
+    }
     pub fn storage(&self) -> &StorageParams {
         &self.params.storage
     }
@@ -315,28 +321,31 @@ impl AetherContainer {
     }
 
     fn install_java_use_case(&self) -> Arc<dyn JavaInstallService> {
-        Arc::new(InstallJavaUseCase::new(
+        let inner: Arc<dyn JavaInstallService> = Arc::new(InstallJavaUseCase::new(
             self.storage().java_storage.clone(),
             self.storage().java_installation_service.clone(),
             self.storage().jre_provider.clone(),
             self.location_info().clone(),
             self.storage().java_installation_tracker.clone(),
-        ))
+        ));
+        Arc::new(Leased::new(inner, self.activity_gate.clone()))
     }
 
     fn minecraft_install_use_case(&self) -> Arc<dyn MinecraftInstallService> {
         self.cache
             .minecraft_install_uc
             .get_or_init(|| {
-                Arc::new(InstallMinecraftUseCase::new(
-                    self.loader_version_resolver(),
-                    self.get_version_manifest_use_case(),
-                    self.minecraft().minecraft_downloader.clone(),
-                    self.minecraft().mod_loader_processor.clone(),
-                    self.storage().java_installation_service.clone(),
-                    self.get_java_use_case(),
-                    self.install_java_use_case(),
-                ))
+                let inner: Arc<dyn MinecraftInstallService> =
+                    Arc::new(InstallMinecraftUseCase::new(
+                        self.loader_version_resolver(),
+                        self.get_version_manifest_use_case(),
+                        self.minecraft().minecraft_downloader.clone(),
+                        self.minecraft().mod_loader_processor.clone(),
+                        self.storage().java_installation_service.clone(),
+                        self.get_java_use_case(),
+                        self.install_java_use_case(),
+                    ));
+                Arc::new(Leased::new(inner, self.activity_gate.clone()))
             })
             .clone()
     }
@@ -758,13 +767,14 @@ impl ContentProviderPort for AetherContainer {
         ))
     }
     fn install_content_use_case(&self) -> Arc<dyn InstallContentUseCasePort> {
-        Arc::new(InstallContentUseCase::new(
+        let inner: Arc<dyn InstallContentUseCasePort> = Arc::new(InstallContentUseCase::new(
             self.storage().pack_storage.clone(),
             self.content_provider_registry().clone(),
             self.storage().instance_storage.clone(),
             self.install_plan_executor(),
             self.instance_locks.clone(),
-        ))
+        ));
+        Arc::new(Leased::new(inner, self.activity_gate.clone()))
     }
     fn install_plan_executor(&self) -> Arc<dyn InstallPlanExecutorPort> {
         Arc::new(InstallPlanExecutor::new(

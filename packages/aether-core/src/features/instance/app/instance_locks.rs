@@ -3,9 +3,12 @@ use std::{
     sync::{Arc, Mutex, Weak},
 };
 
-use tokio::sync::{OwnedMutexGuard, OwnedRwLockReadGuard, OwnedRwLockWriteGuard, RwLock};
+use tokio::sync::OwnedMutexGuard;
 
-use crate::features::instance::InstanceId;
+use crate::{
+    features::instance::InstanceId,
+    shared::housekeeping::{ActivityGate, ActivityLease},
+};
 
 /// One change to an instance's content at a time.
 ///
@@ -17,15 +20,15 @@ use crate::features::instance::InstanceId;
 /// plugin); launching takes the lock only to start the game, and refuses to wait: an instance
 /// whose content is being changed is still installing.
 ///
-/// All of them can be paused at once ([`Self::try_pause`]): while the pause is held no instance
-/// can be locked, and it is only given when none is.
+/// Every lock also holds a lease of the shared [`ActivityGate`]. Pausing all of them at once
+/// belongs to that gate, which the composition root hands in ([`Self::with_gate`]): while the
+/// pause is held no instance can be locked, and it is only given when none is.
 ///
 /// The lock is not reentrant: nothing that runs under it may take it again, directly or through
 /// a plugin it calls.
-#[derive(Default)]
 pub struct InstanceLocks {
-    /// Read-held by every instance lock, write-held by a pause.
-    gate: Arc<RwLock<()>>,
+    /// Leased by every instance lock, paused by whoever empties the caches.
+    gate: Arc<ActivityGate>,
     /// Dropped once nobody holds or waits for the lock, so the map does not keep every instance
     /// ever touched.
     locks: Mutex<HashMap<InstanceId, Weak<tokio::sync::Mutex<()>>>>,
@@ -35,23 +38,31 @@ pub struct InstanceLocks {
 #[must_use = "the instance is unlocked as soon as the guard is dropped"]
 pub struct InstanceLockGuard {
     _guard: OwnedMutexGuard<()>,
-    _gate: OwnedRwLockReadGuard<()>,
+    _gate: ActivityLease,
 }
 
-/// No instance's content is being changed, and none can start, until this is dropped.
-#[must_use = "instances are unpaused as soon as this is dropped"]
-pub struct InstanceLocksPause {
-    _gate: OwnedRwLockWriteGuard<()>,
+impl Default for InstanceLocks {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InstanceLocks {
+    /// With a gate of its own, shared with nobody.
     pub fn new() -> Self {
-        Self::default()
+        Self::with_gate(Arc::new(ActivityGate::new()))
+    }
+
+    pub fn with_gate(gate: Arc<ActivityGate>) -> Self {
+        Self {
+            gate,
+            locks: Mutex::default(),
+        }
     }
 
     /// Wait for the instance's lock.
     pub async fn lock(&self, instance_id: &InstanceId) -> InstanceLockGuard {
-        let gate = self.gate.clone().read_owned().await;
+        let gate = self.gate.lease().await;
         InstanceLockGuard {
             _guard: self.lock_of(instance_id).lock_owned().await,
             _gate: gate,
@@ -71,21 +82,12 @@ impl InstanceLocks {
 
     /// The instance's lock, or `None` while another holds it.
     pub fn try_lock(&self, instance_id: &InstanceId) -> Option<InstanceLockGuard> {
-        let gate = self.gate.clone().try_read_owned().ok()?;
+        let gate = self.gate.try_lease()?;
         let guard = self.lock_of(instance_id).try_lock_owned().ok()?;
         Some(InstanceLockGuard {
             _guard: guard,
             _gate: gate,
         })
-    }
-
-    /// Stop every instance from being locked, or `None` while any is (or is waited for).
-    pub fn try_pause(&self) -> Option<InstanceLocksPause> {
-        self.gate
-            .clone()
-            .try_write_owned()
-            .ok()
-            .map(|gate| InstanceLocksPause { _gate: gate })
     }
 
     fn lock_of(&self, instance_id: &InstanceId) -> Arc<tokio::sync::Mutex<()>> {
@@ -115,19 +117,21 @@ mod tests {
 
     #[tokio::test]
     async fn should_refuse_a_pause_while_an_instance_is_locked() {
-        let locks = InstanceLocks::new();
+        let gate = Arc::new(ActivityGate::new());
+        let locks = InstanceLocks::with_gate(gate.clone());
         let guard = locks.lock(&id("a")).await;
 
-        assert!(locks.try_pause().is_none());
+        assert!(gate.try_pause().is_none());
 
         drop(guard);
-        assert!(locks.try_pause().is_some());
+        assert!(gate.try_pause().is_some());
     }
 
     #[tokio::test]
     async fn should_refuse_to_lock_while_paused() {
-        let locks = InstanceLocks::new();
-        let pause = locks.try_pause().unwrap();
+        let gate = Arc::new(ActivityGate::new());
+        let locks = InstanceLocks::with_gate(gate.clone());
+        let pause = gate.try_pause().unwrap();
 
         assert!(locks.try_lock(&id("a")).is_none());
         assert!(
