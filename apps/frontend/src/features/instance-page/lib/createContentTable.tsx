@@ -14,10 +14,8 @@ import type { ContentFile } from '@/features/content';
 
 import { appTableFeatures, type AppTableFeatures } from '@/shared/ui-kit';
 
-import {
-  CONTENT_TABLE_COLUMNS,
-  contentTableColumnHelper,
-} from '../ui/ContentTableColumns';
+import { contentTableColumnHelper } from '../model/contentTableColumnHelper';
+import { createContentTableColumns } from '../ui/createContentTableColumns';
 
 export interface CreateContentTableProps {
   headerActions: Component<{
@@ -59,7 +57,7 @@ export const createContentTable = (props: CreateContentTableProps) => {
       ),
     });
 
-    return [...CONTENT_TABLE_COLUMNS, actionsColumn];
+    return [...createContentTableColumns(), actionsColumn];
   });
 
   const [sorting, setSorting] = createSignal<SortingState>([

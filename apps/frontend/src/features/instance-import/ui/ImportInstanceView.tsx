@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui-kit';
 
 import type { ImporterTabConfig } from '../model/importerTabConfig';
 
-import { importerToTab } from './ImporterTab';
+import { createImporterTab } from './createImporterTab';
 
 export type ImportInstanceViewProps = TabsProps & {
   importers: ImporterCapabilityEntry[];
@@ -28,7 +28,7 @@ export const ImportInstanceView: Component<ImportInstanceViewProps> = (
   ]);
 
   const tabs = createMemo(() => {
-    return local.importers.map(importerToTab) satisfies ImporterTabConfig[];
+    return local.importers.map(createImporterTab) satisfies ImporterTabConfig[];
   });
 
   return (

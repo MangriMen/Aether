@@ -75,8 +75,10 @@ the folders below. The folder tells what kind of file it is.
 - Which folder, by file:
   - calls `platform/ipc` or a Tauri plugin → `api/` (a component or a `lib/` primitive may
     call a plugin itself);
-  - `.tsx` that renders JSX (a component, table columns, a toast), file name in PascalCase
-    after what it renders (`InstancePage`, `ContentTableColumns`, `UpdateAvailableToast`) → `ui/`;
+  - `.tsx` that builds markup → `ui/`. A component is PascalCase and the file exports only
+    components (`InstancePage`); what renders but is not a component (table columns, a toast,
+    a tab builder) is camelCase with a `create` or `show` prefix, named after its main export
+    (`createContentTableColumns`, `showUpdateAvailable`);
   - starts with `use` or `create` and is neither of the above → `lib/`;
   - anything else (types, pure functions, mappers, stores) → `model/`.
 - `lib/` holds nothing else: a helper without reactivity goes to `model/`, a component to
@@ -164,7 +166,8 @@ features/java/                  a small feature: only the folders it needs
 
 A shared module covers one topic and stays small, so it is flat: `index.ts` and its files
 next to it, `__tests__/` aside. File names follow the kind of file: a `.tsx` is a component
-in PascalCase (`MarkdownRenderer.tsx`), a `.ts` is camelCase (`parseMarkdown.ts`).
+in PascalCase (`MarkdownRenderer.tsx`) or a `create`/`show` builder, a `.ts` is camelCase
+(`parseMarkdown.ts`).
 
 - A new helper goes to the module of its topic. `utils/` takes only stateless helpers that
   know no other module (`cn`, `debounce`, `isNil`); anything with state (`log/` and its

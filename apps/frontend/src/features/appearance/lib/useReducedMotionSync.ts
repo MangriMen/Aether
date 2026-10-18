@@ -2,7 +2,7 @@ import { batch, createEffect, on } from 'solid-js';
 
 import type { ThemeContextValue } from '../model/themeContext';
 
-import { showPrefersReducedMotionInfo } from '../ui/PrefersReducedMotionToast';
+import { showPrefersReducedMotionInfo } from '../ui/showPrefersReducedMotionInfo';
 import { createPrefersReducedMotion } from './createPrefersReducedMotion';
 
 export const useReducedMotionSync = (

@@ -6,7 +6,7 @@ import type { ImporterTabConfig } from '../model/importerTabConfig';
 
 import { ImportInstanceForm } from './ImportInstanceForm';
 
-export const importerToTab = ({
+export const createImporterTab = ({
   pluginId,
   capability: importer,
 }: ImporterCapabilityEntry): ImporterTabConfig => {

@@ -5,7 +5,7 @@ import { useTranslation } from '@/shared/i18n';
 import { appTableFeatures } from '@/shared/ui-kit';
 
 import { type StrictJavaVersion } from '../model/javaVersion';
-import { createDetectedJavaVersionsColumns } from '../ui/DetectedJavaVersionsColumns';
+import { createDetectedJavaVersionsColumns } from '../ui/createDetectedJavaVersionsColumns';
 
 export interface DetectedJavaVersionsTableProps {
   data: Accessor<StrictJavaVersion[]>;
