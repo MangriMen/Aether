@@ -261,7 +261,16 @@
     "title": "Create offline account"
   },
   "events": {
+    "installFailed": "Installation failed",
+    "installing": "Installing {{name}}",
     "javaDownloading": "Downloading Java {{version}}",
+    "stage": {
+      "downloading": "Downloading",
+      "extracting": "Extracting",
+      "finishing": "Finishing",
+      "installing": "Installing",
+      "verifying": "Verifying"
+    },
     "launcherUpdating": "Updating launcher to {{version}}"
   },
   "home": {

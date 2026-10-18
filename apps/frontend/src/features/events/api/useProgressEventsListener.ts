@@ -2,15 +2,24 @@ import { onCleanup, onMount } from 'solid-js';
 import { produce } from 'solid-js/store';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
+import { useTranslation } from '@/shared/i18n';
 import { logDebug } from '@/shared/log';
+import { showToast } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
-import { PROGRESS_EVENT_REMOVE_DELAY } from '../model/progressEvent';
+import {
+  getProgressRemoveDelay,
+  isProgressFailed,
+} from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
 
 export const useProgressEventsListener = () => {
   const [, setProgressStore] = useProgressStore();
+  const [{ t }] = useTranslation();
+
+  // Bars whose failure was already reported, so the toast comes up once.
+  const notifiedFailures = new Set<string>();
 
   const activeTimers = new Map<string, ReturnType<typeof setTimeout>>();
   // Bars updated by live events while the initial snapshot is loading;
@@ -37,7 +46,7 @@ export const useProgressEventsListener = () => {
   const removeEventDelayed = (payload: ProgressEvent) => {
     const timer = setTimeout(() => {
       removeEvent(payload.progressBarId);
-    }, PROGRESS_EVENT_REMOVE_DELAY);
+    }, getProgressRemoveDelay(payload));
 
     activeTimers.set(payload.progressBarId, timer);
   };
@@ -81,7 +90,19 @@ export const useProgressEventsListener = () => {
     liveBarIds?.add(e.payload.progressBarId);
     addEvent(e.payload);
 
-    if (e.payload.fraction === null) {
+    if (
+      e.payload.status.type === 'failed' &&
+      !notifiedFailures.has(e.payload.progressBarId)
+    ) {
+      notifiedFailures.add(e.payload.progressBarId);
+      showToast({
+        title: t('events.installFailed'),
+        description: e.payload.status.message,
+        variant: 'destructive',
+      });
+    }
+
+    if (e.payload.fraction === null || isProgressFailed(e.payload)) {
       removeEventDelayed(e.payload);
     }
   });

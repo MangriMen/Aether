@@ -30,7 +30,7 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         return local.payload.event.instance_name;
       case 'pack_download':
       case 'pack_file_download':
-        return local.payload.event.pack_name;
+        return t('events.installing', { name: local.payload.event.pack_name });
       case 'plugin_download':
         return `[Plugin] ${local.payload.event.plugin_name}`;
       case 'launcher_update':
@@ -45,19 +45,24 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
   });
 
   const message = createMemo(() => {
-    // eslint-disable-next-line sonarjs/no-small-switch
-    switch (local.payload.event.type) {
-      case 'launcher_update':
-        return t(`update.events.phase.${local.payload.event.phase}`);
-      default:
-        return local.payload.message;
+    const { status, stage, event } = local.payload;
+
+    if (status.type === 'failed') {
+      return status.message;
     }
+
+    if (event.type === 'launcher_update') {
+      return t(`update.events.phase.${event.phase}`);
+    }
+
+    return stage ? t(`events.stage.${stage}`) : local.payload.message;
   });
 
   const isError = createMemo(
     () =>
-      local.payload.event.type === 'launcher_update' &&
-      local.payload.event.phase === 'error',
+      local.payload.status.type === 'failed' ||
+      (local.payload.event.type === 'launcher_update' &&
+        local.payload.event.phase === 'error'),
   );
 
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
