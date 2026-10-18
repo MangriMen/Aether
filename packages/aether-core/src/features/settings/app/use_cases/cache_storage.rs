@@ -54,7 +54,7 @@ impl GetCacheUsageUseCasePort for CacheStorageUseCase {
 #[async_trait]
 impl IsCacheBusyUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> bool {
-        self.activity.try_pause().await.is_none()
+        self.activity.is_busy()
     }
 }
 
@@ -109,6 +109,10 @@ mod tests {
 
     #[async_trait]
     impl StorageActivity for Activity {
+        fn is_busy(&self) -> bool {
+            self.0.load(Ordering::SeqCst)
+        }
+
         async fn try_pause(&self) -> Option<ActivityPause> {
             (!self.0.load(Ordering::SeqCst)).then(|| Box::new(()) as ActivityPause)
         }

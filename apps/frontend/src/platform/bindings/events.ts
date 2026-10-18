@@ -35,7 +35,7 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	max: number,
 } } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
 
-export type CacheEventDto = { type: "changed" };
+export type CacheEventDto = { type: "changed" } | { type: "busyChanged"; busy: boolean };
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 

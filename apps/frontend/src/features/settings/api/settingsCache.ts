@@ -22,14 +22,13 @@ export const settingsQueries = {
     // Measuring walks the caches. What changes them is told by the cache event.
     staleTime: 30_000,
   }),
-  // Whether clearing is allowed changes by itself, as downloads start and end. It is cheap,
-  // so it is asked again whenever the pane is opened or the window gets focus.
+  // Whether clearing is allowed changes by itself, as downloads start and end. That is told by
+  // the cache event; it is asked again only on opening, in case an event was missed.
   cacheBusy: () => ({
     queryKey: settingsKeys.cacheBusy(),
     queryFn: settingsCommands.isCacheBusy,
-    staleTime: 0,
+    staleTime: Infinity,
     refetchOnMount: 'always' as const,
-    refetchOnWindowFocus: true,
   }),
   maxRam: () => ({
     queryKey: settingsKeys.maxRam(),
@@ -49,19 +48,19 @@ export const settingsCache = {
         queryKey: settingsKeys.get(),
       }),
     cacheUsage: (queryClient: QueryClient) =>
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: settingsKeys.cacheUsage(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: settingsKeys.cacheBusy(),
-        }),
-      ]),
+      queryClient.invalidateQueries({
+        queryKey: settingsKeys.cacheUsage(),
+      }),
   },
   set: (
     queryClient: QueryClient,
     updater: Updater<SettingsDto | undefined, SettingsDto>,
   ) => queryClient.setQueryData(settingsKeys.get(), updater),
+  // An answer still on its way was asked before the event, so it must not overwrite it.
+  setCacheBusy: async (queryClient: QueryClient, busy: boolean) => {
+    await queryClient.cancelQueries({ queryKey: settingsKeys.cacheBusy() });
+    queryClient.setQueryData(settingsKeys.cacheBusy(), busy);
+  },
 
   prefetch: {
     maxRam: (queryClient: QueryClient) =>

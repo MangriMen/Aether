@@ -4,9 +4,13 @@
 //! The principle: whatever is still used is never cleared automatically; the rest is cleared
 //! by the user.
 
+mod activity_gate;
+
 use std::sync::Arc;
 
 use async_trait::async_trait;
+
+pub use activity_gate::{ActivityGate, ActivityLease, ActivityPauseGuard, BusyWatch};
 
 /// A cleanup that runs by itself, in the background, after startup. Its thresholds are its own,
 /// set where it is built.
@@ -26,6 +30,10 @@ pub type ActivityPause = Box<dyn std::any::Any + Send>;
 /// pull files out from under it.
 #[async_trait]
 pub trait StorageActivity: Send + Sync {
+    /// Whether something is under way, or a pause is held. Takes nothing, so asking does not
+    /// get in the way of what would start meanwhile.
+    fn is_busy(&self) -> bool;
+
     /// Stop such work from starting, or `None` when it is under way already. Checking and
     /// stopping are one step, so nothing slips in between.
     async fn try_pause(&self) -> Option<ActivityPause>;
