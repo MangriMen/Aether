@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_keep_the_gate_busy_while_the_inner_call_runs() {
+    async fn should_keep_the_gate_busy_when_the_inner_call_runs() {
         let Fixture {
             gate,
             leased,
@@ -144,7 +144,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_start_the_inner_call_while_the_gate_is_paused() {
+    async fn should_not_start_the_inner_call_when_the_gate_is_paused() {
         let Fixture {
             gate,
             leased,

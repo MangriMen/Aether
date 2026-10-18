@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_a_pause_while_a_lease_is_held() {
+    async fn should_refuse_a_pause_when_a_lease_is_held() {
         let gate = gate();
         let lease = gate.lease().await;
 
@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_a_second_pause_while_paused() {
+    async fn should_refuse_a_second_pause_when_paused() {
         let gate = gate();
         let pause = gate.try_pause().unwrap();
 
@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_a_try_lease_while_paused() {
+    async fn should_refuse_a_try_lease_when_paused() {
         let gate = gate();
         let pause = gate.try_pause().unwrap();
 
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_let_a_lease_wait_for_the_pause_to_end() {
+    async fn should_let_a_lease_wait_when_the_gate_is_paused() {
         let gate = gate();
         let pause = gate.try_pause().unwrap();
 
@@ -231,7 +231,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_make_a_nested_lease_wait() {
+    async fn should_not_make_a_lease_wait_when_taken_under_another() {
         let gate = gate();
         let outer = gate.lease().await;
 
@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_wake_a_watcher_for_a_lease_under_a_lease() {
+    async fn should_not_wake_a_watcher_when_a_lease_is_taken_under_a_lease() {
         let gate = gate();
         let outer = gate.lease().await;
         let mut watch = gate.watch_busy();
@@ -308,15 +308,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_report_busy_without_taking_anything() {
+    async fn should_take_nothing_when_asked_if_busy() {
         let gate = gate();
         assert!(!gate.is_busy());
+        let mut watch = gate.watch_busy();
 
-        let lease = gate.lease().await;
-        assert!(gate.is_busy());
-        assert!(StorageActivity::is_busy(&gate));
-        drop(lease);
+        assert!(!gate.is_busy());
+        assert!(!StorageActivity::is_busy(&gate));
+        assert!(!watch.is_busy());
 
-        assert!(gate.try_pause().is_some());
+        // Taking a pause, even for a moment, would wake the watcher.
+        let woken = tokio::time::timeout(Duration::from_millis(50), watch.changed()).await;
+        assert!(woken.is_err());
+        assert!(gate.try_lease().is_some());
     }
 }
