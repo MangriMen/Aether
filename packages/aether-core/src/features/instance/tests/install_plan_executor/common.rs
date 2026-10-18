@@ -347,6 +347,10 @@ pub(super) struct RecordingProgress {
     /// A step message to stall on: reaching it signals `stalled` and never returns.
     pub(super) stall_on: Mutex<Option<String>>,
     pub(super) stalled: tokio::sync::Notify,
+    /// Every count of bytes reported as downloaded.
+    pub(super) bytes: Mutex<Vec<u64>>,
+    /// The bytes the bar was told to expect, if it was.
+    pub(super) bytes_total: Mutex<Option<u64>>,
 }
 
 impl RecordingProgress {
@@ -415,6 +419,23 @@ impl ProgressService for RecordingProgress {
         _message: String,
     ) -> Result<(), EventError> {
         Err(EventError::NotInitialized)
+    }
+    async fn add_progress_bytes(
+        &self,
+        _progress_bar_id: &ProgressBarId,
+        bytes: u64,
+    ) -> Result<(), EventError> {
+        self.bytes.lock().unwrap().push(bytes);
+        Ok(())
+    }
+    async fn add_progress_bytes_total(
+        &self,
+        _progress_bar_id: &ProgressBarId,
+        bytes: u64,
+    ) -> Result<(), EventError> {
+        let mut total = self.bytes_total.lock().unwrap();
+        *total = Some(total.unwrap_or(0) + bytes);
+        Ok(())
     }
 }
 

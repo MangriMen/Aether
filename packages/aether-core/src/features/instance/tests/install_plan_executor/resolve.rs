@@ -141,6 +141,56 @@ async fn should_move_the_bar_inside_a_file_when_bytes_are_received() {
 }
 
 #[tokio::test]
+async fn should_report_the_bytes_of_the_pack_when_every_size_is_known() {
+    let fixture = Fixture::new().await;
+    let big_url = "https://cdn.example/chunks/big.jar";
+    let small_url = "https://cdn.example/pack/small.jar";
+    let mut big = direct(big_url, "mods/big.jar");
+    big.size = Some(big_url.len() as u64);
+    let mut small = direct(small_url, "mods/small.jar");
+    small.size = Some(small_url.len() as u64);
+
+    fixture
+        .execute(existing(vec![big, small]), &plugin("packwiz"))
+        .await
+        .unwrap();
+
+    let expected = (big_url.len() + small_url.len()) as u64;
+    let bytes = fixture.progress.bytes.lock().unwrap().clone();
+    assert_eq!(
+        *fixture.progress.bytes_total.lock().unwrap(),
+        Some(expected)
+    );
+    // Four pieces of the big file as they arrive; the small one, which the downloader does not
+    // report, by the size it returns.
+    assert_eq!(bytes.len(), 5, "{bytes:?}");
+    assert_eq!(bytes.iter().sum::<u64>(), expected);
+}
+
+#[tokio::test]
+async fn should_leave_the_pack_total_unknown_when_a_size_is_unknown() {
+    let fixture = Fixture::new().await;
+    let known_url = "https://cdn.example/chunks/known.jar";
+    let unknown_url = "https://cdn.example/pack/unknown.jar";
+    let mut known = direct(known_url, "mods/known.jar");
+    known.size = Some(known_url.len() as u64);
+
+    fixture
+        .execute(
+            existing(vec![known, direct(unknown_url, "mods/unknown.jar")]),
+            &plugin("packwiz"),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(*fixture.progress.bytes_total.lock().unwrap(), None);
+    assert_eq!(
+        fixture.progress.bytes.lock().unwrap().iter().sum::<u64>(),
+        (known_url.len() + unknown_url.len()) as u64
+    );
+}
+
+#[tokio::test]
 async fn should_not_move_the_bar_past_a_file_when_its_size_was_understated() {
     let fixture = Fixture::new().await;
     let url = "https://cdn.example/chunks/liar.jar";

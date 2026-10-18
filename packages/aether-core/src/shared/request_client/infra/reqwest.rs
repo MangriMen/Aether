@@ -82,9 +82,17 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
         let mut bytes = Vec::new();
 
         let (progress_bar_id, total) = progress_bar;
+        // Added, not set: fetches sharing a bar each bring their own size.
+        self.progress_service
+            .add_progress_bytes_total_safe(progress_bar_id, total_size)
+            .await;
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(RequestError::RequestSend)?;
             bytes.extend_from_slice(&chunk);
+
+            self.progress_service
+                .add_progress_bytes_safe(progress_bar_id, chunk.len() as u64)
+                .await;
 
             #[allow(clippy::cast_precision_loss)]
             let progress = (chunk.len() as f64 / total_size as f64) * total;
@@ -398,9 +406,81 @@ mod tests {
         }
     }
 
+    /// Records the bytes reported on any bar.
+    #[derive(Default)]
+    struct RecordingBytes {
+        bytes: std::sync::Mutex<Vec<u64>>,
+        total: std::sync::Mutex<u64>,
+    }
+
+    #[async_trait]
+    impl ProgressService for RecordingBytes {
+        async fn init_progress(
+            &self,
+            event_type: ProgressEventType,
+            total: f64,
+            message: String,
+        ) -> Result<ProgressBarId, EventError> {
+            NoopProgress.init_progress(event_type, total, message).await
+        }
+
+        async fn init_or_edit_progress(
+            &self,
+            progress_bar_id: Option<ProgressBarId>,
+            event_type: ProgressEventType,
+            total: f64,
+            message: String,
+        ) -> Result<ProgressBarId, EventError> {
+            NoopProgress
+                .init_or_edit_progress(progress_bar_id, event_type, total, message)
+                .await
+        }
+
+        async fn emit_progress(
+            &self,
+            _progress_bar_id: &ProgressBarId,
+            _increment_frac: f64,
+            _message: Option<&str>,
+        ) -> Result<(), EventError> {
+            Ok(())
+        }
+
+        async fn edit_progress(
+            &self,
+            _progress_bar_id: &ProgressBarId,
+            _event_type: ProgressEventType,
+            _total: f64,
+            _message: String,
+        ) -> Result<(), EventError> {
+            Ok(())
+        }
+
+        async fn add_progress_bytes(
+            &self,
+            _progress_bar_id: &ProgressBarId,
+            bytes: u64,
+        ) -> Result<(), EventError> {
+            self.bytes.lock().unwrap().push(bytes);
+            Ok(())
+        }
+
+        async fn add_progress_bytes_total(
+            &self,
+            _progress_bar_id: &ProgressBarId,
+            bytes: u64,
+        ) -> Result<(), EventError> {
+            *self.total.lock().unwrap() += bytes;
+            Ok(())
+        }
+    }
+
     fn client() -> ReqwestClient<NoopProgress> {
+        client_with(Arc::new(NoopProgress))
+    }
+
+    fn client_with<PS: ProgressService>(progress: Arc<PS>) -> ReqwestClient<PS> {
         ReqwestClient::new(
-            Arc::new(NoopProgress),
+            progress,
             Arc::new(
                 reqwest_middleware::ClientBuilder::new(
                     reqwest::Client::builder()
@@ -508,6 +588,25 @@ mod tests {
             result,
             Err(RequestError::Status { status: 404, .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn should_report_the_bytes_of_a_fetch_with_progress() {
+        const BODY: &[u8] = &[7_u8; 200_000];
+        let addr = serve("200 OK", BODY).await;
+        let progress = Arc::new(RecordingBytes::default());
+        let progress_bar = bar();
+
+        let bytes = client_with(progress.clone())
+            .fetch_bytes_with_progress(Request::get(url(addr)), Some((&progress_bar, 100.0)))
+            .await
+            .unwrap();
+
+        assert_eq!(bytes.len(), BODY.len());
+        assert_eq!(*progress.total.lock().unwrap(), BODY.len() as u64);
+        let reported = progress.bytes.lock().unwrap();
+        assert!(!reported.is_empty());
+        assert_eq!(reported.iter().sum::<u64>(), BODY.len() as u64);
     }
 
     #[tokio::test]

@@ -149,6 +149,14 @@ impl PlanProgress<'_> {
         }
     }
 
+    /// Count `bytes` more as downloaded, for the bar's bytes and speed.
+    async fn add_bytes(&self, bytes: u64) {
+        if let Some(bar) = &self.bar {
+            let _guard = self.lock.lock().await;
+            self.service.add_progress_bytes_safe(bar, bytes).await;
+        }
+    }
+
     /// Download one file, spreading its *Downloading* step over the bytes as they arrive, so the
     /// bar moves inside a large file. The step adds up to exactly 1 once the file is done:
     /// bytes beyond the expected size move nothing, and a file of unknown size moves the bar
@@ -190,6 +198,7 @@ impl PlanProgress<'_> {
             while let Some(bytes) = received.recv().await {
                 counted += bytes;
                 budget.spend(bytes, &entry.relative_path)?;
+                self.add_bytes(bytes).await;
 
                 let Some(expected) = entry.size.filter(|size| *size > 0) else {
                     continue;
@@ -214,7 +223,11 @@ impl PlanProgress<'_> {
         // An error of either ends both: a download over the budget is not finished.
         let (size, (reported, counted)) = futures::try_join!(transfer, reporting)?;
         // A downloader that does not report its bytes is counted by the size it returns.
-        budget.spend(size.saturating_sub(counted), &entry.relative_path)?;
+        let uncounted = size.saturating_sub(counted);
+        budget.spend(uncounted, &entry.relative_path)?;
+        if uncounted > 0 {
+            self.add_bytes(uncounted).await;
+        }
 
         // What the stream did not account for — all of it when the size was unknown.
         let rest = 1.0 - reported;
@@ -529,7 +542,7 @@ impl InstallPlanExecutor {
         let diff = diff_against_installed(entries, &installed);
 
         let progress = self
-            .start_progress(&target, &origin, diff.to_download.len(), &overrides)
+            .start_progress(&target, &origin, &diff.to_download, &overrides)
             .await;
 
         let dirs = PlanDirs::new(&self.location_info.temp_dir());
@@ -621,17 +634,18 @@ impl InstallPlanExecutor {
     }
 
     /// Start the bar: three steps per file to download (download, hash, install), one per
-    /// override, one to finish.
+    /// override, one to finish. The bytes it expects are those of the files to download, when
+    /// every one of them has a known size.
     async fn start_progress<'a>(
         &'a self,
         target: &InstallTarget,
         origin: &PlanOrigin,
-        to_download: usize,
+        to_download: &[PlannedFile],
         overrides: &PlanOverrides,
     ) -> PlanProgress<'a> {
         let override_count = overrides.file_count();
         #[allow(clippy::cast_precision_loss)] // a count of files
-        let total = (3 * to_download + override_count + 1) as f64;
+        let total = (3 * to_download.len() + override_count + 1) as f64;
         let instance_path = match target {
             InstallTarget::Existing { instance_id, .. } => instance_id.to_string(),
             InstallTarget::New(_) => String::new(),
@@ -647,22 +661,34 @@ impl InstallPlanExecutor {
             InstallTarget::New(new_instance) => new_instance.name.clone(),
         };
 
+        let bar = self
+            .progress_service
+            .init_progress_safe(
+                ProgressEventType::PackDownload {
+                    instance_path,
+                    pack_name,
+                    icon: None,
+                    pack_id: Some(origin.content_id.clone()),
+                    pack_version: None,
+                },
+                total,
+                "Downloading".to_owned(),
+            )
+            .await;
+
+        // Unknown when any size is: the bar then shows its fraction alone.
+        let bytes_total = to_download.iter().try_fold(0_u64, |sum, file| {
+            file.entry.size.map(|size| sum.saturating_add(size))
+        });
+        if let (Some(bar), Some(bytes_total)) = (&bar, bytes_total.filter(|total| *total > 0)) {
+            self.progress_service
+                .add_progress_bytes_total_safe(bar, bytes_total)
+                .await;
+        }
+
         PlanProgress {
             service: self.progress_service.as_ref(),
-            bar: self
-                .progress_service
-                .init_progress_safe(
-                    ProgressEventType::PackDownload {
-                        instance_path,
-                        pack_name,
-                        icon: None,
-                        pack_id: Some(origin.content_id.clone()),
-                        pack_version: None,
-                    },
-                    total,
-                    "Downloading".to_owned(),
-                )
-                .await,
+            bar,
             lock: tokio::sync::Mutex::new(()),
         }
     }

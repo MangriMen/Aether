@@ -45,4 +45,30 @@ pub trait ProgressService: Send + Sync {
     ) -> Result<(), EventError> {
         Ok(())
     }
+
+    /// Counts `bytes` more as transferred for the bar, which also gives it a speed. Listeners
+    /// hear of it a few times a second at most, always of the first bytes and of the ones that
+    /// complete [`add_progress_bytes_total`](Self::add_progress_bytes_total).
+    ///
+    /// Bytes are extra detail next to the fraction, so by default they are ignored.
+    async fn add_progress_bytes(
+        &self,
+        _progress_bar_id: &ProgressBarId,
+        _bytes: u64,
+    ) -> Result<(), EventError> {
+        Ok(())
+    }
+
+    /// Adds `bytes` to how many the bar expects to transfer in all, so that transfers sharing a
+    /// bar each add their own size. Until it is called the total is unknown; it tells listeners
+    /// nothing by itself, the next event carries it.
+    ///
+    /// Bytes are extra detail next to the fraction, so by default they are ignored.
+    async fn add_progress_bytes_total(
+        &self,
+        _progress_bar_id: &ProgressBarId,
+        _bytes: u64,
+    ) -> Result<(), EventError> {
+        Ok(())
+    }
 }

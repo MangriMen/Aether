@@ -7,6 +7,7 @@ pub(crate) mod process;
 pub(crate) mod progress;
 pub(crate) mod progress_bar;
 pub(crate) mod progress_bar_error;
+pub(crate) mod transfer_window;
 pub(crate) mod warning;
 
 pub use cache_event::*;

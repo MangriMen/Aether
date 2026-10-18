@@ -1,11 +1,13 @@
 use std::fmt;
 use std::sync::Arc;
+use std::time::Instant;
 
 use log::error;
 use uuid::Uuid;
 
 use crate::features::events::{ProgressBarStorage, SharedEventEmitter};
 
+use super::transfer_window::TransferWindow;
 use super::{ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus};
 
 #[derive(Debug, Clone)]
@@ -25,9 +27,25 @@ pub struct ProgressBar {
     pub bytes_total: Option<u64>,
     /// Transfer speed in bytes per second.
     pub speed: Option<f64>,
+    /// The recent history of `bytes_done`, which `speed` is measured over.
+    pub(crate) transfer: TransferWindow,
+    /// When the bar last sent an event; events for bytes alone are spaced out from it.
+    pub(crate) last_sent_at: Option<Instant>,
 }
 
 impl ProgressBar {
+    /// Measure `speed` up to `now`. There is none once all the expected bytes are in.
+    pub(crate) fn refresh_speed(&mut self, now: Instant) {
+        let finished = self
+            .bytes_total
+            .is_some_and(|total| self.bytes_done.unwrap_or(0) >= total);
+        self.speed = if finished {
+            None
+        } else {
+            self.transfer.speed(now)
+        };
+    }
+
     /// An event describing this bar with the given fraction, message and status.
     pub(crate) fn event(
         &self,
@@ -239,6 +257,8 @@ mod tests {
             bytes_done: None,
             bytes_total: None,
             speed: None,
+            transfer: TransferWindow::default(),
+            last_sent_at: None,
         }
     }
 
