@@ -267,6 +267,8 @@
     "javaDownloading": "Downloading Java {{version}}",
     "minecraftAssets": "Assets ({{count}} files)",
     "minecraftDownloading": "Downloading Minecraft {{version}}",
+    "neededFor": "Needed for {{count}} installs",
+    "perSecond": "{{size}}/s",
     "waitingFor": "Waiting: {{name}}",
     "stage": {
       "downloading": "Downloading",

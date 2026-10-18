@@ -1,11 +1,14 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { createMemo, splitProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
+import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip, Progress } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
+
+import { formatProgressBytes } from '../model/progressBytes';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
   payload: ProgressEvent;
@@ -14,7 +17,7 @@ export type ProgressCardProps = ComponentProps<'div'> & {
 export const ProgressCard: Component<ProgressCardProps> = (props) => {
   const [local, others] = splitProps(props, ['payload', 'class']);
 
-  const [{ t }] = useTranslation();
+  const [{ t, locale }] = useTranslation();
 
   const clampedValue = createMemo(() => local.payload.fraction ?? 1);
 
@@ -88,13 +91,28 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
 
+  const bytesStr = createMemo(() =>
+    formatProgressBytes(local.payload, {
+      formatSize: (bytes) => formatBytes(bytes, locale()),
+      formatSpeed: (speed) =>
+        t('events.perSecond', { size: formatBytes(speed, locale()) }) ?? '',
+    }),
+  );
+
   return (
     <div class='gap-2 flex flex-col' {...others}>
       <div class='gap-4 flex items-end justify-between'>
-        <CombinedTooltip label={title()} as='span' class='font-bold truncate'>
+        <CombinedTooltip
+          label={title() ?? ''}
+          as='span'
+          class='font-bold truncate'
+        >
           {title()}
         </CombinedTooltip>
-        <span class='text-muted-foreground shrink-0 tabular-nums'>
+        <span class='text-muted-foreground gap-2 flex shrink-0 tabular-nums'>
+          <Show when={bytesStr()}>
+            <span class='text-sm'>{bytesStr()}</span>
+          </Show>
           {percentStr()}
         </span>
       </div>

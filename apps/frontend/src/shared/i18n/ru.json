@@ -267,6 +267,8 @@
     "javaDownloading": "Загрузка Java {{version}}",
     "minecraftAssets": "Ресурсы (файлов: {{count}})",
     "minecraftDownloading": "Загрузка Minecraft {{version}}",
+    "neededFor": "Нужен для установок: {{count}}",
+    "perSecond": "{{size}}/с",
     "waitingFor": "Ждёт: {{name}}",
     "stage": {
       "downloading": "Загрузка",

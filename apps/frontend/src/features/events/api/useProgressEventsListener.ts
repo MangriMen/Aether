@@ -13,9 +13,10 @@ import {
   isProgressFailed,
 } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
+import { getDescendantIds } from '../model/progressTree';
 
 export const useProgressEventsListener = () => {
-  const [, setProgressStore] = useProgressStore();
+  const [progressStore, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
@@ -35,12 +36,26 @@ export const useProgressEventsListener = () => {
     setProgressStore('payloads', payload.progressBarId, payload);
   };
 
+  // Removing a root takes its whole subtree with it, so no orphans stay behind.
   const removeEvent = (id: ProgressEvent['progressBarId']) => {
+    const ids = [
+      id,
+      ...getDescendantIds(Object.values(progressStore.payloads), id),
+    ];
+
+    for (const barId of ids) {
+      clearTimeout(activeTimers.get(barId));
+      activeTimers.delete(barId);
+    }
+
     setProgressStore(
       'payloads',
-      produce((p) => delete p[id]),
+      produce((p) => {
+        for (const barId of ids) {
+          delete p[barId];
+        }
+      }),
     );
-    activeTimers.delete(id);
   };
 
   const removeEventDelayed = (payload: ProgressEvent) => {
@@ -105,7 +120,11 @@ export const useProgressEventsListener = () => {
       });
     }
 
-    if (e.payload.fraction === null || isProgressFailed(e.payload)) {
+    // Only roots expire; children go with their root.
+    if (
+      e.payload.parentId === null &&
+      (e.payload.fraction === null || isProgressFailed(e.payload))
+    ) {
       removeEventDelayed(e.payload);
     }
   });
