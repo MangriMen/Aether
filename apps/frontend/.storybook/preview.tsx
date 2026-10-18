@@ -12,6 +12,7 @@ import {
 import { setThemeToDocument } from '../src/features/appearance/model/themeDom';
 import { I18nProvider, LOCALE_RESOURCES, LOCALES } from '../src/shared/i18n';
 import { createQueryClient } from '../src/shared/query';
+import { BACKGROUNDS, DEFAULT_BACKGROUND, getBackground } from './backgrounds';
 import { ThemedDocsContainer } from './DocsContainer';
 
 const queryClient = createQueryClient();
@@ -28,10 +29,14 @@ const preview: Preview = {
       },
     },
   },
-  initialGlobals: { theme: 'aether-dark' },
+  initialGlobals: {
+    theme: 'aether-dark',
+    backgrounds: { value: DEFAULT_BACKGROUND },
+  },
   parameters: {
     layout: 'fullscreen',
     controls: { expanded: true },
+    backgrounds: { options: BACKGROUNDS },
     docs: { container: ThemedDocsContainer },
   },
   decorators: [
@@ -43,22 +48,28 @@ const preview: Preview = {
       const root = document.documentElement;
       root.setAttribute(KB_THEME_ATTRIBUTE, theme.mode);
       root.style.colorScheme = theme.mode;
+      root.style.setProperty(
+        '--sb-scrollbar-thumb',
+        getBackground(context.globals).scrollbarThumb,
+      );
       return (
         <div class='p-8 text-foreground'>
-          <div
-            class='
-              min-h-96 gap-6 rounded-xl bg-card/card p-8 shadow-sm flex
-              flex-wrap items-start border
-            '
-          >
-            <I18nProvider
-              resources={LOCALE_RESOURCES}
-              fallbackLocale={LOCALES.En}
+          <div class='rounded-xl bg-background'>
+            <div
+              class='
+                min-h-96 gap-6 rounded-xl bg-card/card p-8 shadow-sm flex
+                flex-wrap items-start border
+              '
             >
-              <QueryClientProvider client={queryClient}>
-                <Story />
-              </QueryClientProvider>
-            </I18nProvider>
+              <I18nProvider
+                resources={LOCALE_RESOURCES}
+                fallbackLocale={LOCALES.En}
+              >
+                <QueryClientProvider client={queryClient}>
+                  <Story />
+                </QueryClientProvider>
+              </I18nProvider>
+            </div>
           </div>
         </div>
       );

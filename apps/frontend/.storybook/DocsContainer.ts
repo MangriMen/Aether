@@ -2,15 +2,16 @@
 import { DocsContainer } from '@storybook/addon-docs/blocks';
 import { jsx, themes } from 'storybook/theming';
 
-import { THEMES } from '../src/features/appearance/model/theme';
+import { getBackground } from './backgrounds';
 
 type DocsContainerProps = Parameters<typeof DocsContainer>[0];
 
-// Docs pages are rendered by Storybook itself, so they follow the toolbar theme only through this container
+// Docs pages are rendered by Storybook itself, so they follow the background switcher only through this container
 export const ThemedDocsContainer = (props: DocsContainerProps) => {
   const { context, children } = props;
-  const value = context.getStoryContext(context.storyById()).globals['theme'];
-  const mode = THEMES.find((theme) => theme.value === value)?.mode ?? 'dark';
+  const { mode } = getBackground(
+    context.getStoryContext(context.storyById()).globals,
+  );
 
   return jsx(DocsContainer, {
     context,

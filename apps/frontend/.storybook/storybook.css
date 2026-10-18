@@ -4,7 +4,11 @@ html {
   overflow: auto;
 }
 
-/* The app only styles the scrollbar thumb; the default track is white */
+/* The scrollbar belongs to the page, so it follows the background and not the app theme */
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--sb-scrollbar-thumb);
 }
