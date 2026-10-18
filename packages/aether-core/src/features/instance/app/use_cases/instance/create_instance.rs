@@ -76,7 +76,7 @@ impl CreateInstanceUseCase {
         &self,
         instance: &Instance,
         skip_install_instance: Option<bool>,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         self.instance_storage.upsert(instance).await?;
 
         self.instance_watcher_service
@@ -89,10 +89,10 @@ impl CreateInstanceUseCase {
                 .await?;
         }
 
-        Ok(instance.id().to_string())
+        Ok(instance.id().clone())
     }
 
-    pub async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+    pub async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
         self.create(new_instance, InstanceInstallStage::NotInstalled)
             .await
     }
@@ -101,7 +101,7 @@ impl CreateInstanceUseCase {
     pub async fn execute_for_pack(
         &self,
         new_instance: NewInstance,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         self.create(new_instance, InstanceInstallStage::PackInstalling)
             .await
     }
@@ -112,7 +112,7 @@ impl CreateInstanceUseCase {
         &self,
         new_instance: NewInstance,
         initial_stage: InstanceInstallStage,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         let NewInstance {
             name,
             game_version,
@@ -241,11 +241,14 @@ pub(crate) fn sanitize_instance_name(name: &str) -> String {
 
 #[async_trait]
 impl CreateInstanceUseCasePort for CreateInstanceUseCase {
-    async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
         self.execute(new_instance).await
     }
 
-    async fn execute_for_pack(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+    async fn execute_for_pack(
+        &self,
+        new_instance: NewInstance,
+    ) -> Result<InstanceId, InstanceError> {
         self.execute_for_pack(new_instance).await
     }
 }

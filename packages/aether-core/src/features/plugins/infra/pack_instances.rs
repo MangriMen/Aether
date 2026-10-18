@@ -11,18 +11,20 @@
 
 use std::cell::RefCell;
 
+use crate::features::instance::InstanceId;
+
 thread_local! {
     static DEPLOYMENT: RefCell<Option<Deployment>> = const { RefCell::new(None) };
 }
 
 struct Deployment {
     plugin_id: String,
-    instances: Vec<String>,
+    instances: Vec<InstanceId>,
 }
 
 /// Run `f` — a call into `plugin_id` — with a deployment open, and give back the instances the
 /// plugin created for a pack meanwhile.
-pub(crate) fn deploying_packs<R>(plugin_id: &str, f: impl FnOnce() -> R) -> (R, Vec<String>) {
+pub(crate) fn deploying_packs<R>(plugin_id: &str, f: impl FnOnce() -> R) -> (R, Vec<InstanceId>) {
     let scope = DeploymentScope(DEPLOYMENT.replace(Some(Deployment {
         plugin_id: plugin_id.to_owned(),
         instances: Vec::new(),
@@ -51,13 +53,13 @@ pub(crate) fn is_deploying_packs(plugin_id: &str) -> bool {
 }
 
 /// Record an instance `plugin_id` created for a pack; nothing when it deploys none.
-pub(crate) fn record_pack_instance(plugin_id: &str, instance_id: &str) {
+pub(crate) fn record_pack_instance(plugin_id: &str, instance_id: &InstanceId) {
     DEPLOYMENT.with_borrow_mut(|deployment| {
         if let Some(deployment) = deployment
             .as_mut()
             .filter(|deployment| deployment.plugin_id == plugin_id)
         {
-            deployment.instances.push(instance_id.to_owned());
+            deployment.instances.push(instance_id.clone());
         }
     });
 }
@@ -76,17 +78,21 @@ impl Drop for DeploymentScope {
 mod tests {
     use super::*;
 
+    fn id(id: &str) -> InstanceId {
+        InstanceId::try_from(id).unwrap()
+    }
+
     #[test]
     fn should_collect_the_pack_instances_when_the_deploying_plugin_creates_them() {
         let (result, instances) = deploying_packs("packwiz", || {
             assert!(is_deploying_packs("packwiz"));
-            record_pack_instance("packwiz", "a");
-            record_pack_instance("packwiz", "b");
+            record_pack_instance("packwiz", &id("a"));
+            record_pack_instance("packwiz", &id("b"));
             42
         });
 
         assert_eq!(result, 42);
-        assert_eq!(instances, ["a", "b"]);
+        assert_eq!(instances, [id("a"), id("b")]);
         assert!(!is_deploying_packs("packwiz"));
     }
 
@@ -95,7 +101,7 @@ mod tests {
     fn should_ignore_another_plugin_when_it_creates_pack_instances() {
         let ((), instances) = deploying_packs("packwiz", || {
             assert!(!is_deploying_packs("other"));
-            record_pack_instance("other", "x");
+            record_pack_instance("other", &id("x"));
         });
 
         assert!(instances.is_empty());
@@ -104,7 +110,7 @@ mod tests {
     #[test]
     fn should_record_nothing_when_outside_a_deployment() {
         assert!(!is_deploying_packs("packwiz"));
-        record_pack_instance("packwiz", "a");
+        record_pack_instance("packwiz", &id("a"));
 
         let ((), instances) = deploying_packs("packwiz", || {});
         assert!(instances.is_empty());
@@ -114,12 +120,12 @@ mod tests {
     #[test]
     fn should_restore_the_outer_deployment_when_a_nested_one_ends() {
         let ((), outer) = deploying_packs("a", || {
-            let ((), inner) = deploying_packs("b", || record_pack_instance("b", "inner"));
-            assert_eq!(inner, ["inner"]);
-            record_pack_instance("a", "outer");
+            let ((), inner) = deploying_packs("b", || record_pack_instance("b", &id("inner")));
+            assert_eq!(inner, [id("inner")]);
+            record_pack_instance("a", &id("outer"));
         });
 
-        assert_eq!(outer, ["outer"]);
+        assert_eq!(outer, [id("outer")]);
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use aether_core::features::instance::{
     AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem, ContentSearchParams,
-    ContentSearchResult, ModpackInstallParams, ProviderId,
+    ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams, ProviderId,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -202,15 +202,17 @@ impl From<BaseContentParamsDto> for BaseContentParams {
     }
 }
 
-impl From<AtomicInstallParamsDto> for AtomicInstallParams {
-    fn from(value: AtomicInstallParamsDto) -> Self {
-        Self {
+impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
+    type Error = InstanceError;
+
+    fn try_from(value: AtomicInstallParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             base: value.base.into(),
-            instance_id: value.instance_id,
+            instance_id: InstanceId::try_from(value.instance_id)?,
             game_version: value.game_version,
             loader: value.loader,
             content_type: value.content_type.into(),
-        }
+        })
     }
 }
 
@@ -222,12 +224,14 @@ impl From<ModpackInstallParamsDto> for ModpackInstallParams {
     }
 }
 
-impl From<ContentInstallParamsDto> for ContentInstallParams {
-    fn from(value: ContentInstallParamsDto) -> Self {
-        match value {
-            ContentInstallParamsDto::Atomic(x) => Self::Atomic(x.into()),
+impl TryFrom<ContentInstallParamsDto> for ContentInstallParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentInstallParamsDto) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ContentInstallParamsDto::Atomic(x) => Self::Atomic(x.try_into()?),
             ContentInstallParamsDto::Modpack(x) => Self::Modpack(x.into()),
-        }
+        })
     }
 }
 

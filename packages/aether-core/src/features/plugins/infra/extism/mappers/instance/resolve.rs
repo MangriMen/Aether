@@ -30,7 +30,7 @@ impl From<ResolveTarget> for ResolveTargetDto {
                 game_version,
                 loader,
             } => Self::Existing {
-                instance_id,
+                instance_id: instance_id.to_string(),
                 game_version,
                 loader,
             },

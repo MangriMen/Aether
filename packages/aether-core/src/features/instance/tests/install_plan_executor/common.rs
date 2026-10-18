@@ -231,16 +231,19 @@ impl RecordingCreateInstance {
 
 #[async_trait]
 impl CreateInstanceUseCasePort for RecordingCreateInstance {
-    async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError> {
         self.create_dir().await;
         self.created.lock().unwrap().push(new_instance);
-        Ok(NEW_INSTANCE_ID.into())
+        Ok(InstanceId::try_from(NEW_INSTANCE_ID).unwrap())
     }
 
-    async fn execute_for_pack(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
+    async fn execute_for_pack(
+        &self,
+        new_instance: NewInstance,
+    ) -> Result<InstanceId, InstanceError> {
         self.create_dir().await;
         self.created_for_pack.lock().unwrap().push(new_instance);
-        Ok(NEW_INSTANCE_ID.into())
+        Ok(InstanceId::try_from(NEW_INSTANCE_ID).unwrap())
     }
 }
 
@@ -649,7 +652,7 @@ impl Fixture {
         &self,
         plan: InstallPlan,
         origin: &ProviderId,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         self.execute_as(plan, pack_of(origin)).await
     }
 
@@ -657,7 +660,7 @@ impl Fixture {
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         let instance = InstanceBuilder::new(
             InstanceId::try_from(INSTANCE_ID).unwrap(),
             "Instance".into(),
@@ -842,7 +845,7 @@ pub(super) fn plugin(plugin_id: &str) -> ProviderId {
 
 pub(super) fn existing(files: Vec<InstallFileEntry>) -> InstallPlan {
     InstallPlan {
-        target: InstallTarget::existing(INSTANCE_ID),
+        target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
         files,
         overrides: Vec::new(),
     }
@@ -852,7 +855,7 @@ pub(super) fn existing(files: Vec<InstallFileEntry>) -> InstallPlan {
 pub(super) fn existing_on(game: &InstanceGame, files: Vec<InstallFileEntry>) -> InstallPlan {
     InstallPlan {
         target: InstallTarget::Existing {
-            instance_id: INSTANCE_ID.into(),
+            instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
             game: Some(game.clone()),
         },
         files,

@@ -19,8 +19,8 @@ use crate::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
             ContentProvider, ContentSource, ContentType, FileSide, Importer, InstallTarget,
-            InstanceError, InstanceGame, NewInstance, OverrideLocation, OverrideSource, PackSource,
-            ResolveInstallPlanParams, ResolveTarget, Updater,
+            InstanceError, InstanceGame, InstanceId, NewInstance, OverrideLocation, OverrideSource,
+            PackSource, ResolveInstallPlanParams, ResolveTarget, Updater,
         },
         minecraft::ModLoader,
         plugins::{
@@ -196,7 +196,7 @@ impl Fixture {
 
 fn existing_target() -> ResolveTarget {
     ResolveTarget::Existing {
-        instance_id: "instance".into(),
+        instance_id: InstanceId::try_from("instance").unwrap(),
         game_version: "1.21.1".into(),
         loader: Some("fabric".into()),
     }
@@ -408,7 +408,10 @@ async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolv
             },
         }
     );
-    assert_eq!(plan.target, InstallTarget::existing("instance"));
+    assert_eq!(
+        plan.target,
+        InstallTarget::existing(InstanceId::try_from("instance").unwrap())
+    );
     assert_eq!(plan.files.len(), 1);
     assert_eq!(
         plan.files[0].source,
@@ -639,7 +642,7 @@ async fn should_pass_on_the_game_when_a_plan_names_one_for_the_instance() {
     assert_eq!(
         plan.target,
         InstallTarget::Existing {
-            instance_id: "instance".into(),
+            instance_id: InstanceId::try_from("instance").unwrap(),
             game: Some(InstanceGame {
                 game_version: "1.21.4".into(),
                 mod_loader: ModLoader::Fabric,
@@ -681,6 +684,29 @@ async fn should_refuse_a_plan_when_it_is_for_another_instance() {
                 .await,
         );
     }
+}
+
+/// An id that is not a plain directory name would point the plan outside `instances/`.
+#[tokio::test]
+async fn should_refuse_a_plan_when_its_instance_id_is_not_a_plain_name() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_resolve_install_plan",
+            encode(plan_for(existing_plan_target("../x"), Vec::new())),
+        )],
+    );
+
+    let err = fixture
+        .proxy
+        .resolve_install_plan(plan_params(existing_target()))
+        .await
+        .unwrap_err();
+
+    assert!(
+        matches!(&err, InstanceError::NotFound { instance_id } if instance_id == "../x"),
+        "{err}"
+    );
 }
 
 #[tokio::test]

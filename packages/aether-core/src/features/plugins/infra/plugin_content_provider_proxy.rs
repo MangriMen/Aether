@@ -94,7 +94,7 @@ impl PluginContentProviderProxy {
         requested: &ResolveTarget,
         dto: InstallPlanDto,
     ) -> Result<InstallPlan, InstanceError> {
-        let mut target = InstallTarget::from(dto.target);
+        let mut target = InstallTarget::try_from(dto.target)?;
         if !requested.is_answered_by(&target) {
             return Err(self.invalid_answer(
                 handler_name,

@@ -15,7 +15,8 @@ use std::{fmt, path::PathBuf};
 use crate::{
     features::{
         instance::{
-            ContentMetadata, ContentType, ContentVersionMetadata, Instance, NewInstance, ProviderId,
+            ContentMetadata, ContentType, ContentVersionMetadata, Instance, InstanceId,
+            NewInstance, ProviderId,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
@@ -50,7 +51,7 @@ pub struct PlanOrigin {
 #[derive(Debug, Clone, PartialEq)]
 pub enum InstallTarget {
     Existing {
-        instance_id: String,
+        instance_id: InstanceId,
         /// The game the instance runs once the plan is applied; `None` keeps its game.
         ///
         /// `Some` is accepted only from a plan of the pack the instance was installed from (its
@@ -63,9 +64,9 @@ pub enum InstallTarget {
 
 impl InstallTarget {
     /// An existing instance, keeping its game.
-    pub fn existing(instance_id: impl Into<String>) -> Self {
+    pub fn existing(instance_id: InstanceId) -> Self {
         Self::Existing {
-            instance_id: instance_id.into(),
+            instance_id,
             game: None,
         }
     }
@@ -450,7 +451,7 @@ mod tests {
     fn should_keep_server_files_in_the_plan_when_the_pack_has_them() {
         // The provider reports the side and leaves the file in; skipping it is the core's call.
         let plan = InstallPlan {
-            target: InstallTarget::existing("instance"),
+            target: InstallTarget::existing(InstanceId::try_from("instance").unwrap()),
             files: vec![
                 sodium(FileSide::Client, None),
                 sodium(FileSide::Server, None),

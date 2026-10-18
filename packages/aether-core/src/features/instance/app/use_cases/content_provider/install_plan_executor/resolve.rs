@@ -9,8 +9,6 @@ use std::{
 
 use futures::future::try_join_all;
 
-use crate::features::instance::InstanceId;
-
 use super::{DownloadEntry, InstallPlanExecutor, ResolvedRef, TargetGame, is_pack_of};
 use crate::features::instance::{
     ContentMetadata, ContentProvider, ContentSource, ContentVersionMetadata, InstallFileEntry,
@@ -79,10 +77,7 @@ impl InstallPlanExecutor {
     ) -> Result<TargetGame, InstanceError> {
         Ok(match target {
             InstallTarget::Existing { instance_id, game } => {
-                let instance = self
-                    .instance_storage
-                    .get(&InstanceId::try_from(instance_id.as_str())?)
-                    .await?;
+                let instance = self.instance_storage.get(instance_id).await?;
 
                 match game {
                     None => TargetGame::new(instance.game_version, instance.loader),
@@ -91,7 +86,7 @@ impl InstallPlanExecutor {
                     }
                     Some(_) => {
                         return Err(InstanceError::GameChangeNotAllowed {
-                            instance_id: instance_id.clone(),
+                            instance_id: instance_id.to_string(),
                             provider_id: origin.provider_id.clone(),
                             content_id: origin.content_id.clone(),
                         });

@@ -1,8 +1,8 @@
 use aether_core::features::{
     instance::{
-        ChangeContentState, ContentManagementPort, ContentProviderPort, ContentStateAction,
-        EditInstanceIcon, ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort,
-        InstanceServicesPort, RemoveContent,
+        ChangeContentState, ContentInstallParams, ContentManagementPort, ContentProviderPort,
+        ContentStateAction, EditInstanceIcon, ImportContent, InstanceCrudPort, InstanceId,
+        InstanceLifecyclePort, InstanceServicesPort, RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -65,7 +65,8 @@ async fn create(
         .create_instance_use_case()
         .execute(new_instance.into())
         .await
-        .map_err(aether_core::Error::from)?)
+        .map_err(aether_core::Error::from)?
+        .to_string())
 }
 
 #[tauri::command]
@@ -316,7 +317,7 @@ async fn install_content(
     let container = container.0.clone();
     Ok(container
         .install_content_use_case()
-        .execute(payload.into())
+        .execute(ContentInstallParams::try_from(payload).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?)
 }

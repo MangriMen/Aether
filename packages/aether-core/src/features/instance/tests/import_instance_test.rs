@@ -83,7 +83,7 @@ impl Importer for PackImporter {
         &self.metadata
     }
 
-    async fn import(&self, _: &str) -> Result<Vec<String>, InstanceError> {
+    async fn import(&self, _: &str) -> Result<Vec<InstanceId>, InstanceError> {
         if self.fail {
             Err(InstanceError::ImportFailed {
                 plugin_id: PLUGIN.into(),
@@ -91,7 +91,7 @@ impl Importer for PackImporter {
                 reason: "the importer failed".into(),
             })
         } else {
-            Ok(vec!["pack".into()])
+            Ok(vec![InstanceId::try_from("pack").unwrap()])
         }
     }
 }

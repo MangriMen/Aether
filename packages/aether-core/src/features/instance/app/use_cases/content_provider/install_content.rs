@@ -45,8 +45,7 @@ impl InstallContentUseCase {
     pub async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
         let _lock = match &install_params {
             ContentInstallParams::Atomic(params) => {
-                let instance_id = InstanceId::try_from(params.instance_id.as_str())?;
-                Some(self.instance_locks.lock(&instance_id).await)
+                Some(self.instance_locks.lock(&params.instance_id).await)
             }
             ContentInstallParams::Modpack(_) => None,
         };
@@ -73,11 +72,7 @@ impl InstallContentUseCase {
         let (mut resolve_params, content_id) = resolve_params_of(&install_params);
         if let ResolveTarget::Existing { instance_id, .. } = &resolve_params.target {
             resolve_params.installed_version = self
-                .installed_version(
-                    &InstanceId::try_from(instance_id.as_str())?,
-                    &provider_id,
-                    &content_id,
-                )
+                .installed_version(instance_id, &provider_id, &content_id)
                 .await?;
         }
         let requested = resolve_params.target.clone();
@@ -155,7 +150,6 @@ impl InstallContentUseCase {
         };
         let instance_id = self.plan_executor.execute(plan, origin.clone()).await?;
 
-        let instance_id = InstanceId::try_from(instance_id)?;
         self.finish_pack_install(&instance_id, &origin).await
     }
 

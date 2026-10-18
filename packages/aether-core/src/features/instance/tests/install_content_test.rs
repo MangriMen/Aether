@@ -172,11 +172,11 @@ impl InstallPlanExecutorPort for RecordingExecutor {
         &self,
         plan: InstallPlan,
         origin: PlanOrigin,
-    ) -> Result<String, InstanceError> {
+    ) -> Result<InstanceId, InstanceError> {
         self.calls.lock().unwrap().push(origin);
         Ok(match plan.target {
             InstallTarget::Existing { instance_id, .. } => instance_id,
-            InstallTarget::New(_) => NEW_INSTANCE_ID.into(),
+            InstallTarget::New(_) => InstanceId::try_from(NEW_INSTANCE_ID).unwrap(),
         })
     }
 }
@@ -303,7 +303,7 @@ fn base(content_id: &str) -> BaseContentParams {
 fn atomic(content_type: ContentType, loader: Option<&str>) -> ContentInstallParams {
     ContentInstallParams::Atomic(AtomicInstallParams {
         base: base("sodium"),
-        instance_id: INSTANCE_ID.into(),
+        instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
         game_version: "1.21.1".into(),
         loader: loader.map(Into::into),
         content_type,
@@ -338,7 +338,7 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
             version: Some("v2".into()),
             installed_version: None,
             target: ResolveTarget::Existing {
-                instance_id: INSTANCE_ID.into(),
+                instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
                 game_version: "1.21.1".into(),
                 loader: Some("fabric".into()),
             },
@@ -527,7 +527,7 @@ async fn should_keep_the_asked_id_when_the_file_is_of_another_platform() {
 fn atomic_into(instance_id: &str, content_id: &str) -> ContentInstallParams {
     ContentInstallParams::Atomic(AtomicInstallParams {
         base: base(content_id),
-        instance_id: instance_id.into(),
+        instance_id: InstanceId::try_from(instance_id).unwrap(),
         game_version: "1.21.1".into(),
         loader: Some("fabric".into()),
         content_type: ContentType::Mod,
@@ -564,7 +564,9 @@ async fn should_finish_a_pack_instance_only_when_the_plan_is_of_its_pack() {
 
 #[tokio::test]
 async fn should_refuse_a_plan_when_it_is_for_another_instance_than_the_one_asked_about() {
-    let provider = MockProvider::new(Some(Box::new(|_| InstallTarget::existing("other"))));
+    let provider = MockProvider::new(Some(Box::new(|_| {
+        InstallTarget::existing(InstanceId::try_from("other").unwrap())
+    })));
     let fixture = Fixture::new(&provider).await;
 
     fixture

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::features::instance::app::ports::ImportInstanceUseCasePort;
 use crate::{
     features::instance::{
-        Importer, InstanceError, InstanceId, InstanceInstallStage, InstanceStorage,
+        Importer, InstanceError, InstanceInstallStage, InstanceStorage,
         app::extensions::InstanceStorageExt,
     },
     shared::capability::domain::CapabilityRegistry,
@@ -56,7 +56,7 @@ impl ImportInstanceUseCase {
 
         for instance_id in pack_instances {
             self.instance_storage
-                .upsert_with(&InstanceId::try_from(instance_id)?, |instance| {
+                .upsert_with(&instance_id, |instance| {
                     if instance.install_stage == InstanceInstallStage::PackInstalling {
                         instance.install_stage = InstanceInstallStage::Installed;
                     }
