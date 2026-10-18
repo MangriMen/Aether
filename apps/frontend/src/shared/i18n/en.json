@@ -461,7 +461,7 @@
         "instances": "Instances"
       },
       "cache": "Cache",
-      "cacheDescription": "Saved to work faster and offline. Everything here is downloaded again when needed.",
+      "cacheDescription": "Saved to work faster and offline: content names, authors, icons and version numbers, and downloaded modpack archives. Everything here is downloaded again when needed, which takes an internet connection.",
       "size": "Takes {{size}}",
       "clear": "Clear cache",
       "busy": "Unavailable while something is being installed or downloaded",
