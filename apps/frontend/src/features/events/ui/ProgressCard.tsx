@@ -4,7 +4,7 @@ import { createMemo, Show, splitProps } from 'solid-js';
 
 import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
-import { CombinedTooltip, Progress } from '@/shared/ui-kit';
+import { CombinedTooltip, Progress, useIsOverflow } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
@@ -94,6 +94,8 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         local.payload.event.phase === 'error'),
   );
 
+  const [isTitleOverflowed, titleRef, updateTitleOverflow] = useIsOverflow();
+
   const percentStr = createMemo(() => `${Math.round(clampedValue() * 100)}%`);
 
   const bytesStr = createMemo(() =>
@@ -127,6 +129,9 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         <CombinedTooltip
           label={title() ?? ''}
           as='span'
+          ref={titleRef}
+          onPointerEnter={updateTitleOverflow}
+          disableTooltip={!isTitleOverflowed()}
           class={cn('truncate', isSmall() ? 'text-sm' : 'font-bold')}
         >
           {title()}
