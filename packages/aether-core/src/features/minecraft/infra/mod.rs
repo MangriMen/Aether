@@ -11,4 +11,5 @@ pub use download::MinecraftDownloadService;
 pub use metadata::CachedMetadataStorage;
 pub use metadata::ModrinthMetadataStorage;
 pub use metadata::migrate_minecraft_metadata_to_sqlite;
+pub use metadata::minecraft_metadata_namespaces;
 pub use processors::ForgeProcessor;

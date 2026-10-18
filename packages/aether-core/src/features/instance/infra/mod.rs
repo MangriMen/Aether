@@ -21,4 +21,5 @@ pub use services::{
 pub use sqlite::{
     SqliteInstanceStorage, SqlitePackStorage, migrate_instances_to_sqlite, migrate_packs_to_sqlite,
 };
+pub use universal_content_metadata_cache::NAMESPACES as CONTENT_METADATA_NAMESPACES;
 pub use universal_content_metadata_cache::UniversalContentMetadataCache;

@@ -11,9 +11,10 @@ use aether_core::features::events::infra::InMemoryProgressBarStorage;
 use aether_core::features::events::{CacheEvent, EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
-    EventEmittingInstanceStorage, FsContentFileService, FsContentIconCache, FsInstanceFileService,
-    InstanceEventHandler, InstanceWatcherServiceImpl, ModrinthContentProvider, MrpackCacheCleaner,
-    SqliteInstanceStorage, SqlitePackStorage, UniversalContentMetadataCache, mrpack_dir,
+    CONTENT_METADATA_NAMESPACES, EventEmittingInstanceStorage, FsContentFileService,
+    FsContentIconCache, FsInstanceFileService, InstanceEventHandler, InstanceWatcherServiceImpl,
+    ModrinthContentProvider, MrpackCacheCleaner, SqliteInstanceStorage, SqlitePackStorage,
+    UniversalContentMetadataCache, mrpack_dir,
 };
 use aether_core::features::instance::{
     ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, Updater,
@@ -24,6 +25,7 @@ use aether_core::features::java::infra::{
 use aether_core::features::minecraft::infra::{
     AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor, LibrariesService,
     MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
+    minecraft_metadata_namespaces,
 };
 use aether_core::features::plugins::infra::{
     ExtismPluginLoader, FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
@@ -199,7 +201,15 @@ pub async fn build_container(
     ));
     let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> =
         fs_content_icon_cache.clone();
-    let sqlite_cache = Arc::new(SqliteCache::new(pool.clone()));
+    // Only these namespaces are what the app fetches again; a new namespace is not wiped by the
+    // clear button until it is listed here.
+    let sqlite_cache = Arc::new(
+        SqliteCache::new(pool.clone()).with_clearable_namespaces(
+            CONTENT_METADATA_NAMESPACES
+                .into_iter()
+                .chain(minecraft_metadata_namespaces()),
+        ),
+    );
     // In the background, as they read whole folders and tables. Their thresholds are their own.
     let housekeeping: Vec<Arc<dyn Housekeeping>> = vec![
         sqlite_cache.clone(),
