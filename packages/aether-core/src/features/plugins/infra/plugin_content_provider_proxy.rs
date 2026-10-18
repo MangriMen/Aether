@@ -112,7 +112,7 @@ impl PluginContentProviderProxy {
             .collect();
         if kept.len() != total {
             tracing::warn!(
-                "Plugin '{}' answered '{}' with {total} items, dropped {} of them as unasked,                  repeated or without a name",
+                "Plugin '{}' answered '{}' with {total} items, dropped {} of them as unasked,                  repeated or too poorly described",
                 self.plugin_id,
                 handler_name,
                 total - kept.len()
@@ -451,11 +451,15 @@ impl ContentProvider for PluginContentProviderProxy {
         let result_dto: Vec<ContentMetadataDto> = self
             .call_plugin("get_contents_metadata", handler, content_ids.to_vec())
             .await?;
-        // An item answers an id by its own id or by its slug, as a provider may be asked by either.
+        // An item answers an id by its own id or by its slug, as a provider may be asked by
+        // either. A slug match is kept under the item's own id, which the host cannot check
+        // against what was asked; it stays within the plugin's own provider, and no more than
+        // one item per asked id is kept.
         let asked = |dto: &ContentMetadataDto| {
-            content_ids
-                .iter()
-                .any(|id| *id == dto.content_id || id.eq_ignore_ascii_case(&dto.slug))
+            content_ids.contains(&dto.content_id)
+                || content_ids
+                    .iter()
+                    .any(|id| id.eq_ignore_ascii_case(&dto.slug))
         };
         Ok(self
             .keep_answered(
@@ -466,6 +470,7 @@ impl ContentProvider for PluginContentProviderProxy {
                 |dto| &dto.content_id,
             )
             .into_iter()
+            .take(content_ids.len())
             .map(content_metadata_from_dto)
             .collect())
     }

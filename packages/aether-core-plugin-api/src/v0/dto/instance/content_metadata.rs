@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// The host keeps only items that answer an asked id by their `contentId` or by their `slug`
 /// (compared without regard to case), and only the first of items with one `contentId`. An item
+/// is kept under its `contentId`, so do not give an item the `slug` of one asked project and the
+/// `contentId` of another. An item
 /// without a `contentId` or a non-blank `name` is dropped; the rest of the answer is kept.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
