@@ -6,7 +6,7 @@ use crate::features::{
     file_watcher::FileWatcher,
     instance::{
         app::InstanceWatcherService,
-        domain::{ContentType, InstanceError},
+        domain::{ContentType, InstanceError, InstanceId},
     },
     settings::LocationInfo,
 };
@@ -64,7 +64,9 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
                         continue;
                     }
 
-                    let _ = self.watch_instance(file_name).await;
+                    if let Ok(instance_id) = InstanceId::try_from(file_name) {
+                        let _ = self.watch_instance(&instance_id).await;
+                    }
                 }
             }
         }
@@ -72,7 +74,7 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
         Ok(())
     }
 
-    async fn watch_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn watch_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
         if !instance_dir.is_dir() {
             return Ok(());
@@ -89,7 +91,7 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
         Ok(())
     }
 
-    async fn unwatch_instance(&self, instance_id: &str) -> Result<(), InstanceError> {
+    async fn unwatch_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let path = self.location_info.instance_dir(instance_id);
         if let Err(reason) = self.file_watcher.unwatch(&path).await {
             tracing::error!("Could not stop watching {path:?}: {reason}");
@@ -154,7 +156,10 @@ mod tests {
         let dir = location.instance_dir("inst");
         std::fs::create_dir_all(&dir).unwrap();
 
-        service.watch_instance("inst").await.unwrap();
+        service
+            .watch_instance(&InstanceId::try_from("inst").unwrap())
+            .await
+            .unwrap();
 
         let expected: Vec<PathBuf> = [
             "mods",
@@ -185,7 +190,10 @@ mod tests {
         });
         let service = InstanceWatcherServiceImpl::new(watcher.clone(), location);
 
-        service.watch_instance("inst").await.unwrap();
+        service
+            .watch_instance(&InstanceId::try_from("inst").unwrap())
+            .await
+            .unwrap();
 
         let expected: Vec<PathBuf> = ["mods", "resourcepacks", "shaderpacks", "crash-reports"]
             .iter()
@@ -203,7 +211,10 @@ mod tests {
         let link = dir.join("mods");
         std::os::unix::fs::symlink(temp.path().join("missing-target"), &link).unwrap();
 
-        service.watch_instance("inst").await.unwrap();
+        service
+            .watch_instance(&InstanceId::try_from("inst").unwrap())
+            .await
+            .unwrap();
 
         assert!(std::fs::symlink_metadata(&link).unwrap().is_symlink());
         assert!(!link.exists());
@@ -214,7 +225,10 @@ mod tests {
     async fn watch_instance_ignores_missing_instance_dir() {
         let (_temp, watcher, location, service) = setup();
 
-        service.watch_instance("absent").await.unwrap();
+        service
+            .watch_instance(&InstanceId::try_from("absent").unwrap())
+            .await
+            .unwrap();
 
         assert!(watcher.watched.lock().unwrap().is_empty());
         assert!(!location.instance_dir("absent").exists());
@@ -240,7 +254,10 @@ mod tests {
     async fn unwatch_instance_unwatches_instance_root() {
         let (_temp, watcher, location, service) = setup();
 
-        service.unwatch_instance("inst").await.unwrap();
+        service
+            .unwatch_instance(&InstanceId::try_from("inst").unwrap())
+            .await
+            .unwrap();
 
         assert_eq!(
             *watcher.unwatched.lock().unwrap(),

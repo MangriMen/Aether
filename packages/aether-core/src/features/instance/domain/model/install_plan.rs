@@ -464,7 +464,7 @@ mod tests {
 
     fn fabric_instance(loader_version: Option<&str>) -> Instance {
         crate::features::instance::InstanceBuilder::new(
-            "instance".into(),
+            crate::features::instance::InstanceId::try_from("instance").unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Fabric,
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn should_ignore_the_loader_version_when_the_game_is_vanilla() {
         let instance = crate::features::instance::InstanceBuilder::new(
-            "instance".into(),
+            crate::features::instance::InstanceId::try_from("instance").unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Vanilla,

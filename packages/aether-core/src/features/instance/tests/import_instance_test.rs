@@ -8,7 +8,7 @@ use crate::{
     features::{
         instance::{
             CapabilityMetadata, ImportInstance, ImportInstanceUseCase, Importer,
-            ImporterCapabilityMetadata, Instance, InstanceBuilder, InstanceError,
+            ImporterCapabilityMetadata, Instance, InstanceBuilder, InstanceError, InstanceId,
             InstanceInstallStage, InstanceStorage,
         },
         minecraft::ModLoader,
@@ -30,7 +30,7 @@ impl MemStorage {
             .lock()
             .unwrap()
             .iter()
-            .find(|instance| instance.id() == id)
+            .find(|instance| instance.id().as_str() == id)
             .unwrap()
             .install_stage
     }
@@ -42,7 +42,7 @@ impl InstanceStorage for MemStorage {
         Ok(self.instances.lock().unwrap().clone())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         self.instances
             .lock()
             .unwrap()
@@ -50,7 +50,7 @@ impl InstanceStorage for MemStorage {
             .find(|instance| instance.id() == id)
             .cloned()
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.to_owned(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -61,7 +61,7 @@ impl InstanceStorage for MemStorage {
         Ok(())
     }
 
-    async fn remove(&self, id: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         self.instances
             .lock()
             .unwrap()
@@ -99,7 +99,7 @@ impl Importer for PackImporter {
 async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
     let storage = Arc::new(MemStorage::default());
     let mut instance = InstanceBuilder::new(
-        "pack".into(),
+        InstanceId::try_from("pack").unwrap(),
         "Pack".into(),
         "1.21.1".into(),
         ModLoader::Fabric,

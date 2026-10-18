@@ -6,8 +6,8 @@ use tempfile::TempDir;
 use crate::features::{
     events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
     instance::{
-        InstallInstanceUseCase, Instance, InstanceBuilder, InstanceError, InstanceInstallStage,
-        InstanceStorage, PackInfo, ProviderId,
+        InstallInstanceUseCase, Instance, InstanceBuilder, InstanceError, InstanceId,
+        InstanceInstallStage, InstanceStorage, PackInfo, ProviderId,
     },
     minecraft::{
         InstallMinecraftParams, MinecraftApplicationError, MinecraftInstallService, ModLoader,
@@ -25,7 +25,7 @@ impl InstanceStorage for MemStorage {
         Ok(self.instances.lock().unwrap().clone())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         self.instances
             .lock()
             .unwrap()
@@ -33,7 +33,7 @@ impl InstanceStorage for MemStorage {
             .find(|i| i.id() == id)
             .cloned()
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.to_owned(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -46,7 +46,7 @@ impl InstanceStorage for MemStorage {
         Ok(())
     }
 
-    async fn remove(&self, id: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         self.instances.lock().unwrap().retain(|i| i.id() != id);
         Ok(())
     }
@@ -138,7 +138,7 @@ async fn run_install(
     ));
 
     let mut instance = InstanceBuilder::new(
-        "inst".to_owned(),
+        InstanceId::try_from("inst").unwrap(),
         "inst".to_owned(),
         "1.20.1".to_owned(),
         ModLoader::Vanilla,
@@ -146,7 +146,7 @@ async fn run_install(
     .with_pack_info(pack)
     .build();
     instance.install_stage = stage;
-    let id = instance.id().to_owned();
+    let id = instance.id().clone();
 
     let storage = Arc::new(MemStorage {
         instances: Mutex::new(vec![instance]),
@@ -158,7 +158,7 @@ async fn run_install(
         location_info,
     );
 
-    let result = use_case.execute(id.clone(), false).await;
+    let result = use_case.execute(id.to_string(), false).await;
     (storage.get(&id).await.unwrap(), result.is_ok())
 }
 

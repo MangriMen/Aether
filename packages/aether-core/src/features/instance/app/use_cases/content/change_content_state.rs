@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::ChangeContentStateUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, InstanceLocks, app::ContentFileService},
+    instance::{InstanceError, InstanceId, InstanceLocks, app::ContentFileService},
 };
 
 /// How long a toggle waits for the instance's lock before the instance counts as busy.
@@ -86,23 +86,21 @@ impl ChangeContentStateUseCase {
             action,
         } = input;
 
-        let Some(_lock) = self
-            .instance_locks
-            .lock_within(&instance_id, self.lock_wait)
-            .await
-        else {
+        let id = InstanceId::try_from(instance_id.as_str())?;
+
+        let Some(_lock) = self.instance_locks.lock_within(&id, self.lock_wait).await else {
             return Err(InstanceError::InstanceStillInstalling { instance_id });
         };
 
         match action {
             ContentStateAction::Enable => {
                 self.content_file_service
-                    .enable_content_files(&instance_id, content_paths.as_slice())
+                    .enable_content_files(&id, content_paths.as_slice())
                     .await?;
             }
             ContentStateAction::Disable => {
                 self.content_file_service
-                    .disable_content_files(&instance_id, content_paths.as_slice())
+                    .disable_content_files(&id, content_paths.as_slice())
                     .await?;
             }
         }

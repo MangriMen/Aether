@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::{
     instance::{
         ChangeInstanceGameUseCase, Instance, InstanceBuilder, InstanceError, InstanceGame,
-        InstanceInstallService, InstanceInstallStage, InstanceStorage,
+        InstanceId, InstanceInstallService, InstanceInstallStage, InstanceStorage,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftDomainError, ModLoader, modded,
@@ -33,14 +33,14 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(self.instance.lock().unwrap().iter().cloned().collect())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         self.instance
             .lock()
             .unwrap()
             .clone()
             .filter(|instance| instance.id() == id)
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.into(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -49,7 +49,7 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(())
     }
 
-    async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
         unimplemented!()
     }
 }
@@ -88,7 +88,10 @@ struct RecordingInstall {
 #[async_trait]
 impl InstanceInstallService for RecordingInstall {
     async fn execute(&self, instance_id: String, _force: bool) -> Result<(), InstanceError> {
-        let mut instance = self.storage.get(&instance_id).await?;
+        let mut instance = self
+            .storage
+            .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+            .await?;
         self.installed.lock().unwrap().push((
             instance.game_version.clone(),
             instance.loader,
@@ -123,7 +126,7 @@ impl Fixture {
     fn new(fail_install: bool) -> Self {
         let storage = Arc::new(MemInstanceStorage::default());
         let mut instance = InstanceBuilder::new(
-            INSTANCE_ID.into(),
+            InstanceId::try_from(INSTANCE_ID).unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Fabric,

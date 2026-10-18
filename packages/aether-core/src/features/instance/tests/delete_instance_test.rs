@@ -1,5 +1,7 @@
 use crate::features::instance::infra::{SqliteInstanceStorage, SqlitePackStorage};
-use crate::features::instance::{Instance, InstanceBuilder, InstanceStorage, PackStorage};
+use crate::features::instance::{
+    Instance, InstanceBuilder, InstanceId, InstanceStorage, PackStorage,
+};
 use crate::features::minecraft::ModLoader;
 use sqlx::SqlitePool;
 
@@ -146,7 +148,7 @@ async fn create_pool(with_foreign_keys: bool) -> SqlitePool {
 /// Create a test instance with a given ID.
 fn create_test_instance(id: &str) -> Instance {
     InstanceBuilder::new(
-        id.to_string(),
+        InstanceId::try_from(id).unwrap(),
         "Test Instance".to_string(),
         "1.20.1".to_string(),
         ModLoader::Fabric,
@@ -207,7 +209,10 @@ async fn should_cascade_pack_info_when_an_instance_is_deleted_with_foreign_keys(
     );
 
     // Act: delete the instance
-    storage.remove(&instance_id).await.unwrap();
+    storage
+        .remove(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
 
     // Assert: instance is gone
     assert_eq!(count_rows(&pool, "instances").await, 0);
@@ -239,10 +244,13 @@ async fn should_clean_up_explicitly_when_foreign_keys_are_off() {
 
     // Act: use the full cleanup flow — pack_storage + instance_storage
     pack_storage
-        .remove_all_for_instance(&instance_id)
+        .remove_all_for_instance(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .unwrap();
-    instance_storage.remove(&instance_id).await.unwrap();
+    instance_storage
+        .remove(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
 
     // Assert: cleanup works regardless of FK enforcement
     assert_eq!(count_rows(&pool, "instances").await, 0);
@@ -298,7 +306,7 @@ async fn should_clean_the_pack_tables_when_all_data_of_an_instance_is_removed() 
 
     // Act: remove all pack data
     pack_storage
-        .remove_all_for_instance(&instance_id)
+        .remove_all_for_instance(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .unwrap();
 
@@ -381,10 +389,13 @@ async fn should_leave_no_orphans_when_an_instance_is_deleted_completely() {
 
     // Act: full deletion flow (order matches RemoveInstanceUseCase)
     pack_storage
-        .remove_all_for_instance(&instance_id)
+        .remove_all_for_instance(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .unwrap();
-    instance_storage.remove(&instance_id).await.unwrap();
+    instance_storage
+        .remove(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
 
     // Assert: all tables are clean
     assert_eq!(count_rows(&pool, "instances").await, 0);
@@ -441,10 +452,13 @@ async fn should_clean_everything_up_when_foreign_keys_are_off() {
 
     // Act: remove_all_for_instance (explicit cleanup) + storage.remove
     pack_storage
-        .remove_all_for_instance(&instance_id)
+        .remove_all_for_instance(&InstanceId::try_from(instance_id.as_str()).unwrap())
         .await
         .unwrap();
-    instance_storage.remove(&instance_id).await.unwrap();
+    instance_storage
+        .remove(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await
+        .unwrap();
 
     // Assert: still clean even without FK enforcement
     assert_eq!(count_rows(&pool, "instances").await, 0);

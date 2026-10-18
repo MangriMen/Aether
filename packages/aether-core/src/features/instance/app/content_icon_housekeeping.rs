@@ -106,13 +106,19 @@ mod tests {
         instance::{
             CachedContentIcon, CachedContentMetadata, CachedContentVersionMetadata,
             ContentFileUpdateInfo, ContentIconError, ContentMetadata, ContentVersionMetadata,
-            Instance, InstanceBuilder, Pack, PackFile,
+            Instance, InstanceBuilder, InstanceId, Pack, PackFile,
         },
         minecraft::ModLoader,
     };
 
     fn instance(id: &str) -> Instance {
-        InstanceBuilder::new(id.into(), id.into(), "1.21.1".into(), ModLoader::Fabric).build()
+        InstanceBuilder::new(
+            InstanceId::try_from(id).unwrap(),
+            id.into(),
+            "1.21.1".into(),
+            ModLoader::Fabric,
+        )
+        .build()
     }
 
     fn provider(id: &str) -> ProviderId {
@@ -166,7 +172,7 @@ mod tests {
             })
         }
 
-        async fn get(&self, _: &str) -> Result<Instance, InstanceError> {
+        async fn get(&self, _: &InstanceId) -> Result<Instance, InstanceError> {
             unimplemented!()
         }
 
@@ -174,7 +180,7 @@ mod tests {
             unimplemented!()
         }
 
-        async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+        async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
             unimplemented!()
         }
     }
@@ -184,28 +190,28 @@ mod tests {
 
     #[async_trait]
     impl PackStorage for FakePacks {
-        async fn get_pack(&self, _: &str) -> Result<Pack, InstanceError> {
+        async fn get_pack(&self, _: &InstanceId) -> Result<Pack, InstanceError> {
             unimplemented!()
         }
 
-        async fn update_pack(&self, _: &str, _: &Pack) -> Result<(), InstanceError> {
+        async fn update_pack(&self, _: &InstanceId, _: &Pack) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
-        async fn get_pack_file(&self, _: &str, _: &str) -> Result<PackFile, InstanceError> {
+        async fn get_pack_file(&self, _: &InstanceId, _: &str) -> Result<PackFile, InstanceError> {
             unimplemented!()
         }
 
         async fn get_pack_files(
             &self,
-            instance_id: &str,
+            instance_id: &InstanceId,
         ) -> Result<HashMap<String, PackFile>, InstanceError> {
-            let files = self
-                .0
-                .get(instance_id)
-                .ok_or_else(|| InstanceError::NotFound {
-                    instance_id: instance_id.into(),
-                })?;
+            let files =
+                self.0
+                    .get(instance_id.as_str())
+                    .ok_or_else(|| InstanceError::NotFound {
+                        instance_id: instance_id.to_string(),
+                    })?;
             Ok(files
                 .iter()
                 .map(|f| (f.file_name.clone(), f.clone()))
@@ -214,7 +220,7 @@ mod tests {
 
         async fn find_by_provider_id(
             &self,
-            _: &str,
+            _: &InstanceId,
             _: &ProviderId,
             _: &str,
         ) -> Result<Option<PackFile>, InstanceError> {
@@ -223,7 +229,7 @@ mod tests {
 
         async fn update_pack_file(
             &self,
-            _: &str,
+            _: &InstanceId,
             _: &str,
             _: &PackFile,
         ) -> Result<(), InstanceError> {
@@ -232,22 +238,26 @@ mod tests {
 
         async fn update_pack_file_many(
             &self,
-            _: &str,
+            _: &InstanceId,
             _: &[String],
             _: &[PackFile],
         ) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
-        async fn remove_pack_file(&self, _: &str, _: &str) -> Result<(), InstanceError> {
+        async fn remove_pack_file(&self, _: &InstanceId, _: &str) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
-        async fn remove_pack_file_many(&self, _: &str, _: &[String]) -> Result<(), InstanceError> {
+        async fn remove_pack_file_many(
+            &self,
+            _: &InstanceId,
+            _: &[String],
+        ) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
-        async fn remove_all_for_instance(&self, _: &str) -> Result<(), InstanceError> {
+        async fn remove_all_for_instance(&self, _: &InstanceId) -> Result<(), InstanceError> {
             unimplemented!()
         }
     }

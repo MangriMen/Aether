@@ -21,9 +21,9 @@ use crate::{
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, FileSide, InstallFileEntry, InstallPlan,
             InstallPlanExecutor, InstallTarget, Instance, InstanceBuilder, InstanceError,
-            InstanceGame, InstanceStorage, NewInstance, OverrideLocation, OverrideSource, PackFile,
-            PackInfo, PackStorage, PlanOrigin, PlatformProviderSelection, ProviderId,
-            RemoveInstanceUseCasePort, ResolvedFile,
+            InstanceGame, InstanceId, InstanceStorage, NewInstance, OverrideLocation,
+            OverrideSource, PackFile, PackInfo, PackStorage, PlanOrigin, PlatformProviderSelection,
+            ProviderId, RemoveInstanceUseCasePort, ResolvedFile,
             app::{ContentFileService, LocatedContentFile},
             infra::{FsContentFileService, SqlitePackStorage},
         },
@@ -293,12 +293,12 @@ impl InstanceStorage for OneInstanceStorage {
         Ok(vec![self.instance.clone()])
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         if id == self.instance.id() {
             Ok(self.instance.clone())
         } else {
             Err(InstanceError::NotFound {
-                instance_id: id.into(),
+                instance_id: id.to_string(),
             })
         }
     }
@@ -308,7 +308,7 @@ impl InstanceStorage for OneInstanceStorage {
         Ok(())
     }
 
-    async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
         unimplemented!()
     }
 }
@@ -412,7 +412,7 @@ pub(super) struct FailingRestore(FsContentFileService);
 impl ContentFileService for FailingRestore {
     async fn remove_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         self.0
@@ -422,7 +422,7 @@ impl ContentFileService for FailingRestore {
 
     async fn enable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         self.0
@@ -432,7 +432,7 @@ impl ContentFileService for FailingRestore {
 
     async fn disable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         self.0
@@ -442,7 +442,7 @@ impl ContentFileService for FailingRestore {
 
     async fn locate_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<Option<LocatedContentFile>, InstanceError> {
         self.0.locate_content_file(instance_id, content_path).await
@@ -454,7 +454,7 @@ impl ContentFileService for FailingRestore {
 
     async fn move_content_file_out(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         destination: &Path,
     ) -> Result<bool, InstanceError> {
@@ -465,7 +465,7 @@ impl ContentFileService for FailingRestore {
 
     async fn install_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         temp_path: &Path,
     ) -> Result<(), InstanceError> {
@@ -647,7 +647,7 @@ impl Fixture {
         origin: PlanOrigin,
     ) -> Result<String, InstanceError> {
         let instance = InstanceBuilder::new(
-            INSTANCE_ID.into(),
+            InstanceId::try_from(INSTANCE_ID).unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Fabric,
@@ -760,7 +760,11 @@ impl Fixture {
     /// Record a file of the existing instance in the pack storage.
     pub(super) async fn record(&self, relative_path: &str, pack_file: PackFile) {
         self.pack_storage
-            .update_pack_file(INSTANCE_ID, relative_path, &pack_file)
+            .update_pack_file(
+                &InstanceId::try_from(INSTANCE_ID).unwrap(),
+                relative_path,
+                &pack_file,
+            )
             .await
             .unwrap();
     }
@@ -784,7 +788,10 @@ impl Fixture {
     }
 
     pub(super) async fn records(&self, instance_id: &str) -> HashMap<String, PackFile> {
-        self.pack_storage.get_pack_files(instance_id).await.unwrap()
+        self.pack_storage
+            .get_pack_files(&InstanceId::try_from(instance_id).unwrap())
+            .await
+            .unwrap()
     }
 
     pub(super) fn downloaded_urls(&self) -> Vec<String> {

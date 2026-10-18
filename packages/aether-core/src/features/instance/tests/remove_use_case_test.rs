@@ -10,7 +10,7 @@ use crate::features::instance::infra::{
     FsInstanceFileService, SqliteInstanceStorage, SqlitePackStorage,
 };
 use crate::features::instance::{
-    Instance, InstanceBuilder, InstanceError, InstanceLocks, InstanceStorage,
+    Instance, InstanceBuilder, InstanceError, InstanceId, InstanceLocks, InstanceStorage,
     InstanceWatcherService, RemoveInstanceUseCase, RemoveInstanceUseCasePort,
 };
 use crate::features::minecraft::ModLoader;
@@ -25,10 +25,10 @@ impl InstanceWatcherService for NoOpWatcher {
     async fn watch_instances(&self) -> Result<(), InstanceError> {
         Ok(())
     }
-    async fn watch_instance(&self, _instance_id: &str) -> Result<(), InstanceError> {
+    async fn watch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
-    async fn unwatch_instance(&self, _instance_id: &str) -> Result<(), InstanceError> {
+    async fn unwatch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
         Ok(())
     }
 }
@@ -134,7 +134,7 @@ async fn create_test_infrastructure() -> (TempDir, Arc<LocationInfo>, SqlitePool
 
 fn create_instance(id: &str) -> Instance {
     InstanceBuilder::new(
-        id.to_string(),
+        InstanceId::try_from(id).unwrap(),
         "Integration Test".to_string(),
         "1.21".to_string(),
         ModLoader::Fabric,

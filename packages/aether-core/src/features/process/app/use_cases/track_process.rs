@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
 use crate::features::{
-    instance::{InstanceStorage, InstanceStorageExt},
+    instance::{InstanceId, InstanceStorage, InstanceStorageExt},
     process::{ProcessStorage, TrackProcessService},
 };
 
@@ -71,8 +71,9 @@ impl TrackProcessUseCase {
 
         if elapsed_seconds >= UPDATE_PLAYTIME_INTERVAL || force {
             let result = async {
+                let id = InstanceId::try_from(id)?;
                 self.instance_storage
-                    .upsert_with(id, |instance| {
+                    .upsert_with(&id, |instance| {
                         instance.time_played +=
                             elapsed_seconds.num_seconds().max(0).cast_unsigned();
                         Ok(())

@@ -80,9 +80,9 @@ use crate::{
         events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
         instance::{
             ContentDownloader, ContentFileService, ContentFileUpdateInfo, ContentProvider,
-            FileSide, InstallPlan, InstallTarget, Instance, InstanceError, InstanceStorage,
-            OverrideLocation, PackFile, PackStorage, PlanOrigin, PlatformProviderSelection,
-            ProviderId,
+            FileSide, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
+            InstanceStorage, OverrideLocation, PackFile, PackStorage, PlanOrigin,
+            PlatformProviderSelection, ProviderId,
             app::{
                 DISABLED_SUFFIX,
                 ports::{
@@ -599,7 +599,7 @@ impl InstallPlanExecutor {
             }
             progress.step("Complete").await;
 
-            Ok(instance_id)
+            Ok(instance_id.to_string())
         }
         .await;
 
@@ -638,12 +638,16 @@ impl InstallPlanExecutor {
         };
         // What the bar is captioned with: the instance the plan fills.
         let pack_name = match target {
-            InstallTarget::Existing { instance_id, .. } => {
-                self.instance_storage.get(instance_id).await.map_or_else(
-                    |_| origin.content_id.clone(),
-                    |instance| instance.name().to_owned(),
-                )
+            InstallTarget::Existing { instance_id, .. } => async {
+                self.instance_storage
+                    .get(&InstanceId::try_from(instance_id.as_str())?)
+                    .await
             }
+            .await
+            .map_or_else(
+                |_: InstanceError| origin.content_id.clone(),
+                |instance| instance.name().to_owned(),
+            ),
             InstallTarget::New(new_instance) => new_instance.name.clone(),
         };
 
@@ -674,7 +678,9 @@ impl InstallPlanExecutor {
     ) -> Result<HashMap<String, PackFile>, InstanceError> {
         match target {
             InstallTarget::Existing { instance_id, .. } => {
-                self.pack_storage.get_pack_files(instance_id).await
+                self.pack_storage
+                    .get_pack_files(&InstanceId::try_from(instance_id.as_str())?)
+                    .await
             }
             InstallTarget::New(_) => Ok(HashMap::new()),
         }
@@ -693,6 +699,7 @@ impl InstallPlanExecutor {
         let InstallTarget::Existing { instance_id, .. } = target else {
             return Ok(InstalledState::default());
         };
+        let instance_id = &InstanceId::try_from(instance_id.as_str())?;
 
         // The futures are collected first: a closure kept inside the stream would make the whole
         // `execute` future fail to be `Send` (rust-lang/rust#102211).
@@ -732,7 +739,7 @@ impl InstallPlanExecutor {
 
     async fn planned_on_disk(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         entry: &DownloadEntry,
     ) -> Result<Option<(String, PlannedOnDisk)>, InstanceError> {
         let Some(located) = self
@@ -764,7 +771,7 @@ impl InstallPlanExecutor {
 
     /// Whether the file of a dropped record is disabled on disk. A path that cannot be looked at
     /// counts as enabled: all this decides is whether a new version starts disabled.
-    async fn is_disabled(&self, instance_id: &str, content_path: &str) -> bool {
+    async fn is_disabled(&self, instance_id: &InstanceId, content_path: &str) -> bool {
         match self
             .content_file_service
             .locate_content_file(instance_id, content_path)
@@ -837,24 +844,29 @@ impl InstallPlanExecutor {
     async fn prepare_target(
         &self,
         target: InstallTarget,
-    ) -> Result<(String, Option<Instance>), InstanceError> {
+    ) -> Result<(InstanceId, Option<Instance>), InstanceError> {
         match target {
             InstallTarget::Existing { instance_id, game } => {
+                let id = InstanceId::try_from(instance_id.as_str())?;
                 let mut before = None;
                 if let Some(game) = game {
-                    before = Some(self.instance_storage.get(&instance_id).await?);
+                    before = Some(self.instance_storage.get(&id).await?);
                     self.change_instance_game
                         .execute(instance_id.clone(), game)
                         .await?;
                 }
-                Ok((instance_id, before))
+                Ok((id, before))
             }
             // A pack's instance is not launchable until the pack is in: the caller moves it to
             // `Installed` after the plan, and a failure removes it (`discard_created`).
             InstallTarget::New(spec) if spec.pack_info.is_some() => {
-                Ok((self.create_instance.execute_for_pack(spec).await?, None))
+                let instance_id = self.create_instance.execute_for_pack(spec).await?;
+                Ok((InstanceId::try_from(instance_id)?, None))
             }
-            InstallTarget::New(spec) => Ok((self.create_instance.execute(spec).await?, None)),
+            InstallTarget::New(spec) => {
+                let instance_id = self.create_instance.execute(spec).await?;
+                Ok((InstanceId::try_from(instance_id)?, None))
+            }
         }
     }
 
@@ -873,7 +885,7 @@ impl InstallPlanExecutor {
 
     async fn install_all(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         staged: Vec<StagedFile>,
         progress: &PlanProgress<'_>,
         undo: &mut Undo,
@@ -902,7 +914,7 @@ impl InstallPlanExecutor {
     /// with them otherwise; a ref's file gets the update info of what it resolved to.
     async fn record_installed(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         origin: &PlanOrigin,
         records: &HashMap<String, PackFile>,
         installed: Vec<InstalledFile>,
@@ -959,7 +971,7 @@ impl InstallPlanExecutor {
     /// user disabled stays disabled.
     async fn apply_overrides(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         staged: Vec<StagedOverride>,
         progress: &PlanProgress<'_>,
         undo: &mut Undo,
@@ -993,7 +1005,7 @@ impl InstallPlanExecutor {
     /// leave an unrecorded copy next to the new version.
     async fn remove_dropped(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
         undo: &mut Undo,
     ) -> Result<(), InstanceError> {

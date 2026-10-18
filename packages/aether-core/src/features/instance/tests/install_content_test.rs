@@ -18,7 +18,7 @@ use crate::{
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, InstallContentUseCase, InstallFileEntry,
             InstallPlan, InstallPlanExecutorPort, InstallTarget, Instance, InstanceBuilder,
-            InstanceError, InstanceInstallStage, InstanceLocks, InstanceStorage,
+            InstanceError, InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage,
             ModpackInstallParams, NewInstance, PackFile, PackInfo, PackStorage, PlanOrigin,
             ProviderId, ResolveInstallPlanParams, ResolveTarget, infra::SqlitePackStorage,
         },
@@ -192,7 +192,7 @@ impl MemInstanceStorage {
             .lock()
             .unwrap()
             .iter()
-            .find(|instance| instance.id() == id)
+            .find(|instance| instance.id().as_str() == id)
             .unwrap()
             .install_stage
     }
@@ -204,7 +204,7 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(self.instances.lock().unwrap().clone())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         self.instances
             .lock()
             .unwrap()
@@ -212,7 +212,7 @@ impl InstanceStorage for MemInstanceStorage {
             .find(|instance| instance.id() == id)
             .cloned()
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.into(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -223,7 +223,7 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(())
     }
 
-    async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
         unimplemented!()
     }
 }
@@ -258,10 +258,14 @@ impl Fixture {
                 InstanceInstallStage::PackInstalling,
             ),
         ] {
-            let mut instance =
-                InstanceBuilder::new(id.into(), id.into(), "1.21.1".into(), ModLoader::Fabric)
-                    .with_pack_info(pack_info)
-                    .build();
+            let mut instance = InstanceBuilder::new(
+                InstanceId::try_from(id).unwrap(),
+                id.into(),
+                "1.21.1".into(),
+                ModLoader::Fabric,
+            )
+            .with_pack_info(pack_info)
+            .build();
             instance.install_stage = stage;
             storage.upsert(&instance).await.unwrap();
         }
@@ -407,7 +411,11 @@ async fn should_tell_the_provider_the_installed_version_when_installing_content(
     )]));
     fixture
         .pack_storage
-        .update_pack_file(INSTANCE_ID, "mods/sodium.jar", &record)
+        .update_pack_file(
+            &InstanceId::try_from(INSTANCE_ID).unwrap(),
+            "mods/sodium.jar",
+            &record,
+        )
         .await
         .unwrap();
 

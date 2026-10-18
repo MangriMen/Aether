@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::features::instance::app::InstanceFileService;
 use crate::features::instance::app::ports::RemoveInstanceUseCasePort;
 use crate::features::instance::{
-    InstanceError, InstanceLocks, InstanceStorage, InstanceWatcherService, PackStorage,
+    InstanceError, InstanceId, InstanceLocks, InstanceStorage, InstanceWatcherService, PackStorage,
 };
 
 /// Removes an instance under its lock ([`InstanceLocks`]): after a plan or an update running in
@@ -39,6 +39,7 @@ impl RemoveInstanceUseCase {
 #[async_trait]
 impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
     async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
+        let instance_id = InstanceId::try_from(instance_id)?;
         let _lock = self.instance_locks.lock(&instance_id).await;
 
         self.watcher_service.unwatch_instance(&instance_id).await?;

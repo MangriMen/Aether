@@ -22,7 +22,7 @@ use crate::{
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
-            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame,
+            InstallTarget, Instance, InstanceBuilder, InstanceError, InstanceGame, InstanceId,
             InstanceInstallService, InstanceInstallStage, InstanceLocks, InstanceStorage,
             NewInstance, PackFile, PackInfo, PackMetadata, PackSource, PackStorage, PlanOrigin,
             ProviderId, RemoveInstanceUseCasePort, ResolveInstallPlanParams, ResolveTarget,
@@ -309,8 +309,8 @@ impl Updater for RecordingUpdater {
         unimplemented!()
     }
 
-    async fn update(&self, instance_id: &str) -> Result<(), InstanceError> {
-        self.updated.lock().unwrap().push(instance_id.into());
+    async fn update(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
+        self.updated.lock().unwrap().push(instance_id.to_string());
         Ok(())
     }
 }
@@ -332,14 +332,14 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(self.instances.lock().unwrap().values().cloned().collect())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         self.instances
             .lock()
             .unwrap()
-            .get(id)
+            .get(id.as_str())
             .cloned()
             .ok_or_else(|| InstanceError::NotFound {
-                instance_id: id.into(),
+                instance_id: id.to_string(),
             })
     }
 
@@ -347,11 +347,11 @@ impl InstanceStorage for MemInstanceStorage {
         self.instances
             .lock()
             .unwrap()
-            .insert(instance.id().to_owned(), instance.clone());
+            .insert(instance.id().to_string(), instance.clone());
         Ok(())
     }
 
-    async fn remove(&self, _: &str) -> Result<(), InstanceError> {
+    async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
         unimplemented!()
     }
 }
@@ -367,7 +367,10 @@ struct StageKeepingInstall {
 #[async_trait]
 impl InstanceInstallService for StageKeepingInstall {
     async fn execute(&self, instance_id: String, _: bool) -> Result<(), InstanceError> {
-        let mut instance = self.storage.get(&instance_id).await?;
+        let mut instance = self
+            .storage
+            .get(&InstanceId::try_from(instance_id.as_str()).unwrap())
+            .await?;
         self.stages.lock().unwrap().push(instance.install_stage);
         if instance.install_stage != InstanceInstallStage::PackInstalling {
             instance.install_stage = InstanceInstallStage::Installed;
@@ -488,7 +491,7 @@ impl Fixture {
 
         let storage = Arc::new(MemInstanceStorage::default());
         let mut instance = InstanceBuilder::new(
-            INSTANCE_ID.into(),
+            InstanceId::try_from(INSTANCE_ID).unwrap(),
             "Instance".into(),
             "1.21.1".into(),
             ModLoader::Fabric,
@@ -571,7 +574,7 @@ impl Fixture {
 
         self.pack_storage
             .update_pack_file(
-                INSTANCE_ID,
+                &InstanceId::try_from(INSTANCE_ID).unwrap(),
                 path,
                 &PackFile {
                     installed_by,
@@ -603,7 +606,10 @@ impl Fixture {
     }
 
     async fn owner_of(&self, path: &str) -> Option<PlanOrigin> {
-        self.pack_storage.get_pack_files(INSTANCE_ID).await.unwrap()[path]
+        self.pack_storage
+            .get_pack_files(&InstanceId::try_from(INSTANCE_ID).unwrap())
+            .await
+            .unwrap()[path]
             .installed_by
             .clone()
     }
@@ -733,7 +739,7 @@ async fn should_keep_the_instance_as_it_was_when_a_file_of_a_game_change_fails()
     let records = || async {
         let records = fixture
             .pack_storage
-            .get_pack_files(INSTANCE_ID)
+            .get_pack_files(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .await
             .unwrap();
         format!(

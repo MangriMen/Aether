@@ -8,7 +8,7 @@ use tempfile::TempDir;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     instance::{
-        ContentType, ImportContent, ImportContentUseCase, InstanceLocks, PackStorage,
+        ContentType, ImportContent, ImportContentUseCase, InstanceId, InstanceLocks, PackStorage,
         infra::SqlitePackStorage,
     },
     settings::LocationInfo,
@@ -65,7 +65,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     assert!(
         pack_storage
             .get_pack_file(
-                INSTANCE_ID,
+                &InstanceId::try_from(INSTANCE_ID).unwrap(),
                 &std::path::Path::new("mods").join("a.jar").to_string_lossy()
             )
             .await

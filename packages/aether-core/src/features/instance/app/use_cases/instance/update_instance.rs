@@ -9,7 +9,7 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentProvider, InstallFileEntry, InstallPlan, Instance, InstanceError,
+            ContentProvider, InstallFileEntry, InstallPlan, Instance, InstanceError, InstanceId,
             InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt, PackFile,
             PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams, ResolveTarget,
             Updater,
@@ -65,7 +65,7 @@ impl UpdateInstanceUseCase {
 
     pub async fn update_by_plugin(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         pack_info: &PackInfo,
     ) -> Result<(), InstanceError> {
         let updater = self
@@ -106,7 +106,7 @@ impl UpdateInstanceUseCase {
             .await?;
 
         let requested = ResolveTarget::Existing {
-            instance_id: instance.id().to_owned(),
+            instance_id: instance.id().to_string(),
             game_version: instance.game_version.clone(),
             loader: (instance.loader != ModLoader::Vanilla)
                 .then(|| instance.loader.as_str().to_owned()),
@@ -204,7 +204,7 @@ impl UpdateInstanceUseCase {
     async fn adopt_ownerless_files(
         &self,
         provider: &dyn ContentProvider,
-        instance_id: &str,
+        instance_id: &InstanceId,
         requested: &ResolveTarget,
         pack_info: &PackInfo,
         origin: &PlanOrigin,
@@ -266,7 +266,7 @@ impl UpdateInstanceUseCase {
     /// Put the records adopted for an update that failed back as they were, without an owner.
     /// A failure is only logged: the update has failed already, and an adopted record is still
     /// the pack's file.
-    async fn disown(&self, instance_id: &str, adopted: Vec<(String, PackFile)>) {
+    async fn disown(&self, instance_id: &InstanceId, adopted: Vec<(String, PackFile)>) {
         if adopted.is_empty() {
             return;
         }
@@ -322,6 +322,7 @@ fn ownerless_pack_files_by(
 impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
     async fn execute(&self, instance_id: String) -> Result<(), InstanceError> {
         // Taken before the instance is read: a plan that ran meanwhile changes its stage.
+        let instance_id = InstanceId::try_from(instance_id)?;
         let _lock = self.instance_locks.lock(&instance_id).await;
         let instance = self.instance_storage.get(&instance_id).await?;
 

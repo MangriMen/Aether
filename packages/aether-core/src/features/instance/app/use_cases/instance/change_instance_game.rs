@@ -6,8 +6,8 @@ use log::{error, info};
 
 use crate::features::{
     instance::{
-        InstanceError, InstanceGame, InstanceInstallService, InstanceStorage, InstanceStorageExt,
-        app::ports::ChangeInstanceGameUseCasePort,
+        InstanceError, InstanceGame, InstanceId, InstanceInstallService, InstanceStorage,
+        InstanceStorageExt, app::ports::ChangeInstanceGameUseCasePort,
     },
     minecraft::LoaderVersionService,
 };
@@ -44,7 +44,8 @@ impl ChangeInstanceGameUseCase {
         instance_id: String,
         game: InstanceGame,
     ) -> Result<(), InstanceError> {
-        let mut instance = self.instance_storage.get(&instance_id).await?;
+        let id = InstanceId::try_from(instance_id.as_str())?;
+        let mut instance = self.instance_storage.get(&id).await?;
         if game.is_run_by(&instance) {
             return Ok(());
         }
@@ -84,7 +85,7 @@ impl ChangeInstanceGameUseCase {
 
             let restored = self
                 .instance_storage
-                .upsert_with(&instance_id, move |instance| {
+                .upsert_with(&id, move |instance| {
                     instance.game_version = previous.game_version;
                     instance.loader = previous.loader;
                     instance.loader_version = previous.loader_version;

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::features::instance::app::ports::EditInstanceIconUseCasePort;
 use crate::{
-    features::instance::{Instance, InstanceError, InstanceStorage},
+    features::instance::{Instance, InstanceError, InstanceId, InstanceStorage},
     shared::cache::domain::AssetsStorage,
 };
 
@@ -42,10 +42,8 @@ impl EditInstanceIconUseCase {
         &self,
         edit_instance_icon: EditInstanceIcon,
     ) -> Result<Instance, InstanceError> {
-        let mut instance = self
-            .instance_storage
-            .get(&edit_instance_icon.instance_id)
-            .await?;
+        let instance_id = InstanceId::try_from(edit_instance_icon.instance_id.as_str())?;
+        let mut instance = self.instance_storage.get(&instance_id).await?;
 
         if let Some(icon_path) = edit_instance_icon.icon_path {
             match icon_path {

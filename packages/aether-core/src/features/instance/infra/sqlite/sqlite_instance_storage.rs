@@ -1,6 +1,7 @@
-use crate::features::instance::{Instance, InstanceError, InstanceStorage};
+use crate::features::instance::{Instance, InstanceError, InstanceId, InstanceStorage};
 use async_trait::async_trait;
 use sqlx::SqlitePool;
+use tracing::warn;
 
 use super::{sql_instance::SqlInstance, sql_pack_info::SqlPackInfo};
 
@@ -45,8 +46,9 @@ impl InstanceStorage for SqliteInstanceStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        rows.into_iter()
-            .map(|row| {
+        Ok(rows
+            .into_iter()
+            .filter_map(|row| {
                 let sql_instance = SqlInstance {
                     id: row.id,
 
@@ -90,7 +92,14 @@ impl InstanceStorage for SqliteInstanceStorage {
                     hook_post_exit: row.hook_post_exit,
                 };
 
-                let mut instance = Instance::try_from(sql_instance)?;
+                let row_id = sql_instance.id.clone();
+                let mut instance = match Instance::try_from(sql_instance) {
+                    Ok(instance) => instance,
+                    Err(err) => {
+                        warn!("Failed to read instance {:?}: {:?}", row_id, err);
+                        return None;
+                    }
+                };
 
                 if let (Some(pid), Some(mid), Some(vid)) = (
                     row.pack_provider_id,
@@ -107,12 +116,12 @@ impl InstanceStorage for SqliteInstanceStorage {
                     );
                 }
 
-                Ok(instance)
+                Some(instance)
             })
-            .collect()
+            .collect())
     }
 
-    async fn get(&self, id: &str) -> Result<Instance, InstanceError> {
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
         let row = sqlx::query!(
             r#"
             SELECT 
@@ -135,7 +144,7 @@ impl InstanceStorage for SqliteInstanceStorage {
             LEFT JOIN instance_pack_info p ON i.id = p.instance_id
             WHERE i.id = ?
             "#,
-            id
+            id.as_str()
         )
         .fetch_optional(&self.pool)
         .await
@@ -302,7 +311,7 @@ impl InstanceStorage for SqliteInstanceStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        let instance_id = instance.id().to_owned();
+        let instance_id = instance.id().as_str();
 
         match &instance.pack_info {
             Some(pack) => {
@@ -334,8 +343,8 @@ impl InstanceStorage for SqliteInstanceStorage {
             .map_err(|e| InstanceError::Storage(e.to_string()))
     }
 
-    async fn remove(&self, id: &str) -> Result<(), InstanceError> {
-        sqlx::query!("DELETE FROM instances WHERE id = ?", id)
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
             .execute(&self.pool)
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))?;

@@ -6,9 +6,9 @@ use log::{error, info};
 use crate::features::{
     events::{EventEmitterExt, SharedEventEmitter, WarningEvent},
     instance::{
-        Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceInstallService,
-        InstanceInstallStage, InstanceStorage, InstanceWatcherService, NewInstance,
-        app::ports::CreateInstanceUseCasePort,
+        Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
+        InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
+        NewInstance, app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -85,11 +85,11 @@ impl CreateInstanceUseCase {
 
         if !skip_install_instance.unwrap_or(false) {
             self.instance_install_service
-                .execute(instance.id().to_owned(), false)
+                .execute(instance.id().to_string(), false)
                 .await?;
         }
 
-        Ok(instance.id().to_owned())
+        Ok(instance.id().to_string())
     }
 
     pub async fn execute(&self, new_instance: NewInstance) -> Result<String, InstanceError> {
@@ -147,7 +147,7 @@ impl CreateInstanceUseCase {
         .await?;
 
         let mut instance = InstanceBuilder::new(
-            sanitized_name.clone(),
+            InstanceId::try_from(sanitized_name)?,
             name.clone(),
             game_version.clone(),
             mod_loader,

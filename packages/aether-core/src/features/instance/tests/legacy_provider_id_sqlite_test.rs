@@ -2,7 +2,7 @@ use sqlx::{SqlitePool, pool::PoolOptions};
 
 use crate::{
     core::migrations::run_migrations,
-    features::instance::{PackStorage, ProviderId, infra::SqlitePackStorage},
+    features::instance::{InstanceId, PackStorage, ProviderId, infra::SqlitePackStorage},
 };
 
 /// Rows `SqlitePackStorage` wrote while Modrinth was `core:modrinth#modrinth-content` must read
@@ -70,7 +70,7 @@ async fn should_read_legacy_modrinth_rows_as_aether_modrinth_when_the_table_hold
     let storage = SqlitePackStorage::new(pool);
 
     let pack_file = storage
-        .get_pack_file(INSTANCE_ID, CONTENT_PATH)
+        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), CONTENT_PATH)
         .await
         .unwrap();
 
@@ -87,7 +87,11 @@ async fn should_find_legacy_modrinth_rows_when_searching_by_aether_modrinth() {
     let storage = SqlitePackStorage::new(pool);
 
     let found = storage
-        .find_by_provider_id(INSTANCE_ID, &aether_modrinth(), "AANobbMI")
+        .find_by_provider_id(
+            &InstanceId::try_from(INSTANCE_ID).unwrap(),
+            &aether_modrinth(),
+            "AANobbMI",
+        )
         .await
         .unwrap();
 
@@ -101,11 +105,15 @@ async fn should_store_aether_modrinth_when_a_legacy_row_is_saved_again() {
     let storage = SqlitePackStorage::new(pool.clone());
 
     let pack_file = storage
-        .get_pack_file(INSTANCE_ID, CONTENT_PATH)
+        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), CONTENT_PATH)
         .await
         .unwrap();
     storage
-        .update_pack_file(INSTANCE_ID, CONTENT_PATH, &pack_file)
+        .update_pack_file(
+            &InstanceId::try_from(INSTANCE_ID).unwrap(),
+            CONTENT_PATH,
+            &pack_file,
+        )
         .await
         .unwrap();
 

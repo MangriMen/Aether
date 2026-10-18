@@ -137,18 +137,17 @@ pub(crate) async fn handle_change_contents(
 /// the file service create a directory under `instances/` the launcher never listed.
 ///
 /// The id is checked by its spelling before the lookup: an id such as `../plugins/<id>` would
-/// otherwise reach outside `instances/`, to files the plugin may have planted there.
+/// otherwise reach outside `instances/`, to files the plugin may have planted there. Returns the
+/// parsed id.
 async fn require_instance(
     instance_id: &str,
     get_instance: &dyn GetInstanceUseCasePort,
-) -> crate::Result<()> {
+) -> crate::Result<InstanceId> {
     let instance_id = InstanceId::try_from(instance_id)?;
 
-    get_instance
-        .execute(instance_id.into())
-        .await
-        .map(|_| ())
-        .map_err(Into::into)
+    get_instance.execute(instance_id.to_string()).await?;
+
+    Ok(instance_id)
 }
 
 /// `write_instance_file` over the two ports it needs, so its checks can be tested without a
@@ -180,10 +179,10 @@ pub(crate) async fn write_instance_file_with(
         max_file_bytes,
     )?;
 
-    require_instance(&params.instance_id, get_instance).await?;
+    let instance_id = require_instance(&params.instance_id, get_instance).await?;
 
     file_service
-        .write_instance_file(&params.instance_id, &params.relative_path, &params.bytes)
+        .write_instance_file(&instance_id, &params.relative_path, &params.bytes)
         .await
         .map_err(|err| {
             log::warn!(target: "plugin", "[{plugin_id}]: write_instance_file failed: {err}");
@@ -206,10 +205,10 @@ pub(crate) async fn read_instance_file_with(
         params.relative_path
     );
 
-    require_instance(&params.instance_id, get_instance).await?;
+    let instance_id = require_instance(&params.instance_id, get_instance).await?;
 
     let bytes = file_service
-        .read_instance_file(&params.instance_id, &params.relative_path)
+        .read_instance_file(&instance_id, &params.relative_path)
         .await
         .map_err(|err| {
             log::warn!(target: "plugin", "[{plugin_id}]: read_instance_file failed: {err}");
@@ -440,7 +439,7 @@ mod tests {
         async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
             if instance_id == INSTANCE_ID {
                 Ok(InstanceBuilder::new(
-                    INSTANCE_ID.to_owned(),
+                    InstanceId::try_from(INSTANCE_ID).unwrap(),
                     "Test".to_owned(),
                     "1.20.1".to_owned(),
                     ModLoader::Vanilla,
@@ -465,7 +464,7 @@ mod tests {
             crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
         );
         service
-            .create_instance_dir(INSTANCE_ID)
+            .create_instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .await
             .expect("create_instance_dir should succeed");
         (temp_dir, location_info, service)
@@ -810,9 +809,9 @@ mod tests {
 
     #[async_trait]
     impl GetInstanceUseCasePort for AnyInstance {
-        async fn execute(&self, instance_id: String) -> Result<Instance, InstanceError> {
+        async fn execute(&self, _instance_id: String) -> Result<Instance, InstanceError> {
             Ok(InstanceBuilder::new(
-                instance_id,
+                InstanceId::generate(),
                 "Test".to_owned(),
                 "1.20.1".to_owned(),
                 ModLoader::Vanilla,

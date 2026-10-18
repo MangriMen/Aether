@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
 
-use crate::features::instance::domain::InstanceError;
+use crate::features::instance::domain::{InstanceError, InstanceId};
 
 /// The suffix a disabled content file carries on disk: `mods/a.jar` is kept as
 /// `mods/a.jar.disabled`, its content path staying `mods/a.jar`.
@@ -30,21 +30,21 @@ pub trait ContentFileService: Send + Sync {
     /// file must resolve inside the instance directory, as in [`Self::locate_content_file`].
     async fn remove_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError>;
 
     /// Renames `.disabled` → original for the given content paths.
     async fn enable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError>;
 
     /// Renames original → `.disabled` for the given content paths.
     async fn disable_content_files(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_paths: &[String],
     ) -> Result<(), InstanceError>;
 
@@ -56,7 +56,7 @@ pub trait ContentFileService: Send + Sync {
     /// inside the instance directory (no symlink out of it).
     async fn locate_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
     ) -> Result<Option<LocatedContentFile>, InstanceError>;
 
@@ -72,7 +72,7 @@ pub trait ContentFileService: Send + Sync {
     /// `content_path` is checked as in [`Self::install_content_file`].
     async fn move_content_file_out(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         destination: &Path,
     ) -> Result<bool, InstanceError>;
@@ -84,7 +84,7 @@ pub trait ContentFileService: Send + Sync {
     /// the instance directory on disk too (no symlink out of it); otherwise nothing is moved.
     async fn install_content_file(
         &self,
-        instance_id: &str,
+        instance_id: &InstanceId,
         content_path: &str,
         temp_path: &Path,
     ) -> Result<(), InstanceError>;

@@ -8,11 +8,11 @@ use crate::{
     shared::overridable::domain::Overridable,
 };
 
-use super::{InstanceInstallStage, PackInfo};
+use super::{InstanceId, InstanceInstallStage, PackInfo};
 
 #[derive(Debug, Clone)]
 pub struct InstanceSnapshot {
-    pub id: String,
+    pub id: InstanceId,
 
     pub name: String,
     pub icon_path: Option<String>,

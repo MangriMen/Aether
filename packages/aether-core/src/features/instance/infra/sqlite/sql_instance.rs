@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     features::{
-        instance::{Instance, InstanceError, InstanceInstallStage, InstanceSnapshot},
+        instance::{Instance, InstanceError, InstanceId, InstanceInstallStage, InstanceSnapshot},
         minecraft::{LoaderVersionPreference, ModLoader},
         settings::{Hooks, MemorySettings, WindowSettings, WindowSize},
     },
@@ -159,7 +159,7 @@ impl From<Instance> for SqlInstance {
         let s = i.snapshot();
 
         Self {
-            id: s.id,
+            id: s.id.into(),
             name: s.name,
             icon_path: s.icon_path,
             install_stage: {
@@ -243,7 +243,7 @@ impl TryFrom<SqlInstance> for Instance {
         };
 
         let snapshot = InstanceSnapshot {
-            id: row.id,
+            id: InstanceId::try_from(row.id)?,
             name: row.name,
             icon_path: row.icon_path,
             install_stage: {
