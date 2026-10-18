@@ -74,6 +74,8 @@ uuid.workspace = true
 mime_guess = "2.0.5"
 open = { version = "5.4.0", features = ["shellexecute-on-windows"] }
 percent-encoding = "2.3.2"
+# Native error dialog for failures before the Tauri windows exist (same backend as tauri-plugin-dialog).
+rfd = { version = "0.16", default-features = false, features = ["common-controls-v6"] }
 reqwest = { version = "0.13.4", features = [
     "json",
     "stream",
