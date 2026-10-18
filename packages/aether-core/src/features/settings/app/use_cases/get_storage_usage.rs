@@ -65,6 +65,7 @@ impl GetStorageUsageUseCasePort for GetStorageUsageUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::InstanceId;
 
     #[tokio::test]
     async fn should_measure_each_folder_by_what_it_holds_when_asked_for_usage() {
@@ -79,7 +80,7 @@ mod tests {
             (info.versions_dir(), 2),
             (info.natives_dir(), 1),
             (info.java_dir(), 7),
-            (info.instance_dir("one"), 9),
+            (info.instance_dir(&InstanceId::try_from("one").unwrap()), 9),
         ] {
             std::fs::create_dir_all(&dir).unwrap();
             std::fs::write(dir.join("file"), vec![0; size]).unwrap();

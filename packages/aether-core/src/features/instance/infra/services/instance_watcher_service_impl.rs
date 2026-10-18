@@ -153,7 +153,7 @@ mod tests {
     #[tokio::test]
     async fn watch_instance_creates_and_watches_content_and_crash_folders() {
         let (_temp, watcher, location, service) = setup();
-        let dir = location.instance_dir("inst");
+        let dir = location.instance_dir(&InstanceId::try_from("inst").unwrap());
         std::fs::create_dir_all(&dir).unwrap();
 
         service
@@ -182,7 +182,7 @@ mod tests {
             temp.path().join("settings"),
             temp.path().to_path_buf(),
         ));
-        let dir = location.instance_dir("inst");
+        let dir = location.instance_dir(&InstanceId::try_from("inst").unwrap());
         std::fs::create_dir_all(&dir).unwrap();
         let watcher = Arc::new(RecordingWatcher {
             fail_on: Some(dir.join("datapacks")),
@@ -231,14 +231,20 @@ mod tests {
             .unwrap();
 
         assert!(watcher.watched.lock().unwrap().is_empty());
-        assert!(!location.instance_dir("absent").exists());
+        assert!(
+            !location
+                .instance_dir(&InstanceId::try_from("absent").unwrap())
+                .exists()
+        );
     }
 
     #[tokio::test]
     async fn watch_instances_skips_ds_store_entries() {
         let (_temp, recorder, location, service) = setup();
-        std::fs::create_dir_all(location.instance_dir("a")).unwrap();
-        std::fs::create_dir_all(location.instance_dir(".DS_Store")).unwrap();
+        std::fs::create_dir_all(location.instance_dir(&InstanceId::try_from("a").unwrap()))
+            .unwrap();
+        std::fs::create_dir_all(location.instance_dir(&InstanceId::try_from(".DS_Store").unwrap()))
+            .unwrap();
 
         service.watch_instances().await.unwrap();
 
@@ -246,7 +252,7 @@ mod tests {
         assert_eq!(seen.len(), 5);
         assert!(
             seen.iter()
-                .all(|p| p.starts_with(location.instance_dir("a")))
+                .all(|p| p.starts_with(location.instance_dir(&InstanceId::try_from("a").unwrap())))
         );
     }
 
@@ -261,7 +267,7 @@ mod tests {
 
         assert_eq!(
             *watcher.unwatched.lock().unwrap(),
-            vec![location.instance_dir("inst")]
+            vec![location.instance_dir(&InstanceId::try_from("inst").unwrap())]
         );
     }
 }

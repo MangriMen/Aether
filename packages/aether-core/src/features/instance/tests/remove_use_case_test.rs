@@ -172,7 +172,7 @@ async fn seed_pack_data(pool: &SqlitePool, instance_id: &str) {
 }
 
 async fn create_instance_dir(location_info: &LocationInfo, instance_id: &str) {
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id).unwrap());
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -234,7 +234,8 @@ async fn should_clean_everything_when_an_instance_is_removed() {
     }
 
     // ── Assert: directory removed from disk ──
-    let instance_dir = location_info.instance_dir(&instance_id);
+    let instance_dir =
+        location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     assert!(
         !instance_dir.exists(),
         "Instance directory should be removed"
@@ -331,14 +332,24 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
         pack_storage,
         locks.clone(),
     );
-    let held = locks.lock(&instance_id).await;
+    let held = locks
+        .lock(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await;
 
     let mut remove =
         std::pin::pin!(use_case.execute(InstanceId::try_from(instance_id.clone()).unwrap()));
     assert!(futures::poll!(&mut remove).is_pending());
-    assert!(location_info.instance_dir(&instance_id).exists());
+    assert!(
+        location_info
+            .instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap())
+            .exists()
+    );
 
     drop(held);
     remove.await.unwrap();
-    assert!(!location_info.instance_dir(&instance_id).exists());
+    assert!(
+        !location_info
+            .instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap())
+            .exists()
+    );
 }

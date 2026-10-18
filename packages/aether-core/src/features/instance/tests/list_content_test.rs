@@ -88,7 +88,9 @@ async fn should_list_the_content_there_is_when_some_content_folders_are_missing(
         temp.path().join("settings"),
         temp.path().to_path_buf(),
     ));
-    let mods = location_info.instance_dir("instance").join("mods");
+    let mods = location_info
+        .instance_dir(&InstanceId::try_from("instance").unwrap())
+        .join("mods");
     tokio::fs::create_dir_all(&mods).await.unwrap();
     tokio::fs::write(mods.join("a.jar"), b"jar").await.unwrap();
     let use_case = ListContentUseCase::new(

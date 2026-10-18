@@ -482,9 +482,11 @@ impl Fixture {
             temp_dir.path().join("settings"),
             temp_dir.path().to_path_buf(),
         ));
-        tokio::fs::create_dir_all(location_info.instance_dir(INSTANCE_ID))
-            .await
-            .unwrap();
+        tokio::fs::create_dir_all(
+            location_info.instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        )
+        .await
+        .unwrap();
 
         let storage = Arc::new(MemInstanceStorage::default());
         let mut instance = InstanceBuilder::new(
@@ -565,7 +567,10 @@ impl Fixture {
 
     /// Put the file `name` of the pack at `path`, recorded as installed by `installed_by`.
     async fn put(&self, name: &str, path: &str, installed_by: Option<PlanOrigin>) {
-        let full = self.location_info.instance_dir(INSTANCE_ID).join(path);
+        let full = self
+            .location_info
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+            .join(path);
         std::fs::create_dir_all(full.parent().unwrap()).unwrap();
         std::fs::write(full, url(name)).unwrap();
 
@@ -595,11 +600,14 @@ impl Fixture {
     }
 
     fn mods(&self) -> Vec<String> {
-        let mut mods: Vec<String> =
-            std::fs::read_dir(self.location_info.instance_dir(INSTANCE_ID).join("mods"))
-                .unwrap()
-                .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-                .collect();
+        let mut mods: Vec<String> = std::fs::read_dir(
+            self.location_info
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+                .join("mods"),
+        )
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
         mods.sort();
         mods
     }
@@ -667,7 +675,10 @@ async fn should_wait_for_the_instance_lock_when_another_plan_holds_it() {
     let provider = Arc::new(PackProvider::v1_and_v2(None));
     let fixture = Fixture::new(Some(provider.clone())).await;
     fixture.put_v1(Some(origin())).await;
-    let held = fixture.locks.lock(INSTANCE_ID).await;
+    let held = fixture
+        .locks
+        .lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
+        .await;
 
     let mut update = std::pin::pin!(fixture.update());
     assert!(futures::poll!(&mut update).is_pending());
@@ -680,7 +691,12 @@ async fn should_wait_for_the_instance_lock_when_another_plan_holds_it() {
     drop(held);
     update.await.unwrap();
     assert_eq!(fixture.version_id(), "v2");
-    assert!(fixture.locks.try_lock(INSTANCE_ID).is_some());
+    assert!(
+        fixture
+            .locks
+            .try_lock(&InstanceId::try_from(INSTANCE_ID).unwrap())
+            .is_some()
+    );
 }
 
 /// A version on another game moves the instance to it; installing the game keeps the instance

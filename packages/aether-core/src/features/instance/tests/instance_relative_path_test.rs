@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use tempfile::TempDir;
 
-use crate::features::instance::domain::InstanceError;
+use crate::features::instance::domain::{InstanceError, InstanceId};
 use crate::features::instance::infra::{
     check_plugin_write_allowed, resolve_instance_file_path, validate_relative_path,
 };
@@ -20,7 +20,11 @@ fn setup() -> (TempDir, PathBuf) {
 }
 
 fn resolve(instance_dir: &Path, relative_path: &str) -> Result<PathBuf, InstanceError> {
-    resolve_instance_file_path(INSTANCE_ID, instance_dir, relative_path)
+    resolve_instance_file_path(
+        &InstanceId::try_from(INSTANCE_ID).unwrap(),
+        instance_dir,
+        relative_path,
+    )
 }
 
 // ── validate_relative_path ──
@@ -284,7 +288,12 @@ fn should_fail_when_the_instance_directory_does_not_exist() {
     let missing = temp_dir.path().join("instances").join("no-such-instance");
 
     assert!(
-        resolve_instance_file_path("no-such-instance", &missing, "pack.toml").is_err(),
+        resolve_instance_file_path(
+            &InstanceId::try_from("no-such-instance").unwrap(),
+            &missing,
+            "pack.toml"
+        )
+        .is_err(),
         "a missing instance directory must not be created on the fly"
     );
 }

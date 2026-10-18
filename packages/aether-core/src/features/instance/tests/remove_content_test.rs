@@ -173,7 +173,7 @@ async fn seed_pack_data(pool: &SqlitePool, instance_id: &str) {
 }
 
 async fn create_content_files(location_info: &LocationInfo, instance_id: &str) {
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id).unwrap());
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
@@ -211,7 +211,7 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
         .unwrap();
     assert_eq!(pack.files.len(), 2, "Two pack files initially");
 
-    let disk_dir = location_info.instance_dir(&instance_id);
+    let disk_dir = location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     assert!(disk_dir.join("mods/a.jar").exists());
     assert!(disk_dir.join("mods/b.jar").exists());
 
@@ -290,7 +290,7 @@ async fn should_remove_every_file_when_several_are_given() {
     assert!(pack.files.is_empty(), "No pack files should remain");
 
     // Assert — disk clean
-    let disk_dir = location_info.instance_dir(&instance_id);
+    let disk_dir = location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     assert!(!disk_dir.join("mods/a.jar").exists());
     assert!(!disk_dir.join("mods/b.jar").exists());
 }
@@ -341,7 +341,7 @@ async fn should_keep_the_record_of_a_file_when_it_cannot_be_removed() {
         .await
         .unwrap();
     seed_pack_data(&pool, &instance_id).await;
-    let dir = location_info.instance_dir(&instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     std::fs::create_dir_all(dir.join("mods/a.jar")).unwrap();
     std::fs::write(dir.join("mods/b.jar"), b"more data").unwrap();
 
@@ -394,7 +394,7 @@ async fn should_remove_only_the_selected_files_when_others_exist() {
     .await
     .unwrap();
 
-    let dir = location_info.instance_dir(&instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     tokio::fs::create_dir_all(dir.join("config"))
         .await
         .expect("Failed to create config dir");
@@ -463,7 +463,9 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
         content_file_service,
         locks.clone(),
     );
-    let held = locks.lock(&instance_id).await;
+    let held = locks
+        .lock(&InstanceId::try_from(instance_id.as_str()).unwrap())
+        .await;
 
     let mut remove = std::pin::pin!(use_case.execute(RemoveContent::multiple(
         InstanceId::try_from(instance_id.clone()).unwrap(),
@@ -472,7 +474,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     assert!(futures::poll!(&mut remove).is_pending());
     assert!(
         location_info
-            .instance_dir(&instance_id)
+            .instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap())
             .join("mods/a.jar")
             .exists()
     );

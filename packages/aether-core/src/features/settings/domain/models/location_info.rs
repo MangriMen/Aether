@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use crate::features::instance::InstanceId;
+
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
 pub const CACHE_FOLDER_NAME: &str = "cache";
 pub const INSTANCES_FOLDER_NAME: &str = "instances";
@@ -120,13 +122,13 @@ impl LocationInfo {
 
     /// Get the directory for a specific instance
     #[inline]
-    pub fn instance_dir(&self, id: &str) -> PathBuf {
-        self.instances_dir().join(id)
+    pub fn instance_dir(&self, id: &InstanceId) -> PathBuf {
+        self.instances_dir().join(id.as_str())
     }
 
     /// Get the metadata directory for a specific instance
     #[inline]
-    pub fn instance_metadata_dir(&self, id: &str) -> PathBuf {
+    pub fn instance_metadata_dir(&self, id: &InstanceId) -> PathBuf {
         self.instance_dir(id).join(INSTANCE_METADATA_FOLDER_NAME)
     }
 
@@ -138,7 +140,7 @@ impl LocationInfo {
 
     /// Get the metadata file for a specific instance
     #[inline]
-    pub fn instance_metadata_file(&self, id: &str) -> PathBuf {
+    pub fn instance_metadata_file(&self, id: &InstanceId) -> PathBuf {
         self.instance_metadata_dir(id).join(INSTANCE_FILE_NAME)
     }
 
@@ -151,12 +153,12 @@ impl LocationInfo {
 
     /// Get the pack dir for a specific instance
     #[inline]
-    pub fn instance_pack_dir(&self, id: &str) -> PathBuf {
+    pub fn instance_pack_dir(&self, id: &InstanceId) -> PathBuf {
         self.instance_metadata_dir(id).join("pack")
     }
 
     #[inline]
-    pub fn instance_pack(&self, id: &str) -> PathBuf {
+    pub fn instance_pack(&self, id: &InstanceId) -> PathBuf {
         self.instance_pack_dir(id).join("content.toml")
     }
 
@@ -202,14 +204,14 @@ impl LocationInfo {
 
     /// Get the directory for a specific plugin inside an instance
     #[inline]
-    pub fn instance_plugin_dir(&self, id: &str, plugin_id: &str) -> PathBuf {
+    pub fn instance_plugin_dir(&self, id: &InstanceId, plugin_id: &str) -> PathBuf {
         self.instance_metadata_dir(id)
             .join(PLUGINS_FOLDER_NAME)
             .join(plugin_id)
     }
 
     #[inline]
-    pub fn crash_reports_dir(&self, id: &str) -> PathBuf {
+    pub fn crash_reports_dir(&self, id: &InstanceId) -> PathBuf {
         self.instance_dir(id).join("crash-reports")
     }
 
@@ -234,10 +236,12 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::LocationInfo;
+    use crate::features::instance::InstanceId;
 
     #[test]
     fn should_pin_every_path_accessor() {
         let li = LocationInfo::new(PathBuf::from("s"), PathBuf::from("c"));
+        let id = InstanceId::try_from("i").unwrap();
         let p = |s: &str| PathBuf::from("c").join(s);
         assert_eq!(li.settings_dir(), Path::new("s"));
         assert_eq!(li.config_dir(), Path::new("c"));
@@ -266,20 +270,20 @@ mod tests {
         );
         let inst = p("instances");
         assert_eq!(li.instances_dir(), inst);
-        assert_eq!(li.instance_dir("i"), inst.join("i"));
+        assert_eq!(li.instance_dir(&id), inst.join("i"));
         let im = inst.join("i").join(".metadata");
-        assert_eq!(li.instance_metadata_dir("i"), im);
+        assert_eq!(li.instance_metadata_dir(&id), im);
         assert_eq!(
             li.instance_metadata_dir_with_instance_dir(Path::new("x")),
             Path::new("x").join(".metadata")
         );
-        assert_eq!(li.instance_metadata_file("i"), im.join("instance.json"));
+        assert_eq!(li.instance_metadata_file(&id), im.join("instance.json"));
         assert_eq!(
             li.instance_metadata_file_with_instance_dir(Path::new("x")),
             Path::new("x").join(".metadata").join("instance.json")
         );
-        assert_eq!(li.instance_pack_dir("i"), im.join("pack"));
-        assert_eq!(li.instance_pack("i"), im.join("pack").join("content.toml"));
+        assert_eq!(li.instance_pack_dir(&id), im.join("pack"));
+        assert_eq!(li.instance_pack(&id), im.join("pack").join("content.toml"));
         let cache = p("cache");
         assert_eq!(li.cache_dir(), cache);
         assert_eq!(li.assets_cache_dir(), cache.join("assets"));
@@ -292,11 +296,11 @@ mod tests {
         );
         assert_eq!(li.plugin_cache_dir("pl"), cache.join("plugins").join("pl"));
         assert_eq!(
-            li.instance_plugin_dir("i", "pl"),
+            li.instance_plugin_dir(&id, "pl"),
             im.join("plugins").join("pl")
         );
         assert_eq!(
-            li.crash_reports_dir("i"),
+            li.crash_reports_dir(&id),
             inst.join("i").join("crash-reports")
         );
         assert_eq!(li.wasm_cache_config(), cache.join("wasm.toml"));

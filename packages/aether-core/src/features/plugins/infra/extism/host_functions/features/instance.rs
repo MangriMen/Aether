@@ -506,7 +506,7 @@ mod tests {
         .expect("write_instance_file should succeed");
 
         let written = location_info
-            .instance_dir(INSTANCE_ID)
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .join("mods")
             .join("example.jar");
         assert!(
@@ -596,7 +596,7 @@ mod tests {
         );
         assert!(
             !location_info
-                .instance_dir(INSTANCE_ID)
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
                 .join("big.bin")
                 .exists()
         );
@@ -707,7 +707,8 @@ mod tests {
 
         // The core's own metadata file: rewriting it would let a plugin restate the install
         // stage or the loader of an instance.
-        let metadata_file = location_info.instance_metadata_file(INSTANCE_ID);
+        let metadata_file =
+            location_info.instance_metadata_file(&InstanceId::try_from(INSTANCE_ID).unwrap());
         tokio::fs::create_dir_all(metadata_file.parent().unwrap())
             .await
             .unwrap();
@@ -751,7 +752,7 @@ mod tests {
         .expect("a plugin owns its own subdirectory of `.metadata`");
 
         let written = location_info
-            .instance_plugin_dir(INSTANCE_ID, PLUGIN_ID)
+            .instance_plugin_dir(&InstanceId::try_from(INSTANCE_ID).unwrap(), PLUGIN_ID)
             .join("packwiz.toml");
         assert!(
             written.exists(),
@@ -784,7 +785,8 @@ mod tests {
 
         // Only writing is narrowed: the instances directory is mounted into the sandbox and
         // stays readable, so refusing the read here would buy nothing.
-        let metadata_file = location_info.instance_metadata_file(INSTANCE_ID);
+        let metadata_file =
+            location_info.instance_metadata_file(&InstanceId::try_from(INSTANCE_ID).unwrap());
         tokio::fs::create_dir_all(metadata_file.parent().unwrap())
             .await
             .unwrap();

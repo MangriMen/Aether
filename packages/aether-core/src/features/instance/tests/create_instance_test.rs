@@ -278,7 +278,8 @@ async fn should_create_a_vanilla_instance_when_given_valid_params() {
     assert_eq!(stored.loader, ModLoader::Vanilla);
 
     // Verify instance directory was created (via LocationInfo naming convention)
-    let instance_dir = location_info.instance_dir(&instance_id);
+    let instance_dir =
+        location_info.instance_dir(&InstanceId::try_from(instance_id.as_str()).unwrap());
     assert!(
         instance_dir.exists(),
         "Instance directory should exist on disk"

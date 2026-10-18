@@ -4,8 +4,8 @@ use tempfile::TempDir;
 
 use crate::features::{
     instance::{
-        FileSide, InstallFileEntry, InstallPlan, InstallTarget, InstanceError, NewInstance,
-        OptionalFile, PackInfo, ProviderId, remove_plan_leftovers,
+        FileSide, InstallFileEntry, InstallPlan, InstallTarget, InstanceError, InstanceId,
+        NewInstance, OptionalFile, PackInfo, ProviderId, remove_plan_leftovers,
     },
     minecraft::ModLoader,
     settings::LocationInfo,
@@ -93,7 +93,7 @@ async fn should_create_the_instance_of_a_pack_when_the_plan_is_for_a_pack() {
 
 /// A file where the plan needs a directory: moving any planned mod into the instance fails.
 fn block_mods_dir(location_info: &LocationInfo, instance_id: &str) {
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id).unwrap());
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("mods"), "not a directory").unwrap();
 }

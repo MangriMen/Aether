@@ -220,9 +220,12 @@ pub(super) struct RecordingCreateInstance {
 
 impl RecordingCreateInstance {
     pub(super) async fn create_dir(&self) {
-        tokio::fs::create_dir_all(self.location_info.instance_dir(NEW_INSTANCE_ID))
-            .await
-            .unwrap();
+        tokio::fs::create_dir_all(
+            self.location_info
+                .instance_dir(&InstanceId::try_from(NEW_INSTANCE_ID).unwrap()),
+        )
+        .await
+        .unwrap();
     }
 }
 
@@ -600,9 +603,11 @@ impl Fixture {
             temp_dir.path().join("settings"),
             temp_dir.path().to_path_buf(),
         ));
-        tokio::fs::create_dir_all(location_info.instance_dir(INSTANCE_ID))
-            .await
-            .unwrap();
+        tokio::fs::create_dir_all(
+            location_info.instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        )
+        .await
+        .unwrap();
 
         Self {
             _temp_dir: temp_dir,
@@ -720,7 +725,7 @@ impl Fixture {
     pub(super) fn instance_file(&self, instance_id: &str, relative_path: &str) -> Option<String> {
         std::fs::read_to_string(
             self.location_info
-                .instance_dir(instance_id)
+                .instance_dir(&InstanceId::try_from(instance_id).unwrap())
                 .join(relative_path),
         )
         .ok()
@@ -740,7 +745,9 @@ impl Fixture {
             }
         }
 
-        let root = self.location_info.instance_dir(instance_id);
+        let root = self
+            .location_info
+            .instance_dir(&InstanceId::try_from(instance_id).unwrap());
         let mut out = Vec::new();
         if root.exists() {
             walk(&root, &root, &mut out);
@@ -758,7 +765,7 @@ impl Fixture {
     pub(super) fn put(&self, relative_path: &str, body: &str) {
         let path = self
             .location_info
-            .instance_dir(INSTANCE_ID)
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
             .join(relative_path);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();

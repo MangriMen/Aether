@@ -440,7 +440,9 @@ impl Fixture {
             temp.path().join("settings"),
             temp.path().to_path_buf(),
         ));
-        let mods = location_info.instance_dir(INSTANCE_ID).join("mods");
+        let mods = location_info
+            .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
+            .join("mods");
         tokio::fs::create_dir_all(&mods).await.unwrap();
 
         let pack_storage = Arc::new(SqlitePackStorage::in_memory().await);

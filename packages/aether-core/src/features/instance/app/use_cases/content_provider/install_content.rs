@@ -45,7 +45,8 @@ impl InstallContentUseCase {
     pub async fn execute(&self, install_params: ContentInstallParams) -> Result<(), InstanceError> {
         let _lock = match &install_params {
             ContentInstallParams::Atomic(params) => {
-                Some(self.instance_locks.lock(&params.instance_id).await)
+                let instance_id = InstanceId::try_from(params.instance_id.as_str())?;
+                Some(self.instance_locks.lock(&instance_id).await)
             }
             ContentInstallParams::Modpack(_) => None,
         };

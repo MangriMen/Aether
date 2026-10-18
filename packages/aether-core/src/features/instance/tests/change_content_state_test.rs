@@ -266,7 +266,7 @@ async fn should_succeed_when_the_file_does_not_exist() {
 }
 
 async fn put_enabled_file(location_info: &LocationInfo, instance_id: &str) -> std::path::PathBuf {
-    let dir = location_info.instance_dir(instance_id);
+    let dir = location_info.instance_dir(&InstanceId::try_from(instance_id).unwrap());
     tokio::fs::create_dir_all(dir.join("mods")).await.unwrap();
     tokio::fs::write(dir.join("mods/test.jar"), b"data")
         .await
@@ -281,7 +281,7 @@ async fn should_refuse_the_change_when_a_plan_holds_the_lock_past_the_wait() {
     let use_case = get_use_case_with_locks(service, locks.clone())
         .with_lock_wait(std::time::Duration::from_millis(20));
     let dir = put_enabled_file(&location_info, "busy").await;
-    let _held = locks.lock("busy").await;
+    let _held = locks.lock(&InstanceId::try_from("busy").unwrap()).await;
 
     let result = use_case
         .execute(ChangeContentState::single(
@@ -304,7 +304,7 @@ async fn should_change_the_state_when_the_lock_is_released_within_the_wait() {
     let locks = Arc::new(InstanceLocks::new());
     let use_case = get_use_case_with_locks(service, locks.clone());
     let dir = put_enabled_file(&location_info, "brief").await;
-    let held = locks.lock("brief").await;
+    let held = locks.lock(&InstanceId::try_from("brief").unwrap()).await;
 
     let mut change = std::pin::pin!(use_case.execute(ChangeContentState::single(
         InstanceId::try_from("brief").unwrap(),

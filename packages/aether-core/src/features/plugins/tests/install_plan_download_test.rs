@@ -342,9 +342,11 @@ impl Fixture {
             temp_dir.path().join("settings"),
             temp_dir.path().to_path_buf(),
         ));
-        tokio::fs::create_dir_all(location_info.instance_dir(INSTANCE_ID))
-            .await
-            .unwrap();
+        tokio::fs::create_dir_all(
+            location_info.instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        )
+        .await
+        .unwrap();
 
         Self {
             _temp_dir: temp_dir,
@@ -458,17 +460,20 @@ impl Fixture {
     fn installed(&self, relative_path: &str) -> Option<Vec<u8>> {
         std::fs::read(
             self.location_info
-                .instance_dir(INSTANCE_ID)
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap())
                 .join(relative_path),
         )
         .ok()
     }
 
     fn instance_is_empty(&self) -> bool {
-        std::fs::read_dir(self.location_info.instance_dir(INSTANCE_ID))
-            .unwrap()
-            .next()
-            .is_none()
+        std::fs::read_dir(
+            self.location_info
+                .instance_dir(&InstanceId::try_from(INSTANCE_ID).unwrap()),
+        )
+        .unwrap()
+        .next()
+        .is_none()
     }
 
     fn staging_is_clean(&self) -> bool {
