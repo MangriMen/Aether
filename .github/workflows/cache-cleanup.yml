@@ -1,0 +1,21 @@
+name: Cache cleanup
+
+# a closed PR's caches are only reachable from its own ref, but they count against the repo limit
+# and push out the shared caches saved on main
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Delete PR caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        run: gh cache delete --all --succeed-on-no-caches --ref "$REF"
