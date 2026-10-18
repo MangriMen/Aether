@@ -15,11 +15,38 @@ const BATCH_SIZE: usize = 500;
 
 pub struct SqliteCache {
     pool: SqlitePool,
+    /// The namespaces [`CacheCleaner`] measures and clears; the owner of each lists it.
+    clearable: Vec<&'static str>,
 }
 
 impl SqliteCache {
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            clearable: Vec::new(),
+        }
+    }
+
+    /// Namespaces the user may clear. None by default: [`CacheCleaner`] then touches nothing.
+    #[must_use]
+    pub fn with_clearable_namespaces(
+        mut self,
+        namespaces: impl IntoIterator<Item = &'static str>,
+    ) -> Self {
+        self.clearable = namespaces.into_iter().collect();
+        self
+    }
+
+    /// `query` followed by the clearable namespaces as `(?, ?, ...)`.
+    fn in_clearable(&self, query: &str) -> QueryBuilder<Sqlite> {
+        let mut builder = QueryBuilder::<Sqlite>::new(query);
+        builder.push(" WHERE namespace IN (");
+        let mut list = builder.separated(", ");
+        for namespace in &self.clearable {
+            list.push_bind(*namespace);
+        }
+        list.push_unseparated(")");
+        builder
     }
 }
 
@@ -203,7 +230,8 @@ impl Housekeeping for SqliteCache {
     }
 }
 
-/// Every row, whatever it holds: all of `universal_cache` is fetched again when needed.
+/// The rows of the clearable namespaces, which the app fetches again when needed; the rows of
+/// other namespaces stay.
 #[async_trait]
 impl CacheCleaner for SqliteCache {
     fn what(&self) -> &'static str {
@@ -211,17 +239,25 @@ impl CacheCleaner for SqliteCache {
     }
 
     async fn size(&self) -> u64 {
-        sqlx::query_scalar::<_, i64>(
+        if self.clearable.is_empty() {
+            return 0;
+        }
+        self.in_clearable(
             "SELECT COALESCE(SUM(LENGTH(namespace) + LENGTH(key) + LENGTH(value)), 0)
              FROM universal_cache",
         )
+        .build_query_scalar::<i64>()
         .fetch_one(&self.pool)
         .await
         .map_or(0, |bytes| u64::try_from(bytes).unwrap_or_default())
     }
 
     async fn clear(&self) -> u64 {
-        sqlx::query("DELETE FROM universal_cache")
+        if self.clearable.is_empty() {
+            return 0;
+        }
+        self.in_clearable("DELETE FROM universal_cache")
+            .build()
             .execute(&self.pool)
             .await
             .map_or(0, |result| result.rows_affected())
@@ -362,16 +398,48 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_remove_every_row_when_cleared() {
-        let cache = create_cache().await;
+    async fn should_remove_only_listed_namespaces_when_cleared() {
+        let cache = create_cache().await.with_clearable_namespaces(["a", "b"]);
         cache
-            .set_many(&[entry("a", "1", "one"), entry("b", "2", "two")], LONG)
+            .set_many(
+                &[
+                    entry("a", "1", "one"),
+                    entry("b", "2", "two"),
+                    entry("c", "3", "three"),
+                ],
+                LONG,
+            )
             .await;
 
         assert_eq!(CacheCleaner::clear(&cache).await, 2);
 
         assert_eq!(cache.get(&key("a", "1")).await, None);
         assert_eq!(cache.get(&key("b", "2")).await, None);
+        assert_eq!(cache.get(&key("c", "3")).await, Some("three".to_owned()));
+    }
+
+    #[tokio::test]
+    async fn should_measure_only_listed_namespaces_when_sizing() {
+        let cache = create_cache().await.with_clearable_namespaces(["a"]);
+        assert_eq!(CacheCleaner::size(&cache).await, 0);
+        cache.set(&key("a", "1"), &"one".to_owned(), LONG).await;
+        let listed_only = CacheCleaner::size(&cache).await;
+
+        cache.set(&key("c", "3"), &"three".to_owned(), LONG).await;
+
+        assert!(listed_only > 0);
+        assert_eq!(CacheCleaner::size(&cache).await, listed_only);
+    }
+
+    #[tokio::test]
+    async fn should_clear_nothing_when_no_namespace_is_listed() {
+        let cache = create_cache().await;
+        cache.set(&key("a", "1"), &"one".to_owned(), LONG).await;
+
+        assert_eq!(CacheCleaner::size(&cache).await, 0);
+        assert_eq!(CacheCleaner::clear(&cache).await, 0);
+
+        assert_eq!(cache.get(&key("a", "1")).await, Some("one".to_owned()));
     }
 
     #[tokio::test]

@@ -39,6 +39,9 @@ const ROW_TTL: Duration = Duration::from_hours(100 * 365 * 24);
 /// The namespace of versions, the provider in the key as in [`NAMESPACE`].
 const VERSION_NAMESPACE: &str = "content_version_metadata";
 
+/// Every namespace this cache stores in, for the app to let the user clear them.
+pub const NAMESPACES: [&str; 2] = [NAMESPACE, VERSION_NAMESPACE];
+
 /// [`ContentVersionMetadata`] as stored.
 #[derive(Serialize, Deserialize)]
 struct ContentVersionMetadataRecord {

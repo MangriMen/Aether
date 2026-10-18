@@ -17,6 +17,14 @@ impl MinecraftMetadataCacheNamespaces {
     }
 }
 
+/// Every namespace the Minecraft metadata is cached in, for the app to let the user clear them.
+pub fn minecraft_metadata_namespaces() -> [&'static str; 2] {
+    [
+        MinecraftMetadataCacheNamespaces::VersionManifest.as_str(),
+        MinecraftMetadataCacheNamespaces::LoaderManifest.as_str(),
+    ]
+}
+
 pub(crate) fn version_manifest_key() -> CacheKey<CachedValue<vanilla::VersionManifest>> {
     CacheKey::new(
         MinecraftMetadataCacheNamespaces::VersionManifest.as_str(),
