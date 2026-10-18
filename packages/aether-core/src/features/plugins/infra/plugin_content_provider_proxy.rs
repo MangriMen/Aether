@@ -4,9 +4,10 @@ use std::{
 };
 
 use aether_core_plugin_api::v0::{
-    ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
-    ContentVersionMetadataDto, GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto,
-    InstallPlanDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
+    ContentAuthorDto, ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto,
+    ContentVersionDto, ContentVersionMetadataDto, GetAuthorsParamsDto,
+    GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto, InstallPlanDto,
+    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
     PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
     ResolvedFileDto,
 };
@@ -16,8 +17,8 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentMetadata,
-        ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+        ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem,
+        ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
         ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallFileEntry, InstallPlan,
         InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
         PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams, ResolveTarget,
@@ -479,6 +480,45 @@ impl ContentProvider for PluginContentProviderProxy {
             .into_iter()
             .take(content_ids.len())
             .map(content_metadata_from_dto)
+            .map(|mut metadata| {
+                // A ref no handler can resolve would only fail every lookup of it.
+                if self.capability.handlers.get_authors.is_none() {
+                    metadata.author_ref = None;
+                }
+                metadata
+            })
+            .collect())
+    }
+
+    async fn get_authors(
+        &self,
+        author_refs: &[String],
+    ) -> Result<Vec<ContentAuthor>, InstanceError> {
+        let handler = self.handler(self.capability.handlers.get_authors.as_ref(), "get_authors")?;
+
+        let result_dto: Vec<ContentAuthorDto> = self
+            .call_plugin(
+                "get_authors",
+                handler,
+                GetAuthorsParamsDto {
+                    author_refs: author_refs.to_vec(),
+                },
+            )
+            .await?;
+        let asked: HashSet<&str> = author_refs.iter().map(String::as_str).collect();
+        Ok(self
+            .keep_answered(
+                handler,
+                result_dto,
+                |dto| asked.contains(dto.author_ref.as_str()),
+                |dto| !dto.name.trim().is_empty(),
+                |dto| &dto.author_ref,
+            )
+            .into_iter()
+            .map(|dto| ContentAuthor {
+                author_ref: dto.author_ref,
+                name: author_name(&dto.name),
+            })
             .collect())
     }
 
@@ -500,11 +540,12 @@ impl ContentProvider for PluginContentProviderProxy {
                 },
             )
             .await?;
+        let asked: HashSet<&str> = version_ids.iter().map(String::as_str).collect();
         Ok(self
             .keep_answered(
                 handler,
                 result_dto,
-                |dto| version_ids.contains(&dto.version_id),
+                |dto| asked.contains(dto.version_id.as_str()),
                 |dto| !dto.version_number.trim().is_empty(),
                 |dto| &dto.version_id,
             )
@@ -573,10 +614,21 @@ fn content_metadata_from_dto(dto: ContentMetadataDto) -> ContentMetadata {
         name: dto.name,
         description: dto.description,
         author: dto.author,
-        // A plugin names its authors itself: the contract has no lookup of them apart.
-        author_ref: None,
+        author_ref: dto.author_ref.filter(|author_ref| {
+            !author_ref.trim().is_empty() && author_ref.len() <= MAX_AUTHOR_REF_LEN
+        }),
         icon_url,
     }
+}
+
+/// The longest ref the host keeps and sends back to a plugin; it is an opaque token (a team or
+/// organization id), so a longer one is a plugin's mistake, not an author.
+const MAX_AUTHOR_REF_LEN: usize = 256;
+const MAX_AUTHOR_NAME_CHARS: usize = 128;
+
+/// An author's name is shown as one line, so it is trimmed and cut to a length that fits.
+fn author_name(name: &str) -> String {
+    name.trim().chars().take(MAX_AUTHOR_NAME_CHARS).collect()
 }
 
 /// An empty title is no title.

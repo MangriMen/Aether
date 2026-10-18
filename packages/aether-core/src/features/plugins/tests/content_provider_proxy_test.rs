@@ -5,12 +5,12 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
-    ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto, ContentTypeDto,
-    ContentVersionMetadataDto, FileHashDto, FileSideDto, GetContentsMetadataParamsDto,
-    GetVersionsMetadataParamsDto, InstallFileEntryDto, InstallPlanDto, InstallTargetDto,
-    InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto, OverrideSourceDto,
-    PackMetadataDto, PackSourceDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
-    ResolveTargetDto, ResolvedFileDto,
+    ContentAuthorDto, ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto,
+    ContentTypeDto, ContentVersionMetadataDto, FileHashDto, FileSideDto, GetAuthorsParamsDto,
+    GetContentsMetadataParamsDto, GetVersionsMetadataParamsDto, InstallFileEntryDto,
+    InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto,
+    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
+    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -59,7 +59,8 @@ const RESOLVE_ONLY_CAPABILITIES: &str = r#"{
             "resolveInstallPlan": "cf_resolve_install_plan",
             "resolvePackMetadata": "cf_resolve_pack_metadata",
             "getContentsMetadata": "cf_get_contents_metadata",
-            "getVersionsMetadata": "cf_get_versions_metadata"
+            "getVersionsMetadata": "cf_get_versions_metadata",
+            "getAuthors": "cf_get_authors"
         }
     }]
 }"#;
@@ -482,8 +483,156 @@ fn project_metadata(content_id: &str, icon_url: Option<&str>) -> ContentMetadata
         name: "Just Enough Items".into(),
         description: None,
         author: Some("mezz".into()),
+        author_ref: None,
         icon_url: icon_url.map(Into::into),
     }
+}
+
+fn author(author_ref: &str, name: &str) -> ContentAuthorDto {
+    ContentAuthorDto {
+        author_ref: author_ref.into(),
+        name: name.into(),
+    }
+}
+
+#[tokio::test]
+async fn should_call_the_authors_handler_the_file_names_when_naming_authors() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_authors",
+            encode(vec![author("team:abc", "Mezz Team")]),
+        )],
+    );
+
+    let authors = fixture
+        .proxy
+        .get_authors(&["team:abc".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        fixture.arguments_of_last_call::<GetAuthorsParamsDto>(),
+        GetAuthorsParamsDto {
+            author_refs: vec!["team:abc".into()]
+        }
+    );
+    assert_eq!(fixture.called(), ["cf_get_authors"]);
+    assert_eq!(authors.len(), 1);
+    assert_eq!(authors[0].author_ref, "team:abc");
+    assert_eq!(authors[0].name, "Mezz Team");
+}
+
+#[tokio::test]
+async fn should_keep_an_author_ref_when_describing_content_and_drop_a_blank_one() {
+    let mut with_ref = project_metadata("1", None);
+    with_ref.author_ref = Some("team:abc".into());
+    let mut blank_ref = project_metadata("2", None);
+    blank_ref.author_ref = Some("  ".into());
+    let mut long_ref = project_metadata("4", None);
+    long_ref.author_ref = Some("t".repeat(257));
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_contents_metadata",
+            encode(vec![
+                with_ref,
+                blank_ref,
+                project_metadata("3", None),
+                long_ref,
+            ]),
+        )],
+    );
+
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["1", "2", "3", "4"].map(str::to_owned))
+        .await
+        .unwrap();
+
+    assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
+    assert_eq!(projects[1].author_ref, None);
+    assert_eq!(projects[2].author_ref, None);
+    assert_eq!(projects[3].author_ref, None);
+}
+
+#[tokio::test]
+async fn should_trim_and_cut_the_name_of_an_author() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_authors",
+            encode(vec![
+                author("team:a", "  Mezz  "),
+                author("team:b", &"n".repeat(1000)),
+            ]),
+        )],
+    );
+
+    let authors = fixture
+        .proxy
+        .get_authors(&["team:a", "team:b"].map(str::to_owned))
+        .await
+        .unwrap();
+
+    assert_eq!(authors[0].name, "Mezz");
+    assert_eq!(authors[1].name.chars().count(), 128);
+}
+
+#[tokio::test]
+async fn should_drop_an_author_ref_when_the_plugin_has_no_authors_handler() {
+    let mut with_ref = project_metadata("1", None);
+    with_ref.author_ref = Some("team:abc".into());
+    let capabilities = RESOLVE_ONLY_CAPABILITIES.replace(
+        r#",
+            "getAuthors": "cf_get_authors""#,
+        "",
+    );
+    assert_ne!(capabilities, RESOLVE_ONLY_CAPABILITIES);
+    let fixture = Fixture::new(
+        &capabilities,
+        vec![("cf_get_contents_metadata", encode(vec![with_ref]))],
+    );
+
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["1".to_owned()])
+        .await
+        .unwrap();
+
+    assert_eq!(projects[0].author_ref, None);
+}
+
+#[tokio::test]
+async fn should_drop_authors_nobody_asked_about_repeated_or_unnamed_ones() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_authors",
+            encode(vec![
+                author("team:a", "First"),
+                author("team:a", "Again"),
+                author("team:stranger", "Stranger"),
+                author("  ", "Blank ref"),
+                author("team:b", "  "),
+                author("team:c", "Third"),
+            ]),
+        )],
+    );
+
+    let authors = fixture
+        .proxy
+        .get_authors(&["team:a", "team:b", "team:c"].map(str::to_owned))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        authors
+            .iter()
+            .map(|a| (a.author_ref.as_str(), a.name.as_str()))
+            .collect::<Vec<_>>(),
+        [("team:a", "First"), ("team:c", "Third")]
+    );
 }
 
 #[tokio::test]
@@ -704,6 +853,14 @@ async fn should_report_metadata_as_unsupported_when_the_provider_has_no_handler_
             .await
             .unwrap_err(),
         "get_versions_metadata",
+    );
+    assert_unsupported(
+        fixture
+            .proxy
+            .get_authors(&["team:abc".to_owned()])
+            .await
+            .unwrap_err(),
+        "get_authors",
     );
     assert!(fixture.called().is_empty());
 }

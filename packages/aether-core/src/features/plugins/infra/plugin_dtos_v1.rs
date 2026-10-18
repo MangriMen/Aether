@@ -70,6 +70,8 @@ pub struct ProviderHandlersV1 {
     pub get_contents_metadata: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub get_versions_metadata: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub get_authors: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,6 +198,7 @@ impl From<PluginCapabilitiesV1> for PluginCapabilities {
                         resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
                         get_contents_metadata: cp.handlers.get_contents_metadata,
                         get_versions_metadata: cp.handlers.get_versions_metadata,
+                        get_authors: cp.handlers.get_authors,
                     },
                 })
                 .collect(),
@@ -263,6 +266,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                             resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
                             get_contents_metadata: cp.handlers.get_contents_metadata,
                             get_versions_metadata: cp.handlers.get_versions_metadata,
+                            get_authors: cp.handlers.get_authors,
                         },
                     })
                     .collect(),
