@@ -94,7 +94,7 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 	reason: string,
 } } | { code: "PLUGIN_NOT_RUNNING"; payload: {
 	plugin_id: string,
-} } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
+} } | { code: "CACHES_BEING_CLEARED" } | { code: "PACK_INFO_NOT_FOUND" } | { code: "UPDATER_NOT_FOUND"; payload: {
 	modpack_id: string,
 } } | { code: "UPDATE_FAILED"; payload: {
 	modpack_id: string,

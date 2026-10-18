@@ -45,6 +45,7 @@
       "CAPABILITY_OPERATION_ERROR": "Ошибка выполнения функции компонента",
       "INSTANCE_STILL_INSTALLING": "Инстанс еще устанавливается",
       "INSTANCE_ALREADY_RUNNING": "Инстанс уже запущен",
+      "CACHES_BEING_CLEARED": "Идёт очистка кеша, повторите через мгновение",
       "PRELAUNCH_COMMAND_ERROR": "Ошибка команды перед запуском",
       "VALIDATION_ERROR": "Ошибка проверки файлов инстанса",
       "UNMANAGED_INSTANCE": "Действие недоступно для неуправляемого инстанса",
