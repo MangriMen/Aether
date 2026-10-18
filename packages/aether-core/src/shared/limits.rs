@@ -1,7 +1,10 @@
 //! Every size and budget limit of content installation and of the plugin sandbox, in one place.
 //!
 //! Built in the composition root (`build_container`); the plugin archive extractor has its own,
-//! `ZipPluginExtractorConstants`.
+//! `ZipPluginExtractorConstants`. The timeouts and retries of plugin calls, commands, downloads
+//! and HTTP requests are here too.
+
+use std::time::Duration;
 
 /// Limits on what installing content may bring in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +97,41 @@ impl Default for PluginSandboxLimits {
 /// through `read_instance_file` / `write_instance_file`: the plugin's buffer, the encoded
 /// message and the decoded one.
 pub const INSTANCE_FILE_MEMORY_COPIES: u64 = 3;
+
+/// Fallback execution timeout for a single plugin call (30 minutes).
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_mins(30);
+
+/// Wall-clock budget for one `run_command`. Generous, since the packwiz installer downloads a
+/// whole modpack within it: it stops a wedged child, not useful work.
+pub const COMMAND_TIMEOUT: Duration = Duration::from_mins(15);
+
+/// Total time budget for one attempt, every redirect hop and the body included. A stalled
+/// transfer is cut much earlier by the client's read timeout.
+pub const DOWNLOAD_TIMEOUT: Duration = Duration::from_mins(30);
+
+/// Time budget for one whole `download_to_cache`: every attempt, the waits between them and the
+/// wait for a download slot. Never more than a plugin call may take: Extism cannot stop a call
+/// while the host holds it, so a longer download would keep the call running past its timeout.
+pub const DOWNLOAD_BUDGET: Duration = DEFAULT_TIMEOUT;
+
+const _: () = assert!(
+    DOWNLOAD_BUDGET.as_nanos() <= DEFAULT_TIMEOUT.as_nanos(),
+    "a download must not outlast the plugin call it runs in"
+);
+
+/// Retries of transient failures (connection errors, 5xx, 429). Fewer than the application
+/// client's five: the plugin waits on this call for the whole time.
+pub const DOWNLOAD_MAX_RETRIES: u32 = 3;
+
+/// Total time budget for one `http_get`, including connect and body download.
+pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Time budget for establishing the connection alone.
+pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Longest a connection may stay silent mid-response. Only matters for calls whose total
+/// budget is longer than this, i.e. `download_to_cache`.
+pub const READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl PluginSandboxLimits {
     /// Refuses limits that contradict each other, rather than letting a plugin find out at run

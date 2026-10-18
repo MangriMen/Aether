@@ -45,19 +45,9 @@ use policy::{PinnedResolver, VettedHops};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
 // (`GrantPluginHostAccessUseCase`) is decided by the same rules its requests are held to.
 pub(crate) use crate::features::plugins::{is_blocked_ip, is_host_allowed};
-use crate::shared::limits::PluginSandboxLimits;
+use crate::shared::limits::{CONNECT_TIMEOUT, PluginSandboxLimits, READ_TIMEOUT, REQUEST_TIMEOUT};
 
 mod policy;
-
-/// Total time budget for one `http_get`, including connect and body download.
-pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// Time budget for establishing the connection alone.
-pub(crate) const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-
-/// Longest a connection may stay silent mid-response. Only matters for calls whose total
-/// budget is longer than this, i.e. `download_to_cache`.
-pub(crate) const READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The only headers `http_post_json` honours. Everything else is dropped, and
 /// `Content-Type` is always set by the host.

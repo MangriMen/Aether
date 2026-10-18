@@ -21,7 +21,7 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 use crate::{
     core::app::AetherContainer,
     features::java::{Java, JavaFeature},
-    shared::serializable_command::domain::SerializableCommand,
+    shared::{limits::COMMAND_TIMEOUT, serializable_command::domain::SerializableCommand},
 };
 
 use super::super::{
@@ -31,10 +31,6 @@ use super::super::{
     },
     PluginContext, block_on,
 };
-
-/// Wall-clock budget for one `run_command`. Generous, since the packwiz installer downloads a
-/// whole modpack within it: it stops a wedged child, not useful work.
-pub(crate) const COMMAND_TIMEOUT: Duration = Duration::from_mins(15);
 
 // ── Testable business logic ──
 
