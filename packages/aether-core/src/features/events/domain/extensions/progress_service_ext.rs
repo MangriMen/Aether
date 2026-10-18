@@ -22,6 +22,18 @@ pub trait ProgressServiceExt: ProgressService {
             debug!("Failed to send progress: {e}");
         }
     }
+
+    async fn add_progress_bytes_safe(&self, id: &ProgressBarId, bytes: u64) {
+        if let Err(e) = self.add_progress_bytes(id, bytes).await {
+            debug!("Failed to send progress: {e}");
+        }
+    }
+
+    async fn add_progress_bytes_total_safe(&self, id: &ProgressBarId, bytes: u64) {
+        if let Err(e) = self.add_progress_bytes_total(id, bytes).await {
+            debug!("Failed to send progress: {e}");
+        }
+    }
 }
 
 impl<T: ?Sized + ProgressService> ProgressServiceExt for T {}
