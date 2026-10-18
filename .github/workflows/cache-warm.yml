@@ -2,7 +2,7 @@ name: Cache warm
 
 # PRs can only restore caches saved on their own ref or on main, so main has to keep the shared caches
 # warm. CI no longer runs on push to main; this only rebuilds when the cached inputs change
-# (or weekly, or by hand) and runs no tests or lints.
+# (or by hand) and runs no tests or lints. Caches unused for 7 days are evicted, rerun by hand then.
 on:
   push:
     branches: [main]
@@ -12,9 +12,6 @@ on:
       - ".cargo/**"
       - "bun.lock"
       - ".github/workflows/cache-warm.yml"
-  schedule:
-    # caches unused for 7 days are evicted
-    - cron: "0 5 * * 1,4"
   workflow_dispatch:
 
 concurrency:
