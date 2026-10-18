@@ -12,8 +12,11 @@ export const useSettings = () => useQuery(settingsQueries.get);
 /** How much disk the launcher folders take, by what they hold. */
 export const useStorageUsage = () => useQuery(settingsQueries.storageUsage);
 
-/** How much each cache takes, and whether clearing it is refused now. */
+/** How much each cache takes. */
 export const useCacheUsage = () => useQuery(settingsQueries.cacheUsage);
+
+/** Whether clearing the caches is refused now: the app is busy with something that uses them. */
+export const useCacheBusy = () => useQuery(settingsQueries.cacheBusy);
 
 export const useMaxRam = () => useQuery(settingsQueries.maxRam);
 

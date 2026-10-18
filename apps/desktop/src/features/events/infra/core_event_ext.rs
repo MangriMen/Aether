@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use tauri_specta::Event;
 
 use crate::features::{
-    events::{infra::ProgressEventDto, infra::WarningEventDto},
+    events::infra::{CacheEventDto, ProgressEventDto, WarningEventDto},
     instance::infra::InstanceEventDto,
     plugins::infra::PluginEventDto,
     process::infra::ProcessEventDto,
@@ -22,6 +22,7 @@ impl CoreEventExt for CoreEvent {
             CoreEvent::Progress(e) => ProgressEventDto::from(e.clone()).emit(handle),
             CoreEvent::Plugin(e) => PluginEventDto::from(e.clone()).emit(handle),
             CoreEvent::Warning(e) => WarningEventDto::from(e.clone()).emit(handle),
+            CoreEvent::Cache(e) => CacheEventDto::from(e.clone()).emit(handle),
         }
     }
 }

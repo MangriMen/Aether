@@ -3,9 +3,12 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::{
-    features::settings::{
-        CacheUsage, CacheUsageEntry, ClearCacheOutcome,
-        app::ports::{ClearCacheUseCasePort, GetCacheUsageUseCasePort},
+    features::{
+        events::{CacheEvent, EventEmitterExt, SharedEventEmitter},
+        settings::{
+            CacheKind, CacheUsage, CacheUsageEntry, ClearCacheOutcome,
+            app::ports::{ClearCacheUseCasePort, GetCacheUsageUseCasePort, IsCacheBusyUseCasePort},
+        },
     },
     shared::housekeeping::{CacheCleaner, StorageActivity, clear_caches},
 };
@@ -13,31 +16,45 @@ use crate::{
 /// What the user sees of the caches and may empty: the size of each, and one button to empty
 /// them all — refused while the app is busy with something that uses them.
 pub struct CacheStorageUseCase {
-    cleaners: Vec<Arc<dyn CacheCleaner>>,
+    caches: Vec<(CacheKind, Arc<dyn CacheCleaner>)>,
     activity: Arc<dyn StorageActivity>,
+    event_emitter: SharedEventEmitter,
 }
 
 impl CacheStorageUseCase {
-    pub fn new(cleaners: Vec<Arc<dyn CacheCleaner>>, activity: Arc<dyn StorageActivity>) -> Self {
-        Self { cleaners, activity }
+    pub fn new(
+        caches: Vec<(CacheKind, Arc<dyn CacheCleaner>)>,
+        activity: Arc<dyn StorageActivity>,
+        event_emitter: SharedEventEmitter,
+    ) -> Self {
+        Self {
+            caches,
+            activity,
+            event_emitter,
+        }
     }
 }
 
 #[async_trait]
 impl GetCacheUsageUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> CacheUsage {
-        let mut entries = Vec::with_capacity(self.cleaners.len());
-        for cleaner in &self.cleaners {
-            entries.push(CacheUsageEntry {
-                kind: cleaner.kind(),
-                bytes: cleaner.size().await,
-            });
-        }
+        let entries =
+            futures::future::join_all(self.caches.iter().map(|(kind, cleaner)| async move {
+                CacheUsageEntry {
+                    kind: *kind,
+                    bytes: cleaner.size().await,
+                }
+            }))
+            .await;
 
-        CacheUsage {
-            entries,
-            busy: self.activity.try_pause().await.is_none(),
-        }
+        CacheUsage { entries }
+    }
+}
+
+#[async_trait]
+impl IsCacheBusyUseCasePort for CacheStorageUseCase {
+    async fn execute(&self) -> bool {
+        self.activity.try_pause().await.is_none()
     }
 }
 
@@ -46,19 +63,28 @@ impl ClearCacheUseCasePort for CacheStorageUseCase {
     async fn execute(&self) -> ClearCacheOutcome {
         // Held until the caches are empty: nothing starts using them meanwhile, and a second
         // clearing finds the app paused, so busy.
-        let Some(_pause) = self.activity.try_pause().await else {
+        let Some(pause) = self.activity.try_pause().await else {
             return ClearCacheOutcome::Busy;
         };
-        clear_caches(&self.cleaners).await;
+        clear_caches(self.caches.iter().map(|(_, cleaner)| cleaner)).await;
+        // Released before the event: whoever asks again whether the app is busy must not find
+        // this clearing in the way.
+        drop(pause);
+        self.event_emitter.emit_safe(CacheEvent::Changed).await;
         ClearCacheOutcome::Cleared
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use std::sync::{
+        Mutex,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+    };
 
-    use crate::shared::housekeeping::{ActivityPause, CacheKind};
+    use crate::features::events::{Event, EventEmitter, EventError};
+
+    use crate::shared::housekeeping::ActivityPause;
 
     use super::*;
 
@@ -68,10 +94,6 @@ mod tests {
     impl CacheCleaner for Cleaner {
         fn what(&self) -> &'static str {
             "test"
-        }
-
-        fn kind(&self) -> CacheKind {
-            CacheKind::Icons
         }
 
         async fn size(&self) -> u64 {
@@ -92,38 +114,58 @@ mod tests {
         }
     }
 
-    fn fixture(busy: bool) -> (Arc<Cleaner>, CacheStorageUseCase) {
+    #[derive(Default)]
+    struct Emitted(Mutex<Vec<Event>>);
+
+    #[async_trait]
+    impl EventEmitter<Event> for Emitted {
+        async fn emit(&self, event: Event) -> Result<(), EventError> {
+            self.0.lock().unwrap().push(event);
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    fn fixture(busy: bool) -> (Arc<Cleaner>, Arc<Emitted>, CacheStorageUseCase) {
         let cleaner = Arc::new(Cleaner(AtomicU64::new(42)));
+        let emitted = Arc::new(Emitted::default());
         let use_case = CacheStorageUseCase::new(
-            vec![cleaner.clone()],
+            vec![(CacheKind::Icons, cleaner.clone())],
             Arc::new(Activity(AtomicBool::new(busy))),
+            emitted.clone(),
         );
-        (cleaner, use_case)
+        (cleaner, emitted, use_case)
     }
 
     #[tokio::test]
     async fn should_empty_the_caches_when_nothing_is_busy() {
-        let (cleaner, use_case) = fixture(false);
+        let (cleaner, emitted, use_case) = fixture(false);
 
         let outcome = ClearCacheUseCasePort::execute(&use_case).await;
 
         assert_eq!(outcome, ClearCacheOutcome::Cleared);
         assert_eq!(cleaner.size().await, 0);
+        assert!(matches!(
+            emitted.0.lock().unwrap().as_slice(),
+            [Event::Cache(CacheEvent::Changed)]
+        ));
     }
 
     #[tokio::test]
     async fn should_refuse_and_keep_the_caches_when_the_app_is_busy() {
-        let (cleaner, use_case) = fixture(true);
+        let (cleaner, emitted, use_case) = fixture(true);
 
         let outcome = ClearCacheUseCasePort::execute(&use_case).await;
 
         assert_eq!(outcome, ClearCacheOutcome::Busy);
         assert_eq!(cleaner.size().await, 42);
+        assert!(emitted.0.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
-    async fn should_report_the_sizes_and_whether_clearing_is_refused_when_asked_for_usage() {
-        let (_, use_case) = fixture(true);
+    async fn should_report_the_sizes_when_asked_for_usage() {
+        let (_, _, use_case) = fixture(true);
 
         let usage = GetCacheUsageUseCasePort::execute(&use_case).await;
 
@@ -134,6 +176,11 @@ mod tests {
                 bytes: 42
             }]
         );
-        assert!(usage.busy);
+    }
+
+    #[tokio::test]
+    async fn should_report_whether_clearing_is_refused_when_asked_if_busy() {
+        assert!(IsCacheBusyUseCasePort::execute(&fixture(true).2).await);
+        assert!(!IsCacheBusyUseCasePort::execute(&fixture(false).2).await);
     }
 }

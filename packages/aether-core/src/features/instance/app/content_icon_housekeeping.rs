@@ -6,6 +6,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use futures::{StreamExt, future::join_all, stream};
 
 use crate::{
     features::instance::{
@@ -14,6 +15,9 @@ use crate::{
     },
     shared::housekeeping::Housekeeping,
 };
+
+/// How many instances' pack files are read at once at startup.
+const MAX_CONCURRENT_PACK_READS: usize = 8;
 
 /// Keeps the icons of the content installed in any instance, as its cached metadata names them,
 /// and removes the others.
@@ -46,13 +50,19 @@ impl ContentIconHousekeeping {
     /// The icon URLs of every content installed in any instance.
     async fn installed_icon_urls(&self) -> Result<HashSet<String>, InstanceError> {
         let mut ids: HashMap<ProviderId, Vec<String>> = HashMap::new();
-        for instance in self.instance_storage.list().await? {
-            for pack_file in self
-                .pack_storage
-                .get_pack_files(instance.id())
-                .await?
-                .into_values()
-            {
+        let instances = self.instance_storage.list().await?;
+        // Concurrent but bounded, in the order of the instances: the first failure in it is the
+        // one returned.
+        let reads: Vec<_> = instances
+            .iter()
+            .map(|instance| self.pack_storage.get_pack_files(instance.id()))
+            .collect();
+        let packs: Vec<_> = stream::iter(reads)
+            .buffered(MAX_CONCURRENT_PACK_READS)
+            .collect()
+            .await;
+        for pack in packs {
+            for pack_file in pack?.into_values() {
                 let Some(provider_id) = pack_file.update_provider_id else {
                     continue;
                 };
@@ -66,17 +76,15 @@ impl ContentIconHousekeeping {
             }
         }
 
-        let mut urls = HashSet::new();
-        for (provider_id, content_ids) in ids {
-            urls.extend(
-                self.metadata_cache
-                    .get_many(&provider_id, &content_ids)
-                    .await
-                    .into_values()
-                    .filter_map(|cached| cached.metadata.icon_url),
-            );
-        }
-        Ok(urls)
+        let cached = join_all(ids.iter().map(|(provider_id, content_ids)| {
+            self.metadata_cache.get_many(provider_id, content_ids)
+        }))
+        .await;
+        Ok(cached
+            .into_iter()
+            .flat_map(HashMap::into_values)
+            .filter_map(|cached| cached.metadata.icon_url)
+            .collect())
     }
 }
 

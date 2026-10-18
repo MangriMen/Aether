@@ -66,6 +66,7 @@ export const settingsCommands = {
   getMaxRam: settingsRawCommands.getMaxRam,
   clearCache: withIdempotency(settingsRawCommands.clearCache),
   getCacheUsage: settingsRawCommands.getCacheUsage,
+  isCacheBusy: settingsRawCommands.isCacheBusy,
   getStorageUsage: settingsRawCommands.getStorageUsage,
   getDefaultInstanceSettings: settingsRawCommands.getDefaultInstanceSettings,
   editDefaultInstanceSettings: withIdempotency(

@@ -3,16 +3,27 @@ use crate::features::{
     settings::{DefaultInstanceSettings, MemorySettings, Settings, SettingsError, WindowSettings},
 };
 
-/// How much each cache takes, and whether emptying them is refused now.
+/// What a cache holds, as the user tells them apart. A cache is given its kind where the app
+/// is put together, so a new cache needs no change to the housekeeping it shares.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CacheKind {
+    /// Names, authors, versions and the like: the rows of `universal_cache`.
+    Metadata,
+    /// Icons of content.
+    Icons,
+    /// Downloaded modpack archives.
+    ModpackArchives,
+}
+
+/// How much each cache takes.
 #[derive(Debug, PartialEq, Eq)]
 pub struct CacheUsage {
     pub entries: Vec<CacheUsageEntry>,
-    pub busy: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CacheUsageEntry {
-    pub kind: crate::shared::housekeeping::CacheKind,
+    pub kind: CacheKind,
     pub bytes: u64,
 }
 

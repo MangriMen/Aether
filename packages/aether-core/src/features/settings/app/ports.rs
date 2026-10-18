@@ -57,6 +57,12 @@ pub trait GetCacheUsageUseCasePort: Send + Sync {
 }
 
 #[async_trait]
+pub trait IsCacheBusyUseCasePort: Send + Sync {
+    /// Whether clearing is refused now. Cheap, unlike measuring the caches.
+    async fn execute(&self) -> bool;
+}
+
+#[async_trait]
 pub trait GetSettingsUseCasePort: Send + Sync {
     async fn execute(&self) -> Result<Settings, SettingsError>;
 }

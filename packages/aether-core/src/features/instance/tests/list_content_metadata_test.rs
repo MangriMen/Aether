@@ -15,7 +15,7 @@ use tokio::sync::{Semaphore, mpsc};
 
 use crate::{
     features::{
-        events::{Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
+        events::{CacheEvent, Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
         instance::{
             CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL, CachedContentIcon,
             CachedContentMetadata, CachedContentVersionMetadata, CapabilityMetadata,
@@ -541,12 +541,17 @@ impl Fixture {
             .collect()
     }
 
+    /// The next event of an instance, past the cache events that come with them.
     async fn next_event(&mut self) -> InstanceEvent {
-        let event = tokio::time::timeout(Duration::from_secs(5), self.events.recv())
-            .await
-            .expect("no event in time")
-            .expect("the emitter is gone");
-        event.try_into().expect("not an instance event")
+        loop {
+            let event = tokio::time::timeout(Duration::from_secs(5), self.events.recv())
+                .await
+                .expect("no event in time")
+                .expect("the emitter is gone");
+            if !matches!(event, Event::Cache(_)) {
+                return event.try_into().expect("not an instance event");
+            }
+        }
     }
 
     /// Let a refresh started by a list run to its end. The fakes never wait on anything but the
@@ -558,7 +563,9 @@ impl Fixture {
     }
 
     fn assert_no_event(&mut self) {
-        assert!(self.events.try_recv().is_err(), "unexpected event");
+        while let Ok(event) = self.events.try_recv() {
+            assert!(matches!(event, Event::Cache(_)), "unexpected event");
+        }
     }
 }
 
@@ -657,6 +664,23 @@ async fn should_ask_each_provider_once_then_cache_and_tell_the_ui_when_metadata_
     Fixture::settle().await;
     assert_eq!(modrinth.calls().len(), 1);
     fixture.assert_no_event();
+}
+
+#[tokio::test]
+async fn should_tell_that_the_caches_changed_when_the_metadata_arrived() {
+    let provider = Arc::new(FakeProvider::new(
+        "modrinth",
+        Answer::Items(vec![metadata("A", "Sodium")]),
+    ));
+    let mut fixture = Fixture::new(&[("a.jar", "modrinth", "A")], vec![provider]).await;
+
+    fixture.names().await;
+    fixture.next_event().await;
+
+    assert!(matches!(
+        fixture.events.try_recv(),
+        Ok(Event::Cache(CacheEvent::Changed))
+    ));
 }
 
 #[tokio::test]

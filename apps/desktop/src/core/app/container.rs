@@ -8,7 +8,7 @@ use aether_core::features::auth::infra::SqliteCredentialsStorage;
 use aether_core::features::events::ProgressServiceImpl;
 use aether_core::features::events::SharedEventEmitter;
 use aether_core::features::events::infra::InMemoryProgressBarStorage;
-use aether_core::features::events::{EventEmitterExt, PluginEvent};
+use aether_core::features::events::{CacheEvent, EventEmitterExt, PluginEvent};
 use aether_core::features::file_watcher::infra::NotifyFileWatcher;
 use aether_core::features::instance::infra::{
     EventEmittingInstanceStorage, FsContentFileService, FsContentIconCache, FsInstanceFileService,
@@ -34,6 +34,7 @@ use aether_core::features::plugins::{
     PluginRegistry,
 };
 use aether_core::features::process::infra::InMemoryProcessStorage;
+use aether_core::features::settings::CacheKind;
 use aether_core::features::settings::LocationInfo;
 use aether_core::features::settings::Settings;
 use aether_core::features::settings::SettingsStorage;
@@ -209,14 +210,24 @@ pub async fn build_container(
             content_icon_cache.clone(),
         )),
     ];
-    spawn_housekeeping(housekeeping);
+    let on_housekeeping_removed: Arc<dyn Fn() + Send + Sync> = {
+        let event_emitter = event_emitter.clone();
+        Arc::new(move || {
+            let event_emitter = event_emitter.clone();
+            tokio::spawn(async move { event_emitter.emit_safe(CacheEvent::Changed).await });
+        })
+    };
+    spawn_housekeeping(housekeeping, &on_housekeeping_removed);
     // What the user may empty by hand: everything the app can fetch again.
-    let cache_cleaners: Vec<Arc<dyn CacheCleaner>> = vec![
-        sqlite_cache,
-        fs_content_icon_cache,
-        Arc::new(MrpackCacheCleaner::new(mrpack_dir(
-            &location_info.cache_dir(),
-        ))),
+    let cache_cleaners: Vec<(CacheKind, Arc<dyn CacheCleaner>)> = vec![
+        (CacheKind::Metadata, sqlite_cache),
+        (CacheKind::Icons, fs_content_icon_cache),
+        (
+            CacheKind::ModpackArchives,
+            Arc::new(MrpackCacheCleaner::new(mrpack_dir(
+                &location_info.cache_dir(),
+            ))),
+        ),
     ];
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));

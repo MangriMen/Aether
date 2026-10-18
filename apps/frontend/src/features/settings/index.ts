@@ -2,6 +2,7 @@ export * from './api/appSettingsCache';
 export * from './api/appSettingsQueries';
 export * from './api/settingsCache';
 export * from './api/settingsQueries';
+export * from './api/useCacheEventListener';
 export * from './lib/useDeveloperModeCounter';
 export * from './lib/useSettingsSearchParams';
 export * from './model/appSettings';

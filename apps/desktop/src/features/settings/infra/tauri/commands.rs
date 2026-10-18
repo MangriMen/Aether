@@ -109,6 +109,12 @@ async fn get_cache_usage(container: State<'_, ContainerState>) -> FrontendResult
 
 #[tauri::command]
 #[specta::specta]
+async fn is_cache_busy(container: State<'_, ContainerState>) -> FrontendResult<bool> {
+    Ok(container.0.clone().is_cache_busy_use_case().execute().await)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn get_max_ram() -> FrontendResult<RamSettingsDto> {
     Ok(RamSettingsDto {
         total_memory: aether_core::shared::system::infra::get_total_memory(),

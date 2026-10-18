@@ -1,3 +1,4 @@
+pub(crate) mod cache_event;
 mod event;
 pub(crate) mod event_error;
 pub(crate) mod instance;
@@ -8,6 +9,7 @@ pub(crate) mod progress_bar;
 pub(crate) mod progress_bar_error;
 pub(crate) mod warning;
 
+pub use cache_event::*;
 pub use event::*;
 pub use event_error::*;
 pub use instance::*;

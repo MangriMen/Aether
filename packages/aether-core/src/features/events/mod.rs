@@ -14,7 +14,7 @@ pub use app::stream_utils::{ProgressConfigWithMessage, try_for_each_concurrent_w
 
 // Domain models — explicitly re-exported for cross-feature use
 pub use domain::{
-    Event, EventEmitterExt, EventError, InstanceEvent, InstanceEventType, PluginEvent,
+    CacheEvent, Event, EventEmitterExt, EventError, InstanceEvent, InstanceEventType, PluginEvent,
     ProcessEvent, ProcessEventType, ProgressBar, ProgressBarId, ProgressBarStorageError,
     ProgressBarStorageExt, ProgressConfig, ProgressEvent, ProgressEventType, ProgressServiceExt,
     WarningEvent,

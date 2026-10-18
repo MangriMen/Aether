@@ -153,7 +153,10 @@ pub struct StorageParams {
     pub metadata_storage: Arc<dyn crate::features::minecraft::MetadataStorage>,
     pub assets_storage: Arc<dyn AssetsStorage>,
     /// The caches the user may empty by hand.
-    pub cache_cleaners: Vec<Arc<dyn crate::shared::housekeeping::CacheCleaner>>,
+    pub cache_cleaners: Vec<(
+        crate::features::settings::CacheKind,
+        Arc<dyn crate::shared::housekeeping::CacheCleaner>,
+    )>,
 }
 
 pub struct MinecraftParams {
@@ -235,6 +238,7 @@ impl AetherContainer {
                 instance_locks: instance_locks.clone(),
                 progress_bars: params.progress_bar_storage.clone(),
             }),
+            params.event_emitter.clone(),
         ));
 
         Arc::new(Self {
@@ -487,6 +491,9 @@ impl SettingsFeature for AetherContainer {
     fn get_cache_usage_use_case(
         &self,
     ) -> Arc<dyn crate::features::settings::GetCacheUsageUseCasePort> {
+        self.cache_storage.clone()
+    }
+    fn is_cache_busy_use_case(&self) -> Arc<dyn crate::features::settings::IsCacheBusyUseCasePort> {
         self.cache_storage.clone()
     }
     fn get_settings_use_case(&self) -> Arc<dyn GetSettingsUseCasePort> {
