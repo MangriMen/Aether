@@ -4,7 +4,11 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 
 use crate::features::{
-    events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
+    events::{
+        Event, EventEmitter, EventError, ProgressBarId, ProgressBarStorage, ProgressEventType,
+        ProgressService, ProgressServiceImpl, infra::InMemoryProgressBarStorage,
+        with_progress_parent,
+    },
     instance::{
         InstallInstanceUseCase, Instance, InstanceBuilder, InstanceError, InstanceId,
         InstanceInstallStage, InstanceStorage, PackInfo, ProviderId,
@@ -201,6 +205,84 @@ async fn should_become_installed_when_the_pack_info_was_not_created_for_a_pack()
         run_install(Some(pack_info()), InstanceInstallStage::NotInstalled, false).await;
     assert!(ok);
     assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
+}
+
+struct NoEmitter;
+
+#[async_trait]
+impl EventEmitter<Event> for NoEmitter {
+    async fn emit(&self, _event: Event) -> Result<(), EventError> {
+        Ok(())
+    }
+
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+}
+
+/// Records the parent of the game's bar, every time the game installs.
+struct ParentOfBar(
+    Arc<InMemoryProgressBarStorage>,
+    Mutex<Vec<Option<uuid::Uuid>>>,
+);
+
+#[async_trait]
+impl MinecraftInstallService for ParentOfBar {
+    async fn execute(
+        &self,
+        _params: InstallMinecraftParams,
+        loading_bar: Option<&ProgressBarId>,
+        _force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        let bar = self.0.get(loading_bar.unwrap().id).await.unwrap().clone();
+        self.1.lock().unwrap().push(bar.parent_id);
+        Ok(())
+    }
+}
+
+/// Installing the game of a pack's new instance reports under the pack's bar; on its own, at
+/// the top.
+#[tokio::test]
+async fn should_put_the_bar_of_the_game_under_the_bar_in_scope_when_there_is_one() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        "inst".to_owned(),
+        "1.20.1".to_owned(),
+        ModLoader::Vanilla,
+    )
+    .build();
+    let id = instance.id().clone();
+    let bars = Arc::new(InMemoryProgressBarStorage::default());
+    let progress = Arc::new(ProgressServiceImpl::new(Arc::new(NoEmitter), bars.clone()));
+    let minecraft = Arc::new(ParentOfBar(bars, Mutex::default()));
+    let use_case = InstallInstanceUseCase::new(
+        Arc::new(MemStorage {
+            instances: Mutex::new(vec![instance]),
+        }),
+        minecraft.clone(),
+        progress.clone(),
+        location_info,
+    );
+    let pack = progress
+        .init_progress(
+            ProgressEventType::PluginDownload {
+                plugin_name: "pack".to_owned(),
+            },
+            1.0,
+            String::new(),
+        )
+        .await
+        .unwrap();
+
+    with_progress_parent(Some(&pack), use_case.execute(id.clone(), false))
+        .await
+        .unwrap();
+    use_case.execute(id, false).await.unwrap();
+
+    assert_eq!(*minecraft.1.lock().unwrap(), [Some(pack.id), None]);
 }
 
 #[tokio::test]

@@ -11,7 +11,9 @@ use tempfile::TempDir;
 
 use crate::{
     features::{
-        events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
+        events::{
+            EventError, ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt,
+        },
         instance::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
@@ -216,10 +218,27 @@ pub(super) struct RecordingCreateInstance {
     pub(super) location_info: Arc<LocationInfo>,
     pub(super) created: Mutex<Vec<NewInstance>>,
     pub(super) created_for_pack: Mutex<Vec<NewInstance>>,
+    /// When set, a bar is started on it the way installing the game does.
+    pub(super) game_progress: Mutex<Option<Arc<dyn ProgressService>>>,
 }
 
 impl RecordingCreateInstance {
     pub(super) async fn create_dir(&self) {
+        let game_progress = self.game_progress.lock().unwrap().clone();
+        if let Some(progress) = game_progress {
+            let bar = progress
+                .init_progress_in_scope_safe(
+                    ProgressEventType::MinecraftDownload {
+                        instance_id: InstanceId::try_from(NEW_INSTANCE_ID).unwrap(),
+                        instance_name: NEW_INSTANCE_ID.into(),
+                    },
+                    100.0,
+                    "Downloading Minecraft".into(),
+                )
+                .await;
+            drop(bar);
+        }
+
         tokio::fs::create_dir_all(
             self.location_info
                 .instance_dir(&InstanceId::try_from(NEW_INSTANCE_ID).unwrap()),
@@ -342,14 +361,18 @@ pub(super) type RecordedBar = (f64, Vec<(f64, Option<String>)>);
 pub(super) struct RecordingProgress {
     /// `(total, steps)`: each step is `(increment, message)`.
     pub(super) bar: Mutex<Option<RecordedBar>>,
+    /// The id of the bar.
+    pub(super) bar_id: Mutex<Option<uuid::Uuid>>,
+    /// The bars started under it, as `(parent, event)`.
+    pub(super) children: Mutex<Vec<(uuid::Uuid, ProgressEventType)>>,
     /// The caption (`pack_name`) of the started bar.
     pub(super) caption: Mutex<Option<String>>,
     /// A step message to stall on: reaching it signals `stalled` and never returns.
     pub(super) stall_on: Mutex<Option<String>>,
     pub(super) stalled: tokio::sync::Notify,
-    /// Every count of bytes reported as downloaded.
+    /// Every count of bytes reported as downloaded, to any of the bars.
     pub(super) bytes: Mutex<Vec<u64>>,
-    /// The bytes the bar was told to expect, if it was.
+    /// The bytes the bars were told to expect together, if they were.
     pub(super) bytes_total: Mutex<Option<u64>>,
 }
 
@@ -375,6 +398,22 @@ impl ProgressService for RecordingProgress {
             *self.caption.lock().unwrap() = Some(pack_name);
         }
         *self.bar.lock().unwrap() = Some((total, Vec::new()));
+        let id = uuid::Uuid::new_v4();
+        *self.bar_id.lock().unwrap() = Some(id);
+        Ok(ProgressBarId {
+            id,
+            progress_storage: None,
+            event_emitter: None,
+        })
+    }
+    async fn init_child_progress(
+        &self,
+        parent_id: uuid::Uuid,
+        event_type: ProgressEventType,
+        _total: f64,
+        _message: String,
+    ) -> Result<ProgressBarId, EventError> {
+        self.children.lock().unwrap().push((parent_id, event_type));
         Ok(ProgressBarId {
             id: uuid::Uuid::new_v4(),
             progress_storage: None,
@@ -392,10 +431,14 @@ impl ProgressService for RecordingProgress {
     }
     async fn emit_progress(
         &self,
-        _progress_bar_id: &ProgressBarId,
+        progress_bar_id: &ProgressBarId,
         increment_frac: f64,
         message: Option<&str>,
     ) -> Result<(), EventError> {
+        // Only the steps of the plan's bar; the files' bars move with them.
+        if *self.bar_id.lock().unwrap() != Some(progress_bar_id.id) {
+            return Ok(());
+        }
         self.bar
             .lock()
             .unwrap()
@@ -620,6 +663,8 @@ pub(super) struct Fixture {
     /// The pack the existing instance was installed from.
     pub(super) pack_info: Option<PackInfo>,
     pub(super) progress: Arc<RecordingProgress>,
+    /// A progress service used in place of `progress`.
+    pub(super) progress_service: Option<Arc<dyn ProgressService>>,
     pub(super) remove: Arc<RecordingRemove>,
     pub(super) metadata_cache: Arc<MemoryMetadataCache>,
     /// Limits on the overrides as `(files, bytes)`, in place of the executor's own.
@@ -651,6 +696,7 @@ impl Fixture {
                 location_info: location_info.clone(),
                 created: Mutex::default(),
                 created_for_pack: Mutex::default(),
+                game_progress: Mutex::default(),
             }),
             location_info,
             registry: Arc::default(),
@@ -660,6 +706,7 @@ impl Fixture {
             selected: None,
             pack_info: None,
             progress: Arc::default(),
+            progress_service: None,
             remove: Arc::default(),
             metadata_cache: Arc::default(),
             override_limits: None,
@@ -716,7 +763,9 @@ impl Fixture {
             self.content_file_service(),
             self.pack_storage.clone(),
             self.location_info.clone(),
-            self.progress.clone(),
+            self.progress_service
+                .clone()
+                .unwrap_or_else(|| self.progress.clone() as Arc<dyn ProgressService>),
             self.remove.clone(),
             self.metadata_cache.clone(),
             self.limits(),

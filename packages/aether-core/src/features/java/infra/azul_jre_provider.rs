@@ -184,9 +184,10 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
 #[async_trait]
 impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS, RC> {
     async fn install(&self, version: u32, install_dir: &Path) -> Result<PathBuf, JavaDomainError> {
+        // Under the bar of what needs Java, when that is an install of a pack.
         let progress_bar_id = self
             .progress_service
-            .init_progress_safe(
+            .init_progress_in_scope_safe(
                 ProgressEventType::JavaDownload { version },
                 100.0,
                 "Downloading java version".to_string(),
