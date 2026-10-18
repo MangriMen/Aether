@@ -19,7 +19,7 @@ export const debounce: ScheduleCallback = (callback, wait) => {
     });
   }
 
-  let timeoutId: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let timeoutFn: (() => void) | undefined;
   const clear = () => clearTimeout(timeoutId);
 

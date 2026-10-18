@@ -14,7 +14,7 @@ import { AppLayout } from './AppLayout';
 export type RootErrorBoundaryProps = ParentProps;
 
 export const RootErrorBoundary: Component<RootErrorBoundaryProps> = (props) => {
-  let timer = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   const showWindowFallback = () => {
     setFallbackAttributes();

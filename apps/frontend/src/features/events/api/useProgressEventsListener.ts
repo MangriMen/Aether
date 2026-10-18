@@ -12,7 +12,7 @@ import { useProgressStore } from '../model/progressStore';
 export const useProgressEventsListener = () => {
   const [, setProgressStore] = useProgressStore();
 
-  const activeTimers = new Map<string, number>();
+  const activeTimers = new Map<string, ReturnType<typeof setTimeout>>();
   // Bars updated by live events while the initial snapshot is loading;
   // the snapshot must not overwrite them. Not needed once it is applied.
   let liveBarIds: Set<string> | undefined = new Set<string>();

@@ -20,7 +20,7 @@ export const AppInitializeError: Component<AppInitializeErrorProps> = (
 
   const [errorHasBeenCopied, setErrorHasBeenCopied] = createSignal(false);
 
-  let errorHasBeenCopiedTimer = 0;
+  let errorHasBeenCopiedTimer: ReturnType<typeof setTimeout> | undefined;
 
   const handleCopyError = () => {
     if (!local.error || typeof navigator === 'undefined') {
