@@ -11,10 +11,52 @@ pub(crate) const PLUGIN_CACHE_MOUNT: &str = "/cache";
 /// Where a plugin sees the instance tree.
 pub(crate) const PLUGIN_INSTANCES_MOUNT: &str = "/instances";
 
-/// The mounts the core gives every plugin. A folder of the user's must not take their place or
-/// sit over or under them: the core's guarantees about them (`/instances` read-only, `/cache`
-/// the plugin's own) hold only while nothing else answers for those names.
-pub(super) const RESERVED_PLUGIN_MOUNTS: &[&str] = &[PLUGIN_CACHE_MOUNT, PLUGIN_INSTANCES_MOUNT];
+/// A directory the core mounts into every plugin's sandbox: the one description of those mounts,
+/// from which the path resolution, the Extism map, the read-only marking and the names a folder
+/// of the user's must stay clear of are all derived.
+///
+/// A folder of the user's must not take their place or sit over or under them: the core's
+/// guarantees about them (`/instances` read-only, `/cache` the plugin's own) hold only while
+/// nothing else answers for those names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CoreMount {
+    /// The plugin's own scratch space, read-write.
+    Cache,
+    /// The tree of all instances, read-only to the sandbox.
+    Instances,
+}
+
+impl CoreMount {
+    pub(crate) const ALL: [Self; 2] = [Self::Cache, Self::Instances];
+
+    /// Where the plugin sees the mount.
+    pub(crate) fn plugin_root(self) -> &'static str {
+        match self {
+            Self::Cache => PLUGIN_CACHE_MOUNT,
+            Self::Instances => PLUGIN_INSTANCES_MOUNT,
+        }
+    }
+
+    /// The host folder behind the mount, for `plugin_id`.
+    pub(crate) fn host_root(self, location_info: &LocationInfo, plugin_id: &str) -> PathBuf {
+        match self {
+            Self::Cache => location_info.plugin_cache_dir(plugin_id),
+            Self::Instances => location_info.instances_dir(),
+        }
+    }
+
+    /// Whether the WASM sandbox may only read the mount.
+    ///
+    /// Every write into an instance goes through `write_instance_file`, the single checked path,
+    /// which also guards `.metadata`. `/cache` stays read-write: it is the plugin's own scratch
+    /// space.
+    pub(crate) fn is_read_only(self) -> bool {
+        match self {
+            Self::Cache => false,
+            Self::Instances => true,
+        }
+    }
+}
 
 /// A folder of the user's that a plugin may open, and the path it sees it under.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,7 +85,7 @@ pub enum AllowedPathRejection {
     PluginNotNormalized,
     /// The plugin path is `/` itself, which would hide every other mount.
     PluginIsRoot,
-    /// The plugin path is, contains or lies inside one of [`RESERVED_PLUGIN_MOUNTS`].
+    /// The plugin path is, contains or lies inside the plugin root of a [`CoreMount`].
     PluginReserved,
     /// The host folder is, contains or lies inside one of [`core_folders`].
     HostOverlapsCore,
@@ -174,8 +216,9 @@ fn validate_plugin_path(plugin: &str) -> Result<(), AllowedPathRejection> {
         return Err(AllowedPathRejection::PluginNotNormalized);
     }
 
-    if RESERVED_PLUGIN_MOUNTS
-        .iter()
+    if CoreMount::ALL
+        .into_iter()
+        .map(CoreMount::plugin_root)
         .any(|mount| is_within(plugin, mount) || is_within(mount, plugin))
     {
         return Err(AllowedPathRejection::PluginReserved);
@@ -195,16 +238,18 @@ fn validate_plugin_path(plugin: &str) -> Result<(), AllowedPathRejection> {
 ///   class path and launches.
 /// - `data/` holds the app database, and the settings folder the settings and the credentials.
 pub(crate) fn core_folders(location_info: &LocationInfo, plugin_id: &str) -> Vec<PathBuf> {
-    vec![
-        // Within `cache/`, but the one folder the plugin is given itself.
-        location_info.plugin_cache_dir(plugin_id),
-        location_info.cache_dir(),
-        location_info.instances_dir(),
-        location_info.plugins_dir(),
-        location_info.metadata_dir(),
-        location_info.data_dir(),
-        location_info.settings_dir().to_path_buf(),
-    ]
+    // The plugin's cache is within `cache/`, but the one folder there it is given itself.
+    CoreMount::ALL
+        .into_iter()
+        .map(|mount| mount.host_root(location_info, plugin_id))
+        .chain([
+            location_info.cache_dir(),
+            location_info.plugins_dir(),
+            location_info.metadata_dir(),
+            location_info.data_dir(),
+            location_info.settings_dir().to_path_buf(),
+        ])
+        .collect()
 }
 
 /// The folders of a plugin's settings that its instance is built with, and those it is not,

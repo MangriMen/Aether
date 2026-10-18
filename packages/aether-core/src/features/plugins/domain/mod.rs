@@ -13,9 +13,9 @@ pub use models::{
     ProviderPluginPreview, ProviderReleaseInfo, ProviderUpdateInfo, RuntimeConfig,
 };
 pub(crate) use models::{
-    AsCapabilityMetadata, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,
-    PLUGIN_INSTANCES_MOUNT, core_folders, effective_allowed_hosts, is_blocked_ip,
-    is_filesystem_root, is_host_allowed, partition_mountable, to_wasi_path,
+    AsCapabilityMetadata, CoreMount, GrantableHost, PLUGIN_API_VERSION, PLUGIN_CACHE_MOUNT,
+    core_folders, effective_allowed_hosts, is_blocked_ip, is_filesystem_root, is_host_allowed,
+    partition_mountable, to_wasi_path,
 };
 pub use plugin_handle::PluginHandle;
 pub use plugin_instance::PluginInstance;

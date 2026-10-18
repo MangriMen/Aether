@@ -11,8 +11,8 @@ use crate::{
     core::app::AetherContainer,
     features::{
         plugins::{
-            FolderMounts, LoadConfig, ManifestError, PathMapping, PluginError, PluginHandle,
-            PluginInternalEvent, PluginLoader, PluginManifest, PluginSettings,
+            CoreMount, FolderMounts, LoadConfig, ManifestError, PathMapping, PluginError,
+            PluginHandle, PluginInternalEvent, PluginLoader, PluginManifest, PluginSettings,
             PluginVerificationStorage, core_folders, partition_mountable,
         },
         settings::LocationInfo,
@@ -30,9 +30,7 @@ use super::{
     models::{ExtismPluginInstance, get_default_cache_config},
 };
 
-use super::super::plugin_utils::{
-    get_default_allowed_paths, hash_failed, is_read_only_plugin_mount, to_extism_mount_key,
-};
+use super::super::plugin_utils::{get_default_allowed_paths, hash_failed, to_extism_mount_key};
 
 pub struct ExtismPluginLoader {
     location_info: Arc<LocationInfo>,
@@ -75,7 +73,7 @@ impl ExtismPluginLoader {
     async fn ensure_default_allowed_paths(
         &self,
         plugin_id: &str,
-    ) -> Result<HashMap<String, PathBuf>, PluginError> {
+    ) -> Result<HashMap<String, CoreMount>, PluginError> {
         let default_allowed_paths = get_default_allowed_paths(&self.location_info, plugin_id);
 
         for host in default_allowed_paths.keys() {
@@ -353,7 +351,7 @@ fn unlinked_host_function(message: &str) -> Option<&str> {
 fn resolve_allowed_paths(
     manifest: &PluginManifest,
     settings: Option<&PluginSettings>,
-    default_allowed_paths: Option<&HashMap<String, PathBuf>>,
+    default_allowed_paths: Option<&HashMap<String, CoreMount>>,
     core_folders: &[PathBuf],
 ) -> Vec<PathMapping> {
     if !manifest.runtime.allowed_paths.is_empty() {
@@ -368,11 +366,11 @@ fn resolve_allowed_paths(
 
     if let Some(default_allowed_paths) = default_allowed_paths {
         // `/instances` gets Extism's `ro:` prefix, so WASI can only read it. The map itself
-        // stays unprefixed: directories are created and `#`-paths resolved through it.
-        allowed_paths.extend(default_allowed_paths.iter().map(|(host, plugin)| {
+        // stays unprefixed: directories are created and host files named back through it.
+        allowed_paths.extend(default_allowed_paths.iter().map(|(host, mount)| {
             PathMapping(
-                to_extism_mount_key(host, is_read_only_plugin_mount(plugin)),
-                plugin.clone(),
+                to_extism_mount_key(host, mount.is_read_only()),
+                PathBuf::from(mount.plugin_root()),
             )
         }));
     }

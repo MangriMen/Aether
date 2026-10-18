@@ -11,7 +11,7 @@ pub(crate) use crate::features::plugins::{
 
 use crate::{
     features::{
-        plugins::{PLUGIN_INSTANCES_MOUNT, PluginError},
+        plugins::{CoreMount, PluginError},
         settings::LocationInfo,
     },
     shared::serializable_command::domain::SerializableCommand,
@@ -78,20 +78,6 @@ pub(crate) fn from_wasi_path(input: &str) -> String {
 /// manifest, never in the host↔plugin resolution of this module.
 pub(crate) const READ_ONLY_MOUNT_PREFIX: &str = "ro:";
 
-/// The plugin-side mount points the WASM sandbox may only read.
-///
-/// Every write into an instance goes through `write_instance_file`, the single checked path,
-/// which also guards `.metadata`. `/cache` stays read-write: it is the plugin's own scratch space.
-const READ_ONLY_PLUGIN_MOUNTS: &[&str] = &[PLUGIN_INSTANCES_MOUNT];
-
-/// Whether `plugin_path` is one of the core's mount points the sandbox may only read. Matches
-/// the mount root itself, not a prefix.
-pub(crate) fn is_read_only_plugin_mount(plugin_path: &Path) -> bool {
-    READ_ONLY_PLUGIN_MOUNTS
-        .iter()
-        .any(|mount| plugin_path == Path::new(mount))
-}
-
 /// The host-side key to hand Extism for one mount, read-only ones carrying [`READ_ONLY_MOUNT_PREFIX`].
 ///
 /// Separate from [`get_default_allowed_paths`]: the prefix in that map would end up in the
@@ -104,48 +90,25 @@ pub(crate) fn to_extism_mount_key(host: &str, read_only: bool) -> String {
     }
 }
 
-/// A directory the core mounts into every plugin's sandbox.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum PluginMount {
-    /// The plugin's own scratch space, read-write.
-    Cache,
-    /// The tree of all instances, read-only to the sandbox.
-    Instances,
-}
-
-impl PluginMount {
-    const ALL: [Self; 2] = [Self::Cache, Self::Instances];
-
-    fn plugin_root(self) -> &'static str {
-        match self {
-            Self::Cache => PLUGIN_CACHE_MOUNT,
-            Self::Instances => PLUGIN_INSTANCES_MOUNT,
-        }
-    }
-
-    fn host_root(self, location_info: &LocationInfo, plugin_id: &str) -> PathBuf {
-        match self {
-            Self::Cache => location_info.plugin_cache_dir(plugin_id),
-            Self::Instances => location_info.instances_dir(),
-        }
-    }
-}
-
 /// The mounts a plugin path may resolve into. Each caller names the narrowest set it needs: a
 /// file the core will copy into the asset store has no business in `/instances`.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct MountSet(&'static [PluginMount]);
+pub(crate) struct MountSet(&'static [CoreMount]);
 
 impl MountSet {
-    pub(crate) const CACHE: Self = Self(&[PluginMount::Cache]);
-    pub(crate) const ALL: Self = Self(&PluginMount::ALL);
+    pub(crate) const CACHE: Self = Self(&[CoreMount::Cache]);
+    pub(crate) const ALL: Self = Self(&CoreMount::ALL);
 }
 
+/// Every [`CoreMount`] of `plugin_id`, keyed by its host folder as Extism keys its map. The keys
+/// are plain host paths, never prefixed: directories are created and host files named back
+/// through them; the Extism key comes from [`to_extism_mount_key`] with
+/// [`CoreMount::is_read_only`].
 pub(crate) fn get_default_allowed_paths(
     location_info: &LocationInfo,
     plugin_id: &str,
-) -> HashMap<String, PathBuf> {
-    PluginMount::ALL
+) -> HashMap<String, CoreMount> {
+    CoreMount::ALL
         .into_iter()
         .map(|mount| {
             (
@@ -153,7 +116,7 @@ pub(crate) fn get_default_allowed_paths(
                     .host_root(location_info, plugin_id)
                     .to_string_lossy()
                     .into_owned(),
-                PathBuf::from(mount.plugin_root()),
+                mount,
             )
         })
         .collect()
@@ -225,7 +188,7 @@ pub(crate) fn host_path_to_plugin(
             let base = crate::shared::io::infra::canonicalize(Path::new(&host_dir)).ok()?;
             let rest = host_path.strip_prefix(&base).ok()?;
 
-            let mut plugin_path = mount.to_string_lossy().into_owned();
+            let mut plugin_path = mount.plugin_root().to_owned();
             for component in rest.components() {
                 plugin_path.push('/');
                 plugin_path.push_str(&component.as_os_str().to_string_lossy());
@@ -380,7 +343,7 @@ fn resolve_required_current_dir(
         location_info,
     )?);
 
-    let mount_roots: Vec<PathBuf> = PluginMount::ALL
+    let mount_roots: Vec<PathBuf> = CoreMount::ALL
         .into_iter()
         .map(|mount| mount.host_root(location_info, id))
         .collect();
@@ -555,18 +518,12 @@ mod tests {
         let instances_host = location_info.instances_dir().to_string_lossy().to_string();
 
         assert_eq!(
-            to_extism_mount_key(
-                &instances_host,
-                is_read_only_plugin_mount(&allowed[&instances_host])
-            ),
+            to_extism_mount_key(&instances_host, allowed[&instances_host].is_read_only()),
             format!("ro:{instances_host}"),
             "the instance tree must reach the sandbox read-only"
         );
         assert_eq!(
-            to_extism_mount_key(
-                &cache_host,
-                is_read_only_plugin_mount(&allowed[&cache_host])
-            ),
+            to_extism_mount_key(&cache_host, allowed[&cache_host].is_read_only()),
             cache_host,
             "the plugin cache stays read-write: it is the plugin's own scratch space"
         );
