@@ -262,6 +262,9 @@
   },
   "events": {
     "cancelled": "Отменено",
+    "clearFinished": "Очистить завершённые",
+    "completedChildren": "Завершено: {{count}}",
+    "gameInstalling": "Установка файлов игры",
     "installFailed": "Не удалось выполнить установку",
     "installing": "Установка {{name}}",
     "javaDownloading": "Загрузка Java {{version}}",

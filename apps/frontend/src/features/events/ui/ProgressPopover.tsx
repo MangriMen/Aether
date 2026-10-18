@@ -1,15 +1,16 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
 import IconOpenInNew from '~icons/mdi/open-in-new';
-import { For, splitProps } from 'solid-js';
+import { createMemo, For, Show, splitProps } from 'solid-js';
 
 import { showDialog } from '@/shared/dialogs';
 import { useTranslation } from '@/shared/i18n';
-import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
+import { Button, CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
+import { clearFinishedProgress } from '../model/progressStore';
 import { ProgressCard } from './ProgressCard';
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
 
@@ -24,19 +25,30 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
 
   const handleOpenDetails = () => showDialog('progress', ProgressDetailsDialog);
 
+  const hasFinished = createMemo(() =>
+    local.payloads().some((p) => p.status.type !== 'running'),
+  );
+
   return (
     <div class={cn('gap-1 flex flex-col', local.class)} {...others}>
       <div class='gap-2 px-2 flex items-center justify-between'>
         <span class='text-lg font-medium'>{t('progress.ongoingTasks')}</span>
-        <CombinedTooltip
-          label={t('progress.seeDetails')}
-          as={IconButton}
-          class='self-end'
-          variant='ghost'
-          size='sm'
-          icon={IconOpenInNew}
-          onClick={handleOpenDetails}
-        />
+        <div class='gap-1 flex items-center'>
+          <Show when={hasFinished()}>
+            <Button variant='ghost' size='sm' onClick={clearFinishedProgress}>
+              {t('events.clearFinished')}
+            </Button>
+          </Show>
+          <CombinedTooltip
+            label={t('progress.seeDetails')}
+            as={IconButton}
+            class='self-end'
+            variant='ghost'
+            size='sm'
+            icon={IconOpenInNew}
+            onClick={handleOpenDetails}
+          />
+        </div>
       </div>
       <div class='max-h-61 gap-3 px-2 flex flex-col overflow-y-auto'>
         <For each={local.payloads()}>

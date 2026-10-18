@@ -15,7 +15,32 @@ const base: ProgressEvent = {
   mirrorOf: null,
   bytesDone: 40 * 1024 * 1024,
   bytesTotal: 100 * 1024 * 1024,
-  speed: 5 * 1024 * 1024,
+  speed: 3 * 1024 * 1024,
+};
+
+const unknownSize: ProgressEvent = {
+  ...base,
+  fraction: 0,
+  bytesDone: null,
+  bytesTotal: null,
+  speed: null,
+};
+
+const failed: ProgressEvent = {
+  ...base,
+  status: { type: 'failed', message: 'Connection lost' },
+};
+
+const cancelled: ProgressEvent = { ...base, status: { type: 'cancelled' } };
+
+const mirror: ProgressEvent = { ...base, mirrorOf: 'shared-bar' };
+
+const done: ProgressEvent = {
+  ...base,
+  fraction: 1,
+  status: { type: 'done' },
+  bytesDone: base.bytesTotal,
+  speed: null,
 };
 
 const meta: Meta<typeof ProgressCard> = {
@@ -35,31 +60,30 @@ type Story = StoryObj<typeof meta>;
 
 export const WithBytesAndSpeed: Story = { args: { payload: base } };
 
-export const UnknownSize: Story = {
-  args: {
-    payload: {
-      ...base,
-      fraction: 0,
-      bytesDone: null,
-      bytesTotal: null,
-      speed: null,
-    },
-  },
+export const UnknownSize: Story = { args: { payload: unknownSize } };
+
+export const Failed: Story = { args: { payload: failed } };
+
+export const Cancelled: Story = { args: { payload: cancelled } };
+
+export const Mirror: Story = { args: { payload: mirror } };
+
+export const Done: Story = { args: { payload: done } };
+
+export const SmallWithBytesAndSpeed: Story = {
+  args: { payload: base, size: 'sm' },
 };
 
-export const Failed: Story = {
-  args: {
-    payload: {
-      ...base,
-      status: { type: 'failed', message: 'Connection lost' },
-    },
-  },
+export const SmallUnknownSize: Story = {
+  args: { payload: unknownSize, size: 'sm' },
 };
 
-export const Cancelled: Story = {
-  args: { payload: { ...base, status: { type: 'cancelled' } } },
+export const SmallFailed: Story = { args: { payload: failed, size: 'sm' } };
+
+export const SmallCancelled: Story = {
+  args: { payload: cancelled, size: 'sm' },
 };
 
-export const Mirror: Story = {
-  args: { payload: { ...base, mirrorOf: 'shared-bar' } },
-};
+export const SmallMirror: Story = { args: { payload: mirror, size: 'sm' } };
+
+export const SmallDone: Story = { args: { payload: done, size: 'sm' } };

@@ -1,10 +1,19 @@
 const UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte'] as const;
 
+interface FormatBytesOptions {
+  /** Fixed number of fraction digits (also for bytes), so values do not jump. */
+  fractionDigits?: number;
+}
+
 /**
  * A size in bytes as people read it, in the language of the interface:
  * `0 B`, `1.5 MB` — `1,5 МБ` in Russian. Steps of 1024, as file managers do.
  */
-export const formatBytes = (bytes: number, locale?: string): string => {
+export const formatBytes = (
+  bytes: number,
+  locale?: string,
+  options?: FormatBytesOptions,
+): string => {
   let value = Math.max(0, bytes);
   let unit = 0;
 
@@ -17,7 +26,12 @@ export const formatBytes = (bytes: number, locale?: string): string => {
     style: 'unit',
     unit: UNITS[unit],
     unitDisplay: 'short',
-    maximumFractionDigits: unit === 0 || value >= 100 ? 0 : 1,
+    ...(options?.fractionDigits === undefined
+      ? { maximumFractionDigits: unit === 0 || value >= 100 ? 0 : 1 }
+      : {
+          minimumFractionDigits: options.fractionDigits,
+          maximumFractionDigits: options.fractionDigits,
+        }),
   }).format(value);
 };
 

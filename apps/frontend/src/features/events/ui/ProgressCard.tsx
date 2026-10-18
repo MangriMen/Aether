@@ -5,6 +5,7 @@ import { createMemo, Show, splitProps } from 'solid-js';
 import { formatBytes } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip, Progress } from '@/shared/ui-kit';
+import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
@@ -12,10 +13,12 @@ import { formatProgressBytes } from '../model/progressBytes';
 
 export type ProgressCardProps = ComponentProps<'div'> & {
   payload: ProgressEvent;
+  /** `sm` is a tight single-row variant for nested bars. */
+  size?: 'default' | 'sm';
 };
 
 export const ProgressCard: Component<ProgressCardProps> = (props) => {
-  const [local, others] = splitProps(props, ['payload', 'class']);
+  const [local, others] = splitProps(props, ['payload', 'size', 'class']);
 
   const [{ t, locale }] = useTranslation();
 
@@ -38,12 +41,14 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
       case 'file_download':
         return local.payload.event.file_name;
       case 'minecraft_download':
+        return t('events.gameInstalling');
       case 'instance_update':
       case 'zip_extract':
         return local.payload.event.instance_name;
       case 'pack_download':
-      case 'pack_file_download':
         return t('events.installing', { name: local.payload.event.pack_name });
+      case 'pack_file_download':
+        return local.payload.event.pack_name;
       case 'plugin_download':
         return `[Plugin] ${local.payload.event.plugin_name}`;
       case 'launcher_update':
@@ -94,37 +99,76 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
   const bytesStr = createMemo(() =>
     formatProgressBytes(local.payload, {
       formatSize: (bytes) => formatBytes(bytes, locale()),
+      // A fixed fraction keeps the speed from jumping between "3 MB/s" and "3.1 MB/s".
       formatSpeed: (speed) =>
-        t('events.perSecond', { size: formatBytes(speed, locale()) }) ?? '',
+        t('events.perSecond', {
+          size: formatBytes(speed, locale(), { fractionDigits: 1 }),
+        }) ?? '',
     }),
   );
 
+  const isSmall = () => local.size === 'sm';
+
+  // Compact cards only spend a line on what needs attention.
+  const showMessage = createMemo(
+    () =>
+      !isSmall() ||
+      isError() ||
+      local.payload.status.type === 'cancelled' ||
+      local.payload.mirrorOf !== null,
+  );
+
   return (
-    <div class='gap-2 flex flex-col' {...others}>
-      <div class='gap-4 flex items-end justify-between'>
+    <div
+      class={cn('flex flex-col', isSmall() ? 'gap-1' : 'gap-2', local.class)}
+      {...others}
+    >
+      <div class='gap-4 flex items-center justify-between'>
         <CombinedTooltip
           label={title() ?? ''}
           as='span'
-          class='font-bold truncate'
+          class={cn('truncate', isSmall() ? 'text-sm' : 'font-bold')}
         >
           {title()}
         </CombinedTooltip>
-        <span class='text-muted-foreground gap-2 flex shrink-0 tabular-nums'>
-          <Show when={bytesStr()}>
-            <span class='text-sm'>{bytesStr()}</span>
+        <span
+          class={cn(
+            'text-muted-foreground gap-2 flex shrink-0 items-center tabular-nums',
+            { 'text-xs': isSmall() },
+          )}
+        >
+          <Show when={isSmall() && bytesStr()}>
+            <span>{bytesStr()}</span>
           </Show>
           {percentStr()}
         </span>
       </div>
 
       <Progress
+        class={cn({ '[&>div]:h-1': isSmall() })}
         variant={isError() ? 'error' : undefined}
         value={clampedValue()}
         minValue={0}
         maxValue={1}
       />
 
-      <span class='text-sm text-muted-foreground truncate'>{message()}</span>
+      <Show when={showMessage() || (!isSmall() && bytesStr())}>
+        <div class='gap-4 flex items-center justify-between'>
+          <span
+            class={cn('text-sm min-w-0 truncate', {
+              'text-destructive': local.payload.status.type === 'failed',
+              'text-muted-foreground': local.payload.status.type !== 'failed',
+            })}
+          >
+            <Show when={showMessage()}>{message()}</Show>
+          </span>
+          <Show when={!isSmall() && bytesStr()}>
+            <span class='text-sm text-muted-foreground shrink-0 tabular-nums'>
+              {bytesStr()}
+            </span>
+          </Show>
+        </div>
+      </Show>
     </div>
   );
 };

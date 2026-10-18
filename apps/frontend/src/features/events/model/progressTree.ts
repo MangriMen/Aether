@@ -46,3 +46,42 @@ export const findFailedDescendant = (
     (p) => ids.has(p.progressBarId) && p.status.type === 'failed',
   );
 };
+
+/** Done and cancelled bars are finished; failed ones must stay visible. */
+const isFinishedChild = (p: ProgressEvent): boolean =>
+  p.status.type === 'done' || p.status.type === 'cancelled';
+
+/**
+ * Splits the children of a node: `active` (running first, then the rest,
+ * stable otherwise) and `finished` (done or cancelled), in original order.
+ */
+export const splitChildren = (
+  children: ProgressEvent[],
+): { active: ProgressEvent[]; finished: ProgressEvent[] } => {
+  const running: ProgressEvent[] = [];
+  const rest: ProgressEvent[] = [];
+  const finished: ProgressEvent[] = [];
+
+  for (const child of children) {
+    if (isFinishedChild(child)) {
+      finished.push(child);
+    } else if (child.status.type === 'running') {
+      running.push(child);
+    } else {
+      rest.push(child);
+    }
+  }
+
+  return { active: [...running, ...rest], finished };
+};
+
+/** Roots that are not running by their own status. */
+export const getFinishedRoots = (payloads: ProgressEvent[]): ProgressEvent[] =>
+  getRoots(payloads).filter((p) => p.status.type !== 'running');
+
+/** Ids of every finished root together with all its descendants. */
+export const getFinishedIds = (payloads: ProgressEvent[]): string[] =>
+  getFinishedRoots(payloads).flatMap((root) => [
+    root.progressBarId,
+    ...getDescendantIds(payloads, root.progressBarId),
+  ]);

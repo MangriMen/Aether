@@ -1,17 +1,22 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { DialogRootProps } from '@kobalte/core/dialog';
 
-import { createMemo, type ValidComponent } from 'solid-js';
+import { createMemo, Show, type ValidComponent } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui-kit';
 
-import { useProgressStore } from '../model/progressStore';
+import {
+  clearFinishedProgress,
+  useProgressStore,
+} from '../model/progressStore';
+import { getFinishedRoots } from '../model/progressTree';
 import { ProgressDetails } from './ProgressDetails';
 
 export type ProgressDetailsDialogProps = DialogRootProps;
@@ -27,6 +32,10 @@ export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
     Object.values(progressStore.payloads),
   );
 
+  const hasFinished = createMemo(
+    () => getFinishedRoots(progressValues()).length > 0,
+  );
+
   return (
     <Dialog {...props}>
       <DialogContent
@@ -37,6 +46,16 @@ export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
       >
         <DialogHeader>
           <DialogTitle>{t('progress.dialogTitle')}</DialogTitle>
+          <Show when={hasFinished()}>
+            <Button
+              class='self-start'
+              variant='ghost'
+              size='sm'
+              onClick={clearFinishedProgress}
+            >
+              {t('events.clearFinished')}
+            </Button>
+          </Show>
         </DialogHeader>
         <ProgressDetails payloads={progressValues} />
       </DialogContent>

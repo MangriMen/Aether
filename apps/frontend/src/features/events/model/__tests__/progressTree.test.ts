@@ -7,7 +7,10 @@ import {
   findFailedDescendant,
   getChildren,
   getDescendantIds,
+  getFinishedIds,
+  getFinishedRoots,
   getRoots,
+  splitChildren,
 } from '../progressTree';
 
 const make = (
@@ -55,5 +58,43 @@ describe('progress tree', () => {
 
   it('collects all descendants', () => {
     expect(getDescendantIds(payloads, 'root').sort()).toEqual(['a', 'a1', 'b']);
+  });
+});
+
+describe('finished bars', () => {
+  const st = (type: ProgressEvent['status']['type']) =>
+    (type === 'failed'
+      ? { type, message: 'x' }
+      : { type }) as ProgressEvent['status'];
+
+  it('puts running children first and moves finished ones aside', () => {
+    const list = [
+      make('a', 'p', { status: st('done') }),
+      make('b', 'p', { status: st('failed') }),
+      make('c', 'p'),
+      make('d', 'p', { status: st('cancelled') }),
+      make('e', 'p'),
+    ];
+
+    const { active, finished } = splitChildren(list);
+
+    expect(active.map((p) => p.progressBarId)).toEqual(['c', 'e', 'b']);
+    expect(finished.map((p) => p.progressBarId)).toEqual(['a', 'd']);
+  });
+
+  it('collects finished roots with their subtrees only', () => {
+    const list = [
+      make('r1', null, { status: st('done') }),
+      make('c1', 'r1'),
+      make('r2', null),
+      make('c2', 'r2', { status: st('done') }),
+      make('r3', null, { status: st('failed') }),
+    ];
+
+    expect(getFinishedRoots(list).map((p) => p.progressBarId)).toEqual([
+      'r1',
+      'r3',
+    ]);
+    expect(getFinishedIds(list)).toEqual(['r1', 'c1', 'r3']);
   });
 });

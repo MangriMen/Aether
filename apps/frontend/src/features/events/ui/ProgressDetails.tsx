@@ -1,5 +1,6 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
+import IconCheckCircle from '~icons/mdi/check-circle';
 import IconChevronDown from '~icons/mdi/chevron-down';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 
@@ -17,6 +18,7 @@ import {
   findFailedDescendant,
   getChildren,
   getRoots,
+  splitChildren,
 } from '../model/progressTree';
 import { ProgressCard } from './ProgressCard';
 
@@ -28,7 +30,20 @@ export type ProgressDetailsProps = ComponentProps<'div'> & {
 type ProgressNodeProps = {
   payload: ProgressEvent;
   payloads: Accessor<ProgressEvent[]>;
+  /** Nested bars are compact. */
+  size?: 'default' | 'sm';
+  /** Shown inside the "Completed" group: a check mark marks a leaf. */
+  finished?: boolean;
 };
+
+/** The column of the chevron; leaves keep it empty so siblings line up. */
+const TOGGLE_COLUMN = 'flex h-6 w-6 shrink-0 items-center justify-center';
+
+const Chevron: Component<{ isOpen: boolean }> = (props) => (
+  <IconChevronDown
+    class={cn('transition-transform', { '-rotate-90': !props.isOpen })}
+  />
+);
 
 const ProgressNode: Component<ProgressNodeProps> = (props) => {
   const [{ t }] = useTranslation();
@@ -38,6 +53,7 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   const children = createMemo(() =>
     getChildren(props.payloads(), props.payload.progressBarId),
   );
+  const split = createMemo(() => splitChildren(children()));
   const mirrors = createMemo(() =>
     countMirrors(props.payloads(), props.payload.progressBarId),
   );
@@ -50,8 +66,8 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   });
 
   const card = () => (
-    <div class='gap-1 flex flex-col'>
-      <ProgressCard payload={props.payload} />
+    <div class='min-w-0 gap-1 flex flex-1 flex-col'>
+      <ProgressCard payload={props.payload} size={props.size} />
       <Show when={mirrors() > 0}>
         <span class='text-sm text-muted-foreground'>
           {t('events.neededFor', { count: mirrors() })}
@@ -61,38 +77,97 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   );
 
   return (
-    <Show when={children().length > 0} fallback={card()}>
+    <Show
+      when={children().length > 0}
+      fallback={
+        <div class='gap-2 flex items-start'>
+          <span class={cn(TOGGLE_COLUMN, 'text-success')}>
+            <Show when={props.finished}>
+              <IconCheckCircle class='size-4' />
+            </Show>
+          </span>
+          {card()}
+        </div>
+      }
+    >
       <Collapsible
         class='gap-2 flex flex-col'
         open={isOpen()}
         onOpenChange={setIsOpen}
       >
         <div class='gap-2 flex items-start'>
-          <CollapsibleTrigger class='mt-0.5 shrink-0'>
-            <IconChevronDown
-              class={cn('transition-transform', {
-                '-rotate-90': !isOpen(),
-              })}
-            />
+          <CollapsibleTrigger class={TOGGLE_COLUMN}>
+            <Chevron isOpen={isOpen()} />
           </CollapsibleTrigger>
-          <div class='min-w-0 flex-1'>{card()}</div>
+          {card()}
         </div>
         <Show when={!isOpen() && failedMessage()}>
-          <span class='text-sm text-destructive pl-6 truncate'>
+          <span class='text-sm text-destructive pl-8 truncate'>
             {failedMessage()}
           </span>
         </Show>
         <CollapsibleContent>
-          <div class='gap-3 pl-6 flex flex-col'>
-            <For each={children()}>
+          <div class='gap-2 pl-8 flex flex-col'>
+            <For each={split().active}>
               {(child) => (
-                <ProgressNode payload={child} payloads={props.payloads} />
+                <ProgressNode
+                  payload={child}
+                  payloads={props.payloads}
+                  size='sm'
+                />
               )}
             </For>
+            <Show when={split().finished.length > 0}>
+              <FinishedGroup
+                finished={split().finished}
+                payloads={props.payloads}
+              />
+            </Show>
           </div>
         </CollapsibleContent>
       </Collapsible>
     </Show>
+  );
+};
+
+type FinishedGroupProps = {
+  finished: ProgressEvent[];
+  payloads: Accessor<ProgressEvent[]>;
+};
+
+/** Done and cancelled children, collapsed so they do not crowd the live ones. */
+const FinishedGroup: Component<FinishedGroupProps> = (props) => {
+  const [{ t }] = useTranslation();
+
+  const [isOpen, setIsOpen] = createSignal(false);
+
+  return (
+    <Collapsible
+      class='gap-2 flex flex-col'
+      open={isOpen()}
+      onOpenChange={setIsOpen}
+    >
+      <CollapsibleTrigger class='gap-2 text-sm text-muted-foreground flex items-center'>
+        <span class={TOGGLE_COLUMN}>
+          <Chevron isOpen={isOpen()} />
+        </span>
+        {t('events.completedChildren', { count: props.finished.length })}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div class='gap-2 pl-8 flex flex-col opacity-70'>
+          <For each={props.finished}>
+            {(child) => (
+              <ProgressNode
+                payload={child}
+                payloads={props.payloads}
+                size='sm'
+                finished
+              />
+            )}
+          </For>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
