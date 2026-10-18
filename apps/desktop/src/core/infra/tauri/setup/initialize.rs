@@ -20,7 +20,8 @@ use super::{
 
 fn migration_error_message(error: &MigrateError) -> String {
     match error {
-        MigrateError::VersionMissing(_) => "The database was created by a newer version of              Aether and cannot be opened by this one. Update Aether and try again."
+        MigrateError::VersionMissing(_) => "The database was created by a newer version of Aether and cannot be opened by this one. 
+             Update Aether and try again."
             .to_owned(),
         other => format!("Failed to update the database: {other}"),
     }
