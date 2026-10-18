@@ -93,4 +93,12 @@ pub struct ProviderHandlersDto {
     /// Optional function describing a pack without resolving its files: the preview before
     /// installing and the check for updates. Takes `PackSourceDto`, returns `PackMetadataDto`.
     pub resolve_pack_metadata: Option<String>,
+    /// Optional function describing projects to show installed content by (name, icon, author).
+    /// Takes a list of project ids, returns a list of `ContentMetadataDto`. Without it the
+    /// provider's content is shown by file alone.
+    pub get_contents_metadata: Option<String>,
+    /// Optional function giving the version number of installed files. Takes a list of version
+    /// ids, returns a list of `ContentVersionMetadataDto`. Without it the files are shown
+    /// without a version.
+    pub get_versions_metadata: Option<String>,
 }

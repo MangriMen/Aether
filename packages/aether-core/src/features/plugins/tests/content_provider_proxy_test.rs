@@ -5,10 +5,11 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use aether_core_plugin_api::v0::{
-    ContentCompatibilityResultDto, ContentSourceDto, ContentTypeDto, FileHashDto, FileSideDto,
-    InstallFileEntryDto, InstallPlanDto, InstallTargetDto, InstanceGameDto, ModLoaderDto,
-    NewInstanceDto, OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
-    ResolveFileParamsDto, ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
+    ContentCompatibilityResultDto, ContentMetadataDto, ContentSourceDto, ContentTypeDto,
+    ContentVersionMetadataDto, FileHashDto, FileSideDto, InstallFileEntryDto, InstallPlanDto,
+    InstallTargetDto, InstanceGameDto, ModLoaderDto, NewInstanceDto, OverrideLocationDto,
+    OverrideSourceDto, PackMetadataDto, PackSourceDto, ResolveFileParamsDto,
+    ResolveInstallPlanParamsDto, ResolveTargetDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
@@ -55,7 +56,9 @@ const RESOLVE_ONLY_CAPABILITIES: &str = r#"{
             "getContent": "cf_get_content",
             "resolveFile": "cf_resolve_file",
             "resolveInstallPlan": "cf_resolve_install_plan",
-            "resolvePackMetadata": "cf_resolve_pack_metadata"
+            "resolvePackMetadata": "cf_resolve_pack_metadata",
+            "getContentsMetadata": "cf_get_contents_metadata",
+            "getVersionsMetadata": "cf_get_versions_metadata"
         }
     }]
 }"#;
@@ -469,6 +472,135 @@ async fn should_call_the_pack_metadata_handler_the_file_names_when_resolving_pac
     assert_eq!(metadata.version_id.as_deref(), Some("5000000"));
     assert_eq!(metadata.mod_loader, ModLoader::NeoForge);
     assert_eq!(metadata.file_count, Some(400));
+}
+
+fn project_metadata(content_id: &str, icon_url: Option<&str>) -> ContentMetadataDto {
+    ContentMetadataDto {
+        content_id: content_id.into(),
+        slug: "jei".into(),
+        name: "Just Enough Items".into(),
+        description: None,
+        author: Some("mezz".into()),
+        icon_url: icon_url.map(Into::into),
+    }
+}
+
+#[tokio::test]
+async fn should_call_the_metadata_handlers_the_file_names_when_describing_content() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![
+            (
+                "cf_get_contents_metadata",
+                encode(vec![project_metadata(
+                    "238222",
+                    Some("https://media.forgecdn.net/jei.png"),
+                )]),
+            ),
+            (
+                "cf_get_versions_metadata",
+                encode(vec![ContentVersionMetadataDto {
+                    version_id: "5000000".into(),
+                    version_number: "19.21.0".into(),
+                    name: Some(String::new()),
+                }]),
+            ),
+        ],
+    );
+
+    let projects = fixture
+        .proxy
+        .get_contents_metadata(&["238222".to_owned()])
+        .await
+        .unwrap();
+    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["238222"]);
+    assert_eq!(projects[0].name, "Just Enough Items");
+    assert_eq!(projects[0].author.as_deref(), Some("mezz"));
+    assert_eq!(
+        projects[0].icon_url.as_deref(),
+        Some("https://media.forgecdn.net/jei.png")
+    );
+
+    let versions = fixture
+        .proxy
+        .get_versions_metadata(&["5000000".to_owned()])
+        .await
+        .unwrap();
+    assert_eq!(fixture.arguments_of_last_call::<Vec<String>>(), ["5000000"]);
+    assert_eq!(versions[0].version_number, "19.21.0");
+    assert_eq!(versions[0].name, None, "an empty title is no title");
+    assert_eq!(
+        fixture.called(),
+        ["cf_get_contents_metadata", "cf_get_versions_metadata"]
+    );
+}
+
+#[tokio::test]
+async fn should_drop_an_icon_when_it_is_not_a_web_address() {
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![(
+            "cf_get_contents_metadata",
+            encode(vec![
+                project_metadata("1", Some("file:///C:/Users/me/secret.png")),
+                project_metadata("2", Some("/cache/icon.png")),
+                project_metadata("3", Some("http://example.com/icon.png")),
+            ]),
+        )],
+    );
+
+    let projects = fixture.proxy.get_contents_metadata(&[]).await.unwrap();
+
+    assert_eq!(projects[0].icon_url, None);
+    assert_eq!(projects[1].icon_url, None);
+    assert_eq!(
+        projects[2].icon_url.as_deref(),
+        Some("http://example.com/icon.png")
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_an_answer_when_a_described_project_has_no_name() {
+    let mut nameless = project_metadata("1", None);
+    nameless.name.clear();
+    let fixture = Fixture::new(
+        RESOLVE_ONLY_CAPABILITIES,
+        vec![("cf_get_contents_metadata", encode(vec![nameless]))],
+    );
+
+    assert_invalid_answer(fixture.proxy.get_contents_metadata(&["1".to_owned()]).await);
+}
+
+#[tokio::test]
+async fn should_report_metadata_as_unsupported_when_the_provider_has_no_handler_for_it() {
+    let fixture = Fixture::new(
+        r#"{
+            "contentProviders": [{
+                "id": "curseforge",
+                "name": "CurseForge",
+                "handlers": { "search": "cf_search", "getContent": "cf_get_content" }
+            }]
+        }"#,
+        vec![],
+    );
+
+    assert_unsupported(
+        fixture
+            .proxy
+            .get_contents_metadata(&["238222".to_owned()])
+            .await
+            .unwrap_err(),
+        "get_contents_metadata",
+    );
+    assert_unsupported(
+        fixture
+            .proxy
+            .get_versions_metadata(&["5000000".to_owned()])
+            .await
+            .unwrap_err(),
+        "get_versions_metadata",
+    );
+    assert!(fixture.called().is_empty());
 }
 
 #[tokio::test]

@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use aether_core_plugin_api::v0::{
-    ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto, InstallPlanDto,
-    OverrideLocationDto, OverrideSourceDto, PackMetadataDto, PackSourceDto,
-    PluginCheckCompatibilityParamsDto, ResolveFileParamsDto, ResolveInstallPlanParamsDto,
-    ResolvedFileDto,
+    ContentMetadataDto, ContentSearchParamsDto, ContentSearchResultDto, ContentVersionDto,
+    ContentVersionMetadataDto, InstallPlanDto, OverrideLocationDto, OverrideSourceDto,
+    PackMetadataDto, PackSourceDto, PluginCheckCompatibilityParamsDto, ResolveFileParamsDto,
+    ResolveInstallPlanParamsDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism_convert::Msgpack;
@@ -12,11 +12,12 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentProvider,
-        ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
-        ContentVersion, InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceError,
-        InstanceId, OverrideLocation, OverrideSource, PackMetadata, PackSource, ProviderId,
-        ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+        ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem, ContentMetadata,
+        ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+        ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallFileEntry, InstallPlan,
+        InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
+        PackMetadata, PackSource, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+        ResolvedFile,
     },
     plugins::{
         PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
@@ -86,6 +87,32 @@ impl PluginContentProviderProxy {
                 self.plugin_id
             ),
         }
+    }
+
+    /// A project needs an id and a name to be shown by; an icon is taken only as a web address,
+    /// which the host fetches itself (a file path or any other scheme is dropped, so the plugin
+    /// cannot point the host at a file of the user's).
+    fn content_metadata_from_dto(
+        &self,
+        handler_name: &str,
+        dto: ContentMetadataDto,
+    ) -> Result<ContentMetadata, InstanceError> {
+        if dto.content_id.is_empty() || dto.name.is_empty() {
+            return Err(self.invalid_answer(handler_name, "a project without an id or name"));
+        }
+
+        let icon_url = dto.icon_url.filter(|icon_url| {
+            url::Url::parse(icon_url).is_ok_and(|url| matches!(url.scheme(), "https" | "http"))
+        });
+
+        Ok(ContentMetadata {
+            content_id: dto.content_id,
+            slug: dto.slug,
+            name: dto.name,
+            description: dto.description,
+            author: dto.author,
+            icon_url,
+        })
     }
 
     fn install_plan_from_dto(
@@ -404,6 +431,51 @@ impl ContentProvider for PluginContentProviderProxy {
             .call_plugin("resolve_pack_metadata", handler, source)
             .await?;
         Ok(result_dto.into())
+    }
+
+    async fn get_contents_metadata(
+        &self,
+        content_ids: &[String],
+    ) -> Result<Vec<ContentMetadata>, InstanceError> {
+        let handler = self.handler(
+            self.capability.handlers.get_contents_metadata.as_ref(),
+            "get_contents_metadata",
+        )?;
+
+        let result_dto: Vec<ContentMetadataDto> = self
+            .call_plugin("get_contents_metadata", handler, content_ids.to_vec())
+            .await?;
+        result_dto
+            .into_iter()
+            .map(|dto| self.content_metadata_from_dto(handler, dto))
+            .collect()
+    }
+
+    async fn get_versions_metadata(
+        &self,
+        version_ids: &[String],
+    ) -> Result<Vec<ContentVersionMetadata>, InstanceError> {
+        let handler = self.handler(
+            self.capability.handlers.get_versions_metadata.as_ref(),
+            "get_versions_metadata",
+        )?;
+
+        let result_dto: Vec<ContentVersionMetadataDto> = self
+            .call_plugin("get_versions_metadata", handler, version_ids.to_vec())
+            .await?;
+        result_dto
+            .into_iter()
+            .map(|dto| {
+                if dto.version_id.is_empty() || dto.version_number.is_empty() {
+                    return Err(self.invalid_answer(handler, "a version without an id or number"));
+                }
+                Ok(ContentVersionMetadata {
+                    version_id: dto.version_id,
+                    version_number: dto.version_number,
+                    name: dto.name.filter(|name| !name.is_empty()),
+                })
+            })
+            .collect()
     }
 
     async fn check_compatibility(

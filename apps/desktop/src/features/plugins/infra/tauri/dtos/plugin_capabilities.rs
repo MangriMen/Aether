@@ -80,6 +80,12 @@ pub struct ProviderHandlersDto {
 
     /// Optional function describing a pack without resolving its files.
     pub resolve_pack_metadata: Option<String>,
+
+    /// Optional function describing projects to show installed content by.
+    pub get_contents_metadata: Option<String>,
+
+    /// Optional function giving the version numbers of installed files.
+    pub get_versions_metadata: Option<String>,
 }
 
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
@@ -129,6 +135,8 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             resolve_file: m.resolve_file,
             resolve_install_plan: m.resolve_install_plan,
             resolve_pack_metadata: m.resolve_pack_metadata,
+            get_contents_metadata: m.get_contents_metadata,
+            get_versions_metadata: m.get_versions_metadata,
         }
     }
 }
