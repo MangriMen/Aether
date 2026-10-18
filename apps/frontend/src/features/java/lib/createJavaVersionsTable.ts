@@ -6,7 +6,7 @@ import { appTableFeatures } from '@/shared/ui-kit';
 
 import type { JavaVersion } from '../model/javaVersion';
 
-import { createJavaVersionsColumns } from '../ui/JavaVersionsColumns';
+import { createJavaVersionsColumns } from '../ui/createJavaVersionsColumns';
 import { useJavaVersionActions } from './useJavaVersionActions';
 
 export interface JavaVersionsTableProps {

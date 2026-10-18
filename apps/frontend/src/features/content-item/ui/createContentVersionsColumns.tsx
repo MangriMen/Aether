@@ -1,23 +1,15 @@
-import { createColumnHelper } from '@tanstack/solid-table';
 import { createMemo } from 'solid-js';
-
-import type { ContentVersion } from '@/features/content';
-import type { AppTableFeatures } from '@/shared/ui-kit';
 
 import { dayjs, formatRelativeTime, formatTime } from '@/shared/format';
 import { useTranslation } from '@/shared/i18n';
 import { CombinedTooltip } from '@/shared/ui-kit';
 
+import { contentVersionsColumnHelper } from '../model/contentVersionsColumnHelper';
 import { formatDownloads } from '../model/formatDownloads';
 import { ContentVersionBadgeList } from './ContentVersionBadgeList';
 import { ContentVersionTypeBadge } from './ContentVersionTypeBadge';
 
-export const contentVersionsColumnHelper = createColumnHelper<
-  AppTableFeatures,
-  ContentVersion
->();
-
-export const CONTENT_VERSIONS_TABLE_COLUMNS =
+export const createContentVersionsColumns = () =>
   contentVersionsColumnHelper.columns([
     contentVersionsColumnHelper.display({
       id: 'versionType',

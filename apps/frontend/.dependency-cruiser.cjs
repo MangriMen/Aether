@@ -2,6 +2,8 @@
 
 const FEATURE = '^src/features/([^/]+)/';
 const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
+// Prefix of a camelCase .tsx that renders but is not a component (columns, toasts).
+const BUILDER = '(?:create|show)[A-Z]';
 // Modules outside features/. platform/bindings is generated and has no index:
 // every file exports `commands` and `events`, so it is imported per domain.
 const MODULE = '^src/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
@@ -130,11 +132,11 @@ module.exports = {
     {
       name: 'feature-file-names',
       comment:
-        'ui/ holds PascalCase .tsx components, model/ holds no .tsx, lib/ holds only use*/create* primitives.',
+        'ui/ holds PascalCase .tsx components and create*/show* .tsx builders, model/ holds no .tsx, lib/ holds only use*/create* primitives.',
       severity: 'error',
       from: {
         path: [
-          `${FEATURE}ui/(?:[^A-Z][^/]*|[^/]+\\.ts)$`,
+          `${FEATURE}ui/(?![A-Z][A-Za-z0-9]*(?:\\.(?:test|stories))?\\.tsx$|${BUILDER}[A-Za-z0-9]*(?:\\.(?:test|stories))?\\.tsx$)[^/]+$`,
           `${FEATURE}model/[^/]+\\.tsx$`,
           `${FEATURE}lib/(?!(?:use|create)[A-Z])[^/]+$`,
         ],
@@ -159,12 +161,12 @@ module.exports = {
     {
       name: 'shared-file-names',
       comment:
-        'In shared/, .tsx files are PascalCase components and .ts files are camelCase. In ui-kit, primitives/ and composite/ hold components, lib/ only use*/create*, model/ no .tsx.',
+        'In shared/, .tsx files are PascalCase components or create*/show* builders and .ts files are camelCase. In ui-kit, primitives/ and composite/ hold components, lib/ only use*/create*, model/ no .tsx.',
       severity: 'error',
       from: {
         path: [
-          '^src/shared/[^/]+/[^A-Z/][^/]*\\.tsx$',
-          '^src/shared/ui-kit/[^/]+/[^A-Z/][^/]*\\.tsx$',
+          `^src/shared/[^/]+/(?!${BUILDER})[^A-Z/][^/]*\\.tsx$`,
+          `^src/shared/ui-kit/[^/]+/(?!${BUILDER})[^A-Z/][^/]*\\.tsx$`,
           '^src/shared/[^/]+/[A-Z][^/]*\\.ts$',
           '^src/shared/ui-kit/[^/]+/[A-Z][^/]*\\.ts$',
           '^src/shared/ui-kit/(?:primitives|composite)/[^/]+\\.ts$',

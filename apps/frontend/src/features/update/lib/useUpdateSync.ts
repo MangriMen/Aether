@@ -6,7 +6,7 @@ import {
   UpdateNotificationStyle,
   updateNotificationStyle,
 } from '../model/updateNotificationStyle';
-import { showUpdateAvailable } from '../ui/UpdateAvailableToast';
+import { showUpdateAvailable } from '../ui/showUpdateAvailable';
 
 export const useUpdateSync = () => {
   const update = useCheckUpdate();

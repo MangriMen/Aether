@@ -13,11 +13,9 @@ import type { ContentType, ContentVersion } from '@/features/content';
 
 import { appTableFeatures } from '@/shared/ui-kit';
 
+import { contentVersionsColumnHelper } from '../model/contentVersionsColumnHelper';
 import { ContentVersionActions } from '../ui/ContentVersionActions';
-import {
-  CONTENT_VERSIONS_TABLE_COLUMNS,
-  contentVersionsColumnHelper,
-} from '../ui/ContentVersionsColumns';
+import { createContentVersionsColumns } from '../ui/createContentVersionsColumns';
 
 export interface ContentVersionsTableProps {
   data: Accessor<ContentVersion[]>;
@@ -41,7 +39,7 @@ export const createContentVersionsTable = (
 
   const columns = createMemo(() => {
     return [
-      ...CONTENT_VERSIONS_TABLE_COLUMNS,
+      ...createContentVersionsColumns(),
       contentVersionsColumnHelper.display({
         id: 'actions',
         cell: (cellProps) => (
