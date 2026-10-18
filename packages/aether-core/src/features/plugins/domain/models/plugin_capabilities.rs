@@ -101,6 +101,7 @@ pub struct ProviderHandlers {
     pub resolve_pack_metadata: Option<String>,
     pub get_contents_metadata: Option<String>,
     pub get_versions_metadata: Option<String>,
+    pub get_authors: Option<String>,
 }
 
 impl Deref for PluginImporterCapability {
@@ -189,6 +190,7 @@ mod tests {
                 resolve_pack_metadata: None,
                 get_contents_metadata: None,
                 get_versions_metadata: None,
+                get_authors: None,
             },
         }
     }

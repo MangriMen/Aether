@@ -101,4 +101,8 @@ pub struct ProviderHandlersDto {
     /// `GetVersionsMetadataParamsDto`, returns a list of `ContentVersionMetadataDto`. Without it the files are shown
     /// without a version.
     pub get_versions_metadata: Option<String>,
+    /// Optional function naming the authors of projects by the `authorRef`s of
+    /// `ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns a list of `ContentAuthorDto`.
+    /// Without it a project is shown by its `author` alone.
+    pub get_authors: Option<String>,
 }

@@ -176,6 +176,13 @@
             "null"
           ]
         },
+        "getAuthors": {
+          "description": "Optional function naming the authors of projects by the `authorRef`s of\n`ContentMetadataDto`. Takes `GetAuthorsParamsDto`, returns a list of `ContentAuthorDto`.\nWithout it a project is shown by its `author` alone.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "getContent": {
           "description": "Function to get detailed information about a specific piece of content.",
           "type": "string"

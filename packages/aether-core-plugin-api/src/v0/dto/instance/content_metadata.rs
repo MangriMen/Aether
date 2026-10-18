@@ -18,6 +18,14 @@ pub struct GetVersionsMetadataParamsDto {
     pub version_ids: Vec<String>,
 }
 
+/// The input of `getAuthors`: the authors to name, asked in one go for a whole instance.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAuthorsParamsDto {
+    /// The `authorRef`s the provider gave in `ContentMetadataDto`.
+    pub author_refs: Vec<String>,
+}
+
 /// One item of the answer of `getContentsMetadata`: what the provider says about a project, to
 /// show installed content by.
 ///
@@ -44,6 +52,12 @@ pub struct ContentMetadataDto {
     /// Absent when the provider cannot tell it without extra requests: the rest is shown alone.
     #[serde(default)]
     pub author: Option<String>,
+    /// The provider's own token for whoever authors the project (a team, an organization), when
+    /// naming them is a request apart: the host asks `getAuthors` for it later, so the project is
+    /// shown even when that request fails. Opaque to the host; used instead of `author` or
+    /// besides it. A blank ref is no ref.
+    #[serde(default)]
+    pub author_ref: Option<String>,
     /// An `https` URL of the icon. The host downloads it itself, so the plugin needs no network
     /// access to it; a URL of another scheme, or naming `localhost` or an address of a private
     /// network, is dropped.
@@ -69,4 +83,21 @@ pub struct ContentVersionMetadataDto {
     /// The version's title, when the provider has one apart from its number.
     #[serde(default)]
     pub name: Option<String>,
+}
+
+/// One item of the answer of `getAuthors`: who authors projects, by the `authorRef` of
+/// `ContentMetadataDto`.
+///
+/// The answer is a list of these, for the refs of `GetAuthorsParamsDto`. A ref the provider does
+/// not know is left out of the answer, not an error.
+///
+/// The host keeps only items whose `authorRef` was asked, once each, and with a non-blank
+/// `name`; the rest of the answer is kept when one item is dropped.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentAuthorDto {
+    /// The ref, as asked.
+    pub author_ref: String,
+    /// The name to show as the author.
+    pub name: String,
 }

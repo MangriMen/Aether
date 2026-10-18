@@ -14,8 +14,8 @@ use std::{
 };
 
 use aether_core_plugin_api::v0::{
-    ContentMetadataDto, ContentSearchResultDto, ContentVersionMetadataDto, FileHashDto,
-    ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
+    ContentAuthorDto, ContentMetadataDto, ContentSearchResultDto, ContentVersionMetadataDto,
+    FileHashDto, ModLoaderDto, PackMetadataDto, ProviderIdDto, ResolvedFileDto,
 };
 use async_trait::async_trait;
 use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
@@ -62,7 +62,8 @@ const CAPABILITIES: &str = r#"{
             "resolveFile": "cf_resolve_file",
             "resolvePackMetadata": "cf_resolve_pack_metadata",
             "getContentsMetadata": "cf_get_contents_metadata",
-            "getVersionsMetadata": "cf_get_versions_metadata"
+            "getVersionsMetadata": "cf_get_versions_metadata",
+            "getAuthors": "cf_get_authors"
         }
     }]
 }"#;
@@ -408,7 +409,15 @@ async fn should_describe_content_when_a_wasm_plugin_answers_the_metadata_handler
                     name: "Just Enough Items".into(),
                     description: None,
                     author: Some("mezz".into()),
+                    author_ref: Some("team:abc".into()),
                     icon_url: Some("https://media.forgecdn.net/jei.png".into()),
+                }])),
+            ),
+            (
+                "cf_get_authors",
+                Body::Answer(encode(vec![ContentAuthorDto {
+                    author_ref: "team:abc".into(),
+                    name: "Mezz Team".into(),
                 }])),
             ),
             (
@@ -436,8 +445,50 @@ async fn should_describe_content_when_a_wasm_plugin_answers_the_metadata_handler
     assert_eq!(projects[0].content_id, "238222");
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author.as_deref(), Some("mezz"));
+    assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
     assert_eq!(versions[0].version_number, "15.2.0");
     assert_eq!(versions[0].name.as_deref(), Some("JEI 15.2.0"));
+
+    let authors = proxy.get_authors(&["team:abc".to_owned()]).await.unwrap();
+    assert_eq!(authors.len(), 1);
+    assert_eq!(authors[0].author_ref, "team:abc");
+    assert_eq!(authors[0].name, "Mezz Team");
+}
+
+/// A failing `getAuthors` leaves the metadata handler alone.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_still_describe_content_when_a_wasm_plugin_fails_naming_authors() {
+    let sandbox = sandbox();
+    let handle = wasm_plugin(
+        PLUGIN_ID,
+        &[
+            (
+                "cf_get_contents_metadata",
+                Body::Answer(encode(vec![ContentMetadataDto {
+                    content_id: "238222".into(),
+                    slug: "jei".into(),
+                    name: "Just Enough Items".into(),
+                    description: None,
+                    author: None,
+                    author_ref: Some("team:abc".into()),
+                    icon_url: None,
+                }])),
+            ),
+            ("cf_get_authors", Body::Panic),
+        ],
+        Arc::default(),
+    );
+    let proxy = proxy(&sandbox, PLUGIN_ID, handle);
+
+    let authors = proxy.get_authors(&["team:abc".to_owned()]).await;
+    let projects = proxy
+        .get_contents_metadata(&["238222".to_owned()])
+        .await
+        .unwrap();
+
+    assert!(authors.is_err());
+    assert_eq!(projects[0].name, "Just Enough Items");
+    assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
 }
 
 // ─── What the user is told ─────────────────────────────────────

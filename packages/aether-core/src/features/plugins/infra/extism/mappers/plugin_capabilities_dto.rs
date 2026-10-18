@@ -65,6 +65,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             resolve_pack_metadata: v.resolve_pack_metadata,
             get_contents_metadata: v.get_contents_metadata,
             get_versions_metadata: v.get_versions_metadata,
+            get_authors: v.get_authors,
         }
     }
 }

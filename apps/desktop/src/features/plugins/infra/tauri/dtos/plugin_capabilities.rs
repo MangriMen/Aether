@@ -86,6 +86,9 @@ pub struct ProviderHandlersDto {
 
     /// Optional function giving the version numbers of installed files.
     pub get_versions_metadata: Option<String>,
+
+    /// Optional function naming the authors of projects apart from their metadata.
+    pub get_authors: Option<String>,
 }
 
 impl From<PluginCapabilities> for PluginCapabilitiesDto {
@@ -137,6 +140,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
             resolve_pack_metadata: m.resolve_pack_metadata,
             get_contents_metadata: m.get_contents_metadata,
             get_versions_metadata: m.get_versions_metadata,
+            get_authors: m.get_authors,
         }
     }
 }

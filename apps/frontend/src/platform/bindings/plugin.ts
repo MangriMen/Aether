@@ -534,6 +534,8 @@ export type ProviderHandlersDto = {
 	getContentsMetadata: string | null,
 	/**  Optional function giving the version numbers of installed files. */
 	getVersionsMetadata: string | null,
+	/**  Optional function naming the authors of projects apart from their metadata. */
+	getAuthors: string | null,
 };
 
 /**  Generic provider-agnostic plugin preview for the frontend. */
