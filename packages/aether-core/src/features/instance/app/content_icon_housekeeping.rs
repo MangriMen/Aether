@@ -6,6 +6,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use futures::future::join_all;
 
 use crate::{
     features::instance::{
@@ -46,13 +47,16 @@ impl ContentIconHousekeeping {
     /// The icon URLs of every content installed in any instance.
     async fn installed_icon_urls(&self) -> Result<HashSet<String>, InstanceError> {
         let mut ids: HashMap<ProviderId, Vec<String>> = HashMap::new();
-        for instance in self.instance_storage.list().await? {
-            for pack_file in self
-                .pack_storage
-                .get_pack_files(instance.id())
-                .await?
-                .into_values()
-            {
+        let instances = self.instance_storage.list().await?;
+        // Concurrent, in the order of the instances: the first failure in it is the one returned.
+        let packs = join_all(
+            instances
+                .iter()
+                .map(|instance| self.pack_storage.get_pack_files(instance.id())),
+        )
+        .await;
+        for pack in packs {
+            for pack_file in pack?.into_values() {
                 let Some(provider_id) = pack_file.update_provider_id else {
                     continue;
                 };
@@ -66,17 +70,15 @@ impl ContentIconHousekeeping {
             }
         }
 
-        let mut urls = HashSet::new();
-        for (provider_id, content_ids) in ids {
-            urls.extend(
-                self.metadata_cache
-                    .get_many(&provider_id, &content_ids)
-                    .await
-                    .into_values()
-                    .filter_map(|cached| cached.metadata.icon_url),
-            );
-        }
-        Ok(urls)
+        let cached = join_all(ids.iter().map(|(provider_id, content_ids)| {
+            self.metadata_cache.get_many(provider_id, content_ids)
+        }))
+        .await;
+        Ok(cached
+            .into_iter()
+            .flat_map(HashMap::into_values)
+            .filter_map(|cached| cached.metadata.icon_url)
+            .collect())
     }
 }
 
