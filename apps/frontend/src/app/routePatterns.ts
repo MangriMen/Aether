@@ -10,5 +10,4 @@ export const ROUTE_PATTERNS = {
   INSTANCE: '/instances/:id',
   INSTANCE_SETTINGS_REL: 'settings', // Relative path
   INSTANCE_DIALOG: '/instance-settings/:id',
-  PLAYGROUND: APP_ROUTES.PLAYGROUND,
 } as const;

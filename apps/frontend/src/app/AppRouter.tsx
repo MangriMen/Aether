@@ -1,5 +1,5 @@
 import { Route, Router, type RouteSectionProps } from '@solidjs/router';
-import { lazy, type Component } from 'solid-js';
+import { type Component } from 'solid-js';
 
 import { HomePage } from '@/app/pages/home';
 import { ContentBrowserWrapper } from '@/features/content-browser';
@@ -8,13 +8,8 @@ import { ContentPageLayout } from '@/features/content-page';
 import { InstanceSettingsDialog } from '@/features/instance-edit';
 import { InstancePage } from '@/features/instance-page';
 
-import { ROUTE_PATTERNS } from './routePatterns';
-
-const PlaygroundPage = lazy(() =>
-  import('@/app/pages/playground').then((m) => ({ default: m.PlaygroundPage })),
-);
-
 import { AppRoot } from './AppRoot';
+import { ROUTE_PATTERNS } from './routePatterns';
 
 const InstanceSettingsRoute: Component<RouteSectionProps> = (props) => (
   <InstanceSettingsDialog instanceId={props.params.id} />
@@ -46,8 +41,6 @@ export const AppRouter: Component = () => {
           component={InstanceSettingsRoute}
         />
       </Route>
-
-      <Route path={ROUTE_PATTERNS.PLAYGROUND} component={PlaygroundPage} />
     </Router>
   );
 };

@@ -477,8 +477,6 @@
     "updateNotificationStyle": "Update notification style",
     "whatsNew": "What's new",
     "update": "Update",
-    "playground": "Playground",
-    "playgroundDescription": "UI Kit playground",
     "windowTransparencyDialog": {
       "header": "Recreate Window",
       "description": "Changes to the transparency mode require the window to be recreated. Apply changes now or keep them pending until the next launch?",

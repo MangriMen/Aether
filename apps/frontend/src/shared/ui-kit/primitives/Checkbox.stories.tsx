@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from 'storybook-solidjs-vite';
 
 import { fn } from 'storybook/test';
 
+import { createArgSignal } from '../model/storyArgs';
 import { Checkbox } from './Checkbox';
 import { Label } from './Label';
 
@@ -28,7 +29,23 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  render: (args) => <Checkbox {...args} />,
+  render: (args) => {
+    const [checked, setChecked] = createArgSignal(
+      () => Boolean(args['checked']),
+      false,
+    );
+
+    return (
+      <Checkbox
+        {...args}
+        checked={checked()}
+        onChange={(next) => {
+          setChecked(next);
+          args['onChange']?.(next);
+        }}
+      />
+    );
+  },
 };
 
 export const WithDescription: Story = {

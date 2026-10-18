@@ -10,8 +10,8 @@ import {
 import { useTranslation } from '@/shared/i18n';
 import { SettingsPane } from '@/shared/settings-layout';
 
+import { DiskUsage } from '../ui/DiskUsage';
 import { ClearCacheEntry } from './ClearCacheEntry';
-import { DiskUsage } from './DiskUsage';
 
 export type StoragePaneProps = SettingsPaneProps;
 

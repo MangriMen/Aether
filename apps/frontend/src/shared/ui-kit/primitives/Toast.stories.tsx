@@ -17,7 +17,6 @@ const VARIANTS = [
 
 const meta: Meta = {
   title: 'ui-kit/Toast',
-  component: Toaster,
   tags: ['autodocs'],
   decorators: [
     (Story) => (
@@ -46,7 +45,7 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {
+export const Custom: Story = {
   render: (args) => (
     <Button
       onClick={() =>
