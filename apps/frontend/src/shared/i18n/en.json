@@ -261,9 +261,13 @@
     "title": "Create offline account"
   },
   "events": {
+    "cancelled": "Cancelled",
     "installFailed": "Installation failed",
     "installing": "Installing {{name}}",
     "javaDownloading": "Downloading Java {{version}}",
+    "minecraftAssets": "Assets ({{count}} files)",
+    "minecraftDownloading": "Downloading Minecraft {{version}}",
+    "waitingFor": "Waiting: {{name}}",
     "stage": {
       "downloading": "Downloading",
       "extracting": "Extracting",

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
-    events::{ProgressEventType, ProgressService, ProgressServiceExt},
+    events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
     instance::{
         Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
         InstanceStorage,
@@ -71,7 +71,12 @@ impl InstallInstanceUseCase {
         Ok(())
     }
 
-    pub async fn execute(&self, instance_id: InstanceId, force: bool) -> Result<(), InstanceError> {
+    pub async fn execute(
+        &self,
+        instance_id: InstanceId,
+        force: bool,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
         let mut instance = self.instance_storage.get(&instance_id).await?;
         let pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
 
@@ -80,10 +85,12 @@ impl InstallInstanceUseCase {
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 
-        // Under the bar of a pack being installed into the instance, if any.
+        // Under the bar of a pack being installed into the instance, if any. The shared
+        // downloads the game waits on are mirrored under this one.
         let loading_bar = self
             .progress_service
-            .init_progress_in_scope_safe(
+            .init_progress_under_safe(
+                parent_bar,
                 ProgressEventType::MinecraftDownload {
                     instance_id,
                     instance_name: instance.name().to_owned(),
@@ -129,9 +136,18 @@ impl InstallInstanceUseCase {
         }?;
 
         if let Some(loading_bar) = loading_bar {
-            self.progress_service
-                .emit_progress_safe(&loading_bar, 1.000_000_000_01, Some("Finished installing"))
-                .await;
+            match &result {
+                Ok(()) => {
+                    self.progress_service
+                        .emit_progress_safe(
+                            &loading_bar,
+                            1.000_000_000_01,
+                            Some("Finished installing"),
+                        )
+                        .await;
+                }
+                Err(err) => loading_bar.fail(err.to_string()).await,
+            }
         }
 
         Ok(result?)
@@ -140,7 +156,12 @@ impl InstallInstanceUseCase {
 
 #[async_trait]
 impl InstanceInstallService for InstallInstanceUseCase {
-    async fn execute(&self, instance_id: InstanceId, force: bool) -> Result<(), InstanceError> {
-        self.execute(instance_id, force).await
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        force: bool,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
+        self.execute(instance_id, force, parent_bar).await
     }
 }

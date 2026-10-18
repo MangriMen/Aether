@@ -261,11 +261,19 @@ struct NoCreateInstance;
 
 #[async_trait]
 impl CreateInstanceUseCasePort for NoCreateInstance {
-    async fn execute(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
+    async fn execute(
+        &self,
+        _: NewInstance,
+        _: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
         unimplemented!("these plans install into an existing instance")
     }
 
-    async fn execute_for_pack(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
+    async fn execute_for_pack(
+        &self,
+        _: NewInstance,
+        _: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
         unimplemented!("these plans install into an existing instance")
     }
 }
@@ -274,7 +282,12 @@ struct NoChangeInstanceGame;
 
 #[async_trait]
 impl ChangeInstanceGameUseCasePort for NoChangeInstanceGame {
-    async fn execute(&self, _: InstanceId, _: InstanceGame) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        _: InstanceId,
+        _: InstanceGame,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
         unimplemented!("these plans keep the game of the instance")
     }
 }

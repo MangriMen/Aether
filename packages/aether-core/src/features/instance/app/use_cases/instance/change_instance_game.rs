@@ -5,6 +5,7 @@ use chrono::Utc;
 use log::{error, info};
 
 use crate::features::{
+    events::ProgressBarId,
     instance::{
         InstanceError, InstanceGame, InstanceId, InstanceInstallService, InstanceStorage,
         InstanceStorageExt, app::ports::ChangeInstanceGameUseCasePort,
@@ -43,6 +44,7 @@ impl ChangeInstanceGameUseCase {
         &self,
         instance_id: InstanceId,
         game: InstanceGame,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
         let mut instance = self.instance_storage.get(&instance_id).await?;
         if game.is_run_by(&instance) {
@@ -76,7 +78,7 @@ impl ChangeInstanceGameUseCase {
 
         let result = self
             .instance_install_service
-            .execute(instance_id.clone(), false)
+            .execute(instance_id.clone(), false, parent_bar)
             .await;
 
         if let Err(err) = &result {
@@ -108,7 +110,8 @@ impl ChangeInstanceGameUseCasePort for ChangeInstanceGameUseCase {
         &self,
         instance_id: InstanceId,
         game: InstanceGame,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
-        self.execute(instance_id, game).await
+        self.execute(instance_id, game, parent_bar).await
     }
 }

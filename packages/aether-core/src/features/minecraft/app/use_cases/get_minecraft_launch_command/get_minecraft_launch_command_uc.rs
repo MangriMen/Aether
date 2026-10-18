@@ -123,7 +123,7 @@ impl GetMinecraftLaunchCommandUseCase {
                 Ok(java) => Ok(java),
                 Err(_) => self
                     .install_java_use_case
-                    .execute(InstallJava::new(compatible_java_version))
+                    .execute(InstallJava::new(compatible_java_version), None)
                     .await
                     .map_err(Into::into),
             }

@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use async_trait::async_trait;
 use dashmap::DashMap;
 
+use crate::features::events::ProgressBarId;
 use crate::features::instance::app::{
     ChangeContentState, ContentCompatibilityCheckParams, ContentCompatibilityResult,
     ContentGetParams, ContentListVersionsParams, EditInstance, EditInstanceIcon, ImportContent,
@@ -17,9 +18,15 @@ use crate::features::instance::{ContentInstallParams, ContentSearchParams, Conte
 use crate::features::process::MinecraftProcessMetadata;
 use crate::shared::capability::domain::CapabilityEntry;
 
+/// `parent_bar`: the bar of whatever the instance is created for (a pack being installed into
+/// it), which the bar of the install of its game goes under; at the top without one.
 #[async_trait]
 pub trait CreateInstanceUseCasePort: Send + Sync {
-    async fn execute(&self, new_instance: NewInstance) -> Result<InstanceId, InstanceError>;
+    async fn execute(
+        &self,
+        new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError>;
 
     /// Create an instance whose pack the caller is about to deploy: it stays `PackInstalling`
     /// (not launchable) once the game is installed, and the caller moves it to `Installed` when
@@ -27,16 +34,21 @@ pub trait CreateInstanceUseCasePort: Send + Sync {
     async fn execute_for_pack(
         &self,
         new_instance: NewInstance,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError>;
 }
 
 /// Moves an existing instance to another game. Nothing happens when it already runs it.
+///
+/// `parent_bar`: the bar of whatever moves it (a pack update), which the bar of the install
+/// of the new game goes under; at the top without one.
 #[async_trait]
 pub trait ChangeInstanceGameUseCasePort: Send + Sync {
     async fn execute(
         &self,
         instance_id: InstanceId,
         game: InstanceGame,
+        parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError>;
 }
 

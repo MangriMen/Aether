@@ -4,6 +4,9 @@ mod libraries_service;
 mod minecraft_download_cache_keys;
 mod minecraft_download_resolver;
 mod minecraft_download_service;
+#[cfg(test)]
+mod tests;
+mod version_progress;
 
 pub use assets_service::AssetsService;
 pub use client_service::ClientService;
@@ -14,3 +17,4 @@ pub(crate) use minecraft_download_cache_keys::version_info_key;
 pub(crate) use minecraft_download_cache_keys::version_jar_key;
 pub use minecraft_download_resolver::MinecraftDownloadResolver;
 pub use minecraft_download_service::MinecraftDownloadService;
+use version_progress::VersionProgress;

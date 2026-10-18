@@ -3,8 +3,7 @@ use log::debug;
 use uuid::Uuid;
 
 use crate::features::events::{
-    ProgressBarId, ProgressEventType, ProgressService, ProgressStage,
-    domain::models::progress_parent::current_progress_parent,
+    ProgressBarId, ProgressEventType, ProgressService, ProgressStage, SharedProgressWait,
 };
 
 #[async_trait]
@@ -34,21 +33,45 @@ pub trait ProgressServiceExt: ProgressService {
             .ok()
     }
 
-    /// Starts a bar under the parent of the surrounding
-    /// [`with_progress_parent`](crate::features::events::with_progress_parent), or on its own
-    /// outside of one.
-    async fn init_progress_in_scope_safe(
+    /// Starts a bar under `parent`, or on its own without one.
+    async fn init_progress_under_safe(
+        &self,
+        parent: Option<&ProgressBarId>,
+        event_type: ProgressEventType,
+        total: f64,
+        message: String,
+    ) -> Option<ProgressBarId> {
+        match parent {
+            Some(parent) => {
+                self.init_child_progress_safe(parent.id, event_type, total, message)
+                    .await
+            }
+            None => self.init_progress_safe(event_type, total, message).await,
+        }
+    }
+
+    async fn init_shared_progress_safe(
         &self,
         event_type: ProgressEventType,
         total: f64,
         message: String,
     ) -> Option<ProgressBarId> {
-        match current_progress_parent() {
-            Some(parent_id) => {
-                self.init_child_progress_safe(parent_id, event_type, total, message)
-                    .await
-            }
-            None => self.init_progress_safe(event_type, total, message).await,
+        self.init_shared_progress(event_type, total, message)
+            .await
+            .map_err(|error| debug!("Failed to send progress: {error}"))
+            .ok()
+    }
+
+    /// [`wait_on_shared`](ProgressService::wait_on_shared) for `waiting` when there is a bar to
+    /// wait with.
+    async fn wait_on_shared_if_any(
+        &self,
+        waiting: Option<&ProgressBarId>,
+        event_type: ProgressEventType,
+    ) -> Option<SharedProgressWait> {
+        match waiting {
+            Some(waiting) => Some(self.wait_on_shared(waiting, event_type).await),
+            None => None,
         }
     }
 

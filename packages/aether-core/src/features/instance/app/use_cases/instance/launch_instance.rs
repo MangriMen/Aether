@@ -176,7 +176,7 @@ impl LaunchInstanceUseCase {
                 .unwrap_or(true)
         {
             self.instance_install_service
-                .execute(instance_id.clone(), false)
+                .execute(instance_id.clone(), false, None)
                 .await?;
         }
 

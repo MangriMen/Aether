@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use tracing::debug;
 
 use crate::features::{
-    events::ProgressBarId,
+    events::{ProgressBarId, ProgressService, ProgressServiceExt},
     java::{
         InstallJava, Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
         JavaQueryService,
@@ -17,6 +17,12 @@ use crate::features::{
     },
 };
 
+/// The part of the bar of an install (out of 100) that the shared files of its version take,
+/// whoever downloads them: the rest is the version's metadata (5), the loader's processors
+/// (30, when it has any) and finishing (1).
+const GAME_FILES_SPAN: f64 = 94.0;
+const GAME_FILES_SPAN_WITH_PROCESSORS: f64 = 64.0;
+
 pub struct InstallMinecraftUseCase {
     loader_version_resolver: Arc<dyn LoaderVersionService>,
     get_version_manifest_use_case: Arc<dyn VersionManifestService>,
@@ -25,6 +31,7 @@ pub struct InstallMinecraftUseCase {
     java_installation_service: Arc<dyn JavaInstallationService>,
     get_java_use_case: Arc<dyn JavaQueryService>,
     install_java_use_case: Arc<dyn JavaInstallService>,
+    progress_service: Arc<dyn ProgressService>,
 }
 
 impl InstallMinecraftUseCase {
@@ -38,6 +45,7 @@ impl InstallMinecraftUseCase {
         java_installation_service: Arc<dyn JavaInstallationService>,
         get_java_use_case: Arc<dyn JavaQueryService>,
         install_java_use_case: Arc<dyn JavaInstallService>,
+        progress_service: Arc<dyn ProgressService>,
     ) -> Self {
         Self {
             loader_version_resolver,
@@ -47,6 +55,7 @@ impl InstallMinecraftUseCase {
             java_installation_service,
             get_java_use_case,
             install_java_use_case,
+            progress_service,
         }
     }
 
@@ -134,7 +143,7 @@ impl InstallMinecraftUseCase {
                 Ok(java) => Ok(java),
                 Err(_) => self
                     .install_java_use_case
-                    .execute(InstallJava::new(compatible_java_version))
+                    .execute(InstallJava::new(compatible_java_version), loading_bar)
                     .await
                     .map_err(Into::into),
             }
@@ -149,6 +158,21 @@ impl InstallMinecraftUseCase {
                 loading_bar,
             )
             .await?;
+        if let Some(loading_bar) = loading_bar {
+            // The files are in: the mirror of their download showed how it went.
+            let has_processors = version_info
+                .processors
+                .as_ref()
+                .is_some_and(|processors| !processors.is_empty());
+            let span = if has_processors {
+                GAME_FILES_SPAN_WITH_PROCESSORS
+            } else {
+                GAME_FILES_SPAN
+            };
+            self.progress_service
+                .emit_progress_safe(loading_bar, span, None)
+                .await;
+        }
 
         self.run_mod_loader_post_install(
             game_version,

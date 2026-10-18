@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 
 use crate::features::{
+    events::ProgressBarId,
     instance::{
         ChangeInstanceGameUseCase, Instance, InstanceBuilder, InstanceError, InstanceGame,
         InstanceId, InstanceInstallService, InstanceInstallStage, InstanceStorage,
@@ -87,7 +88,12 @@ struct RecordingInstall {
 
 #[async_trait]
 impl InstanceInstallService for RecordingInstall {
-    async fn execute(&self, instance_id: InstanceId, _force: bool) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        _force: bool,
+        _parent_bar: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
         let mut instance = self.storage.get(&instance_id).await?;
         self.installed.lock().unwrap().push((
             instance.game_version.clone(),
@@ -152,7 +158,7 @@ impl Fixture {
 
     async fn change(&self, game: InstanceGame) -> Result<(), InstanceError> {
         self.use_case
-            .execute(InstanceId::try_from(INSTANCE_ID).unwrap(), game)
+            .execute(InstanceId::try_from(INSTANCE_ID).unwrap(), game, None)
             .await
     }
 

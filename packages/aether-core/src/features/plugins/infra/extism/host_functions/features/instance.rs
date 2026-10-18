@@ -69,9 +69,9 @@ pub(crate) async fn handle_instance_create(
     let new_instance = new_instance_from_plugin(plugin_id, dto, &container.location_info())?;
 
     if for_pack {
-        create.execute_for_pack(new_instance).await
+        create.execute_for_pack(new_instance, None).await
     } else {
-        create.execute(new_instance).await
+        create.execute(new_instance, None).await
     }
     .map_err(Into::into)
 }

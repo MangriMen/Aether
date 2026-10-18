@@ -379,7 +379,12 @@ struct StageKeepingInstall {
 
 #[async_trait]
 impl InstanceInstallService for StageKeepingInstall {
-    async fn execute(&self, instance_id: InstanceId, _: bool) -> Result<(), InstanceError> {
+    async fn execute(
+        &self,
+        instance_id: InstanceId,
+        _: bool,
+        _: Option<&ProgressBarId>,
+    ) -> Result<(), InstanceError> {
         let mut instance = self.storage.get(&instance_id).await?;
         self.stages.lock().unwrap().push(instance.install_stage);
         if instance.install_stage != InstanceInstallStage::PackInstalling {
@@ -415,11 +420,19 @@ struct NoCreateInstance;
 
 #[async_trait]
 impl CreateInstanceUseCasePort for NoCreateInstance {
-    async fn execute(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
+    async fn execute(
+        &self,
+        _: NewInstance,
+        _: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
         unimplemented!("updates create no instance")
     }
 
-    async fn execute_for_pack(&self, _: NewInstance) -> Result<InstanceId, InstanceError> {
+    async fn execute_for_pack(
+        &self,
+        _: NewInstance,
+        _: Option<&ProgressBarId>,
+    ) -> Result<InstanceId, InstanceError> {
         unimplemented!("updates create no instance")
     }
 }

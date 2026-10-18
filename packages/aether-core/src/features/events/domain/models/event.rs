@@ -161,6 +161,7 @@ mod tests {
             stage: None,
             status: ProgressStatus::Running,
             parent_id: None,
+            mirror_of: None,
             bytes_done: None,
             bytes_total: None,
             speed: None,
