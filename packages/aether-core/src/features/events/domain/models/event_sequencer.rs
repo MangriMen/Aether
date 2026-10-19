@@ -1,7 +1,10 @@
+use std::sync::{Arc, Mutex as StdMutex, PoisonError};
+
 use log::error;
 use tokio::sync::{Mutex, MutexGuard};
+use uuid::Uuid;
 
-use crate::features::events::SharedEventEmitter;
+use crate::features::events::{ProgressBarStorage, SharedEventEmitter};
 
 use super::{EventError, ProgressEvent};
 
@@ -18,6 +21,14 @@ pub(crate) struct EventSequencer {
     update_lock: Mutex<()>,
     /// Taken before the update lock is let go, so no event of a bar overtakes an earlier one.
     emit_lock: Mutex<()>,
+    /// The bars whose handles were dropped and that are not ended yet, in the order of the drops.
+    ends: StdMutex<Vec<PendingEnd>>,
+}
+
+/// A bar whose handle was dropped: to be taken out of its storage and ended.
+pub(crate) struct PendingEnd {
+    pub(crate) id: Uuid,
+    pub(crate) storage: Arc<dyn ProgressBarStorage>,
 }
 
 impl EventSequencer {
@@ -26,7 +37,24 @@ impl EventSequencer {
             emitter,
             update_lock: Mutex::new(()),
             emit_lock: Mutex::new(()),
+            ends: StdMutex::default(),
         }
+    }
+
+    /// Note that the handle of the bar `id` was dropped. The drops are noted as they happen, so
+    /// the bars end in the order of the drops whichever task ends them first: a child dropped
+    /// before its parent still ends as it was, not as cancelled with the parent.
+    pub(crate) fn queue_end(&self, id: Uuid, storage: Arc<dyn ProgressBarStorage>) {
+        self.ends
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(PendingEnd { id, storage });
+    }
+
+    /// The bars to end, in the order of the drops; empty when another task took them. Called
+    /// under the change guard.
+    pub(crate) fn take_ends(&self) -> Vec<PendingEnd> {
+        std::mem::take(&mut *self.ends.lock().unwrap_or_else(PoisonError::into_inner))
     }
 
     /// Wait for the turn to change the bars.
