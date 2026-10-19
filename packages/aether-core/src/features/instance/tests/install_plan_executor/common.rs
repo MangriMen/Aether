@@ -422,7 +422,7 @@ impl ProgressService for RecordingProgress {
         Ok(ProgressBarId {
             id,
             progress_storage: None,
-            event_emitter: None,
+            sequencer: None,
         })
     }
     async fn init_child_progress(
@@ -436,7 +436,7 @@ impl ProgressService for RecordingProgress {
         Ok(ProgressBarId {
             id: uuid::Uuid::new_v4(),
             progress_storage: None,
-            event_emitter: None,
+            sequencer: None,
         })
     }
     async fn init_or_edit_progress(

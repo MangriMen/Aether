@@ -7,11 +7,10 @@ import { showToast } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
-import { isStaleEvent } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
 
 export const useProgressEventsListener = () => {
-  const [progressStore, setProgressStore] = useProgressStore();
+  const [, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
@@ -23,10 +22,6 @@ export const useProgressEventsListener = () => {
 
   // Bars are never removed on their own: the user clears finished ones.
   const addEvent = (payload: ProgressEvent) => {
-    if (isStaleEvent(progressStore.payloads[payload.progressBarId], payload)) {
-      return;
-    }
-
     setProgressStore('payloads', payload.progressBarId, payload);
   };
 
