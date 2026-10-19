@@ -10,6 +10,7 @@ import { Show, splitProps } from 'solid-js';
 import { cn } from '@/shared/utils';
 
 import { IconButton } from '../composite/IconButton';
+import { createResizableWidth } from '../lib/createResizableWidth';
 import { useUiKitLabels } from './UiKitLabels';
 
 const Dialog = DialogPrimitive.Root;
@@ -80,7 +81,16 @@ type DialogContentProps<T extends ValidComponent = 'div'> =
       showActions?: boolean;
       class?: string | undefined;
       children?: JSX.Element;
+      /** Lets the user drag the side edges to change the width, like a window. */
+      resizable?: boolean;
+      /** Where a resizable dialog keeps its width between sessions. */
+      resizeStorageKey?: string;
+      /** The width of a resizable dialog, in px, before it is dragged. */
+      defaultWidth?: number;
+      minWidth?: number;
     };
+
+const edgeClass = 'w-1.5 cursor-ew-resize touch-none absolute inset-y-0 z-10';
 
 const DialogContent = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, DialogContentProps<T>>,
@@ -91,7 +101,19 @@ const DialogContent = <T extends ValidComponent = 'div'>(
     'showActions',
     'class',
     'children',
+    'resizable',
+    'resizeStorageKey',
+    'defaultWidth',
+    'minWidth',
   ]);
+
+  const resize = createResizableWidth({
+    defaultWidth: local.defaultWidth ?? 512,
+    // eslint-disable-next-line solid/reactivity
+    minWidth: local.minWidth ?? 320,
+    // eslint-disable-next-line solid/reactivity
+    storageKey: local.resizeStorageKey,
+  });
 
   const onPointerDownOutsideGuard = (e: PointerDownOutsideEvent) =>
     e.target &&
@@ -119,10 +141,26 @@ const DialogContent = <T extends ValidComponent = 'div'>(
               fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-80px)] w-full
               -translate-1/2 overflow-y-auto border duration-200
             `,
+          local.resizable && 'max-w-[calc(100vw-32px)] transition-none',
           local.class,
         )}
+        style={local.resizable ? { width: `${resize.width()}px` } : undefined}
         {...rest}
       >
+        <Show when={local.resizable}>
+          <div
+            class={cn(edgeClass, 'left-0')}
+            role='separator'
+            aria-orientation='vertical'
+            {...resize.edgeHandlers(-1)}
+          />
+          <div
+            class={cn(edgeClass, 'right-0')}
+            role='separator'
+            aria-orientation='vertical'
+            {...resize.edgeHandlers(1)}
+          />
+        </Show>
         {local.children}
         <Show when={local.showActions ?? true}>
           <div class='top-5.5 right-6 absolute flex'>

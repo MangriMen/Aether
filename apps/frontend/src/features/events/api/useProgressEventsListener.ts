@@ -1,4 +1,4 @@
-import { onMount } from 'solid-js';
+import { batch, onCleanup, onMount } from 'solid-js';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
@@ -9,8 +9,10 @@ import type { ProgressEvent } from '../model/progressEvent';
 
 import { useProgressStore } from '../model/progressStore';
 
+const FLUSH_DELAY_MS = 16;
+
 export const useProgressEventsListener = () => {
-  const [, setProgressStore] = useProgressStore();
+  const [progressStore, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
@@ -35,7 +37,37 @@ export const useProgressEventsListener = () => {
       return;
     }
 
+    // A bar that goes on running keeps its status object, so what reads the status of the
+    // bars (the failure of a subtree, say) is not woken by every step of every download.
+    if (
+      payload.status.type === 'running' &&
+      progressStore.payloads[id]?.status.type === 'running'
+    ) {
+      const { status: _, ...step } = payload;
+      setProgressStore('payloads', id, step);
+      return;
+    }
+
     setProgressStore('payloads', id, payload);
+  };
+
+  // Events come in bursts, one message each; they are applied together a frame later, in the
+  // order they came, so the tree is drawn once per frame and not once per event.
+  let pending: ProgressEvent[] = [];
+  let flushTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const flush = () => {
+    flushTimer = undefined;
+    const events = pending;
+    pending = [];
+    batch(() => events.forEach(addEvent));
+  };
+
+  onCleanup(() => clearTimeout(flushTimer));
+
+  const enqueueEvent = (payload: ProgressEvent) => {
+    pending.push(payload);
+    flushTimer ??= setTimeout(flush, FLUSH_DELAY_MS);
   };
 
   const fetchEvents = async () => {
@@ -76,7 +108,7 @@ export const useProgressEventsListener = () => {
   useEventListener(eventsEvents.progressEventDto, (e) => {
     logDebug('[EVENT][DEBUG]', e);
     liveBarIds?.add(e.payload.progressBarId);
-    addEvent(e.payload);
+    enqueueEvent(e.payload);
 
     // A mirror fails with the shared download it shows, which reports it once.
     if (

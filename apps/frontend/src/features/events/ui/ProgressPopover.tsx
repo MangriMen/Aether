@@ -13,7 +13,7 @@ import type { ProgressEvent } from '../model/progressEvent';
 
 import {
   clearFinishedProgress,
-  useProgressStore,
+  useProgressIndex,
 } from '../model/progressStore';
 import { getFinishedRoots } from '../model/progressTree';
 import { ProgressCard } from './ProgressCard';
@@ -28,13 +28,11 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
-  const [progressStore] = useProgressStore();
+  const index = useProgressIndex();
 
   const handleOpenDetails = () => showDialog('progress', ProgressDetailsDialog);
 
-  const hasFinished = createMemo(
-    () => getFinishedRoots(Object.values(progressStore.payloads)).length > 0,
-  );
+  const hasFinished = createMemo(() => getFinishedRoots(index()).length > 0);
 
   return (
     <div class={cn('gap-1 flex flex-col', local.class)} {...others}>

@@ -273,6 +273,8 @@
     "minecraftAssets": "Assets ({{count}} files)",
     "minecraftDownloading": "Downloading Minecraft {{version}}",
     "neededFor": "Needed by installs: {{count}}",
+    "nothingRunning": "No downloads right now",
+    "nothingRunningHint": "Installs and downloads will show up here.",
     "perSecond": "{{size}}/s",
     "waitingFor": "Waiting: {{name}}",
     "stage": {

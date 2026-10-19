@@ -14,32 +14,34 @@ import {
 
 import {
   clearFinishedProgress,
-  useProgressStore,
+  useProgressIndex,
 } from '../model/progressStore';
 import { getFinishedRoots } from '../model/progressTree';
 import { ProgressDetails } from './ProgressDetails';
 
 export type ProgressDetailsDialogProps = DialogRootProps;
 
+const WIDTH_KEY = 'aether:progress-dialog-width';
+
 export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
   props: PolymorphicProps<T, ProgressDetailsDialogProps>,
 ) => {
   const [{ t }] = useTranslation();
 
-  const [progressStore] = useProgressStore();
+  const index = useProgressIndex();
 
-  const progressValues = createMemo(() =>
-    Object.values(progressStore.payloads),
-  );
-
-  const hasFinished = createMemo(
-    () => getFinishedRoots(progressValues()).length > 0,
-  );
+  const hasFinished = createMemo(() => getFinishedRoots(index()).length > 0);
 
   return (
     <Dialog {...props}>
-      <DialogContent class='max-h-[calc(100%-128px)] w-full max-w-3xl'>
-        <DialogHeader>
+      <DialogContent
+        class='max-h-[calc(100%-128px)] flex flex-col overflow-hidden'
+        resizable
+        resizeStorageKey={WIDTH_KEY}
+        defaultWidth={768}
+        minWidth={384}
+      >
+        <DialogHeader class='mb-2'>
           <DialogTitle>{t('progress.dialogTitle')}</DialogTitle>
           <Show when={hasFinished()}>
             <Button
@@ -52,7 +54,7 @@ export const ProgressDetailsDialog = <T extends ValidComponent = 'div'>(
             </Button>
           </Show>
         </DialogHeader>
-        <ProgressDetails payloads={progressValues} />
+        <ProgressDetails class='min-h-0 flex-1' index={index} />
       </DialogContent>
     </Dialog>
   );

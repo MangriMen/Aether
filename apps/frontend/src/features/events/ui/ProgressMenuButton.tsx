@@ -16,8 +16,7 @@ import { cn } from '@/shared/utils';
 import type { ProgressPopover } from './ProgressPopover';
 
 import { useProgressMenuShowActions } from '../lib/useProgressMenuShowActions';
-import { useProgressStore } from '../model/progressStore';
-import { getRoots } from '../model/progressTree';
+import { useProgressIndex } from '../model/progressStore';
 import { ProgressBadge } from './ProgressBadge';
 
 export type ProgressMenuButtonProps<T extends ValidComponent = 'button'> =
@@ -30,10 +29,8 @@ export const ProgressMenuButton: Component<ProgressMenuButtonProps> = (
 ) => {
   const [local, others] = splitProps(props, ['popoverComponent', 'class']);
 
-  const [progressStore] = useProgressStore();
-  const payloadValues = createMemo(() =>
-    getRoots(Object.values(progressStore.payloads)),
-  );
+  const index = useProgressIndex();
+  const payloadValues = createMemo(() => index().roots);
 
   const [isOpen, setIsOpen] = createSignal(false);
   useProgressMenuShowActions(
