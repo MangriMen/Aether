@@ -2,7 +2,7 @@ import { onMount } from 'solid-js';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
-import { logDebug } from '@/shared/log';
+import { logDebug, logError } from '@/shared/log';
 import { showToast } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
@@ -10,7 +10,7 @@ import type { ProgressEvent } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
 
 export const useProgressEventsListener = () => {
-  const [, setProgressStore] = useProgressStore();
+  const [progressStore, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
@@ -22,6 +22,20 @@ export const useProgressEventsListener = () => {
 
   // Bars are never removed on their own: the user clears finished ones.
   const addEvent = (payload: ProgressEvent) => {
+    const current = progressStore.payloads[payload.progressBarId];
+
+    if (
+      current !== undefined &&
+      current.status.type !== 'running' &&
+      payload.status.type === 'running'
+    ) {
+      // Only reported: the core sends a bar's events in order.
+      logError('[EVENT] running event after the end of its bar', {
+        current,
+        payload,
+      });
+    }
+
     setProgressStore('payloads', payload.progressBarId, payload);
   };
 
