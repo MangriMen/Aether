@@ -2,7 +2,13 @@ import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Select, SelectContent, SelectItem, SelectTrigger } from '../Select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../Select';
 
 type Opt = { id: string };
 
@@ -203,5 +209,34 @@ describe('virtualized SelectContent', () => {
     await tick();
 
     expect(firstIndex()).toBeGreaterThan(50);
+  });
+});
+
+describe('SelectContent', () => {
+  it('marks the open list as a top layer so enclosing focus traps ignore it', () => {
+    dispose = render(
+      () => (
+        <Select
+          open
+          options={['Apple', 'Banana']}
+          itemComponent={(props) => (
+            <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
+          )}
+        >
+          <SelectTrigger aria-label='Fruit'>
+            <SelectValue<string>>
+              {(state) => state.selectedOption()}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent />
+        </Select>
+      ),
+      document.body,
+    );
+
+    const listbox = document.querySelector('[role="listbox"]');
+
+    expect(listbox).not.toBeNull();
+    expect(listbox!.closest('[data-kb-top-layer]')).not.toBeNull();
   });
 });

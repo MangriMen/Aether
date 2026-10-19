@@ -120,6 +120,9 @@ const SelectContent = <Option, OptGroup, T extends ValidComponent = 'div'>(
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
+        // Makes the focus traps of an enclosing dialog ignore the list, so opening it
+        // right after a choice does not hand the focus back and close it at once.
+        data-kb-top-layer=''
         class={cn(
           `
             min-w-32 animate-content-hide rounded-md bg-popover/hard
