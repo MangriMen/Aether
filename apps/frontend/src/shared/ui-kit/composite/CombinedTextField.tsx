@@ -59,17 +59,7 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
       </Show>
       <div class='relative flex'>
         <div class='inset-y-0 left-0 absolute'>{local.leadingIcons}</div>
-        <TextFieldInput
-          type='text'
-          {...local.inputProps}
-          // The primitive merges this class via cn (tailwind-merge), so pl/pr
-          // override its px-3 and the icon padding is not lost.
-          class={cn(
-            !!local.leadingIcons && 'pl-9',
-            !!local.trailingIcons && 'pr-9',
-            local.inputProps?.class,
-          )}
-        />
+        <TextFieldInput type='text' {...local.inputProps} />
         <div class='inset-y-0 right-0 absolute'>{local.trailingIcons}</div>
       </div>
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
