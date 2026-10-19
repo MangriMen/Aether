@@ -23,10 +23,7 @@ export const CombinedSlider = <T extends ValidComponent = 'div'>(
   const [local, others] = splitProps(props, ['withLabel']);
 
   return (
-    <Slider
-      class={others.class}
-      {...(others as PolymorphicProps<T, SliderRootProps<T>>)}
-    >
+    <Slider {...(others as PolymorphicProps<T, SliderRootProps<T>>)}>
       <Show when={local.withLabel}>
         <SliderValueLabel />
       </Show>

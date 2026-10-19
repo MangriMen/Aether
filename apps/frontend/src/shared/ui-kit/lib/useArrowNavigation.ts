@@ -1,3 +1,5 @@
+import { onCleanup } from 'solid-js';
+
 export const useArrowNavigation = (
   selector = 'button:not([class*="absolute"])',
 ) => {
@@ -42,8 +44,13 @@ export const useArrowNavigation = (
     elements[nextIndex]?.focus();
   };
 
+  onCleanup(() => {
+    containerRef = undefined;
+  });
+
   return {
-    setRef: (el: HTMLDivElement) => {
+    // Solid passes undefined to ref callbacks on unmount.
+    setRef: (el: HTMLDivElement | undefined) => {
       containerRef = el;
     },
     onKeyDown,
