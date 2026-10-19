@@ -10,7 +10,7 @@ import type { ProgressEvent } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
 
 export const useProgressEventsListener = () => {
-  const [progressStore, setProgressStore] = useProgressStore();
+  const [, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
@@ -20,23 +20,22 @@ export const useProgressEventsListener = () => {
   // the snapshot must not overwrite them. Not needed once it is applied.
   let liveBarIds: Set<string> | undefined = new Set<string>();
 
+  // Bars that have ended, kept after the user clears them. The webview can hand over events it
+  // already delivered again, long after the bar ended; a running one must not bring it back.
+  const endedBarIds = new Set<string>();
+
   // Bars are never removed on their own: the user clears finished ones.
   const addEvent = (payload: ProgressEvent) => {
-    const current = progressStore.payloads[payload.progressBarId];
+    const id = payload.progressBarId;
 
-    if (
-      current !== undefined &&
-      current.status.type !== 'running' &&
-      payload.status.type === 'running'
-    ) {
-      // Only reported: the core sends a bar's events in order.
-      logError('[EVENT] running event after the end of its bar', {
-        current,
-        payload,
-      });
+    if (payload.status.type !== 'running') {
+      endedBarIds.add(id);
+    } else if (endedBarIds.has(id)) {
+      logError('[EVENT] running event after the end of its bar', payload);
+      return;
     }
 
-    setProgressStore('payloads', payload.progressBarId, payload);
+    setProgressStore('payloads', id, payload);
   };
 
   const fetchEvents = async () => {
