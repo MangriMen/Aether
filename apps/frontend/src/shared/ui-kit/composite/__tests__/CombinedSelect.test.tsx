@@ -3,7 +3,7 @@ import type { JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { SelectItem } from '../../primitives/Select';
+import { SelectItem, SelectTrigger } from '../../primitives/Select';
 import { CombinedSelect } from '../CombinedSelect';
 
 type Named = { id: number; name: string };
@@ -87,10 +87,23 @@ describe('CombinedSelect selected value', () => {
     expect(triggerText()).toContain('false');
   });
 
-  it('does not crash on an empty string option', () => {
+  it('shows nothing for an empty string option', () => {
     mount(() => <CombinedSelect<string, never> options={['', 'a']} value='' />);
 
-    expect(trigger()).not.toBeNull();
+    expect(triggerText().trim()).toBe('');
+  });
+
+  it('shows nothing when the selected object lacks the named property', () => {
+    mount(() => (
+      <CombinedSelect<Partial<Named>, never>
+        options={[{ id: 1 }]}
+        optionValue='id'
+        optionTextValue='name'
+        value={{ id: 1 }}
+      />
+    ));
+
+    expect(triggerText()).not.toContain('undefined');
   });
 
   it('renders no text when nothing is selected', () => {
@@ -107,6 +120,17 @@ describe('CombinedSelect selected value', () => {
 });
 
 describe('CombinedSelect props', () => {
+  it('renders custom children in place of the default trigger', () => {
+    mount(() => (
+      <CombinedSelect<string, never> options={['a']} value='a'>
+        <SelectTrigger aria-label='Custom'>custom trigger</SelectTrigger>
+      </CombinedSelect>
+    ));
+
+    expect(triggerText()).toContain('custom trigger');
+    expect(document.querySelectorAll('button')).toHaveLength(1);
+  });
+
   it('puts the class prop on the root element', () => {
     mount(() => (
       <CombinedSelect<string, never>

@@ -160,7 +160,7 @@ describe('virtualized SelectContent', () => {
     expect(itemCount()).toBeLessThan(40);
   });
 
-  it('follows option changes without remounting the listbox', async () => {
+  it('updates the total size and the window when the options change', async () => {
     const setOptions = mountVirtualized(makeOptions(50));
     await tick();
 
@@ -181,6 +181,7 @@ describe('virtualized SelectContent', () => {
     expect(totalSize()).toBe(10 * 32);
   });
 
+  // The only test here that fails when the virtualizer is recreated on option changes.
   it('keeps the scroll position when the options change', async () => {
     const setOptions = mountVirtualized(makeOptions(500));
     await tick();

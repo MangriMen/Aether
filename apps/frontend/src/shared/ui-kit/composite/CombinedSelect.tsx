@@ -2,7 +2,7 @@ import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
 import type { SelectValueOptions } from '@kobalte/core/select';
 import type { Component, JSX, ValidComponent } from 'solid-js';
 
-import { children, Show, splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/utils';
 
@@ -48,8 +48,6 @@ export const CombinedSelect = <
     'children',
   ]);
 
-  const resolved = children(() => local.children);
-
   const getSelectedValue = (state: SelectValueState<Option>): string | null => {
     const selected = state.selectedOption();
 
@@ -68,9 +66,9 @@ export const CombinedSelect = <
         typeof optionTextValue === 'number') &&
       typeof selected === 'object'
     ) {
-      return String(
-        (selected as Record<PropertyKey, unknown>)[optionTextValue],
-      );
+      const text = (selected as Record<PropertyKey, unknown>)[optionTextValue];
+
+      return text == null ? null : String(text);
     }
 
     if (
@@ -91,7 +89,7 @@ export const CombinedSelect = <
       {...others}
     >
       <Show
-        when={resolved()}
+        when={local.children}
         fallback={
           <SelectTrigger class='gap-1.5 whitespace-nowrap'>
             <SelectValue<Option>>
@@ -100,7 +98,7 @@ export const CombinedSelect = <
           </SelectTrigger>
         }
       >
-        {resolved()}
+        {(content) => content()}
       </Show>
       <SelectContent />
     </Select>
