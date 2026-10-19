@@ -663,6 +663,8 @@ mod tests {
                 ],
                 "round {round}"
             );
+            settle().await;
+            assert!(rx.try_recv().is_err(), "round {round}: an event too many");
         }
     }
 
