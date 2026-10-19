@@ -1,13 +1,18 @@
-import { createSignal } from 'solid-js';
+import { createSignal, onCleanup } from 'solid-js';
 
 export function useIsOverflow() {
   const [isOverflowed, setIsOverflowed] = createSignal(false);
   let elementRef: HTMLElement | undefined;
 
   // Just save the element reference without attaching listeners here
-  const ref = (el: HTMLElement) => {
+  // Solid passes undefined to ref callbacks on unmount.
+  const ref = (el: HTMLElement | undefined) => {
     elementRef = el;
   };
+
+  onCleanup(() => {
+    elementRef = undefined;
+  });
 
   // Run the check manually when needed (e.g., on parent hover)
   const updateOverflow = () => {

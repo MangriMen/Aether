@@ -17,6 +17,7 @@ export type CombinedTooltipProps<T extends ValidComponent = 'button'> =
       disableTooltip?: boolean;
     };
 
+// Typed against the root props so a Kobalte rename fails compilation instead of leaking into the trigger.
 const TOOLTIP_ROOT_KEYS = [
   'getAnchorRect',
   'placement',
@@ -34,7 +35,6 @@ const TOOLTIP_ROOT_KEYS = [
   'open',
   'defaultOpen',
   'onOpenChange',
-  'disableTooltip',
   'triggerOnFocusOnly',
   'openDelay',
   'closeDelay',
@@ -42,7 +42,7 @@ const TOOLTIP_ROOT_KEYS = [
   'ignoreSafeArea',
   'forceMount',
   'id',
-] as const;
+] as const satisfies readonly (keyof TooltipRootProps)[];
 
 export const CombinedTooltip = <T extends ValidComponent = 'button'>(
   props: PolymorphicProps<T, CombinedTooltipProps<T>>,
