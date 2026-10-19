@@ -1,6 +1,7 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
 import IconChevronDown from '~icons/mdi/chevron-down';
+import IconDownloadOutline from '~icons/mdi/download-outline';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
@@ -13,22 +14,19 @@ import { cn } from '@/shared/utils';
 
 import { type ProgressEvent } from '../model/progressEvent';
 import {
-  countMirrors,
   findFailedDescendant,
-  getChildren,
-  getRoots,
+  type ProgressIndex,
   splitChildren,
 } from '../model/progressTree';
 import { ProgressCard } from './ProgressCard';
 
 export type ProgressDetailsProps = ComponentProps<'div'> & {
-  /** All bars, the tree is built from `parentId`. */
-  payloads: Accessor<ProgressEvent[]>;
+  index: Accessor<ProgressIndex>;
 };
 
 type ProgressNodeProps = {
   payload: ProgressEvent;
-  payloads: Accessor<ProgressEvent[]>;
+  index: Accessor<ProgressIndex>;
   /** Nested bars are compact. */
   size?: 'default' | 'sm';
 };
@@ -49,15 +47,21 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false);
 
   const children = createMemo(() =>
-    getChildren(props.payloads(), props.payload.progressBarId),
+    props.index().childrenOf(props.payload.progressBarId),
   );
-  const split = createMemo(() => splitChildren(children()));
+  // Bars keep their place while the node works; the finished ones are folded away once it
+  // stops, so nothing jumps under the reader's eyes.
+  const split = createMemo(() =>
+    props.payload.status.type === 'running'
+      ? { active: children(), finished: [] }
+      : splitChildren(children()),
+  );
   const mirrors = createMemo(() =>
-    countMirrors(props.payloads(), props.payload.progressBarId),
+    props.index().mirrorCount(props.payload.progressBarId),
   );
   const failedMessage = createMemo(() => {
     const status = findFailedDescendant(
-      props.payloads(),
+      props.index(),
       props.payload.progressBarId,
     )?.status;
     return status?.type === 'failed' ? status.message : undefined;
@@ -107,18 +111,11 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
           <div class='gap-2 pl-4.5 flex flex-col'>
             <For each={split().active}>
               {(child) => (
-                <ProgressNode
-                  payload={child}
-                  payloads={props.payloads}
-                  size='sm'
-                />
+                <ProgressNode payload={child} index={props.index} size='sm' />
               )}
             </For>
             <Show when={split().finished.length > 0}>
-              <FinishedGroup
-                finished={split().finished}
-                payloads={props.payloads}
-              />
+              <FinishedGroup finished={split().finished} index={props.index} />
             </Show>
           </div>
         </CollapsibleContent>
@@ -129,7 +126,7 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
 
 type FinishedGroupProps = {
   finished: ProgressEvent[];
-  payloads: Accessor<ProgressEvent[]>;
+  index: Accessor<ProgressIndex>;
 };
 
 /** Done and cancelled children, collapsed so they do not crowd the live ones. */
@@ -154,11 +151,7 @@ const FinishedGroup: Component<FinishedGroupProps> = (props) => {
         <div class='gap-2 pl-4.5 flex flex-col opacity-70'>
           <For each={props.finished}>
             {(child) => (
-              <ProgressNode
-                payload={child}
-                payloads={props.payloads}
-                size='sm'
-              />
+              <ProgressNode payload={child} index={props.index} size='sm' />
             )}
           </For>
         </div>
@@ -168,22 +161,29 @@ const FinishedGroup: Component<FinishedGroupProps> = (props) => {
 };
 
 export const ProgressDetails: Component<ProgressDetailsProps> = (props) => {
-  const [local, others] = splitProps(props, ['payloads', 'class']);
+  const [local, others] = splitProps(props, ['index', 'class']);
 
-  const roots = createMemo(() => getRoots(local.payloads()));
+  const [{ t }] = useTranslation();
 
   return (
     <div
       class={cn(
-        'gap-3 flex flex-col overflow-x-hidden overflow-y-scroll',
+        'gap-3 flex flex-col overflow-x-hidden overflow-y-auto',
         local.class,
       )}
       {...others}
     >
-      <For each={roots()}>
-        {(payload) => (
-          <ProgressNode payload={payload} payloads={local.payloads} />
-        )}
+      <For
+        each={local.index().roots}
+        fallback={
+          <div class='gap-2 py-10 text-muted-foreground flex flex-col items-center text-center'>
+            <IconDownloadOutline class='size-10 opacity-50' />
+            <span class='font-medium'>{t('events.nothingRunning')}</span>
+            <span class='text-sm'>{t('events.nothingRunningHint')}</span>
+          </div>
+        }
+      >
+        {(payload) => <ProgressNode payload={payload} index={local.index} />}
       </For>
     </div>
   );

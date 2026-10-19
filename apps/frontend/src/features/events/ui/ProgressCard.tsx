@@ -115,6 +115,14 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   const isSmall = () => local.size === 'sm';
 
+  // A compact bar that is over drops its track and fades, so it stays in its place as a line.
+  const isSettled = createMemo(
+    () =>
+      isSmall() &&
+      (local.payload.status.type === 'done' ||
+        local.payload.status.type === 'cancelled'),
+  );
+
   // Compact cards only spend a line on what needs attention.
   const showMessage = createMemo(
     () =>
@@ -126,7 +134,12 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
 
   return (
     <div
-      class={cn('flex flex-col', isSmall() ? 'gap-1' : 'gap-2', local.class)}
+      class={cn(
+        'flex flex-col',
+        isSmall() ? 'gap-1' : 'gap-2',
+        { 'opacity-60': isSettled() },
+        local.class,
+      )}
       {...others}
     >
       <div class='gap-4 flex items-center justify-between'>
@@ -153,13 +166,15 @@ export const ProgressCard: Component<ProgressCardProps> = (props) => {
         </span>
       </div>
 
-      <Progress
-        class={cn({ '[&>div]:h-1': isSmall() })}
-        variant={isError() ? 'error' : undefined}
-        value={clampedValue()}
-        minValue={0}
-        maxValue={1}
-      />
+      <Show when={!isSettled()}>
+        <Progress
+          class={cn({ '[&>div]:h-1': isSmall() })}
+          variant={isError() ? 'error' : undefined}
+          value={clampedValue()}
+          minValue={0}
+          maxValue={1}
+        />
+      </Show>
 
       <Show when={showMessage() || (!isSmall() && bytesStr())}>
         <div class='gap-4 flex items-center justify-between'>

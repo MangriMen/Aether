@@ -3,13 +3,10 @@ import { describe, expect, it } from 'vitest';
 import type { ProgressEvent } from '../progressEvent';
 
 import {
-  countMirrors,
+  buildProgressIndex,
   findFailedDescendant,
-  getChildren,
-  getDescendantIds,
   getFinishedIds,
   getFinishedRoots,
-  getRoots,
   splitChildren,
 } from '../progressTree';
 
@@ -38,26 +35,29 @@ describe('progress tree', () => {
     make('orphan', 'missing'),
   ];
 
+  const index = buildProgressIndex(payloads);
+
   it('takes only bars without a parent as roots', () => {
-    expect(ids(getRoots(payloads))).toEqual(['root']);
+    expect(ids(index.roots)).toEqual(['root']);
   });
 
   it('finds children by parent', () => {
-    expect(ids(getChildren(payloads, 'root'))).toEqual(['a', 'b']);
+    expect(ids(index.childrenOf('root'))).toEqual(['a', 'b']);
+    expect(index.childrenOf('b')).toEqual([]);
   });
 
   it('counts mirrors of a bar', () => {
-    expect(countMirrors(payloads, 'a')).toBe(1);
-    expect(countMirrors(payloads, 'b')).toBe(0);
+    expect(index.mirrorCount('a')).toBe(1);
+    expect(index.mirrorCount('b')).toBe(0);
   });
 
   it('detects a failed descendant at any depth', () => {
-    expect(findFailedDescendant(payloads, 'root')).toBeDefined();
-    expect(findFailedDescendant(payloads, 'b')).toBeUndefined();
+    expect(findFailedDescendant(index, 'root')).toBeDefined();
+    expect(findFailedDescendant(index, 'b')).toBeUndefined();
   });
 
   it('collects all descendants', () => {
-    expect(getDescendantIds(payloads, 'root').sort()).toEqual(['a', 'a1', 'b']);
+    expect(ids(index.descendantsOf('root')).sort()).toEqual(['a', 'a1', 'b']);
   });
 });
 
@@ -67,7 +67,7 @@ describe('finished bars', () => {
       ? { type, message: 'x' }
       : { type }) as ProgressEvent['status'];
 
-  it('puts running children first and moves finished ones aside', () => {
+  it('keeps the order of the children and moves finished ones aside', () => {
     const list = [
       make('a', 'p', { status: st('done') }),
       make('b', 'p', { status: st('failed') }),
@@ -78,7 +78,7 @@ describe('finished bars', () => {
 
     const { active, finished } = splitChildren(list);
 
-    expect(active.map((p) => p.progressBarId)).toEqual(['c', 'e', 'b']);
+    expect(active.map((p) => p.progressBarId)).toEqual(['b', 'c', 'e']);
     expect(finished.map((p) => p.progressBarId)).toEqual(['a', 'd']);
   });
 
@@ -91,31 +91,34 @@ describe('finished bars', () => {
       make('r3', null, { status: st('failed') }),
     ];
 
-    expect(getFinishedRoots(list).map((p) => p.progressBarId)).toEqual([
+    expect(
+      getFinishedRoots(buildProgressIndex(list)).map((p) => p.progressBarId),
+    ).toEqual(['r1', 'r3']);
+    expect(getFinishedIds(buildProgressIndex(list))).toEqual([
       'r1',
+      'c1',
       'r3',
     ]);
-    expect(getFinishedIds(list)).toEqual(['r1', 'c1', 'r3']);
   });
 
   it('does not treat a failed root with a running child as finished', () => {
     const list = [make('r', null, { status: st('failed') }), make('c', 'r')];
 
-    expect(getFinishedRoots(list)).toEqual([]);
-    expect(getFinishedIds(list)).toEqual([]);
+    expect(getFinishedRoots(buildProgressIndex(list))).toEqual([]);
+    expect(getFinishedIds(buildProgressIndex(list))).toEqual([]);
   });
 
   it('neither treats an orphan as a root nor clears it', () => {
     const list = [make('o', 'missing', { status: st('done') })];
 
-    expect(getRoots(list)).toEqual([]);
-    expect(getFinishedRoots(list)).toEqual([]);
-    expect(getFinishedIds(list)).toEqual([]);
+    expect(buildProgressIndex(list).roots).toEqual([]);
+    expect(getFinishedRoots(buildProgressIndex(list))).toEqual([]);
+    expect(getFinishedIds(buildProgressIndex(list))).toEqual([]);
   });
 
   it('does not hang on a cycle in parent ids', () => {
     const list = [make('a', 'b'), make('b', 'a')];
 
-    expect(getDescendantIds(list, 'a')).toEqual(['b']);
+    expect(ids(buildProgressIndex(list).descendantsOf('a'))).toEqual(['b']);
   });
 });

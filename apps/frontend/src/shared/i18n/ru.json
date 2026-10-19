@@ -273,6 +273,8 @@
     "minecraftAssets": "Ресурсы (файлов: {{count}})",
     "minecraftDownloading": "Загрузка Minecraft {{version}}",
     "neededFor": "Нужен для установок: {{count}}",
+    "nothingRunning": "Сейчас ничего не загружается",
+    "nothingRunningHint": "Здесь появятся установки и загрузки.",
     "perSecond": "{{size}}/с",
     "waitingFor": "Ждёт: {{name}}",
     "stage": {

@@ -1,96 +1,118 @@
 import type { ProgressEvent } from './progressEvent';
 
-export const getRoots = (payloads: ProgressEvent[]): ProgressEvent[] =>
-  payloads.filter((p) => p.parentId === null);
+type BarId = ProgressEvent['progressBarId'];
 
-export const getChildren = (
+/**
+ * The tree of bars, built in one pass over the list so a node asks about its children, mirrors
+ * and descendants without going through the whole list again.
+ */
+export type ProgressIndex = {
+  /** Bars without a parent. */
+  roots: ProgressEvent[];
+  /** Children of `id`, in the order of the list. */
+  childrenOf: (id: BarId) => ProgressEvent[];
+  /** How many bars show `id`. */
+  mirrorCount: (id: BarId) => number;
+  /** Every bar below `id`, parents before their children. */
+  descendantsOf: (id: BarId) => ProgressEvent[];
+};
+
+const noBars: ProgressEvent[] = [];
+
+export const buildProgressIndex = (
   payloads: ProgressEvent[],
-  id: ProgressEvent['progressBarId'],
-): ProgressEvent[] => payloads.filter((p) => p.parentId === id);
+): ProgressIndex => {
+  const roots: ProgressEvent[] = [];
+  const children = new Map<BarId, ProgressEvent[]>();
+  const mirrors = new Map<BarId, number>();
 
-export const countMirrors = (
-  payloads: ProgressEvent[],
-  id: ProgressEvent['progressBarId'],
-): number => payloads.filter((p) => p.mirrorOf === id).length;
+  for (const p of payloads) {
+    if (p.parentId === null) {
+      roots.push(p);
+    } else {
+      const siblings = children.get(p.parentId);
 
-export const getDescendantIds = (
-  payloads: ProgressEvent[],
-  id: ProgressEvent['progressBarId'],
-): string[] => {
-  const result: string[] = [];
-  const seen = new Set<string>([id]);
-  const queue = [id];
-
-  while (queue.length > 0) {
-    const current = queue.shift() as string;
-
-    for (const child of getChildren(payloads, current)) {
-      if (!seen.has(child.progressBarId)) {
-        seen.add(child.progressBarId);
-        result.push(child.progressBarId);
-        queue.push(child.progressBarId);
+      if (siblings) {
+        siblings.push(p);
+      } else {
+        children.set(p.parentId, [p]);
       }
+    }
+
+    if (p.mirrorOf !== null) {
+      mirrors.set(p.mirrorOf, (mirrors.get(p.mirrorOf) ?? 0) + 1);
     }
   }
 
-  return result;
+  const childrenOf = (id: BarId) => children.get(id) ?? noBars;
+
+  const descendantsOf = (id: BarId) => {
+    const result: ProgressEvent[] = [];
+    const seen = new Set<BarId>([id]);
+    const queue = [id];
+
+    for (let i = 0; i < queue.length; i++) {
+      for (const child of childrenOf(queue[i] as BarId)) {
+        if (!seen.has(child.progressBarId)) {
+          seen.add(child.progressBarId);
+          result.push(child);
+          queue.push(child.progressBarId);
+        }
+      }
+    }
+
+    return result;
+  };
+
+  return {
+    roots,
+    childrenOf,
+    mirrorCount: (id) => mirrors.get(id) ?? 0,
+    descendantsOf,
+  };
 };
 
 /** The first failed bar below `id`, if any. */
 export const findFailedDescendant = (
-  payloads: ProgressEvent[],
-  id: ProgressEvent['progressBarId'],
-): ProgressEvent | undefined => {
-  const ids = new Set(getDescendantIds(payloads, id));
-  return payloads.find(
-    (p) => ids.has(p.progressBarId) && p.status.type === 'failed',
-  );
-};
+  index: ProgressIndex,
+  id: BarId,
+): ProgressEvent | undefined =>
+  index.descendantsOf(id).find((p) => p.status.type === 'failed');
 
 /** Done and cancelled bars are finished; failed ones must stay visible. */
 const isFinishedChild = (p: ProgressEvent): boolean =>
   p.status.type === 'done' || p.status.type === 'cancelled';
 
 /**
- * Splits the children of a node: `active` (running first, then the rest,
- * stable otherwise) and `finished` (done or cancelled), in original order.
+ * Splits the children of a node into `active` and `finished` (done or cancelled), each in
+ * the original order: bars keep their place so the list does not jump while they work.
  */
 export const splitChildren = (
   children: ProgressEvent[],
 ): { active: ProgressEvent[]; finished: ProgressEvent[] } => {
-  const running: ProgressEvent[] = [];
-  const rest: ProgressEvent[] = [];
+  const active: ProgressEvent[] = [];
   const finished: ProgressEvent[] = [];
 
   for (const child of children) {
-    if (isFinishedChild(child)) {
-      finished.push(child);
-    } else if (child.status.type === 'running') {
-      running.push(child);
-    } else {
-      rest.push(child);
-    }
+    (isFinishedChild(child) ? finished : active).push(child);
   }
 
-  return { active: [...running, ...rest], finished };
+  return { active, finished };
 };
 
 /** Roots that are not running and have no running descendant. */
-export const getFinishedRoots = (payloads: ProgressEvent[]): ProgressEvent[] =>
-  getRoots(payloads).filter((root) => {
-    if (root.status.type === 'running') {
-      return false;
-    }
-
-    const descendants = new Set(getDescendantIds(payloads, root.progressBarId));
-    return !payloads.some(
-      (p) => descendants.has(p.progressBarId) && p.status.type === 'running',
-    );
-  });
+export const getFinishedRoots = (index: ProgressIndex): ProgressEvent[] =>
+  index.roots.filter(
+    (root) =>
+      root.status.type !== 'running' &&
+      !index
+        .descendantsOf(root.progressBarId)
+        .some((p) => p.status.type === 'running'),
+  );
 
 /** Ids of every finished root together with all its descendants. */
-export const getFinishedIds = (payloads: ProgressEvent[]): string[] =>
-  getFinishedRoots(payloads).flatMap((root) => [
+export const getFinishedIds = (index: ProgressIndex): string[] =>
+  getFinishedRoots(index).flatMap((root) => [
     root.progressBarId,
-    ...getDescendantIds(payloads, root.progressBarId),
+    ...index.descendantsOf(root.progressBarId).map((p) => p.progressBarId),
   ]);
