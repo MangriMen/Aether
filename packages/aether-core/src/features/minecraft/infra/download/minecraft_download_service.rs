@@ -7,8 +7,8 @@ use tracing::info;
 use crate::{
     features::{
         events::{
-            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
-            ProgressServiceExt,
+            OptionalProgressBarExt, ProgressBarId, ProgressService, ProgressServiceExt,
+            SharedDownload,
         },
         minecraft::{MinecraftDomainError, MinecraftDownloader, modded, vanilla, version_jar_name},
     },
@@ -130,7 +130,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
         let bar = self
             .progress_service
             .init_shared_progress_safe(
-                ProgressEventType::MinecraftVersionDownload {
+                SharedDownload::MinecraftVersion {
                     version: version_info.id.clone(),
                 },
                 size.max(1) as f64,
@@ -177,7 +177,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore> MinecraftD
             .progress_service
             .wait_on_shared(
                 waiting_bar,
-                ProgressEventType::MinecraftVersionDownload {
+                SharedDownload::MinecraftVersion {
                     version: version_info.id.clone(),
                 },
             )

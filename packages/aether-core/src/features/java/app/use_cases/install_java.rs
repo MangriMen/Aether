@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::features::events::{ProgressBarId, ProgressEventType, ProgressService};
+use crate::features::events::{ProgressBarId, ProgressService, SharedDownload};
 use crate::features::java::{
     Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
     JavaInstallationTracker, JavaStorage, JreProvider, app::InstallJava,
@@ -29,7 +29,7 @@ impl JavaInstallService for InstallJavaUseCase {
         // provider starts the shared bar of the download.
         let _wait = self
             .progress_service
-            .wait_on_shared(waiting_bar, ProgressEventType::JavaDownload { version })
+            .wait_on_shared(waiting_bar, SharedDownload::Java { version })
             .await;
         let _guard = self.java_installation_tracker.lock(version).await;
 
@@ -165,7 +165,7 @@ mod tests {
             let bar = self
                 .progress
                 .init_shared_progress_safe(
-                    ProgressEventType::JavaDownload { version },
+                    SharedDownload::Java { version },
                     100.0,
                     "Downloading java version".into(),
                 )
