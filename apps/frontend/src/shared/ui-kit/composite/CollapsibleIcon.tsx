@@ -15,6 +15,7 @@ export const CollapsibleIcon: Component<CollapsibleIconProps> = (props) => {
   return (
     <IconButton
       variant='ghost'
+      class={cn(local.class)}
       icon={() => (
         <IconMdiChevronDown
           class={cn('rotate-0 transition-transform', {

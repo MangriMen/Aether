@@ -1,7 +1,7 @@
 import type { Component, ComponentProps } from 'solid-js';
 
 import IconMdiCubeOutline from '~icons/mdi/cube-outline';
-import { createSignal, Show, splitProps } from 'solid-js';
+import { createEffect, createSignal, on, Show, splitProps } from 'solid-js';
 
 import { cn } from '@/shared/utils';
 
@@ -21,6 +21,14 @@ export const Image: Component<ImageProps> = (props) => {
   ]);
 
   const [isValidSrc, setIsValidSrc] = createSignal(true);
+
+  // A new src deserves a fresh attempt: without this the fallback sticks forever.
+  createEffect(
+    on(
+      () => local.src,
+      () => setIsValidSrc(true),
+    ),
+  );
 
   const handleError = () => {
     setIsValidSrc(false);
@@ -49,7 +57,7 @@ export const Image: Component<ImageProps> = (props) => {
         <img
           class={cn('size-full', local.imgClass)}
           src={local.src}
-          alt={local.alt}
+          alt={local.alt ?? ''}
           onError={handleError}
         />
       </Show>

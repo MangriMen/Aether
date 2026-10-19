@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, JSX } from 'solid-js';
 
-import { Show, splitProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/utils';
 
@@ -40,13 +40,18 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
     'inputProps',
     'leadingIcons',
     'trailingIcons',
+    'validationState',
     'class',
   ]);
+
+  const validationState = createMemo(
+    () => local.validationState ?? (local.errorMessage ? 'invalid' : 'valid'),
+  );
 
   return (
     <TextField
       class={cn('gap-2 flex flex-col', local.class)}
-      validationState={local.errorMessage ? 'invalid' : 'valid'}
+      validationState={validationState()}
       {...others}
     >
       <Show when={local.label}>
@@ -54,7 +59,15 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
       </Show>
       <div class='relative flex'>
         <div class='inset-y-0 left-0 absolute'>{local.leadingIcons}</div>
-        <TextFieldInput type='text' {...local.inputProps} />
+        <TextFieldInput
+          type='text'
+          {...local.inputProps}
+          class={cn(
+            !!local.leadingIcons && 'pl-9',
+            !!local.trailingIcons && 'pr-9',
+            local.inputProps?.class,
+          )}
+        />
         <div class='inset-y-0 right-0 absolute'>{local.trailingIcons}</div>
       </div>
       <TextFieldErrorMessage>{local.errorMessage}</TextFieldErrorMessage>
