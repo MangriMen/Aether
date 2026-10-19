@@ -1506,6 +1506,189 @@ mod tests {
         assert_eq!(bytes, [Some(100), Some(300)]);
     }
 
+    /// Sends every event into a channel at once, but the `held`-th one (from 0) only once
+    /// `release` has a permit for it.
+    struct HoldingEmitter {
+        held: usize,
+        emitted: std::sync::atomic::AtomicUsize,
+        release: Arc<tokio::sync::Semaphore>,
+        tx: mpsc::UnboundedSender<Event>,
+    }
+
+    #[async_trait]
+    impl EventEmitter<Event> for HoldingEmitter {
+        async fn emit(&self, event: Event) -> Result<(), EventError> {
+            let index = self
+                .emitted
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if index == self.held {
+                self.release.acquire().await.unwrap().forget();
+            }
+            let _ = self.tx.send(event);
+            Ok(())
+        }
+
+        fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+    }
+
+    /// A service whose first event waits for a permit of the semaphore handed back.
+    fn held_service() -> (
+        Arc<ProgressServiceImpl<InMemoryProgressBarStorage>>,
+        Arc<InMemoryProgressBarStorage>,
+        mpsc::UnboundedReceiver<Event>,
+        Arc<tokio::sync::Semaphore>,
+    ) {
+        let (tx, rx) = mpsc::unbounded_channel();
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let storage = Arc::new(InMemoryProgressBarStorage::default());
+        let service = Arc::new(ProgressServiceImpl::new(
+            Arc::new(HoldingEmitter {
+                held: 0,
+                emitted: std::sync::atomic::AtomicUsize::new(0),
+                release: release.clone(),
+                tx,
+            }),
+            storage.clone(),
+        ));
+        (service, storage, rx, release)
+    }
+
+    /// The events of `bar` in `events`, as `(fraction, status)`.
+    fn events_of(events: &[ProgressEvent], bar: Uuid) -> Vec<(Option<f64>, ProgressStatus)> {
+        events
+            .iter()
+            .filter(|event| event.progress_bar_id == bar)
+            .map(|event| (event.fraction, event.status.clone()))
+            .collect()
+    }
+
+    /// The bytes of a child make a running event of its parent. While that event waits its
+    /// turn behind a slow listener, the parent's handle is dropped: the parent and the child
+    /// left under it end. Their final events must still be the last of them.
+    #[tokio::test]
+    async fn a_running_event_waiting_its_turn_does_not_come_after_the_end_of_its_bar() {
+        let (service, storage, mut rx, release) = held_service();
+        let other = service
+            .init_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        let parent = service
+            .init_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        let parent_id = parent.id;
+        let child = service
+            .init_child_progress(parent.id, file("a.jar"), 10.0, String::new())
+            .await
+            .unwrap();
+        let child_id = child.id;
+        assert!(sent(&mut rx).is_empty());
+
+        // Another bar's event holds the line: the listener is slow with it.
+        let holding = {
+            let service = service.clone();
+            tokio::spawn(async move { service.emit_progress(&other, 1.0, None).await.unwrap() })
+        };
+        settle().await;
+        assert!(
+            !holding.is_finished(),
+            "the first event waits on the listener"
+        );
+
+        // The child's first bytes: running events of the child and the parent, made and
+        // waiting behind the held one.
+        let reporting = {
+            let service = service.clone();
+            tokio::spawn(async move {
+                service.add_progress_bytes(&child, 100).await.unwrap();
+                child
+            })
+        };
+        settle().await;
+        assert!(
+            !reporting.is_finished(),
+            "the bytes' events wait their turn"
+        );
+        assert_eq!(bar(&storage, &parent).await.bytes_done, Some(100));
+
+        // The parent ends meanwhile, taking the child with it.
+        drop(parent);
+        settle().await;
+        assert!(storage.list().await.iter().all(|bar| bar.id != parent_id));
+
+        release.add_permits(1);
+        holding.await.unwrap();
+        drop(reporting.await.unwrap());
+        settle().await;
+
+        let events = sent(&mut rx);
+        let order: Vec<_> = events
+            .iter()
+            .map(|event| (event.progress_bar_id, event.status.clone()))
+            .collect();
+        for (id, last) in [
+            (child_id, ProgressStatus::Cancelled),
+            (parent_id, ProgressStatus::Done),
+        ] {
+            let of_bar = events_of(&events, id);
+            assert_eq!(
+                of_bar.last(),
+                Some(&(None, last)),
+                "the final event of {id} is not its last; all events: {order:?}"
+            );
+        }
+    }
+
+    /// The same for one bar and its own running event: a clone of its handle reports while
+    /// the handle is dropped.
+    #[tokio::test]
+    async fn an_own_running_event_waiting_its_turn_does_not_come_after_the_end_of_the_bar() {
+        let (service, _storage, mut rx, release) = held_service();
+        let other = service
+            .init_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        let id = service
+            .init_progress(java(), 10.0, String::new())
+            .await
+            .unwrap();
+        let bar_id = id.id;
+
+        let holding = {
+            let service = service.clone();
+            tokio::spawn(async move { service.emit_progress(&other, 1.0, None).await.unwrap() })
+        };
+        settle().await;
+        assert!(!holding.is_finished());
+
+        let reporting = {
+            let (service, clone) = (service.clone(), id.clone());
+            tokio::spawn(async move {
+                service.emit_progress(&clone, 5.0, None).await.unwrap();
+                // Dropping the clone afterwards finds the bar gone already.
+                drop(clone);
+            })
+        };
+        settle().await;
+        assert!(!reporting.is_finished());
+
+        drop(id);
+        settle().await;
+
+        release.add_permits(1);
+        holding.await.unwrap();
+        reporting.await.unwrap();
+        settle().await;
+
+        let events = sent(&mut rx);
+        let of_bar = events_of(&events, bar_id);
+        assert_eq!(
+            of_bar.last(),
+            Some(&(None, ProgressStatus::Done)),
+            "the final event is not the last of the bar: {of_bar:?}"
+        );
+    }
+
     #[tokio::test]
     async fn a_bar_starting_to_wait_on_a_running_download_is_shown_it_at_once() {
         let (service, _storage, mut rx) = service();
