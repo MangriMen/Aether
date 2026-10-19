@@ -81,7 +81,8 @@ export const Default: Story = {
 /** Drag a side edge to change the width; double-click an edge to reset it. */
 export const Resizable: Story = {
   render: () => (
-    <Dialog open modal={false}>
+    <Dialog>
+      <DialogTrigger as={Button<'button'>}>Open resizable</DialogTrigger>
       <DialogContent resizable defaultWidth={480} minWidth={320}>
         <DialogHeader>
           <DialogTitle>Resizable</DialogTitle>
