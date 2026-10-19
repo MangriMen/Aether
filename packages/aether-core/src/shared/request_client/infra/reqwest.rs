@@ -359,7 +359,7 @@ mod tests {
         ProgressBarId {
             id: uuid::Uuid::new_v4(),
             progress_storage: None,
-            event_emitter: None,
+            sequencer: None,
         }
     }
 

@@ -1,6 +1,5 @@
 import type { Accessor, Component, ComponentProps } from 'solid-js';
 
-import IconCheckCircle from '~icons/mdi/check-circle';
 import IconChevronDown from '~icons/mdi/chevron-down';
 import { createMemo, createSignal, For, Show, splitProps } from 'solid-js';
 
@@ -32,8 +31,6 @@ type ProgressNodeProps = {
   payloads: Accessor<ProgressEvent[]>;
   /** Nested bars are compact. */
   size?: 'default' | 'sm';
-  /** Shown inside the "Completed" group: a check mark marks a leaf. */
-  finished?: boolean;
 };
 
 /** The column of the chevron; leaves keep it empty so siblings line up. */
@@ -82,11 +79,7 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
       when={children().length > 0}
       fallback={
         <div class='gap-0.5 flex items-start'>
-          <span class={cn(toggleColumn(props.size === 'sm'), 'text-success')}>
-            <Show when={props.finished}>
-              <IconCheckCircle class='size-4' />
-            </Show>
-          </span>
+          <span class={toggleColumn(props.size === 'sm')} />
           {card()}
         </div>
       }
@@ -165,7 +158,6 @@ const FinishedGroup: Component<FinishedGroupProps> = (props) => {
                 payload={child}
                 payloads={props.payloads}
                 size='sm'
-                finished
               />
             )}
           </For>

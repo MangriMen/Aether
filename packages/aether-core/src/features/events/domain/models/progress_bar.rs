@@ -5,8 +5,9 @@ use std::time::Instant;
 use log::error;
 use uuid::Uuid;
 
-use crate::features::events::{ProgressBarStorage, SharedEventEmitter};
+use crate::features::events::ProgressBarStorage;
 
+use super::event_sequencer::EventSequencer;
 use super::transfer_window::TransferWindow;
 use super::{ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus};
 
@@ -186,7 +187,7 @@ pub(crate) struct Shown {
 pub struct ProgressBarId {
     pub id: Uuid,
     pub(crate) progress_storage: Option<Arc<dyn ProgressBarStorage>>,
-    pub(crate) event_emitter: Option<SharedEventEmitter>,
+    pub(crate) sequencer: Option<Arc<EventSequencer>>,
 }
 
 impl fmt::Debug for ProgressBarId {
@@ -237,28 +238,36 @@ impl ProgressBarId {
     /// they are finished: the children first, so that none is heard of after its parent is
     /// over.
     ///
-    /// Does nothing for an id that was never attached to a storage and an emitter.
+    /// Does nothing for an id that was never attached to a storage and a sequencer.
+    ///
+    /// The bars are taken out of the storage as one change, and the events of their end are sent
+    /// in the turn of that change: after those made before it, so none of a bar comes after
+    /// its end, and with the children first.
     async fn finish(
         self_id: Uuid,
         storage: Arc<dyn ProgressBarStorage>,
-        emitter: SharedEventEmitter,
+        sequencer: Arc<EventSequencer>,
     ) {
+        let change = sequencer.begin_change().await;
         let Some(bar) = Self::unregister(self_id, storage.as_ref()).await else {
             return;
         };
 
+        let mut events = Vec::new();
         if bar.has_children {
-            Self::finish_children(self_id, storage.as_ref(), &emitter).await;
+            Self::finish_children(self_id, storage.as_ref(), &mut events).await;
         }
-        Self::finish_mirrors(&bar, storage.as_ref(), &emitter).await;
-        Self::emit_finished(&bar, &emitter).await;
+        Self::finish_mirrors(&bar, storage.as_ref(), &mut events).await;
+        events.push(Self::finished_event(&bar));
+        sequencer.emit_all_after(change, events).await;
     }
 
-    /// End the mirrors of the shared bar `shared` as it ends: they show its last state.
+    /// End the mirrors of the shared bar `shared` as it ends: they show its last state. Their
+    /// last events go to `events`.
     async fn finish_mirrors(
         shared: &ProgressBar,
         storage: &dyn ProgressBarStorage,
-        emitter: &SharedEventEmitter,
+        events: &mut Vec<ProgressEvent>,
     ) {
         if shared.mirrors.is_empty() {
             return;
@@ -271,7 +280,7 @@ impl ProgressBarId {
             };
             mirror.show(&shown);
             mirror.status = shared.status.clone();
-            Self::emit_finished(&mirror, emitter).await;
+            events.push(Self::finished_event(&mirror));
         }
     }
 
@@ -279,12 +288,14 @@ impl ProgressBarId {
     /// at is left unfinished. A child normally ends before its parent; one still there when the
     /// parent ends would otherwise stay in the storage, and in the UI, for good. A mirror is
     /// one of them when its parent stops waiting before the shared bar is through; the shared
-    /// bar goes on.
+    /// bar goes on. Their last events go to `events`, the deepest first, so that none comes
+    /// after the end of its own parent.
     async fn finish_children(
         parent_id: Uuid,
         storage: &dyn ProgressBarStorage,
-        emitter: &SharedEventEmitter,
+        events: &mut Vec<ProgressEvent>,
     ) {
+        let mut ended = Vec::new();
         let mut parents = vec![parent_id];
         while let Some(parent_id) = parents.pop() {
             let children = storage
@@ -303,9 +314,11 @@ impl ProgressBarId {
                 if child.status == ProgressStatus::Running {
                     child.status = ProgressStatus::Cancelled;
                 }
-                Self::emit_finished(&child, emitter).await;
+                ended.push(Self::finished_event(&child));
             }
         }
+        // A bar is found before the bars under it.
+        events.extend(ended.into_iter().rev());
     }
 
     /// Remove the bar from `storage`; `None` when it is not there.
@@ -319,11 +332,10 @@ impl ProgressBarId {
         }
     }
 
-    /// Send the last event of a bar: done or, after [`fail`](Self::fail) or
+    /// The last event of a bar: done or, after [`fail`](Self::fail) or
     /// [`cancel`](Self::cancel), failed or cancelled.
-    async fn emit_finished(bar: &ProgressBar, emitter: &SharedEventEmitter) {
-        let reached_percent = bar.current / bar.total * 100.0;
-        let done = match &bar.status {
+    fn finished_event(bar: &ProgressBar) -> ProgressEvent {
+        match &bar.status {
             ProgressStatus::Failed { message } => {
                 bar.event(None, message.clone(), bar.status.clone())
             }
@@ -335,13 +347,6 @@ impl ProgressBarId {
             ProgressStatus::Running | ProgressStatus::Done => {
                 bar.event(None, COMPLETED_MESSAGE.to_string(), ProgressStatus::Done)
             }
-        };
-
-        if let Err(e) = emitter.emit(done.into()).await {
-            error!(
-                "Completion of progress bar {} (at {reached_percent:.2}%) was not delivered: {e:?}",
-                bar.id
-            );
         }
     }
 }
@@ -351,14 +356,14 @@ impl ProgressBarId {
 /// it end with it.
 impl Drop for ProgressBarId {
     fn drop(&mut self) {
-        let (Some(storage), Some(emitter)) =
-            (self.progress_storage.take(), self.event_emitter.take())
+        let (Some(storage), Some(sequencer)) =
+            (self.progress_storage.take(), self.sequencer.take())
         else {
             return;
         };
         let id = self.id;
 
-        tokio::spawn(Self::finish(id, storage, emitter));
+        tokio::spawn(Self::finish(id, storage, sequencer));
     }
 }
 
@@ -445,7 +450,7 @@ mod tests {
         ProgressBarId {
             id,
             progress_storage: Some(storage.clone()),
-            event_emitter: Some(Arc::new(ChannelEmitter(tx))),
+            sequencer: Some(Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))))),
         }
     }
 
@@ -474,7 +479,7 @@ mod tests {
         let bar_id = ProgressBarId {
             id,
             progress_storage: Some(storage.clone()),
-            event_emitter: Some(Arc::new(ChannelEmitter(tx))),
+            sequencer: Some(Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))))),
         };
         assert_eq!(storage.list().await.len(), 1);
 
@@ -598,8 +603,8 @@ mod tests {
         assert_eq!(
             finished,
             [
-                (child, ProgressStatus::Cancelled),
                 (grandchild, ProgressStatus::Cancelled),
+                (child, ProgressStatus::Cancelled),
                 (parent, ProgressStatus::Done),
             ],
             "the bars left behind were cut short"
@@ -678,7 +683,7 @@ mod tests {
         let id = ProgressBarId {
             id: Uuid::new_v4(),
             progress_storage: None,
-            event_emitter: None,
+            sequencer: None,
         };
         id.fail("ignored").await;
     }
@@ -689,7 +694,7 @@ mod tests {
         let bar_id = ProgressBarId {
             id: Uuid::new_v4(),
             progress_storage: Some(Arc::new(MapStorage::default())),
-            event_emitter: Some(Arc::new(ChannelEmitter(tx))),
+            sequencer: Some(Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))))),
         };
 
         drop(bar_id);
@@ -703,7 +708,7 @@ mod tests {
         let id = ProgressBarId {
             id: Uuid::new_v4(),
             progress_storage: None,
-            event_emitter: None,
+            sequencer: None,
         };
         drop(id);
         settle().await;
