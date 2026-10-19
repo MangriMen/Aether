@@ -6,7 +6,7 @@ use tauri_specta::Event;
 #[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceEventDto {
-    /// The place of the event in the order the backend sent all events of its type: the
+    /// The number of the event, from one counter for all the events the backend sends: the
     /// frontend drops what it has seen already.
     pub seq: u32,
     pub event: InstanceEventTypeDto,

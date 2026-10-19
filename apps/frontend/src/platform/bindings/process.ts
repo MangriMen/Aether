@@ -284,7 +284,7 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 
 export type ProcessEventDto = {
 	/**
-	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  The number of the event, from one counter for all the events the backend sends: the
 	 *  frontend drops what it has seen already.
 	 */
 	seq: number,

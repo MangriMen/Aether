@@ -37,7 +37,7 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 
 export type CacheEventDto = {
 	/**
-	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  The number of the event, from one counter for all the events the backend sends: the
 	 *  frontend drops what it has seen already.
 	 */
 	seq: number,
@@ -309,7 +309,7 @@ export type ProgressBarDto = {
 
 export type ProgressEventDto = {
 	/**
-	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  The number of the event, from one counter for all the events the backend sends: the
 	 *  frontend drops what it has seen already.
 	 */
 	seq: number,
@@ -367,7 +367,7 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 
 export type WarningEventDto = {
 	/**
-	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  The number of the event, from one counter for all the events the backend sends: the
 	 *  frontend drops what it has seen already.
 	 */
 	seq: number,
