@@ -1,6 +1,7 @@
 /** What a value the user gave a plugin (an importer's field) needs the plugin to have. */
 export type PluginAccessTarget =
-  { kind: 'host'; url: string } | { kind: 'folder'; filePath: string };
+  | { kind: 'host'; url: string }
+  | { kind: 'folder'; filePath: string };
 
 const HTTP_URL = /^https?:\/\//i;
 

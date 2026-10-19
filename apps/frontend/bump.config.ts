@@ -1,10 +1,10 @@
 import type { VersionBumpResults } from 'bumpp';
 
-import { defineConfig } from 'bumpp';
-import { execa } from 'execa';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'bumpp';
+import { execa } from 'execa';
 
 // Resolve absolute paths based on current file location
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

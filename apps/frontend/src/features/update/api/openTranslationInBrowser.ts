@@ -32,7 +32,7 @@ export const openTranslationInBrowser = async (text: string, t: TFunction) => {
       description: t('update.failedToOpenBrowserWithChangelogDescription'),
       variant: 'destructive',
     });
-    // eslint-disable-next-line no-console
+    // oxlint-disable-next-line no-console
     console.error('Browser open error:', err);
   }
 };

@@ -1,7 +1,7 @@
 import type { UserConfig } from 'vite';
 
-import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
 import vitePluginChecker from 'vite-plugin-checker';

@@ -1,0 +1,44 @@
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "jsxSingleQuote": true,
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "ignorePatterns": ["dist", "storybook-static", "src/platform/bindings/**"],
+  "sortImports": {
+    "internalPattern": ["@/", "#"],
+    // Keeps the order perfectionist had: @scope/pkg, then ~icons/*, then other packages.
+    "customGroups": [
+      {
+        "groupName": "scoped",
+        "modifiers": ["value"],
+        "elementNamePattern": ["@[a-z]*/**"]
+      },
+      {
+        "groupName": "icons",
+        "modifiers": ["value"],
+        "elementNamePattern": ["~icons/**"]
+      }
+    ],
+    "groups": [
+      "type-import",
+      "value-builtin",
+      { "newlinesBetween": false },
+      "scoped",
+      { "newlinesBetween": false },
+      "icons",
+      { "newlinesBetween": false },
+      "value-external",
+      "type-internal",
+      "value-internal",
+      ["type-parent", "type-sibling", "type-index"],
+      ["value-parent", "value-sibling", "value-index"],
+      "unknown"
+    ]
+  }
+}

@@ -69,11 +69,19 @@ jobs:
         working-directory: apps/frontend
         run: bun run lint:types
 
+      - name: Lint (oxlint)
+        working-directory: apps/frontend
+        run: bun run lint:code
+
+      - name: Format (oxfmt)
+        working-directory: apps/frontend
+        run: bun run lint:format
+
       # the better-tailwindcss rule sometimes times out on its cold start on a slow runner (Atomics.wait),
       # so retry once
-      - name: ESLint
+      - name: ESLint (rules oxlint cannot run)
         working-directory: apps/frontend
-        run: bun run lint:code || bun run lint:code
+        run: bun run lint:eslint || bun run lint:eslint
 
       - name: Architecture (dependency-cruiser)
         working-directory: apps/frontend

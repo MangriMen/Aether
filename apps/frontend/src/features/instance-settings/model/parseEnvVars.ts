@@ -2,7 +2,8 @@ import { EnvVarsError } from './javaAndMemoryConstants';
 import { quote, readQuoted } from './quoting';
 
 export type EnvVarsParseResult =
-  { vars: [string, string][] } | { error: EnvVarsError; part: string };
+  | { vars: [string, string][] }
+  | { error: EnvVarsError; part: string };
 
 const SEPARATOR = /[\s;]/;
 const ONLY_SEPARATORS = /^[\s;]*$/;

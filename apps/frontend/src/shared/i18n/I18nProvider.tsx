@@ -57,7 +57,7 @@ export const I18nProvider = (
 
   const setLocale = (locale: Locale) => {
     dayjs.locale(locale);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
     setLocale_(locale as Exclude<Locale, Function>);
   };
 

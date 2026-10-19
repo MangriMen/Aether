@@ -18,7 +18,7 @@ import { ContentNameCell } from './ContentNameCell';
 import { ContentVersionCell } from './ContentVersionCell';
 
 interface SortableHeaderProps<TData extends RowData> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line @typescript-eslint/no-explicit-any
   column: Column<AppTableFeatures, TData, any>;
   label: JSX.Element;
 }

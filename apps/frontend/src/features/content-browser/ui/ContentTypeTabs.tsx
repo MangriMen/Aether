@@ -34,7 +34,7 @@ export const ContentTypeTabs: Component<ContentTypeTabsProps> = (props) => {
     if (isContentType(value)) {
       local.onChange(value);
     } else {
-      // eslint-disable-next-line no-console
+      // oxlint-disable-next-line no-console
       console.error(`Unknown content type received: ${value}`);
     }
   };

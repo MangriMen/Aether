@@ -21,7 +21,8 @@ export const CreateOfflineAccountFormSchema = v.object({
 });
 
 export type CreateOfflineAccountFormSchemaError =
-  'INVALID_USERNAME_LENGTH' | 'INVALID_USERNAME_CHARS';
+  | 'INVALID_USERNAME_LENGTH'
+  | 'INVALID_USERNAME_CHARS';
 
 type EnsureAllKeys = { [K in CreateOfflineAccountFormSchemaError]: K };
 

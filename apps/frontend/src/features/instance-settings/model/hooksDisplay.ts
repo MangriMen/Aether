@@ -3,7 +3,8 @@ import type { HooksSettingsSchemaInput } from './hooksSettingsSchema';
 
 export const getHookDisplayValue = (
   defaultValues:
-    (() => Partial<HooksSettingsSchemaInput> | undefined) | undefined,
+    | (() => Partial<HooksSettingsSchemaInput> | undefined)
+    | undefined,
   overridable: boolean | undefined,
   key: HookFieldKey,
   value: string | undefined,
