@@ -10,12 +10,14 @@ export type ProgressEvent = ProgressEventDto;
 
 export const PROGRESS_EVENT_REMOVE_DELAY = 5000;
 
-export const PROGRESS_EVENT_FAILED_REMOVE_DELAY = 15000;
-
-export const isProgressFailed = (payload: ProgressEvent) =>
-  payload.status.type === 'failed';
-
-export const getProgressRemoveDelay = (payload: ProgressEvent) =>
-  isProgressFailed(payload)
-    ? PROGRESS_EVENT_FAILED_REMOVE_DELAY
-    : PROGRESS_EVENT_REMOVE_DELAY;
+/**
+ * An event that arrives after the bar's last one is out of order and must not bring the bar
+ * back to life: a finished bar stays as it ended.
+ */
+export const isStaleEvent = (
+  current: ProgressEvent | undefined,
+  incoming: ProgressEvent,
+) =>
+  current !== undefined &&
+  current.status.type !== 'running' &&
+  incoming.status.type === 'running';

@@ -1,5 +1,4 @@
-import { onCleanup, onMount } from 'solid-js';
-import { produce } from 'solid-js/store';
+import { onMount } from 'solid-js';
 
 import { useEventListener, eventsCommands, eventsEvents } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
@@ -8,47 +7,27 @@ import { showToast } from '@/shared/ui-kit';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
-import {
-  getProgressRemoveDelay,
-  isProgressFailed,
-} from '../model/progressEvent';
+import { isStaleEvent } from '../model/progressEvent';
 import { useProgressStore } from '../model/progressStore';
 
 export const useProgressEventsListener = () => {
-  const [, setProgressStore] = useProgressStore();
+  const [progressStore, setProgressStore] = useProgressStore();
   const [{ t }] = useTranslation();
 
   // Bars whose failure was already reported, so the toast comes up once.
   const notifiedFailures = new Set<string>();
 
-  const activeTimers = new Map<string, ReturnType<typeof setTimeout>>();
   // Bars updated by live events while the initial snapshot is loading;
   // the snapshot must not overwrite them. Not needed once it is applied.
   let liveBarIds: Set<string> | undefined = new Set<string>();
 
+  // Bars are never removed on their own: the user clears finished ones.
   const addEvent = (payload: ProgressEvent) => {
-    if (activeTimers.has(payload.progressBarId)) {
-      clearTimeout(activeTimers.get(payload.progressBarId));
-      activeTimers.delete(payload.progressBarId);
+    if (isStaleEvent(progressStore.payloads[payload.progressBarId], payload)) {
+      return;
     }
 
     setProgressStore('payloads', payload.progressBarId, payload);
-  };
-
-  const removeEvent = (id: ProgressEvent['progressBarId']) => {
-    setProgressStore(
-      'payloads',
-      produce((p) => delete p[id]),
-    );
-    activeTimers.delete(id);
-  };
-
-  const removeEventDelayed = (payload: ProgressEvent) => {
-    const timer = setTimeout(() => {
-      removeEvent(payload.progressBarId);
-    }, getProgressRemoveDelay(payload));
-
-    activeTimers.set(payload.progressBarId, timer);
   };
 
   const fetchEvents = async () => {
@@ -103,16 +82,6 @@ export const useProgressEventsListener = () => {
         description: e.payload.status.message,
         variant: 'destructive',
       });
-    }
-
-    if (e.payload.fraction === null || isProgressFailed(e.payload)) {
-      removeEventDelayed(e.payload);
-    }
-  });
-
-  onCleanup(() => {
-    if (activeTimers.size !== 0) {
-      activeTimers.forEach(clearTimeout);
     }
   });
 };

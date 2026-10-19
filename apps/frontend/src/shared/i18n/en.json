@@ -262,11 +262,18 @@
   },
   "events": {
     "cancelled": "Cancelled",
+    "completed": "Completed",
+    "clearFinished": "Clear finished",
+    "completedChildren": "Completed: {{count}}",
+    "toggleDetails": "Show details",
+    "gameInstalling": "Installing game files",
     "installFailed": "Installation failed",
     "installing": "Installing {{name}}",
     "javaDownloading": "Downloading Java {{version}}",
     "minecraftAssets": "Assets ({{count}} files)",
     "minecraftDownloading": "Downloading Minecraft {{version}}",
+    "neededFor": "Needed by installs: {{count}}",
+    "perSecond": "{{size}}/s",
     "waitingFor": "Waiting: {{name}}",
     "stage": {
       "downloading": "Downloading",
