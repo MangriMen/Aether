@@ -5,12 +5,16 @@ use tauri_specta::Event;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
 pub struct WarningEventDto {
+    /// The number of the event, from one counter for all the events the backend sends: the
+    /// frontend drops what it has seen already.
+    pub seq: u32,
     pub message: String,
 }
 
 impl From<WarningEvent> for WarningEventDto {
     fn from(value: WarningEvent) -> Self {
         Self {
+            seq: 0,
             message: value.message,
         }
     }

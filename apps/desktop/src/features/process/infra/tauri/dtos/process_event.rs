@@ -7,6 +7,9 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, Clone, Debug, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessEventDto {
+    /// The number of the event, from one counter for all the events the backend sends: the
+    /// frontend drops what it has seen already.
+    pub seq: u32,
     pub instance_id: String,
     pub process_id: Uuid,
     pub event: ProcessEventTypeDto,
@@ -23,6 +26,7 @@ pub enum ProcessEventTypeDto {
 impl From<ProcessEvent> for ProcessEventDto {
     fn from(value: ProcessEvent) -> Self {
         Self {
+            seq: 0,
             instance_id: value.instance_id.to_string(),
             process_id: value.process_id,
             event: value.event.into(),

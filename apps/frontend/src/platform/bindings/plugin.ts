@@ -424,7 +424,15 @@ export type PluginErrorDto = { code: "NOT_FOUND"; payload: {
 	retry_after: number | null,
 } };
 
-export type PluginEventDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
+export type PluginEventDto = {
+	/**
+	 *  The number of the event, from one counter for all the events the backend sends: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
+} & PluginEventKindDto;
+
+export type PluginEventKindDto = { type: "add"; plugin_id: string } | { type: "edit"; plugin_id: string } | { type: "remove"; plugin_id: string } | { type: "sync" };
 
 export type PluginImporterCapabilityDto = {
 	/**  Plugin function name to handle this capability call. */

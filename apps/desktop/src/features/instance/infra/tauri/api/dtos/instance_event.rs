@@ -6,6 +6,9 @@ use tauri_specta::Event;
 #[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceEventDto {
+    /// The number of the event, from one counter for all the events the backend sends: the
+    /// frontend drops what it has seen already.
+    pub seq: u32,
     pub event: InstanceEventTypeDto,
     pub instance_id: String,
 }
@@ -23,6 +26,7 @@ pub enum InstanceEventTypeDto {
 impl From<InstanceEvent> for InstanceEventDto {
     fn from(value: InstanceEvent) -> Self {
         Self {
+            seq: 0,
             event: value.event.into(),
             instance_id: value.instance_id.to_string(),
         }

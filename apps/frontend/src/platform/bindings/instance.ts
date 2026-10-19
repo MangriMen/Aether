@@ -415,6 +415,11 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 } };
 
 export type InstanceEventDto = {
+	/**
+	 *  The number of the event, from one counter for all the events the backend sends: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
 	event: InstanceEventTypeDto,
 	instanceId: string,
 };
