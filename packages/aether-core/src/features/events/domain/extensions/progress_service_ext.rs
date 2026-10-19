@@ -2,7 +2,9 @@ use async_trait::async_trait;
 use log::debug;
 use uuid::Uuid;
 
-use crate::features::events::{ProgressBarId, ProgressEventType, ProgressService, ProgressStage};
+use crate::features::events::{
+    ProgressBarId, ProgressEventType, ProgressService, ProgressStage, SharedDownload,
+};
 
 #[async_trait]
 pub trait ProgressServiceExt: ProgressService {
@@ -50,11 +52,11 @@ pub trait ProgressServiceExt: ProgressService {
 
     async fn init_shared_progress_safe(
         &self,
-        event_type: ProgressEventType,
+        download: SharedDownload,
         total: f64,
         message: String,
     ) -> Option<ProgressBarId> {
-        self.init_shared_progress(event_type, total, message)
+        self.init_shared_progress(download, total, message)
             .await
             .map_err(|error| debug!("Failed to send progress: {error}"))
             .ok()

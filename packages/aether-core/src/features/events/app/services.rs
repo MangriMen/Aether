@@ -7,8 +7,8 @@ use uuid::Uuid;
 
 use crate::features::events::{
     EventError, ProgressBar, ProgressBarId, ProgressBarStorage, ProgressBarStorageError,
-    ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus, SharedEventEmitter,
-    SharedProgressWait,
+    ProgressEvent, ProgressEventType, ProgressStage, ProgressStatus, SharedDownload,
+    SharedEventEmitter, SharedProgressWait,
     app::ports::ProgressService,
     domain::{EventSequencer, Shown, TransferWindow},
 };
@@ -386,21 +386,23 @@ impl<PS: ProgressBarStorage + 'static> ProgressService for ProgressServiceImpl<P
 
     async fn init_shared_progress(
         &self,
-        event_type: ProgressEventType,
+        download: SharedDownload,
         total: f64,
         message: String,
     ) -> Result<ProgressBarId, EventError> {
-        self.start(None, event_type, total, message, true).await
+        self.start(None, download.event_type(), total, message, true)
+            .await
     }
 
     async fn wait_on_shared(
         &self,
         waiting: Option<&ProgressBarId>,
-        event_type: ProgressEventType,
+        download: SharedDownload,
     ) -> SharedProgressWait {
         let Some(waiting) = waiting else {
             return SharedProgressWait::none();
         };
+        let event_type = download.event_type();
         let guard = self.sequencer.begin_change().await;
 
         let running = self.running_shared(&event_type).await;
@@ -654,6 +656,10 @@ mod tests {
 
     fn java() -> ProgressEventType {
         ProgressEventType::JavaDownload { version: 21 }
+    }
+
+    fn shared_java() -> SharedDownload {
+        SharedDownload::Java { version: 21 }
     }
 
     #[tokio::test]
@@ -1122,26 +1128,23 @@ mod tests {
             .unwrap();
 
         // `a` waits before the download starts, `b` once it runs.
-        let _a_waits = service.wait_on_shared(Some(&a), java()).await;
+        let _a_waits = service.wait_on_shared(Some(&a), shared_java()).await;
         let _other = service
-            .wait_on_shared(
-                Some(&unrelated),
-                ProgressEventType::JavaDownload { version: 8 },
-            )
+            .wait_on_shared(Some(&unrelated), SharedDownload::Java { version: 8 })
             .await;
         assert!(mirrors(&storage).await.is_empty(), "nothing to wait on yet");
         let shared = service
-            .init_shared_progress(java(), 1.0, String::new())
+            .init_shared_progress(shared_java(), 1.0, String::new())
             .await
             .unwrap();
-        let _b_waits = service.wait_on_shared(Some(&b), java()).await;
+        let _b_waits = service.wait_on_shared(Some(&b), shared_java()).await;
 
         let mut expected = vec![(a.id, shared.id), (b.id, shared.id)];
         expected.sort_unstable();
         assert_eq!(mirrors(&storage).await, expected);
         assert_eq!(bar(&storage, &shared).await.parent_id, None);
         // Waiting again adds no second mirror.
-        let _again = service.wait_on_shared(Some(&a), java()).await;
+        let _again = service.wait_on_shared(Some(&a), shared_java()).await;
         assert_eq!(mirrors(&storage).await.len(), 2);
     }
 
@@ -1153,9 +1156,9 @@ mod tests {
             .await
             .unwrap();
 
-        drop(service.wait_on_shared(Some(&pack_bar), java()).await);
+        drop(service.wait_on_shared(Some(&pack_bar), shared_java()).await);
         let _shared = service
-            .init_shared_progress(java(), 1.0, String::new())
+            .init_shared_progress(shared_java(), 1.0, String::new())
             .await
             .unwrap();
 
@@ -1178,9 +1181,9 @@ mod tests {
             .await
             .unwrap();
         service.add_progress_bytes(&file_bar, 4).await.unwrap();
-        let _waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let _waits = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
         let shared = service
-            .init_shared_progress(java(), 10.0, "Downloading".to_string())
+            .init_shared_progress(shared_java(), 10.0, "Downloading".to_string())
             .await
             .unwrap();
         let library = service
@@ -1254,9 +1257,9 @@ mod tests {
             .init_progress(pack("a"), 1.0, String::new())
             .await
             .unwrap();
-        let waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let waits = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
         let shared = service
-            .init_shared_progress(java(), 10.0, String::new())
+            .init_shared_progress(shared_java(), 10.0, String::new())
             .await
             .unwrap();
         let [(_, _)] = mirrors(&storage).await[..] else {
@@ -1304,9 +1307,9 @@ mod tests {
             .init_progress(pack("a"), 1.0, String::new())
             .await
             .unwrap();
-        let _waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let _waits = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
         let shared = service
-            .init_shared_progress(java(), 10.0, String::new())
+            .init_shared_progress(shared_java(), 10.0, String::new())
             .await
             .unwrap();
         sent(&mut rx);
@@ -1689,9 +1692,9 @@ mod tests {
             .init_progress(pack("a"), 10.0, String::new())
             .await
             .unwrap();
-        let _waits = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let _waits = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
         let shared = service
-            .init_shared_progress(java(), 10.0, String::new())
+            .init_shared_progress(shared_java(), 10.0, String::new())
             .await
             .unwrap();
         assert!(sent(&mut rx).is_empty());
@@ -1746,7 +1749,7 @@ mod tests {
                 .unwrap(),
         );
         let shared = service
-            .init_shared_progress(java(), 10.0, String::new())
+            .init_shared_progress(shared_java(), 10.0, String::new())
             .await
             .unwrap();
         let shared_id = shared.id;
@@ -1764,7 +1767,7 @@ mod tests {
         let waiting = {
             let (service, pack_bar) = (service.clone(), pack_bar.clone());
             tokio::spawn(async move {
-                drop(service.wait_on_shared(Some(&pack_bar), java()).await);
+                drop(service.wait_on_shared(Some(&pack_bar), shared_java()).await);
             })
         };
         settle().await;
@@ -1834,13 +1837,13 @@ mod tests {
             .await
             .unwrap();
         let shared = service
-            .init_shared_progress(java(), 10.0, "Downloading".to_string())
+            .init_shared_progress(shared_java(), 10.0, "Downloading".to_string())
             .await
             .unwrap();
         service.emit_progress(&shared, 4.0, None).await.unwrap();
         sent(&mut rx);
 
-        let _wait = service.wait_on_shared(Some(&pack_bar), java()).await;
+        let _wait = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
 
         let shown: Vec<_> = sent(&mut rx)
             .into_iter()
@@ -1868,11 +1871,11 @@ mod tests {
     async fn a_wait_without_a_bar_mirrors_nothing() {
         let (service, storage, _rx) = service();
         let _shared = service
-            .init_shared_progress(java(), 1.0, String::new())
+            .init_shared_progress(shared_java(), 1.0, String::new())
             .await
             .unwrap();
 
-        let _wait = service.wait_on_shared(None, java()).await;
+        let _wait = service.wait_on_shared(None, shared_java()).await;
 
         assert!(mirrors(&storage).await.is_empty());
     }

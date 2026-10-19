@@ -16,7 +16,8 @@ pub use domain::{
     CacheEvent, CancellableBar, Event, EventEmitterExt, EventError, InstanceEvent,
     InstanceEventType, OptionalProgressBarExt, PluginEvent, ProcessEvent, ProcessEventType,
     ProgressBar, ProgressBarId, ProgressBarStorageError, ProgressEvent, ProgressEventType,
-    ProgressServiceExt, ProgressStage, ProgressStatus, SharedProgressWait, WarningEvent,
+    ProgressServiceExt, ProgressStage, ProgressStatus, SharedDownload, SharedProgressWait,
+    WarningEvent,
 };
 
 #[cfg(test)]

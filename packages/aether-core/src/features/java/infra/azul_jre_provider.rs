@@ -11,8 +11,8 @@ use serde::Deserialize;
 use crate::{
     features::{
         events::{
-            OptionalProgressBarExt, ProgressBarId, ProgressEventType, ProgressService,
-            ProgressServiceExt,
+            OptionalProgressBarExt, ProgressBarId, ProgressService, ProgressServiceExt,
+            SharedDownload,
         },
         java::{JavaDomainError, JreProvider},
     },
@@ -202,7 +202,7 @@ impl<PS: ProgressService, RC: RequestClient> JreProvider for AzulJreProvider<PS,
         let progress_bar_id = self
             .progress_service
             .init_shared_progress_safe(
-                ProgressEventType::JavaDownload { version },
+                SharedDownload::Java { version },
                 100.0,
                 "Downloading java version".to_string(),
             )
