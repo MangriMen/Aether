@@ -81,7 +81,11 @@ type DialogContentProps<T extends ValidComponent = 'div'> =
       showActions?: boolean;
       class?: string | undefined;
       children?: JSX.Element;
-      /** Lets the user drag the side edges to change the width, like a window. */
+      /**
+       * Lets the user drag the side edges to change the width, like a window. The options below
+       * are read once. Keep the content from scrolling as a whole (`overflow-hidden` and an inner
+       * scroller), or the edges scroll away with it.
+       */
       resizable?: boolean;
       /** Where a resizable dialog keeps its width between sessions. */
       resizeStorageKey?: string;

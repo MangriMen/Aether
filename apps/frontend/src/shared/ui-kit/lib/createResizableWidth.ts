@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-export type ResizableWidthOptions = {
+type ResizableWidthOptions = {
   defaultWidth: number;
   minWidth: number;
   /** Where the width is kept between sessions; kept for the session only when absent. */
@@ -39,11 +39,6 @@ const writeWidth = (key: string | undefined, width: number) => {
  * move, so the pointer moves half as far as the window grows.
  */
 export const createResizableWidth = (options: ResizableWidthOptions) => {
-  const [width, setWidth] = createSignal(
-    readWidth(options.storageKey) ?? options.defaultWidth,
-  );
-  const [isResizing, setIsResizing] = createSignal(false);
-
   const clamp = (wanted: number) => {
     const max = Math.max(
       options.minWidth,
@@ -52,12 +47,18 @@ export const createResizableWidth = (options: ResizableWidthOptions) => {
     return Math.round(Math.min(max, Math.max(options.minWidth, wanted)));
   };
 
+  const [width, setWidth] = createSignal(
+    clamp(readWidth(options.storageKey) ?? options.defaultWidth),
+  );
+  const [isResizing, setIsResizing] = createSignal(false);
+
   /** Handlers for the edge on `side`: -1 for the left one, 1 for the right one. */
   const edgeHandlers = (side: -1 | 1) => ({
     onPointerDown: (e: PointerEvent) => {
       const handle = e.currentTarget as HTMLElement;
       const startX = e.clientX;
-      const initialWidth = width();
+      // What is on screen, which the window may have narrowed since the width was set.
+      const initialWidth = handle.parentElement?.offsetWidth || width();
 
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
