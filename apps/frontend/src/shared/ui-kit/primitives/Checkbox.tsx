@@ -25,7 +25,7 @@ const Checkbox = <T extends ValidComponent = 'div'>(
       class={cn('group gap-2 inline-flex items-center', local.class)}
       {...others}
     >
-      <CheckboxPrimitive.Input role='checkbox' class='peer' />
+      <CheckboxPrimitive.Input class='peer' />
       <CheckboxPrimitive.Control
         class='
           size-4 rounded-sm border-border-dynamic/15 bg-secondary/control

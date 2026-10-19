@@ -6,14 +6,26 @@
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"],
     },
     "lint:code": {
-      "inputs": ["src/**/*.{ts,tsx,js,jsx}", "eslint.config*", ".prettierrc*"],
+      "inputs": ["src/**/*.{ts,tsx,js,jsx}", ".oxlintrc.json"],
+    },
+    "lint:eslint": {
+      "inputs": ["src/**/*.{ts,tsx,js,jsx}", "eslint.config*"],
       "outputs": ["node_modules/.cache/eslint/**"],
+    },
+    "lint:format": {
+      "inputs": ["src/**/*.{ts,tsx,js,jsx,css}", ".oxfmtrc.json"],
     },
     "lint:arch": {
       "inputs": ["src/**/*", ".dependency-cruiser.cjs"],
     },
     "lint:all": {
-      "dependsOn": ["lint:types", "lint:code", "lint:arch"],
+      "dependsOn": [
+        "lint:types",
+        "lint:code",
+        "lint:eslint",
+        "lint:format",
+        "lint:arch",
+      ],
     },
   },
 }

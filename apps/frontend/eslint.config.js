@@ -1,129 +1,42 @@
-import globals from 'globals';
-import js from '@eslint/js';
-import ts from 'typescript-eslint';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import tsParser from '@typescript-eslint/parser';
-import sonarjs from 'eslint-plugin-sonarjs';
-import jsxA11y from 'eslint-plugin-jsx-a11y';
 import tailwind from 'eslint-plugin-better-tailwindcss';
-import solid from 'eslint-plugin-solid/configs/recommended';
 import perfectionist from 'eslint-plugin-perfectionist';
-import react from 'eslint-plugin-react';
-import importX from 'eslint-plugin-import-x';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import solid from 'eslint-plugin-solid/configs/recommended';
+import sonarjs from 'eslint-plugin-sonarjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Oxlint (.oxlintrc.json) and Oxfmt (.oxfmtrc.json) own everything they can express natively.
+// ESLint keeps only what needs JS plugins, which are slower in oxlint than ESLint with its cache:
+// sonarjs, solid, perfectionist/sort-exports, better-tailwindcss,
+// padding-line-between-statements and no-restricted-syntax. Unlisted dependencies are caught by knip.
 
-// Architecture boundaries (see ARCHITECTURE.md); dependency-cruiser checks the rest.
-const deepFeatureImport = {
-  regex: '^@/features/[^/]+/.+',
-  message: 'Import a feature through its index: @/features/<name>.',
-};
-const deepModuleImport = {
-  regex: '^@/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/.+',
-  message: 'Import a module through its index; inside a module, use relative imports.',
-};
-const appImport = {
-  regex: '^@/app(/|$)',
-  message: 'Only app/ imports app/.',
-};
-const upperLayerImport = {
-  regex: '^@/features(/|$)',
-  message: 'shared/ and platform/ do not import features.',
-};
-const platformImport = {
-  regex: '^@/platform(/|$)',
-  message: 'shared/ is not tied to Aether, so it does not import platform/.',
-};
-const uiKitSharedImport = {
-  regex: '^@/shared/(?!utils$)',
-  message: 'shared/ui-kit imports only shared/utils; texts come through UiKitLabelsProvider.',
-};
-// model/ is plain code: Tauri calls (plugins, window, ...) go to api/ or to the code that uses them.
-const tauriInModel = {
-  group: ['@tauri-apps/**'],
-  allowTypeImports: true,
-  message: 'model/ is plain code: call Tauri from api/ (or from the component or primitive that needs it).',
-};
-// Dto types stay on the backend side: components and primitives use the aliases from model/.
-const bindingsInView = {
-  group: ['@/platform/bindings/**'],
-  message: 'Use the alias from the feature model/ instead of a *Dto from platform/bindings.',
-};
-const featurePatterns = [deepFeatureImport, deepModuleImport, appImport];
-const platformPatterns = [...featurePatterns, upperLayerImport];
-const sharedPatterns = [...platformPatterns, platformImport];
-const uiKitPatterns = [...sharedPatterns, uiKitSharedImport];
+// model/ is plain code: Tauri calls go to api/ (the same text lives in .oxlintrc.json).
+const tauriInModelMessage =
+  'model/ is plain code: call Tauri from api/ (or from the component or primitive that needs it).';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { files: ['**/*.{js,jsx,ts,tsx}'] },
   {
-    ignores: ['*.cjs', 'eslint.config.js', 'dist', '.husky', 'src-tauri', "src/platform/bindings/**/*"],
+    ignores: [
+      '*.cjs',
+      'eslint.config.js',
+      'dist',
+      '.husky',
+      'src-tauri',
+      'src/platform/bindings/**/*',
+    ],
   },
   {
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: globals.browser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
+      parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
-  {
-    rules: {
-      'no-unused-vars': 'off',
-      'prefer-object-spread': 'warn',
-      'object-shorthand': ['error', 'always'],
-      'no-debugger': 'warn',
-      'no-console': 'warn',
-    },
-  },
-  js.configs.recommended,
-  ...ts.configs.recommended,
-  {
-    plugins: { 'import-x': importX },
-    rules: {
-      'import-x/no-extraneous-dependencies': [
-        'error',
-        {
-          includeTypes: true,
-          packageDir: [__dirname, path.resolve(__dirname, '../..')],
-        },
-      ],
-    },
-  },
-  {
-    rules: {
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        {
-          fixStyle: 'separate-type-imports',
-        },
-      ],
-    },
-  },
-  eslintPluginPrettierRecommended,
   {
     plugins: { perfectionist },
-    rules: {
-      'perfectionist/sort-imports': ['error'],
-      'perfectionist/sort-exports': ['error'],
-    },
+    rules: { 'perfectionist/sort-exports': ['error'] },
   },
   sonarjs.configs.recommended,
   {
@@ -132,13 +45,7 @@ export default [
       'sonarjs/no-unused-vars': 'off',
       'sonarjs/todo-tag': 'off',
       'sonarjs/no-skipped-tests': 'off',
-      "sonarjs/no-redundant-optional": "off"
-    },
-  },
-  jsxA11y.flatConfigs.recommended,
-  {
-    rules: {
-      'jsx-a11y/label-has-associated-control': 'off',
+      'sonarjs/no-redundant-optional': 'off',
     },
   },
   tailwind.configs['stylistic-warn'],
@@ -156,65 +63,29 @@ export default [
   },
   solid,
   {
-    plugins: { react },
     rules: {
-      curly: ['error', 'all'],
       'padding-line-between-statements': [
         'error',
-        // Empty line before blocks (if, switch, for)
+        // Empty line before and after multiline blocks (if, switch, for)
         { blankLine: 'always', prev: '*', next: 'multiline-block-like' },
-        // Empty line after blocks
         { blankLine: 'always', prev: 'multiline-block-like', next: '*' },
       ],
-      'react/jsx-curly-brace-presence': [
-        'error',
-        { 
-          props: 'never', 
-          children: 'never',
-          propElementValues: 'always' 
-        }
-      ],
-      'react/jsx-boolean-value': ['error', 'never'],
     },
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
-    rules: {
-      'no-restricted-imports': ['error', { patterns: [deepFeatureImport, deepModuleImport] }],
-    },
-  },
-  // Flat config replaces a rule instead of merging it, so each block lists every pattern.
-  ...[
-    ['src/features/**/*.{ts,tsx}', featurePatterns],
-    ['src/platform/**/*.{ts,tsx}', platformPatterns],
-    ['src/shared/**/*.{ts,tsx}', sharedPatterns],
-    ['src/shared/ui-kit/**/*.{ts,tsx}', uiKitPatterns],
-  ].map(([glob, patterns]) => ({
-    files: [glob],
-    rules: { 'no-restricted-imports': ['error', { patterns }] },
-  })),
-  // A separate rule name, so it adds to the block above instead of replacing it.
-  {
+    // Oxlint's no-restricted-imports sees only static imports and import('literal');
+    // the template-literal form of a dynamic import is checked here.
     files: ['src/features/*/model/**/*.{ts,tsx}'],
     ignores: ['**/__tests__/**'],
     rules: {
-      '@typescript-eslint/no-restricted-imports': ['error', { patterns: [tauriInModel] }],
-      // the rule above sees only static imports
       'no-restricted-syntax': [
         'error',
-        { selector: 'ImportExpression[source.value=/^@tauri-apps/]', message: tauriInModel.message },
         {
-          selector: 'ImportExpression[source.quasis.0.value.raw=/^@tauri-apps/]',
-          message: tauriInModel.message,
+          selector:
+            'ImportExpression[source.quasis.0.value.raw=/^@tauri-apps/]',
+          message: tauriInModelMessage,
         },
       ],
-    },
-  },
-  {
-    files: ['src/features/*/ui/**/*.{ts,tsx}', 'src/features/*/lib/**/*.{ts,tsx}', 'src/app/**/*.{ts,tsx}'],
-    ignores: ['**/__tests__/**'],
-    rules: {
-      '@typescript-eslint/no-restricted-imports': ['error', { patterns: [bindingsInView] }],
     },
   },
 ];

@@ -182,7 +182,7 @@ const SelectListboxVirtualized = <
 ) => {
   const [local, _] = splitProps(props, ['optionValue', 'class']);
 
-  // eslint-disable-next-line no-unassigned-vars
+  // oxlint-disable-next-line no-unassigned-vars
   let listboxRef: HTMLUListElement | undefined;
 
   let firstOpen = true;

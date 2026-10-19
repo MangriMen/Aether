@@ -61,13 +61,13 @@ src/
 A feature has the same shape everywhere: `index.ts` at the root, every other file in one of
 the folders below. The folder tells what kind of file it is.
 
-| Folder | Holds |
-|---|---|
-| `index.ts` | the public API: what other modules may use, nothing more |
-| `api/` | everything that talks to the backend: queries, mutations, query keys, event listeners on top of `platform/ipc`, even when named `use*`; also functions that call Tauri plugins (`browseJavaInstallation`, `openTranslationInBrowser`) |
-| `model/` | plain TypeScript without JSX and without Tauri calls: types, constants, pure functions, mappers, stores and contexts |
-| `lib/` | Solid primitives that serve components (`use*`, `create*`): form handlers, table data, actions; nothing that talks to the backend |
-| `ui/` | components, including the feature's pages, dialogs and panes, and anything else that renders JSX: table columns, a function that shows a toast, tab builders |
+| Folder     | Holds                                                                                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts` | the public API: what other modules may use, nothing more                                                                                                                                                                              |
+| `api/`     | everything that talks to the backend: queries, mutations, query keys, event listeners on top of `platform/ipc`, even when named `use*`; also functions that call Tauri plugins (`browseJavaInstallation`, `openTranslationInBrowser`) |
+| `model/`   | plain TypeScript without JSX and without Tauri calls: types, constants, pure functions, mappers, stores and contexts                                                                                                                  |
+| `lib/`     | Solid primitives that serve components (`use*`, `create*`): form handlers, table data, actions; nothing that talks to the backend                                                                                                     |
+| `ui/`      | components, including the feature's pages, dialogs and panes, and anything else that renders JSX: table columns, a function that shows a toast, tab builders                                                                          |
 
 - No other folders, no files at the root besides `index.ts`, no nesting: the path is always
   `features/<name>/<folder>/<file>`. The only exception is `__tests__/` next to the files it
@@ -174,23 +174,30 @@ in PascalCase (`MarkdownRenderer.tsx`) or a `create`/`show` builder, a `.ts` is 
   debug flag) or a topic of its own gets its own module.
 - `ui-kit/` is the one big module, so it has fixed folders, like a feature:
 
-| Folder | Holds |
-|---|---|
-| `primitives/` | components that wrap Kobalte (`Button`, `Dialog`, `Select`), plus `UiKitLabels` |
-| `composite/` | components built from primitives (`CombinedSelect`, `IconButton`, `SkeletonList`) |
-| `lib/` | `use*`/`create*` primitives (`useIsOverflow`) |
-| `model/` | types and plain code without JSX (`Option`, `TabConfig`, `appTableFeatures`) |
+| Folder        | Holds                                                                             |
+| ------------- | --------------------------------------------------------------------------------- |
+| `primitives/` | components that wrap Kobalte (`Button`, `Dialog`, `Select`), plus `UiKitLabels`   |
+| `composite/`  | components built from primitives (`CombinedSelect`, `IconButton`, `SkeletonList`) |
+| `lib/`        | `use*`/`create*` primitives (`useIsOverflow`)                                     |
+| `model/`      | types and plain code without JSX (`Option`, `TabConfig`, `appTableFeatures`)      |
 
 ## Checks
 
 The checks cover every file under `src/`.
 
-- ESLint (`bun lint:code`, also shown in the editor): no deep imports into another module,
-  no `@/app` outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/`
-  in `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except
-  types, static or `import()`) in a feature's `model/`, no `platform/bindings` (the generated
-  `*Dto`) in a feature's `ui/` and `lib/` or in `app/`: they use the aliases from `model/`;
-  `api/`, `model/` and `platform/ipc` import the Dto.
+- oxlint (`bun lint:code`, also shown in the editor): core ESLint, TypeScript, jsx-a11y and
+  react rules, plus the import boundaries: no deep imports into another module, no `@/app`
+  outside `app/`, no feature imports from `shared/` or `platform/`, no `platform/` in
+  `shared/`, nothing but `shared/utils` in `shared/ui-kit`, no `@tauri-apps/*` (except types, static or `import('...')`)
+  in a feature's `model/`, no `platform/bindings` (the generated `*Dto`) in a feature's `ui/`
+  and `lib/` or in `app/`: they use the aliases from `model/`; `api/`, `model/` and
+  `platform/ipc` import the Dto. Config: `.oxlintrc.json`.
+- oxfmt (`bun lint:format`, `bun format` to write): formatting and import order. Config:
+  `.oxfmtrc.json`.
+- ESLint (`bun lint:eslint`): only the rules oxlint cannot run — sonarjs, solid,
+  better-tailwindcss, `perfectionist/sort-exports`,
+  `padding-line-between-statements` and the template-literal form of a dynamic
+  `@tauri-apps` import in `model/`. Config: `eslint.config.js`.
 - dependency-cruiser (`bun lint:arch`): the layout of `src/`, cycles, layer direction, relative
   imports across features, public API of features and modules, a domain base importing its
   parts, feature and shared folders and file names, `app` modules importing the
@@ -198,7 +205,7 @@ The checks cover every file under `src/`.
   Config: `.dependency-cruiser.cjs`. Its cycle check works on files, so
   `scripts/check-module-cycles.ts` (part of `lint:arch`) also checks the graph of modules,
   type-only imports included.
-- knip (`bun lint:unused`): unused files, exports and dependencies; it also finds a file
+- knip (`bun lint:unused`): unused files, exports and dependencies, and imports missing from `package.json`; it also finds a file
   that imports nothing and that nothing imports, which the layout check cannot see. An export
   used only in its own file loses `export`. Exceptions, config in `knip.jsonc`:
   - `shared/ui-kit/index.ts` is an entry: ui-kit is a library, its index is its API whether
@@ -225,7 +232,7 @@ component needs no mocks of its own.
   own module).
 - `.storybook/` in `apps/frontend` holds the config (`main.ts`) and `preview.tsx`, which
   loads `app.css` and wraps every story in the app theme (the toolbar switches dark and
-  light). It is type-checked by `lint:types` and linted by `lint:code`, but is not part of
+  light). It is type-checked by `lint:types` and linted by `lint:code` and `lint:eslint`, but is not part of
   `src/`, so the layout checks do not see it.
 - `bun storybook` runs it on port 6006, `bun build-storybook` builds `storybook-static/`
   (ignored by git).

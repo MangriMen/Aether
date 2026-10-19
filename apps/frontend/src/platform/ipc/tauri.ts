@@ -8,7 +8,7 @@ type DropRequestId<T extends unknown[]> = T extends [
   : never;
 
 export const withIdempotency = <
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line @typescript-eslint/no-explicit-any
   Fn extends (...args: any[]) => Promise<unknown>,
 >(
   fn: Fn &

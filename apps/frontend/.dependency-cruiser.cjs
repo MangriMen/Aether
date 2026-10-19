@@ -6,8 +6,10 @@ const FEATURE_INDEX = `${FEATURE}index\\.tsx?$`;
 const BUILDER = '(?:create|show)[A-Z]';
 // Modules outside features/. platform/bindings is generated and has no index:
 // every file exports `commands` and `events`, so it is imported per domain.
-const MODULE = '^src/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
-const MODULE_INDEX = '^src/(app/(shell|runtime|pages/[^/]+)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
+const MODULE =
+  '^src/(app/(shell|runtime|pages/[^/]+)|platform/(?!bindings/)[^/]+|shared/[^/]+)/';
+const MODULE_INDEX =
+  '^src/(app/(shell|runtime|pages/[^/]+)|platform/[^/]+|shared/[^/]+)/index\\.tsx?$';
 // The composition root: files at the top of app/ (App, AppRoot, AppRouter, route patterns).
 const APP_ROOT = '^src/app/[^/]+$';
 // Anything in src/ that is not part of the layout (see src-layout).
@@ -45,7 +47,8 @@ module.exports = {
     },
     {
       name: 'app-modules-not-root',
-      comment: 'app/shell, app/runtime and app/pages do not import the composition root at the top of app/.',
+      comment:
+        'app/shell, app/runtime and app/pages do not import the composition root at the top of app/.',
       severity: 'error',
       from: { path: '^src/app/[^/]+/' },
       to: { path: APP_ROOT },
@@ -66,7 +69,8 @@ module.exports = {
     },
     {
       name: 'shared-knows-no-platform',
-      comment: 'shared/ is not tied to Aether, so it does not import platform/.',
+      comment:
+        'shared/ is not tied to Aether, so it does not import platform/.',
       severity: 'error',
       from: { path: '^src/shared/' },
       to: { path: '^src/platform/' },
@@ -88,10 +92,15 @@ module.exports = {
     },
     {
       name: 'feature-no-relative-cross',
-      comment: 'Another feature is imported as @/features/<name>, never through a relative path.',
+      comment:
+        'Another feature is imported as @/features/<name>, never through a relative path.',
       severity: 'error',
       from: { path: FEATURE },
-      to: { path: '^src/features/', pathNot: '^src/features/$1/', dependencyTypesNot: ['aliased'] },
+      to: {
+        path: '^src/features/',
+        pathNot: '^src/features/$1/',
+        dependencyTypesNot: ['aliased'],
+      },
     },
     {
       name: 'feature-public-api',
@@ -178,7 +187,8 @@ module.exports = {
     },
     {
       name: 'module-public-api',
-      comment: 'Other modules are reached only through their index.ts; inside a module, imports are relative.',
+      comment:
+        'Other modules are reached only through their index.ts; inside a module, imports are relative.',
       severity: 'error',
       // $1 is the importing module (first two path segments)
       from: { path: '^src/([^/]+/[^/]+)' },
@@ -195,6 +205,9 @@ module.exports = {
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.d.ts'],
     },
     skipAnalysisNotInRules: true,
-    cache: { folder: 'node_modules/.cache/dependency-cruiser', strategy: 'content' },
+    cache: {
+      folder: 'node_modules/.cache/dependency-cruiser',
+      strategy: 'content',
+    },
   },
 };

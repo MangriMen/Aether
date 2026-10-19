@@ -54,7 +54,7 @@ const getSharedColumnsStyles = <TData extends RowData>(
 
 const createDefaultTable = <TData extends RowData>(
   data: Accessor<TData[] | undefined>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line @typescript-eslint/no-explicit-any
   columns: Accessor<ColumnDef<DataTableFeatures, TData, any>[]>,
 ) => {
   return createTable({
@@ -80,7 +80,7 @@ type DataTableProps<TData extends RowData> = BaseDataTableProps &
   (
     | {
         data: TData[];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // oxlint-disable-next-line @typescript-eslint/no-explicit-any
         columns: ColumnDef<DataTableFeatures, TData, any>[];
         table?: never;
       }

@@ -20,7 +20,8 @@ type GlobalDialogType<T extends DialogComponentProps = DialogComponentProps> = {
 };
 
 let globalDialogStore:
-  ReturnType<typeof createStore<GlobalDialogType>> | undefined;
+  | ReturnType<typeof createStore<GlobalDialogType>>
+  | undefined;
 
 const getOrCreateDialogStore = () => {
   if (!globalDialogStore) {
