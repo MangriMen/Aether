@@ -2,7 +2,7 @@ import type { CollectionNode, PolymorphicProps } from '@kobalte/core';
 import type { SelectValueOptions } from '@kobalte/core/select';
 import type { Component, JSX, ValidComponent } from 'solid-js';
 
-import { createMemo, Show, splitProps } from 'solid-js';
+import { Show, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/utils';
 
@@ -27,6 +27,14 @@ export type CombinedSelectProps<
   selectValueComponent?: JSX.Element | Component<SelectValueOptions<Option>>;
 };
 
+type SelectValueState<Option> = Parameters<
+  Extract<SelectValueOptions<Option>['children'], (...args: never[]) => unknown>
+>[0];
+
+const DefaultItem = <Option,>(props: { item: CollectionNode<Option> }) => (
+  <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
+);
+
 export const CombinedSelect = <
   Option,
   OptGroup,
@@ -40,43 +48,46 @@ export const CombinedSelect = <
     'children',
   ]);
 
-  const itemComponent = createMemo(
-    () =>
-      local.itemComponent ??
-      ((props: { item: CollectionNode<Option> }) => (
-        <SelectItem item={props.item}>{props.item.textValue}</SelectItem>
-      )),
-  );
+  const getSelectedValue = (state: SelectValueState<Option>): string | null => {
+    const selected = state.selectedOption();
 
-  const getSelectedValue = (state: {
-    selectedOption: () => Option;
-    selectedOptions: () => Option[];
-    remove: (option: Option) => void;
-    clear: () => void;
-  }): string | null => {
-    if (!state) {
+    if (selected == null) {
       return null;
     }
 
-    const selectedOption = state.selectedOption();
+    const optionTextValue = props.optionTextValue;
 
-    if (!selectedOption) {
-      return null;
+    if (typeof optionTextValue === 'function') {
+      return optionTextValue(selected);
     }
 
-    if (typeof selectedOption === 'string') {
-      return selectedOption;
-    } else if (typeof selectedOption === 'object') {
-      if (typeof props.optionTextValue === 'string') {
-        return selectedOption[props.optionTextValue];
-      }
+    if (
+      (typeof optionTextValue === 'string' ||
+        typeof optionTextValue === 'number') &&
+      typeof selected === 'object'
+    ) {
+      const text = (selected as Record<PropertyKey, unknown>)[optionTextValue];
+
+      return text == null ? null : String(text);
+    }
+
+    if (
+      typeof selected === 'string' ||
+      typeof selected === 'number' ||
+      typeof selected === 'boolean'
+    ) {
+      return String(selected);
     }
 
     return null;
   };
 
   return (
-    <Select itemComponent={itemComponent()} {...others}>
+    <Select
+      class={local.class}
+      itemComponent={local.itemComponent ?? DefaultItem}
+      {...others}
+    >
       <Show
         when={local.children}
         fallback={
@@ -87,7 +98,7 @@ export const CombinedSelect = <
           </SelectTrigger>
         }
       >
-        {local.children}
+        {(content) => <>{content()}</>}
       </Show>
       <SelectContent />
     </Select>
