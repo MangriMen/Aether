@@ -6,7 +6,7 @@ import type { Accessor, Component, JSX, ValidComponent } from 'solid-js';
 import * as SelectPrimitive from '@kobalte/core/select';
 import { createVirtualizer } from '@tanstack/solid-virtual';
 import { cva } from 'class-variance-authority';
-import { createMemo, Show, splitProps, For } from 'solid-js';
+import { Show, splitProps, For } from 'solid-js';
 
 import { cn } from '@/shared/utils';
 
@@ -106,11 +106,14 @@ type SelectContentVirtualizedProps<
 > = SelectContentProps<T> &
   (NonVirtualizedSelectProps | VirtualizedSelectContentProps<Option, OptGroup>);
 
-const SelectContent = <Option, T extends ValidComponent = 'div'>(
-  props: PolymorphicProps<T, SelectContentVirtualizedProps<Option, T>>,
+const SelectContent = <Option, OptGroup, T extends ValidComponent = 'div'>(
+  props: PolymorphicProps<
+    T,
+    SelectContentVirtualizedProps<Option, OptGroup, T>
+  >,
 ) => {
   const [local, others] = splitProps(
-    props as SelectContentVirtualizedProps<Option, T>,
+    props as SelectContentVirtualizedProps<Option, OptGroup, T>,
     ['virtualized', 'options', 'optionValue', 'itemComponent', 'class'],
   );
 
@@ -199,14 +202,14 @@ const SelectListboxVirtualized = <
     );
   };
 
-  const virtualizer = createMemo(() => {
-    return createVirtualizer({
-      count: props.options.length,
-      overscan: 5,
-      getScrollElement: () => listboxRef ?? null,
-      getItemKey: (index: number) => getOptionValue(props.options[index]),
-      estimateSize: () => 32,
-    });
+  const virtualizer = createVirtualizer({
+    get count() {
+      return props.options.length;
+    },
+    overscan: 5,
+    getScrollElement: () => listboxRef ?? null,
+    getItemKey: (index: number) => getOptionValue(props.options[index]),
+    estimateSize: () => 32,
   });
 
   const scrollToItem = (key: string) => {
@@ -214,13 +217,17 @@ const SelectListboxVirtualized = <
       (option: Option) => getOptionValue(option) === key,
     );
 
+    if (index === -1) {
+      return;
+    }
+
     if (index === 0 && firstOpen) {
-      virtualizer()?.scrollToOffset(-100, { align: 'start' });
+      virtualizer.scrollToOffset(-100, { align: 'start' });
       firstOpen = false;
       return;
     }
 
-    virtualizer()?.scrollToIndex(index);
+    virtualizer.scrollToIndex(index);
   };
 
   const getItemStyle = (virtualRow: VirtualItem): JSX.CSSProperties => ({
@@ -268,12 +275,12 @@ const SelectListboxVirtualized = <
       {(items) => (
         <div
           style={{
-            height: `${virtualizer().getTotalSize()}px`,
+            height: `${virtualizer.getTotalSize()}px`,
             width: '100%',
             position: 'relative',
           }}
         >
-          <For each={virtualizer().getVirtualItems()}>
+          <For each={virtualizer.getVirtualItems()}>
             {(virtualRow) => renderVirtualItem(items, virtualRow)}
           </For>
         </div>
