@@ -265,6 +265,7 @@
     "completed": "Завершено",
     "clearFinished": "Очистить завершённые",
     "completedChildren": "Завершено: {{count}}",
+    "toggleDetails": "Показать детали",
     "gameInstalling": "Установка файлов игры",
     "installFailed": "Не удалось выполнить установку",
     "installing": "Установка {{name}}",

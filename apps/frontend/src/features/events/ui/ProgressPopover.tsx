@@ -11,7 +11,11 @@ import { cn } from '@/shared/utils';
 
 import type { ProgressEvent } from '../model/progressEvent';
 
-import { clearFinishedProgress } from '../model/progressStore';
+import {
+  clearFinishedProgress,
+  useProgressStore,
+} from '../model/progressStore';
+import { getFinishedRoots } from '../model/progressTree';
 import { ProgressCard } from './ProgressCard';
 import { ProgressDetailsDialog } from './ProgressDetailsDialog';
 
@@ -24,10 +28,12 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
 
   const [{ t }] = useTranslation();
 
+  const [progressStore] = useProgressStore();
+
   const handleOpenDetails = () => showDialog('progress', ProgressDetailsDialog);
 
-  const hasFinished = createMemo(() =>
-    local.payloads().some((p) => p.status.type !== 'running'),
+  const hasFinished = createMemo(
+    () => getFinishedRoots(Object.values(progressStore.payloads)).length > 0,
   );
 
   return (
@@ -38,6 +44,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
           <Show when={hasFinished()}>
             <CombinedTooltip
               label={t('events.clearFinished')}
+              aria-label={t('events.clearFinished')}
               as={IconButton}
               variant='ghost'
               size='sm'
@@ -47,6 +54,7 @@ export const ProgressPopover: Component<ProgressPopoverProps> = (props) => {
           </Show>
           <CombinedTooltip
             label={t('progress.seeDetails')}
+            aria-label={t('progress.seeDetails')}
             as={IconButton}
             class='self-end'
             variant='ghost'

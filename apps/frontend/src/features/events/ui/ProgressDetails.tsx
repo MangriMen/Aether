@@ -97,7 +97,10 @@ const ProgressNode: Component<ProgressNodeProps> = (props) => {
         onOpenChange={setIsOpen}
       >
         <div class='gap-0.5 flex items-start'>
-          <CollapsibleTrigger class={toggleColumn(props.size === 'sm')}>
+          <CollapsibleTrigger
+            class={toggleColumn(props.size === 'sm')}
+            aria-label={t('events.toggleDetails')}
+          >
             <Chevron isOpen={isOpen()} />
           </CollapsibleTrigger>
           {card()}

@@ -265,6 +265,7 @@
     "completed": "Completed",
     "clearFinished": "Clear finished",
     "completedChildren": "Completed: {{count}}",
+    "toggleDetails": "Show details",
     "gameInstalling": "Installing game files",
     "installFailed": "Installation failed",
     "installing": "Installing {{name}}",

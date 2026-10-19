@@ -85,7 +85,7 @@ describe('finished bars', () => {
   it('collects finished roots with their subtrees only', () => {
     const list = [
       make('r1', null, { status: st('done') }),
-      make('c1', 'r1'),
+      make('c1', 'r1', { status: st('done') }),
       make('r2', null),
       make('c2', 'r2', { status: st('done') }),
       make('r3', null, { status: st('failed') }),
@@ -96,5 +96,26 @@ describe('finished bars', () => {
       'r3',
     ]);
     expect(getFinishedIds(list)).toEqual(['r1', 'c1', 'r3']);
+  });
+
+  it('does not treat a failed root with a running child as finished', () => {
+    const list = [make('r', null, { status: st('failed') }), make('c', 'r')];
+
+    expect(getFinishedRoots(list)).toEqual([]);
+    expect(getFinishedIds(list)).toEqual([]);
+  });
+
+  it('neither treats an orphan as a root nor clears it', () => {
+    const list = [make('o', 'missing', { status: st('done') })];
+
+    expect(getRoots(list)).toEqual([]);
+    expect(getFinishedRoots(list)).toEqual([]);
+    expect(getFinishedIds(list)).toEqual([]);
+  });
+
+  it('does not hang on a cycle in parent ids', () => {
+    const list = [make('a', 'b'), make('b', 'a')];
+
+    expect(getDescendantIds(list, 'a')).toEqual(['b']);
   });
 });

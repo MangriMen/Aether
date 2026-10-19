@@ -75,9 +75,18 @@ export const splitChildren = (
   return { active: [...running, ...rest], finished };
 };
 
-/** Roots that are not running by their own status. */
+/** Roots that are not running and have no running descendant. */
 export const getFinishedRoots = (payloads: ProgressEvent[]): ProgressEvent[] =>
-  getRoots(payloads).filter((p) => p.status.type !== 'running');
+  getRoots(payloads).filter((root) => {
+    if (root.status.type === 'running') {
+      return false;
+    }
+
+    const descendants = new Set(getDescendantIds(payloads, root.progressBarId));
+    return !payloads.some(
+      (p) => descendants.has(p.progressBarId) && p.status.type === 'running',
+    );
+  });
 
 /** Ids of every finished root together with all its descendants. */
 export const getFinishedIds = (payloads: ProgressEvent[]): string[] =>

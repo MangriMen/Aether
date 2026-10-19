@@ -20,6 +20,12 @@ describe('formatProgressBytes', () => {
     ).toBe('1B / 2B');
   });
 
+  it('is empty when the done bytes are unknown', () => {
+    expect(
+      formatProgressBytes({ bytesDone: null, bytesTotal: 2, speed: 3 }, fmt),
+    ).toBe('');
+  });
+
   it('is empty when the size is unknown', () => {
     expect(
       formatProgressBytes({ bytesDone: 1, bytesTotal: null, speed: 3 }, fmt),
