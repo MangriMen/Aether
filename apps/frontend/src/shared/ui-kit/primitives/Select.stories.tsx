@@ -59,3 +59,93 @@ export const Default: Story = {
     );
   },
 };
+
+type VersionOption = { id: string };
+
+const makeVersions = (count: number, offset = 0): VersionOption[] =>
+  Array.from({ length: count }, (_, i) => ({ id: `v1.0.${offset + i}` }));
+
+export const Virtualized: Story = {
+  render: () => {
+    const options = makeVersions(5000);
+
+    return (
+      <Select<VersionOption>
+        virtualized
+        options={options}
+        optionValue='id'
+        optionTextValue='id'
+      >
+        <SelectTrigger aria-label='Version' class='w-45'>
+          <SelectValue<VersionOption>>
+            {(state) => state.selectedOption()?.id}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          class='h-42.5'
+          virtualized
+          options={options}
+          optionValue='id'
+          itemComponent={(props) => (
+            <SelectItem item={props.item} style={props.style}>
+              {props.item.textValue}
+            </SelectItem>
+          )}
+        />
+      </Select>
+    );
+  },
+};
+
+export const VirtualizedChangingOptions: Story = {
+  render: () => {
+    const [options, setOptions] = createSignal(makeVersions(500));
+
+    return (
+      <div class='gap-2 flex flex-col'>
+        <div class='gap-2 flex'>
+          <button
+            type='button'
+            class='px-2 border'
+            onClick={() =>
+              setOptions((prev) => [...prev, ...makeVersions(100, prev.length)])
+            }
+          >
+            Add 100
+          </button>
+          <button
+            type='button'
+            class='px-2 border'
+            onClick={() => setOptions((prev) => prev.slice(0, -100))}
+          >
+            Remove 100
+          </button>
+          <span>{options().length} options</span>
+        </div>
+        <Select<VersionOption>
+          virtualized
+          options={options()}
+          optionValue='id'
+          optionTextValue='id'
+        >
+          <SelectTrigger aria-label='Version' class='w-45'>
+            <SelectValue<VersionOption>>
+              {(state) => state.selectedOption()?.id}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent
+            class='h-42.5'
+            virtualized
+            options={options()}
+            optionValue='id'
+            itemComponent={(props) => (
+              <SelectItem item={props.item} style={props.style}>
+                {props.item.textValue}
+              </SelectItem>
+            )}
+          />
+        </Select>
+      </div>
+    );
+  },
+};
