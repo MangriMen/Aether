@@ -62,8 +62,8 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
         <TextFieldInput
           type='text'
           {...local.inputProps}
-          // pl/pr only win over the primitive's px-3 because Tailwind emits
-          // them later; keep them last so the icon padding is not overridden.
+          // The primitive merges this class via cn (tailwind-merge), so pl/pr
+          // override its px-3 and the icon padding is not lost.
           class={cn(
             !!local.leadingIcons && 'pl-9',
             !!local.trailingIcons && 'pr-9',
