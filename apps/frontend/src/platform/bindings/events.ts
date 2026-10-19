@@ -35,7 +35,15 @@ export type AuthErrorDto = { code: "CREDENTIALS_NOT_FOUND"; payload: {
 	max: number,
 } } | { code: "INVALID_USERNAME_CHARS" } | { code: "INVALID_ACCOUNT_TYPE" } | { code: "TOKEN_EXPIRED" } | { code: "STORAGE_ERROR" };
 
-export type CacheEventDto = { type: "changed" } | { type: "busyChanged"; busy: boolean };
+export type CacheEventDto = {
+	/**
+	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
+} & CacheEventKindDto;
+
+export type CacheEventKindDto = { type: "changed" } | { type: "busyChanged"; busy: boolean };
 
 export type ContentTypeDto = "modpack" | "mod" | "datapack" | "resourcepack" | "shaderpack";
 
@@ -300,6 +308,11 @@ export type ProgressBarDto = {
 };
 
 export type ProgressEventDto = {
+	/**
+	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
 	event: ProgressEventTypeDto,
 	progressBarId: string,
 	fraction: number | null,
@@ -353,6 +366,11 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 } };
 
 export type WarningEventDto = {
+	/**
+	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
 	message: string,
 };
 

@@ -283,6 +283,11 @@ export type ProcessErrorDto = { code: "KILL_ERROR"; payload: {
 } };
 
 export type ProcessEventDto = {
+	/**
+	 *  The place of the event in the order the backend sent all events of its type: the
+	 *  frontend drops what it has seen already.
+	 */
+	seq: number,
 	instanceId: string,
 	processId: string,
 	event: ProcessEventTypeDto,

@@ -13,6 +13,9 @@ use crate::features::update::{UpdatePhase, UpdateProgress};
 #[derive(Debug, Clone, Serialize, Deserialize, Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressEventDto {
+    /// The place of the event in the order the backend sent all events of its type: the
+    /// frontend drops what it has seen already.
+    pub seq: u32,
     pub event: ProgressEventTypeDto,
     pub progress_bar_id: Uuid,
     pub fraction: Option<f64>, // None means the loading is over; `status` tells how it ended
@@ -119,6 +122,7 @@ pub enum LauncherUpdatePhaseDto {
 impl From<ProgressEvent> for ProgressEventDto {
     fn from(value: ProgressEvent) -> Self {
         Self {
+            seq: 0,
             event: value.event.into(),
             progress_bar_id: value.progress_bar_id,
             fraction: value.fraction,
@@ -236,6 +240,7 @@ impl From<UpdateProgress> for ProgressEventDto {
             },
         };
         Self {
+            seq: 0,
             event: ProgressEventTypeDto::LauncherUpdate {
                 version: value.version,
                 current_version: value.current_version,
