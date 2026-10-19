@@ -288,12 +288,14 @@ impl ProgressBarId {
     /// at is left unfinished. A child normally ends before its parent; one still there when the
     /// parent ends would otherwise stay in the storage, and in the UI, for good. A mirror is
     /// one of them when its parent stops waiting before the shared bar is through; the shared
-    /// bar goes on. Their last events go to `events`.
+    /// bar goes on. Their last events go to `events`, the deepest first, so that none comes
+    /// after the end of its own parent.
     async fn finish_children(
         parent_id: Uuid,
         storage: &dyn ProgressBarStorage,
         events: &mut Vec<ProgressEvent>,
     ) {
+        let mut ended = Vec::new();
         let mut parents = vec![parent_id];
         while let Some(parent_id) = parents.pop() {
             let children = storage
@@ -312,9 +314,11 @@ impl ProgressBarId {
                 if child.status == ProgressStatus::Running {
                     child.status = ProgressStatus::Cancelled;
                 }
-                events.push(Self::finished_event(&child));
+                ended.push(Self::finished_event(&child));
             }
         }
+        // A bar is found before the bars under it.
+        events.extend(ended.into_iter().rev());
     }
 
     /// Remove the bar from `storage`; `None` when it is not there.
@@ -599,8 +603,8 @@ mod tests {
         assert_eq!(
             finished,
             [
-                (child, ProgressStatus::Cancelled),
                 (grandchild, ProgressStatus::Cancelled),
+                (child, ProgressStatus::Cancelled),
                 (parent, ProgressStatus::Done),
             ],
             "the bars left behind were cut short"
