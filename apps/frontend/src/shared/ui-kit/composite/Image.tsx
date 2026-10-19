@@ -20,10 +20,12 @@ export const Image: Component<ImageProps> = (props) => {
     'imgClass',
   ]);
 
-  const [isValidSrc, setIsValidSrc] = createSignal(true);
+  // Track the src that failed rather than a boolean, so a new src is retried
+  // without an effect.
+  const [failedSrc, setFailedSrc] = createSignal<string>();
 
   const handleError = () => {
-    setIsValidSrc(false);
+    setFailedSrc(local.src);
   };
 
   return (
@@ -38,7 +40,7 @@ export const Image: Component<ImageProps> = (props) => {
       {...others}
     >
       <Show
-        when={local.src && isValidSrc()}
+        when={local.src && failedSrc() !== local.src}
         fallback={
           <ResponsiveIcon
             class='text-foreground/85'
@@ -49,7 +51,7 @@ export const Image: Component<ImageProps> = (props) => {
         <img
           class={cn('size-full', local.imgClass)}
           src={local.src}
-          alt={local.alt}
+          alt={local.alt ?? ''}
           onError={handleError}
         />
       </Show>

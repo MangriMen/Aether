@@ -1,7 +1,7 @@
 import type { PolymorphicProps } from '@kobalte/core';
 import type { Component, JSX } from 'solid-js';
 
-import { Show, splitProps } from 'solid-js';
+import { createMemo, Show, splitProps } from 'solid-js';
 
 import type { PartialBy } from '@/shared/utils';
 
@@ -40,13 +40,18 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
     'inputProps',
     'leadingIcons',
     'trailingIcons',
+    'validationState',
     'class',
   ]);
+
+  const resolvedValidationState = createMemo(
+    () => local.validationState ?? (local.errorMessage ? 'invalid' : 'valid'),
+  );
 
   return (
     <TextField
       class={cn('gap-2 flex flex-col', local.class)}
-      validationState={local.errorMessage ? 'invalid' : 'valid'}
+      validationState={resolvedValidationState()}
       {...others}
     >
       <Show when={local.label}>

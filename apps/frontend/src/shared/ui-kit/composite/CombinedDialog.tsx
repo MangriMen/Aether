@@ -32,8 +32,13 @@ export const CombinedDialog: Component<CombinedDialogProps> = (props) => {
 
   const mergedProps = mergeProps(
     {
-      buttonOkText: labels.ok,
-      buttonCancelText: labels.cancel,
+      // Getters keep the defaults reactive, so they follow locale changes.
+      get buttonOkText() {
+        return labels.ok;
+      },
+      get buttonCancelText() {
+        return labels.cancel;
+      },
     },
     props,
   );

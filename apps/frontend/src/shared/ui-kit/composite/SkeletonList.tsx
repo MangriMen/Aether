@@ -1,4 +1,4 @@
-import { createMemo, For, splitProps, type Component } from 'solid-js';
+import { createMemo, Index, splitProps, type Component } from 'solid-js';
 
 import type { SkeletonRootProps } from '../primitives/Skeleton';
 
@@ -15,7 +15,7 @@ export const SkeletonList: Component<SkeletonListProps> = (props) => {
 
   return (
     <>
-      <For each={items()}>{(_) => <Skeleton visible {...others} />}</For>
+      <Index each={items()}>{(_) => <Skeleton visible {...others} />}</Index>
     </>
   );
 };
