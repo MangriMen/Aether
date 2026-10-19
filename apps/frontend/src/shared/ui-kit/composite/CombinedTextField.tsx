@@ -44,14 +44,14 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
     'class',
   ]);
 
-  const validationState = createMemo(
+  const resolvedValidationState = createMemo(
     () => local.validationState ?? (local.errorMessage ? 'invalid' : 'valid'),
   );
 
   return (
     <TextField
       class={cn('gap-2 flex flex-col', local.class)}
-      validationState={validationState()}
+      validationState={resolvedValidationState()}
       {...others}
     >
       <Show when={local.label}>
@@ -62,6 +62,8 @@ export const CombinedTextField: Component<CombinedTextFieldProps> = (props) => {
         <TextFieldInput
           type='text'
           {...local.inputProps}
+          // pl/pr only win over the primitive's px-3 because Tailwind emits
+          // them later; keep them last so the icon padding is not overridden.
           class={cn(
             !!local.leadingIcons && 'pl-9',
             !!local.trailingIcons && 'pr-9',
