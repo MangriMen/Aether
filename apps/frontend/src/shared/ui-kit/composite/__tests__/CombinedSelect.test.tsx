@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js';
 
+import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -128,6 +129,27 @@ describe('CombinedSelect props', () => {
     ));
 
     expect(triggerText()).toContain('custom trigger');
+    expect(document.querySelectorAll('button')).toHaveLength(1);
+  });
+
+  it('follows custom children that change between two elements', () => {
+    const [first, setFirst] = createSignal(true);
+
+    mount(() => (
+      <CombinedSelect<string, never> options={['a']} value='a'>
+        {first() ? (
+          <SelectTrigger aria-label='First'>first trigger</SelectTrigger>
+        ) : (
+          <SelectTrigger aria-label='Second'>second trigger</SelectTrigger>
+        )}
+      </CombinedSelect>
+    ));
+
+    expect(triggerText()).toContain('first trigger');
+
+    setFirst(false);
+
+    expect(triggerText()).toContain('second trigger');
     expect(document.querySelectorAll('button')).toHaveLength(1);
   });
 

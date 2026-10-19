@@ -98,7 +98,7 @@ export const CombinedSelect = <
           </SelectTrigger>
         }
       >
-        {(content) => content()}
+        {(content) => <>{content()}</>}
       </Show>
       <SelectContent />
     </Select>
