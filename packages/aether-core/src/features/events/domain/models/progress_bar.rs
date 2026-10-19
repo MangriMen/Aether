@@ -234,32 +234,38 @@ impl ProgressBarId {
         }
     }
 
-    /// Unregisters the bar, the bars still under it and its mirrors, and tells listeners that
-    /// they are finished: the children first, so that none is heard of after its parent is
-    /// over.
-    ///
-    /// Does nothing for an id that was never attached to a storage and a sequencer.
+    /// Ends the bars whose handles were dropped, in the order of the drops: each is unregistered
+    /// with the bars still under it and its mirrors, and listeners are told that they are
+    /// finished: the children first, so that none is heard of after its parent is over.
     ///
     /// The bars are taken out of the storage as one change, and the events of their end are sent
     /// in the turn of that change: after those made before it, so none of a bar comes after
-    /// its end, and with the children first.
+    /// its end.
+    async fn finish_dropped(sequencer: Arc<EventSequencer>) {
+        let change = sequencer.begin_change().await;
+        let mut events = Vec::new();
+        for end in sequencer.take_ends() {
+            Self::finish(end.id, end.storage.as_ref(), &mut events).await;
+        }
+        sequencer.emit_all_after(change, events).await;
+    }
+
+    /// Unregisters the bar, the bars still under it and its mirrors; their last events go to
+    /// `events`. Does nothing for a bar that is gone already.
     async fn finish(
         self_id: Uuid,
-        storage: Arc<dyn ProgressBarStorage>,
-        sequencer: Arc<EventSequencer>,
+        storage: &dyn ProgressBarStorage,
+        events: &mut Vec<ProgressEvent>,
     ) {
-        let change = sequencer.begin_change().await;
-        let Some(bar) = Self::unregister(self_id, storage.as_ref()).await else {
+        let Some(bar) = Self::unregister(self_id, storage).await else {
             return;
         };
 
-        let mut events = Vec::new();
         if bar.has_children {
-            Self::finish_children(self_id, storage.as_ref(), &mut events).await;
+            Self::finish_children(self_id, storage, events).await;
         }
-        Self::finish_mirrors(&bar, storage.as_ref(), &mut events).await;
+        Self::finish_mirrors(&bar, storage, events).await;
         events.push(Self::finished_event(&bar));
-        sequencer.emit_all_after(change, events).await;
     }
 
     /// End the mirrors of the shared bar `shared` as it ends: they show its last state. Their
@@ -361,9 +367,9 @@ impl Drop for ProgressBarId {
         else {
             return;
         };
-        let id = self.id;
+        sequencer.queue_end(self.id, storage);
 
-        tokio::spawn(Self::finish(id, storage, sequencer));
+        tokio::spawn(Self::finish_dropped(sequencer));
     }
 }
 
@@ -611,6 +617,55 @@ mod tests {
         );
         let left: Vec<_> = storage.list().await.into_iter().map(|bar| bar.id).collect();
         assert_eq!(left, [unrelated]);
+    }
+
+    /// The handles of a child and its parent dropped one after the other: whichever task of
+    /// the two the runtime runs first, the child ends as it was dropped, and before the parent.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn a_child_dropped_before_its_parent_ends_before_it_as_done() {
+        for round in 0..200 {
+            let (tx, mut rx) = mpsc::unbounded_channel();
+            let storage = Arc::new(MapStorage::default());
+            let sequencer = Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))));
+            let [parent, child] = [(); 2].map(|()| Uuid::new_v4());
+            for bar in [
+                ProgressBar {
+                    has_children: true,
+                    ..bar(parent)
+                },
+                ProgressBar {
+                    parent_id: Some(parent),
+                    ..bar(child)
+                },
+            ] {
+                storage.insert(bar.id, bar).await.unwrap();
+            }
+            let handle = |id| ProgressBarId {
+                id,
+                progress_storage: Some(storage.clone()),
+                sequencer: Some(sequencer.clone()),
+            };
+            let (parent_handle, child_handle) = (handle(parent), handle(child));
+
+            drop(child_handle);
+            drop(parent_handle);
+
+            let first = next_progress(&mut rx).await;
+            let second = next_progress(&mut rx).await;
+            assert_eq!(
+                [
+                    (first.progress_bar_id, first.status),
+                    (second.progress_bar_id, second.status)
+                ],
+                [
+                    (child, ProgressStatus::Done),
+                    (parent, ProgressStatus::Done)
+                ],
+                "round {round}"
+            );
+            settle().await;
+            assert!(rx.try_recv().is_err(), "round {round}: an event too many");
+        }
     }
 
     #[tokio::test]
