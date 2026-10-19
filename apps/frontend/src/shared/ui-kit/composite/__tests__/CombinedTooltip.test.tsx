@@ -79,6 +79,16 @@ describe('CombinedTooltip', () => {
     expect(document.body.textContent).not.toContain('Tooltip text');
   });
 
+  it('does not show the label for a controlled open tooltip when disableTooltip is set', () => {
+    mount(() => (
+      <CombinedTooltip open disableTooltip label='Tooltip text'>
+        trigger
+      </CombinedTooltip>
+    ));
+
+    expect(document.body.textContent).not.toContain('Tooltip text');
+  });
+
   it('renders a custom trigger component', () => {
     mount(() => (
       <CombinedTooltip as='a' href='/x' label='Label'>

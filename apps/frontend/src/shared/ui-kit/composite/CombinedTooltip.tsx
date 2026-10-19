@@ -53,7 +53,12 @@ export const CombinedTooltip = <T extends ValidComponent = 'button'>(
     TOOLTIP_ROOT_KEYS,
   );
   return (
-    <Tooltip disabled={local.disableTooltip} {...tooltipRoot}>
+    <Tooltip
+      {...tooltipRoot}
+      disabled={local.disableTooltip}
+      // A controlled `open` would otherwise keep the content visible while disabled.
+      open={local.disableTooltip ? false : tooltipRoot.open}
+    >
       {/* // TODO: find a way to make this work
       //@ts-expect-error no declaration */}
       <TooltipTrigger {...(others as TooltipTriggerProps<T>)} />
