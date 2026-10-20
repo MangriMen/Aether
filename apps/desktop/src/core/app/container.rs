@@ -350,8 +350,7 @@ pub async fn build_container(
 
     // The previous run may have died mid-install; do it before the UI can list instances.
     if let Err(err) =
-        aether_core::features::instance::reset_stuck_install_stages(instance_storage.as_ref())
-            .await
+        aether_core::features::instance::reset_stuck_install_stages(instance_storage.as_ref()).await
     {
         log::warn!("Failed to reset stuck install stages: {err}");
     }

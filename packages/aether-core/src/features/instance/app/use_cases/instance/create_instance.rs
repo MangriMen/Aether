@@ -8,7 +8,9 @@ use crate::features::{
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
-        NewInstance, app::ports::CreateInstanceUseCasePort,
+        NewInstance,
+        app::ports::CreateInstanceUseCasePort,
+        domain::{InstanceField, InstanceValidationErrorReason},
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -134,6 +136,22 @@ impl CreateInstanceUseCase {
             pack_info,
         } = new_instance;
 
+        if name.trim().is_empty() {
+            return Err(InstanceError::ValidationError {
+                field: InstanceField::Name,
+                reason: InstanceValidationErrorReason::CannotBeEmpty,
+            });
+        }
+
+        // Before anything is created on disk: a bad loader must not leave a directory behind.
+        let loader_version = resolve_loader_version(
+            self.loader_version_service.as_ref(),
+            &game_version,
+            mod_loader,
+            loader_version,
+        )
+        .await?;
+
         let icon = self.import_icon(icon_path).await;
 
         let base_sanitized_name = sanitize_instance_name(&name);
@@ -148,14 +166,6 @@ impl CreateInstanceUseCase {
             name,
             instance_dir.display()
         );
-
-        let loader_version = resolve_loader_version(
-            self.loader_version_service.as_ref(),
-            &game_version,
-            mod_loader,
-            loader_version,
-        )
-        .await?;
 
         let mut instance = InstanceBuilder::new(
             InstanceId::try_from(sanitized_name)?,
@@ -245,11 +255,31 @@ pub(crate) async fn resolve_loader_version(
     }
 }
 
+const WINDOWS_RESERVED_NAMES: [&str; 22] = [
+    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+    "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+];
+
+/// The directory name for an instance name: no characters or endings Windows refuses, and
+/// never a reserved device name.
 pub(crate) fn sanitize_instance_name(name: &str) -> String {
-    name.replace(
+    let replaced = name.replace(
         ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
         "_",
-    )
+    );
+    let trimmed = replaced.trim().trim_end_matches(['.', ' ']);
+    if trimmed.is_empty() {
+        return "instance".to_owned();
+    }
+
+    let stem = trimmed.split('.').next().unwrap_or(trimmed);
+    if WINDOWS_RESERVED_NAMES
+        .iter()
+        .any(|reserved| reserved.eq_ignore_ascii_case(stem))
+    {
+        return format!("_{trimmed}");
+    }
+    trimmed.to_owned()
 }
 
 #[async_trait]
@@ -268,5 +298,32 @@ impl CreateInstanceUseCasePort for CreateInstanceUseCase {
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
         self.execute_for_pack(new_instance, parent_bar).await
+    }
+}
+
+#[cfg(test)]
+mod sanitize_tests {
+    use super::sanitize_instance_name;
+
+    #[test]
+    fn should_prefix_a_reserved_windows_name() {
+        assert_eq!(sanitize_instance_name("con"), "_con");
+        assert_eq!(sanitize_instance_name("NUL.txt"), "_NUL.txt");
+        assert_eq!(sanitize_instance_name("console"), "console");
+    }
+
+    #[test]
+    fn should_strip_trailing_dots_and_spaces() {
+        assert_eq!(sanitize_instance_name("My pack. . "), "My pack");
+    }
+
+    #[test]
+    fn should_fall_back_when_nothing_is_left() {
+        assert_eq!(sanitize_instance_name("..."), "instance");
+    }
+
+    #[test]
+    fn should_replace_forbidden_characters() {
+        assert_eq!(sanitize_instance_name("a/b:c"), "a_b_c");
     }
 }
