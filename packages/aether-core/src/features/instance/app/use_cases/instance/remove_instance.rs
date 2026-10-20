@@ -42,10 +42,12 @@ impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
         let _lock = self.instance_locks.lock(&instance_id).await;
 
         self.watcher_service.unwatch_instance(&instance_id).await?;
+        // Files first: if the directory cannot be removed, the records stay and the removal can be
+        // retried instead of leaving a listed instance without its pack data.
+        self.file_service.remove_instance_dir(&instance_id).await?;
         self.pack_storage
             .remove_all_for_instance(&instance_id)
             .await?;
-        self.file_service.remove_instance_dir(&instance_id).await?;
         self.storage.remove(&instance_id).await?;
         Ok(())
     }

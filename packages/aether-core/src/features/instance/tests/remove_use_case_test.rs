@@ -353,3 +353,69 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
             .exists()
     );
 }
+
+struct FailingRemoveFileService;
+
+#[async_trait]
+impl crate::features::instance::InstanceFileService for FailingRemoveFileService {
+    async fn create_instance_dir(&self, _id: &InstanceId) -> Result<(), InstanceError> {
+        Ok(())
+    }
+    async fn create_unique_instance_dir(
+        &self,
+        _base_name: &str,
+    ) -> Result<(String, std::path::PathBuf), InstanceError> {
+        unimplemented!()
+    }
+    async fn remove_instance_dir(&self, _id: &InstanceId) -> Result<(), InstanceError> {
+        Err(InstanceError::Storage("locked".to_string()))
+    }
+    async fn write_instance_file(
+        &self,
+        _id: &InstanceId,
+        _relative_path: &str,
+        _bytes: &[u8],
+    ) -> Result<(), InstanceError> {
+        unimplemented!()
+    }
+    async fn read_instance_file(
+        &self,
+        _id: &InstanceId,
+        _relative_path: &str,
+    ) -> Result<Vec<u8>, InstanceError> {
+        unimplemented!()
+    }
+}
+
+#[tokio::test]
+async fn should_keep_records_when_the_instance_directory_cannot_be_removed() {
+    let (_temp, _location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    seed_pack_data(&pool, &instance_id).await;
+    let use_case = RemoveInstanceUseCase::new(
+        storage,
+        Arc::new(NoOpWatcher),
+        Arc::new(FailingRemoveFileService),
+        Arc::new(SqlitePackStorage::new(pool.clone())),
+        Arc::new(InstanceLocks::new()),
+    );
+
+    let result = use_case
+        .execute(InstanceId::try_from(instance_id).unwrap())
+        .await;
+
+    assert!(result.is_err());
+    for table in ["instances", "packs", "pack_files"] {
+        let count: i64 =
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(count, 1, "{table} must survive a failed directory removal");
+    }
+}
