@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use dashmap::DashMap;
+use dashmap::{DashMap, mapref::entry::Entry};
 use futures::TryStreamExt;
 use path_slash::PathBufExt;
 
@@ -12,7 +12,8 @@ use crate::{
     features::{
         instance::{
             ContentFile, ContentFileView, ContentMetadataService, ContentType, InstanceError,
-            InstanceId, PackEntry, PackFile, PackStorage, app::ports::ListContentUseCasePort,
+            InstanceId, PackEntry, PackFile, PackStorage,
+            app::{DISABLED_SUFFIX, ports::ListContentUseCasePort},
         },
         settings::LocationInfo,
     },
@@ -124,7 +125,18 @@ impl ListContentUseCase {
                         .process_content_file(instance_id, &path, content_type, &entries_ref)
                         .await?
                     {
-                        files_ref.insert(file.content_path.clone(), file);
+                        // `x` next to `x.disabled`: the enabled file is the one that loads, so
+                        // it is listed whatever order the directory is read in.
+                        match files_ref.entry(file.content_path.clone()) {
+                            Entry::Occupied(mut slot) => {
+                                if slot.get().disabled && !file.disabled {
+                                    slot.insert(file);
+                                }
+                            }
+                            Entry::Vacant(slot) => {
+                                slot.insert(file);
+                            }
+                        }
                     }
 
                     Ok(())
@@ -151,17 +163,15 @@ impl ListContentUseCase {
             .map_err(|err| InstanceError::Storage(err.to_string()))?
             .len();
 
-        let is_disabled = file_name.ends_with(".disabled");
-
         let original_path = PathBuf::from(content_type.get_folder())
             .join(file_name)
             .to_slash_lossy()
             .to_string();
 
-        let content_path = if is_disabled {
-            original_path.trim_end_matches(".disabled").to_string()
-        } else {
-            original_path
+        // Only one suffix: `a.jar.disabled.disabled` is the disabled `a.jar.disabled`.
+        let (content_path, is_disabled) = match original_path.strip_suffix(DISABLED_SUFFIX) {
+            Some(enabled) => (enabled.to_string(), true),
+            None => (original_path, false),
         };
 
         let pack_file = self

@@ -10,7 +10,10 @@ use crate::features::instance::app::ports::ImportContentUseCasePort;
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-        instance::{ContentType, InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage},
+        instance::{
+            ContentType, InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage,
+            app::DISABLED_SUFFIX,
+        },
         settings::LocationInfo,
     },
     shared::{hash::infra::sha1_async, io::infra::read_async},
@@ -110,7 +113,8 @@ impl ImportContentUseCase {
             .location_info
             .instance_dir(instance_id)
             .join(&content_path);
-        let disabled_path = absolute_content_path.with_file_name(format!("{file_name}.disabled"));
+        let disabled_path =
+            absolute_content_path.with_file_name(format!("{file_name}{DISABLED_SUFFIX}"));
 
         if absolute_content_path.exists() || disabled_path.exists() {
             return Err(InstanceError::ContentDuplication {

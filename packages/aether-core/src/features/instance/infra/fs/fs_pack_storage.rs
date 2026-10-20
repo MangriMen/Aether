@@ -4,7 +4,10 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
-        instance::{InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage, ProviderId},
+        instance::{
+            InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage, ProviderId,
+            app::DISABLED_SUFFIX,
+        },
         settings::LocationInfo,
     },
     shared::io::infra::{
@@ -190,8 +193,8 @@ impl PackStorage for FsPackStorage {
             let mut file_path = instance_dir.join(content_path);
 
             if !file_path.exists() {
-                // TODO rework disable logic to make it more transparent
-                file_path = PathBuf::from(format!("{}.disabled", file_path.to_string_lossy()));
+                file_path =
+                    PathBuf::from(format!("{}{DISABLED_SUFFIX}", file_path.to_string_lossy()));
             }
 
             let _ = remove_file(file_path).await;
