@@ -27,16 +27,15 @@ use super::JAVA_WINDOW_BIN;
 struct Package {
     pub download_url: String,
     pub name: PathBuf,
-    /// What the archive is checked against. Absent from the answer, the archive is taken as it
-    /// comes.
-    #[serde(default)]
-    pub sha256_hash: Option<String>,
+    /// What the archive is checked against. Required, so an answer without it cannot lead to an
+    /// unverified JRE.
+    pub sha256_hash: String,
 }
 
 const AZUL_PACKAGES_BASE_API_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages";
 
 const AZUL_PACKAGES_DEFAULT_QUERY_PARAMS: &str =
-    "archive_type=zip&javafx_bundled=false&java_package_type=jre&page_size=1";
+    "archive_type=zip&javafx_bundled=false&java_package_type=jre&page_size=1&include_fields=sha256_hash";
 
 pub struct AzulJreProvider<PS: ProgressService, RC: RequestClient> {
     progress_service: Arc<PS>,
@@ -191,14 +190,11 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         package: &Package,
         progress_bar_id: Option<&ProgressBarId>,
     ) -> Result<Bytes, RequestError> {
-        let mut request = Request::get(&package.download_url);
-        if let Some(hash) = package
-            .sha256_hash
-            .as_deref()
-            .and_then(|hex| FileHash::parse("sha256", hex).ok())
-        {
-            request = request.with_hash(hash);
-        }
+        let hash = FileHash::parse("sha256", &package.sha256_hash)
+            .map_err(|err| RequestError::Middleware(err.into()))?;
+        let request = Request::get(&package.download_url)
+            .with_hash(hash)
+            .as_download();
 
         self.request_client
             .fetch_bytes_with_progress(
@@ -431,11 +427,42 @@ mod tests {
         install_dir.join(PACKAGE_DIR).join("bin").join("java")
     }
 
+    /// Serve `archive` with a package answer carrying its real digest.
+    async fn serve_archive(client: &FakeClient, archive: Vec<u8>) {
+        let digest = hash_hex_async(HashAlgorithm::Sha256, Bytes::from(archive.clone()))
+            .await
+            .unwrap();
+        serve_package(client, Some(&digest));
+        client.serve(ARCHIVE_URL, archive);
+    }
+
+    #[test]
+    fn should_request_the_hash_field_when_building_the_packages_url() {
+        assert!(Provider::build_packages_url(VERSION).contains("include_fields=sha256_hash"));
+    }
+
     #[tokio::test]
-    async fn should_install_the_jre_when_the_archive_unpacks() {
+    async fn should_fail_when_the_package_answer_has_no_hash() {
         let fixture = fixture();
         serve_package(&fixture.client, None);
         fixture.client.serve(ARCHIVE_URL, jre_zip(b"new jre"));
+
+        let result = fixture
+            .provider
+            .install(VERSION, &fixture.install_dir)
+            .await;
+
+        assert!(
+            matches!(result, Err(JavaDomainError::VersionNotAvailable { .. })),
+            "{result:?}"
+        );
+        assert!(!installed_java(&fixture.install_dir).exists());
+    }
+
+    #[tokio::test]
+    async fn should_install_the_jre_when_the_archive_unpacks() {
+        let fixture = fixture();
+        serve_archive(&fixture.client, jre_zip(b"new jre")).await;
 
         fixture
             .provider
@@ -459,8 +486,7 @@ mod tests {
         let fixture = fixture();
         std::fs::create_dir_all(installed_java(&fixture.install_dir).parent().unwrap()).unwrap();
         std::fs::write(installed_java(&fixture.install_dir), b"old jre").unwrap();
-        serve_package(&fixture.client, None);
-        fixture.client.serve(ARCHIVE_URL, jre_zip(b"new jre"));
+        serve_archive(&fixture.client, jre_zip(b"new jre")).await;
 
         fixture
             .provider
@@ -481,7 +507,6 @@ mod tests {
         let fixture = fixture();
         std::fs::create_dir_all(installed_java(&fixture.install_dir).parent().unwrap()).unwrap();
         std::fs::write(installed_java(&fixture.install_dir), b"old jre").unwrap();
-        serve_package(&fixture.client, None);
         let mut archive = jre_zip(b"new jre contents");
         // A flipped byte of the stored file: the archive opens, the file fails its checksum.
         let at = archive
@@ -489,7 +514,7 @@ mod tests {
             .position(|window| window == b"new jre contents")
             .unwrap();
         archive[at] ^= 0xff;
-        fixture.client.serve(ARCHIVE_URL, archive);
+        serve_archive(&fixture.client, archive).await;
 
         let result = fixture
             .provider

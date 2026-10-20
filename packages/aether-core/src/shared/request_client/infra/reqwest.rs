@@ -193,9 +193,14 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             hash,
             body,
             timeout,
+            bulk,
         } = request;
 
-        let _permit = self.api_semaphore.0.acquire().await?;
+        let _permit = if bulk {
+            self.semaphore.0.acquire().await?
+        } else {
+            self.api_semaphore.0.acquire().await?
+        };
 
         let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
@@ -226,6 +231,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             hash,
             body,
             timeout,
+            ..
         } = request;
 
         let _permit = self.semaphore.0.acquire().await?;
@@ -249,6 +255,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             hash,
             body,
             timeout,
+            ..
         } = request;
 
         let _permit = self.semaphore.0.acquire().await?;
@@ -592,6 +599,72 @@ mod tests {
         .unwrap();
 
         assert_eq!(&bytes[..], b"payload");
+    }
+
+    fn client_with_semaphores(
+        downloads: Arc<FetchSemaphore>,
+        api: Arc<ApiSemaphore>,
+    ) -> ReqwestClient<NoopProgress> {
+        ReqwestClient::new(
+            Arc::new(NoopProgress),
+            Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build()),
+            downloads,
+        )
+        .with_api_semaphore(api)
+    }
+
+    #[tokio::test]
+    async fn should_wait_for_a_download_permit_when_fetch_is_bulk() {
+        let addr = serve("200 OK", b"payload").await;
+        let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let api = Arc::new(ApiSemaphore(tokio::sync::Semaphore::new(1)));
+        let client = client_with_semaphores(downloads.clone(), api.clone());
+
+        let held_api = api.0.acquire().await.unwrap();
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.fetch_bytes(Request::get(url(addr)).as_download()),
+        )
+        .await
+        .expect("a bulk fetch must not wait for the api permits")
+        .unwrap();
+        assert_eq!(&bytes[..], b"payload");
+        drop(held_api);
+
+        let _held = downloads.0.acquire().await.unwrap();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.fetch_bytes(Request::get(url(addr)).as_download()),
+        )
+        .await;
+        assert!(result.is_err(), "the bulk fetch should still be queued");
+    }
+
+    #[tokio::test]
+    async fn should_wait_for_an_api_permit_when_fetch_is_not_bulk() {
+        let addr = serve("200 OK", b"payload").await;
+        let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let api = Arc::new(ApiSemaphore(tokio::sync::Semaphore::new(1)));
+        let client = client_with_semaphores(downloads.clone(), api.clone());
+
+        let held_downloads = downloads.0.acquire().await.unwrap();
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await
+        .expect("a plain fetch must not wait for the download permits")
+        .unwrap();
+        assert_eq!(&bytes[..], b"payload");
+        drop(held_downloads);
+
+        let _held = api.0.acquire().await.unwrap();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await;
+        assert!(result.is_err(), "the plain fetch should still be queued");
     }
 
     #[tokio::test]

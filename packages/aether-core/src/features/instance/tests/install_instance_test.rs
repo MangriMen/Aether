@@ -247,7 +247,7 @@ async fn should_reset_only_transient_stages_on_startup_sweep() {
         .await
         .unwrap();
 
-    assert_eq!(reset, 2);
+    assert_eq!(reset, 1);
     let stages: Vec<_> = storage
         .instances
         .lock()
@@ -259,7 +259,7 @@ async fn should_reset_only_transient_stages_on_startup_sweep() {
         stages,
         [
             InstanceInstallStage::NotInstalled,
-            InstanceInstallStage::NotInstalled,
+            InstanceInstallStage::PackInstalling,
             InstanceInstallStage::Installed,
             InstanceInstallStage::NotInstalled,
         ]
@@ -346,7 +346,7 @@ async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one()
 }
 
 #[tokio::test]
-async fn should_reset_to_not_installed_when_the_install_fails() {
+async fn should_stay_pack_installing_when_the_install_fails() {
     let (instance, ok) = run_install(
         Some(pack_info()),
         InstanceInstallStage::PackInstalling,
@@ -354,5 +354,56 @@ async fn should_reset_to_not_installed_when_the_install_fails() {
     )
     .await;
     assert!(!ok);
-    assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+    assert_eq!(instance.install_stage, InstanceInstallStage::PackInstalling);
+}
+
+/// Renames the instance while "installing", as an edit made during a long install would.
+struct RenameDuringInstall(Arc<MemStorage>);
+
+#[async_trait]
+impl MinecraftInstallService for RenameDuringInstall {
+    async fn execute(
+        &self,
+        params: InstallMinecraftParams,
+        _loading_bar: Option<&ProgressBarId>,
+        _force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        let _ = params;
+        let mut instance = self.0.get(&InstanceId::try_from("inst").unwrap()).await.unwrap();
+        instance.rename("Renamed".to_owned()).unwrap();
+        self.0.upsert(&instance).await.unwrap();
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn should_keep_an_edit_made_during_the_install_when_the_install_finishes() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        "inst".to_owned(),
+        "1.20.1".to_owned(),
+        ModLoader::Vanilla,
+    )
+    .build();
+    let id = instance.id().clone();
+    let storage = Arc::new(MemStorage {
+        instances: Mutex::new(vec![instance]),
+    });
+    let use_case = InstallInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(RenameDuringInstall(storage.clone())),
+        Arc::new(NoProgress),
+        location_info,
+    );
+
+    use_case.execute(id.clone(), false, None).await.unwrap();
+
+    let stored = storage.get(&id).await.unwrap();
+    assert_eq!(stored.name(), "Renamed");
+    assert_eq!(stored.install_stage, InstanceInstallStage::Installed);
 }

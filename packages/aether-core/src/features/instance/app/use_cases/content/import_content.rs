@@ -81,8 +81,14 @@ impl ImportContentUseCase {
                 .get_import_content_data(instance_id, content_type, source_path)
                 .await?;
 
-            // Two sources of one name would be copied onto each other.
-            if !seen.insert(content_path.clone()) {
+            // Two sources of one name would be copied onto each other; Windows and macOS
+            // file systems treat names differing in case as one.
+            let key = if cfg!(any(windows, target_os = "macos")) {
+                content_path.to_lowercase()
+            } else {
+                content_path.clone()
+            };
+            if !seen.insert(key) {
                 return Err(InstanceError::ContentDuplication { content_path });
             }
 

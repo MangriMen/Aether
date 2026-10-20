@@ -87,6 +87,42 @@ async fn should_keep_both_changes_when_edit_and_launch_update_run_concurrently()
 }
 
 #[tokio::test]
+async fn should_reject_the_rename_when_the_name_is_only_whitespace() {
+    let storage = Arc::new(SqliteInstanceStorage::new(pool().await));
+    let id = InstanceId::try_from(uuid::Uuid::new_v4().to_string().as_str()).unwrap();
+    storage.upsert(&instance(&id)).await.unwrap();
+
+    let result = EditInstanceUseCase::new(storage.clone())
+        .execute(id.clone(), rename_to("   "))
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(storage.get(&id).await.unwrap().name(), "Old");
+}
+
+#[tokio::test]
+async fn should_not_resurrect_the_row_when_remove_runs_under_a_concurrent_update() {
+    let storage = Arc::new(SqliteInstanceStorage::new(pool().await));
+    let id = InstanceId::try_from(uuid::Uuid::new_v4().to_string().as_str()).unwrap();
+    storage.upsert(&instance(&id)).await.unwrap();
+
+    let updater = storage.clone();
+    let update_id = id.clone();
+    let update = tokio::spawn(async move {
+        let _ = updater
+            .update(&update_id, &mut |instance| {
+                instance.install_stage = InstanceInstallStage::Installed;
+                Ok(true)
+            })
+            .await;
+    });
+    storage.remove(&id).await.unwrap();
+    update.await.unwrap();
+
+    assert!(storage.get(&id).await.is_err());
+}
+
+#[tokio::test]
 async fn should_not_write_when_update_reports_no_change() {
     let storage = SqliteInstanceStorage::new(pool().await);
     let id = InstanceId::try_from(uuid::Uuid::new_v4().to_string().as_str()).unwrap();

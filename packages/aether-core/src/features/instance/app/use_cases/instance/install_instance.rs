@@ -6,7 +6,7 @@ use crate::features::{
     events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
     instance::{
         Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
-        InstanceStorage,
+        InstanceStorage, InstanceStorageExt,
     },
     minecraft::{InstallMinecraftParams, MinecraftInstallService},
     settings::LocationInfo,
@@ -36,7 +36,7 @@ impl InstallInstanceUseCase {
 
     async fn handle_success_installation(
         &self,
-        instance: &mut Instance,
+        instance: &Instance,
         pack_pending: bool,
     ) -> Result<(), InstanceError> {
         log::info!(
@@ -51,29 +51,42 @@ impl InstallInstanceUseCase {
         // its game keeps it `PackInstalling`, and whoever deploys the pack moves it on. Only that
         // stage is kept — an instance merely *from* a pack (`pack_info`) reinstalled for a health
         // check or a game change is as ready as before.
-        instance.install_stage = if pack_pending {
+        let stage = if pack_pending {
             InstanceInstallStage::PackInstalling
         } else {
             InstanceInstallStage::Installed
         };
-        self.instance_storage.upsert(instance).await?;
-        Ok(())
+        self.write_stage(instance.id(), stage).await
     }
 
     async fn handle_failed_installation(
         &self,
-        instance: &mut Instance,
+        instance: &Instance,
         previous_stage: InstanceInstallStage,
     ) -> Result<(), InstanceError> {
         // `Installing` was written before the attempt, so a failed reinstall of a working
-        // instance must restore `Installed` instead of demoting it.
-        instance.install_stage = if previous_stage == InstanceInstallStage::Installed {
-            InstanceInstallStage::Installed
-        } else {
-            InstanceInstallStage::NotInstalled
+        // instance must restore `Installed`, and a pack's instance stays `PackInstalling`.
+        let stage = match previous_stage {
+            InstanceInstallStage::Installed => InstanceInstallStage::Installed,
+            InstanceInstallStage::PackInstalling => InstanceInstallStage::PackInstalling,
+            _ => InstanceInstallStage::NotInstalled,
         };
-        self.instance_storage.upsert(instance).await?;
-        Ok(())
+        self.write_stage(instance.id(), stage).await
+    }
+
+    /// Writes only the stage: the install runs for minutes, and the instance may have been
+    /// edited meanwhile.
+    async fn write_stage(
+        &self,
+        id: &InstanceId,
+        stage: InstanceInstallStage,
+    ) -> Result<(), InstanceError> {
+        self.instance_storage
+            .upsert_with(id, move |instance| {
+                instance.install_stage = stage;
+                Ok(())
+            })
+            .await
     }
 
     pub async fn execute(
@@ -82,12 +95,12 @@ impl InstallInstanceUseCase {
         force: bool,
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
-        let mut instance = self.instance_storage.get(&instance_id).await?;
+        let instance = self.instance_storage.get(&instance_id).await?;
         let previous_stage = instance.install_stage;
         let pack_pending = previous_stage == InstanceInstallStage::PackInstalling;
 
-        instance.install_stage = InstanceInstallStage::Installing;
-        self.instance_storage.upsert(&instance).await?;
+        self.write_stage(&instance_id, InstanceInstallStage::Installing)
+            .await?;
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 
@@ -135,11 +148,11 @@ impl InstallInstanceUseCase {
 
         match result {
             Ok(()) => {
-                self.handle_success_installation(&mut instance, pack_pending)
+                self.handle_success_installation(&instance, pack_pending)
                     .await
             }
             Err(_) => {
-                self.handle_failed_installation(&mut instance, previous_stage)
+                self.handle_failed_installation(&instance, previous_stage)
                     .await
             }
         }?;
