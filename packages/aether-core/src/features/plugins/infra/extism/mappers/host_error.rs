@@ -542,7 +542,10 @@ impl From<&ManifestError> for ManifestErrorDto {
                 value: value.clone(),
                 error: error.clone(),
             },
-            ManifestError::InvalidPathMapping => Self::InvalidPathMapping,
+            // The plugin-facing API has no dedicated variant; both are path-shape rejections.
+            ManifestError::InvalidPathMapping | ManifestError::InvalidLoadFile(_) => {
+                Self::InvalidPathMapping
+            }
             ManifestError::UnknownHostFunctions(names) => Self::UnknownHostFunctions(names.clone()),
             ManifestError::HostFunctionsNotDeclared => Self::HostFunctionsNotDeclared,
             ManifestError::InvalidId { field, value } => Self::InvalidId {
