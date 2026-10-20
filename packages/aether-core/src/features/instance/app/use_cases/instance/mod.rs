@@ -10,6 +10,7 @@ mod launch_instance_with_active_account;
 mod list_importers;
 mod list_instances;
 mod remove_instance;
+mod reset_stuck_install_stages;
 mod update_instance;
 
 pub use change_instance_game::*;
@@ -24,4 +25,5 @@ pub use launch_instance_with_active_account::*;
 pub use list_importers::*;
 pub use list_instances::*;
 pub use remove_instance::*;
+pub use reset_stuck_install_stages::*;
 pub use update_instance::*;
