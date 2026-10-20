@@ -9,6 +9,7 @@ import type {
 } from '@/features/instance';
 
 import { isEditInstanceEmpty } from '@/features/instance';
+import { logError } from '@/shared/log';
 
 import type { GeneralSettingsSchemaOutput } from '../model/generalValidation';
 
@@ -41,7 +42,7 @@ export const useGeneralSettingsHandler = ({
       editInstanceIcon()({
         instanceId: instance().id,
         iconPath: values.icon,
-      });
+      }).catch(logError);
     }
 
     const edit = generalSettingsValuesToEditInstance(values);
@@ -50,7 +51,7 @@ export const useGeneralSettingsHandler = ({
       return;
     }
 
-    editInstance()({ id: instance().id, edit });
+    editInstance()({ id: instance().id, edit }).catch(logError);
   };
 
   return { initialValues, onChange };

@@ -84,11 +84,15 @@ export const useForceEnablePlugin = () => {
 };
 
 export const useDisablePlugin = () => {
+  const [{ t }] = useTranslation();
   const queryClient = useQueryClient();
 
   return useMutation(() => ({
     mutationFn: pluginsCommands.disable,
     onSuccess: (_, id) => pluginsCache.invalidate.full(queryClient, id),
+    onError: (err) => {
+      showError({ title: t('plugin.disableError'), err, t });
+    },
   }));
 };
 

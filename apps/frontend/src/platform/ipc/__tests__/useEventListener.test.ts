@@ -59,6 +59,20 @@ describe('useEventListener', () => {
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
+  it('does not leave a rejected listen unhandled', async () => {
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    const event = { listen: vi.fn(() => Promise.reject(new Error('no ipc'))) };
+
+    createRoot(() => {
+      useEventListener(event, () => {});
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    process.off('unhandledRejection', unhandled);
+
+    expect(unhandled).not.toHaveBeenCalled();
+  });
+
   it('drops an event it has heard already, and one that came before the last', () => {
     const { event, send } = createEvent();
     const heard: number[] = [];

@@ -101,7 +101,7 @@ export const useDiscoverJava = () => {
     mutationFn: javaCommands.discover,
     onError: (err) => {
       showError({
-        title: t('java.removeError'),
+        title: t('java.discoverError'),
         err,
         t,
       });
