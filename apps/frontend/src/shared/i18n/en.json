@@ -20,6 +20,11 @@
       "CAN_NOT_RECREATE_WINDOW": "Unable to recreate window",
       "STORAGE": "App settings storage failure"
     },
+    "application": {
+      "IO": "File system error: {{details}}",
+      "DUPLICATE_REQUEST": "This action is already in progress",
+      "LAUNCH": "Failed to start the launcher: {{details}}"
+    },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Credentials with ID {{id}} not found",
       "NO_ACTIVE_CREDENTIALS": "No active credentials found",

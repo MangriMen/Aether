@@ -18,9 +18,9 @@ pub(crate) use infra::format_asset_url;
 pub(crate) use infra::get_main_window_state_flags;
 pub(crate) use infra::get_specta_commands;
 pub(crate) use infra::{
-    AppSettingsErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto, InstanceErrorDto,
-    JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto, RequestErrorDto,
-    SettingsErrorDto, WindowErrorDto,
+    AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto,
+    InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto,
+    RequestErrorDto, SettingsErrorDto, WindowErrorDto,
 };
 pub(crate) use infra::{
     AppSettingsStorageState, ContainerState, EventEmitterState, LocationInfoState,
