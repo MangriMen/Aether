@@ -8,11 +8,16 @@ use crate::features::settings::{
 
 pub struct SqliteDefaultInstanceSettingsStorage {
     pool: SqlitePool,
+    /// Keeps a read-modify-write from losing a concurrent update.
+    update_lock: tokio::sync::Mutex<()>,
 }
 
 impl SqliteDefaultInstanceSettingsStorage {
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            update_lock: tokio::sync::Mutex::new(()),
+        }
     }
 
     pub async fn exists(&self) -> bool {
@@ -122,7 +127,10 @@ impl DefaultInstanceSettingsStorage for SqliteDefaultInstanceSettingsStorage {
         &self,
         f: Box<dyn FnOnce(DefaultInstanceSettings) -> (DefaultInstanceSettings, bool) + Send>,
     ) -> Result<DefaultInstanceSettings, SettingsError> {
-        let settings = self.get().await.unwrap_or_default();
+        let _guard = self.update_lock.lock().await;
+        // A failed read must not fall back to the defaults: the edit would overwrite the
+        // stored settings with them.
+        let settings = self.get().await?;
         let (settings, changed) = f(settings);
         if changed {
             self.upsert(settings).await

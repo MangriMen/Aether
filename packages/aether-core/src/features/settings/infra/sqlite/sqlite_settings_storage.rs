@@ -8,11 +8,17 @@ use crate::features::settings::{
 
 pub struct SqliteSettingsStorage {
     pool: SqlitePool,
+    /// `upsert` rewrites every table from a snapshot, so a write that started from a stale
+    /// snapshot would drop a concurrent change. Writes go one at a time.
+    write_lock: tokio::sync::Mutex<()>,
 }
 
 impl SqliteSettingsStorage {
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            write_lock: tokio::sync::Mutex::new(()),
+        }
     }
 }
 
@@ -52,6 +58,27 @@ impl SettingsStorage for SqliteSettingsStorage {
     }
 
     async fn upsert(&self, settings: Settings) -> Result<Settings, SettingsError> {
+        let _guard = self.write_lock.lock().await;
+        self.write(settings).await
+    }
+
+    async fn update_mut(
+        &self,
+        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
+    ) -> Result<Settings, SettingsError> {
+        let _guard = self.write_lock.lock().await;
+        let settings = self.get().await?;
+        let (settings, changed) = f(settings);
+        if changed {
+            self.write(settings).await
+        } else {
+            Ok(settings)
+        }
+    }
+}
+
+impl SqliteSettingsStorage {
+    async fn write(&self, settings: Settings) -> Result<Settings, SettingsError> {
         let mut tx = self.pool.begin().await?;
 
         let max_downloads = i64::try_from(settings.max_concurrent_downloads())
@@ -100,17 +127,50 @@ impl SettingsStorage for SqliteSettingsStorage {
 
         Ok(settings)
     }
+}
 
-    async fn update_mut(
-        &self,
-        f: Box<dyn FnOnce(Settings) -> (Settings, bool) + Send>,
-    ) -> Result<Settings, SettingsError> {
-        let settings = self.get().await?;
-        let (settings, changed) = f(settings);
-        if changed {
-            self.upsert(settings).await
-        } else {
-            Ok(settings)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn storage() -> SqliteSettingsStorage {
+        let options = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(":memory:")
+            .create_if_missing(true)
+            .foreign_keys(false);
+        let pool = sqlx::pool::PoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .unwrap();
+        crate::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
+        SqliteSettingsStorage::new(pool)
+    }
+
+    #[tokio::test]
+    async fn should_keep_every_plugin_enabled_by_concurrent_updates() {
+        let storage = std::sync::Arc::new(storage().await);
+
+        let tasks: Vec<_> = (0..20)
+            .map(|i| {
+                let storage = storage.clone();
+                tokio::spawn(async move {
+                    storage
+                        .update_mut(Box::new(move |mut settings| {
+                            let changed = settings.enable_plugin(&format!("plugin-{i}"));
+                            (settings, changed)
+                        }))
+                        .await
+                        .unwrap();
+                })
+            })
+            .collect();
+        for task in tasks {
+            task.await.unwrap();
         }
+
+        assert_eq!(storage.get().await.unwrap().enabled_plugins().len(), 20);
     }
 }
