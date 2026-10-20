@@ -7,6 +7,7 @@ import { useRunningProcessesListener } from '@/features/process';
 import type { Instance } from '../model/instance';
 import type { RunningInstancesContextValue } from '../model/runningInstancesContext';
 
+import { applyRunningProcessUpdate } from '../model/runningInstances';
 import { RunningInstancesContext } from '../model/runningInstancesContext';
 
 export type RunningInstancesContextProps = { children?: JSX.Element };
@@ -27,7 +28,14 @@ export const RunningInstancesProvider: Component<
         return context.instances[id];
       },
       setIsLoading: (id, value) => {
-        if (!context[1].get(contextValue, id)) {
+        const current = context[1].get(contextValue, id);
+
+        if (!current) {
+          // Nothing to clear: the process ended and its entry is gone.
+          if (!value) {
+            return;
+          }
+
           setContextValue('instances', id, () => ({
             processId: undefined,
             isLoading: value,
@@ -36,16 +44,27 @@ export const RunningInstancesProvider: Component<
           return;
         }
 
+        // A launch that failed leaves nothing to show: the entry goes with it.
+        if (!value && !current.isRunning) {
+          setContextValue('instances', (instances) => {
+            const rest = { ...instances };
+
+            delete rest[id];
+
+            return rest;
+          });
+          return;
+        }
+
         setContextValue('instances', id, 'isLoading', () => value);
       },
     },
   ];
 
-  useRunningProcessesListener(({ instanceId, processId, isRunning }) => {
-    setContextValue('instances', (instances) => ({
-      ...instances,
-      [instanceId]: { processId, isLoading: false, isRunning },
-    }));
+  useRunningProcessesListener((update) => {
+    setContextValue('instances', (instances) =>
+      applyRunningProcessUpdate(instances, update),
+    );
   });
 
   return (
