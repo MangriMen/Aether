@@ -12,12 +12,21 @@ const FORCE_ENABLE_DIALOG_ID = 'forceEnablePlugin';
 const showForceEnableDialog = (
   pluginName: string,
   onForceEnabled: () => void,
+  onDismissed: () => void,
 ) => {
+  let confirmed = false;
+
   showDialog(FORCE_ENABLE_DIALOG_ID, ForceEnablePluginDialog, {
     pluginName,
     onConfirm: () => {
+      confirmed = true;
       closeDialog(FORCE_ENABLE_DIALOG_ID);
       onForceEnabled();
+    },
+    onOpenChange: (open) => {
+      if (!open && !confirmed) {
+        onDismissed();
+      }
     },
   });
 };
@@ -49,9 +58,14 @@ export const useForceEnablePluginWithDialog = () => {
     } catch (err: unknown) {
       if (isIncompatibleApiVersionError(err)) {
         return new Promise<void>((resolve, reject) => {
-          showForceEnableDialog(plugin.manifest.metadata.name, () => {
-            forceEnableAndResolve(forceEnablePlugin, id, resolve, reject);
-          });
+          showForceEnableDialog(
+            plugin.manifest.metadata.name,
+            () => {
+              forceEnableAndResolve(forceEnablePlugin, id, resolve, reject);
+            },
+            // Declining leaves the plugin disabled, which is not an error.
+            () => resolve(),
+          );
         });
       }
 

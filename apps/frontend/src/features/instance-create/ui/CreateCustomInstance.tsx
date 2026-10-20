@@ -1,7 +1,14 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
 import type { Component } from 'solid-js';
 
-import { createForm, setInput, getInput, Form, Field } from '@formisch/solid';
+import {
+  createForm,
+  setInput,
+  getInput,
+  reset,
+  Form,
+  Field,
+} from '@formisch/solid';
 import {
   createMemo,
   createSignal,
@@ -27,10 +34,12 @@ import {
   CombinedTextField,
   DialogFooter,
   LabeledField,
+  LoadError,
 } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { LOADERS, LOADER_VERSION_TYPES } from '../model/constants';
+import { reconcileGameVersion } from '../model/gameVersionSelection';
 import { loaderManifestToMapped } from '../model/loaderManifestToMapped';
 import {
   filterGameVersions,
@@ -39,6 +48,7 @@ import {
 } from '../model/utils';
 import {
   CreateCustomInstanceSchema,
+  isValidationKey,
   type CreateCustomInstanceSchemaOutput,
 } from '../model/validation';
 import { IncludeSnapshotsCheckbox } from './IncludeSnapshotsCheckbox';
@@ -128,7 +138,64 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     filterGameVersions(loaderGameVersions(), shouldIncludeSnapshots()),
   );
 
+  // Only the manifests the selected loader needs matter for the select.
+  const activeQueries = () => {
+    const loader = getInput(form, { path: ['loader'] });
+    const loaderQuery = {
+      fabric: fabricVersions,
+      forge: forgeVersions,
+      quilt: quiltVersions,
+      neoforge: neoforgeVersions,
+    }[loader as 'fabric' | 'forge' | 'quilt' | 'neoforge'];
+
+    return loaderQuery ? [versionManifest, loaderQuery] : [versionManifest];
+  };
+
+  const hasLoadError = () => activeQueries().some((q) => q.isError);
+  const isLoadingManifests = () =>
+    !hasLoadError() && activeQueries().some((q) => q.isPending);
+
+  const retryManifests = () => {
+    for (const query of activeQueries()) {
+      if (query.isError) {
+        void query.refetch();
+      }
+    }
+  };
+
   const createInstance = useCreateInstance();
+
+  const formatError = (error: string | undefined) =>
+    error !== undefined && isValidationKey(error) ? t(error) : error;
+
+  // The selected version is gone from the list once the loader or the snapshot filter
+  // changes; keeping it would submit a pair the select no longer shows.
+  const dropUnavailableGameVersion = () => {
+    const selected = getInput(form, { path: ['gameVersion'] });
+    const next = reconcileGameVersion(
+      selected,
+      getInput(form, { path: ['loaderVersion'] }),
+      filteredGameVersions(),
+    );
+
+    if (next.gameVersion !== selected) {
+      reset(form, { path: ['gameVersion'] });
+      setInput(form, { path: ['loaderVersion'], input: next.loaderVersion });
+    }
+  };
+
+  const handleAdvancedToggle = () => {
+    if (isAdvanced()) {
+      // The section's fields are hidden now, so they must not block or alter the submit.
+      setInput(form, {
+        path: ['loaderVersionType'],
+        input: LOADER_VERSION_TYPES[0].value,
+      });
+      setInput(form, { path: ['loaderVersion'], input: undefined });
+    }
+
+    setIsAdvanced(!isAdvanced());
+  };
 
   const handleSubmit = async (values: CreateCustomInstanceSchemaOutput) => {
     setIsCreating(true);
@@ -140,15 +207,14 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       loaderVersion: values.loaderVersion,
     };
 
-    props.onOpenChange?.(false);
-
     try {
       await createInstance.mutateAsync(payload);
+      props.onOpenChange?.(false);
     } catch {
-      /* empty */
+      // The mutation shows the error; the dialog stays so the input is not lost.
+    } finally {
+      setIsCreating(false);
     }
-
-    setIsCreating(false);
   };
 
   return (
@@ -158,12 +224,20 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       onSubmit={handleSubmit}
       {...others}
     >
+      <Show when={hasLoadError()}>
+        <LoadError
+          message={t('common.loadFailed')}
+          retryLabel={t('common.retry')}
+          onRetry={retryManifests}
+        />
+      </Show>
+
       <Field of={form} path={['name']}>
         {(field) => (
           <CombinedTextField
             label={t('common.name')}
             value={field.input ?? ''}
-            errorMessage={field.errors?.[0]}
+            errorMessage={formatError(field.errors?.[0])}
             inputProps={{
               class: 'max-w-[36ch]',
               maxLength: 64,
@@ -189,6 +263,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
                   path: ['loaderVersion'],
                   input: undefined,
                 });
+                dropUnavailableGameVersion();
               }}
             />
           )}
@@ -202,13 +277,22 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
               <SelectGameVersion
                 value={filteredGameVersions().find((v) => v.id === field.input)}
                 class='max-w-[31.5ch]'
-                placeholder={t('createInstance.gameVersionPlaceholder')}
+                placeholder={
+                  isLoadingManifests()
+                    ? t('common.loading')
+                    : t('createInstance.gameVersionPlaceholder')
+                }
+                disabled={isLoadingManifests() || hasLoadError()}
                 options={filteredGameVersions()}
-                errorMessage={field.errors?.[0]}
+                errorMessage={formatError(field.errors?.[0])}
                 {...field.props}
                 onChange={(value) => {
                   if (value) {
                     setInput(form, { path: ['gameVersion'], input: value.id });
+                    setInput(form, {
+                      path: ['loaderVersion'],
+                      input: undefined,
+                    });
                   }
                 }}
               />
@@ -218,7 +302,10 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             class='mt-2'
             show={isAdvanced()}
             checked={shouldIncludeSnapshots()}
-            onChange={setShouldIncludeSnapshots}
+            onChange={(checked) => {
+              setShouldIncludeSnapshots(checked);
+              dropUnavailableGameVersion();
+            }}
           />
         </div>
       </LabeledField>
@@ -269,7 +356,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
                     <SelectSpecificLoaderVersion
                       placeholder={t('createInstance.loaderVersionPlaceholder')}
                       options={loaderVersions()}
-                      errorMessage={field.errors?.[0]}
+                      errorMessage={formatError(field.errors?.[0])}
                       {...field.props}
                       onChange={(value: ModdedLoaderVersion | null) => {
                         if (value) {
@@ -292,7 +379,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
         <Button
           class='mr-auto'
           variant='secondary'
-          onClick={() => setIsAdvanced(!isAdvanced())}
+          onClick={handleAdvancedToggle}
         >
           <Switch>
             <Match when={isAdvanced()}>

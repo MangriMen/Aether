@@ -29,16 +29,19 @@ export const useJavaVersionActions = (
     return activeInstallations.data?.includes(majorVersion) ?? false;
   };
 
+  // The mutations tell the user about a failure; the actions below only keep the
+  // rejection from escaping into an event handler.
   const updateJavaPath = async (majorVersion: number, path: string) => {
     if (!path) {
-      return;
+      return false;
     }
 
     try {
       await editJava.mutateAsync({ majorVersion, path });
+      return true;
     } catch (error) {
       logError('Failed to update Java path:', error);
-      throw error;
+      return false;
     }
   };
 
@@ -50,12 +53,20 @@ export const useJavaVersionActions = (
     const selectedVersionPath = () =>
       javaVersions().find((java) => java.majorVersion === majorVersion)?.path;
 
-    const discovered = await discoverJava.mutateAsync();
-    const versions = discovered.filter((v) => v.majorVersion === majorVersion);
+    let versions: Awaited<ReturnType<typeof discoverJava.mutateAsync>>;
+
+    try {
+      const discovered = await discoverJava.mutateAsync();
+      versions = discovered.filter((v) => v.majorVersion === majorVersion);
+    } catch (error) {
+      logError('Failed to detect Java:', error);
+      return;
+    }
 
     const onSelect = async (newVersion: StrictJavaVersion) => {
-      await updateJavaPath(newVersion.majorVersion, newVersion.path);
-      closeDialog(DETECT_JAVA_DIALOG_ID);
+      if (await updateJavaPath(newVersion.majorVersion, newVersion.path)) {
+        closeDialog(DETECT_JAVA_DIALOG_ID);
+      }
     };
 
     showDialog(DETECT_JAVA_DIALOG_ID, DetectJavaDialog, {
@@ -71,15 +82,23 @@ export const useJavaVersionActions = (
       return;
     }
 
-    const path = await browseJavaInstallation();
+    try {
+      const path = await browseJavaInstallation();
 
-    if (typeof path === 'string') {
-      await updateJavaPath(majorVersion, path);
+      if (typeof path === 'string') {
+        await updateJavaPath(majorVersion, path);
+      }
+    } catch (error) {
+      logError('Failed to browse for Java:', error);
     }
   };
 
   const installRecommended = async (majorVersion: number) => {
-    await installJava.mutateAsync({ version: majorVersion, force: true });
+    try {
+      await installJava.mutateAsync({ version: majorVersion, force: true });
+    } catch (error) {
+      logError('Failed to install Java:', error);
+    }
   };
 
   return {

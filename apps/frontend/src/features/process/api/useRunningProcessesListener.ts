@@ -1,6 +1,7 @@
 import { onMount } from 'solid-js';
 
 import { processCommands } from '@/platform/ipc';
+import { logError } from '@/shared/log';
 
 import { useProcessEventListener } from './useProcessEventListener';
 
@@ -45,8 +46,9 @@ export const useRunningProcessesListener = (
           isRunning: true,
         });
       }
-    } catch {
-      /* empty */
+    } catch (error) {
+      // Later process events repair the state, but a running game may show as stopped until then.
+      logError('Failed to list running processes:', error);
     } finally {
       liveInstanceIds = undefined;
     }

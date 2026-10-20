@@ -2,6 +2,8 @@ import { createMemo } from 'solid-js';
 
 import type { HooksSettingsSchemaOutput } from '@/features/instance-settings';
 
+import { logError } from '@/shared/log';
+
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -27,7 +29,8 @@ export const useDefaultHooksSettingsHandler = () => {
       return;
     }
 
-    editSettings.mutateAsync(dto);
+    // The mutation already tells the user; this only keeps the rejection handled.
+    editSettings.mutateAsync(dto).catch(logError);
   };
 
   return { initialValues, onChange };

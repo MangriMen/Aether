@@ -1,8 +1,9 @@
 import type { ComponentProps } from 'solid-js';
 
-import { splitProps, type Component } from 'solid-js';
+import { Match, splitProps, Switch, type Component } from 'solid-js';
 
-import { DataTable } from '@/shared/ui-kit';
+import { useTranslation } from '@/shared/i18n';
+import { DataTable, LoadError } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
 import { useJavaList } from '../api/javaQueries';
@@ -14,6 +15,8 @@ export type JavaVersionsTableProps = ComponentProps<'div'>;
 export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
   const [local, others] = splitProps(props, ['class']);
 
+  const [{ t }] = useTranslation();
+
   const javaVersions = useJavaList();
   const tableData = useJavaVersionsTableData(() => javaVersions.data);
 
@@ -23,7 +26,21 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
 
   return (
     <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
-      <DataTable table={table} isLoading={javaVersions.isLoading} />
+      <Switch>
+        <Match when={javaVersions.isError && !javaVersions.data}>
+          <LoadError
+            message={t('java.loadFailed')}
+            retryLabel={t('common.retry')}
+            onRetry={() => void javaVersions.refetch()}
+          />
+        </Match>
+        <Match when={!javaVersions.isError || javaVersions.data}>
+          <DataTable
+            table={table}
+            isLoading={javaVersions.isLoading && !javaVersions.isError}
+          />
+        </Match>
+      </Switch>
     </div>
   );
 };

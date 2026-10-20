@@ -2,6 +2,8 @@ import { createMemo } from 'solid-js';
 
 import type { JavaAndMemorySettingsSchemaOutput } from '@/features/instance-settings';
 
+import { logError } from '@/shared/log';
+
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -28,7 +30,7 @@ export const useDefaultJavaAndMemorySettingsHandler = () => {
       return;
     }
 
-    editSettings.mutateAsync(dto);
+    editSettings.mutateAsync(dto).catch(logError);
   };
 
   return { initialValues, onChange };

@@ -2,6 +2,7 @@ import { createSignal, type ComponentProps } from 'solid-js';
 
 import { useAppSettings, useEditAppSettings } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   CombinedDialog,
   Switch,
@@ -26,18 +27,24 @@ export const WindowTransparencySwitch = (
   const handleSetTransparency = async (enabled: boolean) => {
     const isActualTransparent = appSettings.data?.isActualTransparent;
 
+    try {
+      await updateSettings.mutateAsync({
+        transparent: enabled,
+      });
+    } catch (error) {
+      // The mutation shows the toast; no restart is offered for an unsaved setting.
+      logError('Failed to save the transparency setting:', error);
+      return;
+    }
+
     if (isActualTransparent !== undefined && isActualTransparent !== enabled) {
       setIsOpen(true);
     }
-
-    await updateSettings.mutateAsync({
-      transparent: enabled,
-    });
   };
 
   const handleOk = (e: MouseEvent) => {
     e.stopPropagation();
-    recreateWindow.mutateAsync();
+    recreateWindow.mutateAsync().catch(logError);
   };
 
   const handleCancel = (e: MouseEvent) => {
