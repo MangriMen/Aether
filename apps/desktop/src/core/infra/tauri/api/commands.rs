@@ -5,11 +5,11 @@ use tauri::State;
 
 use crate::{
     FrontendResult,
-    core::ContainerState,
     core::{
         AppSettingsStorageState, InitializePluginsUseCase, RecreateWindowUseCase,
         WindowManagerState,
     },
+    core::{ContainerState, LocationInfoState},
     shared::{
         self,
         commands::{APPLICATION_PLUGIN_NAME, application_commands},
@@ -42,8 +42,18 @@ pub async fn initialize_plugins(container: State<'_, ContainerState>) -> Fronten
 }
 
 #[tauri::command]
-pub fn reveal_in_explorer(path: String, exact: bool) -> FrontendResult<()> {
-    Ok(shared::reveal_in_explorer(Path::new(&path), exact)?)
+pub fn reveal_in_explorer(
+    location_info: State<'_, LocationInfoState>,
+    path: String,
+    exact: bool,
+) -> FrontendResult<()> {
+    let path = Path::new(&path);
+    shared::ensure_within_roots(
+        path,
+        &[location_info.settings_dir(), location_info.config_dir()],
+    )
+    .map_err(crate::Error::from)?;
+    Ok(shared::reveal_in_explorer(path, exact)?)
 }
 
 #[tauri::command]
