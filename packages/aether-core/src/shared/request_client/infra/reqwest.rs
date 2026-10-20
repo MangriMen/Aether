@@ -41,17 +41,34 @@ pub fn with_default_timeouts(builder: reqwest::ClientBuilder) -> reqwest::Client
     with_timeouts(builder, CONNECT_TIMEOUT, READ_TIMEOUT)
 }
 
+/// The queue a client's requests wait in.
+enum Permits {
+    Downloads(Arc<FetchSemaphore>),
+    Metadata(Arc<ApiSemaphore>),
+}
+
+impl Permits {
+    async fn acquire(&self) -> Result<tokio::sync::SemaphorePermit<'_>, RequestError> {
+        let semaphore = match self {
+            Self::Downloads(semaphore) => &semaphore.0,
+            Self::Metadata(semaphore) => &semaphore.0,
+        };
+        Ok(semaphore.acquire().await?)
+    }
+}
+
+/// A client bound to one queue: build one for the file downloads and one for the metadata
+/// fetches, so a long line of downloads never holds a metadata request back and a service
+/// cannot pick the wrong queue per request.
 pub struct ReqwestClient<PS: ProgressService + ?Sized> {
     progress_service: Arc<PS>,
     client: Arc<reqwest_middleware::ClientWithMiddleware>,
-    /// Bounds the file downloads.
-    semaphore: Arc<FetchSemaphore>,
-    /// Bounds the fetches of metadata, apart from the downloads.
-    api_semaphore: Arc<ApiSemaphore>,
+    permits: Permits,
 }
 
 impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
-    pub fn new(
+    /// A client whose requests wait for a download permit.
+    pub fn for_downloads(
         progress_service: Arc<PS>,
         client: Arc<reqwest_middleware::ClientWithMiddleware>,
         semaphore: Arc<FetchSemaphore>,
@@ -59,15 +76,21 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
         Self {
             progress_service,
             client,
-            semaphore,
-            api_semaphore: Arc::new(ApiSemaphore::default()),
+            permits: Permits::Downloads(semaphore),
         }
     }
 
-    #[must_use]
-    pub fn with_api_semaphore(mut self, api_semaphore: Arc<ApiSemaphore>) -> Self {
-        self.api_semaphore = api_semaphore;
-        self
+    /// A client whose requests wait for a metadata permit.
+    pub fn for_metadata(
+        progress_service: Arc<PS>,
+        client: Arc<reqwest_middleware::ClientWithMiddleware>,
+        semaphore: Arc<ApiSemaphore>,
+    ) -> Self {
+        Self {
+            progress_service,
+            client,
+            permits: Permits::Metadata(semaphore),
+        }
     }
 
     async fn send(
@@ -195,7 +218,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             timeout,
         } = request;
 
-        let _permit = self.api_semaphore.0.acquire().await?;
+        let _permit = self.permits.acquire().await?;
 
         let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
@@ -228,7 +251,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             timeout,
         } = request;
 
-        let _permit = self.semaphore.0.acquire().await?;
+        let _permit = self.permits.acquire().await?;
 
         let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
@@ -251,7 +274,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             timeout,
         } = request;
 
-        let _permit = self.semaphore.0.acquire().await?;
+        let _permit = self.permits.acquire().await?;
 
         let response = self.send(method, &url, headers, body, timeout).await?;
         if response.status() == reqwest::StatusCode::NOT_MODIFIED {
@@ -510,7 +533,7 @@ mod tests {
     }
 
     fn client_with<PS: ProgressService>(progress: Arc<PS>) -> ReqwestClient<PS> {
-        ReqwestClient::new(
+        ReqwestClient::for_downloads(
             progress,
             Arc::new(
                 reqwest_middleware::ClientBuilder::new(
@@ -572,26 +595,67 @@ mod tests {
         format!("http://{addr}/file")
     }
 
+    fn plain_http() -> Arc<reqwest_middleware::ClientWithMiddleware> {
+        Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build())
+    }
+
     #[tokio::test]
-    async fn should_fetch_when_every_download_permit_is_taken() {
+    async fn should_wait_for_a_download_permit_when_a_download_client_fetches() {
         let addr = serve("200 OK", b"payload").await;
         let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let client =
+            ReqwestClient::for_downloads(Arc::new(NoopProgress), plain_http(), downloads.clone());
+
+        let held = downloads.0.acquire().await.unwrap();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await;
+        assert!(result.is_err(), "the fetch should still be queued");
+
+        drop(held);
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await
+        .expect("the fetch should run once a permit is free")
+        .unwrap();
+        assert_eq!(&bytes[..], b"payload");
+    }
+
+    #[tokio::test]
+    async fn should_fetch_when_every_download_permit_is_taken_and_the_client_is_for_metadata() {
+        let addr = serve("200 OK", b"payload").await;
+        let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let api = Arc::new(ApiSemaphore(tokio::sync::Semaphore::new(1)));
         let _held = downloads.0.acquire().await.unwrap();
-        let client = ReqwestClient::new(
-            Arc::new(NoopProgress),
-            Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build()),
-            downloads.clone(),
-        );
+        let client = ReqwestClient::for_metadata(Arc::new(NoopProgress), plain_http(), api);
 
         let bytes = tokio::time::timeout(
             std::time::Duration::from_secs(5),
             client.fetch_bytes(Request::get(url(addr))),
         )
         .await
-        .expect("a fetch must not wait for the download permits")
+        .expect("a metadata fetch must not wait for the download permits")
         .unwrap();
-
         assert_eq!(&bytes[..], b"payload");
+    }
+
+    #[tokio::test]
+    async fn should_wait_for_a_metadata_permit_when_a_metadata_client_fetches() {
+        let addr = serve("200 OK", b"payload").await;
+        let api = Arc::new(ApiSemaphore(tokio::sync::Semaphore::new(1)));
+        let client = ReqwestClient::for_metadata(Arc::new(NoopProgress), plain_http(), api.clone());
+
+        let _held = api.0.acquire().await.unwrap();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await;
+        assert!(result.is_err(), "the fetch should still be queued");
     }
 
     #[tokio::test]
@@ -599,7 +663,7 @@ mod tests {
         let addr = serve("200 OK", b"payload").await;
         let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
         let _held = downloads.0.acquire().await.unwrap();
-        let client = ReqwestClient::new(
+        let client = ReqwestClient::for_downloads(
             Arc::new(NoopProgress),
             Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build()),
             downloads.clone(),
@@ -636,7 +700,7 @@ mod tests {
     #[tokio::test]
     async fn should_fail_when_the_server_stays_silent_past_the_read_timeout() {
         let addr = serve_silence().await;
-        let client = ReqwestClient::new(
+        let client = ReqwestClient::for_downloads(
             Arc::new(NoopProgress),
             Arc::new(
                 reqwest_middleware::ClientBuilder::new(

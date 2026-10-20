@@ -28,7 +28,8 @@ const HASH_PREFIX_LENGTH: usize = 2;
 /// install at a time ([`KeyedLocks`] by path), and whole or not at all, so another never takes
 /// a file still being written for one that is there.
 pub struct AssetsService<RC: RequestClient, C: Cache> {
-    request_client: Arc<RC>,
+    metadata_client: Arc<RC>,
+    download_client: Arc<RC>,
     location_info: Arc<LocationInfo>,
     cached_resource: InfinityCachedResource<C>,
     path_locks: KeyedLocks<PathBuf>,
@@ -48,9 +49,15 @@ impl PendingAsset<'_> {
 }
 
 impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
-    pub fn new(request_client: Arc<RC>, location_info: Arc<LocationInfo>, cache: Arc<C>) -> Self {
+    pub fn new(
+        metadata_client: Arc<RC>,
+        download_client: Arc<RC>,
+        location_info: Arc<LocationInfo>,
+        cache: Arc<C>,
+    ) -> Self {
         Self {
-            request_client,
+            metadata_client,
+            download_client,
             location_info,
             cached_resource: InfinityCachedResource::new(cache),
             path_locks: KeyedLocks::default(),
@@ -75,14 +82,14 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
     }
 
     async fn fetch_json<T: DeserializeOwned>(&self, url: &str) -> Result<T, IoError> {
-        self.request_client
+        self.metadata_client
             .fetch_json(Request::get(url))
             .await
             .map_err(get_network_error)
     }
 
     async fn fetch_bytes(&self, url: &str, sha1: &str) -> Result<Bytes, IoError> {
-        self.request_client
+        self.download_client
             .fetch_bytes(checked_get(url, sha1))
             .await
             .map_err(get_network_error)

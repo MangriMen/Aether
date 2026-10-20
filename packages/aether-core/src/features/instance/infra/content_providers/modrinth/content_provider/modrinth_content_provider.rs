@@ -76,7 +76,7 @@ where
 
 pub struct ModrinthContentProvider<RC> {
     location_info: Arc<LocationInfo>,
-    request_client: Arc<RC>,
+    download_client: Arc<RC>,
     api: ModrinthApiClient<RC>,
     capability: ContentProviderCapabilityMetadata,
     max_mrpack_bytes: u64,
@@ -103,7 +103,8 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     pub fn new(
         location_info: Arc<LocationInfo>,
         base_headers: Option<reqwest::header::HeaderMap>,
-        request_client: Arc<RC>,
+        metadata_client: Arc<RC>,
+        download_client: Arc<RC>,
         max_mrpack_bytes: u64,
     ) -> Self {
         let capability = ContentProviderCapabilityMetadata {
@@ -117,12 +118,12 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
         };
 
         Self {
-            request_client: request_client.clone(),
+            download_client,
             api: ModrinthApiClient::new(
                 MODRINTH_API_URL.to_string(),
                 MODRINTH_API_V3_URL.to_string(),
                 base_headers,
-                request_client,
+                metadata_client,
             ),
             location_info,
             capability,
@@ -304,7 +305,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 .await
                 .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }
-        self.request_client
+        self.download_client
             .download_to_file(
                 Request::get(&file.url).with_hash(hash),
                 &path,
@@ -493,7 +494,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         let path = temp_dir.join(format!("pack-{}.mrpack", uuid::Uuid::new_v4()));
 
-        self.request_client
+        self.download_client
             .download_to_file(Request::get(url), &path, self.max_mrpack_bytes, None)
             .await
             .map_err(|err| InstanceError::ContentDownloadError(format!("{url}: {err}")))?;

@@ -38,14 +38,20 @@ const AZUL_PACKAGES_DEFAULT_QUERY_PARAMS: &str = "archive_type=zip&javafx_bundle
 
 pub struct AzulJreProvider<PS: ProgressService, RC: RequestClient> {
     progress_service: Arc<PS>,
-    request_client: Arc<RC>,
+    metadata_client: Arc<RC>,
+    download_client: Arc<RC>,
 }
 
 impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
-    pub fn new(progress_service: Arc<PS>, request_client: Arc<RC>) -> Self {
+    pub fn new(
+        progress_service: Arc<PS>,
+        metadata_client: Arc<RC>,
+        download_client: Arc<RC>,
+    ) -> Self {
         Self {
             progress_service,
-            request_client,
+            metadata_client,
+            download_client,
         }
     }
 
@@ -71,7 +77,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         let packages_url = Self::build_packages_url(version);
 
         let packages: Vec<Package> = self
-            .request_client
+            .metadata_client
             .fetch_json_with_progress(Request::get(packages_url), None)
             .await
             .map_err(|_| get_version_not_available_error(version))?;
@@ -193,7 +199,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
             .map_err(|err| RequestError::Middleware(err.into()))?;
         let request = Request::get(&package.download_url).with_hash(hash);
 
-        self.request_client
+        self.download_client
             .fetch_bytes_with_progress(
                 request,
                 progress_bar_id.map(|progress_bar_id| (progress_bar_id, 80.0)),
@@ -383,7 +389,7 @@ mod tests {
         ));
         let client = Arc::new(FakeClient::default());
         Fixture {
-            provider: AzulJreProvider::new(progress, client.clone()),
+            provider: AzulJreProvider::new(progress, client.clone(), client.clone()),
             client,
             install_dir: temp.path().join("java"),
             _events: events,

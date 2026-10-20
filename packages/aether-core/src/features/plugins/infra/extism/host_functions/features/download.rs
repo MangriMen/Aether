@@ -285,7 +285,7 @@ pub(crate) fn vetted_download_client(
         network.limits.max_redirects,
     )?;
 
-    Ok(ReqwestClient::<dyn ProgressService>::new(
+    Ok(ReqwestClient::<dyn ProgressService>::for_downloads(
         network.progress_service.clone(),
         Arc::new(client),
         network.semaphore.clone(),

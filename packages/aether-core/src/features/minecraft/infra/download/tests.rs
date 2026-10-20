@@ -182,7 +182,12 @@ fn fixture() -> Fixture {
     let client = Arc::new(FakeClient::default());
     let service = Arc::new(MinecraftDownloadService::new(
         ClientService::new(client.clone(), cache.clone()),
-        AssetsService::new(client.clone(), location_info.clone(), cache.clone()),
+        AssetsService::new(
+            client.clone(),
+            client.clone(),
+            location_info.clone(),
+            cache.clone(),
+        ),
         LibrariesService::new(client.clone(), location_info.clone()),
         LoggingService::new(client.clone(), location_info.clone()),
         client.clone(),
