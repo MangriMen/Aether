@@ -87,7 +87,12 @@ pub trait PluginSyncService: Send + Sync {
 
 #[async_trait]
 pub trait PluginDisableService: Send + Sync {
+    /// Ends the plugin and forgets it as enabled: it is not loaded on the next start.
     async fn execute(&self, plugin_id: String) -> Result<(), PluginError>;
+
+    /// Ends the running instance only. The plugin stays enabled, for a caller that is about to
+    /// load it again, as a changed build of the plugin.
+    async fn unload(&self, plugin_id: String) -> Result<(), PluginError>;
 }
 
 // ── Use case ports ──
