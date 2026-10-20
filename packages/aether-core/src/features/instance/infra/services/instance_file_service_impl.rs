@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use tokio::fs;
+use tracing::warn;
 
 use crate::{
     features::{
@@ -11,10 +12,28 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::{create_dir_all, remove_dir_all},
+    shared::io::infra::{create_dir_all, remove_dir_all, rename},
 };
 
 use super::instance_relative_path::{check_size, resolve_instance_file_path};
+
+const REMOVING_PREFIX: &str = ".removing-";
+
+/// Deletes what an earlier removal moved aside but could not delete.
+async fn sweep_removed(instances_root: &std::path::Path) {
+    let Ok(mut entries) = fs::read_dir(instances_root).await else {
+        return;
+    };
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        if entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with(REMOVING_PREFIX)
+        {
+            let _ = remove_dir_all(entry.path()).await;
+        }
+    }
+}
 
 pub struct FsInstanceFileService {
     location_info: Arc<LocationInfo>,
@@ -76,16 +95,33 @@ impl InstanceFileService for FsInstanceFileService {
         }
     }
 
+    /// Moves the directory out of the way first, then deletes it. The move is all or nothing: if
+    /// something holds a file open, the instance stays whole and the removal can be retried, rather
+    /// than being left half deleted. Once moved, the instance is gone; a failed delete only leaves
+    /// a hidden `.removing-*` directory that the next removal sweeps.
     async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
+        let instances_root = self.location_info.instances_dir();
+
+        sweep_removed(&instances_root).await;
 
         if !instance_dir.exists() {
             return Ok(());
         }
 
-        remove_dir_all(&instance_dir)
+        let trash = instances_root.join(format!(
+            "{REMOVING_PREFIX}{}-{}",
+            instance_id.as_str(),
+            uuid::Uuid::new_v4().simple()
+        ));
+        rename(&instance_dir, &trash)
             .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+
+        if let Err(err) = remove_dir_all(&trash).await {
+            warn!("Removed instance {instance_id} but could not delete {trash:?}: {err}");
+        }
+        Ok(())
     }
 
     async fn write_instance_file(

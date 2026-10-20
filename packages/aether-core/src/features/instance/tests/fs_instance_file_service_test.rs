@@ -113,6 +113,32 @@ async fn should_succeed_when_the_instance_dir_does_not_exist() {
         .expect("remove_instance_dir should succeed for non-existent dir");
 }
 
+#[tokio::test]
+async fn should_leave_nothing_behind_and_sweep_old_leftovers_when_the_instance_dir_is_removed() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = FsInstanceFileService::new(
+        location_info.clone(),
+        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+    );
+    let instance_id = &InstanceId::try_from("to-remove").unwrap();
+    create_instance_dir(&location_info, instance_id).await;
+    let leftover = location_info.instances_dir().join(".removing-old-1234");
+    tokio::fs::create_dir_all(leftover.join("mods"))
+        .await
+        .unwrap();
+
+    service.remove_instance_dir(instance_id).await.unwrap();
+
+    let mut names = Vec::new();
+    let mut entries = tokio::fs::read_dir(location_info.instances_dir())
+        .await
+        .unwrap();
+    while let Some(entry) = entries.next_entry().await.unwrap() {
+        names.push(entry.file_name());
+    }
+    assert!(names.is_empty(), "left behind: {names:?}");
+}
+
 // ── write_instance_file / read_instance_file ──
 
 use crate::features::instance::domain::InstanceError;

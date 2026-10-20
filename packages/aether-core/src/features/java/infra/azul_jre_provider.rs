@@ -34,8 +34,7 @@ struct Package {
 
 const AZUL_PACKAGES_BASE_API_URL: &str = "https://api.azul.com/metadata/v1/zulu/packages";
 
-const AZUL_PACKAGES_DEFAULT_QUERY_PARAMS: &str =
-    "archive_type=zip&javafx_bundled=false&java_package_type=jre&page_size=1&include_fields=sha256_hash";
+const AZUL_PACKAGES_DEFAULT_QUERY_PARAMS: &str = "archive_type=zip&javafx_bundled=false&java_package_type=jre&page_size=1&include_fields=sha256_hash";
 
 pub struct AzulJreProvider<PS: ProgressService, RC: RequestClient> {
     progress_service: Arc<PS>,
