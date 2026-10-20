@@ -218,6 +218,169 @@ async fn should_become_installed_when_the_pack_info_was_not_created_for_a_pack()
     assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
 }
 
+/// A failed reinstall (health check, game change) must not demote a working instance.
+#[tokio::test]
+async fn should_stay_installed_when_reinstalling_a_working_instance_fails() {
+    let (instance, ok) = run_install(None, InstanceInstallStage::Installed, true).await;
+    assert!(!ok);
+    assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
+}
+
+#[tokio::test]
+async fn should_become_not_installed_when_the_first_install_fails() {
+    let (instance, ok) = run_install(None, InstanceInstallStage::NotInstalled, true).await;
+    assert!(!ok);
+    assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+}
+
+/// Reads the stage of the instance while the game is being installed.
+struct StageProbe {
+    storage: Arc<MemStorage>,
+    seen: Mutex<Vec<InstanceInstallStage>>,
+}
+
+#[async_trait]
+impl MinecraftInstallService for StageProbe {
+    async fn execute(
+        &self,
+        _params: InstallMinecraftParams,
+        _loading_bar: Option<&ProgressBarId>,
+        _force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        let stage = self.storage.instances.lock().unwrap()[0].install_stage;
+        self.seen.lock().unwrap().push(stage);
+        Ok(())
+    }
+}
+
+/// While an installed instance is reinstalled it is `Installing`, which keeps it from being
+/// launched or changed under the install; it is `Installed` again once the install is done.
+#[tokio::test]
+async fn should_be_installing_while_a_working_instance_is_reinstalled() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let mut instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        "inst".to_owned(),
+        "1.20.1".to_owned(),
+        ModLoader::Vanilla,
+    )
+    .build();
+    instance.install_stage = InstanceInstallStage::Installed;
+    let id = instance.id().clone();
+    let storage = Arc::new(MemStorage {
+        instances: Mutex::new(vec![instance]),
+    });
+    let probe = Arc::new(StageProbe {
+        storage: storage.clone(),
+        seen: Mutex::default(),
+    });
+    let use_case = InstallInstanceUseCase::new(
+        storage.clone(),
+        probe.clone(),
+        Arc::new(NoProgress),
+        location_info,
+    );
+
+    use_case.execute(id.clone(), true, None).await.unwrap();
+
+    assert_eq!(
+        *probe.seen.lock().unwrap(),
+        [InstanceInstallStage::Installing]
+    );
+    assert_eq!(
+        storage.get(&id).await.unwrap().install_stage,
+        InstanceInstallStage::Installed
+    );
+}
+
+#[tokio::test]
+async fn should_reset_only_transient_stages_on_startup_sweep() {
+    let make = |name: &str, stage| {
+        let mut i = InstanceBuilder::new(
+            InstanceId::try_from(name).unwrap(),
+            name.to_owned(),
+            "1.20.1".to_owned(),
+            ModLoader::Vanilla,
+        )
+        .build();
+        i.install_stage = stage;
+        i
+    };
+    let storage = MemStorage {
+        instances: Mutex::new(vec![
+            make("a", InstanceInstallStage::Installing),
+            make("b", InstanceInstallStage::PackInstalling),
+            make("c", InstanceInstallStage::Installed),
+            make("d", InstanceInstallStage::NotInstalled),
+        ]),
+    };
+
+    let reset = crate::features::instance::reset_stuck_install_stages(&storage)
+        .await
+        .unwrap();
+
+    assert_eq!(reset, 2);
+    let stages: Vec<_> = storage
+        .instances
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|i| i.install_stage)
+        .collect();
+    assert_eq!(
+        stages,
+        [
+            InstanceInstallStage::NotInstalled,
+            InstanceInstallStage::NotInstalled,
+            InstanceInstallStage::Installed,
+            InstanceInstallStage::NotInstalled,
+        ]
+    );
+}
+
+/// A storage that cannot even be listed.
+struct UnlistableStorage;
+
+#[async_trait]
+impl InstanceStorage for UnlistableStorage {
+    async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
+        Err(InstanceError::Storage("boom".to_owned()))
+    }
+
+    async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
+        Err(InstanceError::NotFound {
+            instance_id: id.to_string(),
+        })
+    }
+
+    async fn upsert(&self, _instance: &Instance) -> Result<(), InstanceError> {
+        Ok(())
+    }
+
+    async fn update(
+        &self,
+        id: &InstanceId,
+        _change: crate::features::instance::InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        self.get(id).await
+    }
+
+    async fn remove(&self, _id: &InstanceId) -> Result<(), InstanceError> {
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn should_fail_the_startup_sweep_when_the_instances_cannot_be_listed() {
+    let result = crate::features::instance::reset_stuck_install_stages(&UnlistableStorage).await;
+
+    assert!(matches!(result, Err(InstanceError::Storage(_))));
+}
+
 struct NoEmitter;
 
 #[async_trait]
@@ -298,7 +461,7 @@ async fn should_put_the_bar_of_the_game_under_the_parent_bar_when_there_is_one()
 }
 
 #[tokio::test]
-async fn should_reset_to_not_installed_when_the_install_fails() {
+async fn should_stay_pack_installing_when_the_install_fails() {
     let (instance, ok) = run_install(
         Some(pack_info()),
         InstanceInstallStage::PackInstalling,
@@ -306,7 +469,7 @@ async fn should_reset_to_not_installed_when_the_install_fails() {
     )
     .await;
     assert!(!ok);
-    assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+    assert_eq!(instance.install_stage, InstanceInstallStage::PackInstalling);
 }
 
 struct RenameDuringInstall(Arc<MemStorage>);

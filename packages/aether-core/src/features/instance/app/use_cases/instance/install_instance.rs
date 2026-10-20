@@ -67,20 +67,23 @@ impl InstallInstanceUseCase {
     async fn handle_failed_installation(
         &self,
         instance_id: &InstanceId,
+        previous_stage: InstanceInstallStage,
     ) -> Result<(), InstanceError> {
+        // `Installing` was written before the attempt, so a failed reinstall of a working
+        // instance must restore `Installed`. A pack's instance stays `PackInstalling`: whoever deploys
+        // the pack settles it (discards the new instance, or restores the stage of an update).
+        let stage = match previous_stage {
+            InstanceInstallStage::Installed | InstanceInstallStage::PackInstalling => {
+                previous_stage
+            }
+            _ => InstanceInstallStage::NotInstalled,
+        };
         self.instance_storage
-            .update(
-                instance_id,
-                Box::new(|instance| {
-                    if instance.install_stage == InstanceInstallStage::Installed {
-                        return Ok(false);
-                    }
-                    instance.install_stage = InstanceInstallStage::NotInstalled;
-                    Ok(true)
-                }),
-            )
-            .await?;
-        Ok(())
+            .upsert_with(instance_id, move |instance| {
+                instance.install_stage = stage;
+                Ok(())
+            })
+            .await
     }
 
     pub async fn execute(
@@ -89,18 +92,19 @@ impl InstallInstanceUseCase {
         force: bool,
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
-        let mut pack_pending = false;
+        let mut previous_stage = InstanceInstallStage::NotInstalled;
         let instance = self
             .instance_storage
             .update(
                 &instance_id,
                 Box::new(|instance| {
-                    pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
+                    previous_stage = instance.install_stage;
                     instance.install_stage = InstanceInstallStage::Installing;
                     Ok(true)
                 }),
             )
             .await?;
+        let pack_pending = previous_stage == InstanceInstallStage::PackInstalling;
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 
@@ -151,7 +155,10 @@ impl InstallInstanceUseCase {
                 self.handle_success_installation(&instance, pack_pending)
                     .await
             }
-            Err(_) => self.handle_failed_installation(instance.id()).await,
+            Err(_) => {
+                self.handle_failed_installation(instance.id(), previous_stage)
+                    .await
+            }
         }?;
 
         if let Some(loading_bar) = loading_bar {

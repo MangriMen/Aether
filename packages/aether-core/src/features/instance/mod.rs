@@ -47,6 +47,7 @@ pub use app::{
     RemoveContentUseCase, RemoveContentUseCasePort, RemoveInstanceUseCase,
     RemoveInstanceUseCasePort, SearchContentUseCase, SearchContentUseCasePort,
     UpdateInstanceUseCase, UpdateInstanceUseCasePort, Updater, remove_plan_leftovers,
+    reset_stuck_install_stages,
 };
 
 // Used inside the crate only.
