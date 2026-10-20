@@ -2,19 +2,31 @@ import type { Accessor } from 'solid-js';
 
 import { setInput, getInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { splitProps, type Component, type ComponentProps } from 'solid-js';
+import {
+  createSignal,
+  splitProps,
+  type Component,
+  type ComponentProps,
+} from 'solid-js';
 
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedTextField } from '@/shared/ui-kit';
 import { cn, noop } from '@/shared/utils';
 
-import type { GeneralSettingsSchemaInput } from '../model/generalValidation';
+import type {
+  GeneralSettingsSchemaInput,
+  GeneralSettingsSchemaOutput,
+} from '../model/generalValidation';
 
 import {
   useGeneralSettingsForm,
   useResetGeneralSettingsFormValues,
 } from '../lib/useGeneralSettingsForm';
-import { type GeneralSettingsSchemaOutput } from '../model/generalValidation';
+import {
+  validateInstanceName,
+  type InstanceNameValidation,
+} from '../model/nameValidation';
 import { InstanceIconDropdownButton } from './InstanceIconDropdownButton';
 
 export type GeneralSettingsFormProps = Omit<
@@ -41,17 +53,53 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
   const form = useGeneralSettingsForm();
   useResetGeneralSettingsFormValues(form, () => local.initialValues());
 
+  const [nameErrorKey, setNameErrorKey] =
+    createSignal<
+      Extract<InstanceNameValidation, { valid: false }>['errorKey']
+    >();
+
+  // The name is saved as the field loses focus: only a valid, changed one is sent.
+  const handleNameBlur = () => {
+    const input = getInput(form, { path: ['name'] }) ?? '';
+    const result = validateInstanceName(input);
+
+    if (!result.valid) {
+      setNameErrorKey(result.errorKey);
+
+      const previousName = local.initialValues()?.name;
+
+      if (previousName !== undefined) {
+        setInput(form, { path: ['name'], input: previousName });
+      }
+
+      return;
+    }
+
+    setNameErrorKey(undefined);
+
+    if (result.name !== local.initialValues()?.name) {
+      local.onChangePartial?.({ name: result.name });
+    }
+  };
+
   const handleSelectIcon = async () => {
-    const file = await open({
-      multiple: false,
-      directory: false,
-      filters: [
-        {
-          name: 'Image',
-          extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif'],
-        },
-      ],
-    });
+    let file: string | null;
+
+    try {
+      file = await open({
+        multiple: false,
+        directory: false,
+        filters: [
+          {
+            name: 'Image',
+            extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp', 'gif'],
+          },
+        ],
+      });
+    } catch (error) {
+      logError('Failed to pick an icon:', error);
+      return;
+    }
 
     if (file === null || !file) {
       return;
@@ -89,16 +137,22 @@ export const GeneralSettingsForm: Component<GeneralSettingsFormProps> = (
               class='grow'
               label={t('common.name')}
               value={(field.input as string) ?? ''}
-              errorMessage={field.errors?.[0]}
+              errorMessage={nameErrorKey() ? t(nameErrorKey()!) : undefined}
               inputProps={{
                 type: 'text',
                 maxLength: 64,
                 ...field.props,
+                onInput: (e) => {
+                  field.props.onInput?.(e);
+
+                  // Drop the stale error as soon as the typed name is valid.
+                  if (validateInstanceName(e.currentTarget.value).valid) {
+                    setNameErrorKey(undefined);
+                  }
+                },
                 onBlur: () => {
                   field.props.onBlur?.();
-                  local.onChangePartial?.({
-                    name: getInput(form, { path: ['name'] }),
-                  });
+                  handleNameBlur();
                 },
               }}
             />

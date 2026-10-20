@@ -8,6 +8,7 @@ import {
   type WindowEffect,
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedSelect, type Option } from '@/shared/ui-kit';
 
 type GeneralizedWindowEffect = 'off' | 'mica' | 'acrylic';
@@ -76,9 +77,11 @@ export const SelectWindowEffect = () => {
       newValue = isSystemTheme(theme.rawTheme) ? 'mica' : `mica_${colorMode()}`;
     }
 
-    updateSettings.mutateAsync({
-      windowEffect: newValue,
-    });
+    updateSettings
+      .mutateAsync({
+        windowEffect: newValue,
+      })
+      .catch(logError);
   };
 
   return (

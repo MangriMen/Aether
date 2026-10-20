@@ -206,6 +206,8 @@
     "error": "Ошибка",
     "noData": "Нет данных для отображения",
     "loading": "Загрузка...",
+    "loadFailed": "Не удалось загрузить данные",
+    "retry": "Повторить",
     "clear": "Очистить",
     "current": "Текущая",
     "updating": "Обновление..."
@@ -241,6 +243,20 @@
       "versions": "Версии"
     },
     "alreadyInstalled": "Этот контент уже установлен"
+  },
+  "generalSettingsError": {
+    "name": {
+      "minLength": "Введите название",
+      "maxLength": "Слишком длинное название (не больше 64 символов)"
+    }
+  },
+  "validation": {
+    "nameRequired": "Введите название",
+    "nameTooLong": "Слишком длинное название (не больше 64 символов)",
+    "gameVersionRequired": "Выберите версию игры",
+    "loaderRequired": "Выберите загрузчика",
+    "loaderVersionRequired": "Выберите версию загрузчика",
+    "pathRequired": "Введите путь"
   },
   "createInstance": {
     "custom": "Пользовательский",
@@ -395,6 +411,7 @@
     "preview": "Предпросмотр",
     "githubPreviewError": "Не удалось загрузить предпросмотр плагина",
     "selectVersion": "Выбрать версию",
+    "noReleaseSelected": "Релиз не выбран",
     "prerelease": "Пре-релиз",
     "switchVersion": "Переключиться на версию",
     "pluginCapabilities": "Возможности",
@@ -503,7 +520,8 @@
       "description": "Изменения режима прозрачности требуют пересоздания окна. \nПрименить изменения сейчас или отложить их до следующего запуска?",
       "header": "Пересоздание окна",
       "ok": "Применить",
-      "later": "Отложить"
+      "later": "Отложить",
+      "recreateError": "Не удалось перезапустить окно"
     },
     "usedFromDefaultSettings": "Используется из настроек по умолчанию",
     "environmentVariablesError": {
@@ -552,6 +570,7 @@
     "restartFailed": "Не удалось перезапустить плагин",
     "restartNeeded": "Папки применятся после перезапуска плагина",
     "enableError": "Не удалось включить плагин",
+    "disableError": "Не удалось отключить плагин",
     "sourceGithub": "Установлен с GitHub",
     "sourceGithubDescription": "Установлен из релиза на GitHub: целостность его .wasm-файла проверяется при каждой загрузке.",
     "sourceLocal": "Локальная установка",
@@ -607,7 +626,9 @@
     "installError": "Не удалось установить Java",
     "testError": "Не удалось протестировать Java",
     "editError": "Не удалось изменить Java",
-    "removeError": "Не удалось удалить Java"
+    "discoverError": "Не удалось найти Java",
+    "removeError": "Не удалось удалить Java",
+    "loadFailed": "Не удалось загрузить версии Java"
   },
   "javaVersion": {
     "version": "Версия",

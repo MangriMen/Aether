@@ -89,6 +89,11 @@ export const PluginPreviewCard: Component<PluginPreviewCardProps> = (props) => {
 
       {/* Actions row */}
       <div class='gap-2 flex justify-end'>
+        <Show when={!hasTag()}>
+          <span class='mr-auto self-center text-sm text-muted-foreground'>
+            {t('plugins.noReleaseSelected')}
+          </span>
+        </Show>
         <Button variant='secondary' onClick={props.onClear}>
           {t('common.clear')}
         </Button>

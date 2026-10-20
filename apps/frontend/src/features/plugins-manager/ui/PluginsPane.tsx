@@ -1,13 +1,22 @@
-import { createMemo, createSignal, Show, type Component } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  Match,
+  Show,
+  Switch,
+  type Component,
+} from 'solid-js';
 
 import type { SettingsPaneProps } from '@/shared/settings-layout';
 
 import { usePlugins } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
 import { SettingsPane } from '@/shared/settings-layout';
+import { LoadError } from '@/shared/ui-kit';
 
 import type { PluginSourceType } from '../model/pluginProvider';
 
+import { pluginsPaneState } from '../model/pluginsPaneState';
 import { AddPluginView } from './AddPluginView';
 import { PluginDetails } from './PluginDetails';
 import { PluginsPaneAddTitle } from './PluginsPaneAddTitle';
@@ -23,10 +32,6 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
 
   const plugins = usePlugins();
 
-  const isPluginsLoadedWithoutErrors = createMemo(
-    () => !plugins.isError || (plugins.data && plugins.data.length === 0),
-  );
-
   const [tab, setTab] = createSignal<PluginPaneTab>('view');
 
   const handlePluginAdd = () => {
@@ -39,6 +44,22 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
 
   const [pluginAddProvider, setPluginAddProvider] =
     createSignal<PluginSourceType | null>('git_hub');
+
+  const paneState = createMemo(() =>
+    pluginsPaneState({
+      isError: plugins.isError,
+      isLoading: plugins.isLoading,
+      count: plugins.data?.length,
+    }),
+  );
+
+  const errorMessage = createMemo(() => {
+    const err = plugins.error;
+
+    return err instanceof Error && err.message
+      ? err.message
+      : t('common.loadFailed');
+  });
 
   return (
     <SettingsPane
@@ -67,17 +88,29 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
           />
         }
       >
-        <Show
-          when={isPluginsLoadedWithoutErrors()}
-          fallback={<span>{t('plugins.noPlugins')}</span>}
+        <Switch
+          fallback={
+            <PluginsView
+              class='size-full'
+              plugins={plugins.data}
+              isLoading={plugins.isLoading}
+              pluginDetails={PluginDetails}
+            />
+          }
         >
-          <PluginsView
-            class='size-full'
-            plugins={plugins.data}
-            isLoading={plugins.isLoading}
-            pluginDetails={PluginDetails}
-          />
-        </Show>
+          <Match when={paneState() === 'error'}>
+            <LoadError
+              message={errorMessage()}
+              retryLabel={t('common.retry')}
+              onRetry={() => void plugins.refetch()}
+            />
+          </Match>
+          <Match when={paneState() === 'empty'}>
+            <span class='text-sm text-muted-foreground'>
+              {t('plugins.noPlugins')}
+            </span>
+          </Match>
+        </Switch>
       </Show>
     </SettingsPane>
   );

@@ -96,8 +96,8 @@ export const useProgressEventsListener = () => {
           speed: bar.speed,
         });
       }
-    } catch {
-      /* empty */
+    } catch (error) {
+      logError('Failed to list progress bars:', error);
     } finally {
       liveBarIds = undefined;
     }
