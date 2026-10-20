@@ -7,11 +7,16 @@ use super::{sql_instance::SqlInstance, sql_pack_info::SqlPackInfo};
 
 pub struct SqliteInstanceStorage {
     pool: SqlitePool,
+    // Serializes read-modify-write cycles so concurrent edits keep each other's fields.
+    write_lock: tokio::sync::Mutex<()>,
 }
 
 impl SqliteInstanceStorage {
     pub fn new(pool: SqlitePool) -> Self {
-        Self { pool }
+        Self {
+            pool,
+            write_lock: tokio::sync::Mutex::new(()),
+        }
     }
 }
 
@@ -218,6 +223,35 @@ impl InstanceStorage for SqliteInstanceStorage {
     }
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
+        let _guard = self.write_lock.lock().await;
+        self.write(instance).await
+    }
+
+    async fn update(
+        &self,
+        id: &InstanceId,
+        update_fn: &mut (dyn for<'i> FnMut(&'i mut Instance) -> Result<bool, InstanceError> + Send),
+    ) -> Result<Instance, InstanceError> {
+        let _guard = self.write_lock.lock().await;
+        let mut instance = self.get(id).await?;
+        if update_fn(&mut instance)? {
+            self.write(&instance).await?;
+        }
+        Ok(instance)
+    }
+
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        Ok(())
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+impl SqliteInstanceStorage {
+    async fn write(&self, instance: &Instance) -> Result<(), InstanceError> {
         let mut tx = self
             .pool
             .begin()
@@ -341,13 +375,5 @@ impl InstanceStorage for SqliteInstanceStorage {
         tx.commit()
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))
-    }
-
-    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
-        sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
-        Ok(())
     }
 }
