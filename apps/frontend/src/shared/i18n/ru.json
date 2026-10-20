@@ -266,6 +266,8 @@
     "clearFinished": "Очистить завершённые",
     "completedChildren": "Завершено: {{count}}",
     "toggleDetails": "Показать детали",
+    "gameCrashed": "Игра завершилась с ошибкой",
+    "gameCrashedCode": "Игра завершилась с ошибкой (код {{code}})",
     "gameInstalling": "Установка файлов игры",
     "installFailed": "Не удалось выполнить установку",
     "installing": "Установка {{name}}",

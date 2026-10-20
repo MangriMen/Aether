@@ -12,6 +12,7 @@ use super::super::domain::{MinecraftProcessMetadata, ProcessError};
 struct ActiveProcess {
     metadata: MinecraftProcessMetadata,
     child: Child,
+    killed: bool,
 }
 
 #[derive(Debug, Default)]
@@ -26,8 +27,14 @@ impl ProcessStorage for InMemoryProcessStorage {
         metadata: MinecraftProcessMetadata,
         child: Child,
     ) -> Result<(), ProcessError> {
-        self.processes
-            .insert(metadata.uuid(), ActiveProcess { metadata, child });
+        self.processes.insert(
+            metadata.uuid(),
+            ActiveProcess {
+                metadata,
+                child,
+                killed: false,
+            },
+        );
 
         Ok(())
     }
@@ -73,6 +80,7 @@ impl ProcessStorage for InMemoryProcessStorage {
 
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError> {
         if let Some(mut process) = self.processes.get_mut(&id) {
+            process.killed = true;
             process
                 .child
                 .kill()
@@ -80,5 +88,9 @@ impl ProcessStorage for InMemoryProcessStorage {
                 .map_err(|_| ProcessError::KillError { id: id.to_string() })?;
         }
         Ok(())
+    }
+
+    async fn was_killed(&self, id: Uuid) -> bool {
+        self.processes.get(&id).is_some_and(|p| p.killed)
     }
 }
