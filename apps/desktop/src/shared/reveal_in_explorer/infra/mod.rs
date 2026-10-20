@@ -22,6 +22,15 @@ pub fn ensure_within_roots(path: &Path, roots: &[&Path]) -> io::Result<()> {
 
 pub fn reveal_in_explorer(path: &Path, exact: bool) -> crate::Result<()> {
     if exact {
+        // `open` runs a file through the shell, so only a folder may be opened this way.
+        if !path.is_dir() {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Only a folder can be opened",
+            )
+            .into());
+        }
+
         Ok(open::that(path)?)
     } else {
         #[cfg(target_os = "windows")]
@@ -64,6 +73,15 @@ mod tests {
         let err = ensure_within_roots(other.path(), &[root.path()]).unwrap_err();
 
         assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+    }
+
+    #[test]
+    fn should_refuse_to_open_a_file_exactly() {
+        let root = tempfile::tempdir().unwrap();
+        let file = root.path().join("run.bat");
+        std::fs::write(&file, b"").unwrap();
+
+        assert!(reveal_in_explorer(&file, true).is_err());
     }
 
     #[test]
