@@ -83,3 +83,53 @@ async fn should_fail_to_log_out_when_the_account_does_not_exist() {
     let result = use_case.execute(nonexistent_id).await;
     assert!(result.is_err());
 }
+
+#[tokio::test]
+async fn should_log_out_and_promote_the_next_usable_account_when_another_is_expired() {
+    use crate::features::auth::domain::{AccountType, Credential, Username};
+
+    let storage = Arc::new(MockCredentialsStorage::new());
+
+    let active_id = Uuid::new_v4();
+    let offline_id = Uuid::new_v4();
+    storage
+        .upsert(
+            CredentialsBuilder::new("Active")
+                .with_id(active_id)
+                .with_active(true)
+                .build(),
+        )
+        .await
+        .unwrap();
+    // Listed before the offline account, so it is the first activation candidate.
+    storage
+        .upsert(Credential::new(
+            Uuid::new_v4(),
+            Username::parse("Expired").unwrap(),
+            AccountType::Microsoft,
+            false,
+            "a".into(),
+            "r".into(),
+            chrono::Utc::now() - chrono::Duration::hours(1),
+        ))
+        .await
+        .unwrap();
+    storage
+        .upsert(
+            CredentialsBuilder::new("Offline")
+                .with_id(offline_id)
+                .build(),
+        )
+        .await
+        .unwrap();
+
+    LogoutUseCase::new(storage.clone())
+        .execute(active_id)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        storage.find_active().await.unwrap().unwrap().id(),
+        offline_id
+    );
+}
