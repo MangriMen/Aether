@@ -161,7 +161,8 @@
     "settings": {
       "NOT_FOUND": "Файл настроек не найден",
       "STORAGE_FAILURE": "Ошибка хранилища настроек",
-      "INVALID_PLATFORM_PROVIDER": "Некорректный выбор провайдера контента для платформы \"{{platform}}\": {{reason}}"
+      "INVALID_PLATFORM_PROVIDER": "Некорректный выбор провайдера контента для платформы \"{{platform}}\": {{reason}}",
+      "INVALID_MAX_CONCURRENT_DOWNLOADS": "Число одновременных загрузок должно быть не меньше 1"
     },
     "window": {
       "ALREADY_EXISTS": "Окно с меткой {{label}} уже существует",

@@ -52,7 +52,7 @@ use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
 use aether_core::shared::fetch::FetchSemaphore;
 use aether_core::shared::housekeeping::{CacheCleaner, Housekeeping, spawn_housekeeping};
 use aether_core::shared::limits::{ContentInstallLimits, PluginSandboxLimits};
-use aether_core::shared::request_client::infra::ReqwestClient;
+use aether_core::shared::request_client::infra::{ReqwestClient, with_default_timeouts};
 use log::info;
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
@@ -135,7 +135,8 @@ pub async fn build_container(
         let _ = settings_storage_sqlite.upsert(default.clone()).await;
         default
     };
-    let max_downloads = settings.max_concurrent_downloads();
+    // A stored 0 (older builds accepted it) would park every download forever.
+    let max_downloads = settings.max_concurrent_downloads().max(1);
     let fetch_semaphore = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(max_downloads)));
 
     // ── Limits ──────────────────────────────────────────────────────
@@ -146,10 +147,11 @@ pub async fn build_container(
 
     // ── HTTP client ─────────────────────────────────────────────────
     let reqwest_client: Arc<ClientWithMiddleware> = {
-        let client = reqwest::Client::builder()
-            .tcp_keepalive(Some(std::time::Duration::from_secs(10)))
-            .build()
-            .expect("Failed to build reqwest client");
+        let client = with_default_timeouts(
+            reqwest::Client::builder().tcp_keepalive(Some(std::time::Duration::from_secs(10))),
+        )
+        .build()
+        .expect("Failed to build reqwest client");
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
         let retry_middleware =
             reqwest_retry::RetryTransientMiddleware::new_with_policy(retry_policy);
@@ -171,6 +173,7 @@ pub async fn build_container(
         reqwest_client.clone(),
         fetch_semaphore.clone(),
     ));
+    // Search and metadata requests have their own queue; see `ApiSemaphore`.
 
     // ── Storage implementations ─────────────────────────────────────
     let credentials_storage: Arc<dyn aether_core::features::auth::CredentialsStorage> =
