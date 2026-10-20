@@ -26,6 +26,18 @@ impl FsJavaInstallationService {
         }
     }
 
+    /// Picks the directory expected to hold the java binary. macOS JDK bundles
+    /// keep it under `Contents/Home/bin`.
+    async fn resolve_search_dir(path: PathBuf) -> PathBuf {
+        for relative in ["bin", "Contents/Home/bin"] {
+            let candidate = path.join(relative);
+            if tokio::fs::try_exists(&candidate).await.unwrap_or(false) {
+                return candidate;
+            }
+        }
+        path
+    }
+
     async fn scan_single_dir(&self, base_path: &Path) -> Result<Vec<Java>, JavaDomainError> {
         let mut found_java = Vec::new();
 
@@ -48,16 +60,7 @@ impl FsJavaInstallationService {
             if let Ok(metadata) = tokio::fs::metadata(&path).await
                 && metadata.is_dir()
             {
-                let potential_bin_dir = path.join("bin");
-
-                let search_path = if tokio::fs::try_exists(&potential_bin_dir)
-                    .await
-                    .unwrap_or(false)
-                {
-                    potential_bin_dir
-                } else {
-                    path
-                };
+                let search_path = Self::resolve_search_dir(path).await;
 
                 if let Ok(java) = self.locate_java(&search_path).await {
                     found_java.push(java);
@@ -151,5 +154,44 @@ impl JavaInstallationService for FsJavaInstallationService {
         all_found.dedup_by(|a, b| a.path() == b.path());
 
         Ok(all_found)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn should_search_macos_bundle_home_bin_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_bin = tmp.path().join("Contents/Home/bin");
+        std::fs::create_dir_all(&home_bin).unwrap();
+
+        let resolved =
+            FsJavaInstallationService::resolve_search_dir(tmp.path().to_path_buf()).await;
+
+        assert_eq!(resolved, home_bin);
+    }
+
+    #[tokio::test]
+    async fn should_prefer_plain_bin_dir_over_bundle_layout() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join("bin")).unwrap();
+        std::fs::create_dir_all(tmp.path().join("Contents/Home/bin")).unwrap();
+
+        let resolved =
+            FsJavaInstallationService::resolve_search_dir(tmp.path().to_path_buf()).await;
+
+        assert_eq!(resolved, tmp.path().join("bin"));
+    }
+
+    #[tokio::test]
+    async fn should_fall_back_to_the_directory_itself_without_bin() {
+        let tmp = tempfile::tempdir().unwrap();
+
+        let resolved =
+            FsJavaInstallationService::resolve_search_dir(tmp.path().to_path_buf()).await;
+
+        assert_eq!(resolved, tmp.path());
     }
 }
