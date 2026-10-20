@@ -291,3 +291,52 @@ async fn should_keep_the_user_settings_when_an_imported_archive_brings_its_own()
         "key = 1"
     );
 }
+
+struct CountingSync(std::sync::atomic::AtomicUsize);
+
+#[async_trait]
+impl PluginSyncService for CountingSync {
+    async fn execute(&self) -> Result<(), PluginError> {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn should_sync_and_report_the_error_when_a_later_archive_fails() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().join("config"),
+    ));
+    let verification = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
+    let source = Arc::new(FsPluginSourceStorage::new(location_info.clone()));
+
+    let good = temp.path().join("good.zip");
+    tokio::fs::write(&good, plugin_zip(b"\0asm")).await.unwrap();
+    let missing = temp.path().join("missing.zip");
+
+    let sync = Arc::new(CountingSync(std::sync::atomic::AtomicUsize::new(0)));
+    let result = ImportPluginsUseCase::new(
+        Arc::new(ZipPluginExtractor::default()),
+        Arc::new(FsPluginStorage::new(
+            location_info.clone(),
+            verification.clone(),
+            None,
+        )),
+        source,
+        verification,
+        sync.clone(),
+    )
+    .execute(vec![good, missing])
+    .await;
+
+    assert!(result.is_err());
+    assert_eq!(sync.0.load(std::sync::atomic::Ordering::SeqCst), 1);
+    assert!(
+        location_info
+            .plugin_dir(PLUGIN_ID)
+            .join("plugin.wasm")
+            .exists()
+    );
+}
