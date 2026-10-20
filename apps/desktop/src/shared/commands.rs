@@ -99,7 +99,6 @@ macro_rules! plugin_commands {
             import,
             sync,
             list,
-            get,
             remove,
             enable,
             force_enable,
@@ -114,7 +113,6 @@ macro_rules! plugin_commands {
             get_plugin_source,
             check_for_updates,
             update_plugin,
-            get_available_providers,
             preview_plugin_from_provider,
             install_plugin_from_provider,
         ]
@@ -125,7 +123,6 @@ macro_rules! process_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             list,
-            get_by_instance_id,
         ]
     };
 }
