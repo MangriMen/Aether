@@ -68,4 +68,9 @@ pub trait FileStore: Send + Sync {
 #[async_trait]
 pub trait AssetsStorage: Send + Sync {
     async fn import_file(&self, source: &Path) -> Result<String, AssetError>;
+
+    /// Deletes the asset `id` as [`Self::import_file`] returned it. Assets are shared by
+    /// content, so the caller makes sure nothing uses it. Gone already, or not a plain asset
+    /// name, is a no-op.
+    async fn remove(&self, id: &str);
 }

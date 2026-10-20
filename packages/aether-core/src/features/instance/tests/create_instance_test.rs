@@ -231,6 +231,8 @@ impl AssetsStorage for FakeAssets {
         let name = source.file_name().unwrap().to_string_lossy();
         Ok(format!("asset-{name}"))
     }
+
+    async fn remove(&self, _id: &str) {}
 }
 
 // ─── Tests ─────────────────────────────────────────────────────

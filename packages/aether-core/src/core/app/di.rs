@@ -19,7 +19,7 @@ use crate::features::{
         CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
-        ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
+        IconAssetReaper, ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
         ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
         InstallInstanceUseCase, InstallPlanExecutor, InstallPlanExecutorPort, InstanceFileService,
         InstanceInstallService, InstanceLaunchService, InstanceLocks, InstanceStorage,
@@ -689,6 +689,10 @@ impl InstanceCrudPort for AetherContainer {
                     self.storage().instance_file_service.clone(),
                     self.storage().pack_storage.clone(),
                     self.instance_locks.clone(),
+                    IconAssetReaper::new(
+                        self.storage().instance_storage.clone(),
+                        self.storage().assets_storage.clone(),
+                    ),
                 ))
             })
             .clone()
