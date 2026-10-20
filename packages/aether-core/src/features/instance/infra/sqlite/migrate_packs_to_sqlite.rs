@@ -14,15 +14,25 @@ pub async fn migrate_packs_to_sqlite(
     for instance in instances {
         let instance_id = &instance.id();
 
+        if !fs_storage.has_legacy_pack(instance_id) {
+            continue;
+        }
         let Ok(pack) = fs_storage.get_pack(instance_id).await else {
             continue;
         };
 
         // The pack row outlives its files, so a pack the user emptied is not migrated again.
         // A failed lookup counts as migrated: leaving the legacy file unread is the safe side.
-        let already_migrated = sqlite_storage.has_pack(instance_id).await.unwrap_or(true);
-        if already_migrated {
-            continue;
+        match sqlite_storage.has_pack(instance_id).await {
+            Ok(true) => {
+                set_aside(fs_storage, instance_id).await;
+                continue;
+            }
+            Ok(false) => {}
+            Err(e) => {
+                warn!("Failed to check the migrated pack of instance {instance_id}: {e}");
+                continue;
+            }
         }
 
         info!(
@@ -54,6 +64,7 @@ pub async fn migrate_packs_to_sqlite(
         sqlite_storage
             .update_pack_file_many(instance_id, &content_paths, &pack_files)
             .await?;
+        set_aside(fs_storage, instance_id).await;
 
         info!(
             "Migration of pack for instance {} to SQLite completed successfully.",
@@ -62,6 +73,16 @@ pub async fn migrate_packs_to_sqlite(
     }
 
     Ok(())
+}
+
+/// The legacy pack is read once: set aside, it cannot be migrated again.
+async fn set_aside(
+    fs_storage: &FsPackStorage,
+    instance_id: &crate::features::instance::InstanceId,
+) {
+    if let Err(e) = fs_storage.mark_migrated(instance_id).await {
+        warn!("Failed to set aside the legacy pack of instance {instance_id}: {e}");
+    }
 }
 
 #[cfg(test)]
@@ -150,6 +171,19 @@ mod tests {
 
         let migrated = sqlite.get_pack_file(&id, "mods/a.jar").await.unwrap();
         assert_eq!(migrated.hash, "legacy");
+    }
+
+    #[tokio::test]
+    async fn should_set_the_legacy_pack_aside_when_it_was_migrated() {
+        let (_temp, instances, fs, id) = setup();
+        legacy_pack(&fs, &id, "mods/a.jar", "legacy").await;
+        let sqlite = SqlitePackStorage::in_memory().await;
+
+        migrate_packs_to_sqlite(&instances, &fs, &sqlite)
+            .await
+            .unwrap();
+
+        assert!(!fs.has_legacy_pack(&id));
     }
 
     #[tokio::test]

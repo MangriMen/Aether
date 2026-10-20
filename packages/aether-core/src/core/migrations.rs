@@ -116,4 +116,25 @@ mod tests {
         assert_eq!(rows(&pool, "pack_files").await, expected);
         assert_eq!(rows(&pool, "pack_file_updates").await, expected);
     }
+
+    #[tokio::test]
+    async fn should_not_move_the_updates_of_a_dropped_row_onto_its_slash_twin() {
+        let pool = pool_before().await;
+        add_file(&pool, r"mods\a.jar", "old").await;
+        sqlx::query(
+            "INSERT INTO pack_files (instance_id, content_path, file_name, hash)
+             VALUES ('i', 'mods/a.jar', 'a.jar', 'kept')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        apply_slashes(&pool).await;
+
+        assert_eq!(
+            rows(&pool, "pack_files").await,
+            vec![("mods/a.jar".to_owned(), "kept".to_owned())]
+        );
+        assert!(rows(&pool, "pack_file_updates").await.is_empty());
+    }
 }

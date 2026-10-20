@@ -1,11 +1,11 @@
-use crate::features::instance::{InstanceId, InstanceStorage, infra::FsInstanceStorage};
+use crate::features::instance::{Instance, InstanceId, InstanceStorage, infra::FsInstanceStorage};
 use tracing::{info, warn};
 
 /// Copies the legacy `instance.json` files into SQLite, and only into an empty table.
 ///
-/// The legacy files stay as a backup, so a table the user emptied must not be refilled
-/// from them. For the same reason a failed run is undone: a table that kept the first
-/// instances would be skipped on the next start and the rest would be lost.
+/// A copied file is set aside (`instance.json.migrated`), so the migration runs once per instance
+/// and a table the user emptied is not refilled from it. A failed run is undone: a table that
+/// kept the first instances would be skipped on the next start and the rest would be lost.
 pub async fn migrate_instances_to_sqlite(
     fs_storage: &FsInstanceStorage,
     sqlite_storage: &dyn InstanceStorage,
@@ -17,6 +17,12 @@ pub async fn migrate_instances_to_sqlite(
 
     let existing_sqlite = sqlite_storage.list().await?;
     if !existing_sqlite.is_empty() {
+        // Files left by a build that kept them: SQLite holds those instances already.
+        let held: Vec<_> = old_instances
+            .iter()
+            .filter(|old| existing_sqlite.iter().any(|kept| kept.id() == old.id()))
+            .collect();
+        mark_migrated(fs_storage, held).await;
         return Ok(());
     }
 
@@ -26,8 +32,8 @@ pub async fn migrate_instances_to_sqlite(
     );
 
     let mut migrated: Vec<InstanceId> = Vec::new();
-    for instance in old_instances {
-        if let Err(e) = sqlite_storage.upsert(&instance).await {
+    for instance in &old_instances {
+        if let Err(e) = sqlite_storage.upsert(instance).await {
             warn!("Failed to migrate instance {}: {}", instance.id(), e);
             roll_back(sqlite_storage, &migrated).await;
             return Err(e.into());
@@ -35,9 +41,23 @@ pub async fn migrate_instances_to_sqlite(
         migrated.push(instance.id().clone());
     }
 
+    mark_migrated(fs_storage, old_instances.iter().collect()).await;
+
     info!("Migration of instances to SQLite completed successfully.");
 
     Ok(())
+}
+
+async fn mark_migrated(fs_storage: &FsInstanceStorage, instances: Vec<&Instance>) {
+    for instance in instances {
+        if let Err(e) = fs_storage.mark_migrated(instance.id()).await {
+            warn!(
+                "Failed to set aside the legacy file of {}: {}",
+                instance.id(),
+                e
+            );
+        }
+    }
 }
 
 async fn roll_back(sqlite_storage: &dyn InstanceStorage, migrated: &[InstanceId]) {
@@ -117,6 +137,31 @@ mod tests {
         migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
 
         assert_eq!(sqlite.stored.lock().unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn should_not_copy_an_instance_again_when_the_migration_runs_twice() {
+        let (_temp, fs) = legacy_storage(&["a", "b"]).await;
+        let sqlite = FakeStorage::default();
+
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
+
+        assert_eq!(sqlite.stored.lock().unwrap().len(), 2);
+        assert!(fs.list().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_legacy_files_when_the_migration_fails() {
+        let (_temp, fs) = legacy_storage(&["a", "b"]).await;
+        let sqlite = FakeStorage {
+            failing: Some(InstanceId::try_from("b").unwrap()),
+            ..FakeStorage::default()
+        };
+
+        assert!(migrate_instances_to_sqlite(&fs, &sqlite).await.is_err());
+
+        assert_eq!(fs.list().await.unwrap().len(), 2);
     }
 
     #[tokio::test]

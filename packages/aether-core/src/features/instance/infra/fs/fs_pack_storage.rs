@@ -11,7 +11,8 @@ use crate::{
         settings::LocationInfo,
     },
     shared::io::infra::{
-        ensure_read_toml_async, read_toml_async, remove_dir_all, remove_file, write_toml_async,
+        ensure_read_toml_async, read_toml_async, remove_dir_all, remove_file, rename,
+        write_toml_async,
     },
 };
 
@@ -24,6 +25,29 @@ pub struct FsPackStorage {
 impl FsPackStorage {
     pub fn new(location_info: Arc<LocationInfo>) -> Self {
         Self { location_info }
+    }
+
+    /// Whether a legacy pack file is there. `get_pack` would create an empty one.
+    pub fn has_legacy_pack(&self, instance_id: &InstanceId) -> bool {
+        self.get_pack_path(instance_id).exists()
+    }
+
+    /// Sets the legacy pack directory aside as `pack.migrated`, so that it is read once and a
+    /// later start does not bring the pack back from it.
+    pub async fn mark_migrated(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
+        let dir = self.location_info.instance_pack_dir(instance_id);
+        if !dir.exists() {
+            return Ok(());
+        }
+        let target = dir.with_file_name("pack.migrated");
+        if target.exists() {
+            remove_dir_all(&target)
+                .await
+                .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        }
+        rename(&dir, &target)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
     fn get_pack_path(&self, instance_id: &InstanceId) -> PathBuf {

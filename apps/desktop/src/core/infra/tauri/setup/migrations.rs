@@ -213,18 +213,46 @@ mod tests {
     #[tokio::test]
     async fn should_keep_legacy_table_when_split_fails_midway() {
         let pool = legacy_pool().await;
-        // Makes the rename step fail after the transaction has started.
-        sqlx::query("CREATE TABLE _sqlx_migrations_legacy_backup (x INTEGER)")
+        // A non-numeric version cannot go into the new INTEGER PRIMARY KEY: the copy fails after
+        // the old table was renamed and the new one created, so all of that must roll back.
+        sqlx::query("DROP TABLE _sqlx_migrations")
             .execute(&pool)
             .await
             .unwrap();
+        sqlx::query(
+            "CREATE TABLE _sqlx_migrations (
+                version TEXT,
+                description TEXT NOT NULL,
+                installed_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                success BOOLEAN NOT NULL,
+                checksum BLOB NOT NULL,
+                execution_time INTEGER NOT NULL
+            )",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time)
+             VALUES ('not-a-number', 'broken', 1, x'00', 0)",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
 
         let result = migrate_legacy_migrations_table(&pool).await;
 
         assert!(result.is_err());
-        assert_eq!(
-            versions(&pool, "desktop").await,
-            vec![DESKTOP_VERSION, CORE_VERSION]
-        );
+        let tables: Vec<String> =
+            sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type = 'table'")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(tables, vec!["_sqlx_migrations".to_owned()]);
+        let kept: Vec<String> = sqlx::query_scalar("SELECT version FROM _sqlx_migrations")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        assert_eq!(kept, vec!["not-a-number".to_owned()]);
     }
 }

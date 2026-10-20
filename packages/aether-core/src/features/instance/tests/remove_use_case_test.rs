@@ -33,6 +33,26 @@ impl InstanceWatcherService for NoOpWatcher {
     }
 }
 
+#[derive(Default)]
+struct RecordingWatcher {
+    calls: std::sync::Mutex<Vec<&'static str>>,
+}
+
+#[async_trait]
+impl InstanceWatcherService for RecordingWatcher {
+    async fn watch_instances(&self) -> Result<(), InstanceError> {
+        Ok(())
+    }
+    async fn watch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
+        self.calls.lock().unwrap().push("watch");
+        Ok(())
+    }
+    async fn unwatch_instance(&self, _instance_id: &InstanceId) -> Result<(), InstanceError> {
+        self.calls.lock().unwrap().push("unwatch");
+        Ok(())
+    }
+}
+
 // ─── End-to-end test ───────────────────────────────────────────
 
 async fn create_test_infrastructure() -> (TempDir, Arc<LocationInfo>, SqlitePool) {
@@ -423,6 +443,33 @@ async fn should_keep_records_when_the_instance_directory_cannot_be_removed() {
                 .unwrap();
         assert_eq!(count, 1, "{table} must survive a failed directory removal");
     }
+}
+
+#[tokio::test]
+async fn should_watch_the_instance_again_when_the_directory_cannot_be_removed() {
+    let (_temp, _location_info, pool) = create_test_infrastructure().await;
+    let instance_id = Uuid::new_v4().to_string();
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    storage
+        .upsert(&create_instance(&instance_id))
+        .await
+        .unwrap();
+    let watcher = Arc::new(RecordingWatcher::default());
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        watcher.clone(),
+        Arc::new(FailingRemoveFileService),
+        Arc::new(SqlitePackStorage::new(pool.clone())),
+        Arc::new(InstanceLocks::new()),
+        no_op_reaper(storage),
+    );
+
+    let result = use_case
+        .execute(InstanceId::try_from(instance_id).unwrap())
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(*watcher.calls.lock().unwrap(), vec!["unwatch", "watch"]);
 }
 
 // ─── Icon assets ───

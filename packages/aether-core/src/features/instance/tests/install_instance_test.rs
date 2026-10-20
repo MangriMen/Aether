@@ -369,7 +369,11 @@ impl MinecraftInstallService for RenameDuringInstall {
         _force: bool,
     ) -> Result<(), MinecraftApplicationError> {
         let _ = params;
-        let mut instance = self.0.get(&InstanceId::try_from("inst").unwrap()).await.unwrap();
+        let mut instance = self
+            .0
+            .get(&InstanceId::try_from("inst").unwrap())
+            .await
+            .unwrap();
         instance.rename("Renamed".to_owned()).unwrap();
         self.0.upsert(&instance).await.unwrap();
         Ok(())
