@@ -10,6 +10,8 @@ pub enum SettingsErrorDto {
     StorageFailure,
 
     InvalidPlatformProvider { platform: String, reason: String },
+
+    InvalidMaxConcurrentDownloads,
 }
 
 impl From<&SettingsError> for SettingsErrorDto {
@@ -22,6 +24,9 @@ impl From<&SettingsError> for SettingsErrorDto {
                     platform: platform.clone(),
                     reason: reason.clone(),
                 }
+            }
+            SettingsError::InvalidMaxConcurrentDownloads => {
+                SettingsErrorDto::InvalidMaxConcurrentDownloads
             }
         }
     }

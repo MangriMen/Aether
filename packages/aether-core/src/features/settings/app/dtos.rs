@@ -74,6 +74,11 @@ impl EditSettings {
     /// Refuse a provider choice that no platform install could ever use: an empty platform or a
     /// provider id that is not `plugin#capability`.
     pub fn validate(&self) -> Result<(), SettingsError> {
+        // Zero permits would park every download forever.
+        if self.max_concurrent_downloads == 0 {
+            return Err(SettingsError::InvalidMaxConcurrentDownloads);
+        }
+
         let Some(choice) = &self.platform_provider else {
             return Ok(());
         };
