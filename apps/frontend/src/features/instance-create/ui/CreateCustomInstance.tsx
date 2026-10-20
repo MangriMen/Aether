@@ -98,16 +98,18 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       : undefined,
   );
 
+  const mappedLoaderVersions = () => ({
+    fabric: fabricVersionsMapped(),
+    forge: forgeVersionsMapped(),
+    quilt: quiltVersionsMapped(),
+    neoforge: neoforgeVersionsMapped(),
+  });
+
   const loaderVersions = createMemo(() =>
     getLoaderVersionsForGameVersion(
       getInput(form, { path: ['loader'] }),
       getInput(form, { path: ['gameVersion'] }),
-      {
-        fabric: fabricVersionsMapped(),
-        forge: forgeVersionsMapped(),
-        quilt: quiltVersionsMapped(),
-        neoforge: neoforgeVersionsMapped(),
-      },
+      mappedLoaderVersions(),
     ),
   );
 
@@ -115,12 +117,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     filterGameVersionsForLoader(
       getInput(form, { path: ['loader'] }),
       versionManifest.data?.versions ?? [],
-      {
-        fabric: fabricVersionsMapped(),
-        forge: forgeVersionsMapped(),
-        quilt: quiltVersionsMapped(),
-        neoforge: neoforgeVersionsMapped(),
-      },
+      mappedLoaderVersions(),
     ),
   );
 
