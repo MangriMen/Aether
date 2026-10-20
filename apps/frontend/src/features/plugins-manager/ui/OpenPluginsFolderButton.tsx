@@ -4,6 +4,7 @@ import IconMdiFolder from '~icons/mdi/folder';
 
 import { useOpenPluginFolder } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type OpenPluginsFolderButtonProps = ComponentProps<'button'>;
@@ -16,7 +17,11 @@ export const OpenPluginsFolderButton: Component<
   const openPluginsFolder = useOpenPluginFolder();
 
   const handleOpenPluginsFolder = async () => {
-    await openPluginsFolder.mutateAsync();
+    try {
+      await openPluginsFolder.mutateAsync();
+    } catch (error) {
+      logError('Failed to open the plugins folder:', error);
+    }
   };
 
   return (

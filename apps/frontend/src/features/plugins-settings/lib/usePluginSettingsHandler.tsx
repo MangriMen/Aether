@@ -6,6 +6,8 @@ import type {
   PluginSettings,
 } from '@/features/plugins';
 
+import { logError } from '@/shared/log';
+
 import type {
   PluginSettingsSchemaInput,
   PluginSettingsSchemaOutput,
@@ -23,7 +25,7 @@ export interface UsePluginSettingsHandler {
     (args: {
       id: PluginMetadata['id'];
       editSettings: EditPluginSettings;
-    }) => void
+    }) => Promise<unknown>
   >;
 }
 
@@ -40,7 +42,7 @@ export const usePluginSettingsHandler = ({
     editPluginSettings()({
       id: pluginId(),
       editSettings: pluginSettingsValuesToEditPluginSettings(values),
-    });
+    }).catch(logError);
   };
 
   const onSubmit = (values: PluginSettingsSchemaOutput) =>

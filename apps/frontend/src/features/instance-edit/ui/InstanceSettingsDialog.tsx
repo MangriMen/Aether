@@ -3,14 +3,21 @@ import type { Component } from 'solid-js';
 
 import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
-import { createMemo, createSignal, onMount, Show, splitProps } from 'solid-js';
+import {
+  createMemo,
+  createSignal,
+  Match,
+  onMount,
+  splitProps,
+  Switch,
+} from 'solid-js';
 
 import type { Instance } from '@/features/instance';
 
 import { useInstance } from '@/features/instance';
 import { settingsCache } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
-import { Dialog, DialogContent } from '@/shared/ui-kit';
+import { Dialog, DialogContent, LoadError } from '@/shared/ui-kit';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
@@ -60,17 +67,25 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
         w-225 pb-0 pl-0 flex max-w-[calc(100%-80px)] flex-col
       '
       >
-        <Show
-          when={instance.data}
-          fallback={<span>{t('instance.instanceNotFound')}</span>}
-        >
-          {(instance) => (
-            <>
-              <InstanceSettingsDialogHeader instance={instance()} />
-              <InstanceSettingsDialogBody class='pl-6' instance={instance()} />
-            </>
-          )}
-        </Show>
+        <Switch fallback={<span>{t('instance.instanceNotFound')}</span>}>
+          <Match when={instance.data}>
+            {(instance) => (
+              <>
+                <InstanceSettingsDialogHeader instance={instance()} />
+                <InstanceSettingsDialogBody
+                  class='pl-6'
+                  instance={instance()}
+                />
+              </>
+            )}
+          </Match>
+          <Match when={instance.isLoading || instance.isFetching}>
+            <span>{t('common.loading')}</span>
+          </Match>
+          <Match when={instance.isError}>
+            <LoadError message={t('common.loadFailed')} />
+          </Match>
+        </Switch>
       </DialogContent>
     </Dialog>
   );

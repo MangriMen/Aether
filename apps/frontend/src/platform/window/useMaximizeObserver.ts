@@ -1,6 +1,8 @@
 import { throttle } from '@solid-primitives/scheduled';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { createEffect, onCleanup } from 'solid-js';
+import { onCleanup, onMount } from 'solid-js';
+
+import { logError } from '@/shared/log';
 
 import { updateMaximize } from './window';
 
@@ -17,10 +19,10 @@ export const useMaximizeObserver = (
 ) => {
   const appWindow = getCurrentWebviewWindow();
   let unlistenResize: VoidFunction | undefined;
+  // `onResized` resolves later; a cleanup that comes first must still remove the listener.
+  let disposed = false;
 
   const initializeResizeObserver = async () => {
-    unlistenResize?.();
-
     const handleResize = async () =>
       updateMaximize(await appWindow.isMaximized());
 
@@ -28,7 +30,15 @@ export const useMaximizeObserver = (
 
     const unlistenResizeEvent = await appWindow.onResized(handleResizeThrottle);
 
-    handleResize();
+    if (disposed) {
+      unlistenResizeEvent();
+      handleResizeThrottle.clear();
+      return;
+    }
+
+    handleResize().catch((error: unknown) => {
+      logError('Failed to read the maximize state:', error);
+    });
 
     unlistenResize = () => {
       unlistenResizeEvent();
@@ -36,8 +46,14 @@ export const useMaximizeObserver = (
     };
   };
 
-  createEffect(() => {
-    initializeResizeObserver();
-    onCleanup(() => unlistenResize?.());
+  onMount(() => {
+    initializeResizeObserver().catch((error: unknown) => {
+      logError('Failed to observe window resize:', error);
+    });
+  });
+
+  onCleanup(() => {
+    disposed = true;
+    unlistenResize?.();
   });
 };

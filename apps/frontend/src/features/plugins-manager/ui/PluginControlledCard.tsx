@@ -10,6 +10,7 @@ import {
   usePluginStates,
   useRemovePlugin,
 } from '@/features/plugins';
+import { logError } from '@/shared/log';
 import { ContextMenuTrigger } from '@/shared/ui-kit';
 
 export type PluginControlledCardProps = {
@@ -49,7 +50,11 @@ export const PluginControlledCard: Component<PluginControlledCardProps> = (
   const removePlugin = useRemovePlugin();
 
   const handleRemove = async () => {
-    await removePlugin.mutateAsync(local.plugin.manifest.metadata.id);
+    try {
+      await removePlugin.mutateAsync(local.plugin.manifest.metadata.id);
+    } catch (error) {
+      logError('Failed to remove the plugin:', error);
+    }
   };
 
   return (

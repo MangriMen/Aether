@@ -17,6 +17,7 @@ import { debounce } from '@/shared/utils';
 import type { ProviderPluginPreview } from '../model/pluginProvider';
 import type { ReleaseOption } from './PluginPreviewCard';
 
+import { resolveReleaseTag } from '../model/resolveReleaseTag';
 import { PluginPreviewCard } from './PluginPreviewCard';
 
 export type InstallFromGithubViewProps = {
@@ -55,17 +56,25 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
     () => previewQuery.data,
   );
 
-  const [selectedTag, setSelectedTag] = createSignal('');
+  const [pickedTag, setPickedTag] = createSignal('');
 
-  // Auto-select first release when preview loads
+  // A pick belongs to the repository it was made in; a new URL or release list invalidates it.
   createEffect(() => {
-    const data = previewData();
-    const firstRelease = data?.releases?.[0];
+    debouncedUrl();
+    setPickedTag('');
+  });
 
-    if (firstRelease && !selectedTag()) {
-      setSelectedTag(firstRelease.tag_name);
+  createEffect(() => {
+    const releases = previewData()?.releases ?? [];
+
+    if (!releases.some((release) => release.tag_name === pickedTag())) {
+      setPickedTag('');
     }
   });
+
+  const selectedTag = createMemo(() =>
+    resolveReleaseTag(previewData()?.releases ?? [], pickedTag()),
+  );
 
   const releaseOptions = createMemo<ReleaseOption[]>(() => {
     const p = previewData();
@@ -84,7 +93,7 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
 
   const handleReleaseChange = (option: ReleaseOption | null) => {
     if (option) {
-      setSelectedTag(option.value);
+      setPickedTag(option.value);
     }
   };
 
