@@ -15,6 +15,9 @@ pub enum ManifestError {
     #[error("Invalid path mapping")]
     InvalidPathMapping,
 
+    #[error("Invalid `load.file` \"{0}\": it must be a relative path inside the plugin directory")]
+    InvalidLoadFile(String),
+
     #[error(
         "Plugin declares host functions this launcher does not provide: {}. \
          It was probably built for a newer version of the launcher",
