@@ -7,3 +7,4 @@ mod folder_grants;
 mod host_grants;
 mod restart;
 mod settings;
+mod sync;

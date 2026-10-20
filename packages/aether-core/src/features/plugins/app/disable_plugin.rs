@@ -32,6 +32,12 @@ impl DisablePluginUseCase {
     /// A plugin being enabled or restarted is refused with the matching in-progress error rather
     /// than taken from under it: a restart finishing after the disable would leave it running.
     pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.unload(plugin_id.clone()).await?;
+        self.remove_from_enabled_plugins(&plugin_id).await
+    }
+
+    /// [`Self::execute`] without the plugin ceasing to be enabled.
+    pub(crate) async fn unload(&self, plugin_id: String) -> Result<(), PluginError> {
         let manifest = self.plugin_registry.get_manifest(&plugin_id)?;
         let plugin_instance = self.plugin_registry.begin_unloading(&plugin_id).await?;
 
@@ -39,7 +45,7 @@ impl DisablePluginUseCase {
             .unload_plugin(&plugin_id, &manifest, plugin_instance.clone())
             .await
         {
-            Ok(()) => self.remove_from_enabled_plugins(&plugin_id).await,
+            Ok(()) => Ok(()),
             Err(err) => {
                 self.plugin_registry
                     .upsert_with(&plugin_id, |plugin| {
@@ -95,5 +101,9 @@ impl DisablePluginUseCase {
 impl PluginDisableService for DisablePluginUseCase {
     async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
         self.execute(plugin_id).await
+    }
+
+    async fn unload(&self, plugin_id: String) -> Result<(), PluginError> {
+        self.unload(plugin_id).await
     }
 }
