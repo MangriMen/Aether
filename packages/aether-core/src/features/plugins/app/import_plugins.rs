@@ -3,8 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use async_trait::async_trait;
 
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
-    PluginStorage, PluginSyncService, PluginVerificationStorage,
+    ExtractedPlugin, PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage,
+    PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
 };
 
 use super::ports::ImportPluginsUseCasePort;
@@ -72,23 +72,54 @@ impl ImportPluginsUseCase {
 
         // Before the new bytes land, so they are never checked against the old record. Should
         // the copy fail, the old bytes are left unverified — loaded with a warning, not refused.
+        let old_verification = self.plugin_verification_storage.get(&plugin_id).await?;
+        let old_source = self.plugin_source_storage.get(&plugin_id).await?;
         self.plugin_verification_storage.remove(&plugin_id).await?;
         self.plugin_source_storage.remove(&plugin_id).await?;
 
+        // The old bytes stay when the import fails, so their records must too.
+        let result = self
+            .replace_keeping_settings(&plugin_id, extracted_plugin)
+            .await;
+        if result.is_err() {
+            if let Some(verification) = &old_verification
+                && let Err(err) = self
+                    .plugin_verification_storage
+                    .save(&plugin_id, verification)
+                    .await
+            {
+                tracing::error!(
+                    "Verification of plugin '{plugin_id}' could not be restored: {err}"
+                );
+            }
+            if let Some(source) = &old_source
+                && let Err(err) = self.plugin_source_storage.save(&plugin_id, source).await
+            {
+                tracing::error!("Source of plugin '{plugin_id}' could not be restored: {err}");
+            }
+        }
+        result
+    }
+
+    async fn replace_keeping_settings(
+        &self,
+        plugin_id: &str,
+        extracted_plugin: ExtractedPlugin,
+    ) -> Result<(), PluginError> {
         // The settings live in the plugin's directory, which the replacement swaps out. Held
         // until they are back, so that a change made meanwhile is neither saved over nor lost.
-        let _settings_lock = self.plugin_registry.lock_settings(&plugin_id).await;
-        let settings = self.plugin_settings_storage.get(&plugin_id).await?;
+        let _settings_lock = self.plugin_registry.lock_settings(plugin_id).await;
+        let settings = self.plugin_settings_storage.get(plugin_id).await?;
 
         self.plugin_storage.replace(extracted_plugin).await?;
 
         if let Some(settings) = settings
             && let Err(err) = self
                 .plugin_settings_storage
-                .upsert(&plugin_id, &settings)
+                .upsert(plugin_id, &settings)
                 .await
         {
-            if let Err(restore_err) = self.plugin_storage.restore_replaced(&plugin_id).await {
+            if let Err(restore_err) = self.plugin_storage.restore_replaced(plugin_id).await {
                 tracing::error!(
                     "Plugin '{plugin_id}' could not be put back after a failed import: \
                      {restore_err}"
@@ -97,7 +128,7 @@ impl ImportPluginsUseCase {
             return Err(err);
         }
 
-        if let Err(err) = self.plugin_storage.discard_replaced(&plugin_id).await {
+        if let Err(err) = self.plugin_storage.discard_replaced(plugin_id).await {
             tracing::warn!("Previous version of plugin '{plugin_id}' was left behind: {err}");
         }
         Ok(())

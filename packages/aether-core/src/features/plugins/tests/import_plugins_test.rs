@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io::{Cursor, Write},
     sync::Arc,
 };
@@ -10,9 +11,9 @@ use zip::{ZipWriter, write::SimpleFileOptions};
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     plugins::{
-        ImportPluginsUseCase, PluginError, PluginRegistry, PluginSettingsStorage, PluginSource,
-        PluginSourceStorage, PluginSourceType, PluginSyncService, PluginVerification,
-        PluginVerificationStorage,
+        ExtractedPlugin, ImportPluginsUseCase, Plugin, PluginError, PluginRegistry,
+        PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginSourceType, PluginStorage,
+        PluginSyncService, PluginVerification, PluginVerificationStorage,
         infra::{
             FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
             FsPluginVerificationStorage, ZipPluginExtractor,
@@ -323,6 +324,83 @@ async fn should_keep_the_user_settings_when_an_imported_archive_brings_its_own()
     .unwrap();
 
     assert_eq!(saved_hosts(&location_info).await, vec!["kept.example.com"]);
+}
+
+struct FailingReplace(FsPluginStorage);
+
+#[async_trait]
+impl PluginStorage for FailingReplace {
+    async fn add(&self, p: ExtractedPlugin) -> Result<(), PluginError> {
+        self.0.add(p).await
+    }
+    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+        self.0.list().await
+    }
+    async fn get(&self, id: &str) -> Result<Plugin, PluginError> {
+        self.0.get(id).await
+    }
+    async fn remove(&self, id: &str) -> Result<(), PluginError> {
+        self.0.remove(id).await
+    }
+    async fn replace(&self, p: ExtractedPlugin) -> Result<(), PluginError> {
+        Err(PluginError::NotFound {
+            plugin_id: p.plugin_id,
+        })
+    }
+    async fn restore_replaced(&self, id: &str) -> Result<(), PluginError> {
+        self.0.restore_replaced(id).await
+    }
+    async fn discard_replaced(&self, id: &str) -> Result<(), PluginError> {
+        self.0.discard_replaced(id).await
+    }
+    async fn wasm_sha256(&self, id: &str) -> Result<String, PluginError> {
+        self.0.wasm_sha256(id).await
+    }
+}
+
+#[tokio::test]
+async fn should_keep_the_provider_records_when_the_replacement_fails() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().join("config"),
+    ));
+    let verification = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
+    let source = Arc::new(FsPluginSourceStorage::new(location_info.clone()));
+    let storage = FsPluginStorage::new(location_info.clone(), verification.clone(), None);
+
+    let plugin_dir = location_info.plugin_dir(PLUGIN_ID);
+    tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
+    let recorded = PluginVerification::new("sha256-of-release", PluginSourceType::GitHub);
+    verification.save(PLUGIN_ID, &recorded).await.unwrap();
+    let recorded_source = PluginSource::Remote {
+        source_type: PluginSourceType::GitHub,
+        identifier: "owner/repo".into(),
+        current_tag: "v1".into(),
+        current_version: "1.0.0".into(),
+    };
+    source.save(PLUGIN_ID, &recorded_source).await.unwrap();
+
+    let archive = temp.path().join("local.zip");
+    tokio::fs::write(&archive, plugin_zip(b"\0asm local build"))
+        .await
+        .unwrap();
+
+    let result = ImportPluginsUseCase::new(
+        registry(),
+        settings(&location_info),
+        Arc::new(ZipPluginExtractor::default()),
+        Arc::new(FailingReplace(storage)),
+        source.clone(),
+        verification.clone(),
+        Arc::new(NoSync),
+    )
+    .execute(vec![archive])
+    .await;
+
+    assert!(result.is_err());
+    assert_eq!(verification.get(PLUGIN_ID).await.unwrap(), Some(recorded));
+    assert_eq!(source.get(PLUGIN_ID).await.unwrap(), Some(recorded_source));
 }
 
 struct CountingSync(std::sync::atomic::AtomicUsize);
