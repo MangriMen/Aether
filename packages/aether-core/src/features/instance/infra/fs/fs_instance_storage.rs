@@ -11,7 +11,7 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::{read_json_async, remove_dir_all, write_json_async},
+    shared::io::infra::{read_json_async, remove_dir_all, rename, write_json_async},
 };
 
 pub struct FsInstanceStorage {
@@ -34,6 +34,20 @@ impl FsInstanceStorage {
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
         Ok(())
+    }
+
+    /// Sets the legacy `instance.json` aside as `instance.json.migrated`, so that it is read once
+    /// and a later start does not bring the instance back from it.
+    pub async fn mark_migrated(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        let path = self.location_info.instance_metadata_file(id);
+        if !path.exists() {
+            return Ok(());
+        }
+        let mut renamed = path.clone().into_os_string();
+        renamed.push(".migrated");
+        rename(&path, renamed)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))
     }
 
     async fn load_instance_internal(&self, path: &Path) -> Result<Instance, InstanceError> {
