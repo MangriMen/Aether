@@ -2,9 +2,9 @@ use serde::Serialize;
 use specta::Type;
 
 use crate::core::{
-    AppSettingsErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto, InstanceErrorDto,
-    JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto, RequestErrorDto,
-    SettingsErrorDto, WindowErrorDto,
+    AppSettingsErrorDto, ApplicationErrorDto, AuthErrorDto, EventErrorDto, FileWatcherErrorDto,
+    InstanceErrorDto, JavaErrorDto, MinecraftErrorDto, PluginErrorDto, ProcessErrorDto,
+    RequestErrorDto, SettingsErrorDto, WindowErrorDto,
 };
 
 pub type FrontendResult<T, E = FrontendError> = Result<T, E>;
@@ -15,6 +15,8 @@ pub enum FrontendError {
     AppSettings(AppSettingsErrorDto),
 
     Window(WindowErrorDto),
+
+    Application(ApplicationErrorDto),
 
     Auth(AuthErrorDto),
 
@@ -42,6 +44,7 @@ pub enum FrontendError {
     /// Critical or unexpected errors that indicate a logic failure or
     /// improper error mapping. These should ideally never reach the frontend
     /// but serve as a safety net to prevent silent crashes.
+    #[allow(dead_code)]
     Internal(String),
 }
 
@@ -50,9 +53,13 @@ impl From<crate::Error> for FrontendError {
         match value {
             crate::Error::AppSettingsError(err) => Self::AppSettings(err.into()),
             crate::Error::WindowError(err) => Self::Window(err.into()),
-            crate::Error::LaunchError(err) => Self::Internal(err),
-            crate::Error::IoError(err) => Self::Generic(err.to_string()),
-            crate::Error::IdempotencyManager(err) => Self::Generic(err.to_string()),
+            crate::Error::LaunchError(details) => {
+                Self::Application(ApplicationErrorDto::Launch { details })
+            }
+            crate::Error::IoError(err) => Self::Application(ApplicationErrorDto::Io {
+                details: err.to_string(),
+            }),
+            crate::Error::IdempotencyManager(err) => Self::Application((&err).into()),
             crate::Error::Core(core_err) => Self::from(core_err.raw.as_ref()),
         }
     }
