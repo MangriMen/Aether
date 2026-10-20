@@ -406,7 +406,6 @@
     "noVersionsFound": "No versions found",
     "updateAvailable": "Update available",
     "update": "Update",
-    "restartPlugin": "Restart to apply",
     "checkUpdates": "Check for updates",
     "upToDate": "Up to date",
     "updateCheckError": "Failed to check for updates"
