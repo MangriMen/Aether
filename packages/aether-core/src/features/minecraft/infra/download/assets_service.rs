@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-use super::{VersionProgress, assets_index_key};
+use super::{VersionProgress, assets_index_key, checked_get};
 
 const MINECRAFT_RESOURCES_BASE_URL: &str = "https://resources.download.minecraft.net/";
 const HASH_PREFIX_LENGTH: usize = 2;
@@ -81,9 +81,9 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
             .map_err(get_network_error)
     }
 
-    async fn fetch_bytes(&self, url: &str) -> Result<Bytes, IoError> {
+    async fn fetch_bytes(&self, url: &str, sha1: &str) -> Result<Bytes, IoError> {
         self.request_client
-            .fetch_bytes(Request::get(url))
+            .fetch_bytes(checked_get(url, sha1))
             .await
             .map_err(get_network_error)
     }
@@ -227,7 +227,7 @@ impl<RC: RequestClient, C: Cache> AssetsService<RC, C> {
         }
 
         trace!("Downloading asset \"{}\"\n\tfrom {}", name, url);
-        let asset_data = self.fetch_bytes(&url).await?;
+        let asset_data = self.fetch_bytes(&url, hash).await?;
         let size = asset_data.len() as u64;
 
         tokio::try_join!(

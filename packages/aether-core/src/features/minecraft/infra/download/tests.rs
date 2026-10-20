@@ -25,12 +25,13 @@ use crate::{
     },
     shared::{
         cache::infra::FileCache,
+        hash::infra::{hash_hex_async, sha1_async},
         request_client::{BytesProgress, FileDownload, Request, RequestClient, RequestError},
     },
 };
 
 use super::{
-    AssetsService, ClientService, LibrariesService, MinecraftDownloadResolver,
+    AssetsService, ClientService, LibrariesService, LoggingService, MinecraftDownloadResolver,
     MinecraftDownloadService,
 };
 
@@ -100,15 +101,29 @@ impl RequestClient for FakeClient {
             let mut gate = self.gate.subscribe();
             gate.wait_for(|open| *open).await.unwrap();
         }
-        self.bodies
+        let body = self
+            .bodies
             .lock()
             .unwrap()
             .get(&request.url)
             .cloned()
             .ok_or(RequestError::Status {
                 status: 404,
-                url: request.url,
-            })
+                url: request.url.clone(),
+            })?;
+        // As the real client does: a body that is not the expected one is refused.
+        if let Some(expected) = &request.hash {
+            let actual = hash_hex_async(expected.algorithm(), body.clone())
+                .await
+                .unwrap();
+            if !expected.matches(&actual) {
+                return Err(RequestError::Hash {
+                    actual,
+                    expected: expected.hex().to_owned(),
+                });
+            }
+        }
+        Ok(body)
     }
 
     async fn download_to_file(
@@ -169,6 +184,7 @@ fn fixture() -> Fixture {
         ClientService::new(client.clone(), cache.clone()),
         AssetsService::new(client.clone(), location_info.clone(), cache.clone()),
         LibrariesService::new(client.clone(), location_info.clone()),
+        LoggingService::new(client.clone(), location_info.clone()),
         client.clone(),
         progress.clone(),
         cache,
@@ -202,6 +218,16 @@ fn asset_url(hash: &str) -> String {
 /// A version with a client, the library [`LIBRARY`] and one asset of its own, all served by
 /// `client`.
 fn version(client: &FakeClient, id: &str, asset_hash: &str) -> Arc<vanilla::VersionInfo> {
+    version_from(client, id, asset_hash, |_| {})
+}
+
+/// [`version`], with `adjust` applied to its JSON.
+fn version_from(
+    client: &FakeClient,
+    id: &str,
+    asset_hash: &str,
+    adjust: impl FnOnce(&mut serde_json::Value),
+) -> Arc<vanilla::VersionInfo> {
     client.serve(&client_url(id), format!("client {id}"));
     client.serve(LIBRARY_URL, "library");
     client.serve(
@@ -213,30 +239,66 @@ fn version(client: &FakeClient, id: &str, asset_hash: &str) -> Arc<vanilla::Vers
     );
     client.serve(&asset_url(asset_hash), "sound");
 
-    Arc::new(
-        serde_json::from_value(serde_json::json!({
-            "assetIndex": {
-                "id": id, "sha1": "0", "size": 1, "totalSize": 5, "url": assets_index_url(id)
+    let mut json = serde_json::json!({
+        "assetIndex": {
+            "id": id, "sha1": "0", "size": 1, "totalSize": 5, "url": assets_index_url(id)
+        },
+        "assets": id,
+        "downloads": { "client": { "sha1": "0", "size": 9, "url": client_url(id) } },
+        "id": id,
+        "javaVersion": null,
+        "libraries": [{
+            "name": LIBRARY,
+            "downloads": { "artifact": {
+                "path": "com/example/lib/1.0/lib-1.0.jar", "sha1": "0", "size": 7,
+                "url": LIBRARY_URL
+            } }
+        }],
+        "mainClass": "Main",
+        "minimumLauncherVersion": 1,
+        "releaseTime": "2020-01-01T00:00:00Z",
+        "time": "2020-01-01T00:00:00Z",
+        "type": "release"
+    });
+    adjust(&mut json);
+    Arc::new(serde_json::from_value(json).unwrap())
+}
+
+const NATIVE_LIBRARY: &str = "com.example:native:1.0";
+const NATIVE_URL: &str = "https://libraries.example/native-1.0-natives.jar";
+const NATIVE_JAR_URL: &str = "https://libraries.example/native-1.0.jar";
+
+/// Adds a library with natives for every OS, served from [`NATIVE_URL`].
+fn with_natives(json: &mut serde_json::Value) {
+    let classifier = serde_json::json!({
+        "path": "n.jar", "sha1": "0", "size": 3, "url": NATIVE_URL
+    });
+    json["libraries"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({
+            "name": NATIVE_LIBRARY,
+            "natives": {
+                "linux": "natives-all", "windows": "natives-all", "osx": "natives-all"
             },
-            "assets": id,
-            "downloads": { "client": { "sha1": "0", "size": 9, "url": client_url(id) } },
-            "id": id,
-            "javaVersion": null,
-            "libraries": [{
-                "name": LIBRARY,
-                "downloads": { "artifact": {
-                    "path": "com/example/lib/1.0/lib-1.0.jar", "sha1": "0", "size": 7,
-                    "url": LIBRARY_URL
-                } }
-            }],
-            "mainClass": "Main",
-            "minimumLauncherVersion": 1,
-            "releaseTime": "2020-01-01T00:00:00Z",
-            "time": "2020-01-01T00:00:00Z",
-            "type": "release"
-        }))
-        .unwrap(),
-    )
+            "downloads": {
+                "artifact": {
+                    "path": "com/example/native/1.0/native-1.0.jar", "sha1": "0", "size": 3,
+                    "url": NATIVE_JAR_URL
+                },
+                "classifiers": { "natives-all": classifier }
+            }
+        }));
+}
+
+fn natives_zip() -> Vec<u8> {
+    use std::io::Write;
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    writer
+        .start_file("native.so", zip::write::SimpleFileOptions::default())
+        .unwrap();
+    writer.write_all(b"machine code").unwrap();
+    writer.finish().unwrap().into_inner()
 }
 
 fn library_path(location_info: &LocationInfo) -> std::path::PathBuf {
@@ -262,6 +324,209 @@ fn download(
             .await;
         (result, waiting)
     })
+}
+
+/// A game without its natives starts and crashes: a failed download of them is the install's.
+#[tokio::test]
+async fn should_fail_the_install_when_the_natives_cannot_be_downloaded() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, with_natives);
+    fixture.client.serve(NATIVE_JAR_URL, "native jar");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+}
+
+#[tokio::test]
+async fn should_fail_the_install_when_the_natives_are_not_an_archive() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, with_natives);
+    fixture.client.serve(NATIVE_JAR_URL, "native jar");
+    fixture.client.serve(NATIVE_URL, "not a zip");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+}
+
+#[tokio::test]
+async fn should_extract_the_natives_when_they_are_downloaded() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, with_natives);
+    fixture.client.serve(NATIVE_JAR_URL, "native jar");
+    fixture.client.serve(NATIVE_URL, natives_zip());
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+    let extracted = fixture
+        .location_info
+        .version_natives_dir("1.20.1")
+        .join("native.so");
+    assert_eq!(std::fs::read(extracted).unwrap(), b"machine code");
+}
+
+/// A digest that is none of the bodies the tests serve.
+const WRONG_SHA1: &str = "0123456789abcdef0123456789abcdef01234567";
+
+#[tokio::test]
+async fn should_refuse_the_client_when_its_digest_does_not_match() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["downloads"]["client"]["sha1"] = WRONG_SHA1.into();
+    });
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+}
+
+#[tokio::test]
+async fn should_keep_the_client_when_its_digest_matches() {
+    let fixture = fixture();
+    let digest = sha1_async(Bytes::from_static(b"client 1.20.1"))
+        .await
+        .unwrap();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["downloads"]["client"]["sha1"] = digest.into();
+    });
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+}
+
+#[tokio::test]
+async fn should_leave_no_library_when_its_digest_does_not_match() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.20.1", ASSET_HASH, |json| {
+        json["libraries"][0]["downloads"]["artifact"]["sha1"] = WRONG_SHA1.into();
+    });
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+    assert!(!library_path(&fixture.location_info).exists());
+}
+
+#[tokio::test]
+async fn should_leave_no_asset_when_its_digest_does_not_match() {
+    let fixture = fixture();
+    // The name of an asset is its digest; the body served is not what it names.
+    let hash = "ab0123456789abcdef0123456789abcdef012345";
+    let version = version(&fixture.client, "1.20.1", hash);
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+    assert!(!fixture.location_info.object_dir(hash).exists());
+}
+
+const LOG_CONFIG_URL: &str = "https://launcher.example/client-1.12.xml";
+
+/// The client log config, as the versions that have one name it.
+fn with_log_config(json: &mut serde_json::Value) {
+    json["logging"] = serde_json::json!({
+        "client": {
+            "argument": "-Dlog4j.configurationFile=${path}",
+            "file": {
+                "id": "client-1.12.xml", "sha1": "0", "size": 5, "url": LOG_CONFIG_URL
+            },
+            "type": "log4j2-xml"
+        }
+    });
+}
+
+fn log_config_path(location_info: &LocationInfo) -> std::path::PathBuf {
+    location_info.log_configs_dir().join("client-1.12.xml")
+}
+
+#[tokio::test]
+async fn should_download_the_log_config_the_version_names() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, with_log_config);
+    fixture.client.serve(LOG_CONFIG_URL, "<xml/>");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+    assert_eq!(
+        std::fs::read_to_string(log_config_path(&fixture.location_info)).unwrap(),
+        "<xml/>"
+    );
+}
+
+#[tokio::test]
+async fn should_download_only_the_log_config_when_the_rest_is_there() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, |_| {});
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+    result.unwrap();
+    // The same game version, as the metadata names it now.
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, with_log_config);
+    fixture.client.serve(LOG_CONFIG_URL, "<xml/>");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    result.unwrap();
+    assert_eq!(fixture.client.fetches_of(&client_url("1.12")), 1);
+    assert_eq!(fixture.client.fetches_of(LOG_CONFIG_URL), 1);
+    assert!(log_config_path(&fixture.location_info).exists());
+}
+
+#[tokio::test]
+async fn should_not_fetch_the_log_config_again_when_it_is_there() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, with_log_config);
+    fixture.client.serve(LOG_CONFIG_URL, "<xml/>");
+    download(&fixture.service, &version, None)
+        .await
+        .unwrap()
+        .0
+        .unwrap();
+
+    download(&fixture.service, &version, None)
+        .await
+        .unwrap()
+        .0
+        .unwrap();
+
+    assert_eq!(fixture.client.fetches_of(LOG_CONFIG_URL), 1);
+}
+
+#[tokio::test]
+async fn should_fail_the_install_when_the_log_config_cannot_be_downloaded() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, with_log_config);
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+    assert!(!log_config_path(&fixture.location_info).exists());
+}
+
+#[tokio::test]
+async fn should_refuse_a_log_config_whose_id_leaves_its_directory() {
+    let fixture = fixture();
+    let version = version_from(&fixture.client, "1.12", ASSET_HASH, |json| {
+        with_log_config(json);
+        json["logging"]["client"]["file"]["id"] = "../escape.xml".into();
+    });
+    fixture.client.serve(LOG_CONFIG_URL, "<xml/>");
+
+    let (result, _) = download(&fixture.service, &version, None).await.unwrap();
+
+    assert!(result.is_err(), "{result:?}");
+    assert!(
+        !fixture
+            .location_info
+            .log_configs_dir()
+            .parent()
+            .unwrap()
+            .join("escape.xml")
+            .exists()
+    );
 }
 
 async fn until_no_bars(storage: &InMemoryProgressBarStorage) {
