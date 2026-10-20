@@ -24,7 +24,7 @@ use crate::{
     },
 };
 
-use super::VersionProgress;
+use super::{VersionProgress, checked_get};
 
 const MINECRAFT_LIBRARIES_BASE_URL: &str = "https://libraries.minecraft.net/";
 
@@ -60,10 +60,16 @@ impl<RC: RequestClient> LibrariesService<RC> {
     async fn fetch_bytes(
         &self,
         url: &str,
+        sha1: Option<&str>,
         bar: Option<(&ProgressBarId, f64)>,
     ) -> Result<Bytes, IoError> {
+        let request = match sha1 {
+            Some(sha1) => checked_get(url, sha1),
+            // From a repository that names no digest.
+            None => Request::get(url),
+        };
         self.request_client
-            .fetch_bytes_with_progress(Request::get(url), bar)
+            .fetch_bytes_with_progress(request, bar)
             .await
             .map_err(get_network_error)
     }
@@ -224,12 +230,16 @@ impl<RC: RequestClient> LibrariesService<RC> {
                     Ok::<(), MinecraftDomainError>(())
                 },
                 async {
-                    if pending.natives
-                        && let Err(err) = self
-                            .download_native_library_files(library, version_info, java_arch, file.bar())
-                            .await
-                    {
-                        warn!("Failed to download native library {}: {:?}", library.name, err);
+                    // A failure is the install's: a game without its natives starts and
+                    // crashes, with a reason that says nothing of the download.
+                    if pending.natives {
+                        self.download_native_library_files(
+                            library,
+                            version_info,
+                            java_arch,
+                            file.bar(),
+                        )
+                        .await?;
                     }
 
                     Ok(())
@@ -255,7 +265,11 @@ impl<RC: RequestClient> LibrariesService<RC> {
             && !artifact.url.is_empty()
         {
             let bytes = self
-                .fetch_bytes(&artifact.url, bar.map(|bar| (bar, 1.0)))
+                .fetch_bytes(
+                    &artifact.url,
+                    Some(&artifact.sha1),
+                    bar.map(|bar| (bar, 1.0)),
+                )
                 .await?;
             write_replacing_async(library_path, bytes).await?;
             return Ok(());
@@ -280,7 +294,9 @@ impl<RC: RequestClient> LibrariesService<RC> {
 
         let url = format!("{base_url}{path_part}");
 
-        let bytes = self.fetch_bytes(&url, bar.map(|bar| (bar, 1.0))).await?;
+        let bytes = self
+            .fetch_bytes(&url, None, bar.map(|bar| (bar, 1.0)))
+            .await?;
         write_replacing_async(library_path, bytes).await?;
 
         Ok(())
@@ -408,7 +424,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         debug!("Downloading native library \"{}\"", &library.name);
 
         let bytes = self
-            .fetch_bytes(&native.url, bar.map(|bar| (bar, 0.0)))
+            .fetch_bytes(&native.url, Some(&native.sha1), bar.map(|bar| (bar, 0.0)))
             .await
             .map_err(|e| {
                 error!("Failed to fetch native library {}: {:?}", library.name, e);

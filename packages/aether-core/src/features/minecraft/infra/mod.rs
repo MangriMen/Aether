@@ -6,6 +6,7 @@ mod processors;
 pub use download::AssetsService;
 pub use download::ClientService;
 pub use download::LibrariesService;
+pub use download::LoggingService;
 pub use download::MinecraftDownloadResolver;
 pub use download::MinecraftDownloadService;
 pub use metadata::CachedMetadataStorage;

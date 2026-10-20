@@ -477,6 +477,16 @@ pub struct VersionInfo {
     pub processors: Option<Vec<Processor>>,
 }
 
+impl VersionInfo {
+    /// The log config of the client: the JVM argument template (with `${path}`) and the file to
+    /// download. Versions 1.7 to 1.18.0 rely on it to switch off the log4j lookups (`Log4Shell`).
+    pub fn client_log_config(&self) -> Option<(&str, &LogConfigDownload)> {
+        match self.logging.as_ref()?.get(&LoggingSide::Client)? {
+            LoggingConfiguration::Log4j2Xml { argument, file } => Some((argument, file)),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 /// An asset of the game
 pub struct Asset {

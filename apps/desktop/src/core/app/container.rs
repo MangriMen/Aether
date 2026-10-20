@@ -24,7 +24,7 @@ use aether_core::features::java::infra::{
 };
 use aether_core::features::minecraft::infra::{
     AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor, LibrariesService,
-    MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
+    LoggingService, MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
     minecraft_metadata_namespaces,
 };
 use aether_core::features::plugins::infra::{
@@ -282,11 +282,13 @@ pub async fn build_container(
         minecraft_cache.clone(),
     );
     let libraries_svc = LibrariesService::new(http_client.clone(), location_info.clone());
+    let logging_svc = LoggingService::new(http_client.clone(), location_info.clone());
     let minecraft_downloader: Arc<dyn aether_core::features::minecraft::MinecraftDownloader> =
         Arc::new(MinecraftDownloadService::new(
             client_svc,
             assets_svc,
             libraries_svc,
+            logging_svc,
             http_client.clone(),
             progress_service.clone(),
             minecraft_cache.clone(),
