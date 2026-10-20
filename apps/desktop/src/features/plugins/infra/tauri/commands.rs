@@ -88,18 +88,6 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Plugin
 
 #[tauri::command]
 #[specta::specta]
-async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
-    let container = container.0.clone();
-    Ok(container
-        .get_plugin_dto_use_case()
-        .execute(id)
-        .await
-        .map_err(aether_core::Error::from)?
-        .into())
-}
-
-#[tauri::command]
-#[specta::specta]
 async fn remove(
     id: String,
     request_id: RequestId,
@@ -300,22 +288,6 @@ async fn get_api_version(container: State<'_, ContainerState>) -> FrontendResult
         .execute()
         .await
         .map_err(aether_core::Error::from)?)
-}
-
-// ── Provider factory commands ──
-
-#[tauri::command]
-#[specta::specta]
-async fn get_available_providers(
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<PluginSourceTypeDto>> {
-    let container = container.0.clone();
-    Ok(container
-        .plugin_provider_factory()
-        .list_source_types()
-        .into_iter()
-        .map(Into::into)
-        .collect())
 }
 
 // ── Remote source commands ──
