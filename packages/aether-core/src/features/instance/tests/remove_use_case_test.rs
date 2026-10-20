@@ -419,3 +419,127 @@ async fn should_keep_records_when_the_instance_directory_cannot_be_removed() {
         assert_eq!(count, 1, "{table} must survive a failed directory removal");
     }
 }
+
+// ─── Icon assets ───────────────────────────────────────────────
+
+#[derive(Default)]
+struct RecordingAssets {
+    removed: std::sync::Mutex<Vec<String>>,
+}
+
+#[async_trait]
+impl crate::shared::cache::domain::AssetsStorage for RecordingAssets {
+    async fn import_file(
+        &self,
+        source: &std::path::Path,
+    ) -> Result<String, crate::shared::cache::domain::AssetError> {
+        Ok(format!(
+            "imported-{}",
+            source.file_name().unwrap().to_string_lossy()
+        ))
+    }
+
+    async fn remove(&self, id: &str) {
+        self.removed.lock().unwrap().push(id.to_owned());
+    }
+}
+
+async fn instance_with_icon(storage: &SqliteInstanceStorage, id: &str, icon: &str) {
+    let mut instance = create_instance(id);
+    instance.set_icon(Some(icon.to_owned()));
+    storage.upsert(&instance).await.unwrap();
+}
+
+async fn remove_with_assets(
+    storage: Arc<SqliteInstanceStorage>,
+    pool: &SqlitePool,
+    location_info: Arc<LocationInfo>,
+    assets: Arc<RecordingAssets>,
+    id: &str,
+) {
+    let use_case = RemoveInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(NoOpWatcher),
+        Arc::new(FsInstanceFileService::new(
+            location_info,
+            crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
+        )),
+        Arc::new(SqlitePackStorage::new(pool.clone())),
+        Arc::new(InstanceLocks::new()),
+    )
+    .with_icon_reaper(crate::features::instance::IconAssetReaper::new(
+        storage, assets,
+    ));
+    use_case
+        .execute(InstanceId::try_from(id).unwrap())
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn should_delete_the_icon_asset_when_its_last_instance_is_removed() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    instance_with_icon(&storage, "one", "icon.png").await;
+    let assets = Arc::new(RecordingAssets::default());
+
+    remove_with_assets(storage, &pool, location_info, assets.clone(), "one").await;
+
+    assert_eq!(*assets.removed.lock().unwrap(), ["icon.png"]);
+}
+
+#[tokio::test]
+async fn should_keep_the_icon_asset_when_another_instance_uses_it() {
+    let (_temp, location_info, pool) = create_test_infrastructure().await;
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    instance_with_icon(&storage, "one", "icon.png").await;
+    instance_with_icon(&storage, "two", "icon.png").await;
+    let assets = Arc::new(RecordingAssets::default());
+
+    remove_with_assets(storage, &pool, location_info, assets.clone(), "one").await;
+
+    assert!(assets.removed.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn should_delete_the_old_icon_asset_when_the_icon_is_replaced() {
+    use crate::features::instance::{EditInstanceIcon, EditInstanceIconUseCase};
+
+    let (_temp, _location_info, pool) = create_test_infrastructure().await;
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    instance_with_icon(&storage, "one", "old.png").await;
+    let assets = Arc::new(RecordingAssets::default());
+    let use_case = EditInstanceIconUseCase::new(storage.clone(), assets.clone());
+
+    let updated = use_case
+        .execute(EditInstanceIcon {
+            instance_id: InstanceId::try_from("one").unwrap(),
+            icon_path: Some(Some("C:/pics/new.png".to_owned())),
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(updated.icon_path(), Some("imported-new.png"));
+    assert_eq!(*assets.removed.lock().unwrap(), ["old.png"]);
+}
+
+#[tokio::test]
+async fn should_keep_the_icon_asset_when_the_same_icon_is_set_again() {
+    use crate::features::instance::{EditInstanceIcon, EditInstanceIconUseCase};
+
+    let (_temp, _location_info, pool) = create_test_infrastructure().await;
+    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
+    instance_with_icon(&storage, "one", "imported-same.png").await;
+    let assets = Arc::new(RecordingAssets::default());
+    let use_case = EditInstanceIconUseCase::new(storage.clone(), assets.clone());
+
+    use_case
+        .execute(EditInstanceIcon {
+            instance_id: InstanceId::try_from("one").unwrap(),
+            icon_path: Some(Some("C:/pics/same.png".to_owned())),
+        })
+        .await
+        .unwrap();
+
+    assert!(assets.removed.lock().unwrap().is_empty());
+}
