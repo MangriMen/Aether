@@ -142,6 +142,17 @@ impl MinecraftHealthService for MinecraftFileHealthService {
             return Ok(false);
         }
 
+        // --- Step 8: Check the log config the version names ---
+        // Installs from before it was downloaded are brought up to date this way.
+        if let Some((_, file)) = version_info.client_log_config()
+            && !self
+                .location_info
+                .log_config_path(&file.id)
+                .is_some_and(|path| path.exists())
+        {
+            return Ok(false);
+        }
+
         Ok(true)
     }
 }

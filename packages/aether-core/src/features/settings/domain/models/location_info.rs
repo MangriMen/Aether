@@ -84,6 +84,21 @@ impl LocationInfo {
         self.assets_dir().join("indexes")
     }
 
+    /// Get the directory of the log configs the game versions name
+    #[inline]
+    pub fn log_configs_dir(&self) -> PathBuf {
+        self.assets_dir().join("log_configs")
+    }
+
+    /// Where the log config `id` of a version goes. `None` for an id that is not a plain file
+    /// name: it comes from the version's metadata and must not point outside the directory.
+    pub fn log_config_path(&self, id: &str) -> Option<PathBuf> {
+        let is_plain = !id.is_empty()
+            && Path::new(id).file_name().is_some_and(|name| name == id)
+            && !id.contains('\\');
+        is_plain.then(|| self.log_configs_dir().join(id))
+    }
+
     /// Get the assets objects directory
     #[inline]
     pub fn objects_dir(&self) -> PathBuf {

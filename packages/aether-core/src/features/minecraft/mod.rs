@@ -42,3 +42,4 @@ pub use app::get_class_paths;
 pub use app::get_class_paths_jar;
 pub use app::get_jvm_arguments;
 pub use app::get_lib_path;
+pub use app::get_logging_argument;

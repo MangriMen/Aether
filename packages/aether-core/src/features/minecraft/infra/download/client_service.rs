@@ -7,11 +7,11 @@ use crate::{
         events::{ProgressBarId, ProgressService},
         minecraft::{MinecraftDomainError, vanilla},
     },
-    shared::request_client::{Request, RequestClient},
+    shared::request_client::RequestClient,
     shared::{cache::domain::FileStore, cache::infra::InfinityCachedResource, io::domain::IoError},
 };
 
-use super::{VersionProgress, version_jar_key};
+use super::{VersionProgress, checked_get, version_jar_key};
 
 pub struct ClientService<RC: RequestClient, FS: FileStore> {
     request_client: Arc<RC>,
@@ -49,7 +49,7 @@ impl<RC: RequestClient, FS: FileStore> ClientService<RC, FS> {
         Ok(self
             .request_client
             .fetch_bytes_with_progress(
-                Request::get(&client_download.url),
+                checked_get(&client_download.url, &client_download.sha1),
                 bar.map(|bar| (bar, 1.0)),
             )
             .await
