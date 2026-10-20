@@ -414,7 +414,10 @@ impl PluginStorage for FsPluginStorage {
             return Err(err.into());
         }
 
-        if let Err(err) = rename(&target_dir, &replaced_dir).await {
+        // Nothing installed yet: the plugin is simply put in place, with nothing to keep aside.
+        if target_dir.exists()
+            && let Err(err) = rename(&target_dir, &replaced_dir).await
+        {
             remove_dir_if_present(&staged_dir).await.ok();
             return Err(err.into());
         }
