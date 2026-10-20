@@ -3,8 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use async_trait::async_trait;
 
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage,
+    PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
+    PluginStorage, PluginSyncService, PluginVerificationStorage,
 };
 
 use super::ports::ImportPluginsUseCasePort;
@@ -15,7 +15,13 @@ use super::ports::ImportPluginsUseCasePort;
 /// loses that provider's records with its old bytes — the sha256 recorded for them (the loader
 /// would refuse the new wasm against it) and its source (an update would replace the local build
 /// with the provider's). Its settings stay.
+///
+/// An installed plugin is replaced as a whole, as an update does, not merged with: files the
+/// new archive does not have must not stay behind to run with the new build. The sync that
+/// follows loads the new build of a plugin that was running.
 pub(crate) struct ImportPluginsUseCase {
+    plugin_registry: Arc<PluginRegistry>,
+    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
     plugin_extractor: Arc<dyn PluginExtractor>,
     plugin_storage: Arc<dyn PluginStorage>,
     plugin_source_storage: Arc<dyn PluginSourceStorage>,
@@ -25,6 +31,8 @@ pub(crate) struct ImportPluginsUseCase {
 
 impl ImportPluginsUseCase {
     pub(crate) fn new(
+        plugin_registry: Arc<PluginRegistry>,
+        plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
         plugin_extractor: Arc<dyn PluginExtractor>,
         plugin_storage: Arc<dyn PluginStorage>,
         plugin_source_storage: Arc<dyn PluginSourceStorage>,
@@ -32,6 +40,8 @@ impl ImportPluginsUseCase {
         sync_plugins_service: Arc<dyn PluginSyncService>,
     ) -> Self {
         Self {
+            plugin_registry,
+            plugin_settings_storage,
             plugin_extractor,
             plugin_storage,
             plugin_source_storage,
@@ -67,7 +77,32 @@ impl ImportPluginsUseCase {
         // the copy fail, the old bytes are left unverified — loaded with a warning, not refused.
         self.plugin_verification_storage.remove(&plugin_id).await?;
         self.plugin_source_storage.remove(&plugin_id).await?;
-        self.plugin_storage.add(extracted_plugin).await?;
+
+        // The settings live in the plugin's directory, which the replacement swaps out. Held
+        // until they are back, so that a change made meanwhile is neither saved over nor lost.
+        let _settings_lock = self.plugin_registry.lock_settings(&plugin_id).await;
+        let settings = self.plugin_settings_storage.get(&plugin_id).await?;
+
+        self.plugin_storage.replace(extracted_plugin).await?;
+
+        if let Some(settings) = settings
+            && let Err(err) = self
+                .plugin_settings_storage
+                .upsert(&plugin_id, &settings)
+                .await
+        {
+            if let Err(restore_err) = self.plugin_storage.restore_replaced(&plugin_id).await {
+                tracing::error!(
+                    "Plugin '{plugin_id}' could not be put back after a failed import: \
+                     {restore_err}"
+                );
+            }
+            return Err(err);
+        }
+
+        if let Err(err) = self.plugin_storage.discard_replaced(&plugin_id).await {
+            tracing::warn!("Previous version of plugin '{plugin_id}' was left behind: {err}");
+        }
         Ok(())
     }
 }
