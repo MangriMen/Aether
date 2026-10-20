@@ -241,6 +241,8 @@ impl InstanceStorage for SqliteInstanceStorage {
     }
 
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        // Serialized with writes, so an update in flight cannot re-insert the removed row.
+        let _guard = self.write_lock.lock().await;
         sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
             .execute(&self.pool)
             .await

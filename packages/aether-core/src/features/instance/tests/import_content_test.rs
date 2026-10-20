@@ -194,6 +194,24 @@ async fn should_refuse_a_batch_when_two_files_share_a_name() {
 }
 
 #[tokio::test]
+async fn should_refuse_a_batch_when_names_differ_only_in_case_on_a_case_insensitive_system() {
+    let setup = setup().await;
+    let first = setup.source("Mod.jar", false).await;
+    let second = setup.source("mod.jar", true).await;
+
+    let result = setup.import(vec![first, second]).await;
+
+    if cfg!(any(windows, target_os = "macos")) {
+        assert!(matches!(
+            result,
+            Err(InstanceError::ContentDuplication { .. })
+        ));
+    } else {
+        result.unwrap();
+    }
+}
+
+#[tokio::test]
 async fn should_refuse_the_import_when_the_file_exists_disabled() {
     let setup = setup().await;
     tokio::fs::write(setup.mods.join("a.jar.disabled"), b"old")

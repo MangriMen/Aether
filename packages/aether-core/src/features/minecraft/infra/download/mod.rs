@@ -27,7 +27,7 @@ use crate::shared::{hash::FileHash, request_client::Request};
 /// truncated download is refused instead of being kept as the file. A digest that is none
 /// (modded versions' libraries often carry an empty one) leaves the request unchecked.
 fn checked_get(url: &str, sha1: &str) -> Request {
-    let request = Request::get(url);
+    let request = Request::get(url).as_download();
     match FileHash::parse("sha1", sha1) {
         Ok(hash) => request.with_hash(hash),
         Err(_) => request,

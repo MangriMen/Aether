@@ -13,6 +13,8 @@ pub struct Request {
     /// How long the whole request may take, body included, before it fails. `None` — no
     /// limit of its own, only what the client has.
     pub timeout: Option<Duration>,
+    /// A file download, bounded by the download limit instead of the metadata one.
+    pub bulk: bool,
 }
 
 impl Request {
@@ -24,6 +26,7 @@ impl Request {
             hash: None,
             body: None,
             timeout: None,
+            bulk: false,
         }
     }
 
@@ -50,6 +53,12 @@ impl Request {
     #[must_use]
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    #[must_use]
+    pub fn as_download(mut self) -> Self {
+        self.bulk = true;
         self
     }
 

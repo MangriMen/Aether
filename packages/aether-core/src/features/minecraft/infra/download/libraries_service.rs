@@ -66,7 +66,7 @@ impl<RC: RequestClient> LibrariesService<RC> {
         let request = match sha1 {
             Some(sha1) => checked_get(url, sha1),
             // From a repository that names no digest.
-            None => Request::get(url),
+            None => Request::get(url).as_download(),
         };
         self.request_client
             .fetch_bytes_with_progress(request, bar)

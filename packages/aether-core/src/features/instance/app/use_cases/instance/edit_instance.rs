@@ -53,7 +53,7 @@ fn validate_edit(edit: &EditInstance) -> Result<(), InstanceError> {
 }
 
 fn validate_name(name: &str) -> Result<(), InstanceError> {
-    if name.is_empty() {
+    if name.trim().is_empty() {
         return Err(InstanceError::ValidationError {
             field: InstanceField::Name,
             reason: InstanceValidationErrorReason::CannotBeEmpty,
