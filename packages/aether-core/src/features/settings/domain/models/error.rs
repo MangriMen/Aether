@@ -8,4 +8,7 @@ pub enum SettingsError {
 
     #[error("Invalid content provider choice for platform '{platform}': {reason}")]
     InvalidPlatformProvider { platform: String, reason: String },
+
+    #[error("The number of concurrent downloads must be at least 1")]
+    InvalidMaxConcurrentDownloads,
 }
