@@ -9,9 +9,13 @@ pub trait InstanceStorageExt: InstanceStorage {
     where
         F: FnOnce(&mut Instance) -> Result<(), InstanceError> + Send,
     {
-        let mut instance = self.get(id).await?;
-        update_fn(&mut instance)?;
-        self.upsert(&instance).await
+        let mut update_fn = Some(update_fn);
+        self.update(id, &mut |instance| match update_fn.take() {
+            Some(f) => f(instance).map(|()| true),
+            None => Ok(false),
+        })
+        .await
+        .map(|_| ())
     }
 }
 

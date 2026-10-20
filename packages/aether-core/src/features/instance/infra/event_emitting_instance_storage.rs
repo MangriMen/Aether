@@ -42,6 +42,32 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
         Ok(())
     }
 
+    async fn update(
+        &self,
+        id: &InstanceId,
+        update_fn: &mut (dyn for<'i> FnMut(&'i mut Instance) -> Result<bool, InstanceError> + Send),
+    ) -> Result<Instance, InstanceError> {
+        let mut changed = false;
+        let instance = self
+            .instance_storage
+            .update(id, &mut |instance| {
+                changed = update_fn(instance)?;
+                Ok(changed)
+            })
+            .await?;
+
+        if changed {
+            self.event_emitter
+                .emit_safe(InstanceEvent {
+                    event: InstanceEventType::Edited,
+                    instance_id: id.clone(),
+                })
+                .await;
+        }
+
+        Ok(instance)
+    }
+
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         self.instance_storage.remove(id).await?;
 

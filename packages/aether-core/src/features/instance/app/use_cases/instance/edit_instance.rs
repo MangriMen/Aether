@@ -28,14 +28,19 @@ impl EditInstanceUseCasePort for EditInstanceUseCase {
     ) -> Result<Instance, InstanceError> {
         validate_edit(&edit_instance)?;
 
-        let mut instance = self.instance_storage.get(&instance_id).await?;
-
-        if edit_instance.apply_to(&mut instance)? {
-            instance.modified = Utc::now();
-            self.instance_storage.upsert(&instance).await?;
-        }
-
-        Ok(instance)
+        let mut edit_instance = Some(edit_instance);
+        self.instance_storage
+            .update(&instance_id, &mut |instance| {
+                let Some(edit) = edit_instance.take() else {
+                    return Ok(false);
+                };
+                let changed = edit.apply_to(instance)?;
+                if changed {
+                    instance.modified = Utc::now();
+                }
+                Ok(changed)
+            })
+            .await
     }
 }
 
