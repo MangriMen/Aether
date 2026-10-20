@@ -348,6 +348,14 @@ pub async fn build_container(
     ));
     let assets_storage: Arc<dyn AssetsStorage> = Arc::new(FsAssetsStorage::new(file_cache_assets));
 
+    // The previous run may have died mid-install; do it before the UI can list instances.
+    if let Err(err) =
+        aether_core::features::instance::reset_stuck_install_stages(instance_storage.as_ref())
+            .await
+    {
+        log::warn!("Failed to reset stuck install stages: {err}");
+    }
+
     // ── Assemble container ──────────────────────────────────────────
     let container = AetherContainer::new(AetherContainerParams {
         storage: StorageParams {

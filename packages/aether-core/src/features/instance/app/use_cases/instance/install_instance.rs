@@ -63,11 +63,16 @@ impl InstallInstanceUseCase {
     async fn handle_failed_installation(
         &self,
         instance: &mut Instance,
+        previous_stage: InstanceInstallStage,
     ) -> Result<(), InstanceError> {
-        if instance.install_stage != InstanceInstallStage::Installed {
-            instance.install_stage = InstanceInstallStage::NotInstalled;
-            self.instance_storage.upsert(instance).await?;
-        }
+        // `Installing` was written before the attempt, so a failed reinstall of a working
+        // instance must restore `Installed` instead of demoting it.
+        instance.install_stage = if previous_stage == InstanceInstallStage::Installed {
+            InstanceInstallStage::Installed
+        } else {
+            InstanceInstallStage::NotInstalled
+        };
+        self.instance_storage.upsert(instance).await?;
         Ok(())
     }
 
@@ -78,7 +83,8 @@ impl InstallInstanceUseCase {
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
         let mut instance = self.instance_storage.get(&instance_id).await?;
-        let pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
+        let previous_stage = instance.install_stage;
+        let pack_pending = previous_stage == InstanceInstallStage::PackInstalling;
 
         instance.install_stage = InstanceInstallStage::Installing;
         self.instance_storage.upsert(&instance).await?;
@@ -132,7 +138,10 @@ impl InstallInstanceUseCase {
                 self.handle_success_installation(&mut instance, pack_pending)
                     .await
             }
-            Err(_) => self.handle_failed_installation(&mut instance).await,
+            Err(_) => {
+                self.handle_failed_installation(&mut instance, previous_stage)
+                    .await
+            }
         }?;
 
         if let Some(loading_bar) = loading_bar {

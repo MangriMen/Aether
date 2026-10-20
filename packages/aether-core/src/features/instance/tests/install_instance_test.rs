@@ -206,6 +206,66 @@ async fn should_become_installed_when_the_pack_info_was_not_created_for_a_pack()
     assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
 }
 
+/// A failed reinstall (health check, game change) must not demote a working instance.
+#[tokio::test]
+async fn should_stay_installed_when_reinstalling_a_working_instance_fails() {
+    let (instance, ok) = run_install(None, InstanceInstallStage::Installed, true).await;
+    assert!(!ok);
+    assert_eq!(instance.install_stage, InstanceInstallStage::Installed);
+}
+
+#[tokio::test]
+async fn should_become_not_installed_when_the_first_install_fails() {
+    let (instance, ok) = run_install(None, InstanceInstallStage::NotInstalled, true).await;
+    assert!(!ok);
+    assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+}
+
+#[tokio::test]
+async fn should_reset_only_transient_stages_on_startup_sweep() {
+    let make = |name: &str, stage| {
+        let mut i = InstanceBuilder::new(
+            InstanceId::try_from(name).unwrap(),
+            name.to_owned(),
+            "1.20.1".to_owned(),
+            ModLoader::Vanilla,
+        )
+        .build();
+        i.install_stage = stage;
+        i
+    };
+    let storage = MemStorage {
+        instances: Mutex::new(vec![
+            make("a", InstanceInstallStage::Installing),
+            make("b", InstanceInstallStage::PackInstalling),
+            make("c", InstanceInstallStage::Installed),
+            make("d", InstanceInstallStage::NotInstalled),
+        ]),
+    };
+
+    let reset = crate::features::instance::reset_stuck_install_stages(&storage)
+        .await
+        .unwrap();
+
+    assert_eq!(reset, 2);
+    let stages: Vec<_> = storage
+        .instances
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|i| i.install_stage)
+        .collect();
+    assert_eq!(
+        stages,
+        [
+            InstanceInstallStage::NotInstalled,
+            InstanceInstallStage::NotInstalled,
+            InstanceInstallStage::Installed,
+            InstanceInstallStage::NotInstalled,
+        ]
+    );
+}
+
 struct NoEmitter;
 
 #[async_trait]
