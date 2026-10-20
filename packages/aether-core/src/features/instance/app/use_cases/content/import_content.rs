@@ -16,7 +16,10 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::{hash::infra::sha1_async, io::infra::read_async},
+    shared::{
+        hash::infra::sha1_async,
+        io::infra::{canonicalize, read_async},
+    },
 };
 
 pub struct ImportContent {
@@ -109,14 +112,17 @@ impl ImportContentUseCase {
         // on Windows would record a file the listing never finds, and import it again as new.
         let content_path = format!("{content_folder}/{file_name}");
 
-        let absolute_content_path = self
-            .location_info
-            .instance_dir(instance_id)
-            .join(&content_path);
+        let instance_dir = self.location_info.instance_dir(instance_id);
+        Self::ensure_folder_inside_instance(instance_id, &instance_dir, content_folder)?;
+
+        let absolute_content_path = instance_dir.join(&content_path);
         let disabled_path =
             absolute_content_path.with_file_name(format!("{file_name}{DISABLED_SUFFIX}"));
 
-        if absolute_content_path.exists() || disabled_path.exists() {
+        // `symlink_metadata`: a dangling link is still in the way of a copy, which follows it.
+        if absolute_content_path.symlink_metadata().is_ok()
+            || disabled_path.symlink_metadata().is_ok()
+        {
             return Err(InstanceError::ContentDuplication {
                 content_path: content_path.clone(),
             });
@@ -145,6 +151,27 @@ impl ImportContentUseCase {
             content_path,
             PackFile::from_hash(file_name.to_owned(), hash),
         ))
+    }
+
+    /// A `mods` folder that is a link to elsewhere would take the copy out of the instance.
+    fn ensure_folder_inside_instance(
+        instance_id: &InstanceId,
+        instance_dir: &Path,
+        content_folder: &str,
+    ) -> Result<(), InstanceError> {
+        let escapes = || InstanceError::PathEscapesInstance {
+            path: content_folder.to_owned(),
+            instance_id: instance_id.to_string(),
+        };
+        let root =
+            canonicalize(instance_dir).map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let folder = canonicalize(instance_dir.join(content_folder))
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        if folder.starts_with(&root) {
+            Ok(())
+        } else {
+            Err(escapes())
+        }
     }
 
     async fn copy_import_files(

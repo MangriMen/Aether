@@ -292,3 +292,22 @@ async fn should_leave_no_files_when_the_copy_fails() {
     tokio::fs::create_dir_all(&setup.mods).await.unwrap();
     setup.import(vec![a]).await.unwrap();
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn should_refuse_import_when_the_content_folder_is_a_link_out_of_the_instance() {
+    let setup = setup().await;
+    let outside = setup.sources.join("outside");
+    tokio::fs::create_dir_all(&outside).await.unwrap();
+    tokio::fs::remove_dir(&setup.mods).await.unwrap();
+    std::os::unix::fs::symlink(&outside, &setup.mods).unwrap();
+    let a = setup.source("a.jar", false).await;
+
+    let result = setup.import(vec![a]).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::PathEscapesInstance { .. })
+    ));
+    assert!(!outside.join("a.jar").exists());
+}
