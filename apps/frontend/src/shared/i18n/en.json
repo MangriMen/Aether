@@ -283,6 +283,8 @@
     "clearFinished": "Clear finished",
     "completedChildren": "Completed: {{count}}",
     "toggleDetails": "Show details",
+    "gameCrashed": "The game exited with an error",
+    "gameCrashedCode": "The game exited with an error (code {{code}})",
     "gameInstalling": "Installing game files",
     "installFailed": "Installation failed",
     "installing": "Installing {{name}}",

@@ -14,6 +14,8 @@ pub struct ProcessEventDto {
     pub process_id: Uuid,
     pub event: ProcessEventTypeDto,
     pub message: String,
+    pub exit_code: Option<i32>,
+    pub crashed: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Type)]
@@ -31,6 +33,8 @@ impl From<ProcessEvent> for ProcessEventDto {
             process_id: value.process_id,
             event: value.event.into(),
             message: value.message,
+            exit_code: value.exit_code,
+            crashed: value.crashed,
         }
     }
 }
