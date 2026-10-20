@@ -16,6 +16,6 @@ fn main() {
     attach_to_parent_console();
 
     if let Err(e) = aether_lib::core::launch_app() {
-        eprintln!("Failed to launch app: {e}");
+        aether_lib::core::exit_with_error(&format!("Failed to launch Aether: {e}"));
     }
 }
