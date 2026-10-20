@@ -72,4 +72,6 @@ impl<T> CachedValue<T> {
 pub enum AssetError {
     #[error("Source read error: {0}")]
     ReadSource(String),
+    #[error("Remove error: {0}")]
+    Remove(String),
 }

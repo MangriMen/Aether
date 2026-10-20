@@ -19,7 +19,7 @@ use crate::features::{
         CreateInstanceUseCase, CreateInstanceUseCasePort, EditInstanceIconUseCase,
         EditInstanceIconUseCasePort, EditInstanceUseCase, EditInstanceUseCasePort,
         GetContentUseCase, GetContentUseCasePort, GetInstanceUseCase, GetInstanceUseCasePort,
-        ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
+        IconAssetReaper, ImportContentUseCase, ImportContentUseCasePort, ImportInstanceUseCase,
         ImportInstanceUseCasePort, Importer, InstallContentUseCase, InstallContentUseCasePort,
         InstallInstanceUseCase, InstallPlanExecutor, InstallPlanExecutorPort, InstanceFileService,
         InstanceInstallService, InstanceLaunchService, InstanceLocks, InstanceStorage,
@@ -96,6 +96,7 @@ struct UseCaseCache {
     list_instances_uc: OnceLock<Arc<dyn crate::features::instance::ListInstancesUseCasePort>>,
     get_instance_uc: OnceLock<Arc<dyn crate::features::instance::GetInstanceUseCasePort>>,
     edit_instance_uc: OnceLock<Arc<dyn crate::features::instance::EditInstanceUseCasePort>>,
+    icon_asset_reaper: OnceLock<IconAssetReaper>,
     edit_instance_icon_uc:
         OnceLock<Arc<dyn crate::features::instance::EditInstanceIconUseCasePort>>,
     remove_instance_uc: OnceLock<Arc<dyn crate::features::instance::RemoveInstanceUseCasePort>>,
@@ -117,6 +118,7 @@ impl UseCaseCache {
             list_instances_uc: OnceLock::new(),
             get_instance_uc: OnceLock::new(),
             edit_instance_uc: OnceLock::new(),
+            icon_asset_reaper: OnceLock::new(),
             edit_instance_icon_uc: OnceLock::new(),
             remove_instance_uc: OnceLock::new(),
             start_process_uc: OnceLock::new(),
@@ -287,6 +289,18 @@ impl AetherContainer {
     }
     pub fn instance_watcher_service(&self) -> Arc<dyn InstanceWatcherService> {
         self.params.instance_watcher_service.clone()
+    }
+    /// One for the whole app: its lock is what keeps a release from deleting a reused icon.
+    pub fn icon_asset_reaper(&self) -> IconAssetReaper {
+        self.cache
+            .icon_asset_reaper
+            .get_or_init(|| {
+                IconAssetReaper::new(
+                    self.storage().instance_storage.clone(),
+                    self.storage().assets_storage.clone(),
+                )
+            })
+            .clone()
     }
     pub fn importers_registry(&self) -> Arc<dyn CapabilityRegistry<Arc<dyn Importer>>> {
         self.params.importers_registry.clone()
@@ -632,7 +646,7 @@ impl InstanceCrudPort for AetherContainer {
             self.storage().instance_file_service.clone(),
             self.event_emitter().clone(),
             self.instance_watcher_service().clone(),
-            self.storage().assets_storage.clone(),
+            self.icon_asset_reaper(),
         ))
     }
     fn get_instance_use_case(&self) -> Arc<dyn GetInstanceUseCasePort> {
@@ -671,7 +685,7 @@ impl InstanceCrudPort for AetherContainer {
             .get_or_init(|| {
                 Arc::new(EditInstanceIconUseCase::new(
                     self.storage().instance_storage.clone(),
-                    self.storage().assets_storage.clone(),
+                    self.icon_asset_reaper(),
                 ))
             })
             .clone()
@@ -686,6 +700,7 @@ impl InstanceCrudPort for AetherContainer {
                     self.storage().instance_file_service.clone(),
                     self.storage().pack_storage.clone(),
                     self.instance_locks.clone(),
+                    self.icon_asset_reaper(),
                 ))
             })
             .clone()

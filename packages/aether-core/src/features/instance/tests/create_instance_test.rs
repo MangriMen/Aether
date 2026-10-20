@@ -5,6 +5,7 @@ use tempfile::TempDir;
 
 use crate::features::{
     events::{Event, EventEmitter, EventError, ProgressBarId, SharedEventEmitter},
+    instance::IconAssetReaper,
     instance::{
         CreateInstanceUseCase, Instance, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceStorage, InstanceWatcherService, NewInstance,
@@ -252,13 +253,13 @@ fn make_use_case(
     emitter: SharedEventEmitter,
 ) -> CreateInstanceUseCase {
     CreateInstanceUseCase::new(
-        storage,
+        storage.clone(),
         loader_service,
         install_service,
         file_service,
         emitter,
         watcher,
-        Arc::new(FakeAssets),
+        IconAssetReaper::new(storage, Arc::new(FakeAssets)),
     )
 }
 
@@ -273,6 +274,10 @@ impl AssetsStorage for FakeAssets {
         }
         let name = source.file_name().unwrap().to_string_lossy();
         Ok(format!("asset-{name}"))
+    }
+
+    async fn remove(&self, _id: &str) -> Result<(), AssetError> {
+        Ok(())
     }
 }
 

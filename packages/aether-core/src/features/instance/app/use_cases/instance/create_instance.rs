@@ -6,15 +6,15 @@ use log::{error, info};
 use crate::features::{
     events::{EventEmitterExt, ProgressBarId, SharedEventEmitter, WarningEvent},
     instance::{
-        Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
-        InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
-        NewInstance, app::ports::CreateInstanceUseCasePort,
+        IconAssetGuard, IconAssetReaper, Instance, InstanceBuilder, InstanceError,
+        InstanceFileService, InstanceId, InstanceInstallService, InstanceInstallStage,
+        InstanceStorage, InstanceWatcherService, NewInstance,
+        app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
     },
 };
-use crate::shared::cache::domain::AssetsStorage;
 
 pub struct CreateInstanceUseCase {
     instance_storage: Arc<dyn InstanceStorage>,
@@ -23,7 +23,7 @@ pub struct CreateInstanceUseCase {
     instance_file_service: Arc<dyn InstanceFileService>,
     event_emitter: SharedEventEmitter,
     instance_watcher_service: Arc<dyn InstanceWatcherService>,
-    assets_storage: Arc<dyn AssetsStorage>,
+    icon_reaper: IconAssetReaper,
 }
 
 impl CreateInstanceUseCase {
@@ -34,7 +34,7 @@ impl CreateInstanceUseCase {
         instance_file_service: Arc<dyn InstanceFileService>,
         event_emitter: SharedEventEmitter,
         instance_watcher_service: Arc<dyn InstanceWatcherService>,
-        assets_storage: Arc<dyn AssetsStorage>,
+        icon_reaper: IconAssetReaper,
     ) -> Self {
         Self {
             instance_storage,
@@ -43,7 +43,7 @@ impl CreateInstanceUseCase {
             instance_file_service,
             event_emitter,
             instance_watcher_service,
-            assets_storage,
+            icon_reaper,
         }
     }
 
@@ -51,12 +51,16 @@ impl CreateInstanceUseCase {
     /// the asset store, the only thing the UI can show. A host path kept as it is would read as
     /// a missing asset. An icon that cannot be read is dropped with a warning: it is no reason
     /// to refuse the instance.
-    async fn import_icon(&self, icon_path: Option<String>) -> Option<String> {
+    async fn import_icon(
+        &self,
+        guard: &IconAssetGuard<'_>,
+        icon_path: Option<String>,
+    ) -> Option<String> {
         let icon_path = icon_path?;
 
         match self
-            .assets_storage
-            .import_file(std::path::Path::new(&icon_path))
+            .icon_reaper
+            .import_file(guard, std::path::Path::new(&icon_path))
             .await
         {
             Ok(asset_id) => Some(asset_id),
@@ -77,8 +81,12 @@ impl CreateInstanceUseCase {
         instance: &Instance,
         skip_install_instance: Option<bool>,
         parent_bar: Option<&ProgressBarId>,
+        icon_guard: IconAssetGuard<'_>,
     ) -> Result<InstanceId, InstanceError> {
-        self.instance_storage.upsert(instance).await?;
+        let stored = self.instance_storage.upsert(instance).await;
+        // The instance holds the icon from now on.
+        drop(icon_guard);
+        stored?;
 
         self.instance_watcher_service
             .watch_instance(instance.id())
@@ -147,7 +155,8 @@ impl CreateInstanceUseCase {
         )
         .await?;
 
-        let icon = self.import_icon(icon_path).await;
+        let icon_guard = self.icon_reaper.hold().await;
+        let icon = self.import_icon(&icon_guard, icon_path).await;
 
         let (instance_id, instance_dir) = self
             .instance_file_service
@@ -169,7 +178,7 @@ impl CreateInstanceUseCase {
         instance.install_stage = initial_stage;
 
         let result = self
-            .setup_instance(&instance, skip_install_instance, parent_bar)
+            .setup_instance(&instance, skip_install_instance, parent_bar, icon_guard)
             .await;
 
         // Full rollback on any failure: unwatch, remove from storage, delete directory
@@ -201,6 +210,9 @@ impl CreateInstanceUseCase {
                 .await
             {
                 error!("Failed to remove instance directory during rollback: {rmdir_err}");
+            }
+            if let Some(icon) = instance.icon_path() {
+                self.icon_reaper.release(icon).await;
             }
         }
 

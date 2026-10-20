@@ -112,4 +112,15 @@ impl<R: CachePathResolver> FileStore for FileCache<R> {
             debug!("Failed to remove cache file {:?}. {:?}", path, err);
         }
     }
+
+    async fn delete(&self, key: &CacheKey<()>) -> std::io::Result<()> {
+        let Some(path) = self.path(key) else {
+            return Ok(());
+        };
+
+        match tokio::fs::remove_file(&path).await {
+            Err(err) if err.kind() != std::io::ErrorKind::NotFound => Err(err),
+            _ => Ok(()),
+        }
+    }
 }

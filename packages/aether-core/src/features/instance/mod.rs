@@ -50,7 +50,7 @@ pub use app::{
 };
 
 // Used inside the crate only.
-pub use app::ContentIconHousekeeping;
 pub(crate) use app::ContentMetadataService;
 #[cfg(test)]
 pub(crate) use app::{CONTENT_AUTHOR_TTL, CONTENT_METADATA_TTL, CONTENT_VERSION_METADATA_TTL};
+pub use app::{ContentIconHousekeeping, IconAssetGuard, IconAssetReaper};
