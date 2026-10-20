@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{process::ExitStatus, sync::Arc};
 
 use uuid::Uuid;
 
@@ -13,6 +13,11 @@ use crate::{
 };
 
 use super::TrackProcessParams;
+
+/// A failed exit the user did not ask for. An unknown exit is not reported as a crash.
+fn is_crash(status: Option<ExitStatus>, killed: bool) -> bool {
+    !killed && status.is_some_and(|s| !s.success())
+}
 
 pub struct ManageProcessParams {
     pub process_id: Uuid,
@@ -44,6 +49,7 @@ impl ManageProcessService for ManageProcessUseCase {
             })
             .await;
 
+        let killed = self.process_storage.was_killed(process_id).await;
         self.process_storage.remove(process_id).await?;
 
         self.event_emitter
@@ -52,10 +58,12 @@ impl ManageProcessService for ManageProcessUseCase {
                 process_id,
                 event: ProcessEventType::Finished,
                 message: "Exited process".to_string(),
+                exit_code: mc_exit_status.and_then(|s| s.code()),
+                crashed: is_crash(mc_exit_status, killed),
             })
             .await;
 
-        if mc_exit_status.success() && !post_exit_command.is_empty() {
+        if mc_exit_status.is_some_and(|s| s.success()) && !post_exit_command.is_empty() {
             self.run_post_exit(&post_exit_command, &instance_id)?;
         }
 
@@ -87,5 +95,41 @@ impl ManageProcessUseCase {
                 .map_err(|e| IoError::with_path(e, instance_dir))?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn status(code: i32) -> ExitStatus {
+        #[cfg(windows)]
+        {
+            std::os::windows::process::ExitStatusExt::from_raw(code.cast_unsigned())
+        }
+        #[cfg(unix)]
+        {
+            std::os::unix::process::ExitStatusExt::from_raw(code << 8)
+        }
+    }
+
+    #[test]
+    fn should_report_nonzero_exit_as_crash() {
+        assert!(is_crash(Some(status(1)), false));
+    }
+
+    #[test]
+    fn should_not_report_clean_exit_as_crash() {
+        assert!(!is_crash(Some(status(0)), false));
+    }
+
+    #[test]
+    fn should_not_report_killed_process_as_crash() {
+        assert!(!is_crash(Some(status(1)), true));
+    }
+
+    #[test]
+    fn should_not_report_unknown_exit_as_crash() {
+        assert!(!is_crash(None, false));
     }
 }
