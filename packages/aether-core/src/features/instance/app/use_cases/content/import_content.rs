@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -9,10 +10,16 @@ use crate::features::instance::app::ports::ImportContentUseCasePort;
 use crate::{
     features::{
         events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-        instance::{ContentType, InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage},
+        instance::{
+            ContentType, InstanceError, InstanceId, InstanceLocks, PackFile, PackStorage,
+            app::DISABLED_SUFFIX,
+        },
         settings::LocationInfo,
     },
-    shared::{hash::infra::sha1_async, io::infra::read_async},
+    shared::{
+        hash::infra::sha1_async,
+        io::infra::{canonicalize, read_async},
+    },
 };
 
 pub struct ImportContent {
@@ -67,11 +74,23 @@ impl ImportContentUseCase {
     ) -> Result<(Vec<String>, Vec<PackFile>), InstanceError> {
         let mut paths = Vec::with_capacity(source_paths.len());
         let mut metadata_files = Vec::with_capacity(source_paths.len());
+        let mut seen = HashSet::with_capacity(source_paths.len());
 
         for source_path in source_paths {
             let (content_path, metadata) = self
                 .get_import_content_data(instance_id, content_type, source_path)
                 .await?;
+
+            // Two sources of one name would be copied onto each other; Windows and macOS
+            // file systems treat names differing in case as one.
+            let key = if cfg!(any(windows, target_os = "macos")) {
+                content_path.to_lowercase()
+            } else {
+                content_path.clone()
+            };
+            if !seen.insert(key) {
+                return Err(InstanceError::ContentDuplication { content_path });
+            }
 
             paths.push(content_path);
             metadata_files.push(metadata);
@@ -95,17 +114,21 @@ impl ImportContentUseCase {
                     path: path.to_path_buf(),
                 })?;
 
-        let content_path = Path::new(content_folder)
-            .join(file_name)
-            .to_string_lossy()
-            .to_string();
+        // Always with `/`, as the pack records and the content listing key a file: a `\` here
+        // on Windows would record a file the listing never finds, and import it again as new.
+        let content_path = format!("{content_folder}/{file_name}");
 
-        let absolute_content_path = self
-            .location_info
-            .instance_dir(instance_id)
-            .join(&content_path);
+        let instance_dir = self.location_info.instance_dir(instance_id);
+        Self::ensure_folder_inside_instance(instance_id, &instance_dir, content_folder)?;
 
-        if absolute_content_path.exists() {
+        let absolute_content_path = instance_dir.join(&content_path);
+        let disabled_path =
+            absolute_content_path.with_file_name(format!("{file_name}{DISABLED_SUFFIX}"));
+
+        // `symlink_metadata`: a dangling link is still in the way of a copy, which follows it.
+        if absolute_content_path.symlink_metadata().is_ok()
+            || disabled_path.symlink_metadata().is_ok()
+        {
             return Err(InstanceError::ContentDuplication {
                 content_path: content_path.clone(),
             });
@@ -136,6 +159,26 @@ impl ImportContentUseCase {
         ))
     }
 
+    /// A `mods` folder that is a link to elsewhere would take the copy out of the instance.
+    fn ensure_folder_inside_instance(
+        instance_id: &InstanceId,
+        instance_dir: &Path,
+        content_folder: &str,
+    ) -> Result<(), InstanceError> {
+        let root =
+            canonicalize(instance_dir).map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let folder = canonicalize(instance_dir.join(content_folder))
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        if folder.starts_with(&root) {
+            Ok(())
+        } else {
+            Err(InstanceError::PathEscapesInstance {
+                path: content_folder.to_owned(),
+                instance_id: instance_id.to_string(),
+            })
+        }
+    }
+
     async fn copy_import_files(
         &self,
         instance_id: &InstanceId,
@@ -143,15 +186,36 @@ impl ImportContentUseCase {
         content_paths: &[String],
     ) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
+        let mut copied = Vec::with_capacity(content_paths.len());
 
-        futures::future::try_join_all(source_paths.iter().zip(content_paths).map(|(src, dest)| {
+        for (src, dest) in source_paths.iter().zip(content_paths) {
             let dest_path = instance_dir.join(dest);
-            tokio::fs::copy(src, dest_path)
-        }))
-        .await
-        .map_err(|err| InstanceError::Storage(err.to_string()))?;
+            if let Err(err) = tokio::fs::copy(src, &dest_path).await {
+                // A half-written file is not in the way of another import, but is not
+                // wanted either.
+                copied.push(dest_path);
+                Self::remove_files(&copied).await;
+                return Err(InstanceError::Storage(err.to_string()));
+            }
+            copied.push(dest_path);
+        }
 
         Ok(())
+    }
+
+    /// Only for files this import created: none existed under these names when it began, and
+    /// the instance's lock keeps anything else from creating them.
+    async fn remove_files(paths: &[PathBuf]) {
+        for path in paths {
+            if let Err(err) = tokio::fs::remove_file(path).await
+                && err.kind() != std::io::ErrorKind::NotFound
+            {
+                tracing::warn!(
+                    "Could not remove {} after a failed import: {err}",
+                    path.display()
+                );
+            }
+        }
     }
 
     pub async fn execute(&self, input: ImportContent) -> Result<(), InstanceError> {
@@ -174,9 +238,19 @@ impl ImportContentUseCase {
         self.copy_import_files(&instance_id, source_paths.as_slice(), &content_paths)
             .await?;
 
-        self.pack_storage
+        if let Err(err) = self
+            .pack_storage
             .update_pack_file_many(&instance_id, &content_paths, &pack_files)
-            .await?;
+            .await
+        {
+            let instance_dir = self.location_info.instance_dir(&instance_id);
+            let copied: Vec<PathBuf> = content_paths
+                .iter()
+                .map(|content_path| instance_dir.join(content_path))
+                .collect();
+            Self::remove_files(&copied).await;
+            return Err(err);
+        }
 
         self.event_emitter
             .emit_safe(InstanceEvent {
