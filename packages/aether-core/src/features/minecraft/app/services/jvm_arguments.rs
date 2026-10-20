@@ -1,7 +1,10 @@
 use std::{collections::HashSet, path::Path};
 
-use crate::features::minecraft::{
-    MinecraftDomainError, TEMPORARY_REPLACE_CHAR, parse_arguments, parse_rules, vanilla,
+use crate::features::{
+    minecraft::{
+        MinecraftDomainError, TEMPORARY_REPLACE_CHAR, parse_arguments, parse_rules, vanilla,
+    },
+    settings::LocationInfo,
 };
 use crate::shared::{io::infra::canonicalize, java::domain::get_classpath_separator};
 
@@ -58,6 +61,27 @@ pub fn get_jvm_arguments(
     result.extend(custom_args.iter().filter(|arg| !arg.is_empty()).cloned());
 
     Ok(result)
+}
+
+/// The JVM argument that points the game at the log config its version names, if it names one.
+/// Placed first, so that an argument of the user's for the same property still wins.
+pub fn get_logging_argument(
+    version_info: &vanilla::VersionInfo,
+    location_info: &LocationInfo,
+) -> Result<Option<String>, MinecraftDomainError> {
+    let Some((template, file)) = version_info.client_log_config() else {
+        return Ok(None);
+    };
+    let path = location_info.log_config_path(&file.id).ok_or_else(|| {
+        MinecraftDomainError::StorageFailure {
+            reason: format!("Invalid log config name: {}", file.id),
+        }
+    })?;
+
+    Ok(Some(template.replace(
+        "${path}",
+        &canonical_string(&path, "log_config")?,
+    )))
 }
 
 fn parse_jvm_argument(
@@ -718,5 +742,86 @@ mod tests {
         )
         .unwrap();
         assert_eq!(out.len(), 4);
+    }
+
+    fn version_with_log_config(logging: Option<serde_json::Value>) -> vanilla::VersionInfo {
+        let mut json = serde_json::json!({
+            "assetIndex": { "id": "1", "sha1": "0", "size": 1, "totalSize": 1, "url": "u" },
+            "assets": "1",
+            "downloads": {},
+            "id": "1.12",
+            "javaVersion": null,
+            "libraries": [],
+            "mainClass": "Main",
+            "minimumLauncherVersion": 1,
+            "releaseTime": "2020-01-01T00:00:00Z",
+            "time": "2020-01-01T00:00:00Z",
+            "type": "release"
+        });
+        if let Some(logging) = logging {
+            json["logging"] = logging;
+        }
+        serde_json::from_value(json).unwrap()
+    }
+
+    fn log_config(id: &str) -> serde_json::Value {
+        serde_json::json!({ "client": {
+            "argument": "-Dlog4j.configurationFile=${path}",
+            "file": { "id": id, "sha1": "0", "size": 1, "url": "u" },
+            "type": "log4j2-xml"
+        } })
+    }
+
+    #[test]
+    fn logging_argument_points_at_the_downloaded_config() {
+        let e = env();
+        let location_info = LocationInfo::new(e.root.join("settings"), e.root.clone());
+        let path = location_info.log_configs_dir().join("client-1.12.xml");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, b"<xml/>").unwrap();
+        let version = version_with_log_config(Some(log_config("client-1.12.xml")));
+
+        let argument = get_logging_argument(&version, &location_info).unwrap();
+
+        assert_eq!(
+            argument,
+            Some(format!("-Dlog4j.configurationFile={}", canon(&path)))
+        );
+    }
+
+    #[test]
+    fn logging_argument_is_none_when_the_version_names_no_config() {
+        let e = env();
+        let location_info = LocationInfo::new(e.root.join("settings"), e.root.clone());
+
+        let argument =
+            get_logging_argument(&version_with_log_config(None), &location_info).unwrap();
+
+        assert_eq!(argument, None);
+    }
+
+    #[test]
+    fn logging_argument_fails_when_the_config_is_missing() {
+        let e = env();
+        let location_info = LocationInfo::new(e.root.join("settings"), e.root.clone());
+        let version = version_with_log_config(Some(log_config("client-1.12.xml")));
+
+        let err = get_logging_argument(&version, &location_info).unwrap_err();
+
+        assert!(matches!(
+            err,
+            MinecraftDomainError::PathNotFound { ref entity_type, .. } if entity_type == "log_config"
+        ));
+    }
+
+    #[test]
+    fn logging_argument_fails_when_the_config_id_leaves_its_directory() {
+        let e = env();
+        let location_info = LocationInfo::new(e.root.join("settings"), e.root.clone());
+        let version = version_with_log_config(Some(log_config("../x.xml")));
+
+        let err = get_logging_argument(&version, &location_info).unwrap_err();
+
+        assert!(matches!(err, MinecraftDomainError::StorageFailure { .. }));
     }
 }
