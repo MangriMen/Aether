@@ -1,4 +1,5 @@
 pub mod events;
+pub mod fatal;
 pub mod initialize;
 pub mod launch_app;
 pub mod listeners;

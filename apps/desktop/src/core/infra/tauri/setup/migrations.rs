@@ -4,6 +4,18 @@ use tauri::AppHandle;
 
 use super::state;
 
+#[derive(Debug, thiserror::Error)]
+pub enum StartupMigrationError {
+    #[error(transparent)]
+    Migrate(#[from] MigrateError),
+
+    #[error("Failed to prepare the database: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Failed to move the old settings into the database: {0}")]
+    State(crate::Error),
+}
+
 /// Migrate the legacy shared `_sqlx_migrations` table to the new split layout.
 ///
 /// Old databases (from sqlx ≤0.8) have a single `_sqlx_migrations` table
@@ -12,17 +24,19 @@ use super::state;
 /// so that the new independent migrators can coexist peacefully.
 ///
 /// Safe to call on fresh databases (no-op if the old table doesn't exist).
-async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
+///
+/// The split runs in one transaction (SQLite DDL is transactional), so a failure
+/// halfway leaves the old table untouched instead of a half-moved state.
+async fn migrate_legacy_migrations_table(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     // 1. Does the old shared table even exist?
     let (old_exists,): (bool,) = sqlx::query_as(
         "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='_sqlx_migrations')",
     )
     .fetch_one(pool)
-    .await
-    .expect("Failed to check legacy migrations table");
+    .await?;
 
     if !old_exists {
-        return;
+        return Ok(());
     }
 
     // 2. Has the split already been done?
@@ -30,8 +44,7 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
         "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='_sqlx_migrations_aether_core')",
     )
     .fetch_one(pool)
-    .await
-    .expect("Failed to check new migrations table");
+    .await?;
 
     if new_exists {
         // Split was done before, but the old table may still have stale
@@ -41,9 +54,8 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
              WHERE version >= 20260505171710",
         )
         .execute(pool)
-        .await
-        .expect("Failed to clean stale core entries from legacy table");
-        return;
+        .await?;
+        return Ok(());
     }
 
     // 3. Perform the split: rename the old table out of the way, then create
@@ -53,11 +65,12 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
     //    desktop migration (`app_settings`) has version 20260504203107.
     log::info!("Detected legacy shared migration table. Splitting aether-core entries…");
 
+    let mut tx = pool.begin().await?;
+
     // Rename old table so we can safely query it while sqlx creates fresh ones
     sqlx::query("ALTER TABLE _sqlx_migrations RENAME TO _sqlx_migrations_legacy_backup")
-        .execute(pool)
-        .await
-        .expect("Failed to rename legacy migrations table");
+        .execute(&mut *tx)
+        .await?;
 
     // Create the new core table populated with the core entries
     sqlx::query(
@@ -70,9 +83,8 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
             execution_time INTEGER NOT NULL
         )",
     )
-    .execute(pool)
-    .await
-    .expect("Failed to create core migrations table");
+    .execute(&mut *tx)
+    .await?;
 
     sqlx::query(
         "INSERT INTO _sqlx_migrations_aether_core (version, description, installed_on, success, checksum, execution_time)
@@ -80,9 +92,8 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
          FROM _sqlx_migrations_legacy_backup
          WHERE version >= 20260505171710",
     )
-    .execute(pool)
-    .await
-    .expect("Failed to copy core migrations");
+    .execute(&mut *tx)
+    .await?;
 
     // Create the new desktop table with only the desktop entry
     sqlx::query(
@@ -95,9 +106,8 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
             execution_time INTEGER NOT NULL
         )",
     )
-    .execute(pool)
-    .await
-    .expect("Failed to create desktop migrations table");
+    .execute(&mut *tx)
+    .await?;
 
     sqlx::query(
         "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time)
@@ -105,25 +115,26 @@ async fn migrate_legacy_migrations_table(pool: &SqlitePool) {
          FROM _sqlx_migrations_legacy_backup
          WHERE version < 20260505171710",
     )
-    .execute(pool)
-    .await
-    .expect("Failed to copy desktop migrations");
+    .execute(&mut *tx)
+    .await?;
 
     // Drop the backup
     sqlx::query("DROP TABLE _sqlx_migrations_legacy_backup")
-        .execute(pool)
-        .await
-        .expect("Failed to drop legacy backup table");
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
 
     log::info!("Successfully split legacy migration table");
+    Ok(())
 }
 
 pub async fn run_migrations<R: tauri::Runtime>(
     app_handle: AppHandle<R>,
     pool: SqlitePool,
-) -> Result<(), MigrateError> {
+) -> Result<(), StartupMigrationError> {
     // ── Legacy migration split (one-time for existing databases) ──
-    migrate_legacy_migrations_table(&pool).await;
+    migrate_legacy_migrations_table(&pool).await?;
 
     // Run aether-core (library) migrations with custom table `_sqlx_migrations_aether_core`
     migrations::run_migrations(&pool).await?;
@@ -133,7 +144,87 @@ pub async fn run_migrations<R: tauri::Runtime>(
 
     state::migrate(app_handle, pool)
         .await
-        .expect("State migration failed");
+        .map_err(StartupMigrationError::State)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    use super::*;
+
+    const CORE_VERSION: i64 = 20_260_505_171_710;
+    const DESKTOP_VERSION: i64 = 20_260_504_203_107;
+
+    const CREATE_TABLE: &str = "CREATE TABLE _sqlx_migrations (
+        version INTEGER PRIMARY KEY,
+        description TEXT NOT NULL,
+        installed_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        success BOOLEAN NOT NULL,
+        checksum BLOB NOT NULL,
+        execution_time INTEGER NOT NULL
+    )";
+
+    async fn legacy_pool() -> SqlitePool {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+
+        sqlx::query(CREATE_TABLE).execute(&pool).await.unwrap();
+
+        for (version, description) in [(DESKTOP_VERSION, "app_settings"), (CORE_VERSION, "core")] {
+            sqlx::query(
+                "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time)
+                 VALUES (?, ?, 1, x'00', 0)",
+            )
+            .bind(version)
+            .bind(description)
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+
+        pool
+    }
+
+    async fn versions(pool: &SqlitePool, table: &str) -> Vec<i64> {
+        let query = match table {
+            "core" => "SELECT version FROM _sqlx_migrations_aether_core",
+            _ => "SELECT version FROM _sqlx_migrations",
+        };
+
+        sqlx::query_scalar(query).fetch_all(pool).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn should_split_legacy_table_into_desktop_and_core() {
+        let pool = legacy_pool().await;
+
+        migrate_legacy_migrations_table(&pool).await.unwrap();
+
+        assert_eq!(versions(&pool, "core").await, vec![CORE_VERSION]);
+        assert_eq!(versions(&pool, "desktop").await, vec![DESKTOP_VERSION]);
+    }
+
+    #[tokio::test]
+    async fn should_keep_legacy_table_when_split_fails_midway() {
+        let pool = legacy_pool().await;
+        // Makes the rename step fail after the transaction has started.
+        sqlx::query("CREATE TABLE _sqlx_migrations_legacy_backup (x INTEGER)")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let result = migrate_legacy_migrations_table(&pool).await;
+
+        assert!(result.is_err());
+        assert_eq!(
+            versions(&pool, "desktop").await,
+            vec![DESKTOP_VERSION, CORE_VERSION]
+        );
+    }
 }

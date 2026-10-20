@@ -7,7 +7,7 @@ pub(crate) use app::InitializePluginsUseCase;
 pub(crate) use app::RecreateWindowUseCase;
 pub(crate) use domain::WindowManager;
 pub(crate) use domain::{Error, Result, WindowError, WindowLabel};
-pub use infra::launch_app;
+pub use infra::{exit_with_error, launch_app};
 
 // Internal re-exports (pub(crate))
 pub(crate) use infra::FrontendResult;
