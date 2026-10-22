@@ -4,7 +4,7 @@ use crate::features::auth::app::{
     CreateOfflineAccountUseCase, CreateOfflineAccountUseCasePort, CredentialsStorage,
 };
 
-use super::fixtures::MockCredentialsStorage;
+use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
 #[tokio::test]
 async fn should_set_the_first_account_active_when_none_is_active() {
@@ -19,6 +19,30 @@ async fn should_set_the_first_account_active_when_none_is_active() {
 
     let active = storage.find_active().await.unwrap().unwrap();
     assert_eq!(active.id(), account.id);
+}
+
+#[tokio::test]
+async fn should_activate_the_new_account_when_an_expired_account_comes_first() {
+    let storage = Arc::new(MockCredentialsStorage::new());
+
+    storage
+        .upsert(
+            CredentialsBuilder::new("Expired")
+                .with_expired_token()
+                .build(),
+        )
+        .await
+        .unwrap();
+
+    let use_case = CreateOfflineAccountUseCase::new(storage.clone());
+
+    let account = use_case.execute("TestUser".to_string()).await.unwrap();
+
+    assert!(account.active);
+    assert_eq!(
+        storage.find_active().await.unwrap().unwrap().id(),
+        account.id
+    );
 }
 
 #[tokio::test]

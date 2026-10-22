@@ -25,13 +25,17 @@ impl LogoutUseCase {
 #[async_trait]
 impl LogoutUseCasePort for LogoutUseCase {
     async fn execute(&self, account_id: Uuid) -> Result<(), AuthApplicationError> {
-        self.credentials_storage.remove(account_id).await?;
+        let storage = self.credentials_storage.as_ref();
+        storage.remove(account_id).await?;
 
-        match ActiveAccountHelper::ensure_active(self.credentials_storage.as_ref()).await {
-            Ok(_) | Err(AuthApplicationError::Domain(AuthDomainError::NoActiveCredentials)) => {
-                Ok(())
-            }
-            Err(e) => Err(e),
+        // The account is already gone, so having nothing left to promote must
+        // not turn a successful logout into an error.
+        match ActiveAccountHelper::ensure_active(storage).await {
+            Ok(_)
+            | Err(AuthApplicationError::Domain(
+                AuthDomainError::NoActiveCredentials | AuthDomainError::TokenExpired,
+            )) => Ok(()),
+            Err(error) => Err(error),
         }
     }
 }
