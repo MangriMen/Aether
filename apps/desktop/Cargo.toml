@@ -59,12 +59,7 @@ serde_json.workspace = true
 serde_with.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
-sqlx = { workspace = true, features = [
-    "runtime-tokio",
-    "sqlite",
-    "chrono",
-    "sqlx-toml",
-] }
+sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "chrono", "sqlx-toml"] }
 tauri-specta.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -78,16 +73,10 @@ percent-encoding = "2.3.2"
 # `xdg-portal` is required on Linux: rfd's build script panics without a backend, and feature
 # unification with tauri-plugin-dialog's rfd 0.16 no longer applies now that versions differ.
 rfd = { version = "0.17", default-features = false, features = [
-    "common-controls-v6",
-    "xdg-portal",
+  "common-controls-v6",
+  "xdg-portal",
 ] }
-reqwest = { version = "0.13.4", features = [
-    "json",
-    "stream",
-    "deflate",
-    "gzip",
-    "brotli",
-] }
+reqwest = { version = "0.13.4", features = ["json", "stream", "deflate", "gzip", "brotli"] }
 reqwest-middleware = "0.5.2"
 reqwest-retry = "0.9.1"
 windows-sys = "0.61.2"
