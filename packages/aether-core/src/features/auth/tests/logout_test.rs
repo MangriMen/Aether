@@ -86,8 +86,6 @@ async fn should_fail_to_log_out_when_the_account_does_not_exist() {
 
 #[tokio::test]
 async fn should_log_out_and_promote_the_next_usable_account_when_another_is_expired() {
-    use crate::features::auth::domain::{AccountType, Credential, Username};
-
     let storage = Arc::new(MockCredentialsStorage::new());
 
     let active_id = Uuid::new_v4();
@@ -101,17 +99,13 @@ async fn should_log_out_and_promote_the_next_usable_account_when_another_is_expi
         )
         .await
         .unwrap();
-    // Listed before the offline account, so it is the first activation candidate.
+    // Inserted before the offline account, so it is the first promotion candidate.
     storage
-        .upsert(Credential::new(
-            Uuid::new_v4(),
-            Username::parse("Expired").unwrap(),
-            AccountType::Microsoft,
-            false,
-            "a".into(),
-            "r".into(),
-            chrono::Utc::now() - chrono::Duration::hours(1),
-        ))
+        .upsert(
+            CredentialsBuilder::new("Expired")
+                .with_microsoft(chrono::Utc::now() - chrono::Duration::hours(1))
+                .build(),
+        )
         .await
         .unwrap();
     storage
@@ -132,4 +126,35 @@ async fn should_log_out_and_promote_the_next_usable_account_when_another_is_expi
         storage.find_active().await.unwrap().unwrap().id(),
         offline_id
     );
+}
+
+#[tokio::test]
+async fn should_log_out_when_every_remaining_account_is_expired() {
+    let storage = Arc::new(MockCredentialsStorage::new());
+
+    let active_id = Uuid::new_v4();
+    storage
+        .upsert(
+            CredentialsBuilder::new("Active")
+                .with_id(active_id)
+                .with_active(true)
+                .build(),
+        )
+        .await
+        .unwrap();
+    storage
+        .upsert(
+            CredentialsBuilder::new("Expired")
+                .with_microsoft(chrono::Utc::now() - chrono::Duration::hours(1))
+                .build(),
+        )
+        .await
+        .unwrap();
+
+    LogoutUseCase::new(storage.clone())
+        .execute(active_id)
+        .await
+        .unwrap();
+
+    assert!(storage.find_active().await.unwrap().is_none());
 }

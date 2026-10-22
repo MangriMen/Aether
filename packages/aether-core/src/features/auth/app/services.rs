@@ -7,20 +7,41 @@ use uuid::Uuid;
 pub struct ActiveAccountHelper;
 
 impl ActiveAccountHelper {
+    /// Returns the active credential, promoting the first one that can be
+    /// activated when none is active. Accounts that cannot be activated (for
+    /// example an expired Microsoft token) are skipped instead of failing the
+    /// whole operation, so a single stale account never blocks the others.
     pub async fn ensure_active(
         storage: &dyn CredentialsStorage,
     ) -> Result<Credential, AuthApplicationError> {
-        let all = storage.list().await?;
+        let mut all = storage.list().await?;
 
         if let Some(active) = all.iter().find(|c| c.is_active()) {
             return Ok(active.clone());
         }
 
-        let first = all.first().ok_or(AuthApplicationError::Domain(
-            AuthDomainError::NoActiveCredentials,
+        let mut activation_error = None;
+        let mut promoted = None;
+
+        for credentials in &mut all {
+            match credentials.activate() {
+                Ok(()) => {
+                    promoted = Some(credentials.clone());
+                    break;
+                }
+                Err(error) => {
+                    activation_error.get_or_insert(error);
+                }
+            }
+        }
+
+        let promoted = promoted.ok_or(AuthApplicationError::Domain(
+            activation_error.unwrap_or(AuthDomainError::NoActiveCredentials),
         ))?;
 
-        Self::set_active(storage, first.id()).await
+        storage.upsert_all(all).await?;
+
+        Ok(promoted)
     }
 
     pub async fn set_active(

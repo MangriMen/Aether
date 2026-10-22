@@ -1,14 +1,14 @@
 use async_trait::async_trait;
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use crate::features::auth::app::{AuthApplicationError, CredentialsStorage};
 use crate::features::auth::domain::{AuthDomainError, Credential};
 
+/// Keeps insertion order so tests can rely on which account comes first.
 #[derive(Default)]
 pub struct MockCredentialsStorage {
-    store: Arc<Mutex<HashMap<Uuid, Credential>>>,
+    store: Arc<Mutex<Vec<Credential>>>,
 }
 
 impl MockCredentialsStorage {
@@ -20,14 +20,15 @@ impl MockCredentialsStorage {
 #[async_trait]
 impl CredentialsStorage for MockCredentialsStorage {
     async fn list(&self) -> Result<Vec<Credential>, AuthApplicationError> {
-        Ok(self.store.lock().unwrap().values().cloned().collect())
+        Ok(self.store.lock().unwrap().clone())
     }
 
     async fn get(&self, id: Uuid) -> Result<Credential, AuthApplicationError> {
         self.store
             .lock()
             .unwrap()
-            .get(&id)
+            .iter()
+            .find(|c| c.id() == id)
             .cloned()
             .ok_or(AuthApplicationError::Domain(
                 AuthDomainError::CredentialsNotFound { id },
@@ -35,10 +36,11 @@ impl CredentialsStorage for MockCredentialsStorage {
     }
 
     async fn upsert(&self, credentials: Credential) -> Result<Credential, AuthApplicationError> {
-        self.store
-            .lock()
-            .unwrap()
-            .insert(credentials.id(), credentials.clone());
+        let mut store = self.store.lock().unwrap();
+        match store.iter_mut().find(|c| c.id() == credentials.id()) {
+            Some(existing) => *existing = credentials.clone(),
+            None => store.push(credentials.clone()),
+        }
         Ok(credentials)
     }
 
@@ -47,19 +49,23 @@ impl CredentialsStorage for MockCredentialsStorage {
         credentials_list: Vec<Credential>,
     ) -> Result<(), AuthApplicationError> {
         let mut store = self.store.lock().unwrap();
-        for c in credentials_list {
-            store.insert(c.id(), c);
+        for credentials in credentials_list {
+            match store.iter_mut().find(|c| c.id() == credentials.id()) {
+                Some(existing) => *existing = credentials,
+                None => store.push(credentials),
+            }
         }
         Ok(())
     }
 
     async fn remove(&self, id: Uuid) -> Result<(), AuthApplicationError> {
         let mut store = self.store.lock().unwrap();
-        if store.remove(&id).is_none() {
+        let Some(position) = store.iter().position(|c| c.id() == id) else {
             return Err(AuthApplicationError::Domain(
                 AuthDomainError::CredentialsNotFound { id },
             ));
-        }
+        };
+        store.remove(position);
         Ok(())
     }
 
@@ -73,7 +79,7 @@ impl CredentialsStorage for MockCredentialsStorage {
             .store
             .lock()
             .unwrap()
-            .values()
+            .iter()
             .find(|c| c.is_active())
             .cloned())
     }

@@ -7,7 +7,7 @@ use crate::features::auth::{
     app::{
         ActiveAccountHelper, AuthApplicationError, CredentialsStorage, ports::LogoutUseCasePort,
     },
-    domain::{AuthDomainError, Credential},
+    domain::AuthDomainError,
 };
 
 pub struct LogoutUseCase {
@@ -28,20 +28,14 @@ impl LogoutUseCasePort for LogoutUseCase {
         let storage = self.credentials_storage.as_ref();
         storage.remove(account_id).await?;
 
-        let remaining = storage.list().await?;
-        if remaining.iter().any(Credential::is_active) {
-            return Ok(());
+        // The account is already gone, so having nothing left to promote must
+        // not turn a successful logout into an error.
+        match ActiveAccountHelper::ensure_active(storage).await {
+            Ok(_)
+            | Err(AuthApplicationError::Domain(
+                AuthDomainError::NoActiveCredentials | AuthDomainError::TokenExpired,
+            )) => Ok(()),
+            Err(error) => Err(error),
         }
-
-        // The account is already gone, so an expired candidate must not fail the
-        // logout: skip it and promote the first account that can be activated.
-        for candidate in remaining {
-            match ActiveAccountHelper::set_active(storage, candidate.id()).await {
-                Err(AuthApplicationError::Domain(AuthDomainError::TokenExpired)) => {}
-                result => return result.map(|_| ()),
-            }
-        }
-
-        Ok(())
     }
 }
