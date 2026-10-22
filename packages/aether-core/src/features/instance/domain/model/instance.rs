@@ -54,6 +54,21 @@ pub struct Instance {
     pub pack_info: Option<PackInfo>,
 }
 
+/// A name an instance can be created with or renamed to.
+///
+/// The name is shown as it is, so only emptiness is refused: a name that cannot be a directory
+/// is sanitized into one instead of being rejected.
+pub fn validate_instance_name(name: &str) -> Result<(), InstanceError> {
+    if name.trim().is_empty() {
+        return Err(InstanceError::ValidationError {
+            field: InstanceField::Name,
+            reason: InstanceValidationErrorReason::CannotBeEmpty,
+        });
+    }
+
+    Ok(())
+}
+
 impl Instance {
     pub fn id(&self) -> &InstanceId {
         &self.id
@@ -68,14 +83,9 @@ impl Instance {
     }
 
     pub fn rename(&mut self, new_name: String) -> Result<bool, InstanceError> {
-        let trimmed = new_name.trim();
+        validate_instance_name(&new_name)?;
 
-        if trimmed.is_empty() {
-            return Err(InstanceError::ValidationError {
-                field: InstanceField::Name,
-                reason: InstanceValidationErrorReason::CannotBeEmpty,
-            });
-        }
+        let trimmed = new_name.trim();
 
         if self.name == trimmed {
             return Ok(false);

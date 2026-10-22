@@ -8,9 +8,7 @@ use crate::features::{
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
-        NewInstance,
-        app::ports::CreateInstanceUseCasePort,
-        domain::{InstanceField, InstanceValidationErrorReason},
+        NewInstance, app::ports::CreateInstanceUseCasePort, validate_instance_name,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -136,12 +134,7 @@ impl CreateInstanceUseCase {
             pack_info,
         } = new_instance;
 
-        if name.trim().is_empty() {
-            return Err(InstanceError::ValidationError {
-                field: InstanceField::Name,
-                reason: InstanceValidationErrorReason::CannotBeEmpty,
-            });
-        }
+        validate_instance_name(&name)?;
 
         // Before anything is created on disk: a bad loader must not leave a directory behind.
         let loader_version = resolve_loader_version(
@@ -152,9 +145,13 @@ impl CreateInstanceUseCase {
         )
         .await?;
 
-        let icon = self.import_icon(icon_path).await;
-
         let base_sanitized_name = sanitize_instance_name(&name);
+
+        // The same reason as the loader above: an id that cannot name a directory must fail
+        // before the directory exists, not after.
+        InstanceId::try_from(base_sanitized_name.as_str())?;
+
+        let icon = self.import_icon(icon_path).await;
 
         let (sanitized_name, instance_dir) = self
             .instance_file_service
@@ -168,6 +165,8 @@ impl CreateInstanceUseCase {
         );
 
         let mut instance = InstanceBuilder::new(
+            // The base name was parsed above and the service only appends `-N`, which keeps it
+            // plain, so this cannot fail after the directory exists.
             InstanceId::try_from(sanitized_name)?,
             name.clone(),
             game_version.clone(),
@@ -262,7 +261,10 @@ const WINDOWS_RESERVED_NAMES: [&str; 22] = [
 
 /// The directory name for an instance name: no characters or endings Windows refuses, and
 /// never a reserved device name.
-pub(crate) fn sanitize_instance_name(name: &str) -> String {
+///
+/// Applied on every platform, not only on Windows: an instance directory that a config copied
+/// to Windows cannot hold is worse than a name that differs from the one the user typed.
+fn sanitize_instance_name(name: &str) -> String {
     let replaced = name.replace(
         ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
         "_",
@@ -272,7 +274,8 @@ pub(crate) fn sanitize_instance_name(name: &str) -> String {
         return "instance".to_owned();
     }
 
-    let stem = trimmed.split('.').next().unwrap_or(trimmed);
+    // `NUL.txt` is the device too: Windows ignores the extension.
+    let stem = trimmed.split_once('.').map_or(trimmed, |(stem, _)| stem);
     if WINDOWS_RESERVED_NAMES
         .iter()
         .any(|reserved| reserved.eq_ignore_ascii_case(stem))

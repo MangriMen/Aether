@@ -1,3 +1,5 @@
+use tracing::warn;
+
 use crate::features::instance::{
     PackInfo, ProviderId, infra::legacy_provider_id::parse_stored_provider_id,
 };
@@ -14,10 +16,9 @@ impl From<SqlPackInfo> for PackInfo {
         Self {
             provider_id: parse_stored_provider_id(&row.provider_id).unwrap_or_else(|_| {
                 // The stored value is lost on the next save of this instance, so leave a trace.
-                log::warn!(
+                warn!(
                     "Unparsable stored provider id \"{}\" of pack \"{}\"",
-                    row.provider_id,
-                    row.modpack_id
+                    row.provider_id, row.modpack_id
                 );
                 ProviderId {
                     plugin_id: "unknown".into(),
@@ -53,7 +54,9 @@ mod tests {
         });
 
         assert_eq!(pack_info.provider_id.plugin_id, "unknown");
+        assert_eq!(pack_info.provider_id.capability_id, "unknown");
         assert_eq!(pack_info.modpack_id, "m");
+        assert_eq!(pack_info.version_id, "v");
     }
 
     #[test]

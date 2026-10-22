@@ -5,8 +5,7 @@ use chrono::Utc;
 
 use crate::features::instance::app::ports::EditInstanceUseCasePort;
 use crate::features::instance::{
-    EditInstance, Instance, InstanceError, InstanceId, InstanceStorage,
-    domain::{InstanceField, InstanceValidationErrorReason},
+    EditInstance, Instance, InstanceError, InstanceId, InstanceStorage, validate_instance_name,
 };
 
 pub struct EditInstanceUseCase {
@@ -41,18 +40,8 @@ impl EditInstanceUseCasePort for EditInstanceUseCase {
 
 fn validate_edit(edit: &EditInstance) -> Result<(), InstanceError> {
     if let Some(name) = &edit.name {
-        validate_name(name)?;
+        validate_instance_name(name)?;
     }
 
-    Ok(())
-}
-
-fn validate_name(name: &str) -> Result<(), InstanceError> {
-    if name.is_empty() {
-        return Err(InstanceError::ValidationError {
-            field: InstanceField::Name,
-            reason: InstanceValidationErrorReason::CannotBeEmpty,
-        });
-    }
     Ok(())
 }
