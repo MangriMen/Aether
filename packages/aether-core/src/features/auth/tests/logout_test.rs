@@ -103,7 +103,7 @@ async fn should_log_out_and_promote_the_next_usable_account_when_another_is_expi
     storage
         .upsert(
             CredentialsBuilder::new("Expired")
-                .with_microsoft(chrono::Utc::now() - chrono::Duration::hours(1))
+                .with_expired_token()
                 .build(),
         )
         .await
@@ -145,7 +145,7 @@ async fn should_log_out_when_every_remaining_account_is_expired() {
     storage
         .upsert(
             CredentialsBuilder::new("Expired")
-                .with_microsoft(chrono::Utc::now() - chrono::Duration::hours(1))
+                .with_expired_token()
                 .build(),
         )
         .await

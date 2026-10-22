@@ -39,7 +39,9 @@ impl ActiveAccountHelper {
             activation_error.unwrap_or(AuthDomainError::NoActiveCredentials),
         ))?;
 
-        storage.upsert_all(all).await?;
+        // Every other credential is already inactive, so only the promoted one
+        // needs to be written back.
+        storage.upsert(promoted.clone()).await?;
 
         Ok(promoted)
     }

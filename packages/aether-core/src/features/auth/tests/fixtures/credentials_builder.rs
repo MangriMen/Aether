@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{Duration, Utc};
 use uuid::Uuid;
 
 use crate::features::auth::domain::{AccountType, Credential, Username};
@@ -9,8 +9,7 @@ pub struct CredentialsBuilder {
     id: Uuid,
     username: String,
     active: bool,
-    account_type: AccountType,
-    expires: Option<DateTime<Utc>>,
+    expired_token: bool,
 }
 
 impl CredentialsBuilder {
@@ -19,8 +18,7 @@ impl CredentialsBuilder {
             id: Uuid::new_v4(),
             username: username.to_string(),
             active: false,
-            account_type: AccountType::Offline,
-            expires: None,
+            expired_token: false,
         }
     }
 
@@ -34,27 +32,28 @@ impl CredentialsBuilder {
         self
     }
 
-    pub fn with_microsoft(mut self, expires: DateTime<Utc>) -> Self {
-        self.account_type = AccountType::Microsoft;
-        self.expires = Some(expires);
+    /// Builds an account that cannot be activated, which is what an expired
+    /// Microsoft token looks like to the domain.
+    pub fn with_expired_token(mut self) -> Self {
+        self.expired_token = true;
         self
     }
 
     pub fn build(self) -> Credential {
         let username = Username::parse(&self.username).expect("Invalid username in test builder");
 
-        let mut credentials = match self.account_type {
-            AccountType::Offline => Credential::new_offline(self.id, username),
-            AccountType::Microsoft => Credential::new(
+        let mut credentials = if self.expired_token {
+            Credential::new(
                 self.id,
                 username,
                 AccountType::Microsoft,
                 false,
                 "access".to_string(),
                 "refresh".to_string(),
-                self.expires
-                    .expect("Microsoft credentials require an expiry in test builder"),
-            ),
+                Utc::now() - Duration::hours(1),
+            )
+        } else {
+            Credential::new_offline(self.id, username)
         };
 
         if self.active {

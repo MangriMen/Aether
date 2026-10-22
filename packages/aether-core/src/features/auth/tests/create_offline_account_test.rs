@@ -28,7 +28,7 @@ async fn should_activate_the_new_account_when_an_expired_account_comes_first() {
     storage
         .upsert(
             CredentialsBuilder::new("Expired")
-                .with_microsoft(chrono::Utc::now() - chrono::Duration::hours(1))
+                .with_expired_token()
                 .build(),
         )
         .await
