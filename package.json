@@ -9,7 +9,7 @@
     ],
     "catalogs": {
       "build": {
-        "@tauri-apps/cli": "^2.12.2"
+        "@tauri-apps/cli": "^2.12.3"
       }
     }
   },
@@ -31,7 +31,7 @@
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
     "lefthook": "^2.2.2",
-    "turbo": "^2.11.8",
+    "turbo": "^2.11.9",
     "typescript": "^6.0.3"
   },
   "packageManager": "bun@1.3.11",
