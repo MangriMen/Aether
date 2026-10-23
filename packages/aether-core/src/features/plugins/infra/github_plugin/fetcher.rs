@@ -5,6 +5,58 @@ use reqwest_middleware::ClientWithMiddleware;
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
 use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
 
+/// Upper bound for a downloaded plugin archive. The body is buffered in memory before it is
+/// written to a temporary file, so this bounds the process's memory rather than the disk.
+const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Upper bound for a manifest or capabilities file. Both are small JSON documents; a release
+/// asset that claims to be one has no reason to be large.
+const MAX_METADATA_BYTES: u64 = 1024 * 1024;
+
+/// Only GitHub itself may serve plugin assets; the URL can come from a user-pasted repo.
+fn is_allowed_asset_url(url: &str) -> bool {
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return false;
+    };
+    if parsed.scheme() != "https" {
+        return false;
+    }
+    parsed.host_str().is_some_and(|host| {
+        host == "github.com" || host == "api.github.com" || host.ends_with(".githubusercontent.com")
+    })
+}
+
+/// Reads the body chunk by chunk so an oversized asset is rejected before it fills memory.
+async fn read_capped(
+    mut response: reqwest::Response,
+    url: &str,
+    limit: u64,
+) -> Result<Vec<u8>, PluginProviderError> {
+    let too_large = || PluginProviderError::DownloadFailed {
+        url: url.to_string(),
+        details: format!("asset exceeds {limit} bytes"),
+    };
+    if response.content_length().is_some_and(|len| len > limit) {
+        return Err(too_large());
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) =
+        response
+            .chunk()
+            .await
+            .map_err(|e| PluginProviderError::DownloadFailed {
+                url: url.to_string(),
+                details: e.to_string(),
+            })?
+    {
+        if body.len() as u64 + chunk.len() as u64 > limit {
+            return Err(too_large());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
+}
+
 /// Fetches plugin release information from GitHub repositories.
 pub struct GitHubPluginFetcher {
     client: Arc<ClientWithMiddleware>,
@@ -192,8 +244,23 @@ impl GitHubPluginFetcher {
         })
     }
 
-    /// Download a file from a URL and return the bytes.
+    /// Download a plugin archive from a URL and return the bytes.
     pub async fn download_asset(&self, url: &str) -> Result<Vec<u8>, PluginProviderError> {
+        self.download_asset_capped(url, MAX_ARCHIVE_BYTES).await
+    }
+
+    /// Download a file from a URL and return the bytes, refusing a body over `limit`.
+    async fn download_asset_capped(
+        &self,
+        url: &str,
+        limit: u64,
+    ) -> Result<Vec<u8>, PluginProviderError> {
+        if !is_allowed_asset_url(url) {
+            return Err(PluginProviderError::DownloadFailed {
+                url: url.to_string(),
+                details: "asset URL is not served by GitHub over https".to_string(),
+            });
+        }
         let response = self
             .client
             .get(url)
@@ -218,12 +285,7 @@ impl GitHubPluginFetcher {
             ));
         }
 
-        response.bytes().await.map(|b| b.to_vec()).map_err(|e| {
-            PluginProviderError::DownloadFailed {
-                url: url.to_string(),
-                details: e.to_string(),
-            }
-        })
+        read_capped(response, url, limit).await
     }
 
     /// Preview a plugin from a GitHub repo URL.
@@ -264,7 +326,10 @@ impl GitHubPluginFetcher {
         for release in releases {
             // Fetch manifest
             let manifest = if let Some(manifest_url) = &release.manifest_download_url {
-                match self.download_asset(manifest_url).await {
+                match self
+                    .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
+                    .await
+                {
                     Ok(bytes) => serde_json::from_slice::<
                         aether_core_plugin_api::v0::PluginManifestDto,
                     >(&bytes)
@@ -286,7 +351,7 @@ impl GitHubPluginFetcher {
 
             // Fetch capabilities if URL is present
             let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
-                self.download_asset(cap_url)
+                self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
                     .await
                     .ok()
                     .and_then(|bytes| String::from_utf8(bytes).ok())
@@ -321,6 +386,48 @@ impl GitHubPluginFetcher {
             // github.com/owner/repo/releases/...  or  github.com/owner/repo/tree/...
             n if n >= 2 => Some((segments[0].to_string(), segments[1].to_string())),
             _ => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn response(body: &'static [u8]) -> reqwest::Response {
+        reqwest::Response::from(http::Response::new(body))
+    }
+
+    #[tokio::test]
+    async fn should_read_a_body_within_the_limit() {
+        let body = read_capped(response(b"hello"), "u", 5).await.unwrap();
+        assert_eq!(body, b"hello");
+    }
+
+    #[tokio::test]
+    async fn should_reject_a_body_over_the_limit() {
+        let err = read_capped(response(b"hello!"), "u", 5).await.unwrap_err();
+        assert!(matches!(err, PluginProviderError::DownloadFailed { .. }));
+    }
+
+    #[test]
+    fn should_only_allow_github_https_asset_urls() {
+        for ok in [
+            "https://github.com/o/r/releases/download/v1/a.zip",
+            "https://api.github.com/repos/o/r/releases/assets/1",
+            "https://objects.githubusercontent.com/x",
+        ] {
+            assert!(is_allowed_asset_url(ok), "{ok}");
+        }
+        for bad in [
+            "http://github.com/a",
+            "https://evil.example/a",
+            "https://github.com.evil.example/a",
+            "https://evilgithubusercontent.com/a",
+            "file:///etc/passwd",
+            "not a url",
+        ] {
+            assert!(!is_allowed_asset_url(bad), "{bad}");
         }
     }
 }
