@@ -36,6 +36,19 @@ describe('applyRunningProcessUpdate', () => {
     expect(instances).toBe(current);
   });
 
+  it('keeps a launching entry without a process when an old process finishes', () => {
+    const current = {
+      a: { processId: undefined, isLoading: true, isRunning: false },
+    };
+    const instances = applyRunningProcessUpdate(current, {
+      instanceId: 'a',
+      processId: 'p1',
+      isRunning: false,
+    });
+
+    expect(instances).toBe(current);
+  });
+
   it('ignores the end of an unknown instance', () => {
     const current = {};
     const instances = applyRunningProcessUpdate(current, {

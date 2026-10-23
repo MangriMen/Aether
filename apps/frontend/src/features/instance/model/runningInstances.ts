@@ -16,12 +16,9 @@ export const applyRunningProcessUpdate = (
   const current = instances[update.instanceId];
 
   if (!update.isRunning) {
-    // A late event of a process that was replaced by a newer one must not drop the newer one.
-    if (
-      current === undefined ||
-      (current.processId !== undefined &&
-        current.processId !== update.processId)
-    ) {
+    // A late event of a process that was replaced by a newer one must not drop the newer one,
+    // nor a launch that has no process yet.
+    if (current === undefined || current.processId !== update.processId) {
       return instances;
     }
 
