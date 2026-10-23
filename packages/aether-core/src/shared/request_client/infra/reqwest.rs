@@ -8,7 +8,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     features::events::{ProgressBarId, ProgressService, ProgressServiceExt},
     shared::{
-        fetch::domain::FetchSemaphore,
+        fetch::domain::{ApiSemaphore, FetchSemaphore},
         hash::{
             FileHash,
             infra::{FileHasher, hash_hex_async},
@@ -20,10 +20,34 @@ use crate::{
     },
 };
 
+/// How long a connection may take to open.
+pub const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+/// How long a response may stay silent. Per read, not per request: a large download that keeps
+/// flowing is never cut, a stalled one is. Generous, so a poor connection is not mistaken for a
+/// dead one; the retry middleware covers the rest.
+pub const READ_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(90);
+
+/// Give `builder` timeouts, so a stalled server cannot hold a permit forever.
+pub fn with_timeouts(
+    builder: reqwest::ClientBuilder,
+    connect: std::time::Duration,
+    read: std::time::Duration,
+) -> reqwest::ClientBuilder {
+    builder.connect_timeout(connect).read_timeout(read)
+}
+
+/// [`with_timeouts`] with [`CONNECT_TIMEOUT`] and [`READ_TIMEOUT`].
+pub fn with_default_timeouts(builder: reqwest::ClientBuilder) -> reqwest::ClientBuilder {
+    with_timeouts(builder, CONNECT_TIMEOUT, READ_TIMEOUT)
+}
+
 pub struct ReqwestClient<PS: ProgressService + ?Sized> {
     progress_service: Arc<PS>,
     client: Arc<reqwest_middleware::ClientWithMiddleware>,
+    /// Bounds the file downloads.
     semaphore: Arc<FetchSemaphore>,
+    /// Bounds the fetches of metadata, apart from the downloads.
+    api_semaphore: Arc<ApiSemaphore>,
 }
 
 impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
@@ -36,7 +60,14 @@ impl<PS: ProgressService + ?Sized> ReqwestClient<PS> {
             progress_service,
             client,
             semaphore,
+            api_semaphore: Arc::new(ApiSemaphore::default()),
         }
+    }
+
+    #[must_use]
+    pub fn with_api_semaphore(mut self, api_semaphore: Arc<ApiSemaphore>) -> Self {
+        self.api_semaphore = api_semaphore;
+        self
     }
 
     async fn send(
@@ -164,7 +195,7 @@ impl<PS: ProgressService + ?Sized> RequestClient for ReqwestClient<PS> {
             timeout,
         } = request;
 
-        let _permit = self.semaphore.0.acquire().await?;
+        let _permit = self.api_semaphore.0.acquire().await?;
 
         let response = self.send(method, &url, headers, body, timeout).await?;
         ensure_success(&response, &url)?;
@@ -539,6 +570,100 @@ mod tests {
 
     fn url(addr: SocketAddr) -> String {
         format!("http://{addr}/file")
+    }
+
+    #[tokio::test]
+    async fn should_fetch_when_every_download_permit_is_taken() {
+        let addr = serve("200 OK", b"payload").await;
+        let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let _held = downloads.0.acquire().await.unwrap();
+        let client = ReqwestClient::new(
+            Arc::new(NoopProgress),
+            Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build()),
+            downloads.clone(),
+        );
+
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await
+        .expect("a fetch must not wait for the download permits")
+        .unwrap();
+
+        assert_eq!(&bytes[..], b"payload");
+    }
+
+    #[tokio::test]
+    async fn should_wait_for_a_download_permit_when_downloading() {
+        let addr = serve("200 OK", b"payload").await;
+        let downloads = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1)));
+        let _held = downloads.0.acquire().await.unwrap();
+        let client = ReqwestClient::new(
+            Arc::new(NoopProgress),
+            Arc::new(reqwest_middleware::ClientBuilder::new(reqwest::Client::new()).build()),
+            downloads.clone(),
+        );
+        let dir = tempfile::tempdir().unwrap();
+
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            client.download_to_file(
+                Request::get(url(addr)),
+                &dir.path().join("file"),
+                1 << 20,
+                None,
+            ),
+        )
+        .await;
+
+        assert!(result.is_err(), "the download should still be queued");
+    }
+
+    /// Accept connections and answer nothing, as a hung server does.
+    async fn serve_silence() -> SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut open = Vec::new();
+            while let Ok((stream, _)) = listener.accept().await {
+                open.push(stream);
+            }
+        });
+        addr
+    }
+
+    #[tokio::test]
+    async fn should_fail_when_the_server_stays_silent_past_the_read_timeout() {
+        let addr = serve_silence().await;
+        let client = ReqwestClient::new(
+            Arc::new(NoopProgress),
+            Arc::new(
+                reqwest_middleware::ClientBuilder::new(
+                    with_timeouts(
+                        reqwest::Client::builder().no_proxy(),
+                        std::time::Duration::from_secs(5),
+                        std::time::Duration::from_millis(200),
+                    )
+                    .build()
+                    .unwrap(),
+                )
+                .build(),
+            ),
+            Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(1))),
+        );
+
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.fetch_bytes(Request::get(url(addr))),
+        )
+        .await
+        .expect("the read timeout must end the request");
+
+        assert!(
+            matches!(result, Err(RequestError::RequestSend(_))),
+            "{result:?}"
+        );
     }
 
     #[tokio::test]

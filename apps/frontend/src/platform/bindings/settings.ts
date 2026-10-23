@@ -386,7 +386,7 @@ export type SettingsDto = {
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
 	platform: string,
 	reason: string,
-} };
+} } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" };
 
 export type StorageKindDto = "minecraft" | "java" | "instances";
 

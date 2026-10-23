@@ -82,6 +82,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_refuse_zero_concurrent_downloads() {
+        let mut edit_settings = edit("curseforge", "cf-plugin#curseforge");
+        edit_settings.max_concurrent_downloads = 0;
+
+        let (result, stored) = run(edit_settings).await;
+
+        assert!(matches!(
+            result,
+            Err(SettingsError::InvalidMaxConcurrentDownloads)
+        ));
+        assert_eq!(
+            stored.max_concurrent_downloads(),
+            Settings::default().max_concurrent_downloads()
+        );
+    }
+
+    #[tokio::test]
     async fn should_refuse_a_provider_choice_when_the_platform_is_empty() {
         let (result, stored) = run(edit("", "cf-plugin#curseforge")).await;
 
