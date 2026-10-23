@@ -6,6 +6,9 @@ use log::error;
 use sqlx::{SqlitePool, migrate::MigrateError};
 use tauri::{App, AppHandle, Manager};
 
+use super::fatal::exit_with_error;
+use super::migrations::StartupMigrationError;
+
 use crate::core::app::build_container;
 use crate::core::{
     AppSettingsStorageState, ContainerState, EventEmitterState, WindowLabel, WindowManager,
@@ -18,24 +21,13 @@ use super::{
     state::create_location_info, state::register_state, watchdog::run_window_is_visible_watch_dog,
 };
 
-fn migration_error_message(error: &MigrateError) -> String {
+fn migration_error_message(error: &StartupMigrationError) -> String {
     match error {
-        MigrateError::VersionMissing(_) => "The database was created by a newer version of Aether and cannot be opened by this one. \
+        StartupMigrationError::Migrate(MigrateError::VersionMissing(_)) => "The database was created by a newer version of Aether and cannot be opened by this one. \
              Update Aether and try again."
             .to_owned(),
         other => format!("Failed to update the database: {other}"),
     }
-}
-
-/// Reports a failure that happens before any window exists, then ends the process.
-fn exit_with_error(message: &str) -> ! {
-    error!("{message}");
-    rfd::MessageDialog::new()
-        .set_level(rfd::MessageLevel::Error)
-        .set_title("Aether")
-        .set_description(message)
-        .show();
-    std::process::exit(1)
 }
 
 pub fn initialize_app<R: tauri::Runtime>(app: &mut App<R>) {
@@ -46,7 +38,12 @@ pub fn initialize_app<R: tauri::Runtime>(app: &mut App<R>) {
     let pool = tauri::async_runtime::block_on(async {
         let pool = create_pool(location_info.db_path())
             .await
-            .expect("Failed to connect to DB");
+            .unwrap_or_else(|err| {
+                exit_with_error(&format!(
+                    "Failed to open the database. Make sure Aether is not already running \
+                     and its data folder is writable.\n\n{err}"
+                ))
+            });
 
         if let Err(error) = run_migrations(app_handle.clone(), pool.clone()).await {
             exit_with_error(&migration_error_message(&error));
@@ -79,18 +76,14 @@ fn post_initialize<R: tauri::Runtime>(
     tauri::async_runtime::spawn(async move {
         let container = build_container(location_info, core_event_emitter, pool)
             .await
-            .unwrap_or_else(|err| {
-                eprintln!("CRITICAL: Failed to initialize AetherContainer: {err}");
-                std::process::exit(1);
-            });
+            .unwrap_or_else(|err| exit_with_error(&format!("Failed to initialize Aether: {err}")));
 
         app_handle.manage(ContainerState(container));
 
         let main_window_label = WindowLabel::Main;
 
         let app_settings = app_settings_storage.get().await.unwrap_or_else(|err| {
-            eprintln!("CRITICAL: Failed to get app settings: {err}");
-            std::process::exit(1);
+            exit_with_error(&format!("Failed to read the app settings: {err}"))
         });
 
         window_manager
@@ -101,8 +94,10 @@ fn post_initialize<R: tauri::Runtime>(
             )
             .await
             .unwrap_or_else(|err| {
-                eprintln!("CRITICAL: Failed to create main window: {err}");
-                std::process::exit(1);
+                exit_with_error(&format!(
+                    "Failed to create the main window. Make sure the WebView2 runtime is \
+                     installed.\n\n{err}"
+                ))
             });
 
         app_settings_storage
@@ -133,7 +128,9 @@ mod tests {
 
     #[test]
     fn should_explain_a_database_from_a_newer_version_on_one_line() {
-        let message = migration_error_message(&MigrateError::VersionMissing(1));
+        let message = migration_error_message(&StartupMigrationError::Migrate(
+            MigrateError::VersionMissing(1),
+        ));
 
         assert!(message.contains("newer version of Aether"));
         assert!(!message.contains("  ") && !message.contains('\n'));

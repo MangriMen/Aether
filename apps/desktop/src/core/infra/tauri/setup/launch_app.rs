@@ -16,6 +16,8 @@ use super::{
 /// Entry point for the Tauri runtime
 /// Orchestrates the build process and starts the event loop
 pub fn launch_app() -> crate::Result<()> {
+    super::fatal::install_panic_hook();
+
     build_app()?.run(handle_app_events);
     Ok(())
 }
