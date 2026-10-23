@@ -165,3 +165,38 @@ async fn should_list_the_enabled_file_when_it_sits_next_to_its_disabled_copy() {
         assert!(!file.file.disabled);
     }
 }
+
+#[tokio::test]
+async fn should_strip_only_one_disabled_suffix_when_listing() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let mods = location_info
+        .instance_dir(&InstanceId::try_from("instance").unwrap())
+        .join("mods");
+    tokio::fs::create_dir_all(&mods).await.unwrap();
+    tokio::fs::write(mods.join("a.jar.disabled.disabled"), b"disabled")
+        .await
+        .unwrap();
+    let use_case = ListContentUseCase::new(
+        Arc::new(SqlitePackStorage::in_memory().await),
+        location_info,
+        Arc::new(ContentMetadataService::new(
+            Arc::new(NoCache),
+            Arc::new(NoIcons),
+            Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default()),
+            Arc::new(NoEvents),
+        )),
+    );
+
+    let files = use_case
+        .execute(InstanceId::try_from("instance").unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(files.len(), 1);
+    let file = files.get("mods/a.jar.disabled").unwrap();
+    assert!(file.file.disabled);
+}

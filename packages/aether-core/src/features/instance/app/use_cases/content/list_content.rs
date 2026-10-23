@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use dashmap::{DashMap, mapref::entry::Entry};
+use dashmap::DashMap;
 use futures::TryStreamExt;
 use path_slash::PathBufExt;
 
@@ -121,22 +121,21 @@ impl ListContentUseCase {
                         return Ok(());
                     }
 
+                    // `x` next to `x.disabled`: the enabled file is the one that loads, so it is
+                    // the one listed. Skipping the copy up front keeps it from being hashed.
+                    if let Some(enabled) = path
+                        .to_str()
+                        .and_then(|path| path.strip_suffix(DISABLED_SUFFIX))
+                        && Path::new(enabled).is_file()
+                    {
+                        return Ok(());
+                    }
+
                     if let Some(file) = self
                         .process_content_file(instance_id, &path, content_type, &entries_ref)
                         .await?
                     {
-                        // `x` next to `x.disabled`: the enabled file is the one that loads, so
-                        // it is listed whatever order the directory is read in.
-                        match files_ref.entry(file.content_path.clone()) {
-                            Entry::Occupied(mut slot) => {
-                                if slot.get().disabled && !file.disabled {
-                                    slot.insert(file);
-                                }
-                            }
-                            Entry::Vacant(slot) => {
-                                slot.insert(file);
-                            }
-                        }
+                        files_ref.insert(file.content_path.clone(), file);
                     }
 
                     Ok(())
