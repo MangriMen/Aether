@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use crate::features::instance::{ProviderId, is_valid_id};
 
@@ -99,6 +99,7 @@ pub struct ApiConfig {
 impl PluginManifest {
     pub fn validate(&self, api_version: &semver::Version) -> Result<(), ManifestError> {
         self.runtime.validate()?;
+        self.load.validate()?;
         self.api.validate(api_version)?;
 
         Ok(())
@@ -114,6 +115,7 @@ impl PluginManifest {
     ) -> Result<(), ManifestError> {
         self.metadata.validate_id()?;
         self.runtime.validate()?;
+        self.load.validate()?;
         self.api.validate_host_functions(available_host_functions)?;
 
         Ok(())
@@ -153,7 +155,20 @@ impl RuntimeConfig {
 
 impl LoadConfig {
     pub fn validate(&self) -> Result<(), ManifestError> {
-        // File existence is validated by the infra layer when loading the manifest.
+        // File existence is validated by the infra layer when loading the manifest. Here only
+        // the shape: the path is joined onto the plugin dir, so `..` or an absolute path would
+        // make the loader read (and hash) a file outside it.
+        let LoadConfig::Extism { file, .. } = self;
+
+        let escapes = file.as_os_str().is_empty()
+            || file
+                .components()
+                .any(|c| !matches!(c, Component::Normal(_) | Component::CurDir));
+
+        if escapes {
+            return Err(ManifestError::InvalidLoadFile(file.display().to_string()));
+        }
+
         Ok(())
     }
 }
@@ -567,5 +582,46 @@ mod tests {
             },
         };
         assert!(manifest.validate(&semver::Version::new(0, 1, 0)).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod load_config_tests {
+    use super::*;
+
+    fn load(file: &str) -> LoadConfig {
+        LoadConfig::Extism {
+            file: PathBuf::from(file),
+            memory_limit: None,
+        }
+    }
+
+    #[test]
+    fn should_accept_relative_file_inside_plugin_dir() {
+        assert!(load("plugin.wasm").validate().is_ok());
+        assert!(load("bin/plugin.wasm").validate().is_ok());
+        assert!(load("./plugin.wasm").validate().is_ok());
+    }
+
+    #[test]
+    fn should_reject_file_escaping_plugin_dir() {
+        for file in [
+            "../plugin.wasm",
+            "a/../../x.wasm",
+            "/etc/passwd",
+            "",
+            "C:\\x.wasm",
+        ] {
+            let result = load(file).validate();
+            // `C:\x.wasm` is a plain file name on Unix, so only require rejection where it
+            // is absolute.
+            if file.starts_with("C:") && !Path::new(file).is_absolute() {
+                continue;
+            }
+            assert!(
+                matches!(result, Err(ManifestError::InvalidLoadFile(_))),
+                "{file} must be rejected"
+            );
+        }
     }
 }
