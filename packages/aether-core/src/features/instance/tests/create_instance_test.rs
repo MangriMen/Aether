@@ -83,6 +83,37 @@ impl LoaderVersionService for MockLoaderService {
     }
 }
 
+/// A loader service that cannot resolve any version, like an offline one.
+struct FailingLoaderService;
+
+#[async_trait]
+impl LoaderVersionService for FailingLoaderService {
+    async fn resolve(
+        &self,
+        _game_version: &str,
+        _loader: &ModLoader,
+        _loader_version: Option<&LoaderVersionPreference>,
+    ) -> Result<
+        Option<crate::features::minecraft::modded::LoaderVersion>,
+        crate::features::minecraft::MinecraftDomainError,
+    > {
+        Err(
+            crate::features::minecraft::MinecraftDomainError::LoaderNotFound {
+                loader_version_preference: LoaderVersionPreference::Exact("0.0.0".to_owned()),
+            },
+        )
+    }
+
+    async fn try_get_default(
+        &self,
+        _game_version: &str,
+        _loader: &ModLoader,
+    ) -> Result<Option<LoaderVersionPreference>, crate::features::minecraft::MinecraftDomainError>
+    {
+        Err(crate::features::minecraft::MinecraftDomainError::DefaultLoaderNotFound)
+    }
+}
+
 /// An in-memory `InstanceFileService` that creates dirs inside a `TempDir`.
 struct MemInstanceFileService {
     instances_root: std::path::PathBuf,
@@ -102,13 +133,13 @@ impl InstanceFileService for MemInstanceFileService {
 
     async fn create_unique_instance_dir(
         &self,
-        base_name: &str,
-    ) -> Result<(String, std::path::PathBuf), InstanceError> {
-        let dir = self.instances_root.join(base_name);
+        base_id: &InstanceId,
+    ) -> Result<(InstanceId, std::path::PathBuf), InstanceError> {
+        let dir = self.instances_root.join(base_id.as_str());
         tokio::fs::create_dir_all(&dir)
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))?;
-        Ok((base_name.to_owned(), dir))
+        Ok((base_id.clone(), dir))
     }
 
     async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
@@ -555,6 +586,102 @@ async fn should_sanitize_the_name_when_it_has_unsafe_characters() {
     assert!(
         !instance_id.contains('*'),
         "ID should not contain asterisks"
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_a_blank_name_when_creating_an_instance() {
+    let (_temp, location_info) = setup_temp_location();
+    let instances_root = location_info.instances_dir();
+
+    let storage = Arc::new(MemInstanceStorage::new());
+    let loader_service = Arc::new(MockLoaderService {
+        try_get_default_result: None,
+    });
+    let install_service = Arc::new(NoOpInstallService);
+    let file_service = Arc::new(MemInstanceFileService::new(instances_root.clone()));
+    let watcher = Arc::new(NoOpWatcher);
+    let emitter: SharedEventEmitter = Arc::new(NoOpEmitter);
+
+    let use_case = make_use_case(
+        storage,
+        loader_service,
+        install_service,
+        file_service,
+        watcher,
+        emitter,
+    );
+
+    let new_instance = NewInstance {
+        name: "   ".to_string(),
+        game_version: "1.21".to_string(),
+        mod_loader: ModLoader::Vanilla,
+        loader_version: None,
+        icon_path: None,
+        skip_install_instance: Some(true),
+        pack_info: None,
+    };
+
+    let err = use_case
+        .execute(new_instance, None)
+        .await
+        .expect_err("A blank name must be refused");
+
+    assert!(
+        matches!(
+            err,
+            InstanceError::ValidationError {
+                field: crate::features::instance::InstanceField::Name,
+                reason: crate::features::instance::InstanceValidationErrorReason::CannotBeEmpty,
+            }
+        ),
+        "expected a name validation error, got {err:?}"
+    );
+    assert!(
+        !instances_root.exists(),
+        "nothing may be created for a refused name"
+    );
+}
+
+#[tokio::test]
+async fn should_not_create_a_directory_when_the_loader_cannot_be_resolved() {
+    let (_temp, location_info) = setup_temp_location();
+    let instances_root = location_info.instances_dir();
+
+    let storage = Arc::new(MemInstanceStorage::new());
+    let loader_service = Arc::new(FailingLoaderService);
+    let install_service = Arc::new(NoOpInstallService);
+    let file_service = Arc::new(MemInstanceFileService::new(instances_root.clone()));
+    let watcher = Arc::new(NoOpWatcher);
+    let emitter: SharedEventEmitter = Arc::new(NoOpEmitter);
+
+    let use_case = make_use_case(
+        storage,
+        loader_service,
+        install_service,
+        file_service,
+        watcher,
+        emitter,
+    );
+
+    let new_instance = NewInstance {
+        name: "Fabric Test".to_string(),
+        game_version: "1.20.1".to_string(),
+        mod_loader: ModLoader::Fabric,
+        loader_version: Some(LoaderVersionPreference::Exact("0.0.0".to_string())),
+        icon_path: None,
+        skip_install_instance: Some(true),
+        pack_info: None,
+    };
+
+    use_case
+        .execute(new_instance, None)
+        .await
+        .expect_err("An unresolvable loader must fail the creation");
+
+    assert!(
+        !instances_root.exists(),
+        "a failed loader resolution must not leave a directory behind"
     );
 }
 

@@ -44,8 +44,8 @@ impl InstanceFileService for FsInstanceFileService {
 
     async fn create_unique_instance_dir(
         &self,
-        base_name: &str,
-    ) -> Result<(String, PathBuf), InstanceError> {
+        base_id: &InstanceId,
+    ) -> Result<(InstanceId, PathBuf), InstanceError> {
         let instances_root = self.location_info.instances_dir();
 
         // Ensure the instances root directory exists first
@@ -55,14 +55,15 @@ impl InstanceFileService for FsInstanceFileService {
 
         let mut counter = 0u32;
         loop {
-            let name = if counter == 0 {
-                base_name.to_owned()
+            // Parsed before the directory exists: an id that cannot name one must not leave one.
+            let id = if counter == 0 {
+                base_id.clone()
             } else {
-                format!("{base_name}-{counter}")
+                InstanceId::try_from(format!("{base_id}-{counter}"))?
             };
-            let path = instances_root.join(&name);
+            let path = instances_root.join(id.as_str());
             match fs::create_dir(&path).await {
-                Ok(()) => return Ok((name, path)),
+                Ok(()) => return Ok((id, path)),
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                     counter += 1;
                 }

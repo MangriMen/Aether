@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::InstanceError;
+use super::{InstanceError, validate_instance_name};
 
 /// An id that names a directory directly under `instances/`.
 ///
@@ -18,10 +18,26 @@ use super::InstanceError;
 #[serde(try_from = "String", into = "String")]
 pub struct InstanceId(String);
 
+const WINDOWS_RESERVED_NAMES: [&str; 22] = [
+    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+    "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+];
+
 impl InstanceId {
     /// A fresh id for a new instance.
     pub fn generate() -> Self {
         Self(uuid::Uuid::new_v4().to_string())
+    }
+
+    /// The id a new instance named `name` gets.
+    ///
+    /// The name is what the user typed and is shown as it is; the id is the directory it lives
+    /// in, so it is derived here rather than validated: a name that cannot be a directory is
+    /// sanitized into one. A blank name has no id to derive, hence the validation error.
+    pub fn from_name(name: &str) -> Result<Self, InstanceError> {
+        validate_instance_name(name)?;
+
+        Self::try_from(sanitize_name(name))
     }
 
     pub fn as_str(&self) -> &str {
@@ -54,6 +70,37 @@ impl TryFrom<String> for InstanceId {
             Err(InstanceError::NotFound { instance_id: id })
         }
     }
+}
+
+/// The directory name for an instance name: no characters or endings Windows refuses, and
+/// never a reserved device name.
+///
+/// Applied on every platform, not only on Windows: an instance directory that a config copied
+/// to Windows cannot hold is worse than a name that differs from the one the user typed.
+fn sanitize_name(name: &str) -> String {
+    let replaced: String = name
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | '?' | '*' | ':' | '\'' | '\"' | '|' | '<' | '>' | '!' => '_',
+            // A control character, `\0` included, is not a name a directory can hold.
+            c if c.is_control() => '_',
+            c => c,
+        })
+        .collect();
+    let trimmed = replaced.trim().trim_end_matches(['.', ' ']);
+    if trimmed.is_empty() {
+        return "instance".to_owned();
+    }
+
+    // `NUL.txt` is the device too: Windows ignores the extension.
+    let stem = trimmed.split_once('.').map_or(trimmed, |(stem, _)| stem);
+    if WINDOWS_RESERVED_NAMES
+        .iter()
+        .any(|reserved| reserved.eq_ignore_ascii_case(stem))
+    {
+        return format!("_{trimmed}");
+    }
+    trimmed.to_owned()
 }
 
 impl TryFrom<&str> for InstanceId {
@@ -93,6 +140,7 @@ impl fmt::Display for InstanceId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::{InstanceField, InstanceValidationErrorReason};
 
     #[test]
     fn should_accept_an_instance_id_when_it_is_a_single_name() {
@@ -136,6 +184,52 @@ mod tests {
     fn should_accept_a_generated_id() {
         let id = InstanceId::generate();
         assert_eq!(InstanceId::try_from(id.as_str()).unwrap(), id);
+    }
+
+    // ── from_name ──
+
+    #[test]
+    fn should_replace_forbidden_characters_when_deriving_an_id() {
+        assert_eq!(InstanceId::from_name("a/b:c").unwrap().as_str(), "a_b_c");
+        assert_eq!(InstanceId::from_name("a\0b").unwrap().as_str(), "a_b");
+    }
+
+    #[test]
+    fn should_prefix_a_reserved_windows_name_when_deriving_an_id() {
+        assert_eq!(InstanceId::from_name("con").unwrap().as_str(), "_con");
+        assert_eq!(
+            InstanceId::from_name("NUL.txt").unwrap().as_str(),
+            "_NUL.txt"
+        );
+        assert_eq!(
+            InstanceId::from_name("console").unwrap().as_str(),
+            "console"
+        );
+    }
+
+    #[test]
+    fn should_strip_trailing_dots_and_spaces_when_deriving_an_id() {
+        assert_eq!(
+            InstanceId::from_name("My pack. . ").unwrap().as_str(),
+            "My pack"
+        );
+    }
+
+    #[test]
+    fn should_fall_back_when_nothing_is_left_of_the_name() {
+        assert_eq!(InstanceId::from_name("...").unwrap().as_str(), "instance");
+    }
+
+    #[test]
+    fn should_refuse_a_blank_name_when_deriving_an_id() {
+        let err = InstanceId::from_name("   ").unwrap_err();
+        assert!(matches!(
+            err,
+            InstanceError::ValidationError {
+                field: InstanceField::Name,
+                reason: InstanceValidationErrorReason::CannotBeEmpty,
+            }
+        ));
     }
 
     #[test]

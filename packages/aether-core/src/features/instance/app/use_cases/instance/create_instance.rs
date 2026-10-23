@@ -134,21 +134,11 @@ impl CreateInstanceUseCase {
             pack_info,
         } = new_instance;
 
-        let icon = self.import_icon(icon_path).await;
+        // Parsed before the loader and before anything exists on disk: a name that cannot be an
+        // id must fail while there is still nothing to roll back.
+        let base_id = InstanceId::from_name(&name)?;
 
-        let base_sanitized_name = sanitize_instance_name(&name);
-
-        let (sanitized_name, instance_dir) = self
-            .instance_file_service
-            .create_unique_instance_dir(&base_sanitized_name)
-            .await?;
-
-        info!(
-            "Creating instance \"{}\" at path \"{}\"",
-            name,
-            instance_dir.display()
-        );
-
+        // Before anything is created on disk: a bad loader must not leave a directory behind.
         let loader_version = resolve_loader_version(
             self.loader_version_service.as_ref(),
             &game_version,
@@ -157,16 +147,25 @@ impl CreateInstanceUseCase {
         )
         .await?;
 
-        let mut instance = InstanceBuilder::new(
-            InstanceId::try_from(sanitized_name)?,
-            name.clone(),
-            game_version.clone(),
-            mod_loader,
-        )
-        .with_loader_version(loader_version)
-        .with_icon(icon)
-        .with_pack_info(pack_info)
-        .build();
+        let icon = self.import_icon(icon_path).await;
+
+        let (instance_id, instance_dir) = self
+            .instance_file_service
+            .create_unique_instance_dir(&base_id)
+            .await?;
+
+        info!(
+            "Creating instance \"{}\" at path \"{}\"",
+            name,
+            instance_dir.display()
+        );
+
+        let mut instance =
+            InstanceBuilder::new(instance_id, name.clone(), game_version.clone(), mod_loader)
+                .with_loader_version(loader_version)
+                .with_icon(icon)
+                .with_pack_info(pack_info)
+                .build();
         instance.install_stage = initial_stage;
 
         let result = self
@@ -243,13 +242,6 @@ pub(crate) async fn resolve_loader_version(
             .await
             .map_err(MinecraftApplicationError::Domain)?),
     }
-}
-
-pub(crate) fn sanitize_instance_name(name: &str) -> String {
-    name.replace(
-        ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
-        "_",
-    )
 }
 
 #[async_trait]

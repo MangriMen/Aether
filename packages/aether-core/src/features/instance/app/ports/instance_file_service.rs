@@ -11,12 +11,14 @@ pub trait InstanceFileService: Send + Sync {
     async fn create_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError>;
 
     /// Atomically create a unique instance directory inside the instances root.
-    /// `base_name` should already be sanitised.
-    /// Returns the unique folder name and the full path.
+    ///
+    /// `base_id` is the id the instance is named after; when its directory is taken, the
+    /// service appends `-N` and returns the id it actually created. The id is parsed before
+    /// the directory exists, so a name that cannot be one leaves nothing behind.
     async fn create_unique_instance_dir(
         &self,
-        base_name: &str,
-    ) -> Result<(String, PathBuf), InstanceError>;
+        base_id: &InstanceId,
+    ) -> Result<(InstanceId, PathBuf), InstanceError>;
 
     /// Remove the instance directory for the given instance id.
     async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError>;
