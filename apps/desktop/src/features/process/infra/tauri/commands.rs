@@ -1,4 +1,4 @@
-use aether_core::features::{instance::InstanceId, process::ProcessFeature};
+use aether_core::features::process::ProcessFeature;
 use tauri::State;
 
 use crate::{
@@ -34,24 +34,6 @@ async fn list(
     Ok(container
         .list_process_metadata_use_case()
         .execute()
-        .await
-        .map_err(aether_core::Error::from)?
-        .into_iter()
-        .map(Into::into)
-        .collect())
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn get_by_instance_id(
-    id: String,
-    container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<MinecraftProcessMetadataDto>> {
-    let id = InstanceId::try_from(id).map_err(aether_core::Error::from)?;
-    let container = container.0.clone();
-    Ok(container
-        .get_process_metadata_by_instance_id_use_case()
-        .execute(id)
         .await
         .map_err(aether_core::Error::from)?
         .into_iter()
