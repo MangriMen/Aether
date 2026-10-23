@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettings,
-    PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginStorage,
+    PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService,
     PluginVerificationStorage,
 };
 
@@ -17,6 +17,9 @@ use super::{PluginProviderFactory, record_plugin_verification, write_bytes_to_te
 /// The new release replaces the plugin's files, and the user's settings of it carry over — all
 /// but a force-enable, which confirms one specific build. An update that fails at any
 /// step leaves the installed version, its settings, trust record and source as they were.
+///
+/// Once replaced, the plugin is synced, so that the registry holds the new build and a plugin
+/// that was enabled runs it.
 pub(crate) struct UpdatePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
     plugin_extractor: Arc<dyn PluginExtractor>,
@@ -25,6 +28,7 @@ pub(crate) struct UpdatePluginUseCase {
     plugin_verification_storage: Arc<dyn PluginVerificationStorage>,
     plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
     provider_factory: Arc<PluginProviderFactory>,
+    sync_plugins_service: Arc<dyn PluginSyncService>,
 }
 
 impl UpdatePluginUseCase {
@@ -39,6 +43,7 @@ impl UpdatePluginUseCase {
         plugin_verification_storage: Arc<dyn PluginVerificationStorage>,
         plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
         provider_factory: Arc<PluginProviderFactory>,
+        sync_plugins_service: Arc<dyn PluginSyncService>,
     ) -> Self {
         Self {
             plugin_registry,
@@ -48,6 +53,7 @@ impl UpdatePluginUseCase {
             plugin_verification_storage,
             plugin_settings_storage,
             provider_factory,
+            sync_plugins_service,
         }
     }
 
@@ -126,7 +132,7 @@ impl UpdatePluginUseCase {
         // The settings live in the plugin's directory, which the new version replaces. Held
         // until the old directory is dropped or back, so that a grant made meanwhile is neither
         // saved over nor lost with the directory.
-        let _settings_lock = self.plugin_registry.lock_settings(plugin_id).await;
+        let settings_lock = self.plugin_registry.lock_settings(plugin_id).await;
         let settings = self.plugin_settings_storage.get(plugin_id).await?;
 
         self.plugin_storage.replace(extracted).await?;
@@ -142,7 +148,6 @@ impl UpdatePluginUseCase {
                         "Previous version of plugin '{plugin_id}' was left behind: {err}"
                     );
                 }
-                Ok(())
             }
             Err(err) => {
                 if let Err(restore_err) = self.plugin_storage.restore_replaced(plugin_id).await {
@@ -151,9 +156,14 @@ impl UpdatePluginUseCase {
                          {restore_err}"
                     );
                 }
-                Err(err)
+                return Err(err);
             }
         }
+
+        // Not under the settings lock: enabling the new build can take seconds, and no settings
+        // change needs to wait for it.
+        drop(settings_lock);
+        self.sync_plugins_service.execute().await
     }
 
     /// Writes the core's files about the new version into its directory. The source goes last:

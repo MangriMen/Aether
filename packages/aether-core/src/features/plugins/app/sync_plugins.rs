@@ -8,12 +8,20 @@ use crate::features::{
     plugins::{
         Plugin, PluginDisableService, PluginError, PluginRegistry, PluginStorage, PluginSyncService,
     },
+    settings::SettingsStorage,
 };
 
+use super::ports::EnablePluginUseCasePort;
+
+/// Brings the registry in line with the plugins on disk. A plugin whose files changed is
+/// ended and put back as it now is; if it was enabled it is enabled again, so an update takes
+/// effect without the user's choice being lost.
 pub(crate) struct SyncPluginsUseCase {
     plugin_storage: Arc<dyn PluginStorage>,
     plugin_registry: Arc<PluginRegistry>,
     disable_plugin_service: Arc<dyn PluginDisableService>,
+    enable_plugin_service: Arc<dyn EnablePluginUseCasePort>,
+    settings_storage: Arc<dyn SettingsStorage>,
     event_emitter: SharedEventEmitter,
 }
 
@@ -22,12 +30,16 @@ impl SyncPluginsUseCase {
         plugin_storage: Arc<dyn PluginStorage>,
         plugin_registry: Arc<PluginRegistry>,
         disable_plugin_service: Arc<dyn PluginDisableService>,
+        enable_plugin_service: Arc<dyn EnablePluginUseCasePort>,
+        settings_storage: Arc<dyn SettingsStorage>,
         event_emitter: SharedEventEmitter,
     ) -> Self {
         Self {
             plugin_storage,
             plugin_registry,
             disable_plugin_service,
+            enable_plugin_service,
+            settings_storage,
             event_emitter,
         }
     }
@@ -37,6 +49,7 @@ impl SyncPluginsUseCase {
         found_plugins: HashMap<String, Plugin>,
     ) -> Result<(), PluginError> {
         let existing_plugins = self.plugin_registry.get_ids();
+        let enabled_plugins = self.settings_storage.get().await?.enabled_plugins().clone();
 
         let new_plugins = found_plugins.keys().cloned().collect::<HashSet<_>>();
 
@@ -49,8 +62,23 @@ impl SyncPluginsUseCase {
             .await?;
         self.remove_changed_plugins(&changed_plugins).await?;
         self.add_new_plugins(&plugins_to_add, &found_plugins);
+        self.enable_changed_plugins(&changed_plugins, &enabled_plugins)
+            .await;
 
         Ok(())
+    }
+
+    /// A failure leaves the plugin enabled but not running, as at start-up; the state tells why.
+    async fn enable_changed_plugins(
+        &self,
+        changed_plugins: &HashSet<String>,
+        enabled_plugins: &HashSet<String>,
+    ) {
+        for plugin_id in changed_plugins.intersection(enabled_plugins) {
+            if let Err(err) = self.enable_plugin_service.execute(plugin_id.clone()).await {
+                log::warn!("Changed plugin {plugin_id} could not be enabled again: {err}");
+            }
+        }
     }
 
     fn find_changed_plugins(
@@ -97,7 +125,7 @@ impl SyncPluginsUseCase {
     ) -> Result<(), PluginError> {
         for plugin_id in existing_plugins.difference(new_plugins) {
             log::debug!("Removing plugin {plugin_id}");
-            self.remove_plugin(plugin_id).await?;
+            self.remove_plugin(plugin_id, false).await?;
         }
         Ok(())
     }
@@ -108,7 +136,7 @@ impl SyncPluginsUseCase {
     ) -> Result<(), PluginError> {
         for plugin_id in changed_plugins {
             log::debug!("Removing changed plugin {plugin_id}");
-            self.remove_plugin(plugin_id).await?;
+            self.remove_plugin(plugin_id, true).await?;
         }
         Ok(())
     }
@@ -127,11 +155,18 @@ impl SyncPluginsUseCase {
         }
     }
 
-    async fn remove_plugin(&self, plugin_id: &str) -> Result<(), PluginError> {
-        let disable_result = self
-            .disable_plugin_service
-            .execute(plugin_id.to_string())
-            .await;
+    /// `keep_enabled` for a plugin that is put back at once: it must not drop out of the
+    /// enabled plugins on the way.
+    async fn remove_plugin(&self, plugin_id: &str, keep_enabled: bool) -> Result<(), PluginError> {
+        let disable_result = if keep_enabled {
+            self.disable_plugin_service
+                .unload(plugin_id.to_string())
+                .await
+        } else {
+            self.disable_plugin_service
+                .execute(plugin_id.to_string())
+                .await
+        };
 
         if let Err(err) = disable_result {
             match err {

@@ -479,6 +479,8 @@ impl AetherContainer {
                     self.plugins().storage.clone(),
                     self.plugins().registry.clone(),
                     self.disable_plugin_service(),
+                    self.enable_plugin_use_case(),
+                    self.storage().settings_storage.clone(),
                     self.event_emitter().clone(),
                 ))
             })
@@ -977,6 +979,7 @@ impl PluginsFeature for AetherContainer {
             self.plugins().verification_storage.clone(),
             self.plugins().settings_storage.clone(),
             self.plugins().provider_factory.clone(),
+            self.sync_plugins_service(),
         ))
     }
     fn plugin_registry(&self) -> Arc<PluginRegistry> {
