@@ -314,6 +314,9 @@ mod tests {
         assert_eq!(li.wasm_cache_config(), cache.join("wasm.toml"));
         assert_eq!(li.wasm_cache_dir(), cache.join("wasm"));
         assert_eq!(li.temp_dir(), cache.join("temp"));
-        assert_eq!(li.removed_instances_dir(), cache.join("temp").join("removed-instances"));
+        assert_eq!(
+            li.removed_instances_dir(),
+            cache.join("temp").join("removed-instances")
+        );
     }
 }

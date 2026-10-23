@@ -383,8 +383,8 @@ impl crate::features::instance::InstanceFileService for FailingRemoveFileService
     }
     async fn create_unique_instance_dir(
         &self,
-        _base_name: &str,
-    ) -> Result<(String, std::path::PathBuf), InstanceError> {
+        _base_id: &InstanceId,
+    ) -> Result<(InstanceId, std::path::PathBuf), InstanceError> {
         unimplemented!()
     }
     async fn remove_instance_dir(&self, _id: &InstanceId) -> Result<(), InstanceError> {
