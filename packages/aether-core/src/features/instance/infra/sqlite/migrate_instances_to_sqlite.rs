@@ -7,8 +7,9 @@ use tracing::{info, warn};
 /// Copies the legacy `instance.json` files into SQLite, and only into an empty table.
 ///
 /// A copied file is set aside (`instance.json.migrated`), so the migration runs once per instance
-/// and a table the user emptied is not refilled from it. All instances go in one transaction: a
-/// table that kept only the first ones would be skipped on the next start and the rest lost.
+/// and a table the user emptied is not refilled from it. The instances go in one transaction, so a
+/// failure of the write itself stores none. One instance that cannot be stored is skipped (its
+/// file stays) rather than keeping the launcher from starting.
 pub async fn migrate_instances_to_sqlite(
     fs_storage: &FsInstanceStorage,
     sqlite_storage: &SqliteInstanceStorage,
@@ -34,12 +35,23 @@ pub async fn migrate_instances_to_sqlite(
         old_instances.len()
     );
 
-    if let Err(e) = sqlite_storage.upsert_many(&old_instances).await {
-        warn!("Failed to migrate instances: {}", e);
-        return Err(e.into());
-    }
+    let failed = sqlite_storage
+        .upsert_many(&old_instances)
+        .await
+        .map_err(|e| {
+            warn!("Failed to migrate instances: {}", e);
+            e
+        })?;
 
-    mark_migrated(fs_storage, old_instances.iter().collect()).await;
+    // An instance that could not be stored keeps its file, so it can be recovered by hand.
+    for (instance, e) in &failed {
+        warn!("Skipped instance {}: {}", instance.id(), e);
+    }
+    let saved = old_instances
+        .iter()
+        .filter(|old| !failed.iter().any(|(bad, _)| bad.id() == old.id()))
+        .collect();
+    mark_migrated(fs_storage, saved).await;
 
     info!("Migration of instances to SQLite completed successfully.");
 
@@ -114,20 +126,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_leave_table_empty_and_keep_legacy_files_when_one_instance_cannot_be_saved() {
+    async fn should_skip_an_instance_that_cannot_be_saved_and_keep_its_file() {
         let (_temp, fs) = legacy_storage(&["a", "b", "c"]).await;
         let sqlite = SqliteInstanceStorage::in_memory().await;
         sqlx::query(
             "CREATE TRIGGER reject_c BEFORE INSERT ON instances WHEN NEW.id = 'c'
-             BEGIN SELECT RAISE(ABORT, 'disk full'); END",
+             BEGIN SELECT RAISE(ABORT, 'rejected'); END",
         )
         .execute(sqlite.pool())
         .await
         .unwrap();
 
-        assert!(migrate_instances_to_sqlite(&fs, &sqlite).await.is_err());
+        migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
 
-        assert!(sqlite.list().await.unwrap().is_empty());
-        assert_eq!(fs.list().await.unwrap().len(), 3);
+        let saved: Vec<_> = sqlite.list().await.unwrap();
+        assert_eq!(saved.len(), 2);
+        let left: Vec<_> = fs.list().await.unwrap();
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[0].id().as_str(), "c");
     }
 }

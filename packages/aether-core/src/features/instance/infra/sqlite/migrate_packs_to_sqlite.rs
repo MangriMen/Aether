@@ -61,9 +61,14 @@ pub async fn migrate_packs_to_sqlite(
 
         // One transaction: a pack row only appears together with all of its readable files,
         // because `has_pack` stops the next start from migrating the rest.
-        sqlite_storage
+        // A failed write leaves no pack row, so the next start tries this pack again.
+        if let Err(e) = sqlite_storage
             .update_pack_file_many(instance_id, &content_paths, &pack_files)
-            .await?;
+            .await
+        {
+            warn!("Failed to migrate pack of instance {instance_id}: {e}");
+            continue;
+        }
         set_aside(fs_storage, instance_id).await;
 
         info!(

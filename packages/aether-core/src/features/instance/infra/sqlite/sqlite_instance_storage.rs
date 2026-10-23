@@ -2,7 +2,7 @@ use crate::features::instance::{
     Instance, InstanceChange, InstanceError, InstanceId, InstanceStorage,
 };
 use async_trait::async_trait;
-use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
+use sqlx::{Acquire, Sqlite, SqliteConnection, SqlitePool, Transaction};
 use tracing::warn;
 
 use super::{sql_instance::SqlInstance, sql_pack_info::SqlPackInfo};
@@ -25,15 +25,32 @@ impl SqliteInstanceStorage {
             .map_err(|e| InstanceError::Storage(e.to_string()))
     }
 
-    /// Writes all instances in one transaction: either every one is stored or none is.
-    pub async fn upsert_many(&self, instances: &[Instance]) -> Result<(), InstanceError> {
+    /// Writes the instances in one transaction, each under its own savepoint: an instance that
+    /// cannot be stored is left out and returned with its error, the rest are kept. A failure of
+    /// the transaction itself (disk full, locked database) is an error: nothing is stored then.
+    pub async fn upsert_many<'a>(
+        &self,
+        instances: &'a [Instance],
+    ) -> Result<Vec<(&'a Instance, InstanceError)>, InstanceError> {
         let mut tx = self.begin_write().await?;
+        let mut failed = Vec::new();
         for instance in instances {
-            write_instance(&mut tx, instance).await?;
+            let mut savepoint = tx
+                .begin()
+                .await
+                .map_err(|e| InstanceError::Storage(e.to_string()))?;
+            match write_instance(&mut savepoint, instance).await {
+                Ok(()) => savepoint
+                    .commit()
+                    .await
+                    .map_err(|e| InstanceError::Storage(e.to_string()))?,
+                Err(e) => failed.push((instance, e)),
+            }
         }
         tx.commit()
             .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        Ok(failed)
     }
 
     /// A storage over a fresh in-memory database with every migration applied.
