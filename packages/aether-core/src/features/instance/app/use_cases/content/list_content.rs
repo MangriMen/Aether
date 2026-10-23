@@ -12,7 +12,8 @@ use crate::{
     features::{
         instance::{
             ContentFile, ContentFileView, ContentMetadataService, ContentType, InstanceError,
-            InstanceId, PackEntry, PackFile, PackStorage, app::ports::ListContentUseCasePort,
+            InstanceId, PackEntry, PackFile, PackStorage,
+            app::{DISABLED_SUFFIX, ports::ListContentUseCasePort},
         },
         settings::LocationInfo,
     },
@@ -120,6 +121,16 @@ impl ListContentUseCase {
                         return Ok(());
                     }
 
+                    // `x` next to `x.disabled`: the enabled file is the one that loads, so it is
+                    // the one listed. Skipping the copy up front keeps it from being hashed.
+                    if let Some(enabled) = path
+                        .to_str()
+                        .and_then(|path| path.strip_suffix(DISABLED_SUFFIX))
+                        && Path::new(enabled).is_file()
+                    {
+                        return Ok(());
+                    }
+
                     if let Some(file) = self
                         .process_content_file(instance_id, &path, content_type, &entries_ref)
                         .await?
@@ -151,17 +162,15 @@ impl ListContentUseCase {
             .map_err(|err| InstanceError::Storage(err.to_string()))?
             .len();
 
-        let is_disabled = file_name.ends_with(".disabled");
-
         let original_path = PathBuf::from(content_type.get_folder())
             .join(file_name)
             .to_slash_lossy()
             .to_string();
 
-        let content_path = if is_disabled {
-            original_path.trim_end_matches(".disabled").to_string()
-        } else {
-            original_path
+        // Only one suffix: `a.jar.disabled.disabled` is the disabled `a.jar.disabled`.
+        let (content_path, is_disabled) = match original_path.strip_suffix(DISABLED_SUFFIX) {
+            Some(enabled) => (enabled.to_string(), true),
+            None => (original_path, false),
         };
 
         let pack_file = self
