@@ -43,6 +43,7 @@ impl EditInstanceIconUseCase {
         edit_instance_icon: EditInstanceIcon,
     ) -> Result<Instance, InstanceError> {
         let instance_id = &edit_instance_icon.instance_id;
+        // Fail on a missing instance before importing the icon, or its asset would be left behind.
         self.instance_storage.get(instance_id).await?;
 
         let new_icon = match &edit_instance_icon.icon_path {
