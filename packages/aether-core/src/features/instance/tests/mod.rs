@@ -11,6 +11,7 @@ mod install_instance_test;
 mod install_plan_executor;
 mod instance_locks_test;
 mod instance_relative_path_test;
+mod instance_update_test;
 mod legacy_provider_id_sqlite_test;
 mod list_content_metadata_test;
 mod list_content_test;

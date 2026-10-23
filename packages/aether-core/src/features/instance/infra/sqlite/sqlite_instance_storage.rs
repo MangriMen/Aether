@@ -1,6 +1,8 @@
-use crate::features::instance::{Instance, InstanceError, InstanceId, InstanceStorage};
+use crate::features::instance::{
+    Instance, InstanceChange, InstanceError, InstanceId, InstanceStorage,
+};
 use async_trait::async_trait;
-use sqlx::SqlitePool;
+use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 use tracing::warn;
 
 use super::{sql_instance::SqlInstance, sql_pack_info::SqlPackInfo};
@@ -12,6 +14,15 @@ pub struct SqliteInstanceStorage {
 impl SqliteInstanceStorage {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
+    }
+
+    /// A read-modify-write has to hold the write lock from the read on, or a concurrent write
+    /// commits in between and is overwritten. `BEGIN IMMEDIATE` takes that lock up front.
+    async fn begin_write(&self) -> Result<Transaction<'static, Sqlite>, InstanceError> {
+        self.pool
+            .begin_with("BEGIN IMMEDIATE")
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
     }
 }
 
@@ -122,8 +133,57 @@ impl InstanceStorage for SqliteInstanceStorage {
     }
 
     async fn get(&self, id: &InstanceId) -> Result<Instance, InstanceError> {
-        let row = sqlx::query!(
-            r#"
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        read_instance(&mut conn, id).await
+    }
+
+    async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
+        let mut tx = self.begin_write().await?;
+        write_instance(&mut tx, instance).await?;
+        tx.commit()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
+
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        let mut tx = self.begin_write().await?;
+        let mut instance = read_instance(&mut tx, id).await?;
+        if change(&mut instance)? {
+            write_instance(&mut tx, &instance).await?;
+        }
+        tx.commit()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        Ok(instance)
+    }
+
+    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        let mut tx = self.begin_write().await?;
+        sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+async fn read_instance(
+    conn: &mut SqliteConnection,
+    id: &InstanceId,
+) -> Result<Instance, InstanceError> {
+    let row = sqlx::query!(
+        r#"
             SELECT 
                 i.id, i.name, i.icon_path, i.install_stage, i.game_version, i.loader, 
                 i.loader_version_json, 
@@ -144,89 +204,87 @@ impl InstanceStorage for SqliteInstanceStorage {
             LEFT JOIN instance_pack_info p ON i.id = p.instance_id
             WHERE i.id = ?
             "#,
-            id.as_str()
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| InstanceError::Storage(e.to_string()))?;
+        id.as_str()
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        let row = row.ok_or_else(|| InstanceError::NotFound {
-            instance_id: id.to_string(),
-        })?;
+    let row = row.ok_or_else(|| InstanceError::NotFound {
+        instance_id: id.to_string(),
+    })?;
 
-        let sql_instance = SqlInstance {
-            id: row.id,
+    let sql_instance = SqlInstance {
+        id: row.id,
 
-            name: row.name,
+        name: row.name,
 
-            icon_path: row.icon_path,
+        icon_path: row.icon_path,
 
-            install_stage: row.install_stage,
+        install_stage: row.install_stage,
 
-            game_version: row.game_version,
-            loader: row.loader,
-            loader_version_json: row.loader_version_json,
+        game_version: row.game_version,
+        loader: row.loader,
+        loader_version_json: row.loader_version_json,
 
-            override_java_path: row.override_java_path,
-            java_path: row.java_path,
+        override_java_path: row.override_java_path,
+        java_path: row.java_path,
 
-            override_launch_args: row.override_launch_args,
-            launch_args_json: row.launch_args_json,
+        override_launch_args: row.override_launch_args,
+        launch_args_json: row.launch_args_json,
 
-            override_env_vars: row.override_env_vars,
-            env_vars_json: row.env_vars_json,
+        override_env_vars: row.override_env_vars,
+        env_vars_json: row.env_vars_json,
 
-            override_memory: row.override_memory,
-            memory_maximum: row.memory_maximum,
+        override_memory: row.override_memory,
+        memory_maximum: row.memory_maximum,
 
-            override_window_settings: row.override_window_settings,
-            force_fullscreen: row.force_fullscreen,
-            window_width: row.window_width,
-            window_height: row.window_height,
+        override_window_settings: row.override_window_settings,
+        force_fullscreen: row.force_fullscreen,
+        window_width: row.window_width,
+        window_height: row.window_height,
 
-            created_at: row.created_at,
-            modified_at: row.modified_at,
-            last_played_at: row.last_played_at,
+        created_at: row.created_at,
+        modified_at: row.modified_at,
+        last_played_at: row.last_played_at,
 
-            time_played: row.time_played,
-            recent_time_played: row.recent_time_played,
+        time_played: row.time_played,
+        recent_time_played: row.recent_time_played,
 
-            override_hooks: row.override_hooks,
-            hook_pre_launch: row.hook_pre_launch,
-            hook_wrapper: row.hook_wrapper,
-            hook_post_exit: row.hook_post_exit,
-        };
+        override_hooks: row.override_hooks,
+        hook_pre_launch: row.hook_pre_launch,
+        hook_wrapper: row.hook_wrapper,
+        hook_post_exit: row.hook_post_exit,
+    };
 
-        let mut instance = Instance::try_from(sql_instance)?;
+    let mut instance = Instance::try_from(sql_instance)?;
 
-        if let (Some(pid), Some(mid), Some(vid)) = (
-            row.pack_provider_id,
-            row.pack_modpack_id,
-            row.pack_version_id,
-        ) {
-            instance.pack_info = Some(
-                SqlPackInfo {
-                    provider_id: pid,
-                    modpack_id: mid,
-                    version_id: vid,
-                }
-                .into(),
-            );
-        }
-
-        Ok(instance)
+    if let (Some(pid), Some(mid), Some(vid)) = (
+        row.pack_provider_id,
+        row.pack_modpack_id,
+        row.pack_version_id,
+    ) {
+        instance.pack_info = Some(
+            SqlPackInfo {
+                provider_id: pid,
+                modpack_id: mid,
+                version_id: vid,
+            }
+            .into(),
+        );
     }
 
-    async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
+    Ok(instance)
+}
 
-        let sql = SqlInstance::from(instance.clone());
+#[allow(clippy::too_many_lines)]
+async fn write_instance(
+    tx: &mut SqliteConnection,
+    instance: &Instance,
+) -> Result<(), InstanceError> {
+    let sql = SqlInstance::from(instance.clone());
 
-        sqlx::query!(
+    sqlx::query!(
             r#"
             INSERT INTO instances (
                 id, name, icon_path, install_stage, game_version, loader, 
@@ -311,9 +369,9 @@ impl InstanceStorage for SqliteInstanceStorage {
         .await
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        let instance_id = instance.id().as_str();
+    let instance_id = instance.id().as_str();
 
-        match &instance.pack_info {
+    match &instance.pack_info {
             Some(pack) => {
                 let sql_pack = SqlPackInfo::from(pack.clone());
                 sqlx::query!(
@@ -338,16 +396,5 @@ impl InstanceStorage for SqliteInstanceStorage {
         }
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
-        tx.commit()
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))
-    }
-
-    async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
-        sqlx::query!("DELETE FROM instances WHERE id = ?", id.as_str())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| InstanceError::Storage(e.to_string()))?;
-        Ok(())
-    }
+    Ok(())
 }

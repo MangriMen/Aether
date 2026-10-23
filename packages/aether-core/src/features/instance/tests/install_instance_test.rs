@@ -49,6 +49,18 @@ impl InstanceStorage for MemStorage {
         Ok(())
     }
 
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: crate::features::instance::InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        let mut instance = self.get(id).await?;
+        if change(&mut instance)? {
+            self.upsert(&instance).await?;
+        }
+        Ok(instance)
+    }
+
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         self.instances.lock().unwrap().retain(|i| i.id() != id);
         Ok(())
@@ -295,4 +307,61 @@ async fn should_reset_to_not_installed_when_the_install_fails() {
     .await;
     assert!(!ok);
     assert_eq!(instance.install_stage, InstanceInstallStage::NotInstalled);
+}
+
+struct RenameDuringInstall(Arc<MemStorage>);
+
+#[async_trait]
+impl MinecraftInstallService for RenameDuringInstall {
+    async fn execute(
+        &self,
+        _params: InstallMinecraftParams,
+        _loading_bar: Option<&ProgressBarId>,
+        _force: bool,
+    ) -> Result<(), MinecraftApplicationError> {
+        let id = InstanceId::try_from("inst").unwrap();
+        self.0
+            .update(
+                &id,
+                Box::new(|instance| {
+                    instance.rename("renamed".to_owned())?;
+                    Ok(true)
+                }),
+            )
+            .await
+            .unwrap();
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn should_keep_an_edit_made_while_the_game_installs() {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let instance = InstanceBuilder::new(
+        InstanceId::try_from("inst").unwrap(),
+        "inst".to_owned(),
+        "1.20.1".to_owned(),
+        ModLoader::Vanilla,
+    )
+    .build();
+    let id = instance.id().clone();
+    let storage = Arc::new(MemStorage {
+        instances: Mutex::new(vec![instance]),
+    });
+    let use_case = InstallInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(RenameDuringInstall(storage.clone())),
+        Arc::new(NoProgress),
+        location_info,
+    );
+
+    use_case.execute(id.clone(), false, None).await.unwrap();
+
+    let stored = storage.get(&id).await.unwrap();
+    assert_eq!(stored.name(), "renamed");
+    assert_eq!(stored.install_stage, InstanceInstallStage::Installed);
 }

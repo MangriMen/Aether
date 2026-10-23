@@ -6,7 +6,7 @@ use crate::features::{
     events::{ProgressBarId, ProgressEventType, ProgressService, ProgressServiceExt},
     instance::{
         Instance, InstanceError, InstanceId, InstanceInstallService, InstanceInstallStage,
-        InstanceStorage,
+        InstanceStorage, InstanceStorageExt,
     },
     minecraft::{InstallMinecraftParams, MinecraftInstallService},
     settings::LocationInfo,
@@ -36,7 +36,7 @@ impl InstallInstanceUseCase {
 
     async fn handle_success_installation(
         &self,
-        instance: &mut Instance,
+        instance: &Instance,
         pack_pending: bool,
     ) -> Result<(), InstanceError> {
         log::info!(
@@ -51,23 +51,35 @@ impl InstallInstanceUseCase {
         // its game keeps it `PackInstalling`, and whoever deploys the pack moves it on. Only that
         // stage is kept — an instance merely *from* a pack (`pack_info`) reinstalled for a health
         // check or a game change is as ready as before.
-        instance.install_stage = if pack_pending {
+        let stage = if pack_pending {
             InstanceInstallStage::PackInstalling
         } else {
             InstanceInstallStage::Installed
         };
-        self.instance_storage.upsert(instance).await?;
-        Ok(())
+        self.instance_storage
+            .upsert_with(instance.id(), move |instance| {
+                instance.install_stage = stage;
+                Ok(())
+            })
+            .await
     }
 
     async fn handle_failed_installation(
         &self,
-        instance: &mut Instance,
+        instance_id: &InstanceId,
     ) -> Result<(), InstanceError> {
-        if instance.install_stage != InstanceInstallStage::Installed {
-            instance.install_stage = InstanceInstallStage::NotInstalled;
-            self.instance_storage.upsert(instance).await?;
-        }
+        self.instance_storage
+            .update(
+                instance_id,
+                Box::new(|instance| {
+                    if instance.install_stage == InstanceInstallStage::Installed {
+                        return Ok(false);
+                    }
+                    instance.install_stage = InstanceInstallStage::NotInstalled;
+                    Ok(true)
+                }),
+            )
+            .await?;
         Ok(())
     }
 
@@ -77,11 +89,18 @@ impl InstallInstanceUseCase {
         force: bool,
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
-        let mut instance = self.instance_storage.get(&instance_id).await?;
-        let pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
-
-        instance.install_stage = InstanceInstallStage::Installing;
-        self.instance_storage.upsert(&instance).await?;
+        let mut pack_pending = false;
+        let instance = self
+            .instance_storage
+            .update(
+                &instance_id,
+                Box::new(|instance| {
+                    pack_pending = instance.install_stage == InstanceInstallStage::PackInstalling;
+                    instance.install_stage = InstanceInstallStage::Installing;
+                    Ok(true)
+                }),
+            )
+            .await?;
 
         let install_dir = self.location_info.instance_dir(&instance_id);
 
@@ -129,10 +148,10 @@ impl InstallInstanceUseCase {
 
         match result {
             Ok(()) => {
-                self.handle_success_installation(&mut instance, pack_pending)
+                self.handle_success_installation(&instance, pack_pending)
                     .await
             }
-            Err(_) => self.handle_failed_installation(&mut instance).await,
+            Err(_) => self.handle_failed_installation(instance.id()).await,
         }?;
 
         if let Some(loading_bar) = loading_bar {

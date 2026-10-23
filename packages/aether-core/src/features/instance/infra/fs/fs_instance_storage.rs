@@ -6,7 +6,8 @@ use tracing::warn;
 use crate::{
     features::{
         instance::{
-            Instance, InstanceError, InstanceId, InstanceStorage, infra::fs::instance::InstanceV2,
+            Instance, InstanceChange, InstanceError, InstanceId, InstanceStorage,
+            infra::fs::instance::InstanceV2,
         },
         settings::LocationInfo,
     },
@@ -15,11 +16,24 @@ use crate::{
 
 pub struct FsInstanceStorage {
     location_info: Arc<LocationInfo>,
+    // Serializes read-modify-write cycles so concurrent edits keep each other's fields.
+    write_lock: tokio::sync::Mutex<()>,
 }
 
 impl FsInstanceStorage {
     pub fn new(location_info: Arc<LocationInfo>) -> Self {
-        Self { location_info }
+        Self {
+            location_info,
+            write_lock: tokio::sync::Mutex::new(()),
+        }
+    }
+
+    async fn write(&self, instance: &Instance) -> Result<(), InstanceError> {
+        let path = self.location_info.instance_metadata_file(instance.id());
+        write_json_async(&path, InstanceV2::from(instance))
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        Ok(())
     }
 
     async fn load_instance_internal(&self, path: &Path) -> Result<Instance, InstanceError> {
@@ -83,14 +97,25 @@ impl InstanceStorage for FsInstanceStorage {
     }
 
     async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
-        let path = self.location_info.instance_metadata_file(instance.id());
-        write_json_async(&path, InstanceV2::from(instance))
-            .await
-            .map_err(|err| InstanceError::Storage(err.to_string()))?;
-        Ok(())
+        let _guard = self.write_lock.lock().await;
+        self.write(instance).await
+    }
+
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        let _guard = self.write_lock.lock().await;
+        let mut instance = self.get(id).await?;
+        if change(&mut instance)? {
+            self.write(&instance).await?;
+        }
+        Ok(instance)
     }
 
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        let _guard = self.write_lock.lock().await;
         let path = self.location_info.instance_dir(id);
         remove_dir_all(&path)
             .await

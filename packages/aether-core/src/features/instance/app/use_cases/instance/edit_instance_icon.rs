@@ -43,26 +43,31 @@ impl EditInstanceIconUseCase {
         edit_instance_icon: EditInstanceIcon,
     ) -> Result<Instance, InstanceError> {
         let instance_id = &edit_instance_icon.instance_id;
-        let mut instance = self.instance_storage.get(instance_id).await?;
+        self.instance_storage.get(instance_id).await?;
 
-        if let Some(icon_path) = edit_instance_icon.icon_path {
-            match icon_path {
-                Some(icon_path) => {
-                    let asset_id = self
-                        .assets_storage
-                        .import_file(icon_path.as_ref())
-                        .await
-                        .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let new_icon = match &edit_instance_icon.icon_path {
+            Some(Some(icon_path)) => Some(Some(
+                self.assets_storage
+                    .import_file(icon_path.as_ref())
+                    .await
+                    .map_err(|err| InstanceError::Storage(err.to_string()))?,
+            )),
+            Some(None) => Some(None),
+            None => None,
+        };
 
-                    instance.set_icon(Some(asset_id));
-                }
-                None => instance.set_icon(None),
-            }
-        }
-
-        self.instance_storage.upsert(&instance).await?;
-
-        Ok(instance)
+        self.instance_storage
+            .update(
+                instance_id,
+                Box::new(move |instance| {
+                    let Some(icon) = new_icon else {
+                        return Ok(false);
+                    };
+                    instance.set_icon(icon);
+                    Ok(true)
+                }),
+            )
+            .await
     }
 }
 
