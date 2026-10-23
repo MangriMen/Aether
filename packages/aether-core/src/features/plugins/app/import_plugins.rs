@@ -41,18 +41,33 @@ impl ImportPluginsUseCase {
     }
 
     pub(crate) async fn execute(&self, paths: Vec<PathBuf>) -> Result<(), PluginError> {
+        let mut import_result = Ok(());
         for path in paths {
-            let extracted_plugin = self.plugin_extractor.extract(&path).await?;
-            let plugin_id = extracted_plugin.plugin_id.clone();
-
-            // Before the new bytes land, so they are never checked against the old record. Should
-            // the copy fail, the old bytes are left unverified — loaded with a warning, not refused.
-            self.plugin_verification_storage.remove(&plugin_id).await?;
-            self.plugin_source_storage.remove(&plugin_id).await?;
-            self.plugin_storage.add(extracted_plugin).await?;
+            if let Err(e) = self.import_one(&path).await {
+                import_result = Err(e);
+                break;
+            }
         }
 
-        self.sync_plugins_service.execute().await?;
+        // Also after a failure: the archives imported before it are on disk and belong in the
+        // registry.
+        let sync_result = self.sync_plugins_service.execute().await;
+        if let (Err(_), Err(sync_err)) = (&import_result, &sync_result) {
+            tracing::error!("Plugin sync after a failed import also failed: {sync_err}");
+        }
+        import_result?;
+        sync_result
+    }
+
+    async fn import_one(&self, path: &std::path::Path) -> Result<(), PluginError> {
+        let extracted_plugin = self.plugin_extractor.extract(path).await?;
+        let plugin_id = extracted_plugin.plugin_id.clone();
+
+        // Before the new bytes land, so they are never checked against the old record. Should
+        // the copy fail, the old bytes are left unverified — loaded with a warning, not refused.
+        self.plugin_verification_storage.remove(&plugin_id).await?;
+        self.plugin_source_storage.remove(&plugin_id).await?;
+        self.plugin_storage.add(extracted_plugin).await?;
         Ok(())
     }
 }
