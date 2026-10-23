@@ -161,7 +161,8 @@
     "settings": {
       "NOT_FOUND": "Settings file not found",
       "STORAGE_FAILURE": "Settings storage failure",
-      "INVALID_PLATFORM_PROVIDER": "Invalid content provider choice for platform \"{{platform}}\": {{reason}}"
+      "INVALID_PLATFORM_PROVIDER": "Invalid content provider choice for platform \"{{platform}}\": {{reason}}",
+      "INVALID_MAX_CONCURRENT_DOWNLOADS": "The number of concurrent downloads must be at least 1"
     },
     "window": {
       "ALREADY_EXISTS": "Window with label {{label}} already exists",

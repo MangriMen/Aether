@@ -1,3 +1,3 @@
 pub(crate) mod domain;
 
-pub use domain::FetchSemaphore;
+pub use domain::{ApiSemaphore, FetchSemaphore};

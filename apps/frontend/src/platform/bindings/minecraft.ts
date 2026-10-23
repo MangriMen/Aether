@@ -350,7 +350,7 @@ export type RequestErrorDto = { code: "ACQUIRE" } | { code: "REQUEST_SEND"; payl
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
 	platform: string,
 	reason: string,
-} };
+} } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" };
 
 /**  A game version of Minecraft */
 export type VersionDto = {

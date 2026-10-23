@@ -654,7 +654,7 @@ export type RequestedContentVersionStatusDto = "listed" | "archived" | "draft" |
 export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE" } | { code: "INVALID_PLATFORM_PROVIDER"; payload: {
 	platform: string,
 	reason: string,
-} };
+} } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" };
 
 export type WindowErrorDto = { code: "ALREADY_EXISTS"; payload: {
 	label: WindowLabelDto,

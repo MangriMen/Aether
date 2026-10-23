@@ -22,8 +22,8 @@ use crate::{
 };
 
 use super::{
-    AssetsService, ClientService, LibrariesService, VersionProgress, assets_service::PendingAsset,
-    version_info_key,
+    AssetsService, ClientService, LibrariesService, LoggingService, VersionProgress,
+    assets_service::PendingAsset, version_info_key,
 };
 
 /// The files of a game version are one shared download: one install of a version downloads
@@ -33,6 +33,7 @@ pub struct MinecraftDownloadService<RC: RequestClient, PS: ProgressService, C: C
     client_service: ClientService<RC, FS>,
     assets_service: AssetsService<RC, C>,
     libraries_service: LibrariesService<RC>,
+    logging_service: LoggingService<RC>,
     request_client: Arc<RC>,
     progress_service: Arc<PS>,
     cached_resource: InfinityCachedResource<C>,
@@ -46,6 +47,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
         client_service: ClientService<RC, FS>,
         assets_service: AssetsService<RC, C>,
         libraries_service: LibrariesService<RC>,
+        logging_service: LoggingService<RC>,
         request_client: Arc<RC>,
         progress_service: Arc<PS>,
         cache: Arc<C>,
@@ -54,6 +56,7 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             client_service,
             assets_service,
             libraries_service,
+            logging_service,
             request_client,
             progress_service,
             cached_resource: InfinityCachedResource::new(cache),
@@ -116,8 +119,9 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
             .assets_service
             .pending(&assets_index, with_legacy, force)
             .await?;
+        let log_config = self.logging_service.pending(version_info, force).await;
         // Nothing to wait on: no bar, so no install gets a mirror.
-        if client.is_none() && libraries.is_empty() && assets.is_empty() {
+        if client.is_none() && libraries.is_empty() && assets.is_empty() && log_config.is_none() {
             info!("Minecraft {} is downloaded already", version_info.id);
             return Ok(());
         }
@@ -125,7 +129,8 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
         info!("Downloading minecraft {}", version_info.id);
         let size = client.unwrap_or(0)
             + libraries.iter().map(|library| library.size).sum::<u64>()
-            + assets.iter().map(PendingAsset::size).sum::<u64>();
+            + assets.iter().map(PendingAsset::size).sum::<u64>()
+            + log_config.map_or(0, |file| u64::from(file.size));
         #[allow(clippy::cast_precision_loss)] // a progress total
         let bar = self
             .progress_service
@@ -149,7 +154,13 @@ impl<RC: RequestClient, PS: ProgressService, C: Cache, FS: FileStore>
                 Ok(())
             },
             self.assets_service.download_assets(&assets, &version_info.id, with_legacy, force, &progress),
-            self.libraries_service.download_libraries(&libraries, version_info, java_arch, force, &progress)
+            self.libraries_service.download_libraries(&libraries, version_info, java_arch, force, &progress),
+            async {
+                if let Some(file) = log_config {
+                    self.logging_service.download_log_config(file, &progress).await?;
+                }
+                Ok(())
+            }
         };
 
         bar.fail_on_err(&result).await;

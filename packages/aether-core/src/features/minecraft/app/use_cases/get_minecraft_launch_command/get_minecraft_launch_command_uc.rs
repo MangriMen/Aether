@@ -16,7 +16,7 @@ use crate::{
         minecraft::{
             LaunchSettings, LoaderVersionPreference, LoaderVersionService,
             MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
-            ModLoader, VersionManifestService, get_compatible_java_version,
+            ModLoader, VersionManifestService, get_compatible_java_version, get_logging_argument,
             resolve_minecraft_version, vanilla, version_jar_name,
         },
         settings::LocationInfo,
@@ -144,7 +144,7 @@ impl GetMinecraftLaunchCommandUseCase {
             create_dir_all(&natives_dir).await?;
         }
 
-        let jvm_arguments = get_minecraft_jvm_arguments(
+        let mut jvm_arguments = get_minecraft_jvm_arguments(
             args.get(&vanilla::ArgumentType::Jvm)
                 .map(std::vec::Vec::as_slice),
             &self.location_info.libraries_dir(),
@@ -157,6 +157,9 @@ impl GetMinecraftLaunchCommandUseCase {
             &launch_settings.launch_args,
             minecraft_updated,
         )?;
+        if let Some(logging_argument) = get_logging_argument(&version_info, &self.location_info)? {
+            jvm_arguments.insert(0, logging_argument);
+        }
 
         let minecraft_arguments = get_minecraft_arguments(
             args.get(&vanilla::ArgumentType::Game)

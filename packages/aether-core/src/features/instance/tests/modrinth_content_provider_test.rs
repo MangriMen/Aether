@@ -172,6 +172,7 @@ impl Fixture {
             location_info.clone(),
             None,
             http.clone(),
+            http.clone(),
             max_mrpack_bytes,
         );
 

@@ -24,7 +24,7 @@ use aether_core::features::java::infra::{
 };
 use aether_core::features::minecraft::infra::{
     AssetsService, CachedMetadataStorage, ClientService, ForgeProcessor, LibrariesService,
-    MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
+    LoggingService, MinecraftDownloadResolver, MinecraftDownloadService, ModrinthMetadataStorage,
     minecraft_metadata_namespaces,
 };
 use aether_core::features::plugins::infra::{
@@ -49,10 +49,10 @@ use aether_core::shared::cache::AssetsStorage;
 use aether_core::shared::cache::infra::{FileCache, FsAssetsStorage, SqliteCache};
 use aether_core::shared::capability::CapabilityRegistry;
 use aether_core::shared::capability::infra::MemoryCapabilityRegistry;
-use aether_core::shared::fetch::FetchSemaphore;
+use aether_core::shared::fetch::{ApiSemaphore, FetchSemaphore};
 use aether_core::shared::housekeeping::{CacheCleaner, Housekeeping, spawn_housekeeping};
 use aether_core::shared::limits::{ContentInstallLimits, PluginSandboxLimits};
-use aether_core::shared::request_client::infra::ReqwestClient;
+use aether_core::shared::request_client::infra::{ReqwestClient, with_default_timeouts};
 use log::info;
 use reqwest_middleware::ClientWithMiddleware;
 use reqwest_retry::policies::ExponentialBackoff;
@@ -135,7 +135,8 @@ pub async fn build_container(
         let _ = settings_storage_sqlite.upsert(default.clone()).await;
         default
     };
-    let max_downloads = settings.max_concurrent_downloads();
+    // A stored 0 (older builds accepted it) would park every download forever.
+    let max_downloads = settings.max_concurrent_downloads().max(1);
     let fetch_semaphore = Arc::new(FetchSemaphore(tokio::sync::Semaphore::new(max_downloads)));
 
     // ── Limits ──────────────────────────────────────────────────────
@@ -146,10 +147,11 @@ pub async fn build_container(
 
     // ── HTTP client ─────────────────────────────────────────────────
     let reqwest_client: Arc<ClientWithMiddleware> = {
-        let client = reqwest::Client::builder()
-            .tcp_keepalive(Some(std::time::Duration::from_secs(10)))
-            .build()
-            .expect("Failed to build reqwest client");
+        let client = with_default_timeouts(
+            reqwest::Client::builder().tcp_keepalive(Some(std::time::Duration::from_secs(10))),
+        )
+        .build()
+        .expect("Failed to build reqwest client");
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
         let retry_middleware =
             reqwest_retry::RetryTransientMiddleware::new_with_policy(retry_policy);
@@ -166,11 +168,21 @@ pub async fn build_container(
         event_emitter.clone(),
         progress_bar_storage.clone(),
     ));
-    let http_client: Arc<ReqwestClient<ProgressServiceType>> = Arc::new(ReqwestClient::new(
-        progress_service.clone(),
-        reqwest_client.clone(),
-        fetch_semaphore.clone(),
-    ));
+    // Two clients over one connection pool, each with its own queue, so that a long line of
+    // file downloads never holds a metadata request back; see `ApiSemaphore`. A service that
+    // does both takes both.
+    let download_client: Arc<ReqwestClient<ProgressServiceType>> =
+        Arc::new(ReqwestClient::for_downloads(
+            progress_service.clone(),
+            reqwest_client.clone(),
+            fetch_semaphore.clone(),
+        ));
+    let metadata_client: Arc<ReqwestClient<ProgressServiceType>> =
+        Arc::new(ReqwestClient::for_metadata(
+            progress_service.clone(),
+            reqwest_client.clone(),
+            Arc::new(ApiSemaphore::default()),
+        ));
 
     // ── Storage implementations ─────────────────────────────────────
     let credentials_storage: Arc<dyn aether_core::features::auth::CredentialsStorage> =
@@ -197,7 +209,7 @@ pub async fn build_container(
             pool.clone(),
         )));
     let fs_content_icon_cache = Arc::new(FsContentIconCache::new(
-        http_client.clone(),
+        download_client.clone(),
         &location_info.assets_cache_dir(),
     ));
     let content_icon_cache: Arc<dyn aether_core::features::instance::ContentIconCache> =
@@ -257,14 +269,17 @@ pub async fn build_container(
         Arc::new(FsJavaInstallationService);
     let java_installation_tracker: Arc<dyn aether_core::features::java::JavaInstallationTracker> =
         Arc::new(MemoryJavaInstallationTracker::default());
-    let jre_provider: Arc<dyn aether_core::features::java::JreProvider> = Arc::new(
-        AzulJreProvider::new(progress_service.clone(), http_client.clone()),
-    );
+    let jre_provider: Arc<dyn aether_core::features::java::JreProvider> =
+        Arc::new(AzulJreProvider::new(
+            progress_service.clone(),
+            metadata_client.clone(),
+            download_client.clone(),
+        ));
 
     let metadata_storage: Arc<dyn aether_core::features::minecraft::MetadataStorage> =
         Arc::new(CachedMetadataStorage::new(
             SqliteCache::new(pool.clone()),
-            ModrinthMetadataStorage::new(http_client.clone()),
+            ModrinthMetadataStorage::new(metadata_client.clone()),
         ));
 
     // ── Minecraft download chain ────────────────────────────────────
@@ -272,19 +287,22 @@ pub async fn build_container(
         location_info.clone(),
     )));
 
-    let client_svc = ClientService::new(http_client.clone(), minecraft_cache.clone());
+    let client_svc = ClientService::new(download_client.clone(), minecraft_cache.clone());
     let assets_svc = AssetsService::new(
-        http_client.clone(),
+        metadata_client.clone(),
+        download_client.clone(),
         location_info.clone(),
         minecraft_cache.clone(),
     );
-    let libraries_svc = LibrariesService::new(http_client.clone(), location_info.clone());
+    let libraries_svc = LibrariesService::new(download_client.clone(), location_info.clone());
+    let logging_svc = LoggingService::new(download_client.clone(), location_info.clone());
     let minecraft_downloader: Arc<dyn aether_core::features::minecraft::MinecraftDownloader> =
         Arc::new(MinecraftDownloadService::new(
             client_svc,
             assets_svc,
             libraries_svc,
-            http_client.clone(),
+            logging_svc,
+            metadata_client.clone(),
             progress_service.clone(),
             minecraft_cache.clone(),
         ));
@@ -392,7 +410,7 @@ pub async fn build_container(
             as Arc<dyn aether_core::features::events::ProgressService>,
         location_info: location_info.clone(),
         fetch_semaphore,
-        request_client: http_client.clone(),
+        request_client: download_client.clone(),
         instance_watcher_service: instance_watcher_service.clone(),
         importers_registry: importers_registry.clone(),
         updaters_registry: updaters_registry.clone(),
@@ -415,7 +433,8 @@ pub async fn build_container(
         let provider = Arc::new(ModrinthContentProvider::new(
             location_info.clone(),
             None,
-            http_client.clone(),
+            metadata_client.clone(),
+            download_client.clone(),
             content_limits.max_mrpack_bytes,
         ));
         let meta = provider.metadata();
