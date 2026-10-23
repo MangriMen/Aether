@@ -213,6 +213,18 @@ impl InstanceStorage for MemInstanceStorage {
         Ok(())
     }
 
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: crate::features::instance::InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        let mut instance = self.get(id).await?;
+        if change(&mut instance)? {
+            self.upsert(&instance).await?;
+        }
+        Ok(instance)
+    }
+
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
         let mut guard = self.instances.lock().unwrap();
         guard.retain(|i| i.id() != id);
@@ -702,6 +714,17 @@ async fn should_roll_back_when_storage_fails() {
         }
         async fn upsert(&self, _instance: &Instance) -> Result<(), InstanceError> {
             Err(InstanceError::Storage("disk full".to_string()))
+        }
+        async fn update(
+            &self,
+            id: &InstanceId,
+            change: crate::features::instance::InstanceChange<'_>,
+        ) -> Result<Instance, InstanceError> {
+            let mut instance = self.get(id).await?;
+            if change(&mut instance)? {
+                self.upsert(&instance).await?;
+            }
+            Ok(instance)
         }
         async fn remove(&self, _id: &InstanceId) -> Result<(), InstanceError> {
             Ok(())

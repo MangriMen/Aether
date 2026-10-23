@@ -190,6 +190,18 @@ mod tests {
             unimplemented!()
         }
 
+        async fn update(
+            &self,
+            id: &InstanceId,
+            change: crate::features::instance::InstanceChange<'_>,
+        ) -> Result<Instance, InstanceError> {
+            let mut instance = self.get(id).await?;
+            if change(&mut instance)? {
+                self.upsert(&instance).await?;
+            }
+            Ok(instance)
+        }
+
         async fn remove(&self, _: &InstanceId) -> Result<(), InstanceError> {
             unimplemented!()
         }

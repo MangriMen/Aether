@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{Instance, InstanceError, InstanceId, InstanceStorage},
+    instance::{Instance, InstanceChange, InstanceError, InstanceId, InstanceStorage},
 };
 
 pub struct EventEmittingInstanceStorage<IS> {
@@ -40,6 +40,35 @@ impl<IS: InstanceStorage> InstanceStorage for EventEmittingInstanceStorage<IS> {
             .await;
 
         Ok(())
+    }
+
+    async fn update(
+        &self,
+        id: &InstanceId,
+        change: InstanceChange<'_>,
+    ) -> Result<Instance, InstanceError> {
+        let mut changed = false;
+        let instance = self
+            .instance_storage
+            .update(
+                id,
+                Box::new(|instance| {
+                    changed = change(instance)?;
+                    Ok(changed)
+                }),
+            )
+            .await?;
+
+        if changed {
+            self.event_emitter
+                .emit_safe(InstanceEvent {
+                    event: InstanceEventType::Edited,
+                    instance_id: id.clone(),
+                })
+                .await;
+        }
+
+        Ok(instance)
     }
 
     async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {

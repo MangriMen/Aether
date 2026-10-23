@@ -46,7 +46,7 @@ impl ChangeInstanceGameUseCase {
         game: InstanceGame,
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<(), InstanceError> {
-        let mut instance = self.instance_storage.get(&instance_id).await?;
+        let instance = self.instance_storage.get(&instance_id).await?;
         if game.is_run_by(&instance) {
             return Ok(());
         }
@@ -69,12 +69,16 @@ impl ChangeInstanceGameUseCase {
             loader_version
         );
 
-        let previous = instance.clone();
-        instance.game_version = game.game_version;
-        instance.loader = game.mod_loader;
-        instance.loader_version = loader_version;
-        instance.modified = Utc::now();
-        self.instance_storage.upsert(&instance).await?;
+        let previous = instance;
+        self.instance_storage
+            .upsert_with(&instance_id, move |instance| {
+                instance.game_version = game.game_version;
+                instance.loader = game.mod_loader;
+                instance.loader_version = loader_version;
+                instance.modified = Utc::now();
+                Ok(())
+            })
+            .await?;
 
         let result = self
             .instance_install_service

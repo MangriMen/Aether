@@ -25,14 +25,18 @@ impl EditInstanceUseCasePort for EditInstanceUseCase {
         instance_id: InstanceId,
         edit_instance: EditInstance,
     ) -> Result<Instance, InstanceError> {
-        let mut instance = self.instance_storage.get(&instance_id).await?;
-
         // The name is checked by `Instance::rename`, the only place that knows what a name is.
-        if edit_instance.apply_to(&mut instance)? {
-            instance.modified = Utc::now();
-            self.instance_storage.upsert(&instance).await?;
-        }
-
-        Ok(instance)
+        self.instance_storage
+            .update(
+                &instance_id,
+                Box::new(move |instance| {
+                    let changed = edit_instance.apply_to(instance)?;
+                    if changed {
+                        instance.modified = Utc::now();
+                    }
+                    Ok(changed)
+                }),
+            )
+            .await
     }
 }
