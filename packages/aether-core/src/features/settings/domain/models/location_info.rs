@@ -126,6 +126,14 @@ impl LocationInfo {
         self.instances_dir().join(id.as_str())
     }
 
+    /// Where a removed instance directory waits to be deleted. Outside `instances_dir` so that a
+    /// half-deleted leftover is never listed as an instance, yet on the same volume so moving a
+    /// directory here is a rename. Under `temp_dir`, which is swept of interrupted work at startup.
+    #[inline]
+    pub fn removed_instances_dir(&self) -> PathBuf {
+        self.temp_dir().join("removed-instances")
+    }
+
     /// Get the metadata directory for a specific instance
     #[inline]
     pub fn instance_metadata_dir(&self, id: &InstanceId) -> PathBuf {
@@ -306,5 +314,6 @@ mod tests {
         assert_eq!(li.wasm_cache_config(), cache.join("wasm.toml"));
         assert_eq!(li.wasm_cache_dir(), cache.join("wasm"));
         assert_eq!(li.temp_dir(), cache.join("temp"));
+        assert_eq!(li.removed_instances_dir(), cache.join("temp").join("removed-instances"));
     }
 }

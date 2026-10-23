@@ -12,47 +12,44 @@ use crate::{
         },
         settings::LocationInfo,
     },
-    shared::io::infra::{create_dir_all, remove_dir_all, rename},
+    shared::io::{
+        domain::IoError,
+        infra::{create_dir_all, remove_dir_all, rename},
+    },
 };
 
 use super::instance_relative_path::{check_size, resolve_instance_file_path};
-
-const REMOVING_PREFIX: &str = ".removing-";
 
 // On Windows a directory cannot be moved while a handle into it is still open, and the watcher
 // and a just-stopped process release theirs a moment after being told to.
 const MOVE_ATTEMPTS: u32 = 8;
 const MOVE_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(250);
 
+/// Whether a failed move may succeed once whoever holds the directory lets go of it.
+///
+/// Only the Windows access-denied, sharing and lock violations (5, 32, 33) qualify; anything else
+/// (a missing path, a real permission problem) would only make the caller wait for nothing.
+fn is_held_open(err: &IoError) -> bool {
+    let (IoError::IoPathError { source, .. } | IoError::IoError(source)) = err else {
+        return false;
+    };
+    cfg!(windows) && matches!(source.raw_os_error(), Some(5 | 32 | 33))
+}
+
 async fn retry<T, E, Fut: std::future::Future<Output = Result<T, E>>>(
     attempts: u32,
     delay: std::time::Duration,
+    is_transient: impl Fn(&E) -> bool,
     mut operation: impl FnMut() -> Fut,
 ) -> Result<T, E> {
     let mut attempt = 1;
     loop {
         match operation().await {
-            Err(_) if attempt < attempts => {
+            Err(err) if attempt < attempts && is_transient(&err) => {
                 attempt += 1;
                 tokio::time::sleep(delay).await;
             }
             result => return result,
-        }
-    }
-}
-
-/// Deletes what an earlier removal moved aside but could not delete.
-async fn sweep_removed(instances_root: &std::path::Path) {
-    let Ok(mut entries) = fs::read_dir(instances_root).await else {
-        return;
-    };
-    while let Ok(Some(entry)) = entries.next_entry().await {
-        if entry
-            .file_name()
-            .to_string_lossy()
-            .starts_with(REMOVING_PREFIX)
-        {
-            let _ = remove_dir_all(entry.path()).await;
         }
     }
 }
@@ -69,6 +66,27 @@ impl FsInstanceFileService {
         Self {
             location_info,
             max_file_bytes,
+        }
+    }
+
+    /// Deletes what an earlier removal moved aside but could not delete.
+    ///
+    /// Meant to run once at startup, when no removal is in flight. The trash lives outside the
+    /// instances directory, so a leftover is never mistaken for an instance in the meantime.
+    pub async fn sweep_removed(&self) {
+        let trash_root = self.location_info.removed_instances_dir();
+        let mut entries = match fs::read_dir(&trash_root).await {
+            Ok(entries) => entries,
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => return,
+            Err(err) => {
+                warn!("Failed to read {trash_root:?} to sweep removed instances: {err}");
+                return;
+            }
+        };
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if let Err(err) = remove_dir_all(entry.path()).await {
+                warn!("Failed to sweep removed instance {:?}: {err}", entry.path());
+            }
         }
     }
 }
@@ -121,23 +139,21 @@ impl InstanceFileService for FsInstanceFileService {
     /// Moves the directory out of the way first, then deletes it. The move is all or nothing: if
     /// something holds a file open, the instance stays whole and the removal can be retried, rather
     /// than being left half deleted. Once moved, the instance is gone; a failed delete only leaves
-    /// a hidden `.removing-*` directory that the next removal sweeps.
+    /// a directory in the trash, which [`FsInstanceFileService::sweep_removed`] deletes at startup.
     async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
-        let instances_root = self.location_info.instances_dir();
-
-        sweep_removed(&instances_root).await;
 
         if !instance_dir.exists() {
             return Ok(());
         }
 
-        let trash = instances_root.join(format!(
-            "{REMOVING_PREFIX}{}-{}",
-            instance_id.as_str(),
-            uuid::Uuid::new_v4().simple()
-        ));
-        retry(MOVE_ATTEMPTS, MOVE_RETRY_DELAY, || {
+        let trash_root = self.location_info.removed_instances_dir();
+        create_dir_all(&trash_root)
+            .await
+            .map_err(|err| InstanceError::Storage(err.to_string()))?;
+        let trash = trash_root.join(uuid::Uuid::new_v4().simple().to_string());
+
+        retry(MOVE_ATTEMPTS, MOVE_RETRY_DELAY, is_held_open, || {
             rename(&instance_dir, &trash)
         })
         .await
@@ -216,12 +232,17 @@ mod tests {
     async fn should_retry_until_the_operation_succeeds_when_it_fails_transiently() {
         let calls = AtomicU32::new(0);
 
-        let result: Result<u32, &str> = retry(5, Duration::ZERO, || async {
-            match calls.fetch_add(1, Ordering::SeqCst) {
-                0..=1 => Err("locked"),
-                n => Ok(n),
-            }
-        })
+        let result: Result<u32, &str> = retry(
+            5,
+            Duration::ZERO,
+            |_| true,
+            || async {
+                match calls.fetch_add(1, Ordering::SeqCst) {
+                    0..=1 => Err("locked"),
+                    n => Ok(n),
+                }
+            },
+        )
         .await;
 
         assert_eq!(result, Ok(2));
@@ -231,13 +252,37 @@ mod tests {
     async fn should_return_the_last_error_when_every_attempt_fails() {
         let calls = AtomicU32::new(0);
 
-        let result: Result<(), &str> = retry(3, Duration::ZERO, || async {
-            calls.fetch_add(1, Ordering::SeqCst);
-            Err("locked")
-        })
+        let result: Result<(), &str> = retry(
+            3,
+            Duration::ZERO,
+            |_| true,
+            || async {
+                calls.fetch_add(1, Ordering::SeqCst);
+                Err("locked")
+            },
+        )
         .await;
 
         assert_eq!(result, Err("locked"));
         assert_eq!(calls.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn should_not_retry_when_the_error_is_not_transient() {
+        let calls = AtomicU32::new(0);
+
+        let result: Result<(), &str> = retry(
+            5,
+            Duration::ZERO,
+            |_| false,
+            || async {
+                calls.fetch_add(1, Ordering::SeqCst);
+                Err("missing")
+            },
+        )
+        .await;
+
+        assert_eq!(result, Err("missing"));
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
     }
 }

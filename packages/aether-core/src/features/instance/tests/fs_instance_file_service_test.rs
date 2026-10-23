@@ -113,30 +113,52 @@ async fn should_succeed_when_the_instance_dir_does_not_exist() {
         .expect("remove_instance_dir should succeed for non-existent dir");
 }
 
-#[tokio::test]
-async fn should_leave_nothing_behind_and_sweep_old_leftovers_when_the_instance_dir_is_removed() {
-    let (_temp_dir, location_info) = setup_temp_location();
-    let service = FsInstanceFileService::new(
+fn service_for(location_info: &std::sync::Arc<LocationInfo>) -> FsInstanceFileService {
+    FsInstanceFileService::new(
         location_info.clone(),
         crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
-    );
+    )
+}
+
+async fn dir_is_empty(dir: &std::path::Path) -> bool {
+    let mut entries = tokio::fs::read_dir(dir).await.unwrap();
+    entries.next_entry().await.unwrap().is_none()
+}
+
+#[tokio::test]
+async fn should_leave_nothing_behind_when_the_instance_dir_is_removed() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = service_for(&location_info);
     let instance_id = &InstanceId::try_from("to-remove").unwrap();
     create_instance_dir(&location_info, instance_id).await;
-    let leftover = location_info.instances_dir().join(".removing-old-1234");
+
+    service.remove_instance_dir(instance_id).await.unwrap();
+
+    assert!(dir_is_empty(&location_info.instances_dir()).await);
+    assert!(dir_is_empty(&location_info.removed_instances_dir()).await);
+}
+
+#[tokio::test]
+async fn should_delete_leftovers_of_earlier_removals_when_swept() {
+    let (_temp_dir, location_info) = setup_temp_location();
+    let service = service_for(&location_info);
+    let leftover = location_info.removed_instances_dir().join("old-1234");
     tokio::fs::create_dir_all(leftover.join("mods"))
         .await
         .unwrap();
 
-    service.remove_instance_dir(instance_id).await.unwrap();
+    service.sweep_removed().await;
 
-    let mut names = Vec::new();
-    let mut entries = tokio::fs::read_dir(location_info.instances_dir())
-        .await
-        .unwrap();
-    while let Some(entry) = entries.next_entry().await.unwrap() {
-        names.push(entry.file_name());
-    }
-    assert!(names.is_empty(), "left behind: {names:?}");
+    assert!(dir_is_empty(&location_info.removed_instances_dir()).await);
+}
+
+#[tokio::test]
+async fn should_not_fail_to_sweep_when_nothing_was_ever_removed() {
+    let (_temp_dir, location_info) = setup_temp_location();
+
+    service_for(&location_info).sweep_removed().await;
+
+    assert!(!location_info.removed_instances_dir().exists());
 }
 
 // ── write_instance_file / read_instance_file ──
