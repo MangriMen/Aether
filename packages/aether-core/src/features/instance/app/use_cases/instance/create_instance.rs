@@ -8,7 +8,7 @@ use crate::features::{
     instance::{
         Instance, InstanceBuilder, InstanceError, InstanceFileService, InstanceId,
         InstanceInstallService, InstanceInstallStage, InstanceStorage, InstanceWatcherService,
-        NewInstance, app::ports::CreateInstanceUseCasePort, validate_instance_name,
+        NewInstance, app::ports::CreateInstanceUseCasePort,
     },
     minecraft::{
         LoaderVersionPreference, LoaderVersionService, MinecraftApplicationError, ModLoader,
@@ -134,7 +134,9 @@ impl CreateInstanceUseCase {
             pack_info,
         } = new_instance;
 
-        validate_instance_name(&name)?;
+        // Parsed before the loader and before anything exists on disk: a name that cannot be an
+        // id must fail while there is still nothing to roll back.
+        let base_id = InstanceId::from_name(&name)?;
 
         // Before anything is created on disk: a bad loader must not leave a directory behind.
         let loader_version = resolve_loader_version(
@@ -145,17 +147,11 @@ impl CreateInstanceUseCase {
         )
         .await?;
 
-        let base_sanitized_name = sanitize_instance_name(&name);
-
-        // The same reason as the loader above: an id that cannot name a directory must fail
-        // before the directory exists, not after.
-        InstanceId::try_from(base_sanitized_name.as_str())?;
-
         let icon = self.import_icon(icon_path).await;
 
-        let (sanitized_name, instance_dir) = self
+        let (instance_id, instance_dir) = self
             .instance_file_service
-            .create_unique_instance_dir(&base_sanitized_name)
+            .create_unique_instance_dir(&base_id)
             .await?;
 
         info!(
@@ -164,18 +160,12 @@ impl CreateInstanceUseCase {
             instance_dir.display()
         );
 
-        let mut instance = InstanceBuilder::new(
-            // The base name was parsed above and the service only appends `-N`, which keeps it
-            // plain, so this cannot fail after the directory exists.
-            InstanceId::try_from(sanitized_name)?,
-            name.clone(),
-            game_version.clone(),
-            mod_loader,
-        )
-        .with_loader_version(loader_version)
-        .with_icon(icon)
-        .with_pack_info(pack_info)
-        .build();
+        let mut instance =
+            InstanceBuilder::new(instance_id, name.clone(), game_version.clone(), mod_loader)
+                .with_loader_version(loader_version)
+                .with_icon(icon)
+                .with_pack_info(pack_info)
+                .build();
         instance.install_stage = initial_stage;
 
         let result = self
@@ -254,37 +244,6 @@ pub(crate) async fn resolve_loader_version(
     }
 }
 
-const WINDOWS_RESERVED_NAMES: [&str; 22] = [
-    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
-    "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-];
-
-/// The directory name for an instance name: no characters or endings Windows refuses, and
-/// never a reserved device name.
-///
-/// Applied on every platform, not only on Windows: an instance directory that a config copied
-/// to Windows cannot hold is worse than a name that differs from the one the user typed.
-fn sanitize_instance_name(name: &str) -> String {
-    let replaced = name.replace(
-        ['/', '\\', '?', '*', ':', '\'', '\"', '|', '<', '>', '!'],
-        "_",
-    );
-    let trimmed = replaced.trim().trim_end_matches(['.', ' ']);
-    if trimmed.is_empty() {
-        return "instance".to_owned();
-    }
-
-    // `NUL.txt` is the device too: Windows ignores the extension.
-    let stem = trimmed.split_once('.').map_or(trimmed, |(stem, _)| stem);
-    if WINDOWS_RESERVED_NAMES
-        .iter()
-        .any(|reserved| reserved.eq_ignore_ascii_case(stem))
-    {
-        return format!("_{trimmed}");
-    }
-    trimmed.to_owned()
-}
-
 #[async_trait]
 impl CreateInstanceUseCasePort for CreateInstanceUseCase {
     async fn execute(
@@ -301,32 +260,5 @@ impl CreateInstanceUseCasePort for CreateInstanceUseCase {
         parent_bar: Option<&ProgressBarId>,
     ) -> Result<InstanceId, InstanceError> {
         self.execute_for_pack(new_instance, parent_bar).await
-    }
-}
-
-#[cfg(test)]
-mod sanitize_tests {
-    use super::sanitize_instance_name;
-
-    #[test]
-    fn should_prefix_a_reserved_windows_name() {
-        assert_eq!(sanitize_instance_name("con"), "_con");
-        assert_eq!(sanitize_instance_name("NUL.txt"), "_NUL.txt");
-        assert_eq!(sanitize_instance_name("console"), "console");
-    }
-
-    #[test]
-    fn should_strip_trailing_dots_and_spaces() {
-        assert_eq!(sanitize_instance_name("My pack. . "), "My pack");
-    }
-
-    #[test]
-    fn should_fall_back_when_nothing_is_left() {
-        assert_eq!(sanitize_instance_name("..."), "instance");
-    }
-
-    #[test]
-    fn should_replace_forbidden_characters() {
-        assert_eq!(sanitize_instance_name("a/b:c"), "a_b_c");
     }
 }

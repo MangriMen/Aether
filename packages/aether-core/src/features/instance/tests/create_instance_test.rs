@@ -133,13 +133,13 @@ impl InstanceFileService for MemInstanceFileService {
 
     async fn create_unique_instance_dir(
         &self,
-        base_name: &str,
-    ) -> Result<(String, std::path::PathBuf), InstanceError> {
-        let dir = self.instances_root.join(base_name);
+        base_id: &InstanceId,
+    ) -> Result<(InstanceId, std::path::PathBuf), InstanceError> {
+        let dir = self.instances_root.join(base_id.as_str());
         tokio::fs::create_dir_all(&dir)
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))?;
-        Ok((base_name.to_owned(), dir))
+        Ok((base_id.clone(), dir))
     }
 
     async fn remove_instance_dir(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
