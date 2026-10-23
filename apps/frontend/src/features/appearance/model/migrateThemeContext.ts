@@ -9,21 +9,26 @@ export const migrateThemeContext = (value: unknown): ThemeContextValue => {
     return DEFAULT_THEME_CONTEXT_VALUE;
   }
 
-  const uValue = value as Partial<ThemeContextValue>;
+  const stored = value as Record<string, unknown>;
+
+  // A hand-edited or damaged entry must not put a value of the wrong type into the theme.
+  const pick = <K extends keyof ThemeContextValue>(key: K) => {
+    const candidate = stored[key];
+
+    return typeof candidate === typeof defaults[key]
+      ? (candidate as ThemeContextValue[K])
+      : defaults[key];
+  };
 
   return {
-    theme: uValue['theme'] ?? defaults['theme'],
-    rawTheme: uValue['rawTheme'] ?? defaults['rawTheme'],
-    lightTheme: uValue['lightTheme'] ?? defaults['lightTheme'],
-    darkTheme: uValue['darkTheme'] ?? defaults['darkTheme'],
-    isActualTransparent:
-      uValue['isActualTransparent'] ?? defaults['isActualTransparent'],
-    transparencyEnabled:
-      uValue['transparencyEnabled'] ?? defaults['transparencyEnabled'],
-    transparency: uValue['transparency'] ?? defaults['transparency'],
-    disableAnimations:
-      uValue['disableAnimations'] ?? defaults['disableAnimations'],
-    prefersReducedMotion:
-      uValue['prefersReducedMotion'] ?? defaults['prefersReducedMotion'],
+    theme: pick('theme'),
+    rawTheme: pick('rawTheme'),
+    lightTheme: pick('lightTheme'),
+    darkTheme: pick('darkTheme'),
+    isActualTransparent: pick('isActualTransparent'),
+    transparencyEnabled: pick('transparencyEnabled'),
+    transparency: pick('transparency'),
+    disableAnimations: pick('disableAnimations'),
+    prefersReducedMotion: pick('prefersReducedMotion'),
   };
 };

@@ -11,6 +11,7 @@ export * from './composite/FieldLabel';
 export * from './composite/IconButton';
 export * from './composite/Image';
 export * from './composite/LabeledField';
+export * from './composite/LoadError';
 export * from './composite/ResponsiveIcon';
 export * from './composite/SkeletonList';
 export * from './composite/TitledBlock';

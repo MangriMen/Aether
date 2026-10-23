@@ -2,6 +2,8 @@ import { createMemo } from 'solid-js';
 
 import type { WindowSettingsSchemaOutput } from '@/features/instance-settings';
 
+import { logError } from '@/shared/log';
+
 import {
   useDefaultInstanceSettings,
   useEditDefaultInstanceSettings,
@@ -34,7 +36,7 @@ export const useDefaultWindowSettingsHandler = () => {
       return;
     }
 
-    editSettings.mutateAsync(dto);
+    editSettings.mutateAsync(dto).catch(logError);
   };
 
   return { initialValues, onChange };

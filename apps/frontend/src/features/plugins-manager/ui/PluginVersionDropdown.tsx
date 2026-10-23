@@ -1,4 +1,5 @@
 import IconMdiChevronDown from '~icons/mdi/chevron-down';
+import IconMdiLoading from '~icons/mdi/loading';
 import {
   createMemo,
   createSignal,
@@ -82,7 +83,9 @@ export const PluginVersionDropdown: Component<PluginVersionDropdownProps> = (
           aria-label={t('plugins.switchVersion')}
           disabled={isDisabled()}
         >
-          <IconMdiChevronDown />
+          <Show when={updatePlugin.isPending} fallback={<IconMdiChevronDown />}>
+            <IconMdiLoading class='animate-spin' />
+          </Show>
         </DropdownMenuTrigger>
         <DropdownMenuContent class='min-w-52 rounded-lg'>
           <Show

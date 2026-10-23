@@ -33,13 +33,18 @@ export const useEventListener = <T extends { seq: number }>(
   };
 
   onMount(() => {
-    event.listen(onEvent).then((fn) => {
-      if (disposed) {
-        fn();
-      } else {
-        unlisten = fn;
-      }
-    });
+    event
+      .listen(onEvent)
+      .then((fn) => {
+        if (disposed) {
+          fn();
+        } else {
+          unlisten = fn;
+        }
+      })
+      .catch((error: unknown) => {
+        logError('[EVENT] failed to start listening', error);
+      });
   });
 
   onCleanup(() => {

@@ -1,4 +1,4 @@
-import type { JSX } from 'solid-js';
+import type { Accessor, JSX } from 'solid-js';
 
 import { createMemo, For, splitProps, type Component } from 'solid-js';
 
@@ -13,7 +13,7 @@ import { createImporterTab } from './createImporterTab';
 
 export type ImportInstanceViewProps = TabsProps & {
   importers: ImporterCapabilityEntry[];
-  footerButtons: JSX.Element;
+  footerButtons: (isSubmitting: Accessor<boolean>) => JSX.Element;
   onSubmit?: () => void;
 };
 

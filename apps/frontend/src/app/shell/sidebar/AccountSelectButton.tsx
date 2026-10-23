@@ -9,6 +9,7 @@ import type { CombinedTooltipProps, IconButtonProps } from '@/shared/ui-kit';
 
 import { useChangeAccount, useLogout } from '@/features/account';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   CombinedTooltip,
   IconButton,
@@ -49,14 +50,23 @@ export const AccountSelectButton: Component<AccountSelectButtonProps> = (
 
   const { mutateAsync: changeAccount } = useChangeAccount();
 
+  // The mutations show their own errors; this keeps the rejection from escaping.
   const handleSelect = async (id: Account['id']) => {
-    await changeAccount(id);
+    try {
+      await changeAccount(id);
+    } catch (error) {
+      logError('Failed to change the account:', error);
+    }
   };
 
   const { mutateAsync: logout } = useLogout();
 
   const handleLogout = async (uuid: string) => {
-    await logout(uuid);
+    try {
+      await logout(uuid);
+    } catch (error) {
+      logError('Failed to log out:', error);
+    }
   };
 
   const [accountCreationType, setAccountCreationType] =
