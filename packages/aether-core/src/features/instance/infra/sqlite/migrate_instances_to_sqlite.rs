@@ -1,14 +1,17 @@
-use crate::features::instance::{Instance, InstanceId, InstanceStorage, infra::FsInstanceStorage};
+use crate::features::instance::{
+    Instance, InstanceStorage,
+    infra::{FsInstanceStorage, SqliteInstanceStorage},
+};
 use tracing::{info, warn};
 
 /// Copies the legacy `instance.json` files into SQLite, and only into an empty table.
 ///
 /// A copied file is set aside (`instance.json.migrated`), so the migration runs once per instance
-/// and a table the user emptied is not refilled from it. A failed run is undone: a table that
-/// kept the first instances would be skipped on the next start and the rest would be lost.
+/// and a table the user emptied is not refilled from it. All instances go in one transaction: a
+/// table that kept only the first ones would be skipped on the next start and the rest lost.
 pub async fn migrate_instances_to_sqlite(
     fs_storage: &FsInstanceStorage,
-    sqlite_storage: &dyn InstanceStorage,
+    sqlite_storage: &SqliteInstanceStorage,
 ) -> crate::Result<()> {
     let old_instances = match fs_storage.list().await {
         Ok(instances) if !instances.is_empty() => instances,
@@ -31,14 +34,9 @@ pub async fn migrate_instances_to_sqlite(
         old_instances.len()
     );
 
-    let mut migrated: Vec<InstanceId> = Vec::new();
-    for instance in &old_instances {
-        if let Err(e) = sqlite_storage.upsert(instance).await {
-            warn!("Failed to migrate instance {}: {}", instance.id(), e);
-            roll_back(sqlite_storage, &migrated).await;
-            return Err(e.into());
-        }
-        migrated.push(instance.id().clone());
+    if let Err(e) = sqlite_storage.upsert_many(&old_instances).await {
+        warn!("Failed to migrate instances: {}", e);
+        return Err(e.into());
     }
 
     mark_migrated(fs_storage, old_instances.iter().collect()).await;
@@ -60,54 +58,18 @@ async fn mark_migrated(fs_storage: &FsInstanceStorage, instances: Vec<&Instance>
     }
 }
 
-async fn roll_back(sqlite_storage: &dyn InstanceStorage, migrated: &[InstanceId]) {
-    for id in migrated {
-        if let Err(e) = sqlite_storage.remove(id).await {
-            warn!("Failed to undo the migration of instance {}: {}", id, e);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
 
-    use async_trait::async_trait;
     use tempfile::TempDir;
 
     use super::*;
     use crate::features::{
-        instance::{Instance, InstanceBuilder, InstanceError},
+        instance::{InstanceBuilder, InstanceId},
         minecraft::ModLoader,
         settings::LocationInfo,
     };
-
-    #[derive(Default)]
-    struct FakeStorage {
-        stored: Mutex<Vec<InstanceId>>,
-        failing: Option<InstanceId>,
-    }
-
-    #[async_trait]
-    impl InstanceStorage for FakeStorage {
-        async fn list(&self) -> Result<Vec<Instance>, InstanceError> {
-            Ok(Vec::new())
-        }
-        async fn get(&self, _: &InstanceId) -> Result<Instance, InstanceError> {
-            unimplemented!()
-        }
-        async fn upsert(&self, instance: &Instance) -> Result<(), InstanceError> {
-            if self.failing.as_ref() == Some(instance.id()) {
-                return Err(InstanceError::Storage("disk full".into()));
-            }
-            self.stored.lock().unwrap().push(instance.id().clone());
-            Ok(())
-        }
-        async fn remove(&self, id: &InstanceId) -> Result<(), InstanceError> {
-            self.stored.lock().unwrap().retain(|stored| stored != id);
-            Ok(())
-        }
-    }
 
     async fn legacy_storage(ids: &[&str]) -> (TempDir, FsInstanceStorage) {
         let temp = TempDir::new().unwrap();
@@ -132,49 +94,40 @@ mod tests {
     #[tokio::test]
     async fn should_copy_every_legacy_instance_into_an_empty_table() {
         let (_temp, fs) = legacy_storage(&["a", "b"]).await;
-        let sqlite = FakeStorage::default();
+        let sqlite = SqliteInstanceStorage::in_memory().await;
 
         migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
 
-        assert_eq!(sqlite.stored.lock().unwrap().len(), 2);
+        assert_eq!(sqlite.list().await.unwrap().len(), 2);
     }
 
     #[tokio::test]
     async fn should_not_copy_an_instance_again_when_the_migration_runs_twice() {
         let (_temp, fs) = legacy_storage(&["a", "b"]).await;
-        let sqlite = FakeStorage::default();
+        let sqlite = SqliteInstanceStorage::in_memory().await;
 
         migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
         migrate_instances_to_sqlite(&fs, &sqlite).await.unwrap();
 
-        assert_eq!(sqlite.stored.lock().unwrap().len(), 2);
+        assert_eq!(sqlite.list().await.unwrap().len(), 2);
         assert!(fs.list().await.unwrap().is_empty());
     }
 
     #[tokio::test]
-    async fn should_keep_the_legacy_files_when_the_migration_fails() {
-        let (_temp, fs) = legacy_storage(&["a", "b"]).await;
-        let sqlite = FakeStorage {
-            failing: Some(InstanceId::try_from("b").unwrap()),
-            ..FakeStorage::default()
-        };
+    async fn should_leave_table_empty_and_keep_legacy_files_when_one_instance_cannot_be_saved() {
+        let (_temp, fs) = legacy_storage(&["a", "b", "c"]).await;
+        let sqlite = SqliteInstanceStorage::in_memory().await;
+        sqlx::query(
+            "CREATE TRIGGER reject_c BEFORE INSERT ON instances WHEN NEW.id = 'c'
+             BEGIN SELECT RAISE(ABORT, 'disk full'); END",
+        )
+        .execute(sqlite.pool())
+        .await
+        .unwrap();
 
         assert!(migrate_instances_to_sqlite(&fs, &sqlite).await.is_err());
 
-        assert_eq!(fs.list().await.unwrap().len(), 2);
-    }
-
-    #[tokio::test]
-    async fn should_report_failure_and_leave_table_empty_when_one_instance_cannot_be_saved() {
-        let (_temp, fs) = legacy_storage(&["a", "b", "c"]).await;
-        let sqlite = FakeStorage {
-            failing: Some(InstanceId::try_from("c").unwrap()),
-            ..FakeStorage::default()
-        };
-
-        let result = migrate_instances_to_sqlite(&fs, &sqlite).await;
-
-        assert!(result.is_err());
-        assert!(sqlite.stored.lock().unwrap().is_empty());
+        assert!(sqlite.list().await.unwrap().is_empty());
+        assert_eq!(fs.list().await.unwrap().len(), 3);
     }
 }

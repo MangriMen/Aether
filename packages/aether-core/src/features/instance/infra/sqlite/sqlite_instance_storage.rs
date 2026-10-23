@@ -24,6 +24,42 @@ impl SqliteInstanceStorage {
             .await
             .map_err(|e| InstanceError::Storage(e.to_string()))
     }
+
+    /// Writes all instances in one transaction: either every one is stored or none is.
+    pub async fn upsert_many(&self, instances: &[Instance]) -> Result<(), InstanceError> {
+        let mut tx = self.begin_write().await?;
+        for instance in instances {
+            write_instance(&mut tx, instance).await?;
+        }
+        tx.commit()
+            .await
+            .map_err(|e| InstanceError::Storage(e.to_string()))
+    }
+
+    /// A storage over a fresh in-memory database with every migration applied.
+    #[cfg(test)]
+    pub async fn in_memory() -> Self {
+        let options = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(":memory:")
+            .create_if_missing(true);
+
+        let pool = sqlx::pool::PoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .expect("Failed to create in-memory SQLite pool");
+
+        crate::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
+
+        Self::new(pool)
+    }
+
+    #[cfg(test)]
+    pub fn pool(&self) -> &SqlitePool {
+        &self.pool
+    }
 }
 
 #[allow(clippy::too_many_lines)]
