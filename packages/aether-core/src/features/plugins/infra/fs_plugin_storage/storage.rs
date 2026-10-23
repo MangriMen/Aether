@@ -414,7 +414,10 @@ impl PluginStorage for FsPluginStorage {
             return Err(err.into());
         }
 
-        if let Err(err) = rename(&target_dir, &replaced_dir).await {
+        // Nothing installed yet: the plugin is simply put in place, with nothing to keep aside.
+        if target_dir.exists()
+            && let Err(err) = rename(&target_dir, &replaced_dir).await
+        {
             remove_dir_if_present(&staged_dir).await.ok();
             return Err(err.into());
         }
@@ -524,6 +527,16 @@ impl PluginStorage for FsPluginStorage {
 
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
+
+        // The copies of an update stay behind otherwise, and `settle_replaced` would put the
+        // removed plugin back from `.replaced` at the next listing.
+        for side_dir in [
+            self.staged_dir(plugin_id),
+            self.replaced_dir(plugin_id),
+            self.trash_dir(plugin_id),
+        ] {
+            remove_dir_if_present(&side_dir).await?;
+        }
 
         if !plugin_dir.exists() {
             return Ok(());
@@ -762,6 +775,18 @@ mod tests {
             b"0.1.0"
         );
         assert_eq!(fixture.plugins_dir_entries(), ["test-plugin"]);
+    }
+
+    #[tokio::test]
+    async fn should_not_bring_a_removed_plugin_back_when_an_update_copy_was_left_aside() {
+        let fixture = Fixture::installed();
+        fixture.storage.replace(extracted("0.2.0")).await.unwrap();
+
+        fixture.storage.remove("test-plugin").await.unwrap();
+        let plugins = fixture.storage.list().await.unwrap();
+
+        assert!(plugins.is_empty());
+        assert!(fixture.plugins_dir_entries().is_empty());
     }
 
     #[tokio::test]

@@ -949,6 +949,8 @@ impl PluginsFeature for AetherContainer {
     }
     fn import_plugins_use_case(&self) -> Arc<dyn ImportPluginsUseCasePort> {
         Arc::new(ImportPluginsUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().settings_storage.clone(),
             self.plugins().extractor.clone(),
             self.plugins().storage.clone(),
             self.plugins().source_storage.clone(),
