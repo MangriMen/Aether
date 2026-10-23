@@ -8,8 +8,8 @@ use tempfile::TempDir;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     instance::{
-        ContentType, ImportContent, ImportContentUseCase, InstanceId, InstanceLocks, PackStorage,
-        infra::SqlitePackStorage,
+        ContentType, ImportContent, ImportContentUseCase, InstanceError, InstanceId, InstanceLocks,
+        Pack, PackFile, PackStorage, ProviderId, infra::SqlitePackStorage,
     },
     settings::LocationInfo,
 };
@@ -68,11 +68,280 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
     assert!(instance_mods.join("a.jar").exists());
     assert!(
         pack_storage
-            .get_pack_file(
-                &InstanceId::try_from(INSTANCE_ID).unwrap(),
-                &std::path::Path::new("mods").join("a.jar").to_string_lossy()
-            )
+            .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), "mods/a.jar")
             .await
             .is_ok()
     );
+}
+
+struct Setup {
+    _temp: TempDir,
+    mods: std::path::PathBuf,
+    sources: std::path::PathBuf,
+    pack_storage: Arc<SqlitePackStorage>,
+    use_case: ImportContentUseCase,
+}
+
+fn instance_id() -> InstanceId {
+    InstanceId::try_from(INSTANCE_ID).unwrap()
+}
+
+async fn setup_with(wrap: impl FnOnce(Arc<SqlitePackStorage>) -> Arc<dyn PackStorage>) -> Setup {
+    let temp = TempDir::new().unwrap();
+    let location_info = Arc::new(LocationInfo::new(
+        temp.path().join("settings"),
+        temp.path().to_path_buf(),
+    ));
+    let mods = location_info.instance_dir(&instance_id()).join("mods");
+    tokio::fs::create_dir_all(&mods).await.unwrap();
+    let sources = temp.path().join("sources");
+    tokio::fs::create_dir_all(sources.join("other"))
+        .await
+        .unwrap();
+    let pack_storage = Arc::new(SqlitePackStorage::in_memory().await);
+    let use_case = ImportContentUseCase::new(
+        Arc::new(NoEvents),
+        wrap(pack_storage.clone()),
+        location_info,
+        Arc::new(InstanceLocks::new()),
+    );
+    Setup {
+        _temp: temp,
+        mods,
+        sources,
+        pack_storage,
+        use_case,
+    }
+}
+
+async fn setup() -> Setup {
+    setup_with(|storage| storage).await
+}
+
+impl Setup {
+    async fn source(&self, name: &str, in_other: bool) -> std::path::PathBuf {
+        let dir = if in_other {
+            self.sources.join("other")
+        } else {
+            self.sources.clone()
+        };
+        let path = dir.join(name);
+        tokio::fs::write(&path, name.as_bytes()).await.unwrap();
+        path
+    }
+
+    async fn import(&self, sources: Vec<std::path::PathBuf>) -> Result<(), InstanceError> {
+        self.use_case
+            .execute(ImportContent::new(instance_id(), ContentType::Mod, sources))
+            .await
+    }
+}
+
+/// The pack records and the content listing key a file as `mods/a.jar` on every platform.
+#[tokio::test]
+async fn should_record_the_content_path_with_forward_slashes() {
+    let setup = setup().await;
+    let a = setup.source("a.jar", false).await;
+
+    setup.import(vec![a]).await.unwrap();
+
+    let files: Vec<_> = setup
+        .pack_storage
+        .get_pack(&instance_id())
+        .await
+        .unwrap()
+        .files
+        .into_iter()
+        .map(|entry| entry.file)
+        .collect();
+    assert_eq!(files, ["mods/a.jar"]);
+}
+
+/// A file removed from the instance can be imported again: nothing of the first import is left
+/// under a name the second one does not look at.
+#[tokio::test]
+async fn should_import_again_when_the_file_was_removed() {
+    let setup = setup().await;
+    let a = setup.source("a.jar", false).await;
+    setup.import(vec![a.clone()]).await.unwrap();
+    tokio::fs::remove_file(setup.mods.join("a.jar"))
+        .await
+        .unwrap();
+    setup
+        .pack_storage
+        .remove_pack_file(&instance_id(), "mods/a.jar")
+        .await
+        .unwrap();
+
+    setup.import(vec![a]).await.unwrap();
+
+    assert!(setup.mods.join("a.jar").exists());
+}
+
+#[tokio::test]
+async fn should_refuse_a_batch_when_two_files_share_a_name() {
+    let setup = setup().await;
+    let first = setup.source("a.jar", false).await;
+    let second = setup.source("a.jar", true).await;
+
+    let result = setup.import(vec![first, second]).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDuplication { content_path }) if content_path == "mods/a.jar"
+    ));
+    assert!(!setup.mods.join("a.jar").exists());
+}
+
+#[tokio::test]
+async fn should_refuse_a_batch_when_names_differ_only_in_case_on_a_case_insensitive_system() {
+    let setup = setup().await;
+    let first = setup.source("Mod.jar", false).await;
+    let second = setup.source("mod.jar", true).await;
+
+    let result = setup.import(vec![first, second]).await;
+
+    if cfg!(any(windows, target_os = "macos")) {
+        assert!(matches!(
+            result,
+            Err(InstanceError::ContentDuplication { .. })
+        ));
+    } else {
+        result.unwrap();
+    }
+}
+
+#[tokio::test]
+async fn should_refuse_the_import_when_the_file_exists_disabled() {
+    let setup = setup().await;
+    tokio::fs::write(setup.mods.join("a.jar.disabled"), b"old")
+        .await
+        .unwrap();
+    let a = setup.source("a.jar", false).await;
+
+    let result = setup.import(vec![a]).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDuplication { .. })
+    ));
+    assert!(!setup.mods.join("a.jar").exists());
+}
+
+/// Delegates to the real storage but fails to record the files.
+struct FailingRecord(Arc<SqlitePackStorage>);
+
+#[async_trait]
+impl PackStorage for FailingRecord {
+    async fn get_pack(&self, id: &InstanceId) -> Result<Pack, InstanceError> {
+        self.0.get_pack(id).await
+    }
+    async fn update_pack(&self, id: &InstanceId, pack: &Pack) -> Result<(), InstanceError> {
+        self.0.update_pack(id, pack).await
+    }
+    async fn get_pack_file(&self, id: &InstanceId, path: &str) -> Result<PackFile, InstanceError> {
+        self.0.get_pack_file(id, path).await
+    }
+    async fn find_by_provider_id(
+        &self,
+        id: &InstanceId,
+        provider_id: &ProviderId,
+        content_id: &str,
+    ) -> Result<Option<PackFile>, InstanceError> {
+        self.0
+            .find_by_provider_id(id, provider_id, content_id)
+            .await
+    }
+    async fn update_pack_file(
+        &self,
+        id: &InstanceId,
+        path: &str,
+        pack_file: &PackFile,
+    ) -> Result<(), InstanceError> {
+        self.0.update_pack_file(id, path, pack_file).await
+    }
+    async fn update_pack_file_many(
+        &self,
+        _: &InstanceId,
+        _: &[String],
+        _: &[PackFile],
+    ) -> Result<(), InstanceError> {
+        Err(InstanceError::Storage("disk full".into()))
+    }
+    async fn remove_pack_file(&self, id: &InstanceId, path: &str) -> Result<(), InstanceError> {
+        self.0.remove_pack_file(id, path).await
+    }
+    async fn remove_pack_file_many(
+        &self,
+        id: &InstanceId,
+        paths: &[String],
+    ) -> Result<(), InstanceError> {
+        self.0.remove_pack_file_many(id, paths).await
+    }
+    async fn remove_all_for_instance(&self, id: &InstanceId) -> Result<(), InstanceError> {
+        self.0.remove_all_for_instance(id).await
+    }
+}
+
+#[tokio::test]
+async fn should_leave_no_files_when_recording_them_fails() {
+    let setup = setup_with(|storage| Arc::new(FailingRecord(storage))).await;
+    let a = setup.source("a.jar", false).await;
+    let b = setup.source("b.jar", false).await;
+
+    let result = setup.import(vec![a.clone(), b]).await;
+
+    assert!(matches!(result, Err(InstanceError::Storage(_))));
+    assert!(!setup.mods.join("a.jar").exists());
+    assert!(!setup.mods.join("b.jar").exists());
+}
+
+/// The folder is gone, so the copy of the first file fails: nothing is left, and a later
+/// import is not told the file is a duplicate.
+#[tokio::test]
+async fn should_leave_no_files_when_the_copy_fails() {
+    let setup = setup().await;
+    let a = setup.source("a.jar", false).await;
+    tokio::fs::remove_dir_all(&setup.mods).await.unwrap();
+
+    let result = setup.import(vec![a.clone()]).await;
+
+    assert!(matches!(result, Err(InstanceError::Storage(_))));
+    tokio::fs::create_dir_all(&setup.mods).await.unwrap();
+    setup.import(vec![a]).await.unwrap();
+}
+
+#[tokio::test]
+async fn should_refuse_import_when_the_content_folder_is_a_link_out_of_the_instance() {
+    let setup = setup().await;
+    let outside = setup.sources.join("outside");
+    tokio::fs::create_dir_all(&outside).await.unwrap();
+    tokio::fs::remove_dir(&setup.mods).await.unwrap();
+    link_dir(&outside, &setup.mods);
+    let a = setup.source("a.jar", false).await;
+
+    let result = setup.import(vec![a]).await;
+
+    assert!(matches!(
+        result,
+        Err(InstanceError::PathEscapesInstance { .. })
+    ));
+    assert!(!outside.join("a.jar").exists());
+}
+
+/// A symlink on unix, a junction on Windows: creating a symlink there needs a privilege.
+fn link_dir(target: &std::path::Path, link: &std::path::Path) {
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).unwrap();
+    #[cfg(windows)]
+    {
+        let status = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
+        assert!(status.success());
+    }
 }
