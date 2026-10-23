@@ -20,6 +20,11 @@
       "CAN_NOT_RECREATE_WINDOW": "Невозможно пересоздать окно",
       "STORAGE": "Ошибка хранилища настроек приложения"
     },
+    "application": {
+      "IO": "Ошибка файловой системы: {{details}}",
+      "DUPLICATE_REQUEST": "Это действие уже выполняется",
+      "LAUNCH": "Не удалось запустить лаунчер: {{details}}"
+    },
     "auth": {
       "CREDENTIALS_NOT_FOUND": "Аккаунт с ID {{id}} не найден",
       "NO_ACTIVE_CREDENTIALS": "Активный аккаунт не найден",
