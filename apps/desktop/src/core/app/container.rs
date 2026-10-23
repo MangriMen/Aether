@@ -101,8 +101,8 @@ pub async fn build_container(
     )
     .await?;
 
-    // A broken legacy instance must not keep the launcher from starting. The migrations undo
-    // their own partial work and leave the old files untouched, so the user can still recover them.
+    // A legacy migration must not keep the launcher from starting. A write that fails as a whole
+    // stores nothing and a skipped instance keeps its file, so the user can still recover them.
     if let Err(err) = instance::infra::migrate_instances_to_sqlite(
         &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
         &SqliteInstanceStorage::new(pool.clone()),
