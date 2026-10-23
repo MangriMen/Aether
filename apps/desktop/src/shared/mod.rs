@@ -9,4 +9,4 @@ pub use idempotency_manager::infra::TauriIdempotencyExt;
 pub use idempotency_manager::{
     ActiveRequest, IdempotencyManager, IdempotencyManagerError, RequestId,
 };
-pub use reveal_in_explorer::infra::reveal_in_explorer;
+pub use reveal_in_explorer::infra::{ensure_within_roots, reveal_in_explorer};
