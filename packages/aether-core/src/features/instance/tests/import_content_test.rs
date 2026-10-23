@@ -311,14 +311,13 @@ async fn should_leave_no_files_when_the_copy_fails() {
     setup.import(vec![a]).await.unwrap();
 }
 
-#[cfg(unix)]
 #[tokio::test]
 async fn should_refuse_import_when_the_content_folder_is_a_link_out_of_the_instance() {
     let setup = setup().await;
     let outside = setup.sources.join("outside");
     tokio::fs::create_dir_all(&outside).await.unwrap();
     tokio::fs::remove_dir(&setup.mods).await.unwrap();
-    std::os::unix::fs::symlink(&outside, &setup.mods).unwrap();
+    link_dir(&outside, &setup.mods);
     let a = setup.source("a.jar", false).await;
 
     let result = setup.import(vec![a]).await;
@@ -328,4 +327,21 @@ async fn should_refuse_import_when_the_content_folder_is_a_link_out_of_the_insta
         Err(InstanceError::PathEscapesInstance { .. })
     ));
     assert!(!outside.join("a.jar").exists());
+}
+
+/// A symlink on unix, a junction on Windows: creating a symlink there needs a privilege.
+fn link_dir(target: &std::path::Path, link: &std::path::Path) {
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).unwrap();
+    #[cfg(windows)]
+    {
+        let status = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()
+            .unwrap()
+            .status;
+        assert!(status.success());
+    }
 }
