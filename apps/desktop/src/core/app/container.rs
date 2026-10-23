@@ -101,18 +101,26 @@ pub async fn build_container(
     )
     .await?;
 
-    instance::infra::migrate_instances_to_sqlite(
+    // A legacy migration must not keep the launcher from starting. A write that fails as a whole
+    // stores nothing and a skipped instance keeps its file, so the user can still recover them.
+    if let Err(err) = instance::infra::migrate_instances_to_sqlite(
         &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
         &SqliteInstanceStorage::new(pool.clone()),
     )
-    .await?;
+    .await
+    {
+        log::error!("Legacy instances were not migrated, their files are left as they are: {err}");
+    }
 
-    instance::infra::migrate_packs_to_sqlite(
+    if let Err(err) = instance::infra::migrate_packs_to_sqlite(
         &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
         &aether_core::features::instance::infra::FsPackStorage::new(location_info.clone()),
         &SqlitePackStorage::new(pool.clone()),
     )
-    .await?;
+    .await
+    {
+        log::error!("Legacy packs were not migrated, their files are left as they are: {err}");
+    }
 
     java::infra::migrate_java_to_sqlite(
         &location_info.java_dir(),
