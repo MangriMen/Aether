@@ -5,8 +5,13 @@ use reqwest_middleware::ClientWithMiddleware;
 use super::types::{GitHubPluginPreview, GitHubReleaseInfo, PluginUpdateInfo};
 use crate::features::plugins::{PluginManifestPreview, PluginProviderError, PluginSourceType};
 
-/// Upper bound for a downloaded plugin asset (archive, manifest or capabilities file).
-const MAX_ASSET_BYTES: u64 = 64 * 1024 * 1024;
+/// Upper bound for a downloaded plugin archive. The body is buffered in memory before it is
+/// written to a temporary file, so this bounds the process's memory rather than the disk.
+const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
+
+/// Upper bound for a manifest or capabilities file. Both are small JSON documents; a release
+/// asset that claims to be one has no reason to be large.
+const MAX_METADATA_BYTES: u64 = 1024 * 1024;
 
 /// Only GitHub itself may serve plugin assets; the URL can come from a user-pasted repo.
 fn is_allowed_asset_url(url: &str) -> bool {
@@ -239,8 +244,17 @@ impl GitHubPluginFetcher {
         })
     }
 
-    /// Download a file from a URL and return the bytes.
+    /// Download a plugin archive from a URL and return the bytes.
     pub async fn download_asset(&self, url: &str) -> Result<Vec<u8>, PluginProviderError> {
+        self.download_asset_capped(url, MAX_ARCHIVE_BYTES).await
+    }
+
+    /// Download a file from a URL and return the bytes, refusing a body over `limit`.
+    async fn download_asset_capped(
+        &self,
+        url: &str,
+        limit: u64,
+    ) -> Result<Vec<u8>, PluginProviderError> {
         if !is_allowed_asset_url(url) {
             return Err(PluginProviderError::DownloadFailed {
                 url: url.to_string(),
@@ -271,7 +285,7 @@ impl GitHubPluginFetcher {
             ));
         }
 
-        read_capped(response, url, MAX_ASSET_BYTES).await
+        read_capped(response, url, limit).await
     }
 
     /// Preview a plugin from a GitHub repo URL.
@@ -312,7 +326,10 @@ impl GitHubPluginFetcher {
         for release in releases {
             // Fetch manifest
             let manifest = if let Some(manifest_url) = &release.manifest_download_url {
-                match self.download_asset(manifest_url).await {
+                match self
+                    .download_asset_capped(manifest_url, MAX_METADATA_BYTES)
+                    .await
+                {
                     Ok(bytes) => serde_json::from_slice::<
                         aether_core_plugin_api::v0::PluginManifestDto,
                     >(&bytes)
@@ -334,7 +351,7 @@ impl GitHubPluginFetcher {
 
             // Fetch capabilities if URL is present
             let capabilities = if let Some(cap_url) = &release.capabilities_download_url {
-                self.download_asset(cap_url)
+                self.download_asset_capped(cap_url, MAX_METADATA_BYTES)
                     .await
                     .ok()
                     .and_then(|bytes| String::from_utf8(bytes).ok())
