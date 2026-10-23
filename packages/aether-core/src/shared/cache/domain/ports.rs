@@ -61,6 +61,8 @@ pub trait FileStore: Send + Sync {
     async fn read(&self, key: &CacheKey<()>) -> Option<Bytes>;
     async fn write(&self, key: &CacheKey<()>, value: Bytes);
     async fn invalidate(&self, key: &CacheKey<()>);
+    /// Like [`Self::invalidate`], but says why a file that exists could not be deleted.
+    async fn delete(&self, key: &CacheKey<()>) -> std::io::Result<()>;
 }
 
 // --- AssetsStorage ---
@@ -68,4 +70,9 @@ pub trait FileStore: Send + Sync {
 #[async_trait]
 pub trait AssetsStorage: Send + Sync {
     async fn import_file(&self, source: &Path) -> Result<String, AssetError>;
+
+    /// Deletes the asset `id` as [`Self::import_file`] returned it. Assets are shared by
+    /// content, so the caller makes sure nothing uses it. Gone already is a no-op, and so is a
+    /// name that is not a plain asset name; a file that cannot be deleted is an error.
+    async fn remove(&self, id: &str) -> Result<(), AssetError>;
 }

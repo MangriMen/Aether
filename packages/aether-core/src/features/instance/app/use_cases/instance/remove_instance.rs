@@ -3,8 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tracing::warn;
 
-use crate::features::instance::app::InstanceFileService;
 use crate::features::instance::app::ports::RemoveInstanceUseCasePort;
+use crate::features::instance::app::{IconAssetReaper, InstanceFileService};
 use crate::features::instance::{
     InstanceError, InstanceId, InstanceLocks, InstanceStorage, InstanceWatcherService, PackStorage,
 };
@@ -17,6 +17,7 @@ pub struct RemoveInstanceUseCase {
     file_service: Arc<dyn InstanceFileService>,
     pack_storage: Arc<dyn PackStorage>,
     instance_locks: Arc<InstanceLocks>,
+    icon_reaper: IconAssetReaper,
 }
 
 impl RemoveInstanceUseCase {
@@ -26,6 +27,7 @@ impl RemoveInstanceUseCase {
         file_service: Arc<dyn InstanceFileService>,
         pack_storage: Arc<dyn PackStorage>,
         instance_locks: Arc<InstanceLocks>,
+        icon_reaper: IconAssetReaper,
     ) -> Self {
         Self {
             storage,
@@ -33,6 +35,7 @@ impl RemoveInstanceUseCase {
             file_service,
             pack_storage,
             instance_locks,
+            icon_reaper,
         }
     }
 }
@@ -41,6 +44,14 @@ impl RemoveInstanceUseCase {
 impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
     async fn execute(&self, instance_id: InstanceId) -> Result<(), InstanceError> {
         let _lock = self.instance_locks.lock(&instance_id).await;
+
+        let previous_icon = match self.storage.get(&instance_id).await {
+            Ok(instance) => instance.icon_path().map(ToOwned::to_owned),
+            Err(err) => {
+                warn!("Cannot read the icon of instance {instance_id}, its asset may stay: {err}");
+                None
+            }
+        };
 
         self.watcher_service.unwatch_instance(&instance_id).await?;
         // Files first: if the directory cannot be removed, the records stay and the removal can be
@@ -59,6 +70,9 @@ impl RemoveInstanceUseCasePort for RemoveInstanceUseCase {
             .remove_all_for_instance(&instance_id)
             .await?;
         self.storage.remove(&instance_id).await?;
+        if let Some(icon) = previous_icon {
+            self.icon_reaper.release(&icon).await;
+        }
         Ok(())
     }
 }
