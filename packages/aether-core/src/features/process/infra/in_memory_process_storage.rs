@@ -12,6 +12,7 @@ use super::super::domain::{MinecraftProcessMetadata, ProcessError};
 struct ActiveProcess {
     metadata: MinecraftProcessMetadata,
     child: Child,
+    killed: bool,
 }
 
 #[derive(Debug, Default)]
@@ -26,8 +27,14 @@ impl ProcessStorage for InMemoryProcessStorage {
         metadata: MinecraftProcessMetadata,
         child: Child,
     ) -> Result<(), ProcessError> {
-        self.processes
-            .insert(metadata.uuid(), ActiveProcess { metadata, child });
+        self.processes.insert(
+            metadata.uuid(),
+            ActiveProcess {
+                metadata,
+                child,
+                killed: false,
+            },
+        );
 
         Ok(())
     }
@@ -73,12 +80,18 @@ impl ProcessStorage for InMemoryProcessStorage {
 
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError> {
         if let Some(mut process) = self.processes.get_mut(&id) {
-            process
-                .child
-                .kill()
-                .await
-                .map_err(|_| ProcessError::KillError { id: id.to_string() })?;
+            // Set before the kill: the tracker can see the exit while `kill` is still awaiting.
+            process.killed = true;
+            if process.child.kill().await.is_err() {
+                // The process was not stopped, so a later failure is still a crash.
+                process.killed = false;
+                return Err(ProcessError::KillError { id: id.to_string() });
+            }
         }
         Ok(())
+    }
+
+    async fn was_killed(&self, id: Uuid) -> bool {
+        self.processes.get(&id).is_some_and(|p| p.killed)
     }
 }

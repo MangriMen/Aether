@@ -144,6 +144,8 @@ mod tests {
             process_id: Uuid::new_v4(),
             event: ProcessEventType::Launched,
             message: "started".into(),
+            exit_code: None,
+            crashed: false,
         }
     }
 

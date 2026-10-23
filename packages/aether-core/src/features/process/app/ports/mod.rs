@@ -32,6 +32,8 @@ pub trait ProcessStorage: Send + Sync {
     async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError>;
     async fn wait_for(&self, id: Uuid) -> Result<(), ProcessError>;
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError>;
+    /// Whether `kill` was requested for the process (the exit is then not a crash).
+    async fn was_killed(&self, id: Uuid) -> bool;
 }
 
 // ── Use case ports ──

@@ -69,6 +69,8 @@ impl StartProcessUseCase {
                 process_id: metadata.uuid(),
                 event: ProcessEventType::Launched,
                 message: "Launched Minecraft".to_string(),
+                exit_code: None,
+                crashed: false,
             })
             .await;
 

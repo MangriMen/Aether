@@ -299,6 +299,8 @@ export type ProcessEventDto = {
 	processId: string,
 	event: ProcessEventTypeDto,
 	message: string,
+	exitCode: number | null,
+	crashed: boolean,
 };
 
 export type ProcessEventTypeDto = "launched" | "finished";

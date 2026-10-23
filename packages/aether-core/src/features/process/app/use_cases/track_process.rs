@@ -23,7 +23,7 @@ pub struct TrackProcessUseCase {
 
 #[async_trait::async_trait]
 impl TrackProcessService for TrackProcessUseCase {
-    async fn execute(&self, params: TrackProcessParams) -> ExitStatus {
+    async fn execute(&self, params: TrackProcessParams) -> Option<ExitStatus> {
         let TrackProcessParams {
             process_id,
             instance_id,
@@ -37,13 +37,14 @@ impl TrackProcessService for TrackProcessUseCase {
                     // Process exited successfully
                     self.update_playtime(&mut last_updated_playtime, &instance_id, true)
                         .await;
-                    return exit_status;
+                    return Some(exit_status);
                 }
                 Ok(Some(None)) => {} // Still running
                 Ok(None) | Err(_) => {
+                    // An unknown exit must not look like a clean one.
                     self.update_playtime(&mut last_updated_playtime, &instance_id, true)
                         .await;
-                    return ExitStatus::default();
+                    return None;
                 }
             }
 
