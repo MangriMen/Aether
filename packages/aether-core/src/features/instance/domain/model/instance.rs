@@ -58,7 +58,7 @@ pub struct Instance {
 ///
 /// The name is shown as it is, so only emptiness is refused: a name that cannot be a directory
 /// is sanitized into one instead of being rejected.
-pub fn validate_instance_name(name: &str) -> Result<(), InstanceError> {
+pub(super) fn validate_instance_name(name: &str) -> Result<(), InstanceError> {
     if name.trim().is_empty() {
         return Err(InstanceError::ValidationError {
             field: InstanceField::Name,

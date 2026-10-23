@@ -18,7 +18,7 @@ pub use domain::{
     OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload,
     PackFileOption, PackInfo, PackMetadata, PackSource, PlanOrigin, ProviderId, ReleaseChannel,
     RequestedContentVersionStatus, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
-    UpdaterCapabilityMetadata, is_valid_id, select_version, validate_instance_name,
+    UpdaterCapabilityMetadata, is_valid_id, select_version,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──
