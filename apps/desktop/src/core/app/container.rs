@@ -242,11 +242,14 @@ pub async fn build_container(
     ];
     let content_file_service: Arc<dyn aether_core::features::instance::ContentFileService> =
         Arc::new(FsContentFileService::new(location_info.clone()));
+    let fs_instance_file_service = Arc::new(FsInstanceFileService::new(
+        location_info.clone(),
+        sandbox_limits.max_instance_file_bytes,
+    ));
+    // Nothing is being removed yet, so whatever an earlier run left in the trash can go.
+    fs_instance_file_service.sweep_removed().await;
     let instance_file_service: Arc<dyn aether_core::features::instance::InstanceFileService> =
-        Arc::new(FsInstanceFileService::new(
-            location_info.clone(),
-            sandbox_limits.max_instance_file_bytes,
-        ));
+        fs_instance_file_service;
 
     let java_storage: Arc<dyn aether_core::features::java::JavaStorage> =
         Arc::new(SqliteJavaStorage::new(pool.clone()));
