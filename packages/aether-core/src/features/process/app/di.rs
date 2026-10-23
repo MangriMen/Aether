@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use crate::features::process::app::ports::{
-    GetProcessMetadataByInstanceIdUseCasePort, KillProcessUseCasePort,
-    ListProcessMetadataUseCasePort, ManageProcessService, ProcessStartService, TrackProcessService,
-    WaitForProcessUseCasePort,
+    KillProcessUseCasePort, ListProcessMetadataUseCasePort, ManageProcessService,
+    ProcessStartService, TrackProcessService, WaitForProcessUseCasePort,
 };
 
 /// Extension trait providing access to all process feature use cases and services.
@@ -15,9 +14,6 @@ pub trait ProcessFeature {
     fn wait_for_process_use_case(&self) -> Arc<dyn WaitForProcessUseCasePort>;
     fn kill_process_use_case(&self) -> Arc<dyn KillProcessUseCasePort>;
     fn list_process_metadata_use_case(&self) -> Arc<dyn ListProcessMetadataUseCasePort>;
-    fn get_process_metadata_by_instance_id_use_case(
-        &self,
-    ) -> Arc<dyn GetProcessMetadataByInstanceIdUseCasePort>;
 
     // ── Ports (implemented by use cases) ──
     fn process_start_service(&self) -> Arc<dyn ProcessStartService>;

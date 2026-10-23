@@ -62,7 +62,6 @@ use crate::features::{
         SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
     },
     process::{
-        GetProcessMetadataByInstanceIdUseCase, GetProcessMetadataByInstanceIdUseCasePort,
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
         ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
@@ -860,13 +859,6 @@ impl ProcessFeature for AetherContainer {
     }
     fn list_process_metadata_use_case(&self) -> Arc<dyn ListProcessMetadataUseCasePort> {
         Arc::new(ListProcessMetadataUseCase::new(
-            self.storage().process_storage.clone(),
-        ))
-    }
-    fn get_process_metadata_by_instance_id_use_case(
-        &self,
-    ) -> Arc<dyn GetProcessMetadataByInstanceIdUseCasePort> {
-        Arc::new(GetProcessMetadataByInstanceIdUseCase::new(
             self.storage().process_storage.clone(),
         ))
     }

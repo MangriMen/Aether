@@ -125,7 +125,6 @@ macro_rules! process_commands {
     ($($tokens:tt)*) => {
         $($tokens)* [
             list,
-            get_by_instance_id,
         ]
     };
 }

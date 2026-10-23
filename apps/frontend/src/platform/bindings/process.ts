@@ -6,7 +6,6 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	list: () => __TAURI_INVOKE<MinecraftProcessMetadataDto[]>("plugin:process|list"),
-	getByInstanceId: (id: string) => __TAURI_INVOKE<MinecraftProcessMetadataDto[]>("plugin:process|get_by_instance_id", { id }),
 };
 
 /** Events */
