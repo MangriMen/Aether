@@ -54,6 +54,9 @@ impl PluginDisableService for FakeDisable {
         self.log.lock().unwrap().push("disable");
         (self.result)()
     }
+    async fn unload(&self, _: String) -> Result<(), PluginError> {
+        unimplemented!()
+    }
 }
 
 struct FakeSync(Log);
