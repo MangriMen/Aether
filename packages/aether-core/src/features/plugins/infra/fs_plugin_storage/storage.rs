@@ -10,6 +10,7 @@ use tracing::{error, warn};
 
 use crate::{
     features::{
+        instance::is_valid_id,
         plugins::{
             ExtractedPlugin, LoadConfig, ManifestError, Plugin, PluginCapabilities, PluginContent,
             PluginError, PluginManifest, PluginState, PluginStateReason, PluginStorage,
@@ -523,6 +524,13 @@ impl PluginStorage for FsPluginStorage {
     }
 
     async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+        // An id such as "" or ".." would turn the join below into the plugins folder or its parent.
+        if !is_valid_id(plugin_id) {
+            return Err(PluginError::NotFound {
+                plugin_id: plugin_id.to_owned(),
+            });
+        }
+
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
 
         if !plugin_dir.exists() {
@@ -762,6 +770,23 @@ mod tests {
             b"0.1.0"
         );
         assert_eq!(fixture.plugins_dir_entries(), ["test-plugin"]);
+    }
+
+    #[tokio::test]
+    async fn should_refuse_to_remove_a_plugin_by_an_id_that_leaves_the_plugins_folder() {
+        let fixture = Fixture::installed();
+
+        for id in ["", "..", "../test-plugin", "/abs"] {
+            assert!(
+                matches!(
+                    fixture.storage.remove(id).await,
+                    Err(PluginError::NotFound { .. })
+                ),
+                "{id:?}"
+            );
+        }
+
+        assert!(fixture.plugin_dir().exists());
     }
 
     #[tokio::test]
