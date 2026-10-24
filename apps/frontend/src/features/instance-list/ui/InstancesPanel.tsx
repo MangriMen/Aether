@@ -30,7 +30,7 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
     >
       <Switch>
         <Match when={instances.isLoading}>
-          <SkeletonList itemsCount={4} class='size-33 rounded-md' />
+          <SkeletonList itemsCount={4} width={132} height={132} radius={6} />
         </Match>
         <Match when={instances.isError && !instances.data}>
           <LoadError
