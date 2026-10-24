@@ -19,7 +19,7 @@ impl TryFrom<PluginManifestDto> for PluginManifest {
         Ok(Self {
             metadata: dto.metadata.try_into()?,
             runtime: dto.runtime.into(),
-            load: dto.load.into(),
+            load: dto.load.try_into()?,
             api: dto.api.try_into()?,
         })
     }
@@ -68,10 +68,15 @@ impl From<PathMappingDto> for PathMapping {
     }
 }
 
-impl From<LoadConfigDto> for LoadConfig {
-    fn from(dto: LoadConfigDto) -> Self {
+impl TryFrom<LoadConfigDto> for LoadConfig {
+    type Error = ManifestError;
+
+    fn try_from(dto: LoadConfigDto) -> Result<Self, Self::Error> {
         match dto {
-            LoadConfigDto::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
+            LoadConfigDto::Extism { file, memory_limit } => Ok(Self::Extism {
+                file: file.try_into()?,
+                memory_limit,
+            }),
         }
     }
 }
@@ -141,7 +146,10 @@ impl From<PathMapping> for PathMappingDto {
 impl From<LoadConfig> for LoadConfigDto {
     fn from(v: LoadConfig) -> Self {
         match v {
-            LoadConfig::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
+            LoadConfig::Extism { file, memory_limit } => Self::Extism {
+                file: file.into(),
+                memory_limit,
+            },
         }
     }
 }
@@ -250,5 +258,26 @@ mod tests {
         let json = serde_json::to_value(PluginManifestDto::from(manifest)).expect("serialize");
 
         assert!(json["api"].get("hostFunctions").is_none(), "{json}");
+    }
+}
+
+#[cfg(test)]
+mod load_file_tests {
+    use super::*;
+
+    #[test]
+    fn should_reject_a_load_file_outside_the_plugin_dir_when_mapping_the_manifest() {
+        let json = r#"{
+            "metadata": { "id": "test", "name": "Test", "version": "0.1.0" },
+            "runtime": {},
+            "load": { "type": "extism", "file": "../outside.wasm" },
+            "api": { "version": "0.2.0" }
+        }"#;
+
+        let result = PluginManifest::try_from(
+            serde_json::from_str::<PluginManifestDto>(json).expect("manifest should parse"),
+        );
+
+        assert!(matches!(result, Err(ManifestError::InvalidLoadFile(_))));
     }
 }

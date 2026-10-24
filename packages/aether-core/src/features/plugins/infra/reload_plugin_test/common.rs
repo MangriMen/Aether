@@ -218,7 +218,7 @@ pub(super) fn manifest() -> PluginManifest {
             allowed_paths: vec![],
         },
         load: LoadConfig::Extism {
-            file: "plugin.wasm".into(),
+            file: "plugin.wasm".try_into().unwrap(),
             memory_limit: None,
         },
         api: ApiConfig {

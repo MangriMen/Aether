@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::features::instance::{ProviderId, is_valid_id};
 
-use super::ManifestError;
+use super::{ManifestError, PluginFilePath};
 
 /// Root configuration for an Aether plugin.
 #[derive(Debug, Clone, PartialEq)]
@@ -75,7 +75,7 @@ pub enum LoadConfig {
     /// Use WebAssembly (Extism) for a secure, cross-platform sandbox.
     Extism {
         /// Path to the .wasm file relative to the plugin root.
-        file: PathBuf,
+        file: PluginFilePath,
         /// Maximum memory (in bytes) the plugin is allowed to allocate.
         memory_limit: Option<usize>,
     },
@@ -147,13 +147,6 @@ impl RuntimeConfig {
             }
         }
 
-        Ok(())
-    }
-}
-
-impl LoadConfig {
-    pub fn validate(&self) -> Result<(), ManifestError> {
-        // File existence is validated by the infra layer when loading the manifest.
         Ok(())
     }
 }
@@ -495,7 +488,7 @@ mod tests {
                 )],
             },
             load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm"),
+                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
                 memory_limit: None,
             },
             api: ApiConfig {
@@ -526,7 +519,7 @@ mod tests {
                 allowed_paths: vec![],
             },
             load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm"),
+                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
                 memory_limit: None,
             },
             api: ApiConfig {
@@ -557,7 +550,7 @@ mod tests {
                 allowed_paths: vec![],
             },
             load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm"),
+                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
                 memory_limit: None,
             },
             api: ApiConfig {

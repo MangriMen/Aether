@@ -214,7 +214,10 @@ impl From<PathMapping> for PathMappingDto {
 impl From<LoadConfig> for LoadConfigDto {
     fn from(v: LoadConfig) -> Self {
         match v {
-            LoadConfig::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
+            LoadConfig::Extism { file, memory_limit } => Self::Extism {
+                file: file.into(),
+                memory_limit,
+            },
         }
     }
 }
