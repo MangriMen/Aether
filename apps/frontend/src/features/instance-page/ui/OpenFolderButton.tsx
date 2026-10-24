@@ -7,6 +7,7 @@ import type { IconButtonProps } from '@/shared/ui-kit';
 
 import { useRevealInExplorer } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type OpenFolderButtonProps<T extends ValidComponent = 'button'> =
@@ -26,7 +27,7 @@ export const OpenFolderButton: Component<OpenFolderButtonProps> = (props) => {
       return;
     }
 
-    revealInExplorer({ path: local.instancePath });
+    revealInExplorer({ path: local.instancePath }).catch(logError);
   };
 
   return (

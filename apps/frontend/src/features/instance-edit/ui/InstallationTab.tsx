@@ -14,6 +14,7 @@ import {
 } from '@/features/content';
 import { useInstallInstance, useUpdateInstance } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { Button, Image, LabeledField, Skeleton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -31,11 +32,13 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
   const { mutateAsync: updateInstance } = useUpdateInstance();
 
   const handleUpdate = async () => {
-    await updateInstance(local.instance.id);
+    await updateInstance(local.instance.id).catch(logError);
   };
 
   const handleRepair = async () => {
-    await installInstance({ id: local.instance.id, force: true });
+    await installInstance({ id: local.instance.id, force: true }).catch(
+      logError,
+    );
   };
 
   const isInstalling = createMemo(

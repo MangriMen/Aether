@@ -26,18 +26,19 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
 
   return (
     <div class={cn('gap-2 flex flex-col', local.class)} {...others}>
-      <Switch>
+      <Switch
+        fallback={
+          <DataTable
+            table={table}
+            isLoading={javaVersions.isLoading && !javaVersions.isError}
+          />
+        }
+      >
         <Match when={javaVersions.isError && !javaVersions.data}>
           <LoadError
             message={t('java.loadFailed')}
             retryLabel={t('common.retry')}
             onRetry={() => void javaVersions.refetch()}
-          />
-        </Match>
-        <Match when={!javaVersions.isError || javaVersions.data}>
-          <DataTable
-            table={table}
-            isLoading={javaVersions.isLoading && !javaVersions.isError}
           />
         </Match>
       </Switch>

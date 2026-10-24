@@ -16,6 +16,7 @@ import {
   INSTANCE_ROUTES,
 } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   CombinedDialog,
   CombinedTooltip,
@@ -53,7 +54,9 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
   };
 
   const handleRemove = () =>
-    removeInstance(props.instance).then(() => closeRemoveModal());
+    removeInstance(props.instance)
+      .then(() => closeRemoveModal())
+      .catch(logError);
 
   const { mutateAsync: revealInExplorer } = useRevealInExplorer();
 
@@ -62,7 +65,7 @@ export const InstanceControlledCard: Component<InstanceControlledCardProps> = (
       return;
     }
 
-    revealInExplorer({ path: instancePath.data });
+    revealInExplorer({ path: instancePath.data }).catch(logError);
   };
 
   const handleOpenSettings = () => {

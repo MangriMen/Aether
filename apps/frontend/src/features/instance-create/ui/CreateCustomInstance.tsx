@@ -10,6 +10,7 @@ import {
   Field,
 } from '@formisch/solid';
 import {
+  createEffect,
   createMemo,
   createSignal,
   Match,
@@ -166,8 +167,13 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     error !== undefined && isValidationKey(error) ? t(error) : error;
 
   // The selected version is gone from the list once the loader or the snapshot filter
-  // changes; keeping it would submit a pair the select no longer shows.
-  const dropUnavailableGameVersion = () => {
+  // changes; keeping it would submit a pair the select no longer shows. The list is empty
+  // while a manifest loads, so nothing is judged until it has.
+  createEffect(() => {
+    if (isLoadingManifests() || hasLoadError()) {
+      return;
+    }
+
     const selected = getInput(form, { path: ['gameVersion'] });
     const next = reconcileGameVersion(
       selected,
@@ -179,7 +185,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       reset(form, { path: ['gameVersion'] });
       setInput(form, { path: ['loaderVersion'], input: next.loaderVersion });
     }
-  };
+  });
 
   const handleAdvancedToggle = () => {
     if (isAdvanced()) {
@@ -260,7 +266,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
                   path: ['loaderVersion'],
                   input: undefined,
                 });
-                dropUnavailableGameVersion();
               }}
             />
           )}
@@ -301,7 +306,6 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
             checked={shouldIncludeSnapshots()}
             onChange={(checked) => {
               setShouldIncludeSnapshots(checked);
-              dropUnavailableGameVersion();
             }}
           />
         </div>
@@ -388,7 +392,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
           </Switch>
         </Button>
 
-        <Button type='submit' disabled={isCreating()}>
+        <Button type='submit' loading={isCreating()}>
           {t('common.create')}
         </Button>
 

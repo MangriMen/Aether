@@ -8,7 +8,10 @@ import { appSettingsCache, appSettingsQueries } from './appSettingsCache';
 
 export const useAppSettings = () => useQuery(appSettingsQueries.get);
 
-export const useEditAppSettings = () => {
+export const useEditAppSettings = (options?: {
+  /** For changes the user did not make; a failure is for the log, not a toast. */
+  silent?: boolean;
+}) => {
   const queryClient = useQueryClient();
   const [{ t }] = useTranslation();
 
@@ -16,7 +19,9 @@ export const useEditAppSettings = () => {
     mutationFn: settingsCommands.editAppSettings,
     onSuccess: () => appSettingsCache.invalidate.get(queryClient),
     onError: (err) => {
-      showError({ title: t('settings.changeError'), err, t });
+      if (!options?.silent) {
+        showError({ title: t('settings.changeError'), err, t });
+      }
     },
   }));
 };
