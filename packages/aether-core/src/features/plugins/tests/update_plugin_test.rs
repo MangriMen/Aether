@@ -3,7 +3,7 @@ use std::{
     io::{Cursor, Write},
     sync::{
         Arc,
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -142,12 +142,15 @@ impl ReloadPluginUseCasePort for NoRestart {
 
 /// Counts the syncs the update asks for: what puts the new build in the registry.
 #[derive(Default)]
-struct CountingSync(AtomicUsize);
+struct CountingSync(AtomicUsize, AtomicBool);
 
 #[async_trait]
 impl PluginSyncService for CountingSync {
     async fn execute(&self) -> Result<(), PluginError> {
         self.0.fetch_add(1, Ordering::SeqCst);
+        if self.1.load(Ordering::SeqCst) {
+            return Err(disk_full());
+        }
         Ok(())
     }
 }
@@ -571,6 +574,17 @@ async fn should_sync_the_plugins_when_the_update_succeeds() {
     fixture.update_to_v2(plugin_zip(b"\0asm v2")).await.unwrap();
 
     assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 1);
+}
+
+/// The new version is already in place by then: the failed sync is logged, not reported as a failed update.
+#[tokio::test]
+async fn should_succeed_when_the_sync_after_the_update_fails() {
+    let fixture = Fixture::installed().await;
+    fixture.sync.1.store(true, Ordering::SeqCst);
+
+    fixture.update_to_v2(plugin_zip(b" asm v2")).await.unwrap();
+
+    assert_eq!(fixture.wasm().await, b" asm v2");
 }
 
 #[tokio::test]

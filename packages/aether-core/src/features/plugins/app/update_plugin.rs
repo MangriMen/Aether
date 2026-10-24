@@ -19,7 +19,7 @@ use super::{PluginProviderFactory, record_plugin_verification, write_bytes_to_te
 /// step leaves the installed version, its settings, trust record and source as they were.
 ///
 /// Once replaced, the plugin is synced, so that the registry holds the new build and a plugin
-/// that was enabled runs it.
+/// that was enabled runs it. The update is done by then, so a failed sync is logged, not returned.
 pub(crate) struct UpdatePluginUseCase {
     plugin_registry: Arc<PluginRegistry>,
     plugin_extractor: Arc<dyn PluginExtractor>,
@@ -163,7 +163,10 @@ impl UpdatePluginUseCase {
         // Not under the settings lock: enabling the new build can take seconds, and no settings
         // change needs to wait for it.
         drop(settings_lock);
-        self.sync_plugins_service.execute().await
+        if let Err(err) = self.sync_plugins_service.execute().await {
+            log::warn!("Plugin '{plugin_id}' was updated but the sync after it failed: {err}");
+        }
+        Ok(())
     }
 
     /// Writes the core's files about the new version into its directory. The source goes last:
