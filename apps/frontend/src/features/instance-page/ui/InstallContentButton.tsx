@@ -14,6 +14,7 @@ import {
   useImportContents,
 } from '@/features/content';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   Button,
   DropdownMenu,
@@ -53,17 +54,26 @@ export const InstallContentButton: Component<InstallContentButtonProps> = (
   const { mutateAsync: importContents } = useImportContents();
 
   const handleAddContents = async (contentType: AtomicContentType) => {
-    const paths = await open({
-      multiple: true,
-      directory: false,
-      filters: OPEN_FILTERS_BY_CONTENT_TYPE[contentType],
-    });
+    let paths: string[] | null;
+
+    try {
+      paths = await open({
+        multiple: true,
+        directory: false,
+        filters: OPEN_FILTERS_BY_CONTENT_TYPE[contentType],
+      });
+    } catch (error) {
+      logError('Failed to pick files to import:', error);
+      return;
+    }
 
     if (!paths) {
       return;
     }
 
-    importContents({ id: local.instanceId, paths, type: contentType });
+    importContents({ id: local.instanceId, paths, type: contentType }).catch(
+      logError,
+    );
   };
 
   return (

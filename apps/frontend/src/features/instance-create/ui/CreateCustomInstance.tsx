@@ -392,7 +392,11 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
           </Switch>
         </Button>
 
-        <Button type='submit' loading={isCreating()}>
+        <Button
+          type='submit'
+          loading={isCreating()}
+          disabled={isLoadingManifests() || hasLoadError()}
+        >
           {t('common.create')}
         </Button>
 

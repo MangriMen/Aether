@@ -21,6 +21,7 @@ import {
 } from '@/features/content';
 import { type Instance } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -62,15 +63,24 @@ export const SelectedRowsActions: Component<SelectedRowsActionsProps> = (
   const { mutateAsync: removeInstanceContents } = useRemoveContents();
 
   const handleEnableContents = () => {
-    enableInstanceContents({ id: local.instanceId, paths: getContentIds() });
+    enableInstanceContents({
+      id: local.instanceId,
+      paths: getContentIds(),
+    }).catch(logError);
   };
 
   const handleDisableContents = () => {
-    disableInstanceContents({ id: local.instanceId, paths: getContentIds() });
+    disableInstanceContents({
+      id: local.instanceId,
+      paths: getContentIds(),
+    }).catch(logError);
   };
 
   const handleDeleteContents = () => {
-    removeInstanceContents({ id: local.instanceId, paths: getContentIds() });
+    removeInstanceContents({
+      id: local.instanceId,
+      paths: getContentIds(),
+    }).catch(logError);
   };
 
   return (
