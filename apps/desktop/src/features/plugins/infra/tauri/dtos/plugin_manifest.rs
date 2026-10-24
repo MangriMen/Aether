@@ -159,7 +159,10 @@ impl From<aether_core::features::plugins::LoadConfig> for LoadConfigDto {
     fn from(m: aether_core::features::plugins::LoadConfig) -> Self {
         match m {
             aether_core::features::plugins::LoadConfig::Extism { file, memory_limit } => {
-                Self::Extism { file, memory_limit }
+                Self::Extism {
+                    file: file.into(),
+                    memory_limit,
+                }
             }
         }
     }

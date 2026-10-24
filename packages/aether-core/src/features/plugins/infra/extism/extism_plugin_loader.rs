@@ -92,7 +92,7 @@ impl ExtismPluginLoader {
         let LoadConfig::Extism { file, memory_limit } = &manifest.load;
 
         (
-            self.resolve_absolute_wasm_path(&manifest.metadata.id, file),
+            self.resolve_absolute_wasm_path(&manifest.metadata.id, file.as_path()),
             memory_limit.unwrap_or(self.limits.default_memory_limit_bytes),
         )
     }
@@ -467,7 +467,7 @@ mod tests {
                 allowed_paths: vec![],
             },
             load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm"),
+                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
                 memory_limit,
             },
             api: ApiConfig {

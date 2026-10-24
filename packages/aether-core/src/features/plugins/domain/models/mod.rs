@@ -8,6 +8,7 @@ mod plugin_call_error;
 mod plugin_capabilities;
 mod plugin_dtos;
 mod plugin_error;
+mod plugin_file_path;
 mod plugin_internal_event;
 mod plugin_manifest;
 mod plugin_provider;
@@ -37,6 +38,7 @@ pub use plugin_capabilities::{
 };
 pub use plugin_dtos::{PluginCheckCompatibilityParams, PluginImportInstance};
 pub use plugin_error::PluginError;
+pub use plugin_file_path::PluginFilePath;
 pub use plugin_internal_event::PluginInternalEvent;
 pub use plugin_manifest::{
     ApiConfig, Compatibility, LoadConfig, LoadConfigType, PathMapping, PluginManifest,

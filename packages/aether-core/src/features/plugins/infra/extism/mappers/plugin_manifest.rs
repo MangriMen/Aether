@@ -16,15 +16,10 @@ impl TryFrom<PluginManifestDto> for PluginManifest {
     type Error = ManifestError;
 
     fn try_from(dto: PluginManifestDto) -> Result<Self, Self::Error> {
-        let load = LoadConfig::from(dto.load);
-        // Every read of a manifest from disk comes through here, and listing or hashing a plugin
-        // opens `load.file` before any enable-time validation runs.
-        load.validate()?;
-
         Ok(Self {
             metadata: dto.metadata.try_into()?,
             runtime: dto.runtime.into(),
-            load,
+            load: dto.load.try_into()?,
             api: dto.api.try_into()?,
         })
     }
@@ -73,10 +68,15 @@ impl From<PathMappingDto> for PathMapping {
     }
 }
 
-impl From<LoadConfigDto> for LoadConfig {
-    fn from(dto: LoadConfigDto) -> Self {
+impl TryFrom<LoadConfigDto> for LoadConfig {
+    type Error = ManifestError;
+
+    fn try_from(dto: LoadConfigDto) -> Result<Self, Self::Error> {
         match dto {
-            LoadConfigDto::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
+            LoadConfigDto::Extism { file, memory_limit } => Ok(Self::Extism {
+                file: file.try_into()?,
+                memory_limit,
+            }),
         }
     }
 }
@@ -146,7 +146,10 @@ impl From<PathMapping> for PathMappingDto {
 impl From<LoadConfig> for LoadConfigDto {
     fn from(v: LoadConfig) -> Self {
         match v {
-            LoadConfig::Extism { file, memory_limit } => Self::Extism { file, memory_limit },
+            LoadConfig::Extism { file, memory_limit } => Self::Extism {
+                file: file.into(),
+                memory_limit,
+            },
         }
     }
 }

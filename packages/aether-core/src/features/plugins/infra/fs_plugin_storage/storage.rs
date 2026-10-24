@@ -250,7 +250,7 @@ impl FsPluginStorage {
             ..
         } = &manifest.load;
 
-        dir.join(relative_file_path)
+        dir.join(relative_file_path.as_path())
     }
 
     async fn calc_hash(dir: &Path, manifest: &PluginManifest) -> Result<String, PluginError> {
