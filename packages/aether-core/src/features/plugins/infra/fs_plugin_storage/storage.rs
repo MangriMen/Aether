@@ -10,12 +10,12 @@ use tracing::{error, warn};
 
 use crate::{
     features::{
+        instance::is_valid_id,
         plugins::{
             ExtractedPlugin, LoadConfig, ManifestError, Plugin, PluginCapabilities, PluginContent,
             PluginError, PluginManifest, PluginState, PluginStateReason, PluginStorage,
             PluginVerificationStorage,
         },
-        instance::is_valid_id,
         settings::{LocationInfo, PLUGIN_SETTINGS_FILE_NAME},
     },
     shared::{
