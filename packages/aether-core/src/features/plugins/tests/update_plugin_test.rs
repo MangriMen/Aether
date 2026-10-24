@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
     io::{Cursor, Write},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+    },
     time::Duration,
 };
 
@@ -15,8 +18,8 @@ use crate::features::{
         AllowedPath, ExtractedPlugin, GrantPluginFolderAccessUseCase, Plugin, PluginError,
         PluginProvider, PluginProviderError, PluginProviderFactory, PluginRegistry, PluginSettings,
         PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginSourceType, PluginState,
-        PluginStorage, PluginVerification, PluginVerificationStorage, ProviderPluginPreview,
-        ProviderUpdateInfo, ReloadPluginUseCasePort, UpdatePluginUseCase,
+        PluginStorage, PluginSyncService, PluginVerification, PluginVerificationStorage,
+        ProviderPluginPreview, ProviderUpdateInfo, ReloadPluginUseCasePort, UpdatePluginUseCase,
         domain::ProviderReleaseInfo,
         infra::{
             FsPluginSettingsStorage, FsPluginSourceStorage, FsPluginStorage,
@@ -137,6 +140,21 @@ impl ReloadPluginUseCasePort for NoRestart {
     }
 }
 
+/// Counts the syncs the update asks for: what puts the new build in the registry.
+#[derive(Default)]
+struct CountingSync(AtomicUsize, AtomicBool);
+
+#[async_trait]
+impl PluginSyncService for CountingSync {
+    async fn execute(&self) -> Result<(), PluginError> {
+        self.0.fetch_add(1, Ordering::SeqCst);
+        if self.1.load(Ordering::SeqCst) {
+            return Err(disk_full());
+        }
+        Ok(())
+    }
+}
+
 /// Hands out what it holds, then takes its time before returning it: two changes that were not
 /// made one after the other both read the settings before either saves.
 struct SlowPluginSettings(Arc<FsPluginSettingsStorage>);
@@ -161,6 +179,7 @@ struct Fixture {
     settings: Arc<FsPluginSettingsStorage>,
     source: Arc<FsPluginSourceStorage>,
     verification: Arc<FsPluginVerificationStorage>,
+    sync: Arc<CountingSync>,
 }
 
 impl Fixture {
@@ -189,6 +208,7 @@ impl Fixture {
             settings: Arc::new(FsPluginSettingsStorage::new(location_info.clone())),
             source: Arc::new(FsPluginSourceStorage::new(location_info.clone())),
             verification: Arc::new(FsPluginVerificationStorage::new(location_info.clone())),
+            sync: Arc::default(),
             location_info,
             _temp: temp,
         };
@@ -261,6 +281,7 @@ impl Fixture {
             Arc::new(PluginProviderFactory::new(vec![Box::new(OneRelease {
                 archive,
             })])),
+            self.sync.clone(),
         )
         .execute(PLUGIN_ID, Some("v2"))
         .await
@@ -543,6 +564,39 @@ async fn should_leave_out_core_files_when_the_release_archive_brings_them() {
         Some(PluginSource::Remote { identifier, current_tag, .. })
             if identifier == "owner/repo" && current_tag == "v2"
     ));
+}
+
+/// The registry and a running instance still hold the old build until the plugin is synced.
+#[tokio::test]
+async fn should_sync_the_plugins_when_the_update_succeeds() {
+    let fixture = Fixture::installed().await;
+
+    fixture.update_to_v2(plugin_zip(b"\0asm v2")).await.unwrap();
+
+    assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 1);
+}
+
+/// The new version is already in place by then: the failed sync is logged, not reported as a failed update.
+#[tokio::test]
+async fn should_succeed_when_the_sync_after_the_update_fails() {
+    let fixture = Fixture::installed().await;
+    fixture.sync.1.store(true, Ordering::SeqCst);
+
+    fixture.update_to_v2(plugin_zip(b" asm v2")).await.unwrap();
+
+    assert_eq!(fixture.wasm().await, b" asm v2");
+}
+
+#[tokio::test]
+async fn should_not_sync_the_plugins_when_the_update_fails() {
+    let fixture = Fixture::installed().await;
+
+    let result = fixture
+        .update_to_v2(plugin_zip_of("other-plugin", b"\0asm v2"))
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 0);
 }
 
 /// An archive of another plugin would be installed under the id of the one it replaces, or over

@@ -413,7 +413,6 @@
     "noVersionsFound": "Версии не найдены",
     "updateAvailable": "Доступно обновление",
     "update": "Обновить",
-    "restartPlugin": "Перезапустить",
     "checkUpdates": "Проверить обновления",
     "upToDate": "Обновлений нет",
     "updateCheckError": "Не удалось проверить обновления"
