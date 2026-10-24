@@ -1,5 +1,5 @@
 import type { DialogRootProps } from '@kobalte/core/dialog';
-import type { Component } from 'solid-js';
+import type { Component, ParentComponent } from 'solid-js';
 
 import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
@@ -21,6 +21,14 @@ import { Dialog, DialogContent, LoadError } from '@/shared/ui-kit';
 
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
+
+// The dialog content has no left or bottom padding of its own, so a state shown instead of the
+// settings brings its own.
+const StatePlaceholder: ParentComponent = (props) => (
+  <div class='min-h-40 pb-6 pl-6 flex grow items-center justify-center'>
+    {props.children}
+  </div>
+);
 
 export type InstanceSettingsDialogProps = DialogRootProps & {
   instanceId?: Instance['id'];
@@ -67,7 +75,13 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
         w-225 pb-0 pl-0 flex max-w-[calc(100%-80px)] flex-col
       '
       >
-        <Switch fallback={<span>{t('instance.instanceNotFound')}</span>}>
+        <Switch
+          fallback={
+            <StatePlaceholder>
+              <span>{t('instance.instanceNotFound')}</span>
+            </StatePlaceholder>
+          }
+        >
           <Match when={instance.data}>
             {(instance) => (
               <>
@@ -80,14 +94,18 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
             )}
           </Match>
           <Match when={instance.isLoading || instance.isFetching}>
-            <span>{t('common.loading')}</span>
+            <StatePlaceholder>
+              <span>{t('common.loading')}</span>
+            </StatePlaceholder>
           </Match>
           <Match when={instance.isError && !instance.isNotFound}>
-            <LoadError
-              message={t('common.loadFailed')}
-              retryLabel={t('common.retry')}
-              onRetry={instance.refetch}
-            />
+            <StatePlaceholder>
+              <LoadError
+                message={t('common.loadFailed')}
+                retryLabel={t('common.retry')}
+                onRetry={instance.refetch}
+              />
+            </StatePlaceholder>
           </Match>
         </Switch>
       </DialogContent>
