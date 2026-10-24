@@ -21,7 +21,7 @@ export const validateInstanceName = (input: string): InstanceNameValidation => {
   return {
     valid: false,
     errorKey:
-      result.issues[0]?.message === 'generalSettingsError.name.maxLength'
+      result.issues[0]?.type === 'max_length'
         ? 'generalSettingsError.name.maxLength'
         : 'generalSettingsError.name.minLength',
   };

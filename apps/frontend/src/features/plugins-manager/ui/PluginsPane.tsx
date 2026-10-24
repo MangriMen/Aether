@@ -53,14 +53,6 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
     }),
   );
 
-  const errorMessage = createMemo(() => {
-    const err = plugins.error;
-
-    return err instanceof Error && err.message
-      ? err.message
-      : t('common.loadFailed');
-  });
-
   return (
     <SettingsPane
       label={
@@ -100,7 +92,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
         >
           <Match when={paneState() === 'error'}>
             <LoadError
-              message={errorMessage()}
+              message={t('common.loadFailed')}
               retryLabel={t('common.retry')}
               onRetry={() => void plugins.refetch()}
             />
