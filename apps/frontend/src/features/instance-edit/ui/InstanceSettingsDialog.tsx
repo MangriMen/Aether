@@ -82,8 +82,12 @@ export const InstanceSettingsDialog: Component<InstanceSettingsDialogProps> = (
           <Match when={instance.isLoading || instance.isFetching}>
             <span>{t('common.loading')}</span>
           </Match>
-          <Match when={instance.isError}>
-            <LoadError message={t('common.loadFailed')} />
+          <Match when={instance.isError && !instance.isNotFound}>
+            <LoadError
+              message={t('common.loadFailed')}
+              retryLabel={t('common.retry')}
+              onRetry={instance.refetch}
+            />
           </Match>
         </Switch>
       </DialogContent>
