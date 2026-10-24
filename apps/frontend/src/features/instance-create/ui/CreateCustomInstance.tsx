@@ -210,14 +210,15 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       loaderVersion: values.loaderVersion,
     };
 
+    props.onOpenChange?.(false);
+
     try {
       await createInstance.mutateAsync(payload);
-      props.onOpenChange?.(false);
     } catch {
-      // The mutation shows the error; the dialog stays so the input is not lost.
-    } finally {
-      setIsCreating(false);
+      // The mutation shows the error.
     }
+
+    setIsCreating(false);
   };
 
   return (
@@ -394,8 +395,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
 
         <Button
           type='submit'
-          loading={isCreating()}
-          disabled={isLoadingManifests() || hasLoadError()}
+          disabled={isCreating() || isLoadingManifests() || hasLoadError()}
         >
           {t('common.create')}
         </Button>
