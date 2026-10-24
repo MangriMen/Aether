@@ -42,6 +42,13 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
     () => local.instance.installStage !== 'installed',
   );
 
+  // A not installed instance is what repair is for; only a running install blocks it.
+  const isRepairBlocked = createMemo(
+    () =>
+      local.instance.installStage === 'installing' ||
+      local.instance.installStage === 'pack_installing',
+  );
+
   const content = useContent(() => instanceToContentGetParams(local.instance));
 
   const versions = useContentVersions(() => {
@@ -91,7 +98,7 @@ export const InstallationTab: Component<InstallationTabProps> = (props) => {
               variant='ghostWarning'
               leadingIcon={IconMdiHammer}
               onClick={handleRepair}
-              disabled={isInstalling()}
+              disabled={isRepairBlocked()}
             >
               {t('common.repair')}
             </Button>
