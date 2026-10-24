@@ -16,10 +16,15 @@ impl TryFrom<PluginManifestDto> for PluginManifest {
     type Error = ManifestError;
 
     fn try_from(dto: PluginManifestDto) -> Result<Self, Self::Error> {
+        let load = LoadConfig::from(dto.load);
+        // Every read of a manifest from disk comes through here, and listing or hashing a plugin
+        // opens `load.file` before any enable-time validation runs.
+        load.validate()?;
+
         Ok(Self {
             metadata: dto.metadata.try_into()?,
             runtime: dto.runtime.into(),
-            load: dto.load.into(),
+            load,
             api: dto.api.try_into()?,
         })
     }
@@ -250,5 +255,26 @@ mod tests {
         let json = serde_json::to_value(PluginManifestDto::from(manifest)).expect("serialize");
 
         assert!(json["api"].get("hostFunctions").is_none(), "{json}");
+    }
+}
+
+#[cfg(test)]
+mod load_file_tests {
+    use super::*;
+
+    #[test]
+    fn should_reject_a_load_file_outside_the_plugin_dir_when_mapping_the_manifest() {
+        let json = r#"{
+            "metadata": { "id": "test", "name": "Test", "version": "0.1.0" },
+            "runtime": {},
+            "load": { "type": "extism", "file": "../outside.wasm" },
+            "api": { "version": "0.2.0" }
+        }"#;
+
+        let result = PluginManifest::try_from(
+            serde_json::from_str::<PluginManifestDto>(json).expect("manifest should parse"),
+        );
+
+        assert!(matches!(result, Err(ManifestError::InvalidLoadFile(_))));
     }
 }
