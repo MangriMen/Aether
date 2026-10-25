@@ -25,6 +25,7 @@ import {
   LoadError,
   SkeletonList,
 } from '@/shared/ui-kit';
+import { createDelayedFlag } from '@/shared/utils';
 
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type { ContentItem } from '../model/contentItem';
@@ -45,6 +46,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
 
   const [{ t }] = useTranslation();
   const instances = useInstances();
+  const showSkeleton = createDelayedFlag(() => instances.isLoading);
 
   const instanceIds = createMemo(
     () => instances.data?.map((instance) => instance.id) ?? [],
@@ -100,10 +102,13 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
           <div class='gap-2 flex flex-col'>
             <Switch>
               <Match when={instances.isLoading}>
-                <SkeletonList itemsCount={3} height={60} radius={6} />
+                <Show when={showSkeleton()}>
+                  <SkeletonList itemsCount={3} height={60} radius={6} />
+                </Show>
               </Match>
               <Match when={instances.isError && !instances.data}>
                 <LoadError
+                  variant='inline'
                   message={t('common.loadFailed')}
                   retryLabel={t('common.retry')}
                   onRetry={() => void instances.refetch()}

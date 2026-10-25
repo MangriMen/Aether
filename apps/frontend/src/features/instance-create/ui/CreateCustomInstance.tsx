@@ -230,6 +230,7 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
     >
       <Show when={hasLoadError()}>
         <LoadError
+          variant='inline'
           message={t('common.loadFailed')}
           retryLabel={t('common.retry')}
           onRetry={retryManifests}

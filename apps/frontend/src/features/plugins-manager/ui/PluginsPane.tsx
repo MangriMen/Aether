@@ -92,6 +92,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
         >
           <Match when={paneState() === 'error'}>
             <LoadError
+              variant='inline'
               message={t('common.loadFailed')}
               retryLabel={t('common.retry')}
               onRetry={() => void plugins.refetch()}

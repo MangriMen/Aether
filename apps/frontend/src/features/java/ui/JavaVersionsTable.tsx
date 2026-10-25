@@ -36,6 +36,7 @@ export const JavaVersionsTable: Component<JavaVersionsTableProps> = (props) => {
       >
         <Match when={javaVersions.isError && !javaVersions.data}>
           <LoadError
+            variant='inline'
             message={t('java.loadFailed')}
             retryLabel={t('common.retry')}
             onRetry={() => void javaVersions.refetch()}

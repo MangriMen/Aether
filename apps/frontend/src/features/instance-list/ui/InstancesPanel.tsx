@@ -1,11 +1,11 @@
 import type { Component, ComponentProps } from 'solid-js';
 
-import { For, Match, splitProps, Switch } from 'solid-js';
+import { For, Match, Show, splitProps, Switch } from 'solid-js';
 
 import { useInstances } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
 import { LoadError, SkeletonList, useArrowNavigation } from '@/shared/ui-kit';
-import { cn } from '@/shared/utils';
+import { cn, createDelayedFlag } from '@/shared/utils';
 
 import { InstanceControlledCard } from './InstanceControlledCard';
 
@@ -20,6 +20,9 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
 
   const { setRef, onKeyDown } = useArrowNavigation();
 
+  // A cached or quick load would only flash the skeletons.
+  const showSkeleton = createDelayedFlag(() => instances.isLoading);
+
   return (
     <div
       role='presentation'
@@ -30,7 +33,9 @@ export const InstancesPanel: Component<InstancesPanelProps> = (props) => {
     >
       <Switch>
         <Match when={instances.isLoading}>
-          <SkeletonList itemsCount={4} width={132} height={132} radius={6} />
+          <Show when={showSkeleton()}>
+            <SkeletonList itemsCount={4} width={132} height={132} radius={6} />
+          </Show>
         </Match>
         <Match when={instances.isError && !instances.data}>
           <LoadError
