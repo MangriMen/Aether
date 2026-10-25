@@ -85,15 +85,14 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       path: values.path,
     };
 
+    local.onSubmit?.();
+
     try {
       await importInstance.mutateAsync(dto);
     } catch (error) {
-      // The mutation shows the error; the form stays open so the path is not lost.
+      // The mutation shows the error.
       logError('Failed to import the instance:', error);
-      return;
     }
-
-    local.onSubmit?.();
   };
 
   const handleBrowse = async () => {

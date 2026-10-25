@@ -207,7 +207,9 @@ export const CreateCustomInstance: Component<CreateCustomInstanceProps> = (
       name: values.name,
       gameVersion: values.gameVersion,
       modLoader: values.loader,
-      loaderVersion: values.loaderVersion,
+      // A version picked under "other" must not outlive a switch back to stable or latest.
+      loaderVersion:
+        values.loaderVersionType === 'other' ? values.loaderVersion : undefined,
     };
 
     props.onOpenChange?.(false);
