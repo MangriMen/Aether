@@ -22,10 +22,10 @@ import { Dialog, DialogContent, LoadError } from '@/shared/ui-kit';
 import InstanceSettingsDialogBody from './InstanceSettingsDialogBody';
 import InstanceSettingsDialogHeader from './InstanceSettingsDialogHeader';
 
-// The dialog content has no left or bottom padding of its own, so a state shown instead of the
-// settings brings its own.
+// The settings body has a fixed height and the dialog content no left padding, so a state shown
+// instead of the settings takes the same height and brings the padding.
 const StatePlaceholder: ParentComponent = (props) => (
-  <div class='min-h-40 pb-6 pl-6 flex grow items-center justify-center'>
+  <div class='h-98 pl-6 flex grow items-center justify-center'>
     {props.children}
   </div>
 );
