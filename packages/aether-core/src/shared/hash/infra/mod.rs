@@ -125,37 +125,39 @@ fn to_lower_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
+    #[rstest]
+    #[case::abc(
+        b"abc",
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    )]
+    #[case::empty(
+        b"",
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    )]
     #[tokio::test]
-    async fn should_produce_lowercase_hex_when_hashing_with_sha256() {
-        assert_eq!(
-            sha256_async(b"abc".to_vec()).await.unwrap(),
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-        );
+    async fn should_produce_lowercase_hex_when_hashing_with_sha256(
+        #[case] input: &[u8],
+        #[case] expected: &str,
+    ) {
+        assert_eq!(sha256_async(input.to_vec()).await.unwrap(), expected);
     }
 
+    #[rstest]
+    #[case::sha1(HashAlgorithm::Sha1, "a9993e364706816aba3e25717850c26c9cd0d89d")]
+    #[case::sha512(
+        HashAlgorithm::Sha512,
+        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+    )]
     #[tokio::test]
-    async fn should_hash_empty_input_when_given_no_bytes() {
+    async fn should_produce_known_digests_when_hashing_with_every_algorithm(
+        #[case] algorithm: HashAlgorithm,
+        #[case] expected: &str,
+    ) {
         assert_eq!(
-            sha256_async(Vec::new()).await.unwrap(),
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        );
-    }
-
-    #[tokio::test]
-    async fn should_produce_known_digests_when_hashing_with_every_algorithm() {
-        assert_eq!(
-            hash_hex_async(HashAlgorithm::Sha1, b"abc".to_vec())
-                .await
-                .unwrap(),
-            "a9993e364706816aba3e25717850c26c9cd0d89d"
-        );
-        assert_eq!(
-            hash_hex_async(HashAlgorithm::Sha512, b"abc".to_vec())
-                .await
-                .unwrap(),
-            "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a\
-             2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+            hash_hex_async(algorithm, b"abc".to_vec()).await.unwrap(),
+            expected
         );
     }
 

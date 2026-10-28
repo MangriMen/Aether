@@ -79,34 +79,26 @@ impl FromStr for CommandDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
     use std::str::FromStr;
 
-    #[test]
-    fn test_command_from_str_simple() {
-        let cmd = CommandDto::from_str("git commit -m hello").unwrap();
-        assert_eq!(cmd.program, "git");
-        assert_eq!(cmd.args, vec!["commit", "-m", "hello"]);
-    }
-
-    #[test]
-    fn test_command_from_str_single_quotes() {
-        let cmd = CommandDto::from_str("git commit -m 'hello world'").unwrap();
-        assert_eq!(cmd.program, "git");
-        assert_eq!(cmd.args, vec!["commit", "-m", "hello world"]);
-    }
-
-    #[test]
-    fn test_command_from_str_double_quotes() {
-        let cmd = CommandDto::from_str("git commit -m \"hello world\"").unwrap();
-        assert_eq!(cmd.program, "git");
-        assert_eq!(cmd.args, vec!["commit", "-m", "hello world"]);
-    }
-
-    #[test]
-    fn test_command_from_str_mixed_quotes() {
-        let cmd = CommandDto::from_str("echo \"double quoted\" 'single quoted'").unwrap();
-        assert_eq!(cmd.program, "echo");
-        assert_eq!(cmd.args, vec!["double quoted", "single quoted"]);
+    #[rstest]
+    #[case::simple("git commit -m hello", "git", &["commit", "-m", "hello"])]
+    #[case::single_quotes("git commit -m 'hello world'", "git", &["commit", "-m", "hello world"])]
+    #[case::double_quotes("git commit -m \"hello world\"", "git", &["commit", "-m", "hello world"])]
+    #[case::mixed_quotes(
+        "echo \"double quoted\" 'single quoted'",
+        "echo",
+        &["double quoted", "single quoted"]
+    )]
+    fn should_split_the_program_and_args_when_parsing_a_command_line(
+        #[case] line: &str,
+        #[case] program: &str,
+        #[case] args: &[&str],
+    ) {
+        let cmd = CommandDto::from_str(line).unwrap();
+        assert_eq!(cmd.program, program);
+        assert_eq!(cmd.args, args);
     }
 
     #[test]

@@ -44,19 +44,18 @@ impl<T: Clone> Overridable<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn should_use_data_when_the_override_is_active() {
-        let overridable = Overridable::new(String::from("custom"), true);
+    #[rstest]
+    #[case::active_uses_data(true, "custom")]
+    #[case::inactive_uses_global(false, "global")]
+    fn should_resolve_to_the_matching_value_when_the_override_toggles(
+        #[case] is_active: bool,
+        #[case] expected: &str,
+    ) {
+        let overridable = Overridable::new(String::from("custom"), is_active);
         let result = overridable.resolve(&String::from("global"));
-        assert_eq!(result, "custom");
-    }
-
-    #[test]
-    fn should_use_global_when_the_override_is_not_active() {
-        let overridable = Overridable::new(String::from("custom"), false);
-        let result = overridable.resolve(&String::from("global"));
-        assert_eq!(result, "global");
+        assert_eq!(result, expected);
     }
 
     #[test]

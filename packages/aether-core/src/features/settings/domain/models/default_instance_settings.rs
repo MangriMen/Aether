@@ -247,50 +247,39 @@ impl Hooks {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     // ── Hooks::update_hooks ──
 
-    #[test]
-    fn should_update_all_hooks_and_return_true_when_they_differ() {
+    #[rstest]
+    #[case::all_differ(
+        (Some("pre2"), Some("wrap2"), Some("post2")),
+        true,
+        ("pre2", "wrap2", "post2")
+    )]
+    #[case::nothing_changed(
+        (Some("pre"), Some("wrap"), Some("post")),
+        false,
+        ("pre", "wrap", "post")
+    )]
+    #[case::only_pre_given((Some("pre2"), None, None), true, ("pre2", "wrap", "post"))]
+    #[case::only_post_given((None, None, Some("post2")), true, ("pre", "wrap", "post2"))]
+    #[case::none_given((None, None, None), false, ("pre", "wrap", "post"))]
+    fn should_update_the_given_hooks_and_report_whether_they_changed(
+        #[case] update: (Option<&str>, Option<&str>, Option<&str>),
+        #[case] expected_changed: bool,
+        #[case] expected: (&str, &str, &str),
+    ) {
         let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
-        assert!(hooks.update_hooks(
-            Some("pre2".into()),
-            Some("wrap2".into()),
-            Some("post2".into()),
-        ));
-        assert_eq!(hooks.pre_launch(), "pre2");
-        assert_eq!(hooks.wrapper(), "wrap2");
-        assert_eq!(hooks.post_exit(), "post2");
-    }
-
-    #[test]
-    fn should_return_false_when_nothing_changed() {
-        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
-        assert!(!hooks.update_hooks(Some("pre".into()), Some("wrap".into()), Some("post".into()),));
-    }
-
-    #[test]
-    fn should_skip_none_fields_and_still_detect_a_change_when_only_some_are_given() {
-        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
-        assert!(hooks.update_hooks(Some("pre2".into()), None, None));
-        assert_eq!(hooks.pre_launch(), "pre2");
-        assert_eq!(hooks.wrapper(), "wrap");
-    }
-
-    #[test]
-    fn should_return_true_when_only_partial_update() {
-        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
-        assert!(hooks.update_hooks(None, None, Some("post2".into())));
-        assert_eq!(hooks.post_exit(), "post2");
-    }
-
-    #[test]
-    fn should_not_change_field_when_none_passed() {
-        let mut hooks = Hooks::new("pre".into(), "wrap".into(), "post".into());
-        hooks.update_hooks(None, None, None);
-        assert_eq!(hooks.pre_launch(), "pre");
-        assert_eq!(hooks.wrapper(), "wrap");
-        assert_eq!(hooks.post_exit(), "post");
+        let changed = hooks.update_hooks(
+            update.0.map(Into::into),
+            update.1.map(Into::into),
+            update.2.map(Into::into),
+        );
+        assert_eq!(changed, expected_changed);
+        assert_eq!(hooks.pre_launch(), expected.0);
+        assert_eq!(hooks.wrapper(), expected.1);
+        assert_eq!(hooks.post_exit(), expected.2);
     }
 
     // ── DefaultInstanceSettings::update_launch_args (representative) ──

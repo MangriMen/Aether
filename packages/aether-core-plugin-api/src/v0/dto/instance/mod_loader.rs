@@ -15,20 +15,20 @@ pub enum ModLoaderDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn serializes_every_variant_as_lowercase_string() {
-        let cases = [
-            (ModLoaderDto::Vanilla, "\"vanilla\""),
-            (ModLoaderDto::Forge, "\"forge\""),
-            (ModLoaderDto::Fabric, "\"fabric\""),
-            (ModLoaderDto::Quilt, "\"quilt\""),
-            (ModLoaderDto::NeoForge, "\"neoforge\""),
-        ];
-        for (variant, expected) in cases {
-            assert_eq!(serde_json::to_string(&variant).unwrap(), expected);
-            let back: ModLoaderDto = serde_json::from_str(expected).unwrap();
-            assert_eq!(serde_json::to_string(&back).unwrap(), expected);
-        }
+    #[rstest]
+    #[case::vanilla(ModLoaderDto::Vanilla, "\"vanilla\"")]
+    #[case::forge(ModLoaderDto::Forge, "\"forge\"")]
+    #[case::fabric(ModLoaderDto::Fabric, "\"fabric\"")]
+    #[case::quilt(ModLoaderDto::Quilt, "\"quilt\"")]
+    #[case::neoforge(ModLoaderDto::NeoForge, "\"neoforge\"")]
+    fn serializes_a_variant_as_lowercase_string(
+        #[case] variant: ModLoaderDto,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(serde_json::to_string(&variant).unwrap(), expected);
+        let back: ModLoaderDto = serde_json::from_str(expected).unwrap();
+        assert_eq!(serde_json::to_string(&back).unwrap(), expected);
     }
 }

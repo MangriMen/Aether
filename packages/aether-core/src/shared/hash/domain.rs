@@ -167,6 +167,7 @@ impl FromStr for FileHash {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
@@ -190,20 +191,17 @@ mod tests {
         );
     }
 
-    #[test]
-    fn should_reject_a_digest_when_it_is_path_like() {
-        for hex in [
-            "../../../../../../../../../../../../etc/passwd",
-            "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\windows",
-            "C:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        ] {
-            let padded = format!("{hex:a<40}");
-            let padded: String = padded.chars().take(40).collect();
-            assert!(
-                FileHash::Sha1(padded.clone()).normalized().is_err(),
-                "`{padded}` must not pass as a digest"
-            );
-        }
+    #[rstest]
+    #[case::unix_traversal("../../../../../../../../../../../../etc/passwd")]
+    #[case::windows_traversal(r"..\..\..\..\..\..\..\..\..\..\windows")]
+    #[case::drive_prefix("C:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    fn should_reject_a_digest_when_it_is_path_like(#[case] hex: &str) {
+        let padded = format!("{hex:a<40}");
+        let padded: String = padded.chars().take(40).collect();
+        assert!(
+            FileHash::Sha1(padded.clone()).normalized().is_err(),
+            "`{padded}` must not pass as a digest"
+        );
     }
 
     #[test]
@@ -231,15 +229,17 @@ mod tests {
         }
     }
 
-    #[test]
-    fn should_refuse_an_algorithm_when_it_is_outside_the_supported_set() {
-        // packwiz's `hash-format` may also be md5 or murmur2; neither is verifiable here.
-        for name in ["md5", "murmur2", "", "sha"] {
-            assert_eq!(
-                name.parse::<HashAlgorithm>(),
-                Err(InvalidFileHash::UnsupportedAlgorithm { name: name.into() })
-            );
-        }
+    // packwiz's `hash-format` may also be md5 or murmur2; neither is verifiable here.
+    #[rstest]
+    #[case::md5("md5")]
+    #[case::murmur2("murmur2")]
+    #[case::empty("")]
+    #[case::truncated("sha")]
+    fn should_refuse_an_algorithm_when_it_is_outside_the_supported_set(#[case] name: &str) {
+        assert_eq!(
+            name.parse::<HashAlgorithm>(),
+            Err(InvalidFileHash::UnsupportedAlgorithm { name: name.into() })
+        );
     }
 
     #[test]
@@ -266,15 +266,12 @@ mod tests {
         );
     }
 
-    #[test]
-    fn should_round_trip_when_converted_through_its_string_form() {
-        for hash in [
-            FileHash::Sha1(SHA1_ABC.into()),
-            FileHash::Sha256(SHA256_ABC.into()),
-            FileHash::Sha512("a".repeat(128)),
-        ] {
-            assert_eq!(hash.to_string().parse::<FileHash>(), Ok(hash));
-        }
+    #[rstest]
+    #[case::sha1(FileHash::Sha1(SHA1_ABC.into()))]
+    #[case::sha256(FileHash::Sha256(SHA256_ABC.into()))]
+    #[case::sha512(FileHash::Sha512("a".repeat(128)))]
+    fn should_round_trip_when_converted_through_its_string_form(#[case] hash: FileHash) {
+        assert_eq!(hash.to_string().parse::<FileHash>(), Ok(hash));
     }
 
     #[test]
