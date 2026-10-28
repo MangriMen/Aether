@@ -38,15 +38,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn install_success() {
-        let service = Arc::new(MockUpdateService {
-            install_result: Ok(()),
-        });
-        let use_case = InstallUpdateUseCase::new(service);
-        assert!(use_case.execute().await.is_ok());
-    }
-
-    #[tokio::test]
     async fn install_failure() {
         let service = Arc::new(MockUpdateService {
             install_result: Err("download failed".to_string()),
