@@ -107,6 +107,16 @@ impl FsAppSettingsStorage {
     pub fn get_file_path(&self) -> PathBuf {
         self.path.clone()
     }
+
+    /// Reads the file as it is, where `get` falls back to the defaults for a file it cannot parse.
+    pub async fn read_strict(&self) -> Result<AppSettings, AppSettingsError> {
+        let dto: AppSettingsV1 = self
+            .store
+            .read()
+            .await
+            .map_err(|err| AppSettingsError::Storage(err.to_string()))?;
+        Ok(dto.into())
+    }
 }
 
 #[async_trait]

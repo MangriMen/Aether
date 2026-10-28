@@ -2,7 +2,7 @@ use aether_core::core::migrations;
 use sqlx::{SqlitePool, migrate::MigrateError};
 use tauri::AppHandle;
 
-use super::state;
+use super::{fatal::show_warning, state};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StartupMigrationError {
@@ -142,9 +142,17 @@ pub async fn run_migrations<R: tauri::Runtime>(
     // Run desktop (application) migrations in the default `_sqlx_migrations` table
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    state::migrate(app_handle, pool)
-        .await
-        .map_err(StartupMigrationError::State)?;
+    // Moving the old app settings must not keep the launcher from starting: the legacy file is
+    // archived only after a successful write, so a failure leaves it for the next start.
+    if let Err(error) = state::migrate(app_handle, pool).await {
+        let error = StartupMigrationError::State(error);
+        tracing::error!("{error}");
+        show_warning(&format!(
+            "{error}\n\nYour old files are kept (a file that cannot be \
+             read is renamed to *.corrupt in the migrated folder). Until the move succeeds your \
+             settings may be missing."
+        ));
+    }
 
     Ok(())
 }

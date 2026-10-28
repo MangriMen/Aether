@@ -60,9 +60,30 @@ use sqlx::SqlitePool;
 
 use super::busy_events::spawn_busy_events;
 use super::ordered_events::ordered_sink;
+use crate::core::infra::show_warning;
 
 type PBarStorage = InMemoryProgressBarStorage;
 type ProgressServiceType = ProgressServiceImpl<PBarStorage>;
+
+/// Log a failed legacy migration instead of failing the start. Returns whether it failed.
+fn log_legacy_failure<E: std::fmt::Display>(what: &str, result: Result<(), E>) -> bool {
+    let Err(err) = result else {
+        return false;
+    };
+    tracing::error!("Legacy {what} were not migrated, {err}");
+    true
+}
+
+/// Tell the user that a legacy migration failed. Blocks until the dialog is closed so the
+/// message is not missed; the launcher starts after that.
+async fn notify_legacy_failure(lost: &str) {
+    let message = format!(
+        "Aether could not move your old {lost} to the new storage. Your old files are kept (a file \
+         that cannot be read is renamed to *.corrupt in the migrated folder). Until the move \
+         succeeds your {lost} may be missing. See the log for details."
+    );
+    let _ = tauri::async_runtime::spawn_blocking(move || show_warning(&message)).await;
+}
 
 /// Build the complete `AetherContainer` with all concrete dependencies wired up.
 ///
@@ -80,54 +101,82 @@ pub async fn build_container(
     let migrated_dir_name = "migrated";
 
     // ── FS → SQLite migrations ──────────────────────────────────────
-    settings::infra::migrate_settings_to_sqlite(
-        &FsSettingsStorage::new(config_dir),
-        &SqliteSettingsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    // A legacy migration must not keep the launcher from starting. The legacy file is archived
+    // only after a successful write, so a failed migration leaves it in place and is retried on
+    // the next start.
+    let settings_failed = log_legacy_failure(
+        "settings",
+        settings::infra::migrate_settings_to_sqlite(
+            &FsSettingsStorage::new(config_dir),
+            &SqliteSettingsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    settings::infra::migrate_default_instance_settings_to_sqlite(
-        &FsDefaultInstanceSettingsStorage::new(config_dir),
-        &SqliteDefaultInstanceSettingsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    let default_settings_failed = log_legacy_failure(
+        "default instance settings",
+        settings::infra::migrate_default_instance_settings_to_sqlite(
+            &FsDefaultInstanceSettingsStorage::new(config_dir),
+            &SqliteDefaultInstanceSettingsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    auth::infra::migrate_credentials_to_sqlite(
-        &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
-        &SqliteCredentialsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    let credentials_failed = log_legacy_failure(
+        "credentials",
+        auth::infra::migrate_credentials_to_sqlite(
+            &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
+            &SqliteCredentialsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    // A legacy migration must not keep the launcher from starting. A write that fails as a whole
-    // stores nothing and a skipped instance keeps its file, so the user can still recover them.
-    if let Err(err) = instance::infra::migrate_instances_to_sqlite(
-        &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-        &SqliteInstanceStorage::new(pool.clone()),
-    )
-    .await
-    {
-        log::error!("Legacy instances were not migrated, their files are left as they are: {err}");
+    // A write that fails as a whole stores nothing and a skipped instance keeps its file, so the
+    // user can still recover them.
+    log_legacy_failure(
+        "instances",
+        instance::infra::migrate_instances_to_sqlite(
+            &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
+            &SqliteInstanceStorage::new(pool.clone()),
+        )
+        .await,
+    );
+
+    log_legacy_failure(
+        "packs",
+        instance::infra::migrate_packs_to_sqlite(
+            &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
+            &aether_core::features::instance::infra::FsPackStorage::new(location_info.clone()),
+            &SqlitePackStorage::new(pool.clone()),
+        )
+        .await,
+    );
+
+    // Installed Java is found again by the next discovery, so a failure here loses nothing.
+    log_legacy_failure(
+        "Java installations",
+        java::infra::migrate_java_to_sqlite(
+            &location_info.java_dir(),
+            &FsJavaInstallationService,
+            &SqliteJavaStorage::new(pool.clone()),
+        )
+        .await,
+    );
+
+    // The user would otherwise find missing accounts or settings with no explanation.
+    let mut lost = Vec::new();
+    if settings_failed || default_settings_failed {
+        lost.push("settings");
     }
-
-    if let Err(err) = instance::infra::migrate_packs_to_sqlite(
-        &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-        &aether_core::features::instance::infra::FsPackStorage::new(location_info.clone()),
-        &SqlitePackStorage::new(pool.clone()),
-    )
-    .await
-    {
-        log::error!("Legacy packs were not migrated, their files are left as they are: {err}");
+    if credentials_failed {
+        lost.push("accounts");
     }
-
-    java::infra::migrate_java_to_sqlite(
-        &location_info.java_dir(),
-        &FsJavaInstallationService,
-        &SqliteJavaStorage::new(pool.clone()),
-    )
-    .await?;
+    if !lost.is_empty() {
+        notify_legacy_failure(&lost.join(" and ")).await;
+    }
 
     minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 

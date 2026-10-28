@@ -33,6 +33,7 @@ register-schema-derive = { path = "packages/register-schema-derive" }
 # Error Handling & Logging
 anyhow = "1.0.103"
 log = "0.4.33"
+tracing = "0.1.44"
 thiserror = "2.0.18"
 
 # Serialization & Data

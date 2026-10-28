@@ -61,7 +61,7 @@ extism = "1.41.0"
 extism-convert = "1.41.0"
 
 # Observability & Logging
-tracing = "0.1.44"
+tracing.workspace = true
 tracing-error = "0.2.1"
 
 # Utilities
