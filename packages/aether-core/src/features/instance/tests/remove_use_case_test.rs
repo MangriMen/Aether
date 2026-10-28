@@ -214,9 +214,21 @@ async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
 
     // Deleting something that never existed should be fine
     use_case
-        .execute(InstanceId::try_from(instance_id).unwrap())
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
         .await
         .unwrap();
+
+    let instances: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(instances, 0);
+    assert!(
+        !location_info
+            .instance_dir(&InstanceId::try_from(instance_id).unwrap())
+            .exists(),
+        "removing a missing instance must not create its directory"
+    );
 }
 
 #[tokio::test]

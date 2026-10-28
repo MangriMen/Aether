@@ -251,6 +251,13 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
         ))
         .await
         .expect("Should not fail for non-existent content");
+
+    let files: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM pack_files WHERE instance_id = ?1")
+        .bind(&instance_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(files, 2, "the records of the pack must stay untouched");
 }
 
 /// A file that cannot be removed (a directory at its path, on any OS) keeps its record; the

@@ -137,6 +137,11 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
         .remove_content_files(instance_id, &["mods/nonexistent.jar".to_string()])
         .await
         .expect("remove_content_files should succeed for non-existent files");
+
+    assert!(
+        !location_info.instance_dir(instance_id).exists(),
+        "removing a missing file must not create the instance directory"
+    );
 }
 
 /// A directory at the content path cannot be removed as a file on any OS: it stands for a file
@@ -239,8 +244,12 @@ async fn should_refuse_to_move_out_a_path_when_it_leads_out_of_the_instance() {
         )
         .await;
 
-    assert!(result.is_err());
+    assert!(
+        matches!(result, Err(InstanceError::InvalidRelativePath { .. })),
+        "{result:?}"
+    );
     assert!(temp_dir.path().join("escaped.jar").exists());
+    assert!(!temp_dir.path().join("backup").exists());
 }
 
 // ─── Enable / Disable tests ────────────────────────────────────

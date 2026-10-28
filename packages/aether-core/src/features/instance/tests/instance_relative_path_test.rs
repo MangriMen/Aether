@@ -211,12 +211,18 @@ fn should_fail_when_the_instance_directory_does_not_exist() {
     let missing = temp_dir.path().join("instances").join("no-such-instance");
 
     assert!(
-        resolve_instance_file_path(
-            &InstanceId::try_from("no-such-instance").unwrap(),
-            &missing,
-            "pack.toml"
-        )
-        .is_err(),
+        matches!(
+            resolve_instance_file_path(
+                &InstanceId::try_from("no-such-instance").unwrap(),
+                &missing,
+                "pack.toml"
+            ),
+            Err(InstanceError::Storage(_))
+        ),
+        "a missing instance directory must be a storage error"
+    );
+    assert!(
+        !missing.exists(),
         "a missing instance directory must not be created on the fly"
     );
 }

@@ -304,10 +304,10 @@ async fn should_fail_a_read_when_the_file_is_missing() {
     let instance_id = &InstanceId::try_from("read-missing").unwrap();
     let (_temp_dir, _location_info, service) = setup_instance(instance_id).await;
 
-    assert!(
-        service
-            .read_instance_file(instance_id, "nope.txt")
-            .await
-            .is_err()
-    );
+    let err = service
+        .read_instance_file(instance_id, "nope.txt")
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, InstanceError::Storage(_)), "{err:?}");
 }
