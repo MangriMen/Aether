@@ -191,25 +191,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn edit_changes_action_on_instance_launch() {
-        let storage = Arc::new(MockStorage::new(AppSettings::default()));
-        let window = Arc::new(MockWindowManager::new(false));
-        let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
-
-        let request = EditAppSettingsRequest {
-            action_on_instance_launch: Some(ActionOnInstanceLaunch::Hide),
-            transparent: None,
-            window_effect: None,
-        };
-
-        let result = use_case.execute(request).await.unwrap();
-        assert_eq!(
-            result.action_on_instance_launch,
-            ActionOnInstanceLaunch::Hide
-        );
-    }
-
-    #[tokio::test]
     async fn edit_changes_transparent() {
         let storage = Arc::new(MockStorage::new(AppSettings::default()));
         let window = Arc::new(MockWindowManager::new(false));

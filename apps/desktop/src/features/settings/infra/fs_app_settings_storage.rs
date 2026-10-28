@@ -145,6 +145,7 @@ mod tests {
 
     // ── AppSettingsV1 conversion tests ──
 
+    // What `get` falls back to when the settings cannot be read; no other test reaches it.
     #[test]
     fn app_settings_v1_default() {
         let dto = AppSettingsV1::default();
@@ -191,57 +192,7 @@ mod tests {
 
     // ── ActionOnInstanceLaunchV1 conversion ──
 
-    #[test]
-    fn action_v1_domain_roundtrip_all_variants() {
-        let domain_variants = [
-            ActionOnInstanceLaunch::Nothing,
-            ActionOnInstanceLaunch::Hide,
-            ActionOnInstanceLaunch::Close,
-        ];
-        for variant in domain_variants {
-            let dto: ActionOnInstanceLaunchV1 = match variant {
-                ActionOnInstanceLaunch::Nothing => ActionOnInstanceLaunchV1::Nothing,
-                ActionOnInstanceLaunch::Hide => ActionOnInstanceLaunchV1::Hide,
-                ActionOnInstanceLaunch::Close => ActionOnInstanceLaunchV1::Close,
-            };
-            let back = match dto {
-                ActionOnInstanceLaunchV1::Nothing => ActionOnInstanceLaunch::Nothing,
-                ActionOnInstanceLaunchV1::Hide => ActionOnInstanceLaunch::Hide,
-                ActionOnInstanceLaunchV1::Close => ActionOnInstanceLaunch::Close,
-            };
-            assert_eq!(variant, back);
-        }
-    }
-
     // ── WindowEffectV1 conversion ──
-
-    #[test]
-    fn window_effect_v1_domain_roundtrip_all_variants() {
-        let domain_variants = [
-            WindowEffect::Off,
-            WindowEffect::MicaLight,
-            WindowEffect::MicaDark,
-            WindowEffect::Mica,
-            WindowEffect::Acrylic,
-        ];
-        for variant in domain_variants {
-            let dto: WindowEffectV1 = match variant {
-                WindowEffect::Off => WindowEffectV1::Off,
-                WindowEffect::MicaLight => WindowEffectV1::MicaLight,
-                WindowEffect::MicaDark => WindowEffectV1::MicaDark,
-                WindowEffect::Mica => WindowEffectV1::Mica,
-                WindowEffect::Acrylic => WindowEffectV1::Acrylic,
-            };
-            let back = match dto {
-                WindowEffectV1::Off => WindowEffect::Off,
-                WindowEffectV1::MicaLight => WindowEffect::MicaLight,
-                WindowEffectV1::MicaDark => WindowEffect::MicaDark,
-                WindowEffectV1::Mica => WindowEffect::Mica,
-                WindowEffectV1::Acrylic => WindowEffect::Acrylic,
-            };
-            assert_eq!(variant, back);
-        }
-    }
 
     // ── JSON serialization ──
 

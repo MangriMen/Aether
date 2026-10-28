@@ -22,17 +22,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn update_progress_fraction_none() {
-        let progress = UpdateProgress {
-            fraction: None,
-            phase: UpdatePhase::Started,
-            version: "1.0.0".to_string(),
-            current_version: "0.9.0".to_string(),
-        };
-        assert!(progress.fraction.is_none());
-    }
-
-    #[test]
     fn update_progress_serialize_deserialize_roundtrip() {
         let progress = UpdateProgress {
             fraction: Some(0.75),

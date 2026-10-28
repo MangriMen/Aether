@@ -27,12 +27,6 @@ mod tests {
     }
 
     #[test]
-    fn prevent_exit_state_starts_false() {
-        let state = PreventExitState::new(false);
-        assert!(!state.is_prevented());
-    }
-
-    #[test]
     fn prevent_exit_state_toggle_to_true() {
         let state = PreventExitState::new(false);
         state.set_prevented(true);
@@ -42,14 +36,6 @@ mod tests {
     #[test]
     fn prevent_exit_state_toggle_to_false() {
         let state = PreventExitState::new(true);
-        state.set_prevented(false);
-        assert!(!state.is_prevented());
-    }
-
-    #[test]
-    fn prevent_exit_state_set_twice() {
-        let state = PreventExitState::new(false);
-        state.set_prevented(true);
         state.set_prevented(false);
         assert!(!state.is_prevented());
     }

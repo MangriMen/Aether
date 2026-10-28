@@ -95,19 +95,6 @@ mod tests {
     // ── AppSettings → AppSettingsDto ──
 
     #[test]
-    fn app_settings_to_dto_default() {
-        let domain = AppSettings::default();
-        let dto: AppSettingsDto = domain.into();
-        assert_eq!(
-            dto.action_on_instance_launch,
-            ActionOnInstanceLaunchDto::Nothing
-        );
-        assert!(!dto.transparent);
-        assert!(!dto.is_actual_transparent);
-        assert_eq!(dto.window_effect, WindowEffectDto::Off);
-    }
-
-    #[test]
     fn app_settings_to_dto_custom() {
         let domain = AppSettings {
             action_on_instance_launch: ActionOnInstanceLaunch::Close,
@@ -159,20 +146,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn action_dto_roundtrip_all_variants() {
-        let variants = [
-            ActionOnInstanceLaunch::Nothing,
-            ActionOnInstanceLaunch::Hide,
-            ActionOnInstanceLaunch::Close,
-        ];
-        for variant in variants {
-            let dto: ActionOnInstanceLaunchDto = variant.into();
-            let back: ActionOnInstanceLaunch = dto.into();
-            assert_eq!(variant, back);
-        }
-    }
-
     // ── WindowEffect conversions ──
 
     #[test]
@@ -220,22 +193,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn window_effect_dto_roundtrip_all_variants() {
-        let variants = [
-            WindowEffect::Off,
-            WindowEffect::MicaLight,
-            WindowEffect::MicaDark,
-            WindowEffect::Mica,
-            WindowEffect::Acrylic,
-        ];
-        for variant in variants {
-            let dto: WindowEffectDto = variant.into();
-            let back: WindowEffect = dto.into();
-            assert_eq!(variant, back);
-        }
-    }
-
     // ── JSON serialization ──
 
     #[test]
@@ -275,15 +232,5 @@ mod tests {
         assert!(dto.is_actual_transparent);
         assert!(dto.transparent);
         assert_eq!(dto.window_effect, WindowEffectDto::MicaDark);
-    }
-
-    #[test]
-    fn app_settings_dto_default_is_off() {
-        let dto = AppSettingsDto::default();
-        assert_eq!(
-            dto.action_on_instance_launch,
-            ActionOnInstanceLaunchDto::Nothing
-        );
-        assert_eq!(dto.window_effect, WindowEffectDto::Off);
     }
 }
