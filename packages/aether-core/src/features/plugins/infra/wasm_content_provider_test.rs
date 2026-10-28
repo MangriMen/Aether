@@ -480,13 +480,13 @@ async fn should_still_describe_content_when_a_wasm_plugin_fails_naming_authors()
     );
     let proxy = proxy(&sandbox, PLUGIN_ID, handle);
 
-    let authors = proxy.get_authors(&["team:abc".to_owned()]).await;
+    let authors = provider_error(proxy.get_authors(&["team:abc".to_owned()]).await);
     let projects = proxy
         .get_contents_metadata(&["238222".to_owned()])
         .await
         .unwrap();
 
-    assert!(authors.is_err());
+    assert!(authors.contains("the plugin crashed"), "{authors}");
     assert_eq!(projects[0].name, "Just Enough Items");
     assert_eq!(projects[0].author_ref.as_deref(), Some("team:abc"));
 }

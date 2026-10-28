@@ -585,15 +585,17 @@ mod tests {
 
     /// A variable the launcher really has and [`plugin_utils::isolated_env`] does not pass on.
     /// Chosen from the live environment rather than set here, so the test never mutates
-    /// process-wide state other tests read.
-    fn a_variable_that_must_not_leak() -> Option<(String, String)> {
+    /// process-wide state other tests read. Panics when there is none, so the tests cannot pass
+    /// vacuously.
+    fn a_variable_that_must_not_leak() -> (String, String) {
         let isolated = plugin_utils::isolated_env();
 
-        std::env::vars().find(|(name, value)| {
-            // Windows keeps hidden `=C:`-style entries that the shell rebuilds from its own
-            // working directory; they are not inherited state, so skip anything not spellable
-            // as a plain variable reference.
-            name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+        std::env::vars()
+            .find(|(name, value)| {
+                // Windows keeps hidden `=C:`-style entries that the shell rebuilds from its own
+                // working directory; they are not inherited state, so skip anything not spellable
+                // as a plain variable reference.
+                name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
                 && !name.is_empty()
                 && value.len() > 8
                 && value.is_ascii()
@@ -601,15 +603,13 @@ mod tests {
                 && !isolated
                     .keys()
                     .any(|kept| kept.eq_ignore_ascii_case(name))
-        })
+            })
+            .expect("the test launcher must have an environment variable outside the isolated set")
     }
 
     #[tokio::test]
     async fn should_pass_only_the_explicit_environment_when_a_child_is_started() {
-        let Some((name, value)) = a_variable_that_must_not_leak() else {
-            // Nothing to prove: the launcher's environment is already the minimal set.
-            return;
-        };
+        let (name, value) = a_variable_that_must_not_leak();
 
         let script = if cfg!(windows) {
             format!("echo [%{name}%]")
@@ -633,9 +633,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_still_inherit_the_environment_when_none_is_given() {
-        let Some((name, value)) = a_variable_that_must_not_leak() else {
-            return;
-        };
+        let (name, value) = a_variable_that_must_not_leak();
 
         let script = if cfg!(windows) {
             format!("echo [%{name}%]")

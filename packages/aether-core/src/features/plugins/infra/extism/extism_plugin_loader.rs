@@ -987,6 +987,8 @@ mod tests {
         ));
 
         assert!(!reason.contains("api.hostFunctions"), "{reason}");
+        assert!(!reason.contains("does not provide"), "{reason}");
+        assert!(!reason.contains("does not declare"), "{reason}");
     }
 
     // ── `ro:` on real Extism ──

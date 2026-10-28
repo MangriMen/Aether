@@ -559,9 +559,14 @@ async fn should_succeed_when_the_sync_after_the_update_fails() {
     let fixture = Fixture::installed().await;
     fixture.sync.1.store(true, Ordering::SeqCst);
 
-    fixture.update_to_v2(plugin_zip(b" asm v2")).await.unwrap();
+    fixture.update_to_v2(plugin_zip(b"\0asm v2")).await.unwrap();
 
-    assert_eq!(fixture.wasm().await, b" asm v2");
+    assert_eq!(fixture.wasm().await, b"\0asm v2");
+    assert_eq!(
+        fixture.sync.0.load(Ordering::SeqCst),
+        1,
+        "the sync must have been attempted"
+    );
 }
 
 #[tokio::test]
