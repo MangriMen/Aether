@@ -78,6 +78,10 @@ describe('error translations', () => {
       () => i18n.flatten(enDictionary),
       i18n.resolveTemplate,
     );
+    const tRu = i18n.translator(
+      () => i18n.flatten(ruDictionary),
+      i18n.resolveTemplate,
+    );
     const cases = [
       ['notFound', 'A file or folder was not found'],
       ['permissionDenied', 'Access to a file or folder was denied'],
@@ -94,6 +98,10 @@ describe('error translations', () => {
       } as unknown as LauncherError;
 
       expect(getTranslatedError(error, t)).toBe(expected);
+      expect(getTranslatedError(error, tRu)).not.toMatch(
+        /^(errors.)?application.IO/,
+      );
+      expect(getTranslatedError(error, tRu)).not.toBe(expected);
     }
   });
 });
