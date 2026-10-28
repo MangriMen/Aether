@@ -119,6 +119,7 @@ mod tests {
         },
         minecraft::ModLoader,
     };
+    use rstest::rstest;
 
     fn instance(id: &str) -> Instance {
         InstanceBuilder::new(
@@ -419,23 +420,18 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case::instances_cannot_be_listed(None, HashMap::new())]
+    #[case::pack_files_cannot_be_read(
+        Some(vec![instance("one"), instance("broken")]),
+        HashMap::from([("one".to_string(), vec![pack_file(Some(&provider("a")), "sodium")])]),
+    )]
     #[tokio::test]
-    async fn should_not_retain_when_instances_cannot_be_listed() {
-        let (housekeeping, icons) = housekeeping(None, HashMap::new(), FakeMetadata::default());
-
-        assert_eq!(housekeeping.run().await, 0);
-        assert!(icons.retained.lock().unwrap().is_none());
-    }
-
-    #[tokio::test]
-    async fn should_not_retain_when_pack_files_cannot_be_read() {
-        let a = provider("a");
-        let packs = HashMap::from([("one".to_string(), vec![pack_file(Some(&a), "sodium")])]);
-        let (housekeeping, icons) = housekeeping(
-            Some(vec![instance("one"), instance("broken")]),
-            packs,
-            FakeMetadata::default(),
-        );
+    async fn should_not_retain_when_the_installed_content_is_unknown(
+        #[case] instances: Option<Vec<Instance>>,
+        #[case] packs: HashMap<String, Vec<PackFile>>,
+    ) {
+        let (housekeeping, icons) = housekeeping(instances, packs, FakeMetadata::default());
 
         assert_eq!(housekeeping.run().await, 0);
         assert!(icons.retained.lock().unwrap().is_none());

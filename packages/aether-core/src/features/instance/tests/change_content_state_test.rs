@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use rstest::rstest;
 use tempfile::TempDir;
 
 use crate::features::events::{Event, EventEmitter, EventError, SharedEventEmitter};
@@ -53,191 +54,106 @@ fn get_use_case_with_locks(
 
 // ─── Tests ─────────────────────────────────────────────────────
 
-#[tokio::test]
-async fn should_enable_a_file_when_one_file_is_given() {
-    let (_temp, location_info, service) = setup();
-    let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-enable-usecase").unwrap();
-
-    let dir = location_info.instance_dir(&instance_id);
+/// Creates `mods/` under the instance directory and the given files in it.
+async fn put_files(dir: &std::path::Path, files: &[&str]) {
     tokio::fs::create_dir_all(dir.join("mods"))
         .await
         .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/test.jar.disabled"), b"data")
-        .await
-        .unwrap();
+    for file in files {
+        tokio::fs::write(dir.join(file), b"data").await.unwrap();
+    }
+}
+
+#[rstest]
+#[case::enable(
+    &["mods/test.jar.disabled"],
+    ContentStateAction::Enable,
+    &["mods/test.jar"],
+    &["mods/test.jar.disabled"],
+)]
+#[case::disable(
+    &["mods/test.jar"],
+    ContentStateAction::Disable,
+    &["mods/test.jar.disabled"],
+    &["mods/test.jar"],
+)]
+#[case::already_enabled(
+    &["mods/test.jar"],
+    ContentStateAction::Enable,
+    &["mods/test.jar"],
+    &[],
+)]
+#[case::already_disabled(
+    &["mods/test.jar.disabled"],
+    ContentStateAction::Disable,
+    &["mods/test.jar.disabled"],
+    &[],
+)]
+#[tokio::test]
+async fn should_change_a_file_state_when_one_file_is_given(
+    #[case] initial: &[&str],
+    #[case] action: ContentStateAction,
+    #[case] present: &[&str],
+    #[case] absent: &[&str],
+) {
+    let (_temp, location_info, service) = setup();
+    let use_case = get_use_case(service);
+    let instance_id = InstanceId::try_from("test-change-state-usecase").unwrap();
+    let dir = location_info.instance_dir(&instance_id);
+    put_files(&dir, initial).await;
 
     use_case
         .execute(ChangeContentState::single(
             instance_id.clone(),
             "mods/test.jar".to_string(),
-            ContentStateAction::Enable,
+            action,
         ))
         .await
-        .expect("Enable should succeed");
+        .expect("Changing the state should succeed");
 
-    assert!(dir.join("mods/test.jar").exists(), "File should be enabled");
-    assert!(
-        !dir.join("mods/test.jar.disabled").exists(),
-        "Disabled file should not exist"
-    );
+    for file in present {
+        assert!(dir.join(file).exists(), "{file} should exist");
+    }
+    for file in absent {
+        assert!(!dir.join(file).exists(), "{file} should not exist");
+    }
 }
 
+#[rstest]
+#[case::enable(
+    &["mods/a.jar.disabled", "mods/b.jar.disabled"],
+    ContentStateAction::Enable,
+    &["mods/a.jar", "mods/b.jar"],
+)]
+#[case::disable(
+    &["mods/a.jar", "mods/b.jar"],
+    ContentStateAction::Disable,
+    &["mods/a.jar.disabled", "mods/b.jar.disabled"],
+)]
 #[tokio::test]
-async fn should_disable_a_file_when_one_file_is_given() {
+async fn should_change_file_states_when_several_are_given(
+    #[case] initial: &[&str],
+    #[case] action: ContentStateAction,
+    #[case] present: &[&str],
+) {
     let (_temp, location_info, service) = setup();
     let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-disable-usecase").unwrap();
-
+    let instance_id = InstanceId::try_from("test-change-state-multi-usecase").unwrap();
     let dir = location_info.instance_dir(&instance_id);
-    tokio::fs::create_dir_all(dir.join("mods"))
-        .await
-        .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/test.jar"), b"data")
-        .await
-        .unwrap();
-
-    use_case
-        .execute(ChangeContentState::single(
-            instance_id.clone(),
-            "mods/test.jar".to_string(),
-            ContentStateAction::Disable,
-        ))
-        .await
-        .expect("Disable should succeed");
-
-    assert!(
-        dir.join("mods/test.jar.disabled").exists(),
-        "File should be disabled"
-    );
-    assert!(
-        !dir.join("mods/test.jar").exists(),
-        "Original file should not exist"
-    );
-}
-
-#[tokio::test]
-async fn should_enable_files_when_several_are_given() {
-    let (_temp, location_info, service) = setup();
-    let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-enable-multi-usecase").unwrap();
-
-    let dir = location_info.instance_dir(&instance_id);
-    tokio::fs::create_dir_all(dir.join("mods"))
-        .await
-        .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/a.jar.disabled"), b"data")
-        .await
-        .unwrap();
-    tokio::fs::write(dir.join("mods/b.jar.disabled"), b"data")
-        .await
-        .unwrap();
+    put_files(&dir, initial).await;
 
     use_case
         .execute(ChangeContentState::multiple(
             instance_id.clone(),
             vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
-            ContentStateAction::Enable,
+            action,
         ))
         .await
-        .expect("Enable multiple should succeed");
+        .expect("Changing several states should succeed");
 
-    assert!(dir.join("mods/a.jar").exists(), "a.jar should be enabled");
-    assert!(dir.join("mods/b.jar").exists(), "b.jar should be enabled");
-}
-
-#[tokio::test]
-async fn should_disable_files_when_several_are_given() {
-    let (_temp, location_info, service) = setup();
-    let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-disable-multi-usecase").unwrap();
-
-    let dir = location_info.instance_dir(&instance_id);
-    tokio::fs::create_dir_all(dir.join("mods"))
-        .await
-        .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/a.jar"), b"data")
-        .await
-        .unwrap();
-    tokio::fs::write(dir.join("mods/b.jar"), b"data")
-        .await
-        .unwrap();
-
-    use_case
-        .execute(ChangeContentState::multiple(
-            instance_id.clone(),
-            vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
-            ContentStateAction::Disable,
-        ))
-        .await
-        .expect("Disable multiple should succeed");
-
-    assert!(
-        dir.join("mods/a.jar.disabled").exists(),
-        "a.jar should be disabled"
-    );
-    assert!(
-        dir.join("mods/b.jar.disabled").exists(),
-        "b.jar should be disabled"
-    );
-}
-
-#[tokio::test]
-async fn should_stay_enabled_when_a_file_is_already_enabled() {
-    let (_temp, location_info, service) = setup();
-    let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-already-enabled").unwrap();
-
-    let dir = location_info.instance_dir(&instance_id);
-    tokio::fs::create_dir_all(dir.join("mods"))
-        .await
-        .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/test.jar"), b"data")
-        .await
-        .unwrap();
-
-    use_case
-        .execute(ChangeContentState::single(
-            instance_id.clone(),
-            "mods/test.jar".to_string(),
-            ContentStateAction::Enable,
-        ))
-        .await
-        .expect("Enable should succeed even if already enabled");
-
-    assert!(
-        dir.join("mods/test.jar").exists(),
-        "File should still exist"
-    );
-}
-
-#[tokio::test]
-async fn should_stay_disabled_when_a_file_is_already_disabled() {
-    let (_temp, location_info, service) = setup();
-    let use_case = get_use_case(service);
-    let instance_id = InstanceId::try_from("test-already-disabled").unwrap();
-
-    let dir = location_info.instance_dir(&instance_id);
-    tokio::fs::create_dir_all(dir.join("mods"))
-        .await
-        .expect("Failed to create dirs");
-    tokio::fs::write(dir.join("mods/test.jar.disabled"), b"data")
-        .await
-        .unwrap();
-
-    use_case
-        .execute(ChangeContentState::single(
-            instance_id.clone(),
-            "mods/test.jar".to_string(),
-            ContentStateAction::Disable,
-        ))
-        .await
-        .expect("Disable should succeed even if already disabled");
-
-    assert!(
-        dir.join("mods/test.jar.disabled").exists(),
-        "Disabled file should still exist"
-    );
+    for file in present {
+        assert!(dir.join(file).exists(), "{file} should exist");
+    }
 }
 
 #[tokio::test]
