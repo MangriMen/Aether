@@ -9,6 +9,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use rstest::rstest;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
@@ -411,74 +412,50 @@ impl PluginSourceStorage for FailingSourceSave {
     }
 }
 
-#[tokio::test]
-async fn should_keep_the_installed_version_when_the_new_files_cannot_be_put_in_place() {
-    let fixture = Fixture::installed().await;
+/// One of the writes of an update, failing.
+enum Failure {
+    PuttingFilesInPlace,
+    SavingSettings,
+    RecordingVerification,
+    SavingSource,
+}
 
-    let result = fixture
-        .update_to_v2_with(
-            plugin_zip(b"\0asm v2"),
-            Seams {
+impl Failure {
+    fn seams(self, fixture: &Fixture) -> Seams {
+        match self {
+            Self::PuttingFilesInPlace => Seams {
                 failing_replace: true,
                 ..Seams::default()
             },
-        )
-        .await;
-
-    assert!(result.is_err());
-    fixture.assert_v1_untouched().await;
-}
-
-#[tokio::test]
-async fn should_keep_the_installed_version_when_the_settings_cannot_be_saved() {
-    let fixture = Fixture::installed().await;
-
-    let result = fixture
-        .update_to_v2_with(
-            plugin_zip(b"\0asm v2"),
-            Seams {
+            Self::SavingSettings => Seams {
                 settings: Some(Arc::new(FailingSettingsSave(fixture.settings.clone()))),
                 ..Seams::default()
             },
-        )
-        .await;
-
-    assert!(result.is_err());
-    fixture.assert_v1_untouched().await;
-}
-
-#[tokio::test]
-async fn should_keep_the_installed_version_when_the_verification_cannot_be_recorded() {
-    let fixture = Fixture::installed().await;
-
-    let result = fixture
-        .update_to_v2_with(
-            plugin_zip(b"\0asm v2"),
-            Seams {
+            Self::RecordingVerification => Seams {
                 verification: Some(Arc::new(FailingVerificationSave(
                     fixture.verification.clone(),
                 ))),
                 ..Seams::default()
             },
-        )
-        .await;
-
-    assert!(result.is_err());
-    fixture.assert_v1_untouched().await;
-}
-
-#[tokio::test]
-async fn should_keep_the_installed_version_when_the_source_cannot_be_saved() {
-    let fixture = Fixture::installed().await;
-
-    let result = fixture
-        .update_to_v2_with(
-            plugin_zip(b"\0asm v2"),
-            Seams {
+            Self::SavingSource => Seams {
                 source: Some(Arc::new(FailingSourceSave(fixture.source.clone()))),
                 ..Seams::default()
             },
-        )
+        }
+    }
+}
+
+#[rstest]
+#[case::new_files_cannot_be_put_in_place(Failure::PuttingFilesInPlace)]
+#[case::settings_cannot_be_saved(Failure::SavingSettings)]
+#[case::verification_cannot_be_recorded(Failure::RecordingVerification)]
+#[case::source_cannot_be_saved(Failure::SavingSource)]
+#[tokio::test]
+async fn should_keep_the_installed_version_when_an_update_write_fails(#[case] failure: Failure) {
+    let fixture = Fixture::installed().await;
+
+    let result = fixture
+        .update_to_v2_with(plugin_zip(b"\0asm v2"), failure.seams(&fixture))
         .await;
 
     assert!(result.is_err());

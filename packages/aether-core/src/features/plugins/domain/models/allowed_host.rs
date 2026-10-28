@@ -226,6 +226,7 @@ fn is_localhost(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn grantable(url: &str) -> Result<GrantableHost, AllowedHostRejection> {
         GrantableHost::from_url(url)
@@ -298,69 +299,37 @@ mod tests {
         is_blocked_ip(ip.parse().unwrap())
     }
 
-    #[test]
-    fn should_judge_by_the_embedded_ipv4_when_the_address_is_nat64() {
-        assert!(blocked("64:ff9b::7f00:1"), "127.0.0.1");
-        assert!(blocked("64:ff9b::10.0.0.1"));
-        assert!(blocked("64:ff9b::169.254.169.254"));
-        assert!(!blocked("64:ff9b::8.8.8.8"));
-    }
-
-    #[test]
-    fn should_block_the_whole_prefix_when_the_address_is_local_use_nat64() {
-        assert!(blocked("64:ff9b:1::10.0.0.1"));
-        assert!(blocked("64:ff9b:1::8.8.8.8"));
-        assert!(blocked("64:ff9b:1:a00:1::"));
-    }
-
-    #[test]
-    fn should_judge_by_the_embedded_ipv4_when_the_address_is_6to4() {
-        assert!(blocked("2002:7f00:1::1"), "127.0.0.1");
-        assert!(blocked("2002:c0a8:101::1"), "192.168.1.1");
-        assert!(blocked("2002:a9fe:a9fe::"), "169.254.169.254");
-        assert!(!blocked("2002:808:808::1"), "8.8.8.8");
-    }
-
-    #[test]
-    fn should_block_when_the_address_is_site_local() {
-        assert!(blocked("fec0::1"));
-        assert!(blocked("feff:ffff::1"));
-    }
-
-    #[test]
-    fn should_block_when_the_address_is_discard_only() {
-        assert!(blocked("100::"));
-        assert!(blocked("100::ffff:ffff:ffff:ffff"));
-    }
-
-    #[test]
-    fn should_judge_by_the_embedded_ipv4_when_the_address_is_ipv4_mapped() {
-        assert!(blocked("::ffff:127.0.0.1"));
-        assert!(blocked("::ffff:100.64.0.1"));
-        assert!(!blocked("::ffff:8.8.8.8"));
-    }
-
-    #[test]
-    fn should_block_when_the_address_is_ipv4_compatible_or_translated() {
-        assert!(blocked("::"));
-        assert!(blocked("::1"));
-        assert!(blocked("::10.0.0.1"));
-        assert!(blocked("::8.8.8.8"), "deprecated, never routed as IPv4");
-        assert!(blocked("::ffff:0:8.8.8.8"), "SIIT");
-    }
-
-    #[test]
-    fn should_block_when_the_address_is_outside_global_unicast() {
-        for ip in [
-            "1::1", "4000::1", "fc00::1", "fd12::1", "fe80::1", "ff02::1",
-        ] {
-            assert!(blocked(ip), "{ip}");
-        }
-    }
-
-    #[test]
-    fn should_block_when_the_address_is_special_purpose_global_unicast() {
-        for ip in [
+    #[rstest]
+    #[case::nat64_embedded_ipv4(
+        &["64:ff9b::7f00:1", "64:ff9b::10.0.0.1", "64:ff9b::169.254.169.254"],
+        &["64:ff9b::8.8.8.8"]
+    )]
+    #[case::local_use_nat64_whole_prefix(
+        &["64:ff9b:1::10.0.0.1", "64:ff9b:1::8.8.8.8", "64:ff9b:1:a00:1::"],
+        &[]
+    )]
+    #[case::six_to_four_embedded_ipv4(
+        // 127.0.0.1, 192.168.1.1, 169.254.169.254, then 8.8.8.8 allowed.
+        &["2002:7f00:1::1", "2002:c0a8:101::1", "2002:a9fe:a9fe::"],
+        &["2002:808:808::1"]
+    )]
+    #[case::site_local(&["fec0::1", "feff:ffff::1"], &[])]
+    #[case::discard_only(&["100::", "100::ffff:ffff:ffff:ffff"], &[])]
+    #[case::ipv4_mapped(
+        &["::ffff:127.0.0.1", "::ffff:100.64.0.1"],
+        &["::ffff:8.8.8.8"]
+    )]
+    #[case::ipv4_compatible_or_translated(
+        // The last two are deprecated (never routed as IPv4) and SIIT.
+        &["::", "::1", "::10.0.0.1", "::8.8.8.8", "::ffff:0:8.8.8.8"],
+        &[]
+    )]
+    #[case::outside_global_unicast(
+        &["1::1", "4000::1", "fc00::1", "fd12::1", "fe80::1", "ff02::1"],
+        &[]
+    )]
+    #[case::special_purpose_global_unicast(
+        &[
             "2001::1",
             "2001:0:4136:e378:8000:63bf:3fff:fdd2",
             "2001:2::1",
@@ -369,19 +338,23 @@ mod tests {
             "2001:db8::1",
             "3fff::1",
             "3ffe::1",
-        ] {
-            assert!(blocked(ip), "{ip}");
-        }
-    }
-
-    #[test]
-    fn should_allow_when_the_address_is_public_global_unicast() {
-        for ip in [
+        ],
+        &[]
+    )]
+    #[case::public_global_unicast(
+        &[],
+        &[
             "2606:4700:4700::1111",
             "2001:4860:4860::8888",
             "2a00:1450:4001::1",
             "2001:200::1",
-        ] {
+        ]
+    )]
+    fn should_judge_the_ipv6_address(#[case] blocked_ips: &[&str], #[case] allowed_ips: &[&str]) {
+        for ip in blocked_ips {
+            assert!(blocked(ip), "{ip}");
+        }
+        for ip in allowed_ips {
             assert!(!blocked(ip), "{ip}");
         }
     }

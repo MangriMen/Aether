@@ -56,26 +56,30 @@ impl AsRef<Path> for PluginFilePath {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn parse(path: &str) -> Result<PluginFilePath, ManifestError> {
         PluginFilePath::try_from(PathBuf::from(path))
     }
 
-    #[test]
-    fn should_accept_relative_file_inside_plugin_dir() {
-        assert!(parse("plugin.wasm").is_ok());
-        assert!(parse("bin/plugin.wasm").is_ok());
-        assert!(parse("./plugin.wasm").is_ok());
+    #[rstest]
+    #[case::bare_file("plugin.wasm")]
+    #[case::nested_file("bin/plugin.wasm")]
+    #[case::current_dir_prefix("./plugin.wasm")]
+    fn should_accept_relative_file_inside_plugin_dir(#[case] file: &str) {
+        assert!(parse(file).is_ok(), "{file} must be accepted");
     }
 
-    #[test]
-    fn should_reject_file_escaping_plugin_dir() {
-        for file in ["../plugin.wasm", "a/../../x.wasm", "/etc/passwd", ""] {
-            assert!(
-                matches!(parse(file), Err(ManifestError::InvalidLoadFile(_))),
-                "{file} must be rejected"
-            );
-        }
+    #[rstest]
+    #[case::parent_dir("../plugin.wasm")]
+    #[case::nested_parent_dir("a/../../x.wasm")]
+    #[case::absolute("/etc/passwd")]
+    #[case::empty("")]
+    fn should_reject_file_escaping_plugin_dir(#[case] file: &str) {
+        assert!(
+            matches!(parse(file), Err(ManifestError::InvalidLoadFile(_))),
+            "{file} must be rejected"
+        );
     }
 
     #[cfg(windows)]
