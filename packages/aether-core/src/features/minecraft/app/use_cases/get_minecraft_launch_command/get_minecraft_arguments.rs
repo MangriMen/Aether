@@ -116,6 +116,7 @@ mod tests {
         },
     };
     use chrono::Utc;
+    use rstest::rstest;
 
     const UUID_STR: &str = "0123456789abcdef0123456789abcdef";
 
@@ -286,14 +287,77 @@ mod tests {
         );
     }
 
-    #[test]
-    fn multiple_placeholders_in_one_argument_are_replaced() {
+    fn many(values: &[&str]) -> ArgumentValue {
+        ArgumentValue::Many(values.iter().map(ToString::to_string).collect())
+    }
+
+    fn custom_resolution_rules() -> Vec<Rule> {
+        vec![Rule {
+            action: RuleAction::Allow,
+            os: None,
+            features: Some(FeatureRule {
+                is_demo_user: None,
+                has_custom_resolution: Some(true),
+                has_quick_plays_support: None,
+                is_quick_play_singleplayer: None,
+                is_quick_play_multiplayer: None,
+                is_quick_play_realms: None,
+            }),
+        }]
+    }
+
+    #[rstest]
+    #[case::multiple_placeholders_in_one_argument_are_replaced(
+        Some(vec![normal("${auth_player_name}@${version_name}/${version_name}")]),
+        None,
+        vec!["Steve_1@1.20.1/1.20.1"]
+    )]
+    #[case::unknown_placeholders_are_left_untouched(
+        Some(vec![normal("--x ${nope}")]),
+        None,
+        vec!["--x", "${nope}"]
+    )]
+    #[case::ruled_arguments_follow_rules(
+        Some(vec![
+            Argument::Ruled {
+                rules: allow(),
+                value: many(&["--width", "${resolution_width}"]),
+            },
+            Argument::Ruled {
+                rules: deny(),
+                value: ArgumentValue::Single("--skipped".to_string()),
+            },
+        ]),
+        None,
+        vec!["--width", "1280"]
+    )]
+    #[case::ruled_feature_argument_for_custom_resolution_is_included(
+        Some(vec![Argument::Ruled {
+            rules: custom_resolution_rules(),
+            value: many(&["--width", "${resolution_width}"]),
+        }]),
+        None,
+        vec!["--width", "1280"]
+    )]
+    #[case::modern_arguments_win_over_legacy(
+        Some(vec![normal("--a")]),
+        Some("--legacy"),
+        vec!["--a"]
+    )]
+    #[case::empty_modern_arguments_win_over_legacy(Some(vec![]), Some("--legacy"), vec![])]
+    #[case::legacy_consecutive_spaces_give_empty_arguments(
+        None,
+        Some("a  b"),
+        vec!["a", "", "b"]
+    )]
+    #[case::legacy_empty_string_gives_one_empty_argument(None, Some(""), vec![""])]
+    fn arguments_are_resolved(
+        #[case] args: Option<Vec<Argument>>,
+        #[case] legacy: Option<&str>,
+        #[case] expected: Vec<&str>,
+    ) {
         let e = env();
-        let args = vec![normal(
-            "${auth_player_name}@${version_name}/${version_name}",
-        )];
-        let out = call(&e, Some(&args), None).unwrap();
-        assert_eq!(out, vec!["Steve_1@1.20.1/1.20.1"]);
+        assert_eq!(call(&e, args.as_deref(), legacy).unwrap(), expected);
     }
 
     #[test]
@@ -303,73 +367,6 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out[1], canon(&e.game));
         assert!(out[1].contains("game dir"));
-    }
-
-    #[test]
-    fn unknown_placeholders_are_left_untouched() {
-        let e = env();
-        let out = call(&e, Some(&[normal("--x ${nope}")]), None).unwrap();
-        assert_eq!(out, vec!["--x", "${nope}"]);
-    }
-
-    #[test]
-    fn ruled_arguments_follow_rules() {
-        let e = env();
-        let args = vec![
-            Argument::Ruled {
-                rules: allow(),
-                value: ArgumentValue::Many(vec![
-                    "--width".to_string(),
-                    "${resolution_width}".to_string(),
-                ]),
-            },
-            Argument::Ruled {
-                rules: deny(),
-                value: ArgumentValue::Single("--skipped".to_string()),
-            },
-        ];
-        let out = call(&e, Some(&args), None).unwrap();
-        assert_eq!(out, vec!["--width", "1280"]);
-    }
-
-    #[test]
-    fn ruled_feature_argument_for_custom_resolution_is_included() {
-        let e = env();
-        let args = vec![Argument::Ruled {
-            rules: vec![Rule {
-                action: RuleAction::Allow,
-                os: None,
-                features: Some(FeatureRule {
-                    is_demo_user: None,
-                    has_custom_resolution: Some(true),
-                    has_quick_plays_support: None,
-                    is_quick_play_singleplayer: None,
-                    is_quick_play_multiplayer: None,
-                    is_quick_play_realms: None,
-                }),
-            }],
-            value: ArgumentValue::Many(vec![
-                "--width".to_string(),
-                "${resolution_width}".to_string(),
-            ]),
-        }];
-        assert_eq!(
-            call(&e, Some(&args), None).unwrap(),
-            vec!["--width", "1280"]
-        );
-    }
-
-    #[test]
-    fn modern_arguments_win_over_legacy() {
-        let e = env();
-        let out = call(&e, Some(&[normal("--a")]), Some("--legacy")).unwrap();
-        assert_eq!(out, vec!["--a"]);
-    }
-
-    #[test]
-    fn empty_modern_arguments_win_over_legacy() {
-        let e = env();
-        assert!(call(&e, Some(&[]), Some("--legacy")).unwrap().is_empty());
     }
 
     #[test]
@@ -404,18 +401,6 @@ mod tests {
                 UUID_STR.to_string(),
             ]
         );
-    }
-
-    #[test]
-    fn legacy_consecutive_spaces_give_empty_arguments() {
-        let e = env();
-        assert_eq!(call(&e, None, Some("a  b")).unwrap(), vec!["a", "", "b"]);
-    }
-
-    #[test]
-    fn legacy_empty_string_gives_one_empty_argument() {
-        let e = env();
-        assert_eq!(call(&e, None, Some("")).unwrap(), vec![""]);
     }
 
     #[test]

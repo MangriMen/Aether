@@ -116,6 +116,7 @@ macro_rules! processor_rules {
 mod tests {
     use super::*;
     use crate::features::minecraft::vanilla::{FeatureRule, Os, OsRule, Rule, RuleAction};
+    use rstest::rstest;
     use std::collections::HashMap;
 
     fn plain(action: RuleAction) -> Rule {
@@ -173,109 +174,78 @@ mod tests {
 
     // ---- parse_rules: combination logic ----
 
-    #[test]
-    fn empty_rules_are_allowed() {
-        assert!(parse_rules(&[], "x64", true));
-        assert!(parse_rules(&[], "x64", false));
-    }
-
-    #[test]
-    fn allow_without_conditions_is_allowed() {
-        assert!(parse_rules(&[plain(RuleAction::Allow)], "x64", true));
-    }
-
-    #[test]
-    fn disallow_without_conditions_is_denied() {
-        assert!(!parse_rules(&[plain(RuleAction::Disallow)], "x64", true));
-        assert!(!parse_rules(&[plain(RuleAction::Disallow)], "x64", false));
-    }
-
-    #[test]
-    fn unconditional_disallow_denies_alongside_allow() {
-        let rules = [plain(RuleAction::Allow), plain(RuleAction::Disallow)];
-        assert!(!parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn allow_with_matching_os_is_allowed() {
-        let rules = [os_rule(RuleAction::Allow, matching())];
-        assert!(parse_rules(&rules, "x64", true));
-        assert!(parse_rules(&rules, "x64", false));
-    }
-
-    #[test]
-    fn allow_with_non_matching_os_is_denied() {
-        let rules = [os_rule(RuleAction::Allow, not_matching())];
-        assert!(!parse_rules(&rules, "x64", true));
-        assert!(!parse_rules(&rules, "x64", false));
-    }
-
-    #[test]
-    fn disallow_with_matching_os_is_denied() {
-        let rules = [os_rule(RuleAction::Disallow, matching())];
-        assert!(!parse_rules(&rules, "x64", true));
-        assert!(!parse_rules(&rules, "x64", false));
-    }
-
-    #[test]
-    fn disallow_with_non_matching_os_is_allowed() {
-        let rules = [os_rule(RuleAction::Disallow, not_matching())];
-        assert!(parse_rules(&rules, "x64", true));
-        assert!(parse_rules(&rules, "x64", false));
-    }
-
-    #[test]
-    fn all_disallow_one_matching_denies_even_if_others_do_not_match() {
-        let rules = [
+    #[rstest]
+    #[case::empty_rules_are_allowed(vec![], true)]
+    #[case::allow_without_conditions_is_allowed(vec![plain(RuleAction::Allow)], true)]
+    #[case::disallow_without_conditions_is_denied(vec![plain(RuleAction::Disallow)], false)]
+    #[case::unconditional_disallow_denies_alongside_allow(
+        vec![plain(RuleAction::Allow), plain(RuleAction::Disallow)],
+        false
+    )]
+    #[case::allow_with_matching_os_is_allowed(
+        vec![os_rule(RuleAction::Allow, matching())],
+        true
+    )]
+    #[case::allow_with_non_matching_os_is_denied(
+        vec![os_rule(RuleAction::Allow, not_matching())],
+        false
+    )]
+    #[case::disallow_with_matching_os_is_denied(
+        vec![os_rule(RuleAction::Disallow, matching())],
+        false
+    )]
+    #[case::disallow_with_non_matching_os_is_allowed(
+        vec![os_rule(RuleAction::Disallow, not_matching())],
+        true
+    )]
+    #[case::all_disallow_one_matching_denies_even_if_others_do_not_match(
+        vec![
             os_rule(RuleAction::Disallow, not_matching()),
             os_rule(RuleAction::Disallow, matching()),
-        ];
-        assert!(!parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn mixed_allow_unconditional_and_disallow_matching_is_denied() {
-        let rules = [
+        ],
+        false
+    )]
+    #[case::mixed_allow_unconditional_and_disallow_matching_is_denied(
+        vec![
             plain(RuleAction::Allow),
             os_rule(RuleAction::Disallow, matching()),
-        ];
-        assert!(!parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn mixed_allow_unconditional_and_disallow_non_matching_is_allowed() {
-        let rules = [
+        ],
+        false
+    )]
+    #[case::mixed_allow_unconditional_and_disallow_non_matching_is_allowed(
+        vec![
             plain(RuleAction::Allow),
             os_rule(RuleAction::Disallow, not_matching()),
-        ];
-        assert!(parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn mixed_allow_matching_and_disallow_non_matching_is_allowed() {
-        let rules = [
+        ],
+        true
+    )]
+    #[case::mixed_allow_matching_and_disallow_non_matching_is_allowed(
+        vec![
             os_rule(RuleAction::Allow, matching()),
             os_rule(RuleAction::Disallow, not_matching()),
-        ];
-        assert!(parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn mixed_allow_non_matching_and_disallow_non_matching_is_denied() {
-        let rules = [
+        ],
+        true
+    )]
+    #[case::mixed_allow_non_matching_and_disallow_non_matching_is_denied(
+        vec![
             os_rule(RuleAction::Allow, not_matching()),
             os_rule(RuleAction::Disallow, not_matching()),
-        ];
-        assert!(!parse_rules(&rules, "x64", true));
-    }
-
-    #[test]
-    fn any_failing_allow_denies_the_whole_list() {
-        let rules = [
+        ],
+        false
+    )]
+    #[case::any_failing_allow_denies_the_whole_list(
+        vec![
             os_rule(RuleAction::Allow, matching()),
             os_rule(RuleAction::Allow, not_matching()),
-        ];
-        assert!(!parse_rules(&rules, "x64", true));
+        ],
+        false
+    )]
+    fn parse_rules_combines_rules(
+        #[case] rules: Vec<Rule>,
+        #[case] expected: bool,
+        #[values(true, false)] minecraft_updated: bool,
+    ) {
+        assert_eq!(parse_rules(&rules, "x64", minecraft_updated), expected);
     }
 
     // ---- parse_rules: features ----
@@ -302,119 +272,131 @@ mod tests {
         assert!(parse_rules(&rules, "x64", true));
     }
 
-    #[test]
-    fn features_demo_user_true_is_denied_false_is_allowed() {
-        assert!(!allow_features(FeatureRule {
+    #[rstest]
+    #[case::demo_user_true_is_denied(
+        FeatureRule { is_demo_user: Some(true), ..no_features() },
+        false
+    )]
+    #[case::demo_user_false_is_allowed(
+        FeatureRule { is_demo_user: Some(false), ..no_features() },
+        true
+    )]
+    #[case::custom_resolution_true_is_allowed(
+        FeatureRule { has_custom_resolution: Some(true), ..no_features() },
+        true
+    )]
+    #[case::custom_resolution_false_is_denied(
+        FeatureRule { has_custom_resolution: Some(false), ..no_features() },
+        false
+    )]
+    #[case::quick_plays_support_true_is_denied(
+        FeatureRule { has_quick_plays_support: Some(true), ..no_features() },
+        false
+    )]
+    #[case::quick_plays_support_false_is_allowed(
+        FeatureRule { has_quick_plays_support: Some(false), ..no_features() },
+        true
+    )]
+    #[case::quick_play_singleplayer_true_is_denied(
+        FeatureRule { is_quick_play_singleplayer: Some(true), ..no_features() },
+        false
+    )]
+    #[case::quick_play_singleplayer_false_is_allowed(
+        FeatureRule { is_quick_play_singleplayer: Some(false), ..no_features() },
+        true
+    )]
+    #[case::quick_play_multiplayer_true_is_denied(
+        FeatureRule { is_quick_play_multiplayer: Some(true), ..no_features() },
+        false
+    )]
+    #[case::quick_play_multiplayer_false_is_allowed(
+        FeatureRule { is_quick_play_multiplayer: Some(false), ..no_features() },
+        true
+    )]
+    #[case::quick_play_realms_true_is_denied(
+        FeatureRule { is_quick_play_realms: Some(true), ..no_features() },
+        false
+    )]
+    #[case::quick_play_realms_false_is_allowed(
+        FeatureRule { is_quick_play_realms: Some(false), ..no_features() },
+        true
+    )]
+    // Custom resolution matches, but the demo flag does not
+    #[case::all_specified_flags_demo_mismatch_is_denied(
+        FeatureRule {
             is_demo_user: Some(true),
-            ..no_features()
-        }));
-        assert!(allow_features(FeatureRule {
-            is_demo_user: Some(false),
-            ..no_features()
-        }));
-    }
-
-    #[test]
-    fn features_custom_resolution_true_is_allowed_false_is_denied() {
-        assert!(allow_features(FeatureRule {
             has_custom_resolution: Some(true),
             ..no_features()
-        }));
-        assert!(!allow_features(FeatureRule {
-            has_custom_resolution: Some(false),
-            ..no_features()
-        }));
-    }
-
-    #[test]
-    fn features_quick_play_flags_true_are_denied_false_are_allowed() {
-        let setters: [fn(&mut FeatureRule, Option<bool>); 4] = [
-            |f, v| f.has_quick_plays_support = v,
-            |f, v| f.is_quick_play_singleplayer = v,
-            |f, v| f.is_quick_play_multiplayer = v,
-            |f, v| f.is_quick_play_realms = v,
-        ];
-        for set in setters {
-            let mut on = no_features();
-            set(&mut on, Some(true));
-            assert!(!allow_features(on));
-
-            let mut off = no_features();
-            set(&mut off, Some(false));
-            assert!(allow_features(off));
-        }
-    }
-
-    #[test]
-    fn features_all_specified_flags_must_match() {
-        // Custom resolution matches, but the demo flag does not
-        assert!(!allow_features(FeatureRule {
-            is_demo_user: Some(true),
-            has_custom_resolution: Some(true),
-            ..no_features()
-        }));
-        assert!(allow_features(FeatureRule {
+        },
+        false
+    )]
+    #[case::all_specified_flags_match_is_allowed(
+        FeatureRule {
             is_demo_user: Some(false),
             has_custom_resolution: Some(true),
             ..no_features()
-        }));
-        assert!(!allow_features(FeatureRule {
+        },
+        true
+    )]
+    #[case::all_specified_flags_third_flag_mismatch_is_denied(
+        FeatureRule {
             is_demo_user: Some(false),
             has_custom_resolution: Some(true),
             is_quick_play_realms: Some(true),
             ..no_features()
-        }));
+        },
+        false
+    )]
+    fn allow_feature_rule_requires_all_flags(
+        #[case] features: FeatureRule,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(allow_features(features), expected);
     }
 
-    #[test]
-    fn disallow_feature_rule_inverts() {
-        // Condition holds (custom resolution) -> disallowed
-        let holds = [feature_rule(
-            RuleAction::Disallow,
+    #[rstest]
+    // Condition holds (custom resolution) -> disallowed
+    #[case::condition_holds_is_denied(
+        FeatureRule { has_custom_resolution: Some(true), ..no_features() },
+        false
+    )]
+    // Condition does not hold (demo user wanted) -> allowed
+    #[case::condition_does_not_hold_is_allowed(
+        FeatureRule { is_demo_user: Some(true), ..no_features() },
+        true
+    )]
+    fn disallow_feature_rule_inverts(#[case] features: FeatureRule, #[case] expected: bool) {
+        let rules = [feature_rule(RuleAction::Disallow, features)];
+        assert_eq!(parse_rules(&rules, "x64", true), expected);
+    }
+
+    #[rstest]
+    #[case::matching_os_holding_features(matching(), true, true)]
+    #[case::matching_os_failing_features(matching(), false, false)]
+    #[case::non_matching_os_holding_features(not_matching(), true, false)]
+    #[case::non_matching_os_failing_features(not_matching(), false, false)]
+    fn rule_with_os_and_features_needs_both_to_hold(
+        #[case] os: OsRule,
+        #[case] features_hold: bool,
+        #[case] expected: bool,
+    ) {
+        let features = if features_hold {
             FeatureRule {
                 has_custom_resolution: Some(true),
                 ..no_features()
-            },
-        )];
-        assert!(!parse_rules(&holds, "x64", true));
-
-        // Condition does not hold (demo user wanted) -> allowed
-        let not_holds = [feature_rule(
-            RuleAction::Disallow,
+            }
+        } else {
             FeatureRule {
                 is_demo_user: Some(true),
                 ..no_features()
-            },
-        )];
-        assert!(parse_rules(&not_holds, "x64", true));
-    }
-
-    #[test]
-    fn rule_with_os_and_features_needs_both_to_hold() {
-        let holding = FeatureRule {
-            has_custom_resolution: Some(true),
-            ..no_features()
+            }
         };
-        let failing = FeatureRule {
-            is_demo_user: Some(true),
-            ..no_features()
-        };
-        let allowed = |os: OsRule, features: FeatureRule| {
-            parse_rules(
-                &[Rule {
-                    action: RuleAction::Allow,
-                    os: Some(os),
-                    features: Some(features),
-                }],
-                "x64",
-                true,
-            )
-        };
-
-        assert!(allowed(matching(), holding.clone()));
-        assert!(!allowed(matching(), failing.clone()));
-        assert!(!allowed(not_matching(), holding));
-        assert!(!allowed(not_matching(), failing));
+        let rules = [Rule {
+            action: RuleAction::Allow,
+            os: Some(os),
+            features: Some(features),
+        }];
+        assert_eq!(parse_rules(&rules, "x64", true), expected);
     }
 
     #[test]
@@ -435,117 +417,110 @@ mod tests {
 
     // ---- parse_os_rule ----
 
-    #[test]
-    fn os_rule_empty_matches() {
-        let rule = OsRule {
-            name: None,
-            version: None,
-            arch: None,
-        };
-        assert!(parse_os_rule(&rule, "x64", true));
-        assert!(parse_os_rule(&rule, "x64", false));
-    }
-
-    #[test]
-    fn os_rule_arch_x86_and_arm_never_match() {
-        for (arch, expected) in [
-            ("x86", false),
-            ("arm", false),
-            ("x64", true),
-            ("aarch64", true),
-        ] {
-            let rule = OsRule {
-                name: None,
-                version: None,
-                arch: Some(arch.to_string()),
-            };
-            assert_eq!(parse_os_rule(&rule, "x64", true), expected, "arch {arch}");
-            assert_eq!(parse_os_rule(&rule, "x64", false), expected, "arch {arch}");
+    fn os_cond(name: Option<Os>, version: Option<&str>, arch: Option<&str>) -> OsRule {
+        OsRule {
+            name,
+            version: version.map(str::to_string),
+            arch: arch.map(str::to_string),
         }
     }
 
-    #[test]
-    fn os_rule_arch_is_independent_of_java_arch() {
-        let rule = OsRule {
-            name: None,
-            version: None,
-            arch: Some("x86".to_string()),
-        };
-        assert!(!parse_os_rule(&rule, "aarch64", true));
-    }
-
-    #[test]
-    fn os_rule_native_name_matches_for_x64() {
-        assert!(parse_os_rule(&matching(), "x64", true));
-        assert!(parse_os_rule(&matching(), "x64", false));
-    }
-
-    #[test]
-    fn os_rule_unknown_name_does_not_match() {
-        assert!(!parse_os_rule(&not_matching(), "x64", true));
-        assert!(!parse_os_rule(&not_matching(), "x64", false));
-    }
-
-    #[test]
-    fn os_rule_native_name_with_aarch64_java_depends_on_minecraft_updated() {
-        // updated: the plain native OS name still matches
-        assert!(parse_os_rule(&matching(), "aarch64", true));
-        // not updated: only the arch-specific variant matches
-        assert!(!parse_os_rule(&matching(), "aarch64", false));
-    }
-
-    #[test]
-    fn os_rule_arch_variant_name_matches_only_with_matching_java_arch() {
-        let variant = os_name(Os::native_arch("aarch64"));
-        for updated in [true, false] {
-            assert!(parse_os_rule(&variant, "aarch64", updated));
-            assert!(!parse_os_rule(&variant, "x64", updated));
-        }
-    }
-
-    #[test]
-    fn os_rule_version_regex_matching_anything_keeps_match() {
-        let rule = OsRule {
-            version: Some(".*".to_string()),
-            ..matching()
-        };
-        assert!(parse_os_rule(&rule, "x64", true));
-    }
-
-    #[test]
-    fn os_rule_version_regex_never_matching_rejects() {
-        let rule = OsRule {
-            name: None,
-            version: Some("a^b".to_string()),
-            arch: None,
-        };
-        assert!(!parse_os_rule(&rule, "x64", true));
+    #[rstest]
+    #[case::empty_matches_updated(os_cond(None, None, None), "x64", true, true)]
+    #[case::empty_matches_not_updated(os_cond(None, None, None), "x64", false, true)]
+    #[case::arch_x86_never_matches_updated(os_cond(None, None, Some("x86")), "x64", true, false)]
+    #[case::arch_x86_never_matches_not_updated(
+        os_cond(None, None, Some("x86")),
+        "x64",
+        false,
+        false
+    )]
+    #[case::arch_arm_never_matches_updated(os_cond(None, None, Some("arm")), "x64", true, false)]
+    #[case::arch_arm_never_matches_not_updated(
+        os_cond(None, None, Some("arm")),
+        "x64",
+        false,
+        false
+    )]
+    #[case::arch_x64_matches_updated(os_cond(None, None, Some("x64")), "x64", true, true)]
+    #[case::arch_x64_matches_not_updated(os_cond(None, None, Some("x64")), "x64", false, true)]
+    #[case::arch_aarch64_matches_updated(os_cond(None, None, Some("aarch64")), "x64", true, true)]
+    #[case::arch_aarch64_matches_not_updated(
+        os_cond(None, None, Some("aarch64")),
+        "x64",
+        false,
+        true
+    )]
+    #[case::arch_is_independent_of_java_arch(
+        os_cond(None, None, Some("x86")),
+        "aarch64",
+        true,
+        false
+    )]
+    #[case::native_name_matches_for_x64_updated(matching(), "x64", true, true)]
+    #[case::native_name_matches_for_x64_not_updated(matching(), "x64", false, true)]
+    #[case::unknown_name_does_not_match_updated(not_matching(), "x64", true, false)]
+    #[case::unknown_name_does_not_match_not_updated(not_matching(), "x64", false, false)]
+    // updated: the plain native OS name still matches
+    #[case::native_name_aarch64_java_updated(matching(), "aarch64", true, true)]
+    // not updated: only the arch-specific variant matches
+    #[case::native_name_aarch64_java_not_updated(matching(), "aarch64", false, false)]
+    #[case::arch_variant_name_matching_java_arch_updated(
+        os_name(Os::native_arch("aarch64")),
+        "aarch64",
+        true,
+        true
+    )]
+    #[case::arch_variant_name_matching_java_arch_not_updated(
+        os_name(Os::native_arch("aarch64")),
+        "aarch64",
+        false,
+        true
+    )]
+    #[case::arch_variant_name_other_java_arch_updated(
+        os_name(Os::native_arch("aarch64")),
+        "x64",
+        true,
+        false
+    )]
+    #[case::arch_variant_name_other_java_arch_not_updated(
+        os_name(Os::native_arch("aarch64")),
+        "x64",
+        false,
+        false
+    )]
+    #[case::version_regex_matching_anything_keeps_match(
+        OsRule { version: Some(".*".to_string()), ..matching() },
+        "x64",
+        true,
+        true
+    )]
+    #[case::version_regex_never_matching_rejects(
+        os_cond(None, Some("a^b"), None),
+        "x64",
+        true,
+        false
+    )]
+    #[case::invalid_version_regex_is_ignored(os_cond(None, Some("("), None), "x64", true, true)]
+    #[case::conditions_are_anded(
+        os_cond(Some(Os::native()), Some(".*"), Some("x86")),
+        "x64",
+        true,
+        false
+    )]
+    fn parse_os_rule_matches(
+        #[case] rule: OsRule,
+        #[case] java_arch: &str,
+        #[case] minecraft_updated: bool,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(parse_os_rule(&rule, java_arch, minecraft_updated), expected);
     }
 
     #[test]
     fn version_pattern_for_windows_10_matches_java_style_version() {
         assert!(version_matches(r"^10\.", "10.0"));
         assert!(!version_matches(r"^10\.", "6.2"));
-    }
-
-    #[test]
-    fn os_rule_invalid_version_regex_is_ignored() {
-        let rule = OsRule {
-            name: None,
-            version: Some("(".to_string()),
-            arch: None,
-        };
-        assert!(parse_os_rule(&rule, "x64", true));
-    }
-
-    #[test]
-    fn os_rule_conditions_are_anded() {
-        let rule = OsRule {
-            name: Some(Os::native()),
-            version: Some(".*".to_string()),
-            arch: Some("x86".to_string()),
-        };
-        assert!(!parse_os_rule(&rule, "x64", true));
     }
 
     // ---- processor_rules! ----

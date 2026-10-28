@@ -43,6 +43,7 @@ fn is_minecraft_updated(
 mod tests {
     use super::*;
     use crate::features::minecraft::vanilla;
+    use rstest::rstest;
 
     fn make_version(id: &str) -> vanilla::Version {
         vanilla::Version {
@@ -85,39 +86,6 @@ mod tests {
         assert!(matches!(err, MinecraftDomainError::VersionNotFound { .. }));
     }
 
-    #[test]
-    fn should_mark_as_updated_when_below_threshold() {
-        let manifest = make_manifest(vec![
-            make_version("1.19"),
-            make_version("22w16a"),
-            make_version("1.20"),
-        ]);
-        let (_, is_updated) = resolve_minecraft_version("1.19", &manifest).unwrap();
-        assert!(is_updated);
-    }
-
-    #[test]
-    fn should_mark_as_not_updated_when_above_threshold() {
-        let manifest = make_manifest(vec![
-            make_version("22w16a"),
-            make_version("1.20"),
-            make_version("1.21"),
-        ]);
-        let (_, is_updated) = resolve_minecraft_version("1.21", &manifest).unwrap();
-        assert!(!is_updated);
-    }
-
-    #[test]
-    fn should_mark_the_version_as_updated_when_it_is_the_threshold() {
-        let manifest = make_manifest(vec![
-            make_version("1.19"),
-            make_version("22w16a"),
-            make_version("1.20"),
-        ]);
-        let (_, is_updated) = resolve_minecraft_version("22w16a", &manifest).unwrap();
-        assert!(is_updated);
-    }
-
     fn released_at(id: &str, timestamp: i64) -> vanilla::Version {
         vanilla::Version {
             release_time: chrono::DateTime::from_timestamp(timestamp, 0).unwrap(),
@@ -125,24 +93,46 @@ mod tests {
         }
     }
 
-    #[test]
-    fn should_mark_as_updated_by_release_time_when_threshold_not_found_and_version_is_newer() {
-        let manifest = make_manifest(vec![
+    #[rstest]
+    #[case::below_threshold(
+        vec![make_version("1.19"), make_version("22w16a"), make_version("1.20")],
+        "1.19",
+        true
+    )]
+    #[case::above_threshold(
+        vec![make_version("22w16a"), make_version("1.20"), make_version("1.21")],
+        "1.21",
+        false
+    )]
+    #[case::the_threshold_itself(
+        vec![make_version("1.19"), make_version("22w16a"), make_version("1.20")],
+        "22w16a",
+        true
+    )]
+    #[case::by_release_time_when_threshold_not_found_and_version_is_newer(
+        vec![
             released_at("1.20", NATIVE_SUPPORT_SINCE + 1),
             released_at("1.19", NATIVE_SUPPORT_SINCE),
-        ]);
-        let (_, is_updated) = resolve_minecraft_version("1.19", &manifest).unwrap();
-        assert!(is_updated);
-    }
-
-    #[test]
-    fn should_mark_as_not_updated_by_release_time_when_threshold_not_found_and_version_is_older() {
-        let manifest = make_manifest(vec![
+        ],
+        "1.19",
+        true
+    )]
+    #[case::by_release_time_when_threshold_not_found_and_version_is_older(
+        vec![
             released_at("1.20", NATIVE_SUPPORT_SINCE + 1),
             released_at("1.18", NATIVE_SUPPORT_SINCE - 1),
-        ]);
-        let (_, is_updated) = resolve_minecraft_version("1.18", &manifest).unwrap();
-        assert!(!is_updated);
+        ],
+        "1.18",
+        false
+    )]
+    fn should_mark_updated_by_threshold(
+        #[case] versions: Vec<vanilla::Version>,
+        #[case] requested: &str,
+        #[case] expected_updated: bool,
+    ) {
+        let manifest = make_manifest(versions);
+        let (_, is_updated) = resolve_minecraft_version(requested, &manifest).unwrap();
+        assert_eq!(is_updated, expected_updated);
     }
 
     #[test]

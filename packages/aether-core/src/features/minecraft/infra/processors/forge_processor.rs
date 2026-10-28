@@ -300,6 +300,7 @@ fn read_main_class(path: &str) -> Result<Option<String>, MinecraftDomainError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
     use std::io::Write;
 
     fn entry(client: &str) -> modded::SidedDataEntry {
@@ -392,23 +393,14 @@ mod tests {
         }
     }
 
-    #[test]
-    fn processor_without_sides_runs_on_client() {
-        assert!(runs_on_client(&processor_with_sides(None)));
-    }
-
-    #[test]
-    fn processor_with_client_side_runs() {
-        assert!(runs_on_client(&processor_with_sides(Some(&[
-            "server", "client"
-        ]))));
-    }
-
-    #[test]
-    fn processor_without_client_side_is_skipped() {
-        assert!(!runs_on_client(&processor_with_sides(Some(&["server"]))));
-        assert!(!runs_on_client(&processor_with_sides(Some(&[]))));
-        assert!(!runs_on_client(&processor_with_sides(Some(&["extract"]))));
+    #[rstest]
+    #[case::without_sides_runs_on_client(None, true)]
+    #[case::with_client_side_runs(Some(&["server", "client"][..]), true)]
+    #[case::server_only_is_skipped(Some(&["server"][..]), false)]
+    #[case::empty_sides_is_skipped(Some(&[][..]), false)]
+    #[case::extract_only_is_skipped(Some(&["extract"][..]), false)]
+    fn processor_runs_on_client_by_sides(#[case] sides: Option<&[&str]>, #[case] expected: bool) {
+        assert_eq!(runs_on_client(&processor_with_sides(sides)), expected);
     }
 
     #[test]
@@ -418,113 +410,94 @@ mod tests {
         assert!((progress_step(7) * 7.0 - 30.0).abs() < 1e-9);
     }
 
-    #[test]
-    fn processor_arguments_empty_list_gives_empty_vec() {
+    #[rstest]
+    #[case::empty_list_gives_empty_vec(&[], &[], &[])]
+    #[case::plain_values_pass_through_in_order(
+        &["--task", "MERGE_MAPPING", "--debug", ""],
+        &[("SIDE", "client")],
+        &["--task", "MERGE_MAPPING", "--debug", ""]
+    )]
+    #[case::unbalanced_bracket_is_plain_text(
+        &["[g:a:1", "g:a:1]"],
+        &[],
+        &["[g:a:1", "g:a:1]"]
+    )]
+    #[case::key_placeholder_uses_client_value(
+        &["{SIDE}", "{MINECRAFT_VERSION}"],
+        &[("SIDE", "client"), ("MINECRAFT_VERSION", "1.20.1")],
+        &["client", "1.20.1"]
+    )]
+    #[case::key_placeholder_inside_composite_value(
+        &["{ROOT}/libraries/", "--in={ROOT}/a/{NAME}.txt"],
+        &[("ROOT", "/game"), ("NAME", "x")],
+        &["/game/libraries/", "--in=/game/a/x.txt"]
+    )]
+    #[case::repeated_placeholder_is_replaced_everywhere(&["{A}-{A}"], &[("A", "z")], &["z-z"])]
+    #[case::data_value_with_unbalanced_bracket_is_literal(
+        &["{M}"],
+        &[("M", "[not-closed")],
+        &["[not-closed"]
+    )]
+    // An invalid library reference in an unused entry must not matter
+    #[case::unused_data_entries_are_not_resolved(
+        &["--plain"],
+        &[("BAD", "[broken]")],
+        &["--plain"]
+    )]
+    #[case::use_client_side_only(&["{K}"], &[("K", "c")], &["c"])]
+    fn processor_arguments_are_resolved(
+        #[case] args: &[&str],
+        #[case] entries: &[(&str, &str)],
+        #[case] expected: &[&str],
+    ) {
         let (_t, libs) = libs_dir();
-        let none: [&str; 0] = [];
-        assert!(
-            get_processor_arguments(&libs, &none, &data(&[]))
-                .unwrap()
-                .is_empty()
-        );
+        let out = get_processor_arguments(&libs, args, &data(entries)).unwrap();
+        assert_eq!(out, expected);
     }
 
-    #[test]
-    fn processor_arguments_plain_values_pass_through_in_order() {
+    #[rstest]
+    #[case::bracket_form_resolves_existing_library(
+        "net/minecraftforge/forge/1.20-47/forge-1.20-47-client.jar",
+        "[net.minecraftforge:forge:1.20-47:client]"
+    )]
+    #[case::bracket_form_supports_extension(
+        "de/oceanlabs/mcp/mcp_config/1.20/mcp_config-1.20.zip",
+        "[de.oceanlabs.mcp:mcp_config:1.20@zip]"
+    )]
+    fn processor_arguments_bracket_form_resolves_library(
+        #[case] rel_path: &str,
+        #[case] arg: &str,
+    ) {
         let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(
-            &libs,
-            &["--task", "MERGE_MAPPING", "--debug", ""],
-            &data(&[("SIDE", "client")]),
-        )
-        .unwrap();
-        assert_eq!(out, vec!["--task", "MERGE_MAPPING", "--debug", ""]);
-    }
-
-    #[test]
-    fn processor_arguments_bracket_form_resolves_existing_library() {
-        let (_t, libs) = libs_dir();
-        let path = make_lib(
-            &libs,
-            "net/minecraftforge/forge/1.20-47/forge-1.20-47-client.jar",
-        );
-        let out = get_processor_arguments(
-            &libs,
-            &["[net.minecraftforge:forge:1.20-47:client]"],
-            &data(&[]),
-        )
-        .unwrap();
+        let path = make_lib(&libs, rel_path);
+        let out = get_processor_arguments(&libs, &[arg], &data(&[])).unwrap();
         assert_eq!(out, vec![path]);
     }
 
-    #[test]
-    fn processor_arguments_bracket_form_supports_extension() {
+    #[rstest]
+    #[case::bracket_form(&["[g:a:1]"], &[])]
+    #[case::data_value_in_brackets(&["{M}"], &[("M", "[g:a:1]")])]
+    fn processor_arguments_missing_library_gives_uncanonicalized_path(
+        #[case] args: &[&str],
+        #[case] entries: &[(&str, &str)],
+    ) {
         let (_t, libs) = libs_dir();
-        let path = make_lib(
-            &libs,
-            "de/oceanlabs/mcp/mcp_config/1.20/mcp_config-1.20.zip",
-        );
-        let out = get_processor_arguments(
-            &libs,
-            &["[de.oceanlabs.mcp:mcp_config:1.20@zip]"],
-            &data(&[]),
-        )
-        .unwrap();
-        assert_eq!(out, vec![path]);
-    }
-
-    #[test]
-    fn processor_arguments_bracket_form_missing_library_gives_uncanonicalized_path() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["[g:a:1]"], &data(&[])).unwrap();
+        let out = get_processor_arguments(&libs, args, &data(entries)).unwrap();
         let mut expected = libs.clone();
         expected.push("g/a/1/a-1.jar");
         assert_eq!(out, vec![expected.to_string_lossy().to_string()]);
     }
 
-    #[test]
-    fn processor_arguments_bracket_form_invalid_coordinate_fails() {
+    #[rstest]
+    #[case::bracket_form(&["[broken]"], &[])]
+    #[case::data_value(&["{M}"], &[("M", "[broken]")])]
+    fn processor_arguments_invalid_library_coordinate_fails(
+        #[case] args: &[&str],
+        #[case] entries: &[(&str, &str)],
+    ) {
         let (_t, libs) = libs_dir();
-        let err = get_processor_arguments(&libs, &["[broken]"], &data(&[])).unwrap_err();
+        let err = get_processor_arguments(&libs, args, &data(entries)).unwrap_err();
         assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
-    }
-
-    #[test]
-    fn processor_arguments_unbalanced_bracket_is_plain_text() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["[g:a:1", "g:a:1]"], &data(&[])).unwrap();
-        assert_eq!(out, vec!["[g:a:1", "g:a:1]"]);
-    }
-
-    #[test]
-    fn processor_arguments_key_placeholder_uses_client_value() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(
-            &libs,
-            &["{SIDE}", "{MINECRAFT_VERSION}"],
-            &data(&[("SIDE", "client"), ("MINECRAFT_VERSION", "1.20.1")]),
-        )
-        .unwrap();
-        assert_eq!(out, vec!["client", "1.20.1"]);
-    }
-
-    #[test]
-    fn processor_arguments_key_placeholder_inside_composite_value() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(
-            &libs,
-            &["{ROOT}/libraries/", "--in={ROOT}/a/{NAME}.txt"],
-            &data(&[("ROOT", "/game"), ("NAME", "x")]),
-        )
-        .unwrap();
-        assert_eq!(out, vec!["/game/libraries/", "--in=/game/a/x.txt"]);
-    }
-
-    #[test]
-    fn processor_arguments_repeated_placeholder_is_replaced_everywhere() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["{A}-{A}"], &data(&[("A", "z")])).unwrap();
-        assert_eq!(out, vec!["z-z"]);
     }
 
     #[test]
@@ -540,44 +513,16 @@ mod tests {
         assert_eq!(out, vec![path.clone(), format!("--out={path}")]);
     }
 
-    #[test]
-    fn processor_arguments_data_value_in_brackets_missing_library_is_uncanonicalized() {
+    #[rstest]
+    #[case::unknown_placeholder(&["{UNKNOWN}"], &[("SIDE", "client")])]
+    #[case::braces_coming_from_data_values(&["{A}"], &[("A", "{B}")])]
+    #[case::error_in_any_argument_fails_whole_call(&["ok", "{NOPE}", "ok2"], &[])]
+    fn processor_arguments_unresolved_placeholder_fails(
+        #[case] args: &[&str],
+        #[case] entries: &[(&str, &str)],
+    ) {
         let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[g:a:1]")])).unwrap();
-        let mut expected = libs.clone();
-        expected.push("g/a/1/a-1.jar");
-        assert_eq!(out, vec![expected.to_string_lossy().to_string()]);
-    }
-
-    #[test]
-    fn processor_arguments_data_value_with_unbalanced_bracket_is_literal() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[not-closed")])).unwrap();
-        assert_eq!(out, vec!["[not-closed"]);
-    }
-
-    #[test]
-    fn processor_arguments_data_value_invalid_library_fails() {
-        let (_t, libs) = libs_dir();
-        let err =
-            get_processor_arguments(&libs, &["{M}"], &data(&[("M", "[broken]")])).unwrap_err();
-        assert!(matches!(err, MinecraftDomainError::ParseFailed { .. }));
-    }
-
-    #[test]
-    fn processor_arguments_unused_data_entries_are_not_resolved() {
-        // An invalid library reference in an unused entry must not matter
-        let (_t, libs) = libs_dir();
-        let out =
-            get_processor_arguments(&libs, &["--plain"], &data(&[("BAD", "[broken]")])).unwrap();
-        assert_eq!(out, vec!["--plain"]);
-    }
-
-    #[test]
-    fn processor_arguments_unknown_placeholder_fails() {
-        let (_t, libs) = libs_dir();
-        let err = get_processor_arguments(&libs, &["{UNKNOWN}"], &data(&[("SIDE", "client")]))
-            .unwrap_err();
+        let err = get_processor_arguments(&libs, args, &data(entries)).unwrap_err();
         assert!(unresolved(&err));
     }
 
@@ -605,27 +550,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn processor_arguments_braces_coming_from_data_values_fail() {
-        let (_t, libs) = libs_dir();
-        let err = get_processor_arguments(&libs, &["{A}"], &data(&[("A", "{B}")])).unwrap_err();
-        assert!(unresolved(&err));
-    }
-
-    #[test]
-    fn processor_arguments_error_in_any_argument_fails_whole_call() {
-        let (_t, libs) = libs_dir();
-        let err = get_processor_arguments(&libs, &["ok", "{NOPE}", "ok2"], &data(&[])).unwrap_err();
-        assert!(unresolved(&err));
-    }
-
-    #[test]
-    fn processor_arguments_use_client_side_only() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["{K}"], &data(&[("K", "c")])).unwrap();
-        assert_eq!(out, vec!["c"]);
-    }
-
     // ---- get_processor_main_class ----
 
     fn write_jar(dir: &Path, name: &str, manifest: Option<&str>) -> String {
@@ -644,56 +568,26 @@ mod tests {
         path.to_string_lossy().to_string()
     }
 
+    #[rstest]
+    #[case::read_from_manifest(
+        "Manifest-Version: 1.0\r\nMain-Class: net.example.Main\r\nCreated-By: x\r\n",
+        Some("net.example.Main")
+    )]
+    #[case::value_is_trimmed("Main-Class:    a.B   \n", Some("a.B"))]
+    #[case::first_occurrence_wins("Main-Class: first\nMain-Class: second\n", Some("first"))]
+    #[case::absent_gives_none("Manifest-Version: 1.0\n", None)]
+    #[case::key_is_case_sensitive("main-class: a.B\n", None)]
     #[tokio::test]
-    async fn main_class_is_read_from_manifest() {
+    async fn main_class_is_read_from_manifest(
+        #[case] manifest: &str,
+        #[case] expected: Option<&str>,
+    ) {
         let tmp = tempfile::tempdir().unwrap();
-        let jar = write_jar(
-            tmp.path(),
-            "a.jar",
-            Some("Manifest-Version: 1.0\r\nMain-Class: net.example.Main\r\nCreated-By: x\r\n"),
-        );
+        let jar = write_jar(tmp.path(), "a.jar", Some(manifest));
         assert_eq!(
             get_processor_main_class(jar).await.unwrap(),
-            Some("net.example.Main".to_string())
+            expected.map(str::to_string)
         );
-    }
-
-    #[tokio::test]
-    async fn main_class_value_is_trimmed() {
-        let tmp = tempfile::tempdir().unwrap();
-        let jar = write_jar(tmp.path(), "a.jar", Some("Main-Class:    a.B   \n"));
-        assert_eq!(
-            get_processor_main_class(jar).await.unwrap(),
-            Some("a.B".to_string())
-        );
-    }
-
-    #[tokio::test]
-    async fn main_class_first_occurrence_wins() {
-        let tmp = tempfile::tempdir().unwrap();
-        let jar = write_jar(
-            tmp.path(),
-            "a.jar",
-            Some("Main-Class: first\nMain-Class: second\n"),
-        );
-        assert_eq!(
-            get_processor_main_class(jar).await.unwrap(),
-            Some("first".to_string())
-        );
-    }
-
-    #[tokio::test]
-    async fn main_class_absent_gives_none() {
-        let tmp = tempfile::tempdir().unwrap();
-        let jar = write_jar(tmp.path(), "a.jar", Some("Manifest-Version: 1.0\n"));
-        assert_eq!(get_processor_main_class(jar).await.unwrap(), None);
-    }
-
-    #[tokio::test]
-    async fn main_class_key_is_case_sensitive() {
-        let tmp = tempfile::tempdir().unwrap();
-        let jar = write_jar(tmp.path(), "a.jar", Some("main-class: a.B\n"));
-        assert_eq!(get_processor_main_class(jar).await.unwrap(), None);
     }
 
     #[tokio::test]

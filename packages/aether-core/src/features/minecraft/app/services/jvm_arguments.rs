@@ -191,6 +191,7 @@ mod tests {
     use crate::features::minecraft::vanilla::{
         Argument, ArgumentValue, Library, Os, OsRule, Rule, RuleAction,
     };
+    use rstest::rstest;
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -550,41 +551,22 @@ mod tests {
         );
     }
 
-    #[test]
-    fn jvm_without_arguments_requires_natives_dir() {
+    #[rstest]
+    #[case::empty_arguments_have_only_memory_and_custom(
+        512,
+        &["-Dfoo=bar", "", "-Dbaz"],
+        &["-Xmx512M", "-Dfoo=bar", "-Dbaz"]
+    )]
+    #[case::heap_flag_is_omitted_when_the_memory_is_zero(0, &["-Dfoo=bar"], &["-Dfoo=bar"])]
+    fn jvm_with_empty_arguments_emits_memory_and_custom(
+        #[case] mem: u32,
+        #[case] custom: &[&str],
+        #[case] expected: &[&str],
+    ) {
         let e = env();
-        let err = get_jvm_arguments(
-            None,
-            &e.root.join("missing"),
-            &e.libs,
-            "cp",
-            "v",
-            1,
-            &[],
-            "x64",
-        )
-        .unwrap_err();
-        assert!(matches!(
-            err,
-            MinecraftDomainError::PathNotFound { ref entity_type, .. }
-                if entity_type == "native_library"
-        ));
-    }
-
-    #[test]
-    fn jvm_with_empty_arguments_has_only_memory_and_custom() {
-        let e = env();
-        let custom = vec!["-Dfoo=bar".to_string(), String::new(), "-Dbaz".to_string()];
-        let out = jvm(&e, Some(&[]), "cp", 512, &custom).unwrap();
-        assert_eq!(out, vec!["-Xmx512M", "-Dfoo=bar", "-Dbaz"]);
-    }
-
-    #[test]
-    fn should_omit_the_heap_flag_when_the_memory_is_zero() {
-        let e = env();
-        let custom = vec!["-Dfoo=bar".to_string()];
-        let out = jvm(&e, Some(&[]), "cp", 0, &custom).unwrap();
-        assert_eq!(out, vec!["-Dfoo=bar"]);
+        let custom: Vec<String> = custom.iter().map(ToString::to_string).collect();
+        let out = jvm(&e, Some(&[]), "cp", mem, &custom).unwrap();
+        assert_eq!(out, expected);
     }
 
     #[test]
@@ -625,43 +607,42 @@ mod tests {
         );
     }
 
-    #[test]
-    fn jvm_placeholder_value_with_spaces_stays_one_argument() {
-        let e = env();
-        let args = vec![Argument::Normal("${classpath}".to_string())];
-        let out = jvm(&e, Some(&args), "C:/My Libs/a.jar", 1, &[]).unwrap();
-        assert_eq!(out[0], "C:/My Libs/a.jar");
-    }
-
-    #[test]
-    fn jvm_whitespace_in_template_is_kept_not_split() {
-        // JVM templates are never split on spaces and keep their whitespace verbatim.
-        let e = env();
-        let args = vec![Argument::Normal("-cp ${classpath}".to_string())];
-        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
-        assert_eq!(out, vec!["-cp A.jar", "-Xmx1M"]);
-    }
-
-    #[test]
-    fn jvm_ruled_value_with_space_stays_one_argument_with_placeholders() {
-        let e = env();
-        let args = vec![Argument::Ruled {
+    #[rstest]
+    #[case::placeholder_value_with_spaces_stays_one_argument(
+        vec![Argument::Normal("${classpath}".to_string())],
+        "C:/My Libs/a.jar",
+        &["C:/My Libs/a.jar", "-Xmx1M"]
+    )]
+    // JVM templates are never split on spaces and keep their whitespace verbatim.
+    #[case::whitespace_in_template_is_kept_not_split(
+        vec![Argument::Normal("-cp ${classpath}".to_string())],
+        "A.jar",
+        &["-cp A.jar", "-Xmx1M"]
+    )]
+    #[case::ruled_value_with_space_stays_one_argument_with_placeholders(
+        vec![Argument::Ruled {
             rules: vec![],
             value: ArgumentValue::Many(vec![
                 "-Dos.name=Windows 10".to_string(),
                 "-Dv=${version_name} x".to_string(),
             ]),
-        }];
-        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
-        assert_eq!(out, vec!["-Dos.name=Windows 10", "-Dv=1.20.1 x", "-Xmx1M"]);
-    }
-
-    #[test]
-    fn jvm_unknown_placeholders_are_left_untouched() {
+        }],
+        "A.jar",
+        &["-Dos.name=Windows 10", "-Dv=1.20.1 x", "-Xmx1M"]
+    )]
+    #[case::unknown_placeholders_are_left_untouched(
+        vec![Argument::Normal("-Dx=${unknown}".to_string())],
+        "A.jar",
+        &["-Dx=${unknown}", "-Xmx1M"]
+    )]
+    fn jvm_template_values_are_kept_verbatim(
+        #[case] args: Vec<Argument>,
+        #[case] classpath: &str,
+        #[case] expected: &[&str],
+    ) {
         let e = env();
-        let args = vec![Argument::Normal("-Dx=${unknown}".to_string())];
-        let out = jvm(&e, Some(&args), "A.jar", 1, &[]).unwrap();
-        assert_eq!(out[0], "-Dx=${unknown}");
+        let out = jvm(&e, Some(&args), classpath, 1, &[]).unwrap();
+        assert_eq!(out, expected);
     }
 
     #[test]
@@ -688,12 +669,13 @@ mod tests {
         assert_eq!(out, vec!["-Da", "-Db=1.20.1", "-Dsingle", "-Xmx1M"]);
     }
 
-    #[test]
-    fn jvm_with_arguments_fails_when_natives_dir_missing_even_if_unused() {
+    #[rstest]
+    #[case::without_arguments(None)]
+    #[case::with_arguments_even_if_unused(Some(vec![Argument::Normal("-Dx=1".to_string())]))]
+    fn jvm_fails_when_natives_dir_missing(#[case] args: Option<Vec<Argument>>) {
         let e = env();
-        let args = vec![Argument::Normal("-Dx=1".to_string())];
         let err = get_jvm_arguments(
-            Some(&args),
+            args.as_deref(),
             &e.root.join("missing"),
             &e.libs,
             "cp",
