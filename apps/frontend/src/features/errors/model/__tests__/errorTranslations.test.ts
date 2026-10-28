@@ -1,8 +1,13 @@
+import * as i18n from '@solid-primitives/i18n';
 import { describe, expect, it } from 'vitest';
 
 import bindings from '@/platform/bindings/application.ts?raw';
 import pluginBindings from '@/platform/bindings/plugin.ts?raw';
 import { enDictionary, ruDictionary } from '@/shared/i18n';
+
+import type { LauncherError } from '../launcherError';
+
+import { getTranslatedError } from '../launcherError';
 
 /**
  * Error codes are only types in the generated bindings, so a new Rust error
@@ -67,6 +72,30 @@ describe('error translations', () => {
       expect(missing).toEqual([]);
     },
   );
+
+  it('should_pick_the_io_message_by_kind_when_the_error_has_a_kind', () => {
+    const t = i18n.translator(
+      () => i18n.flatten(enDictionary),
+      i18n.resolveTemplate,
+    );
+    const cases = [
+      ['notFound', 'A file or folder was not found'],
+      ['permissionDenied', 'Access to a file or folder was denied'],
+      ['other', 'File system error: disk full'],
+    ] as const;
+
+    for (const [kind, expected] of cases) {
+      const error = {
+        type: 'application',
+        payload: {
+          code: 'IO',
+          payload: { details: 'disk full', kind },
+        },
+      } as unknown as LauncherError;
+
+      expect(getTranslatedError(error, t)).toBe(expected);
+    }
+  });
 });
 
 describe('plugin state reason translations', () => {

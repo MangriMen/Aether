@@ -2,13 +2,40 @@ use serde::Serialize;
 use specta::Type;
 
 #[derive(Debug, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum IoErrorKindDto {
+    NotFound,
+
+    PermissionDenied,
+
+    Other,
+}
+
+impl From<std::io::ErrorKind> for IoErrorKindDto {
+    fn from(value: std::io::ErrorKind) -> Self {
+        match value {
+            std::io::ErrorKind::NotFound => Self::NotFound,
+            std::io::ErrorKind::PermissionDenied => Self::PermissionDenied,
+            _ => Self::Other,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Type)]
 #[serde(tag = "code", content = "payload", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ApplicationErrorDto {
-    Io { details: String },
+    Io {
+        kind: IoErrorKindDto,
+        details: String,
+    },
 
-    DuplicateRequest { id: String },
+    DuplicateRequest {
+        id: String,
+    },
 
-    Launch { details: String },
+    Launch {
+        details: String,
+    },
 }
 
 impl From<&crate::shared::IdempotencyManagerError> for ApplicationErrorDto {
@@ -34,7 +61,17 @@ mod tests {
 
         assert_eq!(value["type"], "application");
         assert_eq!(value["payload"]["code"], "IO");
+        assert_eq!(value["payload"]["payload"]["kind"], "other");
         assert_eq!(value["payload"]["payload"]["details"], "disk full");
+    }
+
+    #[test]
+    fn should_map_a_missing_file_to_the_not_found_kind() {
+        let err = crate::Error::IoError(std::io::Error::from(std::io::ErrorKind::NotFound));
+
+        let value = serde_json::to_value(FrontendError::from(err)).unwrap();
+
+        assert_eq!(value["payload"]["payload"]["kind"], "notFound");
     }
 
     #[test]

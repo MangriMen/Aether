@@ -22,6 +22,7 @@ export type AppSettingsErrorDto = { code: "CAN_NOT_SET_EFFECT"; payload: {
 } };
 
 export type ApplicationErrorDto = { code: "IO"; payload: {
+	kind: IoErrorKindDto,
 	details: string,
 } } | { code: "DUPLICATE_REQUEST"; payload: {
 	id: string,
@@ -137,6 +138,8 @@ export type InstanceErrorDto = { code: "STORAGE"; payload: {
 export type InstanceFieldDto = "name";
 
 export type InstanceValidationErrorReasonDto = "cannot_be_empty";
+
+export type IoErrorKindDto = "notFound" | "permissionDenied" | "other";
 
 export type JavaErrorDto = { code: "NOT_FOUND"; payload: {
 	version: number,

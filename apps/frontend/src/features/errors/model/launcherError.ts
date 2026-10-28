@@ -18,9 +18,10 @@ type LauncherErrorWithoutGenericErrors = Exclude<
   { type: 'generic' | 'internal' }
 >;
 
+// The I/O message is picked by its kind in `getTranslatedError`, so it has no single key.
 type LauncherErrorTranslateKey<E extends LauncherError> =
   E extends LauncherErrorWithoutGenericErrors
-    ? `${E['type']}.${E['payload']['code']}`
+    ? Exclude<`${E['type']}.${E['payload']['code']}`, 'application.IO'>
     : never;
 
 type LauncherErrorArgs<E extends LauncherError> =
@@ -47,12 +48,34 @@ const getLauncherErrorTranslationData = <
   };
 };
 
+type IoErrorKind = 'notFound' | 'permissionDenied' | 'other';
+
+const getIoErrorKind = (payload: unknown): IoErrorKind => {
+  if (
+    payload !== null &&
+    typeof payload === 'object' &&
+    'kind' in payload &&
+    (payload.kind === 'notFound' || payload.kind === 'permissionDenied')
+  ) {
+    return payload.kind;
+  }
+
+  return 'other';
+};
+
 export const getTranslatedError = (
   error: LauncherError,
   t: TFunction,
 ): string => {
   if (error.type === 'internal' || error.type === 'generic') {
     return error.payload;
+  }
+
+  if (error.type === 'application' && error.payload.code === 'IO') {
+    const key =
+      `errors.application.IO.${getIoErrorKind(error.payload.payload)}` as const;
+
+    return t(key, error.payload.payload) ?? key;
   }
 
   const { key, args } = getLauncherErrorTranslationData(error);
