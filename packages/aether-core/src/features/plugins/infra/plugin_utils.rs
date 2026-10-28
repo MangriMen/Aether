@@ -394,105 +394,47 @@ mod tests {
     use super::*;
     use super::{from_wasi_path, to_wasi_path};
     use crate::features::instance::InstanceId;
+    use rstest::rstest;
 
-    #[test]
-    fn should_convert_to_wasi_path_when_windows_drive_has_a_backslash() {
-        assert_eq!(
-            to_wasi_path(r"D:\Documents\Minecraft\Test\simple\pack.toml"),
-            "/mnt/d/Documents/Minecraft/Test/simple/pack.toml"
-        );
-    }
-
-    #[test]
-    fn should_convert_to_wasi_path_when_windows_drive_has_a_slash() {
-        assert_eq!(
-            to_wasi_path("C:/Users/test/file.txt"),
-            "/mnt/c/Users/test/file.txt"
-        );
-    }
-
-    #[test]
-    fn should_convert_to_wasi_path_when_it_is_a_windows_drive_root() {
-        assert_eq!(to_wasi_path("D:\\"), "/mnt/d");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_it_is_already_wasi() {
-        assert_eq!(to_wasi_path("/mnt/c/path/to/file"), "/mnt/c/path/to/file");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_it_is_a_linux_absolute_path() {
-        assert_eq!(to_wasi_path("/home/user/file.txt"), "/home/user/file.txt");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_it_is_relative() {
-        assert_eq!(
-            to_wasi_path("relative/path/file.txt"),
-            "relative/path/file.txt"
-        );
-    }
-
-    #[test]
-    fn should_convert_to_wasi_path_when_the_windows_drive_letter_is_lowercase() {
-        assert_eq!(to_wasi_path("d:/path/to/file"), "/mnt/d/path/to/file");
-    }
-
-    #[test]
-    fn should_drop_the_trailing_slash_when_converting_to_wasi_path() {
-        assert_eq!(to_wasi_path("C:\\Users\\"), "/mnt/c/Users");
-    }
-
-    #[test]
-    fn should_collapse_double_slashes_when_converting_to_wasi_path() {
-        assert_eq!(to_wasi_path("C://path//to//file"), "/mnt/c/path/to/file");
-    }
-
-    #[test]
-    fn should_return_empty_when_the_path_is_empty() {
-        assert_eq!(to_wasi_path(""), "");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_it_has_a_colon_but_no_drive_letter() {
-        assert_eq!(to_wasi_path("some:path"), "some:path");
+    #[rstest]
+    #[case::drive_with_backslash(
+        r"D:\Documents\Minecraft\Test\simple\pack.toml",
+        "/mnt/d/Documents/Minecraft/Test/simple/pack.toml"
+    )]
+    #[case::drive_with_slash("C:/Users/test/file.txt", "/mnt/c/Users/test/file.txt")]
+    #[case::drive_root("D:\\", "/mnt/d")]
+    #[case::already_wasi("/mnt/c/path/to/file", "/mnt/c/path/to/file")]
+    #[case::linux_absolute("/home/user/file.txt", "/home/user/file.txt")]
+    #[case::relative("relative/path/file.txt", "relative/path/file.txt")]
+    #[case::lowercase_drive("d:/path/to/file", "/mnt/d/path/to/file")]
+    #[case::trailing_slash(r"C:\Users\", "/mnt/c/Users")]
+    #[case::double_slashes("C://path//to//file", "/mnt/c/path/to/file")]
+    #[case::empty("", "")]
+    #[case::colon_without_drive_letter("some:path", "some:path")]
+    fn should_convert_to_wasi_path(#[case] input: &str, #[case] expected: &str) {
+        assert_eq!(to_wasi_path(input), expected);
     }
 
     // ── from_wasi_path tests ──
 
-    #[test]
     #[cfg(windows)]
-    fn should_convert_from_wasi_path_when_it_names_a_drive_and_a_file() {
-        assert_eq!(
-            from_wasi_path("/mnt/d/Documents/Minecraft/Test/simple/pack.toml"),
-            r"D:\Documents\Minecraft\Test\simple\pack.toml"
-        );
+    #[rstest]
+    #[case::drive_and_file(
+        "/mnt/d/Documents/Minecraft/Test/simple/pack.toml",
+        r"D:\Documents\Minecraft\Test\simple\pack.toml"
+    )]
+    #[case::lowercase_drive_only("/mnt/c", r"C:\")]
+    #[case::uppercase_drive_only("/mnt/D", r"D:\")]
+    fn should_convert_from_wasi_path(#[case] input: &str, #[case] expected: &str) {
+        assert_eq!(from_wasi_path(input), expected);
     }
 
-    #[test]
-    #[cfg(windows)]
-    fn should_convert_from_wasi_path_when_it_names_only_a_drive() {
-        assert_eq!(from_wasi_path("/mnt/c"), r"C:\");
-        assert_eq!(from_wasi_path("/mnt/D"), r"D:\");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_converting_a_linux_path_from_wasi() {
-        assert_eq!(from_wasi_path("/home/user/file.txt"), "/home/user/file.txt");
-    }
-
-    #[test]
-    fn should_leave_the_path_as_is_when_converting_a_relative_path_from_wasi() {
-        assert_eq!(
-            from_wasi_path("relative/path/file.txt"),
-            "relative/path/file.txt"
-        );
-    }
-
-    #[test]
-    fn should_return_empty_when_converting_an_empty_path_from_wasi() {
-        assert_eq!(from_wasi_path(""), "");
+    #[rstest]
+    #[case::linux_path("/home/user/file.txt")]
+    #[case::relative_path("relative/path/file.txt")]
+    #[case::empty_path("")]
+    fn should_leave_the_path_as_is_when_converting_from_wasi(#[case] path: &str) {
+        assert_eq!(from_wasi_path(path), path);
     }
 
     #[test]
