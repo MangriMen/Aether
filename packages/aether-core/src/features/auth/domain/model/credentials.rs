@@ -7,7 +7,7 @@ use crate::features::auth::domain::AuthDomainError;
 
 use super::Username;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Credential {
     id: Uuid,
     username: Username,
@@ -109,6 +109,22 @@ impl Credential {
     }
 }
 
+/// The tokens are left out: a `{:?}` in a log line, a panic message or a bug report must not leak
+/// the account.
+impl std::fmt::Debug for Credential {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Credential")
+            .field("id", &self.id)
+            .field("username", &self.username)
+            .field("account_type", &self.account_type)
+            .field("is_active", &self.is_active)
+            .field("access_token", &"<redacted>")
+            .field("refresh_token", &"<redacted>")
+            .field("expires", &self.expires)
+            .finish()
+    }
+}
+
 impl AccountType {
     pub fn from_string(account_type: &str) -> Result<AccountType, AuthDomainError> {
         match account_type {
@@ -188,6 +204,25 @@ mod account_type_tests {
 #[cfg(test)]
 mod credential_tests {
     use super::*;
+
+    #[test]
+    fn should_not_show_tokens_when_formatted_for_debug() {
+        let cred = Credential::new(
+            Uuid::new_v4(),
+            Username::parse("MSPlayer").unwrap(),
+            AccountType::Microsoft,
+            false,
+            "secret-access".into(),
+            "secret-refresh".into(),
+            Utc::now(),
+        );
+
+        let debug = format!("{cred:?}");
+
+        assert!(!debug.contains("secret-access"));
+        assert!(!debug.contains("secret-refresh"));
+        assert!(debug.contains("MSPlayer"));
+    }
 
     #[test]
     fn should_activate_offline_credential_when_it_is_inactive() {

@@ -6,7 +6,7 @@ use crate::features::auth::{AccountType, Credential};
 
 use super::UsernameV1;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CredentialV1 {
     pub id: Uuid,
     pub username: UsernameV1,
@@ -16,6 +16,20 @@ pub struct CredentialV1 {
     pub access_token: String,
     pub refresh_token: String,
     pub expires: DateTime<Utc>,
+}
+
+impl std::fmt::Debug for CredentialV1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CredentialV1")
+            .field("id", &self.id)
+            .field("username", &self.username)
+            .field("account_type", &self.account_type)
+            .field("is_active", &self.is_active)
+            .field("access_token", &"<redacted>")
+            .field("refresh_token", &"<redacted>")
+            .field("expires", &self.expires)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
