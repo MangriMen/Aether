@@ -162,7 +162,7 @@ async fn count_rows(pool: &SqlitePool, table: &str) -> i64 {
     sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(query))
         .fetch_one(pool)
         .await
-        .unwrap_or(0)
+        .expect("Failed to count rows")
 }
 
 /// Count rows in a table filtered by `instance_id`.
@@ -172,7 +172,7 @@ async fn count_rows_for_instance(pool: &SqlitePool, table: &str, instance_id: &s
         .bind(instance_id)
         .fetch_one(pool)
         .await
-        .unwrap_or(0)
+        .expect("Failed to count rows for instance")
 }
 
 // ──────────────────────────────────────────────

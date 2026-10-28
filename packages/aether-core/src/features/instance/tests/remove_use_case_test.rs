@@ -250,7 +250,7 @@ async fn should_clean_everything_when_an_instance_is_removed() {
         let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(query))
             .fetch_one(&pool)
             .await
-            .unwrap_or(0);
+            .expect("Failed to count rows");
         assert_eq!(count, 0, "Table {table} should be empty after deletion");
     }
 
