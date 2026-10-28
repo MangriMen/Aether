@@ -177,12 +177,6 @@ async fn update(
         .map_err(aether_core::Error::from)?)
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// async fn list_updaters() -> FrontendResult<Vec<CapabilityEntry<UpdaterCapabilityMetadata>>> {
-//     todo!()
-// }
-
 #[tauri::command]
 #[specta::specta]
 async fn edit(
