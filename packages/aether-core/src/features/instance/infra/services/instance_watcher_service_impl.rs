@@ -92,9 +92,14 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
     }
 
     async fn unwatch_instance(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
-        let path = self.location_info.instance_dir(instance_id);
-        if let Err(reason) = self.file_watcher.unwatch(&path).await {
-            tracing::error!("Could not stop watching {path:?}: {reason}");
+        // The folders are what `watch_instance` registers, not the instance root: a watch left on
+        // them keeps a handle open that makes Windows refuse to move or delete the instance.
+        let instance_dir = self.location_info.instance_dir(instance_id);
+        for folder in watched_subfolders() {
+            let path = instance_dir.join(folder);
+            if let Err(reason) = self.file_watcher.unwatch(&path).await {
+                tracing::warn!("Could not stop watching {path:?}: {reason}");
+            }
         }
         Ok(())
     }
@@ -257,17 +262,64 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn unwatch_instance_unwatches_instance_root() {
-        let (_temp, watcher, location, service) = setup();
+    async fn should_allow_moving_the_instance_dir_when_it_is_unwatched() {
+        use crate::features::file_watcher::{
+            FileEvent, FileEventHandler, infra::NotifyFileWatcher,
+        };
 
-        service
-            .unwatch_instance(&InstanceId::try_from("inst").unwrap())
-            .await
-            .unwrap();
+        struct Ignore;
+
+        #[async_trait]
+        impl FileEventHandler for Ignore {
+            async fn handle_events(
+                &self,
+                _events: Result<Vec<FileEvent>, FileWatcherError>,
+            ) -> Result<(), FileWatcherError> {
+                Ok(())
+            }
+        }
+
+        let temp = TempDir::new().unwrap();
+        let location = Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        ));
+        let service = InstanceWatcherServiceImpl::new(
+            Arc::new(NotifyFileWatcher::new(Arc::new(Ignore)).unwrap()),
+            location.clone(),
+        );
+        let id = InstanceId::try_from("inst").unwrap();
+        let dir = location.instance_dir(&id);
+        std::fs::create_dir_all(&dir).unwrap();
+        service.watch_instance(&id).await.unwrap();
+
+        service.unwatch_instance(&id).await.unwrap();
+
+        // The watcher drops its handles on its own thread, a moment after being told to.
+        let moved = temp.path().join("moved");
+        let mut result = std::fs::rename(&dir, &moved);
+        for _ in 0..20 {
+            if result.is_ok() {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            result = std::fs::rename(&dir, &moved);
+        }
+        result.unwrap();
+    }
+
+    #[tokio::test]
+    async fn should_unwatch_every_folder_that_watch_instance_registered() {
+        let (_temp, watcher, location, service) = setup();
+        let id = InstanceId::try_from("inst").unwrap();
+        std::fs::create_dir_all(location.instance_dir(&id)).unwrap();
+        service.watch_instance(&id).await.unwrap();
+
+        service.unwatch_instance(&id).await.unwrap();
 
         assert_eq!(
             *watcher.unwatched.lock().unwrap(),
-            vec![location.instance_dir(&InstanceId::try_from("inst").unwrap())]
+            *watcher.watched.lock().unwrap()
         );
     }
 }
