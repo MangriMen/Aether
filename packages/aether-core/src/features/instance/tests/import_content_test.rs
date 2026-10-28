@@ -193,6 +193,7 @@ async fn should_refuse_a_batch_when_two_files_share_a_name() {
     assert!(!setup.mods.join("a.jar").exists());
 }
 
+#[cfg(any(windows, target_os = "macos"))]
 #[tokio::test]
 async fn should_refuse_a_batch_when_names_differ_only_in_case_on_a_case_insensitive_system() {
     let setup = setup().await;
@@ -201,14 +202,23 @@ async fn should_refuse_a_batch_when_names_differ_only_in_case_on_a_case_insensit
 
     let result = setup.import(vec![first, second]).await;
 
-    if cfg!(any(windows, target_os = "macos")) {
-        assert!(matches!(
-            result,
-            Err(InstanceError::ContentDuplication { .. })
-        ));
-    } else {
-        result.unwrap();
-    }
+    assert!(matches!(
+        result,
+        Err(InstanceError::ContentDuplication { .. })
+    ));
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
+#[tokio::test]
+async fn should_import_a_batch_when_names_differ_only_in_case_on_a_case_sensitive_system() {
+    let setup = setup().await;
+    let first = setup.source("Mod.jar", false).await;
+    let second = setup.source("mod.jar", true).await;
+
+    setup.import(vec![first, second]).await.unwrap();
+
+    assert!(setup.mods.join("Mod.jar").exists());
+    assert!(setup.mods.join("mod.jar").exists());
 }
 
 #[tokio::test]
