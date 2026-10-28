@@ -145,6 +145,18 @@ mod tests {
 
     // ── AppSettingsV1 conversion tests ──
 
+    // What `get` falls back to when the settings cannot be read; no other test reaches it.
+    #[test]
+    fn app_settings_v1_default() {
+        let dto = AppSettingsV1::default();
+        assert_eq!(
+            dto.action_on_instance_launch,
+            ActionOnInstanceLaunchV1::Nothing
+        );
+        assert!(!dto.transparent);
+        assert_eq!(dto.window_effect, WindowEffectV1::Off);
+    }
+
     #[test]
     fn app_settings_to_v1_roundtrip_default() {
         let domain = AppSettings::default();
