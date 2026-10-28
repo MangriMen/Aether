@@ -259,12 +259,15 @@ fn make_use_case(
         file_service,
         emitter,
         watcher,
-        IconAssetReaper::new(storage, Arc::new(FakeAssets)),
+        IconAssetReaper::new(storage, Arc::new(FakeAssets::default())),
     )
 }
 
 /// Imports an existing file under the id `asset-<file name>`, like the real store names its copy.
-struct FakeAssets;
+#[derive(Default)]
+struct FakeAssets {
+    removed: std::sync::Mutex<Vec<String>>,
+}
 
 #[async_trait]
 impl AssetsStorage for FakeAssets {
@@ -276,7 +279,8 @@ impl AssetsStorage for FakeAssets {
         Ok(format!("asset-{name}"))
     }
 
-    async fn remove(&self, _id: &str) -> Result<(), AssetError> {
+    async fn remove(&self, id: &str) -> Result<(), AssetError> {
+        self.removed.lock().unwrap().push(id.to_owned());
         Ok(())
     }
 }
@@ -865,4 +869,46 @@ async fn should_create_the_instance_without_an_icon_when_the_icon_cannot_be_impo
         None,
         "a host path must never be kept as the icon"
     );
+}
+
+#[tokio::test]
+async fn should_release_the_imported_icon_when_the_instance_directory_cannot_be_created() {
+    let (temp, _location_info) = setup_temp_location();
+    let icon = temp.path().join("icon.png");
+    std::fs::write(&icon, b"png").unwrap();
+    // A file where the instances root should be makes creating the directory fail.
+    let blocked_root = temp.path().join("blocked");
+    std::fs::write(&blocked_root, b"").unwrap();
+
+    let storage = Arc::new(MemInstanceStorage::new());
+    let assets = Arc::new(FakeAssets::default());
+    let use_case = CreateInstanceUseCase::new(
+        storage.clone(),
+        Arc::new(MockLoaderService {
+            try_get_default_result: None,
+        }),
+        Arc::new(NoOpInstallService),
+        Arc::new(MemInstanceFileService::new(blocked_root.join("instances"))),
+        Arc::new(NoOpEmitter),
+        Arc::new(NoOpWatcher),
+        IconAssetReaper::new(storage, assets.clone()),
+    );
+
+    let result = use_case
+        .execute(
+            NewInstance {
+                name: "No Dir".to_string(),
+                game_version: "1.21".to_string(),
+                mod_loader: ModLoader::Vanilla,
+                loader_version: None,
+                icon_path: Some(icon.to_string_lossy().into_owned()),
+                skip_install_instance: Some(true),
+                pack_info: None,
+            },
+            None,
+        )
+        .await;
+
+    assert!(result.is_err());
+    assert_eq!(*assets.removed.lock().unwrap(), ["asset-icon.png"]);
 }

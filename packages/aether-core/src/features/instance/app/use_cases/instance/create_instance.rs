@@ -158,10 +158,21 @@ impl CreateInstanceUseCase {
         let icon_guard = self.icon_reaper.hold().await;
         let icon = self.import_icon(&icon_guard, icon_path).await;
 
-        let (instance_id, instance_dir) = self
+        let (instance_id, instance_dir) = match self
             .instance_file_service
             .create_unique_instance_dir(&base_id)
-            .await?;
+            .await
+        {
+            Ok(created) => created,
+            Err(err) => {
+                // No instance will hold the imported icon; releasing needs the guard dropped.
+                drop(icon_guard);
+                if let Some(icon) = &icon {
+                    self.icon_reaper.release(icon).await;
+                }
+                return Err(err);
+            }
+        };
 
         info!(
             "Creating instance \"{}\" at path \"{}\"",
