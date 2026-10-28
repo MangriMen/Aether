@@ -64,6 +64,13 @@ use super::ordered_events::ordered_sink;
 type PBarStorage = InMemoryProgressBarStorage;
 type ProgressServiceType = ProgressServiceImpl<PBarStorage>;
 
+/// Log a failed legacy migration instead of failing the start.
+fn log_legacy_failure<E: std::fmt::Display>(what: &str, result: Result<(), E>) {
+    if let Err(err) = result {
+        log::error!("Legacy {what} were not migrated, their files are left as they are: {err}");
+    }
+}
+
 /// Build the complete `AetherContainer` with all concrete dependencies wired up.
 ///
 /// This is the Composition Root for the desktop application. It creates every
@@ -80,54 +87,70 @@ pub async fn build_container(
     let migrated_dir_name = "migrated";
 
     // ── FS → SQLite migrations ──────────────────────────────────────
-    settings::infra::migrate_settings_to_sqlite(
-        &FsSettingsStorage::new(config_dir),
-        &SqliteSettingsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    // A legacy migration must not keep the launcher from starting. The legacy file is archived
+    // only after a successful write, so a failed migration leaves it in place and is retried on
+    // the next start.
+    log_legacy_failure(
+        "settings",
+        settings::infra::migrate_settings_to_sqlite(
+            &FsSettingsStorage::new(config_dir),
+            &SqliteSettingsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    settings::infra::migrate_default_instance_settings_to_sqlite(
-        &FsDefaultInstanceSettingsStorage::new(config_dir),
-        &SqliteDefaultInstanceSettingsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    log_legacy_failure(
+        "default instance settings",
+        settings::infra::migrate_default_instance_settings_to_sqlite(
+            &FsDefaultInstanceSettingsStorage::new(config_dir),
+            &SqliteDefaultInstanceSettingsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    auth::infra::migrate_credentials_to_sqlite(
-        &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
-        &SqliteCredentialsStorage::new(pool.clone()),
-        migrated_dir_name,
-    )
-    .await?;
+    log_legacy_failure(
+        "credentials",
+        auth::infra::migrate_credentials_to_sqlite(
+            &aether_core::features::auth::infra::FsCredentialsStorage::new(config_dir),
+            &SqliteCredentialsStorage::new(pool.clone()),
+            migrated_dir_name,
+        )
+        .await,
+    );
 
-    // A legacy migration must not keep the launcher from starting. A write that fails as a whole
-    // stores nothing and a skipped instance keeps its file, so the user can still recover them.
-    if let Err(err) = instance::infra::migrate_instances_to_sqlite(
-        &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-        &SqliteInstanceStorage::new(pool.clone()),
-    )
-    .await
-    {
-        log::error!("Legacy instances were not migrated, their files are left as they are: {err}");
-    }
+    // A write that fails as a whole stores nothing and a skipped instance keeps its file, so the
+    // user can still recover them.
+    log_legacy_failure(
+        "instances",
+        instance::infra::migrate_instances_to_sqlite(
+            &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
+            &SqliteInstanceStorage::new(pool.clone()),
+        )
+        .await,
+    );
 
-    if let Err(err) = instance::infra::migrate_packs_to_sqlite(
-        &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
-        &aether_core::features::instance::infra::FsPackStorage::new(location_info.clone()),
-        &SqlitePackStorage::new(pool.clone()),
-    )
-    .await
-    {
-        log::error!("Legacy packs were not migrated, their files are left as they are: {err}");
-    }
+    log_legacy_failure(
+        "packs",
+        instance::infra::migrate_packs_to_sqlite(
+            &aether_core::features::instance::infra::FsInstanceStorage::new(location_info.clone()),
+            &aether_core::features::instance::infra::FsPackStorage::new(location_info.clone()),
+            &SqlitePackStorage::new(pool.clone()),
+        )
+        .await,
+    );
 
-    java::infra::migrate_java_to_sqlite(
-        &location_info.java_dir(),
-        &FsJavaInstallationService,
-        &SqliteJavaStorage::new(pool.clone()),
-    )
-    .await?;
+    // Installed Java is found again by the next discovery, so a failure here loses nothing.
+    log_legacy_failure(
+        "Java installations",
+        java::infra::migrate_java_to_sqlite(
+            &location_info.java_dir(),
+            &FsJavaInstallationService,
+            &SqliteJavaStorage::new(pool.clone()),
+        )
+        .await,
+    );
 
     minecraft::infra::migrate_minecraft_metadata_to_sqlite(&location_info).await;
 
