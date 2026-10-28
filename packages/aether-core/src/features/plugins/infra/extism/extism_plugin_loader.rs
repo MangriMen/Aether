@@ -410,6 +410,7 @@ mod tests {
     use crate::features::plugins::{AllowedPath, PluginSourceType, PluginVerification};
 
     use extism::UserData;
+    use rstest::rstest;
 
     use super::super::{
         extism_limits::WASM_PAGE_SIZE_BYTES, host_functions::select_host_functions,
@@ -518,18 +519,15 @@ mod tests {
     /// integrity check runs — and here, fails — before the runtime is involved.
     const ORIGINAL_WASM: &[u8] = b"original wasm";
 
-    #[test]
-    fn should_round_bytes_up_to_pages_when_they_are_not_a_whole_number_of_pages() {
-        assert_eq!(bytes_to_pages(0), 0);
-        assert_eq!(bytes_to_pages(1), 1);
-        assert_eq!(bytes_to_pages(WASM_PAGE_SIZE_BYTES), 1);
-        assert_eq!(bytes_to_pages(WASM_PAGE_SIZE_BYTES + 1), 2);
-        assert_eq!(bytes_to_pages(256 * 1024 * 1024), 4096);
-    }
-
-    #[test]
-    fn should_saturate_pages_at_u32_max_when_the_size_is_huge() {
-        assert_eq!(bytes_to_pages(usize::MAX), u32::MAX);
+    #[rstest]
+    #[case::zero(0, 0)]
+    #[case::one_byte(1, 1)]
+    #[case::one_whole_page(WASM_PAGE_SIZE_BYTES, 1)]
+    #[case::one_page_and_a_byte(WASM_PAGE_SIZE_BYTES + 1, 2)]
+    #[case::two_hundred_fifty_six_mib(256 * 1024 * 1024, 4096)]
+    #[case::saturates_at_u32_max(usize::MAX, u32::MAX)]
+    fn should_convert_bytes_to_pages(#[case] bytes: usize, #[case] pages: u32) {
+        assert_eq!(bytes_to_pages(bytes), pages);
     }
 
     #[test]
