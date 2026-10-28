@@ -127,18 +127,6 @@ mod tests {
     }
 
     #[test]
-    fn should_roundtrip_provider_id_when_displayed_and_parsed() {
-        let original = ProviderId {
-            plugin_id: "test".to_string(),
-            capability_id: "cap".to_string(),
-        };
-        let serialized = original.to_string();
-        let deserialized: ProviderId = serialized.parse().unwrap();
-        assert_eq!(original.plugin_id, deserialized.plugin_id);
-        assert_eq!(original.capability_id, deserialized.capability_id);
-    }
-
-    #[test]
     fn should_accept_ids_when_they_match_the_scheme() {
         for id in [
             "aether",

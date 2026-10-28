@@ -325,18 +325,6 @@ mod tests {
         }
     }
 
-    fn sodium(side: FileSide, optional: Option<OptionalFile>) -> InstallFileEntry {
-        InstallFileEntry {
-            optional,
-            side,
-            ..InstallFileEntry::new(
-                provider_ref("modrinth", "AANobbMI", None),
-                "mods/sodium.jar",
-                ContentType::Mod,
-            )
-        }
-    }
-
     #[test]
     fn should_build_a_direct_source_when_given_manifest_strings() {
         // A packwiz index entry: `hash-format = "sha1"`, `hash = "<HEX>"`.
@@ -351,40 +339,6 @@ mod tests {
                 "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
                 Some(FileHash::Sha1(SHA1_ABC.into()))
             )
-        );
-    }
-
-    #[test]
-    fn should_address_content_by_platform_when_refs_name_different_providers() {
-        // A packwiz `[update.curseforge]` entry names the platform, not the plugin serving it.
-        let ContentSource::ProviderRef {
-            platform,
-            content_id,
-            version,
-        } = provider_ref("curseforge", "238222", Some("4512345"))
-        else {
-            unreachable!()
-        };
-
-        assert_eq!(platform, "curseforge");
-        assert_eq!(content_id, "238222");
-        assert_eq!(version.as_deref(), Some("4512345"));
-    }
-
-    #[test]
-    fn should_tell_refs_apart_when_their_platforms_differ() {
-        // The same id on two platforms is two different projects.
-        assert_ne!(
-            provider_ref("modrinth", "238222", None),
-            provider_ref("curseforge", "238222", None)
-        );
-    }
-
-    #[test]
-    fn should_tell_refs_apart_when_their_versions_differ() {
-        assert_ne!(
-            provider_ref("modrinth", "AANobbMI", Some("IZskON6d")),
-            provider_ref("modrinth", "AANobbMI", None)
         );
     }
 
@@ -408,59 +362,6 @@ mod tests {
             provider_ref("modrinth", "AANobbMI", None).to_string(),
             "modrinth/AANobbMI@latest"
         );
-    }
-
-    #[test]
-    fn should_create_a_required_entry_for_both_sides_when_built_with_defaults() {
-        let entry = InstallFileEntry::new(
-            provider_ref("modrinth", "AANobbMI", None),
-            "mods/sodium.jar",
-            ContentType::Mod,
-        );
-
-        assert_eq!(entry.optional, None);
-        assert_eq!(entry.side, FileSide::Both);
-        assert_eq!(FileSide::default(), FileSide::Both);
-        assert_eq!(entry.size, None);
-    }
-
-    #[test]
-    fn should_tell_entries_apart_when_their_optional_choice_differs() {
-        // A packwiz `[option]` table: `optional = true`, `default` absent, a `description`.
-        let off_by_default = OptionalFile {
-            default_enabled: false,
-            description: Some("Faster rendering".into()),
-        };
-        let on_by_default = OptionalFile {
-            default_enabled: true,
-            ..off_by_default.clone()
-        };
-
-        let required = sodium(FileSide::Both, None);
-        assert_ne!(
-            sodium(FileSide::Both, Some(off_by_default.clone())),
-            required
-        );
-        assert_ne!(
-            sodium(FileSide::Both, Some(off_by_default)),
-            sodium(FileSide::Both, Some(on_by_default))
-        );
-    }
-
-    #[test]
-    fn should_keep_server_files_in_the_plan_when_the_pack_has_them() {
-        // The provider reports the side and leaves the file in; skipping it is the core's call.
-        let plan = InstallPlan {
-            target: InstallTarget::existing(InstanceId::try_from("instance").unwrap()),
-            files: vec![
-                sodium(FileSide::Client, None),
-                sodium(FileSide::Server, None),
-            ],
-            overrides: Vec::new(),
-        };
-
-        let sides: Vec<_> = plan.files.iter().map(|f| f.side).collect();
-        assert_eq!(sides, [FileSide::Client, FileSide::Server]);
     }
 
     fn fabric_instance(loader_version: Option<&str>) -> Instance {

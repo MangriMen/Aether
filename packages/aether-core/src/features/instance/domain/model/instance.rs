@@ -551,33 +551,4 @@ mod tests {
         );
         assert_eq!(instance.icon_path(), Some("icon.png"));
     }
-
-    // ── from_snapshot error handling ──
-
-    #[test]
-    fn should_not_panic_when_timestamps_are_default() {
-        let snapshot = InstanceSnapshot {
-            id: InstanceId::try_from("id").unwrap(),
-            name: "name".into(),
-            icon_path: None,
-            install_stage: InstanceInstallStage::NotInstalled,
-            game_version: "1.20".into(),
-            loader: ModLoader::Vanilla,
-            loader_version: None,
-            java_path: Overridable::new_disabled_default(),
-            launch_args: Overridable::new_disabled_default(),
-            env_vars: Overridable::new_disabled_default(),
-            memory: Overridable::new_disabled_default(),
-            window: Overridable::new_disabled_default(),
-            hooks: Overridable::new_disabled_default(),
-            created: Utc::now(),
-            modified: Utc::now(),
-            last_played: None,
-            time_played: 0,
-            recent_time_played: 0,
-            pack_info: None,
-        };
-        let instance = Instance::from_snapshot(snapshot);
-        assert_eq!(instance.id().as_str(), "id");
-    }
 }

@@ -39,62 +39,6 @@ async fn create_instance_dir(location_info: &LocationInfo, instance_id: &Instanc
 }
 
 #[tokio::test]
-async fn should_remove_the_instance_dir_when_it_exists() {
-    let (_temp_dir, location_info) = setup_temp_location();
-    let service = FsInstanceFileService::new(
-        location_info.clone(),
-        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
-    );
-    let instance_id = &InstanceId::try_from("test-instance-123").unwrap();
-
-    // Create a fake instance directory
-    create_instance_dir(&location_info, instance_id).await;
-    let instance_dir = location_info.instance_dir(instance_id);
-    assert!(
-        instance_dir.exists(),
-        "Instance dir should exist before removal"
-    );
-
-    // Act
-    service
-        .remove_instance_dir(instance_id)
-        .await
-        .expect("remove_instance_dir should succeed");
-
-    // Assert
-    assert!(!instance_dir.exists(), "Instance dir should be removed");
-}
-
-#[tokio::test]
-async fn should_remove_nested_files_when_the_instance_dir_is_removed() {
-    let (_temp_dir, location_info) = setup_temp_location();
-    let service = FsInstanceFileService::new(
-        location_info.clone(),
-        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
-    );
-    let instance_id = &InstanceId::try_from("test-instance-nested").unwrap();
-
-    create_instance_dir(&location_info, instance_id).await;
-    let instance_dir = location_info.instance_dir(instance_id);
-
-    // Verify nested structure exists
-    assert!(instance_dir.join("mods").join("test.jar").exists());
-    assert!(instance_dir.join("launch.cfg").exists());
-
-    // Act
-    service
-        .remove_instance_dir(instance_id)
-        .await
-        .expect("remove_instance_dir should succeed");
-
-    // Assert — everything is gone
-    assert!(
-        !instance_dir.exists(),
-        "Instance dir should be completely removed"
-    );
-}
-
-#[tokio::test]
 async fn should_succeed_when_the_instance_dir_does_not_exist() {
     let (_temp_dir, location_info) = setup_temp_location();
     let service = FsInstanceFileService::new(

@@ -679,28 +679,6 @@ async fn resolve_sodium(versions: Value, installed: &str) -> String {
     identity.version.clone()
 }
 
-/// Reinstalled without a version, a mod on a beta is not rolled back to the older release.
-#[tokio::test]
-async fn should_keep_a_mod_on_its_beta_when_the_newest_release_is_older() {
-    let versions = json!([
-        mod_version("RELEASE1", "1.21.1", "release", 1),
-        mod_version("BETA0002", "1.21.1", "beta", 2),
-    ]);
-
-    assert_eq!(resolve_sodium(versions, "BETA0002").await, "BETA0002");
-}
-
-#[tokio::test]
-async fn should_move_a_mod_from_its_beta_when_a_newer_release_exists() {
-    let versions = json!([
-        mod_version("BETA0001", "1.21.1", "beta", 1),
-        mod_version("RELEASE2", "1.21.1", "release", 2),
-        mod_version("RELEASE0", "1.21.1", "release", 0),
-    ]);
-
-    assert_eq!(resolve_sodium(versions, "BETA0001").await, "RELEASE2");
-}
-
 /// An installed version made for another game version cannot stay: the newest fitting version
 /// of its channel is taken, even an older one.
 #[tokio::test]

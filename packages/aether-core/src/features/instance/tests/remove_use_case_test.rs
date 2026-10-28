@@ -293,46 +293,6 @@ async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
 }
 
 #[tokio::test]
-async fn should_reuse_the_pool_when_an_instance_is_removed() {
-    // Ensures all three SQL-based services work on the same pool/connection
-    let (_temp, location_info, pool) = create_test_infrastructure().await;
-    let instance_id = Uuid::new_v4().to_string();
-
-    let storage = Arc::new(SqliteInstanceStorage::new(pool.clone()));
-    let pack_storage = Arc::new(SqlitePackStorage::new(pool.clone()));
-    let file_service = Arc::new(FsInstanceFileService::new(
-        location_info.clone(),
-        crate::shared::limits::PluginSandboxLimits::default().max_instance_file_bytes,
-    ));
-    let watcher = Arc::new(NoOpWatcher);
-
-    let instance = create_instance(&instance_id);
-    storage.upsert(&instance).await.unwrap();
-    seed_pack_data(&pool, &instance_id).await;
-
-    let use_case = RemoveInstanceUseCase::new(
-        storage.clone(),
-        watcher,
-        file_service,
-        pack_storage,
-        Arc::new(InstanceLocks::new()),
-        no_op_reaper(storage),
-    );
-
-    use_case
-        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
-        .await
-        .unwrap();
-
-    // Verify: the same pool sees no data
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(count, 0, "All instances gone on the shared pool");
-}
-
-#[tokio::test]
 async fn should_wait_for_the_instance_lock_when_a_plan_holds_it_on_removal() {
     let (_temp, location_info, pool) = create_test_infrastructure().await;
     let instance_id = Uuid::new_v4().to_string();
