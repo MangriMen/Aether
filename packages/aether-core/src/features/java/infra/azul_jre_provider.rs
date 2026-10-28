@@ -523,7 +523,10 @@ mod tests {
             .install(VERSION, &fixture.install_dir)
             .await;
 
-        assert!(result.is_err(), "{result:?}");
+        assert!(
+            matches!(result, Err(JavaDomainError::FailedToInstall { .. })),
+            "{result:?}"
+        );
         assert_eq!(
             std::fs::read(installed_java(&fixture.install_dir)).unwrap(),
             b"old jre"

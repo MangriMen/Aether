@@ -621,10 +621,10 @@ mod tests {
     async fn main_class_missing_file_is_error() {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("missing.jar");
+        let result = get_processor_main_class(path.to_string_lossy().to_string()).await;
         assert!(
-            get_processor_main_class(path.to_string_lossy().to_string())
-                .await
-                .is_err()
+            matches!(result, Err(MinecraftDomainError::StorageFailure { .. })),
+            "{result:?}"
         );
     }
 }

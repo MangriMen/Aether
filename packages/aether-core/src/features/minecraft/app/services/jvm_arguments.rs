@@ -727,7 +727,8 @@ mod tests {
             "x64",
         )
         .unwrap();
-        assert_eq!(out.len(), 4);
+        assert!(out[0].starts_with("-Djava.library.path="), "{out:?}");
+        assert_eq!(out[1..], ["-cp", "cp", "-Xmx1M"]);
     }
 
     fn version_with_log_config(logging: Option<serde_json::Value>) -> vanilla::VersionInfo {

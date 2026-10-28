@@ -137,8 +137,14 @@ mod tests {
 
     #[test]
     fn should_find_the_first_match_when_several_versions_match() {
-        let manifest = make_manifest(vec![make_version("1.20"), make_version("1.20")]);
+        let mut first = make_version("1.20");
+        first.sha1 = "first".into();
+        let mut second = make_version("1.20");
+        second.sha1 = "second".into();
+        let manifest = make_manifest(vec![first, second]);
+
         let (version, _) = resolve_minecraft_version("1.20", &manifest).unwrap();
-        assert_eq!(version.id, "1.20");
+
+        assert_eq!(version.sha1, "first");
     }
 }

@@ -20,7 +20,7 @@ use crate::{
             infra::InMemoryProgressBarStorage,
             test_support::{ChannelEmitter, mirrors, pack, sent},
         },
-        minecraft::{MinecraftDownloader, vanilla},
+        minecraft::{MinecraftDomainError, MinecraftDownloader, vanilla},
         settings::LocationInfo,
     },
     shared::{
@@ -318,10 +318,7 @@ fn download(
     service: &Arc<Service>,
     version: &Arc<vanilla::VersionInfo>,
     waiting: Option<ProgressBarId>,
-) -> tokio::task::JoinHandle<(
-    Result<(), crate::features::minecraft::MinecraftDomainError>,
-    Option<ProgressBarId>,
-)> {
+) -> tokio::task::JoinHandle<(Result<(), MinecraftDomainError>, Option<ProgressBarId>)> {
     let (service, version) = (service.clone(), version.clone());
     tokio::spawn(async move {
         let result = service
@@ -340,7 +337,10 @@ async fn should_fail_the_install_when_the_natives_cannot_be_downloaded() {
 
     let (result, _) = download(&fixture.service, &version, None).await.unwrap();
 
-    assert!(result.is_err(), "{result:?}");
+    assert!(
+        matches!(result, Err(MinecraftDomainError::StorageFailure { .. })),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]
@@ -352,7 +352,10 @@ async fn should_fail_the_install_when_the_natives_are_not_an_archive() {
 
     let (result, _) = download(&fixture.service, &version, None).await.unwrap();
 
-    assert!(result.is_err(), "{result:?}");
+    assert!(
+        matches!(result, Err(MinecraftDomainError::StorageFailure { .. })),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]
@@ -384,7 +387,10 @@ async fn should_refuse_the_client_when_its_digest_does_not_match() {
 
     let (result, _) = download(&fixture.service, &version, None).await.unwrap();
 
-    assert!(result.is_err(), "{result:?}");
+    assert!(
+        matches!(result, Err(MinecraftDomainError::StorageFailure { .. })),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]
