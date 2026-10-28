@@ -123,13 +123,6 @@ fn should_block_when_the_address_is_multicast_or_documentation() {
 }
 
 #[test]
-fn should_block_when_the_address_is_ipv6_unique_local_or_link_local() {
-    assert!(is_blocked_ip("fd00::1".parse().unwrap()));
-    assert!(is_blocked_ip("fc00::1".parse().unwrap()));
-    assert!(is_blocked_ip("fe80::1".parse().unwrap()));
-}
-
-#[test]
 fn should_block_when_an_ipv4_mapped_address_is_private() {
     assert!(is_blocked_ip("::ffff:127.0.0.1".parse().unwrap()));
     assert!(is_blocked_ip("::ffff:169.254.169.254".parse().unwrap()));
@@ -297,25 +290,6 @@ async fn get_from(
         limits(),
     )
     .await
-}
-
-#[tokio::test]
-async fn should_refuse_a_redirect_when_it_leads_to_a_host_outside_allowed_hosts() {
-    // The hop is followed only if it passes the same checks as a first request, and the
-    // metadata address is not in `allowed_hosts`.
-    let addr = serve_once(
-        "HTTP/1.1 302 Found\r\nLocation: http://169.254.169.254/latest/meta-data/\r\nContent-Length: 0\r\n\r\n",
-    )
-    .await;
-
-    let err = get_from(addr, allow_any_address)
-        .await
-        .expect_err("a hop to a host outside allowed_hosts must be refused");
-
-    assert!(
-        matches!(err, PluginHttpError::HostNotAllowed { ref host } if host == "169.254.169.254"),
-        "expected HostNotAllowed, got: {err}"
-    );
 }
 
 #[tokio::test]

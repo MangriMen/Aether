@@ -97,13 +97,6 @@ pub struct ApiConfig {
 }
 
 impl PluginManifest {
-    pub fn validate(&self, api_version: &semver::Version) -> Result<(), ManifestError> {
-        self.runtime.validate()?;
-        self.api.validate(api_version)?;
-
-        Ok(())
-    }
-
     /// The checks that hold however the plugin is enabled: force-enabling skips the API
     /// version check, never these.
     ///
@@ -465,100 +458,5 @@ mod tests {
                 "`{name}` must not be taken for `http_get`"
             );
         }
-    }
-
-    // ── PluginManifest::validate integration ──
-
-    #[test]
-    fn should_fail_when_invalid_path_mapping() {
-        let manifest = PluginManifest {
-            metadata: PluginMetadata {
-                id: "test".into(),
-                name: "Test".into(),
-                version: semver::Version::new(0, 1, 0),
-                description: None,
-                authors: vec![],
-                license: None,
-            },
-            runtime: RuntimeConfig {
-                allowed_hosts: vec![],
-                allowed_paths: vec![PathMapping(
-                    absolute_path().to_string_lossy().into_owned(),
-                    PathBuf::new(),
-                )],
-            },
-            load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
-                memory_limit: None,
-            },
-            api: ApiConfig {
-                version: semver::VersionReq::STAR,
-                features: vec![],
-                host_functions: Some(vec![]),
-            },
-        };
-        assert!(matches!(
-            manifest.validate(&semver::Version::new(0, 1, 0)),
-            Err(ManifestError::InvalidPathMapping)
-        ));
-    }
-
-    #[test]
-    fn should_fail_when_unsupported_api() {
-        let manifest = PluginManifest {
-            metadata: PluginMetadata {
-                id: "test".into(),
-                name: "Test".into(),
-                version: semver::Version::new(0, 1, 0),
-                description: None,
-                authors: vec![],
-                license: None,
-            },
-            runtime: RuntimeConfig {
-                allowed_hosts: vec![],
-                allowed_paths: vec![],
-            },
-            load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
-                memory_limit: None,
-            },
-            api: ApiConfig {
-                version: semver::VersionReq::parse(">=2.0.0").unwrap(),
-                features: vec![],
-                host_functions: Some(vec![]),
-            },
-        };
-        assert!(matches!(
-            manifest.validate(&semver::Version::new(1, 0, 0)),
-            Err(ManifestError::UnsupportedApi)
-        ));
-    }
-
-    #[test]
-    fn should_pass_when_all_valid() {
-        let manifest = PluginManifest {
-            metadata: PluginMetadata {
-                id: "test".into(),
-                name: "Test".into(),
-                version: semver::Version::new(0, 1, 0),
-                description: None,
-                authors: vec![],
-                license: None,
-            },
-            runtime: RuntimeConfig {
-                allowed_hosts: vec![],
-                allowed_paths: vec![],
-            },
-            load: LoadConfig::Extism {
-                file: PathBuf::from("plugin.wasm").try_into().unwrap(),
-                memory_limit: None,
-            },
-            api: ApiConfig {
-                version: semver::VersionReq::STAR,
-                features: vec![],
-                host_functions: Some(vec![]),
-            },
-        };
-        assert!(manifest.validate(&semver::Version::new(0, 1, 0)).is_ok());
     }
 }

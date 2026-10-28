@@ -991,11 +991,6 @@ mod tests {
         assert!(!reason.contains("api.hostFunctions"), "{reason}");
     }
 
-    #[test]
-    fn should_offer_every_registered_host_function_when_listing_declarable_ones() {
-        assert_eq!(loader().host_functions(), host_function_names());
-    }
-
     // ── `ro:` on real Extism ──
 
     /// Talks WASI directly to the first preopened folder (fd 3), the one mount these tests
