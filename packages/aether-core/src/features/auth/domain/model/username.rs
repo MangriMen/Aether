@@ -105,6 +105,9 @@ mod tests {
     #[test]
     fn should_fail_conversion_from_string_when_invalid() {
         let result: Result<Username, AuthDomainError> = "ab".to_string().try_into();
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(AuthDomainError::InvalidUsernameLength { .. })
+        ));
     }
 }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::features::auth::app::{
     CreateOfflineAccountUseCase, CreateOfflineAccountUseCasePort, CredentialsStorage,
 };
+use crate::features::auth::{app::AuthApplicationError, domain::AuthDomainError};
 
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
@@ -50,12 +51,28 @@ async fn should_fail_to_create_offline_account_when_username_is_invalid() {
     let storage = Arc::new(MockCredentialsStorage::new());
     let use_case = CreateOfflineAccountUseCase::new(storage.clone());
 
-    assert!(use_case.execute("ab".to_string()).await.is_err());
-    assert!(
-        use_case
-            .execute("verylongusernamethatexceedslimit".to_string())
-            .await
-            .is_err()
-    );
-    assert!(use_case.execute("user@name".to_string()).await.is_err());
+    let too_short = use_case.execute("ab".to_string()).await;
+    let too_long = use_case
+        .execute("verylongusernamethatexceedslimit".to_string())
+        .await;
+    let bad_chars = use_case.execute("user@name".to_string()).await;
+
+    assert!(matches!(
+        too_short,
+        Err(AuthApplicationError::Domain(
+            AuthDomainError::InvalidUsernameLength { .. }
+        ))
+    ));
+    assert!(matches!(
+        too_long,
+        Err(AuthApplicationError::Domain(
+            AuthDomainError::InvalidUsernameLength { .. }
+        ))
+    ));
+    assert!(matches!(
+        bad_chars,
+        Err(AuthApplicationError::Domain(
+            AuthDomainError::InvalidUsernameChars
+        ))
+    ));
 }

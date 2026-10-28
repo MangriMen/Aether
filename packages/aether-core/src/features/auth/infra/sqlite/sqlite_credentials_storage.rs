@@ -252,7 +252,10 @@ mod tests {
             .upsert(CredentialsBuilder::new("Second").with_active(true).build())
             .await;
 
-        assert!(result.is_err());
+        assert!(
+            matches!(result, Err(AuthApplicationError::Storage(_))),
+            "{result:?}"
+        );
     }
 
     #[tokio::test]
