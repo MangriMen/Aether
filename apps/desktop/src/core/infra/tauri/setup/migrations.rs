@@ -148,8 +148,9 @@ pub async fn run_migrations<R: tauri::Runtime>(
         let error = StartupMigrationError::State(error);
         tracing::error!("{error}");
         show_warning(&format!(
-            "{error}\n\nYour old files are kept and the move will be tried again the next time \
-             Aether starts. Until then your settings may be missing."
+            "{error}\n\nYour old files are kept (a file that cannot be \
+             read is renamed to *.corrupt in the migrated folder). Until the move succeeds your \
+             settings may be missing."
         ));
     }
 

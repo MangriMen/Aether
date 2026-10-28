@@ -5,7 +5,7 @@ use crate::{
         DefaultInstanceSettingsStorage,
         infra::{FsDefaultInstanceSettingsStorage, SqliteDefaultInstanceSettingsStorage},
     },
-    shared::archive::infra::archive_legacy_file,
+    shared::archive::infra::{archive_legacy_file, quarantine_unreadable_legacy_file},
 };
 
 pub async fn migrate_default_instance_settings_to_sqlite(
@@ -24,13 +24,24 @@ pub async fn migrate_default_instance_settings_to_sqlite(
         return Ok(());
     }
 
-    if let Ok(old_settings) = fs_storage.get().await {
-        info!("Legacy default instance settings found. Starting migration to SQLite...");
+    let old_settings = match fs_storage.get().await {
+        Ok(value) => value,
+        Err(err) => {
+            quarantine_unreadable_legacy_file(
+                &old_path,
+                migrated_dir_name,
+                "default instance settings",
+            )
+            .await;
+            return Err(err.into());
+        }
+    };
 
-        sqlite_storage.upsert(old_settings).await?;
+    info!("Legacy default instance settings found. Starting migration to SQLite...");
 
-        archive_legacy_file(&old_path, migrated_dir_name, "default instance settings").await;
-    }
+    sqlite_storage.upsert(old_settings).await?;
+
+    archive_legacy_file(&old_path, migrated_dir_name, "default instance settings").await;
 
     Ok(())
 }

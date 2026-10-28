@@ -1,4 +1,4 @@
-use aether_core::shared::archive::infra::archive_legacy_file;
+use aether_core::shared::archive::infra::{archive_legacy_file, quarantine_unreadable_legacy_file};
 use log::info;
 
 use crate::features::settings::domain::AppSettingsStorage;
@@ -20,13 +20,19 @@ pub async fn migrate_app_settings_to_sqlite(
         return Ok(());
     }
 
-    if let Ok(old_app_settings) = fs_storage.get().await {
-        info!("Legacy app settings found. Starting migration to SQLite...");
+    let old_app_settings = match fs_storage.read_strict().await {
+        Ok(value) => value,
+        Err(err) => {
+            quarantine_unreadable_legacy_file(&old_path, migrated_dir_name, "app settings").await;
+            return Err(err.into());
+        }
+    };
 
-        sqlite_storage.upsert(old_app_settings).await?;
+    info!("Legacy app settings found. Starting migration to SQLite...");
 
-        archive_legacy_file(&old_path, migrated_dir_name, "app settings").await;
-    }
+    sqlite_storage.upsert(old_app_settings).await?;
+
+    archive_legacy_file(&old_path, migrated_dir_name, "app settings").await;
 
     Ok(())
 }
