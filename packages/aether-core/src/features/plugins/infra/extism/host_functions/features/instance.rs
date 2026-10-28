@@ -666,7 +666,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_refuse_a_wasi_path_when_writing_instead_of_resolving_it() {
-        let (_temp_dir, _location_info, service) = setup().await;
+        let (temp_dir, _location_info, service) = setup().await;
 
         // These host functions take an id plus a relative path, so the WASI spellings a plugin
         // uses elsewhere must not work here.
@@ -684,13 +684,21 @@ mod tests {
             .await
             .expect_err("a WASI path must be refused");
         }
+
+        let instance_dir = temp_dir.path().join("instances").join(INSTANCE_ID);
+        assert!(
+            !instance_dir.join("pack.toml").exists()
+                && !instance_dir.join("instances").exists()
+                && !instance_dir.join("mnt").exists(),
+            "a refused WASI-path write must not create the file"
+        );
     }
 
     #[tokio::test]
     async fn should_refuse_a_read_when_the_instance_id_is_unknown() {
         let (_temp_dir, _location_info, service) = setup().await;
 
-        read_instance_file_with(
+        let err = read_instance_file_with(
             PLUGIN_ID,
             MAX_FILE_BYTES,
             read_params("no-such-instance", "pack.toml"),
@@ -699,6 +707,7 @@ mod tests {
         )
         .await
         .expect_err("an unknown instance id must be refused");
+        assert!(err.to_string().contains("not found"), "{err}");
     }
 
     #[tokio::test]
@@ -762,7 +771,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_refuse_a_plugin_write_when_the_path_is_in_another_plugins_directory() {
-        let (_temp_dir, _location_info, service) = setup().await;
+        let (_temp_dir, location_info, service) = setup().await;
 
         write_instance_file_with(
             PLUGIN_ID,
@@ -777,6 +786,14 @@ mod tests {
         )
         .await
         .expect_err("one plugin must not write into another's directory");
+
+        let other = location_info
+            .instance_plugin_dir(&InstanceId::try_from(INSTANCE_ID).unwrap(), "other-plugin")
+            .join("settings.toml");
+        assert!(
+            !other.exists(),
+            "the refused write must not land in the other plugin's directory"
+        );
     }
 
     #[tokio::test]
