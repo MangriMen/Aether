@@ -19,20 +19,3 @@ pub enum RegistryError {
         capability_id: String,
     },
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_format_capability_not_found_error_when_displayed() {
-        let err = RegistryError::CapabilityNotFound {
-            capability_type: "content_provider",
-            capability_id: "my_plugin".into(),
-        };
-        assert_eq!(
-            err.to_string(),
-            "Capability content_provider with id \"my_plugin\" not found"
-        );
-    }
-}

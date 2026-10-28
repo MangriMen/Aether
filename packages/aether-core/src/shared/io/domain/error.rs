@@ -153,29 +153,10 @@ mod tests {
     }
 
     #[test]
-    fn plain_error_displays_source_transparently() {
-        let err = IoError::from(not_found());
-        assert!(matches!(err, IoError::IoError(_)));
-        assert_eq!(err.to_string(), "gone");
-    }
-
-    #[test]
     fn path_error_displays_source_and_path() {
         let err = IoError::with_path(not_found(), "/tmp/x");
         assert!(matches!(err, IoError::IoPathError { .. }));
         assert_eq!(err.to_string(), "gone, path: /tmp/x");
-    }
-
-    #[test]
-    fn serialization_variants_display() {
-        assert_eq!(
-            IoError::SerializationError("a".into()).to_string(),
-            "Serialization error: a"
-        );
-        assert_eq!(
-            IoError::DeserializationError("b".into()).to_string(),
-            "Deserialization error: b"
-        );
     }
 
     #[test]

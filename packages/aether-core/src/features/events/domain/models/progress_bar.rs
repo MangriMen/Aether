@@ -734,13 +734,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn failing_detached_progress_bar_id_does_nothing() {
+    async fn failing_detached_progress_bar_id_emits_nothing() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
         let id = ProgressBarId {
             id: Uuid::new_v4(),
             progress_storage: None,
-            sequencer: None,
+            sequencer: Some(Arc::new(EventSequencer::new(Arc::new(ChannelEmitter(tx))))),
         };
+
         id.fail("ignored").await;
+        drop(id);
+        settle().await;
+
+        assert!(rx.try_recv().is_err());
     }
 
     #[tokio::test]
@@ -756,16 +762,5 @@ mod tests {
         settle().await;
 
         assert!(rx.try_recv().is_err());
-    }
-
-    #[tokio::test]
-    async fn dropping_detached_progress_bar_id_emits_nothing() {
-        let id = ProgressBarId {
-            id: Uuid::new_v4(),
-            progress_storage: None,
-            sequencer: None,
-        };
-        drop(id);
-        settle().await;
     }
 }
