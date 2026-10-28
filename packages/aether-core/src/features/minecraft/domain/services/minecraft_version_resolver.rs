@@ -1,5 +1,9 @@
 use crate::features::minecraft::{MinecraftDomainError, vanilla};
 
+/// 2022-04-20T00:00:00Z, the day 22w16a came out: the first version that runs natively on every
+/// desktop OS the launcher supports.
+const NATIVE_SUPPORT_SINCE: i64 = 1_650_412_800;
+
 pub fn resolve_minecraft_version(
     game_version: &str,
     version_manifest: &vanilla::VersionManifest,
@@ -13,18 +17,26 @@ pub fn resolve_minecraft_version(
             version: game_version.to_owned(),
         })?;
 
-    let is_updated = is_minecraft_updated(index, version_manifest);
+    let is_updated = is_minecraft_updated(index, version, version_manifest);
 
     Ok((version.clone(), is_updated))
 }
 
-fn is_minecraft_updated(version_index: usize, version_manifest: &vanilla::VersionManifest) -> bool {
-    version_index
-        <= version_manifest
-            .versions
-            .iter()
-            .position(|version| version.id == "22w16a")
-            .unwrap_or(0)
+/// The manifest lists the newest version first, so a version is at or after 22w16a when it sits
+/// no later than it. A manifest without 22w16a falls back to the release time instead.
+fn is_minecraft_updated(
+    version_index: usize,
+    version: &vanilla::Version,
+    version_manifest: &vanilla::VersionManifest,
+) -> bool {
+    match version_manifest
+        .versions
+        .iter()
+        .position(|version| version.id == "22w16a")
+    {
+        Some(anchor) => version_index <= anchor,
+        None => version.release_time.timestamp() >= NATIVE_SUPPORT_SINCE,
+    }
 }
 
 #[cfg(test)]
@@ -106,21 +118,31 @@ mod tests {
         assert!(is_updated);
     }
 
-    #[test]
-    fn should_return_first_as_updated_when_threshold_not_found() {
-        let manifest = make_manifest(vec![make_version("1.19"), make_version("1.20")]);
-        let (_, is_updated) = resolve_minecraft_version("1.19", &manifest).unwrap();
-        assert!(is_updated, "when 22w16a not found, only index 0 is updated");
+    fn released_at(id: &str, timestamp: i64) -> vanilla::Version {
+        vanilla::Version {
+            release_time: chrono::DateTime::from_timestamp(timestamp, 0).unwrap(),
+            ..make_version(id)
+        }
     }
 
     #[test]
-    fn should_return_not_updated_when_threshold_not_found_and_not_first() {
-        let manifest = make_manifest(vec![make_version("1.19"), make_version("1.20")]);
-        let (_, is_updated) = resolve_minecraft_version("1.20", &manifest).unwrap();
-        assert!(
-            !is_updated,
-            "when 22w16a not found, index > 0 is not updated"
-        );
+    fn should_mark_as_updated_by_release_time_when_threshold_not_found_and_version_is_newer() {
+        let manifest = make_manifest(vec![
+            released_at("1.20", NATIVE_SUPPORT_SINCE + 1),
+            released_at("1.19", NATIVE_SUPPORT_SINCE),
+        ]);
+        let (_, is_updated) = resolve_minecraft_version("1.19", &manifest).unwrap();
+        assert!(is_updated);
+    }
+
+    #[test]
+    fn should_mark_as_not_updated_by_release_time_when_threshold_not_found_and_version_is_older() {
+        let manifest = make_manifest(vec![
+            released_at("1.20", NATIVE_SUPPORT_SINCE + 1),
+            released_at("1.18", NATIVE_SUPPORT_SINCE - 1),
+        ]);
+        let (_, is_updated) = resolve_minecraft_version("1.18", &manifest).unwrap();
+        assert!(!is_updated);
     }
 
     #[test]

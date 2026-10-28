@@ -30,18 +30,12 @@ pub trait ProcessStorage: Send + Sync {
     ) -> Result<Option<MinecraftProcessMetadata>, ProcessError>;
 
     async fn try_wait(&self, id: Uuid) -> Result<Option<Option<ExitStatus>>, ProcessError>;
-    async fn wait_for(&self, id: Uuid) -> Result<(), ProcessError>;
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError>;
     /// Whether `kill` was requested for the process (the exit is then not a crash).
     async fn was_killed(&self, id: Uuid) -> bool;
 }
 
 // ── Use case ports ──
-
-#[async_trait]
-pub trait WaitForProcessUseCasePort: Send + Sync {
-    async fn execute(&self, process_id: Uuid) -> Result<(), ProcessError>;
-}
 
 #[async_trait]
 pub trait KillProcessUseCasePort: Send + Sync {

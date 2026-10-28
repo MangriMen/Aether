@@ -5,9 +5,9 @@ mod use_cases;
 pub use di::ProcessFeature;
 pub use ports::{
     KillProcessUseCasePort, ListProcessMetadataUseCasePort, ManageProcessService,
-    ProcessStartService, ProcessStorage, TrackProcessService, WaitForProcessUseCasePort,
+    ProcessStartService, ProcessStorage, TrackProcessService,
 };
 pub use use_cases::{
     KillProcessUseCase, ListProcessMetadataUseCase, ManageProcessUseCase, StartProcessUseCase,
-    TrackProcessUseCase, WaitForProcessUseCase,
+    TrackProcessUseCase,
 };

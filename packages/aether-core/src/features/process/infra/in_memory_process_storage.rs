@@ -67,17 +67,6 @@ impl ProcessStorage for InMemoryProcessStorage {
         Ok(None)
     }
 
-    async fn wait_for(&self, id: Uuid) -> Result<(), ProcessError> {
-        if let Some(mut process) = self.processes.get_mut(&id) {
-            process
-                .child
-                .wait()
-                .await
-                .map_err(|_| ProcessError::WaitError { id: id.to_string() })?;
-        }
-        Ok(())
-    }
-
     async fn kill(&self, id: Uuid) -> Result<(), ProcessError> {
         if let Some(mut process) = self.processes.get_mut(&id) {
             // Set before the kill: the tracker can see the exit while `kill` is still awaiting.

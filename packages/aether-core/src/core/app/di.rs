@@ -65,7 +65,7 @@ use crate::features::{
         KillProcessUseCase, KillProcessUseCasePort, ListProcessMetadataUseCase,
         ListProcessMetadataUseCasePort, ManageProcessService, ManageProcessUseCase, ProcessFeature,
         ProcessStartService, ProcessStorage, StartProcessUseCase, TrackProcessService,
-        TrackProcessUseCase, WaitForProcessUseCase, WaitForProcessUseCasePort,
+        TrackProcessUseCase,
     },
     settings::{
         EditDefaultInstanceSettingsUseCase, EditDefaultInstanceSettingsUseCasePort,
@@ -864,11 +864,6 @@ impl InstanceServicesPort for AetherContainer {
 }
 
 impl ProcessFeature for AetherContainer {
-    fn wait_for_process_use_case(&self) -> Arc<dyn WaitForProcessUseCasePort> {
-        Arc::new(WaitForProcessUseCase::new(
-            self.storage().process_storage.clone(),
-        ))
-    }
     fn kill_process_use_case(&self) -> Arc<dyn KillProcessUseCasePort> {
         Arc::new(KillProcessUseCase::new(
             self.storage().process_storage.clone(),
