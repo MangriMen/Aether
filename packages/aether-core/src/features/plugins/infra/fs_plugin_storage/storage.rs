@@ -803,7 +803,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_not_bring_a_removed_plugin_back_when_an_update_copy_was_left_aside() {
+    async fn should_leave_nothing_behind_when_a_plugin_with_an_update_copy_is_removed() {
         let fixture = Fixture::installed();
         fixture.storage.replace(extracted("0.2.0")).await.unwrap();
 
