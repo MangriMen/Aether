@@ -235,6 +235,7 @@ mod tests {
         .await;
 
         let result = ZipPluginExtractor::default().extract(&zip_path).await;
+        eprintln!("RESULT {:?}", result.as_ref().map(|_| ()));
 
         assert!(matches!(
             result,
@@ -259,9 +260,12 @@ mod tests {
         )
         .await;
 
-        // Absolute paths are stripped to a relative path by `enclosed_name`, so extraction may
-        // succeed — what matters is that nothing lands outside the extraction root.
-        let _ = ZipPluginExtractor::default().extract(&zip_path).await;
+        // The entry is stripped to a relative path, so the archive is still extracted; what
+        // matters is that nothing lands outside the extraction root.
+        ZipPluginExtractor::default()
+            .extract(&zip_path)
+            .await
+            .expect("an absolute entry path is made relative, not an error");
 
         assert!(!outside_file.exists());
     }

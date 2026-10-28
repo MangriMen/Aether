@@ -233,12 +233,17 @@ mod tests {
     }
 
     #[test]
-    fn should_take_the_host_when_the_url_is_http() {
-        let host = grantable("https://Example.com:8443/packs/pack.toml?x=1").unwrap();
+    fn should_take_the_host_when_the_url_has_a_scheme_port_and_query() {
+        for url in [
+            "https://Example.com:8443/packs/pack.toml?x=1",
+            "http://Example.com:8443/packs/pack.toml?x=1",
+        ] {
+            let host = grantable(url).unwrap();
 
-        assert_eq!(host.host, "example.com");
-        assert_eq!(host.entry, "example.com");
-        assert!(is_host_allowed(&host.host, &[host.entry]));
+            assert_eq!(host.host, "example.com", "{url}");
+            assert_eq!(host.entry, "example.com", "{url}");
+            assert!(is_host_allowed("example.com", &["example.com".to_owned()]));
+        }
     }
 
     #[test]
