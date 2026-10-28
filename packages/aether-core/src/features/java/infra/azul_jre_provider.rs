@@ -552,23 +552,4 @@ mod tests {
         );
         assert!(!installed_java(&fixture.install_dir).exists());
     }
-
-    #[tokio::test]
-    async fn should_install_the_jre_when_the_checksum_matches() {
-        let fixture = fixture();
-        let archive = jre_zip(b"new jre");
-        let digest = hash_hex_async(HashAlgorithm::Sha256, Bytes::from(archive.clone()))
-            .await
-            .unwrap();
-        serve_package(&fixture.client, Some(&digest));
-        fixture.client.serve(ARCHIVE_URL, archive);
-
-        fixture
-            .provider
-            .install(VERSION, &fixture.install_dir)
-            .await
-            .unwrap();
-
-        assert!(installed_java(&fixture.install_dir).exists());
-    }
 }

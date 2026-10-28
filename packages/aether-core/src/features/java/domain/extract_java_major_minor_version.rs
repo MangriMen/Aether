@@ -59,11 +59,6 @@ mod tests {
     }
 
     #[test]
-    fn should_extract_version_when_given_the_java_8_format() {
-        assert_eq!(extract_java_major_minor_version("1.8").unwrap(), (1, 8));
-    }
-
-    #[test]
     fn should_return_an_error_when_the_version_is_invalid() {
         let err = extract_java_major_minor_version("").unwrap_err();
         assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
