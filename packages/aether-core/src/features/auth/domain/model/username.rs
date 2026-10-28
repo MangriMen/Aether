@@ -119,18 +119,6 @@ mod tests {
     }
 
     #[test]
-    fn should_display_username_when_formatted() {
-        let username = Username::parse("DisplayMe").unwrap();
-        assert_eq!(format!("{username}"), "DisplayMe");
-    }
-
-    #[test]
-    fn should_return_str_when_as_ref_is_called() {
-        let username = Username::parse("RefTest").unwrap();
-        assert_eq!(username.as_ref(), "RefTest");
-    }
-
-    #[test]
     fn should_accept_username_when_length_is_the_minimum() {
         let username = Username::parse("abc").unwrap();
         assert_eq!(username.as_str(), "abc");

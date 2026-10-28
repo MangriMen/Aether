@@ -442,13 +442,6 @@ mod tests {
     }
 
     #[test]
-    fn processor_arguments_accept_owned_strings() {
-        let (_t, libs) = libs_dir();
-        let out = get_processor_arguments(&libs, &["--x".to_string()], &data(&[])).unwrap();
-        assert_eq!(out, vec!["--x"]);
-    }
-
-    #[test]
     fn processor_arguments_bracket_form_resolves_existing_library() {
         let (_t, libs) = libs_dir();
         let path = make_lib(

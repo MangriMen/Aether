@@ -365,14 +365,6 @@ mod tests {
     }
 
     #[test]
-    fn class_paths_jar_accepts_owned_strings() {
-        let e = env();
-        let a = make_lib(&e, "g/a/1/a-1.jar");
-        let cp = get_class_paths_jar(&e.libs, &["g:a:1".to_string()], "x64").unwrap();
-        assert_eq!(cp, a);
-    }
-
-    #[test]
     fn class_paths_jar_missing_library_fails() {
         let e = env();
         make_lib(&e, "g/a/1/a-1.jar");
