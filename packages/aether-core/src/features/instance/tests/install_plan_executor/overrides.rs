@@ -494,27 +494,29 @@ async fn should_keep_a_disabled_override_disabled_when_the_plan_runs_again() {
     fixture.put("mods/extra.jar.disabled", "old");
     let archive = zip_archive(&fixture, &[("overrides/mods/extra.jar", "new")]);
 
-    fixture
-        .execute(
-            InstallPlan {
-                overrides: archive_overrides(archive),
-                ..existing(vec![])
-            },
-            &plugin("packwiz"),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(
-        fixture.instance_files(INSTANCE_ID),
-        ["mods/extra.jar.disabled"]
-    );
-    assert_eq!(
+    for _ in 0..2 {
         fixture
-            .instance_file(INSTANCE_ID, "mods/extra.jar.disabled")
-            .unwrap(),
-        "new"
-    );
+            .execute(
+                InstallPlan {
+                    overrides: archive_overrides(archive.clone()),
+                    ..existing(vec![])
+                },
+                &plugin("packwiz"),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            fixture.instance_files(INSTANCE_ID),
+            ["mods/extra.jar.disabled"]
+        );
+        assert_eq!(
+            fixture
+                .instance_file(INSTANCE_ID, "mods/extra.jar.disabled")
+                .unwrap(),
+            "new"
+        );
+    }
 }
 
 /// Overrides are copied out before the instance is touched: a failed download leaves no

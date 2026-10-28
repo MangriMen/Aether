@@ -307,7 +307,10 @@ async fn should_leave_no_backups_when_an_update_succeeds() {
         fixture.instance_files(INSTANCE_ID),
         ["config/user.toml", "mods/a.jar"]
     );
-    assert!(fixture.staging_is_clean());
+    assert!(
+        fixture.staging_is_clean(),
+        "neither a staging nor a backup directory is left in the temp dir"
+    );
 }
 
 /// A failed download leaves the instance as it was: nothing removed, nothing recorded.

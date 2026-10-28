@@ -163,7 +163,7 @@ fn listed_directory(dir: &TempDir) -> (PathBuf, PathBuf) {
 }
 
 #[tokio::test]
-async fn should_stage_a_directory_override_when_its_path_is_unchanged() {
+async fn should_stage_the_files_of_a_directory_override() {
     let dir = TempDir::new().unwrap();
     let (overrides, _) = listed_directory(&dir);
 
