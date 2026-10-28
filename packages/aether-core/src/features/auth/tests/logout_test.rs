@@ -2,6 +2,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::features::auth::app::{CredentialsStorage, LogoutUseCase, LogoutUseCasePort};
+use crate::features::auth::{app::AuthApplicationError, domain::AuthDomainError};
 
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
@@ -52,7 +53,15 @@ async fn should_fail_to_log_out_when_the_account_does_not_exist() {
 
     let nonexistent_id = Uuid::new_v4();
     let result = use_case.execute(nonexistent_id).await;
-    assert!(result.is_err());
+
+    assert!(
+        matches!(
+            result,
+            Err(AuthApplicationError::Domain(AuthDomainError::CredentialsNotFound { id }))
+                if id == nonexistent_id
+        ),
+        "{result:?}"
+    );
 }
 
 #[tokio::test]

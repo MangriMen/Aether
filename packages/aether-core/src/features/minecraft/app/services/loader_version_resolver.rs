@@ -225,6 +225,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn should_pick_the_stable_own_loader_when_a_game_version_has_no_group() {
+        let manifest = modded::Manifest {
+            game_versions: vec![modded::Version {
+                id: "1.8".to_string(),
+                stable: true,
+                loaders: vec![loader("beta", false), loader("release", true)],
+                version_group: None,
+            }],
+            version_groups: vec![],
+        };
+
+        let resolved = resolve_loader_version(
+            "1.8",
+            &ModLoader::Quilt,
+            &LoaderVersionPreference::Stable,
+            &manifest,
+        )
+        .await;
+
+        assert_eq!(resolved.unwrap().unwrap().id, "release");
+    }
+
+    #[tokio::test]
     async fn should_fail_when_the_group_of_a_game_version_does_not_exist() {
         let resolved = resolve("1.7", LoaderVersionPreference::Latest).await;
 

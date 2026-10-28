@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::features::auth::app::{
     CredentialsStorage, SetActiveAccountUseCase, SetActiveAccountUseCasePort,
 };
+use crate::features::auth::{app::AuthApplicationError, domain::AuthDomainError};
 
 use super::fixtures::{CredentialsBuilder, MockCredentialsStorage};
 
@@ -73,5 +74,40 @@ async fn should_fail_to_activate_when_the_account_does_not_exist() {
 
     let nonexistent_id = Uuid::new_v4();
     let result = use_case.execute(nonexistent_id).await;
-    assert!(result.is_err());
+
+    assert!(
+        matches!(
+            result,
+            Err(AuthApplicationError::Domain(AuthDomainError::CredentialsNotFound { id }))
+                if id == nonexistent_id
+        ),
+        "{result:?}"
+    );
+}
+
+#[tokio::test]
+async fn should_refuse_to_activate_an_expired_account_and_keep_the_active_one() {
+    let storage = Arc::new(MockCredentialsStorage::new());
+    let active = CredentialsBuilder::new("Active").with_active(true).build();
+    let expired = CredentialsBuilder::new("Expired")
+        .with_expired_token()
+        .build();
+    storage.upsert(active.clone()).await.unwrap();
+    storage.upsert(expired.clone()).await.unwrap();
+
+    let use_case = SetActiveAccountUseCase::new(storage.clone());
+
+    let result = use_case.execute(expired.id()).await;
+
+    assert!(
+        matches!(
+            result,
+            Err(AuthApplicationError::Domain(AuthDomainError::TokenExpired))
+        ),
+        "{result:?}"
+    );
+    assert_eq!(
+        storage.find_active().await.unwrap().unwrap().id(),
+        active.id()
+    );
 }
