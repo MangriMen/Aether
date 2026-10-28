@@ -11,6 +11,7 @@ const TRUSTED_IMAGE_HOSTS: readonly string[] = [
   'cdn-raw.modrinth.com',
   'raw.githubusercontent.com',
   'user-images.githubusercontent.com',
+  'github.com',
   'img.shields.io',
   'i.imgur.com',
   'imgur.com',
