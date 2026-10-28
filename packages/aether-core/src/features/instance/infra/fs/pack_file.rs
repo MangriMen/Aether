@@ -229,6 +229,7 @@ fn migrate_update_info(v: &serde_json::Value) -> Option<ContentFileUpdateInfo> {
 #[cfg(test)]
 mod tests {
     use crate::features::instance::ProviderId;
+    use rstest::rstest;
 
     use super::*;
 
@@ -281,72 +282,64 @@ mod tests {
         assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
     }
 
+    fn read_v1(text: &str) -> PackFile {
+        PackFile::from(toml::from_str::<PackFileV1>(text).unwrap())
+    }
+
+    fn read_v2(text: &str) -> PackFile {
+        PackFile::from(toml::from_str::<PackFileV2>(text).unwrap())
+    }
+
     /// A damaged entry costs that entry, not the whole read.
-    #[test]
-    fn should_skip_v2_update_entry_when_its_key_is_unparsable() {
-        let dto: PackFileV2 = toml::from_str(
-            r#"
-            file-name = "sodium.jar"
-            hash = "abc"
+    #[rstest]
+    #[case::v2_unparsable_key(
+        read_v2,
+        r#"
+        file-name = "sodium.jar"
+        hash = "abc"
 
-            [update.no-separator]
-            content-id = "broken"
-            version = "v0"
+        [update.no-separator]
+        content-id = "broken"
+        version = "v0"
 
-            [update."aether#modrinth"]
-            content-id = "AANobbMI"
-            version = "v1"
-            "#,
-        )
-        .unwrap();
+        [update."aether#modrinth"]
+        content-id = "AANobbMI"
+        version = "v1"
+        "#
+    )]
+    #[case::v1_unparsable_key(
+        read_v1,
+        r#"
+        file-name = "sodium.jar"
+        hash = "abc"
 
-        let update = PackFile::from(dto).update.unwrap();
+        [update.no-separator]
+        project_id = "broken"
 
-        assert_eq!(update.len(), 1);
-        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
-    }
+        [update.modrinth]
+        project_id = "AANobbMI"
+        version = "v1"
+        "#
+    )]
+    #[case::v1_entry_is_not_a_table(
+        read_v1,
+        r#"
+        file-name = "sodium.jar"
+        hash = "abc"
 
-    #[test]
-    fn should_skip_v1_update_entry_when_its_key_is_unparsable() {
-        let dto: PackFileV1 = toml::from_str(
-            r#"
-            file-name = "sodium.jar"
-            hash = "abc"
+        [update]
+        "curseforge#cf" = "not a table"
 
-            [update.no-separator]
-            project_id = "broken"
-
-            [update.modrinth]
-            project_id = "AANobbMI"
-            version = "v1"
-            "#,
-        )
-        .unwrap();
-
-        let update = PackFile::from(dto).update.unwrap();
-
-        assert_eq!(update.len(), 1);
-        assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
-    }
-
-    #[test]
-    fn should_skip_v1_update_entry_when_it_is_not_a_table() {
-        let dto: PackFileV1 = toml::from_str(
-            r#"
-            file-name = "sodium.jar"
-            hash = "abc"
-
-            [update]
-            "curseforge#cf" = "not a table"
-
-            [update.modrinth]
-            project_id = "AANobbMI"
-            version = "v1"
-            "#,
-        )
-        .unwrap();
-
-        let update = PackFile::from(dto).update.unwrap();
+        [update.modrinth]
+        project_id = "AANobbMI"
+        version = "v1"
+        "#
+    )]
+    fn should_skip_the_damaged_update_entry_and_keep_the_rest(
+        #[case] read: fn(&str) -> PackFile,
+        #[case] text: &str,
+    ) {
+        let update = read(text).update.unwrap();
 
         assert_eq!(update.len(), 1);
         assert_eq!(update[&aether_modrinth()].content_id, "AANobbMI");
