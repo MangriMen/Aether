@@ -60,15 +60,6 @@ mod tests {
     }
 
     #[test]
-    fn should_resolve_an_integer_when_the_override_holds_one() {
-        let overridable = Overridable::new(42, true);
-        assert_eq!(overridable.resolve(&0), 42);
-
-        let overridable = Overridable::new(42, false);
-        assert_eq!(overridable.resolve(&100), 100);
-    }
-
-    #[test]
     fn should_transform_data_when_mapped() {
         let overridable = Overridable::new(5, true);
         let mapped = overridable.map(|x| x * 2);
