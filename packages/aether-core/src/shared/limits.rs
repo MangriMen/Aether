@@ -170,59 +170,38 @@ impl PluginSandboxLimits {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn should_keep_the_default_limits_consistent_when_checked_together() {
         PluginSandboxLimits::default().assert_consistent();
     }
 
-    #[test]
+    #[rstest]
+    #[case::does_not_fit_the_plugin_memory(256 * 1024 * 1024)]
+    #[case::fits_the_plugin_memory_only_once(128 * 1024 * 1024)]
     #[should_panic(expected = "must stay below")]
-    fn should_refuse_an_instance_file_cap_when_it_does_not_fit_the_plugin_memory() {
+    fn should_refuse_an_instance_file_cap_when_it_does_not_leave_room(#[case] cap: u64) {
         PluginSandboxLimits {
-            max_instance_file_bytes: 256 * 1024 * 1024,
+            max_instance_file_bytes: cap,
             ..PluginSandboxLimits::default()
         }
         .assert_consistent();
     }
 
-    #[test]
-    #[should_panic(expected = "must stay below")]
-    fn should_refuse_an_instance_file_cap_when_it_fits_the_plugin_memory_only_once() {
-        PluginSandboxLimits {
-            max_instance_file_bytes: 128 * 1024 * 1024,
-            ..PluginSandboxLimits::default()
-        }
-        .assert_consistent();
-    }
-
-    #[test]
-    fn should_keep_the_instance_file_cap_when_the_plugin_has_the_default_memory() {
+    #[rstest]
+    #[case::default_memory(None, None)]
+    #[case::manifest_declares_less_memory(Some(30 * 1024 * 1024), Some(10 * 1024 * 1024))]
+    #[case::manifest_declares_more_memory(Some(1024 * 1024 * 1024), None)]
+    fn should_size_the_instance_file_cap_when_the_manifest_declares_memory(
+        #[case] declared_memory: Option<usize>,
+        #[case] expected: Option<u64>,
+    ) {
         let limits = PluginSandboxLimits::default();
 
         assert_eq!(
-            limits.max_instance_file_bytes_within(None),
-            limits.max_instance_file_bytes
-        );
-    }
-
-    #[test]
-    fn should_lower_the_instance_file_cap_when_the_manifest_declares_less_memory() {
-        let limits = PluginSandboxLimits::default();
-
-        assert_eq!(
-            limits.max_instance_file_bytes_within(Some(30 * 1024 * 1024)),
-            10 * 1024 * 1024
-        );
-    }
-
-    #[test]
-    fn should_keep_the_instance_file_cap_when_the_manifest_declares_more_memory() {
-        let limits = PluginSandboxLimits::default();
-
-        assert_eq!(
-            limits.max_instance_file_bytes_within(Some(1024 * 1024 * 1024)),
-            limits.max_instance_file_bytes
+            limits.max_instance_file_bytes_within(declared_memory),
+            expected.unwrap_or(limits.max_instance_file_bytes)
         );
     }
 }
