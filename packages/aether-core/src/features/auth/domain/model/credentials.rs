@@ -254,6 +254,50 @@ mod credential_tests {
     }
 
     #[test]
+    fn should_set_the_offline_defaults_when_created_offline() {
+        let id = Uuid::new_v4();
+
+        let cred = Credential::new_offline(id, Username::parse("Player").unwrap());
+
+        assert_eq!(cred.id(), id);
+        assert_eq!(cred.account_type(), AccountType::Offline);
+        assert!(!cred.is_active());
+        assert!(!cred.is_expired());
+    }
+
+    #[test]
+    fn should_deactivate_the_credential_when_it_is_active() {
+        let mut cred = Credential::new_offline(Uuid::new_v4(), Username::parse("Player").unwrap());
+        cred.activate().unwrap();
+
+        cred.deactivate();
+
+        assert!(!cred.is_active());
+    }
+
+    #[test]
+    fn should_replace_the_tokens_and_extend_the_expiry_when_they_are_updated() {
+        let mut cred = Credential::new(
+            Uuid::new_v4(),
+            Username::parse("MSPlayer").unwrap(),
+            AccountType::Microsoft,
+            true,
+            "old-access".into(),
+            "old-refresh".into(),
+            Utc::now() - Duration::hours(1),
+        );
+        assert!(cred.is_expired());
+
+        cred.update_tokens("new-access".into(), "new-refresh".into(), 3600);
+
+        assert_eq!(cred.access_token(), "new-access");
+        assert_eq!(cred.refresh_token(), "new-refresh");
+        assert!(!cred.is_expired());
+        assert!(cred.expires() > Utc::now() + Duration::minutes(59));
+        assert!(cred.is_active(), "the activity is untouched");
+    }
+
+    #[test]
     fn should_fail_activation_when_microsoft_token_expired() {
         let id = Uuid::new_v4();
         let expires = Utc::now() - Duration::hours(1);
