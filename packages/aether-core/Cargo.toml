@@ -105,6 +105,7 @@ uuid.workspace = true
 windows-sys = { version = "0.61.2", features = ["Wdk_System_SystemServices", "Win32_System_SystemInformation"] }
 
 [dev-dependencies]
+rstest = "0.28.0"
 rust_arkitect = "0.3.7"
 
 [lints]

@@ -90,4 +90,5 @@ tauri-build = { version = "2.6.3", features = ["codegen"] }
 workspace = true
 
 [dev-dependencies]
+rstest = "0.28.0"
 tempfile = "3.27.0"
