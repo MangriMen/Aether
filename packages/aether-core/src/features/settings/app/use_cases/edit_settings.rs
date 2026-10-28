@@ -33,6 +33,7 @@ impl EditSettingsUseCasePort for EditSettingsUseCase {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use tokio::sync::Mutex;
 
     use super::*;
@@ -98,25 +99,21 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case::empty_platform("", "cf-plugin#curseforge", "")]
+    #[case::malformed_provider_id("curseforge", "not a provider id", "not a provider id")]
     #[tokio::test]
-    async fn should_refuse_a_provider_choice_when_the_platform_is_empty() {
-        let (result, stored) = run(edit("", "cf-plugin#curseforge")).await;
+    async fn should_refuse_a_provider_choice_when_it_is_invalid(
+        #[case] platform: &str,
+        #[case] provider_id: &str,
+        #[case] reason_fragment: &str,
+    ) {
+        let (result, stored) = run(edit(platform, provider_id)).await;
 
         assert!(matches!(
             result,
-            Err(SettingsError::InvalidPlatformProvider { ref platform, .. }) if platform.is_empty()
-        ));
-        assert!(stored.platform_providers().is_empty());
-    }
-
-    #[tokio::test]
-    async fn should_refuse_a_provider_choice_when_the_provider_id_is_malformed() {
-        let (result, stored) = run(edit("curseforge", "not a provider id")).await;
-
-        assert!(matches!(
-            result,
-            Err(SettingsError::InvalidPlatformProvider { ref platform, ref reason })
-                if platform == "curseforge" && reason.contains("not a provider id")
+            Err(SettingsError::InvalidPlatformProvider { platform: ref got, ref reason })
+                if got == platform && reason.contains(reason_fragment)
         ));
         assert!(stored.platform_providers().is_empty());
     }
