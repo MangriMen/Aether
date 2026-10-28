@@ -365,6 +365,7 @@ mod tests {
     use super::*;
     use crate::features::instance::InstanceInstallStage;
     use crate::features::settings::{WindowSettings, WindowSize};
+    use rstest::rstest;
 
     fn make_built_instance(name: &str) -> Instance {
         InstanceBuilder::new(
@@ -410,26 +411,21 @@ mod tests {
 
     // ── rename ──
 
-    #[test]
-    fn should_rename_and_return_true_when_name_differs() {
-        let mut instance = make_built_instance("old_name");
-        let result = instance.rename("new_name".into()).unwrap();
-        assert!(result);
-        assert_eq!(instance.name(), "new_name");
-    }
-
-    #[test]
-    fn should_return_false_when_name_unchanged() {
-        let mut instance = make_built_instance("same");
-        let result = instance.rename("same".into()).unwrap();
-        assert!(!result);
-    }
-
-    #[test]
-    fn should_return_false_when_the_name_differs_only_by_surrounding_spaces() {
-        let mut instance = make_built_instance("name");
-        let result = instance.rename("  name  ".into()).unwrap();
-        assert!(!result, "should detect same name after trim");
+    #[rstest]
+    #[case::name_differs("old_name", "new_name", true, "new_name")]
+    #[case::name_unchanged("same", "same", false, "same")]
+    // the same name after a trim
+    #[case::name_differs_only_by_surrounding_spaces("name", "  name  ", false, "name")]
+    fn should_report_whether_the_name_changed_when_renamed(
+        #[case] old_name: &str,
+        #[case] new_name: &str,
+        #[case] changed: bool,
+        #[case] expected_name: &str,
+    ) {
+        let mut instance = make_built_instance(old_name);
+        let result = instance.rename(new_name.into()).unwrap();
+        assert_eq!(result, changed);
+        assert_eq!(instance.name(), expected_name);
     }
 
     #[test]
