@@ -68,8 +68,11 @@ mod tests {
     #[test]
     fn lock_request_new_id_returns_active_request() {
         let manager = IdempotencyManager::default();
-        let result = manager.lock_request(make_id("new"));
-        assert!(result.is_ok());
+        let id = make_id("new");
+
+        let _active = manager.lock_request(id.clone()).unwrap();
+
+        assert!(!manager.register(id), "The id must be held while active");
     }
 
     #[test]
@@ -78,9 +81,10 @@ mod tests {
         let id = make_id("locked");
         let _first = manager.lock_request(id.clone()).unwrap();
         let result = manager.lock_request(id.clone());
-        assert!(result.is_err());
-        let Err(err) = result else { unreachable!() };
-        assert_eq!(err.to_string(), format!("Duplicate request {id}"));
+        assert!(matches!(
+            result,
+            Err(IdempotencyManagerError::DuplicateRequest { id: ref dup }) if *dup == id
+        ));
     }
 
     #[test]
@@ -114,7 +118,14 @@ mod tests {
     fn remove_nonexistent_id_does_nothing() {
         let manager = IdempotencyManager::default();
         let id = make_id("ghost");
-        // Should not panic
+        let other = make_id("other");
+        assert!(manager.register(other.clone()));
+
         manager.remove(&id);
+
+        assert!(!manager.register(other), "Other ids must stay registered");
+        assert!(manager.register(id.clone()), "An unknown id must stay free");
+        manager.remove(&id);
+        assert!(manager.register(id), "Removing twice must stay harmless");
     }
 }

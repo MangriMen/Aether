@@ -30,6 +30,10 @@ mod tests {
             current_version: "1.0.0".to_string(),
         };
         let json = serde_json::to_string(&progress).unwrap();
+        let wire: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(wire["phase"], "finished");
+        assert_eq!(wire["fraction"], 0.75);
+        assert_eq!(wire["current_version"], "1.0.0");
         let deserialized: UpdateProgress = serde_json::from_str(&json).unwrap();
         assert!((deserialized.fraction.unwrap() - 0.75).abs() < f64::EPSILON);
         assert_eq!(deserialized.phase, UpdatePhase::Finished);
