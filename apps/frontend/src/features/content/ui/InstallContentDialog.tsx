@@ -5,8 +5,10 @@ import {
   createMemo,
   createSignal,
   For,
+  Match,
   Show,
   splitProps,
+  Switch,
   type Component,
 } from 'solid-js';
 
@@ -20,7 +22,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  LoadError,
+  SkeletonList,
 } from '@/shared/ui-kit';
+import { createDelayedFlag } from '@/shared/utils';
 
 import type { ContentCompatibilityCheckParams } from '../model/compatibility';
 import type { ContentItem } from '../model/contentItem';
@@ -41,6 +46,7 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
 
   const [{ t }] = useTranslation();
   const instances = useInstances();
+  const showSkeleton = createDelayedFlag(() => instances.isLoading);
 
   const instanceIds = createMemo(
     () => instances.data?.map((instance) => instance.id) ?? [],
@@ -94,29 +100,42 @@ export const InstallContentDialog: Component<InstallContentDialogProps> = (
             }
           />
           <div class='gap-2 flex flex-col'>
-            <Show
-              when={filteredInstances.length <= 0}
-              fallback={
+            <Switch>
+              <Match when={instances.isLoading}>
+                <Show when={showSkeleton()}>
+                  <SkeletonList itemsCount={3} height={60} radius={6} />
+                </Show>
+              </Match>
+              <Match when={instances.isError && !instances.data}>
+                <LoadError
+                  variant='inline'
+                  message={t('common.loadFailed')}
+                  retryLabel={t('common.retry')}
+                  onRetry={() => void instances.refetch()}
+                />
+              </Match>
+              <Match when={(filteredInstances()?.length ?? 0) > 0}>
+                <For each={filteredInstances()}>
+                  {(instance) => (
+                    <InstallContentDialogListItem
+                      item={props.item}
+                      instance={instance}
+                      manager={local.manager}
+                      checkCompatibilityData={checkCompatibility.data}
+                      isLoadingCheckCompatibilityData={
+                        checkCompatibility.isLoading
+                      }
+                      onCloseDialog={() => others.onOpenChange?.(false)}
+                    />
+                  )}
+                </For>
+              </Match>
+              <Match when={filteredInstances()}>
                 <span class='text-muted-foreground self-center'>
                   {t('content.noMatchingInstances')}
                 </span>
-              }
-            >
-              <For each={filteredInstances()}>
-                {(instance) => (
-                  <InstallContentDialogListItem
-                    item={props.item}
-                    instance={instance}
-                    manager={local.manager}
-                    checkCompatibilityData={checkCompatibility.data}
-                    isLoadingCheckCompatibilityData={
-                      checkCompatibility.isLoading
-                    }
-                    onCloseDialog={() => others.onOpenChange?.(false)}
-                  />
-                )}
-              </For>
-            </Show>
+              </Match>
+            </Switch>
           </div>
         </Show>
       </DialogContent>

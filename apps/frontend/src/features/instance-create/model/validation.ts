@@ -4,21 +4,35 @@ import type { ModLoader } from '@/features/minecraft';
 
 import { MOD_LOADERS } from '@/features/minecraft';
 
+// Messages are dictionary keys: the form translates them, see `isValidationKey`.
+const VALIDATION_KEYS = [
+  'validation.nameRequired',
+  'validation.nameTooLong',
+  'validation.gameVersionRequired',
+  'validation.loaderRequired',
+  'validation.loaderVersionRequired',
+] as const;
+
+export type ValidationKey = (typeof VALIDATION_KEYS)[number];
+
+export const isValidationKey = (message: string): message is ValidationKey =>
+  (VALIDATION_KEYS as readonly string[]).includes(message);
+
 const ModLoaderSchema = v.picklist(
   MOD_LOADERS as [ModLoader, ...ModLoader[]],
-  'Mod loader is required',
+  'validation.loaderRequired',
 );
 
 export const CreateCustomInstanceSchema = v.pipe(
   v.object({
     name: v.pipe(
-      v.string('Name is required'),
-      v.minLength(1, 'Name is required'),
-      v.maxLength(64, 'Max length 64 symbols'),
+      v.string('validation.nameRequired'),
+      v.minLength(1, 'validation.nameRequired'),
+      v.maxLength(64, 'validation.nameTooLong'),
     ),
     gameVersion: v.pipe(
-      v.string('Game version is required'),
-      v.minLength(1, 'Game version is required'),
+      v.string('validation.gameVersionRequired'),
+      v.minLength(1, 'validation.gameVersionRequired'),
     ),
     loader: ModLoaderSchema,
     loaderVersionType: v.optional(v.string()),
@@ -26,8 +40,11 @@ export const CreateCustomInstanceSchema = v.pipe(
   }),
   v.forward(
     v.check(
-      (data) => !(data.loaderVersionType === 'other' && !data.loaderVersion),
-      'Loader version is required if loader version type is other',
+      // Vanilla has no loader version, whatever the hidden advanced section holds.
+      (data) =>
+        data.loader === 'vanilla' ||
+        !(data.loaderVersionType === 'other' && !data.loaderVersion),
+      'validation.loaderVersionRequired',
     ),
     ['loaderVersion'],
   ),

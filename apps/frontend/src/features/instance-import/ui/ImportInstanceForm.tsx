@@ -1,6 +1,12 @@
 import { createForm, setInput, Form, Field } from '@formisch/solid';
 import { open } from '@tauri-apps/plugin-dialog';
-import { splitProps, type Component, type JSX } from 'solid-js';
+import {
+  createSignal,
+  splitProps,
+  type Accessor,
+  type Component,
+  type JSX,
+} from 'solid-js';
 
 import type { ImportInstance } from '@/features/instance';
 import type {
@@ -9,6 +15,8 @@ import type {
 } from '@/features/plugins';
 
 import { useImportInstance } from '@/features/instance';
+import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { BrowseTrailingIcon, CombinedTextField } from '@/shared/ui-kit';
 import { cn } from '@/shared/utils';
 
@@ -21,7 +29,7 @@ import {
 export type ImportInstanceFormProps = {
   pluginId: PluginMetadata['id'];
   importer: ImporterCapabilityMetadata;
-  footerButtons: JSX.Element;
+  footerButtons: (isSubmitting: Accessor<boolean>) => JSX.Element;
   onSubmit?: () => void;
   class?: string;
 };
@@ -37,6 +45,8 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
     'class',
   ]);
 
+  const [{ t }] = useTranslation();
+
   const form = createForm({
     schema: ImportInstanceSchema,
   });
@@ -44,7 +54,24 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
   const importInstance = useImportInstance();
   const ensurePluginAccess = useEnsurePluginAccess();
 
+  const [isSubmitting, setIsSubmitting] = createSignal(false);
+
   const handleSubmit = async (values: ImportInstanceSchemaOutput) => {
+    // A second click while the import runs would only produce a DUPLICATE_REQUEST toast.
+    if (isSubmitting()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await submit(values);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const submit = async (values: ImportInstanceSchemaOutput) => {
     // The importer reads the file or downloads the URL: the plugin needs the folder or the host
     // first, and the user's yes for it. A path typed by hand is asked about just like a picked
     // one; a no, or a failed grant, starts no import.
@@ -58,16 +85,28 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       path: values.path,
     };
 
-    importInstance.mutateAsync(dto);
-
     local.onSubmit?.();
+
+    try {
+      await importInstance.mutateAsync(dto);
+    } catch (error) {
+      // The mutation shows the error.
+      logError('Failed to import the instance:', error);
+    }
   };
 
   const handleBrowse = async () => {
-    const file = await open({
-      multiple: false,
-      directory: false,
-    });
+    let file: string | null;
+
+    try {
+      file = await open({
+        multiple: false,
+        directory: false,
+      });
+    } catch (error) {
+      logError('Failed to pick a file to import:', error);
+      return;
+    }
 
     if (file) {
       setInput(form, { path: ['path'], input: file });
@@ -75,7 +114,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
       // Asked right after the pick, while the user knows which file it was: the plugin is to
       // read the folder it lies in, which also holds the rest of the pack. A no is asked again
       // on submit.
-      void ensurePluginAccess(local.pluginId, file);
+      ensurePluginAccess(local.pluginId, file).catch(logError);
     }
   };
 
@@ -92,7 +131,9 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
             label={local.importer.fieldLabel}
             name='path'
             value={field.input}
-            errorMessage={field.errors?.[0]}
+            errorMessage={
+              field.errors?.[0] ? t('validation.pathRequired') : undefined
+            }
             inputProps={{
               type: 'text',
               class: 'pr-9',
@@ -102,7 +143,7 @@ export const ImportInstanceForm: Component<ImportInstanceFormProps> = (
           />
         )}
       </Field>
-      <div class='mt-auto'>{local.footerButtons}</div>
+      <div class='mt-auto'>{local.footerButtons(isSubmitting)}</div>
     </Form>
   );
 };

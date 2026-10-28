@@ -38,9 +38,11 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
         {(importers) => (
           <ImportInstanceView
             importers={importers()}
-            footerButtons={
+            footerButtons={(isSubmitting) => (
               <DialogFooter>
-                <Button type='submit'>{t('createInstance.import')}</Button>
+                <Button type='submit' loading={isSubmitting()}>
+                  {t('createInstance.import')}
+                </Button>
                 <Button
                   variant='secondary'
                   onClick={() => props.onOpenChange?.(false)}
@@ -48,7 +50,7 @@ export const ImportInstance: Component<ImportInstanceProps> = (props) => {
                   {t('common.cancel')}
                 </Button>
               </DialogFooter>
-            }
+            )}
             onSubmit={() => props.onOpenChange?.(false)}
           />
         )}

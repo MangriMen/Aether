@@ -16,7 +16,7 @@ export const useMicaUpdateListener = () => {
   const [theme] = useThemeContext();
 
   const appSettings = useAppSettings();
-  const updateAppSettings = useEditAppSettings();
+  const updateAppSettings = useEditAppSettings({ silent: true });
 
   const updateMicaDebounced = debounce(
     (rawTheme: string, colorMode: ColorMode) => {

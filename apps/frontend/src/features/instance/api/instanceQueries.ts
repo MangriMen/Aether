@@ -3,7 +3,7 @@ import { createMemo, type Accessor } from 'solid-js';
 
 import type { EditInstanceDto } from '@/platform/bindings/instance';
 
-import { showError } from '@/features/errors';
+import { isLauncherError, showError } from '@/features/errors';
 import { instanceCommands } from '@/platform/ipc';
 import { useTranslation } from '@/shared/i18n';
 
@@ -79,6 +79,16 @@ export const useInstance = (id: Accessor<string | undefined>) => {
   );
   const isError = createMemo(() => instances.isError || instanceQuery.isError);
 
+  const isNotFound = createMemo(() => {
+    const err = instanceQuery.error;
+
+    return (
+      isLauncherError(err) &&
+      err.type === 'instance' &&
+      err.payload.code === 'NOT_FOUND'
+    );
+  });
+
   return {
     get data() {
       return data();
@@ -89,8 +99,20 @@ export const useInstance = (id: Accessor<string | undefined>) => {
     get isError() {
       return isError();
     },
+    get isNotFound() {
+      return isNotFound();
+    },
     get isFetching() {
       return instances.isFetching || instanceQuery.isFetching;
+    },
+    refetch: () => {
+      if (instances.isError) {
+        void instances.refetch();
+      }
+
+      if (instanceQuery.isError) {
+        void instanceQuery.refetch();
+      }
     },
   };
 };

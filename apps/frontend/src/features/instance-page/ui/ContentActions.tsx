@@ -12,6 +12,7 @@ import {
 } from '@/features/content';
 import { useRevealInExplorer } from '@/features/instance';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import {
   CombinedTooltip,
   DropdownMenu,
@@ -52,12 +53,12 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
       enableContents({
         id: local.instanceId,
         paths: [local.content.contentPath],
-      });
+      }).catch(logError);
     } else {
       disableContents({
         id: local.instanceId,
         paths: [local.content.contentPath],
-      });
+      }).catch(logError);
     }
   };
 
@@ -65,14 +66,14 @@ export const ContentActions: Component<ContentActionsProps> = (props) => {
     removeInstanceContents({
       id: local.instanceId,
       paths: [local.content.contentPath],
-    });
+    }).catch(logError);
   };
 
   const handleShowFile = () => {
     revealInExplorer({
       path: `${local.instancePath}/${local.content.contentPath}${local.content.disabled ? '.disabled' : ''}`,
       exact: false,
-    });
+    }).catch(logError);
   };
 
   return (

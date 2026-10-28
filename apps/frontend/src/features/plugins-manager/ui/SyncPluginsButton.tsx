@@ -4,6 +4,7 @@ import IconMdiReload from '~icons/mdi/reload';
 
 import { useSyncPlugins } from '@/features/plugins';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { CombinedTooltip, IconButton } from '@/shared/ui-kit';
 
 export type SyncPluginsButtonProps = ComponentProps<'button'>;
@@ -14,7 +15,11 @@ export const SyncPluginsButton: Component<SyncPluginsButtonProps> = (props) => {
   const syncPlugins = useSyncPlugins();
 
   const handleRefreshPlugins = async () => {
-    await syncPlugins.mutateAsync();
+    try {
+      await syncPlugins.mutateAsync();
+    } catch (error) {
+      logError('Failed to sync plugins:', error);
+    }
   };
 
   return (

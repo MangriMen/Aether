@@ -10,6 +10,7 @@ import {
   type ActionOnInstanceLaunchType,
 } from '@/features/settings';
 import { useTranslation } from '@/shared/i18n';
+import { logError } from '@/shared/log';
 import { SettingsEntry } from '@/shared/settings-layout';
 import {
   Select,
@@ -56,9 +57,13 @@ export const SelectActionOnInstanceLaunchEntry: Component<
       return;
     }
 
-    await updateAppSettings.mutateAsync({
-      actionOnInstanceLaunch: value.value,
-    });
+    try {
+      await updateAppSettings.mutateAsync({
+        actionOnInstanceLaunch: value.value,
+      });
+    } catch (error) {
+      logError('Failed to save the launch action:', error);
+    }
   };
 
   return (
