@@ -261,9 +261,19 @@ fn assert_unsupported(err: InstanceError, expected_operation: &str) {
 }
 
 fn assert_invalid_answer(result: Result<impl std::fmt::Debug, InstanceError>) {
+    assert_refused_with(
+        result,
+        &format!("Plugin '{PLUGIN_ID}' returned an invalid answer from"),
+    );
+}
+
+fn assert_refused_with(result: Result<impl std::fmt::Debug, InstanceError>, expected: &str) {
     match result {
         Err(InstanceError::ContentProviderError { reason }) => {
-            assert!(reason.contains(PLUGIN_ID), "{reason}");
+            assert!(
+                reason.contains(expected),
+                "expected `{expected}` in: {reason}"
+            );
         }
         other => panic!("expected the answer to be refused, got {other:?}"),
     }
@@ -951,11 +961,12 @@ async fn should_refuse_an_answer_when_it_has_the_wrong_shape() {
         vec![("cf_resolve_install_plan", encode("not a plan"))],
     );
 
-    assert_invalid_answer(
+    assert_refused_with(
         fixture
             .proxy
             .resolve_install_plan(plan_params(existing_target()))
             .await,
+        "the plugin exchanged malformed data",
     );
 }
 
@@ -1376,11 +1387,12 @@ async fn should_refuse_a_pack_file_when_the_plugin_cannot_read_it() {
     std::fs::create_dir_all(outside.parent().unwrap()).unwrap();
     std::fs::write(&outside, b"zip").unwrap();
 
-    assert_invalid_answer(
+    assert_refused_with(
         fixture
             .proxy
             .resolve_pack_metadata(PackSource::File(outside))
             .await,
+        "a pack file has to be in the plugin's cache or in an instance",
     );
     assert!(fixture.called().is_empty());
 }
