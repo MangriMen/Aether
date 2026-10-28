@@ -2,20 +2,10 @@ name: Audit
 
 on:
   pull_request:
-    paths:
-      - "**/Cargo.toml"
-      - Cargo.lock
-      - scripts/licenses/deny.toml
-      - "**/package.json"
-      - bun.lock
+    paths: ["**/Cargo.toml", "Cargo.lock", "scripts/licenses/deny.toml"]
   push:
     branches: [main]
-    paths:
-      - "**/Cargo.toml"
-      - Cargo.lock
-      - scripts/licenses/deny.toml
-      - "**/package.json"
-      - bun.lock
+    paths: ["**/Cargo.toml", "Cargo.lock", "scripts/licenses/deny.toml"]
   schedule:
     - cron: "0 6 * * 1"
 
