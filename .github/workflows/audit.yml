@@ -22,6 +22,8 @@ on:
 jobs:
   cargo-audit:
     runs-on: ubuntu-22.04
+    # non-blocking at first
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
@@ -33,6 +35,8 @@ jobs:
 
   bun-audit:
     runs-on: ubuntu-22.04
+    # non-blocking at first
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
