@@ -65,28 +65,3 @@ impl DefaultInstanceSettingsStorage for FsDefaultInstanceSettingsStorage {
         Ok(settings)
     }
 }
-
-impl FsDefaultInstanceSettingsStorage {
-    /// Same signature as trait but with boxed closure for object-safety.
-    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
-    where
-        F: FnOnce(&mut DefaultInstanceSettings) -> UpdateAction<R> + Send,
-    {
-        Ok(self
-            .store
-            .update_with_default(|dto| {
-                let mut domain_settings = DefaultInstanceSettings::from(dto.clone());
-
-                let action = f(&mut domain_settings);
-
-                match action {
-                    UpdateAction::Save(return_value) => {
-                        *dto = DefaultInstanceSettingsV1::from(&domain_settings);
-                        UpdateAction::Save(return_value)
-                    }
-                    UpdateAction::NoChanges(return_value) => UpdateAction::NoChanges(return_value),
-                }
-            })
-            .await?)
-    }
-}
