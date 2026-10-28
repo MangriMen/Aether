@@ -77,13 +77,18 @@ impl std::fmt::Display for ProviderId {
 impl FromStr for ProviderId {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (plugin, cap) = s.split_once(Self::SEPARATOR).ok_or_else(|| {
+        let invalid = || {
             format!(
                 "Invalid format '{}'. Expected plugin{}capability",
                 s,
                 Self::SEPARATOR
             )
-        })?;
+        };
+
+        let (plugin, cap) = s.split_once(Self::SEPARATOR).ok_or_else(invalid)?;
+        if plugin.is_empty() || cap.is_empty() {
+            return Err(invalid());
+        }
 
         Ok(Self {
             plugin_id: plugin.to_string(),
@@ -121,9 +126,10 @@ mod tests {
 
     #[test]
     fn should_fail_to_parse_provider_id_when_a_part_is_empty() {
-        let id: ProviderId = "#only_cap".parse().unwrap();
-        assert!(id.plugin_id.is_empty());
-        assert_eq!(id.capability_id, "only_cap");
+        for value in ["#only_cap", "only_plugin#", "#"] {
+            let err = value.parse::<ProviderId>().unwrap_err();
+            assert!(err.contains("Invalid format"), "{value}: {err}");
+        }
     }
 
     #[test]
