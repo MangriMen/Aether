@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use rstest::rstest;
 use tempfile::TempDir;
 
 use crate::features::instance::domain::{InstanceError, InstanceId};
@@ -29,176 +30,98 @@ fn resolve(instance_dir: &Path, relative_path: &str) -> Result<PathBuf, Instance
 
 // ── validate_relative_path ──
 
-#[test]
-fn should_accept_a_path_when_it_is_a_plain_relative_one() {
-    let path = validate_relative_path("mods/example.jar").expect("plain path should be accepted");
-    assert_eq!(path, PathBuf::from("mods").join("example.jar"));
-}
-
-#[test]
-fn should_accept_a_path_when_it_is_a_single_file_name() {
+#[rstest]
+#[case::plain_relative_path("mods/example.jar", PathBuf::from("mods").join("example.jar"))]
+#[case::single_file_name("pack.toml", PathBuf::from("pack.toml"))]
+#[case::backslash_separators(
+    r"config\mod\settings.json",
+    PathBuf::from("config").join("mod").join("settings.json")
+)]
+fn should_accept_a_path_when_it_is_valid(#[case] path: &str, #[case] expected: PathBuf) {
     assert_eq!(
-        validate_relative_path("pack.toml").expect("file name should be accepted"),
-        PathBuf::from("pack.toml")
+        validate_relative_path(path).expect("path should be accepted"),
+        expected
     );
 }
 
-#[test]
-fn should_accept_a_path_when_it_uses_backslashes_as_separators() {
-    assert_eq!(
-        validate_relative_path(r"config\mod\settings.json").expect("should be accepted"),
-        PathBuf::from("config").join("mod").join("settings.json")
+#[rstest]
+// parent directory segments
+#[case::parent_at_start("../evil.txt")]
+#[case::parent_climbs_out("mods/../../evil.txt")]
+#[case::parent_in_the_middle("mods/../evil.txt")]
+#[case::parent_with_backslashes(r"mods\..\..\evil.txt")]
+#[case::parent_alone("..")]
+// current directory segments
+#[case::current_at_start("./pack.toml")]
+#[case::current_in_the_middle("mods/./example.jar")]
+#[case::current_alone(".")]
+// absolute paths
+#[case::absolute_unix("/etc/passwd")]
+#[case::absolute_instances("/instances/inst-1/pack.toml")]
+#[case::absolute_backslash(r"\Windows\System32\evil.dll")]
+#[case::absolute_drive_slash("C:/Windows/System32/evil.dll")]
+#[case::absolute_drive_backslash(r"C:\Windows\System32\evil.dll")]
+#[case::absolute_unc(r"\\server\share\evil.dll")]
+#[case::absolute_verbatim(r"\\?\C:\evil.dll")]
+// WASI style: plugins speak `/instances/…` and `/mnt/d/…` to WASI, and neither form may be
+// accepted here
+#[case::wasi_instances("/instances/inst-1/mods/a.jar")]
+#[case::wasi_mnt("/mnt/d/instances/a.jar")]
+// empty or only separators
+#[case::empty("")]
+#[case::slash("/")]
+#[case::backslash(r"\")]
+#[case::double_slash("mods//a.jar")]
+#[case::trailing_slash("mods/")]
+#[case::double_backslash(r"mods\\a.jar")]
+// a first segment spelled as a drive is absolute on Windows, so it is refused everywhere
+#[case::drive_like_without_separator("C:evil.dll")]
+#[case::drive_like_lowercase("c:/evil.dll")]
+#[case::drive_like_alone("C:")]
+// Windows drops trailing dots and spaces: `.metadata.` and `.metadata ` are `.metadata` there
+#[case::metadata_trailing_dot(".metadata./instance.json")]
+#[case::metadata_trailing_space(".metadata /instance.json")]
+#[case::file_trailing_dot("mods/sodium.jar.")]
+#[case::folder_trailing_dot("mods./sodium.jar")]
+#[case::nul_byte("pack.toml\0.jar")]
+fn should_reject_a_path_when_it_is_invalid(#[case] path: &str) {
+    assert!(
+        matches!(
+            validate_relative_path(path),
+            Err(InstanceError::InvalidRelativePath { .. })
+        ),
+        "`{path}` must be rejected"
     );
-}
-
-#[test]
-fn should_reject_a_path_when_it_has_parent_directory_segments() {
-    for path in [
-        "../evil.txt",
-        "mods/../../evil.txt",
-        "mods/../evil.txt",
-        r"mods\..\..\evil.txt",
-        "..",
-    ] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_it_has_current_directory_segments() {
-    for path in ["./pack.toml", "mods/./example.jar", "."] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_it_is_absolute() {
-    for path in [
-        "/etc/passwd",
-        "/instances/inst-1/pack.toml",
-        r"\Windows\System32\evil.dll",
-        "C:/Windows/System32/evil.dll",
-        r"C:\Windows\System32\evil.dll",
-        r"\\server\share\evil.dll",
-        r"\\?\C:\evil.dll",
-    ] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_it_is_wasi_style() {
-    // Plugins speak `/instances/…` and `/mnt/d/…` to WASI, and
-    // neither form may be accepted here.
-    for path in ["/instances/inst-1/mods/a.jar", "/mnt/d/instances/a.jar"] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "WASI path `{path}` must be rejected"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_it_is_empty_or_only_separators() {
-    for path in ["", "/", r"\", "mods//a.jar", "mods/", r"mods\\a.jar"] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
-}
-
-/// A first segment spelled as a drive is absolute on Windows, so it is refused everywhere.
-#[test]
-fn should_reject_a_drive_like_first_segment_when_on_any_platform() {
-    for path in ["C:evil.dll", "c:/evil.dll", "C:"] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
 }
 
 /// On Windows a `:` inside a name is a drive, a prefix or an alternate data stream.
 #[cfg(windows)]
-#[test]
-fn should_reject_colon_in_a_segment_when_on_windows() {
-    for path in ["pack.toml:secret", "mods/a.jar:stream", "mods/C:evil.dll"] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
+#[rstest]
+#[case::alternate_data_stream("pack.toml:secret")]
+#[case::stream_in_a_folder("mods/a.jar:stream")]
+#[case::drive_in_a_segment("mods/C:evil.dll")]
+fn should_reject_colon_in_a_segment_when_on_windows(#[case] path: &str) {
+    assert!(
+        matches!(
+            validate_relative_path(path),
+            Err(InstanceError::InvalidRelativePath { .. })
+        ),
+        "`{path}` must be rejected"
+    );
 }
 
 /// Elsewhere a `:` is part of a name a user's file may have.
 #[cfg(not(windows))]
-#[test]
-fn should_accept_colon_in_a_file_name_when_not_on_windows() {
-    for path in ["mods/a:b.jar", "pack.toml:secret", "mods/C:evil.dll"] {
-        assert_eq!(
-            validate_relative_path(path).unwrap(),
-            path.split('/').collect::<PathBuf>(),
-            "`{path}` must be accepted"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_a_segment_ends_with_a_dot_or_space() {
-    // Windows drops them: `.metadata.` and `.metadata ` are `.metadata` there.
-    for path in [
-        ".metadata./instance.json",
-        ".metadata /instance.json",
-        "mods/sodium.jar.",
-        "mods./sodium.jar",
-    ] {
-        assert!(
-            matches!(
-                validate_relative_path(path),
-                Err(InstanceError::InvalidRelativePath { .. })
-            ),
-            "`{path}` must be rejected"
-        );
-    }
-}
-
-#[test]
-fn should_reject_a_path_when_it_contains_a_nul_byte() {
-    assert!(matches!(
-        validate_relative_path("pack.toml\0.jar"),
-        Err(InstanceError::InvalidRelativePath { .. })
-    ));
+#[rstest]
+#[case::colon_in_a_file_name("mods/a:b.jar")]
+#[case::stream_like_name("pack.toml:secret")]
+#[case::drive_like_in_a_segment("mods/C:evil.dll")]
+fn should_accept_colon_in_a_file_name_when_not_on_windows(#[case] path: &str) {
+    assert_eq!(
+        validate_relative_path(path).unwrap(),
+        path.split('/').collect::<PathBuf>(),
+        "`{path}` must be accepted"
+    );
 }
 
 // ── resolve_instance_file_path ──
@@ -359,93 +282,58 @@ fn check(relative_path: &str) -> Result<(), InstanceError> {
     check_plugin_write_allowed(PLUGIN_ID, relative_path)
 }
 
-#[test]
-fn should_allow_a_plugin_write_when_the_path_is_outside_metadata() {
-    for path in ["mods/example.jar", "pack.toml", "config/a/b.txt"] {
-        assert!(check(path).is_ok(), "{path} should be allowed");
-    }
+#[rstest]
+#[case::outside_metadata_mod("mods/example.jar")]
+#[case::outside_metadata_pack("pack.toml")]
+#[case::outside_metadata_nested("config/a/b.txt")]
+#[case::own_metadata_file(".metadata/plugins/packwiz/packwiz.toml")]
+#[case::own_metadata_nested(".metadata/plugins/packwiz/state/cache.bin")]
+// the plugin's own subtree is its own whichever separator is used
+#[case::own_metadata_backslashes(r".metadata\plugins\packwiz\packwiz.toml")]
+fn should_allow_a_plugin_write_when_the_path_is_permitted(#[case] path: &str) {
+    assert!(check(path).is_ok(), "{path} should be allowed");
 }
 
-#[test]
-fn should_allow_a_plugin_write_when_the_path_is_in_its_own_metadata_subtree() {
-    for path in [
-        ".metadata/plugins/packwiz/packwiz.toml",
-        ".metadata/plugins/packwiz/state/cache.bin",
-    ] {
-        assert!(check(path).is_ok(), "{path} should be allowed");
-    }
+#[rstest]
+#[case::another_plugins_directory(
+    ".metadata/plugins/curseforge/settings.toml",
+    "is not this plugin's own directory"
+)]
+// Same directory on a case-insensitive filesystem — must not pass on the strength of spelling
+// alone.
+#[case::another_plugins_directory_by_case(
+    ".metadata/plugins/Packwiz/packwiz.toml",
+    "is not this plugin's own directory"
+)]
+// Allowing these would mean writing a *file* called `packwiz`, `plugins` or `.metadata`
+// where the core expects a directory.
+#[case::metadata_directory(".metadata", "is a directory, not a file in it")]
+#[case::plugins_directory(".metadata/plugins", "is a directory, not a file in it")]
+#[case::own_plugin_directory(".metadata/plugins/packwiz", "is a directory, not a file in it")]
+// `.METADATA` is the same directory on Windows. It is refused rather than allowed under a
+// second spelling, even though it matches nothing the core writes.
+#[case::metadata_upper_case(".METADATA/instance.json", "must not slip past on case")]
+#[case::metadata_mixed_case(".Metadata/plugins/packwiz/packwiz.toml", "must not slip past on case")]
+// a Windows-style separator must not hide the `.metadata` segment
+#[case::metadata_backslash(r".metadata\instance.json", "must not hide the `.metadata` segment")]
+fn should_refuse_a_plugin_write_when_the_path_is_not_permitted(
+    #[case] path: &str,
+    #[case] reason: &str,
+) {
+    assert!(check(path).is_err(), "{path}: {reason}");
 }
 
-#[test]
-fn should_refuse_a_plugin_write_when_the_path_is_in_instance_metadata() {
-    let err = check(".metadata/instance.json")
-        .expect_err("instance.json belongs to the launcher, not to a plugin");
+#[rstest]
+// instance.json belongs to the launcher, not to a plugin
+#[case::instance_metadata(".metadata/instance.json")]
+// The segment rules run first, so this never reaches the `.metadata` comparison.
+#[case::traversal_into_metadata("mods/../.metadata/instance.json")]
+fn should_refuse_a_plugin_write_with_an_invalid_path_error_when_the_path_is_forbidden(
+    #[case] path: &str,
+) {
+    let err = check(path).expect_err("the path must be refused");
     assert!(
         matches!(err, InstanceError::InvalidRelativePath { .. }),
         "{err}"
-    );
-}
-
-#[test]
-fn should_refuse_a_plugin_write_when_the_path_is_in_another_plugins_directory() {
-    for path in [
-        ".metadata/plugins/curseforge/settings.toml",
-        // Same directory on a case-insensitive filesystem — must not pass on the strength of
-        // spelling alone.
-        ".metadata/plugins/Packwiz/packwiz.toml",
-    ] {
-        assert!(
-            check(path).is_err(),
-            "{path} is not this plugin's own directory"
-        );
-    }
-}
-
-#[test]
-fn should_refuse_a_plugin_write_when_the_path_is_the_plugins_directory_itself() {
-    // Allowing these would mean writing a *file* called `packwiz`, `plugins` or `.metadata`
-    // where the core expects a directory.
-    for path in [
-        ".metadata",
-        ".metadata/plugins",
-        ".metadata/plugins/packwiz",
-    ] {
-        assert!(
-            check(path).is_err(),
-            "{path} is a directory, not a file in it"
-        );
-    }
-}
-
-#[test]
-fn should_recognise_metadata_when_its_case_differs() {
-    // `.METADATA` is the same directory on Windows. It is refused rather than allowed under a
-    // second spelling, even though it matches nothing the core writes.
-    for path in [
-        ".METADATA/instance.json",
-        ".Metadata/plugins/packwiz/packwiz.toml",
-    ] {
-        assert!(check(path).is_err(), "{path} must not slip past on case");
-    }
-}
-
-#[test]
-fn should_refuse_a_path_when_a_traversal_leads_into_metadata() {
-    // The segment rules run first, so this never reaches the `.metadata` comparison.
-    assert!(matches!(
-        check("mods/../.metadata/instance.json"),
-        Err(InstanceError::InvalidRelativePath { .. })
-    ));
-}
-
-#[test]
-fn should_treat_a_backslash_as_a_separator_when_checking_plugin_writes() {
-    assert!(
-        check(r".metadata\instance.json").is_err(),
-        "a Windows-style separator must not hide the `.metadata` segment"
-    );
-    assert!(
-        check(r".metadata\plugins\packwiz\packwiz.toml").is_ok(),
-        "the plugin's own subtree is its own whichever separator is used"
     );
 }
