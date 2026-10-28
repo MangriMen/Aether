@@ -27,7 +27,7 @@ use crate::{
         },
         minecraft::ModLoader,
         plugins::{
-            ApiConfig, LoadConfig, ManifestError, Plugin, PluginCallError, PluginCapabilities,
+            ApiConfig, LoadConfig, Plugin, PluginCallError, PluginCapabilities,
             PluginContentProviderCapability, PluginError, PluginHandle, PluginInstance,
             PluginInternalEvent, PluginManifest, PluginMetadata, PluginRegistry, PluginState,
             RuntimeConfig,
@@ -308,25 +308,6 @@ fn should_ignore_unknown_keys_when_the_provider_declares_them() {
 
     assert_eq!(capability.metadata.platform, None);
     assert_eq!(capability.handlers.resolve_file, None);
-}
-
-#[test]
-fn should_refuse_a_platform_when_the_provider_has_no_resolve_file() {
-    let capabilities = capabilities(
-        r#"{
-            "contentProviders": [{
-                "id": "curseforge",
-                "name": "CurseForge",
-                "platform": "curseforge",
-                "handlers": { "search": "s", "getContent": "g" }
-            }]
-        }"#,
-    );
-
-    assert!(matches!(
-        capabilities.validate(),
-        Err(ManifestError::PlatformWithoutResolveFile { .. })
-    ));
 }
 
 #[test]

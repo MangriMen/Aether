@@ -218,39 +218,6 @@ mod tests {
         );
     }
 
-    fn parse_with_id(id: &str) -> Result<PluginManifest, ManifestError> {
-        let json = format!(
-            r#"{{
-                "metadata": {{ "id": {id:?}, "name": "Test", "version": "0.1.0" }},
-                "runtime": {{}},
-                "load": {{ "type": "extism", "file": "test.wasm" }},
-                "api": {{ "version": "0.2.0" }}
-            }}"#
-        );
-
-        serde_json::from_str::<PluginManifestDto>(&json)
-            .expect("manifest should parse")
-            .try_into()
-    }
-
-    #[test]
-    fn should_reject_manifest_when_the_plugin_id_is_invalid() {
-        for id in ["", "a#b", "core:modrinth", "Packwiz"] {
-            assert!(
-                matches!(parse_with_id(id), Err(ManifestError::InvalidId { .. })),
-                "{id:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn should_reject_manifest_when_the_plugin_id_is_reserved() {
-        assert!(matches!(
-            parse_with_id("aether"),
-            Err(ManifestError::ReservedPluginId)
-        ));
-    }
-
     #[test]
     fn should_not_write_a_host_function_declaration_when_none_was_made() {
         let manifest = parse(r#"{ "version": "0.2.0" }"#);

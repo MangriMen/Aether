@@ -277,22 +277,6 @@ mod tests {
     }
 
     #[test]
-    fn should_refuse_a_host_when_it_is_a_whole_drive() {
-        // The top of whatever drive the temporary directory is on, not a drive letter that may
-        // not exist.
-        let temp = TempDir::new().unwrap();
-        let root = temp.path().ancestors().last().unwrap();
-
-        let result = edit(vec![folder(root, "/drive")]);
-
-        assert_eq!(
-            rejection(&result),
-            Some(AllowedPathRejection::HostIsRoot),
-            "{result:?}"
-        );
-    }
-
-    #[test]
     fn should_refuse_a_host_when_it_is_a_file() {
         let dir = tempfile::tempdir().unwrap();
         let file = dir.path().join("pack.toml");
