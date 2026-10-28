@@ -57,7 +57,11 @@ pub fn get_jvm_arguments(
         result.push(class_paths.to_owned());
     }
 
-    result.push(format!("-Xmx{max_memory}M"));
+    // `-Xmx0M` is not a valid heap size and the JVM refuses to start; without the flag it picks
+    // its own default.
+    if max_memory > 0 {
+        result.push(format!("-Xmx{max_memory}M"));
+    }
     result.extend(custom_args.iter().filter(|arg| !arg.is_empty()).cloned());
 
     Ok(result)
@@ -581,6 +585,14 @@ mod tests {
         let custom = vec!["-Dfoo=bar".to_string(), String::new(), "-Dbaz".to_string()];
         let out = jvm(&e, Some(&[]), "cp", 512, &custom).unwrap();
         assert_eq!(out, vec!["-Xmx512M", "-Dfoo=bar", "-Dbaz"]);
+    }
+
+    #[test]
+    fn should_omit_the_heap_flag_when_the_memory_is_zero() {
+        let e = env();
+        let custom = vec!["-Dfoo=bar".to_string()];
+        let out = jvm(&e, Some(&[]), "cp", 0, &custom).unwrap();
+        assert_eq!(out, vec!["-Dfoo=bar"]);
     }
 
     #[test]
