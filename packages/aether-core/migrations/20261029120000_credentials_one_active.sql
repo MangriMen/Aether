@@ -1,6 +1,5 @@
--- At most one active account. Older builds could leave several rows active (activating the target
--- before deactivating the rest), so keep the first one by insertion order and deactivate the others
--- before the index can be created.
+-- At most one active account: keep the first active row by insertion order, deactivate the rest,
+-- then forbid a second one.
 UPDATE credentials
 SET is_active = 0
 WHERE is_active = 1
