@@ -13,22 +13,22 @@ pub enum AppSettingsError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn cannot_set_effect_format() {
-        let err = AppSettingsError::CanNotSetEffect("not supported".to_string());
-        assert_eq!(err.to_string(), "Can't set effect: not supported");
-    }
-
-    #[test]
-    fn cannot_recreate_window_format() {
-        let err = AppSettingsError::CanNotRecreateWindow("window busy".to_string());
-        assert_eq!(err.to_string(), "Can't recreate window: window busy");
-    }
-
-    #[test]
-    fn storage_error_format() {
-        let err = AppSettingsError::Storage("disk full".to_string());
-        assert_eq!(err.to_string(), "Storage error: disk full");
+    #[rstest]
+    #[case::cannot_set_effect(
+        AppSettingsError::CanNotSetEffect("not supported".to_string()),
+        "Can't set effect: not supported"
+    )]
+    #[case::cannot_recreate_window(
+        AppSettingsError::CanNotRecreateWindow("window busy".to_string()),
+        "Can't recreate window: window busy"
+    )]
+    #[case::storage(
+        AppSettingsError::Storage("disk full".to_string()),
+        "Storage error: disk full"
+    )]
+    fn error_format(#[case] err: AppSettingsError, #[case] expected: &str) {
+        assert_eq!(err.to_string(), expected);
     }
 }

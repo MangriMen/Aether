@@ -71,6 +71,7 @@ mod tests {
     use crate::core::WindowError;
     use crate::features::settings::{ActionOnInstanceLaunch, WindowEffect};
     use async_trait::async_trait;
+    use rstest::rstest;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
     // ── Mock Storage ──
@@ -207,91 +208,72 @@ mod tests {
         assert!(!result.is_actual_transparent);
     }
 
+    fn settings_with(
+        transparent: bool,
+        is_actual_transparent: bool,
+        effect: WindowEffect,
+    ) -> AppSettings {
+        AppSettings {
+            action_on_instance_launch: ActionOnInstanceLaunch::Nothing,
+            is_actual_transparent,
+            transparent,
+            window_effect: effect,
+        }
+    }
+
+    // Whether the visual effect is applied depends on the old/new transparency and old/new effect.
+    #[rstest]
+    #[case::transparent_and_effect_applies(
+        AppSettings::default(),
+        Some(true),
+        WindowEffect::Acrylic,
+        true
+    )]
+    #[case::effect_changes_when_transparent_applies(
+        settings_with(true, true, WindowEffect::Off),
+        None,
+        WindowEffect::Mica,
+        true
+    )]
+    #[case::same_effect_not_applied_when_transparent(
+        settings_with(true, false, WindowEffect::Mica),
+        None,
+        WindowEffect::Mica,
+        false
+    )]
+    #[case::effect_not_applied_when_not_transparent(
+        AppSettings::default(),
+        None,
+        WindowEffect::Acrylic,
+        false
+    )]
     #[tokio::test]
-    async fn edit_transparent_and_effect_applies_visual_effect() {
-        let storage = Arc::new(MockStorage::new(AppSettings::default()));
+    async fn edit_effect_apply_decision(
+        #[case] initial: AppSettings,
+        #[case] transparent: Option<bool>,
+        #[case] effect: WindowEffect,
+        #[case] expect_applied: bool,
+    ) {
+        let storage = Arc::new(MockStorage::new(initial));
         let window = Arc::new(MockWindowManager::new(false));
         let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
 
         let request = EditAppSettingsRequest {
             action_on_instance_launch: None,
-            transparent: Some(true),
-            window_effect: Some(WindowEffect::Acrylic),
+            transparent,
+            window_effect: Some(effect),
         };
 
         let result = use_case.execute(request).await.unwrap();
-        assert!(result.transparent);
-        assert_eq!(result.window_effect, WindowEffect::Acrylic);
-        assert!(
+        assert_eq!(result.window_effect, effect);
+        assert_eq!(
+            result.transparent,
+            transparent.unwrap_or(initial.transparent)
+        );
+        assert_eq!(
             window.apply_effect_called.load(Ordering::SeqCst),
-            "apply_visual_effect should have been called"
-        );
-    }
-
-    #[tokio::test]
-    async fn edit_effect_changes_when_transparent_calls_apply() {
-        let initial = AppSettings {
-            action_on_instance_launch: ActionOnInstanceLaunch::Nothing,
-            is_actual_transparent: true,
-            transparent: true,
-            window_effect: WindowEffect::Off,
-        };
-        let storage = Arc::new(MockStorage::new(initial));
-        let window = Arc::new(MockWindowManager::new(false));
-        let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
-
-        let request = EditAppSettingsRequest {
-            action_on_instance_launch: None,
-            transparent: None,
-            window_effect: Some(WindowEffect::Mica),
-        };
-
-        let result = use_case.execute(request).await.unwrap();
-        assert_eq!(result.window_effect, WindowEffect::Mica);
-        assert!(window.apply_effect_called.load(Ordering::SeqCst));
-    }
-
-    #[tokio::test]
-    async fn edit_same_effect_not_applied_when_transparent() {
-        let initial = AppSettings {
-            action_on_instance_launch: ActionOnInstanceLaunch::Nothing,
-            is_actual_transparent: false,
-            transparent: true,
-            window_effect: WindowEffect::Mica,
-        };
-        let storage = Arc::new(MockStorage::new(initial));
-        let window = Arc::new(MockWindowManager::new(false));
-        let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
-
-        let request = EditAppSettingsRequest {
-            action_on_instance_launch: None,
-            transparent: None,
-            window_effect: Some(WindowEffect::Mica),
-        };
-
-        let _ = use_case.execute(request).await.unwrap();
-        assert!(
-            !window.apply_effect_called.load(Ordering::SeqCst),
-            "apply should NOT be called when effect is the same"
-        );
-    }
-
-    #[tokio::test]
-    async fn edit_effect_not_applied_when_not_transparent() {
-        let storage = Arc::new(MockStorage::new(AppSettings::default()));
-        let window = Arc::new(MockWindowManager::new(false));
-        let use_case = EditAppSettingsUseCase::new(storage.clone(), window.clone());
-
-        let request = EditAppSettingsRequest {
-            action_on_instance_launch: None,
-            transparent: None,
-            window_effect: Some(WindowEffect::Acrylic),
-        };
-
-        let _ = use_case.execute(request).await.unwrap();
-        assert!(
-            !window.apply_effect_called.load(Ordering::SeqCst),
-            "apply should NOT be called when neither new nor old is transparent"
+            expect_applied,
+            "unexpected apply_visual_effect call state"
         );
     }
 

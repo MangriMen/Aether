@@ -33,47 +33,34 @@ impl From<EditAppSettingsDto> for EditAppSettingsRequest {
 mod tests {
     use super::*;
     use crate::features::settings::{ActionOnInstanceLaunch, WindowEffect};
+    use rstest::rstest;
 
-    #[test]
-    fn edit_dto_all_fields_none() {
+    #[rstest]
+    #[case::all_fields_none(None, None, None, None, None)]
+    #[case::all_fields_some(
+        Some(ActionOnInstanceLaunchDto::Hide),
+        Some(true),
+        Some(WindowEffectDto::Acrylic),
+        Some(ActionOnInstanceLaunch::Hide),
+        Some(WindowEffect::Acrylic)
+    )]
+    #[case::partial_fields(None, Some(false), None, None, None)]
+    fn edit_dto_into_request(
+        #[case] action: Option<ActionOnInstanceLaunchDto>,
+        #[case] transparent: Option<bool>,
+        #[case] effect: Option<WindowEffectDto>,
+        #[case] expected_action: Option<ActionOnInstanceLaunch>,
+        #[case] expected_effect: Option<WindowEffect>,
+    ) {
         let dto = EditAppSettingsDto {
-            action_on_instance_launch: None,
-            transparent: None,
-            window_effect: None,
+            action_on_instance_launch: action,
+            transparent,
+            window_effect: effect,
         };
         let request: EditAppSettingsRequest = dto.into();
-        assert!(request.action_on_instance_launch.is_none());
-        assert!(request.transparent.is_none());
-        assert!(request.window_effect.is_none());
-    }
-
-    #[test]
-    fn edit_dto_all_fields_some() {
-        let dto = EditAppSettingsDto {
-            action_on_instance_launch: Some(ActionOnInstanceLaunchDto::Hide),
-            transparent: Some(true),
-            window_effect: Some(WindowEffectDto::Acrylic),
-        };
-        let request: EditAppSettingsRequest = dto.into();
-        assert_eq!(
-            request.action_on_instance_launch,
-            Some(ActionOnInstanceLaunch::Hide)
-        );
-        assert_eq!(request.transparent, Some(true));
-        assert_eq!(request.window_effect, Some(WindowEffect::Acrylic));
-    }
-
-    #[test]
-    fn edit_dto_partial_fields() {
-        let dto = EditAppSettingsDto {
-            action_on_instance_launch: None,
-            transparent: Some(false),
-            window_effect: None,
-        };
-        let request: EditAppSettingsRequest = dto.into();
-        assert!(request.action_on_instance_launch.is_none());
-        assert_eq!(request.transparent, Some(false));
-        assert!(request.window_effect.is_none());
+        assert_eq!(request.action_on_instance_launch, expected_action);
+        assert_eq!(request.transparent, transparent);
+        assert_eq!(request.window_effect, expected_effect);
     }
 
     #[test]

@@ -52,26 +52,26 @@ impl From<&crate::shared::IdempotencyManagerError> for ApplicationErrorDto {
 mod tests {
     use crate::core::infra::tauri::api::dtos::FrontendError;
     use crate::shared::{IdempotencyManagerError, RequestId};
+    use rstest::rstest;
 
-    #[test]
-    fn should_map_io_error_to_structured_application_error() {
-        let err = crate::Error::IoError(std::io::Error::other("disk full"));
+    #[rstest]
+    #[case::other(std::io::Error::other("disk full"), "other", Some("disk full"))]
+    #[case::not_found(std::io::Error::from(std::io::ErrorKind::NotFound), "notFound", None)]
+    fn should_map_io_error_to_structured_application_error(
+        #[case] io_error: std::io::Error,
+        #[case] expected_kind: &str,
+        #[case] expected_details: Option<&str>,
+    ) {
+        let err = crate::Error::IoError(io_error);
 
         let value = serde_json::to_value(FrontendError::from(err)).unwrap();
 
         assert_eq!(value["type"], "application");
         assert_eq!(value["payload"]["code"], "IO");
-        assert_eq!(value["payload"]["payload"]["kind"], "other");
-        assert_eq!(value["payload"]["payload"]["details"], "disk full");
-    }
-
-    #[test]
-    fn should_map_a_missing_file_to_the_not_found_kind() {
-        let err = crate::Error::IoError(std::io::Error::from(std::io::ErrorKind::NotFound));
-
-        let value = serde_json::to_value(FrontendError::from(err)).unwrap();
-
-        assert_eq!(value["payload"]["payload"]["kind"], "notFound");
+        assert_eq!(value["payload"]["payload"]["kind"], expected_kind);
+        if let Some(details) = expected_details {
+            assert_eq!(value["payload"]["payload"]["details"], details);
+        }
     }
 
     #[test]

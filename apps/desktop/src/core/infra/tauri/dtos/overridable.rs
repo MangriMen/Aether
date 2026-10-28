@@ -24,27 +24,16 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn overridable_dto_from_inactive() {
-        let overridable = Overridable::<i32> {
-            is_active: false,
-            data: 42,
-        };
+    #[rstest]
+    #[case::inactive(false, 42)]
+    #[case::active(true, 100)]
+    fn overridable_dto_from(#[case] is_active: bool, #[case] data: i32) {
+        let overridable = Overridable::<i32> { is_active, data };
         let dto: OverridableDto<i32> = overridable.into();
-        assert!(!dto.is_active);
-        assert_eq!(dto.data, 42);
-    }
-
-    #[test]
-    fn overridable_dto_from_active() {
-        let overridable = Overridable::<i32> {
-            is_active: true,
-            data: 100,
-        };
-        let dto: OverridableDto<i32> = overridable.into();
-        assert!(dto.is_active);
-        assert_eq!(dto.data, 100);
+        assert_eq!(dto.is_active, is_active);
+        assert_eq!(dto.data, data);
     }
 
     #[test]

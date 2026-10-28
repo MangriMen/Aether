@@ -49,6 +49,7 @@ mod tests {
         ActionOnInstanceLaunch, AppSettings, AppSettingsError, AppSettingsStorage, WindowEffect,
     };
     use async_trait::async_trait;
+    use rstest::rstest;
     use std::sync::Mutex;
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -156,14 +157,34 @@ mod tests {
 
     // ── Tests ──
 
-    #[tokio::test]
-    async fn recreate_window_happy_path() {
-        let storage = Arc::new(MockStorage::new(AppSettings {
+    #[rstest]
+    #[case::happy_path(
+        AppSettings {
             action_on_instance_launch: ActionOnInstanceLaunch::Nothing,
             is_actual_transparent: false,
             transparent: true,
             window_effect: WindowEffect::Mica,
-        }));
+        },
+        true,
+        WindowEffect::Mica
+    )]
+    #[case::correct_transparency(
+        AppSettings {
+            action_on_instance_launch: ActionOnInstanceLaunch::Hide,
+            is_actual_transparent: true,
+            transparent: false,
+            window_effect: WindowEffect::Acrylic,
+        },
+        false,
+        WindowEffect::Acrylic
+    )]
+    #[tokio::test]
+    async fn recreate_window_creates_with_settings(
+        #[case] initial: AppSettings,
+        #[case] expected_transparent: bool,
+        #[case] expected_effect: WindowEffect,
+    ) {
+        let storage = Arc::new(MockStorage::new(initial));
         let window = Arc::new(MockWindowManager::new());
         let use_case = RecreateWindowUseCase::new(storage.clone(), window.clone());
 
@@ -171,11 +192,11 @@ mod tests {
 
         assert!(window.close_and_wait_called.load(Ordering::SeqCst));
         assert!(window.create_window_called.load(Ordering::SeqCst));
-        assert_eq!(*window.last_transparent.lock().unwrap(), Some(true));
         assert_eq!(
-            *window.last_effect.lock().unwrap(),
-            Some(WindowEffect::Mica)
+            *window.last_transparent.lock().unwrap(),
+            Some(expected_transparent)
         );
+        assert_eq!(*window.last_effect.lock().unwrap(), Some(expected_effect));
     }
 
     #[tokio::test]
@@ -197,25 +218,5 @@ mod tests {
             "After recreate, is_actual_transparent should be true"
         );
         assert!(stored.transparent);
-    }
-
-    #[tokio::test]
-    async fn recreate_window_creates_with_correct_transparency() {
-        let storage = Arc::new(MockStorage::new(AppSettings {
-            action_on_instance_launch: ActionOnInstanceLaunch::Hide,
-            is_actual_transparent: true,
-            transparent: false,
-            window_effect: WindowEffect::Acrylic,
-        }));
-        let window = Arc::new(MockWindowManager::new());
-        let use_case = RecreateWindowUseCase::new(storage.clone(), window.clone());
-
-        use_case.execute().await.unwrap();
-
-        assert_eq!(*window.last_transparent.lock().unwrap(), Some(false));
-        assert_eq!(
-            *window.last_effect.lock().unwrap(),
-            Some(WindowEffect::Acrylic)
-        );
     }
 }

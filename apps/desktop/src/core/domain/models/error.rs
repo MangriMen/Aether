@@ -30,25 +30,23 @@ pub enum Error {
 mod tests {
     use super::*;
     use crate::shared::RequestId;
+    use rstest::rstest;
 
-    #[test]
-    fn error_launch_error_format() {
-        let err = Error::LaunchError("port in use".to_string());
-        assert_eq!(err.to_string(), "Launch critical error: port in use");
-    }
-
-    #[test]
-    fn error_from_app_settings_error() {
-        let app_err = AppSettingsError::Storage("db error".to_string());
-        let err: Error = app_err.into();
-        assert_eq!(err.to_string(), "Storage error: db error");
-    }
-
-    #[test]
-    fn error_from_window_error() {
-        let window_err = WindowError::Other("oops".to_string());
-        let err: Error = window_err.into();
-        assert_eq!(err.to_string(), "Unexpected error: oops");
+    #[rstest]
+    #[case::launch_error(
+        Error::LaunchError("port in use".to_string()),
+        "Launch critical error: port in use"
+    )]
+    #[case::from_app_settings_error(
+        AppSettingsError::Storage("db error".to_string()).into(),
+        "Storage error: db error"
+    )]
+    #[case::from_window_error(
+        WindowError::Other("oops".to_string()).into(),
+        "Unexpected error: oops"
+    )]
+    fn error_display(#[case] err: Error, #[case] expected: &str) {
+        assert_eq!(err.to_string(), expected);
     }
 
     #[test]
