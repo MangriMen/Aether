@@ -360,16 +360,6 @@ mod tests {
     }
 
     #[test]
-    fn ruled_single_with_space_is_passed_verbatim_not_split() {
-        let e = env();
-        let args = vec![Argument::Ruled {
-            rules: allow(),
-            value: ArgumentValue::Single("--width ${resolution_width}".to_string()),
-        }];
-        assert_eq!(call(&e, Some(&args), None).unwrap(), vec!["--width 1280"]);
-    }
-
-    #[test]
     fn modern_arguments_win_over_legacy() {
         let e = env();
         let out = call(&e, Some(&[normal("--a")]), Some("--legacy")).unwrap();

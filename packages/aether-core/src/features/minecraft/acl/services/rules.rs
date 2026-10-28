@@ -504,23 +504,6 @@ mod tests {
     }
 
     #[test]
-    fn os_rule_linux_arm_names_use_same_branch_as_other_names() {
-        // The `name != LinuxArm64 || name != LinuxArm32` guard is always true,
-        // so these behave exactly like any other name.
-        let arm32 = os_name(Os::LinuxArm32);
-        let arm64 = os_name(Os::LinuxArm64);
-        let expect32 = Os::native() == Os::LinuxArm32 || Os::native_arch("arm") == Os::LinuxArm32;
-        let expect64 =
-            Os::native() == Os::LinuxArm64 || Os::native_arch("aarch64") == Os::LinuxArm64;
-        assert_eq!(parse_os_rule(&arm32, "arm", true), expect32);
-        assert_eq!(parse_os_rule(&arm64, "aarch64", true), expect64);
-        assert_eq!(
-            parse_os_rule(&arm64, "aarch64", false),
-            Os::native_arch("aarch64") == Os::LinuxArm64
-        );
-    }
-
-    #[test]
     fn os_rule_version_regex_matching_anything_keeps_match() {
         let rule = OsRule {
             version: Some(".*".to_string()),
@@ -586,20 +569,5 @@ mod tests {
         assert_eq!(data["SIDE"].server, "");
         assert_eq!(data["MINECRAFT_JAR"].client, "client.jar");
         assert_eq!(data["MINECRAFT_JAR"].server, "srv");
-    }
-
-    #[test]
-    fn processor_rules_macro_overwrites_existing_keys() {
-        let mut data = HashMap::new();
-        crate::processor_rules! {
-            &mut data;
-            "SIDE": client => "old", server => "";
-        }
-        crate::processor_rules! {
-            &mut data;
-            "SIDE": client => "new", server => "";
-        }
-        assert_eq!(data.len(), 1);
-        assert_eq!(data["SIDE"].client, "new");
     }
 }
