@@ -2,6 +2,7 @@ use std::net::Ipv4Addr;
 
 use super::super::test_server::{TestServer, ok, redirect, status};
 use reqwest::{StatusCode, dns::Resolve, header::HeaderValue};
+use rstest::rstest;
 
 use super::policy::{redirect_target, resolve_public_addrs};
 use super::*;
@@ -21,121 +22,74 @@ fn hosts(values: &[&str]) -> Vec<String> {
 
 // ── is_host_allowed ──
 
-#[test]
-fn should_reject_when_allowed_hosts_is_empty() {
-    assert!(!is_host_allowed("example.com", &[]));
-}
-
-#[test]
-fn should_match_when_the_host_is_exact() {
-    assert!(is_host_allowed("example.com", &hosts(&["example.com"])));
-    assert!(!is_host_allowed("evil.com", &hosts(&["example.com"])));
-}
-
-#[test]
-fn should_match_when_the_host_is_a_wildcard_subdomain() {
-    let allowed = hosts(&["*.example.com"]);
-    assert!(is_host_allowed("api.example.com", &allowed));
-    assert!(is_host_allowed("a.b.example.com", &allowed));
-    // Extism's glob matching requires the dot, so the apex is not covered.
-    assert!(!is_host_allowed("example.com", &allowed));
-}
-
-#[test]
-fn should_not_match_when_the_host_is_a_suffix_of_another_domain() {
-    assert!(!is_host_allowed(
-        "api.example.com.evil.com",
-        &hosts(&["*.example.com"])
-    ));
-}
-
-#[test]
-fn should_match_when_the_entry_is_a_full_wildcard() {
-    assert!(is_host_allowed("anything.dev", &hosts(&["*"])));
-}
-
-#[test]
-fn should_match_when_the_entry_is_a_character_class_like_extism() {
-    let allowed = hosts(&["cdn[0-9].example.com"]);
-    assert!(is_host_allowed("cdn1.example.com", &allowed));
-    assert!(!is_host_allowed("cdnx.example.com", &allowed));
-}
-
-#[test]
-fn should_fall_back_to_exact_compare_when_the_glob_is_invalid() {
-    // `[` alone is not a valid glob pattern; Extism compares such entries literally.
-    let allowed = hosts(&["exa[mple.com"]);
-    assert!(is_host_allowed("exa[mple.com", &allowed));
-    assert!(!is_host_allowed("example.com", &allowed));
-}
-
-#[test]
-fn should_match_when_any_entry_in_the_list_matches() {
-    let allowed = hosts(&["a.example.com", "b.example.com"]);
-    assert!(is_host_allowed("b.example.com", &allowed));
-    assert!(!is_host_allowed("c.example.com", &allowed));
+#[rstest]
+#[case::empty_allowed_hosts(&[], &[], &["example.com"])]
+#[case::exact_host(&["example.com"], &["example.com"], &["evil.com"])]
+// Extism's glob matching requires the dot, so the apex is not covered.
+#[case::wildcard_subdomain(
+    &["*.example.com"],
+    &["api.example.com", "a.b.example.com"],
+    &["example.com"]
+)]
+#[case::suffix_of_another_domain(&["*.example.com"], &[], &["api.example.com.evil.com"])]
+#[case::full_wildcard(&["*"], &["anything.dev"], &[])]
+#[case::character_class_like_extism(
+    &["cdn[0-9].example.com"],
+    &["cdn1.example.com"],
+    &["cdnx.example.com"]
+)]
+// `[` alone is not a valid glob pattern; Extism compares such entries literally.
+#[case::invalid_glob_falls_back_to_exact_compare(
+    &["exa[mple.com"],
+    &["exa[mple.com"],
+    &["example.com"]
+)]
+#[case::any_entry_in_the_list(
+    &["a.example.com", "b.example.com"],
+    &["b.example.com"],
+    &["c.example.com"]
+)]
+fn should_judge_the_host_against_allowed_hosts(
+    #[case] allowed: &[&str],
+    #[case] matching: &[&str],
+    #[case] not_matching: &[&str],
+) {
+    let allowed = hosts(allowed);
+    for host in matching {
+        assert!(is_host_allowed(host, &allowed), "{host}");
+    }
+    for host in not_matching {
+        assert!(!is_host_allowed(host, &allowed), "{host}");
+    }
 }
 
 // ── is_blocked_ip ──
 
-#[test]
-fn should_block_when_the_address_is_loopback() {
-    assert!(is_blocked_ip("127.0.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("127.10.20.30".parse().unwrap()));
-    assert!(is_blocked_ip("::1".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_the_address_is_in_a_private_range() {
-    assert!(is_blocked_ip("10.0.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("172.16.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("172.31.255.255".parse().unwrap()));
-    assert!(is_blocked_ip("192.168.1.1".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_the_address_is_the_cloud_metadata_address() {
-    assert!(is_blocked_ip("169.254.169.254".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_the_address_is_unspecified_or_broadcast() {
-    assert!(is_blocked_ip("0.0.0.0".parse().unwrap()));
-    assert!(is_blocked_ip("255.255.255.255".parse().unwrap()));
-    assert!(is_blocked_ip("::".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_the_address_is_shared_benchmark_or_reserved() {
-    assert!(is_blocked_ip("100.64.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("100.127.255.255".parse().unwrap()));
-    assert!(is_blocked_ip("198.18.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("192.0.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("240.0.0.1".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_the_address_is_multicast_or_documentation() {
-    assert!(is_blocked_ip("224.0.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("192.0.2.1".parse().unwrap()));
-    assert!(is_blocked_ip("ff02::1".parse().unwrap()));
-    assert!(is_blocked_ip("2001:db8::1".parse().unwrap()));
-}
-
-#[test]
-fn should_block_when_an_ipv4_mapped_address_is_private() {
-    assert!(is_blocked_ip("::ffff:127.0.0.1".parse().unwrap()));
-    assert!(is_blocked_ip("::ffff:169.254.169.254".parse().unwrap()));
-    assert!(is_blocked_ip("::ffff:10.0.0.1".parse().unwrap()));
-}
-
-#[test]
-fn should_allow_when_the_address_is_public() {
-    assert!(!is_blocked_ip("1.1.1.1".parse().unwrap()));
-    assert!(!is_blocked_ip("8.8.8.8".parse().unwrap()));
-    assert!(!is_blocked_ip("104.16.0.1".parse().unwrap()));
-    assert!(!is_blocked_ip("2606:4700:4700::1111".parse().unwrap()));
-    assert!(!is_blocked_ip("::ffff:8.8.8.8".parse().unwrap()));
+#[rstest]
+#[case::loopback(&["127.0.0.1", "127.10.20.30", "::1"], &[])]
+#[case::private_range(&["10.0.0.1", "172.16.0.1", "172.31.255.255", "192.168.1.1"], &[])]
+#[case::cloud_metadata(&["169.254.169.254"], &[])]
+#[case::unspecified_or_broadcast(&["0.0.0.0", "255.255.255.255", "::"], &[])]
+#[case::shared_benchmark_or_reserved(
+    &["100.64.0.1", "100.127.255.255", "198.18.0.1", "192.0.0.1", "240.0.0.1"],
+    &[]
+)]
+#[case::multicast_or_documentation(&["224.0.0.1", "192.0.2.1", "ff02::1", "2001:db8::1"], &[])]
+#[case::ipv4_mapped_private(
+    &["::ffff:127.0.0.1", "::ffff:169.254.169.254", "::ffff:10.0.0.1"],
+    &[]
+)]
+#[case::public(
+    &[],
+    &["1.1.1.1", "8.8.8.8", "104.16.0.1", "2606:4700:4700::1111", "::ffff:8.8.8.8"]
+)]
+fn should_judge_the_address(#[case] blocked: &[&str], #[case] allowed: &[&str]) {
+    for ip in blocked {
+        assert!(is_blocked_ip(ip.parse().unwrap()), "{ip}");
+    }
+    for ip in allowed {
+        assert!(!is_blocked_ip(ip.parse().unwrap()), "{ip}");
+    }
 }
 
 // ── parse_url ──
