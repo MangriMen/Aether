@@ -57,6 +57,7 @@ impl From<crate::Error> for FrontendError {
                 Self::Application(ApplicationErrorDto::Launch { details })
             }
             crate::Error::IoError(err) => Self::Application(ApplicationErrorDto::Io {
+                kind: err.kind().into(),
                 details: err.to_string(),
             }),
             crate::Error::IdempotencyManager(err) => Self::Application((&err).into()),

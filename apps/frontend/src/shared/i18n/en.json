@@ -21,7 +21,11 @@
       "STORAGE": "App settings storage failure"
     },
     "application": {
-      "IO": "File system error: {{details}}",
+      "IO": {
+        "notFound": "A file or folder was not found",
+        "permissionDenied": "Access to a file or folder was denied",
+        "other": "File system error: {{details}}"
+      },
       "DUPLICATE_REQUEST": "This action is already in progress",
       "LAUNCH": "Failed to start the launcher: {{details}}"
     },

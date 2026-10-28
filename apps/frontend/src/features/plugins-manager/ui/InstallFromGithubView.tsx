@@ -6,6 +6,7 @@ import {
   type Component,
 } from 'solid-js';
 
+import { getTranslatedError, isLauncherError } from '@/features/errors';
 import {
   useInstallPluginFromProvider,
   usePluginPreview,
@@ -59,15 +60,19 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
   const [pickedTag, setPickedTag] = createSignal('');
 
   // A pick belongs to the repository it was made in; a new URL or release list invalidates it.
-  createEffect(() => {
-    debouncedUrl();
-    setPickedTag('');
-  });
+  let previousUrl: string | undefined;
 
   createEffect(() => {
+    const url = debouncedUrl();
     const releases = previewData()?.releases ?? [];
+    const urlChanged = url !== previousUrl;
 
-    if (!releases.some((release) => release.tag_name === pickedTag())) {
+    previousUrl = url;
+
+    if (
+      urlChanged ||
+      !releases.some((release) => release.tag_name === pickedTag())
+    ) {
       setPickedTag('');
     }
   });
@@ -150,8 +155,8 @@ export const InstallFromGithubView: Component<InstallFromGithubViewProps> = (
       {/* Error message */}
       <Show when={previewQuery.isError}>
         <p class='text-sm text-destructive'>
-          {previewQuery.error instanceof Error
-            ? previewQuery.error.message
+          {isLauncherError(previewQuery.error)
+            ? getTranslatedError(previewQuery.error, t)
             : t('plugins.githubPreviewError')}
         </p>
       </Show>
