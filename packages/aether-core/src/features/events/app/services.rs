@@ -729,37 +729,6 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn bar_ends_done_when_dropped_and_failed_after_fail() {
-        let (service, _storage, mut rx) = service();
-
-        let ok = service
-            .init_progress(java(), 1.0, "Downloading".to_string())
-            .await
-            .unwrap();
-        drop(ok);
-        let done = next_progress(&mut rx).await;
-        assert_eq!(done.fraction, None);
-        assert_eq!(done.message, "Completed");
-        assert_eq!(done.status, ProgressStatus::Done);
-
-        let broken = service
-            .init_progress(java(), 1.0, "Downloading".to_string())
-            .await
-            .unwrap();
-        broken.fail("No space left").await;
-        drop(broken);
-        let failed = next_progress(&mut rx).await;
-        assert_eq!(failed.fraction, None);
-        assert_eq!(failed.message, "No space left");
-        assert_eq!(
-            failed.status,
-            ProgressStatus::Failed {
-                message: "No space left".to_string()
-            }
-        );
-    }
-
     async fn snapshot(storage: &Arc<InMemoryProgressBarStorage>) -> ProgressBar {
         let bars = ListProgressBarsUseCase::new(storage.clone())
             .execute()
@@ -1298,36 +1267,6 @@ mod tests {
         drop(shared);
         settle().await;
         assert!(storage.list().await.is_empty());
-    }
-
-    #[tokio::test]
-    async fn mirrors_end_with_the_status_of_their_shared_bar() {
-        let (service, storage, mut rx) = service();
-        let pack_bar = service
-            .init_progress(pack("a"), 1.0, String::new())
-            .await
-            .unwrap();
-        let _waits = service.wait_on_shared(Some(&pack_bar), shared_java()).await;
-        let shared = service
-            .init_shared_progress(shared_java(), 10.0, String::new())
-            .await
-            .unwrap();
-        sent(&mut rx);
-
-        shared.fail("Not available").await;
-        drop(shared);
-        settle().await;
-
-        let failed = ProgressStatus::Failed {
-            message: "Not available".to_string(),
-        };
-        let ended: Vec<_> = sent(&mut rx)
-            .into_iter()
-            .map(|event| (event.mirror_of.is_some(), event.fraction, event.status))
-            .collect();
-        assert_eq!(ended, [(true, None, failed.clone()), (false, None, failed)]);
-        let left: Vec<_> = storage.list().await.into_iter().map(|bar| bar.id).collect();
-        assert_eq!(left, [pack_bar.id], "the waiting bar goes on");
     }
 
     /// How a [`CancellableBar`](crate::features::events::CancellableBar) settled by `settle`

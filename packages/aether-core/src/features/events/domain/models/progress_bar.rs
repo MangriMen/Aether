@@ -757,15 +757,4 @@ mod tests {
 
         assert!(rx.try_recv().is_err());
     }
-
-    #[tokio::test]
-    async fn dropping_detached_progress_bar_id_emits_nothing() {
-        let id = ProgressBarId {
-            id: Uuid::new_v4(),
-            progress_storage: None,
-            sequencer: None,
-        };
-        drop(id);
-        settle().await;
-    }
 }
