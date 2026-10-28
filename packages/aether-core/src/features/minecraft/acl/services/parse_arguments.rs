@@ -54,6 +54,7 @@ mod tests {
     use crate::features::minecraft::vanilla::{
         Argument, ArgumentValue, FeatureRule, Os, OsRule, Rule, RuleAction,
     };
+    use rstest::rstest;
 
     #[allow(clippy::unnecessary_wraps)]
     fn identity(s: &str) -> Result<String, MinecraftDomainError> {
@@ -99,9 +100,87 @@ mod tests {
         })
     }
 
-    #[test]
-    fn empty_input_produces_nothing() {
-        assert_eq!(run(&[], identity).unwrap(), Vec::<String>::new());
+    fn ruled(rules: Vec<Rule>, value: ArgumentValue) -> Argument {
+        Argument::Ruled { rules, value }
+    }
+
+    fn single(s: &str) -> ArgumentValue {
+        ArgumentValue::Single(s.to_string())
+    }
+
+    fn many(values: &[&str]) -> ArgumentValue {
+        ArgumentValue::Many(values.iter().map(ToString::to_string).collect())
+    }
+
+    fn demo_user_feature_rule() -> Rule {
+        Rule {
+            action: RuleAction::Allow,
+            os: None,
+            features: Some(FeatureRule {
+                is_demo_user: Some(true),
+                has_custom_resolution: None,
+                has_quick_plays_support: None,
+                is_quick_play_singleplayer: None,
+                is_quick_play_multiplayer: None,
+                is_quick_play_realms: None,
+            }),
+        }
+    }
+
+    #[rstest]
+    #[case::empty_input_produces_nothing(vec![], vec![])]
+    #[case::normal_without_spaces_is_single_argument(
+        vec![normal("--demo"), normal("-Xss1M")],
+        vec!["--demo", "-Xss1M"]
+    )]
+    #[case::normal_with_spaces_is_split_on_spaces(
+        vec![normal("--width 800 --height 600")],
+        vec!["--width", "800", "--height", "600"]
+    )]
+    #[case::normal_empty_string_gives_one_empty_argument(vec![normal("")], vec![""])]
+    #[case::normal_consecutive_spaces_give_empty_arguments(
+        vec![normal("a  b")],
+        vec!["a", "", "b"]
+    )]
+    #[case::ruled_single_allowed_is_added(
+        vec![ruled(allow_all(), single("--flag"))],
+        vec!["--flag"]
+    )]
+    #[case::ruled_many_allowed_adds_each_value_in_order(
+        vec![ruled(allow_all(), many(&["--a", "--b"]))],
+        vec!["--a", "--b"]
+    )]
+    #[case::ruled_many_denied_is_skipped(
+        vec![ruled(vec![never_matching_os_rule()], many(&["--a", "--b"]))],
+        vec![]
+    )]
+    #[case::ruled_with_empty_rules_is_allowed(
+        vec![ruled(vec![], single("--flag"))],
+        vec!["--flag"]
+    )]
+    #[case::ruled_feature_rule_for_demo_user_is_currently_skipped(
+        vec![ruled(vec![demo_user_feature_rule()], single("--demo"))],
+        vec![]
+    )]
+    #[case::ruled_single_with_spaces_is_passed_verbatim(
+        vec![ruled(allow_all(), single("a b"))],
+        vec!["a b"]
+    )]
+    #[case::ruled_many_with_spaces_is_passed_verbatim_per_value(
+        vec![ruled(allow_all(), many(&["-x", "a b"]))],
+        vec!["-x", "a b"]
+    )]
+    #[case::mixed_arguments_keep_order(
+        vec![
+            normal("-a 1"),
+            ruled(allow_all(), many(&["-b", "2"])),
+            ruled(vec![never_matching_os_rule()], single("-skipped")),
+            normal("-c"),
+        ],
+        vec!["-a", "1", "-b", "2", "-c"]
+    )]
+    fn parse_arguments_with_identity(#[case] args: Vec<Argument>, #[case] expected: Vec<&str>) {
+        assert_eq!(run(&args, identity).unwrap(), expected);
     }
 
     #[test]
@@ -109,22 +188,6 @@ mod tests {
         let mut out = vec!["first".to_string()];
         parse_arguments(&[normal("second")], &mut out, identity, "x64").unwrap();
         assert_eq!(out, vec!["first", "second"]);
-    }
-
-    #[test]
-    fn normal_without_spaces_is_single_argument() {
-        assert_eq!(
-            run(&[normal("--demo"), normal("-Xss1M")], identity).unwrap(),
-            vec!["--demo", "-Xss1M"]
-        );
-    }
-
-    #[test]
-    fn normal_with_spaces_is_split_on_spaces() {
-        assert_eq!(
-            run(&[normal("--width 800 --height 600")], identity).unwrap(),
-            vec!["--width", "800", "--height", "600"]
-        );
     }
 
     #[test]
@@ -151,28 +214,6 @@ mod tests {
     }
 
     #[test]
-    fn normal_empty_string_gives_one_empty_argument() {
-        assert_eq!(run(&[normal("")], identity).unwrap(), vec![""]);
-    }
-
-    #[test]
-    fn normal_consecutive_spaces_give_empty_arguments() {
-        assert_eq!(
-            run(&[normal("a  b")], identity).unwrap(),
-            vec!["a", "", "b"]
-        );
-    }
-
-    #[test]
-    fn ruled_single_allowed_is_added() {
-        let arg = Argument::Ruled {
-            rules: allow_all(),
-            value: ArgumentValue::Single("--flag".to_string()),
-        };
-        assert_eq!(run(&[arg], identity).unwrap(), vec!["--flag"]);
-    }
-
-    #[test]
     fn ruled_single_denied_is_skipped_and_parse_function_not_called() {
         let arg = Argument::Ruled {
             rules: vec![never_matching_os_rule()],
@@ -186,74 +227,6 @@ mod tests {
         .unwrap();
         assert!(out.is_empty());
         assert_eq!(calls.get(), 0);
-    }
-
-    #[test]
-    fn ruled_many_allowed_adds_each_value_in_order() {
-        let arg = Argument::Ruled {
-            rules: allow_all(),
-            value: ArgumentValue::Many(vec!["--a".to_string(), "--b".to_string()]),
-        };
-        assert_eq!(run(&[arg], identity).unwrap(), vec!["--a", "--b"]);
-    }
-
-    #[test]
-    fn ruled_many_denied_is_skipped() {
-        let arg = Argument::Ruled {
-            rules: vec![never_matching_os_rule()],
-            value: ArgumentValue::Many(vec!["--a".to_string(), "--b".to_string()]),
-        };
-        assert!(run(&[arg], identity).unwrap().is_empty());
-    }
-
-    #[test]
-    fn ruled_with_empty_rules_is_allowed() {
-        let arg = Argument::Ruled {
-            rules: vec![],
-            value: ArgumentValue::Single("--flag".to_string()),
-        };
-        assert_eq!(run(&[arg], identity).unwrap(), vec!["--flag"]);
-    }
-
-    #[test]
-    fn ruled_feature_rule_for_demo_user_is_currently_skipped() {
-        let arg = Argument::Ruled {
-            rules: vec![Rule {
-                action: RuleAction::Allow,
-                os: None,
-                features: Some(FeatureRule {
-                    is_demo_user: Some(true),
-                    has_custom_resolution: None,
-                    has_quick_plays_support: None,
-                    is_quick_play_singleplayer: None,
-                    is_quick_play_multiplayer: None,
-                    is_quick_play_realms: None,
-                }),
-            }],
-            value: ArgumentValue::Single("--demo".to_string()),
-        };
-        assert!(run(&[arg], identity).unwrap().is_empty());
-    }
-
-    #[test]
-    fn ruled_single_with_spaces_is_passed_verbatim() {
-        let arg = Argument::Ruled {
-            rules: allow_all(),
-            value: ArgumentValue::Single("a b".to_string()),
-        };
-        assert_eq!(run(&[arg], identity).unwrap(), vec!["a b"]);
-    }
-
-    #[test]
-    fn ruled_many_with_spaces_is_passed_verbatim_per_value() {
-        let arg = Argument::Ruled {
-            rules: allow_all(),
-            value: ArgumentValue::Many(vec!["-x".to_string(), "a b".to_string()]),
-        };
-        assert_eq!(
-            run(&[arg], identity).unwrap(),
-            vec!["-x".to_string(), "a b".to_string()]
-        );
     }
 
     #[test]
@@ -283,26 +256,6 @@ mod tests {
     }
 
     #[test]
-    fn mixed_arguments_keep_order() {
-        let args = vec![
-            normal("-a 1"),
-            Argument::Ruled {
-                rules: allow_all(),
-                value: ArgumentValue::Many(vec!["-b".to_string(), "2".to_string()]),
-            },
-            Argument::Ruled {
-                rules: vec![never_matching_os_rule()],
-                value: ArgumentValue::Single("-skipped".to_string()),
-            },
-            normal("-c"),
-        ];
-        assert_eq!(
-            run(&args, identity).unwrap(),
-            vec!["-a", "1", "-b", "2", "-c"]
-        );
-    }
-
-    #[test]
     fn error_from_normal_is_propagated() {
         let err = run(&[normal("x")], failing).unwrap_err();
         assert!(
@@ -310,18 +263,15 @@ mod tests {
         );
     }
 
-    #[test]
-    fn error_from_ruled_single_and_many_is_propagated() {
-        for value in [
-            ArgumentValue::Single("x".to_string()),
-            ArgumentValue::Many(vec!["x".to_string()]),
-        ] {
-            let arg = Argument::Ruled {
-                rules: allow_all(),
-                value,
-            };
-            assert!(run(&[arg], failing).is_err());
-        }
+    #[rstest]
+    #[case::single(single("x"))]
+    #[case::many(many(&["x"]))]
+    fn error_from_ruled_value_is_propagated(#[case] value: ArgumentValue) {
+        let arg = Argument::Ruled {
+            rules: allow_all(),
+            value,
+        };
+        assert!(run(&[arg], failing).is_err());
     }
 
     #[test]
