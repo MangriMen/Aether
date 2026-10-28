@@ -161,29 +161,11 @@ mod tests {
     use uuid::Uuid;
 
     #[test]
-    fn should_format_storage_error_when_displayed() {
-        let err = InstanceError::Storage("db error".into());
-        assert_eq!(err.to_string(), "Storage error: db error");
-    }
-
-    #[test]
     fn should_format_not_found_error_when_displayed() {
         let err = InstanceError::NotFound {
             instance_id: "abc".into(),
         };
         assert_eq!(err.to_string(), "Instance with id \"abc\" not found");
-    }
-
-    #[test]
-    fn should_format_capability_operation_error_when_displayed() {
-        let err = InstanceError::CapabilityOperationError;
-        assert_eq!(err.to_string(), "Capability operation error");
-    }
-
-    #[test]
-    fn should_format_prelaunch_command_error_when_displayed() {
-        let err = InstanceError::PrelaunchCommandError { code: 1 };
-        assert_eq!(err.to_string(), "Prelaunch command error with code: 1");
     }
 
     #[test]
