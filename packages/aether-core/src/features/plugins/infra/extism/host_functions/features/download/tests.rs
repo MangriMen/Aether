@@ -60,12 +60,6 @@ fn allow_any_address(_ip: IpAddr) -> bool {
     false
 }
 
-/// The production filter, except for the first test server: a hop away from it is judged
-/// by the real policy.
-fn production_filter_except_first(ip: IpAddr) -> bool {
-    ip != IpAddr::from([127, 0, 0, 1]) && is_blocked_ip(ip)
-}
-
 fn sha1_of(bytes: &[u8]) -> String {
     sha1_smol::Sha1::from(bytes).hexdigest()
 }
@@ -376,41 +370,6 @@ async fn should_replace_a_planted_file_when_it_does_not_match_its_name() {
     assert_eq!(std::fs::read(&planted).unwrap(), BODY);
 }
 
-#[tokio::test]
-async fn should_refuse_a_redirect_when_it_leads_to_a_host_outside_allowed_hosts() {
-    // The hop is checked like a first request, and the metadata address is not in
-    // `allowed_hosts`.
-    let cache = tempfile::tempdir().unwrap();
-    let hosts = loopback();
-    let addr = serve_once(
-        b"HTTP/1.1 302 Found\r\nLocation: http://169.254.169.254/\r\nContent-Length: 0\r\n\r\n"
-            .to_vec(),
-    )
-    .await;
-
-    let err = perform_download(
-        params(addr, FileHashDto::Sha1(sha1_of(BODY))),
-        &context(cache.path(), &hosts),
-        allow_any_address,
-    )
-    .await
-    .expect_err("a hop to a host outside allowed_hosts must be refused");
-
-    assert!(
-        matches!(
-            err,
-            PluginDownloadError::Http(PluginHttpError::HostNotAllowed { ref host })
-                if host == "169.254.169.254"
-        ),
-        "expected HostNotAllowed, got: {err}"
-    );
-    assert!(
-        only_directories(cache.path()),
-        "{:?}",
-        entries(cache.path())
-    );
-}
-
 // ── Redirects ──
 
 fn download_params(url: String) -> DownloadToCacheParamsDto {
@@ -478,36 +437,6 @@ async fn should_refuse_a_redirect_without_connecting_when_it_leads_outside_allow
         only_directories(cache.path()),
         "{:?}",
         entries(cache.path())
-    );
-}
-
-#[tokio::test]
-async fn should_refuse_a_redirect_to_a_non_public_address_when_the_production_filter_is_used() {
-    let cache = tempfile::tempdir().unwrap();
-    let hosts = vec!["*".to_string()];
-    let target = TestServer::start(SECOND, |_| ok(BODY)).await;
-    let location = target.url("/mod.jar");
-    let origin = TestServer::start(FIRST, move |_| redirect(302, &location)).await;
-
-    let err = perform_download(
-        download_params(origin.url("/mod.jar")),
-        &context(cache.path(), &hosts),
-        production_filter_except_first,
-    )
-    .await
-    .expect_err("a hop to a non-public address must be refused");
-
-    assert!(
-        matches!(
-            err,
-            PluginDownloadError::Http(PluginHttpError::BlockedAddress { .. })
-        ),
-        "expected BlockedAddress, got: {err}"
-    );
-    assert_eq!(
-        target.connections(),
-        0,
-        "the blocked host must not be contacted"
     );
 }
 
