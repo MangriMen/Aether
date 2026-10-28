@@ -100,110 +100,45 @@ impl ContentType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn should_return_mod_when_given_mod_loader_names() {
-        let loaders = vec!["fabric".to_string(), "quilt".to_string()];
+    #[rstest]
+    #[case::mod_loaders(&["fabric", "quilt"], Some(ContentType::Mod))]
+    #[case::datapack_loader(&["datapack"], Some(ContentType::DataPack))]
+    #[case::shader_loaders(&["iris", "optifine"], Some(ContentType::ShaderPack))]
+    #[case::resource_loaders(&["vanilla", "minecraft"], Some(ContentType::ResourcePack))]
+    #[case::unknown_loaders(&["unknown"], None)]
+    #[case::mod_wins_over_shader(&["fabric", "iris"], Some(ContentType::Mod))]
+    #[case::empty_loaders(&[], None)]
+    fn should_pick_content_type_when_given_loaders(
+        #[case] names: &[&str],
+        #[case] expected: Option<ContentType>,
+    ) {
+        let loaders: Vec<String> = names.iter().map(ToString::to_string).collect();
+        assert_eq!(ContentType::get_from_loaders(&loaders), expected);
+    }
+
+    #[rstest]
+    #[case::mods("/some/instance/mods/MyMod.jar", Some(ContentType::Mod))]
+    #[case::datapacks("/some/instance/datapacks/MyPack.zip", Some(ContentType::DataPack))]
+    #[case::resourcepacks(
+        "/some/instance/resourcepacks/MyPack.zip",
+        Some(ContentType::ResourcePack)
+    )]
+    #[case::shaderpacks(
+        "/some/instance/shaderpacks/MyShader.zip",
+        Some(ContentType::ShaderPack)
+    )]
+    #[case::unknown_folder("/some/instance/other/file.txt", None)]
+    #[case::root("/file.txt", None)]
+    fn should_pick_content_type_when_given_a_parent_folder(
+        #[case] path: &str,
+        #[case] expected: Option<ContentType>,
+    ) {
         assert_eq!(
-            ContentType::get_from_loaders(&loaders),
-            Some(ContentType::Mod)
+            ContentType::get_from_parent_folder(Path::new(path)),
+            expected
         );
-    }
-
-    #[test]
-    fn should_return_datapack_when_given_the_datapack_loader() {
-        let loaders = vec!["datapack".to_string()];
-        assert_eq!(
-            ContentType::get_from_loaders(&loaders),
-            Some(ContentType::DataPack)
-        );
-    }
-
-    #[test]
-    fn should_return_shaderpack_when_given_shader_loaders() {
-        let loaders = vec!["iris".to_string(), "optifine".to_string()];
-        assert_eq!(
-            ContentType::get_from_loaders(&loaders),
-            Some(ContentType::ShaderPack)
-        );
-    }
-
-    #[test]
-    fn should_return_resourcepack_when_given_resource_loaders() {
-        let loaders = vec!["vanilla".to_string(), "minecraft".to_string()];
-        assert_eq!(
-            ContentType::get_from_loaders(&loaders),
-            Some(ContentType::ResourcePack)
-        );
-    }
-
-    #[test]
-    fn should_return_none_when_loaders_are_unknown() {
-        let loaders = vec!["unknown".to_string()];
-        assert_eq!(ContentType::get_from_loaders(&loaders), None);
-    }
-
-    #[test]
-    fn should_return_mod_when_multiple_loaders_match_mod_first() {
-        let loaders = vec!["fabric".to_string(), "iris".to_string()];
-        assert_eq!(
-            ContentType::get_from_loaders(&loaders),
-            Some(ContentType::Mod)
-        );
-    }
-
-    #[test]
-    fn should_return_none_when_loaders_are_empty() {
-        let loaders: Vec<String> = vec![];
-        assert_eq!(ContentType::get_from_loaders(&loaders), None);
-    }
-
-    #[test]
-    fn should_return_mod_when_folder_is_mods() {
-        let path = Path::new("/some/instance/mods/MyMod.jar");
-        assert_eq!(
-            ContentType::get_from_parent_folder(path),
-            Some(ContentType::Mod)
-        );
-    }
-
-    #[test]
-    fn should_return_datapack_when_folder_is_datapacks() {
-        let path = Path::new("/some/instance/datapacks/MyPack.zip");
-        assert_eq!(
-            ContentType::get_from_parent_folder(path),
-            Some(ContentType::DataPack)
-        );
-    }
-
-    #[test]
-    fn should_return_resourcepack_when_folder_is_resourcepacks() {
-        let path = Path::new("/some/instance/resourcepacks/MyPack.zip");
-        assert_eq!(
-            ContentType::get_from_parent_folder(path),
-            Some(ContentType::ResourcePack)
-        );
-    }
-
-    #[test]
-    fn should_return_shaderpack_when_folder_is_shaderpacks() {
-        let path = Path::new("/some/instance/shaderpacks/MyShader.zip");
-        assert_eq!(
-            ContentType::get_from_parent_folder(path),
-            Some(ContentType::ShaderPack)
-        );
-    }
-
-    #[test]
-    fn should_return_none_when_folder_is_unknown() {
-        let path = Path::new("/some/instance/other/file.txt");
-        assert_eq!(ContentType::get_from_parent_folder(path), None);
-    }
-
-    #[test]
-    fn should_return_none_when_path_is_the_root() {
-        let path = Path::new("/file.txt");
-        assert_eq!(ContentType::get_from_parent_folder(path), None);
     }
 
     #[test]
