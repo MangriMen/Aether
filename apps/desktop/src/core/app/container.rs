@@ -67,7 +67,7 @@ type ProgressServiceType = ProgressServiceImpl<PBarStorage>;
 /// Log a failed legacy migration instead of failing the start.
 fn log_legacy_failure<E: std::fmt::Display>(what: &str, result: Result<(), E>) {
     if let Err(err) = result {
-        log::error!("Legacy {what} were not migrated, their files are left as they are: {err}");
+        tracing::error!("Legacy {what} were not migrated, their files are left as they are: {err}");
     }
 }
 

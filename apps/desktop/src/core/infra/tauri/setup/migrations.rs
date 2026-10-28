@@ -145,7 +145,7 @@ pub async fn run_migrations<R: tauri::Runtime>(
     // Moving the old app settings must not keep the launcher from starting: the legacy file is
     // archived only after a successful write, so a failure leaves it for the next start.
     if let Err(error) = state::migrate(app_handle, pool).await {
-        log::error!("{}", StartupMigrationError::State(error));
+        tracing::error!("{}", StartupMigrationError::State(error));
     }
 
     Ok(())
