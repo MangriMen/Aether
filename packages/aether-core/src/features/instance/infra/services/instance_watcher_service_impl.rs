@@ -98,7 +98,7 @@ impl<FW: FileWatcher> InstanceWatcherService for InstanceWatcherServiceImpl<FW> 
         for folder in watched_subfolders() {
             let path = instance_dir.join(folder);
             if let Err(reason) = self.file_watcher.unwatch(&path).await {
-                tracing::warn!("Could not stop watching {path:?}: {reason}");
+                tracing::debug!("Could not stop watching {path:?}: {reason}");
             }
         }
         Ok(())
