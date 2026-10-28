@@ -228,6 +228,7 @@ impl ApiConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn absolute_path() -> PathBuf {
         if cfg!(windows) {
@@ -250,24 +251,28 @@ mod tests {
         }
     }
 
-    #[test]
-    fn should_accept_a_manifest_when_the_plugin_id_is_one_of_existing_plugins() {
-        for id in ["packwiz", "curseforge_plugin", "test-plugin"] {
-            assert!(metadata(id).validate_id().is_ok(), "{id:?}");
-        }
+    #[rstest]
+    #[case::packwiz("packwiz")]
+    #[case::underscore("curseforge_plugin")]
+    #[case::dash("test-plugin")]
+    fn should_accept_a_manifest_when_the_plugin_id_is_one_of_existing_plugins(#[case] id: &str) {
+        assert!(metadata(id).validate_id().is_ok(), "{id:?}");
     }
 
-    #[test]
-    fn should_reject_a_manifest_when_the_plugin_id_is_outside_the_scheme() {
-        for id in ["", "a#b", "core:modrinth", "Packwiz", "../escape"] {
-            assert!(
-                matches!(
-                    metadata(id).validate_id(),
-                    Err(ManifestError::InvalidId { field, value }) if field == "metadata.id" && value == id
-                ),
-                "{id:?}"
-            );
-        }
+    #[rstest]
+    #[case::empty("")]
+    #[case::hash("a#b")]
+    #[case::provider_prefix("core:modrinth")]
+    #[case::uppercase("Packwiz")]
+    #[case::traversal("../escape")]
+    fn should_reject_a_manifest_when_the_plugin_id_is_outside_the_scheme(#[case] id: &str) {
+        assert!(
+            matches!(
+                metadata(id).validate_id(),
+                Err(ManifestError::InvalidId { field, value }) if field == "metadata.id" && value == id
+            ),
+            "{id:?}"
+        );
     }
 
     #[test]
@@ -315,16 +320,15 @@ mod tests {
 
     // ── ApiConfig::validate ──
 
-    #[test]
-    fn should_accept_a_manifest_when_the_api_version_matches() {
-        let config = ApiConfig {
-            version: semver::VersionReq::parse(">=0.1.0").unwrap(),
-            features: vec![],
-            host_functions: None,
-        };
-        assert!(config.validate(&semver::Version::new(0, 2, 0)).is_ok());
+    #[rstest]
+    #[case::range_matches(">=0.1.0", semver::Version::new(0, 2, 0))]
+    #[case::exact_version("=0.1.0", semver::Version::new(0, 1, 0))]
+    fn should_accept_a_manifest_when_the_api_version_matches(
+        #[case] requirement: &str,
+        #[case] host: semver::Version,
+    ) {
+        assert!(api_requiring(requirement).validate(&host).is_ok());
     }
-
     #[test]
     fn should_reject_a_manifest_when_the_api_version_does_not_match() {
         let config = ApiConfig {
@@ -336,16 +340,6 @@ mod tests {
             config.validate(&semver::Version::new(0, 9, 0)),
             Err(ManifestError::UnsupportedApi)
         ));
-    }
-
-    #[test]
-    fn should_accept_a_manifest_when_the_api_version_is_exact() {
-        let config = ApiConfig {
-            version: semver::VersionReq::parse("=0.1.0").unwrap(),
-            features: vec![],
-            host_functions: None,
-        };
-        assert!(config.validate(&semver::Version::new(0, 1, 0)).is_ok());
     }
 
     // ── ApiConfig::check_compatibility ──
@@ -401,15 +395,13 @@ mod tests {
         }
     }
 
-    #[test]
-    fn should_accept_a_manifest_when_declared_host_functions_are_provided_by_the_host() {
-        let config = api_declaring(Some(vec!["log", "http_get"]));
-        assert!(config.validate_host_functions(AVAILABLE).is_ok());
-    }
-
-    #[test]
-    fn should_accept_a_manifest_when_the_host_function_declaration_is_empty() {
-        let config = api_declaring(Some(vec![]));
+    #[rstest]
+    #[case::provided_by_the_host(&["log", "http_get"])]
+    #[case::empty_declaration(&[])]
+    fn should_accept_a_manifest_when_the_declared_host_functions_are_acceptable(
+        #[case] declared: &[&str],
+    ) {
+        let config = api_declaring(Some(declared.to_vec()));
         assert!(config.validate_host_functions(AVAILABLE).is_ok());
     }
 
@@ -449,14 +441,15 @@ mod tests {
     }
 
     /// Matching is exact: the import namespace and case are part of the name.
-    #[test]
-    fn should_match_host_function_names_exactly_when_declared() {
-        for name in ["HTTP_GET", "extism:host/user::http_get", " http_get"] {
-            let config = api_declaring(Some(vec![name]));
-            assert!(
-                config.validate_host_functions(AVAILABLE).is_err(),
-                "`{name}` must not be taken for `http_get`"
-            );
-        }
+    #[rstest]
+    #[case::uppercase("HTTP_GET")]
+    #[case::namespaced("extism:host/user::http_get")]
+    #[case::leading_space(" http_get")]
+    fn should_match_host_function_names_exactly_when_declared(#[case] name: &str) {
+        let config = api_declaring(Some(vec![name]));
+        assert!(
+            config.validate_host_functions(AVAILABLE).is_err(),
+            "`{name}` must not be taken for `http_get`"
+        );
     }
 }
