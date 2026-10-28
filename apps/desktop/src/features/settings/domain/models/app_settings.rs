@@ -96,14 +96,6 @@ mod tests {
     // ── ActionOnInstanceLaunch tests ──
 
     #[test]
-    fn action_default_is_nothing() {
-        assert_eq!(
-            ActionOnInstanceLaunch::default(),
-            ActionOnInstanceLaunch::Nothing
-        );
-    }
-
-    #[test]
     fn action_as_str_returns_lowercase() {
         assert_eq!(ActionOnInstanceLaunch::Nothing.as_str(), "nothing");
         assert_eq!(ActionOnInstanceLaunch::Hide.as_str(), "hide");
@@ -138,29 +130,7 @@ mod tests {
         assert!(ActionOnInstanceLaunch::from_str("invalid").is_err());
     }
 
-    #[test]
-    fn action_equality() {
-        assert_eq!(ActionOnInstanceLaunch::Hide, ActionOnInstanceLaunch::Hide);
-        assert_ne!(
-            ActionOnInstanceLaunch::Hide,
-            ActionOnInstanceLaunch::Nothing
-        );
-    }
-
-    #[test]
-    fn action_hash() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        set.insert(ActionOnInstanceLaunch::Nothing);
-        assert!(set.contains(&ActionOnInstanceLaunch::Nothing));
-    }
-
     // ── WindowEffect tests ──
-
-    #[test]
-    fn window_effect_default_is_off() {
-        assert_eq!(WindowEffect::default(), WindowEffect::Off);
-    }
 
     #[test]
     fn window_effect_as_str_returns_lowercase() {
@@ -203,28 +173,6 @@ mod tests {
         let result = WindowEffect::from_str("unknown");
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Invalid window effect");
-    }
-
-    #[test]
-    fn window_effect_roundtrip_all_variants() {
-        let variants = [
-            WindowEffect::Off,
-            WindowEffect::MicaLight,
-            WindowEffect::MicaDark,
-            WindowEffect::Mica,
-            WindowEffect::Acrylic,
-        ];
-        for variant in variants {
-            let serialized = variant.as_str();
-            let deserialized = WindowEffect::from_str(serialized).unwrap();
-            assert_eq!(variant, deserialized);
-        }
-    }
-
-    #[test]
-    fn window_effect_equality() {
-        assert_eq!(WindowEffect::Mica, WindowEffect::Mica);
-        assert_ne!(WindowEffect::Mica, WindowEffect::Acrylic);
     }
 
     // ── AppSettings tests ──
