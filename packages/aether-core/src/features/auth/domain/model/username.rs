@@ -56,17 +56,16 @@ impl AsRef<str> for Username {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn should_parse_username_when_length_is_valid() {
-        let username = Username::parse("Player123").unwrap();
-        assert_eq!(username.as_str(), "Player123");
-    }
-
-    #[test]
-    fn should_parse_username_when_it_contains_underscores() {
-        let username = Username::parse("my_player").unwrap();
-        assert_eq!(username.as_str(), "my_player");
+    #[rstest]
+    #[case::length_is_valid("Player123")]
+    #[case::contains_underscores("my_player")]
+    #[case::length_is_the_minimum("abc")]
+    #[case::length_is_the_maximum("aaaaaaaaaaaaaaaa")]
+    fn should_parse_valid_username(#[case] input: &str) {
+        let username = Username::parse(input).unwrap();
+        assert_eq!(username.as_str(), input);
     }
 
     #[test]
@@ -88,21 +87,12 @@ mod tests {
         );
     }
 
-    #[test]
-    fn should_fail_validation_when_username_contains_special_chars() {
-        let err = Username::parse("user@name").unwrap_err();
-        assert!(matches!(err, AuthDomainError::InvalidUsernameChars));
-    }
-
-    #[test]
-    fn should_fail_validation_when_username_contains_spaces() {
-        let err = Username::parse("my user").unwrap_err();
-        assert!(matches!(err, AuthDomainError::InvalidUsernameChars));
-    }
-
-    #[test]
-    fn should_fail_validation_when_username_contains_cyrillic() {
-        let err = Username::parse("игрок").unwrap_err();
+    #[rstest]
+    #[case::special_chars("user@name")]
+    #[case::spaces("my user")]
+    #[case::cyrillic("игрок")]
+    fn should_fail_validation_when_username_contains_invalid_chars(#[case] input: &str) {
+        let err = Username::parse(input).unwrap_err();
         assert!(matches!(err, AuthDomainError::InvalidUsernameChars));
     }
 
@@ -116,18 +106,5 @@ mod tests {
     fn should_fail_conversion_from_string_when_invalid() {
         let result: Result<Username, AuthDomainError> = "ab".to_string().try_into();
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn should_accept_username_when_length_is_the_minimum() {
-        let username = Username::parse("abc").unwrap();
-        assert_eq!(username.as_str(), "abc");
-    }
-
-    #[test]
-    fn should_accept_username_when_length_is_the_maximum() {
-        let long = "a".repeat(16);
-        let username = Username::parse(&long).unwrap();
-        assert_eq!(username.as_str(), long);
     }
 }
