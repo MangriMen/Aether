@@ -1037,17 +1037,24 @@ mod tests {
                     matches!(result, Err(PluginError::AccessViolation { .. })),
                     "{path} must be refused"
                 );
-            } else if let Ok(host) = result {
+            } else {
                 // Backslashes and colons are plain file name characters off Windows: whatever
                 // such a name resolves to has to stay in the mount.
-                assert!(
-                    host.starts_with(
-                        crate::shared::io::infra::canonicalize(
-                            layout.location_info.plugin_cache_dir(PLUGIN_ID)
-                        )
-                        .unwrap()
-                    )
-                );
+                match result {
+                    Ok(host) => assert!(
+                        host.starts_with(
+                            crate::shared::io::infra::canonicalize(
+                                layout.location_info.plugin_cache_dir(PLUGIN_ID)
+                            )
+                            .unwrap()
+                        ),
+                        "{path} resolved outside the mount: {host:?}"
+                    ),
+                    Err(err) => assert!(
+                        matches!(err, PluginError::AccessViolation { .. }),
+                        "{path} failed with something other than a refusal: {err:?}"
+                    ),
+                }
             }
         }
     }
