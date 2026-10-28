@@ -303,6 +303,7 @@ pub run_command(user_data: PluginContext; command: Msgpack<CommandDto>) -> HostR
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn max_output_bytes() -> usize {
         crate::shared::limits::PluginSandboxLimits::default().max_output_bytes
@@ -310,17 +311,12 @@ mod tests {
 
     // ── read_capped ──
 
+    #[rstest]
+    #[case::shorter_than_the_limit(16)]
+    #[case::exactly_at_the_limit(5)]
     #[tokio::test]
-    async fn should_return_output_untouched_when_it_is_shorter_than_the_limit() {
-        let (collected, truncated) = read_capped(&b"hello"[..], 16).await.unwrap();
-
-        assert_eq!(collected, b"hello");
-        assert!(!truncated);
-    }
-
-    #[tokio::test]
-    async fn should_return_output_untouched_when_it_is_exactly_at_the_limit() {
-        let (collected, truncated) = read_capped(&b"hello"[..], 5).await.unwrap();
+    async fn should_return_output_untouched_when_it_fits_the_limit(#[case] limit: usize) {
+        let (collected, truncated) = read_capped(&b"hello"[..], limit).await.unwrap();
 
         assert_eq!(collected, b"hello");
         assert!(!truncated);
