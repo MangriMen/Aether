@@ -359,7 +359,8 @@ mod tests {
             Some(LoaderVersionPreference::Exact("0.16.5".into()))
         );
         assert_eq!(instance.pack_info, Some(pack_info));
-        assert_eq!(metadata.file_count, Some(plan.files.len()));
+        assert_eq!(instance.icon_path, None);
+        assert_eq!(instance.skip_install_instance, None);
     }
 
     /// An update of a pack names the pack's game for the instance; a new install creates the

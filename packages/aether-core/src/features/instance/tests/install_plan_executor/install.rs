@@ -316,7 +316,7 @@ async fn should_remove_the_staging_when_the_run_is_dropped_halfway() {
 /// At startup the directories of runs a crash interrupted go, but for backups that hold files:
 /// they may be the only copy of what a run moved aside.
 #[tokio::test]
-async fn should_remove_the_leftovers_of_interrupted_runs_when_keeping_backups_with_files() {
+async fn should_remove_the_leftovers_of_interrupted_runs_but_keep_the_backups_with_files() {
     let temp = TempDir::new().unwrap();
     let dir = |name: &str| temp.path().join(name);
     std::fs::create_dir_all(dir("install-plan-1/overrides")).unwrap();

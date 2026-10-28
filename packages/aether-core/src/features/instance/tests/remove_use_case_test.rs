@@ -72,82 +72,9 @@ async fn create_test_infrastructure() -> (TempDir, Arc<LocationInfo>, SqlitePool
         .await
         .expect("Failed to create in-memory SQLite pool");
 
-    // Create tables (same as delete_instance_test)
-    sqlx::query(
-        r"
-        CREATE TABLE IF NOT EXISTS instances (
-          id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, icon_path TEXT,
-          install_stage TEXT NOT NULL, game_version TEXT NOT NULL, loader TEXT NOT NULL,
-          loader_version_json TEXT,
-          override_java_path BOOLEAN NOT NULL DEFAULT 0, java_path TEXT NOT NULL DEFAULT '',
-          override_launch_args BOOLEAN NOT NULL DEFAULT 0, launch_args_json TEXT NOT NULL DEFAULT '[]',
-          override_env_vars BOOLEAN NOT NULL DEFAULT 0, env_vars_json TEXT NOT NULL DEFAULT '[]',
-          override_memory BOOLEAN NOT NULL DEFAULT 0, memory_maximum INTEGER NOT NULL DEFAULT 2048,
-          override_window_settings BOOLEAN NOT NULL DEFAULT 0, force_fullscreen BOOLEAN NOT NULL DEFAULT 0,
-          window_width INTEGER NOT NULL DEFAULT 960, window_height INTEGER NOT NULL DEFAULT 540,
-          created_at DATETIME NOT NULL, modified_at DATETIME NOT NULL, last_played_at DATETIME,
-          time_played INTEGER NOT NULL DEFAULT 0, recent_time_played INTEGER NOT NULL DEFAULT 0,
-          override_hooks BOOLEAN NOT NULL DEFAULT 0, hook_pre_launch TEXT NOT NULL DEFAULT '',
-          hook_wrapper TEXT NOT NULL DEFAULT '', hook_post_exit TEXT NOT NULL DEFAULT ''
-        )
-        ",
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create instances table");
-
-    sqlx::query(
-        r"
-        CREATE TABLE IF NOT EXISTS instance_pack_info (
-          instance_id TEXT PRIMARY KEY NOT NULL, provider_id TEXT NOT NULL,
-          modpack_id TEXT NOT NULL, version_id TEXT NOT NULL,
-          FOREIGN KEY (instance_id) REFERENCES instances (id) ON DELETE CASCADE
-        )
-        ",
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create instance_pack_info table");
-
-    sqlx::query(
-        r"
-        CREATE TABLE IF NOT EXISTS packs (
-          instance_id TEXT PRIMARY KEY,
-          FOREIGN KEY(instance_id) REFERENCES instances(id) ON DELETE CASCADE
-        )
-        ",
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create packs table");
-
-    sqlx::query(
-        r"
-        CREATE TABLE IF NOT EXISTS pack_files (
-          instance_id TEXT NOT NULL, content_path TEXT NOT NULL,
-          file_name TEXT NOT NULL, name TEXT, hash TEXT NOT NULL, side TEXT, update_provider_id TEXT,
-          PRIMARY KEY(instance_id, content_path),
-          FOREIGN KEY(instance_id) REFERENCES packs(instance_id) ON DELETE CASCADE
-        )
-        ",
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create pack_files table");
-
-    sqlx::query(
-        r"
-        CREATE TABLE IF NOT EXISTS pack_file_updates (
-          instance_id TEXT NOT NULL, content_path TEXT NOT NULL,
-          provider_id TEXT NOT NULL, content_id TEXT NOT NULL, version_id TEXT NOT NULL,
-          PRIMARY KEY(instance_id, content_path, provider_id),
-          FOREIGN KEY(instance_id, content_path) REFERENCES pack_files(instance_id, content_path) ON DELETE CASCADE
-        )
-        ",
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create pack_file_updates table");
+    crate::core::migrations::run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
 
     (temp_dir, location_info, pool)
 }
@@ -250,7 +177,7 @@ async fn should_clean_everything_when_an_instance_is_removed() {
         let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(query))
             .fetch_one(&pool)
             .await
-            .unwrap_or(0);
+            .expect("Failed to count rows");
         assert_eq!(count, 0, "Table {table} should be empty after deletion");
     }
 
@@ -287,9 +214,21 @@ async fn should_succeed_when_the_instance_to_remove_does_not_exist() {
 
     // Deleting something that never existed should be fine
     use_case
-        .execute(InstanceId::try_from(instance_id).unwrap())
+        .execute(InstanceId::try_from(instance_id.clone()).unwrap())
         .await
         .unwrap();
+
+    let instances: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM instances")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(instances, 0);
+    assert!(
+        !location_info
+            .instance_dir(&InstanceId::try_from(instance_id).unwrap())
+            .exists(),
+        "removing a missing instance must not create its directory"
+    );
 }
 
 #[tokio::test]
