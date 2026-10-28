@@ -1,0 +1,24 @@
+name: Audit frontend
+
+on:
+  pull_request:
+    paths: ["**/package.json", "bun.lock"]
+  push:
+    branches: [main]
+    paths: ["**/package.json", "bun.lock"]
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  bun-audit:
+    runs-on: ubuntu-22.04
+    # non-blocking at first
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+
+      # High and critical only: the moderate ones come from dev tooling and wait for upstream.
+      - name: bun audit
+        run: bun audit --audit-level=high

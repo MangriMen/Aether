@@ -23,19 +23,6 @@ jobs:
       - name: cargo audit
         run: cargo audit
 
-  bun-audit:
-    runs-on: ubuntu-22.04
-    # non-blocking at first
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: oven-sh/setup-bun@v2
-
-      # High and critical only: the moderate ones come from dev tooling and wait for upstream.
-      - name: bun audit
-        run: bun audit --audit-level=high
-
   cargo-deny:
     runs-on: ubuntu-22.04
     steps:
