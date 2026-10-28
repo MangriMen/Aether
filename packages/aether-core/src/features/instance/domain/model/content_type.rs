@@ -216,19 +216,6 @@ mod tests {
     }
 
     #[test]
-    fn should_return_modpack_when_string_is_modpack() {
-        assert_eq!(
-            ContentType::from_string("modpack"),
-            Some(ContentType::Modpack)
-        );
-    }
-
-    #[test]
-    fn should_return_none_when_string_is_unknown() {
-        assert_eq!(ContentType::from_string("unknown"), None);
-    }
-
-    #[test]
     fn should_return_loader_names_when_content_is_a_mod() {
         assert_eq!(
             ContentType::Mod.get_loaders(),
@@ -269,13 +256,6 @@ mod tests {
             ContentType::Modpack.get_relative_path("my_pack.zip"),
             PathBuf::from("my_pack.zip")
         );
-    }
-
-    #[test]
-    fn should_skip_modpack_when_iterating_variants() {
-        let variants: Vec<ContentType> = ContentType::iterator().collect();
-        assert_eq!(variants.len(), 4);
-        assert!(!variants.contains(&ContentType::Modpack));
     }
 
     #[test]

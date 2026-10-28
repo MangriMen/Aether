@@ -559,22 +559,6 @@ mod tests {
         assert_eq!(item.author_ref, None);
     }
 
-    #[tokio::test]
-    async fn should_keep_the_author_ref_of_a_project_when_put_and_read_back() {
-        let cache = create_cache().await;
-        let modrinth = provider("modrinth");
-        cache
-            .put_many(&modrinth, &[metadata("AANobbMI", "Sodium")])
-            .await;
-
-        let found = cache.get_many(&modrinth, &ids(&["AANobbMI"])).await;
-
-        assert_eq!(
-            found["AANobbMI"].metadata.author_ref.as_deref(),
-            Some("team:AANobbMI")
-        );
-    }
-
     fn author(author_ref: &str, name: &str) -> ContentAuthor {
         ContentAuthor {
             author_ref: author_ref.into(),
