@@ -91,38 +91,39 @@ impl FromStr for WindowEffect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
     use std::str::FromStr;
 
     // ── ActionOnInstanceLaunch tests ──
 
-    #[test]
-    fn action_as_str_returns_lowercase() {
-        assert_eq!(ActionOnInstanceLaunch::Nothing.as_str(), "nothing");
-        assert_eq!(ActionOnInstanceLaunch::Hide.as_str(), "hide");
-        assert_eq!(ActionOnInstanceLaunch::Close.as_str(), "close");
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunch::Nothing, "nothing")]
+    #[case::hide(ActionOnInstanceLaunch::Hide, "hide")]
+    #[case::close(ActionOnInstanceLaunch::Close, "close")]
+    fn action_as_str_returns_lowercase(
+        #[case] action: ActionOnInstanceLaunch,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(action.as_str(), expected);
     }
 
-    #[test]
-    fn action_display_matches_as_str() {
-        assert_eq!(format!("{}", ActionOnInstanceLaunch::Nothing), "nothing");
-        assert_eq!(format!("{}", ActionOnInstanceLaunch::Hide), "hide");
-        assert_eq!(format!("{}", ActionOnInstanceLaunch::Close), "close");
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunch::Nothing, "nothing")]
+    #[case::hide(ActionOnInstanceLaunch::Hide, "hide")]
+    #[case::close(ActionOnInstanceLaunch::Close, "close")]
+    fn action_display_matches_as_str(
+        #[case] action: ActionOnInstanceLaunch,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(format!("{action}"), expected);
     }
 
-    #[test]
-    fn action_from_str_valid_cases() {
-        assert_eq!(
-            ActionOnInstanceLaunch::from_str("nothing").unwrap(),
-            ActionOnInstanceLaunch::Nothing
-        );
-        assert_eq!(
-            ActionOnInstanceLaunch::from_str("hide").unwrap(),
-            ActionOnInstanceLaunch::Hide
-        );
-        assert_eq!(
-            ActionOnInstanceLaunch::from_str("close").unwrap(),
-            ActionOnInstanceLaunch::Close
-        );
+    #[rstest]
+    #[case::nothing("nothing", ActionOnInstanceLaunch::Nothing)]
+    #[case::hide("hide", ActionOnInstanceLaunch::Hide)]
+    #[case::close("close", ActionOnInstanceLaunch::Close)]
+    fn action_from_str_valid_cases(#[case] input: &str, #[case] expected: ActionOnInstanceLaunch) {
+        assert_eq!(ActionOnInstanceLaunch::from_str(input).unwrap(), expected);
     }
 
     #[test]
@@ -132,40 +133,37 @@ mod tests {
 
     // ── WindowEffect tests ──
 
-    #[test]
-    fn window_effect_as_str_returns_lowercase() {
-        assert_eq!(WindowEffect::Off.as_str(), "off");
-        assert_eq!(WindowEffect::MicaLight.as_str(), "mica_light");
-        assert_eq!(WindowEffect::MicaDark.as_str(), "mica_dark");
-        assert_eq!(WindowEffect::Mica.as_str(), "mica");
-        assert_eq!(WindowEffect::Acrylic.as_str(), "acrylic");
+    #[rstest]
+    #[case::off(WindowEffect::Off, "off")]
+    #[case::mica_light(WindowEffect::MicaLight, "mica_light")]
+    #[case::mica_dark(WindowEffect::MicaDark, "mica_dark")]
+    #[case::mica(WindowEffect::Mica, "mica")]
+    #[case::acrylic(WindowEffect::Acrylic, "acrylic")]
+    fn window_effect_as_str_returns_lowercase(
+        #[case] effect: WindowEffect,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(effect.as_str(), expected);
     }
 
-    #[test]
-    fn window_effect_display_matches_as_str() {
-        assert_eq!(format!("{}", WindowEffect::Off), "off");
-        assert_eq!(format!("{}", WindowEffect::MicaLight), "mica_light");
-        assert_eq!(format!("{}", WindowEffect::MicaDark), "mica_dark");
-        assert_eq!(format!("{}", WindowEffect::Mica), "mica");
-        assert_eq!(format!("{}", WindowEffect::Acrylic), "acrylic");
+    #[rstest]
+    #[case::off(WindowEffect::Off, "off")]
+    #[case::mica_light(WindowEffect::MicaLight, "mica_light")]
+    #[case::mica_dark(WindowEffect::MicaDark, "mica_dark")]
+    #[case::mica(WindowEffect::Mica, "mica")]
+    #[case::acrylic(WindowEffect::Acrylic, "acrylic")]
+    fn window_effect_display_matches_as_str(#[case] effect: WindowEffect, #[case] expected: &str) {
+        assert_eq!(format!("{effect}"), expected);
     }
 
-    #[test]
-    fn window_effect_from_str_valid_cases() {
-        assert_eq!(WindowEffect::from_str("off").unwrap(), WindowEffect::Off);
-        assert_eq!(
-            WindowEffect::from_str("mica_light").unwrap(),
-            WindowEffect::MicaLight
-        );
-        assert_eq!(
-            WindowEffect::from_str("mica_dark").unwrap(),
-            WindowEffect::MicaDark
-        );
-        assert_eq!(WindowEffect::from_str("mica").unwrap(), WindowEffect::Mica);
-        assert_eq!(
-            WindowEffect::from_str("acrylic").unwrap(),
-            WindowEffect::Acrylic
-        );
+    #[rstest]
+    #[case::off("off", WindowEffect::Off)]
+    #[case::mica_light("mica_light", WindowEffect::MicaLight)]
+    #[case::mica_dark("mica_dark", WindowEffect::MicaDark)]
+    #[case::mica("mica", WindowEffect::Mica)]
+    #[case::acrylic("acrylic", WindowEffect::Acrylic)]
+    fn window_effect_from_str_valid_cases(#[case] input: &str, #[case] expected: WindowEffect) {
+        assert_eq!(WindowEffect::from_str(input).unwrap(), expected);
     }
 
     #[test]

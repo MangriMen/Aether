@@ -91,6 +91,7 @@ impl From<WindowEffectDto> for WindowEffect {
 mod tests {
     use super::*;
     use crate::features::settings::AppSettings;
+    use rstest::rstest;
 
     // ── AppSettings → AppSettingsDto ──
 
@@ -114,83 +115,51 @@ mod tests {
 
     // ── ActionOnInstanceLaunch conversions ──
 
-    #[test]
-    fn action_domain_to_dto_all_variants() {
-        assert_eq!(
-            ActionOnInstanceLaunchDto::from(ActionOnInstanceLaunch::Nothing),
-            ActionOnInstanceLaunchDto::Nothing
-        );
-        assert_eq!(
-            ActionOnInstanceLaunchDto::from(ActionOnInstanceLaunch::Hide),
-            ActionOnInstanceLaunchDto::Hide
-        );
-        assert_eq!(
-            ActionOnInstanceLaunchDto::from(ActionOnInstanceLaunch::Close),
-            ActionOnInstanceLaunchDto::Close
-        );
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunch::Nothing, ActionOnInstanceLaunchDto::Nothing)]
+    #[case::hide(ActionOnInstanceLaunch::Hide, ActionOnInstanceLaunchDto::Hide)]
+    #[case::close(ActionOnInstanceLaunch::Close, ActionOnInstanceLaunchDto::Close)]
+    fn action_domain_to_dto(
+        #[case] domain: ActionOnInstanceLaunch,
+        #[case] expected: ActionOnInstanceLaunchDto,
+    ) {
+        assert_eq!(ActionOnInstanceLaunchDto::from(domain), expected);
     }
 
-    #[test]
-    fn action_dto_to_domain_all_variants() {
-        assert_eq!(
-            ActionOnInstanceLaunch::from(ActionOnInstanceLaunchDto::Nothing),
-            ActionOnInstanceLaunch::Nothing
-        );
-        assert_eq!(
-            ActionOnInstanceLaunch::from(ActionOnInstanceLaunchDto::Hide),
-            ActionOnInstanceLaunch::Hide
-        );
-        assert_eq!(
-            ActionOnInstanceLaunch::from(ActionOnInstanceLaunchDto::Close),
-            ActionOnInstanceLaunch::Close
-        );
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunchDto::Nothing, ActionOnInstanceLaunch::Nothing)]
+    #[case::hide(ActionOnInstanceLaunchDto::Hide, ActionOnInstanceLaunch::Hide)]
+    #[case::close(ActionOnInstanceLaunchDto::Close, ActionOnInstanceLaunch::Close)]
+    fn action_dto_to_domain(
+        #[case] dto: ActionOnInstanceLaunchDto,
+        #[case] expected: ActionOnInstanceLaunch,
+    ) {
+        assert_eq!(ActionOnInstanceLaunch::from(dto), expected);
     }
 
     // ── WindowEffect conversions ──
 
-    #[test]
-    fn window_effect_domain_to_dto_all_variants() {
-        assert_eq!(
-            WindowEffectDto::from(WindowEffect::Off),
-            WindowEffectDto::Off
-        );
-        assert_eq!(
-            WindowEffectDto::from(WindowEffect::MicaLight),
-            WindowEffectDto::MicaLight
-        );
-        assert_eq!(
-            WindowEffectDto::from(WindowEffect::MicaDark),
-            WindowEffectDto::MicaDark
-        );
-        assert_eq!(
-            WindowEffectDto::from(WindowEffect::Mica),
-            WindowEffectDto::Mica
-        );
-        assert_eq!(
-            WindowEffectDto::from(WindowEffect::Acrylic),
-            WindowEffectDto::Acrylic
-        );
+    #[rstest]
+    #[case::off(WindowEffect::Off, WindowEffectDto::Off)]
+    #[case::mica_light(WindowEffect::MicaLight, WindowEffectDto::MicaLight)]
+    #[case::mica_dark(WindowEffect::MicaDark, WindowEffectDto::MicaDark)]
+    #[case::mica(WindowEffect::Mica, WindowEffectDto::Mica)]
+    #[case::acrylic(WindowEffect::Acrylic, WindowEffectDto::Acrylic)]
+    fn window_effect_domain_to_dto(
+        #[case] domain: WindowEffect,
+        #[case] expected: WindowEffectDto,
+    ) {
+        assert_eq!(WindowEffectDto::from(domain), expected);
     }
 
-    #[test]
-    fn window_effect_dto_to_domain_all_variants() {
-        assert_eq!(WindowEffect::from(WindowEffectDto::Off), WindowEffect::Off);
-        assert_eq!(
-            WindowEffect::from(WindowEffectDto::MicaLight),
-            WindowEffect::MicaLight
-        );
-        assert_eq!(
-            WindowEffect::from(WindowEffectDto::MicaDark),
-            WindowEffect::MicaDark
-        );
-        assert_eq!(
-            WindowEffect::from(WindowEffectDto::Mica),
-            WindowEffect::Mica
-        );
-        assert_eq!(
-            WindowEffect::from(WindowEffectDto::Acrylic),
-            WindowEffect::Acrylic
-        );
+    #[rstest]
+    #[case::off(WindowEffectDto::Off, WindowEffect::Off)]
+    #[case::mica_light(WindowEffectDto::MicaLight, WindowEffect::MicaLight)]
+    #[case::mica_dark(WindowEffectDto::MicaDark, WindowEffect::MicaDark)]
+    #[case::mica(WindowEffectDto::Mica, WindowEffect::Mica)]
+    #[case::acrylic(WindowEffectDto::Acrylic, WindowEffect::Acrylic)]
+    fn window_effect_dto_to_domain(#[case] dto: WindowEffectDto, #[case] expected: WindowEffect) {
+        assert_eq!(WindowEffect::from(dto), expected);
     }
 
     // ── JSON serialization ──
