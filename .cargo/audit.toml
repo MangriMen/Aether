@@ -7,4 +7,10 @@ ignore = [
   "RUSTSEC-2026-0367",
   "RUSTSEC-2026-0368",
   "RUSTSEC-2026-0369",
+  # `zstd` 0.13 and `zstd-safe` 7 come through `wasmtime` (pinned by `extism`), which only uses
+  # them for its own compiled-module cache; no untrusted zstd stream reaches them. Drop these
+  # once `extism` moves to a `wasmtime` that uses `zstd` >= 0.14.3.
+  "RUSTSEC-2026-0391",
+  "RUSTSEC-2026-0398",
+  "RUSTSEC-2026-0403",
 ]
