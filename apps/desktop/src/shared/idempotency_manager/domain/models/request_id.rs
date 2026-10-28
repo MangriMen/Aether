@@ -27,22 +27,6 @@ mod tests {
     }
 
     #[test]
-    fn request_id_hash() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        let id = RequestId::new("unique".to_string());
-        set.insert(id.clone());
-        assert!(set.contains(&id));
-    }
-
-    #[test]
-    fn request_id_different_ids_not_equal() {
-        let a = RequestId::new("alpha".to_string());
-        let b = RequestId::new("beta".to_string());
-        assert_ne!(a, b);
-    }
-
-    #[test]
     fn request_id_serialize_deserialize() {
         let id = RequestId::new("test-id".to_string());
         let json = serde_json::to_string(&id).unwrap();

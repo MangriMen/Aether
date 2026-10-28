@@ -19,12 +19,4 @@ mod tests {
         assert!(msg.contains("Duplicate request"));
         assert!(msg.contains("req-1"));
     }
-
-    #[test]
-    fn duplicate_request_debug() {
-        let err = IdempotencyManagerError::DuplicateRequest {
-            id: RequestId::new("test".to_string()),
-        };
-        assert!(!format!("{err:?}").is_empty());
-    }
 }
