@@ -11,6 +11,16 @@ pub fn exit_with_error(message: &str) -> ! {
     std::process::exit(1)
 }
 
+/// Tells the user about a problem the launcher survives. Blocks until the dialog is closed.
+pub fn show_warning(message: &str) {
+    tracing::warn!("{message}");
+    rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Warning)
+        .set_title("Aether")
+        .set_description(message)
+        .show();
+}
+
 fn show_error(message: &str) {
     error!("{message}");
     rfd::MessageDialog::new()
