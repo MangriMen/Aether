@@ -33,46 +33,25 @@ pub(crate) fn extract_java_major_minor_version(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn should_extract_version_when_given_the_old_format() {
-        assert_eq!(
-            extract_java_major_minor_version("1.8.0_361").unwrap(),
-            (1, 8)
-        );
+    #[rstest]
+    #[case::old_format("1.8.0_361", (1, 8))]
+    #[case::new_format_17("17", (1, 17))]
+    #[case::new_format_20("20", (1, 20))]
+    #[case::new_format_21("21", (1, 21))]
+    #[case::detailed_format("17.0.1", (1, 17))]
+    #[case::detailed_format_four_parts("17.0.2.3", (1, 17))]
+    fn should_extract_version(#[case] input: &str, #[case] expected: (u32, u32)) {
+        assert_eq!(extract_java_major_minor_version(input).unwrap(), expected);
     }
 
-    #[test]
-    fn should_extract_version_when_given_the_new_format() {
-        assert_eq!(extract_java_major_minor_version("17").unwrap(), (1, 17));
-        assert_eq!(extract_java_major_minor_version("20").unwrap(), (1, 20));
-        assert_eq!(extract_java_major_minor_version("21").unwrap(), (1, 21));
-    }
-
-    #[test]
-    fn should_extract_version_when_given_the_detailed_format() {
-        assert_eq!(extract_java_major_minor_version("17.0.1").unwrap(), (1, 17));
-        assert_eq!(
-            extract_java_major_minor_version("17.0.2.3").unwrap(),
-            (1, 17)
-        );
-    }
-
-    #[test]
-    fn should_return_an_error_when_the_version_is_invalid() {
-        let err = extract_java_major_minor_version("").unwrap_err();
-        assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
-    }
-
-    #[test]
-    fn should_return_an_error_when_the_version_is_not_numeric() {
-        let err = extract_java_major_minor_version("abc").unwrap_err();
-        assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
-    }
-
-    #[test]
-    fn should_return_an_error_when_the_version_is_partly_non_numeric() {
-        let err = extract_java_major_minor_version("1.abc").unwrap_err();
+    #[rstest]
+    #[case::empty("")]
+    #[case::not_numeric("abc")]
+    #[case::partly_non_numeric("1.abc")]
+    fn should_return_an_error_when_the_version_is_invalid(#[case] input: &str) {
+        let err = extract_java_major_minor_version(input).unwrap_err();
         assert!(matches!(err, JavaDomainError::InvalidVersion { .. }));
     }
 }
