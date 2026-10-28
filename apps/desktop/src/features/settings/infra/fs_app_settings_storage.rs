@@ -142,6 +142,7 @@ impl AppSettingsStorage for FsAppSettingsStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     // ── AppSettingsV1 conversion tests ──
 
@@ -192,7 +193,71 @@ mod tests {
 
     // ── ActionOnInstanceLaunchV1 conversion ──
 
+    // Explicit expected variants, so a swapped mapping (Hide <-> Close) fails; the exhaustive
+    // `match` in the `From` impls only guarantees that every variant is mapped.
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunch::Nothing, ActionOnInstanceLaunchV1::Nothing)]
+    #[case::hide(ActionOnInstanceLaunch::Hide, ActionOnInstanceLaunchV1::Hide)]
+    #[case::close(ActionOnInstanceLaunch::Close, ActionOnInstanceLaunchV1::Close)]
+    fn action_domain_to_v1(
+        #[case] domain: ActionOnInstanceLaunch,
+        #[case] expected: ActionOnInstanceLaunchV1,
+    ) {
+        let dto: AppSettingsV1 = AppSettings {
+            action_on_instance_launch: domain,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(dto.action_on_instance_launch, expected);
+    }
+
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunchV1::Nothing, ActionOnInstanceLaunch::Nothing)]
+    #[case::hide(ActionOnInstanceLaunchV1::Hide, ActionOnInstanceLaunch::Hide)]
+    #[case::close(ActionOnInstanceLaunchV1::Close, ActionOnInstanceLaunch::Close)]
+    fn action_v1_to_domain(
+        #[case] dto: ActionOnInstanceLaunchV1,
+        #[case] expected: ActionOnInstanceLaunch,
+    ) {
+        let domain: AppSettings = AppSettingsV1 {
+            action_on_instance_launch: dto,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(domain.action_on_instance_launch, expected);
+    }
+
     // ── WindowEffectV1 conversion ──
+
+    #[rstest]
+    #[case::off(WindowEffect::Off, WindowEffectV1::Off)]
+    #[case::mica_light(WindowEffect::MicaLight, WindowEffectV1::MicaLight)]
+    #[case::mica_dark(WindowEffect::MicaDark, WindowEffectV1::MicaDark)]
+    #[case::mica(WindowEffect::Mica, WindowEffectV1::Mica)]
+    #[case::acrylic(WindowEffect::Acrylic, WindowEffectV1::Acrylic)]
+    fn window_effect_domain_to_v1(#[case] domain: WindowEffect, #[case] expected: WindowEffectV1) {
+        let dto: AppSettingsV1 = AppSettings {
+            window_effect: domain,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(dto.window_effect, expected);
+    }
+
+    #[rstest]
+    #[case::off(WindowEffectV1::Off, WindowEffect::Off)]
+    #[case::mica_light(WindowEffectV1::MicaLight, WindowEffect::MicaLight)]
+    #[case::mica_dark(WindowEffectV1::MicaDark, WindowEffect::MicaDark)]
+    #[case::mica(WindowEffectV1::Mica, WindowEffect::Mica)]
+    #[case::acrylic(WindowEffectV1::Acrylic, WindowEffect::Acrylic)]
+    fn window_effect_v1_to_domain(#[case] dto: WindowEffectV1, #[case] expected: WindowEffect) {
+        let domain: AppSettings = AppSettingsV1 {
+            window_effect: dto,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(domain.window_effect, expected);
+    }
 
     // ── JSON serialization ──
 
@@ -229,35 +294,25 @@ mod tests {
 
     // ── Enum serialization ──
 
-    #[test]
-    fn action_v1_serialize_snake_case() {
-        assert_eq!(
-            serde_json::to_string(&ActionOnInstanceLaunchV1::Nothing).unwrap(),
-            "\"nothing\""
-        );
-        assert_eq!(
-            serde_json::to_string(&ActionOnInstanceLaunchV1::Hide).unwrap(),
-            "\"hide\""
-        );
-        assert_eq!(
-            serde_json::to_string(&ActionOnInstanceLaunchV1::Close).unwrap(),
-            "\"close\""
-        );
+    #[rstest]
+    #[case::nothing(ActionOnInstanceLaunchV1::Nothing, "\"nothing\"")]
+    #[case::hide(ActionOnInstanceLaunchV1::Hide, "\"hide\"")]
+    #[case::close(ActionOnInstanceLaunchV1::Close, "\"close\"")]
+    fn action_v1_serialize_snake_case(
+        #[case] value: ActionOnInstanceLaunchV1,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(serde_json::to_string(&value).unwrap(), expected);
     }
 
-    #[test]
-    fn window_effect_v1_serialize_snake_case() {
-        assert_eq!(
-            serde_json::to_string(&WindowEffectV1::MicaLight).unwrap(),
-            "\"mica_light\""
-        );
-        assert_eq!(
-            serde_json::to_string(&WindowEffectV1::MicaDark).unwrap(),
-            "\"mica_dark\""
-        );
-        assert_eq!(
-            serde_json::to_string(&WindowEffectV1::Acrylic).unwrap(),
-            "\"acrylic\""
-        );
+    #[rstest]
+    #[case::mica_light(WindowEffectV1::MicaLight, "\"mica_light\"")]
+    #[case::mica_dark(WindowEffectV1::MicaDark, "\"mica_dark\"")]
+    #[case::acrylic(WindowEffectV1::Acrylic, "\"acrylic\"")]
+    fn window_effect_v1_serialize_snake_case(
+        #[case] value: WindowEffectV1,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(serde_json::to_string(&value).unwrap(), expected);
     }
 }
