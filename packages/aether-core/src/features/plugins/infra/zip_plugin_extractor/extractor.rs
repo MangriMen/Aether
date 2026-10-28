@@ -178,6 +178,7 @@ impl ZipPluginExtractor {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use std::{
         io::{Cursor, Write},
         path::PathBuf,
@@ -361,70 +362,29 @@ mod tests {
         ));
     }
 
+    #[rstest]
+    #[case::too_many_entries(
+        &[("manifest.json", MANIFEST.as_bytes()), ("plugin.wasm", b"\0asm")],
+        ZipPluginExtractorConstants { max_entries: 1, ..Default::default() }
+    )]
+    #[case::exceeds_the_uncompressed_size_limit(
+        &[("manifest.json", MANIFEST.as_bytes()), ("plugin.wasm", &[0u8; 1024])],
+        ZipPluginExtractorConstants { max_total_uncompressed_bytes: 16, ..Default::default() }
+    )]
+    // Each entry is small enough on its own; only the running total crosses the limit.
+    #[case::entries_exceed_the_limit_in_aggregate(
+        &[("manifest.json", MANIFEST.as_bytes()), ("a.bin", &[0u8; 64]), ("b.bin", &[0u8; 64])],
+        ZipPluginExtractorConstants { max_total_uncompressed_bytes: 100, ..Default::default() }
+    )]
     #[tokio::test]
-    async fn should_reject_an_archive_when_it_has_too_many_entries() {
+    async fn should_reject_an_archive_when_it_crosses_a_limit(
+        #[case] entries: &[(&str, &[u8])],
+        #[case] constants: ZipPluginExtractorConstants,
+    ) {
         let source_dir = TempDir::new().unwrap();
-        let zip_path = write_zip(
-            source_dir.path(),
-            &[
-                ("manifest.json", MANIFEST.as_bytes()),
-                ("plugin.wasm", b"\0asm"),
-            ],
-        )
-        .await;
+        let zip_path = write_zip(source_dir.path(), entries).await;
 
-        let extractor = ZipPluginExtractor::new(ZipPluginExtractorConstants {
-            max_entries: 1,
-            ..Default::default()
-        });
-
-        assert!(matches!(
-            extractor.extract(&zip_path).await,
-            Err(PluginProviderError::FileExtractionFailed { .. })
-        ));
-    }
-
-    #[tokio::test]
-    async fn should_reject_an_archive_when_it_exceeds_the_uncompressed_size_limit() {
-        let source_dir = TempDir::new().unwrap();
-        let zip_path = write_zip(
-            source_dir.path(),
-            &[
-                ("manifest.json", MANIFEST.as_bytes()),
-                ("plugin.wasm", &[0u8; 1024]),
-            ],
-        )
-        .await;
-
-        let extractor = ZipPluginExtractor::new(ZipPluginExtractorConstants {
-            max_total_uncompressed_bytes: 16,
-            ..Default::default()
-        });
-
-        assert!(matches!(
-            extractor.extract(&zip_path).await,
-            Err(PluginProviderError::FileExtractionFailed { .. })
-        ));
-    }
-
-    #[tokio::test]
-    async fn should_reject_an_archive_when_its_entries_exceed_the_limit_in_aggregate() {
-        let source_dir = TempDir::new().unwrap();
-        // Each entry is small enough on its own; only the running total crosses the limit.
-        let zip_path = write_zip(
-            source_dir.path(),
-            &[
-                ("manifest.json", MANIFEST.as_bytes()),
-                ("a.bin", &[0u8; 64]),
-                ("b.bin", &[0u8; 64]),
-            ],
-        )
-        .await;
-
-        let extractor = ZipPluginExtractor::new(ZipPluginExtractorConstants {
-            max_total_uncompressed_bytes: 100,
-            ..Default::default()
-        });
+        let extractor = ZipPluginExtractor::new(constants);
 
         assert!(matches!(
             extractor.extract(&zip_path).await,
