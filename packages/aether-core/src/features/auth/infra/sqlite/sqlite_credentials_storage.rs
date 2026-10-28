@@ -68,7 +68,14 @@ impl CredentialsStorage for SqliteCredentialsStorage {
         Ok(credential)
     }
 
-    async fn upsert_all(&self, credentials: Vec<Credential>) -> Result<(), AuthApplicationError> {
+    async fn upsert_all(
+        &self,
+        mut credentials: Vec<Credential>,
+    ) -> Result<(), AuthApplicationError> {
+        // The inactive ones go first: the unique index allows one active row, so the previous one
+        // must be written inactive before the new one is written active.
+        credentials.sort_by_key(Credential::is_active);
+
         let mut tx = self.pool.begin().await?;
 
         for credential in credentials {
@@ -181,5 +188,97 @@ impl TryFrom<SqlCredential> for Credential {
 impl From<sqlx::Error> for AuthApplicationError {
     fn from(err: sqlx::Error) -> Self {
         AuthApplicationError::Storage(err.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::sqlite::SqliteConnectOptions;
+
+    use crate::features::auth::{app::ActiveAccountHelper, tests::fixtures::CredentialsBuilder};
+
+    use super::*;
+
+    const ONE_ACTIVE: &str =
+        include_str!("../../../../../migrations/20261029120000_credentials_one_active.sql");
+
+    async fn pool() -> SqlitePool {
+        let options = SqliteConnectOptions::new()
+            .filename(":memory:")
+            .create_if_missing(true);
+        sqlx::pool::PoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .unwrap()
+    }
+
+    async fn storage() -> SqliteCredentialsStorage {
+        let pool = pool().await;
+        crate::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
+        SqliteCredentialsStorage::new(pool)
+    }
+
+    #[tokio::test]
+    async fn should_move_the_active_account_to_the_target_when_it_is_set_active() {
+        let storage = storage().await;
+        let first = CredentialsBuilder::new("First").with_active(true).build();
+        let second = CredentialsBuilder::new("Second").build();
+        storage.upsert(first.clone()).await.unwrap();
+        storage.upsert(second.clone()).await.unwrap();
+
+        ActiveAccountHelper::set_active(&storage, second.id())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            storage.find_active().await.unwrap().unwrap().id(),
+            second.id()
+        );
+        assert!(!storage.get(first.id()).await.unwrap().is_active());
+    }
+
+    #[tokio::test]
+    async fn should_refuse_a_second_active_account_when_one_is_already_active() {
+        let storage = storage().await;
+        storage
+            .upsert(CredentialsBuilder::new("First").with_active(true).build())
+            .await
+            .unwrap();
+
+        let result = storage
+            .upsert(CredentialsBuilder::new("Second").with_active(true).build())
+            .await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn should_keep_the_first_active_account_when_the_index_is_added_over_several() {
+        let pool = pool().await;
+        sqlx::raw_sql(
+            "CREATE TABLE credentials (
+               id TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, account_type TEXT NOT NULL,
+               is_active BOOLEAN NOT NULL DEFAULT 0, access_token TEXT NOT NULL,
+               refresh_token TEXT NOT NULL, expires TEXT NOT NULL);
+             INSERT INTO credentials VALUES
+               ('a', 'A', 'offline', 1, 'null', 'null', '2099-01-01T00:00:00+00:00'),
+               ('b', 'B', 'offline', 1, 'null', 'null', '2099-01-01T00:00:00+00:00'),
+               ('c', 'C', 'offline', 0, 'null', 'null', '2099-01-01T00:00:00+00:00')",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        sqlx::raw_sql(ONE_ACTIVE).execute(&pool).await.unwrap();
+
+        let active: Vec<String> =
+            sqlx::query_scalar("SELECT id FROM credentials WHERE is_active = 1")
+                .fetch_all(&pool)
+                .await
+                .unwrap();
+        assert_eq!(active, vec!["a".to_owned()]);
     }
 }
