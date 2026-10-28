@@ -100,6 +100,8 @@ impl ManageProcessUseCase {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     fn status(code: i32) -> ExitStatus {
@@ -113,23 +115,16 @@ mod tests {
         }
     }
 
-    #[test]
-    fn should_report_nonzero_exit_as_crash() {
-        assert!(is_crash(Some(status(1)), false));
-    }
-
-    #[test]
-    fn should_not_report_clean_exit_as_crash() {
-        assert!(!is_crash(Some(status(0)), false));
-    }
-
-    #[test]
-    fn should_not_report_killed_process_as_crash() {
-        assert!(!is_crash(Some(status(1)), true));
-    }
-
-    #[test]
-    fn should_not_report_unknown_exit_as_crash() {
-        assert!(!is_crash(None, false));
+    #[rstest]
+    #[case::nonzero_exit(Some(1), false, true)]
+    #[case::clean_exit(Some(0), false, false)]
+    #[case::killed_process(Some(1), true, false)]
+    #[case::unknown_exit(None, false, false)]
+    fn should_report_a_crash_only_for_an_unrequested_nonzero_exit(
+        #[case] code: Option<i32>,
+        #[case] killed: bool,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(is_crash(code.map(status), killed), expected);
     }
 }
