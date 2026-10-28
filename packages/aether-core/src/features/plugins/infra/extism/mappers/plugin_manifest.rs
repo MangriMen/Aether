@@ -175,6 +175,7 @@ impl From<&LoadConfig> for LoadConfigType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     fn parse(api: &str) -> PluginManifest {
         let json = format!(
@@ -194,28 +195,23 @@ mod tests {
 
     /// Manifests written before `api.hostFunctions` existed must keep parsing — and must stay
     /// distinguishable from an explicit empty declaration.
-    #[test]
-    fn should_read_a_missing_host_function_declaration_as_undeclared_when_the_field_is_absent() {
-        let manifest = parse(r#"{ "version": "0.2.0" }"#);
+    #[rstest]
+    #[case::absent_field_reads_as_undeclared(r#"{ "version": "0.2.0" }"#, None)]
+    #[case::empty_list_reads_as_declaring_none(
+        r#"{ "version": "0.2.0", "hostFunctions": [] }"#,
+        Some(vec![])
+    )]
+    #[case::named_functions(
+        r#"{ "version": "0.2.0", "hostFunctions": ["log", "http_get"] }"#,
+        Some(vec!["log".to_owned(), "http_get".to_owned()])
+    )]
+    fn should_read_the_host_function_declaration(
+        #[case] api: &str,
+        #[case] expected: Option<Vec<String>>,
+    ) {
+        let manifest = parse(api);
 
-        assert_eq!(manifest.api.host_functions, None);
-    }
-
-    #[test]
-    fn should_read_an_empty_host_function_declaration_as_declaring_none_when_the_list_is_empty() {
-        let manifest = parse(r#"{ "version": "0.2.0", "hostFunctions": [] }"#);
-
-        assert_eq!(manifest.api.host_functions, Some(vec![]));
-    }
-
-    #[test]
-    fn should_read_declared_host_functions_when_the_list_has_names() {
-        let manifest = parse(r#"{ "version": "0.2.0", "hostFunctions": ["log", "http_get"] }"#);
-
-        assert_eq!(
-            manifest.api.host_functions,
-            Some(vec!["log".to_owned(), "http_get".to_owned()])
-        );
+        assert_eq!(manifest.api.host_functions, expected);
     }
 
     #[test]
