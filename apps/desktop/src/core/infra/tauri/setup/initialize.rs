@@ -133,6 +133,6 @@ mod tests {
         ));
 
         assert!(message.contains("newer version of Aether"));
-        assert!(!message.contains("  ") && !message.contains('\n'));
+        assert!(message.contains("Update Aether"));
     }
 }

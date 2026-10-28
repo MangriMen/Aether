@@ -88,7 +88,20 @@ mod tests {
     fn should_refuse_a_url() {
         let root = tempfile::tempdir().unwrap();
 
-        assert!(ensure_within_roots(Path::new("https://example.com"), &[root.path()]).is_err());
+        let err =
+            ensure_within_roots(Path::new("https://example.com"), &[root.path()]).unwrap_err();
+
+        // A URL is refused because it is not an existing path, never because it was resolved.
+        // The kind differs by platform (a colon is an invalid file name on Windows).
+        assert!(
+            matches!(
+                err.kind(),
+                io::ErrorKind::NotFound
+                    | io::ErrorKind::InvalidFilename
+                    | io::ErrorKind::InvalidInput
+            ),
+            "{err:?}"
+        );
     }
 
     #[test]
