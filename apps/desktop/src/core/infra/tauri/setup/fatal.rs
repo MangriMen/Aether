@@ -68,19 +68,16 @@ fn format_panic(reason: &str, location: Option<(&str, u32)>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
-    #[test]
-    fn should_include_reason_and_location_in_panic_message() {
-        let message = format_panic("boom", Some(("src/lib.rs", 7)));
-
-        assert_eq!(message, "Aether crashed unexpectedly: boom (src/lib.rs:7)");
-    }
-
-    #[test]
-    fn should_omit_location_when_unknown() {
-        assert_eq!(
-            format_panic("boom", None),
-            "Aether crashed unexpectedly: boom"
-        );
+    #[rstest]
+    #[case::with_location("boom", Some(("src/lib.rs", 7)), "Aether crashed unexpectedly: boom (src/lib.rs:7)")]
+    #[case::unknown_location("boom", None, "Aether crashed unexpectedly: boom")]
+    fn should_format_panic_message(
+        #[case] reason: &str,
+        #[case] location: Option<(&str, u32)>,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(format_panic(reason, location), expected);
     }
 }
