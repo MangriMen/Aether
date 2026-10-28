@@ -396,6 +396,7 @@ impl From<Method> for reqwest::Method {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use std::net::SocketAddr;
 
     use tokio::{
@@ -739,28 +740,23 @@ mod tests {
         assert_eq!(&bytes[..], b"payload");
     }
 
+    #[rstest]
+    #[case::not_found("404 Not Found", 404, b"<html>not found</html>")]
+    #[case::server_fails("500 Internal Server Error", 500, b"oops")]
     #[tokio::test]
-    async fn should_reject_the_fetch_when_the_status_is_not_found() {
-        let addr = serve("404 Not Found", b"<html>not found</html>").await;
+    async fn should_reject_the_fetch_when_the_status_is_not_ok(
+        #[case] status_line: &str,
+        #[case] status: u16,
+        #[case] body: &'static [u8],
+    ) {
+        let addr = serve(status_line, body).await;
         let request_url = url(addr);
 
         let result = client().fetch_bytes(Request::get(&request_url)).await;
 
         assert!(matches!(
             result,
-            Err(RequestError::Status { status: 404, url }) if url == request_url
-        ));
-    }
-
-    #[tokio::test]
-    async fn should_reject_the_fetch_when_the_server_fails() {
-        let addr = serve("500 Internal Server Error", b"oops").await;
-
-        let result = client().fetch_bytes(Request::get(url(addr))).await;
-
-        assert!(matches!(
-            result,
-            Err(RequestError::Status { status: 500, .. })
+            Err(RequestError::Status { status: got, url }) if got == status && url == request_url
         ));
     }
 
