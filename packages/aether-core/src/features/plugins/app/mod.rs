@@ -11,6 +11,7 @@ mod get_plugin_settings;
 mod grant_plugin_folder_access;
 mod grant_plugin_host_access;
 mod import_plugins;
+mod install_plugin_from_provider;
 mod list_plugins_dto;
 mod plugin_access_grant;
 mod plugin_enabler;
@@ -47,16 +48,18 @@ pub(crate) use grant_plugin_folder_access::GrantPluginFolderAccessUseCase;
 pub(crate) use grant_plugin_host_access::GrantPluginHostAccessUseCase;
 pub use grant_plugin_host_access::HostAccess;
 pub(crate) use import_plugins::ImportPluginsUseCase;
+pub(crate) use install_plugin_from_provider::InstallPluginFromProviderUseCase;
 pub(crate) use list_plugins_dto::ListPluginsDtoUseCase;
 pub use plugin_provider::{PluginProvider, PluginProviderFactory};
 pub use ports::{
     CheckForPluginUpdatesUseCasePort, EditPluginSettingsUseCasePort, EnablePluginUseCasePort,
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
     GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCasePort,
-    GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort, ListPluginsDtoUseCasePort,
-    PluginDisableService, PluginExtractor, PluginLoader, PluginSettingsStorage,
-    PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
-    ReloadPluginUseCasePort, RemovePluginUseCasePort, UpdatePluginUseCasePort,
+    GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort,
+    InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort, PluginDisableService,
+    PluginExtractor, PluginLoader, PluginSettingsStorage, PluginSourceStorage, PluginStorage,
+    PluginSyncService, PluginVerificationStorage, ProviderRelease, ReloadPluginUseCasePort,
+    RemovePluginUseCasePort, UpdatePluginUseCasePort,
 };
 pub use record_plugin_verification::record_plugin_verification;
 pub(crate) use reload_plugin::ReloadPluginUseCase;

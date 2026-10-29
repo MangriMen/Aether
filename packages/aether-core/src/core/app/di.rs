@@ -54,8 +54,9 @@ use crate::features::{
         GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
         GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
         GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
-        ImportPluginsUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort, LoadConfigType,
-        PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
+        ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
+        InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
+        LoadConfigType, PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
         PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
         PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
         ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
@@ -973,6 +974,20 @@ impl PluginsFeature for AetherContainer {
             self.plugins().registry.clone(),
             self.plugins().storage.clone(),
             self.disable_plugin_service(),
+            self.sync_plugins_service(),
+        ))
+    }
+    fn install_plugin_from_provider_use_case(
+        &self,
+    ) -> Arc<dyn InstallPluginFromProviderUseCasePort> {
+        Arc::new(InstallPluginFromProviderUseCase::new(
+            self.plugins().registry.clone(),
+            self.plugins().extractor.clone(),
+            self.plugins().storage.clone(),
+            self.plugins().source_storage.clone(),
+            self.plugins().verification_storage.clone(),
+            self.plugins().settings_storage.clone(),
+            self.plugins().provider_factory.clone(),
             self.sync_plugins_service(),
         ))
     }

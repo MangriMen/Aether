@@ -8,7 +8,7 @@ use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess
 use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError, PluginSettings,
-    PluginSource, PluginVerification, ProviderUpdateInfo,
+    PluginSource, PluginSourceType, PluginVerification, ProviderUpdateInfo,
 };
 
 #[async_trait]
@@ -179,4 +179,22 @@ pub trait RemovePluginUseCasePort: Send + Sync {
 #[async_trait]
 pub trait UpdatePluginUseCasePort: Send + Sync {
     async fn execute(&self, plugin_id: &str, target_tag: Option<&str>) -> Result<(), PluginError>;
+}
+
+/// The release a user picked from a provider's preview.
+pub struct ProviderRelease {
+    pub download_url: String,
+    pub tag_name: String,
+    pub version: String,
+}
+
+#[async_trait]
+pub trait InstallPluginFromProviderUseCasePort: Send + Sync {
+    /// Returns the id of the plugin the archive holds.
+    async fn execute(
+        &self,
+        source_type: PluginSourceType,
+        identifier: &str,
+        release: ProviderRelease,
+    ) -> Result<String, PluginError>;
 }
