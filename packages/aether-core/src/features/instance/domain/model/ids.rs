@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, fmt, str::FromStr};
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -84,29 +84,9 @@ macro_rules! define_id {
             }
         }
 
-        impl AsRef<str> for $name {
-            fn as_ref(&self) -> &str {
-                &self.0
-            }
-        }
 
-        impl Borrow<str> for $name {
-            fn borrow(&self) -> &str {
-                &self.0
-            }
-        }
 
-        impl PartialEq<str> for $name {
-            fn eq(&self, other: &str) -> bool {
-                self.0 == other
-            }
-        }
 
-        impl PartialEq<&str> for $name {
-            fn eq(&self, other: &&str) -> bool {
-                self.0 == *other
-            }
-        }
 
         impl fmt::Display for $name {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -128,12 +108,6 @@ define_id!(
     "capability"
 );
 
-define_id!(
-    /// The name of a platform content is installed from, e.g. `modrinth`.
-    PlatformId,
-    "platform"
-);
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -151,7 +125,6 @@ mod tests {
         assert!(is_valid_id(value));
         assert_eq!(PluginId::try_from(value).unwrap().as_str(), value);
         assert_eq!(CapabilityId::try_from(value).unwrap().as_str(), value);
-        assert_eq!(PlatformId::try_from(value).unwrap().as_str(), value);
     }
 
     #[rstest]
@@ -181,10 +154,6 @@ mod tests {
             value.parse::<CapabilityId>().unwrap_err().kind,
             "capability"
         );
-        assert_eq!(
-            PlatformId::try_from(value.to_owned()).unwrap_err().kind,
-            "platform"
-        );
     }
 
     #[test]
@@ -210,12 +179,11 @@ mod tests {
     fn should_refuse_to_deserialize_when_the_id_is_invalid(#[case] json: &str) {
         assert!(serde_json::from_str::<PluginId>(json).is_err());
         assert!(serde_json::from_str::<CapabilityId>(json).is_err());
-        assert!(serde_json::from_str::<PlatformId>(json).is_err());
     }
 
     #[test]
     fn should_display_the_id_when_formatted() {
-        assert_eq!(PlatformId::from_static("modrinth").to_string(), "modrinth");
+        assert_eq!(PluginId::from_static("modrinth").to_string(), "modrinth");
     }
 
     #[test]

@@ -52,8 +52,8 @@ mod tests {
             version_id: "v".to_owned(),
         });
 
-        assert_eq!(pack_info.provider_id.plugin_id, "unknown");
-        assert_eq!(pack_info.provider_id.capability_id, "unknown");
+        assert_eq!(pack_info.provider_id.plugin_id.as_str(), "unknown");
+        assert_eq!(pack_info.provider_id.capability_id.as_str(), "unknown");
         assert_eq!(pack_info.modpack_id, "m");
         assert_eq!(pack_info.version_id, "v");
     }

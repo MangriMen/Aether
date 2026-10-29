@@ -579,7 +579,7 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
     gate.entered().await;
 
     let found = other.search(search_params("other-plugin")).await.unwrap();
-    assert_eq!(found.provider_id.plugin_id, "other-plugin");
+    assert_eq!(found.provider_id.plugin_id.as_str(), "other-plugin");
     assert!(
         !pack.is_finished(),
         "the other search answered while the pack was being worked on"
@@ -601,7 +601,13 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
         Some("5000000")
     );
     assert_eq!(
-        own_search.await.unwrap().unwrap().provider_id.plugin_id,
+        own_search
+            .await
+            .unwrap()
+            .unwrap()
+            .provider_id
+            .plugin_id
+            .as_str(),
         PLUGIN_ID
     );
 }
