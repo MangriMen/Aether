@@ -1,8 +1,10 @@
 use aether_core::features::{
     instance::{
-        ChangeContentState, ContentInstallParams, ContentManagementPort, ContentProviderPort,
-        ContentStateAction, EditInstanceIcon, ImportContent, InstanceCrudPort, InstanceId,
-        InstanceLifecyclePort, InstanceServicesPort, RemoveContent,
+        ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
+        ContentInstallParams, ContentListVersionsParams, ContentManagementPort,
+        ContentProviderPort, ContentSearchParams, ContentStateAction, EditInstanceIcon,
+        ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort, InstanceServicesPort,
+        NewInstance, RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -63,7 +65,10 @@ async fn create(
     let container = container.0.clone();
     Ok(container
         .create_instance_use_case()
-        .execute(new_instance.into(), None)
+        .execute(
+            NewInstance::try_from(new_instance).map_err(aether_core::Error::from)?,
+            None,
+        )
         .await
         .map_err(aether_core::Error::from)?
         .to_string())
@@ -409,7 +414,7 @@ async fn search_content(
     let container = container.0.clone();
     Ok(container
         .search_content_use_case()
-        .execute(payload.into())
+        .execute(ContentSearchParams::try_from(payload).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?
         .into())
@@ -430,7 +435,11 @@ async fn check_compatibility(
     let container = container.0.clone();
     Ok(container
         .check_content_compatibility_use_case()
-        .execute(instance_ids, check_params.into())
+        .execute(
+            instance_ids,
+            ContentCompatibilityCheckParams::try_from(check_params)
+                .map_err(aether_core::Error::from)?,
+        )
         .await
         .map_err(aether_core::Error::from)?
         .into_iter()
@@ -447,7 +456,7 @@ async fn get_content(
     let container = container.0.clone();
     Ok(container
         .get_content_use_case()
-        .execute(params.into())
+        .execute(ContentGetParams::try_from(params).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?
         .into())
@@ -462,7 +471,7 @@ async fn list_content_version(
     let container = container.0.clone();
     Ok(container
         .list_content_versions_use_case()
-        .execute(params.into())
+        .execute(ContentListVersionsParams::try_from(params).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?
         .into_iter()

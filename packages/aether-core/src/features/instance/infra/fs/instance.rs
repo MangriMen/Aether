@@ -220,7 +220,7 @@ impl TryFrom<InstanceV1> for Instance {
                     || v1.hooks.post_exit.is_some(),
             ),
 
-            pack_info: v1.pack_info.map(Into::into),
+            pack_info: v1.pack_info.and_then(PackInfoV1::into_pack_info),
         };
 
         Ok(Instance::from_snapshot(snapshot))
@@ -318,7 +318,7 @@ impl TryFrom<InstanceV2> for Instance {
 
             hooks: v2.hooks.map(Into::into),
 
-            pack_info: v2.pack_info.map(Into::into),
+            pack_info: v2.pack_info.and_then(PackInfoV2::into_pack_info),
         };
 
         Ok(Instance::from_snapshot(snapshot))

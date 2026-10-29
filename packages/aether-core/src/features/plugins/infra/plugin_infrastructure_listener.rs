@@ -110,7 +110,7 @@ where
             &self.importers,
             &caps.importers,
             instance.as_ref(),
-            |inst, cap| Arc::new(PluginImporterProxy::new(inst, cap)),
+            |inst, cap| Ok(Arc::new(PluginImporterProxy::new(inst, cap))),
         )
         .await?;
 
@@ -120,7 +120,7 @@ where
             &self.updaters,
             &caps.updaters,
             instance.as_ref(),
-            |inst, cap| Arc::new(PluginUpdaterProxy::new(inst, cap)),
+            |inst, cap| Ok(Arc::new(PluginUpdaterProxy::new(inst, cap))),
         )
         .await?;
 
@@ -131,12 +131,13 @@ where
             &caps.content_providers,
             instance.as_ref(),
             |inst, cap| {
-                Arc::new(PluginContentProviderProxy::new(
+                let proxy = PluginContentProviderProxy::new(
                     plugin_id.to_owned(),
                     inst,
                     cap,
                     self.location_info.clone(),
-                ))
+                )?;
+                Ok(Arc::new(proxy))
             },
         )
         .await?;
@@ -158,14 +159,24 @@ where
         T: Send + Sync + ?Sized + 'static,
         R: CapabilityRegistry<Arc<T>> + ?Sized,
         C: Clone + AsCapabilityMetadata,
-        F: Fn(PluginHandle, C) -> Arc<T>,
+        F: Fn(PluginHandle, C) -> Result<Arc<T>, PluginError>,
     {
         for capability in items {
             let meta = capability.as_metadata();
 
             match instance {
                 Some(instance) => {
-                    let proxy = proxy_factory(instance.clone(), capability.clone());
+                    let proxy = match proxy_factory(instance.clone(), capability.clone()) {
+                        Ok(proxy) => proxy,
+                        Err(err) => {
+                            let error = PluginError::CapabilityRegistrationFailed {
+                                capability_type: registry.get_type(),
+                                capability_id: meta.id.clone(),
+                            };
+                            tracing::error!("{}: {}", error, err);
+                            continue;
+                        }
+                    };
                     if let Err(err) = registry
                         .add(plugin_id.to_string(), meta.id.clone(), proxy)
                         .await

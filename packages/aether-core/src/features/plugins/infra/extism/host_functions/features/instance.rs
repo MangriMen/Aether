@@ -10,8 +10,8 @@ use crate::{
     core::app::AetherContainer,
     features::instance::{
         ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
-        ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceFileService,
-        InstanceId, InstanceServicesPort, ListContentUseCasePort, NewInstance,
+        ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
+        InstanceFileService, InstanceId, InstanceServicesPort, ListContentUseCasePort, NewInstance,
         infra::{check_plugin_write_allowed, check_size},
     },
     features::plugins::LoadConfig,
@@ -90,7 +90,10 @@ pub(crate) fn new_instance_from_plugin(
         .transpose()?
         .map(|host| host.to_string_lossy().into_owned());
 
-    let mut new_instance = NewInstance::from(dto);
+    let mut new_instance =
+        NewInstance::try_from(dto).map_err(|err| InstanceError::ContentProviderError {
+            reason: err.to_string(),
+        })?;
     new_instance.icon_path = icon_path;
     Ok(new_instance)
 }

@@ -59,10 +59,7 @@ pub(super) struct MockProvider {
 impl MockProvider {
     pub(super) fn new(plugin_id: &str, capability_id: &str, platform: Option<&str>) -> Arc<Self> {
         Arc::new(Self {
-            id: ProviderId {
-                plugin_id: plugin_id.into(),
-                capability_id: capability_id.into(),
-            },
+            id: ProviderId::from_parts(plugin_id, capability_id).unwrap(),
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
                     id: capability_id.into(),
@@ -751,8 +748,8 @@ impl Fixture {
     pub(super) async fn register(&self, provider: &Arc<MockProvider>) {
         self.registry
             .add(
-                provider.id.plugin_id.clone(),
-                provider.id.capability_id.clone(),
+                provider.id.plugin_id.clone().into(),
+                provider.id.capability_id.clone().into(),
                 provider.clone(),
             )
             .await
@@ -951,10 +948,7 @@ pub(super) fn pack_of(provider_id: &ProviderId) -> PlanOrigin {
 }
 
 pub(super) fn plugin(plugin_id: &str) -> ProviderId {
-    ProviderId {
-        plugin_id: plugin_id.into(),
-        capability_id: "provider".into(),
-    }
+    ProviderId::from_parts(plugin_id, "provider").unwrap()
 }
 
 pub(super) fn existing(files: Vec<InstallFileEntry>) -> InstallPlan {
@@ -1027,10 +1021,7 @@ pub(super) fn hashed(url: &str, path: &str) -> InstallFileEntry {
 }
 
 pub(super) fn modrinth_id() -> ProviderId {
-    ProviderId {
-        plugin_id: ProviderId::BUILTIN_PLUGIN_ID.into(),
-        capability_id: "modrinth".into(),
-    }
+    ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap()
 }
 
 /// Update info naming `content_id` on the built-in Modrinth, as a ref's file is recorded.

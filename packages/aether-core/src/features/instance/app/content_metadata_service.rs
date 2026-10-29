@@ -359,7 +359,7 @@ impl ContentMetadataService {
             .unsupported
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .retain(|(provider_id, _)| provider_id.plugin_id != plugin_id);
+            .retain(|(provider_id, _)| provider_id.plugin_id.as_str() != plugin_id);
     }
 
     /// Forget the lookups that failed, as once [`LOOKUP_RETRY_AFTER`] has passed: the failures
@@ -679,7 +679,10 @@ impl Inner {
     async fn provider(&self, provider_id: &ProviderId) -> Option<Arc<dyn ContentProvider>> {
         let entry = self
             .providers
-            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
+            .find_by_plugin_and_capability_id(
+                provider_id.plugin_id.as_str(),
+                provider_id.capability_id.as_str(),
+            )
             .await;
         if entry.is_err() {
             tracing::debug!("No content provider {provider_id} to describe its content");

@@ -337,10 +337,7 @@ mod tests {
     }
 
     fn provider(capability_id: &str) -> ProviderId {
-        ProviderId {
-            plugin_id: "aether".into(),
-            capability_id: capability_id.into(),
-        }
+        ProviderId::from_parts("aether", capability_id).unwrap()
     }
 
     fn metadata(content_id: &str, name: &str) -> ContentMetadata {

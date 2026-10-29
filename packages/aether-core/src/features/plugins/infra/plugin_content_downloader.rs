@@ -179,9 +179,9 @@ impl ContentDownloader for ProviderContentDownloader {
         }
 
         // Read for every file: the user may narrow the plugin's hosts while a plan downloads.
-        let allowed_hosts = self.plugin_allowed_hosts(&origin.plugin_id).await?;
+        let allowed_hosts = self.plugin_allowed_hosts(origin.plugin_id.as_str()).await?;
         let client = self
-            .plugin_client(&origin.plugin_id, &allowed_hosts)
+            .plugin_client(origin.plugin_id.as_str(), &allowed_hosts)
             .map_err(|err| Self::failed(url, err))?;
 
         download_with(

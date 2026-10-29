@@ -2,7 +2,7 @@ use std::{ops::Deref, str::FromStr};
 
 use crate::features::minecraft::ModLoader;
 
-use super::{ContentType, InstanceId};
+use super::{CapabilityId, ContentType, InstanceId, InvalidId, PluginId};
 
 #[derive(Clone, Debug)]
 pub struct ContentSearchParams {
@@ -26,8 +26,8 @@ pub struct ContentSearchResult {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ProviderId {
-    pub plugin_id: String,
-    pub capability_id: String,
+    pub plugin_id: PluginId,
+    pub capability_id: CapabilityId,
 }
 
 impl ProviderId {
@@ -39,27 +39,34 @@ impl ProviderId {
     /// built-in provider.
     pub const BUILTIN_PLUGIN_ID: &'static str = "aether";
 
+    pub fn new(plugin_id: PluginId, capability_id: CapabilityId) -> Self {
+        Self {
+            plugin_id,
+            capability_id,
+        }
+    }
+
+    /// The provider of `capability_id` in `plugin_id`, both still to be checked.
+    pub fn from_parts(plugin_id: &str, capability_id: &str) -> Result<Self, InvalidId> {
+        Ok(Self::new(plugin_id.parse()?, capability_id.parse()?))
+    }
+
     /// Whether this is a provider built into Aether rather than one a plugin registered.
     ///
     /// Safe to decide trust on: [`Self::BUILTIN_PLUGIN_ID`] is reserved, so a plugin cannot
     /// claim it.
     pub fn is_builtin(&self) -> bool {
-        self.plugin_id == Self::BUILTIN_PLUGIN_ID
+        self.plugin_id.as_str() == Self::BUILTIN_PLUGIN_ID
     }
 }
 
-/// Whether `value` fits the scheme shared by `plugin_id`, `capability_id` and platform names:
-/// `[a-z0-9][a-z0-9_-]*`.
-///
-/// The scheme leaves no room for [`ProviderId::SEPARATOR`] or `:`, so the string form of a
-/// [`ProviderId`] always parses back into the same pair.
-pub fn is_valid_id(value: &str) -> bool {
-    let mut chars = value.chars();
-
-    chars
-        .next()
-        .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-        && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
+/// A string that is not the `plugin#capability` form of a [`ProviderId`].
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum ProviderIdError {
+    #[error("Invalid format '{0}'. Expected plugin{sep}capability", sep = ProviderId::SEPARATOR)]
+    Format(String),
+    #[error(transparent)]
+    InvalidPart(#[from] InvalidId),
 }
 
 impl std::fmt::Display for ProviderId {
@@ -75,94 +82,101 @@ impl std::fmt::Display for ProviderId {
 }
 
 impl FromStr for ProviderId {
-    type Err = String;
+    type Err = ProviderIdError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let invalid = || {
-            format!(
-                "Invalid format '{}'. Expected plugin{}capability",
-                s,
-                Self::SEPARATOR
-            )
-        };
-
-        let (plugin, cap) = s.split_once(Self::SEPARATOR).ok_or_else(invalid)?;
+        let (plugin, cap) = s
+            .split_once(Self::SEPARATOR)
+            .ok_or_else(|| ProviderIdError::Format(s.to_owned()))?;
         if plugin.is_empty() || cap.is_empty() {
-            return Err(invalid());
+            return Err(ProviderIdError::Format(s.to_owned()));
         }
 
-        Ok(Self {
-            plugin_id: plugin.to_string(),
-            capability_id: cap.to_string(),
-        })
+        Ok(Self::from_parts(plugin, cap)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     #[test]
     fn should_display_provider_id_when_formatted() {
-        let id = ProviderId {
-            plugin_id: "my_plugin".to_string(),
-            capability_id: "mod_provider".to_string(),
-        };
+        let id = ProviderId::new(
+            PluginId::from_static("my_plugin"),
+            CapabilityId::from_static("mod_provider"),
+        );
         assert_eq!(id.to_string(), "my_plugin#mod_provider");
     }
 
     #[test]
     fn should_parse_provider_id_when_string_is_valid() {
         let id: ProviderId = "my_plugin#mod_provider".parse().unwrap();
-        assert_eq!(id.plugin_id, "my_plugin");
-        assert_eq!(id.capability_id, "mod_provider");
+        assert_eq!(id.plugin_id.as_str(), "my_plugin");
+        assert_eq!(id.capability_id.as_str(), "mod_provider");
+    }
+
+    #[rstest]
+    #[case("aether#modrinth")]
+    #[case("packwiz#packwiz")]
+    #[case("0x#mod-provider_2")]
+    fn should_parse_back_the_same_id_when_displayed(#[case] value: &str) {
+        let id: ProviderId = value.parse().unwrap();
+        assert_eq!(id.to_string(), value);
+        assert_eq!(id.to_string().parse::<ProviderId>().unwrap(), id);
     }
 
     #[test]
     fn should_fail_to_parse_provider_id_when_separator_is_missing() {
         let err = "my_plugin".parse::<ProviderId>().unwrap_err();
-        assert!(err.contains("Invalid format"));
-        assert!(err.contains("my_plugin"));
+        assert_eq!(err, ProviderIdError::Format("my_plugin".to_owned()));
+        assert!(err.to_string().contains("Invalid format"));
+        assert!(err.to_string().contains("my_plugin"));
     }
 
-    #[test]
-    fn should_fail_to_parse_provider_id_when_a_part_is_empty() {
-        for value in ["#only_cap", "only_plugin#", "#"] {
-            let err = value.parse::<ProviderId>().unwrap_err();
-            assert!(err.contains("Invalid format"), "{value}: {err}");
-        }
+    #[rstest]
+    #[case("#only_cap")]
+    #[case("only_plugin#")]
+    #[case("#")]
+    fn should_fail_to_parse_provider_id_when_a_part_is_empty(#[case] value: &str) {
+        let err = value.parse::<ProviderId>().unwrap_err();
+        assert_eq!(err, ProviderIdError::Format(value.to_owned()));
     }
 
-    #[test]
-    fn should_accept_ids_when_they_match_the_scheme() {
-        for id in [
-            "aether",
-            "packwiz",
-            "curseforge_plugin",
-            "modrinth-content",
-            "0x",
-            "a",
-        ] {
-            assert!(is_valid_id(id), "{id:?} should be valid");
-        }
+    #[rstest]
+    #[case("core:modrinth#modrinth-content", "plugin", "core:modrinth")]
+    #[case("Bad Id#cap", "plugin", "Bad Id")]
+    #[case("plugin#a#b", "capability", "a#b")]
+    #[case("plugin#Cap", "capability", "Cap")]
+    fn should_fail_to_parse_provider_id_when_a_part_is_not_an_id(
+        #[case] value: &str,
+        #[case] kind: &'static str,
+        #[case] part: &str,
+    ) {
+        let err = value.parse::<ProviderId>().unwrap_err();
+        assert_eq!(
+            err,
+            ProviderIdError::InvalidPart(InvalidId {
+                kind,
+                value: part.to_owned(),
+            }),
+            "{value}"
+        );
     }
 
-    #[test]
-    fn should_reject_ids_when_they_are_outside_the_scheme() {
-        for id in [
-            "",
-            "core:modrinth",
-            "a#b",
-            "Packwiz",
-            "AETHER",
-            "-leading-dash",
-            "_leading_underscore",
-            "with space",
-            "dotted.id",
-            "../escape",
-            "кириллица",
-        ] {
-            assert!(!is_valid_id(id), "{id:?} should be invalid");
-        }
+    #[rstest]
+    #[case("aether#modrinth", true)]
+    #[case("aetherx#modrinth", false)]
+    #[case("packwiz#aether", false)]
+    fn should_tell_a_builtin_provider_when_its_plugin_is_aether(
+        #[case] value: &str,
+        #[case] is_builtin: bool,
+    ) {
+        assert_eq!(
+            value.parse::<ProviderId>().unwrap().is_builtin(),
+            is_builtin
+        );
     }
 }
 

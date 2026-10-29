@@ -1,4 +1,4 @@
-use aether_core::features::instance::ContentCompatibilityCheckParams;
+use aether_core::features::instance::{ContentCompatibilityCheckParams, InstanceError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -11,11 +11,13 @@ pub struct ContentCompatibilityCheckParamsDto {
     pub content_item: ContentItemDto,
 }
 
-impl From<ContentCompatibilityCheckParamsDto> for ContentCompatibilityCheckParams {
-    fn from(value: ContentCompatibilityCheckParamsDto) -> Self {
-        Self {
-            provider_id: value.provider_id.into(),
+impl TryFrom<ContentCompatibilityCheckParamsDto> for ContentCompatibilityCheckParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentCompatibilityCheckParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            provider_id: value.provider_id.try_into()?,
             content_item: value.content_item.into(),
-        }
+        })
     }
 }

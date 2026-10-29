@@ -233,6 +233,7 @@ fn proxy(sandbox: &Sandbox, id: &str, handle: PluginHandle) -> PluginContentProv
         provider_capability(),
         sandbox.location_info.clone(),
     )
+    .expect("ids should be valid")
 }
 
 fn resolved_jei() -> Vec<u8> {
@@ -276,10 +277,7 @@ fn search_result(plugin_id: &str) -> Vec<u8> {
 fn search_params(plugin_id: &str) -> ContentSearchParams {
     ContentSearchParams {
         content_type: ContentType::Mod,
-        provider_id: ProviderId {
-            plugin_id: plugin_id.into(),
-            capability_id: "curseforge".into(),
-        },
+        provider_id: ProviderId::from_parts(plugin_id, "curseforge").unwrap(),
         page: 1,
         page_size: 20,
         query: Some("jei".into()),
@@ -581,7 +579,7 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
     gate.entered().await;
 
     let found = other.search(search_params("other-plugin")).await.unwrap();
-    assert_eq!(found.provider_id.plugin_id, "other-plugin");
+    assert_eq!(found.provider_id.plugin_id.as_str(), "other-plugin");
     assert!(
         !pack.is_finished(),
         "the other search answered while the pack was being worked on"
@@ -603,7 +601,13 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
         Some("5000000")
     );
     assert_eq!(
-        own_search.await.unwrap().unwrap().provider_id.plugin_id,
+        own_search
+            .await
+            .unwrap()
+            .unwrap()
+            .provider_id
+            .plugin_id
+            .as_str(),
         PLUGIN_ID
     );
 }

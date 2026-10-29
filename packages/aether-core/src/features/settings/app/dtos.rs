@@ -94,7 +94,7 @@ impl EditSettings {
             provider_id.parse::<ProviderId>().map_err(|reason| {
                 SettingsError::InvalidPlatformProvider {
                     platform: choice.platform.clone(),
-                    reason,
+                    reason: reason.to_string(),
                 }
             })?;
         }

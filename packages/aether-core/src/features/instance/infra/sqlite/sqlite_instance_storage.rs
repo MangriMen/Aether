@@ -170,14 +170,12 @@ impl InstanceStorage for SqliteInstanceStorage {
                     row.pack_modpack_id,
                     row.pack_version_id,
                 ) {
-                    instance.pack_info = Some(
-                        SqlPackInfo {
-                            provider_id: pid,
-                            modpack_id: mid,
-                            version_id: vid,
-                        }
-                        .into(),
-                    );
+                    instance.pack_info = SqlPackInfo {
+                        provider_id: pid,
+                        modpack_id: mid,
+                        version_id: vid,
+                    }
+                    .into_pack_info();
                 }
 
                 Some(instance)
@@ -317,14 +315,12 @@ async fn read_instance(
         row.pack_modpack_id,
         row.pack_version_id,
     ) {
-        instance.pack_info = Some(
-            SqlPackInfo {
-                provider_id: pid,
-                modpack_id: mid,
-                version_id: vid,
-            }
-            .into(),
-        );
+        instance.pack_info = SqlPackInfo {
+            provider_id: pid,
+            modpack_id: mid,
+            version_id: vid,
+        }
+        .into_pack_info();
     }
 
     Ok(instance)

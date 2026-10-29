@@ -148,17 +148,19 @@ pub struct ContentItemDto {
     pub content_type: ContentTypeDto,
 }
 
-impl From<ContentSearchParamsDto> for ContentSearchParams {
-    fn from(value: ContentSearchParamsDto) -> Self {
-        Self {
+impl TryFrom<ContentSearchParamsDto> for ContentSearchParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentSearchParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             content_type: value.content_type.into(),
-            provider_id: value.provider_id.into(),
+            provider_id: value.provider_id.try_into()?,
             page: value.page,
             page_size: value.page_size,
             query: value.query,
             game_versions: value.game_versions,
             loader: value.loader.map(Into::into),
-        }
+        })
     }
 }
 
@@ -174,31 +176,38 @@ impl From<ContentSearchResult> for ContentSearchResultDto {
     }
 }
 
-impl From<ProviderIdDto> for ProviderId {
-    fn from(value: ProviderIdDto) -> Self {
-        Self {
-            plugin_id: value.plugin_id,
-            capability_id: value.capability_id,
-        }
+/// An id that does not parse names no provider, hence [`InstanceError::ContentProviderNotFound`].
+impl TryFrom<ProviderIdDto> for ProviderId {
+    type Error = InstanceError;
+
+    fn try_from(value: ProviderIdDto) -> Result<Self, Self::Error> {
+        Self::from_parts(&value.plugin_id, &value.capability_id).map_err(|_| {
+            InstanceError::ContentProviderNotFound {
+                plugin_id: value.plugin_id,
+                capability_id: value.capability_id,
+            }
+        })
     }
 }
 
 impl From<ProviderId> for ProviderIdDto {
     fn from(value: ProviderId) -> Self {
         Self {
-            plugin_id: value.plugin_id,
-            capability_id: value.capability_id,
+            plugin_id: value.plugin_id.into(),
+            capability_id: value.capability_id.into(),
         }
     }
 }
 
-impl From<BaseContentParamsDto> for BaseContentParams {
-    fn from(value: BaseContentParamsDto) -> Self {
-        Self {
+impl TryFrom<BaseContentParamsDto> for BaseContentParams {
+    type Error = InstanceError;
+
+    fn try_from(value: BaseContentParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             content_id: value.content_id,
             content_version: value.content_version,
-            provider_id: value.provider_id.into(),
-        }
+            provider_id: value.provider_id.try_into()?,
+        })
     }
 }
 
@@ -207,7 +216,7 @@ impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
 
     fn try_from(value: AtomicInstallParamsDto) -> Result<Self, Self::Error> {
         Ok(Self {
-            base: value.base.into(),
+            base: value.base.try_into()?,
             instance_id: InstanceId::try_from(value.instance_id)?,
             game_version: value.game_version,
             loader: value.loader.map(Into::into),
@@ -216,11 +225,13 @@ impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
     }
 }
 
-impl From<ModpackInstallParamsDto> for ModpackInstallParams {
-    fn from(value: ModpackInstallParamsDto) -> Self {
-        Self {
-            base: value.base.into(),
-        }
+impl TryFrom<ModpackInstallParamsDto> for ModpackInstallParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ModpackInstallParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            base: value.base.try_into()?,
+        })
     }
 }
 
@@ -230,7 +241,7 @@ impl TryFrom<ContentInstallParamsDto> for ContentInstallParams {
     fn try_from(value: ContentInstallParamsDto) -> Result<Self, Self::Error> {
         Ok(match value {
             ContentInstallParamsDto::Atomic(x) => Self::Atomic(x.try_into()?),
-            ContentInstallParamsDto::Modpack(x) => Self::Modpack(x.into()),
+            ContentInstallParamsDto::Modpack(x) => Self::Modpack(x.try_into()?),
         })
     }
 }

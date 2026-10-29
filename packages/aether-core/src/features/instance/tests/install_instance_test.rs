@@ -132,10 +132,7 @@ impl ProgressService for NoProgress {
 
 fn pack_info() -> PackInfo {
     PackInfo {
-        provider_id: ProviderId {
-            plugin_id: "aether".to_owned(),
-            capability_id: "modrinth".to_owned(),
-        },
+        provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
         modpack_id: "pack".to_owned(),
         version_id: "1".to_owned(),
     }

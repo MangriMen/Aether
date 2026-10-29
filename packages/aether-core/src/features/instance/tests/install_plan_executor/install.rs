@@ -37,10 +37,7 @@ async fn should_create_a_new_instance_and_install_into_it_when_the_target_is_new
                 files: vec![provider_ref("modrinth", "AANobbMI", "mods/sodium.jar")],
                 overrides: Vec::new(),
             },
-            &ProviderId {
-                plugin_id: ProviderId::BUILTIN_PLUGIN_ID.into(),
-                capability_id: "modrinth".into(),
-            },
+            &ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap(),
         )
         .await
         .unwrap();
@@ -452,10 +449,7 @@ async fn should_refuse_a_path_when_it_leads_into_the_instance_metadata() {
         let err = fixture
             .execute(
                 existing(vec![direct("https://cdn.example/a.json", path)]),
-                &ProviderId {
-                    plugin_id: ProviderId::BUILTIN_PLUGIN_ID.into(),
-                    capability_id: "modrinth".into(),
-                },
+                &ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap(),
             )
             .await
             .unwrap_err();

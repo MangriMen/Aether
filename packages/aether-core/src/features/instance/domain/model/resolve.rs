@@ -217,10 +217,7 @@ mod tests {
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
     fn modrinth() -> ProviderId {
-        ProviderId {
-            plugin_id: ProviderId::BUILTIN_PLUGIN_ID.into(),
-            capability_id: "modrinth".into(),
-        }
+        ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap()
     }
 
     fn sodium_ref(version: Option<&str>) -> ContentSource {

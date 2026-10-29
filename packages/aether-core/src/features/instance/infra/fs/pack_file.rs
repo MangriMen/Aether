@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use crate::features::instance::{
-    ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId,
+    ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId, ProviderIdError,
     infra::{
         legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
         stored_side::parse_stored_side,
@@ -206,7 +206,7 @@ impl From<PackFile> for PackFileV2 {
 fn parse_update_key(
     file_name: &str,
     key: &str,
-    parse: fn(&str) -> Result<ProviderId, String>,
+    parse: fn(&str) -> Result<ProviderId, ProviderIdError>,
 ) -> Option<ProviderId> {
     parse(key)
         .inspect_err(|e| warn!("Skipping update info of pack file \"{file_name}\": {e}"))
