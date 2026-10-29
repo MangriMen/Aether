@@ -25,6 +25,7 @@ import {
   useInstallContent,
 } from '@/features/content';
 import { useInstances } from '@/features/instance';
+import { isModLoader } from '@/features/minecraft';
 
 export type ContentContextProviderProps = {
   children: JSX.Element;
@@ -150,7 +151,10 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
     const gameVersion =
       instance?.gameVersion ?? local.filters?.gameVersions?.[0];
-    const loader = instance?.loader ?? local.filters?.loaders?.[0];
+    const filterLoader = local.filters?.loaders?.[0];
+    const loader =
+      instance?.loader ??
+      (isModLoader(filterLoader) ? filterLoader : undefined);
 
     if (!providerId || !finalInstanceId || !gameVersion) {
       return;
@@ -165,17 +169,13 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       data: {
         instanceId: finalInstanceId,
         gameVersion,
-        loader,
+        loader: item.contentType === 'mod' ? loader : undefined,
         contentId: item.id,
         contentType: item.contentType,
         contentVersion,
         providerId,
       },
     };
-
-    if (item.contentType !== 'mod') {
-      payload.data.loader = undefined;
-    }
 
     setStore('installingContentIds', contentId, true);
 
