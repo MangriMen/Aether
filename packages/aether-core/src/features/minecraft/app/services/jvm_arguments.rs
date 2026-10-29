@@ -18,18 +18,32 @@ fn canonical_string(path: &Path, entity_type: &str) -> Result<String, MinecraftD
         })
 }
 
-// TODO: Wrap arguments in struct
-#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, Copy)]
+pub struct JvmArgumentsParams<'a> {
+    pub arguments: Option<&'a [vanilla::Argument]>,
+    pub natives_path: &'a Path,
+    pub libraries_path: &'a Path,
+    pub class_paths: &'a str,
+    pub version_name: &'a str,
+    pub max_memory: u32,
+    pub custom_args: &'a [String],
+    pub java_arch: &'a str,
+}
+
 pub fn get_jvm_arguments(
-    arguments: Option<&[vanilla::Argument]>,
-    natives_path: &Path,
-    libraries_path: &Path,
-    class_paths: &str,
-    version_name: &str,
-    max_memory: u32,
-    custom_args: &[String],
-    java_arch: &str,
+    params: JvmArgumentsParams<'_>,
 ) -> Result<Vec<String>, MinecraftDomainError> {
+    let JvmArgumentsParams {
+        arguments,
+        natives_path,
+        libraries_path,
+        class_paths,
+        version_name,
+        max_memory,
+        custom_args,
+        java_arch,
+    } = params;
+
     let mut result = Vec::new();
 
     if let Some(arguments) = arguments {
@@ -273,7 +287,16 @@ mod tests {
         mem: u32,
         custom: &[String],
     ) -> Result<Vec<String>, MinecraftDomainError> {
-        get_jvm_arguments(args, &e.natives, &e.libs, cp, "1.20.1", mem, custom, "x64")
+        get_jvm_arguments(JvmArgumentsParams {
+            arguments: args,
+            natives_path: &e.natives,
+            libraries_path: &e.libs,
+            class_paths: cp,
+            version_name: "1.20.1",
+            max_memory: mem,
+            custom_args: custom,
+            java_arch: "x64",
+        })
     }
 
     // ---- get_lib_path ----
@@ -674,16 +697,16 @@ mod tests {
     #[case::with_arguments_even_if_unused(Some(vec![Argument::Normal("-Dx=1".to_string())]))]
     fn jvm_fails_when_natives_dir_missing(#[case] args: Option<Vec<Argument>>) {
         let e = env();
-        let err = get_jvm_arguments(
-            args.as_deref(),
-            &e.root.join("missing"),
-            &e.libs,
-            "cp",
-            "v",
-            1,
-            &[],
-            "x64",
-        )
+        let err = get_jvm_arguments(JvmArgumentsParams {
+            arguments: args.as_deref(),
+            natives_path: &e.root.join("missing"),
+            libraries_path: &e.libs,
+            class_paths: "cp",
+            version_name: "v",
+            max_memory: 1,
+            custom_args: &[],
+            java_arch: "x64",
+        })
         .unwrap_err();
         assert!(matches!(
             err,
@@ -696,16 +719,16 @@ mod tests {
     fn jvm_with_arguments_fails_when_libraries_dir_missing() {
         let e = env();
         let args = vec![Argument::Normal("-Dx=1".to_string())];
-        let err = get_jvm_arguments(
-            Some(&args),
-            &e.natives,
-            &e.root.join("missing"),
-            "cp",
-            "v",
-            1,
-            &[],
-            "x64",
-        )
+        let err = get_jvm_arguments(JvmArgumentsParams {
+            arguments: Some(&args),
+            natives_path: &e.natives,
+            libraries_path: &e.root.join("missing"),
+            class_paths: "cp",
+            version_name: "v",
+            max_memory: 1,
+            custom_args: &[],
+            java_arch: "x64",
+        })
         .unwrap_err();
         assert!(matches!(
             err,
@@ -716,16 +739,16 @@ mod tests {
     #[test]
     fn jvm_without_arguments_does_not_need_libraries_dir() {
         let e = env();
-        let out = get_jvm_arguments(
-            None,
-            &e.natives,
-            &e.root.join("missing"),
-            "cp",
-            "v",
-            1,
-            &[],
-            "x64",
-        )
+        let out = get_jvm_arguments(JvmArgumentsParams {
+            arguments: None,
+            natives_path: &e.natives,
+            libraries_path: &e.root.join("missing"),
+            class_paths: "cp",
+            version_name: "v",
+            max_memory: 1,
+            custom_args: &[],
+            java_arch: "x64",
+        })
         .unwrap();
         assert!(out[0].starts_with("-Djava.library.path="), "{out:?}");
         assert_eq!(out[1..], ["-cp", "cp", "-Xmx1M"]);

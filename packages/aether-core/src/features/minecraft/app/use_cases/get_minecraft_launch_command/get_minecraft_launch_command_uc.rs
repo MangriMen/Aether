@@ -10,14 +10,15 @@ use crate::{
     features::{
         auth::Credential,
         java::{
-            InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
+            InstallJava, Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
             JavaQueryService,
         },
         minecraft::{
-            LaunchSettings, LoaderVersionPreference, LoaderVersionService,
+            JvmArgumentsParams, LaunchSettings, LoaderVersionPreference, LoaderVersionService,
             MinecraftApplicationError, MinecraftDownloader, MinecraftLaunchCommandService,
-            ModLoader, VersionManifestService, get_compatible_java_version, get_logging_argument,
-            resolve_minecraft_version, vanilla, version_jar_name,
+            ModLoader, VersionManifestService, get_class_paths, get_compatible_java_version,
+            get_jvm_arguments, get_logging_argument, resolve_minecraft_version, vanilla,
+            version_jar_name,
         },
         settings::LocationInfo,
     },
@@ -25,10 +26,7 @@ use crate::{
     with_mut_ref,
 };
 
-use super::{
-    get_minecraft_arguments::get_minecraft_arguments,
-    get_minecraft_jvm_arguments::get_minecraft_jvm_arguments,
-};
+use super::get_minecraft_arguments::get_minecraft_arguments;
 
 #[derive(Debug, Clone)]
 pub struct GetMinecraftLaunchCommandParams {
@@ -139,24 +137,28 @@ impl GetMinecraftLaunchCommandUseCase {
 
         let env_args_vec = launch_settings.env_vars.clone();
 
-        let natives_dir = self.location_info.version_natives_dir(&version_jar);
-        if !natives_dir.exists() {
-            create_dir_all(&natives_dir).await?;
-        }
+        let natives_dir = self.ensure_natives_dir(&version_jar).await?;
 
-        let mut jvm_arguments = get_minecraft_jvm_arguments(
-            args.get(&vanilla::ArgumentType::Jvm)
-                .map(std::vec::Vec::as_slice),
-            &self.location_info.libraries_dir(),
-            &version_info,
-            &natives_dir,
+        let libraries_dir = self.location_info.libraries_dir();
+        let class_paths = get_class_paths(
+            &libraries_dir,
+            version_info.libraries.as_slice(),
             &client_path,
-            &version_jar,
-            &java,
-            launch_settings.memory.maximum,
-            &launch_settings.launch_args,
+            java.architecture(),
             minecraft_updated,
         )?;
+        let mut jvm_arguments = get_jvm_arguments(JvmArgumentsParams {
+            arguments: args
+                .get(&vanilla::ArgumentType::Jvm)
+                .map(std::vec::Vec::as_slice),
+            natives_path: &natives_dir,
+            libraries_path: &libraries_dir,
+            class_paths: &class_paths,
+            version_name: &version_jar,
+            max_memory: launch_settings.memory.maximum,
+            custom_args: &launch_settings.launch_args,
+            java_arch: java.architecture(),
+        })?;
         if let Some(logging_argument) = get_logging_argument(&version_info, &self.location_info)? {
             jvm_arguments.insert(0, logging_argument);
         }
@@ -177,11 +179,7 @@ impl GetMinecraftLaunchCommandUseCase {
         .into_iter()
         .collect::<Vec<_>>();
 
-        let mut command = if launch_settings.hooks.wrapper().is_empty() {
-            tokio::process::Command::new(java.path())
-        } else {
-            with_mut_ref!(it = tokio::process::Command::new(launch_settings.hooks.wrapper()) => {it.arg(java.path())})
-        };
+        let mut command = java_command(&launch_settings, &java);
 
         command
             .args(jvm_arguments)
@@ -195,6 +193,17 @@ impl GetMinecraftLaunchCommandUseCase {
 
         Ok(command)
     }
+
+    async fn ensure_natives_dir(
+        &self,
+        version_jar: &str,
+    ) -> Result<PathBuf, MinecraftApplicationError> {
+        let natives_dir = self.location_info.version_natives_dir(version_jar);
+        if !natives_dir.exists() {
+            create_dir_all(&natives_dir).await?;
+        }
+        Ok(natives_dir)
+    }
 }
 
 #[async_trait]
@@ -206,6 +215,15 @@ impl MinecraftLaunchCommandService for GetMinecraftLaunchCommandUseCase {
         credentials: Credential,
     ) -> Result<Command, MinecraftApplicationError> {
         self.execute(params, launch_settings, credentials).await
+    }
+}
+
+/// The process to start: the java binary, behind the user's wrapper command when one is set.
+fn java_command(launch_settings: &LaunchSettings, java: &Java) -> Command {
+    if launch_settings.hooks.wrapper().is_empty() {
+        Command::new(java.path())
+    } else {
+        with_mut_ref!(it = Command::new(launch_settings.hooks.wrapper()) => {it.arg(java.path())})
     }
 }
 
