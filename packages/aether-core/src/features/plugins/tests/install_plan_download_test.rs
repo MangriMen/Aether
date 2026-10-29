@@ -46,7 +46,7 @@ use crate::{
     shared::{
         capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
         fetch::FetchSemaphore,
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
         request_client::infra::ReqwestClient,
     },
 };
@@ -322,7 +322,11 @@ fn allow_any_address(_ip: IpAddr) -> bool {
 }
 
 fn sha1_of(bytes: &[u8]) -> FileHash {
-    FileHash::parse("sha1", &sha1_smol::Sha1::from(bytes).hexdigest()).unwrap()
+    FileHash::new(
+        HashAlgorithm::Sha1,
+        sha1_smol::Sha1::from(bytes).hexdigest(),
+    )
+    .unwrap()
 }
 
 fn plugin_origin() -> ProviderId {

@@ -43,7 +43,7 @@ use crate::{
     },
     shared::{
         capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
         limits::PluginSandboxLimits,
     },
 };
@@ -381,7 +381,7 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
     assert_eq!(resolved.file_name, "jei.jar");
     assert_eq!(
         resolved.hash,
-        Some(FileHash::parse("sha1", SHA1_ABC).unwrap())
+        Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
     );
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
 

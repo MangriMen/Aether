@@ -405,6 +405,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::shared::hash::HashAlgorithm;
     use crate::{
         features::events::{EventError, ProgressEventType},
         shared::request_client::RequestClientExt,
@@ -858,7 +859,7 @@ mod tests {
         let addr = serve("200 OK", b"payload").await;
         let dir = tempfile::tempdir().unwrap();
         let destination = dir.path().join("file");
-        let wrong = FileHash::parse("sha1", &"0".repeat(40)).unwrap();
+        let wrong = FileHash::new(HashAlgorithm::Sha1, "0".repeat(40)).unwrap();
 
         let result = client()
             .download_to_file(

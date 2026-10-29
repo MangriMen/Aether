@@ -28,7 +28,7 @@ use crate::{
         settings::LocationInfo,
     },
     shared::{
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
         limits::ContentInstallLimits,
         request_client::{
             BytesProgress, FileDownload, Request, RequestClient, RequestError, SavedDownload,
@@ -340,7 +340,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
         entry.source,
         ContentSource::Direct {
             url: SODIUM_URL.into(),
-            hash: Some(FileHash::parse("sha512", &sha512_hex(b"sodium")).unwrap()),
+            hash: Some(FileHash::new(HashAlgorithm::Sha512, sha512_hex(b"sodium")).unwrap()),
             identity: Some(ContentIdentity {
                 platform: "modrinth".into(),
                 content_id: "AANobbMI".into(),
@@ -749,7 +749,7 @@ async fn should_resolve_a_ref_to_the_primary_file_when_the_version_has_several()
     assert_eq!(resolved.file_name, "sodium.jar");
     assert_eq!(
         resolved.hash,
-        Some(FileHash::parse("sha512", &sha512_hex(b"sodium")).unwrap())
+        Some(FileHash::new(HashAlgorithm::Sha512, sha512_hex(b"sodium")).unwrap())
     );
     assert_eq!(resolved.name.as_deref(), Some("Version IZskON6d"));
 }

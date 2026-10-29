@@ -124,6 +124,7 @@ mod tests {
     use crate::features::instance::ContentType;
 
     use super::*;
+    use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
@@ -246,7 +247,7 @@ mod tests {
             source,
             ContentSource::Direct {
                 url: "https://example.com/a.jar".into(),
-                hash: Some(FileHash::parse("sha1", SHA1_ABC).unwrap()),
+                hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: "modrinth".into(),
                     content_id: "AANobbMI".into(),

@@ -314,6 +314,7 @@ pub enum OverrideLocation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
@@ -330,14 +331,14 @@ mod tests {
         // A packwiz index entry: `hash-format = "sha1"`, `hash = "<HEX>"`.
         let source = ContentSource::direct(
             "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
-            Some(FileHash::parse("sha1", &SHA1_ABC.to_ascii_uppercase()).unwrap()),
+            Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC.to_ascii_uppercase()).unwrap()),
         );
 
         assert_eq!(
             source,
             ContentSource::direct(
                 "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
-                Some(FileHash::parse("sha1", SHA1_ABC).unwrap())
+                Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
             )
         );
     }
@@ -347,8 +348,11 @@ mod tests {
         let url = "https://example.com/a.jar";
         assert_eq!(ContentSource::direct(url.into(), None).to_string(), url);
         assert_eq!(
-            ContentSource::direct(url.into(), Some(FileHash::parse("sha1", SHA1_ABC).unwrap()))
-                .to_string(),
+            ContentSource::direct(
+                url.into(),
+                Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
+            )
+            .to_string(),
             format!("{url} (sha1:{SHA1_ABC})")
         );
     }

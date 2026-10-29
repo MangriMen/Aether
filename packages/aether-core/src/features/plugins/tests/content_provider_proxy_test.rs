@@ -39,7 +39,7 @@ use crate::{
     },
     shared::{
         capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
     },
 };
 
@@ -372,7 +372,7 @@ async fn should_call_the_resolve_file_handler_the_file_names_when_resolving_a_fi
     assert_eq!(resolved.version, "4512345");
     assert_eq!(
         resolved.hash,
-        Some(FileHash::parse("sha1", SHA1_ABC).unwrap())
+        Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())
     );
     assert_eq!(resolved.size, Some(3));
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
