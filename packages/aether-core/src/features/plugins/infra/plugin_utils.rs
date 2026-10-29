@@ -1104,7 +1104,7 @@ mod tests {
     #[cfg(unix)]
     fn should_refuse_a_symlink_when_it_points_out_of_the_mount() {
         let layout = layout();
-        let cache = layout.location_info.plugin_cache_dir(PLUGIN_ID);
+        let cache = layout.location_info.plugin_cache_dir(&plugin_id());
         std::os::unix::fs::symlink(layout.location_info.config_dir(), cache.join("escape"))
             .unwrap();
 
