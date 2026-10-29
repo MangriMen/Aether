@@ -6,7 +6,7 @@
 use std::str::FromStr;
 
 use crate::features::instance::{
-    CapabilityId, InvalidId, PluginId, ProviderId, ProviderIdError, infra::ModrinthContentProvider,
+    InvalidId, ProviderId, ProviderIdError, infra::ModrinthContentProvider,
 };
 
 /// The built-in Modrinth provider in V1 pack files, before ids had a plugin part.
@@ -55,14 +55,6 @@ pub(super) fn parse_v1_provider_id(value: &str) -> Result<ProviderId, ProviderId
     }
 
     parse_stored_provider_id(value)
-}
-
-/// What a stored provider id that does not parse is read as.
-pub(super) fn unknown_provider_id() -> ProviderId {
-    ProviderId::new(
-        PluginId::from_static("unknown"),
-        CapabilityId::from_static("unknown"),
-    )
 }
 
 /// The string form `id` was stored under before it was renamed, if it was.

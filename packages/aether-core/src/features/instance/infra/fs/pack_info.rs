@@ -3,9 +3,7 @@ use tracing::warn;
 
 use crate::features::instance::{
     PackInfo, ProviderId,
-    infra::legacy_provider_id::{
-        parse_stored_provider_id_parts, parse_v1_provider_id, unknown_provider_id,
-    },
+    infra::legacy_provider_id::{parse_stored_provider_id_parts, parse_v1_provider_id},
 };
 
 /// The pack of a V1 instance. Its `plugin_id` was a bare id: `modrinth` for the built-in Modrinth
@@ -18,24 +16,25 @@ pub struct PackInfoV1 {
     pub version: String,
 }
 
-impl From<PackInfoV1> for PackInfo {
-    fn from(old: PackInfoV1) -> Self {
+impl PackInfoV1 {
+    /// The pack, or `None` when its stored provider id does not parse.
+    pub fn into_pack_info(self) -> Option<PackInfo> {
         // A plugin's id names its provider of the same id, as V1 found it.
-        let provider_id = parse_v1_provider_id(&old.plugin_id)
-            .or_else(|_| ProviderId::from_parts(&old.plugin_id, &old.plugin_id))
-            .unwrap_or_else(|e| {
+        let provider_id = parse_v1_provider_id(&self.plugin_id)
+            .or_else(|_| ProviderId::from_parts(&self.plugin_id, &self.plugin_id))
+            .inspect_err(|e| {
                 warn!(
-                    "Unparsable stored provider id of pack \"{}\": {e}",
-                    old.modpack_id
+                    "Unparsable stored provider id \"{}\" of pack \"{}\": {e}",
+                    self.plugin_id, self.modpack_id
                 );
-                unknown_provider_id()
-            });
+            })
+            .ok()?;
 
-        Self {
+        Some(PackInfo {
             provider_id,
-            modpack_id: old.modpack_id,
-            version_id: old.version,
-        }
+            modpack_id: self.modpack_id,
+            version_id: self.version,
+        })
     }
 }
 
@@ -64,24 +63,25 @@ impl From<ProviderId> for ProviderIdV1 {
     }
 }
 
-impl From<PackInfoV2> for PackInfo {
-    fn from(value: PackInfoV2) -> Self {
-        let stored = &value.provider_id;
+impl PackInfoV2 {
+    /// The pack, or `None` when its stored provider id does not parse.
+    pub fn into_pack_info(self) -> Option<PackInfo> {
+        let stored = &self.provider_id;
         let provider_id = parse_stored_provider_id_parts(&stored.plugin_id, &stored.capability_id)
-            .unwrap_or_else(|e| {
+            .inspect_err(|e| {
                 // The stored value is lost on the next save of this instance, so leave a trace.
                 warn!(
-                    "Unparsable stored provider id of pack \"{}\": {e}",
-                    value.modpack_id
+                    "Unparsable stored provider id \"{}#{}\" of pack \"{}\": {e}",
+                    stored.plugin_id, stored.capability_id, self.modpack_id
                 );
-                unknown_provider_id()
-            });
+            })
+            .ok()?;
 
-        Self {
+        Some(PackInfo {
             provider_id,
-            modpack_id: value.modpack_id,
-            version_id: value.version_id,
-        }
+            modpack_id: self.modpack_id,
+            version_id: self.version_id,
+        })
     }
 }
 
@@ -100,7 +100,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_read_an_invalid_stored_provider_id_as_unknown() {
+    fn should_read_no_pack_when_the_stored_provider_id_is_invalid() {
         let dto: PackInfoV2 = serde_json::from_str(
             r#"{
                 "providerId": { "pluginId": "a:b", "capabilityId": "cap" },
@@ -110,10 +110,7 @@ mod tests {
         )
         .unwrap();
 
-        let pack_info = PackInfo::from(dto);
-
-        assert_eq!(pack_info.provider_id, unknown_provider_id());
-        assert_eq!(pack_info.modpack_id, "1KVo5zza");
+        assert!(dto.into_pack_info().is_none());
     }
 
     #[test]
@@ -128,7 +125,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            PackInfo::from(dto).provider_id,
+            dto.into_pack_info().unwrap().provider_id,
             "aether#modrinth".parse::<ProviderId>().unwrap()
         );
     }
@@ -138,7 +135,8 @@ mod tests {
             r#"{{ "pluginId": "{plugin_id}", "modpackId": "1KVo5zza", "version": "v1" }}"#
         ))
         .unwrap()
-        .into()
+        .into_pack_info()
+        .unwrap()
     }
 
     /// V1's `ModrinthContentProvider` wrote its packs as `modrinth`; read as `modrinth#modrinth`,
