@@ -17,6 +17,7 @@ mod plugin_enabler;
 mod plugin_provider;
 mod ports;
 mod record_plugin_verification;
+mod release_installer;
 mod reload_plugin;
 mod remove_plugin;
 mod services;
