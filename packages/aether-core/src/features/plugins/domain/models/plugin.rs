@@ -8,6 +8,9 @@ pub enum PluginState {
     Loading,
     Loaded(PluginHandle),
     Unloading,
+    /// Its files are being deleted. Nothing loads, unloads or syncs the plugin meanwhile; it
+    /// leaves this state by being forgotten, or by being put back as it was if the delete fails.
+    Removing,
     /// The plugin asks for what this host does not offer: an API version or host functions.
     Incompatible(PluginStateReason),
     Failed(PluginStateReason),

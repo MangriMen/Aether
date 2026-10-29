@@ -29,7 +29,7 @@ pub use app::{
     PluginManifestDto, PluginMetadataDto, PluginProvider, PluginProviderFactory, PluginRegistry,
     PluginSettingsStorage, PluginSourceStorage, PluginStateReasonDto, PluginStorage,
     PluginUpdaterCapabilityDto, PluginVerificationStorage, PluginsFeature, ProviderHandlersDto,
-    RuntimeConfigDto, UpdaterCapabilityMetadataDto, record_plugin_verification,
+    ProviderRelease, RuntimeConfigDto, UpdaterCapabilityMetadataDto, record_plugin_verification,
     write_bytes_to_temp_file,
 };
 pub(crate) use app::{
@@ -40,7 +40,8 @@ pub(crate) use app::{
     GetPluginDtoUseCasePort, GetPluginSettingsUseCase, GetPluginSettingsUseCasePort,
     GrantPluginFolderAccessUseCase, GrantPluginFolderAccessUseCasePort,
     GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
-    ImportPluginsUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
+    ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
+    InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
     PluginDisableService, PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort,
     RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
     UpdatePluginUseCasePort,

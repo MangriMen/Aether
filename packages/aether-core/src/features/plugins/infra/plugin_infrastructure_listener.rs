@@ -64,7 +64,10 @@ where
             // Passing states keep the registrations: during an unload or restart the proxies
             // answer "not running" over the retired handle instead of the capability going
             // missing, until the new instance or the final state replaces them.
-            if matches!(state, PluginState::Loading | PluginState::Unloading) {
+            if matches!(
+                state,
+                PluginState::Loading | PluginState::Unloading | PluginState::Removing
+            ) {
                 return Ok(());
             }
 
@@ -81,7 +84,7 @@ where
                     | PluginState::Incompatible(_) => {
                         self.sync_all_capabilities(&plugin_id, None, &caps).await?;
                     }
-                    PluginState::Loading | PluginState::Unloading => (),
+                    PluginState::Loading | PluginState::Unloading | PluginState::Removing => (),
                 }
             }
 

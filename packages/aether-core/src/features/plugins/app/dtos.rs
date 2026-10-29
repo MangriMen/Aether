@@ -332,7 +332,8 @@ impl From<&PluginState> for PluginDtoState {
             PluginState::NotLoaded => PluginDtoState::NotLoaded,
             PluginState::Loading => PluginDtoState::Loading,
             PluginState::Loaded(_) => PluginDtoState::Loaded,
-            PluginState::Unloading => PluginDtoState::Unloading,
+            // A plugin being removed is shown as unloading: the UI treats both as a passing state.
+            PluginState::Unloading | PluginState::Removing => PluginDtoState::Unloading,
             PluginState::Incompatible(_) => PluginDtoState::Incompatible,
             PluginState::Failed(_) => PluginDtoState::Failed,
         }

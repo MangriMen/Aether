@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::features::plugins::{
-    PluginSource, PluginSourceType, PluginsFeature, write_bytes_to_temp_file,
-};
+use aether_core::features::plugins::{PluginSourceType, PluginsFeature, ProviderRelease};
 use tauri::State;
 
 use crate::{
@@ -415,67 +413,19 @@ async fn install_plugin_from_provider(
     container: State<'_, ContainerState>,
 ) -> FrontendResult<String> {
     let _guard = idempotency.lock_cmd(request_id)?;
-    let st: PluginSourceType = source_type.into();
 
     let container = container.0.clone();
-    let factory = container.plugin_provider_factory();
-    let provider = factory.get_provider(&st).ok_or_else(|| {
-        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
-            format!("No provider registered for: {st:?}"),
-        )))
-    })?;
-
-    let normalized = provider.parse_identifier(&identifier).map_err(|e| {
-        crate::Error::from(aether_core::Error::from(aether_core::ErrorKind::CoreError(
-            e.to_string(),
-        )))
-    })?;
-
-    let zip_bytes = provider
-        .download_plugin(&download_url)
+    Ok(container
+        .install_plugin_from_provider_use_case()
+        .execute(
+            source_type.into(),
+            &identifier,
+            ProviderRelease {
+                download_url,
+                tag_name,
+                version,
+            },
+        )
         .await
-        .map_err(|e| crate::Error::from(aether_core::Error::from(e)))?;
-    let temp_file = write_bytes_to_temp_file(&zip_bytes).map_err(aether_core::Error::from)?;
-    let extracted = container
-        .plugin_extractor()
-        .extract(temp_file.path())
-        .await
-        .map_err(aether_core::Error::from)?;
-    let plugin_id = extracted.plugin_id.clone();
-    container
-        .plugin_storage()
-        .add(extracted)
-        .await
-        .map_err(aether_core::Error::from)?;
-
-    // Trust on first use: these bytes came straight from the release the user
-    // picked, so record their sha256 now — every later load is checked against it.
-    aether_core::features::plugins::record_plugin_verification(
-        container.plugin_storage().as_ref(),
-        container.plugin_verification_storage().as_ref(),
-        &plugin_id,
-        st.clone(),
-    )
-    .await
-    .map_err(aether_core::Error::from)?;
-
-    let source = PluginSource::Remote {
-        source_type: st,
-        identifier: normalized,
-        current_tag: tag_name,
-        current_version: version,
-    };
-    container
-        .plugin_source_storage()
-        .save(&plugin_id, &source)
-        .await
-        .map_err(aether_core::Error::from)?;
-
-    container
-        .sync_plugins_service()
-        .execute()
-        .await
-        .map_err(aether_core::Error::from)?;
-
-    Ok(plugin_id)
+        .map_err(aether_core::Error::from)?)
 }

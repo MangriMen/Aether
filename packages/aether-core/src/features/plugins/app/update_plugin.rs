@@ -3,13 +3,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::plugins::{
-    PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettings,
-    PluginSettingsStorage, PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService,
-    PluginVerificationStorage,
+    PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
+    PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
 };
 
 use super::ports::UpdatePluginUseCasePort;
-use super::{PluginProviderFactory, record_plugin_verification, write_bytes_to_temp_file};
+use super::release_installer::ReleaseInstaller;
+use super::{PluginProviderFactory, write_bytes_to_temp_file};
 
 /// Updates a plugin to a specific version (or latest) using the provider factory.
 /// Works with any provider type (GitHub, Modrinth, etc.).
@@ -21,12 +21,9 @@ use super::{PluginProviderFactory, record_plugin_verification, write_bytes_to_te
 /// Once replaced, the plugin is synced, so that the registry holds the new build and a plugin
 /// that was enabled runs it. The update is done by then, so a failed sync is logged, not returned.
 pub(crate) struct UpdatePluginUseCase {
-    plugin_registry: Arc<PluginRegistry>,
     plugin_extractor: Arc<dyn PluginExtractor>,
-    plugin_storage: Arc<dyn PluginStorage>,
     plugin_source_storage: Arc<dyn PluginSourceStorage>,
-    plugin_verification_storage: Arc<dyn PluginVerificationStorage>,
-    plugin_settings_storage: Arc<dyn PluginSettingsStorage>,
+    installer: ReleaseInstaller,
     provider_factory: Arc<PluginProviderFactory>,
     sync_plugins_service: Arc<dyn PluginSyncService>,
 }
@@ -46,12 +43,15 @@ impl UpdatePluginUseCase {
         sync_plugins_service: Arc<dyn PluginSyncService>,
     ) -> Self {
         Self {
-            plugin_registry,
             plugin_extractor,
-            plugin_storage,
-            plugin_source_storage,
-            plugin_verification_storage,
-            plugin_settings_storage,
+            plugin_source_storage: plugin_source_storage.clone(),
+            installer: ReleaseInstaller {
+                registry: plugin_registry,
+                storage: plugin_storage,
+                source_storage: plugin_source_storage,
+                verification_storage: plugin_verification_storage,
+                settings_storage: plugin_settings_storage,
+            },
             provider_factory,
             sync_plugins_service,
         }
@@ -129,74 +129,15 @@ impl UpdatePluginUseCase {
             current_version: release.version,
         };
 
-        // The settings live in the plugin's directory, which the new version replaces. Held
-        // until the old directory is dropped or back, so that a grant made meanwhile is neither
-        // saved over nor lost with the directory.
-        let settings_lock = self.plugin_registry.lock_settings(plugin_id).await;
-        let settings = self.plugin_settings_storage.get(plugin_id).await?;
+        self.installer
+            .install(extracted, &updated_source, true)
+            .await?;
 
-        self.plugin_storage.replace(extracted).await?;
-
-        match self
-            .complete_replacement(plugin_id, settings, &updated_source)
-            .await
-        {
-            Ok(()) => {
-                // The new version is complete without it: a leftover is only disk space.
-                if let Err(err) = self.plugin_storage.discard_replaced(plugin_id).await {
-                    tracing::warn!(
-                        "Previous version of plugin '{plugin_id}' was left behind: {err}"
-                    );
-                }
-            }
-            Err(err) => {
-                if let Err(restore_err) = self.plugin_storage.restore_replaced(plugin_id).await {
-                    tracing::error!(
-                        "Plugin '{plugin_id}' could not be put back after a failed update: \
-                         {restore_err}"
-                    );
-                }
-                return Err(err);
-            }
-        }
-
-        // Not under the settings lock: enabling the new build can take seconds, and no settings
-        // change needs to wait for it.
-        drop(settings_lock);
+        // Once replaced, so that enabling the new build, which can take seconds, holds nothing.
         if let Err(err) = self.sync_plugins_service.execute().await {
             log::warn!("Plugin '{plugin_id}' was updated but the sync after it failed: {err}");
         }
         Ok(())
-    }
-
-    /// Writes the core's files about the new version into its directory. The source goes last:
-    /// it names the installed release, and must not name the new one before the rest is there.
-    async fn complete_replacement(
-        &self,
-        plugin_id: &str,
-        settings: Option<PluginSettings>,
-        updated_source: &PluginSource,
-    ) -> Result<(), PluginError> {
-        if let Some(mut settings) = settings {
-            settings.force_enabled_at_api_version = None;
-            self.plugin_settings_storage
-                .upsert(plugin_id, &settings)
-                .await?;
-        }
-
-        // Trust is established on the bytes this release just delivered; the old record stays
-        // with the old directory.
-        record_plugin_verification(
-            self.plugin_storage.as_ref(),
-            self.plugin_verification_storage.as_ref(),
-            plugin_id,
-            updated_source.to_source_type(),
-        )
-        .await?;
-
-        self.plugin_source_storage
-            .save(plugin_id, updated_source)
-            .await
     }
 }
 
