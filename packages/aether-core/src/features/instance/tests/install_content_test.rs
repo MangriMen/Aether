@@ -20,7 +20,8 @@ use crate::{
             InstallPlan, InstallPlanExecutorPort, InstallTarget, Instance, InstanceBuilder,
             InstanceError, InstanceId, InstanceInstallStage, InstanceLocks, InstanceStorage,
             ModpackInstallParams, NewInstance, PackFile, PackInfo, PackStorage, PlanOrigin,
-            ProviderId, ResolveInstallPlanParams, ResolveTarget, infra::SqlitePackStorage,
+            PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+            infra::SqlitePackStorage,
         },
         minecraft::ModLoader,
     },
@@ -35,10 +36,7 @@ const NEW_INSTANCE_ID: &str = "new-instance";
 type Answer = Box<dyn Fn(&ResolveTarget) -> InstallTarget + Send + Sync>;
 
 fn provider_id() -> ProviderId {
-    ProviderId {
-        plugin_id: PLUGIN.into(),
-        capability_id: CAPABILITY.into(),
-    }
+    ProviderId::from_parts(PLUGIN, CAPABILITY).unwrap()
 }
 
 fn pack_info(modpack_id: &str) -> PackInfo {
@@ -594,7 +592,7 @@ async fn should_refuse_a_plan_when_it_is_for_another_instance_than_the_one_asked
 async fn should_refuse_a_new_pack_when_it_belongs_to_another_provider() {
     let provider = MockProvider::new(Some(Box::new(|_| {
         let mut pack_info = pack_info("project-id");
-        pack_info.provider_id.plugin_id = "other-plugin".into();
+        pack_info.provider_id.plugin_id = PluginId::from_static("other-plugin");
         InstallTarget::New(new_instance(Some(pack_info)))
     })));
     let fixture = Fixture::new(&provider).await;

@@ -233,6 +233,7 @@ fn proxy(sandbox: &Sandbox, id: &str, handle: PluginHandle) -> PluginContentProv
         provider_capability(),
         sandbox.location_info.clone(),
     )
+    .expect("ids should be valid")
 }
 
 fn resolved_jei() -> Vec<u8> {
@@ -276,10 +277,7 @@ fn search_result(plugin_id: &str) -> Vec<u8> {
 fn search_params(plugin_id: &str) -> ContentSearchParams {
     ContentSearchParams {
         content_type: ContentType::Mod,
-        provider_id: ProviderId {
-            plugin_id: plugin_id.into(),
-            capability_id: "curseforge".into(),
-        },
+        provider_id: ProviderId::from_parts(plugin_id, "curseforge").unwrap(),
         page: 1,
         page_size: 20,
         query: Some("jei".into()),

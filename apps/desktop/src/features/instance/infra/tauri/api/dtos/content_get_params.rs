@@ -1,4 +1,4 @@
-use aether_core::features::instance::ContentGetParams;
+use aether_core::features::instance::{ContentGetParams, InstanceError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -11,11 +11,13 @@ pub struct ContentGetParamsDto {
     pub provider_id: ProviderIdDto,
 }
 
-impl From<ContentGetParamsDto> for ContentGetParams {
-    fn from(value: ContentGetParamsDto) -> Self {
-        Self {
+impl TryFrom<ContentGetParamsDto> for ContentGetParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentGetParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             content_id: value.content_id,
-            provider_id: value.provider_id.into(),
-        }
+            provider_id: value.provider_id.try_into()?,
+        })
     }
 }

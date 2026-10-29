@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::features::instance::{
     PackInfo, ProviderId,
-    infra::legacy_provider_id::{migrate_provider_id, parse_v1_provider_id},
+    infra::legacy_provider_id::{
+        parse_stored_provider_id_parts, parse_v1_provider_id, unknown_provider_id,
+    },
 };
 
 /// The pack of a V1 instance. Its `plugin_id` was a bare id: `modrinth` for the built-in Modrinth
@@ -18,10 +21,15 @@ pub struct PackInfoV1 {
 impl From<PackInfoV1> for PackInfo {
     fn from(old: PackInfoV1) -> Self {
         // A plugin's id names its provider of the same id, as V1 found it.
-        let provider_id = parse_v1_provider_id(&old.plugin_id).unwrap_or_else(|_| ProviderId {
-            plugin_id: old.plugin_id.clone(),
-            capability_id: old.plugin_id,
-        });
+        let provider_id = parse_v1_provider_id(&old.plugin_id)
+            .or_else(|_| ProviderId::from_parts(&old.plugin_id, &old.plugin_id))
+            .unwrap_or_else(|e| {
+                warn!(
+                    "Unparsable stored provider id of pack \"{}\": {e}",
+                    old.modpack_id
+                );
+                unknown_provider_id()
+            });
 
         Self {
             provider_id,
@@ -47,28 +55,30 @@ pub struct PackInfoV2 {
     pub version_id: String,
 }
 
-impl From<ProviderIdV1> for ProviderId {
-    fn from(value: ProviderIdV1) -> Self {
-        migrate_provider_id(Self {
-            plugin_id: value.plugin_id,
-            capability_id: value.capability_id,
-        })
-    }
-}
-
 impl From<ProviderId> for ProviderIdV1 {
     fn from(value: ProviderId) -> Self {
         Self {
-            plugin_id: value.plugin_id,
-            capability_id: value.capability_id,
+            plugin_id: value.plugin_id.into(),
+            capability_id: value.capability_id.into(),
         }
     }
 }
 
 impl From<PackInfoV2> for PackInfo {
     fn from(value: PackInfoV2) -> Self {
+        let stored = &value.provider_id;
+        let provider_id = parse_stored_provider_id_parts(&stored.plugin_id, &stored.capability_id)
+            .unwrap_or_else(|e| {
+                // The stored value is lost on the next save of this instance, so leave a trace.
+                warn!(
+                    "Unparsable stored provider id of pack \"{}\": {e}",
+                    value.modpack_id
+                );
+                unknown_provider_id()
+            });
+
         Self {
-            provider_id: value.provider_id.into(),
+            provider_id,
             modpack_id: value.modpack_id,
             version_id: value.version_id,
         }
@@ -88,6 +98,23 @@ impl From<PackInfo> for PackInfoV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_read_an_invalid_stored_provider_id_as_unknown() {
+        let dto: PackInfoV2 = serde_json::from_str(
+            r#"{
+                "providerId": { "pluginId": "a:b", "capabilityId": "cap" },
+                "modpackId": "1KVo5zza",
+                "versionId": "v1"
+            }"#,
+        )
+        .unwrap();
+
+        let pack_info = PackInfo::from(dto);
+
+        assert_eq!(pack_info.provider_id, unknown_provider_id());
+        assert_eq!(pack_info.modpack_id, "1KVo5zza");
+    }
 
     #[test]
     fn should_read_core_modrinth_as_aether_modrinth_when_the_pack_stores_the_old_id() {

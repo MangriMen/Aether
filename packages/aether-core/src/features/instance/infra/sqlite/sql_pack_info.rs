@@ -1,7 +1,8 @@
 use tracing::warn;
 
 use crate::features::instance::{
-    PackInfo, ProviderId, infra::legacy_provider_id::parse_stored_provider_id,
+    PackInfo,
+    infra::legacy_provider_id::{parse_stored_provider_id, unknown_provider_id},
 };
 
 #[allow(clippy::struct_field_names)]
@@ -20,10 +21,7 @@ impl From<SqlPackInfo> for PackInfo {
                     "Unparsable stored provider id \"{}\" of pack \"{}\"",
                     row.provider_id, row.modpack_id
                 );
-                ProviderId {
-                    plugin_id: "unknown".into(),
-                    capability_id: "unknown".into(),
-                }
+                unknown_provider_id()
             }),
             modpack_id: row.modpack_id,
             version_id: row.version_id,
@@ -44,6 +42,7 @@ impl From<PackInfo> for SqlPackInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::ProviderId;
 
     #[test]
     fn should_read_an_unparsable_provider_id_as_unknown() {

@@ -86,7 +86,7 @@ impl LaunchInstanceUseCase {
         let handle = instance.pack_info.as_ref().and_then(|pack_info| {
             let plugin = self
                 .plugin_registry
-                .get(&pack_info.provider_id.plugin_id)
+                .get(pack_info.provider_id.plugin_id.as_str())
                 .ok()?;
             match &plugin.state {
                 PluginState::Loaded(handle) => Some(handle.clone()),

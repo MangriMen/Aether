@@ -10,7 +10,7 @@ use aether_core_plugin_api::v0::{
 use crate::{
     features::instance::{
         ContentIdentity, ContentSource, FileSide, InstallFileEntry, InstallTarget, InstanceError,
-        InstanceGame, InstanceId, OptionalFile,
+        InstanceGame, InstanceId, InvalidId, OptionalFile,
     },
     shared::hash::{FileHash, InvalidFileHash},
 };
@@ -26,7 +26,13 @@ impl TryFrom<InstallTargetDto> for InstallTarget {
                 instance_id: InstanceId::try_from(instance_id)?,
                 game: game.map(Into::into),
             },
-            InstallTargetDto::New(new_instance) => Self::New(new_instance.into()),
+            InstallTargetDto::New(new_instance) => {
+                Self::New(new_instance.try_into().map_err(|err: InvalidId| {
+                    InstanceError::ContentProviderError {
+                        reason: err.to_string(),
+                    }
+                })?)
+            }
         })
     }
 }

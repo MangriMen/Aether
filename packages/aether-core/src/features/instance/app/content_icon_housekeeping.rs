@@ -132,10 +132,7 @@ mod tests {
     }
 
     fn provider(id: &str) -> ProviderId {
-        ProviderId {
-            plugin_id: id.into(),
-            capability_id: "content".into(),
-        }
+        ProviderId::from_parts(id, "content").unwrap()
     }
 
     fn pack_file(provider_id: Option<&ProviderId>, content_id: &str) -> PackFile {

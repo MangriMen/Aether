@@ -25,11 +25,14 @@ impl GetContentUseCase {
 
         let provider = self
             .provider_registry
-            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
+            .find_by_plugin_and_capability_id(
+                provider_id.plugin_id.as_str(),
+                provider_id.capability_id.as_str(),
+            )
             .await
             .map_err(|_| InstanceError::ContentProviderNotFound {
-                plugin_id: provider_id.plugin_id.clone(),
-                capability_id: provider_id.capability_id.clone(),
+                plugin_id: provider_id.plugin_id.to_string(),
+                capability_id: provider_id.capability_id.to_string(),
             })?;
 
         provider.capability.get_content(get_params.content_id).await

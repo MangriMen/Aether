@@ -7,18 +7,19 @@ mod tests;
 
 // ── Domain models (pure data containers) ──
 pub use domain::{
-    AtomicInstallParams, BaseContentParams, CapabilityMetadata, ChannelVersion, ContentAuthor,
-    ContentFile, ContentFileUpdateInfo, ContentFileView, ContentIdentity, ContentInstallParams,
-    ContentItem, ContentMetadata, ContentProviderCapabilityMetadata, ContentSearchParams,
-    ContentSearchResult, ContentSource, ContentType, ContentVersion, ContentVersionDependency,
-    ContentVersionDependencyType, ContentVersionMetadata, ContentVersionStatus, ContentVersionType,
-    FileSide, ImporterCapabilityMetadata, InstallFileEntry, InstallPlan, InstallTarget, Instance,
-    InstanceBuilder, InstanceError, InstanceField, InstanceGame, InstanceId, InstanceInstallStage,
-    InstanceSnapshot, InstanceValidationErrorReason, ModpackInstallParams, NewInstance,
-    OptionalFile, OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload,
-    PackFileOption, PackInfo, PackMetadata, PackSource, PlanOrigin, ProviderId, ReleaseChannel,
-    RequestedContentVersionStatus, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
-    UpdaterCapabilityMetadata, is_valid_id, select_version,
+    AtomicInstallParams, BaseContentParams, CapabilityId, CapabilityMetadata, ChannelVersion,
+    ContentAuthor, ContentFile, ContentFileUpdateInfo, ContentFileView, ContentIdentity,
+    ContentInstallParams, ContentItem, ContentMetadata, ContentProviderCapabilityMetadata,
+    ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
+    ContentVersionDependency, ContentVersionDependencyType, ContentVersionMetadata,
+    ContentVersionStatus, ContentVersionType, FileSide, ImporterCapabilityMetadata,
+    InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceBuilder, InstanceError,
+    InstanceField, InstanceGame, InstanceId, InstanceInstallStage, InstanceSnapshot,
+    InstanceValidationErrorReason, InvalidId, ModpackInstallParams, NewInstance, OptionalFile,
+    OverrideLocation, OverrideSource, Pack, PackEntry, PackFile, PackFileDownload, PackFileOption,
+    PackInfo, PackMetadata, PackSource, PlanOrigin, PlatformId, PluginId, ProviderId,
+    ProviderIdError, ReleaseChannel, RequestedContentVersionStatus, ResolveInstallPlanParams,
+    ResolveTarget, ResolvedFile, UpdaterCapabilityMetadata, is_valid_id, select_version,
 };
 
 // ── App layer: Use Cases (Inbound Ports) ──

@@ -171,10 +171,7 @@ mod tests {
     #[test]
     fn should_format_unsupported_operation_error_when_displayed() {
         let err = InstanceError::UnsupportedOperation {
-            provider_id: ProviderId {
-                plugin_id: "aether".into(),
-                capability_id: "modrinth".into(),
-            },
+            provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
             operation: "resolve_pack_metadata",
         };
         assert_eq!(
@@ -205,10 +202,7 @@ mod tests {
     fn should_format_game_change_not_allowed_error_when_displayed() {
         let err = InstanceError::GameChangeNotAllowed {
             instance_id: "inst-1".into(),
-            provider_id: ProviderId {
-                plugin_id: "aether".into(),
-                capability_id: "modrinth".into(),
-            },
+            provider_id: ProviderId::from_parts("aether", "modrinth").unwrap(),
             content_id: "AANobbMI".into(),
         };
         assert_eq!(

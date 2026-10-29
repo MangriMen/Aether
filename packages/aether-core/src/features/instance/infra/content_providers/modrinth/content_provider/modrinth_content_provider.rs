@@ -11,11 +11,11 @@ use tracing::warn;
 use crate::{
     features::{
         instance::{
-            CapabilityMetadata, ContentAuthor, ContentIdentity, ContentItem, ContentMetadata,
-            ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
-            ContentSearchResult, ContentSource, ContentType, ContentVersion,
+            CapabilityId, CapabilityMetadata, ContentAuthor, ContentIdentity, ContentItem,
+            ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
             ContentVersionMetadata, InstallFileEntry, InstallPlan, Instance, InstanceError,
-            InstanceId, PackInfo, PackMetadata, PackSource, ProviderId, ReleaseChannel,
+            InstanceId, PackInfo, PackMetadata, PackSource, PluginId, ProviderId, ReleaseChannel,
             ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
             app::{ContentCompatibilityCheckParams, ContentCompatibilityResult},
             infra::content_providers::modrinth::{
@@ -92,10 +92,10 @@ impl ModrinthContentProvider<()> {
 
     /// `aether#modrinth`.
     pub fn provider_id() -> ProviderId {
-        ProviderId {
-            plugin_id: Self::ID.to_owned(),
-            capability_id: Self::CAPABILITY_ID.to_owned(),
-        }
+        ProviderId::new(
+            PluginId::from_static(Self::ID),
+            CapabilityId::from_static(Self::CAPABILITY_ID),
+        )
     }
 }
 

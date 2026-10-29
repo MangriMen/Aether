@@ -174,10 +174,7 @@ mod tests {
         }
 
         fn provider_id(&self) -> ProviderId {
-            ProviderId {
-                plugin_id: "plugin".into(),
-                capability_id: self.metadata.base.id.clone(),
-            }
+            ProviderId::from_parts("plugin", &self.metadata.base.id).unwrap()
         }
 
         async fn search(

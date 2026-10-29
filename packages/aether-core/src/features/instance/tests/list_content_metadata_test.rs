@@ -35,10 +35,7 @@ use crate::{
 const INSTANCE_ID: &str = "instance";
 
 fn provider_id(capability_id: &str) -> ProviderId {
-    ProviderId {
-        plugin_id: "plugin".into(),
-        capability_id: capability_id.into(),
-    }
+    ProviderId::from_parts("plugin", capability_id).unwrap()
 }
 
 /// The version id the fixture records for a file of `content_id`.
@@ -557,7 +554,7 @@ impl Fixture {
         for provider in providers {
             let id = provider.provider_id();
             registry
-                .add(id.plugin_id, id.capability_id, provider)
+                .add(id.plugin_id.into(), id.capability_id.into(), provider)
                 .await
                 .unwrap();
         }

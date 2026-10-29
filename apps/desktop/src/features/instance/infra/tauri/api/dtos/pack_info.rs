@@ -1,4 +1,4 @@
-use aether_core::features::instance::PackInfo;
+use aether_core::features::instance::{InstanceError, PackInfo};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -12,13 +12,15 @@ pub struct PackInfoDto {
     pub version: String,
 }
 
-impl From<PackInfoDto> for PackInfo {
-    fn from(value: PackInfoDto) -> Self {
-        Self {
-            provider_id: value.provider_id.into(),
+impl TryFrom<PackInfoDto> for PackInfo {
+    type Error = InstanceError;
+
+    fn try_from(value: PackInfoDto) -> Result<Self, Self::Error> {
+        Ok(Self {
+            provider_id: value.provider_id.try_into()?,
             modpack_id: value.modpack_id,
             version_id: value.version,
-        }
+        })
     }
 }
 

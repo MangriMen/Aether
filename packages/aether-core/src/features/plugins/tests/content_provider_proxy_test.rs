@@ -168,7 +168,8 @@ impl Fixture {
             PluginHandle::new(plugin),
             provider_capability(capabilities_json),
             location_info.clone(),
-        );
+        )
+        .expect("ids should be valid");
 
         Self {
             root,
@@ -1125,10 +1126,7 @@ async fn should_refuse_a_compatibility_answer_when_a_key_is_not_a_plain_name() {
         )],
     );
     let check_params = ContentCompatibilityCheckParams {
-        provider_id: ProviderId {
-            plugin_id: PLUGIN_ID.to_owned(),
-            capability_id: "curseforge".to_owned(),
-        },
+        provider_id: ProviderId::from_parts(PLUGIN_ID, "curseforge").unwrap(),
         content_item: ContentItem {
             id: "238222".to_owned(),
             slug: "jei".to_owned(),

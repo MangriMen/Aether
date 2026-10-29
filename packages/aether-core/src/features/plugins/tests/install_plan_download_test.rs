@@ -330,17 +330,11 @@ fn sha1_of(bytes: &[u8]) -> FileHash {
 }
 
 fn plugin_origin() -> ProviderId {
-    ProviderId {
-        plugin_id: PLUGIN_ID.into(),
-        capability_id: "curseforge".into(),
-    }
+    ProviderId::from_parts(PLUGIN_ID, "curseforge").unwrap()
 }
 
 fn builtin_origin() -> ProviderId {
-    ProviderId {
-        plugin_id: ProviderId::BUILTIN_PLUGIN_ID.into(),
-        capability_id: "modrinth".into(),
-    }
+    ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap()
 }
 
 fn manifest(allowed_hosts: &[&str]) -> PluginManifest {

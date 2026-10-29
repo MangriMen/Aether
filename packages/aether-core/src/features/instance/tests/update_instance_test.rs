@@ -95,10 +95,7 @@ const PLUGIN: &str = "plugin";
 const CAPABILITY: &str = "provider";
 
 fn provider_id() -> ProviderId {
-    ProviderId {
-        plugin_id: PLUGIN.into(),
-        capability_id: CAPABILITY.into(),
-    }
+    ProviderId::from_parts(PLUGIN, CAPABILITY).unwrap()
 }
 
 fn origin() -> PlanOrigin {

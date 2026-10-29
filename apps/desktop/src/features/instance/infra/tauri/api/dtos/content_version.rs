@@ -1,6 +1,6 @@
 use aether_core::features::instance::{
     ContentListVersionsParams, ContentVersion, ContentVersionDependency,
-    ContentVersionDependencyType, ContentVersionStatus, ContentVersionType,
+    ContentVersionDependencyType, ContentVersionStatus, ContentVersionType, InstanceError,
     RequestedContentVersionStatus,
 };
 use serde::{Deserialize, Serialize};
@@ -85,12 +85,14 @@ pub struct ContentVersionDto {
     pub web_url: String,
 }
 
-impl From<ContentListVersionParamsDto> for ContentListVersionsParams {
-    fn from(value: ContentListVersionParamsDto) -> Self {
-        Self {
+impl TryFrom<ContentListVersionParamsDto> for ContentListVersionsParams {
+    type Error = InstanceError;
+
+    fn try_from(value: ContentListVersionParamsDto) -> Result<Self, Self::Error> {
+        Ok(Self {
             content_id: value.content_id,
-            provider_id: value.provider_id.into(),
-        }
+            provider_id: value.provider_id.try_into()?,
+        })
     }
 }
 

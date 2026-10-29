@@ -234,10 +234,8 @@ mod tests {
 
     #[test]
     fn should_expose_the_updates_as_entries_ordered_by_provider() {
-        let provider = |plugin: &str, capability: &str| ProviderId {
-            plugin_id: plugin.into(),
-            capability_id: capability.into(),
-        };
+        let provider =
+            |plugin: &str, capability: &str| ProviderId::from_parts(plugin, capability).unwrap();
         let info = |content_id: &str| ContentFileUpdateInfo {
             content_id: content_id.into(),
             version: "1".into(),
