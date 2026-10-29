@@ -25,6 +25,7 @@ pub use app::GetMinecraftLaunchCommandUseCase;
 pub use app::GetVersionManifestUseCase;
 pub use app::InstallMinecraftParams;
 pub use app::InstallMinecraftUseCase;
+pub use app::JvmArgumentsParams;
 pub use app::LoaderVersionResolver;
 pub use app::LoaderVersionService;
 pub use app::MetadataStorage;
