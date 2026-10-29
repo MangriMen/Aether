@@ -115,7 +115,7 @@ pub struct AtomicInstallParamsDto {
     pub instance_id: String,
     pub game_version: String,
     #[specta(optional)]
-    pub loader: Option<String>,
+    pub loader: Option<ModLoaderDto>,
     pub content_type: ContentTypeDto,
 }
 
@@ -210,7 +210,7 @@ impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
             base: value.base.into(),
             instance_id: InstanceId::try_from(value.instance_id)?,
             game_version: value.game_version,
-            loader: value.loader,
+            loader: value.loader.map(Into::into),
             content_type: value.content_type.into(),
         })
     }

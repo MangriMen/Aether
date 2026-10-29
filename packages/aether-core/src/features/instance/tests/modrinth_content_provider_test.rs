@@ -299,7 +299,7 @@ fn existing_fabric() -> ResolveTarget {
     ResolveTarget::Existing {
         instance_id: InstanceId::try_from("instance").unwrap(),
         game_version: "1.21.1".into(),
-        loader: Some("fabric".into()),
+        loader: Some(ModLoader::Fabric),
     }
 }
 

@@ -13,6 +13,7 @@ pub use domain::LoaderVersionPreference;
 pub use domain::MinecraftDomainError;
 pub use domain::ModLoader;
 pub use domain::TEMPORARY_REPLACE_CHAR;
+pub use domain::UnknownModLoader;
 pub use domain::get_compatible_java_version;
 pub use domain::resolve_minecraft_version;
 pub use domain::version_jar_name;

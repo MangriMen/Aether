@@ -61,7 +61,7 @@ export type ApplicationErrorDto = { code: "IO"; payload: {
 export type AtomicInstallParamsDto = {
 	instanceId: string,
 	gameVersion: string,
-	loader?: string | null,
+	loader?: ModLoaderDto | null,
 	contentType: ContentTypeDto,
 } & BaseContentParamsDto;
 

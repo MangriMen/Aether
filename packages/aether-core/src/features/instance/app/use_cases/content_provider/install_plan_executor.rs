@@ -380,15 +380,15 @@ impl PlanBudget {
 /// What a ref is resolved against: the game version and loader the target runs, or will run.
 struct TargetGame {
     game_version: String,
-    /// As `resolve_file` takes it (`fabric`, `neoforge`); `None` for vanilla.
-    loader: Option<String>,
+    /// `None` for vanilla.
+    loader: Option<ModLoader>,
 }
 
 impl TargetGame {
     fn new(game_version: String, loader: ModLoader) -> Self {
         Self {
             game_version,
-            loader: (loader != ModLoader::Vanilla).then(|| loader.as_str().to_owned()),
+            loader: (loader != ModLoader::Vanilla).then_some(loader),
         }
     }
 }

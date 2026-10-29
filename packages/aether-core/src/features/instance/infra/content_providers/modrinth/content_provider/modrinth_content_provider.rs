@@ -353,7 +353,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                 self.get_project_version_for_game_version(
                     &project.id,
                     game_version,
-                    loader.as_deref(),
+                    loader.as_ref().map(ModLoader::as_str),
                     params.installed_version.as_deref(),
                 )
                 .await?

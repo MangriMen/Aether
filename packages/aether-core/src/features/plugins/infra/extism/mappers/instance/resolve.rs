@@ -32,7 +32,7 @@ impl From<ResolveTarget> for ResolveTargetDto {
             } => Self::Existing {
                 instance_id: instance_id.to_string(),
                 game_version,
-                loader,
+                loader: loader.map(|loader| loader.as_str().to_owned()),
             },
             ResolveTarget::New => Self::New,
         }

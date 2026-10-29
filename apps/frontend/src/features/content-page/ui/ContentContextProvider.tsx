@@ -26,6 +26,8 @@ import {
 } from '@/features/content';
 import { useInstances } from '@/features/instance';
 
+import { getInstallLoader } from '../model/getInstallLoader';
+
 export type ContentContextProviderProps = {
   children: JSX.Element;
   instanceId: string | undefined;
@@ -150,7 +152,6 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
 
     const gameVersion =
       instance?.gameVersion ?? local.filters?.gameVersions?.[0];
-    const loader = instance?.loader ?? local.filters?.loaders?.[0];
 
     if (!providerId || !finalInstanceId || !gameVersion) {
       return;
@@ -165,17 +166,17 @@ export const ContentContextProvider: Component<ContentContextProviderProps> = (
       data: {
         instanceId: finalInstanceId,
         gameVersion,
-        loader,
+        loader: getInstallLoader(
+          item.contentType,
+          instance?.loader,
+          local.filters?.loaders?.[0],
+        ),
         contentId: item.id,
         contentType: item.contentType,
         contentVersion,
         providerId,
       },
     };
-
-    if (item.contentType !== 'mod') {
-      payload.data.loader = undefined;
-    }
 
     setStore('installingContentIds', contentId, true);
 
