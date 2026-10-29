@@ -340,7 +340,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
         entry.source,
         ContentSource::Direct {
             url: SODIUM_URL.into(),
-            hash: Some(FileHash::Sha512(sha512_hex(b"sodium"))),
+            hash: Some(FileHash::parse("sha512", &sha512_hex(b"sodium")).unwrap()),
             identity: Some(ContentIdentity {
                 platform: "modrinth".into(),
                 content_id: "AANobbMI".into(),
@@ -747,7 +747,10 @@ async fn should_resolve_a_ref_to_the_primary_file_when_the_version_has_several()
     assert_eq!(resolved.version, "IZskON6d");
     assert_eq!(resolved.url, SODIUM_URL);
     assert_eq!(resolved.file_name, "sodium.jar");
-    assert_eq!(resolved.hash, Some(FileHash::Sha512(sha512_hex(b"sodium"))));
+    assert_eq!(
+        resolved.hash,
+        Some(FileHash::parse("sha512", &sha512_hex(b"sodium")).unwrap())
+    );
     assert_eq!(resolved.name.as_deref(), Some("Version IZskON6d"));
 }
 

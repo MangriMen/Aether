@@ -337,7 +337,7 @@ mod tests {
             source,
             ContentSource::direct(
                 "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
-                Some(FileHash::Sha1(SHA1_ABC.into()))
+                Some(FileHash::parse("sha1", SHA1_ABC).unwrap())
             )
         );
     }
@@ -347,7 +347,8 @@ mod tests {
         let url = "https://example.com/a.jar";
         assert_eq!(ContentSource::direct(url.into(), None).to_string(), url);
         assert_eq!(
-            ContentSource::direct(url.into(), Some(FileHash::Sha1(SHA1_ABC.into()))).to_string(),
+            ContentSource::direct(url.into(), Some(FileHash::parse("sha1", SHA1_ABC).unwrap()))
+                .to_string(),
             format!("{url} (sha1:{SHA1_ABC})")
         );
     }

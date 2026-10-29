@@ -55,11 +55,14 @@ impl FromStr for HashAlgorithm {
 }
 
 /// The expected digest of a file, hex-encoded.
+///
+/// Can only be built through [`FileHash::new`], [`FileHash::parse`] or `FromStr`, all of which
+/// check the digest has the right length and only hex digits, and lowercase it. A validated digest
+/// cannot contain a separator, a `..` or a drive letter, so it is safe to name a file after.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FileHash {
-    Sha1(String),
-    Sha256(String),
-    Sha512(String),
+pub struct FileHash {
+    algorithm: HashAlgorithm,
+    hex: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -82,48 +85,10 @@ pub enum InvalidFileHash {
 }
 
 impl FileHash {
-    pub fn new(algorithm: HashAlgorithm, hex: impl Into<String>) -> Self {
-        let hex = hex.into();
-        match algorithm {
-            HashAlgorithm::Sha1 => Self::Sha1(hex),
-            HashAlgorithm::Sha256 => Self::Sha256(hex),
-            HashAlgorithm::Sha512 => Self::Sha512(hex),
-        }
-    }
-
-    /// A validated, lowercased hash from an algorithm name and a hex digest, the two strings a
-    /// manifest keeps them as (packwiz's `hash-format` + `hash`, Modrinth's `hashes` map).
-    pub fn parse(algorithm: &str, hex: &str) -> Result<Self, InvalidFileHash> {
-        Self::new(algorithm.parse()?, hex).normalized()
-    }
-
-    pub fn algorithm(&self) -> HashAlgorithm {
-        match self {
-            Self::Sha1(_) => HashAlgorithm::Sha1,
-            Self::Sha256(_) => HashAlgorithm::Sha256,
-            Self::Sha512(_) => HashAlgorithm::Sha512,
-        }
-    }
-
-    pub fn hex(&self) -> &str {
-        match self {
-            Self::Sha1(hex) | Self::Sha256(hex) | Self::Sha512(hex) => hex,
-        }
-    }
-
-    /// Whether `actual_hex` is this digest. Hex case is not significant.
-    pub fn matches(&self, actual_hex: &str) -> bool {
-        self.hex().eq_ignore_ascii_case(actual_hex)
-    }
-
-    /// The same hash with its digest lowercased, after checking it really is a digest of its
-    /// algorithm: exactly the right length, hex digits only.
-    ///
-    /// Anything that goes on to name a file must pass through here first — a validated digest
-    /// cannot contain a separator, a `..` or a drive letter.
-    pub fn normalized(&self) -> Result<Self, InvalidFileHash> {
-        let algorithm = self.algorithm();
-        let hex = self.hex();
+    /// A hash from an algorithm and a hex digest, checking it really is a digest of that
+    /// algorithm: exactly the right length, hex digits only. The digest is lowercased.
+    pub fn new(algorithm: HashAlgorithm, hex: impl Into<String>) -> Result<Self, InvalidFileHash> {
+        let mut hex = hex.into();
 
         if hex.len() != algorithm.hex_len() {
             return Err(InvalidFileHash::WrongLength {
@@ -137,7 +102,27 @@ impl FileHash {
             return Err(InvalidFileHash::NotHex { algorithm });
         }
 
-        Ok(Self::new(algorithm, hex.to_ascii_lowercase()))
+        hex.make_ascii_lowercase();
+        Ok(Self { algorithm, hex })
+    }
+
+    /// A validated, lowercased hash from an algorithm name and a hex digest, the two strings a
+    /// manifest keeps them as (packwiz's `hash-format` + `hash`, Modrinth's `hashes` map).
+    pub fn parse(algorithm: &str, hex: &str) -> Result<Self, InvalidFileHash> {
+        Self::new(algorithm.parse()?, hex)
+    }
+
+    pub fn algorithm(&self) -> HashAlgorithm {
+        self.algorithm
+    }
+
+    pub fn hex(&self) -> &str {
+        &self.hex
+    }
+
+    /// Whether `actual_hex` is this digest. Hex case is not significant.
+    pub fn matches(&self, actual_hex: &str) -> bool {
+        self.hex().eq_ignore_ascii_case(actual_hex)
     }
 }
 
@@ -171,16 +156,32 @@ mod tests {
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
+    fn sha1(hex: &str) -> FileHash {
+        FileHash::new(HashAlgorithm::Sha1, hex).unwrap()
+    }
+
     #[test]
     fn should_lowercase_a_digest_when_it_is_valid() {
-        let hash = FileHash::Sha1(SHA1_ABC.to_ascii_uppercase());
-        assert_eq!(hash.normalized().unwrap(), FileHash::Sha1(SHA1_ABC.into()));
+        let hash = FileHash::new(HashAlgorithm::Sha1, SHA1_ABC.to_ascii_uppercase()).unwrap();
+        assert_eq!(hash.hex(), SHA1_ABC);
+        assert_eq!(hash, sha1(SHA1_ABC));
+    }
+
+    #[test]
+    fn should_reject_a_digest_when_it_is_not_hex() {
+        let err = FileHash::new(HashAlgorithm::Sha1, "z".repeat(40)).unwrap_err();
+        assert_eq!(
+            err,
+            InvalidFileHash::NotHex {
+                algorithm: HashAlgorithm::Sha1
+            }
+        );
     }
 
     #[test]
     fn should_reject_a_digest_when_it_has_the_wrong_length() {
         // A sha1-length digest labelled sha256 must not be accepted as a short sha256.
-        let err = FileHash::Sha256(SHA1_ABC.into()).normalized().unwrap_err();
+        let err = FileHash::new(HashAlgorithm::Sha256, SHA1_ABC).unwrap_err();
         assert_eq!(
             err,
             InvalidFileHash::WrongLength {
@@ -199,24 +200,21 @@ mod tests {
         let padded = format!("{hex:a<40}");
         let padded: String = padded.chars().take(40).collect();
         assert!(
-            FileHash::Sha1(padded.clone()).normalized().is_err(),
+            FileHash::new(HashAlgorithm::Sha1, padded.clone()).is_err(),
             "`{padded}` must not pass as a digest"
         );
     }
 
     #[test]
     fn should_match_when_hex_case_differs() {
-        let hash = FileHash::Sha1(SHA1_ABC.into());
+        let hash = sha1(SHA1_ABC);
         assert!(hash.matches(&SHA1_ABC.to_ascii_uppercase()));
         assert!(!hash.matches("0000000000000000000000000000000000000000"));
     }
 
     #[test]
     fn should_display_with_the_algorithm_prefix_when_formatted() {
-        assert_eq!(
-            FileHash::Sha1(SHA1_ABC.into()).to_string(),
-            format!("sha1:{SHA1_ABC}")
-        );
+        assert_eq!(sha1(SHA1_ABC).to_string(), format!("sha1:{SHA1_ABC}"));
     }
 
     const SHA256_ABC: &str = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
@@ -246,7 +244,7 @@ mod tests {
     fn should_parse_a_hash_when_given_its_format_and_digest() {
         assert_eq!(
             FileHash::parse("sha256", &SHA256_ABC.to_ascii_uppercase()),
-            Ok(FileHash::Sha256(SHA256_ABC.into()))
+            FileHash::new(HashAlgorithm::Sha256, SHA256_ABC)
         );
     }
 
@@ -267,9 +265,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case::sha1(FileHash::Sha1(SHA1_ABC.into()))]
-    #[case::sha256(FileHash::Sha256(SHA256_ABC.into()))]
-    #[case::sha512(FileHash::Sha512("a".repeat(128)))]
+    #[case::sha1(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap())]
+    #[case::sha256(FileHash::new(HashAlgorithm::Sha256, SHA256_ABC).unwrap())]
+    #[case::sha512(FileHash::new(HashAlgorithm::Sha512, "a".repeat(128)).unwrap())]
     fn should_round_trip_when_converted_through_its_string_form(#[case] hash: FileHash) {
         assert_eq!(hash.to_string().parse::<FileHash>(), Ok(hash));
     }
@@ -277,7 +275,7 @@ mod tests {
     #[test]
     fn should_lowercase_when_parsing_the_string_form() {
         let upper = format!("SHA1:{}", SHA1_ABC.to_ascii_uppercase());
-        assert_eq!(upper.parse(), Ok(FileHash::Sha1(SHA1_ABC.into())));
+        assert_eq!(upper.parse(), Ok(sha1(SHA1_ABC)));
     }
 
     #[test]

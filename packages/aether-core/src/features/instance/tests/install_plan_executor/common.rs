@@ -133,7 +133,7 @@ impl ContentProvider for MockProvider {
         Ok(ResolvedFile {
             version: version.unwrap_or("newest").into(),
             url: self.url_for(content_id),
-            hash: Some(FileHash::Sha1(SHA1_ABC.into())),
+            hash: Some(FileHash::parse("sha1", SHA1_ABC).unwrap()),
             file_name: format!("{content_id}.jar"),
             size: None,
             name: Some(format!("{content_id} {}", version.unwrap_or("newest"))),
@@ -1017,7 +1017,10 @@ pub(super) fn direct(url: &str, path: &str) -> InstallFileEntry {
 /// A direct entry with the hash of what the recording downloader writes for it: its URL.
 pub(super) fn hashed(url: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
-        ContentSource::direct(url.into(), Some(FileHash::Sha1(sha1(url)))),
+        ContentSource::direct(
+            url.into(),
+            Some(FileHash::parse("sha1", &sha1(url)).unwrap()),
+        ),
         path,
         ContentType::Mod,
     )
@@ -1055,7 +1058,7 @@ pub(super) fn identified(
     InstallFileEntry::new(
         ContentSource::Direct {
             url: url.into(),
-            hash: Some(FileHash::Sha1(sha1(url))),
+            hash: Some(FileHash::parse("sha1", &sha1(url)).unwrap()),
             identity: Some(ContentIdentity {
                 platform: platform.into(),
                 content_id: content_id.into(),

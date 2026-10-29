@@ -379,7 +379,10 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
         .unwrap();
     assert_eq!(resolved.version, "4512345");
     assert_eq!(resolved.file_name, "jei.jar");
-    assert_eq!(resolved.hash, Some(FileHash::Sha1(SHA1_ABC.into())));
+    assert_eq!(
+        resolved.hash,
+        Some(FileHash::parse("sha1", SHA1_ABC).unwrap())
+    );
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
 
     plugins.insert(PLUGIN_ID.into(), plugin(PluginState::NotLoaded));

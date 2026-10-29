@@ -322,7 +322,7 @@ fn allow_any_address(_ip: IpAddr) -> bool {
 }
 
 fn sha1_of(bytes: &[u8]) -> FileHash {
-    FileHash::Sha1(sha1_smol::Sha1::from(bytes).hexdigest())
+    FileHash::parse("sha1", &sha1_smol::Sha1::from(bytes).hexdigest()).unwrap()
 }
 
 fn plugin_origin() -> ProviderId {

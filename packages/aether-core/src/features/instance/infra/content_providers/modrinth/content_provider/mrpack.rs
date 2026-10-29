@@ -16,7 +16,7 @@ use crate::{
     },
     features::minecraft::ModLoader,
     shared::{
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
         limits::{MAX_MRPACK_FILES, MAX_MRPACK_INDEX_BYTES},
     },
 };
@@ -141,8 +141,7 @@ pub(super) fn cdn_identity(url: &str) -> Option<ContentIdentity> {
 
 /// The file's SHA-512, the stronger of the two hashes Modrinth gives, validated.
 pub(super) fn sha512_of(hashes: &Hashes) -> Result<FileHash, InstanceError> {
-    FileHash::Sha512(hashes.sha512.clone())
-        .normalized()
+    FileHash::new(HashAlgorithm::Sha512, hashes.sha512.clone())
         .map_err(|e| invalid_pack(format!("Invalid SHA-512 from Modrinth: {e}")))
 }
 
@@ -419,7 +418,7 @@ mod tests {
             files[0].source,
             ContentSource::Direct {
                 url: SODIUM_URL.into(),
-                hash: Some(FileHash::Sha512("b".repeat(128))),
+                hash: Some(FileHash::new(HashAlgorithm::Sha512, "b".repeat(128)).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: "modrinth".into(),
                     content_id: "AANobbMI".into(),

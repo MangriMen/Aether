@@ -858,7 +858,7 @@ mod tests {
         let addr = serve("200 OK", b"payload").await;
         let dir = tempfile::tempdir().unwrap();
         let destination = dir.path().join("file");
-        let wrong = FileHash::Sha1("0".repeat(40));
+        let wrong = FileHash::parse("sha1", &"0".repeat(40)).unwrap();
 
         let result = client()
             .download_to_file(

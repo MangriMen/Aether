@@ -46,10 +46,7 @@ impl TryFrom<ResolvedFileDto> for ResolvedFile {
         Ok(Self {
             version: value.version,
             url: value.url,
-            hash: value
-                .hash
-                .map(|hash| FileHash::from(hash).normalized())
-                .transpose()?,
+            hash: value.hash.map(FileHash::try_from).transpose()?,
             file_name: value.file_name,
             size: value.size,
             name: value.name,

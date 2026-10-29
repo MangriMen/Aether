@@ -1,13 +1,15 @@
 use aether_core_plugin_api::v0::FileHashDto;
 
-use crate::shared::hash::FileHash;
+use crate::shared::hash::{FileHash, HashAlgorithm, InvalidFileHash};
 
-impl From<FileHashDto> for FileHash {
-    fn from(value: FileHashDto) -> Self {
+impl TryFrom<FileHashDto> for FileHash {
+    type Error = InvalidFileHash;
+
+    fn try_from(value: FileHashDto) -> Result<Self, Self::Error> {
         match value {
-            FileHashDto::Sha1(hex) => Self::Sha1(hex),
-            FileHashDto::Sha256(hex) => Self::Sha256(hex),
-            FileHashDto::Sha512(hex) => Self::Sha512(hex),
+            FileHashDto::Sha1(hex) => Self::new(HashAlgorithm::Sha1, hex),
+            FileHashDto::Sha256(hex) => Self::new(HashAlgorithm::Sha256, hex),
+            FileHashDto::Sha512(hex) => Self::new(HashAlgorithm::Sha512, hex),
         }
     }
 }

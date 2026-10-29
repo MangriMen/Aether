@@ -54,9 +54,7 @@ impl TryFrom<ContentSourceDto> for ContentSource {
                 identity,
             } => Self::Direct {
                 url,
-                hash: hash
-                    .map(|hash| FileHash::from(hash).normalized())
-                    .transpose()?,
+                hash: hash.map(FileHash::try_from).transpose()?,
                 identity: identity.map(Into::into),
             },
             ContentSourceDto::ProviderRef {
@@ -248,7 +246,7 @@ mod tests {
             source,
             ContentSource::Direct {
                 url: "https://example.com/a.jar".into(),
-                hash: Some(FileHash::Sha1(SHA1_ABC.into())),
+                hash: Some(FileHash::parse("sha1", SHA1_ABC).unwrap()),
                 identity: Some(ContentIdentity {
                     platform: "modrinth".into(),
                     content_id: "AANobbMI".into(),

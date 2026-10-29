@@ -266,7 +266,7 @@ mod tests {
         let resolved = ResolvedFile {
             version: "IZskON6d".into(),
             url: "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
-            hash: Some(FileHash::Sha1(SHA1_ABC.into())),
+            hash: Some(FileHash::parse("sha1", SHA1_ABC).unwrap()),
             file_name: "sodium.jar".into(),
             size: Some(1024),
             name: None,
