@@ -6,6 +6,7 @@ mod instance_event_handler;
 mod legacy_provider_id;
 mod services;
 mod sqlite;
+mod stored_side;
 mod universal_content_metadata_cache;
 
 pub use content_providers::{ModrinthContentProvider, MrpackCacheCleaner, mrpack_dir};

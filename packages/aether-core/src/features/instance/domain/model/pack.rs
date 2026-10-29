@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::features::instance::{ContentFile, ContentFileUpdateInfo, PlanOrigin, ProviderId};
+use crate::features::instance::{
+    ContentFile, ContentFileUpdateInfo, FileSide, PlanOrigin, ProviderId,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct Pack {
@@ -19,7 +21,7 @@ pub struct PackFile {
     pub hash: String,
     pub download: Option<PackFileDownload>,
     pub option: Option<PackFileOption>,
-    pub side: Option<String>,
+    pub side: Option<FileSide>,
     pub update_provider_id: Option<ProviderId>,
     pub update: Option<HashMap<ProviderId, ContentFileUpdateInfo>>,
     /// The install plan that put this file into the instance; the next plan of the same origin

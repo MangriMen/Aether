@@ -10,7 +10,7 @@
 //! a plan may replace or remove is told by
 //! [`PackFile::installed_by`](super::PackFile::installed_by), the [`PlanOrigin`] that installed it.
 
-use std::{fmt, path::PathBuf};
+use std::{fmt, path::PathBuf, str::FromStr};
 
 use crate::{
     features::{
@@ -193,6 +193,26 @@ impl FileSide {
             Self::Client => "client",
             Self::Server => "server",
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("Unknown file side `{name}`, expected one of both, client, server")]
+pub struct UnknownFileSide {
+    pub name: String,
+}
+
+impl FromStr for FileSide {
+    type Err = UnknownFileSide;
+
+    /// Parses the spelling [`FileSide::as_str`] produces, packwiz's `side`.
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        [Self::Both, Self::Client, Self::Server]
+            .into_iter()
+            .find(|side| side.as_str() == name)
+            .ok_or_else(|| UnknownFileSide {
+                name: name.to_owned(),
+            })
     }
 }
 

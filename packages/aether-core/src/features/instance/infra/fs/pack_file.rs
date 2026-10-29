@@ -5,7 +5,10 @@ use tracing::warn;
 
 use crate::features::instance::{
     ContentFileUpdateInfo, PackFile, PackFileDownload, PackFileOption, ProviderId,
-    infra::legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
+    infra::{
+        legacy_provider_id::{parse_stored_provider_id, parse_v1_provider_id},
+        stored_side::parse_stored_side,
+    },
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -74,6 +77,8 @@ impl From<PackFileV1> for PackFile {
             .update_provider
             .and_then(|s| parse_v1_provider_id(&s).ok());
 
+        let side = parse_stored_side(&value.file_name, value.side.as_deref());
+
         let update = value.update.map(|old_map| {
             old_map
                 .into_iter()
@@ -105,7 +110,7 @@ impl From<PackFileV1> for PackFile {
                 default: o.default,
                 description: o.description,
             }),
-            side: value.side,
+            side,
             update_provider_id,
             update,
             installed_by: None,
@@ -119,6 +124,8 @@ impl From<PackFileV2> for PackFile {
             .update_provider_id
             .as_ref()
             .and_then(|s| parse_stored_provider_id(s).ok());
+
+        let side = parse_stored_side(&value.file_name, value.side.as_deref());
 
         let update = value.update.map(|old_map| {
             old_map
@@ -151,7 +158,7 @@ impl From<PackFileV2> for PackFile {
                 default: o.default,
                 description: o.description,
             }),
-            side: value.side,
+            side,
             update_provider_id,
             update,
             installed_by: None,
@@ -174,7 +181,7 @@ impl From<PackFile> for PackFileV2 {
                 default: o.default,
                 description: o.description,
             }),
-            side: value.side,
+            side: value.side.map(|side| side.as_str().to_owned()),
             update_provider_id: value.update_provider_id.map(|id| id.to_string()),
             update: value.update.map(|updates| {
                 updates
