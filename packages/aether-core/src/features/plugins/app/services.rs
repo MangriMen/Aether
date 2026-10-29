@@ -138,7 +138,7 @@ impl PluginRegistry {
                 PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {}
                 PluginState::Loading => return Err(PluginError::LoadingInProgress { plugin_id }),
                 PluginState::Loaded(_) => return Err(PluginError::AlreadyLoaded { plugin_id }),
-                PluginState::Unloading => {
+                PluginState::Unloading | PluginState::Removing => {
                     return Err(PluginError::UnloadingInProgress { plugin_id });
                 }
             }
@@ -180,7 +180,7 @@ impl PluginRegistry {
                 PluginState::Loading => {
                     return Err(PluginError::LoadingInProgress { plugin_id });
                 }
-                PluginState::Unloading => {
+                PluginState::Unloading | PluginState::Removing => {
                     return Err(PluginError::UnloadingInProgress { plugin_id });
                 }
                 PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {
@@ -199,6 +199,54 @@ impl PluginRegistry {
 
         // The closure assigns `taken` before it returns `Ok`; every other path returned an error.
         Ok(taken.expect("the handle is taken whenever the state is changed"))
+    }
+
+    /// Takes a plugin that is not running to `Removing` in the step that checks nothing is
+    /// loading it, so that of a remove and an enable only one goes on. Returns the state it
+    /// was in, to put back should the delete fail. A plugin that is running, or in the middle of
+    /// a transition, is refused with the matching error and its files are not to be touched.
+    pub async fn begin_removing(&self, plugin_id: &str) -> Result<PluginState, PluginError> {
+        let mut taken = None;
+        self.upsert_with(plugin_id, |plugin| {
+            let plugin_id = plugin_id.to_owned();
+            match &plugin.state {
+                PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {}
+                PluginState::Loading => return Err(PluginError::LoadingInProgress { plugin_id }),
+                PluginState::Loaded(_) => return Err(PluginError::AlreadyLoaded { plugin_id }),
+                PluginState::Unloading | PluginState::Removing => {
+                    return Err(PluginError::UnloadingInProgress { plugin_id });
+                }
+            }
+            taken = Some(std::mem::replace(&mut plugin.state, PluginState::Removing));
+            Ok(())
+        })
+        .await?;
+
+        Ok(taken.expect("the state is taken whenever it is changed"))
+    }
+
+    /// Puts back the state [`Self::begin_removing`] took the plugin from.
+    pub async fn abandon_removing(
+        &self,
+        plugin_id: &str,
+        previous: PluginState,
+    ) -> Result<(), PluginError> {
+        self.upsert_with(plugin_id, |plugin| {
+            if matches!(plugin.state, PluginState::Removing) {
+                plugin.state = previous;
+            }
+            Ok(())
+        })
+        .await
+    }
+
+    /// The plugins whose files are being deleted.
+    pub fn get_removing_ids(&self) -> HashSet<String> {
+        self.plugins
+            .iter()
+            .filter(|entry| matches!(entry.state, PluginState::Removing))
+            .map(|entry| entry.key().clone())
+            .collect()
     }
 
     fn get_mut(&self, plugin_id: &str) -> Result<DashMapRefMut<'_, String, Plugin>, PluginError> {

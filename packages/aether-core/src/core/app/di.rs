@@ -970,6 +970,7 @@ impl PluginsFeature for AetherContainer {
     }
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort> {
         Arc::new(RemovePluginUseCase::new(
+            self.plugins().registry.clone(),
             self.plugins().storage.clone(),
             self.disable_plugin_service(),
             self.sync_plugins_service(),

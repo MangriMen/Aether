@@ -154,6 +154,7 @@ impl GrantPluginFolderAccessUseCase {
             }),
             PluginState::NotLoaded
             | PluginState::Unloading
+            | PluginState::Removing
             | PluginState::Failed(_)
             | PluginState::Incompatible(_) => Ok(None),
         }

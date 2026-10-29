@@ -9,6 +9,20 @@ use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginDisableService, PluginError, PluginStorage, PluginSyncService,
     RemovePluginUseCase,
 };
+use crate::features::{
+    events::{Event, EventEmitter, EventError},
+    plugins::PluginRegistry,
+};
+
+struct NoOpEmitter;
+
+#[async_trait]
+impl EventEmitter<Event> for NoOpEmitter {
+    async fn emit(&self, _event: Event) -> Result<(), EventError> {
+        Ok(())
+    }
+    fn listen(&self, _handler: Box<dyn Fn(Event) + Send + Sync + 'static>) {}
+}
 
 type Log = Arc<Mutex<Vec<&'static str>>>;
 
@@ -72,6 +86,7 @@ impl PluginSyncService for FakeSync {
 fn use_case(result: fn() -> Result<(), PluginError>) -> (RemovePluginUseCase, Log) {
     let log = Log::default();
     let use_case = RemovePluginUseCase::new(
+        Arc::new(PluginRegistry::new(Arc::new(NoOpEmitter))),
         Arc::new(FakeStorage(log.clone())),
         Arc::new(FakeDisable {
             log: log.clone(),

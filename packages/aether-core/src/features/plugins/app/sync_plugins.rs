@@ -46,9 +46,13 @@ impl SyncPluginsUseCase {
 
     async fn sync_plugins(
         &self,
-        found_plugins: HashMap<String, Plugin>,
+        mut found_plugins: HashMap<String, Plugin>,
     ) -> Result<(), PluginError> {
-        let existing_plugins = self.plugin_registry.get_ids();
+        // A plugin being removed belongs to the remove: its directory is half deleted, and
+        // adding or ending it here would undo the guard that keeps it from loading.
+        let removing_plugins = self.plugin_registry.get_removing_ids();
+        found_plugins.retain(|id, _| !removing_plugins.contains(id));
+        let existing_plugins = &self.plugin_registry.get_ids() - &removing_plugins;
         let enabled_plugins = self.settings_storage.get().await?.enabled_plugins().clone();
 
         let new_plugins = found_plugins.keys().cloned().collect::<HashSet<_>>();
