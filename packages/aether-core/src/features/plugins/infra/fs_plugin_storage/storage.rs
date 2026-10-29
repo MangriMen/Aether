@@ -322,8 +322,12 @@ impl FsPluginStorage {
                 continue;
             }
 
-            // A plugin is a directory; a file beside them is none of the launcher's business.
-            if !dir_entry.file_type().await.map_err(IoError::from)?.is_dir() {
+            // A plugin is a directory, or a link to one; a file beside them is none of the launcher's
+            // business.
+            if !tokio::fs::metadata(&path)
+                .await
+                .is_ok_and(|meta| meta.is_dir())
+            {
                 continue;
             }
 
@@ -763,6 +767,22 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn should_list_the_plugin_when_its_directory_is_a_symlink() {
+        let fixture = Fixture::installed();
+        let target = TempDir::new().unwrap();
+        write_plugin_with_id(target.path(), "linked");
+        std::os::unix::fs::symlink(
+            target.path(),
+            fixture.location_info.plugins_dir().join("linked"),
+        )
+        .unwrap();
+
+        let plugins = fixture.storage.list().await.unwrap();
+
+        assert_eq!(plugins.len(), 2);
+    }
     #[tokio::test]
     async fn should_report_the_directory_when_its_plugin_cannot_be_read() {
         let fixture = Fixture::installed();
