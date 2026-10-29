@@ -90,7 +90,9 @@ impl InstallPluginFromProviderUseCase {
             .await?;
 
         if let Err(err) = self.sync_plugins_service.execute().await {
-            log::warn!("Plugin '{plugin_id}' was installed but the sync after it failed: {err}");
+            tracing::warn!(
+                "Plugin '{plugin_id}' was installed but the sync after it failed: {err}"
+            );
         }
         Ok(plugin_id)
     }

@@ -266,3 +266,26 @@ async fn should_not_put_a_plugin_being_removed_back_when_a_sync_still_finds_its_
     assert!(matches!(harness.state(), PluginState::Removing));
     assert_eq!(harness.plugins.get(PLUGIN_ID).unwrap().hash, "hash");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn should_wait_for_a_settings_change_in_flight_when_the_plugin_is_removed() {
+    let harness = Arc::new(Harness::enabled().await);
+    let storage = Arc::new(FakeStorage::default());
+    let settings_lock = harness.plugins.lock_settings(PLUGIN_ID).await;
+
+    let remove = tokio::spawn({
+        let harness = Arc::clone(&harness);
+        let storage = storage.clone();
+        async move { harness.remove(storage).execute(PLUGIN_ID.into()).await }
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    assert_eq!(
+        storage.removes.load(Ordering::SeqCst),
+        0,
+        "the files are not deleted under a writer"
+    );
+    drop(settings_lock);
+    remove.await.unwrap().unwrap();
+    assert_eq!(storage.removes.load(Ordering::SeqCst), 1);
+}
