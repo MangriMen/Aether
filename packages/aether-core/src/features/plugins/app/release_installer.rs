@@ -20,13 +20,14 @@ pub(super) struct ReleaseInstaller {
 }
 
 impl ReleaseInstaller {
-    /// `was_installed` says whether there are files to put back; a failure of a first install
-    /// removes what it wrote instead.
+    /// `known_installed` is for a caller that has the plugin installed already; otherwise it is
+    /// found out under the lock, once nothing else can remove or replace it. A failure of a first
+    /// install removes what it wrote instead of putting files back.
     pub(super) async fn install(
         &self,
         extracted: ExtractedPlugin,
         source: &PluginSource,
-        was_installed: bool,
+        known_installed: bool,
     ) -> Result<(), PluginError> {
         let plugin_id = extracted.plugin_id.clone();
 
@@ -35,6 +36,7 @@ impl ReleaseInstaller {
         // saved over nor lost with the directory.
         let _settings_lock = self.registry.lock_settings(&plugin_id).await;
         let settings = self.settings_storage.get(&plugin_id).await?;
+        let was_installed = known_installed || self.storage.get(&plugin_id).await.is_ok();
 
         self.storage.replace(extracted).await?;
 

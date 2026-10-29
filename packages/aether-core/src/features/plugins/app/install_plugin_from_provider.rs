@@ -23,7 +23,6 @@ use super::{PluginProviderFactory, write_bytes_to_temp_file};
 /// then, so a failed sync is logged, not returned.
 pub(crate) struct InstallPluginFromProviderUseCase {
     plugin_extractor: Arc<dyn PluginExtractor>,
-    plugin_storage: Arc<dyn PluginStorage>,
     installer: ReleaseInstaller,
     provider_factory: Arc<PluginProviderFactory>,
     sync_plugins_service: Arc<dyn PluginSyncService>,
@@ -45,7 +44,6 @@ impl InstallPluginFromProviderUseCase {
     ) -> Self {
         Self {
             plugin_extractor,
-            plugin_storage: plugin_storage.clone(),
             installer: ReleaseInstaller {
                 registry: plugin_registry,
                 storage: plugin_storage,
@@ -78,16 +76,13 @@ impl InstallPluginFromProviderUseCase {
         let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
         let plugin_id = extracted.plugin_id.clone();
 
-        let was_installed = self.plugin_storage.get(&plugin_id).await.is_ok();
         let source = PluginSource::Remote {
             source_type,
             identifier,
             current_tag: release.tag_name,
             current_version: release.version,
         };
-        self.installer
-            .install(extracted, &source, was_installed)
-            .await?;
+        self.installer.install(extracted, &source, false).await?;
 
         if let Err(err) = self.sync_plugins_service.execute().await {
             tracing::warn!(
