@@ -99,6 +99,7 @@ macro_rules! plugin_commands {
             import,
             sync,
             list,
+            list_skipped_dirs,
             get,
             remove,
             enable,

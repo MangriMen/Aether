@@ -8,6 +8,7 @@ export * from './model/capabilities';
 export * from './model/plugin';
 export * from './model/pluginManifest';
 export * from './model/pluginSettings';
+export * from './model/skippedPluginDir';
 export * from './ui/PluginCapabilitiesSection';
 export * from './ui/PluginCard';
 export * from './ui/PluginCardContextMenu';

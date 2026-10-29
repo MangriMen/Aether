@@ -16,6 +16,7 @@ mod plugin_provider_error;
 mod plugin_settings;
 mod plugin_source;
 mod plugin_verification;
+mod skipped_plugin_dir;
 
 pub use allowed_host::AllowedHostRejection;
 pub(crate) use allowed_host::{
@@ -51,3 +52,4 @@ pub use plugin_provider_error::PluginProviderError;
 pub use plugin_settings::PluginSettings;
 pub use plugin_source::{PluginManifestPreview, PluginSource};
 pub use plugin_verification::PluginVerification;
+pub use skipped_plugin_dir::{SkippedPluginDir, SkippedPluginDirReason};

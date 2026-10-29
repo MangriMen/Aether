@@ -22,6 +22,7 @@ import { PluginDetails } from './PluginDetails';
 import { PluginsPaneAddTitle } from './PluginsPaneAddTitle';
 import { PluginsPaneTitle } from './PluginsPaneTitle';
 import { PluginsView } from './PluginsView';
+import { SkippedPluginDirsNotice } from './SkippedPluginDirsNotice';
 
 export type PluginsPaneProps = SettingsPaneProps;
 
@@ -80,6 +81,7 @@ export const PluginsPane: Component<PluginsPaneProps> = (props) => {
           />
         }
       >
+        <SkippedPluginDirsNotice />
         <Switch
           fallback={
             <PluginsView

@@ -9,7 +9,7 @@ use crate::features::plugins::app::{EditPluginSettings, FolderAccess, HostAccess
 use crate::features::plugins::domain::PluginHandle;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginManifest, PluginProviderError, PluginSettings,
-    PluginSource, PluginSourceType, PluginVerification, ProviderUpdateInfo,
+    PluginSource, PluginSourceType, PluginVerification, ProviderUpdateInfo, SkippedPluginDir,
 };
 
 #[async_trait]
@@ -56,6 +56,11 @@ pub trait PluginLoader: Send + Sync {
 pub trait PluginStorage: Send + Sync {
     async fn add(&self, extracted_plugin: ExtractedPlugin) -> Result<(), PluginError>;
     async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError>;
+    /// Directories in the plugins folder that [`Self::list`] leaves out, with the reason, so
+    /// the user can be told why such a plugin is not there.
+    async fn list_skipped_dirs(&self) -> Result<Vec<SkippedPluginDir>, PluginError> {
+        Ok(Vec::new())
+    }
     async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError>;
     async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError>;
     /// Puts the extracted plugin in place of the installed one of its id, all at once: on an
@@ -174,6 +179,11 @@ pub trait ImportPluginsUseCasePort: Send + Sync {
 #[async_trait]
 pub trait ListPluginsDtoUseCasePort: Send + Sync {
     async fn execute(&self) -> Result<Vec<PluginDto>, PluginError>;
+}
+
+#[async_trait]
+pub trait ListSkippedPluginDirsUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<SkippedPluginDir>, PluginError>;
 }
 
 #[async_trait]

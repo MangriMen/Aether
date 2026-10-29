@@ -6,9 +6,10 @@ use crate::features::plugins::app::ports::{
     ForceEnablePluginUseCasePort, GetPluginApiVersionUseCasePort, GetPluginDtoUseCasePort,
     GetPluginSettingsUseCasePort, GrantPluginFolderAccessUseCasePort,
     GrantPluginHostAccessUseCasePort, ImportPluginsUseCasePort,
-    InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort, PluginDisableService,
-    PluginExtractor, PluginLoader, PluginSettingsStorage, PluginSourceStorage, PluginStorage,
-    PluginSyncService, PluginVerificationStorage, ReloadPluginUseCasePort, RemovePluginUseCasePort,
+    InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCasePort,
+    ListSkippedPluginDirsUseCasePort, PluginDisableService, PluginExtractor, PluginLoader,
+    PluginSettingsStorage, PluginSourceStorage, PluginStorage, PluginSyncService,
+    PluginVerificationStorage, ReloadPluginUseCasePort, RemovePluginUseCasePort,
     UpdatePluginUseCasePort,
 };
 use crate::features::plugins::app::services::{PluginLoaderRegistry, PluginRegistry};
@@ -33,6 +34,7 @@ pub trait PluginsFeature {
         &self,
     ) -> Arc<dyn InstallPluginFromProviderUseCasePort>;
     fn list_plugins_dto_use_case(&self) -> Arc<dyn ListPluginsDtoUseCasePort>;
+    fn list_skipped_plugin_dirs_use_case(&self) -> Arc<dyn ListSkippedPluginDirsUseCasePort>;
     fn reload_plugin_use_case(&self) -> Arc<dyn ReloadPluginUseCasePort>;
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort>;
     fn update_plugin_use_case(&self) -> Arc<dyn UpdatePluginUseCasePort>;

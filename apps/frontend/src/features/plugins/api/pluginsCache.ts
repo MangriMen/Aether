@@ -13,6 +13,10 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.list,
     staleTime: 60 * 1000,
   }),
+  skippedDirs: () => ({
+    queryKey: pluginKeys.skippedDirs(),
+    queryFn: pluginsCommands.listSkippedDirs,
+  }),
   settings: (id: PluginId) => ({
     queryKey: pluginKeys.settings(id),
     queryFn: () => pluginsCommands.getSettings(id),

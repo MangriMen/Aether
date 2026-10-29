@@ -8,6 +8,7 @@ export const commands = {
 	import: (paths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|import", { paths, requestId }),
 	sync: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|sync", { requestId }),
 	list: () => __TAURI_INVOKE<PluginDto[]>("plugin:plugin|list"),
+	listSkippedDirs: () => __TAURI_INVOKE<SkippedPluginDirDto[]>("plugin:plugin|list_skipped_dirs"),
 	get: (id: string) => __TAURI_INVOKE<PluginDto>("plugin:plugin|get", { id }),
 	remove: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|remove", { id, requestId }),
 	enable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|enable", { id, requestId }),
@@ -610,6 +611,16 @@ export type SettingsErrorDto = { code: "NOT_FOUND" } | { code: "STORAGE_FAILURE"
 	platform: string,
 	reason: string,
 } } | { code: "INVALID_MAX_CONCURRENT_DOWNLOADS" };
+
+export type SkippedPluginDirDto = {
+	dir_name: string,
+	reason: SkippedPluginDirReasonDto,
+};
+
+/**  Translated by its `code`; the payload fills in the message. */
+export type SkippedPluginDirReasonDto = { code: "INVALID_NAME" } | { code: "LOAD_FAILED"; payload: {
+	details: string,
+} };
 
 export type UpdaterCapabilityMetadataDto = CapabilityMetadataDto;
 
