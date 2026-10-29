@@ -24,6 +24,9 @@ env:
 jobs:
   rust:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      actions: write
     env:
       SQLX_OFFLINE: "true"
     steps:
@@ -36,6 +39,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # rust-cache skips the save when the key it restored matches, and the key does not cover
+      # this workflow, so a manual run or a changed step would keep the stale cache; drop it first
+      - name: Drop the cache this run replaces
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh cache list --ref refs/heads/main --key v0-rust-aether-ci-cache --json id --jq ".[].id" |
+            xargs -r -n1 gh cache delete
 
       # same key and workspaces as the rust job in ci.yml
       - name: Rust cache
