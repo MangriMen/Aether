@@ -1335,7 +1335,7 @@ dependencies = [
 [[package]]
 name = "daedalus"
 version = "0.2.3"
-source = "git+https://github.com/modrinth/code#5e3318bb4b8ec358b15f9fd9330f30534f90d27f"
+source = "git+https://github.com/modrinth/code#c0248b9e236cbe3236fa2c477559cf1b27161696"
 dependencies = [
  "chrono",
  "serde",
