@@ -37,15 +37,8 @@ impl FsSettingsStorage {
             Err(original_err) => {
                 match read_json_async::<super::settings::SettingsV1>(self.path.clone()).await {
                     Ok(v1) => {
-                        warn!("Migrating instance from V1 at {:?}", self.path.clone());
-                        let migrated: Settings = v1.into();
-                        let v2 = SettingsV2::from(&migrated);
-
-                        if let Err(e) = self.store.write(&v2).await {
-                            warn!("Failed to save migrated instance: {:?}", e);
-                        }
-
-                        Ok(migrated)
+                        warn!("Reading legacy V1 settings at {:?}", self.path);
+                        Ok(v1.into())
                     }
                     Err(_) => Err(SettingsError::Storage(original_err.to_string())),
                 }
@@ -83,31 +76,6 @@ impl SettingsStorage for FsSettingsStorage {
             })
             .await?;
         Ok(result)
-    }
-}
-
-impl FsSettingsStorage {
-    /// Same signature as `SettingsStorage` trait but with boxed closure for object-safety.
-    pub async fn upsert_with<F, R: Send>(&self, f: F) -> Result<R, SettingsError>
-    where
-        F: FnOnce(&mut Settings) -> UpdateAction<R> + Send,
-    {
-        Ok(self
-            .store
-            .update(|dto| {
-                let mut settings = Settings::from(dto.clone());
-
-                let action = f(&mut settings);
-
-                match action {
-                    UpdateAction::Save(return_value) => {
-                        *dto = SettingsV2::from(&settings);
-                        UpdateAction::Save(return_value)
-                    }
-                    UpdateAction::NoChanges(return_value) => UpdateAction::NoChanges(return_value),
-                }
-            })
-            .await?)
     }
 }
 

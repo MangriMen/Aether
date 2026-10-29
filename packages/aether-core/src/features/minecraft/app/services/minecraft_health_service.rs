@@ -22,7 +22,6 @@ pub struct MinecraftHealthParams {
     pub java_path: Option<String>,
 }
 
-#[allow(dead_code)]
 pub struct MinecraftFileHealthService {
     loader_version_resolver: Arc<dyn LoaderVersionService>,
     get_version_manifest_use_case: Arc<dyn VersionManifestService>,
