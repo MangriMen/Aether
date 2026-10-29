@@ -5,6 +5,7 @@ use std::{
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginDisableService, PluginError, PluginStorage, PluginSyncService,
     RemovePluginUseCase,
@@ -33,26 +34,26 @@ impl PluginStorage for FakeStorage {
     async fn add(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!()
     }
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         unimplemented!()
     }
-    async fn get(&self, _: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
         unimplemented!()
     }
-    async fn remove(&self, _: &str) -> Result<(), PluginError> {
+    async fn remove(&self, _: &PluginId) -> Result<(), PluginError> {
         self.0.lock().unwrap().push("remove");
         Ok(())
     }
     async fn replace(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!()
     }
-    async fn restore_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!()
     }
-    async fn discard_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!()
     }
-    async fn wasm_sha256(&self, _: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, _: &PluginId) -> Result<String, PluginError> {
         unimplemented!()
     }
 }
@@ -64,11 +65,11 @@ struct FakeDisable {
 
 #[async_trait]
 impl PluginDisableService for FakeDisable {
-    async fn execute(&self, _: String) -> Result<(), PluginError> {
+    async fn execute(&self, _: PluginId) -> Result<(), PluginError> {
         self.log.lock().unwrap().push("disable");
         (self.result)()
     }
-    async fn unload(&self, _: String) -> Result<(), PluginError> {
+    async fn unload(&self, _: PluginId) -> Result<(), PluginError> {
         unimplemented!()
     }
 }
@@ -101,7 +102,7 @@ fn use_case(result: fn() -> Result<(), PluginError>) -> (RemovePluginUseCase, Lo
 async fn should_unload_the_plugin_before_deleting_its_files() {
     let (use_case, log) = use_case(|| Ok(()));
 
-    use_case.execute("p".into()).await.unwrap();
+    use_case.execute(PluginId::from_static("p")).await.unwrap();
 
     assert_eq!(*log.lock().unwrap(), ["disable", "remove", "sync"]);
 }
@@ -110,11 +111,11 @@ async fn should_unload_the_plugin_before_deleting_its_files() {
 async fn should_keep_the_files_when_the_plugin_is_busy() {
     let (use_case, log) = use_case(|| {
         Err(PluginError::Busy {
-            plugin_id: "p".into(),
+            plugin_id: PluginId::from_static("p"),
         })
     });
 
-    let result = use_case.execute("p".into()).await;
+    let result = use_case.execute(PluginId::from_static("p")).await;
 
     assert!(matches!(result, Err(PluginError::Busy { .. })));
     assert_eq!(*log.lock().unwrap(), ["disable"]);
@@ -124,11 +125,11 @@ async fn should_keep_the_files_when_the_plugin_is_busy() {
 async fn should_remove_a_plugin_that_was_not_loaded() {
     let (use_case, log) = use_case(|| {
         Err(PluginError::AlreadyUnloaded {
-            plugin_id: "p".into(),
+            plugin_id: PluginId::from_static("p"),
         })
     });
 
-    use_case.execute("p".into()).await.unwrap();
+    use_case.execute(PluginId::from_static("p")).await.unwrap();
 
     assert_eq!(*log.lock().unwrap(), ["disable", "remove", "sync"]);
 }

@@ -134,7 +134,7 @@ mod tests {
 
     fn make_plugin_event() -> PluginEvent {
         PluginEvent::Add {
-            plugin_id: "test-plugin".into(),
+            plugin_id: crate::shared::capability::PluginId::from_static("test-plugin"),
         }
     }
 

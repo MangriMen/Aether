@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         Compatibility, PLUGIN_API_VERSION, PluginError, PluginLoaderRegistry, PluginManifest,
         PluginRegistry, PluginSettingsStorage, PluginStateReason,
@@ -33,7 +34,7 @@ impl EnablePluginUseCase {
         }
     }
 
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         let (previous, manifest) = self
             .enabler
             .plugin_registry
@@ -55,7 +56,7 @@ impl EnablePluginUseCase {
     /// The manifest's requirements and the API version, unless the user forced this version.
     async fn check_may_load(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         manifest: &PluginManifest,
     ) -> Result<(), PluginError> {
         // Must hold unconditionally, even for plugins the user force-enabled.
@@ -94,7 +95,7 @@ impl EnablePluginUseCase {
 
 #[async_trait]
 impl EnablePluginUseCasePort for EnablePluginUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.execute(plugin_id).await
     }
 }

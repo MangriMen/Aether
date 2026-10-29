@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use crate::{
     features::{
         events::ProgressService,
-        instance::{ContentDownloader, InstanceError, ProviderId},
+        instance::{ContentDownloader, InstanceError, PluginId, ProviderId},
         plugins::{PluginRegistry, PluginSettingsStorage},
     },
     shared::{
@@ -49,7 +49,7 @@ pub struct ProviderContentDownloader {
     content_limits: ContentInstallLimits,
     sandbox_limits: PluginSandboxLimits,
     /// By plugin id: the client and the `allowed_hosts` it was built for.
-    clients: Mutex<HashMap<String, PluginClient>>,
+    clients: Mutex<HashMap<PluginId, PluginClient>>,
 }
 
 struct PluginClient {
@@ -96,7 +96,10 @@ impl ProviderContentDownloader {
 
     /// What the plugin may reach now: its manifest and the user's current settings. A plugin
     /// that is gone has no policy, so its URLs are not downloaded at all.
-    async fn plugin_allowed_hosts(&self, plugin_id: &str) -> Result<Vec<String>, InstanceError> {
+    async fn plugin_allowed_hosts(
+        &self,
+        plugin_id: &PluginId,
+    ) -> Result<Vec<String>, InstanceError> {
         let manifest = self.plugins.get_manifest(plugin_id).map_err(|err| {
             InstanceError::ContentDownloadError(format!(
                 "No network policy for plugin \"{plugin_id}\": {err}"
@@ -115,7 +118,7 @@ impl ProviderContentDownloader {
     /// yet or the hosts changed since it was built.
     fn plugin_client(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         allowed_hosts: &[String],
     ) -> Result<Arc<VettedDownloadClient>, String> {
         let mut clients = self
@@ -139,7 +142,7 @@ impl ProviderContentDownloader {
         };
         let client = Arc::new(vetted_download_client(&network).map_err(|err| err.to_string())?);
         clients.insert(
-            plugin_id.to_owned(),
+            plugin_id.clone(),
             PluginClient {
                 allowed_hosts: allowed_hosts.to_vec(),
                 client: client.clone(),
@@ -179,9 +182,9 @@ impl ContentDownloader for ProviderContentDownloader {
         }
 
         // Read for every file: the user may narrow the plugin's hosts while a plan downloads.
-        let allowed_hosts = self.plugin_allowed_hosts(origin.plugin_id.as_str()).await?;
+        let allowed_hosts = self.plugin_allowed_hosts(&origin.plugin_id).await?;
         let client = self
-            .plugin_client(origin.plugin_id.as_str(), &allowed_hosts)
+            .plugin_client(&origin.plugin_id, &allowed_hosts)
             .map_err(|err| Self::failed(url, err))?;
 
         download_with(

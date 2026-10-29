@@ -1,8 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use crate::features::plugins::{
-    AllowedPath, PluginCapabilities, PluginContentProviderCapability, PluginImporterCapability,
-    PluginSettings, PluginUpdaterCapability, ProviderHandlers,
+use crate::features::{
+    instance::{
+        CapabilityId, CapabilityMetadata, ContentProviderCapabilityMetadata,
+        ImporterCapabilityMetadata, UpdaterCapabilityMetadata,
+    },
+    plugins::{
+        AllowedPath, ManifestError, PluginCapabilities, PluginContentProviderCapability,
+        PluginImporterCapability, PluginSettings, PluginUpdaterCapability, ProviderHandlers,
+    },
 };
 
 /// DTO for `PluginCapabilities` that can be read/written as JSON file.
@@ -137,72 +143,89 @@ impl From<AllowedPath> for AllowedPathV1 {
 
 // ── Converters V1 → Domain ──
 
-impl From<PluginCapabilitiesV1> for PluginCapabilities {
-    fn from(v1: PluginCapabilitiesV1) -> Self {
-        Self {
+/// A capability id outside the scheme is refused as the manifest field it came from: the
+/// ids become parts of `plugin_id#capability_id`.
+fn capability_id(field: &str, value: String) -> Result<CapabilityId, ManifestError> {
+    CapabilityId::try_from(value).map_err(|e| ManifestError::InvalidId {
+        field: field.to_owned(),
+        value: e.value,
+    })
+}
+
+impl TryFrom<PluginCapabilitiesV1> for PluginCapabilities {
+    type Error = ManifestError;
+
+    fn try_from(v1: PluginCapabilitiesV1) -> Result<Self, Self::Error> {
+        Ok(Self {
             importers: v1
                 .importers
                 .unwrap_or_default()
                 .into_iter()
-                .map(|i| PluginImporterCapability {
-                    metadata: crate::features::instance::ImporterCapabilityMetadata {
-                        base: crate::features::instance::CapabilityMetadata {
-                            id: i.id,
-                            name: i.name,
-                            description: i.description,
-                            icon: i.icon,
+                .map(|i| {
+                    Ok(PluginImporterCapability {
+                        metadata: ImporterCapabilityMetadata {
+                            base: CapabilityMetadata {
+                                id: capability_id("importers[].id", i.id)?,
+                                name: i.name,
+                                description: i.description,
+                                icon: i.icon,
+                            },
+                            field_label: i.field_label,
+                            supported_extensions: i.supported_extensions,
                         },
-                        field_label: i.field_label,
-                        supported_extensions: i.supported_extensions,
-                    },
-                    handler: i.handler,
+                        handler: i.handler,
+                    })
                 })
-                .collect(),
+                .collect::<Result<_, ManifestError>>()?,
             updaters: v1
                 .updaters
                 .unwrap_or_default()
                 .into_iter()
-                .map(|u| PluginUpdaterCapability {
-                    metadata: crate::features::instance::UpdaterCapabilityMetadata {
-                        base: crate::features::instance::CapabilityMetadata {
-                            id: u.id,
-                            name: u.name,
-                            description: u.description,
-                            icon: u.icon,
+                .map(|u| {
+                    Ok(PluginUpdaterCapability {
+                        metadata: UpdaterCapabilityMetadata {
+                            base: CapabilityMetadata {
+                                id: capability_id("updaters[].id", u.id)?,
+                                name: u.name,
+                                description: u.description,
+                                icon: u.icon,
+                            },
                         },
-                    },
-                    handler: u.handler,
+                        handler: u.handler,
+                    })
                 })
-                .collect(),
+                .collect::<Result<_, ManifestError>>()?,
             content_providers: v1
                 .content_providers
                 .unwrap_or_default()
                 .into_iter()
-                .map(|cp| PluginContentProviderCapability {
-                    metadata: crate::features::instance::ContentProviderCapabilityMetadata {
-                        base: crate::features::instance::CapabilityMetadata {
-                            id: cp.id,
-                            name: cp.name,
-                            description: cp.description,
-                            icon: cp.icon,
+                .map(|cp| {
+                    Ok(PluginContentProviderCapability {
+                        metadata: ContentProviderCapabilityMetadata {
+                            base: CapabilityMetadata {
+                                id: capability_id("contentProviders[].id", cp.id)?,
+                                name: cp.name,
+                                description: cp.description,
+                                icon: cp.icon,
+                            },
+                            platform: cp.platform,
                         },
-                        platform: cp.platform,
-                    },
-                    handlers: ProviderHandlers {
-                        search: cp.handlers.search,
-                        get_content: cp.handlers.get_content,
-                        list_version: cp.handlers.list_version,
-                        check_compatibility: cp.handlers.check_compatibility,
-                        resolve_file: cp.handlers.resolve_file,
-                        resolve_install_plan: cp.handlers.resolve_install_plan,
-                        resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
-                        get_contents_metadata: cp.handlers.get_contents_metadata,
-                        get_versions_metadata: cp.handlers.get_versions_metadata,
-                        get_authors: cp.handlers.get_authors,
-                    },
+                        handlers: ProviderHandlers {
+                            search: cp.handlers.search,
+                            get_content: cp.handlers.get_content,
+                            list_version: cp.handlers.list_version,
+                            check_compatibility: cp.handlers.check_compatibility,
+                            resolve_file: cp.handlers.resolve_file,
+                            resolve_install_plan: cp.handlers.resolve_install_plan,
+                            resolve_pack_metadata: cp.handlers.resolve_pack_metadata,
+                            get_contents_metadata: cp.handlers.get_contents_metadata,
+                            get_versions_metadata: cp.handlers.get_versions_metadata,
+                            get_authors: cp.handlers.get_authors,
+                        },
+                    })
                 })
-                .collect(),
-        }
+                .collect::<Result<_, ManifestError>>()?,
+        })
     }
 }
 
@@ -225,7 +248,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                 v.importers
                     .into_iter()
                     .map(|i| PluginImporterCapabilityV1 {
-                        id: i.metadata.base.id.clone(),
+                        id: i.metadata.base.id.to_string(),
                         name: i.metadata.base.name.clone(),
                         description: i.metadata.base.description.clone(),
                         icon: i.metadata.base.icon.clone(),
@@ -239,7 +262,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                 v.updaters
                     .into_iter()
                     .map(|u| PluginUpdaterCapabilityV1 {
-                        id: u.metadata.base.id.clone(),
+                        id: u.metadata.base.id.to_string(),
                         name: u.metadata.base.name.clone(),
                         description: u.metadata.base.description.clone(),
                         icon: u.metadata.base.icon.clone(),
@@ -251,7 +274,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                 v.content_providers
                     .into_iter()
                     .map(|cp| PluginContentProviderCapabilityV1 {
-                        id: cp.metadata.base.id.clone(),
+                        id: cp.metadata.base.id.to_string(),
                         name: cp.metadata.base.name.clone(),
                         description: cp.metadata.base.description.clone(),
                         icon: cp.metadata.base.icon.clone(),
@@ -288,6 +311,40 @@ impl From<PluginSettings> for PluginSettingsV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn rejected_field(json: &str) -> Option<String> {
+        let v1: PluginCapabilitiesV1 = serde_json::from_str(json).unwrap();
+        match PluginCapabilities::try_from(v1) {
+            Err(ManifestError::InvalidId { field, .. }) => Some(field),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn should_reject_capabilities_when_an_id_is_invalid() {
+        for id in ["", "a#b", "x:y", "Packwiz"] {
+            let importers = format!(
+                r#"{{ "importers": [{{ "id": "{id}", "name": "T", "handler": "import" }}] }}"#
+            );
+            let updaters = format!(
+                r#"{{ "updaters": [{{ "id": "{id}", "name": "T", "handler": "update" }}] }}"#
+            );
+            let providers = format!(
+                r#"{{ "contentProviders": [{{ "id": "{id}", "name": "T",
+                    "handlers": {{ "search": "search", "getContent": "get_content" }} }}] }}"#
+            );
+
+            assert_eq!(
+                rejected_field(&importers).as_deref(),
+                Some("importers[].id")
+            );
+            assert_eq!(rejected_field(&updaters).as_deref(), Some("updaters[].id"));
+            assert_eq!(
+                rejected_field(&providers).as_deref(),
+                Some("contentProviders[].id")
+            );
+        }
+    }
 
     #[test]
     fn should_read_a_folder_as_read_only_when_it_was_saved_before_rights_existed() {

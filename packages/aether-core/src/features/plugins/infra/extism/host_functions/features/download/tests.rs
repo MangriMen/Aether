@@ -630,7 +630,7 @@ async fn should_reject_a_host_before_touching_the_cache_when_it_is_outside_allow
     let hosts = vec!["example.com".to_string()];
 
     let err = handle_download_to_cache(
-        "test",
+        &PluginId::from_static("test"),
         DownloadToCacheParamsDto {
             url: "http://evil.com/mod.jar".to_string(),
             hash: FileHashDto::Sha1(sha1_of(BODY)),
@@ -654,7 +654,7 @@ async fn should_block_non_public_addresses_when_the_production_filter_is_used() 
         "http://169.254.169.254/latest/meta-data/",
     ] {
         let err = handle_download_to_cache(
-            "test",
+            &PluginId::from_static("test"),
             DownloadToCacheParamsDto {
                 url: url.to_string(),
                 hash: FileHashDto::Sha1(sha1_of(BODY)),
@@ -683,7 +683,7 @@ async fn should_reject_a_hash_before_any_io_when_it_is_not_a_digest() {
         not_hex.as_str(),
     ] {
         let err = handle_download_to_cache(
-            "test",
+            &PluginId::from_static("test"),
             DownloadToCacheParamsDto {
                 url: "https://example.com/mod.jar".to_string(),
                 hash: FileHashDto::Sha1(hex.to_string()),

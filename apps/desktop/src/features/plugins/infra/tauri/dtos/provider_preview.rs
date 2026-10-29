@@ -22,7 +22,8 @@ impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPlu
             .capabilities
             .as_deref()
             .and_then(|raw| serde_json::from_str::<PluginCapabilitiesV1>(raw).ok())
-            .map(|v1| PluginCapabilitiesDto::from(PluginCapabilities::from(v1)));
+            .and_then(|v1| PluginCapabilities::try_from(v1).ok())
+            .map(PluginCapabilitiesDto::from);
 
         Self {
             owner: value.owner,

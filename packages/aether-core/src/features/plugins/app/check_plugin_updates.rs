@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginProviderError, PluginSource, PluginSourceStorage, ProviderUpdateInfo,
 };
@@ -28,13 +29,16 @@ impl CheckForPluginUpdatesUseCase {
     }
 
     /// Check if a plugin has updates available.
-    pub(crate) async fn execute(&self, plugin_id: &str) -> Result<ProviderUpdateInfo, PluginError> {
+    pub(crate) async fn execute(
+        &self,
+        plugin_id: &PluginId,
+    ) -> Result<ProviderUpdateInfo, PluginError> {
         let source = self
             .plugin_source_storage
             .get(plugin_id)
             .await?
             .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.to_string(),
+                plugin_id: plugin_id.clone(),
             })?;
 
         let source_type = source.to_source_type();
@@ -44,7 +48,7 @@ impl CheckForPluginUpdatesUseCase {
             .provider_factory
             .get_provider(&source_type)
             .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.to_string(),
+                plugin_id: plugin_id.clone(),
             })?;
 
         let current_tag = source.current_tag().unwrap_or_default();
@@ -74,7 +78,7 @@ fn source_version(source: &PluginSource) -> &str {
 
 #[async_trait]
 impl CheckForPluginUpdatesUseCasePort for CheckForPluginUpdatesUseCase {
-    async fn execute(&self, plugin_id: &str) -> Result<ProviderUpdateInfo, PluginError> {
+    async fn execute(&self, plugin_id: &PluginId) -> Result<ProviderUpdateInfo, PluginError> {
         self.execute(plugin_id).await
     }
 }

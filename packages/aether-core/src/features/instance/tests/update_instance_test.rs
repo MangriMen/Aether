@@ -12,6 +12,7 @@ use std::{
 use async_trait::async_trait;
 use tempfile::TempDir;
 
+use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
         events::{EventError, ProgressBarId, ProgressEventType, ProgressService},
@@ -158,7 +159,7 @@ impl PackProvider {
         Self {
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
-                    id: CAPABILITY.into(),
+                    id: CapabilityId::from_static(CAPABILITY),
                     name: CAPABILITY.into(),
                     description: None,
                     icon: None,
@@ -545,14 +546,22 @@ impl Fixture {
         let providers = Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default());
         if let Some(provider) = provider {
             providers
-                .add(PLUGIN.into(), CAPABILITY.into(), provider)
+                .add(
+                    PluginId::from_static(PLUGIN),
+                    CapabilityId::from_static(CAPABILITY),
+                    provider,
+                )
                 .await
                 .unwrap();
         }
         let updater = Arc::new(RecordingUpdater::default());
         let updaters = Arc::new(MemoryCapabilityRegistry::<Arc<dyn Updater>>::default());
         updaters
-            .add(PLUGIN.into(), CAPABILITY.into(), updater.clone())
+            .add(
+                PluginId::from_static(PLUGIN),
+                CapabilityId::from_static(CAPABILITY),
+                updater.clone(),
+            )
             .await
             .unwrap();
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use extism::{CurrentPlugin, Function, PTR, UserData, Val, ValType};
 
-use crate::core::app::AetherContainer;
+use crate::{core::app::AetherContainer, features::instance::PluginId};
 
 use super::{PluginContext, features};
 
@@ -148,11 +148,11 @@ pub(crate) fn select_host_functions(declared: &[String]) -> Vec<&'static HostFun
 }
 
 pub(crate) fn get_host_functions(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     container: &Arc<AetherContainer>,
     declared: &[String],
 ) -> Vec<Function> {
-    let context = PluginContext::new(plugin_id.to_string(), container);
+    let context = PluginContext::new(plugin_id.clone(), container);
 
     select_host_functions(declared)
         .into_iter()

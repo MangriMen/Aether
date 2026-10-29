@@ -186,7 +186,7 @@ impl From<PluginManifest> for PluginManifestDto {
 impl From<PluginMetadata> for PluginMetadataDto {
     fn from(v: PluginMetadata) -> Self {
         Self {
-            id: v.id,
+            id: v.id.into(),
             name: v.name,
             version: v.version,
             description: v.description,
@@ -291,7 +291,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
 impl From<CapabilityMetadata> for CapabilityMetadataDto {
     fn from(v: CapabilityMetadata) -> Self {
         Self {
-            id: v.id,
+            id: v.id.into(),
             name: v.name,
             description: v.description,
             icon: v.icon,

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         FolderMounts, LoadConfigType, PluginError, PluginLoaderRegistry, PluginManifest,
         PluginRegistry, PluginSettingsStorage, PluginState, PluginStateReason,
@@ -24,7 +25,7 @@ impl PluginEnabler {
     /// `Incompatible`.
     pub(super) async fn check_requirements(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         manifest: &PluginManifest,
     ) -> Result<(), PluginError> {
         let loader = self.plugin_loader_registry.get(&(&manifest.load).into())?;
@@ -42,7 +43,7 @@ impl PluginEnabler {
         // `api.features` is not enforced: requesting plugins load, but the gap is logged.
         if !manifest.api.features.is_empty() {
             tracing::warn!(
-                plugin_id,
+                %plugin_id,
                 features = ?manifest.api.features,
                 "Plugin requests optional API features that are not yet enforced by the host",
             );
@@ -53,7 +54,7 @@ impl PluginEnabler {
 
     pub(super) async fn mark_incompatible(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         reason: PluginStateReason,
     ) -> Result<(), PluginError> {
         self.set_state(plugin_id, PluginState::Incompatible(reason))
@@ -62,7 +63,7 @@ impl PluginEnabler {
 
     pub(super) async fn set_state(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         state: PluginState,
     ) -> Result<(), PluginError> {
         self.plugin_registry
@@ -77,7 +78,7 @@ impl PluginEnabler {
     /// `Failed` for a failure of the plugin itself and `NotLoaded` otherwise.
     pub(super) async fn load(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         manifest: &PluginManifest,
     ) -> Result<(), PluginError> {
         let result = async {
@@ -113,7 +114,10 @@ impl PluginEnabler {
     }
 
     /// Remember the plugin as enabled, to load it on the next start.
-    pub(super) async fn add_to_enabled_plugins(&self, plugin_id: &str) -> Result<(), PluginError> {
+    pub(super) async fn add_to_enabled_plugins(
+        &self,
+        plugin_id: &PluginId,
+    ) -> Result<(), PluginError> {
         let owned = plugin_id.to_owned();
         self.settings_storage
             .update_mut(Box::new(move |mut settings| {

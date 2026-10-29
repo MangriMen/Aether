@@ -679,10 +679,7 @@ impl Inner {
     async fn provider(&self, provider_id: &ProviderId) -> Option<Arc<dyn ContentProvider>> {
         let entry = self
             .providers
-            .find_by_plugin_and_capability_id(
-                provider_id.plugin_id.as_str(),
-                provider_id.capability_id.as_str(),
-            )
+            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
             .await;
         if entry.is_err() {
             tracing::debug!("No content provider {provider_id} to describe its content");

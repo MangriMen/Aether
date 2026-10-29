@@ -14,7 +14,7 @@ async fn should_give_a_new_instance_and_leave_the_old_one_refusing_calls_when_re
     let harness = Harness::enabled().await;
     let old = harness.handle();
 
-    harness.reload().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.reload().execute(plugin_id()).await.unwrap();
 
     let new = harness.handle();
     assert!(old.is_retired());
@@ -32,7 +32,7 @@ async fn should_not_restart_a_busy_plugin_and_let_its_call_finish_when_asked_to(
     let handle = harness.handle();
     let call = harness.start_long_call(&handle).await;
 
-    let refused = tokio::time::timeout(PATIENCE, harness.reload().execute(PLUGIN_ID.into()))
+    let refused = tokio::time::timeout(PATIENCE, harness.reload().execute(plugin_id()))
         .await
         .expect("the restart is refused, not waited for");
 
@@ -45,7 +45,7 @@ async fn should_not_restart_a_busy_plugin_and_let_its_call_finish_when_asked_to(
 
     harness.let_go();
     assert!(call.await.unwrap().is_ok(), "the call runs to its end");
-    harness.reload().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.reload().execute(plugin_id()).await.unwrap();
     assert_eq!(harness.loader.loads.load(Ordering::SeqCst), 2);
 }
 
@@ -55,7 +55,7 @@ async fn should_not_disable_a_busy_plugin_when_asked_to() {
     let handle = harness.handle();
     let call = harness.start_long_call(&handle).await;
 
-    let refused = harness.disable().execute(PLUGIN_ID.into()).await;
+    let refused = harness.disable().execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::Busy { .. })),
@@ -85,7 +85,7 @@ fn should_refuse_a_restart_when_it_comes_from_inside_the_plugin() {
             tokio::time::timeout(
                 PATIENCE,
                 handle.run("work", move |_| {
-                    tokio::runtime::Handle::current().block_on(reload.execute(PLUGIN_ID.into()))
+                    tokio::runtime::Handle::current().block_on(reload.execute(plugin_id()))
                 }),
             )
             .await
@@ -106,7 +106,7 @@ async fn should_give_an_explicit_error_to_a_call_when_it_comes_during_a_restart(
 
     let restart = tokio::spawn({
         let harness = Arc::clone(&harness);
-        async move { harness.reload().execute(PLUGIN_ID.into()).await }
+        async move { harness.reload().execute(plugin_id()).await }
     });
     harness.loader.load_started.notified().await;
 
@@ -122,7 +122,7 @@ async fn should_give_an_explicit_error_to_a_call_when_it_comes_during_a_restart(
     ));
     assert!(is_stopped(&noop(&old).await));
     assert!(matches!(
-        harness.reload().execute(PLUGIN_ID.into()).await,
+        harness.reload().execute(plugin_id()).await,
         Err(PluginError::LoadingInProgress { .. })
     ));
 
@@ -142,7 +142,7 @@ async fn should_leave_the_plugin_failed_and_enabled_when_a_restart_fails_to_load
     let old = harness.handle();
     harness.loader.fail_next_load.store(true, Ordering::SeqCst);
 
-    let result = harness.reload().execute(PLUGIN_ID.into()).await;
+    let result = harness.reload().execute(plugin_id()).await;
 
     assert!(
         matches!(result, Err(PluginError::LoadFailed { .. })),
@@ -173,7 +173,7 @@ async fn should_leave_the_plugin_failed_and_enabled_when_a_restart_fails_to_load
         Arc::new(NoPluginSettings),
         harness.settings.clone(),
     )
-    .execute(PLUGIN_ID.into())
+    .execute(plugin_id())
     .await
     .unwrap();
     assert!(noop(&harness.handle()).await.is_ok());
@@ -184,9 +184,9 @@ async fn should_end_the_instance_before_each_restart_when_restarts_follow_one_an
     let harness = Harness::enabled().await;
     let first = harness.handle();
 
-    harness.reload().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.reload().execute(plugin_id()).await.unwrap();
     let second = harness.handle();
-    harness.reload().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.reload().execute(plugin_id()).await.unwrap();
     let third = harness.handle();
 
     assert!(first.is_retired() && second.is_retired() && !third.is_retired());
@@ -198,9 +198,9 @@ async fn should_end_the_instance_before_each_restart_when_restarts_follow_one_an
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_not_restart_a_plugin_when_it_is_not_loaded() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
 
-    let result = harness.reload().execute(PLUGIN_ID.into()).await;
+    let result = harness.reload().execute(plugin_id()).await;
 
     assert!(
         matches!(result, Err(PluginError::AlreadyUnloaded { .. })),

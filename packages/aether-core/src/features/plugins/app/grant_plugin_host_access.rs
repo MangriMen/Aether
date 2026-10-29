@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     GrantableHost, PluginError, PluginRegistry, PluginSettingsStorage, effective_allowed_hosts,
     is_host_allowed,
@@ -47,7 +48,7 @@ impl GrantPluginHostAccessUseCase {
 
     pub(crate) async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         url: String,
         dry_run: bool,
     ) -> Result<HostAccess, PluginError> {
@@ -81,7 +82,7 @@ impl GrantPluginHostAccessUseCase {
 impl GrantPluginHostAccessUseCasePort for GrantPluginHostAccessUseCase {
     async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         url: String,
         dry_run: bool,
     ) -> Result<HostAccess, PluginError> {

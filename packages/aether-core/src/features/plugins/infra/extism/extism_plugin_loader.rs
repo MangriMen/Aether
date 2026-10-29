@@ -10,6 +10,7 @@ use extism::{Function, Manifest, Plugin, PluginBuilder, Wasm};
 use crate::{
     core::app::AetherContainer,
     features::{
+        instance::PluginId,
         plugins::{
             CoreMount, FolderMounts, LoadConfig, ManifestError, PathMapping, PluginError,
             PluginHandle, PluginInternalEvent, PluginLoader, PluginManifest, PluginSettings,
@@ -72,7 +73,7 @@ impl ExtismPluginLoader {
 
     async fn ensure_default_allowed_paths(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
     ) -> Result<HashMap<String, CoreMount>, PluginError> {
         let default_allowed_paths = get_default_allowed_paths(&self.location_info, plugin_id);
 
@@ -83,7 +84,7 @@ impl ExtismPluginLoader {
         Ok(default_allowed_paths)
     }
 
-    fn resolve_absolute_wasm_path(&self, plugin_id: &str, wasm_file: &Path) -> PathBuf {
+    fn resolve_absolute_wasm_path(&self, plugin_id: &PluginId, wasm_file: &Path) -> PathBuf {
         self.location_info.plugin_dir(plugin_id).join(wasm_file)
     }
 
@@ -105,7 +106,7 @@ impl ExtismPluginLoader {
     /// actionable error, `with_hash` closes the gap between this read and Extism's own.
     async fn resolve_expected_wasm_sha256(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         wasm_path: &Path,
     ) -> Result<Option<String>, PluginError> {
         let Some(verification) = self.verification_storage.get(plugin_id).await? else {
@@ -134,7 +135,7 @@ impl ExtismPluginLoader {
             tracing::error!("Refusing to load plugin '{plugin_id}': {reason}");
 
             return Err(PluginError::LoadFailed {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.clone(),
                 reason,
             });
         }
@@ -169,7 +170,7 @@ impl ExtismPluginLoader {
     /// Links exactly `host_functions`: wasmtime refuses a module with an unsatisfied import, so
     /// a plugin importing a function it did not declare fails here, not on its first call.
     fn build_plugin(
-        plugin_id: &str,
+        plugin_id: &PluginId,
         wasm_manifest: &Manifest,
         cache_dir: Option<&PathBuf>,
         host_functions: Vec<Function>,
@@ -187,7 +188,7 @@ impl ExtismPluginLoader {
         builder.build().map_err(|e| {
             tracing::debug!("Load failed for plugin {}: {:#}", plugin_id, e);
             PluginError::LoadFailed {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.clone(),
                 reason: describe_build_error(&e),
             }
         })
@@ -225,7 +226,7 @@ impl PluginLoader for ExtismPluginLoader {
             .get()
             .and_then(Weak::upgrade)
             .ok_or_else(|| PluginError::LoadFailed {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.clone(),
                 reason: "the application container is not available".to_owned(),
             })?;
 
@@ -422,15 +423,15 @@ mod tests {
 
     #[async_trait]
     impl PluginVerificationStorage for StubVerificationStorage {
-        async fn save(&self, _: &str, _: &PluginVerification) -> Result<(), PluginError> {
+        async fn save(&self, _: &PluginId, _: &PluginVerification) -> Result<(), PluginError> {
             Ok(())
         }
 
-        async fn get(&self, _: &str) -> Result<Option<PluginVerification>, PluginError> {
+        async fn get(&self, _: &PluginId) -> Result<Option<PluginVerification>, PluginError> {
             Ok(self.0.clone())
         }
 
-        async fn remove(&self, _: &str) -> Result<(), PluginError> {
+        async fn remove(&self, _: &PluginId) -> Result<(), PluginError> {
             Ok(())
         }
     }
@@ -456,7 +457,7 @@ mod tests {
     fn manifest_with_memory_limit(memory_limit: Option<usize>) -> PluginManifest {
         PluginManifest {
             metadata: PluginMetadata {
-                id: "test".into(),
+                id: PluginId::from_static("test"),
                 name: "Test".into(),
                 version: semver::Version::new(0, 1, 0),
                 description: None,
@@ -499,7 +500,9 @@ mod tests {
         verification: Option<PluginVerification>,
     ) -> (ExtismPluginLoader, PathBuf) {
         let location_info = LocationInfo::new(dir.to_path_buf(), dir.to_path_buf());
-        let wasm_path = location_info.plugin_dir("test").join("plugin.wasm");
+        let wasm_path = location_info
+            .plugin_dir(&PluginId::from_static("test"))
+            .join("plugin.wasm");
 
         std::fs::create_dir_all(wasm_path.parent().expect("plugin dir"))
             .expect("plugin dir should be created");
@@ -805,13 +808,13 @@ mod tests {
             loader_with_wasm(dir.path(), b"tampered wasm", Some(verification(&recorded)));
 
         let error = loader
-            .resolve_expected_wasm_sha256("test", &wasm_path)
+            .resolve_expected_wasm_sha256(&PluginId::from_static("test"), &wasm_path)
             .await
             .expect_err("a tampered wasm file must not load");
 
         match error {
             PluginError::LoadFailed { plugin_id, reason } => {
-                assert_eq!(plugin_id, "test");
+                assert_eq!(plugin_id, PluginId::from_static("test"));
                 assert!(
                     reason.contains(&recorded),
                     "the error should name the recorded digest, got: {reason}"
@@ -829,7 +832,7 @@ mod tests {
             loader_with_wasm(dir.path(), ORIGINAL_WASM, Some(verification(&recorded)));
 
         let expected = loader
-            .resolve_expected_wasm_sha256("test", &wasm_path)
+            .resolve_expected_wasm_sha256(&PluginId::from_static("test"), &wasm_path)
             .await
             .expect("an untouched wasm file should pass");
 
@@ -844,7 +847,7 @@ mod tests {
         let (loader, wasm_path) = loader_with_wasm(dir.path(), ORIGINAL_WASM, None);
 
         let expected = loader
-            .resolve_expected_wasm_sha256("test", &wasm_path)
+            .resolve_expected_wasm_sha256(&PluginId::from_static("test"), &wasm_path)
             .await
             .expect("an unverified plugin should still load");
 
@@ -893,7 +896,7 @@ mod tests {
         let declared: Vec<String> = declared.iter().map(|&name| name.to_owned()).collect();
 
         ExtismPluginLoader::build_plugin(
-            "test",
+            &PluginId::from_static("test"),
             &Manifest::new([Wasm::data(wat.as_bytes().to_vec())]),
             None,
             stub_host_functions(&declared),
@@ -1080,7 +1083,7 @@ mod tests {
         );
 
         let plugin = ExtismPluginLoader::build_plugin(
-            "test",
+            &PluginId::from_static("test"),
             &Manifest::new([Wasm::data(WASI_PLUGIN.as_bytes().to_vec())])
                 .with_allowed_paths(allowed_paths.into_iter().map(Into::into)),
             None,

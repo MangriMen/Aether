@@ -36,6 +36,7 @@ mod tests {
 
     use extism::{Manifest, Plugin, PluginBuilder, Wasm};
 
+    use crate::features::instance::PluginId;
     use crate::features::plugins::{
         PluginCallError, PluginError, PluginInstance, infra::extism::models::ExtismPluginInstance,
     };
@@ -102,7 +103,7 @@ mod tests {
         }
         let plugin: Plugin = builder.build().expect("the test plugin should load");
 
-        ExtismPluginInstance::new(plugin, "test".to_owned())
+        ExtismPluginInstance::new(plugin, PluginId::from_static("test"))
     }
 
     fn unlimited() -> ExtismPluginInstance {

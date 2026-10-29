@@ -22,6 +22,7 @@ use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 use extism_convert::{Msgpack, ToBytes};
 use serde::Serialize;
 
+use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
@@ -49,6 +50,11 @@ use crate::{
 };
 
 const PLUGIN_ID: &str = "curseforge-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
+
 const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
 const CAPABILITIES: &str = r#"{
@@ -195,12 +201,15 @@ fn wasm_plugin(id: &str, exports: &[(&str, Body)], gate: Arc<Gate>) -> PluginHan
     .build()
     .expect("the test plugin should load");
 
-    PluginHandle::new(ExtismPluginInstance::new(plugin, id.to_owned()))
+    PluginHandle::new(ExtismPluginInstance::new(
+        plugin,
+        id.parse::<PluginId>().unwrap(),
+    ))
 }
 
 fn capabilities() -> PluginCapabilities {
     let file: PluginCapabilitiesV1 = serde_json::from_str(CAPABILITIES).expect("capabilities");
-    let capabilities = PluginCapabilities::from(file);
+    let capabilities = PluginCapabilities::try_from(file).expect("valid capabilities");
     capabilities.validate().expect("valid capabilities");
     capabilities
 }
@@ -228,12 +237,11 @@ fn sandbox() -> Sandbox {
 
 fn proxy(sandbox: &Sandbox, id: &str, handle: PluginHandle) -> PluginContentProviderProxy {
     PluginContentProviderProxy::new(
-        id.to_owned(),
+        id.parse::<PluginId>().unwrap(),
         handle,
         provider_capability(),
         sandbox.location_info.clone(),
     )
-    .expect("ids should be valid")
 }
 
 fn resolved_jei() -> Vec<u8> {
@@ -261,20 +269,20 @@ fn pack_metadata() -> Vec<u8> {
     })
 }
 
-fn search_result(plugin_id: &str) -> Vec<u8> {
+fn search_result(plugin_id: &PluginId) -> Vec<u8> {
     encode(ContentSearchResultDto {
         page: 1,
         page_size: 20,
         page_count: 1,
         provider_id: ProviderIdDto {
-            plugin_id: plugin_id.into(),
+            plugin_id: plugin_id.to_string(),
             capability_id: "curseforge".into(),
         },
         items: Vec::new(),
     })
 }
 
-fn search_params(plugin_id: &str) -> ContentSearchParams {
+fn search_params(plugin_id: &PluginId) -> ContentSearchParams {
     ContentSearchParams {
         content_type: ContentType::Mod,
         provider_id: ProviderId::from_parts(plugin_id, "curseforge").unwrap(),
@@ -308,7 +316,7 @@ impl EventEmitter<Event> for NoOpEmitter {
 fn manifest() -> PluginManifest {
     PluginManifest {
         metadata: PluginMetadata {
-            id: PLUGIN_ID.into(),
+            id: plugin_id(),
             name: "CurseForge".into(),
             version: semver::Version::new(0, 1, 0),
             description: None,
@@ -350,7 +358,7 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
         verified: false,
         state,
     };
-    plugins.insert(PLUGIN_ID.into(), plugin(PluginState::Loaded(handle)));
+    plugins.insert(plugin_id(), plugin(PluginState::Loaded(handle)));
     let providers = Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default());
     let listener = PluginInfrastructureListener::new(
         plugins.clone(),
@@ -360,13 +368,13 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
         sandbox.location_info.clone(),
     );
     let edit = || PluginEvent::Edit {
-        plugin_id: PLUGIN_ID.into(),
+        plugin_id: plugin_id(),
     };
 
     listener.on_plugin_event(edit()).await;
 
     let provider = providers
-        .find_by_plugin_and_capability_id(PLUGIN_ID, "curseforge")
+        .find_by_plugin_and_capability_id(&plugin_id(), &CapabilityId::from_static("curseforge"))
         .await
         .expect("registered")
         .capability;
@@ -383,12 +391,15 @@ async fn should_serve_a_platform_from_a_loaded_wasm_plugin_and_drop_it_when_unlo
     );
     assert_eq!(resolved.name.as_deref(), Some("JEI 15.2.0"));
 
-    plugins.insert(PLUGIN_ID.into(), plugin(PluginState::NotLoaded));
+    plugins.insert(plugin_id(), plugin(PluginState::NotLoaded));
     listener.on_plugin_event(edit()).await;
 
     assert!(
         providers
-            .find_by_plugin_and_capability_id(PLUGIN_ID, "curseforge")
+            .find_by_plugin_and_capability_id(
+                &plugin_id(),
+                &CapabilityId::from_static("curseforge"),
+            )
             .await
             .is_err(),
         "an unloaded plugin serves nothing"
@@ -554,7 +565,7 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
                     "cf_resolve_pack_metadata",
                     Body::WaitThenAnswer(pack_metadata()),
                 ),
-                ("cf_search", Body::Answer(search_result(PLUGIN_ID))),
+                ("cf_search", Body::Answer(search_result(&plugin_id()))),
             ],
             gate.clone(),
         ),
@@ -564,7 +575,10 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
         "other-plugin",
         wasm_plugin(
             "other-plugin",
-            &[("cf_search", Body::Answer(search_result("other-plugin")))],
+            &[(
+                "cf_search",
+                Body::Answer(search_result(&PluginId::from_static("other-plugin"))),
+            )],
             Arc::default(),
         ),
     );
@@ -578,7 +592,10 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
     });
     gate.entered().await;
 
-    let found = other.search(search_params("other-plugin")).await.unwrap();
+    let found = other
+        .search(search_params(&PluginId::from_static("other-plugin")))
+        .await
+        .unwrap();
     assert_eq!(found.provider_id.plugin_id.as_str(), "other-plugin");
     assert!(
         !pack.is_finished(),
@@ -587,7 +604,7 @@ async fn should_search_elsewhere_and_queue_its_own_search_when_a_plugin_is_busy(
 
     let own_search = tokio::spawn({
         let busy = busy.clone();
-        async move { busy.search(search_params(PLUGIN_ID)).await }
+        async move { busy.search(search_params(&plugin_id())).await }
     });
     tokio::time::sleep(Duration::from_millis(50)).await;
     assert!(
@@ -680,7 +697,7 @@ fn instances_plugin(sandbox: &Sandbox) -> (PathBuf, extism::Plugin) {
     std::fs::create_dir_all(&instance).unwrap();
     std::fs::write(instance.join("pack.toml"), PACK).unwrap();
 
-    let mounts = get_default_allowed_paths(&sandbox.location_info, PLUGIN_ID)
+    let mounts = get_default_allowed_paths(&sandbox.location_info, &plugin_id())
         .into_iter()
         .filter(|(_, mount)| mount.plugin_root() == "/instances")
         .map(|(host, mount)| {

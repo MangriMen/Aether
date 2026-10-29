@@ -124,7 +124,7 @@ impl From<aether_core::features::plugins::PluginManifest> for PluginManifestDto 
 impl From<aether_core::features::plugins::PluginMetadata> for PluginMetadataDto {
     fn from(m: aether_core::features::plugins::PluginMetadata) -> Self {
         Self {
-            id: m.id,
+            id: m.id.into(),
             name: m.name,
             version: m.version,
             description: m.description,

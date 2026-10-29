@@ -30,7 +30,7 @@ impl Updater for PluginUpdaterProxy {
     async fn update(&self, instance_id: &InstanceId) -> Result<(), InstanceError> {
         let plugin_id = self.instance.id();
         let failed = || InstanceError::UpdateFailed {
-            modpack_id: self.capability.id.clone(),
+            modpack_id: self.capability.id.to_string(),
         };
 
         let handler = self.capability.handler.clone();
@@ -48,9 +48,9 @@ impl Updater for PluginUpdaterProxy {
 
         match result {
             Ok(Some(())) => Ok(()),
-            Err(PluginError::Stopped { plugin_id }) => {
-                Err(InstanceError::PluginNotRunning { plugin_id })
-            }
+            Err(PluginError::Stopped { plugin_id }) => Err(InstanceError::PluginNotRunning {
+                plugin_id: plugin_id.into(),
+            }),
             Err(err) => {
                 tracing::error!("Error updating instance by plugin '{plugin_id}': {err:?}");
                 Err(failed())

@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex, atomic::Ordering};
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     AllowedPath, AllowedPathRejection, FolderAccess, GrantPluginFolderAccessUseCase, PluginError,
     PluginRegistry, PluginSettings, PluginSettingsStorage, PluginState,
@@ -32,7 +33,7 @@ async fn should_give_the_folder_read_only_and_restart_the_plugin_when_a_pack_is_
 
     let access = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), false)
+        .execute(plugin_id(), file.clone(), false)
         .await
         .unwrap();
 
@@ -53,7 +54,7 @@ async fn should_give_the_folder_read_only_and_restart_the_plugin_when_a_pack_is_
     // Picking the same pack, or another file of that folder, again changes nothing.
     let again = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), folder.join("index.toml"), false)
+        .execute(plugin_id(), folder.join("index.toml"), false)
         .await
         .unwrap();
     assert_eq!(again, FolderAccess::AlreadyAllowed { folder });
@@ -76,7 +77,7 @@ async fn should_give_the_folder_when_a_saved_one_over_it_is_left_out_by_the_load
     }))));
     harness
         .reload_from(&settings)
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .unwrap();
     assert!(!harness.handle().folders().exposes(&file));
@@ -84,7 +85,7 @@ async fn should_give_the_folder_when_a_saved_one_over_it_is_left_out_by_the_load
 
     let access = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), false)
+        .execute(plugin_id(), file.clone(), false)
         .await
         .unwrap();
 
@@ -112,7 +113,7 @@ async fn should_give_no_folder_when_the_plugin_is_busy() {
 
     let refused = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file, false)
+        .execute(plugin_id(), file, false)
         .await;
 
     assert!(
@@ -145,7 +146,7 @@ async fn should_keep_the_rights_and_add_the_new_folder_when_a_folder_was_already
 
     harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), false)
+        .execute(plugin_id(), file.clone(), false)
         .await
         .unwrap();
 
@@ -179,7 +180,7 @@ async fn should_give_nothing_when_the_file_is_at_the_top_of_a_drive_or_relative(
     ] {
         let result = harness
             .grant(&settings)
-            .execute(PLUGIN_ID.into(), file, false)
+            .execute(plugin_id(), file, false)
             .await;
 
         assert!(
@@ -195,13 +196,13 @@ async fn should_give_nothing_when_the_file_is_at_the_top_of_a_drive_or_relative(
 async fn should_give_nothing_when_the_file_is_in_the_plugins_own_cache() {
     let harness = Harness::enabled().await;
     let settings = Arc::new(MemoryPluginSettings::default());
-    let cache = harness.location_info.plugin_cache_dir(PLUGIN_ID);
+    let cache = harness.location_info.plugin_cache_dir(&plugin_id());
     std::fs::create_dir_all(&cache).unwrap();
 
     for dry_run in [true, false] {
         let result = harness
             .grant(&settings)
-            .execute(PLUGIN_ID.into(), cache.join("pack.toml"), dry_run)
+            .execute(plugin_id(), cache.join("pack.toml"), dry_run)
             .await;
 
         assert!(
@@ -227,7 +228,7 @@ async fn should_name_the_folder_and_change_nothing_when_it_is_a_dry_run() {
 
     let access = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), true)
+        .execute(plugin_id(), file.clone(), true)
         .await
         .unwrap();
 
@@ -244,7 +245,7 @@ async fn should_name_the_folder_and_change_nothing_when_it_is_a_dry_run() {
     // A dry run refuses what the grant would refuse, before the user is asked anything.
     let relative = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), "pack.toml".into(), true)
+        .execute(plugin_id(), "pack.toml".into(), true)
         .await;
     assert!(
         matches!(relative, Err(PluginError::InvalidAllowedPath { .. })),
@@ -267,12 +268,12 @@ async fn should_restart_the_plugin_when_its_folder_is_saved_but_not_mounted() {
 
     let dry_run = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), true)
+        .execute(plugin_id(), file.clone(), true)
         .await
         .unwrap();
     let access = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), false)
+        .execute(plugin_id(), file.clone(), false)
         .await
         .unwrap();
 
@@ -300,17 +301,17 @@ async fn should_refuse_a_folder_when_the_plugin_is_loading() {
     harness.loader.hold_loads.store(true, Ordering::SeqCst);
     let restart = tokio::spawn({
         let harness = Arc::clone(&harness);
-        async move { harness.reload().execute(PLUGIN_ID.into()).await }
+        async move { harness.reload().execute(plugin_id()).await }
     });
     harness.loader.load_started.notified().await;
 
     let dry_run = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), true)
+        .execute(plugin_id(), file.clone(), true)
         .await;
     let result = harness
         .grant(&settings)
-        .execute(PLUGIN_ID.into(), file.clone(), false)
+        .execute(plugin_id(), file.clone(), false)
         .await;
 
     assert!(
@@ -328,10 +329,7 @@ async fn should_refuse_a_folder_when_the_plugin_is_loading() {
         allowed_paths: vec![AllowedPath::read_only_folder(file.parent().unwrap())],
         ..PluginSettings::default()
     }))));
-    let saved_dry_run = harness
-        .grant(&saved)
-        .execute(PLUGIN_ID.into(), file, true)
-        .await;
+    let saved_dry_run = harness.grant(&saved).execute(plugin_id(), file, true).await;
     assert!(
         matches!(saved_dry_run, Err(PluginError::LoadingInProgress { .. })),
         "{saved_dry_run:?}"
@@ -349,11 +347,15 @@ struct StartsLoadingOnSave {
 
 #[async_trait]
 impl PluginSettingsStorage for StartsLoadingOnSave {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         self.inner.get(plugin_id).await
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.inner.upsert(plugin_id, settings).await?;
         self.plugins
             .upsert_with(plugin_id, |plugin| {
@@ -369,7 +371,7 @@ impl PluginSettingsStorage for StartsLoadingOnSave {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_take_the_folder_back_when_a_load_starts_while_it_is_saved() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     let settings = Arc::new(StartsLoadingOnSave {
         inner: MemoryPluginSettings::default(),
         plugins: Arc::clone(&harness.plugins),
@@ -382,7 +384,7 @@ async fn should_take_the_folder_back_when_a_load_starts_while_it_is_saved() {
         Arc::clone(&harness.location_info),
     );
 
-    let result = grant.execute(PLUGIN_ID.into(), file, false).await;
+    let result = grant.execute(plugin_id(), file, false).await;
 
     assert!(
         matches!(result, Err(PluginError::LoadingInProgress { .. })),

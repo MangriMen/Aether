@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     FolderMounts, Plugin, PluginError, PluginRegistry, PluginSettingsStorage, PluginState,
 };
@@ -25,7 +26,7 @@ impl GetPluginDtoUseCase {
         }
     }
 
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<PluginDto, PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<PluginDto, PluginError> {
         let plugin = self.plugin_registry.get(&plugin_id)?.clone();
         Ok(plugin_dto(self.plugin_settings_storage.as_ref(), plugin).await)
     }
@@ -55,7 +56,7 @@ pub(super) async fn plugin_dto(storage: &dyn PluginSettingsStorage, plugin: Plug
 
 #[async_trait]
 impl GetPluginDtoUseCasePort for GetPluginDtoUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<PluginDto, PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<PluginDto, PluginError> {
         self.execute(plugin_id).await
     }
 }

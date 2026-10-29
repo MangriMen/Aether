@@ -14,6 +14,7 @@ use std::{
 use async_trait::async_trait;
 use tempfile::TempDir;
 
+use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
         events::{
@@ -52,6 +53,11 @@ use crate::{
 };
 
 const PLUGIN_ID: &str = "cf-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
+
 const INSTANCE_ID: &str = "instance";
 const BODY: &[u8] = b"mod bytes";
 
@@ -163,15 +169,19 @@ struct MemSettings(Mutex<HashMap<String, PluginSettings>>);
 
 #[async_trait]
 impl PluginSettingsStorage for MemSettings {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
-        Ok(self.0.lock().unwrap().get(plugin_id).cloned())
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
+        Ok(self.0.lock().unwrap().get(plugin_id.as_str()).cloned())
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.0
             .lock()
             .unwrap()
-            .insert(plugin_id.into(), settings.clone());
+            .insert(plugin_id.to_string(), settings.clone());
         Ok(())
     }
 }
@@ -340,7 +350,7 @@ fn builtin_origin() -> ProviderId {
 fn manifest(allowed_hosts: &[&str]) -> PluginManifest {
     PluginManifest {
         metadata: PluginMetadata {
-            id: PLUGIN_ID.into(),
+            id: plugin_id(),
             name: "CurseForge".into(),
             version: semver::Version::new(0, 1, 0),
             description: None,
@@ -397,7 +407,7 @@ impl Fixture {
     /// policy.
     fn install_plugin(&self, allowed_hosts: &[&str]) {
         self.plugins.insert(
-            PLUGIN_ID.into(),
+            plugin_id(),
             Plugin {
                 manifest: manifest(allowed_hosts),
                 capabilities: None,
@@ -412,7 +422,7 @@ impl Fixture {
         let provider = PluginProvider {
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
-                    id: "curseforge".into(),
+                    id: CapabilityId::from_static("curseforge"),
                     name: "CurseForge".into(),
                     description: None,
                     icon: None,
@@ -422,7 +432,11 @@ impl Fixture {
             url,
         };
         self.providers
-            .add(PLUGIN_ID.into(), "curseforge".into(), Arc::new(provider))
+            .add(
+                plugin_id(),
+                CapabilityId::from_static("curseforge"),
+                Arc::new(provider),
+            )
             .await
             .unwrap();
     }
@@ -609,7 +623,7 @@ async fn should_honour_hosts_when_they_were_added_in_the_plugin_settings() {
     fixture
         .settings
         .upsert(
-            PLUGIN_ID,
+            &plugin_id(),
             &PluginSettings {
                 allowed_hosts: vec![ALLOWED.into()],
                 ..PluginSettings::default()
@@ -640,7 +654,7 @@ async fn should_apply_hosts_when_they_changed_between_two_files_of_a_plan() {
         async move {
             settings
                 .upsert(
-                    PLUGIN_ID,
+                    &plugin_id(),
                     &PluginSettings {
                         allowed_hosts: hosts,
                         ..PluginSettings::default()

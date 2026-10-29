@@ -26,9 +26,15 @@ impl From<PluginEvent> for PluginEventDto {
         Self {
             seq: 0,
             kind: match value {
-                PluginEvent::Add { plugin_id } => PluginEventKindDto::Add { plugin_id },
-                PluginEvent::Edit { plugin_id } => PluginEventKindDto::Edit { plugin_id },
-                PluginEvent::Remove { plugin_id } => PluginEventKindDto::Remove { plugin_id },
+                PluginEvent::Add { plugin_id } => PluginEventKindDto::Add {
+                    plugin_id: plugin_id.into(),
+                },
+                PluginEvent::Edit { plugin_id } => PluginEventKindDto::Edit {
+                    plugin_id: plugin_id.into(),
+                },
+                PluginEvent::Remove { plugin_id } => PluginEventKindDto::Remove {
+                    plugin_id: plugin_id.into(),
+                },
                 PluginEvent::Sync => PluginEventKindDto::Sync,
             },
         }
@@ -37,7 +43,7 @@ impl From<PluginEvent> for PluginEventDto {
 
 #[cfg(test)]
 mod tests {
-    use aether_core::features::events::PluginEvent;
+    use aether_core::features::{events::PluginEvent, instance::PluginId};
     use serde_json::json;
 
     use super::*;
@@ -47,7 +53,7 @@ mod tests {
         let dto = PluginEventDto {
             seq: 3,
             ..PluginEventDto::from(PluginEvent::Add {
-                plugin_id: "a".to_owned(),
+                plugin_id: PluginId::from_static("a"),
             })
         };
 

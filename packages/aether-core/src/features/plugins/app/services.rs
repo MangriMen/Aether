@@ -10,6 +10,7 @@ use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use crate::features::{
     events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
+    instance::PluginId,
     plugins::domain::LoadConfigType,
     plugins::{Plugin, PluginCapabilities, PluginError, PluginHandle, PluginManifest, PluginState},
 };
@@ -17,8 +18,8 @@ use crate::features::{
 use super::ports::PluginLoader;
 
 pub struct PluginRegistry {
-    plugins: DashMap<String, Plugin>,
-    settings_locks: DashMap<String, Arc<Mutex<()>>>,
+    plugins: DashMap<PluginId, Plugin>,
+    settings_locks: DashMap<PluginId, Arc<Mutex<()>>>,
     event_emitter: SharedEventEmitter,
 }
 
@@ -34,39 +35,42 @@ impl PluginRegistry {
     /// Held while a plugin's settings are read, changed and saved: every change rewrites the
     /// whole settings, so two at once would save over each other. Not to be held across a
     /// restart, which takes seconds and no settings change needs to wait for.
-    pub async fn lock_settings(&self, plugin_id: &str) -> OwnedMutexGuard<()> {
-        let lock = Arc::clone(&self.settings_locks.entry(plugin_id.to_owned()).or_default());
+    pub async fn lock_settings(&self, plugin_id: &PluginId) -> OwnedMutexGuard<()> {
+        let lock = Arc::clone(&self.settings_locks.entry(plugin_id.clone()).or_default());
         lock.lock_owned().await
     }
 
-    pub fn insert(&self, plugin_id: String, plugin: Plugin) {
+    pub fn insert(&self, plugin_id: PluginId, plugin: Plugin) {
         self.plugins.insert(plugin_id, plugin);
     }
 
-    pub fn list(&self) -> impl Iterator<Item = DashMapRefMulti<'_, String, Plugin>> {
+    pub fn list(&self) -> impl Iterator<Item = DashMapRefMulti<'_, PluginId, Plugin>> {
         self.plugins.iter()
     }
 
-    pub fn get(&self, plugin_id: &str) -> Result<DashMapRef<'_, String, Plugin>, PluginError> {
+    pub fn get(
+        &self,
+        plugin_id: &PluginId,
+    ) -> Result<DashMapRef<'_, PluginId, Plugin>, PluginError> {
         self.plugins
             .get(plugin_id)
             .ok_or_else(|| PluginError::NotFound {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.to_string(),
             })
     }
 
-    pub fn remove(&self, plugin_id: &str) {
+    pub fn remove(&self, plugin_id: &PluginId) {
         self.plugins.remove(plugin_id);
     }
 
-    pub fn get_ids(&self) -> HashSet<String> {
+    pub fn get_ids(&self) -> HashSet<PluginId> {
         self.plugins
             .iter()
             .map(|entry| entry.key().clone())
             .collect()
     }
 
-    pub fn get_enabled_ids(&self) -> HashSet<String> {
+    pub fn get_enabled_ids(&self) -> HashSet<PluginId> {
         self.plugins
             .iter()
             .filter_map(|entry| match &entry.state {
@@ -82,12 +86,12 @@ impl PluginRegistry {
 
     pub fn get_capabilities(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
     ) -> Result<Option<PluginCapabilities>, PluginError> {
         Ok(self.get(plugin_id)?.capabilities.clone())
     }
 
-    pub fn get_manifest(&self, plugin_id: &str) -> Result<PluginManifest, PluginError> {
+    pub fn get_manifest(&self, plugin_id: &PluginId) -> Result<PluginManifest, PluginError> {
         Ok(self.get(plugin_id)?.manifest.clone())
     }
 
@@ -95,7 +99,7 @@ impl PluginRegistry {
     /// Prevents deadlocks when `upsert_with()` is called later.
     pub fn get_state_and_manifest(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
     ) -> Result<(PluginState, PluginManifest), PluginError> {
         let plugin = self.get(plugin_id)?;
         let state = plugin.state.clone();
@@ -104,7 +108,11 @@ impl PluginRegistry {
         Ok((state, manifest))
     }
 
-    pub async fn upsert_with<F>(&self, plugin_id: &str, update_fn: F) -> Result<(), PluginError>
+    pub async fn upsert_with<F>(
+        &self,
+        plugin_id: &PluginId,
+        update_fn: F,
+    ) -> Result<(), PluginError>
     where
         F: FnOnce(&mut Plugin) -> Result<(), PluginError> + Send,
     {
@@ -117,7 +125,7 @@ impl PluginRegistry {
 
         self.event_emitter
             .emit_safe(PluginEvent::Edit {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.clone(),
             })
             .await;
 
@@ -129,11 +137,11 @@ impl PluginRegistry {
     /// Returns the state it was in, for a caller that gives up before loading, and its manifest.
     pub async fn begin_loading(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
     ) -> Result<(PluginState, PluginManifest), PluginError> {
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
-            let plugin_id = plugin_id.to_owned();
+            let plugin_id = plugin_id.clone();
             match &plugin.state {
                 PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {}
                 PluginState::Loading => return Err(PluginError::LoadingInProgress { plugin_id }),
@@ -156,7 +164,7 @@ impl PluginRegistry {
     /// decided about it since (it was found incompatible).
     pub async fn abandon_loading(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         previous: PluginState,
     ) -> Result<(), PluginError> {
         self.upsert_with(plugin_id, |plugin| {
@@ -171,10 +179,10 @@ impl PluginRegistry {
     /// Takes the plugin from `Loaded` to `Unloading` in one step, so that two restarts, or a
     /// restart and a disable, cannot both take the same instance. A busy plugin is refused
     /// without passing through `Unloading`.
-    pub async fn begin_unloading(&self, plugin_id: &str) -> Result<PluginHandle, PluginError> {
+    pub async fn begin_unloading(&self, plugin_id: &PluginId) -> Result<PluginHandle, PluginError> {
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
-            let plugin_id = plugin_id.to_owned();
+            let plugin_id = plugin_id.clone();
             let handle = match &plugin.state {
                 PluginState::Loaded(handle) => handle,
                 PluginState::Loading => {
@@ -205,10 +213,10 @@ impl PluginRegistry {
     /// loading it, so that of a remove and an enable only one goes on. Returns the state it
     /// was in, to put back should the delete fail. A plugin that is running, or in the middle of
     /// a transition, is refused with the matching error and its files are not to be touched.
-    pub async fn begin_removing(&self, plugin_id: &str) -> Result<PluginState, PluginError> {
+    pub async fn begin_removing(&self, plugin_id: &PluginId) -> Result<PluginState, PluginError> {
         let mut taken = None;
         self.upsert_with(plugin_id, |plugin| {
-            let plugin_id = plugin_id.to_owned();
+            let plugin_id = plugin_id.clone();
             match &plugin.state {
                 PluginState::NotLoaded | PluginState::Failed(_) | PluginState::Incompatible(_) => {}
                 PluginState::Loading => return Err(PluginError::LoadingInProgress { plugin_id }),
@@ -228,7 +236,7 @@ impl PluginRegistry {
     /// Puts back the state [`Self::begin_removing`] took the plugin from.
     pub async fn abandon_removing(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         previous: PluginState,
     ) -> Result<(), PluginError> {
         self.upsert_with(plugin_id, |plugin| {
@@ -241,7 +249,7 @@ impl PluginRegistry {
     }
 
     /// The plugins whose files are being deleted.
-    pub fn get_removing_ids(&self) -> HashSet<String> {
+    pub fn get_removing_ids(&self) -> HashSet<PluginId> {
         self.plugins
             .iter()
             .filter(|entry| matches!(entry.state, PluginState::Removing))
@@ -249,11 +257,14 @@ impl PluginRegistry {
             .collect()
     }
 
-    fn get_mut(&self, plugin_id: &str) -> Result<DashMapRefMut<'_, String, Plugin>, PluginError> {
+    fn get_mut(
+        &self,
+        plugin_id: &PluginId,
+    ) -> Result<DashMapRefMut<'_, PluginId, Plugin>, PluginError> {
         self.plugins
             .get_mut(plugin_id)
             .ok_or_else(|| PluginError::NotFound {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.to_string(),
             })
     }
 }

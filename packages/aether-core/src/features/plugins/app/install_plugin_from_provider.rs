@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
     PluginSource, PluginSourceStorage, PluginSourceType, PluginStorage, PluginSyncService,
@@ -61,7 +62,7 @@ impl InstallPluginFromProviderUseCase {
         source_type: PluginSourceType,
         identifier: &str,
         release: ProviderRelease,
-    ) -> Result<String, PluginError> {
+    ) -> Result<PluginId, PluginError> {
         let provider = self
             .provider_factory
             .get_provider(&source_type)
@@ -100,7 +101,7 @@ impl InstallPluginFromProviderUseCasePort for InstallPluginFromProviderUseCase {
         source_type: PluginSourceType,
         identifier: &str,
         release: ProviderRelease,
-    ) -> Result<String, PluginError> {
+    ) -> Result<PluginId, PluginError> {
         self.execute(source_type, identifier, release).await
     }
 }

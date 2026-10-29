@@ -8,6 +8,7 @@ use tracing::warn;
 
 use crate::{
     features::{
+        instance::PluginId,
         plugins::{
             AllowedPath, AllowedPathRejection, PluginError, PluginRegistry, PluginSettings,
             PluginSettingsStorage, core_folders,
@@ -49,7 +50,7 @@ impl EditPluginSettingsUseCase {
 
     pub(crate) async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         edit_settings: EditPluginSettings,
     ) -> Result<(), PluginError> {
         let _settings_lock = self.plugin_registry.lock_settings(&plugin_id).await;
@@ -70,7 +71,7 @@ impl EditPluginSettingsUseCase {
 /// Loading the plugin still reads them strictly and refuses a broken file.
 pub(super) async fn settings_to_edit(
     storage: &dyn PluginSettingsStorage,
-    plugin_id: &str,
+    plugin_id: &PluginId,
 ) -> Result<Option<PluginSettings>, PluginError> {
     match storage.get(plugin_id).await {
         Err(PluginError::Storage(IoError::DeserializationError(reason))) => {
@@ -88,7 +89,7 @@ pub(super) async fn settings_to_edit(
 /// and since removed, which should not block every later edit. A file is refused: the user
 /// would believe the plugin got a folder it cannot open.
 fn apply_edit_changes(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     core_folders: &[PathBuf],
     mut settings: PluginSettings,
     edit_settings: EditPluginSettings,
@@ -131,7 +132,7 @@ fn apply_edit_changes(
 impl EditPluginSettingsUseCasePort for EditPluginSettingsUseCase {
     async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         edit_settings: EditPluginSettings,
     ) -> Result<(), PluginError> {
         self.execute(plugin_id, edit_settings).await
@@ -164,8 +165,8 @@ mod tests {
 
         fn edit(&self, paths: Vec<AllowedPath>) -> Result<PluginSettings, PluginError> {
             apply_edit_changes(
-                "packwiz",
-                &core_folders(&self.location_info, "packwiz"),
+                &PluginId::from_static("packwiz"),
+                &core_folders(&self.location_info, &PluginId::from_static("packwiz")),
                 PluginSettings::default(),
                 EditPluginSettings {
                     allowed_paths: Some(paths),
@@ -234,9 +235,9 @@ mod tests {
     fn should_refuse_a_folder_when_it_is_the_plugins_cache_instances_or_plugins_folder() {
         let launcher = Launcher::new();
         let location_info = &launcher.location_info;
-        let cache = location_info.plugin_cache_dir("packwiz");
+        let cache = location_info.plugin_cache_dir(&PluginId::from_static("packwiz"));
         let instances = location_info.instances_dir();
-        let own_dir = location_info.plugin_dir("packwiz");
+        let own_dir = location_info.plugin_dir(&PluginId::from_static("packwiz"));
         let plugins = location_info.plugins_dir();
         for dir in [&cache, &instances, &own_dir] {
             std::fs::create_dir_all(dir).unwrap();
@@ -310,7 +311,7 @@ mod tests {
 
     #[async_trait]
     impl PluginSettingsStorage for BrokenSettingsFile {
-        async fn get(&self, _plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+        async fn get(&self, _plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
             match self.saved.lock().unwrap().clone() {
                 Some(settings) => Ok(Some(settings)),
                 None => Err(PluginError::Storage(IoError::DeserializationError(
@@ -321,7 +322,7 @@ mod tests {
 
         async fn upsert(
             &self,
-            _plugin_id: &str,
+            _plugin_id: &PluginId,
             settings: &PluginSettings,
         ) -> Result<(), PluginError> {
             *self.saved.lock().unwrap() = Some(settings.clone());
@@ -362,7 +363,7 @@ mod tests {
 
         use_case
             .execute(
-                "packwiz".into(),
+                PluginId::from_static("packwiz"),
                 EditPluginSettings {
                     allowed_hosts: Some(vec!["example.com".into()]),
                     ..EditPluginSettings::default()
@@ -380,7 +381,9 @@ mod tests {
     async fn should_show_no_settings_when_the_saved_file_does_not_parse() {
         let storage = BrokenSettingsFile::default();
 
-        let settings = settings_to_edit(&storage, "packwiz").await.unwrap();
+        let settings = settings_to_edit(&storage, &PluginId::from_static("packwiz"))
+            .await
+            .unwrap();
 
         assert!(settings.is_none());
     }

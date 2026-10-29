@@ -5,6 +5,7 @@ use std::{
 
 use crate::features::{
     events::{EventEmitterExt, PluginEvent, SharedEventEmitter},
+    instance::PluginId,
     plugins::{
         Plugin, PluginDisableService, PluginError, PluginRegistry, PluginStorage, PluginSyncService,
     },
@@ -46,7 +47,7 @@ impl SyncPluginsUseCase {
 
     async fn sync_plugins(
         &self,
-        mut found_plugins: HashMap<String, Plugin>,
+        mut found_plugins: HashMap<PluginId, Plugin>,
     ) -> Result<(), PluginError> {
         // A plugin being removed belongs to the remove: its directory is half deleted, and
         // adding or ending it here would undo the guard that keeps it from loading.
@@ -75,10 +76,13 @@ impl SyncPluginsUseCase {
     /// A failure leaves the plugin enabled but not running, as at start-up; the state tells why.
     async fn enable_changed_plugins(
         &self,
-        changed_plugins: &HashSet<String>,
+        changed_plugins: &HashSet<PluginId>,
         enabled_plugins: &HashSet<String>,
     ) {
-        for plugin_id in changed_plugins.intersection(enabled_plugins) {
+        let enabled = changed_plugins
+            .iter()
+            .filter(|id| enabled_plugins.contains(id.as_str()));
+        for plugin_id in enabled {
             if let Err(err) = self.enable_plugin_service.execute(plugin_id.clone()).await {
                 log::warn!("Changed plugin {plugin_id} could not be enabled again: {err}");
             }
@@ -87,10 +91,10 @@ impl SyncPluginsUseCase {
 
     fn find_changed_plugins(
         &self,
-        existing_plugins: &HashSet<String>,
-        new_plugins: &HashSet<String>,
-        found_plugins: &HashMap<String, Plugin>,
-    ) -> HashSet<String> {
+        existing_plugins: &HashSet<PluginId>,
+        new_plugins: &HashSet<PluginId>,
+        found_plugins: &HashMap<PluginId, Plugin>,
+    ) -> HashSet<PluginId> {
         existing_plugins
             .intersection(new_plugins)
             .filter(|&plugin| {
@@ -111,10 +115,10 @@ impl SyncPluginsUseCase {
     }
 
     fn determine_plugins_to_add(
-        existing_plugins: &HashSet<String>,
-        new_plugins: &HashSet<String>,
-        changed_plugins: &HashSet<String>,
-    ) -> HashSet<String> {
+        existing_plugins: &HashSet<PluginId>,
+        new_plugins: &HashSet<PluginId>,
+        changed_plugins: &HashSet<PluginId>,
+    ) -> HashSet<PluginId> {
         new_plugins
             .difference(existing_plugins)
             .chain(changed_plugins.iter())
@@ -124,8 +128,8 @@ impl SyncPluginsUseCase {
 
     async fn remove_non_existing_plugins(
         &self,
-        existing_plugins: &HashSet<String>,
-        new_plugins: &HashSet<String>,
+        existing_plugins: &HashSet<PluginId>,
+        new_plugins: &HashSet<PluginId>,
     ) -> Result<(), PluginError> {
         for plugin_id in existing_plugins.difference(new_plugins) {
             log::debug!("Removing plugin {plugin_id}");
@@ -136,7 +140,7 @@ impl SyncPluginsUseCase {
 
     async fn remove_changed_plugins(
         &self,
-        changed_plugins: &HashSet<String>,
+        changed_plugins: &HashSet<PluginId>,
     ) -> Result<(), PluginError> {
         for plugin_id in changed_plugins {
             log::debug!("Removing changed plugin {plugin_id}");
@@ -147,8 +151,8 @@ impl SyncPluginsUseCase {
 
     fn add_new_plugins(
         &self,
-        plugins_to_add: &HashSet<String>,
-        found_plugins: &HashMap<String, Plugin>,
+        plugins_to_add: &HashSet<PluginId>,
+        found_plugins: &HashMap<PluginId, Plugin>,
     ) {
         for plugin_id in plugins_to_add {
             if let Some(plugin_state) = found_plugins.get(plugin_id) {
@@ -161,21 +165,20 @@ impl SyncPluginsUseCase {
 
     /// `keep_enabled` for a plugin that is put back at once: it must not drop out of the
     /// enabled plugins on the way.
-    async fn remove_plugin(&self, plugin_id: &str, keep_enabled: bool) -> Result<(), PluginError> {
+    async fn remove_plugin(
+        &self,
+        plugin_id: &PluginId,
+        keep_enabled: bool,
+    ) -> Result<(), PluginError> {
         let disable_result = if keep_enabled {
-            self.disable_plugin_service
-                .unload(plugin_id.to_string())
-                .await
+            self.disable_plugin_service.unload(plugin_id.clone()).await
         } else {
-            self.disable_plugin_service
-                .execute(plugin_id.to_string())
-                .await
+            self.disable_plugin_service.execute(plugin_id.clone()).await
         };
 
         if let Err(err) = disable_result {
             match err {
-                PluginError::NotFound { plugin_id }
-                | PluginError::AlreadyUnloaded { plugin_id } => {
+                PluginError::NotFound { .. } | PluginError::AlreadyUnloaded { .. } => {
                     log::debug!("Plugin {plugin_id} was already disabled");
                 }
                 _ => return Err(err),

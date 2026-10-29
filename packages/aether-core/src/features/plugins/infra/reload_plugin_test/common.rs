@@ -17,7 +17,8 @@ use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
         instance::{
-            CapabilityMetadata, ContentProvider, Importer, ImporterCapabilityMetadata, Updater,
+            CapabilityId, CapabilityMetadata, ContentProvider, Importer,
+            ImporterCapabilityMetadata, PluginId, Updater,
         },
         plugins::{
             AllowedPath, ApiConfig, DisablePluginUseCase, EditPluginSettingsUseCase,
@@ -34,6 +35,11 @@ use crate::{
 };
 
 pub(super) const PLUGIN_ID: &str = "packwiz";
+
+pub(super) fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
+
 pub(super) const PATIENCE: Duration = Duration::from_secs(5);
 
 /// `work` blocks in the host function `wait` until the test lets it go; `import` returns at once.
@@ -59,13 +65,13 @@ pub(super) struct NoPluginSettings;
 
 #[async_trait]
 impl PluginSettingsStorage for NoPluginSettings {
-    async fn get(&self, _plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, _plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         Ok(None)
     }
 
     async fn upsert(
         &self,
-        _plugin_id: &str,
+        _plugin_id: &PluginId,
         _settings: &PluginSettings,
     ) -> Result<(), PluginError> {
         Ok(())
@@ -206,7 +212,7 @@ pub(super) struct Harness {
 pub(super) fn manifest() -> PluginManifest {
     PluginManifest {
         metadata: PluginMetadata {
-            id: PLUGIN_ID.into(),
+            id: plugin_id(),
             name: "Packwiz".into(),
             version: semver::Version::new(0, 1, 0),
             description: None,
@@ -233,7 +239,7 @@ pub(super) fn importer_capability() -> PluginImporterCapability {
     PluginImporterCapability {
         metadata: ImporterCapabilityMetadata {
             base: CapabilityMetadata {
-                id: "packwiz".into(),
+                id: CapabilityId::from_static("packwiz"),
                 name: "Packwiz".into(),
                 description: None,
                 icon: None,
@@ -250,7 +256,7 @@ impl Harness {
     pub(super) async fn enabled() -> Self {
         let plugins = Arc::new(PluginRegistry::new(Arc::new(NoOpEmitter)));
         plugins.insert(
-            PLUGIN_ID.to_owned(),
+            plugin_id(),
             Plugin {
                 manifest: manifest(),
                 capabilities: Some(PluginCapabilities {
@@ -315,7 +321,7 @@ impl Harness {
             Arc::new(NoPluginSettings),
             harness.settings.clone(),
         )
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .expect("the plugin should enable");
         harness.sync_registries().await;
@@ -343,7 +349,7 @@ impl Harness {
     pub(super) async fn sync_registries(&self) {
         self.listener
             .on_plugin_event(PluginEvent::Edit {
-                plugin_id: PLUGIN_ID.into(),
+                plugin_id: plugin_id(),
             })
             .await;
     }
@@ -353,7 +359,7 @@ impl Harness {
     }
 
     pub(super) fn state(&self) -> PluginState {
-        self.plugins.get(PLUGIN_ID).unwrap().state.clone()
+        self.plugins.get(&plugin_id()).unwrap().state.clone()
     }
 
     pub(super) fn handle(&self) -> PluginHandle {
@@ -374,7 +380,7 @@ impl Harness {
 
     pub(super) async fn importer(&self) -> Option<Arc<dyn Importer>> {
         self.importers
-            .find_by_plugin_and_capability_id(PLUGIN_ID, "packwiz")
+            .find_by_plugin_and_capability_id(&plugin_id(), &CapabilityId::from_static("packwiz"))
             .await
             .ok()
             .map(|entry| entry.capability)
@@ -410,7 +416,7 @@ pub(super) async fn noop(handle: &PluginHandle) -> Result<(), PluginError> {
 }
 
 pub(super) fn is_stopped(result: &Result<(), PluginError>) -> bool {
-    matches!(result, Err(PluginError::Stopped { plugin_id }) if plugin_id == PLUGIN_ID)
+    matches!(result, Err(PluginError::Stopped { plugin_id }) if plugin_id.as_str() == PLUGIN_ID)
 }
 
 impl Harness {
@@ -438,11 +444,15 @@ pub(super) struct MemoryPluginSettings(pub(super) Mutex<Option<PluginSettings>>)
 
 #[async_trait]
 impl PluginSettingsStorage for MemoryPluginSettings {
-    async fn get(&self, _plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, _plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         Ok(self.0.lock().unwrap().clone())
     }
 
-    async fn upsert(&self, _plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        _plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         *self.0.lock().unwrap() = Some(settings.clone());
         Ok(())
     }
@@ -520,7 +530,7 @@ impl Harness {
             Arc::clone(&self.plugins),
             Arc::clone(settings) as Arc<dyn PluginSettingsStorage>,
         )
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .unwrap();
         let listed = ListPluginsDtoUseCase::new(
@@ -542,13 +552,17 @@ pub(super) struct SlowPluginSettings(pub(super) MemoryPluginSettings);
 
 #[async_trait]
 impl PluginSettingsStorage for SlowPluginSettings {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         let settings = self.0.get(plugin_id).await;
         tokio::time::sleep(Duration::from_millis(50)).await;
         settings
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.0.upsert(plugin_id, settings).await
     }
 }

@@ -10,7 +10,7 @@ use tracing::{error, warn};
 
 use crate::{
     features::{
-        instance::is_valid_id,
+        instance::PluginId,
         plugins::{
             ExtractedPlugin, LoadConfig, ManifestError, Plugin, PluginCapabilities, PluginContent,
             PluginError, PluginManifest, PluginState, PluginStateReason, PluginStorage,
@@ -51,7 +51,7 @@ const CORE_FILE_NAMES: [&str; 3] = [
 /// Matched case-insensitively: on Windows and macOS `Settings.TOML` is the same file. Every
 /// install path (provider release, local import, update) adds a plugin through here, so this is
 /// the one place the rule has to hold.
-fn copy_plugin_files(source: &Path, target: &Path, plugin_id: &str) -> Result<(), IoError> {
+fn copy_plugin_files(source: &Path, target: &Path, plugin_id: &PluginId) -> Result<(), IoError> {
     std::fs::create_dir_all(target)?;
 
     // What the target already holds, by the exact names it lists.
@@ -106,7 +106,7 @@ fn copy_plugin_files(source: &Path, target: &Path, plugin_id: &str) -> Result<()
 /// A core file `target` listed before the copy is not touched.
 fn remove_new_core_files(
     target: &Path,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     listed: &HashSet<OsString>,
 ) -> Result<(), IoError> {
     for core in CORE_FILE_NAMES {
@@ -180,20 +180,20 @@ impl FsPluginStorage {
     }
 
     /// Beside the plugin's directory, so that moving it in place is a rename on one file system.
-    fn staged_dir(&self, plugin_id: &str) -> PathBuf {
+    fn staged_dir(&self, plugin_id: &PluginId) -> PathBuf {
         self.location_info
             .plugins_dir()
             .join(format!(".{plugin_id}.staged"))
     }
 
-    fn replaced_dir(&self, plugin_id: &str) -> PathBuf {
+    fn replaced_dir(&self, plugin_id: &PluginId) -> PathBuf {
         self.location_info
             .plugins_dir()
             .join(format!(".{plugin_id}.replaced"))
     }
 
     /// Where the plugin in place goes for the moment a restore puts the replaced one back.
-    fn trash_dir(&self, plugin_id: &str) -> PathBuf {
+    fn trash_dir(&self, plugin_id: &PluginId) -> PathBuf {
         self.location_info
             .plugins_dir()
             .join(format!(".{plugin_id}.trash"))
@@ -238,7 +238,7 @@ impl FsPluginStorage {
             return Ok(None);
         };
 
-        let capabilities = PluginCapabilities::from(dto);
+        let capabilities = PluginCapabilities::try_from(dto)?;
         capabilities.validate()?;
 
         Ok(Some(capabilities))
@@ -308,13 +308,13 @@ impl FsPluginStorage {
             let Some(plugin_id) = file_name
                 .to_str()
                 .and_then(|name| name.strip_prefix('.')?.strip_suffix(".replaced"))
-                .filter(|id| !id.is_empty())
+                .and_then(|id| PluginId::try_from(id).ok())
             else {
                 continue;
             };
 
             let replaced_dir = dir_entry.path();
-            let target_dir = self.location_info.plugin_dir(plugin_id);
+            let target_dir = self.location_info.plugin_dir(&plugin_id);
 
             let result = if !target_dir.exists() {
                 if self.get_manifest_path(&replaced_dir).is_file() {
@@ -345,32 +345,32 @@ impl FsPluginStorage {
         self.get_manifest_path(dir).is_file() && dir.join(SOURCE_FILE_NAME).is_file()
     }
 
-    /// A plugin whose manifest names an id the scheme refuses (see [`PluginMetadata::validate_id`])
-    /// is listed as `Failed` with the reason, rather than left out: the user sees it is there,
-    /// why it does not run, and can remove it. It never loads: enabling checks the id again.
+    /// A plugin whose manifest names the reserved id (see [`PluginMetadata::validate_id`]) is
+    /// listed as `Failed` with the reason, rather than left out: the user sees it is there, why
+    /// it does not run, and can remove it. It never loads: enabling checks the id again.
     ///
-    /// Only when the id is the name of its directory, which is the key the plugin is listed
-    /// under and the path every operation on it builds; any other plugin stays unlisted.
+    /// Only when the id is the name of its directory, `dir_id`, which is the key the plugin is
+    /// listed under and the path every operation on it builds; any other plugin stays unlisted.
+    ///
+    /// [`PluginMetadata::validate_id`]: crate::features::plugins::PluginMetadata::validate_id
     async fn load_refused_from_dir(
         &self,
         dir: &Path,
+        dir_id: PluginId,
         refusal: ManifestError,
     ) -> Result<Plugin, PluginError> {
         const STAND_IN_ID: &str = "refused-id";
 
         let mut dto: aether_core_plugin_api::v0::PluginManifestDto =
             read_json_async(&self.get_manifest_path(dir)).await?;
-        let dir_matches_id = dir
-            .file_name()
-            .is_some_and(|name| name.to_str() == Some(dto.metadata.id.as_str()));
-        if !dir_matches_id {
+        if dto.metadata.id != dir_id.as_str() {
             return Err(refusal.into());
         }
 
         // The rest of the manifest is read as usual, so only the id is taken as it is.
-        let id = std::mem::replace(&mut dto.metadata.id, STAND_IN_ID.to_owned());
+        STAND_IN_ID.clone_into(&mut dto.metadata.id);
         let mut manifest = PluginManifest::try_from(dto)?;
-        manifest.metadata.id = id;
+        manifest.metadata.id = dir_id;
 
         Ok(Plugin {
             hash: Self::calc_hash(dir, &manifest).await.unwrap_or_default(),
@@ -438,7 +438,7 @@ impl PluginStorage for FsPluginStorage {
         Ok(())
     }
 
-    async fn restore_replaced(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let target_dir = self.location_info.plugin_dir(plugin_id);
         let replaced_dir = self.replaced_dir(plugin_id);
 
@@ -476,11 +476,11 @@ impl PluginStorage for FsPluginStorage {
         Ok(())
     }
 
-    async fn discard_replaced(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         Ok(remove_dir_if_present(&self.replaced_dir(plugin_id)).await?)
     }
 
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         let plugins_dir = self.location_info.plugins_dir();
 
         if !plugins_dir.exists() {
@@ -497,14 +497,28 @@ impl PluginStorage for FsPluginStorage {
 
             // A replacement under way or cut off: a copy of a plugin listed under its own name,
             // which must not be loaded in its place.
-            if is_side_dir(&dir_entry.file_name()) {
+            let file_name = dir_entry.file_name();
+            if is_side_dir(&file_name) {
                 continue;
             }
 
+            // Every operation on a plugin finds it by `plugins/<id>`: a directory whose name is
+            // no id is not one the launcher put there, and could not be reached as a plugin.
+            let Some(dir_id) = file_name
+                .to_str()
+                .and_then(|name| PluginId::try_from(name).ok())
+            else {
+                warn!(
+                    "Skipping '{}' in the plugins folder: its name is not a plugin id",
+                    path.display()
+                );
+                continue;
+            };
+
             let loaded = match self.load_from_dir(&path).await {
-                Err(PluginError::Manifest(
-                    err @ (ManifestError::InvalidId { .. } | ManifestError::ReservedPluginId),
-                )) => self.load_refused_from_dir(&path, err).await,
+                Err(PluginError::Manifest(err @ ManifestError::ReservedPluginId)) => {
+                    self.load_refused_from_dir(&path, dir_id, err).await
+                }
                 other => other,
             };
 
@@ -521,19 +535,12 @@ impl PluginStorage for FsPluginStorage {
         Ok(plugins)
     }
 
-    async fn get(&self, plugin_id: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError> {
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
         self.load_from_dir(&plugin_dir).await
     }
 
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
-        // An id such as "" or ".." would turn the join below into the plugins folder or its parent.
-        if !is_valid_id(plugin_id) {
-            return Err(PluginError::NotFound {
-                plugin_id: plugin_id.to_owned(),
-            });
-        }
-
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
 
         // The copies of an update stay behind otherwise, and `settle_replaced` would put the
@@ -555,7 +562,7 @@ impl PluginStorage for FsPluginStorage {
         Ok(())
     }
 
-    async fn wasm_sha256(&self, plugin_id: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, plugin_id: &PluginId) -> Result<String, PluginError> {
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
         let manifest = self.load_manifest(&plugin_dir).await?;
         let file_content = read_async(Self::binary_path(&plugin_dir, &manifest)).await?;
@@ -601,9 +608,9 @@ mod tests {
                 temp.path().join("settings"),
                 temp.path().join("config"),
             ));
-            write_plugin(&location_info.plugin_dir("test-plugin"), "0.1.0");
+            write_plugin(&location_info.plugin_dir(&test_plugin()), "0.1.0");
             std::fs::write(
-                location_info.plugin_settings("test-plugin"),
+                location_info.plugin_settings(&test_plugin()),
                 b"allowed_hosts = []\n",
             )
             .unwrap();
@@ -620,7 +627,7 @@ mod tests {
         }
 
         fn plugin_dir(&self) -> PathBuf {
-            self.location_info.plugin_dir("test-plugin")
+            self.location_info.plugin_dir(&test_plugin())
         }
 
         fn plugins_dir_entries(&self) -> Vec<String> {
@@ -657,35 +664,45 @@ mod tests {
         let dto: aether_core_plugin_api::v0::PluginManifestDto =
             serde_json::from_str(&MANIFEST.replace("0.1.0", version)).unwrap();
         ExtractedPlugin {
-            plugin_id: "test-plugin".into(),
+            plugin_id: test_plugin(),
             manifest: dto.try_into().unwrap(),
             content: PluginContent::Filesystem { temp_dir },
         }
     }
 
+    fn test_plugin() -> PluginId {
+        PluginId::from_static("test-plugin")
+    }
+
     #[tokio::test]
-    async fn should_list_the_plugin_as_failed_when_its_id_is_outside_the_scheme() {
+    async fn should_list_the_plugin_as_failed_when_its_id_is_reserved() {
         let fixture = Fixture::installed();
-        for id in ["Packwiz", "My Plugin", "aether"] {
-            write_plugin_with_id(&fixture.location_info.plugin_dir(id), id);
+        let id = PluginId::from_static("aether");
+        write_plugin_with_id(&fixture.location_info.plugin_dir(&id), "aether");
+
+        let plugins = fixture.storage.list().await.unwrap();
+
+        let plugin = plugins.get(&id).expect("the plugin stays listed");
+        assert_eq!(plugin.manifest.metadata.id, id);
+        assert!(matches!(
+            &plugin.state,
+            PluginState::Failed(PluginStateReason::InvalidManifest { .. })
+        ));
+        assert!(plugins.contains_key(&test_plugin()));
+    }
+
+    #[tokio::test]
+    async fn should_skip_a_directory_when_its_name_is_not_a_plugin_id() {
+        let fixture = Fixture::installed();
+        // Skipped by the name alone, even with a manifest that would be accepted.
+        for (name, id) in [("Packwiz", "packwiz"), ("My Plugin", "My Plugin")] {
+            write_plugin_with_id(&fixture.location_info.plugins_dir().join(name), id);
         }
 
         let plugins = fixture.storage.list().await.unwrap();
 
-        for id in ["Packwiz", "My Plugin", "aether"] {
-            let plugin = plugins
-                .get(id)
-                .unwrap_or_else(|| panic!("'{id}' stays listed"));
-            assert_eq!(plugin.manifest.metadata.id, id);
-            assert!(
-                matches!(
-                    &plugin.state,
-                    PluginState::Failed(PluginStateReason::InvalidManifest { .. })
-                ),
-                "{id}"
-            );
-        }
-        assert!(plugins.contains_key("test-plugin"));
+        assert_eq!(plugins.len(), 1);
+        assert!(plugins.contains_key(&test_plugin()));
     }
 
     #[tokio::test]
@@ -697,7 +714,7 @@ mod tests {
         let plugins = fixture.storage.list().await.unwrap();
 
         assert_eq!(plugins.len(), 1);
-        assert!(plugins.contains_key("test-plugin"));
+        assert!(plugins.contains_key(&test_plugin()));
     }
 
     #[tokio::test]
@@ -711,7 +728,9 @@ mod tests {
 
         let plugins = fixture.storage.list().await.unwrap();
 
-        let plugin = plugins.get("test-plugin").expect("the plugin stays listed");
+        let plugin = plugins
+            .get(&test_plugin())
+            .expect("the plugin stays listed");
         assert!(!plugin.verified);
     }
 
@@ -733,7 +752,7 @@ mod tests {
 
         fixture
             .storage
-            .restore_replaced("test-plugin")
+            .restore_replaced(&test_plugin())
             .await
             .unwrap();
 
@@ -757,7 +776,7 @@ mod tests {
         fixture.storage.replace(extracted("0.2.0")).await.unwrap();
         fixture
             .storage
-            .discard_replaced("test-plugin")
+            .discard_replaced(&test_plugin())
             .await
             .unwrap();
 
@@ -786,28 +805,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_refuse_to_remove_a_plugin_by_an_id_that_leaves_the_plugins_folder() {
-        let fixture = Fixture::installed();
-
-        for id in ["", "..", "../test-plugin", "/abs"] {
-            assert!(
-                matches!(
-                    fixture.storage.remove(id).await,
-                    Err(PluginError::NotFound { .. })
-                ),
-                "{id:?}"
-            );
-        }
-
-        assert!(fixture.plugin_dir().exists());
-    }
-
-    #[tokio::test]
     async fn should_leave_nothing_behind_when_a_plugin_with_an_update_copy_is_removed() {
         let fixture = Fixture::installed();
         fixture.storage.replace(extracted("0.2.0")).await.unwrap();
 
-        fixture.storage.remove("test-plugin").await.unwrap();
+        fixture.storage.remove(&test_plugin()).await.unwrap();
         let plugins = fixture.storage.list().await.unwrap();
 
         assert!(plugins.is_empty());
@@ -823,7 +825,7 @@ mod tests {
 
         assert_eq!(plugins.len(), 1);
         assert_eq!(
-            plugins["test-plugin"].manifest.metadata.version,
+            plugins[&test_plugin()].manifest.metadata.version,
             semver::Version::new(0, 2, 0)
         );
     }
@@ -837,7 +839,7 @@ mod tests {
         fixture.storage.replace(extracted("0.3.0")).await.unwrap();
         fixture
             .storage
-            .restore_replaced("test-plugin")
+            .restore_replaced(&test_plugin())
             .await
             .unwrap();
 
@@ -854,7 +856,12 @@ mod tests {
         // Only a case-insensitive file system makes this one `settings.toml`.
         std::fs::write(dir.path().join("Settings.TOML"), b"allowed_hosts = [\"*\"]").unwrap();
 
-        remove_new_core_files(dir.path(), "test-plugin", &HashSet::new()).unwrap();
+        remove_new_core_files(
+            dir.path(),
+            &PluginId::from_static("test-plugin"),
+            &HashSet::new(),
+        )
+        .unwrap();
 
         assert!(!dir.path().join(PLUGIN_SETTINGS_FILE_NAME).exists());
     }
@@ -869,7 +876,7 @@ mod tests {
         .unwrap();
         let listed = HashSet::from([OsString::from(PLUGIN_SETTINGS_FILE_NAME)]);
 
-        remove_new_core_files(dir.path(), "test-plugin", &listed).unwrap();
+        remove_new_core_files(dir.path(), &PluginId::from_static("test-plugin"), &listed).unwrap();
 
         assert!(dir.path().join(PLUGIN_SETTINGS_FILE_NAME).exists());
     }
@@ -883,7 +890,12 @@ mod tests {
             std::fs::write(source.path().join(name), b"{}").unwrap();
         }
 
-        copy_plugin_files(source.path(), target.path(), "test-plugin").unwrap();
+        copy_plugin_files(
+            source.path(),
+            target.path(),
+            &PluginId::from_static("test-plugin"),
+        )
+        .unwrap();
 
         let mut names: Vec<_> = std::fs::read_dir(target.path())
             .unwrap()
@@ -913,7 +925,7 @@ mod tests {
 
         let plugins = fixture.storage.list().await.unwrap();
 
-        assert!(plugins.contains_key("test-plugin"));
+        assert!(plugins.contains_key(&test_plugin()));
         assert!(
             fixture
                 .plugin_dir()
@@ -933,7 +945,7 @@ mod tests {
         let plugins = fixture.storage.list().await.unwrap();
 
         assert_eq!(
-            plugins["test-plugin"].manifest.metadata.version,
+            plugins[&test_plugin()].manifest.metadata.version,
             semver::Version::new(0, 2, 0)
         );
         assert_eq!(fixture.plugins_dir_entries(), ["test-plugin"]);
@@ -950,7 +962,7 @@ mod tests {
         // either way the copy aside is what a rollback has.
         fixture
             .storage
-            .restore_replaced("test-plugin")
+            .restore_replaced(&test_plugin())
             .await
             .unwrap();
         assert_eq!(
@@ -966,7 +978,7 @@ mod tests {
 
         fixture
             .storage
-            .restore_replaced("test-plugin")
+            .restore_replaced(&test_plugin())
             .await
             .unwrap();
 
@@ -989,7 +1001,7 @@ mod tests {
 
         fixture
             .storage
-            .restore_replaced("test-plugin")
+            .restore_replaced(&test_plugin())
             .await
             .unwrap();
 

@@ -25,7 +25,7 @@ async fn should_need_no_restart_when_a_host_is_edited_on_a_running_plugin() {
     harness
         .edit(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             EditPluginSettings {
                 allowed_hosts: Some(vec!["example.com".into()]),
                 ..EditPluginSettings::default()
@@ -53,7 +53,7 @@ async fn should_need_a_restart_until_it_restarts_when_a_folder_is_edited_on_a_ru
 
     harness
         .edit(&settings)
-        .execute(PLUGIN_ID.into(), edit_folders(vec![first.clone()]))
+        .execute(plugin_id(), edit_folders(vec![first.clone()]))
         .await
         .unwrap();
 
@@ -63,7 +63,7 @@ async fn should_need_a_restart_until_it_restarts_when_a_folder_is_edited_on_a_ru
     // Taking the folder back before the restart leaves the plugin as it runs.
     harness
         .edit(&settings)
-        .execute(PLUGIN_ID.into(), edit_folders(vec![]))
+        .execute(plugin_id(), edit_folders(vec![]))
         .await
         .unwrap();
     assert!(!harness.restart_needed(&settings).await);
@@ -71,14 +71,14 @@ async fn should_need_a_restart_until_it_restarts_when_a_folder_is_edited_on_a_ru
     harness
         .edit(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             edit_folders(vec![first.clone(), second.clone()]),
         )
         .await
         .unwrap();
     harness
         .reload_from(&settings)
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .unwrap();
 
@@ -92,7 +92,7 @@ async fn should_need_a_restart_until_it_restarts_when_a_folder_is_edited_on_a_ru
     harness
         .edit(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             edit_folders(vec![second.clone(), first, second]),
         )
         .await
@@ -108,7 +108,7 @@ async fn should_refuse_the_restart_and_still_need_it_when_the_plugin_is_busy() {
     harness
         .edit(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             edit_folders(vec![AllowedPath::read_only_folder(folder.path())]),
         )
         .await
@@ -116,10 +116,7 @@ async fn should_refuse_the_restart_and_still_need_it_when_the_plugin_is_busy() {
     let handle = harness.handle();
     let call = harness.start_long_call(&handle).await;
 
-    let refused = harness
-        .reload_from(&settings)
-        .execute(PLUGIN_ID.into())
-        .await;
+    let refused = harness.reload_from(&settings).execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::Busy { .. })),
@@ -132,7 +129,7 @@ async fn should_refuse_the_restart_and_still_need_it_when_the_plugin_is_busy() {
     assert!(call.await.unwrap().is_ok());
     harness
         .reload_from(&settings)
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .unwrap();
     assert!(!harness.restart_needed(&settings).await);
@@ -153,12 +150,8 @@ async fn should_keep_each_other_when_two_changes_are_made_at_once() {
     );
     let grant = GrantPluginHostAccessUseCase::new(Arc::clone(&harness.plugins), storage);
     let (edited, granted) = tokio::join!(
-        edit.execute(PLUGIN_ID.into(), edit_folders(vec![folder.clone()])),
-        grant.execute(
-            PLUGIN_ID.into(),
-            "https://example.com/pack.toml".into(),
-            false
-        ),
+        edit.execute(plugin_id(), edit_folders(vec![folder.clone()])),
+        grant.execute(plugin_id(), "https://example.com/pack.toml".into(), false),
     );
 
     edited.unwrap();

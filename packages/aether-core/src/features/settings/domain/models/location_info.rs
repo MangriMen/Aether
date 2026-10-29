@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::features::instance::InstanceId;
+use crate::features::instance::{InstanceId, PluginId};
 
 pub const METADATA_FOLDER_NAME: &str = ".minecraft";
 pub const CACHE_FOLDER_NAME: &str = "cache";
@@ -211,26 +211,26 @@ impl LocationInfo {
 
     /// Get the directory for a specific plugin
     #[inline]
-    pub fn plugin_dir(&self, id: &str) -> PathBuf {
-        self.plugins_dir().join(id)
+    pub fn plugin_dir(&self, id: &PluginId) -> PathBuf {
+        self.plugins_dir().join(id.as_str())
     }
 
     #[inline]
-    pub fn plugin_settings(&self, id: &str) -> PathBuf {
+    pub fn plugin_settings(&self, id: &PluginId) -> PathBuf {
         self.plugin_dir(id).join(PLUGIN_SETTINGS_FILE_NAME)
     }
 
     #[inline]
-    pub fn plugin_cache_dir(&self, id: &str) -> PathBuf {
-        self.cache_dir().join("plugins").join(id)
+    pub fn plugin_cache_dir(&self, id: &PluginId) -> PathBuf {
+        self.cache_dir().join("plugins").join(id.as_str())
     }
 
     /// Get the directory for a specific plugin inside an instance
     #[inline]
-    pub fn instance_plugin_dir(&self, id: &InstanceId, plugin_id: &str) -> PathBuf {
+    pub fn instance_plugin_dir(&self, id: &InstanceId, plugin_id: &PluginId) -> PathBuf {
         self.instance_metadata_dir(id)
             .join(PLUGINS_FOLDER_NAME)
-            .join(plugin_id)
+            .join(plugin_id.as_str())
     }
 
     #[inline]
@@ -259,12 +259,13 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::LocationInfo;
-    use crate::features::instance::InstanceId;
+    use crate::features::instance::{InstanceId, PluginId};
 
     #[test]
     fn should_pin_every_path_accessor() {
         let li = LocationInfo::new(PathBuf::from("s"), PathBuf::from("c"));
         let id = InstanceId::try_from("i").unwrap();
+        let pl = PluginId::from_static("pl");
         let p = |s: &str| PathBuf::from("c").join(s);
         assert_eq!(li.settings_dir(), Path::new("s"));
         assert_eq!(li.config_dir(), Path::new("c"));
@@ -312,14 +313,14 @@ mod tests {
         assert_eq!(li.assets_cache_dir(), cache.join("assets"));
         assert_eq!(li.java_dir(), cache.join("java"));
         assert_eq!(li.plugins_dir(), p("plugins"));
-        assert_eq!(li.plugin_dir("pl"), p("plugins").join("pl"));
+        assert_eq!(li.plugin_dir(&pl), p("plugins").join("pl"));
         assert_eq!(
-            li.plugin_settings("pl"),
+            li.plugin_settings(&pl),
             p("plugins").join("pl").join("settings.toml")
         );
-        assert_eq!(li.plugin_cache_dir("pl"), cache.join("plugins").join("pl"));
+        assert_eq!(li.plugin_cache_dir(&pl), cache.join("plugins").join("pl"));
         assert_eq!(
-            li.instance_plugin_dir(&id, "pl"),
+            li.instance_plugin_dir(&id, &pl),
             im.join("plugins").join("pl")
         );
         assert_eq!(

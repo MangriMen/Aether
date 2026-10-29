@@ -50,7 +50,7 @@ mod tests {
             auth::{AuthApplicationError, AuthDomainError},
             events::EventError,
             file_watcher::FileWatcherError,
-            instance::InstanceError,
+            instance::{InstanceError, PluginId},
             java::{JavaApplicationError, JavaDomainError},
             minecraft::{MinecraftApplicationError, MinecraftDomainError},
             plugins::{PluginCallError, PluginError},
@@ -276,7 +276,7 @@ mod tests {
         let host = through_msgpack(
             PluginError::FunctionCallFailed {
                 function_name: "install".to_owned(),
-                plugin_id: "packwiz".to_owned(),
+                plugin_id: PluginId::from_static("packwiz"),
                 error: PluginCallError::Timeout,
             }
             .into(),

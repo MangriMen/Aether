@@ -11,6 +11,7 @@ pub(crate) use crate::features::plugins::{
 
 use crate::{
     features::{
+        instance::PluginId,
         plugins::{CoreMount, PluginError},
         settings::LocationInfo,
     },
@@ -106,7 +107,7 @@ impl MountSet {
 /// [`CoreMount::is_read_only`].
 pub(crate) fn get_default_allowed_paths(
     location_info: &LocationInfo,
-    plugin_id: &str,
+    plugin_id: &PluginId,
 ) -> HashMap<String, CoreMount> {
     CoreMount::ALL
         .into_iter()
@@ -134,7 +135,7 @@ pub(crate) fn get_default_allowed_paths(
 /// returned, so a symlink swapped in later does not redirect the core.
 pub(crate) fn resolve_plugin_path(
     location_info: &LocationInfo,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     plugin_path: &str,
     mounts: MountSet,
 ) -> Result<PathBuf, PluginError> {
@@ -177,7 +178,7 @@ pub(crate) fn resolve_plugin_path(
 /// `/instances`); `None` for a file the plugin could not open.
 pub(crate) fn host_path_to_plugin(
     location_info: &LocationInfo,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     host_path: &Path,
 ) -> Option<String> {
     let host_path = crate::shared::io::infra::canonicalize(host_path).ok()?;
@@ -209,16 +210,16 @@ pub(crate) fn isolated_env() -> BTreeMap<String, String> {
         .collect()
 }
 
-fn access_violation(id: &str, path: impl AsRef<Path>) -> PluginError {
+fn access_violation(id: &PluginId, path: impl AsRef<Path>) -> PluginError {
     PluginError::AccessViolation {
-        plugin_id: id.to_owned(),
+        plugin_id: id.clone(),
         path: path.as_ref().to_string_lossy().to_string(),
     }
 }
 
 /// Canonicalise or refuse. A path that cannot be resolved — it does not exist, or it is not
 /// reachable — is never given the benefit of the doubt.
-fn canonicalize_or_deny(id: &str, path: &Path) -> Result<PathBuf, PluginError> {
+fn canonicalize_or_deny(id: &PluginId, path: &Path) -> Result<PathBuf, PluginError> {
     crate::shared::io::infra::canonicalize(path).map_err(|_| access_violation(id, path))
 }
 
@@ -259,7 +260,7 @@ where
 /// mounted working directory, both checked on the result; this must not be reused where a path
 /// is opened by the core itself.
 fn command_value_to_host(
-    id: &str,
+    id: &PluginId,
     value: &str,
     location_info: &LocationInfo,
 ) -> Result<String, PluginError> {
@@ -279,7 +280,7 @@ fn command_value_to_host(
 /// such a path too: merely resolving `\\server\share\…` makes Windows connect to that server and
 /// offer it the user's credentials.
 fn refuse_untrusted_share(
-    id: &str,
+    id: &PluginId,
     path: &Path,
     trusted_roots: &[PathBuf],
 ) -> Result<(), PluginError> {
@@ -303,7 +304,7 @@ fn is_share_or_device(path: &Path) -> bool {
 /// A narrowing (no shell, no arbitrary native binary), not a containment boundary: the plugin
 /// chooses the arguments, so `<allowed java> -jar #/cache/…` runs whatever it put there.
 fn resolve_allowed_program(
-    id: &str,
+    id: &PluginId,
     program: &str,
     location_info: &LocationInfo,
     allowed_program_dirs: &[PathBuf],
@@ -331,7 +332,7 @@ fn resolve_allowed_program(
 /// Resolve the working directory, which is mandatory and has to sit inside a directory that is
 /// really mounted for this plugin (`/cache`, `/instances`).
 fn resolve_required_current_dir(
-    id: &str,
+    id: &PluginId,
     current_dir: Option<&Path>,
     location_info: &LocationInfo,
 ) -> Result<PathBuf, PluginError> {
@@ -364,7 +365,7 @@ fn resolve_required_current_dir(
 }
 
 pub(crate) fn plugin_command_to_host(
-    id: &str,
+    id: &PluginId,
     command: &CommandDto,
     location_info: &LocationInfo,
     allowed_program_dirs: &[PathBuf],
@@ -451,10 +452,10 @@ mod tests {
     #[test]
     fn should_mark_only_the_instances_mount_read_only_when_building_mounts() {
         let location_info = LocationInfo::new(PathBuf::from("settings"), PathBuf::from("config"));
-        let allowed = get_default_allowed_paths(&location_info, PLUGIN_ID);
+        let allowed = get_default_allowed_paths(&location_info, &PluginId::from_static(PLUGIN_ID));
 
         let cache_host = location_info
-            .plugin_cache_dir(PLUGIN_ID)
+            .plugin_cache_dir(&PluginId::from_static(PLUGIN_ID))
             .to_string_lossy()
             .to_string();
         let instances_host = location_info.instances_dir().to_string_lossy().to_string();
@@ -478,7 +479,7 @@ mod tests {
         let location_info = LocationInfo::new(PathBuf::from("settings"), PathBuf::from("config"));
 
         assert!(
-            get_default_allowed_paths(&location_info, PLUGIN_ID)
+            get_default_allowed_paths(&location_info, &PluginId::from_static(PLUGIN_ID))
                 .keys()
                 .all(|host| !host.starts_with(READ_ONLY_MOUNT_PREFIX))
         );
@@ -487,6 +488,11 @@ mod tests {
     // ── plugin_command_to_host: the run_command allowlist ──
 
     const PLUGIN_ID: &str = "packwiz";
+
+    fn plugin_id() -> PluginId {
+        PluginId::from_static(PLUGIN_ID)
+    }
+
     const INSTANCE_ID: &str = "test-instance";
 
     /// A layout that mirrors a real install: a core-managed Java, a plugin cache holding the
@@ -512,7 +518,7 @@ mod tests {
         let java_bin = java_bin_dir.join(java_file_name());
         std::fs::write(&java_bin, b"").expect("java binary");
 
-        let plugin_cache_dir = location_info.plugin_cache_dir(PLUGIN_ID);
+        let plugin_cache_dir = location_info.plugin_cache_dir(&plugin_id());
         std::fs::create_dir_all(&plugin_cache_dir).expect("plugin cache dir");
         std::fs::write(
             plugin_cache_dir.join("packwiz-installer-bootstrap.jar"),
@@ -561,7 +567,7 @@ mod tests {
 
         let resolved = resolve_plugin_path(
             &layout.location_info,
-            PLUGIN_ID,
+            &plugin_id(),
             &format!("/instances/{INSTANCE_ID}"),
             MountSet::ALL,
         )
@@ -584,7 +590,7 @@ mod tests {
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
         let host_command = plugin_command_to_host(
-            PLUGIN_ID,
+            &plugin_id(),
             &command,
             &layout.location_info,
             &layout.allowed(),
@@ -605,7 +611,7 @@ mod tests {
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
         let host_command = plugin_command_to_host(
-            PLUGIN_ID,
+            &plugin_id(),
             &command,
             &layout.location_info,
             &layout.allowed(),
@@ -644,7 +650,7 @@ mod tests {
             assert!(
                 matches!(
                     plugin_command_to_host(
-                        PLUGIN_ID,
+                        &plugin_id(),
                         &command,
                         &layout.location_info,
                         &layout.allowed()
@@ -669,7 +675,7 @@ mod tests {
         let command = packwiz_command(&rogue_java.to_string_lossy());
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -698,7 +704,7 @@ mod tests {
         let command = packwiz_command(&traversal.to_string_lossy());
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -716,7 +722,7 @@ mod tests {
         assert!(
             matches!(
                 plugin_command_to_host(
-                    PLUGIN_ID,
+                    &plugin_id(),
                     &command,
                     &layout.location_info,
                     &layout.allowed()
@@ -735,7 +741,7 @@ mod tests {
 
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -756,7 +762,7 @@ mod tests {
 
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -785,7 +791,7 @@ mod tests {
         let allowed = java_bin_dirs([system_java.as_path()]);
 
         assert!(
-            plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info, &allowed).is_ok(),
+            plugin_command_to_host(&plugin_id(), &command, &layout.location_info, &allowed).is_ok(),
             "a system-wide Java the core registered must be allowed"
         );
     }
@@ -805,7 +811,7 @@ mod tests {
         let command = packwiz_command(&sibling.to_string_lossy());
         assert!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -826,7 +832,7 @@ mod tests {
         let command = packwiz_command(&stray.to_string_lossy());
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -842,7 +848,7 @@ mod tests {
 
         assert!(
             matches!(
-                plugin_command_to_host(PLUGIN_ID, &command, &layout.location_info, &[]),
+                plugin_command_to_host(&plugin_id(), &command, &layout.location_info, &[]),
                 Err(PluginError::AccessViolation { .. })
             ),
             "an empty allowlist must permit nothing, not everything"
@@ -879,7 +885,7 @@ mod tests {
         let command = packwiz_command(&layout.java_bin.to_string_lossy());
 
         let host_command = plugin_command_to_host(
-            PLUGIN_ID,
+            &plugin_id(),
             &command,
             &layout.location_info,
             &layout.allowed(),
@@ -905,14 +911,14 @@ mod tests {
         let expected = crate::shared::io::infra::canonicalize(
             layout
                 .location_info
-                .plugin_cache_dir(PLUGIN_ID)
+                .plugin_cache_dir(&plugin_id())
                 .join("packwiz-installer-bootstrap.jar"),
         )
         .unwrap();
 
         let host = resolve_plugin_path(
             &layout.location_info,
-            PLUGIN_ID,
+            &plugin_id(),
             "/cache/packwiz-installer-bootstrap.jar",
             MountSet::CACHE,
         )
@@ -924,7 +930,7 @@ mod tests {
     fn assert_refused(layout: &Layout, path: &str, mounts: MountSet) {
         assert!(
             matches!(
-                resolve_plugin_path(&layout.location_info, PLUGIN_ID, path, mounts),
+                resolve_plugin_path(&layout.location_info, &plugin_id(), path, mounts),
                 Err(PluginError::AccessViolation { .. })
             ),
             "{path} must be refused"
@@ -967,7 +973,7 @@ mod tests {
             format!("/instances/{INSTANCE_ID}"),
             format!("/instances/{INSTANCE_ID}/"),
         ] {
-            resolve_plugin_path(&layout.location_info, PLUGIN_ID, &path, MountSet::ALL)
+            resolve_plugin_path(&layout.location_info, &plugin_id(), &path, MountSet::ALL)
                 .unwrap_or_else(|err| panic!("{path} must resolve: {err}"));
         }
     }
@@ -1031,7 +1037,8 @@ mod tests {
             r"/cache/\\?\C:\Windows",
             "/cache/packwiz-installer-bootstrap.jar:stream",
         ] {
-            let result = resolve_plugin_path(&layout.location_info, PLUGIN_ID, path, MountSet::ALL);
+            let result =
+                resolve_plugin_path(&layout.location_info, &plugin_id(), path, MountSet::ALL);
             if cfg!(windows) {
                 assert!(
                     matches!(result, Err(PluginError::AccessViolation { .. })),
@@ -1044,7 +1051,7 @@ mod tests {
                     Ok(host) => assert!(
                         host.starts_with(
                             crate::shared::io::infra::canonicalize(
-                                layout.location_info.plugin_cache_dir(PLUGIN_ID)
+                                layout.location_info.plugin_cache_dir(&plugin_id())
                             )
                             .unwrap()
                         ),
@@ -1120,7 +1127,7 @@ mod tests {
             assert!(
                 matches!(
                     plugin_command_to_host(
-                        PLUGIN_ID,
+                        &plugin_id(),
                         &command,
                         &layout.location_info,
                         &layout.allowed()
@@ -1139,7 +1146,7 @@ mod tests {
         command.args.push("/etc/hosts".to_owned());
 
         let host_command = plugin_command_to_host(
-            PLUGIN_ID,
+            &plugin_id(),
             &command,
             &layout.location_info,
             &layout.allowed(),
@@ -1159,7 +1166,7 @@ mod tests {
             assert!(
                 matches!(
                     plugin_command_to_host(
-                        PLUGIN_ID,
+                        &plugin_id(),
                         &command,
                         &layout.location_info,
                         &layout.allowed()
@@ -1180,7 +1187,7 @@ mod tests {
 
         assert!(matches!(
             plugin_command_to_host(
-                PLUGIN_ID,
+                &plugin_id(),
                 &command,
                 &layout.location_info,
                 &layout.allowed()
@@ -1200,7 +1207,7 @@ mod tests {
         );
 
         let host_command = plugin_command_to_host(
-            PLUGIN_ID,
+            &plugin_id(),
             &command,
             &layout.location_info,
             &layout.allowed(),
@@ -1220,16 +1227,16 @@ mod tests {
         std::fs::write(&pack, b"").unwrap();
 
         assert_eq!(
-            host_path_to_plugin(&layout.location_info, PLUGIN_ID, &pack).as_deref(),
+            host_path_to_plugin(&layout.location_info, &plugin_id(), &pack).as_deref(),
             Some(format!("/instances/{INSTANCE_ID}/pack.toml").as_str())
         );
         assert_eq!(
             host_path_to_plugin(
                 &layout.location_info,
-                PLUGIN_ID,
+                &plugin_id(),
                 &layout
                     .location_info
-                    .plugin_cache_dir(PLUGIN_ID)
+                    .plugin_cache_dir(&plugin_id())
                     .join("packwiz-installer-bootstrap.jar"),
             )
             .as_deref(),
@@ -1242,16 +1249,16 @@ mod tests {
         let layout = layout();
 
         assert_eq!(
-            host_path_to_plugin(&layout.location_info, PLUGIN_ID, &layout.java_bin),
+            host_path_to_plugin(&layout.location_info, &plugin_id(), &layout.java_bin),
             None
         );
         assert_eq!(
             host_path_to_plugin(
                 &layout.location_info,
-                "another-plugin",
+                &PluginId::from_static("another-plugin"),
                 &layout
                     .location_info
-                    .plugin_cache_dir(PLUGIN_ID)
+                    .plugin_cache_dir(&plugin_id())
                     .join("packwiz-installer-bootstrap.jar"),
             ),
             None,

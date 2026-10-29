@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::instance::PluginId;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     plugins::{
@@ -26,6 +27,10 @@ use crate::features::{
 };
 
 const PLUGIN_ID: &str = "test-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
 
 const MANIFEST: &str = r#"{
     "metadata": {
@@ -117,13 +122,13 @@ struct FailingSourceSave(Arc<FsPluginSourceStorage>);
 
 #[async_trait]
 impl PluginSourceStorage for FailingSourceSave {
-    async fn save(&self, _: &str, _: &PluginSource) -> Result<(), PluginError> {
+    async fn save(&self, _: &PluginId, _: &PluginSource) -> Result<(), PluginError> {
         Err(disk_full())
     }
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSource>, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(plugin_id).await
     }
 }
@@ -132,13 +137,13 @@ struct FailingVerificationSave(Arc<FsPluginVerificationStorage>);
 
 #[async_trait]
 impl PluginVerificationStorage for FailingVerificationSave {
-    async fn save(&self, _: &str, _: &PluginVerification) -> Result<(), PluginError> {
+    async fn save(&self, _: &PluginId, _: &PluginVerification) -> Result<(), PluginError> {
         Err(disk_full())
     }
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginVerification>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginVerification>, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(plugin_id).await
     }
 }
@@ -171,7 +176,7 @@ impl Fixture {
         }
     }
 
-    async fn install(&self, archive: Vec<u8>) -> Result<String, PluginError> {
+    async fn install(&self, archive: Vec<u8>) -> Result<PluginId, PluginError> {
         self.install_with(archive, self.source.clone(), self.verification.clone())
             .await
     }
@@ -181,7 +186,7 @@ impl Fixture {
         archive: Vec<u8>,
         source: Arc<dyn PluginSourceStorage>,
         verification: Arc<dyn PluginVerificationStorage>,
-    ) -> Result<String, PluginError> {
+    ) -> Result<PluginId, PluginError> {
         InstallPluginFromProviderUseCase::new(
             self.registry.clone(),
             Arc::new(ZipPluginExtractor::default()),
@@ -211,7 +216,7 @@ impl Fixture {
     }
 
     fn plugin_dir(&self) -> std::path::PathBuf {
-        self.location_info.plugin_dir(PLUGIN_ID)
+        self.location_info.plugin_dir(&plugin_id())
     }
 
     /// What `plugins/` holds: the plugin's directory, and no copy of a replacement beside it.
@@ -229,14 +234,21 @@ async fn should_record_the_release_and_sync_when_a_plugin_is_installed() {
 
     let plugin_id = fixture.install(plugin_zip(b"\0asm v2")).await.unwrap();
 
-    assert_eq!(plugin_id, PLUGIN_ID);
+    assert_eq!(plugin_id.as_str(), PLUGIN_ID);
     assert_eq!(
         std::fs::read(fixture.plugin_dir().join("plugin.wasm")).unwrap(),
         b"\0asm v2"
     );
-    assert!(fixture.verification.get(PLUGIN_ID).await.unwrap().is_some());
+    assert!(
+        fixture
+            .verification
+            .get(&plugin_id)
+            .await
+            .unwrap()
+            .is_some()
+    );
     assert!(matches!(
-        fixture.source.get(PLUGIN_ID).await.unwrap(),
+        fixture.source.get(&plugin_id).await.unwrap(),
         Some(PluginSource::Remote { current_tag, .. }) if current_tag == "v2"
     ));
     assert_eq!(fixture.sync.0.load(Ordering::SeqCst), 1);
@@ -301,7 +313,7 @@ async fn installed(fixture: &Fixture) {
     fixture
         .settings
         .upsert(
-            PLUGIN_ID,
+            &plugin_id(),
             &PluginSettings {
                 allowed_hosts: vec!["extra.example.com".into()],
                 ..PluginSettings::default()
@@ -315,7 +327,7 @@ async fn installed(fixture: &Fixture) {
 async fn should_keep_the_installed_version_when_replacing_it_fails_midway() {
     let fixture = Fixture::empty();
     installed(&fixture).await;
-    let trusted = fixture.verification.get(PLUGIN_ID).await.unwrap();
+    let trusted = fixture.verification.get(&plugin_id()).await.unwrap();
 
     let result = fixture
         .install_with(
@@ -333,7 +345,7 @@ async fn should_keep_the_installed_version_when_replacing_it_fails_midway() {
     assert_eq!(
         fixture
             .verification
-            .get(PLUGIN_ID)
+            .get(&plugin_id())
             .await
             .unwrap()
             .map(|record| record.wasm_sha256),
@@ -342,7 +354,7 @@ async fn should_keep_the_installed_version_when_replacing_it_fails_midway() {
     assert_eq!(
         fixture
             .settings
-            .get(PLUGIN_ID)
+            .get(&plugin_id())
             .await
             .unwrap()
             .unwrap()
@@ -371,7 +383,7 @@ async fn should_replace_the_files_and_keep_the_settings_when_the_plugin_is_insta
     assert_eq!(
         fixture
             .settings
-            .get(PLUGIN_ID)
+            .get(&plugin_id())
             .await
             .unwrap()
             .unwrap()

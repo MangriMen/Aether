@@ -4,9 +4,12 @@ use async_trait::async_trait;
 
 use crate::{
     core::app::AetherContainer,
-    features::plugins::{
-        PluginError, PluginRegistry, PluginSettingsStorage,
-        infra::plugin_utils::effective_allowed_hosts,
+    features::{
+        instance::PluginId,
+        plugins::{
+            PluginError, PluginRegistry, PluginSettingsStorage,
+            infra::plugin_utils::effective_allowed_hosts,
+        },
     },
     shared::limits::PluginSandboxLimits,
 };
@@ -18,7 +21,7 @@ use crate::{
 /// its very next request without a reload.
 #[async_trait]
 pub(crate) trait AllowedHostsSource: Send + Sync {
-    async fn allowed_hosts(&self, plugin_id: &str) -> crate::Result<Vec<String>>;
+    async fn allowed_hosts(&self, plugin_id: &PluginId) -> crate::Result<Vec<String>>;
 }
 
 /// The manifest in the registry plus the user's settings — what [`effective_allowed_hosts`]
@@ -30,7 +33,7 @@ pub(crate) struct LiveAllowedHosts {
 
 #[async_trait]
 impl AllowedHostsSource for LiveAllowedHosts {
-    async fn allowed_hosts(&self, plugin_id: &str) -> crate::Result<Vec<String>> {
+    async fn allowed_hosts(&self, plugin_id: &PluginId) -> crate::Result<Vec<String>> {
         let to_error = |err: PluginError| crate::ErrorKind::from(err).as_error();
 
         let manifest = self.registry.get_manifest(plugin_id).map_err(to_error)?;
@@ -42,7 +45,7 @@ impl AllowedHostsSource for LiveAllowedHosts {
 
 #[derive(Clone)]
 pub(crate) struct PluginContext {
-    pub id: String,
+    pub id: PluginId,
     pub container: Weak<AetherContainer>,
     /// The plugin's network policy, read on each call. Host functions that touch the network
     /// check against it themselves instead of trusting Extism's own check (see
@@ -55,7 +58,7 @@ pub(crate) struct PluginContext {
 }
 
 impl PluginContext {
-    pub(crate) fn new(id: String, container: &Arc<AetherContainer>) -> Self {
+    pub(crate) fn new(id: PluginId, container: &Arc<AetherContainer>) -> Self {
         let plugins = container.plugins();
 
         Self {
@@ -111,7 +114,7 @@ mod tests {
 
     #[async_trait]
     impl AllowedHostsSource for EditableHosts {
-        async fn allowed_hosts(&self, _plugin_id: &str) -> crate::Result<Vec<String>> {
+        async fn allowed_hosts(&self, _plugin_id: &PluginId) -> crate::Result<Vec<String>> {
             Ok(self.0.lock().unwrap().clone())
         }
     }
@@ -119,7 +122,7 @@ mod tests {
     /// The plugin as the loader builds it: no `allowed_hosts` in the Extism manifest.
     fn plugin(hosts: Arc<EditableHosts>) -> Plugin {
         let context = PluginContext {
-            id: "test".to_owned(),
+            id: PluginId::from_static("test"),
             container: Weak::new(),
             hosts,
             limits: PluginSandboxLimits::default(),

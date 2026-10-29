@@ -19,6 +19,7 @@ mod tests {
     use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 
     use super::block_on;
+    use crate::features::instance::PluginId;
     use crate::features::plugins::{
         PluginCallError, PluginError, PluginHandle, infra::extism::models::ExtismPluginInstance,
     };
@@ -50,7 +51,10 @@ mod tests {
             .build()
             .expect("the test plugin should load");
 
-        PluginHandle::new(ExtismPluginInstance::new(plugin, "test".to_owned()))
+        PluginHandle::new(ExtismPluginInstance::new(
+            plugin,
+            PluginId::from_static("test"),
+        ))
     }
 
     #[tokio::test]
@@ -124,7 +128,10 @@ mod tests {
             .with_functions([call_self])
             .build()
             .expect("the test plugin should load");
-        let plugin = PluginHandle::new(ExtismPluginInstance::new(plugin, "test".to_owned()));
+        let plugin = PluginHandle::new(ExtismPluginInstance::new(
+            plugin,
+            PluginId::from_static("test"),
+        ));
         assert!(handle.set(plugin.clone()).is_ok());
 
         // A runtime let go rather than waited for: a deadlocked call would hang its drop.

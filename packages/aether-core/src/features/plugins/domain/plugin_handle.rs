@@ -6,13 +6,16 @@ use std::{
 use tokio::sync::{Mutex, OwnedMutexGuard};
 
 use super::PluginInstance;
-use crate::features::plugins::{FolderMounts, PluginCallError, PluginError};
+use crate::features::{
+    instance::PluginId,
+    plugins::{FolderMounts, PluginCallError, PluginError},
+};
 
 thread_local! {
     /// The plugins whose calls this thread is inside of, outermost first. Everything a host
     /// function waits on is driven on the thread of the call it serves, so a chain of calls that
     /// comes back to one of these plugins shows up here.
-    static CALL_CHAIN: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    static CALL_CHAIN: RefCell<Vec<PluginId>> = const { RefCell::new(Vec::new()) };
 }
 
 /// A loaded plugin, shared by everything that calls into it.
@@ -26,7 +29,7 @@ thread_local! {
 /// handle, so nothing keeps calling it with the rights it had before.
 #[derive(Clone)]
 pub struct PluginHandle {
-    id: String,
+    id: PluginId,
     instance: Arc<Mutex<Option<Box<dyn PluginInstance>>>>,
     calls: Arc<SyncMutex<Calls>>,
     folders: Arc<FolderMounts>,
@@ -84,7 +87,7 @@ impl PluginHandle {
     }
 
     /// Known without waiting for a call in progress.
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &PluginId {
         &self.id
     }
 
@@ -211,7 +214,7 @@ impl PluginHandle {
 }
 
 async fn on_blocking_pool<T: Send + 'static>(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     call: impl FnOnce() -> T + Send + 'static,
 ) -> T {
     match tokio::task::spawn_blocking(call).await {
@@ -224,10 +227,10 @@ async fn on_blocking_pool<T: Send + 'static>(
 
 /// The call chain of a blocking-pool thread for as long as it runs one call. The thread goes
 /// back to the pool afterwards, so the previous chain is put back even when the call panics.
-struct ChainScope(Vec<String>);
+struct ChainScope(Vec<PluginId>);
 
 impl ChainScope {
-    fn enter(chain: Vec<String>) -> Self {
+    fn enter(chain: Vec<PluginId>) -> Self {
         Self(CALL_CHAIN.replace(chain))
     }
 }
@@ -260,8 +263,8 @@ mod tests {
     struct Stub(&'static str);
 
     impl PluginInstance for Stub {
-        fn get_id(&self) -> String {
-            self.0.to_owned()
+        fn get_id(&self) -> PluginId {
+            PluginId::from_static(self.0)
         }
 
         fn supports(&self, _name: &str) -> bool {
@@ -313,7 +316,7 @@ mod tests {
                 function_name,
                 plugin_id,
                 error: PluginCallError::Reentrant,
-            }) if plugin_id == plugin && function_name == function
+            }) if plugin_id.as_str() == plugin && function_name == function
         )
     }
 
@@ -382,7 +385,11 @@ mod tests {
             }
         });
 
-        assert_eq!(handle.id(), "stub", "the id is there during a call");
+        assert_eq!(
+            handle.id().as_str(),
+            "stub",
+            "the id is there during a call"
+        );
         for _ in 0..16 {
             tokio::task::yield_now().await;
         }
@@ -408,7 +415,7 @@ mod tests {
         let after = tokio::time::timeout(PATIENCE, handle.run("id", |plugin| plugin.get_id()))
             .await
             .expect("the plugin should not stay taken");
-        assert_eq!(after.unwrap(), "stub");
+        assert_eq!(after.unwrap(), PluginId::from_static("stub"));
     }
 
     /// What a host function does: blocks the call's thread on async work, here a call back
@@ -456,7 +463,7 @@ mod tests {
     #[test]
     fn should_end_the_call_chain_when_the_call_panics() {
         let panicked = std::panic::catch_unwind(|| {
-            let _chain = ChainScope::enter(vec!["a".to_owned()]);
+            let _chain = ChainScope::enter(vec![PluginId::from_static("a")]);
             panic!("boom");
         });
 
@@ -478,8 +485,8 @@ mod tests {
     }
 
     impl PluginInstance for Tracked {
-        fn get_id(&self) -> String {
-            "tracked".to_owned()
+        fn get_id(&self) -> PluginId {
+            PluginId::from_static("tracked")
         }
 
         fn supports(&self, _name: &str) -> bool {
@@ -500,7 +507,7 @@ mod tests {
     }
 
     fn is_busy_error<T>(result: &Result<T, PluginError>) -> bool {
-        matches!(result, Err(PluginError::Busy { plugin_id }) if plugin_id == "stub")
+        matches!(result, Err(PluginError::Busy { plugin_id }) if plugin_id.as_str() == "stub")
     }
 
     #[tokio::test]
@@ -513,12 +520,12 @@ mod tests {
 
         let last = handle.retire(|plugin| plugin.get_id()).await.unwrap();
 
-        assert_eq!(last, "tracked");
+        assert_eq!(last, PluginId::from_static("tracked"));
         assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
         assert!(clone.is_retired());
         assert!(matches!(
             clone.run("after", |_| ()).await,
-            Err(PluginError::Stopped { plugin_id }) if plugin_id == "tracked"
+            Err(PluginError::Stopped { plugin_id }) if plugin_id == PluginId::from_static("tracked")
         ));
         assert!(matches!(
             clone.retire(|_| ()).await,
@@ -552,7 +559,7 @@ mod tests {
         assert!(!handle.is_retired());
 
         release.send(()).unwrap();
-        assert_eq!(call.await.unwrap().unwrap(), "stub");
+        assert_eq!(call.await.unwrap().unwrap(), PluginId::from_static("stub"));
         assert!(handle.retire(|_| ()).await.is_ok());
     }
 

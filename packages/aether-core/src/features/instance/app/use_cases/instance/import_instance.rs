@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::features::instance::app::ports::ImportInstanceUseCasePort;
 use crate::{
     features::instance::{
-        Importer, InstanceError, InstanceInstallStage, InstanceStorage,
+        CapabilityId, Importer, InstanceError, InstanceInstallStage, InstanceStorage, PluginId,
         app::extensions::InstanceStorageExt,
     },
     shared::capability::domain::CapabilityRegistry,
@@ -15,8 +15,8 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportInstance {
-    pub plugin_id: String,
-    pub importer_id: String,
+    pub plugin_id: PluginId,
+    pub importer_id: CapabilityId,
     pub path: String,
 }
 
@@ -48,7 +48,7 @@ impl ImportInstanceUseCase {
             .find_by_plugin_and_capability_id(&plugin_id, &importer_id)
             .await
             .map_err(|_| InstanceError::ImporterNotFound {
-                importer_id: importer_id.clone(),
+                importer_id: importer_id.to_string(),
             })?;
 
         // A failed import leaves its pack instances `PackInstalling`: they are not complete.

@@ -1,9 +1,10 @@
 use std::ops::Deref;
 
+use super::CapabilityId;
+
 #[derive(Debug, Clone)]
 pub struct CapabilityMetadata {
-    /// Identifier for the capability (lowercase, kebab/underscore allowed).
-    pub id: String,
+    pub id: CapabilityId,
 
     /// Display name of the capability.
     pub name: String,

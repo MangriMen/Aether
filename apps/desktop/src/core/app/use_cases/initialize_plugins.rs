@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use aether_core::{
     core::app::AetherContainer,
-    features::{plugins::PluginsFeature, settings::SettingsFeature},
+    features::{instance::PluginId, plugins::PluginsFeature, settings::SettingsFeature},
 };
 
 pub struct InitializePluginsUseCase {}
@@ -26,11 +26,12 @@ impl InitializePluginsUseCase {
             .map_err(aether_core::Error::from)?;
 
         for plugin_id in settings.enabled_plugins() {
-            if let Err(e) = container
-                .enable_plugin_use_case()
-                .execute(plugin_id.clone())
-                .await
-            {
+            // Stored by an older launcher, or by hand: no plugin can have such an id.
+            let Ok(id) = PluginId::try_from(plugin_id.as_str()) else {
+                tracing::warn!("Skipping enabled plugin '{plugin_id}': not a plugin id");
+                continue;
+            };
+            if let Err(e) = container.enable_plugin_use_case().execute(id).await {
                 log::error!("Failed to load plugin {plugin_id}: {e}");
             }
         }

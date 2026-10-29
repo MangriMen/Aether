@@ -26,7 +26,10 @@ use extism::{convert::Msgpack, host_fn};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 
 use crate::{
-    features::{events::ProgressService, plugins::infra::plugin_utils::PLUGIN_CACHE_MOUNT},
+    features::{
+        events::ProgressService, instance::PluginId,
+        plugins::infra::plugin_utils::PLUGIN_CACHE_MOUNT,
+    },
     shared::{
         fetch::FetchSemaphore,
         hash::{FileHash, HashAlgorithm, InvalidFileHash, infra::hash_file_hex_async},
@@ -328,7 +331,7 @@ pub(crate) async fn download_with(
 
 /// Handle `download_to_cache` — download a hash-verified file into the plugin's `/cache`.
 pub(crate) async fn handle_download_to_cache(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     params: DownloadToCacheParamsDto,
     context: &DownloadContext<'_>,
 ) -> crate::Result<CachedFileDto> {

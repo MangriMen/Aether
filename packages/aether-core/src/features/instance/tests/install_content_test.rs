@@ -9,6 +9,7 @@ use std::{
 use async_trait::async_trait;
 use tempfile::TempDir;
 
+use crate::features::instance::CapabilityId;
 use crate::{
     features::{
         instance::{
@@ -76,7 +77,7 @@ impl MockProvider {
         Arc::new(Self {
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
-                    id: CAPABILITY.into(),
+                    id: CapabilityId::from_static(CAPABILITY),
                     name: CAPABILITY.into(),
                     description: None,
                     icon: None,
@@ -255,7 +256,11 @@ impl Fixture {
         let temp_dir = TempDir::new().unwrap();
         let registry = Arc::new(MemoryCapabilityRegistry::<Arc<dyn ContentProvider>>::default());
         registry
-            .add(PLUGIN.into(), CAPABILITY.into(), provider.clone())
+            .add(
+                PluginId::from_static(PLUGIN),
+                CapabilityId::from_static(CAPABILITY),
+                provider.clone(),
+            )
             .await
             .unwrap();
 

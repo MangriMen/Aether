@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::features::instance::{ProviderId, is_valid_id};
+use crate::features::instance::{PluginId, ProviderId};
 
 use super::{ManifestError, PluginFilePath};
 
@@ -19,9 +19,9 @@ pub struct PluginManifest {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PluginMetadata {
-    /// Unique identifier for the plugin: `[a-z0-9][a-z0-9_-]*`, never
-    /// [`ProviderId::BUILTIN_PLUGIN_ID`] (see [`PluginMetadata::validate_id`]).
-    pub id: String,
+    /// Unique identifier for the plugin, never [`ProviderId::BUILTIN_PLUGIN_ID`] (see
+    /// [`PluginMetadata::validate_id`]).
+    pub id: PluginId,
 
     /// Readable name of the plugin.
     pub name: String,
@@ -114,17 +114,10 @@ impl PluginManifest {
 }
 
 impl PluginMetadata {
-    /// The id must fit the id scheme and must not be the one reserved for the providers built
-    /// into Aether: a plugin taking it would pass its providers off as built-in ones.
+    /// The id must not be the one reserved for the providers built into Aether: a plugin taking
+    /// it would pass its providers off as built-in ones.
     pub fn validate_id(&self) -> Result<(), ManifestError> {
-        if !is_valid_id(&self.id) {
-            return Err(ManifestError::InvalidId {
-                field: "metadata.id".to_owned(),
-                value: self.id.clone(),
-            });
-        }
-
-        if self.id == ProviderId::BUILTIN_PLUGIN_ID {
+        if self.id.as_str() == ProviderId::BUILTIN_PLUGIN_ID {
             return Err(ManifestError::ReservedPluginId);
         }
 
@@ -240,9 +233,9 @@ mod tests {
 
     // ── PluginMetadata::validate_id ──
 
-    fn metadata(id: &str) -> PluginMetadata {
+    fn metadata(id: &'static str) -> PluginMetadata {
         PluginMetadata {
-            id: id.to_owned(),
+            id: PluginId::from_static(id),
             name: "Test".to_owned(),
             version: semver::Version::new(0, 1, 0),
             description: None,
@@ -255,24 +248,10 @@ mod tests {
     #[case::packwiz("packwiz")]
     #[case::underscore("curseforge_plugin")]
     #[case::dash("test-plugin")]
-    fn should_accept_a_manifest_when_the_plugin_id_is_one_of_existing_plugins(#[case] id: &str) {
+    fn should_accept_a_manifest_when_the_plugin_id_is_one_of_existing_plugins(
+        #[case] id: &'static str,
+    ) {
         assert!(metadata(id).validate_id().is_ok(), "{id:?}");
-    }
-
-    #[rstest]
-    #[case::empty("")]
-    #[case::hash("a#b")]
-    #[case::provider_prefix("core:modrinth")]
-    #[case::uppercase("Packwiz")]
-    #[case::traversal("../escape")]
-    fn should_reject_a_manifest_when_the_plugin_id_is_outside_the_scheme(#[case] id: &str) {
-        assert!(
-            matches!(
-                metadata(id).validate_id(),
-                Err(ManifestError::InvalidId { field, value }) if field == "metadata.id" && value == id
-            ),
-            "{id:?}"
-        );
     }
 
     #[test]

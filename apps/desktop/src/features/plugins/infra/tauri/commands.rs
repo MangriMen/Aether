@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use aether_core::features::plugins::{PluginSourceType, PluginsFeature, ProviderRelease};
+use aether_core::features::{
+    instance::PluginId,
+    plugins::{PluginError, PluginSourceType, PluginsFeature, ProviderRelease},
+};
 use tauri::State;
 
 use crate::{
@@ -33,6 +36,16 @@ pub fn get_specta_commands<R: tauri::Runtime>() -> tauri_specta::Commands<R> {
 #[must_use]
 pub fn get_specta_events() -> tauri_specta::Events {
     tauri_specta::collect_events![PluginEventDto]
+}
+
+/// An id that does not parse names no plugin, hence [`PluginError::NotFound`].
+fn parse_id(id: String) -> Result<PluginId, aether_core::Error> {
+    PluginId::try_from(id).map_err(|err| {
+        PluginError::NotFound {
+            plugin_id: err.value,
+        }
+        .into()
+    })
 }
 
 #[tauri::command]
@@ -87,6 +100,7 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Plugin
 #[tauri::command]
 #[specta::specta]
 async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .get_plugin_dto_use_case()
@@ -106,6 +120,7 @@ async fn remove(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .remove_plugin_use_case()
@@ -124,6 +139,7 @@ async fn enable(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .enable_plugin_use_case()
@@ -142,6 +158,7 @@ async fn force_enable(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .force_enable_plugin_use_case()
@@ -160,6 +177,7 @@ async fn disable(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .disable_plugin_service()
@@ -180,6 +198,7 @@ async fn reload(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .reload_plugin_use_case()
@@ -194,6 +213,7 @@ async fn get_settings(
     id: String,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Option<PluginSettingsDto>> {
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .get_plugin_settings_use_case()
@@ -214,6 +234,7 @@ async fn edit_settings(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .edit_plugin_settings_use_case()
@@ -237,6 +258,7 @@ async fn grant_folder_access(
 ) -> FrontendResult<FolderAccessDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .grant_plugin_folder_access_use_case()
@@ -261,6 +283,7 @@ async fn grant_host_access(
 ) -> FrontendResult<HostAccessDto> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .grant_plugin_host_access_use_case()
@@ -324,6 +347,7 @@ async fn get_plugin_source(
     id: String,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<Option<PluginSourceDto>> {
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .plugin_source_storage()
@@ -339,6 +363,7 @@ async fn check_for_updates(
     id: String,
     container: State<'_, ContainerState>,
 ) -> FrontendResult<PluginUpdateInfoDto> {
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .check_for_plugin_updates_use_case()
@@ -359,6 +384,7 @@ async fn update_plugin(
 ) -> FrontendResult<()> {
     let _guard = idempotency.lock_cmd(request_id)?;
 
+    let id = parse_id(id)?;
     let container = container.0.clone();
     Ok(container
         .update_plugin_use_case()
@@ -427,5 +453,6 @@ async fn install_plugin_from_provider(
             },
         )
         .await
-        .map_err(aether_core::Error::from)?)
+        .map_err(aether_core::Error::from)?
+        .into())
 }
