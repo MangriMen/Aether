@@ -317,7 +317,7 @@ fn atomic(content_type: ContentType, loader: Option<&str>) -> ContentInstallPara
         base: base("sodium"),
         instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
         game_version: "1.21.1".into(),
-        loader: loader.map(Into::into),
+        loader: loader.map(|l| l.parse().unwrap()),
         content_type,
     })
 }
@@ -352,7 +352,7 @@ async fn should_install_content_under_the_content_owner_when_an_instance_is_chos
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
                 game_version: "1.21.1".into(),
-                loader: Some("fabric".into()),
+                loader: Some(ModLoader::Fabric),
             },
         }]
     );
@@ -541,7 +541,7 @@ fn atomic_into(instance_id: &str, content_id: &str) -> ContentInstallParams {
         base: base(content_id),
         instance_id: InstanceId::try_from(instance_id).unwrap(),
         game_version: "1.21.1".into(),
-        loader: Some("fabric".into()),
+        loader: Some(ModLoader::Fabric),
         content_type: ContentType::Mod,
     })
 }

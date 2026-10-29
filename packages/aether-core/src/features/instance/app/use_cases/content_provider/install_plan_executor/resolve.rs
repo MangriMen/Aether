@@ -1,6 +1,7 @@
 //! Resolving a plan's provider refs: which game the target runs and which provider answers
 //! each platform.
 
+use crate::features::minecraft::ModLoader;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -174,7 +175,7 @@ impl InstallPlanExecutor {
                             &content_id,
                             version.as_deref(),
                             &game.game_version,
-                            game.loader.as_deref(),
+                            game.loader.as_ref().map(ModLoader::as_str),
                         )
                         .await?;
 

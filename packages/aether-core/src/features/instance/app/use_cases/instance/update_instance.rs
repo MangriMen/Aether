@@ -108,8 +108,7 @@ impl UpdateInstanceUseCase {
         let requested = ResolveTarget::Existing {
             instance_id: instance.id().clone(),
             game_version: instance.game_version.clone(),
-            loader: (instance.loader != ModLoader::Vanilla)
-                .then(|| instance.loader.as_str().to_owned()),
+            loader: (instance.loader != ModLoader::Vanilla).then_some(instance.loader),
         };
         let plan = match provider
             .resolve_install_plan(ResolveInstallPlanParams {

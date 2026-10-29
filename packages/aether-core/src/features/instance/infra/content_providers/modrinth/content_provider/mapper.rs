@@ -331,14 +331,8 @@ impl TryFrom<ProjectVersionResponse> for ContentVersion {
 
         let loaders = loaders
             .into_iter()
-            .filter_map(|l| match l.to_lowercase().as_str() {
-                "vanilla" => Some(ModLoader::Vanilla),
-                "forge" => Some(ModLoader::Forge),
-                "fabric" => Some(ModLoader::Fabric),
-                "quilt" => Some(ModLoader::Quilt),
-                "neoforge" | "neo" => Some(ModLoader::NeoForge),
-                _ => None,
-            })
+            // A tag the provider invents that is not a loader of ours is dropped, not an error.
+            .filter_map(|l| l.parse::<ModLoader>().ok())
             .collect();
 
         let web_url = format!("{MODRINTH_WEB_URL}/project/{project_id}/version/{id}");

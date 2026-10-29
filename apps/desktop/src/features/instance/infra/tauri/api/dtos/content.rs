@@ -4,6 +4,7 @@ use aether_core::features::instance::{
     AtomicInstallParams, BaseContentParams, ContentInstallParams, ContentItem, ContentSearchParams,
     ContentSearchResult, InstanceError, InstanceId, ModpackInstallParams, ProviderId,
 };
+use aether_core::features::minecraft::UnknownModLoader;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use specta::Type;
@@ -210,7 +211,16 @@ impl TryFrom<AtomicInstallParamsDto> for AtomicInstallParams {
             base: value.base.into(),
             instance_id: InstanceId::try_from(value.instance_id)?,
             game_version: value.game_version,
-            loader: value.loader,
+            loader: value
+                .loader
+                .as_deref()
+                .map(str::parse)
+                .transpose()
+                .map_err(
+                    |err: UnknownModLoader| InstanceError::ContentProviderError {
+                        reason: err.to_string(),
+                    },
+                )?,
             content_type: value.content_type.into(),
         })
     }

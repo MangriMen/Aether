@@ -178,7 +178,7 @@ pub struct AtomicInstallParams {
     pub base: BaseContentParams,
     pub instance_id: InstanceId,
     pub game_version: String,
-    pub loader: Option<String>,
+    pub loader: Option<ModLoader>,
     pub content_type: ContentType,
 }
 

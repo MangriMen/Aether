@@ -693,7 +693,7 @@ async fn should_update_the_pack_through_a_plan_and_record_its_version_when_a_new
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from(INSTANCE_ID).unwrap(),
                 game_version: "1.21.1".into(),
-                loader: Some("fabric".into()),
+                loader: Some(ModLoader::Fabric),
             },
         }]
     );

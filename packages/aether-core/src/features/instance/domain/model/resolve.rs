@@ -46,9 +46,8 @@ pub enum ResolveTarget {
     Existing {
         instance_id: InstanceId,
         game_version: String,
-        /// The loader as the provider's `resolve_file` takes it (`fabric`, `neoforge`, …);
         /// `None` for a vanilla instance.
-        loader: Option<String>,
+        loader: Option<ModLoader>,
     },
     /// A new instance, described by the content (a modpack): what it runs is the provider's
     /// answer, not a constraint on it.
@@ -242,7 +241,7 @@ mod tests {
             target: ResolveTarget::Existing {
                 instance_id: InstanceId::try_from("instance").unwrap(),
                 game_version: "1.21.1".into(),
-                loader: Some("fabric".into()),
+                loader: Some(ModLoader::Fabric),
             },
         };
 
@@ -381,7 +380,7 @@ mod tests {
         let existing = ResolveTarget::Existing {
             instance_id: InstanceId::try_from("instance").unwrap(),
             game_version: "1.21.1".into(),
-            loader: Some("fabric".into()),
+            loader: Some(ModLoader::Fabric),
         };
 
         assert_eq!(

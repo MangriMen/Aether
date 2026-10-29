@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use super::install_plan_executor::is_pack_of;
 use crate::features::instance::app::ports::{InstallContentUseCasePort, InstallPlanExecutorPort};
+use crate::features::minecraft::ModLoader;
 use crate::{
     features::instance::{
         AtomicInstallParams, ContentInstallParams, ContentProvider, ContentSource, ContentType,
@@ -221,9 +222,7 @@ fn resolve_params_of(params: &ContentInstallParams) -> (ResolveInstallPlanParams
                     instance_id: instance_id.clone(),
                     game_version: game_version.clone(),
                     // A vanilla instance has no loader to match.
-                    loader: loader
-                        .clone()
-                        .filter(|loader| !loader.eq_ignore_ascii_case("vanilla")),
+                    loader: loader.filter(|loader| *loader != ModLoader::Vanilla),
                 },
             },
             base.content_id.clone(),
