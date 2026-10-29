@@ -401,7 +401,11 @@
     "fromPlugin": "From plugin",
     "noPlugins": "No plugins found",
     "openPluginsFolder": "Open plugins folder",
-    "unrecognizedDirs": "These folders in the plugins folder are not loaded: {{names}}. A plugin folder name may only contain lowercase letters, digits, \"-\" and \"_\". Rename the folder and sync the plugins.",
+    "skippedDirs": {
+      "title": "These folders in the plugins folder are not loaded:",
+      "invalidName": "the name may only contain lowercase letters, digits, \"-\" and \"_\"; rename the folder and sync the plugins",
+      "loadFailed": "the plugin cannot be read ({{details}})"
+    },
     "saveSettings": "Save settings",
     "title": "Plugins",
     "syncError": "Sync error",

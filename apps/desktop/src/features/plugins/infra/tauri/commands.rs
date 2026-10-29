@@ -12,7 +12,7 @@ use crate::{
     features::plugins::{
         EditPluginSettingsDto, FolderAccessDto, HostAccessDto, PluginDto, PluginEventDto,
         PluginSettingsDto, PluginSourceDto, PluginSourceTypeDto, PluginUpdateInfoDto,
-        ProviderPluginPreviewDto,
+        ProviderPluginPreviewDto, SkippedPluginDirDto,
     },
     shared::reveal_in_explorer::infra::reveal_in_explorer,
     shared::{
@@ -99,15 +99,18 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Plugin
 
 #[tauri::command]
 #[specta::specta]
-async fn list_unrecognized_dirs(
+async fn list_skipped_dirs(
     container: State<'_, ContainerState>,
-) -> FrontendResult<Vec<String>> {
+) -> FrontendResult<Vec<SkippedPluginDirDto>> {
     let container = container.0.clone();
     Ok(container
-        .list_unrecognized_plugin_dirs_use_case()
+        .list_skipped_plugin_dirs_use_case()
         .execute()
         .await
-        .map_err(aether_core::Error::from)?)
+        .map_err(aether_core::Error::from)?
+        .into_iter()
+        .map(Into::into)
+        .collect())
 }
 
 #[tauri::command]

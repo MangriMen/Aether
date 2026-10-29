@@ -14,7 +14,7 @@ use crate::{
         plugins::{
             ExtractedPlugin, LoadConfig, ManifestError, Plugin, PluginCapabilities, PluginContent,
             PluginError, PluginManifest, PluginState, PluginStateReason, PluginStorage,
-            PluginVerificationStorage,
+            PluginVerificationStorage, SkippedPluginDir, SkippedPluginDirReason,
         },
         settings::{LocationInfo, PLUGIN_SETTINGS_FILE_NAME},
     },
@@ -289,7 +289,90 @@ impl FsPluginStorage {
     }
 }
 
+/// What the plugins folder holds: the plugins that could be read, and the directories that
+/// could not be, with the reason.
+struct Scan {
+    plugins: HashMap<PluginId, Plugin>,
+    skipped: Vec<SkippedPluginDir>,
+}
+
 impl FsPluginStorage {
+    async fn scan(&self) -> Result<Scan, PluginError> {
+        let plugins_dir = self.location_info.plugins_dir();
+        let mut scan = Scan {
+            plugins: HashMap::new(),
+            skipped: Vec::new(),
+        };
+
+        if !plugins_dir.exists() {
+            return Ok(scan);
+        }
+
+        self.settle_replaced(&plugins_dir).await?;
+
+        let mut dir_entries = read_dir(&plugins_dir).await?;
+
+        while let Some(dir_entry) = dir_entries.next_entry().await.map_err(IoError::from)? {
+            let path = dir_entry.path();
+
+            // A replacement under way or cut off: a copy of a plugin listed under its own name,
+            // which must not be loaded in its place.
+            let file_name = dir_entry.file_name();
+            if is_side_dir(&file_name) {
+                continue;
+            }
+
+            // A plugin is a directory; a file beside them is none of the launcher's business.
+            if !dir_entry.file_type().await.map_err(IoError::from)?.is_dir() {
+                continue;
+            }
+
+            let dir_name = file_name.to_string_lossy().into_owned();
+
+            // Every operation on a plugin finds it by `plugins/<id>`: a directory whose name is
+            // no id is not one the launcher put there, and could not be reached as a plugin.
+            let Some(dir_id) = file_name
+                .to_str()
+                .and_then(|name| PluginId::try_from(name).ok())
+            else {
+                warn!(
+                    "Skipping '{}' in the plugins folder: its name is not a plugin id",
+                    path.display()
+                );
+                scan.skipped.push(SkippedPluginDir {
+                    dir_name,
+                    reason: SkippedPluginDirReason::InvalidName,
+                });
+                continue;
+            };
+
+            let loaded = match self.load_from_dir(&path).await {
+                Err(PluginError::Manifest(err @ ManifestError::ReservedPluginId)) => {
+                    self.load_refused_from_dir(&path, dir_id, err).await
+                }
+                other => other,
+            };
+
+            match loaded {
+                Ok(plugin) => {
+                    scan.plugins
+                        .insert(plugin.manifest.metadata.id.clone(), plugin);
+                }
+                Err(e) => {
+                    warn!("Failed to load plugin from '{}': {}", path.display(), e);
+                    scan.skipped.push(SkippedPluginDir {
+                        dir_name,
+                        reason: SkippedPluginDirReason::LoadFailed {
+                            details: e.to_string(),
+                        },
+                    });
+                }
+            }
+        }
+
+        Ok(scan)
+    }
+
     /// Settles the copies a replacement left aside, so that a process killed in the middle of
     /// one does not lose the plugin. Only what is certain is done, since an update may be under
     /// way as this runs:
@@ -481,87 +564,13 @@ impl PluginStorage for FsPluginStorage {
     }
 
     async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
-        let plugins_dir = self.location_info.plugins_dir();
-
-        if !plugins_dir.exists() {
-            return Ok(HashMap::new());
-        }
-
-        self.settle_replaced(&plugins_dir).await?;
-
-        let mut dir_entries = read_dir(&plugins_dir).await?;
-        let mut plugins = HashMap::new();
-
-        while let Some(dir_entry) = dir_entries.next_entry().await.map_err(IoError::from)? {
-            let path = dir_entry.path();
-
-            // A replacement under way or cut off: a copy of a plugin listed under its own name,
-            // which must not be loaded in its place.
-            let file_name = dir_entry.file_name();
-            if is_side_dir(&file_name) {
-                continue;
-            }
-
-            // Every operation on a plugin finds it by `plugins/<id>`: a directory whose name is
-            // no id is not one the launcher put there, and could not be reached as a plugin.
-            let Some(dir_id) = file_name
-                .to_str()
-                .and_then(|name| PluginId::try_from(name).ok())
-            else {
-                warn!(
-                    "Skipping '{}' in the plugins folder: its name is not a plugin id",
-                    path.display()
-                );
-                continue;
-            };
-
-            let loaded = match self.load_from_dir(&path).await {
-                Err(PluginError::Manifest(err @ ManifestError::ReservedPluginId)) => {
-                    self.load_refused_from_dir(&path, dir_id, err).await
-                }
-                other => other,
-            };
-
-            match loaded {
-                Ok(plugin) => {
-                    plugins.insert(plugin.manifest.metadata.id.clone(), plugin);
-                }
-                Err(e) => {
-                    warn!("Failed to load plugin from '{}': {}", path.display(), e);
-                }
-            }
-        }
-
-        Ok(plugins)
+        Ok(self.scan().await?.plugins)
     }
 
-    async fn list_unrecognized_dirs(&self) -> Result<Vec<String>, PluginError> {
-        let plugins_dir = self.location_info.plugins_dir();
-
-        if !plugins_dir.exists() {
-            return Ok(Vec::new());
-        }
-
-        let mut dir_entries = read_dir(&plugins_dir).await?;
-        let mut names = Vec::new();
-
-        while let Some(dir_entry) = dir_entries.next_entry().await.map_err(IoError::from)? {
-            let file_name = dir_entry.file_name();
-            if is_side_dir(&file_name) {
-                continue;
-            }
-
-            let is_dir = dir_entry.file_type().await.map_err(IoError::from)?.is_dir();
-            let is_plugin_id = file_name
-                .to_str()
-                .is_some_and(|name| PluginId::try_from(name).is_ok());
-            if is_dir && !is_plugin_id {
-                names.push(file_name.to_string_lossy().into_owned());
-            }
-        }
-
-        names.sort();
-        Ok(names)
+    async fn list_skipped_dirs(&self) -> Result<Vec<SkippedPluginDir>, PluginError> {
+        let mut skipped = self.scan().await?.skipped;
+        skipped.sort_by(|a, b| a.dir_name.cmp(&b.dir_name));
+        Ok(skipped)
     }
 
     async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError> {
@@ -743,9 +752,32 @@ mod tests {
         }
         std::fs::write(plugins_dir.join("Notes.txt"), b"").unwrap();
 
-        let names = fixture.storage.list_unrecognized_dirs().await.unwrap();
+        let skipped = fixture.storage.list_skipped_dirs().await.unwrap();
 
+        let names: Vec<_> = skipped.iter().map(|dir| dir.dir_name.as_str()).collect();
         assert_eq!(names, ["My Plugin", "Packwiz"]);
+        assert!(
+            skipped
+                .iter()
+                .all(|dir| dir.reason == SkippedPluginDirReason::InvalidName)
+        );
+    }
+
+    #[tokio::test]
+    async fn should_report_the_directory_when_its_plugin_cannot_be_read() {
+        let fixture = Fixture::installed();
+        let dir = fixture.location_info.plugins_dir().join("broken");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("manifest.json"), b"not json").unwrap();
+
+        let skipped = fixture.storage.list_skipped_dirs().await.unwrap();
+
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].dir_name, "broken");
+        assert!(matches!(
+            skipped[0].reason,
+            SkippedPluginDirReason::LoadFailed { .. }
+        ));
     }
 
     #[tokio::test]

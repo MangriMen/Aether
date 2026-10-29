@@ -21,8 +21,7 @@ import { pluginsCache, pluginsQueries } from './pluginsCache';
 
 export const usePlugins = () => useQuery(pluginsQueries.list);
 
-export const useUnrecognizedPluginDirs = () =>
-  useQuery(pluginsQueries.unrecognizedDirs);
+export const useSkippedPluginDirs = () => useQuery(pluginsQueries.skippedDirs);
 
 export const usePluginSettings = (id: Accessor<PluginId>) =>
   useQuery(() => pluginsQueries.settings(id()));

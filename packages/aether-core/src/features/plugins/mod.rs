@@ -10,7 +10,8 @@ pub use domain::{
     PathMapping, PluginCapabilities, PluginContentProviderCapability, PluginError,
     PluginImporterCapability, PluginManifest, PluginManifestPreview, PluginMetadata,
     PluginProviderError, PluginSettings, PluginSource, PluginSourceType, PluginUpdaterCapability,
-    ProviderHandlers, ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig,
+    ProviderHandlers, ProviderPluginPreview, ProviderUpdateInfo, RuntimeConfig, SkippedPluginDir,
+    SkippedPluginDirReason,
 };
 pub(crate) use domain::{
     AsCapabilityMetadata, Compatibility, CoreMount, ExtractedPlugin, FolderMounts, GrantableHost,
@@ -42,7 +43,7 @@ pub(crate) use app::{
     GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
     ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
-    ListUnrecognizedPluginDirsUseCase, ListUnrecognizedPluginDirsUseCasePort, PluginDisableService,
+    ListSkippedPluginDirsUseCase, ListSkippedPluginDirsUseCasePort, PluginDisableService,
     PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase,
     RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
 };

@@ -13,9 +13,9 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.list,
     staleTime: 60 * 1000,
   }),
-  unrecognizedDirs: () => ({
-    queryKey: pluginKeys.unrecognizedDirs(),
-    queryFn: pluginsCommands.listUnrecognizedDirs,
+  skippedDirs: () => ({
+    queryKey: pluginKeys.skippedDirs(),
+    queryFn: pluginsCommands.listSkippedDirs,
   }),
   settings: (id: PluginId) => ({
     queryKey: pluginKeys.settings(id),
