@@ -27,10 +27,7 @@ impl ListContentVersionsUseCase {
 
         let provider = self
             .provider_registry
-            .find_by_plugin_and_capability_id(
-                provider_id.plugin_id.as_str(),
-                provider_id.capability_id.as_str(),
-            )
+            .find_by_plugin_and_capability_id(&provider_id.plugin_id, &provider_id.capability_id)
             .await
             .map_err(|_| InstanceError::ContentProviderNotFound {
                 plugin_id: provider_id.plugin_id.to_string(),

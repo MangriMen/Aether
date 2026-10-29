@@ -1,4 +1,4 @@
-use crate::features::instance::ProviderId;
+use crate::features::instance::{CapabilityId, ProviderId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ManifestError {
@@ -48,7 +48,7 @@ pub enum ManifestError {
         "Content provider \"{capability_id}\" declares a `platform` but no `resolveFile` handler, \
          which a platform requires: references to the platform's content are resolved through it"
     )]
-    PlatformWithoutResolveFile { capability_id: String },
+    PlatformWithoutResolveFile { capability_id: CapabilityId },
 }
 
 fn quote_names(names: &[String]) -> String {

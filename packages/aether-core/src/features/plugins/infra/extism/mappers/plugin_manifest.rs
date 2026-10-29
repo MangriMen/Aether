@@ -5,9 +5,12 @@ use aether_core_plugin_api::v0::{
     RuntimeConfigDto,
 };
 
-use crate::features::plugins::domain::{
-    ApiConfig, LoadConfig, LoadConfigType, ManifestError, PathMapping, PluginManifest,
-    PluginMetadata, RuntimeConfig,
+use crate::features::{
+    instance::PluginId,
+    plugins::domain::{
+        ApiConfig, LoadConfig, LoadConfigType, ManifestError, PathMapping, PluginManifest,
+        PluginMetadata, RuntimeConfig,
+    },
 };
 
 // ── DTO → Domain (fallible — semver parsing, id scheme) ──
@@ -36,8 +39,13 @@ impl TryFrom<PluginMetadataDto> for PluginMetadata {
                 error: e.to_string(),
             })?;
 
+        let id = PluginId::try_from(dto.id).map_err(|e| ManifestError::InvalidId {
+            field: "metadata.id".to_owned(),
+            value: e.value,
+        })?;
+
         let metadata = Self {
-            id: dto.id,
+            id,
             name: dto.name,
             version,
             description: dto.description,
@@ -118,7 +126,7 @@ impl From<PluginManifest> for PluginManifestDto {
 impl From<PluginMetadata> for PluginMetadataDto {
     fn from(v: PluginMetadata) -> Self {
         Self {
-            id: v.id,
+            id: v.id.into(),
             name: v.name,
             version: v.version.to_string(),
             description: v.description,
@@ -242,5 +250,37 @@ mod load_file_tests {
         );
 
         assert!(matches!(result, Err(ManifestError::InvalidLoadFile(_))));
+    }
+}
+
+#[cfg(test)]
+mod id_tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::hash("a#b")]
+    #[case::provider_prefix("core:modrinth")]
+    #[case::uppercase("Packwiz")]
+    #[case::traversal("../escape")]
+    fn should_reject_a_manifest_when_the_plugin_id_is_outside_the_scheme(#[case] id: &str) {
+        let dto = PluginMetadataDto {
+            id: id.to_owned(),
+            name: "Test".to_owned(),
+            version: "0.1.0".to_owned(),
+            description: None,
+            authors: vec![],
+            license: None,
+        };
+
+        assert!(
+            matches!(
+                PluginMetadata::try_from(dto),
+                Err(ManifestError::InvalidId { field, value }) if field == "metadata.id" && value == id
+            ),
+            "{id:?}"
+        );
     }
 }

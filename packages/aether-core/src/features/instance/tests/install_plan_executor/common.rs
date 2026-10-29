@@ -62,7 +62,7 @@ impl MockProvider {
             id: ProviderId::from_parts(plugin_id, capability_id).unwrap(),
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
-                    id: capability_id.into(),
+                    id: capability_id.parse().unwrap(),
                     name: capability_id.into(),
                     description: None,
                     icon: None,
@@ -748,8 +748,8 @@ impl Fixture {
     pub(super) async fn register(&self, provider: &Arc<MockProvider>) {
         self.registry
             .add(
-                provider.id.plugin_id.clone().into(),
-                provider.id.capability_id.clone().into(),
+                provider.id.plugin_id.clone(),
+                provider.id.capability_id.clone(),
                 provider.clone(),
             )
             .await

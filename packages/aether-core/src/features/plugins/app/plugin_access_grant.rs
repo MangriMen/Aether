@@ -1,3 +1,4 @@
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginRegistry, PluginSettings, PluginSettingsStorage,
 };
@@ -18,7 +19,7 @@ pub(super) enum SettingsGrant {
 pub(super) async fn grant_in_settings(
     registry: &PluginRegistry,
     storage: &dyn PluginSettingsStorage,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     dry_run: bool,
     is_allowed: impl FnOnce(&PluginSettings) -> bool,
     add: impl FnOnce(&mut PluginSettings),
@@ -45,7 +46,7 @@ pub(super) async fn grant_in_settings(
 pub(super) async fn revoke_in_settings(
     registry: &PluginRegistry,
     storage: &dyn PluginSettingsStorage,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     remove: impl FnOnce(&mut PluginSettings),
 ) -> Result<(), PluginError> {
     let _settings_lock = registry.lock_settings(plugin_id).await;

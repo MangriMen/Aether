@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, ops::Deref, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -16,8 +16,8 @@ pub struct InvalidId {
 /// The scheme leaves no room for [`ProviderId::SEPARATOR`] or `:`, so the string form of a
 /// [`ProviderId`] always parses back into the same pair.
 ///
-/// [`ProviderId`]: super::ProviderId
-/// [`ProviderId::SEPARATOR`]: super::ProviderId::SEPARATOR
+/// [`ProviderId`]: crate::features::instance::ProviderId
+/// [`ProviderId::SEPARATOR`]: crate::features::instance::ProviderId::SEPARATOR
 pub fn is_valid_id(value: &str) -> bool {
     let mut chars = value.chars();
 
@@ -84,9 +84,19 @@ macro_rules! define_id {
             }
         }
 
+        impl Deref for $name {
+            type Target = str;
 
+            fn deref(&self) -> &str {
+                &self.0
+            }
+        }
 
-
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
 
         impl fmt::Display for $name {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

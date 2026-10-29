@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         LoadConfigType, PluginDisableService, PluginError, PluginHandle, PluginLoaderRegistry,
         PluginManifest, PluginRegistry, PluginState,
@@ -31,13 +32,13 @@ impl DisablePluginUseCase {
 
     /// A plugin being enabled or restarted is refused with the matching in-progress error rather
     /// than taken from under it: a restart finishing after the disable would leave it running.
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.unload(plugin_id.clone()).await?;
         self.remove_from_enabled_plugins(&plugin_id).await
     }
 
     /// [`Self::execute`] without the plugin ceasing to be enabled.
-    pub(crate) async fn unload(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn unload(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         let manifest = self.plugin_registry.get_manifest(&plugin_id)?;
         let plugin_instance = self.plugin_registry.begin_unloading(&plugin_id).await?;
 
@@ -66,7 +67,7 @@ impl DisablePluginUseCase {
 
     async fn unload_plugin(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         manifest: &PluginManifest,
         plugin_instance: PluginHandle,
     ) -> Result<(), PluginError> {
@@ -85,7 +86,7 @@ impl DisablePluginUseCase {
         Ok(())
     }
 
-    async fn remove_from_enabled_plugins(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove_from_enabled_plugins(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let owned = plugin_id.to_owned();
         self.settings_storage
             .update_mut(Box::new(move |mut settings| {
@@ -99,11 +100,11 @@ impl DisablePluginUseCase {
 
 #[async_trait]
 impl PluginDisableService for DisablePluginUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.execute(plugin_id).await
     }
 
-    async fn unload(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn unload(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.unload(plugin_id).await
     }
 }

@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::instance::PluginId;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     plugins::{
@@ -23,6 +24,10 @@ use crate::features::{
 };
 
 const PLUGIN_ID: &str = "test-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
 
 const MANIFEST: &str = r#"{
     "metadata": {
@@ -58,7 +63,7 @@ fn settings(location_info: &Arc<LocationInfo>) -> Arc<FsPluginSettingsStorage> {
 
 async fn saved_hosts(location_info: &Arc<LocationInfo>) -> Vec<String> {
     settings(location_info)
-        .get(PLUGIN_ID)
+        .get(&plugin_id())
         .await
         .unwrap()
         .unwrap()
@@ -112,27 +117,27 @@ async fn should_drop_the_provider_records_when_a_plugin_is_imported_over_another
         None,
     ));
 
-    let plugin_dir = location_info.plugin_dir(PLUGIN_ID);
+    let plugin_dir = location_info.plugin_dir(&plugin_id());
     tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
     tokio::fs::write(plugin_dir.join("plugin.wasm"), b"\0asm released")
         .await
         .unwrap();
     tokio::fs::write(
-        location_info.plugin_settings(PLUGIN_ID),
+        location_info.plugin_settings(&plugin_id()),
         "allowedHosts = [\"kept.example.com\"]\nallowedPaths = []\n",
     )
     .await
     .unwrap();
     verification
         .save(
-            PLUGIN_ID,
+            &plugin_id(),
             &PluginVerification::new("sha256-of-release", PluginSourceType::GitHub),
         )
         .await
         .unwrap();
     source
         .save(
-            PLUGIN_ID,
+            &plugin_id(),
             &PluginSource::Remote {
                 source_type: PluginSourceType::GitHub,
                 identifier: "owner/repo".into(),
@@ -161,8 +166,8 @@ async fn should_drop_the_provider_records_when_a_plugin_is_imported_over_another
     .await
     .unwrap();
 
-    assert_eq!(verification.get(PLUGIN_ID).await.unwrap(), None);
-    assert_eq!(source.get(PLUGIN_ID).await.unwrap(), None);
+    assert_eq!(verification.get(&plugin_id()).await.unwrap(), None);
+    assert_eq!(source.get(&plugin_id()).await.unwrap(), None);
     assert_eq!(
         tokio::fs::read(plugin_dir.join("plugin.wasm"))
             .await
@@ -207,7 +212,7 @@ async fn should_import_a_plugin_when_it_has_no_records() {
 
     assert!(
         location_info
-            .plugin_dir(PLUGIN_ID)
+            .plugin_dir(&plugin_id())
             .join("plugin.wasm")
             .exists()
     );
@@ -272,13 +277,13 @@ async fn should_leave_out_core_files_when_an_imported_archive_brings_them() {
     .await
     .unwrap();
 
-    let plugin_dir = location_info.plugin_dir(PLUGIN_ID);
+    let plugin_dir = location_info.plugin_dir(&plugin_id());
     assert!(plugin_dir.join("plugin.wasm").exists());
     for name in ["settings.toml", "verification.json", "source.json"] {
         assert!(!has_file_like(&plugin_dir, name), "{name} was copied");
     }
-    assert_eq!(verification.get(PLUGIN_ID).await.unwrap(), None);
-    assert_eq!(source.get(PLUGIN_ID).await.unwrap(), None);
+    assert_eq!(verification.get(&plugin_id()).await.unwrap(), None);
+    assert_eq!(source.get(&plugin_id()).await.unwrap(), None);
 }
 
 #[tokio::test]
@@ -291,11 +296,11 @@ async fn should_keep_the_user_settings_when_an_imported_archive_brings_its_own()
     let verification = Arc::new(FsPluginVerificationStorage::new(location_info.clone()));
     let source = Arc::new(FsPluginSourceStorage::new(location_info.clone()));
 
-    tokio::fs::create_dir_all(location_info.plugin_dir(PLUGIN_ID))
+    tokio::fs::create_dir_all(location_info.plugin_dir(&plugin_id()))
         .await
         .unwrap();
     tokio::fs::write(
-        location_info.plugin_settings(PLUGIN_ID),
+        location_info.plugin_settings(&plugin_id()),
         "allowedHosts = [\"kept.example.com\"]\nallowedPaths = []\n",
     )
     .await
@@ -333,27 +338,27 @@ impl PluginStorage for FailingReplace {
     async fn add(&self, p: ExtractedPlugin) -> Result<(), PluginError> {
         self.0.add(p).await
     }
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         self.0.list().await
     }
-    async fn get(&self, id: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, id: &PluginId) -> Result<Plugin, PluginError> {
         self.0.get(id).await
     }
-    async fn remove(&self, id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(id).await
     }
     async fn replace(&self, p: ExtractedPlugin) -> Result<(), PluginError> {
         Err(PluginError::NotFound {
-            plugin_id: p.plugin_id,
+            plugin_id: p.plugin_id.into(),
         })
     }
-    async fn restore_replaced(&self, id: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, id: &PluginId) -> Result<(), PluginError> {
         self.0.restore_replaced(id).await
     }
-    async fn discard_replaced(&self, id: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, id: &PluginId) -> Result<(), PluginError> {
         self.0.discard_replaced(id).await
     }
-    async fn wasm_sha256(&self, id: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, id: &PluginId) -> Result<String, PluginError> {
         self.0.wasm_sha256(id).await
     }
 }
@@ -369,17 +374,17 @@ async fn should_keep_the_provider_records_when_the_replacement_fails() {
     let source = Arc::new(FsPluginSourceStorage::new(location_info.clone()));
     let storage = FsPluginStorage::new(location_info.clone(), verification.clone(), None);
 
-    let plugin_dir = location_info.plugin_dir(PLUGIN_ID);
+    let plugin_dir = location_info.plugin_dir(&plugin_id());
     tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
     let recorded = PluginVerification::new("sha256-of-release", PluginSourceType::GitHub);
-    verification.save(PLUGIN_ID, &recorded).await.unwrap();
+    verification.save(&plugin_id(), &recorded).await.unwrap();
     let recorded_source = PluginSource::Remote {
         source_type: PluginSourceType::GitHub,
         identifier: "owner/repo".into(),
         current_tag: "v1".into(),
         current_version: "1.0.0".into(),
     };
-    source.save(PLUGIN_ID, &recorded_source).await.unwrap();
+    source.save(&plugin_id(), &recorded_source).await.unwrap();
 
     let archive = temp.path().join("local.zip");
     tokio::fs::write(&archive, plugin_zip(b"\0asm local build"))
@@ -399,8 +404,14 @@ async fn should_keep_the_provider_records_when_the_replacement_fails() {
     .await;
 
     assert!(result.is_err());
-    assert_eq!(verification.get(PLUGIN_ID).await.unwrap(), Some(recorded));
-    assert_eq!(source.get(PLUGIN_ID).await.unwrap(), Some(recorded_source));
+    assert_eq!(
+        verification.get(&plugin_id()).await.unwrap(),
+        Some(recorded)
+    );
+    assert_eq!(
+        source.get(&plugin_id()).await.unwrap(),
+        Some(recorded_source)
+    );
 }
 /// An imported plugin replaces the installed one as a whole: a file only the old build had is
 /// gone, and the user's settings carry over.
@@ -419,13 +430,13 @@ async fn should_replace_the_installed_plugin_when_one_of_its_id_is_imported() {
         None,
     ));
 
-    let plugin_dir = location_info.plugin_dir(PLUGIN_ID);
+    let plugin_dir = location_info.plugin_dir(&plugin_id());
     tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
     tokio::fs::write(plugin_dir.join("stale.bin"), b"old")
         .await
         .unwrap();
     tokio::fs::write(
-        location_info.plugin_settings(PLUGIN_ID),
+        location_info.plugin_settings(&plugin_id()),
         "allowedHosts = [\"kept.example.com\"]\nallowedPaths = []\n",
     )
     .await
@@ -511,7 +522,7 @@ async fn should_sync_and_report_the_error_when_a_later_archive_fails() {
     assert_eq!(sync.0.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert!(
         location_info
-            .plugin_dir(PLUGIN_ID)
+            .plugin_dir(&plugin_id())
             .join("plugin.wasm")
             .exists()
     );

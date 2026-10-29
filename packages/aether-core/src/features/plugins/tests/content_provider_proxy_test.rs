@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use extism_convert::{FromBytes, Msgpack, ToBytes};
 use serde::{Serialize, de::DeserializeOwned};
 
+use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
         events::{Event, EventEmitter, EventError, PluginEvent},
@@ -44,6 +45,11 @@ use crate::{
 };
 
 const PLUGIN_ID: &str = "curseforge-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
+
 const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
 /// A provider in the new format: no `install*` handlers, no `supports*` flags, a platform.
@@ -77,8 +83,8 @@ struct RecordingPlugin {
 }
 
 impl PluginInstance for RecordingPlugin {
-    fn get_id(&self) -> String {
-        PLUGIN_ID.to_owned()
+    fn get_id(&self) -> PluginId {
+        plugin_id()
     }
 
     fn supports(&self, name: &str) -> bool {
@@ -96,7 +102,7 @@ impl PluginInstance for RecordingPlugin {
                 .cloned()
                 .ok_or_else(|| PluginError::FunctionCallFailed {
                     function_name: name.to_owned(),
-                    plugin_id: PLUGIN_ID.to_owned(),
+                    plugin_id: plugin_id(),
                     error: PluginCallError::MissingFunction,
                 })?;
         Ok(&self.last_answer)
@@ -130,7 +136,7 @@ fn decode<T: DeserializeOwned>(bytes: &[u8]) -> T {
 
 fn capabilities(json: &str) -> PluginCapabilities {
     let file: PluginCapabilitiesV1 = serde_json::from_str(json).expect("capabilities.json");
-    PluginCapabilities::from(file)
+    PluginCapabilities::try_from(file).expect("valid capabilities")
 }
 
 fn provider_capability(json: &str) -> PluginContentProviderCapability {
@@ -164,12 +170,11 @@ impl Fixture {
         };
 
         let proxy = PluginContentProviderProxy::new(
-            PLUGIN_ID.to_owned(),
+            plugin_id(),
             PluginHandle::new(plugin),
             provider_capability(capabilities_json),
             location_info.clone(),
-        )
-        .expect("ids should be valid");
+        );
 
         Self {
             root,
@@ -193,7 +198,7 @@ impl Fixture {
     }
 
     fn cache_file(&self, name: &str) -> std::path::PathBuf {
-        let dir = self.location_info.plugin_cache_dir(PLUGIN_ID);
+        let dir = self.location_info.plugin_cache_dir(&plugin_id());
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join(name);
         std::fs::write(&path, b"zip").unwrap();
@@ -1181,7 +1186,7 @@ async fn should_translate_override_paths_when_they_are_in_the_plugin_cache() {
         std::fs::create_dir_all(
             fixture
                 .location_info
-                .plugin_cache_dir(PLUGIN_ID)
+                .plugin_cache_dir(&plugin_id())
                 .join("downloads"),
         )
         .unwrap();
@@ -1429,7 +1434,7 @@ async fn should_register_a_plugin_when_it_implements_only_the_resolve_handlers()
 
     let plugins = Arc::new(PluginRegistry::new(Arc::new(NoOpEmitter)));
     plugins.insert(
-        PLUGIN_ID.to_owned(),
+        plugin_id(),
         Plugin {
             manifest: manifest(),
             capabilities: Some(capabilities(RESOLVE_ONLY_CAPABILITIES)),
@@ -1449,12 +1454,12 @@ async fn should_register_a_plugin_when_it_implements_only_the_resolve_handlers()
 
     listener
         .on_plugin_event(PluginEvent::Edit {
-            plugin_id: PLUGIN_ID.to_owned(),
+            plugin_id: plugin_id(),
         })
         .await;
 
     let provider = providers
-        .find_by_plugin_and_capability_id(PLUGIN_ID, "curseforge")
+        .find_by_plugin_and_capability_id(&plugin_id(), &CapabilityId::from_static("curseforge"))
         .await
         .expect("registered")
         .capability;
@@ -1484,7 +1489,7 @@ async fn should_register_a_plugin_when_it_implements_only_the_resolve_handlers()
 fn manifest() -> PluginManifest {
     PluginManifest {
         metadata: PluginMetadata {
-            id: PLUGIN_ID.into(),
+            id: plugin_id(),
             name: "CurseForge".into(),
             version: semver::Version::new(0, 1, 0),
             description: None,

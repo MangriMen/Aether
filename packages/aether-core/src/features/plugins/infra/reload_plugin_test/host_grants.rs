@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, Mutex, atomic::Ordering};
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{AllowedHostRejection, HostAccess, PluginError, PluginSettings};
 
 use super::common::*;
@@ -15,7 +16,7 @@ async fn should_give_the_host_without_a_restart_when_given_a_url() {
     let access = harness
         .grant_host(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             "https://CDN.example.com/packs/pack.toml".into(),
             false,
         )
@@ -43,7 +44,7 @@ async fn should_give_the_host_without_a_restart_when_given_a_url() {
     let again = harness
         .grant_host(&settings)
         .execute(
-            PLUGIN_ID.into(),
+            plugin_id(),
             "http://cdn.example.com/other/pack.toml".into(),
             false,
         )
@@ -63,7 +64,7 @@ async fn should_not_ask_for_a_host_when_the_manifest_or_a_pattern_admits_it() {
     let harness = Harness::enabled().await;
     harness
         .plugins
-        .upsert_with(PLUGIN_ID, |plugin| {
+        .upsert_with(&plugin_id(), |plugin| {
             plugin.manifest.runtime.allowed_hosts = vec!["github.com".into()];
             Ok(())
         })
@@ -80,7 +81,7 @@ async fn should_not_ask_for_a_host_when_the_manifest_or_a_pattern_admits_it() {
     ] {
         let access = harness
             .grant_host(&settings)
-            .execute(PLUGIN_ID.into(), url.into(), true)
+            .execute(plugin_id(), url.into(), true)
             .await
             .unwrap();
         assert_eq!(access, HostAccess::AlreadyAllowed { host: host.into() });
@@ -89,11 +90,7 @@ async fn should_not_ask_for_a_host_when_the_manifest_or_a_pattern_admits_it() {
     // The glob wants the dot, as Extism's does: the apex is a host of its own.
     let apex = harness
         .grant_host(&settings)
-        .execute(
-            PLUGIN_ID.into(),
-            "https://example.com/pack.toml".into(),
-            true,
-        )
+        .execute(plugin_id(), "https://example.com/pack.toml".into(), true)
         .await
         .unwrap();
     assert_eq!(
@@ -118,11 +115,7 @@ async fn should_give_a_host_all_the_same_when_the_plugin_is_busy() {
 
     let access = harness
         .grant_host(&settings)
-        .execute(
-            PLUGIN_ID.into(),
-            "https://example.com/pack.toml".into(),
-            false,
-        )
+        .execute(plugin_id(), "https://example.com/pack.toml".into(), false)
         .await;
 
     assert!(
@@ -162,7 +155,7 @@ async fn should_not_give_a_host_when_the_plugin_could_not_reach_it_anyway() {
         for dry_run in [true, false] {
             let result = harness
                 .grant_host(&settings)
-                .execute(PLUGIN_ID.into(), url.into(), dry_run)
+                .execute(plugin_id(), url.into(), dry_run)
                 .await;
 
             assert!(
@@ -175,7 +168,11 @@ async fn should_not_give_a_host_when_the_plugin_could_not_reach_it_anyway() {
 
     let unknown = harness
         .grant_host(&settings)
-        .execute("missing".into(), "https://example.com/".into(), false)
+        .execute(
+            PluginId::from_static("missing"),
+            "https://example.com/".into(),
+            false,
+        )
         .await;
     assert!(
         matches!(unknown, Err(PluginError::NotFound { .. })),

@@ -17,7 +17,7 @@ use aether_core::features::instance::infra::{
     UniversalContentMetadataCache, mrpack_dir,
 };
 use aether_core::features::instance::{
-    ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, Updater,
+    ContentIconHousekeeping, ContentProvider, GetInstanceUseCase, Importer, PluginId, Updater,
 };
 use aether_core::features::java::infra::{
     AzulJreProvider, FsJavaInstallationService, MemoryJavaInstallationTracker, SqliteJavaStorage,
@@ -506,7 +506,7 @@ pub async fn build_container(
         let meta = provider.metadata();
         let _ = content_provider_registry
             .add(
-                ModrinthContentProvider::ID.to_owned(),
+                PluginId::from_static(ModrinthContentProvider::ID),
                 meta.id.clone(),
                 provider,
             )

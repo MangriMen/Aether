@@ -21,35 +21,19 @@ pub struct PluginCapabilities {
 }
 
 impl PluginCapabilities {
-    /// Every capability id, and every platform a content provider serves, must fit the id
-    /// scheme: they become parts of `plugin_id#capability_id` and of `ProviderRef`.
+    /// Every platform a content provider serves must fit the id scheme: it becomes part of
+    /// `ProviderRef`.
     pub fn validate(&self) -> Result<(), ManifestError> {
-        let ids = self
-            .importers
+        let platforms = self
+            .content_providers
             .iter()
-            .map(|c| ("importers[].id", &c.metadata.base.id))
-            .chain(
-                self.updaters
-                    .iter()
-                    .map(|c| ("updaters[].id", &c.metadata.base.id)),
-            )
-            .chain(
-                self.content_providers
-                    .iter()
-                    .map(|c| ("contentProviders[].id", &c.metadata.base.id)),
-            )
-            .chain(self.content_providers.iter().filter_map(|c| {
-                c.metadata
-                    .platform
-                    .as_ref()
-                    .map(|platform| ("contentProviders[].platform", platform))
-            }));
+            .filter_map(|c| c.metadata.platform.as_ref());
 
-        for (field, value) in ids {
-            if !is_valid_id(value) {
+        for platform in platforms {
+            if !is_valid_id(platform) {
                 return Err(ManifestError::InvalidId {
-                    field: field.to_owned(),
-                    value: value.clone(),
+                    field: "contentProviders[].platform".to_owned(),
+                    value: platform.clone(),
                 });
             }
         }
@@ -146,17 +130,18 @@ impl AsCapabilityMetadata for PluginContentProviderCapability {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::features::instance::CapabilityId;
 
-    fn base(id: &str) -> CapabilityMetadata {
+    fn base(id: &'static str) -> CapabilityMetadata {
         CapabilityMetadata {
-            id: id.to_owned(),
+            id: CapabilityId::from_static(id),
             name: "Test".to_owned(),
             description: None,
             icon: None,
         }
     }
 
-    fn importer(id: &str) -> PluginImporterCapability {
+    fn importer(id: &'static str) -> PluginImporterCapability {
         PluginImporterCapability {
             metadata: ImporterCapabilityMetadata {
                 base: base(id),
@@ -167,14 +152,17 @@ mod tests {
         }
     }
 
-    fn updater(id: &str) -> PluginUpdaterCapability {
+    fn updater(id: &'static str) -> PluginUpdaterCapability {
         PluginUpdaterCapability {
             metadata: UpdaterCapabilityMetadata { base: base(id) },
             handler: "update".to_owned(),
         }
     }
 
-    fn content_provider(id: &str, platform: Option<&str>) -> PluginContentProviderCapability {
+    fn content_provider(
+        id: &'static str,
+        platform: Option<&str>,
+    ) -> PluginContentProviderCapability {
         PluginContentProviderCapability {
             metadata: ContentProviderCapabilityMetadata {
                 base: base(id),
@@ -215,34 +203,6 @@ mod tests {
     }
 
     #[test]
-    fn should_reject_capabilities_when_an_id_is_invalid() {
-        for id in ["", "a#b", "x:y", "Packwiz"] {
-            let importers = PluginCapabilities {
-                importers: vec![importer(id)],
-                ..Default::default()
-            };
-            let updaters = PluginCapabilities {
-                updaters: vec![updater(id)],
-                ..Default::default()
-            };
-            let providers = PluginCapabilities {
-                content_providers: vec![content_provider(id, None)],
-                ..Default::default()
-            };
-
-            assert_eq!(
-                rejected_field(&importers).as_deref(),
-                Some("importers[].id")
-            );
-            assert_eq!(rejected_field(&updaters).as_deref(), Some("updaters[].id"));
-            assert_eq!(
-                rejected_field(&providers).as_deref(),
-                Some("contentProviders[].id")
-            );
-        }
-    }
-
-    #[test]
     fn should_reject_a_capability_when_the_platform_is_invalid() {
         let capabilities = PluginCapabilities {
             content_providers: vec![content_provider("provider", Some("Mod Rinth"))],
@@ -267,7 +227,7 @@ mod tests {
         assert!(matches!(
             capabilities.validate(),
             Err(ManifestError::PlatformWithoutResolveFile { capability_id })
-                if capability_id == "curseforge"
+                if capability_id.as_str() == "curseforge"
         ));
     }
 

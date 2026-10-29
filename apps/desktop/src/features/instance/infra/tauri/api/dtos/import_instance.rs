@@ -1,4 +1,4 @@
-use aether_core::features::instance::ImportInstance;
+use aether_core::features::instance::{ImportInstance, InstanceError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -10,12 +10,19 @@ pub struct ImportInstanceDto {
     pub path: String,
 }
 
-impl From<ImportInstanceDto> for ImportInstance {
-    fn from(value: ImportInstanceDto) -> Self {
-        Self {
-            plugin_id: value.plugin_id,
-            importer_id: value.importer_id,
+/// An id that does not parse names no importer, hence [`InstanceError::ImporterNotFound`].
+impl TryFrom<ImportInstanceDto> for ImportInstance {
+    type Error = InstanceError;
+
+    fn try_from(value: ImportInstanceDto) -> Result<Self, Self::Error> {
+        let not_found = || InstanceError::ImporterNotFound {
+            importer_id: value.importer_id.clone(),
+        };
+
+        Ok(Self {
+            plugin_id: value.plugin_id.parse().map_err(|_| not_found())?,
+            importer_id: value.importer_id.parse().map_err(|_| not_found())?,
             path: value.path,
-        }
+        })
     }
 }

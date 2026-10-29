@@ -71,8 +71,8 @@ impl UpdateInstanceUseCase {
         let updater = self
             .updaters_registry
             .find_by_plugin_and_capability_id(
-                pack_info.provider_id.plugin_id.as_str(),
-                pack_info.provider_id.capability_id.as_str(),
+                &pack_info.provider_id.plugin_id,
+                &pack_info.provider_id.capability_id,
             )
             .await
             .map_err(|_| InstanceError::UpdaterNotFound {
@@ -90,8 +90,8 @@ impl UpdateInstanceUseCase {
         let provider = self
             .provider_registry
             .find_by_plugin_and_capability_id(
-                pack_info.provider_id.plugin_id.as_str(),
-                pack_info.provider_id.capability_id.as_str(),
+                &pack_info.provider_id.plugin_id,
+                &pack_info.provider_id.capability_id,
             )
             .await;
         let Ok(provider) = provider else {

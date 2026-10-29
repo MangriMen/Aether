@@ -59,7 +59,7 @@ pub struct ContentProviderCapabilityMetadataDto {
 impl From<CapabilityMetadata> for CapabilityMetadataDto {
     fn from(m: CapabilityMetadata) -> Self {
         Self {
-            id: m.id,
+            id: m.id.into(),
             name: m.name,
             description: m.description,
             icon: m.icon,
@@ -105,7 +105,7 @@ impl From<CapabilityEntry<ImporterCapabilityMetadata>>
 {
     fn from(value: CapabilityEntry<ImporterCapabilityMetadata>) -> Self {
         CapabilityEntryDto {
-            plugin_id: value.plugin_id,
+            plugin_id: value.plugin_id.into(),
             capability: value.capability.into(),
         }
     }
@@ -154,7 +154,7 @@ impl From<CapabilityEntry<ContentProviderCapabilityMetadata>>
 {
     fn from(value: CapabilityEntry<ContentProviderCapabilityMetadata>) -> Self {
         CapabilityEntryDto {
-            plugin_id: value.plugin_id,
+            plugin_id: value.plugin_id.into(),
             capability: value.capability.into(),
         }
     }

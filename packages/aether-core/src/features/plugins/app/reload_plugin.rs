@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         PluginError, PluginHandle, PluginLoaderRegistry, PluginManifest, PluginRegistry,
         PluginSettingsStorage, PluginState,
@@ -43,7 +44,7 @@ impl ReloadPluginUseCase {
 
     /// Refused with [`PluginError::Busy`] while any call into the plugin is under way or waiting
     /// for its turn — the plugin then goes on as it was. Never waits for a call to end.
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         let manifest = self.enabler.plugin_registry.get_manifest(&plugin_id)?;
         let handle = self
             .enabler
@@ -91,7 +92,7 @@ impl ReloadPluginUseCase {
 
 #[async_trait]
 impl ReloadPluginUseCasePort for ReloadPluginUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.execute(plugin_id).await
     }
 }

@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use crate::features::settings::LocationInfo;
+use crate::features::{instance::PluginId, settings::LocationInfo};
 
 /// Where a plugin sees its own cache directory.
 pub(crate) const PLUGIN_CACHE_MOUNT: &str = "/cache";
@@ -38,7 +38,7 @@ impl CoreMount {
     }
 
     /// The host folder behind the mount, for `plugin_id`.
-    pub(crate) fn host_root(self, location_info: &LocationInfo, plugin_id: &str) -> PathBuf {
+    pub(crate) fn host_root(self, location_info: &LocationInfo, plugin_id: &PluginId) -> PathBuf {
         match self {
             Self::Cache => location_info.plugin_cache_dir(plugin_id),
             Self::Instances => location_info.instances_dir(),
@@ -237,7 +237,7 @@ fn validate_plugin_path(plugin: &str) -> Result<(), AllowedPathRejection> {
 /// - `.minecraft/` holds the libraries, natives and game versions the core puts on the game's
 ///   class path and launches.
 /// - `data/` holds the app database, and the settings folder the settings and the credentials.
-pub(crate) fn core_folders(location_info: &LocationInfo, plugin_id: &str) -> Vec<PathBuf> {
+pub(crate) fn core_folders(location_info: &LocationInfo, plugin_id: &PluginId) -> Vec<PathBuf> {
     // The plugin's cache is within `cache/`, but the one folder there it is given itself.
     CoreMount::ALL
         .into_iter()
@@ -483,13 +483,13 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let location_info =
             LocationInfo::new(root.path().join("settings"), root.path().join("config"));
-        std::fs::create_dir_all(location_info.plugin_dir("other")).unwrap();
-        let core = core_folders(&location_info, "self");
+        std::fs::create_dir_all(location_info.plugin_dir(&PluginId::from_static("other"))).unwrap();
+        let core = core_folders(&location_info, &PluginId::from_static("self"));
 
         for host in [
             location_info.plugins_dir(),
-            location_info.plugin_dir("self"),
-            location_info.plugin_dir("other"),
+            location_info.plugin_dir(&PluginId::from_static("self")),
+            location_info.plugin_dir(&PluginId::from_static("other")),
             location_info.config_dir().to_path_buf(),
         ] {
             assert_eq!(
@@ -506,7 +506,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let location_info =
             LocationInfo::new(root.path().join("settings"), root.path().join("config"));
-        let core = core_folders(&location_info, "self");
+        let core = core_folders(&location_info, &PluginId::from_static("self"));
 
         for host in [
             // The Java runtimes, whose `bin` the core lets a plugin start.
@@ -515,7 +515,7 @@ mod tests {
             location_info.wasm_cache_dir(),
             location_info.cache_dir(),
             // The cache of another plugin.
-            location_info.plugin_cache_dir("other"),
+            location_info.plugin_cache_dir(&PluginId::from_static("other")),
             location_info.cache_dir().join("plugins"),
             location_info.libraries_dir(),
             location_info.natives_dir(),
@@ -541,7 +541,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let location_info =
             LocationInfo::new(root.path().join("settings"), root.path().join("config"));
-        let core = core_folders(&location_info, "self");
+        let core = core_folders(&location_info, &PluginId::from_static("self"));
 
         for host in ["packs", "config-backup", "cached"] {
             assert_eq!(

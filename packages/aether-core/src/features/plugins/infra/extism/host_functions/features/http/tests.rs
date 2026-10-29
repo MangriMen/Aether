@@ -166,9 +166,14 @@ async fn should_reject_when_the_host_is_outside_allowed_hosts() {
         url: "http://evil.com/".to_string(),
         headers: HashMap::new(),
     };
-    let err = handle_http_get("test", request, &hosts(&["example.com"]), limits())
-        .await
-        .expect_err("request to a host outside allowed_hosts must fail");
+    let err = handle_http_get(
+        &PluginId::from_static("test"),
+        request,
+        &hosts(&["example.com"]),
+        limits(),
+    )
+    .await
+    .expect_err("request to a host outside allowed_hosts must fail");
     assert!(err.to_string().contains("allowed_hosts"), "{err}");
 }
 
@@ -178,9 +183,14 @@ async fn should_reject_loopback_even_when_host_is_allowed() {
         url: "http://127.0.0.1:9/".to_string(),
         headers: HashMap::new(),
     };
-    let err = handle_http_get("test", request, &hosts(&["127.0.0.1"]), limits())
-        .await
-        .expect_err("loopback must be blocked even if explicitly allowlisted");
+    let err = handle_http_get(
+        &PluginId::from_static("test"),
+        request,
+        &hosts(&["127.0.0.1"]),
+        limits(),
+    )
+    .await
+    .expect_err("loopback must be blocked even if explicitly allowlisted");
     assert!(err.to_string().contains("non-public address"), "{err}");
 }
 
@@ -190,9 +200,14 @@ async fn should_reject_metadata_address_even_when_host_is_allowed() {
         url: "http://169.254.169.254/latest/meta-data/".to_string(),
         headers: HashMap::new(),
     };
-    let err = handle_http_get("test", request, &hosts(&["*"]), limits())
-        .await
-        .expect_err("cloud metadata address must be blocked");
+    let err = handle_http_get(
+        &PluginId::from_static("test"),
+        request,
+        &hosts(&["*"]),
+        limits(),
+    )
+    .await
+    .expect_err("cloud metadata address must be blocked");
     assert!(err.to_string().contains("non-public address"), "{err}");
 }
 
@@ -337,9 +352,14 @@ async fn serve_capturing(
 #[tokio::test]
 async fn should_reject_a_post_when_the_host_is_outside_allowed_hosts() {
     let request = post_request("http://evil.com/api".to_string(), "{}");
-    let err = handle_http_post_json("test", request, &hosts(&["example.com"]), limits())
-        .await
-        .expect_err("POST to a host outside allowed_hosts must fail");
+    let err = handle_http_post_json(
+        &PluginId::from_static("test"),
+        request,
+        &hosts(&["example.com"]),
+        limits(),
+    )
+    .await
+    .expect_err("POST to a host outside allowed_hosts must fail");
     assert!(err.to_string().contains("allowed_hosts"), "{err}");
 }
 
@@ -347,9 +367,14 @@ async fn should_reject_a_post_when_the_host_is_outside_allowed_hosts() {
 async fn should_reject_post_to_non_public_address_even_when_allowlisted() {
     for url in ["http://127.0.0.1:9/", "http://169.254.169.254/latest/"] {
         let request = post_request(url.to_string(), "{}");
-        let err = handle_http_post_json("test", request, &hosts(&["*"]), limits())
-            .await
-            .expect_err("non-public address must be blocked");
+        let err = handle_http_post_json(
+            &PluginId::from_static("test"),
+            request,
+            &hosts(&["*"]),
+            limits(),
+        )
+        .await
+        .expect_err("non-public address must be blocked");
         assert!(err.to_string().contains("non-public address"), "{err}");
     }
 }

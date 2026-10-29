@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     features::{
         events::PluginEvent,
-        instance::{ContentProvider, Importer, Updater},
+        instance::{ContentProvider, Importer, PluginId, Updater},
         plugins::{
             AsCapabilityMetadata, PluginCapabilities, PluginError, PluginHandle, PluginRegistry,
             PluginState,
@@ -100,7 +100,7 @@ where
     /// Dispatches registration or unregistration for all capability types.
     async fn sync_all_capabilities(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         instance: Option<PluginHandle>,
         caps: &PluginCapabilities,
     ) -> Result<(), PluginError> {
@@ -110,7 +110,7 @@ where
             &self.importers,
             &caps.importers,
             instance.as_ref(),
-            |inst, cap| Ok(Arc::new(PluginImporterProxy::new(inst, cap))),
+            |inst, cap| Arc::new(PluginImporterProxy::new(inst, cap)),
         )
         .await?;
 
@@ -120,7 +120,7 @@ where
             &self.updaters,
             &caps.updaters,
             instance.as_ref(),
-            |inst, cap| Ok(Arc::new(PluginUpdaterProxy::new(inst, cap))),
+            |inst, cap| Arc::new(PluginUpdaterProxy::new(inst, cap)),
         )
         .await?;
 
@@ -131,13 +131,12 @@ where
             &caps.content_providers,
             instance.as_ref(),
             |inst, cap| {
-                let proxy = PluginContentProviderProxy::new(
-                    plugin_id.to_owned(),
+                Arc::new(PluginContentProviderProxy::new(
+                    plugin_id.clone(),
                     inst,
                     cap,
                     self.location_info.clone(),
-                )?;
-                Ok(Arc::new(proxy))
+                ))
             },
         )
         .await?;
@@ -149,7 +148,7 @@ where
     /// If instance is Some -> Add, if None -> Remove.
     async fn sync_registry<T, C, R, F>(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         registry: &Arc<R>,
         items: &[C],
         instance: Option<&PluginHandle>,
@@ -159,26 +158,16 @@ where
         T: Send + Sync + ?Sized + 'static,
         R: CapabilityRegistry<Arc<T>> + ?Sized,
         C: Clone + AsCapabilityMetadata,
-        F: Fn(PluginHandle, C) -> Result<Arc<T>, PluginError>,
+        F: Fn(PluginHandle, C) -> Arc<T>,
     {
         for capability in items {
             let meta = capability.as_metadata();
 
             match instance {
                 Some(instance) => {
-                    let proxy = match proxy_factory(instance.clone(), capability.clone()) {
-                        Ok(proxy) => proxy,
-                        Err(err) => {
-                            let error = PluginError::CapabilityRegistrationFailed {
-                                capability_type: registry.get_type(),
-                                capability_id: meta.id.clone(),
-                            };
-                            tracing::error!("{}: {}", error, err);
-                            continue;
-                        }
-                    };
+                    let proxy = proxy_factory(instance.clone(), capability.clone());
                     if let Err(err) = registry
-                        .add(plugin_id.to_string(), meta.id.clone(), proxy)
+                        .add(plugin_id.clone(), meta.id.clone(), proxy)
                         .await
                     {
                         let error = PluginError::CapabilityRegistrationFailed {
@@ -189,10 +178,7 @@ where
                     }
                 }
                 None => {
-                    if let Err(err) = registry
-                        .remove(plugin_id.to_string(), meta.id.clone())
-                        .await
-                    {
+                    if let Err(err) = registry.remove(plugin_id.clone(), meta.id.clone()).await {
                         {
                             let error = PluginError::CapabilityCancelRegistrationFailed {
                                 capability_type: registry.get_type(),

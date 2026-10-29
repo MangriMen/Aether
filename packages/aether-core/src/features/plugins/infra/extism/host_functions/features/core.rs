@@ -20,7 +20,10 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 
 use crate::{
     core::app::AetherContainer,
-    features::java::{Java, JavaFeature},
+    features::{
+        instance::PluginId,
+        java::{Java, JavaFeature},
+    },
     shared::{limits::COMMAND_TIMEOUT, serializable_command::domain::SerializableCommand},
 };
 
@@ -45,7 +48,7 @@ fn log_level_from_u32(level: u32) -> log::Level {
 }
 
 /// Handle `log` — forward a log message from the plugin.
-pub(crate) fn handle_log(plugin_id: &str, level: u32, msg: &str) {
+pub(crate) fn handle_log(plugin_id: &PluginId, level: u32, msg: &str) {
     log::log!(
         target: "plugin",
         log_level_from_u32(level),
@@ -212,7 +215,7 @@ async fn collect_capped(
 
 /// Handle `run_command` — execute a command on behalf of a plugin.
 pub(crate) async fn handle_run_command(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     command: CommandDto,
     container: &AetherContainer,
 ) -> crate::Result<OutputDto> {
@@ -282,7 +285,7 @@ host_fn!(
 pub get_id(user_data: PluginContext;) -> String {
     let context = user_data.get()?;
     let ctx = context.lock().map_err(|_| anyhow::Error::msg("Failed to lock plugin context"))?;
-    let id = ctx.id.clone();
+    let id = ctx.id.to_string();
 
     Ok(id)
 });

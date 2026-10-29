@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         PLUGIN_API_VERSION, PluginError, PluginLoaderRegistry, PluginRegistry,
         PluginSettingsStorage,
@@ -41,7 +42,7 @@ impl ForceEnablePluginUseCase {
 
     /// Bypasses the API version check and loads the plugin directly, then saves the
     /// force-enable flag in plugin settings with the current API version.
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         // Forcing skips the API version check, not the state: a loaded plugin stays as it is.
         let (previous, manifest) = self
             .enabler
@@ -62,7 +63,7 @@ impl ForceEnablePluginUseCase {
         self.enabler.add_to_enabled_plugins(&plugin_id).await
     }
 
-    async fn save_force_enabled_flag(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn save_force_enabled_flag(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let _settings_lock = self.enabler.plugin_registry.lock_settings(plugin_id).await;
         let storage = &self.enabler.plugin_settings_storage;
         let mut settings = storage.get(plugin_id).await?.unwrap_or_default();
@@ -77,7 +78,7 @@ impl ForceEnablePluginUseCase {
 
 #[async_trait]
 impl ForceEnablePluginUseCasePort for ForceEnablePluginUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.execute(plugin_id).await
     }
 }

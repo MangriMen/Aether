@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginExtractor, PluginProviderError, PluginRegistry, PluginSettingsStorage,
     PluginSource, PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
@@ -59,7 +60,7 @@ impl UpdatePluginUseCase {
 
     pub(crate) async fn execute(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         target_tag: Option<&str>,
     ) -> Result<(), PluginError> {
         let source = self
@@ -67,7 +68,7 @@ impl UpdatePluginUseCase {
             .get(plugin_id)
             .await?
             .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.to_string(),
+                plugin_id: plugin_id.clone(),
             })?;
 
         let source_type = source.to_source_type();
@@ -77,7 +78,7 @@ impl UpdatePluginUseCase {
             .provider_factory
             .get_provider(&source_type)
             .ok_or_else(|| PluginProviderError::NoRemoteSource {
-                plugin_id: plugin_id.to_string(),
+                plugin_id: plugin_id.clone(),
             })?;
 
         let tag = if let Some(t) = target_tag {
@@ -115,9 +116,9 @@ impl UpdatePluginUseCase {
         // Unpacked before anything is removed: an archive that cannot be read, or that is of
         // another plugin, leaves the installed version in place.
         let extracted = self.plugin_extractor.extract(temp_file.path()).await?;
-        if extracted.plugin_id != plugin_id {
+        if &extracted.plugin_id != plugin_id {
             return Err(PluginError::IdMismatch {
-                plugin_id: plugin_id.to_string(),
+                plugin_id: plugin_id.clone(),
                 archive_id: extracted.plugin_id,
             });
         }
@@ -161,7 +162,11 @@ fn source_version(source: &PluginSource) -> &str {
 
 #[async_trait]
 impl UpdatePluginUseCasePort for UpdatePluginUseCase {
-    async fn execute(&self, plugin_id: &str, target_tag: Option<&str>) -> Result<(), PluginError> {
+    async fn execute(
+        &self,
+        plugin_id: &PluginId,
+        target_tag: Option<&str>,
+    ) -> Result<(), PluginError> {
         self.execute(plugin_id, target_tag).await
     }
 }

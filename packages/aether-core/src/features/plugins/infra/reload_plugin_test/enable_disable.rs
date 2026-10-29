@@ -12,16 +12,16 @@ use super::common::*;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_build_one_instance_when_the_plugin_is_enabled_twice_at_once() {
     let harness = Arc::new(Harness::enabled().await);
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     harness.loader.hold_loads.store(true, Ordering::SeqCst);
 
     let first = tokio::spawn({
         let harness = Arc::clone(&harness);
-        async move { harness.enable().execute(PLUGIN_ID.into()).await }
+        async move { harness.enable().execute(plugin_id()).await }
     });
     harness.loader.load_started.notified().await;
-    let second = harness.enable().execute(PLUGIN_ID.into()).await;
-    let forced = harness.force_enable().execute(PLUGIN_ID.into()).await;
+    let second = harness.enable().execute(plugin_id()).await;
+    let forced = harness.force_enable().execute(plugin_id()).await;
 
     assert!(
         matches!(second, Err(PluginError::LoadingInProgress { .. })),
@@ -46,7 +46,7 @@ async fn should_build_one_instance_when_the_plugin_is_enabled_twice_at_once() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_build_one_instance_when_two_enables_check_the_state_at_once() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     let settings = Arc::new(SlowPluginSettings::default());
     let enable = || {
         EnablePluginUseCase::new(
@@ -58,10 +58,7 @@ async fn should_build_one_instance_when_two_enables_check_the_state_at_once() {
     };
     let (first, second) = (enable(), enable());
 
-    let (first, second) = tokio::join!(
-        first.execute(PLUGIN_ID.into()),
-        second.execute(PLUGIN_ID.into())
-    );
+    let (first, second) = tokio::join!(first.execute(plugin_id()), second.execute(plugin_id()));
 
     let refused = [&first, &second]
         .into_iter()
@@ -78,11 +75,11 @@ async fn should_refuse_a_disable_when_the_plugin_is_being_restarted() {
     harness.loader.hold_loads.store(true, Ordering::SeqCst);
     let restart = tokio::spawn({
         let harness = Arc::clone(&harness);
-        async move { harness.reload().execute(PLUGIN_ID.into()).await }
+        async move { harness.reload().execute(plugin_id()).await }
     });
     harness.loader.load_started.notified().await;
 
-    let refused = harness.disable().execute(PLUGIN_ID.into()).await;
+    let refused = harness.disable().execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::LoadingInProgress { .. })),
@@ -93,7 +90,7 @@ async fn should_refuse_a_disable_when_the_plugin_is_being_restarted() {
     assert!(harness.is_enabled());
 
     // Once the restart is over, the disable goes through and nothing brings the plugin back.
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     assert!(!harness.is_enabled());
     assert!(matches!(harness.state(), PluginState::NotLoaded));
 }
@@ -105,14 +102,14 @@ async fn should_refuse_a_disable_when_a_restart_has_taken_the_instance() {
     let harness = Harness::enabled().await;
     harness
         .plugins
-        .upsert_with(PLUGIN_ID, |plugin| {
+        .upsert_with(&plugin_id(), |plugin| {
             plugin.state = PluginState::Unloading;
             Ok(())
         })
         .await
         .unwrap();
 
-    let refused = harness.disable().execute(PLUGIN_ID.into()).await;
+    let refused = harness.disable().execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::UnloadingInProgress { .. })),
@@ -124,10 +121,10 @@ async fn should_refuse_a_disable_when_a_restart_has_taken_the_instance() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_leave_the_plugin_as_it_was_when_enabling_fails_before_the_load() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     harness
         .plugins
-        .upsert_with(PLUGIN_ID, |plugin| {
+        .upsert_with(&plugin_id(), |plugin| {
             plugin.state = PluginState::Failed(PluginStateReason::LoadFailed {
                 details: "the wasm does not compile".into(),
             });
@@ -142,7 +139,7 @@ async fn should_leave_the_plugin_as_it_was_when_enabling_fails_before_the_load()
         harness.settings.clone(),
     );
 
-    let result = no_loaders.execute(PLUGIN_ID.into()).await;
+    let result = no_loaders.execute(plugin_id()).await;
 
     assert!(
         matches!(result, Err(PluginError::LoaderNotFound { .. })),

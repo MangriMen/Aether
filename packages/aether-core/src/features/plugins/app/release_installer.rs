@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     ExtractedPlugin, PluginError, PluginRegistry, PluginSettings, PluginSettingsStorage,
     PluginSource, PluginSourceStorage, PluginStorage, PluginVerificationStorage,
@@ -57,7 +58,7 @@ impl ReleaseInstaller {
         }
     }
 
-    async fn undo(&self, plugin_id: &str, was_installed: bool) {
+    async fn undo(&self, plugin_id: &PluginId, was_installed: bool) {
         if was_installed {
             if let Err(err) = self.storage.restore_replaced(plugin_id).await {
                 tracing::error!(
@@ -75,7 +76,7 @@ impl ReleaseInstaller {
     /// it names the installed release, and must not name the new one before the rest is there.
     async fn complete(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         settings: Option<PluginSettings>,
         source: &PluginSource,
     ) -> Result<(), PluginError> {

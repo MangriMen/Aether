@@ -377,30 +377,30 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             plugin_id: plugin_id.clone(),
         },
         PluginError::AlreadyLoaded { plugin_id } => Dto::AlreadyLoaded {
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
         },
         PluginError::LoadingInProgress { plugin_id } => Dto::LoadingInProgress {
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
         },
         // `Busy` and `Stopped` reach a plugin only through a host function that reaches another
         // plugin. They map to the closest kinds the ABI has: a new kind would not decode in
         // plugins built before it.
         PluginError::UnloadingInProgress { plugin_id } | PluginError::Busy { plugin_id } => {
             Dto::UnloadingInProgress {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             }
         }
         PluginError::AlreadyUnloaded { plugin_id } | PluginError::Stopped { plugin_id } => {
             Dto::AlreadyUnloaded {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             }
         }
         PluginError::LoadFailed { plugin_id, reason } => Dto::LoadFailed {
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
             reason: reason.clone(),
         },
         PluginError::IncompatibleApiVersion { plugin_id, reason } => Dto::IncompatibleApiVersion {
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
             reason: reason.clone(),
         },
         PluginError::FunctionCallFailed {
@@ -409,7 +409,7 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             error,
         } => Dto::FunctionCallFailed {
             function_name: function_name.clone(),
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
             error: error.into(),
         },
         PluginError::Manifest(err) => Dto::Manifest(err.into()),
@@ -423,22 +423,25 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             capability_id,
         } => Dto::CapabilityRegistrationFailed {
             capability_type: (*capability_type).to_owned(),
-            capability_id: capability_id.clone(),
+            capability_id: capability_id.to_string(),
         },
         PluginError::CapabilityCancelRegistrationFailed {
             capability_type,
             capability_id,
         } => Dto::CapabilityCancelRegistrationFailed {
             capability_type: (*capability_type).to_owned(),
-            capability_id: capability_id.clone(),
+            capability_id: capability_id.to_string(),
         },
         // Only the user's settings, the import dialog and an update produce the last ones; the ABI's closest kind,
         // as a new one would not decode in plugins built before it.
-        PluginError::AccessViolation { plugin_id, path }
-        | PluginError::IdMismatch {
+        PluginError::IdMismatch {
             plugin_id,
-            archive_id: path,
-        }
+            archive_id,
+        } => Dto::AccessViolation {
+            plugin_id: plugin_id.to_string(),
+            path: archive_id.to_string(),
+        },
+        PluginError::AccessViolation { plugin_id, path }
         | PluginError::InvalidAllowedPath {
             plugin_id, path, ..
         }
@@ -447,7 +450,7 @@ fn plugin_dto(value: &PluginError) -> PluginErrorDto {
             url: path,
             ..
         } => Dto::AccessViolation {
-            plugin_id: plugin_id.clone(),
+            plugin_id: plugin_id.to_string(),
             path: path.clone(),
         },
         PluginError::HashComputationFailed => Dto::HashComputationFailed,
@@ -487,7 +490,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
                 source_type: source_type.into(),
             },
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginProviderError::DownloadFailed { url, details } => Self::DownloadFailed {
                 url: url.clone(),
@@ -555,7 +558,7 @@ impl From<&ManifestError> for ManifestErrorDto {
             ManifestError::ReservedPluginId => Self::ReservedPluginId,
             ManifestError::PlatformWithoutResolveFile { capability_id } => {
                 Self::PlatformWithoutResolveFile {
-                    capability_id: capability_id.clone(),
+                    capability_id: capability_id.to_string(),
                 }
             }
         }

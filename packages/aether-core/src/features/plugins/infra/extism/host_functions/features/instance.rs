@@ -12,6 +12,7 @@ use crate::{
         ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
         ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
         InstanceFileService, InstanceId, InstanceServicesPort, ListContentUseCasePort, NewInstance,
+        PluginId,
         infra::{check_plugin_write_allowed, check_size},
     },
     features::plugins::LoadConfig,
@@ -41,7 +42,7 @@ pub(crate) async fn handle_instance_get_dir(
 }
 
 pub(crate) async fn handle_instance_plugin_get_dir(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     instance_id: &str,
     location_info: &LocationInfo,
     get_instance: &dyn GetInstanceUseCasePort,
@@ -60,7 +61,7 @@ pub(crate) async fn handle_instance_plugin_get_dir(
 /// `for_pack` — the plugin deploys a pack into the instance: it stays `PackInstalling` until the
 /// plugin's call is over (`infra::pack_instances`).
 pub(crate) async fn handle_instance_create(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     dto: NewInstanceDto,
     container: &AetherContainer,
     for_pack: bool,
@@ -79,7 +80,7 @@ pub(crate) async fn handle_instance_create(
 /// The icon of an instance a plugin makes is a file of the plugin's own `/cache`: a host path
 /// would have the core copy any file of the user's into the asset store, where the UI reads it.
 pub(crate) fn new_instance_from_plugin(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     dto: NewInstanceDto,
     location_info: &LocationInfo,
 ) -> crate::Result<NewInstance> {
@@ -160,7 +161,7 @@ async fn require_instance(
 /// ([`PluginSandboxLimits::max_instance_file_bytes_within`]): a payload over it is refused as too
 /// large rather than left to run the plugin out of memory.
 pub(crate) async fn write_instance_file_with(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     max_file_bytes: u64,
     params: WriteInstanceFileParamsDto,
     get_instance: &dyn GetInstanceUseCasePort,
@@ -195,7 +196,7 @@ pub(crate) async fn write_instance_file_with(
 
 /// `read_instance_file` over the two ports it actually needs. See [`write_instance_file_with`].
 pub(crate) async fn read_instance_file_with(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     max_file_bytes: u64,
     params: ReadInstanceFileParamsDto,
     get_instance: &dyn GetInstanceUseCasePort,
@@ -227,7 +228,7 @@ pub(crate) async fn read_instance_file_with(
 
 /// What a file passing through this plugin's memory may weigh at most: its manifest's
 /// `memoryLimit`, or the default one, shared by the copies the call makes.
-fn max_file_bytes_of(plugin_id: &str, container: &AetherContainer) -> crate::Result<u64> {
+fn max_file_bytes_of(plugin_id: &PluginId, container: &AetherContainer) -> crate::Result<u64> {
     let manifest = container
         .plugins()
         .registry
@@ -246,7 +247,7 @@ fn max_file_bytes_of(plugin_id: &str, container: &AetherContainer) -> crate::Res
 /// The path rules, symlink check and size cap live in the file service the rest of the core
 /// writes through too.
 pub(crate) async fn handle_write_instance_file(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     params: WriteInstanceFileParamsDto,
     container: &AetherContainer,
 ) -> crate::Result<()> {
@@ -262,7 +263,7 @@ pub(crate) async fn handle_write_instance_file(
 
 /// Handle `read_instance_file` — read a file back out of an instance.
 pub(crate) async fn handle_read_instance_file(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     params: ReadInstanceFileParamsDto,
     container: &AetherContainer,
 ) -> crate::Result<Vec<u8>> {
@@ -431,6 +432,11 @@ mod tests {
     use super::*;
 
     const PLUGIN_ID: &str = "test-plugin";
+
+    fn plugin_id() -> PluginId {
+        PluginId::from_static(PLUGIN_ID)
+    }
+
     const INSTANCE_ID: &str = "inst-1";
     const MAX_FILE_BYTES: u64 = 64 * 1024 * 1024;
 
@@ -499,7 +505,7 @@ mod tests {
         let (_temp_dir, location_info, service) = setup().await;
 
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(INSTANCE_ID, "mods/example.jar", b"jar bytes"),
             &OneInstance,
@@ -524,7 +530,7 @@ mod tests {
         let (_temp_dir, _location_info, service) = setup().await;
 
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(INSTANCE_ID, "pack.toml", b"name = \"test\""),
             &OneInstance,
@@ -534,7 +540,7 @@ mod tests {
         .unwrap();
 
         let bytes = read_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             read_params(INSTANCE_ID, "pack.toml"),
             &OneInstance,
@@ -551,7 +557,7 @@ mod tests {
         let (temp_dir, _location_info, service) = setup().await;
 
         let err = write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params("no-such-instance", "pack.toml", b"pwned"),
             &OneInstance,
@@ -577,7 +583,7 @@ mod tests {
         let (_temp_dir, location_info, service) = setup().await;
 
         let err = write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             4,
             write_params(INSTANCE_ID, "big.bin", b"12345"),
             &OneInstance,
@@ -609,7 +615,7 @@ mod tests {
     async fn should_refuse_a_read_over_the_memory_of_the_plugin_when_it_is_under_the_sandbox_cap() {
         let (_temp_dir, _location_info, service) = setup().await;
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(INSTANCE_ID, "big.bin", b"12345"),
             &OneInstance,
@@ -619,7 +625,7 @@ mod tests {
         .unwrap();
 
         let err = read_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             4,
             read_params(INSTANCE_ID, "big.bin"),
             &OneInstance,
@@ -647,7 +653,7 @@ mod tests {
 
         for path in ["../escaped.txt", "mods/../../escaped.txt"] {
             write_instance_file_with(
-                PLUGIN_ID,
+                &plugin_id(),
                 MAX_FILE_BYTES,
                 write_params(INSTANCE_ID, path, b"pwned"),
                 &OneInstance,
@@ -678,7 +684,7 @@ mod tests {
             "/mnt/d/instances/inst-1/pack.toml",
         ] {
             write_instance_file_with(
-                PLUGIN_ID,
+                &plugin_id(),
                 MAX_FILE_BYTES,
                 write_params(INSTANCE_ID, path, b"pwned"),
                 &OneInstance,
@@ -702,7 +708,7 @@ mod tests {
         let (_temp_dir, _location_info, service) = setup().await;
 
         let err = read_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             read_params("no-such-instance", "pack.toml"),
             &OneInstance,
@@ -729,7 +735,7 @@ mod tests {
             .unwrap();
 
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(INSTANCE_ID, ".metadata/instance.json", b"pwned"),
             &OneInstance,
@@ -754,7 +760,7 @@ mod tests {
         let relative_path = format!(".metadata/plugins/{PLUGIN_ID}/packwiz.toml");
 
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(INSTANCE_ID, &relative_path, b"pack_path = \"x\""),
             &OneInstance,
@@ -764,7 +770,7 @@ mod tests {
         .expect("a plugin owns its own subdirectory of `.metadata`");
 
         let written = location_info
-            .instance_plugin_dir(&InstanceId::try_from(INSTANCE_ID).unwrap(), PLUGIN_ID)
+            .instance_plugin_dir(&InstanceId::try_from(INSTANCE_ID).unwrap(), &plugin_id())
             .join("packwiz.toml");
         assert!(
             written.exists(),
@@ -777,7 +783,7 @@ mod tests {
         let (_temp_dir, location_info, service) = setup().await;
 
         write_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             write_params(
                 INSTANCE_ID,
@@ -791,7 +797,10 @@ mod tests {
         .expect_err("one plugin must not write into another's directory");
 
         let other = location_info
-            .instance_plugin_dir(&InstanceId::try_from(INSTANCE_ID).unwrap(), "other-plugin")
+            .instance_plugin_dir(
+                &InstanceId::try_from(INSTANCE_ID).unwrap(),
+                &PluginId::from_static("other-plugin"),
+            )
             .join("settings.toml");
         assert!(
             !other.exists(),
@@ -815,7 +824,7 @@ mod tests {
             .unwrap();
 
         let bytes = read_instance_file_with(
-            PLUGIN_ID,
+            &plugin_id(),
             MAX_FILE_BYTES,
             read_params(INSTANCE_ID, ".metadata/instance.json"),
             &OneInstance,
@@ -959,17 +968,22 @@ mod tests {
         let (temp_dir, location_info, _service) = setup().await;
 
         for id in escaping_ids(&temp_dir) {
-            handle_instance_plugin_get_dir(PLUGIN_ID, &id, &location_info, &AnyInstance)
+            handle_instance_plugin_get_dir(&plugin_id(), &id, &location_info, &AnyInstance)
                 .await
                 .expect_err("an id outside `instances/` must be refused");
         }
 
-        handle_instance_plugin_get_dir(PLUGIN_ID, "no-such-instance", &location_info, &OneInstance)
-            .await
-            .expect_err("an unknown instance must be refused");
+        handle_instance_plugin_get_dir(
+            &plugin_id(),
+            "no-such-instance",
+            &location_info,
+            &OneInstance,
+        )
+        .await
+        .expect_err("an unknown instance must be refused");
 
         let dir =
-            handle_instance_plugin_get_dir(PLUGIN_ID, INSTANCE_ID, &location_info, &OneInstance)
+            handle_instance_plugin_get_dir(&plugin_id(), INSTANCE_ID, &location_info, &OneInstance)
                 .await
                 .expect("a known instance is accepted");
         assert_eq!(
@@ -1011,12 +1025,12 @@ mod tests {
     #[tokio::test]
     async fn should_translate_the_icon_to_a_host_path_when_it_is_in_the_plugin_cache() {
         let (_temp_dir, location_info, _service) = setup().await;
-        let cache = location_info.plugin_cache_dir(PLUGIN_ID);
+        let cache = location_info.plugin_cache_dir(&plugin_id());
         std::fs::create_dir_all(&cache).unwrap();
         std::fs::write(cache.join("icon.png"), b"png").unwrap();
 
         let new_instance = new_instance_from_plugin(
-            PLUGIN_ID,
+            &plugin_id(),
             dto_with_icon(Some("/cache/icon.png")),
             &location_info,
         )
@@ -1040,7 +1054,7 @@ mod tests {
             secret.to_string_lossy().into_owned(),
             "/cache/../../secret.png".to_owned(),
         ] {
-            new_instance_from_plugin(PLUGIN_ID, dto_with_icon(Some(&icon)), &location_info)
+            new_instance_from_plugin(&plugin_id(), dto_with_icon(Some(&icon)), &location_info)
                 .expect_err("an icon outside the plugin cache must be refused");
         }
     }
@@ -1050,7 +1064,7 @@ mod tests {
         let (_temp_dir, location_info, _service) = setup().await;
 
         let new_instance =
-            new_instance_from_plugin(PLUGIN_ID, dto_with_icon(None), &location_info).unwrap();
+            new_instance_from_plugin(&plugin_id(), dto_with_icon(None), &location_info).unwrap();
 
         assert_eq!(new_instance.icon_path, None);
     }

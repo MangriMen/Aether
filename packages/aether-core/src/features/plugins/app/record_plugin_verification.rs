@@ -1,3 +1,4 @@
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginError, PluginSourceType, PluginStorage, PluginVerification, PluginVerificationStorage,
 };
@@ -10,7 +11,7 @@ use crate::features::plugins::{
 pub async fn record_plugin_verification(
     plugin_storage: &dyn PluginStorage,
     verification_storage: &dyn PluginVerificationStorage,
-    plugin_id: &str,
+    plugin_id: &PluginId,
     source_type: PluginSourceType,
 ) -> Result<(), PluginError> {
     let wasm_sha256 = plugin_storage.wasm_sha256(plugin_id).await?;

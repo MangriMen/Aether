@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     plugins::{
@@ -35,15 +36,24 @@ struct MockPluginSettingsStorage {
 
 #[async_trait]
 impl PluginSettingsStorage for MockPluginSettingsStorage {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
-        Ok(self.settings.lock().unwrap().get(plugin_id).cloned())
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
+        Ok(self
+            .settings
+            .lock()
+            .unwrap()
+            .get(plugin_id.as_str())
+            .cloned())
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.settings
             .lock()
             .unwrap()
-            .insert(plugin_id.to_owned(), settings.clone());
+            .insert(plugin_id.to_string(), settings.clone());
         Ok(())
     }
 }
@@ -85,8 +95,8 @@ impl SettingsStorage for MockSettingsStorage {
 struct MockPluginInstance;
 
 impl PluginInstance for MockPluginInstance {
-    fn get_id(&self) -> String {
-        "mock".to_owned()
+    fn get_id(&self) -> PluginId {
+        PluginId::from_static("mock")
     }
     fn supports(&self, _name: &str) -> bool {
         false
@@ -128,7 +138,7 @@ fn manifest_with(
 ) -> PluginManifest {
     PluginManifest {
         metadata: PluginMetadata {
-            id: "test-plugin".into(),
+            id: PluginId::from_static("test-plugin"),
             name: "Test Plugin".into(),
             version: semver::Version::new(0, 1, 0),
             description: None,
@@ -230,7 +240,7 @@ async fn should_reject_enable_when_allowed_paths_are_absolute() {
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(matches!(
@@ -239,7 +249,7 @@ async fn should_reject_enable_when_allowed_paths_are_absolute() {
     ));
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Incompatible(_)));
 }
@@ -257,7 +267,7 @@ async fn should_reject_force_enable_when_allowed_paths_are_absolute_despite_an_o
 
     let result = harness
         .force_enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(matches!(
@@ -266,7 +276,7 @@ async fn should_reject_force_enable_when_allowed_paths_are_absolute_despite_an_o
     ));
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Incompatible(_)));
 }
@@ -279,7 +289,7 @@ async fn should_mark_the_plugin_incompatible_with_both_versions_when_the_api_ver
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(
@@ -288,7 +298,7 @@ async fn should_mark_the_plugin_incompatible_with_both_versions_when_the_api_ver
     );
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     let PluginState::Incompatible(reason) = state else {
         panic!("the plugin should be marked incompatible");
@@ -314,13 +324,13 @@ async fn should_bypass_the_api_version_check_when_force_enabling() {
 
     let result = harness
         .force_enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(result.is_ok());
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Loaded(_)));
 }
@@ -337,13 +347,13 @@ async fn should_enable_when_paths_are_relative_and_the_api_is_compatible() {
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(result.is_ok());
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Loaded(_)));
 }
@@ -361,13 +371,13 @@ async fn should_enable_when_the_manifest_has_no_allowed_paths() {
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(result.is_ok());
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Loaded(_)));
 }
@@ -380,7 +390,7 @@ async fn should_reject_enable_when_the_loader_does_not_provide_a_declared_host_f
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     match result {
@@ -391,7 +401,7 @@ async fn should_reject_enable_when_the_loader_does_not_provide_a_declared_host_f
     }
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     let PluginState::Incompatible(PluginStateReason::InvalidManifest { details }) = state else {
         panic!("the plugin should be marked incompatible for its manifest");
@@ -407,7 +417,7 @@ async fn should_reject_force_enable_when_the_loader_does_not_provide_a_declared_
 
     let result = harness
         .force_enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(matches!(
@@ -418,7 +428,7 @@ async fn should_reject_force_enable_when_the_loader_does_not_provide_a_declared_
     ));
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Incompatible(_)));
 }
@@ -429,13 +439,13 @@ async fn should_enable_when_every_declared_host_function_is_provided() {
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(result.is_ok(), "{result:?}");
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Loaded(_)));
 }
@@ -449,7 +459,7 @@ async fn should_reject_enable_when_the_manifest_has_no_host_function_declaration
 
     let result = harness
         .enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(matches!(
@@ -460,7 +470,7 @@ async fn should_reject_enable_when_the_manifest_has_no_host_function_declaration
     ));
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     let PluginState::Incompatible(PluginStateReason::InvalidManifest { details }) = state else {
         panic!("the plugin should be marked incompatible for its manifest");
@@ -476,7 +486,7 @@ async fn should_reject_force_enable_when_the_manifest_has_no_host_function_decla
 
     let result = harness
         .force_enable_use_case()
-        .execute("test-plugin".into())
+        .execute(PluginId::from_static("test-plugin"))
         .await;
 
     assert!(matches!(
@@ -497,9 +507,12 @@ async fn should_refuse_force_enable_when_the_plugin_is_already_loaded() {
     );
     let harness = Harness::new(manifest);
     let use_case = harness.force_enable_use_case();
-    use_case.execute("test-plugin".into()).await.unwrap();
+    use_case
+        .execute(PluginId::from_static("test-plugin"))
+        .await
+        .unwrap();
 
-    let result = use_case.execute("test-plugin".into()).await;
+    let result = use_case.execute(PluginId::from_static("test-plugin")).await;
 
     assert!(
         matches!(result, Err(PluginError::AlreadyLoaded { .. })),
@@ -507,7 +520,7 @@ async fn should_refuse_force_enable_when_the_plugin_is_already_loaded() {
     );
     let (state, _) = harness
         .plugin_registry
-        .get_state_and_manifest("test-plugin")
+        .get_state_and_manifest(&PluginId::from_static("test-plugin"))
         .unwrap();
     assert!(matches!(state, PluginState::Loaded(_)));
 }
@@ -525,14 +538,18 @@ struct SlowPluginSettingsStorage {
 
 #[async_trait]
 impl PluginSettingsStorage for SlowPluginSettingsStorage {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         self.read_started.notify_one();
         let settings = self.inner.get(plugin_id).await;
         tokio::time::sleep(Duration::from_millis(50)).await;
         settings
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.inner.upsert(plugin_id, settings).await
     }
 }
@@ -555,20 +572,28 @@ async fn should_keep_a_host_granted_when_it_is_granted_during_a_force_enable() {
     let grant =
         GrantPluginHostAccessUseCase::new(harness.plugin_registry.clone(), settings.clone());
 
-    let (forced, granted) = tokio::join!(force_enable.execute("test-plugin".into()), async {
-        settings.read_started.notified().await;
-        grant
-            .execute(
-                "test-plugin".into(),
-                "https://example.com/pack.toml".into(),
-                false,
-            )
-            .await
-    });
+    let (forced, granted) = tokio::join!(
+        force_enable.execute(PluginId::from_static("test-plugin")),
+        async {
+            settings.read_started.notified().await;
+            grant
+                .execute(
+                    PluginId::from_static("test-plugin"),
+                    "https://example.com/pack.toml".into(),
+                    false,
+                )
+                .await
+        }
+    );
 
     forced.unwrap();
     granted.unwrap();
-    let saved = settings.inner.get("test-plugin").await.unwrap().unwrap();
+    let saved = settings
+        .inner
+        .get(&PluginId::from_static("test-plugin"))
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(saved.allowed_hosts, ["example.com"]);
     assert_eq!(
         saved.force_enabled_at_api_version,

@@ -44,6 +44,7 @@ pub(super) use policy::policy_error;
 use policy::{PinnedResolver, VettedHops};
 // The allowlist match and the address policy are the domain's: giving a host to a plugin
 // (`GrantPluginHostAccessUseCase`) is decided by the same rules its requests are held to.
+use crate::features::instance::PluginId;
 pub(crate) use crate::features::plugins::{is_blocked_ip, is_host_allowed};
 use crate::shared::limits::{CONNECT_TIMEOUT, PluginSandboxLimits, READ_TIMEOUT, REQUEST_TIMEOUT};
 
@@ -515,7 +516,7 @@ async fn send_checked(
 
 /// Handle `http_get` — perform an allowlisted GET, every redirect hop vetted, on behalf of a plugin.
 pub(crate) async fn handle_http_get(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     request: HttpRequestDto,
     allowed_hosts: &[String],
     limits: PluginSandboxLimits,
@@ -538,7 +539,7 @@ pub(crate) async fn handle_http_get(
 
 /// Handle `http_post_json` — perform an allowlisted, redirect-free JSON POST on behalf of a plugin.
 pub(crate) async fn handle_http_post_json(
-    plugin_id: &str,
+    plugin_id: &PluginId,
     request: HttpPostJsonRequestDto,
     allowed_hosts: &[String],
     limits: PluginSandboxLimits,

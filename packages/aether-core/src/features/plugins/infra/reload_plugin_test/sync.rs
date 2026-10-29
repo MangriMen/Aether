@@ -7,6 +7,7 @@ use std::{
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     ExtractedPlugin, Plugin, PluginError, PluginState, PluginStorage, PluginSyncService,
     SyncPluginsUseCase,
@@ -15,39 +16,39 @@ use crate::features::plugins::{
 use super::common::*;
 
 /// The plugins found on disk, as the sync lists them.
-struct OnDisk(HashMap<String, Plugin>);
+struct OnDisk(HashMap<PluginId, Plugin>);
 
 #[async_trait]
 impl PluginStorage for OnDisk {
     async fn add(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!("the sync only lists")
     }
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         Ok(self.0.clone())
     }
-    async fn get(&self, _: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
         unimplemented!("the sync only lists")
     }
-    async fn remove(&self, _: &str) -> Result<(), PluginError> {
+    async fn remove(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!("the sync only lists")
     }
     async fn replace(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!("the sync only lists")
     }
-    async fn restore_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!("the sync only lists")
     }
-    async fn discard_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!("the sync only lists")
     }
-    async fn wasm_sha256(&self, _: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, _: &PluginId) -> Result<String, PluginError> {
         unimplemented!("the sync only lists")
     }
 }
 
 impl Harness {
     /// A sync that finds `on_disk`.
-    fn sync(&self, on_disk: HashMap<String, Plugin>) -> SyncPluginsUseCase {
+    fn sync(&self, on_disk: HashMap<PluginId, Plugin>) -> SyncPluginsUseCase {
         SyncPluginsUseCase::new(
             Arc::new(OnDisk(on_disk)),
             Arc::clone(&self.plugins),
@@ -59,11 +60,11 @@ impl Harness {
     }
 
     /// The plugin as it is registered, with another build behind it.
-    fn rebuilt(&self) -> HashMap<String, Plugin> {
-        let mut plugin = self.plugins.get(PLUGIN_ID).unwrap().clone();
+    fn rebuilt(&self) -> HashMap<PluginId, Plugin> {
+        let mut plugin = self.plugins.get(&plugin_id()).unwrap().clone();
         plugin.hash = "another build".into();
         plugin.state = PluginState::NotLoaded;
-        HashMap::from([(PLUGIN_ID.to_owned(), plugin)])
+        HashMap::from([(plugin_id(), plugin)])
     }
 }
 
@@ -74,7 +75,7 @@ async fn should_run_the_new_build_and_keep_the_plugin_enabled_when_its_files_cha
     harness.sync(harness.rebuilt()).execute().await.unwrap();
 
     assert_eq!(
-        harness.plugins.get(PLUGIN_ID).unwrap().hash,
+        harness.plugins.get(&plugin_id()).unwrap().hash,
         "another build"
     );
     assert!(matches!(harness.state(), PluginState::Loaded(_)));
@@ -93,12 +94,12 @@ async fn should_run_the_new_build_and_keep_the_plugin_enabled_when_its_files_cha
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_leave_the_plugin_disabled_when_a_disabled_plugin_changed() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
 
     harness.sync(harness.rebuilt()).execute().await.unwrap();
 
     assert_eq!(
-        harness.plugins.get(PLUGIN_ID).unwrap().hash,
+        harness.plugins.get(&plugin_id()).unwrap().hash,
         "another build"
     );
     assert!(matches!(harness.state(), PluginState::NotLoaded));
@@ -112,6 +113,6 @@ async fn should_forget_the_plugin_as_enabled_when_its_files_are_gone() {
 
     harness.sync(HashMap::new()).execute().await.unwrap();
 
-    assert!(harness.plugins.get(PLUGIN_ID).is_err());
+    assert!(harness.plugins.get(&plugin_id()).is_err());
     assert!(!harness.is_enabled());
 }

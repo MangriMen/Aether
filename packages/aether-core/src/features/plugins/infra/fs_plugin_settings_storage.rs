@@ -7,6 +7,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
+        instance::PluginId,
         plugins::{PluginError, PluginSettings, PluginSettingsStorage},
         settings::LocationInfo,
     },
@@ -46,20 +47,24 @@ impl FsPluginSettingsStorage {
         Self { location_info }
     }
 
-    fn get_plugin_settings_path(&self, plugin_id: &str) -> PathBuf {
+    fn get_plugin_settings_path(&self, plugin_id: &PluginId) -> PathBuf {
         self.location_info.plugin_settings(plugin_id)
     }
 }
 
 #[async_trait]
 impl PluginSettingsStorage for FsPluginSettingsStorage {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         let dto: Option<PluginSettingsV1> =
             self.read(&self.get_plugin_settings_path(plugin_id)).await?;
         Ok(dto.map(PluginSettings::from))
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         let dto = PluginSettingsV1::from(settings.clone());
         self.write(&self.get_plugin_settings_path(plugin_id), &dto)
             .await

@@ -5,6 +5,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
+        instance::PluginId,
         plugins::{PluginError, PluginVerification, PluginVerificationStorage},
         settings::LocationInfo,
     },
@@ -28,7 +29,7 @@ impl FsPluginVerificationStorage {
         Self { location_info }
     }
 
-    fn get_verification_path(&self, plugin_id: &str) -> PathBuf {
+    fn get_verification_path(&self, plugin_id: &PluginId) -> PathBuf {
         self.location_info
             .plugin_dir(plugin_id)
             .join(VERIFICATION_FILE_NAME)
@@ -39,7 +40,7 @@ impl FsPluginVerificationStorage {
 impl PluginVerificationStorage for FsPluginVerificationStorage {
     async fn save(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         verification: &PluginVerification,
     ) -> Result<(), PluginError> {
         write_json_async(self.get_verification_path(plugin_id), verification)
@@ -47,7 +48,7 @@ impl PluginVerificationStorage for FsPluginVerificationStorage {
             .map_err(PluginError::Storage)
     }
 
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginVerification>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginVerification>, PluginError> {
         match read_json_async::<PluginVerification>(self.get_verification_path(plugin_id)).await {
             Ok(verification) => Ok(Some(verification)),
             // No record: the plugin was never installed through a remote
@@ -57,7 +58,7 @@ impl PluginVerificationStorage for FsPluginVerificationStorage {
         }
     }
 
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let path = self.get_verification_path(plugin_id);
         match tokio::fs::remove_file(&path).await {
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),

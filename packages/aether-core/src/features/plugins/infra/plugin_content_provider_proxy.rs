@@ -17,16 +17,15 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::features::{
     instance::{
-        CapabilityId, ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult,
-        ContentItem, ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
-        ContentSearchParams, ContentSearchResult, ContentVersion, ContentVersionMetadata,
-        InstallFileEntry, InstallPlan, InstallTarget, Instance, InstanceError, InstanceId,
-        InvalidId, OverrideLocation, OverrideSource, PackMetadata, PackSource, PluginId,
-        ProviderId, ResolveInstallPlanParams, ResolveTarget, ResolvedFile,
+        ContentAuthor, ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentItem,
+        ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata, ContentSearchParams,
+        ContentSearchResult, ContentVersion, ContentVersionMetadata, InstallFileEntry, InstallPlan,
+        InstallTarget, Instance, InstanceError, InstanceId, OverrideLocation, OverrideSource,
+        PackMetadata, PackSource, PluginId, ProviderId, ResolveInstallPlanParams, ResolveTarget,
+        ResolvedFile,
     },
     plugins::{
-        ManifestError, PluginCheckCompatibilityParams, PluginContentProviderCapability,
-        PluginError, PluginHandle,
+        PluginCheckCompatibilityParams, PluginContentProviderCapability, PluginError, PluginHandle,
     },
     settings::LocationInfo,
 };
@@ -44,7 +43,7 @@ use crate::features::plugins::infra::plugin_utils::{
 /// the request, and every plugin-side path is translated or refused, so nothing past the proxy
 /// sees one.
 pub struct PluginContentProviderProxy {
-    plugin_id: String,
+    plugin_id: PluginId,
     provider_id: ProviderId,
     instance: PluginHandle,
     capability: PluginContentProviderCapability,
@@ -52,30 +51,21 @@ pub struct PluginContentProviderProxy {
 }
 
 impl PluginContentProviderProxy {
-    /// Refuses a plugin or capability id outside the id scheme, as the manifest check does.
     pub fn new(
-        plugin_id: String,
+        plugin_id: PluginId,
         instance: PluginHandle,
         capability: PluginContentProviderCapability,
         location_info: Arc<LocationInfo>,
-    ) -> Result<Self, ManifestError> {
-        let invalid = |field: &str, err: InvalidId| ManifestError::InvalidId {
-            field: field.to_owned(),
-            value: err.value,
-        };
-        let provider_id = ProviderId::new(
-            PluginId::try_from(plugin_id.as_str()).map_err(|e| invalid("metadata.id", e))?,
-            CapabilityId::try_from(capability.metadata.base.id.as_str())
-                .map_err(|e| invalid("contentProviders[].id", e))?,
-        );
+    ) -> Self {
+        let provider_id = ProviderId::new(plugin_id.clone(), capability.metadata.base.id.clone());
 
-        Ok(Self {
+        Self {
             plugin_id,
             provider_id,
             instance,
             capability,
             location_info,
-        })
+        }
     }
 
     /// The handler of an operation a plugin may leave out. Without one the operation is
@@ -306,9 +296,9 @@ impl PluginContentProviderProxy {
                 );
                 Err(self.unsupported(operation))
             }
-            Err(PluginError::Stopped { plugin_id }) => {
-                Err(InstanceError::PluginNotRunning { plugin_id })
-            }
+            Err(PluginError::Stopped { plugin_id }) => Err(InstanceError::PluginNotRunning {
+                plugin_id: plugin_id.into(),
+            }),
             Err(err) => {
                 tracing::error!(
                     "Error calling plugin '{}' ({}): {:?}",

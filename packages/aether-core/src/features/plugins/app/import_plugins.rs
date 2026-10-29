@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     ExtractedPlugin, PluginError, PluginExtractor, PluginRegistry, PluginSettingsStorage,
     PluginSourceStorage, PluginStorage, PluginSyncService, PluginVerificationStorage,
@@ -106,7 +107,7 @@ impl ImportPluginsUseCase {
 
     async fn replace_keeping_settings(
         &self,
-        plugin_id: &str,
+        plugin_id: &PluginId,
         extracted_plugin: ExtractedPlugin,
     ) -> Result<(), PluginError> {
         // The settings live in the plugin's directory, which the replacement swaps out. Held

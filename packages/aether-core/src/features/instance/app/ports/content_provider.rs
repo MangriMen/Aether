@@ -142,7 +142,7 @@ pub trait ContentProvider: Send + Sync {
 mod tests {
     use std::sync::Arc;
 
-    use crate::features::instance::{CapabilityMetadata, ResolveTarget};
+    use crate::features::instance::{CapabilityId, CapabilityMetadata, ResolveTarget};
 
     use super::*;
 
@@ -156,7 +156,7 @@ mod tests {
             Self {
                 metadata: ContentProviderCapabilityMetadata {
                     base: CapabilityMetadata {
-                        id: "bare".into(),
+                        id: CapabilityId::from_static("bare"),
                         name: "Bare".into(),
                         description: None,
                         icon: None,

@@ -13,6 +13,7 @@ use rstest::rstest;
 use tempfile::TempDir;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
+use crate::features::instance::PluginId;
 use crate::features::{
     events::{Event, EventEmitter, EventError},
     plugins::{
@@ -31,6 +32,10 @@ use crate::features::{
 };
 
 const PLUGIN_ID: &str = "test-plugin";
+
+fn plugin_id() -> PluginId {
+    PluginId::from_static(PLUGIN_ID)
+}
 
 const MANIFEST: &str = r#"{
     "metadata": {
@@ -136,7 +141,7 @@ struct NoRestart;
 
 #[async_trait]
 impl ReloadPluginUseCasePort for NoRestart {
-    async fn execute(&self, _plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, _plugin_id: PluginId) -> Result<(), PluginError> {
         unreachable!("a plugin that is not running is not restarted")
     }
 }
@@ -162,13 +167,17 @@ struct SlowPluginSettings(Arc<FsPluginSettingsStorage>);
 
 #[async_trait]
 impl PluginSettingsStorage for SlowPluginSettings {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         let settings = self.0.get(plugin_id).await;
         tokio::time::sleep(Duration::from_millis(50)).await;
         settings
     }
 
-    async fn upsert(&self, plugin_id: &str, settings: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(
+        &self,
+        plugin_id: &PluginId,
+        settings: &PluginSettings,
+    ) -> Result<(), PluginError> {
         self.0.upsert(plugin_id, settings).await
     }
 }
@@ -195,7 +204,7 @@ impl Fixture {
         let manifest: aether_core_plugin_api::v0::PluginManifestDto =
             serde_json::from_str(MANIFEST).unwrap();
         registry.insert(
-            PLUGIN_ID.to_owned(),
+            plugin_id(),
             Plugin {
                 manifest: manifest.try_into().unwrap(),
                 capabilities: None,
@@ -214,7 +223,7 @@ impl Fixture {
             _temp: temp,
         };
 
-        let plugin_dir = fixture.location_info.plugin_dir(PLUGIN_ID);
+        let plugin_dir = fixture.location_info.plugin_dir(&plugin_id());
         tokio::fs::create_dir_all(&plugin_dir).await.unwrap();
         tokio::fs::write(plugin_dir.join("plugin.wasm"), b"\0asm v1")
             .await
@@ -222,7 +231,7 @@ impl Fixture {
         fixture
             .source
             .save(
-                PLUGIN_ID,
+                &plugin_id(),
                 &PluginSource::Remote {
                     source_type: PluginSourceType::GitHub,
                     identifier: "owner/repo".into(),
@@ -235,7 +244,7 @@ impl Fixture {
         fixture
             .verification
             .save(
-                PLUGIN_ID,
+                &plugin_id(),
                 &PluginVerification::new("sha256 of v1", PluginSourceType::GitHub),
             )
             .await
@@ -243,7 +252,7 @@ impl Fixture {
         fixture
             .settings
             .upsert(
-                PLUGIN_ID,
+                &plugin_id(),
                 &PluginSettings {
                     allowed_hosts: vec!["extra.example.com".into()],
                     force_enabled_at_api_version: Some("0.1.0".into()),
@@ -284,20 +293,24 @@ impl Fixture {
             })])),
             self.sync.clone(),
         )
-        .execute(PLUGIN_ID, Some("v2"))
+        .execute(&plugin_id(), Some("v2"))
         .await
     }
 
     async fn wasm(&self) -> Vec<u8> {
-        tokio::fs::read(self.location_info.plugin_dir(PLUGIN_ID).join("plugin.wasm"))
-            .await
-            .unwrap()
+        tokio::fs::read(
+            self.location_info
+                .plugin_dir(&plugin_id())
+                .join("plugin.wasm"),
+        )
+        .await
+        .unwrap()
     }
 
     /// Version `v1` as [`Fixture::installed`] left it, and nothing of the update beside it.
     async fn assert_v1_untouched(&self) {
         assert_eq!(self.wasm().await, b"\0asm v1");
-        let settings = self.settings.get(PLUGIN_ID).await.unwrap().unwrap();
+        let settings = self.settings.get(&plugin_id()).await.unwrap().unwrap();
         assert_eq!(settings.allowed_hosts, ["extra.example.com"]);
         assert_eq!(
             settings.force_enabled_at_api_version.as_deref(),
@@ -305,14 +318,14 @@ impl Fixture {
         );
         assert_eq!(
             self.verification
-                .get(PLUGIN_ID)
+                .get(&plugin_id())
                 .await
                 .unwrap()
                 .map(|record| record.wasm_sha256),
             Some("sha256 of v1".to_owned())
         );
         assert!(matches!(
-            self.source.get(PLUGIN_ID).await.unwrap(),
+            self.source.get(&plugin_id()).await.unwrap(),
             Some(PluginSource::Remote { current_tag, .. }) if current_tag == "v1"
         ));
         let entries: Vec<_> = std::fs::read_dir(self.location_info.plugins_dir())
@@ -347,25 +360,25 @@ impl PluginStorage for FailingReplace {
     async fn add(&self, extracted_plugin: ExtractedPlugin) -> Result<(), PluginError> {
         self.0.add(extracted_plugin).await
     }
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         self.0.list().await
     }
-    async fn get(&self, plugin_id: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(plugin_id).await
     }
     async fn replace(&self, _extracted_plugin: ExtractedPlugin) -> Result<(), PluginError> {
         Err(disk_full())
     }
-    async fn restore_replaced(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.restore_replaced(plugin_id).await
     }
-    async fn discard_replaced(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.discard_replaced(plugin_id).await
     }
-    async fn wasm_sha256(&self, plugin_id: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, plugin_id: &PluginId) -> Result<String, PluginError> {
         self.0.wasm_sha256(plugin_id).await
     }
 }
@@ -374,10 +387,10 @@ struct FailingSettingsSave(Arc<FsPluginSettingsStorage>);
 
 #[async_trait]
 impl PluginSettingsStorage for FailingSettingsSave {
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSettings>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSettings>, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn upsert(&self, _: &str, _: &PluginSettings) -> Result<(), PluginError> {
+    async fn upsert(&self, _: &PluginId, _: &PluginSettings) -> Result<(), PluginError> {
         Err(disk_full())
     }
 }
@@ -386,13 +399,13 @@ struct FailingVerificationSave(Arc<FsPluginVerificationStorage>);
 
 #[async_trait]
 impl PluginVerificationStorage for FailingVerificationSave {
-    async fn save(&self, _: &str, _: &PluginVerification) -> Result<(), PluginError> {
+    async fn save(&self, _: &PluginId, _: &PluginVerification) -> Result<(), PluginError> {
         Err(disk_full())
     }
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginVerification>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginVerification>, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(plugin_id).await
     }
 }
@@ -401,13 +414,13 @@ struct FailingSourceSave(Arc<FsPluginSourceStorage>);
 
 #[async_trait]
 impl PluginSourceStorage for FailingSourceSave {
-    async fn save(&self, _: &str, _: &PluginSource) -> Result<(), PluginError> {
+    async fn save(&self, _: &PluginId, _: &PluginSource) -> Result<(), PluginError> {
         Err(disk_full())
     }
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSource>, PluginError> {
         self.0.get(plugin_id).await
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.0.remove(plugin_id).await
     }
 }
@@ -484,12 +497,19 @@ async fn should_keep_the_settings_of_a_plugin_when_it_is_updated() {
     fixture.update_to_v2(plugin_zip(b"\0asm v2")).await.unwrap();
 
     assert_eq!(fixture.wasm().await, b"\0asm v2");
-    let settings = fixture.settings.get(PLUGIN_ID).await.unwrap().unwrap();
+    let settings = fixture.settings.get(&plugin_id()).await.unwrap().unwrap();
     assert_eq!(settings.allowed_hosts, ["extra.example.com"]);
     assert_eq!(settings.force_enabled_at_api_version, None);
-    assert!(fixture.verification.get(PLUGIN_ID).await.unwrap().is_some());
+    assert!(
+        fixture
+            .verification
+            .get(&plugin_id())
+            .await
+            .unwrap()
+            .is_some()
+    );
     assert!(matches!(
-        fixture.source.get(PLUGIN_ID).await.unwrap(),
+        fixture.source.get(&plugin_id()).await.unwrap(),
         Some(PluginSource::Remote { current_tag, .. }) if current_tag == "v2"
     ));
 }
@@ -505,7 +525,7 @@ async fn should_keep_the_installed_version_when_the_new_archive_is_broken() {
         .unwrap_err();
 
     assert_eq!(fixture.wasm().await, b"\0asm v1");
-    assert!(fixture.settings.get(PLUGIN_ID).await.unwrap().is_some());
+    assert!(fixture.settings.get(&plugin_id()).await.unwrap().is_some());
 }
 
 /// With no settings of the user's to carry over, nothing would replace a `settings.toml` of the
@@ -513,7 +533,7 @@ async fn should_keep_the_installed_version_when_the_new_archive_is_broken() {
 #[tokio::test]
 async fn should_leave_out_core_files_when_the_release_archive_brings_them() {
     let fixture = Fixture::installed().await;
-    tokio::fs::remove_file(fixture.location_info.plugin_settings(PLUGIN_ID))
+    tokio::fs::remove_file(fixture.location_info.plugin_settings(&plugin_id()))
         .await
         .unwrap();
 
@@ -535,9 +555,9 @@ async fn should_leave_out_core_files_when_the_release_archive_brings_them() {
         .unwrap();
 
     assert_eq!(fixture.wasm().await, b"\0asm v2");
-    assert!(fixture.settings.get(PLUGIN_ID).await.unwrap().is_none());
+    assert!(fixture.settings.get(&plugin_id()).await.unwrap().is_none());
     assert!(matches!(
-        fixture.source.get(PLUGIN_ID).await.unwrap(),
+        fixture.source.get(&plugin_id()).await.unwrap(),
         Some(PluginSource::Remote { identifier, current_tag, .. })
             if identifier == "owner/repo" && current_tag == "v2"
     ));
@@ -594,16 +614,21 @@ async fn should_refuse_the_update_when_the_archive_has_another_plugin_id() {
     assert!(matches!(
         result,
         Err(PluginError::IdMismatch { plugin_id, archive_id })
-            if plugin_id == PLUGIN_ID && archive_id == "other-plugin"
+            if plugin_id.as_str() == PLUGIN_ID && archive_id.as_str() == "other-plugin"
     ));
     assert_eq!(fixture.wasm().await, b"\0asm v1");
-    let settings = fixture.settings.get(PLUGIN_ID).await.unwrap().unwrap();
+    let settings = fixture.settings.get(&plugin_id()).await.unwrap().unwrap();
     assert_eq!(settings.allowed_hosts, ["extra.example.com"]);
     assert_eq!(
         settings.force_enabled_at_api_version.as_deref(),
         Some("0.1.0")
     );
-    assert!(!fixture.location_info.plugin_dir("other-plugin").exists());
+    assert!(
+        !fixture
+            .location_info
+            .plugin_dir(&PluginId::from_static("other-plugin"))
+            .exists()
+    );
 }
 
 /// The update reads the settings, replaces the plugin's directory and saves them back: a folder
@@ -631,12 +656,12 @@ async fn should_keep_a_folder_granted_when_it_is_granted_during_an_update() {
                 ..Seams::default()
             }
         ),
-        grant.execute(PLUGIN_ID.into(), pack_file, false),
+        grant.execute(plugin_id(), pack_file, false),
     );
 
     updated.unwrap();
     granted.unwrap();
-    let settings = fixture.settings.get(PLUGIN_ID).await.unwrap().unwrap();
+    let settings = fixture.settings.get(&plugin_id()).await.unwrap().unwrap();
     assert_eq!(
         settings.allowed_paths,
         [AllowedPath::read_only_folder(pack.path())]

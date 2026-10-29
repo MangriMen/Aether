@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     features::{
+        instance::PluginId,
         plugins::{PluginError, PluginSource, PluginSourceStorage},
         settings::LocationInfo,
     },
@@ -25,7 +26,7 @@ impl FsPluginSourceStorage {
         Self { location_info }
     }
 
-    fn get_source_path(&self, plugin_id: &str) -> std::path::PathBuf {
+    fn get_source_path(&self, plugin_id: &PluginId) -> std::path::PathBuf {
         self.location_info
             .plugin_dir(plugin_id)
             .join(SOURCE_FILE_NAME)
@@ -34,14 +35,14 @@ impl FsPluginSourceStorage {
 
 #[async_trait]
 impl PluginSourceStorage for FsPluginSourceStorage {
-    async fn save(&self, plugin_id: &str, source: &PluginSource) -> Result<(), PluginError> {
+    async fn save(&self, plugin_id: &PluginId, source: &PluginSource) -> Result<(), PluginError> {
         let path = self.get_source_path(plugin_id);
         write_json_async(&path, source)
             .await
             .map_err(PluginError::Storage)
     }
 
-    async fn get(&self, plugin_id: &str) -> Result<Option<PluginSource>, PluginError> {
+    async fn get(&self, plugin_id: &PluginId) -> Result<Option<PluginSource>, PluginError> {
         let path = self.get_source_path(plugin_id);
 
         match read_json_async::<PluginSource>(&path).await {
@@ -62,7 +63,7 @@ impl PluginSourceStorage for FsPluginSourceStorage {
     }
 
     /// No record is already the state asked for.
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         let path = self.get_source_path(plugin_id);
         match tokio::fs::remove_file(&path).await {
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),

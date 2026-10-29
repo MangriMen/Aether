@@ -65,7 +65,7 @@ impl ZipPluginExtractor {
                 }
             })?;
 
-        PluginCapabilities::from(dto).validate()?;
+        PluginCapabilities::try_from(dto)?.validate()?;
 
         Ok(())
     }
@@ -187,6 +187,7 @@ mod tests {
     use zip::{ZipWriter, write::SimpleFileOptions};
 
     use super::*;
+    use crate::features::instance::PluginId;
     use crate::features::plugins::ManifestError;
 
     const MANIFEST: &str = r#"{
@@ -288,7 +289,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(extracted.plugin_id, "test-plugin");
+        assert_eq!(extracted.plugin_id, PluginId::from_static("test-plugin"));
         let PluginContent::Filesystem { temp_dir } = &extracted.content;
         assert!(temp_dir.path().join("manifest.json").is_file());
         assert!(temp_dir.path().join("plugin.wasm").is_file());

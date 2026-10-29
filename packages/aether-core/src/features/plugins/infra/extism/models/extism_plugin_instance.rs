@@ -1,4 +1,5 @@
 use super::PluginInstanceExt;
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginCallError, PluginError, PluginInstance, PluginInternalEvent,
     infra::extism::call_error::classify_call_error,
@@ -6,18 +7,18 @@ use crate::features::plugins::{
 
 #[derive(Debug)]
 pub(crate) struct ExtismPluginInstance {
-    id: String,
+    id: PluginId,
     inner: extism::Plugin,
 }
 
 impl ExtismPluginInstance {
-    pub(crate) fn new(plugin: extism::Plugin, id: String) -> Self {
+    pub(crate) fn new(plugin: extism::Plugin, id: PluginId) -> Self {
         Self { inner: plugin, id }
     }
 }
 
 impl PluginInstance for ExtismPluginInstance {
-    fn get_id(&self) -> String {
+    fn get_id(&self) -> PluginId {
         self.id.clone()
     }
     fn supports(&self, name: &str) -> bool {

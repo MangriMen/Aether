@@ -12,7 +12,7 @@ pub struct CapabilityEntryDto<C: Send + Sync + Clone> {
 impl<C: Send + Sync + Clone> From<CapabilityEntry<C>> for CapabilityEntryDto<C> {
     fn from(value: CapabilityEntry<C>) -> Self {
         CapabilityEntryDto {
-            plugin_id: value.plugin_id,
+            plugin_id: value.plugin_id.into(),
             capability: value.capability,
         }
     }

@@ -75,7 +75,7 @@ impl From<ProviderHandlers> for ProviderHandlersDto {
 impl From<CapabilityMetadata> for CapabilityMetadataDto {
     fn from(v: CapabilityMetadata) -> Self {
         Self {
-            id: v.id,
+            id: v.id.into(),
             name: v.name,
             description: v.description,
             icon: v.icon,

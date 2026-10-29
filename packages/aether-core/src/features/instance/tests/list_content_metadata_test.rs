@@ -13,6 +13,7 @@ use dashmap::DashMap;
 use tempfile::TempDir;
 use tokio::sync::{Semaphore, mpsc};
 
+use crate::features::instance::CapabilityId;
 use crate::{
     features::{
         events::{CacheEvent, Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
@@ -365,7 +366,7 @@ impl FakeProvider {
         Self {
             metadata: ContentProviderCapabilityMetadata {
                 base: CapabilityMetadata {
-                    id: capability_id.into(),
+                    id: capability_id.parse::<CapabilityId>().unwrap(),
                     name: capability_id.into(),
                     description: None,
                     icon: None,
@@ -554,7 +555,7 @@ impl Fixture {
         for provider in providers {
             let id = provider.provider_id();
             registry
-                .add(id.plugin_id.into(), id.capability_id.into(), provider)
+                .add(id.plugin_id, id.capability_id, provider)
                 .await
                 .unwrap();
         }

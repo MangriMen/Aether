@@ -3,8 +3,8 @@ use aether_core::features::{
         ChangeContentState, ContentCompatibilityCheckParams, ContentGetParams,
         ContentInstallParams, ContentListVersionsParams, ContentManagementPort,
         ContentProviderPort, ContentSearchParams, ContentStateAction, EditInstanceIcon,
-        ImportContent, InstanceCrudPort, InstanceId, InstanceLifecyclePort, InstanceServicesPort,
-        NewInstance, RemoveContent,
+        ImportContent, ImportInstance, InstanceCrudPort, InstanceId, InstanceLifecyclePort,
+        InstanceServicesPort, NewInstance, RemoveContent,
     },
     process::ProcessFeature,
 };
@@ -87,7 +87,7 @@ async fn import(
     let container = container.0.clone();
     Ok(container
         .import_instance_use_case()
-        .execute(import_instance.into())
+        .execute(ImportInstance::try_from(import_instance).map_err(aether_core::Error::from)?)
         .await
         .map_err(aether_core::Error::from)?)
 }

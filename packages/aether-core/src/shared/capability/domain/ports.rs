@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::shared::capability::domain::models::{CapabilityEntry, RegistryError};
+use crate::shared::capability::domain::{
+    ids::{CapabilityId, PluginId},
+    models::{CapabilityEntry, RegistryError},
+};
 
 #[async_trait]
 pub trait CapabilityRegistry<C: Send + Sync + Clone>: Send + Sync {
@@ -8,8 +11,8 @@ pub trait CapabilityRegistry<C: Send + Sync + Clone>: Send + Sync {
 
     async fn add(
         &self,
-        plugin_id: String,
-        capability_id: String,
+        plugin_id: PluginId,
+        capability_id: CapabilityId,
         capability: C,
     ) -> Result<(), RegistryError>;
 
@@ -17,14 +20,18 @@ pub trait CapabilityRegistry<C: Send + Sync + Clone>: Send + Sync {
 
     async fn find_by_capability_id(
         &self,
-        capability_id: &str,
+        capability_id: &CapabilityId,
     ) -> Result<Vec<CapabilityEntry<C>>, RegistryError>;
 
     async fn find_by_plugin_and_capability_id(
         &self,
-        plugin_id: &str,
-        capability_id: &str,
+        plugin_id: &PluginId,
+        capability_id: &CapabilityId,
     ) -> Result<CapabilityEntry<C>, RegistryError>;
 
-    async fn remove(&self, plugin_id: String, capability_id: String) -> Result<(), RegistryError>;
+    async fn remove(
+        &self,
+        plugin_id: PluginId,
+        capability_id: CapabilityId,
+    ) -> Result<(), RegistryError>;
 }

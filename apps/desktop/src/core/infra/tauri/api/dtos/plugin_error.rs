@@ -125,37 +125,37 @@ impl From<&PluginError> for PluginErrorDto {
                 plugin_id: plugin_id.clone(),
             },
             PluginError::AlreadyLoaded { plugin_id } => Self::AlreadyLoaded {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::LoadingInProgress { plugin_id } => Self::LoadingInProgress {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::UnloadingInProgress { plugin_id } => Self::UnloadingInProgress {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::AlreadyUnloaded { plugin_id } => Self::AlreadyUnloaded {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::Busy { plugin_id } => Self::Busy {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::Stopped { plugin_id } => Self::Stopped {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginError::IdMismatch {
                 plugin_id,
                 archive_id,
             } => Self::IdMismatch {
-                plugin_id: plugin_id.clone(),
-                archive_id: archive_id.clone(),
+                plugin_id: plugin_id.to_string(),
+                archive_id: archive_id.to_string(),
             },
             PluginError::LoadFailed { plugin_id, reason } => Self::LoadFailed {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
                 reason: reason.clone(),
             },
             PluginError::IncompatibleApiVersion { plugin_id, reason } => {
                 Self::IncompatibleApiVersion {
-                    plugin_id: plugin_id.clone(),
+                    plugin_id: plugin_id.to_string(),
                     reason: reason.clone(),
                 }
             }
@@ -165,7 +165,7 @@ impl From<&PluginError> for PluginErrorDto {
                 error,
             } => Self::FunctionCallFailed {
                 function_name: function_name.clone(),
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
                 error: error.to_string(),
             },
             PluginError::Manifest(err) => Self::Manifest {
@@ -179,17 +179,17 @@ impl From<&PluginError> for PluginErrorDto {
                 capability_id,
             } => Self::CapabilityRegistrationFailed {
                 capability_type: capability_type.to_string(),
-                capability_id: capability_id.clone(),
+                capability_id: capability_id.to_string(),
             },
             PluginError::CapabilityCancelRegistrationFailed {
                 capability_type,
                 capability_id,
             } => Self::CapabilityCancelRegistrationFailed {
                 capability_type: capability_type.to_string(),
-                capability_id: capability_id.clone(),
+                capability_id: capability_id.to_string(),
             },
             PluginError::AccessViolation { plugin_id, path } => Self::AccessViolation {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
                 path: path.clone(),
             },
             PluginError::InvalidAllowedPath {
@@ -197,7 +197,7 @@ impl From<&PluginError> for PluginErrorDto {
                 path,
                 reason,
             } => Self::InvalidAllowedPath {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
                 path: path.clone(),
                 reason: (*reason).into(),
             },
@@ -206,7 +206,7 @@ impl From<&PluginError> for PluginErrorDto {
                 url,
                 reason,
             } => Self::InvalidAllowedHost {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
                 url: url.clone(),
                 reason: (*reason).into(),
             },
@@ -249,7 +249,7 @@ impl From<&PluginProviderError> for PluginErrorDto {
                 source_type: source_type.to_string(),
             },
             PluginProviderError::NoRemoteSource { plugin_id } => Self::NoRemoteSource {
-                plugin_id: plugin_id.clone(),
+                plugin_id: plugin_id.to_string(),
             },
             PluginProviderError::DownloadFailed { url, details } => Self::DownloadFailed {
                 url: url.clone(),

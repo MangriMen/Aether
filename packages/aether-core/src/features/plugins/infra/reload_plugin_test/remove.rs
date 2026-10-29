@@ -10,6 +10,7 @@ use std::{
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     DisablePluginUseCase, EnablePluginUseCase, ExtractedPlugin, Plugin, PluginDisableService,
     PluginError, PluginState, PluginStorage, PluginSyncService, RemovePluginUseCase,
@@ -22,7 +23,7 @@ use super::common::*;
 /// fail.
 #[derive(Default)]
 struct FakeStorage {
-    on_disk: HashMap<String, Plugin>,
+    on_disk: HashMap<PluginId, Plugin>,
     removes: AtomicUsize,
     fail_remove: AtomicBool,
 }
@@ -32,17 +33,17 @@ impl PluginStorage for FakeStorage {
     async fn add(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!("the remove and the sync do not add")
     }
-    async fn list(&self) -> Result<HashMap<String, Plugin>, PluginError> {
+    async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError> {
         Ok(self.on_disk.clone())
     }
-    async fn get(&self, _: &str) -> Result<Plugin, PluginError> {
+    async fn get(&self, _: &PluginId) -> Result<Plugin, PluginError> {
         unimplemented!("the remove and the sync do not get")
     }
-    async fn remove(&self, plugin_id: &str) -> Result<(), PluginError> {
+    async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError> {
         self.removes.fetch_add(1, Ordering::SeqCst);
         if self.fail_remove.load(Ordering::SeqCst) {
             return Err(PluginError::NotFound {
-                plugin_id: plugin_id.to_owned(),
+                plugin_id: plugin_id.to_string(),
             });
         }
         Ok(())
@@ -50,13 +51,13 @@ impl PluginStorage for FakeStorage {
     async fn replace(&self, _: ExtractedPlugin) -> Result<(), PluginError> {
         unimplemented!("the remove and the sync do not replace")
     }
-    async fn restore_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn restore_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!("the remove and the sync do not restore")
     }
-    async fn discard_replaced(&self, _: &str) -> Result<(), PluginError> {
+    async fn discard_replaced(&self, _: &PluginId) -> Result<(), PluginError> {
         unimplemented!("the remove and the sync do not discard")
     }
-    async fn wasm_sha256(&self, _: &str) -> Result<String, PluginError> {
+    async fn wasm_sha256(&self, _: &PluginId) -> Result<String, PluginError> {
         unimplemented!("the remove and the sync do not hash")
     }
 }
@@ -78,11 +79,11 @@ struct DisableThenEnable {
 
 #[async_trait]
 impl PluginDisableService for DisableThenEnable {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.disable.execute(plugin_id.clone()).await?;
         self.enable.execute(plugin_id).await
     }
-    async fn unload(&self, _: String) -> Result<(), PluginError> {
+    async fn unload(&self, _: PluginId) -> Result<(), PluginError> {
         unimplemented!("the remove ends the plugin for good")
     }
 }
@@ -111,8 +112,8 @@ impl Harness {
     /// Disabled, and taken by a remove that has not finished.
     async fn being_removed() -> Self {
         let harness = Self::enabled().await;
-        harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
-        harness.plugins.begin_removing(PLUGIN_ID).await.unwrap();
+        harness.disable().execute(plugin_id()).await.unwrap();
+        harness.plugins.begin_removing(&plugin_id()).await.unwrap();
         harness
     }
 }
@@ -124,12 +125,12 @@ async fn should_forget_the_plugin_when_it_is_removed() {
 
     harness
         .remove(storage.clone())
-        .execute(PLUGIN_ID.into())
+        .execute(plugin_id())
         .await
         .unwrap();
 
     assert_eq!(storage.removes.load(Ordering::SeqCst), 1);
-    assert!(harness.plugins.get(PLUGIN_ID).is_err());
+    assert!(harness.plugins.get(&plugin_id()).is_err());
     assert!(!harness.is_enabled());
 }
 
@@ -137,8 +138,8 @@ async fn should_forget_the_plugin_when_it_is_removed() {
 async fn should_refuse_an_enable_when_the_plugin_is_being_removed() {
     let harness = Harness::being_removed().await;
 
-    let refused = harness.enable().execute(PLUGIN_ID.into()).await;
-    let forced = harness.force_enable().execute(PLUGIN_ID.into()).await;
+    let refused = harness.enable().execute(plugin_id()).await;
+    let forced = harness.force_enable().execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::UnloadingInProgress { .. })),
@@ -156,7 +157,7 @@ async fn should_refuse_an_enable_when_the_plugin_is_being_removed() {
 async fn should_refuse_a_disable_when_the_plugin_is_being_removed() {
     let harness = Harness::being_removed().await;
 
-    let refused = harness.disable().execute(PLUGIN_ID.into()).await;
+    let refused = harness.disable().execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::UnloadingInProgress { .. })),
@@ -178,7 +179,7 @@ async fn should_keep_the_files_when_an_enable_gets_in_before_the_remove() {
         Arc::new(NoSync),
     );
 
-    let refused = remove.execute(PLUGIN_ID.into()).await;
+    let refused = remove.execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::AlreadyLoaded { .. })),
@@ -192,21 +193,18 @@ async fn should_keep_the_files_when_an_enable_gets_in_before_the_remove() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_keep_the_files_when_the_plugin_is_loading_as_the_remove_begins() {
     let harness = Harness::enabled().await;
-    harness.disable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.disable().execute(plugin_id()).await.unwrap();
     harness.loader.hold_loads.store(true, Ordering::SeqCst);
     let storage = Arc::new(FakeStorage::default());
     let harness = Arc::new(harness);
 
     let enable = tokio::spawn({
         let harness = Arc::clone(&harness);
-        async move { harness.enable().execute(PLUGIN_ID.into()).await }
+        async move { harness.enable().execute(plugin_id()).await }
     });
     harness.loader.load_started.notified().await;
 
-    let refused = harness
-        .remove(storage.clone())
-        .execute(PLUGIN_ID.into())
-        .await;
+    let refused = harness.remove(storage.clone()).execute(plugin_id()).await;
 
     assert!(
         matches!(refused, Err(PluginError::LoadingInProgress { .. })),
@@ -224,17 +222,14 @@ async fn should_put_the_state_back_when_deleting_the_files_fails() {
     let storage = Arc::new(FakeStorage::default());
     storage.fail_remove.store(true, Ordering::SeqCst);
 
-    let result = harness
-        .remove(storage.clone())
-        .execute(PLUGIN_ID.into())
-        .await;
+    let result = harness.remove(storage.clone()).execute(plugin_id()).await;
 
     assert!(result.is_err());
     assert!(
         matches!(harness.state(), PluginState::NotLoaded),
         "not left `Removing`, which would refuse every later enable"
     );
-    harness.enable().execute(PLUGIN_ID.into()).await.unwrap();
+    harness.enable().execute(plugin_id()).await.unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -253,30 +248,30 @@ async fn should_leave_a_plugin_being_removed_to_the_remove_when_its_files_are_go
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_not_put_a_plugin_being_removed_back_when_a_sync_still_finds_its_files() {
     let harness = Harness::being_removed().await;
-    let mut plugin = harness.plugins.get(PLUGIN_ID).unwrap().clone();
+    let mut plugin = harness.plugins.get(&plugin_id()).unwrap().clone();
     plugin.state = PluginState::NotLoaded;
     plugin.hash = "another build".into();
     let storage = FakeStorage {
-        on_disk: HashMap::from([(PLUGIN_ID.to_owned(), plugin)]),
+        on_disk: HashMap::from([(plugin_id(), plugin)]),
         ..FakeStorage::default()
     };
 
     harness.sync_of(storage).execute().await.unwrap();
 
     assert!(matches!(harness.state(), PluginState::Removing));
-    assert_eq!(harness.plugins.get(PLUGIN_ID).unwrap().hash, "hash");
+    assert_eq!(harness.plugins.get(&plugin_id()).unwrap().hash, "hash");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn should_wait_for_a_settings_change_in_flight_when_the_plugin_is_removed() {
     let harness = Arc::new(Harness::enabled().await);
     let storage = Arc::new(FakeStorage::default());
-    let settings_lock = harness.plugins.lock_settings(PLUGIN_ID).await;
+    let settings_lock = harness.plugins.lock_settings(&plugin_id()).await;
 
     let remove = tokio::spawn({
         let harness = Arc::clone(&harness);
         let storage = storage.clone();
-        async move { harness.remove(storage).execute(PLUGIN_ID.into()).await }
+        async move { harness.remove(storage).execute(plugin_id()).await }
     });
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 

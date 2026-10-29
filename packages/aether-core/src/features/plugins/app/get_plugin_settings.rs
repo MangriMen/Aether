@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{PluginError, PluginSettings, PluginSettingsStorage};
 
 use super::{edit_plugin_settings::settings_to_edit, ports::GetPluginSettingsUseCasePort};
@@ -19,7 +20,7 @@ impl GetPluginSettingsUseCase {
 
     pub(crate) async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
     ) -> Result<Option<PluginSettings>, PluginError> {
         settings_to_edit(self.plugin_settings_storage.as_ref(), &plugin_id).await
     }
@@ -27,7 +28,7 @@ impl GetPluginSettingsUseCase {
 
 #[async_trait]
 impl GetPluginSettingsUseCasePort for GetPluginSettingsUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<Option<PluginSettings>, PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<Option<PluginSettings>, PluginError> {
         self.execute(plugin_id).await
     }
 }

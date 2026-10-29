@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 
+use crate::features::instance::{CapabilityId, PluginId};
 use crate::{
     features::{
         instance::{
@@ -123,12 +124,12 @@ async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
     let registry = Arc::new(MemoryCapabilityRegistry::<Arc<dyn Importer>>::default());
     registry
         .add(
-            PLUGIN.into(),
-            IMPORTER.into(),
+            PluginId::from_static(PLUGIN),
+            CapabilityId::from_static(IMPORTER),
             Arc::new(PackImporter {
                 metadata: ImporterCapabilityMetadata {
                     base: CapabilityMetadata {
-                        id: IMPORTER.into(),
+                        id: CapabilityId::from_static(IMPORTER),
                         name: "Packwiz".into(),
                         description: None,
                         icon: None,
@@ -144,8 +145,8 @@ async fn import(fail: bool) -> (Result<(), InstanceError>, Arc<MemStorage>) {
 
     let result = ImportInstanceUseCase::new(registry, storage.clone())
         .execute(ImportInstance {
-            plugin_id: PLUGIN.into(),
-            importer_id: IMPORTER.into(),
+            plugin_id: PluginId::from_static(PLUGIN),
+            importer_id: CapabilityId::from_static(IMPORTER),
             path: "pack.toml".into(),
         })
         .await;

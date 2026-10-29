@@ -6,6 +6,7 @@ use std::{
 use async_trait::async_trait;
 
 use crate::features::{
+    instance::PluginId,
     plugins::{
         AllowedPath, AllowedPathRejection, PluginError, PluginRegistry, PluginSettingsStorage,
         PluginState, core_folders, is_filesystem_root, partition_mountable,
@@ -61,7 +62,7 @@ impl GrantPluginFolderAccessUseCase {
 
     pub(crate) async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         file: PathBuf,
         dry_run: bool,
     ) -> Result<FolderAccess, PluginError> {
@@ -146,7 +147,7 @@ impl GrantPluginFolderAccessUseCase {
     /// Whether the running instance has `file` mounted; `None` when no instance runs, and the
     /// settings are what its next load gets. A load under way may or may not have read them yet,
     /// so it is refused rather than guessed at.
-    fn mounts(&self, plugin_id: &str, file: &Path) -> Result<Option<bool>, PluginError> {
+    fn mounts(&self, plugin_id: &PluginId, file: &Path) -> Result<Option<bool>, PluginError> {
         match &self.plugin_registry.get(plugin_id)?.state {
             PluginState::Loaded(handle) => Ok(Some(handle.folders().exposes(file))),
             PluginState::Loading => Err(PluginError::LoadingInProgress {
@@ -163,7 +164,7 @@ impl GrantPluginFolderAccessUseCase {
 
 /// The folder holding `file`, as the user named it: the importer hands the plugin the file under
 /// that same name, so a mount of a resolved (symlink-free) path would not answer for it.
-fn folder_of(plugin_id: &str, file: &Path) -> Result<PathBuf, PluginError> {
+fn folder_of(plugin_id: &PluginId, file: &Path) -> Result<PathBuf, PluginError> {
     let rejected = |reason| PluginError::InvalidAllowedPath {
         plugin_id: plugin_id.to_owned(),
         path: file.to_string_lossy().into_owned(),
@@ -192,7 +193,7 @@ fn folder_of(plugin_id: &str, file: &Path) -> Result<PathBuf, PluginError> {
 impl GrantPluginFolderAccessUseCasePort for GrantPluginFolderAccessUseCase {
     async fn execute(
         &self,
-        plugin_id: String,
+        plugin_id: PluginId,
         file: PathBuf,
         dry_run: bool,
     ) -> Result<FolderAccess, PluginError> {

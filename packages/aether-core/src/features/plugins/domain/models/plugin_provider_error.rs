@@ -1,5 +1,8 @@
 use crate::{
-    features::plugins::{ManifestError, PluginSourceType},
+    features::{
+        instance::PluginId,
+        plugins::{ManifestError, PluginSourceType},
+    },
     shared::io::domain::IoError,
 };
 
@@ -37,7 +40,7 @@ pub enum PluginProviderError {
     ProviderNoAssets { source_type: PluginSourceType },
 
     #[error("Plugin \"{plugin_id}\" has no remote source configured")]
-    NoRemoteSource { plugin_id: String },
+    NoRemoteSource { plugin_id: PluginId },
 
     #[error("Failed to download plugin from {url}: {details}")]
     DownloadFailed { url: String, details: String },

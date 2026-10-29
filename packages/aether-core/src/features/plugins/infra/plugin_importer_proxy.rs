@@ -41,15 +41,15 @@ impl Importer for PluginImporterProxy {
     async fn import(&self, path: &str) -> Result<Vec<InstanceId>, InstanceError> {
         let plugin_id = self.instance.id();
         let failed = |reason: String| InstanceError::ImportFailed {
-            plugin_id: plugin_id.to_owned(),
-            capability_id: self.capability.id.clone(),
+            plugin_id: plugin_id.to_string(),
+            capability_id: self.capability.id.to_string(),
             reason,
         };
 
         // Normalize Windows paths to WASI-compatible /mnt/<letter>/... format; a URL is not a
         // path and goes to the plugin as is (path normalization would turn `https://` into `https:/`)
         let params = PluginImportInstance {
-            importer_id: self.capability.id.clone(),
+            importer_id: self.capability.id.to_string(),
             path: if is_url(path) {
                 path.to_owned()
             } else {
@@ -76,9 +76,9 @@ impl Importer for PluginImporterProxy {
 
         match result {
             Ok(Some(instances)) => Ok(instances),
-            Err(PluginError::Stopped { plugin_id }) => {
-                Err(InstanceError::PluginNotRunning { plugin_id })
-            }
+            Err(PluginError::Stopped { plugin_id }) => Err(InstanceError::PluginNotRunning {
+                plugin_id: plugin_id.into(),
+            }),
             Err(err) => {
                 tracing::error!("Error importing instance by plugin '{plugin_id}': {err:?}");
                 Err(failed(err.to_string()))
@@ -104,6 +104,7 @@ mod tests {
     use extism::{Function, Manifest, PluginBuilder, UserData, Wasm};
 
     use super::*;
+    use crate::features::instance::{CapabilityId, PluginId};
     use crate::features::{
         instance::CapabilityMetadata,
         plugins::infra::{
@@ -129,8 +130,11 @@ mod tests {
             [extism::ValType::I64],
             UserData::new(()),
             |_, _, outputs, _| {
-                if is_deploying_packs("packwiz") {
-                    record_pack_instance("packwiz", &InstanceId::try_from("pack").unwrap());
+                if is_deploying_packs(&PluginId::from_static("packwiz")) {
+                    record_pack_instance(
+                        &PluginId::from_static("packwiz"),
+                        &InstanceId::try_from("pack").unwrap(),
+                    );
                 }
                 outputs[0] = extism::Val::I64(0);
                 Ok(())
@@ -142,11 +146,14 @@ mod tests {
             .expect("the test plugin should load");
 
         PluginImporterProxy::new(
-            PluginHandle::new(ExtismPluginInstance::new(plugin, "packwiz".to_owned())),
+            PluginHandle::new(ExtismPluginInstance::new(
+                plugin,
+                PluginId::from_static("packwiz"),
+            )),
             PluginImporterCapability {
                 metadata: ImporterCapabilityMetadata {
                     base: CapabilityMetadata {
-                        id: "packwiz".into(),
+                        id: CapabilityId::from_static("packwiz"),
                         name: "Packwiz".into(),
                         description: None,
                         icon: None,

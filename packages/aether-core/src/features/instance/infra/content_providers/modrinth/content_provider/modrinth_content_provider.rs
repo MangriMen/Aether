@@ -109,7 +109,7 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
     ) -> Self {
         let capability = ContentProviderCapabilityMetadata {
             base: CapabilityMetadata {
-                id: ModrinthContentProvider::CAPABILITY_ID.to_string(),
+                id: CapabilityId::from_static(ModrinthContentProvider::CAPABILITY_ID),
                 name: "Modrinth".to_string(),
                 description: None,
                 icon: None,

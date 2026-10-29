@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
+use crate::features::instance::PluginId;
 use crate::features::plugins::{
     PluginDisableService, PluginError, PluginRegistry, PluginStorage, PluginSyncService,
 };
@@ -30,7 +31,7 @@ impl RemovePluginUseCase {
         }
     }
 
-    pub(crate) async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    pub(crate) async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         // Unload first: a busy plugin refuses with `Busy` while its files are still intact,
         // instead of leaving a registry entry whose directory is already gone.
         match self.disable_plugin_service.execute(plugin_id.clone()).await {
@@ -74,7 +75,7 @@ impl RemovePluginUseCase {
 
 #[async_trait]
 impl RemovePluginUseCasePort for RemovePluginUseCase {
-    async fn execute(&self, plugin_id: String) -> Result<(), PluginError> {
+    async fn execute(&self, plugin_id: PluginId) -> Result<(), PluginError> {
         self.execute(plugin_id).await
     }
 }
