@@ -22,7 +22,13 @@ impl From<aether_core::features::plugins::ProviderPluginPreview> for ProviderPlu
             .capabilities
             .as_deref()
             .and_then(|raw| serde_json::from_str::<PluginCapabilitiesV1>(raw).ok())
-            .and_then(|v1| PluginCapabilities::try_from(v1).ok())
+            .and_then(|v1| {
+                PluginCapabilities::try_from(v1)
+                    .inspect_err(|err| {
+                        tracing::warn!("Dropping the capabilities of a plugin preview: {err}");
+                    })
+                    .ok()
+            })
             .map(PluginCapabilitiesDto::from);
 
         Self {
