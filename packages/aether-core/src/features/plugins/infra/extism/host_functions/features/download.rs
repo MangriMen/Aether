@@ -205,7 +205,7 @@ async fn perform_download_unbounded(
     is_blocked: AddressFilter,
 ) -> Result<CachedFileDto, PluginDownloadError> {
     // The digest becomes a file name, so it is validated before anything else happens.
-    let hash = FileHash::from(params.hash).normalized()?;
+    let hash = FileHash::try_from(params.hash)?;
     let (url, _) = check_target(&params.url, context.allowed_hosts)?;
 
     let dir = prepare_download_dir(context.cache_dir, hash.algorithm()).await?;

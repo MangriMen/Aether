@@ -6,7 +6,7 @@ use crate::{
         instance::{ContentSource, InstallPlan, InstallTarget, InstanceError, NewInstance},
         minecraft::ModLoader,
     },
-    shared::hash::FileHash,
+    shared::hash::{FileHash, HashAlgorithm},
 };
 
 use super::common::*;
@@ -48,7 +48,7 @@ async fn should_resolve_a_provider_ref_to_a_direct_download_when_installing() {
         [Download {
             origin: "aether#modrinth".into(),
             url: modrinth.url_for("AANobbMI"),
-            hash: Some(FileHash::Sha1(SHA1_ABC.into())),
+            hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
         }]
     );
     assert_eq!(

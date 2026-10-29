@@ -1165,7 +1165,7 @@ impl InstallPlanExecutor {
 /// against it), else read from the file.
 async fn sha1_of(path: &Path, known: Option<&FileHash>) -> Result<String, InstanceError> {
     match known {
-        Some(hash @ FileHash::Sha1(_)) => Ok(hash.hex().to_ascii_lowercase()),
+        Some(hash) if hash.algorithm() == HashAlgorithm::Sha1 => Ok(hash.hex().to_owned()),
         _ => hash_file_hex_async(HashAlgorithm::Sha1, path)
             .await
             .map_err(|err| InstanceError::Storage(err.to_string())),

@@ -213,6 +213,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::shared::hash::HashAlgorithm;
 
     const SHA1_ABC: &str = "a9993e364706816aba3e25717850c26c9cd0d89d";
 
@@ -266,7 +267,7 @@ mod tests {
         let resolved = ResolvedFile {
             version: "IZskON6d".into(),
             url: "https://cdn.modrinth.com/data/AANobbMI/versions/IZskON6d/sodium.jar".into(),
-            hash: Some(FileHash::Sha1(SHA1_ABC.into())),
+            hash: Some(FileHash::new(HashAlgorithm::Sha1, SHA1_ABC).unwrap()),
             file_name: "sodium.jar".into(),
             size: Some(1024),
             name: None,

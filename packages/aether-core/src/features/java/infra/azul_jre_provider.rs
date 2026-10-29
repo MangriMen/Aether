@@ -16,7 +16,7 @@ use crate::{
         },
         java::{JavaDomainError, JreProvider},
     },
-    shared::hash::FileHash,
+    shared::hash::{FileHash, HashAlgorithm},
     shared::io::infra::remove_dir_all,
     shared::request_client::{Request, RequestClient, RequestClientExt, RequestError},
 };
@@ -195,7 +195,7 @@ impl<PS: ProgressService, RC: RequestClient> AzulJreProvider<PS, RC> {
         package: &Package,
         progress_bar_id: Option<&ProgressBarId>,
     ) -> Result<Bytes, RequestError> {
-        let hash = FileHash::parse("sha256", &package.sha256_hash)
+        let hash = FileHash::new(HashAlgorithm::Sha256, package.sha256_hash.as_str())
             .map_err(|err| RequestError::Middleware(err.into()))?;
         let request = Request::get(&package.download_url).with_hash(hash);
 

@@ -8,7 +8,7 @@ use crate::{
         },
         minecraft::ModLoader,
     },
-    shared::hash::FileHash,
+    shared::hash::{FileHash, HashAlgorithm},
 };
 
 use super::common::*;
@@ -141,7 +141,10 @@ async fn should_check_the_file_on_disk_with_the_plan_algorithm_when_it_exists() 
     fixture
         .execute(
             existing(vec![InstallFileEntry::new(
-                ContentSource::direct(url.into(), Some(FileHash::Sha512(sha512))),
+                ContentSource::direct(
+                    url.into(),
+                    Some(FileHash::new(HashAlgorithm::Sha512, sha512).unwrap()),
+                ),
                 "mods/a.jar",
                 ContentType::Mod,
             )]),

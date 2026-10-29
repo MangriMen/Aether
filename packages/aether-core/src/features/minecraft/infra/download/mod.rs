@@ -21,14 +21,17 @@ pub use minecraft_download_resolver::MinecraftDownloadResolver;
 pub use minecraft_download_service::MinecraftDownloadService;
 use version_progress::VersionProgress;
 
-use crate::shared::{hash::FileHash, request_client::Request};
+use crate::shared::{
+    hash::{FileHash, HashAlgorithm},
+    request_client::Request,
+};
 
 /// A GET of `url`, checked against `sha1` as the version's metadata gives it: a corrupt or
 /// truncated download is refused instead of being kept as the file. A digest that is none
 /// (modded versions' libraries often carry an empty one) leaves the request unchecked.
 fn checked_get(url: &str, sha1: &str) -> Request {
     let request = Request::get(url);
-    match FileHash::parse("sha1", sha1) {
+    match FileHash::new(HashAlgorithm::Sha1, sha1) {
         Ok(hash) => request.with_hash(hash),
         Err(_) => request,
     }

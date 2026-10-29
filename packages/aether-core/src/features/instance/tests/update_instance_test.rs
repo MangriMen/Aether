@@ -37,7 +37,7 @@ use crate::{
     },
     shared::{
         capability::{CapabilityRegistry, infra::MemoryCapabilityRegistry},
-        hash::FileHash,
+        hash::{FileHash, HashAlgorithm},
         request_client::BytesProgress,
     },
 };
@@ -119,7 +119,10 @@ fn sha1(body: &str) -> String {
 /// A file of the pack, hashed as the downloader below writes it: its URL is its body.
 fn pack_file(name: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
-        ContentSource::direct(url(name), Some(FileHash::Sha1(sha1(&url(name))))),
+        ContentSource::direct(
+            url(name),
+            Some(FileHash::new(HashAlgorithm::Sha1, sha1(&url(name))).unwrap()),
+        ),
         path,
         ContentType::Mod,
     )
