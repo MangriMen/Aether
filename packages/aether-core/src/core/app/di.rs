@@ -56,7 +56,8 @@ use crate::features::{
         GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
         ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
         InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
-        LoadConfigType, PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
+        ListUnrecognizedPluginDirsUseCase, ListUnrecognizedPluginDirsUseCasePort, LoadConfigType,
+        PluginDisableService, PluginExtractor, PluginLoader, PluginLoaderRegistry,
         PluginProviderFactory, PluginRegistry, PluginSettingsStorage, PluginSourceStorage,
         PluginStorage, PluginSyncService, PluginVerificationStorage, PluginsFeature,
         ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase, RemovePluginUseCasePort,
@@ -967,6 +968,13 @@ impl PluginsFeature for AetherContainer {
         Arc::new(ListPluginsDtoUseCase::new(
             self.plugins().registry.clone(),
             self.plugins().settings_storage.clone(),
+        ))
+    }
+    fn list_unrecognized_plugin_dirs_use_case(
+        &self,
+    ) -> Arc<dyn ListUnrecognizedPluginDirsUseCasePort> {
+        Arc::new(ListUnrecognizedPluginDirsUseCase::new(
+            self.plugins().storage.clone(),
         ))
     }
     fn remove_plugin_use_case(&self) -> Arc<dyn RemovePluginUseCasePort> {

@@ -13,6 +13,10 @@ export const pluginsQueries = {
     queryFn: pluginsCommands.list,
     staleTime: 60 * 1000,
   }),
+  unrecognizedDirs: () => ({
+    queryKey: pluginKeys.unrecognizedDirs(),
+    queryFn: pluginsCommands.listUnrecognizedDirs,
+  }),
   settings: (id: PluginId) => ({
     queryKey: pluginKeys.settings(id),
     queryFn: () => pluginsCommands.getSettings(id),

@@ -39,6 +39,7 @@ export const pluginsCommands = {
   import: withIdempotency(pluginsRawCommands.import),
   sync: withIdempotency(pluginsRawCommands.sync),
   list: pluginsRawCommands.list,
+  listUnrecognizedDirs: pluginsRawCommands.listUnrecognizedDirs,
   remove: withIdempotency(pluginsRawCommands.remove),
   enable: withIdempotency(pluginsRawCommands.enable),
   forceEnable: withIdempotency(pluginsRawCommands.forceEnable),

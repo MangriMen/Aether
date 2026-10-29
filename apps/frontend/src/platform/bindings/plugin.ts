@@ -8,6 +8,7 @@ export const commands = {
 	import: (paths: string[], requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|import", { paths, requestId }),
 	sync: (requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|sync", { requestId }),
 	list: () => __TAURI_INVOKE<PluginDto[]>("plugin:plugin|list"),
+	listUnrecognizedDirs: () => __TAURI_INVOKE<string[]>("plugin:plugin|list_unrecognized_dirs"),
 	get: (id: string) => __TAURI_INVOKE<PluginDto>("plugin:plugin|get", { id }),
 	remove: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|remove", { id, requestId }),
 	enable: (id: string, requestId: string & { readonly __brand: "RequestId" }) => __TAURI_INVOKE<null>("plugin:plugin|enable", { id, requestId }),

@@ -42,7 +42,7 @@ pub(crate) use app::{
     GrantPluginHostAccessUseCase, GrantPluginHostAccessUseCasePort, ImportPluginsUseCase,
     ImportPluginsUseCasePort, InstallPluginFromProviderUseCase,
     InstallPluginFromProviderUseCasePort, ListPluginsDtoUseCase, ListPluginsDtoUseCasePort,
-    PluginDisableService, PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort,
-    RemovePluginUseCase, RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase,
-    UpdatePluginUseCasePort,
+    ListUnrecognizedPluginDirsUseCase, ListUnrecognizedPluginDirsUseCasePort, PluginDisableService,
+    PluginSyncService, ReloadPluginUseCase, ReloadPluginUseCasePort, RemovePluginUseCase,
+    RemovePluginUseCasePort, SyncPluginsUseCase, UpdatePluginUseCase, UpdatePluginUseCasePort,
 };

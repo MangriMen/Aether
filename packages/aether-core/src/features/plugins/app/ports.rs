@@ -56,6 +56,11 @@ pub trait PluginLoader: Send + Sync {
 pub trait PluginStorage: Send + Sync {
     async fn add(&self, extracted_plugin: ExtractedPlugin) -> Result<(), PluginError>;
     async fn list(&self) -> Result<HashMap<PluginId, Plugin>, PluginError>;
+    /// Names of the directories in the plugins folder that [`Self::list`] skips because the
+    /// name is no plugin id, so the user can be told why such a plugin is not there.
+    async fn list_unrecognized_dirs(&self) -> Result<Vec<String>, PluginError> {
+        Ok(Vec::new())
+    }
     async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError>;
     async fn remove(&self, plugin_id: &PluginId) -> Result<(), PluginError>;
     /// Puts the extracted plugin in place of the installed one of its id, all at once: on an
@@ -174,6 +179,11 @@ pub trait ImportPluginsUseCasePort: Send + Sync {
 #[async_trait]
 pub trait ListPluginsDtoUseCasePort: Send + Sync {
     async fn execute(&self) -> Result<Vec<PluginDto>, PluginError>;
+}
+
+#[async_trait]
+pub trait ListUnrecognizedPluginDirsUseCasePort: Send + Sync {
+    async fn execute(&self) -> Result<Vec<String>, PluginError>;
 }
 
 #[async_trait]

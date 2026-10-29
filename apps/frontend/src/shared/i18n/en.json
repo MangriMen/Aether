@@ -401,6 +401,7 @@
     "fromPlugin": "From plugin",
     "noPlugins": "No plugins found",
     "openPluginsFolder": "Open plugins folder",
+    "unrecognizedDirs": "These folders in the plugins folder are not loaded: {{names}}. A plugin folder name may only contain lowercase letters, digits, \"-\" and \"_\". Rename the folder and sync the plugins.",
     "saveSettings": "Save settings",
     "title": "Plugins",
     "syncError": "Sync error",

@@ -535,6 +535,35 @@ impl PluginStorage for FsPluginStorage {
         Ok(plugins)
     }
 
+    async fn list_unrecognized_dirs(&self) -> Result<Vec<String>, PluginError> {
+        let plugins_dir = self.location_info.plugins_dir();
+
+        if !plugins_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut dir_entries = read_dir(&plugins_dir).await?;
+        let mut names = Vec::new();
+
+        while let Some(dir_entry) = dir_entries.next_entry().await.map_err(IoError::from)? {
+            let file_name = dir_entry.file_name();
+            if is_side_dir(&file_name) {
+                continue;
+            }
+
+            let is_dir = dir_entry.file_type().await.map_err(IoError::from)?.is_dir();
+            let is_plugin_id = file_name
+                .to_str()
+                .is_some_and(|name| PluginId::try_from(name).is_ok());
+            if is_dir && !is_plugin_id {
+                names.push(file_name.to_string_lossy().into_owned());
+            }
+        }
+
+        names.sort();
+        Ok(names)
+    }
+
     async fn get(&self, plugin_id: &PluginId) -> Result<Plugin, PluginError> {
         let plugin_dir = self.location_info.plugin_dir(plugin_id);
         self.load_from_dir(&plugin_dir).await
@@ -703,6 +732,20 @@ mod tests {
 
         assert_eq!(plugins.len(), 1);
         assert!(plugins.contains_key(&test_plugin()));
+    }
+
+    #[tokio::test]
+    async fn should_report_the_directories_whose_names_are_not_plugin_ids() {
+        let fixture = Fixture::installed();
+        let plugins_dir = fixture.location_info.plugins_dir();
+        for name in ["Packwiz", "My Plugin", ".packwiz.replaced"] {
+            std::fs::create_dir_all(plugins_dir.join(name)).unwrap();
+        }
+        std::fs::write(plugins_dir.join("Notes.txt"), b"").unwrap();
+
+        let names = fixture.storage.list_unrecognized_dirs().await.unwrap();
+
+        assert_eq!(names, ["My Plugin", "Packwiz"]);
     }
 
     #[tokio::test]

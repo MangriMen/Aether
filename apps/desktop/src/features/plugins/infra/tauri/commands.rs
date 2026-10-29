@@ -99,6 +99,19 @@ async fn list(container: State<'_, ContainerState>) -> FrontendResult<Vec<Plugin
 
 #[tauri::command]
 #[specta::specta]
+async fn list_unrecognized_dirs(
+    container: State<'_, ContainerState>,
+) -> FrontendResult<Vec<String>> {
+    let container = container.0.clone();
+    Ok(container
+        .list_unrecognized_plugin_dirs_use_case()
+        .execute()
+        .await
+        .map_err(aether_core::Error::from)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn get(id: String, container: State<'_, ContainerState>) -> FrontendResult<PluginDto> {
     let id = parse_id(id)?;
     let container = container.0.clone();
