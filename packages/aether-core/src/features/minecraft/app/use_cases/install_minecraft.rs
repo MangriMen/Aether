@@ -6,14 +6,14 @@ use tracing::debug;
 use crate::features::{
     events::{ProgressBarId, ProgressService, ProgressServiceExt},
     java::{
-        InstallJava, Java, JavaApplicationError, JavaInstallService, JavaInstallationService,
+        InstallJava, JavaApplicationError, JavaInstallService, JavaInstallationService,
         JavaQueryService,
     },
     minecraft::{
         InstallMinecraftParams, LoaderVersionService, MinecraftApplicationError,
-        MinecraftDomainError, MinecraftDownloader, MinecraftInstallService, ModLoader,
-        ModLoaderProcessor, VersionManifestService, get_compatible_java_version,
-        resolve_minecraft_version, vanilla, version_jar_name,
+        MinecraftDownloader, MinecraftInstallService, ModLoader, ModLoaderProcessor,
+        VersionManifestService, get_compatible_java_version, resolve_minecraft_version,
+        version_jar_name,
     },
 };
 
@@ -35,7 +35,6 @@ pub struct InstallMinecraftUseCase {
 }
 
 impl InstallMinecraftUseCase {
-    // TODO: try to decrease arguments count
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         loader_version_resolver: Arc<dyn LoaderVersionService>,
@@ -56,35 +55,6 @@ impl InstallMinecraftUseCase {
             get_java_use_case,
             install_java_use_case,
             progress_service,
-        }
-    }
-
-    // TODO: try to decrease arguments count
-    #[allow(clippy::too_many_arguments)]
-    async fn run_mod_loader_post_install(
-        &self,
-        game_version: String,
-        loader: ModLoader,
-        version_jar: String,
-        minecraft_dir: &Path,
-        version_info: &mut vanilla::VersionInfo,
-        java_version: &Java,
-        loading_bar: Option<&ProgressBarId>,
-    ) -> Result<(), MinecraftDomainError> {
-        match loader {
-            ModLoader::NeoForge | ModLoader::Forge => {
-                self.mod_loader_processor
-                    .run(
-                        game_version,
-                        version_jar,
-                        minecraft_dir,
-                        version_info,
-                        java_version,
-                        loading_bar,
-                    )
-                    .await
-            }
-            ModLoader::Vanilla | ModLoader::Fabric | ModLoader::Quilt => Ok(()),
         }
     }
 
@@ -174,16 +144,21 @@ impl InstallMinecraftUseCase {
                 .await;
         }
 
-        self.run_mod_loader_post_install(
-            game_version,
-            loader,
-            version_jar,
-            &install_dir,
-            &mut version_info,
-            &java,
-            loading_bar,
-        )
-        .await?;
+        match loader {
+            ModLoader::NeoForge | ModLoader::Forge => {
+                self.mod_loader_processor
+                    .run(
+                        game_version,
+                        version_jar,
+                        &install_dir,
+                        &mut version_info,
+                        &java,
+                        loading_bar,
+                    )
+                    .await?;
+            }
+            ModLoader::Vanilla | ModLoader::Fabric | ModLoader::Quilt => {}
+        }
 
         Ok(())
     }
