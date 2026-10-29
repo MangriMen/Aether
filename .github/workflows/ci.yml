@@ -111,7 +111,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -127,10 +127,10 @@ jobs:
         run: cargo fmt --all --check
 
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
 
       - name: cargo test
-        run: cargo test --workspace
+        run: cargo test --locked --workspace
 
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features sqlite,rustls,sqlx-toml
@@ -147,8 +147,8 @@ jobs:
           SQLX_OFFLINE: "false"
         run: |
           export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
-          (cd packages/aether-core && cargo sqlx prepare --check -- --all-targets)
-          (cd apps/desktop && cargo sqlx prepare --check -- --all-targets)
+          (cd packages/aether-core && cargo sqlx prepare --check -- --all-targets --locked)
+          (cd apps/desktop && cargo sqlx prepare --check -- --all-targets --locked)
 
   # single required check for branch protection: skipped jobs count as success, failed ones do not
   ci-ok:

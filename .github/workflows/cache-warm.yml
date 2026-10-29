@@ -35,7 +35,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       # same key and workspaces as the rust job in ci.yml
       - name: Rust cache
@@ -48,13 +48,30 @@ jobs:
         run: mkdir -p apps/frontend/dist
 
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets
+        run: cargo clippy --locked --workspace --all-targets
 
       - name: cargo test (build only)
-        run: cargo test --workspace --no-run
+        run: cargo test --locked --workspace --no-run
 
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features sqlite,rustls,sqlx-toml
+
+      # CI's `sqlx prepare --check` builds the crates per package with its own env, which produces
+      # artifacts the steps above do not; run the same commands so they land in the shared cache
+      - name: Create database and run migrations
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          sqlx db create
+          (cd packages/aether-core && sqlx migrate run)
+          (cd apps/desktop && sqlx migrate run)
+
+      - name: cargo sqlx prepare --check
+        env:
+          SQLX_OFFLINE: "false"
+        run: |
+          export DATABASE_URL="sqlite://$GITHUB_WORKSPACE/ci.db"
+          (cd packages/aether-core && cargo sqlx prepare --check -- --all-targets --locked)
+          (cd apps/desktop && cargo sqlx prepare --check -- --all-targets --locked)
 
   bun:
     runs-on: ubuntu-22.04
@@ -77,3 +94,21 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+  # every run saves a cache under a new key; the old ones would sit until the repo limit evicts
+  # them, possibly the live one. The rust cache is saved in the job's post step, so prune after it.
+  prune:
+    needs: [rust, bun]
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: write
+    steps:
+      - name: Delete superseded caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for prefix in v0-rust-aether-ci-cache bun-Linux; do
+            gh cache list --ref refs/heads/main --key "$prefix" --sort created_at --order desc --limit 100 --json id --jq '.[1:][].id' |
+              xargs -r -n1 gh cache delete
+          done
