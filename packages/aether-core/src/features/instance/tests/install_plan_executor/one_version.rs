@@ -244,16 +244,16 @@ async fn should_record_the_name_and_side_of_planned_files_when_installing() {
     let records = fixture.records(INSTANCE_ID).await;
     let recorded = |path: &str| {
         let record = &records[path];
-        (record.name.as_deref(), record.side.as_deref())
+        (record.name.as_deref(), record.side)
     };
     assert_eq!(
         recorded("mods/modmenu-v9.jar"),
-        (Some("Mod Menu 9"), Some("client"))
+        (Some("Mod Menu 9"), Some(FileSide::Client))
     );
-    assert_eq!(recorded("mods/a.jar"), (None, Some("both")));
+    assert_eq!(recorded("mods/a.jar"), (None, Some(FileSide::Both)));
     assert_eq!(
         recorded("mods/sodium.jar"),
-        (Some("AANobbMI newest"), Some("both"))
+        (Some("AANobbMI newest"), Some(FileSide::Both))
     );
 }
 

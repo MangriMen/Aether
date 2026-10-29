@@ -1,7 +1,10 @@
 use crate::features::instance::{
-    ContentFileUpdateInfo, InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage,
-    PlanOrigin, ProviderId,
-    infra::legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
+    ContentFileUpdateInfo, FileSide, InstanceError, InstanceId, Pack, PackEntry, PackFile,
+    PackStorage, PlanOrigin, ProviderId,
+    infra::{
+        legacy_provider_id::{legacy_provider_id_string, parse_stored_provider_id},
+        stored_side::parse_stored_side,
+    },
 };
 use async_trait::async_trait;
 use sqlx::{Sqlite, SqlitePool, Transaction};
@@ -74,6 +77,8 @@ impl PackFileRow {
             _ => None,
         };
 
+        let side = parse_stored_side(&self.content_path, self.side.as_deref());
+
         // The `pack_files` table has no columns for `download` and `option`, so a file read back
         // from SQLite has neither.
         PackFile {
@@ -82,7 +87,7 @@ impl PackFileRow {
             hash: self.hash,
             download: None,
             option: None,
-            side: self.side,
+            side,
             update_provider_id: self
                 .update_provider_id
                 .and_then(|p| parse_stored_provider_id(&p).ok()),
@@ -182,7 +187,7 @@ impl SqlitePackStorage {
             pack_file.file_name,
             pack_file.name,
             pack_file.hash,
-            pack_file.side,
+            pack_file.side.map(FileSide::as_str),
             update_provider_id,
             installed_by_provider_id,
             installed_by_content_id

@@ -1064,7 +1064,7 @@ impl InstallPlanExecutor {
                     hash: sha1,
                     download: None,
                     option: None,
-                    side: Some(entry.side.as_str().to_owned()),
+                    side: Some(entry.side),
                     update_provider_id: same_bytes
                         .and_then(|record| record.update_provider_id.clone()),
                     update: same_bytes.and_then(|record| record.update.clone()),
