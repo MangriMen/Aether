@@ -16,7 +16,7 @@ use crate::{
     features::{
         instance::{
             ContentMetadata, ContentType, ContentVersionMetadata, Instance, InstanceId,
-            NewInstance, ProviderId,
+            NewInstance, PlatformId, ProviderId,
         },
         minecraft::{LoaderVersionPreference, ModLoader},
     },
@@ -249,7 +249,7 @@ pub enum ContentSource {
     /// swapping the provider never invalidates a ref. The core treats them as opaque and only
     /// compares them for equality.
     ProviderRef {
-        platform: String,
+        platform: PlatformId,
         content_id: String,
         version: Option<String>,
     },
@@ -270,7 +270,7 @@ impl ContentSource {
 /// (same format and rules) — except that the version is always known.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContentIdentity {
-    pub platform: String,
+    pub platform: PlatformId,
     pub content_id: String,
     pub version: String,
 }
@@ -340,7 +340,7 @@ mod tests {
 
     fn provider_ref(platform: &str, content_id: &str, version: Option<&str>) -> ContentSource {
         ContentSource::ProviderRef {
-            platform: platform.into(),
+            platform: PlatformId::try_from(platform).unwrap(),
             content_id: content_id.into(),
             version: version.map(Into::into),
         }

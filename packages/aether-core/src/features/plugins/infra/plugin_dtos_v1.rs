@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::features::{
     instance::{
         CapabilityId, CapabilityMetadata, ContentProviderCapabilityMetadata,
-        ImporterCapabilityMetadata, UpdaterCapabilityMetadata,
+        ImporterCapabilityMetadata, PlatformId, UpdaterCapabilityMetadata,
     },
     plugins::{
         AllowedPath, ManifestError, PluginCapabilities, PluginContentProviderCapability,
@@ -152,6 +152,15 @@ fn capability_id(field: &str, value: String) -> Result<CapabilityId, ManifestErr
     })
 }
 
+/// A platform outside the id scheme is refused as the manifest field it came from: it becomes
+/// part of `ProviderRef`.
+fn platform_id(field: &str, value: String) -> Result<PlatformId, ManifestError> {
+    PlatformId::try_from(value).map_err(|e| ManifestError::InvalidId {
+        field: field.to_owned(),
+        value: e.value,
+    })
+}
+
 impl TryFrom<PluginCapabilitiesV1> for PluginCapabilities {
     type Error = ManifestError;
 
@@ -208,7 +217,10 @@ impl TryFrom<PluginCapabilitiesV1> for PluginCapabilities {
                                 description: cp.description,
                                 icon: cp.icon,
                             },
-                            platform: cp.platform,
+                            platform: cp
+                                .platform
+                                .map(|p| platform_id("contentProviders[].platform", p))
+                                .transpose()?,
                         },
                         handlers: ProviderHandlers {
                             search: cp.handlers.search,
@@ -278,7 +290,7 @@ impl From<PluginCapabilities> for PluginCapabilitiesV1 {
                         name: cp.metadata.base.name.clone(),
                         description: cp.metadata.base.description.clone(),
                         icon: cp.metadata.base.icon.clone(),
-                        platform: cp.metadata.platform.clone(),
+                        platform: cp.metadata.platform.clone().map(Into::into),
                         handlers: ProviderHandlersV1 {
                             search: cp.handlers.search,
                             get_content: cp.handlers.get_content,
@@ -317,6 +329,21 @@ mod tests {
         match PluginCapabilities::try_from(v1) {
             Err(ManifestError::InvalidId { field, .. }) => Some(field),
             _ => None,
+        }
+    }
+
+    #[test]
+    fn should_reject_a_provider_when_the_platform_is_invalid() {
+        for platform in ["", "Mod Rinth", "MODRINTH"] {
+            let json = format!(
+                r#"{{ "contentProviders": [{{ "id": "provider", "name": "T", "platform": "{platform}",
+                    "handlers": {{ "search": "search", "getContent": "get_content" }} }}] }}"#
+            );
+
+            assert_eq!(
+                rejected_field(&json).as_deref(),
+                Some("contentProviders[].platform")
+            );
         }
     }
 

@@ -208,7 +208,7 @@ impl ResolvedFile {
 mod tests {
     use crate::features::instance::{
         ContentType, FileSide, InstallFileEntry, InstallPlan, OverrideLocation, OverrideSource,
-        ProviderId,
+        PlatformId, ProviderId,
     };
 
     use super::*;
@@ -222,7 +222,7 @@ mod tests {
 
     fn sodium_ref(version: Option<&str>) -> ContentSource {
         ContentSource::ProviderRef {
-            platform: "modrinth".into(),
+            platform: PlatformId::from_static("modrinth"),
             content_id: "AANobbMI".into(),
             version: version.map(Into::into),
         }

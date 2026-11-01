@@ -3,7 +3,7 @@ use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::features::settings::{
     DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
-    SettingsError, SettingsStorage,
+    SettingsError, SettingsStorage, parse_platform_providers,
 };
 
 pub struct SqliteSettingsStorage {
@@ -73,8 +73,8 @@ async fn read_settings(conn: &mut SqliteConnection) -> Result<Settings, Settings
         .fetch_all(&mut *conn)
         .await?
         .into_iter()
-        .map(|row| (row.platform, row.provider_id))
-        .collect();
+        .map(|row| (row.platform, row.provider_id));
+    let platform_providers = parse_platform_providers(platform_providers);
 
     Ok(Settings::new(
         base.max_concurrent_downloads
@@ -122,6 +122,7 @@ async fn write_settings(
         .await?;
 
     for (platform, provider_id) in settings.platform_providers() {
+        let platform = platform.as_str();
         sqlx::query!(
             "INSERT INTO platform_providers (platform, provider_id) VALUES (?, ?)",
             platform,

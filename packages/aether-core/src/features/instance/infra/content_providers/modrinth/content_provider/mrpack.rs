@@ -9,7 +9,7 @@ use url::Url;
 use crate::{
     features::instance::{
         ContentIdentity, ContentSource, ContentType, FileSide, InstallFileEntry, InstanceError,
-        OptionalFile, OverrideLocation, OverrideSource, PackMetadata,
+        OptionalFile, OverrideLocation, OverrideSource, PackMetadata, PlatformId,
         infra::content_providers::modrinth::api_client::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile, ProjectVersionResponse,
         },
@@ -133,7 +133,7 @@ pub(super) fn parse_cdn_url(url: &str) -> Option<(String, String)> {
 /// Which Modrinth content a URL is, when it is a file on Modrinth's CDN.
 pub(super) fn cdn_identity(url: &str) -> Option<ContentIdentity> {
     parse_cdn_url(url).map(|(content_id, version)| ContentIdentity {
-        platform: ModrinthContentProvider::PLATFORM.to_owned(),
+        platform: PlatformId::from_static(ModrinthContentProvider::PLATFORM),
         content_id,
         version,
     })
@@ -420,7 +420,7 @@ mod tests {
                 url: SODIUM_URL.into(),
                 hash: Some(FileHash::new(HashAlgorithm::Sha512, "b".repeat(128)).unwrap()),
                 identity: Some(ContentIdentity {
-                    platform: "modrinth".into(),
+                    platform: PlatformId::from_static("modrinth"),
                     content_id: "AANobbMI".into(),
                     version: "IZskON6d".into(),
                 }),

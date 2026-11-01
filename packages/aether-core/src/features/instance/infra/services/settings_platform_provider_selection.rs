@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use crate::features::{
-    instance::{InstanceError, PlatformProviderSelection, ProviderId},
+    instance::{InstanceError, PlatformId, PlatformProviderSelection, ProviderId},
     settings::SettingsStorage,
 };
 
@@ -20,7 +20,10 @@ impl SettingsPlatformProviderSelection {
 
 #[async_trait]
 impl PlatformProviderSelection for SettingsPlatformProviderSelection {
-    async fn selected_provider(&self, platform: &str) -> Result<Option<ProviderId>, InstanceError> {
+    async fn selected_provider(
+        &self,
+        platform: &PlatformId,
+    ) -> Result<Option<ProviderId>, InstanceError> {
         let settings = self.settings_storage.get().await.map_err(|err| {
             tracing::error!("Can not read the platform provider choice: {err}");
             InstanceError::CapabilityOperationError
@@ -34,7 +37,7 @@ impl PlatformProviderSelection for SettingsPlatformProviderSelection {
             .map(|id| {
                 id.parse()
                     .map_err(|_| InstanceError::PlatformProviderNotChosen {
-                        platform: platform.to_owned(),
+                        platform: platform.clone(),
                     })
             })
             .transpose()
@@ -71,7 +74,8 @@ mod tests {
     fn selection(choices: &[(&str, &str)]) -> SettingsPlatformProviderSelection {
         let mut settings = Settings::default();
         for (platform, provider) in choices {
-            settings.set_platform_provider(platform, Some(provider));
+            settings
+                .set_platform_provider(&PlatformId::try_from(*platform).unwrap(), Some(provider));
         }
         SettingsPlatformProviderSelection::new(Arc::new(FixedSettings(Mutex::new(settings))))
     }
@@ -80,7 +84,10 @@ mod tests {
     async fn should_return_the_chosen_provider_when_the_platform_has_a_choice() {
         let selection = selection(&[("curseforge", "cf-plugin#curseforge")]);
 
-        let chosen = selection.selected_provider("curseforge").await.unwrap();
+        let chosen = selection
+            .selected_provider(&PlatformId::from_static("curseforge"))
+            .await
+            .unwrap();
 
         assert_eq!(chosen, Some("cf-plugin#curseforge".parse().unwrap()));
     }
@@ -89,14 +96,22 @@ mod tests {
     async fn should_return_nothing_when_the_platform_has_no_choice() {
         let selection = selection(&[("curseforge", "cf-plugin#curseforge")]);
 
-        assert_eq!(selection.selected_provider("modrinth").await.unwrap(), None);
+        assert_eq!(
+            selection
+                .selected_provider(&PlatformId::from_static("modrinth"))
+                .await
+                .unwrap(),
+            None
+        );
     }
 
     #[tokio::test]
     async fn should_refuse_a_stored_choice_when_it_is_not_a_provider_id() {
         let selection = selection(&[("curseforge", "not a provider id")]);
 
-        let result = selection.selected_provider("curseforge").await;
+        let result = selection
+            .selected_provider(&PlatformId::from_static("curseforge"))
+            .await;
 
         assert!(matches!(
             result,

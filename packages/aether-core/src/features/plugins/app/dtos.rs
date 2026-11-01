@@ -321,7 +321,7 @@ impl From<ContentProviderCapabilityMetadata> for ContentProviderCapabilityMetada
     fn from(v: ContentProviderCapabilityMetadata) -> Self {
         Self {
             base: v.base.into(),
-            platform: v.platform,
+            platform: v.platform.map(String::from),
         }
     }
 }

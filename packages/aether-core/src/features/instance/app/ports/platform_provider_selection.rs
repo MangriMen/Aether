@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{InstanceError, ProviderId};
+use crate::features::instance::domain::{InstanceError, PlatformId, ProviderId};
 
 /// Which provider the user chose for a platform: the map "platform → [`ProviderId`]" from the
 /// settings.
@@ -10,5 +10,8 @@ use crate::features::instance::domain::{InstanceError, ProviderId};
 #[async_trait]
 pub trait PlatformProviderSelection: Send + Sync {
     /// The provider chosen for `platform`, if one is.
-    async fn selected_provider(&self, platform: &str) -> Result<Option<ProviderId>, InstanceError>;
+    async fn selected_provider(
+        &self,
+        platform: &PlatformId,
+    ) -> Result<Option<ProviderId>, InstanceError>;
 }

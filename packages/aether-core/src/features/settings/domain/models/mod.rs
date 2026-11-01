@@ -11,6 +11,7 @@ pub use location_info::{
     CACHE_FOLDER_NAME, INSTANCE_METADATA_FOLDER_NAME, INSTANCES_FOLDER_NAME, LocationInfo,
     METADATA_FOLDER_NAME, PLUGIN_SETTINGS_FILE_NAME, PLUGINS_FOLDER_NAME,
 };
+pub(crate) use settings::parse_platform_providers;
 pub use settings::{
     DEFAULT_MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64, Settings,
 };

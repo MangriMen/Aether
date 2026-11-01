@@ -1,6 +1,7 @@
 //! The content provider contract end to end, without a WASM runtime: a `capabilities.json` in
 //! the new format becomes a registered provider whose trait methods call the functions it names.
 
+use crate::features::instance::PlatformId;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -422,7 +423,7 @@ async fn should_call_the_resolve_install_plan_handler_the_file_names_when_resolv
     assert_eq!(
         plan.files[0].source,
         ContentSource::ProviderRef {
-            platform: "curseforge".into(),
+            platform: PlatformId::from_static("curseforge"),
             content_id: "238222".into(),
             version: Some("4512345".into()),
         }

@@ -118,6 +118,13 @@ define_id!(
     "capability"
 );
 
+define_id!(
+    /// The logical name of a content platform (`modrinth`, `curseforge`) that providers serve and
+    /// that content refs name instead of a provider.
+    PlatformId,
+    "platform"
+);
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;

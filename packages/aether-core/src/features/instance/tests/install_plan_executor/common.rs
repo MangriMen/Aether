@@ -1,3 +1,4 @@
+use crate::features::instance::PlatformId;
 use std::{
     collections::HashMap,
     io::Write,
@@ -67,7 +68,7 @@ impl MockProvider {
                     description: None,
                     icon: None,
                 },
-                platform: platform.map(Into::into),
+                platform: platform.map(|p| PlatformId::try_from(p).unwrap()),
             },
             calls: Mutex::default(),
         })
@@ -377,7 +378,7 @@ pub(super) struct FixedSelection(Option<ProviderId>);
 
 #[async_trait]
 impl PlatformProviderSelection for FixedSelection {
-    async fn selected_provider(&self, _: &str) -> Result<Option<ProviderId>, InstanceError> {
+    async fn selected_provider(&self, _: &PlatformId) -> Result<Option<ProviderId>, InstanceError> {
         Ok(self.0.clone())
     }
 }
@@ -991,7 +992,7 @@ pub(super) fn installed_from(provider_id: &ProviderId, modpack_id: &str) -> Pack
 pub(super) fn provider_ref(platform: &str, content_id: &str, path: &str) -> InstallFileEntry {
     InstallFileEntry::new(
         ContentSource::ProviderRef {
-            platform: platform.into(),
+            platform: PlatformId::try_from(platform).unwrap(),
             content_id: content_id.into(),
             version: None,
         },
@@ -1051,7 +1052,7 @@ pub(super) fn identified(
             url: url.into(),
             hash: Some(FileHash::new(HashAlgorithm::Sha1, sha1(url)).unwrap()),
             identity: Some(ContentIdentity {
-                platform: platform.into(),
+                platform: PlatformId::try_from(platform).unwrap(),
                 content_id: content_id.into(),
                 version: version.into(),
             }),

@@ -34,4 +34,4 @@ pub use pack_info::*;
 pub use release_channel::*;
 pub use resolve::*;
 
-pub use crate::shared::capability::{CapabilityId, InvalidId, PluginId, is_valid_id};
+pub use crate::shared::capability::{CapabilityId, InvalidId, PlatformId, PluginId, is_valid_id};

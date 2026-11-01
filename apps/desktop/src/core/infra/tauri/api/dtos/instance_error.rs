@@ -223,12 +223,12 @@ impl From<&InstanceError> for InstanceErrorDto {
             },
             InstanceError::PlatformProviderNotFound { platform } => {
                 Self::PlatformProviderNotFound {
-                    platform: platform.clone(),
+                    platform: platform.to_string(),
                 }
             }
             InstanceError::PlatformProviderNotChosen { platform } => {
                 Self::PlatformProviderNotChosen {
-                    platform: platform.clone(),
+                    platform: platform.to_string(),
                 }
             }
             InstanceError::GameChangeNotAllowed {

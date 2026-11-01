@@ -37,7 +37,7 @@ mod tests {
     use tokio::sync::Mutex;
 
     use super::*;
-    use crate::features::settings::app::EditPlatformProvider;
+    use crate::features::{instance::PlatformId, settings::app::EditPlatformProvider};
 
     struct FixedSettings(Mutex<Settings>);
 
@@ -67,7 +67,7 @@ mod tests {
         EditSettings {
             max_concurrent_downloads: 10,
             platform_provider: Some(EditPlatformProvider {
-                platform: platform.to_owned(),
+                platform: PlatformId::try_from(platform).unwrap(),
                 provider_id: Some(provider_id.to_owned()),
             }),
         }
@@ -100,7 +100,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::empty_platform("", "cf-plugin#curseforge", "")]
     #[case::malformed_provider_id("curseforge", "not a provider id", "not a provider id")]
     #[tokio::test]
     async fn should_refuse_a_provider_choice_when_it_is_invalid(
@@ -126,7 +125,7 @@ mod tests {
         assert_eq!(
             stored
                 .platform_providers()
-                .get("curseforge")
+                .get(&PlatformId::from_static("curseforge"))
                 .map(String::as_str),
             Some("cf-plugin#curseforge")
         );

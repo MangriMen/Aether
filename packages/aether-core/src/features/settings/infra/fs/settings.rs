@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::features::settings::Settings;
+use crate::features::settings::{Settings, parse_platform_providers};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -37,7 +37,7 @@ pub struct SettingsV2 {
 impl From<SettingsV2> for Settings {
     fn from(value: SettingsV2) -> Self {
         Self::new(value.max_concurrent_downloads, value.enabled_plugins)
-            .with_platform_providers(value.platform_providers)
+            .with_platform_providers(parse_platform_providers(value.platform_providers))
     }
 }
 
@@ -46,7 +46,11 @@ impl From<&Settings> for SettingsV2 {
         Self {
             max_concurrent_downloads: value.max_concurrent_downloads(),
             enabled_plugins: value.enabled_plugins().clone(),
-            platform_providers: value.platform_providers().clone(),
+            platform_providers: value
+                .platform_providers()
+                .iter()
+                .map(|(platform, provider)| (platform.to_string(), provider.clone()))
+                .collect(),
         }
     }
 }

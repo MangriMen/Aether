@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::features::instance::PlatformId;
+
 pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS: usize = 10;
 #[allow(clippy::cast_possible_wrap)]
 pub const DEFAULT_MAX_CONCURRENT_DOWNLOADS_I64: i64 = DEFAULT_MAX_CONCURRENT_DOWNLOADS as i64;
@@ -12,7 +14,7 @@ pub struct Settings {
 
     /// Platform → id of the provider the user chose to serve it. Providers are stored as strings
     /// so the settings do not depend on the instance feature.
-    platform_providers: HashMap<String, String>,
+    platform_providers: HashMap<PlatformId, String>,
 }
 
 impl Default for Settings {
@@ -35,22 +37,29 @@ impl Settings {
     }
 
     #[must_use]
-    pub fn with_platform_providers(mut self, platform_providers: HashMap<String, String>) -> Self {
+    pub fn with_platform_providers(
+        mut self,
+        platform_providers: HashMap<PlatformId, String>,
+    ) -> Self {
         self.platform_providers = platform_providers;
         self
     }
 
-    pub fn platform_providers(&self) -> &HashMap<String, String> {
+    pub fn platform_providers(&self) -> &HashMap<PlatformId, String> {
         &self.platform_providers
     }
 
     /// Choose `provider_id` for `platform`, or drop the choice with `None`. Returns whether
     /// anything changed.
-    pub fn set_platform_provider(&mut self, platform: &str, provider_id: Option<&str>) -> bool {
+    pub fn set_platform_provider(
+        &mut self,
+        platform: &PlatformId,
+        provider_id: Option<&str>,
+    ) -> bool {
         match provider_id {
             Some(provider_id) => {
                 self.platform_providers
-                    .insert(platform.to_owned(), provider_id.to_owned())
+                    .insert(platform.clone(), provider_id.to_owned())
                     .as_deref()
                     != Some(provider_id)
             }
@@ -87,6 +96,25 @@ impl Settings {
     }
 }
 
+/// A platform that is not a [`PlatformId`] is dropped: a bad key must not fail the whole read.
+pub(crate) fn parse_platform_providers(
+    raw: impl IntoIterator<Item = (String, String)>,
+) -> HashMap<PlatformId, String> {
+    raw.into_iter()
+        .filter_map(
+            |(platform, provider)| match PlatformId::try_from(platform.as_str()) {
+                Ok(platform) => Some((platform, provider)),
+                Err(err) => {
+                    tracing::warn!(
+                        "Dropping the provider choice for platform \"{platform}\": {err}"
+                    );
+                    None
+                }
+            },
+        )
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,11 +123,17 @@ mod tests {
     fn should_report_a_changed_platform_provider_only_when_it_differs() {
         let mut settings = Settings::default();
 
-        assert!(settings.set_platform_provider("curseforge", Some("a#b")));
-        assert!(!settings.set_platform_provider("curseforge", Some("a#b")));
-        assert!(settings.set_platform_provider("curseforge", Some("c#d")));
-        assert!(settings.set_platform_provider("curseforge", None));
-        assert!(!settings.set_platform_provider("curseforge", None));
+        assert!(
+            settings.set_platform_provider(&PlatformId::from_static("curseforge"), Some("a#b"))
+        );
+        assert!(
+            !settings.set_platform_provider(&PlatformId::from_static("curseforge"), Some("a#b"))
+        );
+        assert!(
+            settings.set_platform_provider(&PlatformId::from_static("curseforge"), Some("c#d"))
+        );
+        assert!(settings.set_platform_provider(&PlatformId::from_static("curseforge"), None));
+        assert!(!settings.set_platform_provider(&PlatformId::from_static("curseforge"), None));
     }
 
     #[test]
