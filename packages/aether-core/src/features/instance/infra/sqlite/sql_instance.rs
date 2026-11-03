@@ -156,7 +156,7 @@ pub struct SqlInstance {
 
 /// Serializes a unit-variant enum to its bare column string (`"neo_forge"` -> `neo_forge`).
 /// Anything that does not serialize to a JSON string is an error rather than a mangled value.
-pub(crate) fn enum_to_column<T: serde::Serialize>(value: &T) -> Result<String, serde_json::Error> {
+fn enum_to_column<T: serde::Serialize>(value: &T) -> Result<String, serde_json::Error> {
     match serde_json::to_value(value)? {
         serde_json::Value::String(s) => Ok(s),
         other => Err(<serde_json::Error as serde::ser::Error>::custom(format!(
