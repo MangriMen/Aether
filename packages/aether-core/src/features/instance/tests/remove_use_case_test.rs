@@ -296,7 +296,7 @@ impl crate::features::instance::InstanceFileService for FailingRemoveFileService
     async fn write_instance_file(
         &self,
         _id: &InstanceId,
-        _relative_path: &str,
+        _relative_path: &crate::features::instance::InstanceRelativePath,
         _bytes: &[u8],
     ) -> Result<(), InstanceError> {
         unimplemented!()
@@ -304,7 +304,7 @@ impl crate::features::instance::InstanceFileService for FailingRemoveFileService
     async fn read_instance_file(
         &self,
         _id: &InstanceId,
-        _relative_path: &str,
+        _relative_path: &crate::features::instance::InstanceRelativePath,
     ) -> Result<Vec<u8>, InstanceError> {
         unimplemented!()
     }

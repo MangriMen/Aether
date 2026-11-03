@@ -8,7 +8,7 @@ use crate::{
     features::{
         instance::{
             app::InstanceFileService,
-            domain::{InstanceError, InstanceId},
+            domain::{InstanceError, InstanceId, InstanceRelativePath},
         },
         settings::LocationInfo,
     },
@@ -168,10 +168,14 @@ impl InstanceFileService for FsInstanceFileService {
     async fn write_instance_file(
         &self,
         instance_id: &InstanceId,
-        relative_path: &str,
+        relative_path: &InstanceRelativePath,
         bytes: &[u8],
     ) -> Result<(), InstanceError> {
-        check_size(relative_path, bytes.len() as u64, self.max_file_bytes)?;
+        check_size(
+            relative_path.as_str(),
+            bytes.len() as u64,
+            self.max_file_bytes,
+        )?;
 
         let instance_dir = self.location_info.instance_dir(instance_id);
         let target = resolve_instance_file_path(instance_id, &instance_dir, relative_path)?;
@@ -195,7 +199,7 @@ impl InstanceFileService for FsInstanceFileService {
     async fn read_instance_file(
         &self,
         instance_id: &InstanceId,
-        relative_path: &str,
+        relative_path: &InstanceRelativePath,
     ) -> Result<Vec<u8>, InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
         let target = resolve_instance_file_path(instance_id, &instance_dir, relative_path)?;
@@ -206,14 +210,14 @@ impl InstanceFileService for FsInstanceFileService {
 
         if !metadata.is_file() {
             return Err(InstanceError::InvalidRelativePath {
-                path: relative_path.to_owned(),
+                path: relative_path.as_str().to_owned(),
                 reason: "path is not a regular file".to_owned(),
             });
         }
 
         // Checked from the metadata rather than after reading, so an oversized file is never
         // pulled into memory at all.
-        check_size(relative_path, metadata.len(), self.max_file_bytes)?;
+        check_size(relative_path.as_str(), metadata.len(), self.max_file_bytes)?;
 
         fs::read(&target).await.map_err(|err| {
             InstanceError::Storage(format!("Failed to read \"{}\": {err}", target.display()))

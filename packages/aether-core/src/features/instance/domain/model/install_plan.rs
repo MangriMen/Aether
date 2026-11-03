@@ -102,7 +102,7 @@ pub struct InstallFileEntry {
     /// host. Resolving a [`ContentSource::ProviderRef`] never changes it.
     ///
     /// Not checked to stay inside the instance here: that happens where the file is written
-    /// (`validate_relative_path`), as for every other write.
+    /// (`InstanceRelativePath::parse`), as for every other write.
     pub relative_path: String,
     pub content_type: ContentType,
     /// `None` — the file is required. `Some` — the user may leave it out, and the plan carries

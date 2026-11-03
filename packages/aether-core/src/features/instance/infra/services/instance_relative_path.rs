@@ -1,28 +1,26 @@
 //! Resolving a plugin-supplied relative path inside an instance directory.
 //!
 //! `write_instance_file` / `read_instance_file` are the single audited way into an instance, so
-//! everything they are handed goes through here first. Two separate checks are needed, and
-//! neither replaces the other:
+//! everything they are handed goes through here. Two separate checks are needed, and neither
+//! replaces the other:
 //!
-//! * [`validate_relative_path`] is pure string work. It refuses anything that is not a plain
-//!   chain of name segments — absolute paths, drive letters, `..`, empty segments — before the
-//!   filesystem is touched at all.
+//! * [`InstanceRelativePath`] (parsed in the domain) is pure string work. It refuses anything
+//!   that is not a plain chain of name segments — absolute paths, drive letters, `..`, empty
+//!   segments — before the filesystem is touched at all, so the functions here only ever receive
+//!   a path that already passed it.
 //! * [`resolve_instance_file_path`] then canonicalises what actually exists on disk and checks
 //!   the result still sits under the instance root, which is what catches a **symlink** pointing
 //!   out of the instance. A path can pass the first check and fail this one.
 //!
-//! Note that the segment rules are applied to the raw string rather than through `std::path`.
-//! A plugin's path is not this host's path: on Linux `mods\..\..\evil` is a single `Normal`
-//! component, so letting the host's parser decide would make the very same input mean different
-//! things on different platforms.
-//!
-//! The one rule that differs by platform is a `:` inside a name: on Windows it is a drive, a
-//! prefix or a data stream, elsewhere an ordinary character of a file name the user may have.
-//! A first segment spelled as a drive (`C:`) is refused everywhere, as it is absolute-looking.
+//! The policy rules that need the filesystem or the plugin's identity live here as well:
+//! [`check_plugin_write_allowed`] for `.metadata`, and the 8.3 alias check inside
+//! [`resolve_instance_file_path`].
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
-use crate::features::instance::domain::{InstanceError, InstanceId};
+use crate::features::instance::domain::{
+    ContentPath, InstanceError, InstanceId, InstanceRelativePath,
+};
 use crate::features::settings::{INSTANCE_METADATA_FOLDER_NAME, PLUGINS_FOLDER_NAME};
 
 fn invalid(path: &str, reason: &str) -> InstanceError {
@@ -37,92 +35,6 @@ fn escapes(path: &str, instance_id: &InstanceId) -> InstanceError {
         path: path.to_owned(),
         instance_id: instance_id.to_string(),
     }
-}
-
-/// Check a plugin-supplied path is a plain relative chain of name segments, and rebuild it.
-///
-/// Both `/` and `\` are treated as separators no matter which host this runs on, so a path that
-/// is refused on Windows is refused on Linux too — but for a `:` inside a name past a drive-like
-/// first segment ([`is_refused_colon`]).
-pub fn validate_relative_path(relative_path: &str) -> Result<PathBuf, InstanceError> {
-    if relative_path.is_empty() {
-        return Err(invalid(relative_path, "path is empty"));
-    }
-
-    if relative_path.contains('\0') {
-        return Err(invalid(relative_path, "path contains a NUL byte"));
-    }
-
-    if relative_path.starts_with('/') || relative_path.starts_with('\\') {
-        return Err(invalid(
-            relative_path,
-            "path is absolute; only paths relative to the instance root are accepted",
-        ));
-    }
-
-    let mut result = PathBuf::new();
-
-    for (index, segment) in relative_path.split(['/', '\\']).enumerate() {
-        match segment {
-            "" => {
-                return Err(invalid(
-                    relative_path,
-                    "path has an empty segment (a repeated or trailing separator)",
-                ));
-            }
-            "." | ".." => {
-                return Err(invalid(
-                    relative_path,
-                    "path contains a `.` or `..` segment",
-                ));
-            }
-            _ if is_refused_colon(index, segment) => {
-                return Err(invalid(
-                    relative_path,
-                    "path segment contains `:` (drive letter, UNC prefix or data stream)",
-                ));
-            }
-            // Windows drops a trailing dot or space from a name, so `.metadata.` *is*
-            // `.metadata` there: the segment would name another file than the one checked.
-            _ if segment.ends_with(['.', ' ']) => {
-                return Err(invalid(
-                    relative_path,
-                    "path segment ends with a dot or a space",
-                ));
-            }
-            _ => result.push(segment),
-        }
-    }
-
-    // Belt and braces: whatever the host's own parser makes of the rebuilt path, it must still
-    // be nothing but plain names. This is what would catch a form the rules above did not
-    // anticipate on some platform.
-    if !result
-        .components()
-        .all(|component| matches!(component, Component::Normal(_)))
-    {
-        return Err(invalid(
-            relative_path,
-            "path does not consist of plain name segments",
-        ));
-    }
-
-    Ok(result)
-}
-
-/// Whether a `:` in the `index`th segment refuses the path.
-///
-/// On Windows a drive letter (`C:`), a UNC/verbatim prefix, or an alternate data stream
-/// (`file.txt:secret`) all show up as a `:` inside a segment, so any `:` is refused. Elsewhere it
-/// is part of a name (`mods/a:b.jar` is a file a Linux user may have), and only a first segment
-/// spelled as a drive is refused, so a path absolute on Windows is refused on every platform.
-fn is_refused_colon(index: usize, segment: &str) -> bool {
-    if cfg!(windows) {
-        return segment.contains(':');
-    }
-
-    let bytes = segment.as_bytes();
-    index == 0 && bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
 }
 
 /// The deepest ancestor of `path` (possibly `path` itself) that exists on disk.
@@ -149,9 +61,9 @@ fn deepest_existing(path: &Path) -> Option<&Path> {
 pub fn resolve_instance_file_path(
     instance_id: &InstanceId,
     instance_dir: &Path,
-    relative_path: &str,
+    relative_path: &InstanceRelativePath,
 ) -> Result<PathBuf, InstanceError> {
-    let relative = validate_relative_path(relative_path)?;
+    let relative = relative_path.to_path_buf();
 
     // An instance directory that is missing is not a directory we create here: the caller is
     // expected to have checked the instance exists.
@@ -164,18 +76,18 @@ pub fn resolve_instance_file_path(
     let candidate = canonical_root.join(&relative);
 
     let existing =
-        deepest_existing(&candidate).ok_or_else(|| escapes(relative_path, instance_id))?;
+        deepest_existing(&candidate).ok_or_else(|| escapes(relative_path.as_str(), instance_id))?;
 
     let canonical_existing = crate::shared::io::infra::canonicalize(existing)
-        .map_err(|_| escapes(relative_path, instance_id))?;
+        .map_err(|_| escapes(relative_path.as_str(), instance_id))?;
 
     if !canonical_existing.starts_with(&canonical_root) {
-        return Err(escapes(relative_path, instance_id));
+        return Err(escapes(relative_path.as_str(), instance_id));
     }
 
-    if reaches_metadata_by_alias(relative_path, &canonical_root, &canonical_existing) {
+    if reaches_metadata_by_alias(relative_path.as_str(), &canonical_root, &canonical_existing) {
         return Err(invalid(
-            relative_path,
+            relative_path.as_str(),
             &format!("path reaches `{INSTANCE_METADATA_FOLDER_NAME}` under another name"),
         ));
     }
@@ -224,12 +136,10 @@ fn reaches_metadata_by_alias(
 /// a looser match would let one plugin into another's directory on a case-insensitive file system.
 pub fn check_plugin_write_allowed(
     plugin_id: &str,
-    relative_path: &str,
+    relative_path: &InstanceRelativePath,
 ) -> Result<(), InstanceError> {
-    // Reuse the segment rules first, so `..` and the rest are already gone by this point.
-    validate_relative_path(relative_path)?;
-
-    let mut segments = relative_path.split(['/', '\\']);
+    // The segment rules already ran when the path was parsed, so `..` and the rest are gone.
+    let mut segments = relative_path.segments();
 
     let Some(first) = segments.next() else {
         return Ok(());
@@ -250,7 +160,7 @@ pub fn check_plugin_write_allowed(
     }
 
     Err(invalid(
-        relative_path,
+        relative_path.as_str(),
         &format!(
             "`{INSTANCE_METADATA_FOLDER_NAME}` belongs to the launcher; a plugin may only write \
              under `{INSTANCE_METADATA_FOLDER_NAME}/{PLUGINS_FOLDER_NAME}/{plugin_id}/`"
@@ -261,7 +171,7 @@ pub fn check_plugin_write_allowed(
 /// Check a content path — where an install puts a mod, a resource pack, a file of a plan — before
 /// anything is downloaded for it.
 ///
-/// The segment rules of [`validate_relative_path`], plus: nothing under `.metadata`. That is the
+/// The segment rules of [`InstanceRelativePath`], plus: nothing under `.metadata`. That is the
 /// core's state (see [`check_plugin_write_allowed`]), and content is never part of it — not even
 /// a plugin's own `.metadata/plugins/<id>/`, which a plugin writes through
 /// `write_instance_file`, not through a plan. A provider's plan is the provider's word, so the
@@ -270,17 +180,9 @@ pub fn check_plugin_write_allowed(
 /// Whether the path also stays inside the instance on disk (symlinks) is only known where the
 /// file is written, by [`resolve_instance_file_path`].
 pub fn check_content_path(relative_path: &str) -> Result<PathBuf, InstanceError> {
-    let path = validate_relative_path(relative_path)?;
+    let path = ContentPath::parse(relative_path)?;
 
-    let first = relative_path.split(['/', '\\']).next().unwrap_or_default();
-    if first.eq_ignore_ascii_case(INSTANCE_METADATA_FOLDER_NAME) {
-        return Err(invalid(
-            relative_path,
-            &format!("`{INSTANCE_METADATA_FOLDER_NAME}` belongs to the launcher, not to content"),
-        ));
-    }
-
-    Ok(path)
+    Ok(path.to_path_buf())
 }
 
 /// Refuse a payload over `limit` before it is written or read.

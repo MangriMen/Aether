@@ -158,7 +158,7 @@ impl InstanceFileService for MemInstanceFileService {
     async fn write_instance_file(
         &self,
         _instance_id: &InstanceId,
-        _relative_path: &str,
+        _relative_path: &crate::features::instance::InstanceRelativePath,
         _bytes: &[u8],
     ) -> Result<(), InstanceError> {
         unimplemented!("create_instance does not write instance files")
@@ -167,7 +167,7 @@ impl InstanceFileService for MemInstanceFileService {
     async fn read_instance_file(
         &self,
         _instance_id: &InstanceId,
-        _relative_path: &str,
+        _relative_path: &crate::features::instance::InstanceRelativePath,
     ) -> Result<Vec<u8>, InstanceError> {
         unimplemented!("create_instance does not read instance files")
     }
