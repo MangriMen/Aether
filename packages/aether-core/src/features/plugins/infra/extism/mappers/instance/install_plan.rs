@@ -299,7 +299,15 @@ mod tests {
     /// anything of it is resolved.
     #[test]
     fn should_reject_a_path_when_it_leaves_the_instance_or_is_metadata() {
-        for path in ["../x", "mods/../../x", "/abs/x.jar", ".metadata/x", ""] {
+        for path in [
+            "../x",
+            "mods/../../x",
+            "/abs/x.jar",
+            ".metadata/x",
+            "",
+            "C:/x.jar",
+            ".METADATA/x",
+        ] {
             let mut dto = entry(ContentSourceDto::Direct {
                 url: "https://example.com/a.jar".into(),
                 hash: None,
