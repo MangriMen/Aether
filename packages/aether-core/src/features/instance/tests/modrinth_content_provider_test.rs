@@ -332,7 +332,7 @@ async fn should_plan_a_mod_as_its_file_with_its_identity_when_resolving_a_mod() 
     let [entry] = &plan.files[..] else {
         panic!("one file expected: {:?}", plan.files)
     };
-    assert_eq!(entry.relative_path, "mods/sodium.jar");
+    assert_eq!(entry.relative_path.as_str(), "mods/sodium.jar");
     assert_eq!(entry.content_type, ContentType::Mod);
     assert_eq!(entry.size, Some(6));
     // The version's name, as the older install path recorded it.

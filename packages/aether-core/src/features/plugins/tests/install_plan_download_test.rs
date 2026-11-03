@@ -25,7 +25,7 @@ use crate::{
             CachedContentAuthor, CachedContentMetadata, CachedContentVersionMetadata,
             CapabilityMetadata, ChangeInstanceGameUseCasePort, ContentAuthor,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentDownloader,
-            ContentItem, ContentMetadata, ContentMetadataCache, ContentProvider,
+            ContentItem, ContentMetadata, ContentMetadataCache, ContentPath, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, ContentVersionMetadata,
             CreateInstanceUseCasePort, InstallFileEntry, InstallPlan, InstallPlanExecutor,
@@ -538,7 +538,7 @@ fn direct_plan(url: String, hash: Option<FileHash>) -> InstallPlan {
         target: InstallTarget::existing(InstanceId::try_from(INSTANCE_ID).unwrap()),
         files: vec![InstallFileEntry::new(
             ContentSource::direct(url, hash),
-            "mods/jei.jar",
+            ContentPath::parse("mods/jei.jar").unwrap(),
             ContentType::Mod,
         )],
         overrides: Vec::new(),
@@ -734,7 +734,7 @@ async fn should_hold_a_ref_to_that_plugins_hosts_when_a_plugin_resolved_it() {
                 content_id: "238222".into(),
                 version: None,
             },
-            "mods/jei.jar",
+            ContentPath::parse("mods/jei.jar").unwrap(),
             ContentType::Mod,
         )],
         ..direct_plan(String::new(), None)
@@ -784,12 +784,12 @@ async fn should_install_no_file_of_a_plan_when_one_fails() {
         files: vec![
             InstallFileEntry::new(
                 ContentSource::direct(allowed.url("/good.jar"), Some(sha1_of(BODY))),
-                "mods/good.jar",
+                ContentPath::parse("mods/good.jar").unwrap(),
                 ContentType::Mod,
             ),
             InstallFileEntry::new(
                 ContentSource::direct(allowed.url("/bad.jar"), Some(sha1_of(b"other bytes"))),
-                "mods/bad.jar",
+                ContentPath::parse("mods/bad.jar").unwrap(),
                 ContentType::Mod,
             ),
         ],

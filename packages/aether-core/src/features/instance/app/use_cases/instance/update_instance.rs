@@ -9,7 +9,7 @@ use crate::features::instance::app::ports::{InstallPlanExecutorPort, UpdateInsta
 use crate::{
     features::{
         instance::{
-            ContentProvider, InstallFileEntry, InstallPlan, Instance, InstanceError, InstanceId,
+            ContentPath, ContentProvider, InstallPlan, Instance, InstanceError, InstanceId,
             InstanceInstallStage, InstanceLocks, InstanceStorage, InstanceStorageExt, PackFile,
             PackInfo, PackSource, PackStorage, PlanOrigin, ResolveInstallPlanParams, ResolveTarget,
             Updater,
@@ -299,16 +299,11 @@ fn ownerless_pack_files_by(
     plan: &InstallPlan,
     ignores_case: bool,
 ) -> Vec<(String, PackFile)> {
-    let key = |path: &str| {
-        InstallFileEntry::path_key(
-            &InstallFileEntry::normalize_relative_path(path),
-            ignores_case,
-        )
-    };
+    let key = |path: &str| ContentPath::raw_key(&path.replace('\\', "/"), ignores_case);
     let planned: HashSet<String> = plan
         .files
         .iter()
-        .map(|file| key(&file.relative_path))
+        .map(|file| file.relative_path.key(ignores_case))
         .collect();
 
     records
@@ -379,7 +374,7 @@ impl UpdateInstanceUseCasePort for UpdateInstanceUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::features::instance::{ContentSource, ContentType};
+    use crate::features::instance::{ContentSource, ContentType, InstallFileEntry};
 
     fn plan_of(path: &str) -> InstallPlan {
         InstallPlan {
@@ -388,7 +383,7 @@ mod tests {
             ),
             files: vec![InstallFileEntry::new(
                 ContentSource::direct("https://example.com/a.jar".into(), None),
-                path,
+                ContentPath::parse(path).unwrap(),
                 ContentType::Mod,
             )],
             overrides: Vec::new(),

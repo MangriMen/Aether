@@ -16,7 +16,7 @@ use crate::{
         instance::{
             AtomicInstallParams, BaseContentParams, CapabilityMetadata,
             ContentCompatibilityCheckParams, ContentCompatibilityResult, ContentFileUpdateInfo,
-            ContentIdentity, ContentInstallParams, ContentItem, ContentProvider,
+            ContentIdentity, ContentInstallParams, ContentItem, ContentPath, ContentProvider,
             ContentProviderCapabilityMetadata, ContentSearchParams, ContentSearchResult,
             ContentSource, ContentType, ContentVersion, InstallContentUseCase, InstallFileEntry,
             InstallPlan, InstallPlanExecutorPort, InstallTarget, Instance, InstanceBuilder,
@@ -105,7 +105,7 @@ impl MockProvider {
                     version: "v2".into(),
                 }),
             },
-            "mods/sodium.jar",
+            ContentPath::parse("mods/sodium.jar").unwrap(),
             ContentType::Mod,
         )];
         Arc::new(provider)

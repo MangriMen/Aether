@@ -8,8 +8,8 @@ use url::Url;
 
 use crate::{
     features::instance::{
-        ContentIdentity, ContentSource, ContentType, FileSide, InstallFileEntry, InstanceError,
-        OptionalFile, OverrideLocation, OverrideSource, PackMetadata, PlatformId,
+        ContentIdentity, ContentPath, ContentSource, ContentType, FileSide, InstallFileEntry,
+        InstanceError, OptionalFile, OverrideLocation, OverrideSource, PackMetadata, PlatformId,
         infra::content_providers::modrinth::api_client::{
             Hashes, ModrinthEnv, ModrinthIndex, ModrinthIndexFile, ProjectVersionResponse,
         },
@@ -181,6 +181,11 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
         })?;
 
     let (side, optional) = side_and_option(file.env.as_ref());
+    let hash = sha512_of(&file.hashes)?;
+    let relative_path = ContentPath::parse(&file.path).inspect_err(|err| {
+        tracing::warn!("The pack lists a file at an invalid path: {err}");
+    })?;
+    let content_type = content_type_of(relative_path.as_str());
 
     Ok(InstallFileEntry {
         optional,
@@ -189,11 +194,11 @@ fn plan_file(file: &ModrinthIndexFile) -> Result<InstallFileEntry, InstanceError
         ..InstallFileEntry::new(
             ContentSource::Direct {
                 url: url.clone(),
-                hash: Some(sha512_of(&file.hashes)?),
+                hash: Some(hash),
                 identity: cdn_identity(url),
             },
-            &file.path,
-            content_type_of(&file.path),
+            relative_path,
+            content_type,
         )
     })
 }
@@ -403,6 +408,33 @@ mod tests {
         }
     }
 
+    /// A path that leaves the instance or points into `.metadata` fails the plan where the index is
+    /// read, before anything is resolved or downloaded — `.metadata` is the launcher's, the
+    /// built-in provider's plan included.
+    #[test]
+    fn should_refuse_the_plan_when_a_file_path_is_not_a_content_path() {
+        for path in [
+            "../escape.jar",
+            "/etc/passwd",
+            "mods/../../escape.jar",
+            "C:/x.jar",
+            ".metadata/instance.json",
+            ".METADATA/instance.json",
+            ".metadata/plugins/packwiz/packwiz.toml",
+        ] {
+            let err = plan_files(&index(vec![
+                index_file("mods/a.jar", &[SODIUM_URL], None),
+                index_file(path, &[SODIUM_URL], None),
+            ]))
+            .unwrap_err();
+
+            assert!(
+                matches!(err, InstanceError::InvalidRelativePath { .. }),
+                "{path}: {err:?}"
+            );
+        }
+    }
+
     /// A file of Modrinth's CDN names its content, so the executor treats it
     /// as that mod across updates; a file elsewhere stays plain bytes.
     #[test]
@@ -426,7 +458,7 @@ mod tests {
                 }),
             }
         );
-        assert_eq!(files[0].relative_path, "mods/sodium.jar");
+        assert_eq!(files[0].relative_path.as_str(), "mods/sodium.jar");
         assert_eq!(files[0].size, Some(42));
         assert!(matches!(
             &files[1].source,

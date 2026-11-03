@@ -207,8 +207,8 @@ impl ResolvedFile {
 #[cfg(test)]
 mod tests {
     use crate::features::instance::{
-        ContentType, FileSide, InstallFileEntry, InstallPlan, OverrideLocation, OverrideSource,
-        PlatformId, ProviderId,
+        ContentPath, ContentType, FileSide, InstallFileEntry, InstallPlan, OverrideLocation,
+        OverrideSource, PlatformId, ProviderId,
     };
 
     use super::*;
@@ -250,7 +250,7 @@ mod tests {
                 .into_install_target(|| unreachable!("an existing target needs no new instance")),
             files: vec![InstallFileEntry::new(
                 sodium_ref(params.version.as_deref()),
-                "mods/sodium-fabric-0.6.0.jar",
+                ContentPath::parse("mods/sodium-fabric-0.6.0.jar").unwrap(),
                 ContentType::Mod,
             )],
             overrides: Vec::new(),
@@ -278,7 +278,7 @@ mod tests {
             ContentSource::direct(resolved.url.clone(), resolved.hash.clone())
         );
         // The platform's file name does not move the file the plan placed.
-        assert_eq!(entry.relative_path, "mods/sodium-fabric-0.6.0.jar");
+        assert_eq!(entry.relative_path.as_str(), "mods/sodium-fabric-0.6.0.jar");
     }
 
     /// A modpack into a new instance: the preview reads the pack from the platform, and the plan
@@ -324,7 +324,7 @@ mod tests {
             files: vec![
                 InstallFileEntry::new(
                     sodium_ref(Some("IZskON6d")),
-                    "mods/sodium.jar",
+                    ContentPath::parse("mods/sodium.jar").unwrap(),
                     ContentType::Mod,
                 ),
                 InstallFileEntry::new(
@@ -332,7 +332,7 @@ mod tests {
                         "https://cdn.modrinth.com/data/YL57xq9U/versions/x/iris.jar".into(),
                         None,
                     ),
-                    "mods/iris.jar",
+                    ContentPath::parse("mods/iris.jar").unwrap(),
                     ContentType::Mod,
                 ),
             ],

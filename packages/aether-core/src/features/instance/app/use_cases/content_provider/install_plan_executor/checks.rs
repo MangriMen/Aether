@@ -23,22 +23,19 @@ impl InstallPlanExecutor {
         Ok(())
     }
 
-    /// Every path is a valid content path, and no two files claim the same one — the second
-    /// would silently replace the first. Compared as [`path_key`]s: on a case-insensitive file
-    /// system, paths differing only in case are one file.
-    pub(super) fn check_paths(&self, files: &[InstallFileEntry]) -> Result<(), InstanceError> {
+    /// No two files claim the same path — the second would silently replace the first. Compared as
+    /// case-insensitive keys: on a case-insensitive file system, paths differing only in case are
+    /// one file. (Each path is already a valid content path: that is the type's word.)
+    pub(super) fn check_paths(files: &[InstallFileEntry]) -> Result<(), InstanceError> {
         let mut seen = HashSet::new();
 
         for file in files {
-            self.content_file_service
-                .check_content_path(&file.relative_path)?;
-
             // `X` and `X.disabled` are one file, the second the disabled state of the first.
-            let key = path_key(&file.relative_path);
+            let key = file.relative_path.case_insensitive_key();
             let key = key.strip_suffix(DISABLED_SUFFIX).unwrap_or(&key).to_owned();
             if !seen.insert(key) {
                 return Err(InstanceError::ContentDuplication {
-                    content_path: file.relative_path.clone(),
+                    content_path: file.relative_path.to_string(),
                 });
             }
         }
@@ -57,7 +54,7 @@ impl InstallPlanExecutor {
         let planned: HashSet<String> = files
             .iter()
             .flat_map(|file| {
-                let path = path_key(&file.relative_path);
+                let path = file.relative_path.case_insensitive_key();
                 [format!("{path}{DISABLED_SUFFIX}"), path]
             })
             .collect();

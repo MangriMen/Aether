@@ -12,7 +12,7 @@ use crate::{
     features::{
         instance::{
             CapabilityId, CapabilityMetadata, ContentAuthor, ContentIdentity, ContentItem,
-            ContentMetadata, ContentProvider, ContentProviderCapabilityMetadata,
+            ContentMetadata, ContentPath, ContentProvider, ContentProviderCapabilityMetadata,
             ContentSearchParams, ContentSearchResult, ContentSource, ContentType, ContentVersion,
             ContentVersionMetadata, InstallFileEntry, InstallPlan, Instance, InstanceError,
             InstanceId, PackInfo, PackMetadata, PackSource, PlatformId, PluginId, ProviderId,
@@ -380,9 +380,11 @@ impl<RC: RequestClient> ModrinthContentProvider<RC> {
                         version: resolved.version,
                     }),
                 },
-                &content_type
-                    .get_relative_path(&resolved.file_name)
-                    .to_string_lossy(),
+                ContentPath::parse(
+                    &content_type
+                        .get_relative_path(&resolved.file_name)
+                        .to_string_lossy(),
+                )?,
                 content_type,
             )
         };

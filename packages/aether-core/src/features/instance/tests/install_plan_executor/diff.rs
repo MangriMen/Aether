@@ -3,8 +3,8 @@
 use crate::{
     features::{
         instance::{
-            ContentSource, ContentType, InstallFileEntry, InstallPlan, InstallTarget, NewInstance,
-            PackFile, PlanOrigin,
+            ContentPath, ContentSource, ContentType, InstallFileEntry, InstallPlan, InstallTarget,
+            NewInstance, PackFile, PlanOrigin,
         },
         minecraft::ModLoader,
     },
@@ -145,7 +145,7 @@ async fn should_check_the_file_on_disk_with_the_plan_algorithm_when_it_exists() 
                     url.into(),
                     Some(FileHash::new(HashAlgorithm::Sha512, sha512).unwrap()),
                 ),
-                "mods/a.jar",
+                ContentPath::parse("mods/a.jar").unwrap(),
                 ContentType::Mod,
             )]),
             &plugin("packwiz"),

@@ -408,61 +408,6 @@ async fn should_install_the_default_selection_of_files_when_no_choice_is_made() 
 }
 
 #[tokio::test]
-async fn should_refuse_a_path_before_downloading_anything_when_it_leads_out_of_the_instance() {
-    for path in [
-        "../escape.jar",
-        "/etc/passwd",
-        "mods/../../escape.jar",
-        "C:/x.jar",
-    ] {
-        let fixture = Fixture::new().await;
-
-        let err = fixture
-            .execute(
-                existing(vec![
-                    direct("https://cdn.example/a.jar", "mods/a.jar"),
-                    direct("https://cdn.example/b.jar", path),
-                ]),
-                &plugin("packwiz"),
-            )
-            .await
-            .unwrap_err();
-
-        assert!(
-            matches!(err, InstanceError::InvalidRelativePath { .. }),
-            "{path}: {err:?}"
-        );
-        assert!(fixture.downloader.downloads().is_empty(), "{path}");
-    }
-}
-
-/// `.metadata` is the launcher's: no plan writes there, the built-in provider's included.
-#[tokio::test]
-async fn should_refuse_a_path_when_it_leads_into_the_instance_metadata() {
-    for path in [
-        ".metadata/instance.json",
-        ".METADATA/instance.json",
-        ".metadata/plugins/packwiz/packwiz.toml",
-    ] {
-        let fixture = Fixture::new().await;
-
-        let err = fixture
-            .execute(
-                existing(vec![direct("https://cdn.example/a.json", path)]),
-                &ProviderId::from_parts(ProviderId::BUILTIN_PLUGIN_ID, "modrinth").unwrap(),
-            )
-            .await
-            .unwrap_err();
-
-        assert!(
-            matches!(err, InstanceError::InvalidRelativePath { .. }),
-            "{path}: {err:?}"
-        );
-        assert!(fixture.downloader.downloads().is_empty(), "{path}");
-    }
-}
-
-#[tokio::test]
 async fn should_refuse_two_files_when_they_share_one_path() {
     let fixture = Fixture::new().await;
 
