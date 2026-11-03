@@ -81,8 +81,18 @@ async fn read_settings(
         return Ok(DefaultInstanceSettings::default());
     };
 
-    let launch_args = serde_json::from_str(&row.launch_args_json).unwrap_or_default();
-    let env_vars = serde_json::from_str(&row.env_vars_json).unwrap_or_default();
+    let launch_args = serde_json::from_str(&row.launch_args_json).map_err(|e| {
+        tracing::warn!(column = "launch_args_json", error = %e, "Invalid default instance settings column");
+        SettingsError::Storage(format!(
+            "Invalid launch_args_json in default_instance_settings: {e}"
+        ))
+    })?;
+    let env_vars = serde_json::from_str(&row.env_vars_json).map_err(|e| {
+        tracing::warn!(column = "env_vars_json", error = %e, "Invalid default instance settings column");
+        SettingsError::Storage(format!(
+            "Invalid env_vars_json in default_instance_settings: {e}"
+        ))
+    })?;
 
     let memory = MemorySettings::new(MemoryMb::from_stored_or_default(
         row.max_memory,
@@ -113,9 +123,10 @@ async fn write_settings(
     conn: &mut SqliteConnection,
     settings: DefaultInstanceSettings,
 ) -> Result<DefaultInstanceSettings, SettingsError> {
-    let launch_args_json =
-        serde_json::to_string(settings.launch_args()).unwrap_or_else(|_| "[]".into());
-    let env_vars_json = serde_json::to_string(settings.env_vars()).unwrap_or_else(|_| "[]".into());
+    let launch_args_json = serde_json::to_string(settings.launch_args())
+        .map_err(|e| SettingsError::Storage(format!("Invalid launch_args_json: {e}")))?;
+    let env_vars_json = serde_json::to_string(settings.env_vars())
+        .map_err(|e| SettingsError::Storage(format!("Invalid env_vars_json: {e}")))?;
 
     let memory_max = i64::from(settings.memory().maximum());
     let fullscreen = settings.window().force_fullscreen();
@@ -246,5 +257,78 @@ mod tests {
         let settings = storage.get().await.unwrap();
 
         assert_eq!(settings.memory().maximum(), MemoryMb::default());
+    }
+}
+
+#[cfg(test)]
+mod corrupt_json_tests {
+    use super::*;
+
+    async fn storage(dir: &tempfile::TempDir) -> SqliteDefaultInstanceSettingsStorage {
+        let options = sqlx::sqlite::SqliteConnectOptions::new()
+            .filename(dir.path().join("settings.db"))
+            .create_if_missing(true)
+            .foreign_keys(false);
+        let pool = sqlx::pool::PoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .unwrap();
+        crate::core::migrations::run_migrations(&pool)
+            .await
+            .unwrap();
+        SqliteDefaultInstanceSettingsStorage::new(pool)
+    }
+
+    #[tokio::test]
+    async fn should_round_trip_launch_args_and_env_vars() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        let mut settings = DefaultInstanceSettings::default();
+        settings.update_launch_args(vec!["-Xss1M".to_owned()]);
+
+        storage.upsert(settings).await.unwrap();
+
+        assert_eq!(storage.get().await.unwrap().launch_args(), ["-Xss1M"]);
+    }
+
+    #[tokio::test]
+    async fn should_fail_to_read_corrupt_launch_args() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        storage
+            .upsert(DefaultInstanceSettings::default())
+            .await
+            .unwrap();
+        sqlx::query("UPDATE default_instance_settings SET launch_args_json = 'oops' WHERE id = 1")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let result = storage.get().await;
+
+        assert!(
+            matches!(result, Err(SettingsError::Storage(ref m)) if m.contains("launch_args_json"))
+        );
+    }
+
+    #[tokio::test]
+    async fn should_fail_to_read_corrupt_env_vars() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = storage(&dir).await;
+        storage
+            .upsert(DefaultInstanceSettings::default())
+            .await
+            .unwrap();
+        sqlx::query("UPDATE default_instance_settings SET env_vars_json = '[1' WHERE id = 1")
+            .execute(&storage.pool)
+            .await
+            .unwrap();
+
+        let result = storage.get().await;
+
+        assert!(
+            matches!(result, Err(SettingsError::Storage(ref m)) if m.contains("env_vars_json"))
+        );
     }
 }

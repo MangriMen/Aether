@@ -331,7 +331,7 @@ async fn write_instance(
     tx: &mut SqliteConnection,
     instance: &Instance,
 ) -> Result<(), InstanceError> {
-    let sql = SqlInstance::from(instance.clone());
+    let sql = SqlInstance::try_from(instance.clone())?;
 
     sqlx::query!(
             r#"
@@ -446,4 +446,75 @@ async fn write_instance(
         .map_err(|e| InstanceError::Storage(e.to_string()))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::{instance::InstanceBuilder, minecraft::ModLoader};
+
+    fn instance(loader: ModLoader) -> Instance {
+        InstanceBuilder::new(
+            InstanceId::try_from("a").unwrap(),
+            "a".to_owned(),
+            "1.21.1".into(),
+            loader,
+        )
+        .build()
+    }
+
+    #[tokio::test]
+    async fn should_round_trip_an_instance_keeping_the_stored_enum_strings() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage
+            .upsert(&instance(ModLoader::NeoForge))
+            .await
+            .unwrap();
+
+        let (loader, stage): (String, String) =
+            sqlx::query_as("SELECT loader, install_stage FROM instances WHERE id = 'a'")
+                .fetch_one(storage.pool())
+                .await
+                .unwrap();
+        let read = storage
+            .get(&InstanceId::try_from("a").unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(loader, "neo_forge");
+        assert_eq!(stage, "not_installed");
+        assert_eq!(read.snapshot().loader, ModLoader::NeoForge);
+    }
+
+    #[tokio::test]
+    async fn should_fail_to_read_an_instance_with_corrupt_launch_args() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET launch_args_json = 'not json' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
+
+        assert!(
+            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("launch_args_json"))
+        );
+    }
+
+    #[tokio::test]
+    async fn should_fail_to_read_an_instance_with_corrupt_env_vars() {
+        let storage = SqliteInstanceStorage::in_memory().await;
+        storage.upsert(&instance(ModLoader::Fabric)).await.unwrap();
+        sqlx::query("UPDATE instances SET env_vars_json = '{' WHERE id = 'a'")
+            .execute(storage.pool())
+            .await
+            .unwrap();
+
+        let result = storage.get(&InstanceId::try_from("a").unwrap()).await;
+
+        assert!(
+            matches!(result, Err(InstanceError::Storage(ref m)) if m.contains("env_vars_json"))
+        );
+    }
 }
