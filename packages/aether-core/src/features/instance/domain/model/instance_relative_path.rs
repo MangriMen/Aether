@@ -102,6 +102,12 @@ impl InstanceRelativePath {
                         "path segment ends with a dot or a space",
                     ));
                 }
+                _ if is_reserved_windows_name(segment) => {
+                    return Err(invalid(
+                        relative_path,
+                        "path segment is a reserved Windows device name",
+                    ));
+                }
                 _ => {
                     result.push(segment);
                     if index > 0 {
@@ -165,6 +171,33 @@ fn is_refused_colon(index: usize, segment: &str) -> bool {
 
     let bytes = segment.as_bytes();
     index == 0 && bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
+}
+
+/// Whether `segment` names a Windows device (`CON`, `NUL`, `COM1`, ...).
+///
+/// Windows resolves such a name to the device whatever the case and whatever follows the first dot
+/// or colon (`nul.txt`, `COM1.tar.gz`, `aux:stream`), so a file with it cannot be created or read
+/// as a file there. Refused on every host for the same reason `\` is a separator everywhere: a
+/// pack must mean the same thing on every platform it is shared to.
+fn is_reserved_windows_name(segment: &str) -> bool {
+    let stem = segment.split(['.', ':']).next().unwrap_or_default();
+    let stem = stem.trim_end_matches(' ').to_ascii_uppercase();
+
+    match stem.as_str() {
+        "CON" | "PRN" | "AUX" | "NUL" | "CONIN$" | "CONOUT$" => true,
+        _ => {
+            let numbered = |prefix: &str| {
+                stem.strip_prefix(prefix).is_some_and(|rest| {
+                    let mut chars = rest.chars();
+                    matches!(
+                        (chars.next(), chars.next()),
+                        (Some('1'..='9' | '\u{b9}' | '\u{b2}' | '\u{b3}'), None)
+                    )
+                })
+            };
+            numbered("COM") || numbered("LPT")
+        }
+    }
 }
 
 /// A content path — where an install puts a mod, a resource pack, a file of a plan — checked
@@ -263,6 +296,48 @@ impl From<ContentPath> for String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_refuse_reserved_windows_device_names() {
+        for path in [
+            "CON",
+            "mods/nul",
+            "mods/NUL.txt",
+            "aux.tar.gz",
+            "Prn",
+            "com1",
+            "mods/LPT9.jar",
+            "COM\u{b9}",
+            "lpt\u{b2}.txt",
+            "CONIN$",
+            "conout$",
+            "con:stream",
+            "nul\\x",
+        ] {
+            assert!(InstanceRelativePath::parse(path).is_err(), "{path}");
+        }
+    }
+
+    #[test]
+    fn should_accept_names_that_only_resemble_device_names() {
+        for path in [
+            "console.txt",
+            "mods/null.jar",
+            "com0",
+            "com10.jar",
+            "lpt",
+            "mods/auxiliary",
+            "a.con",
+            "my.nul",
+        ] {
+            assert!(InstanceRelativePath::parse(path).is_ok(), "{path}");
+        }
+    }
+
+    #[test]
+    fn should_refuse_reserved_names_in_content_paths_too() {
+        assert!(ContentPath::parse("mods/aux.jar").is_err());
+    }
 
     #[test]
     fn should_normalize_backslashes_when_parsing() {
