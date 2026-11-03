@@ -11,8 +11,8 @@ use crate::{
     features::instance::{
         ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
         ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
-        InstanceFileService, InstanceId, InstanceServicesPort, ListContentUseCasePort, NewInstance,
-        PluginId,
+        InstanceFileService, InstanceId, InstanceRelativePath, InstanceServicesPort,
+        ListContentUseCasePort, NewInstance, PluginId,
         infra::{check_plugin_write_allowed, check_size},
     },
     features::plugins::LoadConfig,
@@ -176,7 +176,9 @@ pub(crate) async fn write_instance_file_with(
     );
 
     // `.metadata` is the core's, apart from this plugin's own subdirectory in it.
-    check_plugin_write_allowed(plugin_id, &params.relative_path)?;
+    let relative_path =
+        InstanceRelativePath::parse(&params.relative_path).map_err(InstanceError::from)?;
+    check_plugin_write_allowed(plugin_id, &relative_path)?;
     check_size(
         &params.relative_path,
         params.bytes.len() as u64,
@@ -186,7 +188,7 @@ pub(crate) async fn write_instance_file_with(
     let instance_id = require_instance(&params.instance_id, get_instance).await?;
 
     file_service
-        .write_instance_file(&instance_id, &params.relative_path, &params.bytes)
+        .write_instance_file(&instance_id, &relative_path, &params.bytes)
         .await
         .map_err(|err| {
             log::warn!(target: "plugin", "[{plugin_id}]: write_instance_file failed: {err}");
@@ -209,10 +211,13 @@ pub(crate) async fn read_instance_file_with(
         params.relative_path
     );
 
+    let relative_path =
+        InstanceRelativePath::parse(&params.relative_path).map_err(InstanceError::from)?;
+
     let instance_id = require_instance(&params.instance_id, get_instance).await?;
 
     let bytes = file_service
-        .read_instance_file(&instance_id, &params.relative_path)
+        .read_instance_file(&instance_id, &relative_path)
         .await
         .map_err(|err| {
             log::warn!(target: "plugin", "[{plugin_id}]: read_instance_file failed: {err}");

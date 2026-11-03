@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 
-use crate::features::instance::domain::{InstanceError, InstanceId};
+use crate::features::instance::domain::{InstanceError, InstanceId, InstanceRelativePath};
 
 #[async_trait]
 pub trait InstanceFileService: Send + Sync {
@@ -27,12 +27,13 @@ pub trait InstanceFileService: Send + Sync {
     /// there and creating the parent directories as needed.
     ///
     /// The single write path for plugins into an instance, so every write is resolved and
-    /// bounded in one place. Anything that could leave the instance root (an absolute path, a
-    /// `..` segment, a symlink pointing outside) is refused, as is a payload over the size limit.
+    /// bounded in one place. `relative_path` is already checked by [`InstanceRelativePath::parse`]
+    /// (no absolute path, no `..` segment); what could still leave the instance root (a
+    /// symlink pointing outside) is refused, as is a payload over the size limit.
     async fn write_instance_file(
         &self,
         instance_id: &InstanceId,
-        relative_path: &str,
+        relative_path: &InstanceRelativePath,
         bytes: &[u8],
     ) -> Result<(), InstanceError>;
 
@@ -42,6 +43,6 @@ pub trait InstanceFileService: Send + Sync {
     async fn read_instance_file(
         &self,
         instance_id: &InstanceId,
-        relative_path: &str,
+        relative_path: &InstanceRelativePath,
     ) -> Result<Vec<u8>, InstanceError>;
 }

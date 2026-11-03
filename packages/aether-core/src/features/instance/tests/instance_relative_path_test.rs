@@ -5,10 +5,8 @@ use std::path::{Path, PathBuf};
 use rstest::rstest;
 use tempfile::TempDir;
 
-use crate::features::instance::domain::{InstanceError, InstanceId};
-use crate::features::instance::infra::{
-    check_plugin_write_allowed, resolve_instance_file_path, validate_relative_path,
-};
+use crate::features::instance::domain::{InstanceError, InstanceId, InstanceRelativePath};
+use crate::features::instance::infra::{check_plugin_write_allowed, resolve_instance_file_path};
 use crate::test_support::{link_dir, link_file};
 
 const INSTANCE_ID: &str = "inst-1";
@@ -24,11 +22,11 @@ fn resolve(instance_dir: &Path, relative_path: &str) -> Result<PathBuf, Instance
     resolve_instance_file_path(
         &InstanceId::try_from(INSTANCE_ID).unwrap(),
         instance_dir,
-        relative_path,
+        &InstanceRelativePath::parse(relative_path)?,
     )
 }
 
-// ── validate_relative_path ──
+// ── InstanceRelativePath::parse ──
 
 #[rstest]
 #[case::plain_relative_path("mods/example.jar", PathBuf::from("mods").join("example.jar"))]
@@ -39,7 +37,9 @@ fn resolve(instance_dir: &Path, relative_path: &str) -> Result<PathBuf, Instance
 )]
 fn should_accept_a_path_when_it_is_valid(#[case] path: &str, #[case] expected: PathBuf) {
     assert_eq!(
-        validate_relative_path(path).expect("path should be accepted"),
+        InstanceRelativePath::parse(path)
+            .expect("path should be accepted")
+            .to_path_buf(),
         expected
     );
 }
@@ -86,10 +86,7 @@ fn should_accept_a_path_when_it_is_valid(#[case] path: &str, #[case] expected: P
 #[case::nul_byte("pack.toml\0.jar")]
 fn should_reject_a_path_when_it_is_invalid(#[case] path: &str) {
     assert!(
-        matches!(
-            validate_relative_path(path),
-            Err(InstanceError::InvalidRelativePath { .. })
-        ),
+        InstanceRelativePath::parse(path).is_err(),
         "`{path}` must be rejected"
     );
 }
@@ -102,10 +99,7 @@ fn should_reject_a_path_when_it_is_invalid(#[case] path: &str) {
 #[case::drive_in_a_segment("mods/C:evil.dll")]
 fn should_reject_colon_in_a_segment_when_on_windows(#[case] path: &str) {
     assert!(
-        matches!(
-            validate_relative_path(path),
-            Err(InstanceError::InvalidRelativePath { .. })
-        ),
+        InstanceRelativePath::parse(path).is_err(),
         "`{path}` must be rejected"
     );
 }
@@ -118,7 +112,7 @@ fn should_reject_colon_in_a_segment_when_on_windows(#[case] path: &str) {
 #[case::drive_like_in_a_segment("mods/C:evil.dll")]
 fn should_accept_colon_in_a_file_name_when_not_on_windows(#[case] path: &str) {
     assert_eq!(
-        validate_relative_path(path).unwrap(),
+        InstanceRelativePath::parse(path).unwrap().to_path_buf(),
         path.split('/').collect::<PathBuf>(),
         "`{path}` must be accepted"
     );
@@ -215,7 +209,7 @@ fn should_fail_when_the_instance_directory_does_not_exist() {
             resolve_instance_file_path(
                 &InstanceId::try_from("no-such-instance").unwrap(),
                 &missing,
-                "pack.toml"
+                &InstanceRelativePath::parse("pack.toml").unwrap()
             ),
             Err(InstanceError::Storage(_))
         ),
@@ -238,7 +232,7 @@ fn should_reject_a_path_when_a_directory_symlink_points_out_of_the_instance() {
     link_dir(&outside, &link);
 
     // Passes the string rules — only canonicalisation can catch it.
-    assert!(validate_relative_path("mods/escaped.txt").is_ok());
+    assert!(InstanceRelativePath::parse("mods/escaped.txt").is_ok());
     assert!(
         matches!(
             resolve(&instance_dir, "mods/escaped.txt"),
@@ -285,7 +279,7 @@ fn should_accept_a_path_when_a_symlink_stays_inside_the_instance() {
 const PLUGIN_ID: &str = "packwiz";
 
 fn check(relative_path: &str) -> Result<(), InstanceError> {
-    check_plugin_write_allowed(PLUGIN_ID, relative_path)
+    check_plugin_write_allowed(PLUGIN_ID, &InstanceRelativePath::parse(relative_path)?)
 }
 
 #[rstest]

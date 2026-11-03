@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use tempfile::TempDir;
 
-use crate::features::instance::InstanceId;
 use crate::features::instance::app::InstanceFileService;
 use crate::features::instance::infra::FsInstanceFileService;
+use crate::features::instance::{InstanceId, InstanceRelativePath};
 use crate::features::settings::LocationInfo;
 use crate::test_support::link_dir;
 
@@ -109,6 +109,10 @@ async fn should_not_fail_to_sweep_when_nothing_was_ever_removed() {
 
 use crate::features::instance::domain::InstanceError;
 
+fn rel(path: &str) -> InstanceRelativePath {
+    InstanceRelativePath::parse(path).expect("test path should be valid")
+}
+
 /// The service assumes the instance directory is already there — `require_instance` in the host
 /// function is what guarantees the instance exists at all.
 async fn setup_instance(
@@ -132,7 +136,7 @@ async fn should_create_the_file_inside_the_instance_when_writing() {
     let (_temp_dir, location_info, service) = setup_instance(instance_id).await;
 
     service
-        .write_instance_file(instance_id, "mods/example.jar", b"jar bytes")
+        .write_instance_file(instance_id, &rel("mods/example.jar"), b"jar bytes")
         .await
         .expect("write_instance_file should succeed");
 
@@ -153,11 +157,11 @@ async fn should_replace_existing_content_when_the_file_is_written_again() {
     let (_temp_dir, location_info, service) = setup_instance(instance_id).await;
 
     service
-        .write_instance_file(instance_id, "pack.toml", b"first")
+        .write_instance_file(instance_id, &rel("pack.toml"), b"first")
         .await
         .unwrap();
     service
-        .write_instance_file(instance_id, "pack.toml", b"second")
+        .write_instance_file(instance_id, &rel("pack.toml"), b"second")
         .await
         .unwrap();
 
@@ -171,12 +175,12 @@ async fn should_return_what_was_written_when_the_file_is_read() {
     let (_temp_dir, _location_info, service) = setup_instance(instance_id).await;
 
     service
-        .write_instance_file(instance_id, "config/a.json", b"{}")
+        .write_instance_file(instance_id, &rel("config/a.json"), b"{}")
         .await
         .unwrap();
 
     let read = service
-        .read_instance_file(instance_id, "config/a.json")
+        .read_instance_file(instance_id, &rel("config/a.json"))
         .await
         .expect("read_instance_file should succeed");
     assert_eq!(read, b"{}");
@@ -185,12 +189,11 @@ async fn should_return_what_was_written_when_the_file_is_read() {
 #[tokio::test]
 async fn should_reject_a_write_when_the_path_traverses_to_the_parent() {
     let instance_id = &InstanceId::try_from("write-traversal").unwrap();
-    let (temp_dir, _location_info, service) = setup_instance(instance_id).await;
+    let (temp_dir, _location_info, _service) = setup_instance(instance_id).await;
 
-    let err = service
-        .write_instance_file(instance_id, "../escaped.txt", b"pwned")
-        .await
-        .expect_err("`..` must be rejected");
+    let err = InstanceError::from(
+        InstanceRelativePath::parse("../escaped.txt").expect_err("`..` must be rejected"),
+    );
     assert!(
         matches!(err, InstanceError::InvalidRelativePath { .. }),
         "{err}"
@@ -209,13 +212,12 @@ async fn should_reject_a_write_when_the_path_traverses_to_the_parent() {
 #[tokio::test]
 async fn should_reject_a_write_when_the_path_is_absolute() {
     let instance_id = &InstanceId::try_from("write-absolute").unwrap();
-    let (_temp_dir, _location_info, service) = setup_instance(instance_id).await;
+    let (_temp_dir, _location_info, _service) = setup_instance(instance_id).await;
 
     for path in ["/etc/passwd", "C:/Windows/evil.dll", "/instances/x/a.jar"] {
-        let err = service
-            .write_instance_file(instance_id, path, b"pwned")
-            .await
-            .expect_err("an absolute path must be rejected");
+        let err = InstanceError::from(
+            InstanceRelativePath::parse(path).expect_err("an absolute path must be rejected"),
+        );
         assert!(
             matches!(err, InstanceError::InvalidRelativePath { .. }),
             "`{path}`: {err}"
@@ -235,7 +237,7 @@ async fn should_reject_a_write_when_a_symlink_leads_out_of_the_instance() {
     link_dir(&outside, &link);
 
     let err = service
-        .write_instance_file(instance_id, "mods/escaped.jar", b"pwned")
+        .write_instance_file(instance_id, &rel("mods/escaped.jar"), b"pwned")
         .await
         .expect_err("a write through a symlink out of the instance must be rejected");
     assert!(
@@ -265,7 +267,7 @@ async fn should_reject_a_write_when_the_payload_is_oversized() {
     ];
 
     let err = service
-        .write_instance_file(instance_id, "big.bin", &oversized)
+        .write_instance_file(instance_id, &rel("big.bin"), &oversized)
         .await
         .expect_err("an oversized payload must be rejected");
     assert!(matches!(err, InstanceError::FileTooLarge { .. }), "{err}");
@@ -285,12 +287,12 @@ async fn should_reject_a_read_when_the_path_is_a_directory() {
     let (_temp_dir, _location_info, service) = setup_instance(instance_id).await;
 
     service
-        .write_instance_file(instance_id, "mods/a.jar", b"x")
+        .write_instance_file(instance_id, &rel("mods/a.jar"), b"x")
         .await
         .unwrap();
 
     let err = service
-        .read_instance_file(instance_id, "mods")
+        .read_instance_file(instance_id, &rel("mods"))
         .await
         .expect_err("a directory is not a readable file");
     assert!(
@@ -305,7 +307,7 @@ async fn should_fail_a_read_when_the_file_is_missing() {
     let (_temp_dir, _location_info, service) = setup_instance(instance_id).await;
 
     let err = service
-        .read_instance_file(instance_id, "nope.txt")
+        .read_instance_file(instance_id, &rel("nope.txt"))
         .await
         .unwrap_err();
 
