@@ -7,7 +7,7 @@ use crate::{
     features::{
         instance::{
             app::{ContentFileService, DISABLED_SUFFIX, LocatedContentFile},
-            domain::{InstanceError, InstanceId, InstanceRelativePath},
+            domain::{ContentPath, InstanceError, InstanceId},
         },
         settings::LocationInfo,
     },
@@ -17,20 +17,28 @@ use crate::{
     },
 };
 
-use super::instance_relative_path::{check_content_path, resolve_instance_file_path};
+use super::instance_relative_path::resolve_instance_file_path;
 
-/// Parse a content-side path as an instance relative path, then resolve it. The parse is the same
-/// string check that `resolve_instance_file_path` used to run first, so a refused path fails with
-/// the same error before the filesystem is touched.
-fn resolve_raw(
+/// Where `content_path` is on disk, resolved inside the instance directory (symlinks).
+fn resolve_content(
     instance_id: &InstanceId,
     instance_dir: &Path,
-    relative_path: &str,
+    content_path: &ContentPath,
+) -> Result<PathBuf, InstanceError> {
+    resolve_instance_file_path(instance_id, instance_dir, content_path.as_relative())
+}
+
+/// Where the [`DISABLED_SUFFIX`] variant of `content_path` is on disk, resolved as
+/// [`resolve_content`].
+fn resolve_disabled(
+    instance_id: &InstanceId,
+    instance_dir: &Path,
+    content_path: &ContentPath,
 ) -> Result<PathBuf, InstanceError> {
     resolve_instance_file_path(
         instance_id,
         instance_dir,
-        &InstanceRelativePath::parse(relative_path)?,
+        &content_path.with_suffix(DISABLED_SUFFIX)?,
     )
 }
 
@@ -55,46 +63,23 @@ impl FsContentFileService {
     }
 }
 
-/// The paths come from the pack storage and from the UI, which are no more trusted than a plan:
-/// each is checked as one before any file is touched. A path that fails is skipped with a warning
-/// — nothing is done to it — rather than failing the rest: a stale record or a name this platform
-/// refuses must not keep the user from changing the other files. A symlink out of the instance is
-/// only found as each file is reached.
-fn valid_content_paths<'a>(instance_id: &InstanceId, content_paths: &'a [String]) -> Vec<&'a str> {
-    content_paths
-        .iter()
-        .filter_map(|content_path| match check_content_path(content_path) {
-            Ok(_) => Some(content_path.as_str()),
-            Err(err) => {
-                tracing::warn!("Skipping \"{content_path}\" of \"{instance_id}\": {err}");
-                None
-            }
-        })
-        .collect()
-}
-
 #[async_trait]
 impl ContentFileService for FsContentFileService {
     async fn remove_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
-        let content_paths = valid_content_paths(instance_id, content_paths);
         let Some(instance_dir) = self.existing_instance_dir(instance_id).await else {
             return Ok(());
         };
 
         for content_path in content_paths {
-            let mut file_path = resolve_raw(instance_id, &instance_dir, content_path)?;
+            let mut file_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
             if !file_path.exists() {
                 // TODO rework disable logic to make it more transparent
-                file_path = resolve_raw(
-                    instance_id,
-                    &instance_dir,
-                    &format!("{content_path}{DISABLED_SUFFIX}"),
-                )?;
+                file_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
             }
 
             match remove_file(&file_path).await {
@@ -112,25 +97,20 @@ impl ContentFileService for FsContentFileService {
     async fn enable_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
-        let content_paths = valid_content_paths(instance_id, content_paths);
         let Some(instance_dir) = self.existing_instance_dir(instance_id).await else {
             return Ok(());
         };
 
         for content_path in content_paths {
-            let enabled_path = resolve_raw(instance_id, &instance_dir, content_path)?;
+            let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
             if enabled_path.exists() {
                 continue;
             }
 
-            let disabled_path = resolve_raw(
-                instance_id,
-                &instance_dir,
-                &format!("{content_path}{DISABLED_SUFFIX}"),
-            )?;
+            let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
 
             if !disabled_path.exists() {
                 continue;
@@ -147,25 +127,20 @@ impl ContentFileService for FsContentFileService {
     async fn disable_content_files(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
-        let content_paths = valid_content_paths(instance_id, content_paths);
         let Some(instance_dir) = self.existing_instance_dir(instance_id).await else {
             return Ok(());
         };
 
         for content_path in content_paths {
-            let disabled_path = resolve_raw(
-                instance_id,
-                &instance_dir,
-                &format!("{content_path}{DISABLED_SUFFIX}"),
-            )?;
+            let disabled_path = resolve_disabled(instance_id, &instance_dir, content_path)?;
 
             if disabled_path.exists() {
                 continue;
             }
 
-            let enabled_path = resolve_raw(instance_id, &instance_dir, content_path)?;
+            let enabled_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
             if !enabled_path.exists() {
                 continue;
@@ -182,17 +157,16 @@ impl ContentFileService for FsContentFileService {
     async fn locate_content_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<Option<LocatedContentFile>, InstanceError> {
-        check_content_path(content_path)?;
-
         let instance_dir = self.location_info.instance_dir(instance_id);
 
-        for (candidate, disabled) in [
-            (content_path.to_owned(), false),
-            (format!("{content_path}{DISABLED_SUFFIX}"), true),
-        ] {
-            let path = resolve_raw(instance_id, &instance_dir, &candidate)?;
+        for disabled in [false, true] {
+            let path = if disabled {
+                resolve_disabled(instance_id, &instance_dir, content_path)?
+            } else {
+                resolve_content(instance_id, &instance_dir, content_path)?
+            };
 
             if tokio::fs::metadata(&path)
                 .await
@@ -205,21 +179,17 @@ impl ContentFileService for FsContentFileService {
         Ok(None)
     }
 
-    fn check_content_path(&self, content_path: &str) -> Result<(), InstanceError> {
-        check_content_path(content_path).map(drop)
-    }
-
     async fn move_content_file_out(
         &self,
         instance_id: &InstanceId,
         content_path: &str,
         destination: &Path,
     ) -> Result<bool, InstanceError> {
-        check_content_path(content_path)?;
+        let content_path = &ContentPath::parse(content_path)?;
         let Some(instance_dir) = self.existing_instance_dir(instance_id).await else {
             return Ok(false);
         };
-        let path = resolve_raw(instance_id, &instance_dir, content_path)?;
+        let path = resolve_content(instance_id, &instance_dir, content_path)?;
 
         // Looked at first, so that a rename failing for want of `destination` is not taken for
         // an empty path.
@@ -253,10 +223,10 @@ impl ContentFileService for FsContentFileService {
     ) -> Result<(), InstanceError> {
         // The path may come from a provider's plan: it gets the same checks as a plugin's
         // `write_instance_file`, before and after the parent chain is created.
-        check_content_path(content_path)?;
+        let content_path = &ContentPath::parse(content_path)?;
 
         let instance_dir = self.location_info.instance_dir(instance_id);
-        let absolute_content_path = resolve_raw(instance_id, &instance_dir, content_path)?;
+        let absolute_content_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
         if let Some(parent) = absolute_content_path.parent() {
             create_dir_all(parent)
@@ -264,7 +234,7 @@ impl ContentFileService for FsContentFileService {
                 .map_err(|err| InstanceError::Storage(err.to_string()))?;
         }
 
-        let absolute_content_path = resolve_raw(instance_id, &instance_dir, content_path)?;
+        let absolute_content_path = resolve_content(instance_id, &instance_dir, content_path)?;
 
         rename(temp_path, absolute_content_path)
             .await

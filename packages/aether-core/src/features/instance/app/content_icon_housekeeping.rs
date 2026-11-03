@@ -114,8 +114,8 @@ mod tests {
         instance::{
             CachedContentAuthor, CachedContentIcon, CachedContentMetadata,
             CachedContentVersionMetadata, ContentAuthor, ContentFileUpdateInfo, ContentIconError,
-            ContentMetadata, ContentVersionMetadata, Instance, InstanceBuilder, InstanceId, Pack,
-            PackFile,
+            ContentMetadata, ContentPath, ContentVersionMetadata, Instance, InstanceBuilder,
+            InstanceId, Pack, PackFile,
         },
         minecraft::ModLoader,
     };
@@ -218,14 +218,18 @@ mod tests {
             unimplemented!()
         }
 
-        async fn get_pack_file(&self, _: &InstanceId, _: &str) -> Result<PackFile, InstanceError> {
+        async fn get_pack_file(
+            &self,
+            _: &InstanceId,
+            _: &ContentPath,
+        ) -> Result<PackFile, InstanceError> {
             unimplemented!()
         }
 
         async fn get_pack_files(
             &self,
             instance_id: &InstanceId,
-        ) -> Result<HashMap<String, PackFile>, InstanceError> {
+        ) -> Result<HashMap<ContentPath, PackFile>, InstanceError> {
             let files =
                 self.0
                     .get(instance_id.as_str())
@@ -234,7 +238,7 @@ mod tests {
                     })?;
             Ok(files
                 .iter()
-                .map(|f| (f.file_name.clone(), f.clone()))
+                .map(|f| (ContentPath::parse(&f.file_name).unwrap(), f.clone()))
                 .collect())
         }
 
@@ -250,7 +254,7 @@ mod tests {
         async fn update_pack_file(
             &self,
             _: &InstanceId,
-            _: &str,
+            _: &ContentPath,
             _: &PackFile,
         ) -> Result<(), InstanceError> {
             unimplemented!()
@@ -259,20 +263,24 @@ mod tests {
         async fn update_pack_file_many(
             &self,
             _: &InstanceId,
-            _: &[String],
+            _: &[ContentPath],
             _: &[PackFile],
         ) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
-        async fn remove_pack_file(&self, _: &InstanceId, _: &str) -> Result<(), InstanceError> {
+        async fn remove_pack_file(
+            &self,
+            _: &InstanceId,
+            _: &ContentPath,
+        ) -> Result<(), InstanceError> {
             unimplemented!()
         }
 
         async fn remove_pack_file_many(
             &self,
             _: &InstanceId,
-            _: &[String],
+            _: &[ContentPath],
         ) -> Result<(), InstanceError> {
             unimplemented!()
         }

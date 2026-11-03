@@ -13,7 +13,7 @@ use dashmap::DashMap;
 use tempfile::TempDir;
 use tokio::sync::{Semaphore, mpsc};
 
-use crate::features::instance::CapabilityId;
+use crate::features::instance::{CapabilityId, ContentPath};
 use crate::{
     features::{
         events::{CacheEvent, Event, EventEmitter, EventError, InstanceEvent, InstanceEventType},
@@ -544,7 +544,7 @@ impl Fixture {
             pack_storage
                 .update_pack_file(
                     &InstanceId::try_from(INSTANCE_ID).unwrap(),
-                    &format!("mods/{file}"),
+                    &ContentPath::parse(&format!("mods/{file}")).unwrap(),
                     &pack_file,
                 )
                 .await

@@ -16,8 +16,8 @@ pub use fs_content_icon_cache::{CONTENT_ICONS_FOLDER, FsContentIconCache};
 pub use instance_event_handler::InstanceEventHandler;
 pub use services::{
     FsContentFileService, FsInstanceFileService, InstanceWatcherServiceImpl,
-    NoPlatformProviderSelection, SettingsPlatformProviderSelection, check_content_path,
-    check_plugin_write_allowed, check_size, resolve_instance_file_path,
+    NoPlatformProviderSelection, SettingsPlatformProviderSelection, check_plugin_write_allowed,
+    check_size, resolve_instance_file_path,
 };
 pub use sqlite::{
     SqliteInstanceStorage, SqlitePackStorage, migrate_instances_to_sqlite, migrate_packs_to_sqlite,

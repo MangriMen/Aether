@@ -9,7 +9,7 @@ use path_slash::PathBufExt;
 use crate::{
     core::app::AetherContainer,
     features::instance::{
-        ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort,
+        ChangeContentState, ChangeContentStateUseCasePort, ContentManagementPort, ContentPath,
         ContentStateAction, GetInstanceUseCasePort, InstanceCrudPort, InstanceError,
         InstanceFileService, InstanceId, InstanceRelativePath, InstanceServicesPort,
         ListContentUseCasePort, NewInstance, PluginId,
@@ -126,6 +126,11 @@ pub(crate) async fn handle_change_contents(
     change_state: &dyn ChangeContentStateUseCasePort,
 ) -> crate::Result<()> {
     let instance_id = require_instance(&instance_id, get_instance).await?;
+    let content_paths = content_paths
+        .iter()
+        .map(|content_path| ContentPath::parse(content_path))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(InstanceError::from)?;
 
     change_state
         .execute(ChangeContentState::multiple(

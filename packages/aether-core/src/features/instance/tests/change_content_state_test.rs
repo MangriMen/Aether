@@ -8,8 +8,8 @@ use crate::features::events::{Event, EventEmitter, EventError, SharedEventEmitte
 use crate::features::instance::app::ContentFileService;
 use crate::features::instance::infra::FsContentFileService;
 use crate::features::instance::{
-    ChangeContentState, ChangeContentStateUseCase, ContentStateAction, InstanceError, InstanceId,
-    InstanceLocks,
+    ChangeContentState, ChangeContentStateUseCase, ContentPath, ContentStateAction, InstanceError,
+    InstanceId, InstanceLocks,
 };
 use crate::features::settings::LocationInfo;
 
@@ -105,7 +105,7 @@ async fn should_change_a_file_state_when_one_file_is_given(
     use_case
         .execute(ChangeContentState::single(
             instance_id.clone(),
-            "mods/test.jar".to_string(),
+            ContentPath::parse("mods/test.jar").unwrap(),
             action,
         ))
         .await
@@ -145,7 +145,10 @@ async fn should_change_file_states_when_several_are_given(
     use_case
         .execute(ChangeContentState::multiple(
             instance_id.clone(),
-            vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
+            vec![
+                ContentPath::parse("mods/a.jar").unwrap(),
+                ContentPath::parse("mods/b.jar").unwrap(),
+            ],
             action,
         ))
         .await
@@ -165,7 +168,7 @@ async fn should_succeed_when_the_file_does_not_exist() {
     use_case
         .execute(ChangeContentState::single(
             instance_id.clone(),
-            "mods/nonexistent.jar".to_string(),
+            ContentPath::parse("mods/nonexistent.jar").unwrap(),
             ContentStateAction::Enable,
         ))
         .await
@@ -174,7 +177,7 @@ async fn should_succeed_when_the_file_does_not_exist() {
     use_case
         .execute(ChangeContentState::single(
             instance_id.clone(),
-            "mods/nonexistent.jar".to_string(),
+            ContentPath::parse("mods/nonexistent.jar").unwrap(),
             ContentStateAction::Disable,
         ))
         .await
@@ -202,7 +205,7 @@ async fn should_refuse_the_change_when_a_plan_holds_the_lock_past_the_wait() {
     let result = use_case
         .execute(ChangeContentState::single(
             InstanceId::try_from("busy").unwrap(),
-            "mods/test.jar".to_string(),
+            ContentPath::parse("mods/test.jar").unwrap(),
             ContentStateAction::Disable,
         ))
         .await;
@@ -224,7 +227,7 @@ async fn should_change_the_state_when_the_lock_is_released_within_the_wait() {
 
     let mut change = std::pin::pin!(use_case.execute(ChangeContentState::single(
         InstanceId::try_from("brief").unwrap(),
-        "mods/test.jar".to_string(),
+        ContentPath::parse("mods/test.jar").unwrap(),
         ContentStateAction::Disable,
     )));
     assert!(futures::poll!(&mut change).is_pending());

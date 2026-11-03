@@ -3,10 +3,14 @@ use std::sync::Arc;
 use tempfile::TempDir;
 
 use crate::features::instance::{
-    InstanceError, InstanceId, app::ContentFileService, infra::FsContentFileService,
+    ContentPath, InstanceError, InstanceId, app::ContentFileService, infra::FsContentFileService,
 };
 use crate::features::settings::LocationInfo;
 use crate::test_support::link_dir;
+
+fn cp(path: &str) -> ContentPath {
+    ContentPath::parse(path).unwrap()
+}
 
 fn setup_temp_location() -> (TempDir, Arc<LocationInfo>) {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -52,7 +56,7 @@ async fn should_remove_a_file_when_one_file_is_given() {
 
     // Act
     service
-        .remove_content_files(instance_id, &["mods/test.jar".to_string()])
+        .remove_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("remove_content_files should succeed");
 
@@ -75,7 +79,7 @@ async fn should_remove_files_when_several_are_given() {
 
     create_instance_dir(&location_info, instance_id).await;
 
-    let paths = vec!["mods/test.jar".to_string(), "mods/another.jar".to_string()];
+    let paths = vec![cp("mods/test.jar"), cp("mods/another.jar")];
 
     // Act
     service
@@ -87,7 +91,7 @@ async fn should_remove_files_when_several_are_given() {
     let instance_dir = location_info.instance_dir(instance_id);
     for path in &paths {
         assert!(
-            !instance_dir.join(path).exists(),
+            !instance_dir.join(path.as_str()).exists(),
             "File {path} should be removed"
         );
     }
@@ -115,7 +119,7 @@ async fn should_remove_a_disabled_file_when_the_file_is_disabled() {
 
     // Act — should find and remove the .disabled variant
     service
-        .remove_content_files(instance_id, &["mods/test.jar".to_string()])
+        .remove_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("remove_content_files should succeed");
 
@@ -134,7 +138,7 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
 
     // No files created at all — should not fail
     service
-        .remove_content_files(instance_id, &["mods/nonexistent.jar".to_string()])
+        .remove_content_files(instance_id, &[cp("mods/nonexistent.jar")])
         .await
         .expect("remove_content_files should succeed for non-existent files");
 
@@ -155,7 +159,7 @@ async fn should_fail_with_the_file_kept_when_it_cannot_be_removed() {
     std::fs::create_dir_all(instance_dir.join("mods/held.jar")).unwrap();
 
     let err = service
-        .remove_content_files(instance_id, &["mods/held.jar".to_string()])
+        .remove_content_files(instance_id, &[cp("mods/held.jar")])
         .await
         .unwrap_err();
 
@@ -281,7 +285,7 @@ async fn should_enable_a_file_when_it_is_disabled() {
 
     // Act
     service
-        .enable_content_files(instance_id, &["mods/test.jar".to_string()])
+        .enable_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("enable_content_files should succeed");
 
@@ -315,7 +319,7 @@ async fn should_disable_a_file_when_it_is_enabled() {
 
     // Act
     service
-        .disable_content_files(instance_id, &["mods/test.jar".to_string()])
+        .disable_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("disable_content_files should succeed");
 
@@ -347,7 +351,7 @@ async fn should_stay_enabled_when_a_file_is_already_enabled() {
 
     // Act — should do nothing and not fail
     service
-        .enable_content_files(instance_id, &["mods/test.jar".to_string()])
+        .enable_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("enable should succeed even if already enabled");
 
@@ -374,7 +378,7 @@ async fn should_stay_disabled_when_a_file_is_already_disabled() {
 
     // Act — should do nothing and not fail
     service
-        .disable_content_files(instance_id, &["mods/test.jar".to_string()])
+        .disable_content_files(instance_id, &[cp("mods/test.jar")])
         .await
         .expect("disable should succeed even if already disabled");
 
@@ -404,10 +408,7 @@ async fn should_enable_files_when_several_are_given() {
 
     // Act
     service
-        .enable_content_files(
-            instance_id,
-            &["mods/a.jar".to_string(), "mods/b.jar".to_string()],
-        )
+        .enable_content_files(instance_id, &[cp("mods/a.jar"), cp("mods/b.jar")])
         .await
         .expect("enable_content_files multiple should succeed");
 
@@ -443,10 +444,7 @@ async fn should_disable_files_when_several_are_given() {
 
     // Act
     service
-        .disable_content_files(
-            instance_id,
-            &["mods/a.jar".to_string(), "mods/b.jar".to_string()],
-        )
+        .disable_content_files(instance_id, &[cp("mods/a.jar"), cp("mods/b.jar")])
         .await
         .expect("disable_content_files multiple should succeed");
 
@@ -470,12 +468,12 @@ async fn should_succeed_when_the_file_to_enable_or_disable_does_not_exist() {
 
     // No files at all — should not fail
     service
-        .enable_content_files(instance_id, &["mods/nonexistent.jar".to_string()])
+        .enable_content_files(instance_id, &[cp("mods/nonexistent.jar")])
         .await
         .expect("enable should be idempotent for missing files");
 
     service
-        .disable_content_files(instance_id, &["mods/nonexistent.jar".to_string()])
+        .disable_content_files(instance_id, &[cp("mods/nonexistent.jar")])
         .await
         .expect("disable should be idempotent for missing files");
 }
@@ -548,7 +546,7 @@ async fn should_refuse_a_path_when_it_leads_out_of_the_content_area() {
             "{path}: {err:?}"
         );
         assert!(
-            service.check_content_path(path).is_err(),
+            ContentPath::parse(path).is_err(),
             "{path}: the check alone refuses it too"
         );
         assert!(temp.exists(), "{path}: nothing is moved");
@@ -556,7 +554,7 @@ async fn should_refuse_a_path_when_it_leads_out_of_the_content_area() {
 
     assert!(!temp_dir.path().join("escaped.jar").exists());
     assert!(!location_info.instances_dir().join("escaped.jar").exists());
-    assert!(service.check_content_path("mods/sodium.jar").is_ok());
+    assert!(ContentPath::parse("mods/sodium.jar").is_ok());
 }
 
 #[tokio::test]
@@ -590,7 +588,7 @@ async fn should_refuse_an_install_when_a_symlink_leads_out_of_the_instance() {
 async fn change_all(
     service: &FsContentFileService,
     instance_id: &InstanceId,
-    paths: &[String],
+    paths: &[ContentPath],
 ) -> Vec<(&'static str, Result<(), InstanceError>)> {
     vec![
         (
@@ -608,11 +606,11 @@ async fn change_all(
     ]
 }
 
-/// The paths come from the pack storage and the UI: one out of the instance, or into the
-/// launcher's `.metadata`, is skipped by every operation — nothing is done to it — while the
-/// valid path next to it is changed as asked.
+/// The paths come from the pack storage and the UI, and are checked as [`ContentPath`]s where they
+/// enter: one out of the instance, or into the launcher's `.metadata`, never reaches an operation
+/// — nothing is done to what it would have named — while the valid path is changed as asked.
 #[tokio::test]
-async fn should_skip_a_path_out_of_the_content_area_when_changing_a_list() {
+async fn should_refuse_a_path_out_of_the_content_area_before_changing_a_list() {
     let (temp_dir, location_info) = setup_temp_location();
     let service = FsContentFileService::new(location_info.clone());
     let instance_id = &InstanceId::try_from("test-change-refused").unwrap();
@@ -635,7 +633,8 @@ async fn should_skip_a_path_out_of_the_content_area_when_changing_a_list() {
         ".metadata/instance.json",
         ".Metadata/instance.json",
     ] {
-        let paths = ["mods/test.jar".to_owned(), path.to_owned()];
+        assert!(ContentPath::parse(path).is_err(), "{path} must not parse");
+        let paths = [cp("mods/test.jar")];
         std::fs::create_dir_all(valid.parent().unwrap()).unwrap();
         std::fs::write(&valid, b"jar").unwrap();
 
@@ -683,7 +682,7 @@ async fn should_refuse_to_change_a_file_when_a_symlink_leads_out_of_the_instance
 
     link_dir(&outside, &instance_dir.join("mods"));
 
-    let paths = ["mods/escaped.jar".to_owned()];
+    let paths = [cp("mods/escaped.jar")];
     for (operation, result) in change_all(&service, instance_id, &paths).await {
         let err = result.expect_err(operation);
         assert!(

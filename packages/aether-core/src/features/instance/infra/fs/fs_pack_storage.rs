@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use crate::{
     features::{
         instance::{
-            InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage, ProviderId,
-            app::DISABLED_SUFFIX,
+            ContentPath, InstanceError, InstanceId, Pack, PackEntry, PackFile, PackStorage,
+            ProviderId, app::DISABLED_SUFFIX,
         },
         settings::LocationInfo,
     },
@@ -54,10 +54,10 @@ impl FsPackStorage {
         self.location_info.instance_pack(instance_id)
     }
 
-    fn get_pack_file_path(&self, instance_id: &InstanceId, content_path: &str) -> PathBuf {
+    fn get_pack_file_path(&self, instance_id: &InstanceId, content_path: &ContentPath) -> PathBuf {
         self.location_info
             .instance_pack_dir(instance_id)
-            .join(content_path)
+            .join(content_path.to_path_buf())
             .with_extension("toml")
     }
 }
@@ -69,11 +69,22 @@ impl PackStorage for FsPackStorage {
             .await
             .map_err(|err| InstanceError::Storage(err.to_string()))?;
 
+        // An entry that fails the check can never name a file of an instance: it is dropped with
+        // a warning rather than failing the read of the whole pack.
         Ok(Pack {
             files: dto
                 .files
                 .into_iter()
-                .map(|e| PackEntry { file: e.file })
+                .filter_map(|e| match ContentPath::parse(&e.file) {
+                    Ok(file) => Some(PackEntry { file }),
+                    Err(err) => {
+                        tracing::warn!(
+                            "Ignoring pack file \"{}\" of \"{instance_id}\": not a valid content path: {err}",
+                            e.file
+                        );
+                        None
+                    }
+                })
                 .collect(),
         })
     }
@@ -88,7 +99,7 @@ impl PackStorage for FsPackStorage {
                 .files
                 .iter()
                 .map(|e| super::pack_file::PackEntryV2 {
-                    file: e.file.clone(),
+                    file: e.file.as_str().to_owned(),
                 })
                 .collect(),
         };
@@ -101,7 +112,7 @@ impl PackStorage for FsPackStorage {
     async fn get_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<PackFile, InstanceError> {
         let path = self.get_pack_file_path(instance_id, content_path);
 
@@ -151,12 +162,12 @@ impl PackStorage for FsPackStorage {
     async fn update_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
         pack_file: &PackFile,
     ) -> Result<(), InstanceError> {
         self.update_pack_file_many(
             instance_id,
-            &[content_path.to_string()],
+            std::slice::from_ref(content_path),
             std::slice::from_ref(pack_file),
         )
         .await
@@ -165,7 +176,7 @@ impl PackStorage for FsPackStorage {
     async fn update_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
         pack_files: &[PackFile],
     ) -> Result<(), InstanceError> {
         for (content_path, pack_file) in content_paths.iter().zip(pack_files) {
@@ -199,22 +210,22 @@ impl PackStorage for FsPackStorage {
     async fn remove_pack_file(
         &self,
         instance_id: &InstanceId,
-        content_path: &str,
+        content_path: &ContentPath,
     ) -> Result<(), InstanceError> {
-        self.remove_pack_file_many(instance_id, &[content_path.to_string()])
+        self.remove_pack_file_many(instance_id, std::slice::from_ref(content_path))
             .await
     }
 
     async fn remove_pack_file_many(
         &self,
         instance_id: &InstanceId,
-        content_paths: &[String],
+        content_paths: &[ContentPath],
     ) -> Result<(), InstanceError> {
         let instance_dir = self.location_info.instance_dir(instance_id);
         let mut success_deleted = Vec::new();
 
         for content_path in content_paths {
-            let mut file_path = instance_dir.join(content_path);
+            let mut file_path = instance_dir.join(content_path.to_path_buf());
 
             if !file_path.exists() {
                 file_path =
@@ -246,5 +257,42 @@ impl PackStorage for FsPackStorage {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::TempDir;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn should_drop_an_index_entry_that_is_not_a_content_path_when_reading() {
+        let temp = TempDir::new().unwrap();
+        let storage = FsPackStorage::new(Arc::new(LocationInfo::new(
+            temp.path().join("settings"),
+            temp.path().to_path_buf(),
+        )));
+        let id = InstanceId::try_from("inst").unwrap();
+        let good = ContentPath::parse("mods/a.jar").unwrap();
+        storage
+            .update_pack_file(&id, &good, &PackFile::from_hash("a.jar".into(), "h".into()))
+            .await
+            .unwrap();
+        tokio::fs::write(
+            storage.get_pack_path(&id),
+            "[[files]]\nfile = \"../x.jar\"\n\n[[files]]\nfile = \"mods/a.jar\"\n\n\
+             [[files]]\nfile = \".metadata/instance.json\"\n",
+        )
+        .await
+        .unwrap();
+
+        let pack = storage.get_pack(&id).await.unwrap();
+        let files = storage.get_pack_files(&id).await.unwrap();
+
+        assert_eq!(pack.files.len(), 1);
+        assert_eq!(pack.files[0].file, good);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[&good].hash, "h");
     }
 }

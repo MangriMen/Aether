@@ -12,8 +12,8 @@ use crate::features::instance::infra::{
     FsContentFileService, SqliteInstanceStorage, SqlitePackStorage,
 };
 use crate::features::instance::{
-    Instance, InstanceBuilder, InstanceId, InstanceLocks, InstanceStorage, PackStorage,
-    RemoveContent, RemoveContentUseCase,
+    ContentPath, Instance, InstanceBuilder, InstanceId, InstanceLocks, InstanceStorage,
+    PackStorage, RemoveContent, RemoveContentUseCase,
 };
 use crate::features::minecraft::ModLoader;
 use crate::features::settings::LocationInfo;
@@ -152,7 +152,7 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
     use_case
         .execute(RemoveContent::multiple(
             InstanceId::try_from(instance_id.clone()).unwrap(),
-            vec!["mods/a.jar".to_string()],
+            vec![ContentPath::parse("mods/a.jar").unwrap()],
         ))
         .await
         .expect("RemoveContentUseCase should succeed");
@@ -163,7 +163,11 @@ async fn should_clean_db_and_disk_when_content_is_removed() {
         .await
         .unwrap();
     assert_eq!(pack.files.len(), 1, "One pack file should remain");
-    assert_eq!(pack.files[0].file, "mods/b.jar", "Only b.jar should remain");
+    assert_eq!(
+        pack.files[0].file.as_str(),
+        "mods/b.jar",
+        "Only b.jar should remain"
+    );
 
     // Assert — disk file removed, other files intact
     assert!(
@@ -203,7 +207,10 @@ async fn should_remove_every_file_when_several_are_given() {
     use_case
         .execute(RemoveContent::multiple(
             InstanceId::try_from(instance_id.clone()).unwrap(),
-            vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
+            vec![
+                ContentPath::parse("mods/a.jar").unwrap(),
+                ContentPath::parse("mods/b.jar").unwrap(),
+            ],
         ))
         .await
         .expect("RemoveContentUseCase should succeed");
@@ -247,7 +254,7 @@ async fn should_succeed_when_the_file_to_remove_does_not_exist() {
     use_case
         .execute(RemoveContent::multiple(
             InstanceId::try_from(instance_id.clone()).unwrap(),
-            vec!["mods/nonexistent.jar".to_string()],
+            vec![ContentPath::parse("mods/nonexistent.jar").unwrap()],
         ))
         .await
         .expect("Should not fail for non-existent content");
@@ -287,7 +294,10 @@ async fn should_keep_the_record_of_a_file_when_it_cannot_be_removed() {
     let result = use_case
         .execute(RemoveContent::multiple(
             InstanceId::try_from(instance_id.clone()).unwrap(),
-            vec!["mods/a.jar".to_string(), "mods/b.jar".to_string()],
+            vec![
+                ContentPath::parse("mods/a.jar").unwrap(),
+                ContentPath::parse("mods/b.jar").unwrap(),
+            ],
         ))
         .await;
 
@@ -346,7 +356,7 @@ async fn should_remove_only_the_selected_files_when_others_exist() {
     use_case
         .execute(RemoveContent::multiple(
             InstanceId::try_from(instance_id.clone()).unwrap(),
-            vec!["mods/a.jar".to_string()],
+            vec![ContentPath::parse("mods/a.jar").unwrap()],
         ))
         .await
         .expect("RemoveContentUseCase should succeed");
@@ -402,7 +412,7 @@ async fn should_wait_for_the_instance_lock_when_a_plan_holds_it() {
 
     let mut remove = std::pin::pin!(use_case.execute(RemoveContent::multiple(
         InstanceId::try_from(instance_id.clone()).unwrap(),
-        vec!["mods/a.jar".to_string()],
+        vec![ContentPath::parse("mods/a.jar").unwrap()],
     )));
     assert!(futures::poll!(&mut remove).is_pending());
     assert!(

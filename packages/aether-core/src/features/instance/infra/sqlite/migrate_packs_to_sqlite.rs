@@ -100,11 +100,16 @@ mod tests {
     use super::*;
     use crate::features::{
         instance::{
-            Instance, InstanceBuilder, InstanceError, InstanceId, Pack, PackEntry, PackFile,
+            ContentPath, Instance, InstanceBuilder, InstanceError, InstanceId, Pack, PackEntry,
+            PackFile,
         },
         minecraft::ModLoader,
         settings::LocationInfo,
     };
+
+    fn cp(path: &str) -> ContentPath {
+        ContentPath::parse(path).unwrap()
+    }
 
     struct MemInstanceStorage(Mutex<Vec<Instance>>);
 
@@ -139,14 +144,14 @@ mod tests {
         fs.update_pack(
             instance_id,
             &Pack {
-                files: vec![PackEntry { file: path.into() }],
+                files: vec![PackEntry { file: cp(path) }],
             },
         )
         .await
         .unwrap();
         fs.update_pack_file(
             instance_id,
-            path,
+            &cp(path),
             &PackFile::from_hash("a.jar".into(), hash.into()),
         )
         .await
@@ -185,7 +190,7 @@ mod tests {
             .await
             .unwrap();
 
-        let migrated = sqlite.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        let migrated = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
         assert_eq!(migrated.hash, "legacy");
     }
 
@@ -210,7 +215,7 @@ mod tests {
         sqlite
             .update_pack_file(
                 &id,
-                "mods/a.jar",
+                &cp("mods/a.jar"),
                 &PackFile::from_hash("a.jar".into(), "current".into()),
             )
             .await
@@ -220,7 +225,7 @@ mod tests {
             .await
             .unwrap();
 
-        let kept = sqlite.get_pack_file(&id, "mods/a.jar").await.unwrap();
+        let kept = sqlite.get_pack_file(&id, &cp("mods/a.jar")).await.unwrap();
         assert_eq!(kept.hash, "current");
     }
 
@@ -233,10 +238,10 @@ mod tests {
             &Pack {
                 files: vec![
                     PackEntry {
-                        file: "mods/missing.jar".into(),
+                        file: cp("mods/missing.jar"),
                     },
                     PackEntry {
-                        file: "mods/a.jar".into(),
+                        file: cp("mods/a.jar"),
                     },
                 ],
             },
@@ -251,7 +256,7 @@ mod tests {
 
         let migrated = sqlite.get_pack(&id).await.unwrap();
         assert_eq!(migrated.files.len(), 1);
-        assert_eq!(migrated.files[0].file, "mods/a.jar");
+        assert_eq!(migrated.files[0].file, cp("mods/a.jar"));
     }
 
     #[tokio::test]
@@ -262,7 +267,10 @@ mod tests {
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
             .await
             .unwrap();
-        sqlite.remove_pack_file(&id, "mods/a.jar").await.unwrap();
+        sqlite
+            .remove_pack_file(&id, &cp("mods/a.jar"))
+            .await
+            .unwrap();
 
         migrate_packs_to_sqlite(&instances, &fs, &sqlite)
             .await

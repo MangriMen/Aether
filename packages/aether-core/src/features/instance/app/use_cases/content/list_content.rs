@@ -11,8 +11,8 @@ use path_slash::PathBufExt;
 use crate::{
     features::{
         instance::{
-            ContentFile, ContentFileView, ContentMetadataService, ContentType, InstanceError,
-            InstanceId, PackEntry, PackFile, PackStorage,
+            ContentFile, ContentFileView, ContentMetadataService, ContentPath, ContentType,
+            InstanceError, InstanceId, PackEntry, PackFile, PackStorage,
             app::{DISABLED_SUFFIX, ports::ListContentUseCasePort},
         },
         settings::LocationInfo,
@@ -68,7 +68,7 @@ impl ListContentUseCase {
         };
         let views: DashMap<String, ContentFileView> = files
             .into_iter()
-            .map(|(path, file)| (path, file.into()))
+            .map(|(path, file)| (path.into_string(), file.into()))
             .collect();
         self.content_metadata.attach(&instance_id, &views).await;
 
@@ -78,7 +78,7 @@ impl ListContentUseCase {
     async fn get_entries_by_path(
         &self,
         instance_id: &InstanceId,
-    ) -> Result<DashMap<String, PackEntry>, InstanceError> {
+    ) -> Result<DashMap<ContentPath, PackEntry>, InstanceError> {
         let metadata = self.pack_storage.get_pack(instance_id).await?;
 
         Ok(metadata
@@ -93,8 +93,8 @@ impl ListContentUseCase {
         instance_id: &InstanceId,
         instance_dir: &Path,
         content_type: ContentType,
-        entries_by_path: Arc<DashMap<String, PackEntry>>,
-        files: Arc<DashMap<String, ContentFile>>,
+        entries_by_path: Arc<DashMap<ContentPath, PackEntry>>,
+        files: Arc<DashMap<ContentPath, ContentFile>>,
     ) -> Result<(), InstanceError> {
         let content_dir = instance_dir.join(content_type.get_folder());
 
@@ -151,7 +151,7 @@ impl ListContentUseCase {
         instance_id: &InstanceId,
         file_path: &Path,
         content_type: ContentType,
-        entries_by_path: &DashMap<String, PackEntry>,
+        entries_by_path: &DashMap<ContentPath, PackEntry>,
     ) -> Result<Option<ContentFile>, InstanceError> {
         let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) else {
             return Ok(None);
@@ -169,8 +169,27 @@ impl ListContentUseCase {
 
         // Only one suffix: `a.jar.disabled.disabled` is the disabled `a.jar.disabled`.
         let (content_path, is_disabled) = match original_path.strip_suffix(DISABLED_SUFFIX) {
-            Some(enabled) => (enabled.to_string(), true),
-            None => (original_path, false),
+            Some(enabled) => (enabled, true),
+            None => (original_path.as_str(), false),
+        };
+
+        // A file whose name can never be a content path (a trailing dot or space, a `:` where
+        // the platform refuses it, a `\` that parsing would turn into a separator) cannot be
+        // tracked or changed: it is left out of the list.
+        let content_path = match ContentPath::parse(content_path) {
+            Ok(parsed) if parsed.as_str() == content_path => parsed,
+            Ok(_) => {
+                tracing::warn!(
+                    "Skipping \"{original_path}\" of \"{instance_id}\": its name is not a single path segment"
+                );
+                return Ok(None);
+            }
+            Err(err) => {
+                tracing::warn!(
+                    "Skipping \"{original_path}\" of \"{instance_id}\": not a valid content path: {err}"
+                );
+                return Ok(None);
+            }
         };
 
         let pack_file = self
@@ -197,8 +216,8 @@ impl ListContentUseCase {
         instance_id: &InstanceId,
         file_path: &Path,
         file_name: &str,
-        content_path: &str,
-        entries_by_path: &DashMap<String, PackEntry>,
+        content_path: &ContentPath,
+        entries_by_path: &DashMap<ContentPath, PackEntry>,
     ) -> Result<PackFile, InstanceError> {
         if let Some(entry) = entries_by_path.get(content_path) {
             return self

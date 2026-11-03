@@ -9,6 +9,10 @@ use crate::{
 /// as `aether#modrinth`, and still be found when looked up by the new id.
 const INSTANCE_ID: &str = "instance";
 const CONTENT_PATH: &str = "mods/sodium.jar";
+
+fn content_path() -> crate::features::instance::ContentPath {
+    crate::features::instance::ContentPath::parse(CONTENT_PATH).unwrap()
+}
 const LEGACY_MODRINTH: &str = "core:modrinth#modrinth-content";
 
 async fn create_pool() -> SqlitePool {
@@ -70,7 +74,7 @@ async fn should_read_legacy_modrinth_rows_as_aether_modrinth_when_the_table_hold
     let storage = SqlitePackStorage::new(pool);
 
     let pack_file = storage
-        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), CONTENT_PATH)
+        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), &content_path())
         .await
         .unwrap();
 
@@ -105,13 +109,13 @@ async fn should_store_aether_modrinth_when_a_legacy_row_is_saved_again() {
     let storage = SqlitePackStorage::new(pool.clone());
 
     let pack_file = storage
-        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), CONTENT_PATH)
+        .get_pack_file(&InstanceId::try_from(INSTANCE_ID).unwrap(), &content_path())
         .await
         .unwrap();
     storage
         .update_pack_file(
             &InstanceId::try_from(INSTANCE_ID).unwrap(),
-            CONTENT_PATH,
+            &content_path(),
             &pack_file,
         )
         .await

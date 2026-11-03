@@ -5,16 +5,18 @@ use async_trait::async_trait;
 use crate::features::instance::app::ports::RemoveContentUseCasePort;
 use crate::features::{
     events::{EventEmitterExt, InstanceEvent, InstanceEventType, SharedEventEmitter},
-    instance::{InstanceError, InstanceId, InstanceLocks, PackStorage, app::ContentFileService},
+    instance::{
+        ContentPath, InstanceError, InstanceId, InstanceLocks, PackStorage, app::ContentFileService,
+    },
 };
 
 pub struct RemoveContent {
     instance_id: InstanceId,
-    content_paths: Vec<String>,
+    content_paths: Vec<ContentPath>,
 }
 
 impl RemoveContent {
-    pub fn multiple(instance_id: InstanceId, content_paths: Vec<String>) -> Self {
+    pub fn multiple(instance_id: InstanceId, content_paths: Vec<ContentPath>) -> Self {
         Self {
             instance_id,
             content_paths,

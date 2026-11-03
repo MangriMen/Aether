@@ -53,7 +53,7 @@ pub(super) fn is_installed_by(record: &PackFile, origin: &PlanOrigin) -> bool {
 /// that content itself is the user's choice of a version, and keeps its file.
 pub(super) fn without_separate_installs(
     entries: Vec<DownloadEntry>,
-    records: &HashMap<String, PackFile>,
+    records: &HashMap<ContentPath, PackFile>,
     origin: &PlanOrigin,
 ) -> Vec<DownloadEntry> {
     entries
@@ -87,10 +87,10 @@ pub(super) fn without_separate_installs(
 /// A path that differs from a planned one only in case is left alone where the file system
 /// ignores case (Windows, macOS): there it is the planned file.
 pub(super) fn dropped_paths(
-    records: &HashMap<String, PackFile>,
+    records: &HashMap<ContentPath, PackFile>,
     origin: &PlanOrigin,
     entries: &[DownloadEntry],
-) -> Vec<String> {
+) -> Vec<ContentPath> {
     let planned: HashSet<String> = entries
         .iter()
         .map(|entry| entry.relative_path.file_system_key())
@@ -104,11 +104,11 @@ pub(super) fn dropped_paths(
         })
     };
 
-    let mut dropped: Vec<String> = records
+    let mut dropped: Vec<ContentPath> = records
         .iter()
         .filter(|(content_path, record)| {
             (is_installed_by(record, origin) || replaced(record))
-                && !planned.contains(&ContentPath::raw_file_system_key(content_path))
+                && !planned.contains(&content_path.file_system_key())
         })
         .map(|(content_path, _)| content_path.clone())
         .collect();
@@ -132,7 +132,7 @@ pub(super) fn diff_against_installed(
     };
 
     for entry in entries {
-        match installed.planned.get(entry.relative_path.as_str()) {
+        match installed.planned.get(&entry.relative_path) {
             Some(on_disk) if on_disk.matches => diff.unchanged.push(UnchangedFile {
                 file: PlannedFile {
                     entry,
